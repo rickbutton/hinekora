@@ -244,7 +244,8 @@ export type RPred =
           readonly op: Cmp;
           readonly value: number;
       }
-    | { readonly kind: "not"; readonly inner: RPred };
+    | { readonly kind: "not"; readonly inner: RPred }
+    | { readonly kind: "and" | "or"; readonly left: RPred; readonly right: RPred };
 
 /**
  * Refine `a` to the sub-state where `pred` holds (`positive`) or fails
@@ -275,7 +276,37 @@ export function refine(a: AItem, pred: RPred, positive = true): AItem | null {
                 positive ? pred.op : negateCmp(pred.op),
                 pred.value,
             );
+
+        // Boolean combinations, via De Morgan. Refining a CONJUNCTION is
+        // sequential (narrow by both); refining a DISJUNCTION is a `join` (the
+        // least-upper-bound over-approximates "one of them holds"). Negation
+        // swaps the two: ¬(A∧B) = ¬A ∨ ¬B, and ¬(A∨B) = ¬A ∧ ¬B.
+        case "and":
+            return positive
+                ? refineBoth(a, pred.left, pred.right, true)
+                : joinOrNull(refine(a, pred.left, false), refine(a, pred.right, false));
+        case "or":
+            return positive
+                ? joinOrNull(refine(a, pred.left, true), refine(a, pred.right, true))
+                : refineBoth(a, pred.left, pred.right, false);
     }
+}
+
+/** Narrow by `left` then `right` at the same polarity — the conjunction case. */
+function refineBoth(a: AItem, left: RPred, right: RPred, positive: boolean): AItem | null {
+    const s = refine(a, left, positive);
+    return s === null ? null : refine(s, right, positive);
+}
+
+/**
+ * The least-upper-bound of two sub-states, treating `null` (an uninhabited
+ * branch) as absent: the disjunction is inhabited if either side is. Only `null`
+ * when BOTH sides are uninhabited — which is exactly the dead-arm signal.
+ */
+function joinOrNull(s1: AItem | null, s2: AItem | null): AItem | null {
+    if (s1 === null) return s2;
+    if (s2 === null) return s1;
+    return join(s1, s2);
 }
 
 /** Can this state be refined so `type` (optionally at tier `tierMod`) is present? */

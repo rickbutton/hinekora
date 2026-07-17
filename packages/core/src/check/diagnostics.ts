@@ -65,6 +65,10 @@ export function describePred(pred: Pred): string {
             return `${pred.projection} ${pred.op} ${pred.value}`;
         case "not":
             return `not ${describePred(pred.inner)}`;
+        case "and":
+            return `(${describePred(pred.left)} and ${describePred(pred.right)})`;
+        case "or":
+            return `(${describePred(pred.left)} or ${describePred(pred.right)})`;
     }
 }
 

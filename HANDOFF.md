@@ -280,6 +280,14 @@ the op required." `describePred`, `resolveMessage` for other diagnostics.
 
 ## 7. Recent work (changelog, newest first)
 
+### `or` / `and` predicates
+
+- `BinaryPred` in the AST; parser precedence `or` < `and` < `not` < atom (left-assoc, parens
+  override). Checker `refine` handles them by De Morgan (conjunction = sequential narrow,
+  disjunction = `join`); dead-arm and loop-exit-as-proof both work — e.g. `until has "fire
+resistance" t1 or has "cold resistance" t1 or has "lightning resistance" t1 { chaos }`
+  checks clean, and a disjunctive exit proves nothing specific (`guaranteed` stays empty).
+
 ### Essence groundwork + `t1` tier shorthand
 
 - **`t1` tier shorthand** replaces `tier 1` (long form dropped). A single `t<digits>` ident
@@ -374,12 +382,13 @@ To preview hover/completion without VSCode: a throwaway `.mjs` placed **inside
 
 ### Designed & queued (essence + language features)
 
-- **`or` / `and` in predicates.** Currently `Pred` has only `not` + atoms — no disjunction.
-  Needed by the essence example ("any of fire/cold/lightning T1") and by predicate functions.
-  Build FIRST. Touches lexer/parser/AST + checker `refine` (refine by a disjunction = join of
-  the per-disjunct refinements; loop-exit-as-proof of a disjunction is the weaker "one of
-  them holds", which is correct).
-- **Local predicate functions.** `def name(args) = <predicate>` — named, parameterized,
+- **`or` / `and` in predicates — DONE.** `BinaryPred {kind:"and"|"or", left, right}`; parser
+  precedence `or` < `and` < `not` < atom, all left-assoc. Checker `refine` handles them by De
+  Morgan: conjunction = sequential narrow, disjunction = `join` (LUB over-approximates "one
+  holds"); negation swaps. Loop-exit proves the disjunction (a weaker fact — `guaranteed`
+  stays empty when the exit is `X or Y`, which is correct). Completion doesn't yet offer
+  `or`/`and` mid-predicate (minor gap).
+- **Local predicate functions — NEXT.** `def name(args) = <predicate>` — named, parameterized,
   PURE predicates (no item side-effects), file-level scope. Args substitute into the body;
   no new checker machinery beyond substitution. **Param types are INFERRED from usage** (a
   param in `t1`/count position ⇒ int; in `has p` ⇒ mod-name), each use a constraint, unify;

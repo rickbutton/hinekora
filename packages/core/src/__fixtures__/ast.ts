@@ -9,6 +9,7 @@
 import type {
     ComparePred,
     Craft,
+    BinaryPred,
     HasPred,
     IfStmt,
     ItemBlock,
@@ -96,3 +97,10 @@ export const cmp = (
     value: number,
 ): ComparePred => ({ kind: "compare", projection, op, value, span: DS });
 export const notp = (inner: Pred): NotPred => ({ kind: "not", inner, span: DS });
+export const andp = (left: Pred, right: Pred): BinaryPred => ({
+    kind: "and",
+    left,
+    right,
+    span: DS,
+});
+export const orp = (left: Pred, right: Pred): BinaryPred => ({ kind: "or", left, right, span: DS });

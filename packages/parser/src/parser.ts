@@ -307,10 +307,37 @@ class Parser {
 
     // --- predicates (surface §5) -------------------------------------------
 
+    // Predicate grammar by precedence, loosest first: `or` < `and` < `not` <
+    // atom. So `a or b and c` parses as `a or (b and c)`, and `not a and b` as
+    // `(not a) and b`. All binary operators are left-associative.
     private parsePred(): Pred {
+        return this.parseOr();
+    }
+
+    private parseOr(): Pred {
+        let left = this.parseAnd();
+        while (this.atKeyword("or")) {
+            this.advance();
+            const right = this.parseAnd();
+            left = { kind: "or", left, right, span: span(left.span.start, right.span.end) };
+        }
+        return left;
+    }
+
+    private parseAnd(): Pred {
+        let left = this.parseNot();
+        while (this.atKeyword("and")) {
+            this.advance();
+            const right = this.parseNot();
+            left = { kind: "and", left, right, span: span(left.span.start, right.span.end) };
+        }
+        return left;
+    }
+
+    private parseNot(): Pred {
         if (this.atKeyword("not")) {
             const start = this.advance().span.start;
-            const inner = this.parsePred();
+            const inner = this.parseNot();
             return { kind: "not", inner, span: span(start, inner.span.end) };
         }
         return this.parsePredAtom();

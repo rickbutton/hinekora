@@ -454,6 +454,15 @@ class Checker {
                 const inner = this.resolvePred(pred.inner, a);
                 return inner === null ? null : { kind: "not", inner };
             }
+            case "and":
+            case "or": {
+                // An unresolvable sub-predicate (already reported) makes the whole
+                // combination unknown — return null so we skip narrowing entirely
+                // rather than narrow by a half-understood condition.
+                const left = this.resolvePred(pred.left, a);
+                const right = this.resolvePred(pred.right, a);
+                return left === null || right === null ? null : { kind: pred.kind, left, right };
+            }
             case "has":
                 return this.resolveHas(pred, a);
         }

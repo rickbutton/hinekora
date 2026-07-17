@@ -190,6 +190,37 @@ describe("parser — predicates", () => {
         });
     });
 
+    it("parses `and`/`or` with `or` binding looser than `and`", () => {
+        // `a or b and c` == `a or (b and c)`.
+        expect(predOf(wrap('has "a" or has "b" and has "c"'))).toMatchObject({
+            kind: "or",
+            left: { kind: "has", mod: "a" },
+            right: {
+                kind: "and",
+                left: { kind: "has", mod: "b" },
+                right: { kind: "has", mod: "c" },
+            },
+        });
+    });
+
+    it("binds `not` tighter than `and`, and honors parentheses", () => {
+        // `not a and b` == `(not a) and b`.
+        expect(predOf(wrap('not has "a" and has "b"'))).toMatchObject({
+            kind: "and",
+            left: { kind: "not", inner: { kind: "has", mod: "a" } },
+            right: { kind: "has", mod: "b" },
+        });
+        // Parens override: `not (a or b)`.
+        expect(predOf(wrap('not (has "a" or has "b")'))).toMatchObject({
+            kind: "not",
+            inner: {
+                kind: "or",
+                left: { kind: "has", mod: "a" },
+                right: { kind: "has", mod: "b" },
+            },
+        });
+    });
+
     it("rejects a bogus predicate", () => {
         expect(
             parseErr('craft in poe1 item { base: "R" ilvl: 1 rarity: rare } until wat { exalt }')

@@ -86,7 +86,7 @@ export interface WithOmenStmt {
 
 // --- Predicates (surface §5) ----------------------------------------------
 
-export type Pred = RarityPred | HasPred | ComparePred | NotPred;
+export type Pred = RarityPred | HasPred | ComparePred | NotPred | BinaryPred;
 
 /** Comparison operators for count projections. */
 export type Cmp = "==" | "!=" | "<" | "<=" | ">" | ">=";
@@ -123,5 +123,13 @@ export interface ComparePred {
 export interface NotPred {
     readonly kind: "not";
     readonly inner: Pred;
+    readonly span: SourceSpan;
+}
+
+/** `<pred> and <pred>` / `<pred> or <pred>`. `or` binds looser than `and`. */
+export interface BinaryPred {
+    readonly kind: "and" | "or";
+    readonly left: Pred;
+    readonly right: Pred;
     readonly span: SourceSpan;
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import {
+    andp,
     craft,
     cmp,
     has,
@@ -10,6 +11,7 @@ import {
     item,
     notp,
     op,
+    orp,
     until,
     withOmen,
 } from "../__fixtures__/ast.js";
@@ -235,6 +237,46 @@ describe("checker — narrowing (if / else) and dead arms", () => {
             iff(cmp("prefixCount", "==", 2), [], []),
         ]);
         expect(check(c, ctx).diagnostics).toEqual([]);
+    });
+});
+
+describe("checker — boolean predicates (and / or)", () => {
+    it("`or`: a disjunction that always holds makes the else arm dead", () => {
+        // Life is guaranteed, so `has life or has fire` is always true.
+        const c = craft("poe1", rareRing(["IncreasedLife1"]), [
+            iff(orp(has("IncreasedLife1"), has("FireResist1")), [], [op("annul")]),
+        ]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("'else' branch can never run");
+    });
+
+    it("`and`: an impossible conjunct makes the if arm dead", () => {
+        // isMagic is false on a Rare item, so the whole conjunction is impossible.
+        const c = craft("poe1", rareRing(), [
+            iff(andp(isRarity("magic"), has("IncreasedLife1")), [op("exalt")]),
+        ]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("'if' branch can never run");
+    });
+
+    it("`or`: a genuine two-way narrow has no dead arm", () => {
+        // After one exalt the added mod might be life, fire, or neither — so both
+        // arms of `has life or has fire` are inhabited.
+        const c = craft("poe1", rareRing(), [
+            op("exalt"),
+            iff(orp(has("IncreasedLife1"), has("FireResist1")), [], []),
+        ]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
+    });
+
+    it("`not (X or Y)` drains both: the loop proves both absent on exit", () => {
+        // De Morgan: exiting when `not (has life or has fire)` proves neither is
+        // present. The draining annul keeps the loop sound.
+        const c = craft("poe1", rareRing(["IncreasedLife1"], ["FireResist1"]), [
+            until(notp(orp(has("IncreasedLife1"), has("FireResist1"))), [op("annul")]),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState?.excluded.has(LIFE_T1.type)).toBe(true);
+        expect(r.finalState?.excluded.has(FIRE_RESIST.type)).toBe(true);
     });
 });
 
