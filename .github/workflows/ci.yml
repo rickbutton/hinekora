@@ -41,14 +41,8 @@ jobs:
             - name: Coverage summary
               if: always()
               run: |
-                  f=coverage/coverage-summary.json
-                  [ -f "$f" ] || exit 0
-                  {
-                    echo "## Coverage"
-                    echo "| metric | % | covered / total |"
-                    echo "| --- | --- | --- |"
-                    jq -r '.total | "| lines | \(.lines.pct)% | \(.lines.covered) / \(.lines.total) |\n| statements | \(.statements.pct)% | \(.statements.covered) / \(.statements.total) |\n| functions | \(.functions.pct)% | \(.functions.covered) / \(.functions.total) |\n| branches | \(.branches.pct)% | \(.branches.covered) / \(.branches.total) |"' "$f"
-                  } >> "$GITHUB_STEP_SUMMARY"
+                  [ -f coverage/coverage-summary.json ] || exit 0
+                  node scripts/coverage-summary.mjs >> "$GITHUB_STEP_SUMMARY"
 
             - name: Upload coverage report
               if: always()
