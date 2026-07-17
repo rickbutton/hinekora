@@ -53,7 +53,7 @@ const KEYWORD_DOC: Record<string, string> = {
     else: "The alternative branch of an `if`.",
     with: "`with <omen> { … }` — apply an omen that directs the operations inside (e.g. forcing an add/remove onto one side).",
     restart: "`restart` — abandon this attempt and re-run the enclosing loop from the top.",
-    has: '`has "<mod>" [tier N]` — true when the item is guaranteed to carry that mod (optionally at that tier).',
+    has: '`has "<mod>" [t1]` — true when the item is guaranteed to carry that mod (optionally at that tier; `t1` = best).',
     not: "`not <pred>` — logical negation of a predicate.",
     craft: "`craft in <game>` — the file header declaring which game's data this craft targets.",
     in: "Part of the `craft in <game>` header.",
@@ -83,15 +83,17 @@ function stringIsBase(tokens: readonly Token[], i: number): boolean {
     return prev?.kind === "colon" && prev2?.kind === "ident" && prev2.text === "base";
 }
 
-/** The tier number in a `… "<mod>" tier <int>` predicate, if the mod is at `i`. */
+/** The tier in a `… "<mod>" t1` predicate, if the mod string is at `i`. */
 function tierAfter(tokens: readonly Token[], i: number): number | undefined {
-    const kw = tokens[i + 1];
-    const num = tokens[i + 2];
-    if (kw?.kind === "ident" && kw.text === "tier" && num?.kind === "int") {
-        const n = Number(num.text);
-        return Number.isInteger(n) ? n : undefined;
-    }
-    return undefined;
+    const next = tokens[i + 1];
+    if (next?.kind !== "ident") return undefined;
+    const m = /^t(\d+)$/i.exec(next.text);
+    return m ? Number(m[1]) : undefined;
+}
+
+/** A `t1` tier shorthand: `[full, "1"]` if `tok` is one, else null. */
+function tierToken(text: string): RegExpExecArray | null {
+    return /^t(\d+)$/i.exec(text);
 }
 
 // --- rendering -------------------------------------------------------------
@@ -133,6 +135,12 @@ function signature(
     const tok = tokens[i]!;
 
     if (tok.kind === "ident") {
+        // A `t1` tier shorthand hovers exactly like the mod string it qualifies.
+        const tierM = tierToken(tok.text);
+        const prev = tokens[i - 1];
+        if (tierM && prev?.kind === "string" && !stringIsBase(tokens, i - 1)) {
+            return modSignature(prev.text, Number(tierM[1]), entry, registry);
+        }
         const cur = registry.resolveCurrency(tok.text);
         if (cur.ok) {
             const c = cur.value;

@@ -26,7 +26,7 @@ describe("hover", () => {
     it("resolves a mod string to its ModType signature", () => {
         const src = `craft in poe1
 item { base: "Iron Ring" ilvl: 84 rarity: rare }
-until has "maximum life" tier 1 { exalt }`;
+until has "maximum life" t1 { exalt }`;
         const offset = src.indexOf("maximum life") + 1;
         const md = getHover(src, offset, registry);
         expect(md).not.toBeNull();

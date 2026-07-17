@@ -339,14 +339,15 @@ class Parser {
         if (t.text === "has") {
             this.advance();
             const modTok = this.expect("string", "a quoted mod name after 'has'");
-            // Optional `tier N` qualifier (T1 = best).
+            // Optional tier qualifier `t1`: a single `t<digits>` ident, T1 = best.
             let tier: number | undefined;
             let end = modTok.span.end;
-            if (this.atKeyword("tier")) {
+            const short = this.peek();
+            const m = short.kind === "ident" ? /^t(\d+)$/i.exec(short.text) : null;
+            if (m) {
                 this.advance();
-                const n = this.expect("int", "a tier number after 'tier'");
-                tier = Number(n.text);
-                end = n.span.end;
+                tier = Number(m[1]);
+                end = short.span.end;
             }
             return {
                 kind: "has",

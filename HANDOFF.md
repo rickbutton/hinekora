@@ -280,6 +280,18 @@ the op required." `describePred`, `resolveMessage` for other diagnostics.
 
 ## 7. Recent work (changelog, newest first)
 
+### Essence groundwork + `t1` tier shorthand
+
+- **`t1` tier shorthand** replaces `tier 1` (long form dropped). A single `t<digits>` ident
+  wherever a tier is taken (`has "mod" t1`; the future `essence "…" t1`). Hovering a `t1`
+  token renders the same signature as its mod string, with that tier spotlit.
+- **Essence data corrected** (see §9): the ingest now reads the real ladder (`e.level`), and
+  `item_level_restriction` was renamed `maxRandomModLevel` (the fill-mod cap — essences have
+  no item-level gate; the guaranteed mod is forced at its fixed tier). Mechanics fully locked
+  via in-game testing; transfer function still to build.
+- Example `examples/essence-life-boots.craft` sketches the intended essence craft (a design
+  target — uses `essence`, `or`, and the `t1` shorthand).
+
 ### Editor UX — completion made context- and state-aware
 
 - **Predicate completions.** After `if` / `until` / `not` (a non-string boundary whose
@@ -360,14 +372,46 @@ To preview hover/completion without VSCode: a throwaway `.mjs` placed **inside
 
 ## 9. Pending / possible next work (none committed yet)
 
-- **The 9 common orbs are done** (transmute/augment/alteration/regal/alchemy/chaos/exalt/
-  annul/scour) — both semantics (`transfer.ts`) and catalog. Currencies deliberately left
-  out: Divine/Blessed (reroll values/implicits — no-ops in our count-based domain), Vaal/
-  Chance (random rarity/corruption outcomes we don't model yet).
-- **Source-specific currency ops** — veiled / essence / bench operations that draw from a
-  specific pool (the catalogs are already ingested; the transfer functions don't yet model
-  them). The user has asked about this direction (e.g. veiled exalt → unveil choices).
-  Essence is the cleanest next step (each essence grants a KNOWN mod).
+### Designed & queued (essence + language features)
+
+- **`or` / `and` in predicates.** Currently `Pred` has only `not` + atoms — no disjunction.
+  Needed by the essence example ("any of fire/cold/lightning T1") and by predicate functions.
+  Build FIRST. Touches lexer/parser/AST + checker `refine` (refine by a disjunction = join of
+  the per-disjunct refinements; loop-exit-as-proof of a disjunction is the weaker "one of
+  them holds", which is correct).
+- **Local predicate functions.** `def name(args) = <predicate>` — named, parameterized,
+  PURE predicates (no item side-effects), file-level scope. Args substitute into the body;
+  no new checker machinery beyond substitution. **Param types are INFERRED from usage** (a
+  param in `t1`/count position ⇒ int; in `has p` ⇒ mod-name), each use a constraint, unify;
+  conflicting uses → error. Decided v1 = predicate-only. Example target: `def anyEleRes(t) =
+has "fire resistance" t… or …`.
+- **THEN: generic functions that can contain operations** (not just predicates) — reusable
+  op sequences / procedures. Bigger design (they mutate the item, compose like inlined
+  blocks). Explicitly wanted as the follow-up to predicate functions.
+- **Essences transfer function** — mechanics fully locked (confirmed by in-game testing):
+    - Precondition: **Normal** always; **Rare** only if `tier ≥ 5`; **never Magic**; the
+      item's class must be in `grants`. **No item-level gate.**
+    - Effect: reforge (replace all) → inject the fixed `grants[itemClass]` mod (essence-only,
+      forced at its exact tier/generation regardless of ilvl) into `guaranteed` + tier
+      overlay; fill to `[4, 2·cap]` from the normal pool capped at `min(item.ilvl,
+maxRandomModLevel)`. First op that GROWS `guaranteed`.
+    - Data ready: `EssenceSpec` = `{id, name, tier (1=Whispering…7=Deafening, 8=corrupted),
+maxRandomModLevel?, grants: class→modId}`. Needs `resolveEssence` + a transfer fn +
+      `essence "<type>" t1` syntax (t1 = Deafening, best; type+tier resolves the specific
+      essence) + checker dispatch + tests + completion/hover.
+    - Reforge count `[4,6]` confirmed for standard bases (poewiki 8:3:1); jewels/altered-cap
+      bases differ — see per-base-cap item below.
+- **`t1` tier shorthand is DONE** (parser + hover + completion); the `tier 1` long form was
+  dropped — only `t1` is accepted. Hovering a `t1` token renders its mod string's signature.
+
+### Housekeeping / smaller items
+
+- **Re-evaluate comment verbosity** across the codebase — comments are currently very dense
+  (explain-the-why, cite design-doc §s). Decide the right level and normalize; some are more
+  than they need to be.
+- **Per-base affix caps** — `rarityCap` is a flat 3/side (6 total) for every Rare. Jewels
+  cap at 4 total and some special bases differ. Pre-existing soundness gap: a jewel modeled
+  as 6-max lets the checker miss a "no open slot" error. Affects exalt/annul/reforge alike.
 - **Item-block tier declarations**; restrict **base** completion to craftable classes (mod
   completion is already base+state filtered; base completion still lists all base names).
 - **`with omen "…"` completion** deliberately deferred — omens aren't really implemented

@@ -160,7 +160,7 @@ describe("parser — predicates", () => {
     });
 
     it("parses a has with a tier qualifier", () => {
-        expect(predOf(wrap('has "maximum life" tier 1'))).toMatchObject({
+        expect(predOf(wrap('has "maximum life" t1'))).toMatchObject({
             kind: "has",
             mod: "maximum life",
             tier: 1,

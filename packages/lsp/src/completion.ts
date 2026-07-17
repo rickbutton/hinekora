@@ -30,7 +30,7 @@ const CONTROL_KEYWORDS = ["until", "if", "else", "with", "restart"];
 
 /** The keywords that can START a predicate (after `if` / `until` / `not`). */
 const PREDICATE_KEYWORDS: { label: string; detail: string; kind: CompletionItemKind }[] = [
-    { label: "has", detail: 'has "<mod>" [tier N]', kind: CompletionItemKind.Function },
+    { label: "has", detail: 'has "<mod>" [t1]', kind: CompletionItemKind.Function },
     { label: "not", detail: "not <pred>", kind: CompletionItemKind.Keyword },
     { label: "isNormal", detail: "rarity is Normal", kind: CompletionItemKind.Keyword },
     { label: "isMagic", detail: "rarity is Magic", kind: CompletionItemKind.Keyword },
