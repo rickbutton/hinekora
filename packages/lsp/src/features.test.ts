@@ -23,6 +23,15 @@ describe("hover", () => {
         expect(md!).toContain("Iron Ring · Magic"); // before regal, in the footer
     });
 
+    it("hovers an essence name with its tier and the mod it guarantees here", () => {
+        const src = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: normal }\nessence "Deafening Essence of Greed"`;
+        const md = getHover(src, src.indexOf("Deafening") + 1, registry);
+        expect(md).not.toBeNull();
+        expect(md!).toContain("Deafening Essence of Greed");
+        expect(md!).toContain("essence (T1)");
+        expect(md!).toMatch(/Guarantees/);
+    });
+
     it("resolves a mod string to its ModType signature", () => {
         const src = `craft in poe1
 item { base: "Iron Ring" ilvl: 84 rarity: rare }
@@ -74,6 +83,13 @@ describe("completion", () => {
         const labels = getCompletions(src, src.length, registry).map((c) => c.label);
         expect(labels).toContain("Iron Ring");
         expect(labels).not.toContain("exalt");
+    });
+
+    it('offers essence names inside an `essence "` string, not mods', () => {
+        const src = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: normal }\nessence "`;
+        const labels = getCompletions(src, src.length, registry).map((c) => c.label);
+        expect(labels).toContain("Deafening Essence of Greed");
+        expect(labels).not.toContain("maximum life"); // not mod suggestions
     });
 
     it("offers stat descriptions inside a has string", () => {

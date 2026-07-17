@@ -25,7 +25,7 @@ import {
 import { parse } from "@hinekora/parser";
 import { type CompletionItem, CompletionItemKind } from "vscode-languageserver-types";
 
-type Context = "statement" | "base" | "mod" | "predicate";
+type Context = "statement" | "base" | "mod" | "predicate" | "essence";
 
 const CONTROL_KEYWORDS = ["until", "if", "else", "with", "restart"];
 
@@ -85,7 +85,12 @@ function contextAt(source: string, offset: number): Context {
         while (k >= 0 && isWord(source[k])) k--;
         return source.slice(k + 1, end) === "base" ? "base" : "mod";
     }
-    return "mod"; // e.g. after `has`, or inside a prefixes/suffixes list
+    // A bare word before the quote: `essence "…"` → essence names; otherwise a
+    // mod (after `has`, or inside a prefixes/suffixes list).
+    const end = j + 1;
+    let k = j;
+    while (k >= 0 && isWord(source[k])) k--;
+    return source.slice(k + 1, end) === "essence" ? "essence" : "mod";
 }
 
 /** Best-effort base + ilvl + game for the craft, read from the text (robust to a broken tail). */
@@ -133,6 +138,11 @@ export function getCompletions(
             }));
         case "base":
             return registry.baseNames.map((label) => ({ label, kind: CompletionItemKind.Value }));
+        case "essence":
+            return registry.essenceNames.map((label) => ({
+                label,
+                kind: CompletionItemKind.Value,
+            }));
         case "mod": {
             const ctx = itemContext(source, registry);
             const rollable = ctx

@@ -136,6 +136,8 @@ export interface Registry {
     readonly baseNames: readonly string[];
     /** Stat-description suggestions for mod completion. */
     readonly statSuggestions: readonly StatSuggestion[];
+    /** Full essence names, for `essence "…"` completion. */
+    readonly essenceNames: readonly string[];
 }
 
 /**
@@ -287,6 +289,7 @@ export function buildRegistry(data: RegistryData): Registry {
         currencies,
         baseNames,
         statSuggestions,
+        essenceNames: essences.map((e) => e.name),
 
         resolveBase(name) {
             const key = norm(name);

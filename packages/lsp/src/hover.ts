@@ -84,6 +84,12 @@ function stringIsBase(tokens: readonly Token[], i: number): boolean {
     return prev?.kind === "colon" && prev2?.kind === "ident" && prev2.text === "base";
 }
 
+/** A string literal is an essence name when it directly follows the `essence` keyword. */
+function stringIsEssence(tokens: readonly Token[], i: number): boolean {
+    const prev = tokens[i - 1];
+    return prev?.kind === "ident" && prev.text === "essence";
+}
+
 /** The tier in a `… "<mod>" t1` predicate, if the mod string is at `i`. */
 function tierAfter(tokens: readonly Token[], i: number): number | undefined {
     const next = tokens[i + 1];
@@ -168,6 +174,9 @@ function signature(
             if (!b.ok) return `**"${tok.text}"** — unknown base.`;
             return `**${b.value.name ?? b.value.id}** — base item · class \`${b.value.itemClass}\``;
         }
+        if (stringIsEssence(tokens, i)) {
+            return essenceSignature(tok.text, tierAfter(tokens, i), entry, registry);
+        }
         // A mod string is fuzzy — resolve it against the item at this point
         // (base + ilvl) so we pick the tier family that can actually roll here.
         return modSignature(tok.text, tierAfter(tokens, i), entry, registry);
@@ -249,6 +258,42 @@ function modSignature(
     blocks.push(
         `| tier | id | name | roll | ilvl |\n|---|---|---|---|---|\n${rows.join("\n")}${more}`,
     );
+    return blocks.join("\n\n");
+}
+
+/**
+ * The signature for an essence name: its tier, reforge behaviour, and — using the
+ * item at the cursor — the SPECIFIC mod it guarantees on this base's item class.
+ */
+function essenceSignature(
+    text: string,
+    tier: number | undefined,
+    entry: TraceEntry | undefined,
+    registry: Registry,
+): string {
+    const res = registry.resolveEssence(text, tier);
+    if (!res.ok) {
+        return res.error.kind === "ambiguous"
+            ? `**"${text}"** — ambiguous essence (${res.error.candidates.length} match; give a full name or a tier).`
+            : `**"${text}"** — unresolved essence.`;
+    }
+    const e = res.value;
+    const blocks = [
+        `**${e.name}** — essence (T${8 - e.tier})`, // ladder 7 = Deafening = T1
+        e.tier >= 5
+            ? "Reforges a **Normal or Rare** item, guaranteeing one mod."
+            : "Upgrades a **Normal** item to Rare, guaranteeing one mod.",
+    ];
+    if (entry) {
+        const cls = entry.before.base.itemClass;
+        const modId = e.grants.get(cls);
+        const mod = modId ? registry.catalog.find((m) => m.id === modId) : undefined;
+        blocks.push(
+            mod
+                ? `**Guarantees** on a \`${cls}\`: ${mod.text} (${mod.gen})`
+                : `Cannot be used on a \`${cls}\` — it grants no mod there.`,
+        );
+    }
     return blocks.join("\n\n");
 }
 
