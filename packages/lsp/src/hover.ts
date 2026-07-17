@@ -84,10 +84,37 @@ function stringIsBase(tokens: readonly Token[], i: number): boolean {
     return prev?.kind === "colon" && prev2?.kind === "ident" && prev2.text === "base";
 }
 
-/** A string literal is an essence name when it directly follows the `essence` keyword. */
-function stringIsEssence(tokens: readonly Token[], i: number): boolean {
-    const prev = tokens[i - 1];
-    return prev?.kind === "ident" && prev.text === "essence";
+/**
+ * If the token at `i` belongs to an `essence "<name>" [t1]` statement — the
+ * `essence` keyword, the name string, OR the `t1` tier — return that essence's
+ * (name, tier). All three tokens then share one hover.
+ */
+function essenceAt(
+    tokens: readonly Token[],
+    i: number,
+): { name: string; tier: number | undefined } | undefined {
+    const tok = tokens[i];
+    if (!tok) return undefined;
+    // The `essence` keyword: the name is the following string.
+    if (tok.kind === "ident" && tok.text === "essence") {
+        const nameTok = tokens[i + 1];
+        return nameTok?.kind === "string"
+            ? { name: nameTok.text, tier: tierAfter(tokens, i + 1) }
+            : undefined;
+    }
+    // The name string, directly after `essence`.
+    const kw = tokens[i - 1];
+    if (tok.kind === "string" && kw?.kind === "ident" && kw.text === "essence") {
+        return { name: tok.text, tier: tierAfter(tokens, i) };
+    }
+    // The `t1` tier, after `essence "<name>"`.
+    const m = tok.kind === "ident" ? /^t(\d+)$/i.exec(tok.text) : null;
+    const str = tokens[i - 1];
+    const essKw = tokens[i - 2];
+    if (m && str?.kind === "string" && essKw?.kind === "ident" && essKw.text === "essence") {
+        return { name: str.text, tier: Number(m[1]) };
+    }
+    return undefined;
 }
 
 /** The tier in a `… "<mod>" t1` predicate, if the mod string is at `i`. */
@@ -142,6 +169,11 @@ function signature(
 ): string | null {
     const tok = tokens[i]!;
 
+    // `essence "<name>" [t1]` — the keyword, the name, and the tier all hover as
+    // the same essence signature.
+    const ess = essenceAt(tokens, i);
+    if (ess) return essenceSignature(ess.name, ess.tier, entry, registry);
+
     if (tok.kind === "ident") {
         // A `t1` tier shorthand hovers exactly like the mod string it qualifies.
         const tierM = tierToken(tok.text);
@@ -173,9 +205,6 @@ function signature(
             const b = registry.resolveBase(tok.text);
             if (!b.ok) return `**"${tok.text}"** — unknown base.`;
             return `**${b.value.name ?? b.value.id}** — base item · class \`${b.value.itemClass}\``;
-        }
-        if (stringIsEssence(tokens, i)) {
-            return essenceSignature(tok.text, tierAfter(tokens, i), entry, registry);
         }
         // A mod string is fuzzy — resolve it against the item at this point
         // (base + ilvl) so we pick the tier family that can actually roll here.
