@@ -1,0 +1,16 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "rootDir": "./src",
+        "outDir": "./dist",
+        // Tests import vitest explicitly (no globals), so we only need vitest's
+        // types available during typecheck.
+        "types": ["node"]
+    },
+    // Tests live next to the code they exercise and ARE typechecked by `tsc -b`
+    // (strict mode applies to tests too). They compile into dist alongside src;
+    // harmless for a private, non-published package and worth the full type
+    // coverage of the test suite.
+    "include": ["src/**/*.ts"],
+    "exclude": ["dist"]
+}

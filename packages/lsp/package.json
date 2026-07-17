@@ -1,0 +1,31 @@
+{
+    "name": "@hinekora/lsp",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Language server for the Hinekora craft language (diagnostics, hover, completion).",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        },
+        "./node": {
+            "types": "./dist/node.d.ts",
+            "default": "./dist/node.js"
+        }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "scripts": {
+        "build": "tsc -b",
+        "test": "vitest run"
+    },
+    "dependencies": {
+        "@hinekora/core": "workspace:*",
+        "@hinekora/data": "workspace:*",
+        "@hinekora/parser": "workspace:*",
+        "vscode-languageserver": "^9.0.1",
+        "vscode-languageserver-textdocument": "^1.0.11",
+        "vscode-languageserver-types": "3.17.5"
+    }
+}

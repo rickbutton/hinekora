@@ -1,0 +1,13 @@
+{
+    // Root "solution" file. It holds no files of its own — it just points `tsc -b`
+    // at every package so the whole workspace builds in dependency order.
+    // New packages get added here as their milestones arrive.
+    "files": [],
+    "references": [
+        { "path": "packages/core" },
+        { "path": "packages/parser" },
+        { "path": "packages/data" },
+        { "path": "packages/cli" },
+        { "path": "packages/lsp" }
+    ]
+}

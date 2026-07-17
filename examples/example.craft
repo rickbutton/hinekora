@@ -1,0 +1,18 @@
+craft in poe1
+
+item {
+    base:     "Vaal Regalia"
+    ilvl:     84
+    rarity:   normal
+}
+
+transmute
+regal
+
+until has "maximum life" tier 1 {
+    if prefixCount < 3 {
+        exalt
+    } else {
+        annul
+    }
+}

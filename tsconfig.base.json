@@ -1,0 +1,44 @@
+{
+    // Shared compiler options. Every package's tsconfig `extends` this file and
+    // only adds paths (rootDir/outDir) and project references. All strictness
+    // lives here so there is exactly one place to tune it.
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "compilerOptions": {
+        // --- Module system: modern ESM on Node ---------------------------------
+        "target": "ES2023",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "lib": ["ES2023"],
+
+        // --- Project-reference build graph -------------------------------------
+        // `composite` is required for `tsc -b` to build packages in dependency
+        // order and to emit .d.ts + .tsbuildinfo for downstream packages.
+        "composite": true,
+        "declaration": true,
+        "declarationMap": true,
+        "sourceMap": true,
+
+        // --- Strictness: the full recommended strict family --------------------
+        // `strict` alone turns on strictNullChecks, strictFunctionTypes,
+        // strictBindCallApply, strictPropertyInitialization, noImplicitAny,
+        // noImplicitThis, alwaysStrict, and useUnknownInCatchVariables.
+        "strict": true,
+        // The extra flags the brief calls out by name, plus the rest of the
+        // best-practice set. Each one is a deliberate discipline for this codebase:
+        "noUncheckedIndexedAccess": true, //  arr[i] is T | undefined — forces bounds thinking
+        "noImplicitOverride": true, //         `override` keyword required when overriding
+        "exactOptionalPropertyTypes": true, // `x?: T` ≠ `x: T | undefined`; no accidental undefined
+        "noFallthroughCasesInSwitch": true, // exhaustive-switch discipline for tagged unions
+        "noImplicitReturns": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noPropertyAccessFromIndexSignature": true,
+        "forceConsistentCasingInFileNames": true,
+        "isolatedModules": true,
+        "verbatimModuleSyntax": true, //       explicit `import type`; clean ESM emit
+
+        // --- Ergonomics --------------------------------------------------------
+        "skipLibCheck": true, //                don't typecheck node_modules .d.ts
+        "resolveJsonModule": true
+    }
+}

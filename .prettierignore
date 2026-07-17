@@ -1,0 +1,11 @@
+**/dist/**
+**/*.tsbuildinfo
+pnpm-lock.yaml
+
+# Ingested game data (RePoE exports) — verbatim upstream JSON, not ours to reformat.
+packages/data/data/**
+
+# Design docs are ground-truth spec — leave their formatting untouched.
+IMPLEMENTATION_BRIEF.md
+crafting-lang-typing-rules-v0.md
+crafting-lang-surface-v0.md

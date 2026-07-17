@@ -1,0 +1,53 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "Hinekora",
+    "scopeName": "source.hinekora",
+    "patterns": [
+        { "include": "#comments" },
+        { "include": "#strings" },
+        { "include": "#numbers" },
+        { "include": "#keywords" },
+        { "include": "#operators" }
+    ],
+    "repository": {
+        "comments": {
+            "match": "#.*$",
+            "name": "comment.line.number-sign.hinekora"
+        },
+        "strings": {
+            "name": "string.quoted.double.hinekora",
+            "begin": "\"",
+            "end": "\"",
+            "patterns": [{ "match": "\\\\.", "name": "constant.character.escape.hinekora" }]
+        },
+        "numbers": {
+            "match": "\\b\\d+\\b",
+            "name": "constant.numeric.hinekora"
+        },
+        "keywords": {
+            "patterns": [
+                {
+                    "match": "\\b(craft|in|item|until|if|else|with|omen|restart)\\b",
+                    "name": "keyword.control.hinekora"
+                },
+                { "match": "\\b(has|not|tier)\\b", "name": "keyword.other.hinekora" },
+                {
+                    "match": "\\b(isRare|isMagic|isNormal|prefixCount|suffixCount)\\b",
+                    "name": "support.function.hinekora"
+                },
+                {
+                    "match": "\\b(base|ilvl|rarity|prefixes|suffixes|augments|quality)\\b",
+                    "name": "variable.parameter.hinekora"
+                },
+                {
+                    "match": "\\b(normal|magic|rare|poe1|poe2)\\b",
+                    "name": "constant.language.hinekora"
+                }
+            ]
+        },
+        "operators": {
+            "match": "(==|!=|<=|>=|<|>|:|,)",
+            "name": "keyword.operator.hinekora"
+        }
+    }
+}

@@ -1,0 +1,50 @@
+{
+    "name": "hinekora-vscode",
+    "displayName": "Hinekora",
+    "description": "Syntax highlighting and live diagnostics for Hinekora .craft files.",
+    "version": "0.0.0",
+    "private": true,
+    "publisher": "hinekora",
+    "engines": {
+        "vscode": "^1.85.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "activationEvents": [
+        "onLanguage:hinekora"
+    ],
+    "main": "./dist/extension.js",
+    "contributes": {
+        "languages": [
+            {
+                "id": "hinekora",
+                "aliases": [
+                    "Hinekora",
+                    "craft"
+                ],
+                "extensions": [
+                    ".craft"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "hinekora",
+                "scopeName": "source.hinekora",
+                "path": "./syntaxes/hinekora.tmLanguage.json"
+            }
+        ]
+    },
+    "scripts": {
+        "build": "tsc -p ."
+    },
+    "dependencies": {
+        "@hinekora/lsp": "workspace:*",
+        "vscode-languageclient": "^9.0.1"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.85.0"
+    }
+}

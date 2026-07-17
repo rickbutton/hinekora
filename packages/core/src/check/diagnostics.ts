@@ -1,0 +1,105 @@
+/**
+ * Checker diagnostics and how they render.
+ *
+ * Every diagnostic carries a source span and a message. Precondition messages
+ * follow the surface-§6 stance — render the item's current (abstract) state,
+ * then say what the operation needed — reusing the same "state first, no
+ * lecturing" shape as the concrete renderer, adapted to ranges.
+ */
+import type { Pred } from "../ast/ast.js";
+import type { SourceSpan } from "../ast/span.js";
+import type { Rarity } from "../model/ids.js";
+import type { ResolveError } from "../resolve/registry.js";
+import { baseLabel } from "../render/render.js";
+import { type AItem, type Range, suffixRange } from "./astate.js";
+import type { PreconditionFailure } from "./transfer.js";
+
+export interface CheckDiagnostic {
+    readonly message: string;
+    readonly span: SourceSpan;
+}
+
+const RARITY_LABEL: Record<Rarity, string> = { normal: "Normal", magic: "Magic", rare: "Rare" };
+
+function plural(noun: string, n: number): string {
+    if (n === 1) return noun;
+    return /(?:s|x|z|ch|sh)$/.test(noun) ? `${noun}es` : `${noun}s`;
+}
+
+function renderRange(range: Range, noun: string): string {
+    const [min, max] = range;
+    return min === max ? `${min} ${plural(noun, min)}` : `${min}–${max} ${plural(noun, 2)}`;
+}
+
+/**
+ * The one-line abstract-state summary shown in errors and hover (surface §6).
+ *
+ * Counts lead with the TOTAL affix range, then the prefix/suffix split. This
+ * ordering matters: the domain tracks `total` and `prefix` as coupled ranges
+ * (`prefix + suffix = total`), but the two side-ranges rendered alone read as
+ * independent — e.g. after a transmute both sides show 0–1, which would imply
+ * (0,0) or (1,1) is reachable when neither is. Showing `total` (here, "1 affix")
+ * restores the correlation the reader needs.
+ */
+export function renderState(a: AItem): string {
+    return [
+        baseLabel(a.base),
+        RARITY_LABEL[a.rarity],
+        renderRange(a.total, "affix"),
+        renderRange(a.prefix, "prefix"),
+        renderRange(suffixRange(a), "suffix"),
+        `ilvl ${a.ilvl}`,
+    ].join(" · ");
+}
+
+/** Human description of a surface predicate, for dead-arm / unreachable messages. */
+export function describePred(pred: Pred): string {
+    switch (pred.kind) {
+        case "isRarity":
+            return `is${pred.rarity[0]!.toUpperCase()}${pred.rarity.slice(1)}`;
+        case "has":
+            return pred.tier === undefined
+                ? `has "${pred.mod}"`
+                : `has "${pred.mod}" tier ${pred.tier}`;
+        case "compare":
+            return `${pred.projection} ${pred.op} ${pred.value}`;
+        case "not":
+            return `not ${describePred(pred.inner)}`;
+    }
+}
+
+// --- message builders ------------------------------------------------------
+
+/** A precondition failure: state first, then what the op required. */
+export function preconditionMessage(state: AItem, failure: PreconditionFailure): string {
+    const need = ((): string => {
+        switch (failure.kind) {
+            case "wrongRarity":
+                return `Requires a ${RARITY_LABEL[failure.needed]} item — this item is ${RARITY_LABEL[failure.actual]}.`;
+            case "noOpenSlot":
+                return failure.gen === undefined
+                    ? "Requires an open affix slot — the item may be full."
+                    : `Requires an open ${failure.gen} slot — none is guaranteed open here.`;
+            case "nothingToRemove":
+                return failure.gen === undefined
+                    ? "Requires a removable affix — the item may have none."
+                    : `Requires a removable ${failure.gen} — none is guaranteed present here.`;
+        }
+    })();
+    return `at this point the item is: ${renderState(state)}\n${need}`;
+}
+
+export function resolveMessage(error: ResolveError): string {
+    switch (error.kind) {
+        case "unknownBase":
+            return `Unknown base "${error.name}".`;
+        case "unknownMod":
+            return `Unknown mod "${error.name}".`;
+        case "unknownCurrency":
+            return `Unknown currency "${error.name}".`;
+        case "unknownOmen":
+            return `Unknown omen "${error.name}".`;
+        case "ambiguous":
+            return `Ambiguous name "${error.name}" — candidates: ${error.candidates.join(", ")}.`;
+    }
+}
