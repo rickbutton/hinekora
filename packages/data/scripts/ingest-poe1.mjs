@@ -89,9 +89,16 @@ function projectBases(raw) {
 function projectEssences(raw) {
     const out = {};
     for (const [id, e] of Object.entries(raw)) {
+        // Skip essences that grant no mod — the retired "Remnant of Corruption"
+        // is the only one; it isn't a mod-adding currency we model.
+        if (!e.mods || Object.keys(e.mods).length === 0) continue;
         out[id] = {
             name: e.name,
-            tier: e.type?.tier ?? 0,
+            // `e.level` is the ladder tier (1 = Whispering … 7 = Deafening, 8 =
+            // corrupted). NOT `e.type.tier`, which is a mod-category number. The
+            // ladder is what gates usage: level >= 5 may reforge a Rare item.
+            tier: e.level ?? 0,
+            // Absent `item_level_restriction` means no minimum (high-tier essences).
             itemLevel: e.item_level_restriction ?? 1,
             grants: e.mods ?? {}, // item class → guaranteed mod id
         };

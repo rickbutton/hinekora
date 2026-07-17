@@ -23,7 +23,9 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
     it("carries dump provenance in the manifest", () => {
         expect(data.manifest.game).toBe("poe1");
         expect(data.manifest.source.commit).toBe("14e3edc89ed705bd4e4eda5c8135756431c76e81");
-        expect(data.manifest.source.publishedAt).toBe("2026-07-14T07:58:14Z");
+        // publishedAt is the gh-pages republish timestamp — it changes on rebuilds
+        // even for the same commit, so assert only that provenance is present.
+        expect(data.manifest.source.publishedAt).toBeTruthy();
     });
 
     it("loads the essence and bench catalogs", () => {
