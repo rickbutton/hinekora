@@ -144,34 +144,52 @@ export function essence(a: AItem, spec: EssenceSpec, registry: Registry): Transf
         return fail({ kind: "essenceClass", essence: spec.name, itemClass: a.base.itemClass });
     }
 
-    // Reforge to a full Rare (4–6 mods), one of which is the guaranteed mod.
+    // Reforge to a full Rare (4–6 mods) — the RANDOM fill — from the normal pool,
+    // capped by BOTH the item level and the essence's max random-mod level.
     const cap = rarityCap("rare");
     const total: Range = [4, 2 * cap];
-    const spread: Range = [Math.max(0, total[0] - cap), Math.min(cap, total[1])];
-    const prefix: Range =
-        guaranteedMod.gen === "prefix"
-            ? [Math.max(spread[0], 1), spread[1]] // ≥ 1 prefix
-            : [spread[0], Math.min(spread[1], total[1] - 1)]; // ≥ 1 suffix
-
-    // The random fill is drawn from the normal pool this base can roll, capped by
-    // BOTH the item level and the essence's max random-mod level.
     const fillCap = Math.min(a.ilvl, spec.maxRandomModLevel ?? Infinity);
     const fill = addableMods({ ...a, presence: a.bdd.TRUE }, undefined, registry).filter(
         (m) => m.minLevel <= fillCap,
     );
-    const possible = new Set<TypeId>([guaranteedMod.type]);
-    const tiers = new Map<TypeId, ReadonlySet<ModId>>([[guaranteedMod.type, new Set([modId])]]);
+    const possible = new Set<TypeId>();
+    const tiers = new Map<TypeId, ReadonlySet<ModId>>();
     for (const m of fill) {
         possible.add(m.type);
-        if (m.type === guaranteedMod.type) continue; // keep the guaranteed tier pinned
         const cur = tiers.get(m.type);
         tiers.set(m.type, cur ? new Set([...cur, m.id]) : new Set([m.id]));
     }
+    const reforged: AItem = {
+        ...a,
+        rarity: "rare",
+        total,
+        prefix: [Math.max(0, total[0] - cap), Math.min(cap, total[1])],
+        presence: a.bdd.TRUE,
+        possible,
+        tiers,
+    };
+    // …then FORCE the essence's guaranteed mod present, pinned to its exact tier.
+    return ok(withGuaranteed(reforged, guaranteedMod));
+}
 
-    // The guaranteed mod is FORCED present (the reforge otherwise knows nothing).
-    const presence = a.bdd.variable(guaranteedMod.type);
-    const next: AItem = { ...a, rarity: "rare", total, prefix, presence, possible, tiers };
-    return ok(normalize(next) ?? next);
+/**
+ * Force a SPECIFIC mod present on a state: it becomes guaranteed (`presence`),
+ * pinned to that exact tier (the overlay), added to `possible`, and its
+ * generation gets ≥ 1 affix (and total ≥ 1). The total count is the caller's to
+ * set — an essence reforges to a range first; a bench add bumps it by one.
+ * Shared by `essence()` and `bench()`.
+ */
+function withGuaranteed(a: AItem, mod: Mod): AItem {
+    const presence = a.bdd.and(a.presence, a.bdd.variable(mod.type));
+    const tiers = new Map(a.tiers).set(mod.type, new Set([mod.id]));
+    const possible = new Set(a.possible).add(mod.type);
+    const total: Range = [Math.max(a.total[0], 1), a.total[1]];
+    const prefix: Range =
+        mod.gen === "prefix"
+            ? [Math.max(a.prefix[0], 1), a.prefix[1]] // ≥ 1 prefix
+            : [a.prefix[0], Math.min(a.prefix[1], total[1] - 1)]; // ≥ 1 suffix
+    const next: AItem = { ...a, presence, tiers, possible, total, prefix };
+    return normalize(next) ?? next;
 }
 
 /**
