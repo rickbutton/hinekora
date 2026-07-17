@@ -114,7 +114,7 @@ own tsconfig, does NOT extend the ESM base).
 ### Commands (run from anywhere; do not `cd`)
 
 ```
-pnpm -C c:/git/hinekora test           # vitest run — currently 191 passing
+pnpm -C c:/git/hinekora test           # vitest run — currently 197 passing
 pnpm -C c:/git/hinekora exec tsc -b    # typecheck + build all packages
 pnpm -C c:/git/hinekora lint           # eslint .
 pnpm -C c:/git/hinekora format         # prettier --write .
