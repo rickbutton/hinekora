@@ -18,6 +18,7 @@ import {
     type AItem,
     check,
     type CurrencyKind,
+    guaranteedTypes,
     type Range,
     type Registry,
     renderState,
@@ -117,9 +118,10 @@ function footer(entry: TraceEntry, registry: Registry): string {
     }
 
     const state = entry.after ?? entry.before;
-    if (state.guaranteed.size > 0) {
+    const guaranteed = guaranteedTypes(state);
+    if (guaranteed.size > 0) {
         const note = entry.kind === "until" ? " (on every exit)" : "";
-        const names = [...state.guaranteed].map((t) => registry.typeLabel(t));
+        const names = [...guaranteed].map((t) => registry.typeLabel(t));
         lines.push(`_guaranteed${note}:_ ${names.join(", ")}`);
     }
     return lines.join("\n\n");

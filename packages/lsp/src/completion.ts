@@ -15,6 +15,7 @@
 import {
     type Base,
     check,
+    excludedTypes,
     type Game,
     type Registry,
     rollableTypes,
@@ -113,7 +114,7 @@ function excludedAt(source: string, offset: number, registry: Registry): Readonl
         const p = parse(s);
         if (!p.ok) continue;
         const entry = traceAt(check(p.craft, { registry }).trace, offset);
-        if (entry) return entry.before.excluded;
+        if (entry) return excludedTypes(entry.before);
     }
     return new Set();
 }

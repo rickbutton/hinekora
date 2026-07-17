@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
+import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { rollableTiers } from "../resolve/tiers.js";
 import { craft, has, iff, item, op } from "../__fixtures__/ast.js";
@@ -39,7 +40,7 @@ describe("checker — fuzzy names in predicates and item blocks", () => {
         const c = craft("poe1", rareRing(["maximum life"]), []);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState?.guaranteed.has(MAXLIFE_T1.type)).toBe(true);
+        expect(guaranteedTypes(r.finalState!).has(MAXLIFE_T1.type)).toBe(true);
     });
 
     it("errors on a tier that doesn't roll on this item", () => {

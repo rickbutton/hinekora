@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
+import { excludedTypes, guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import {
     andp,
@@ -59,7 +60,7 @@ describe("checker — the wider currency set", () => {
         const r = check(c, ctx);
         expect(r.ok).toBe(true);
         expect(r.finalState?.rarity).toBe("rare");
-        expect(r.finalState?.guaranteed.size).toBe(0);
+        expect(guaranteedTypes(r.finalState!).size).toBe(0);
     });
 
     it("`until has X { chaos }` checks clean — a reforge never gets stuck full", () => {
@@ -151,13 +152,13 @@ describe("checker — guarantee tracking (additive vs risky)", () => {
         const c = craft("poe1", rareRing(["IncreasedLife1"]), [op("exalt")]);
         const r = check(c, ctx);
         expect(r.ok).toBe(true);
-        expect(r.finalState?.guaranteed.has(LIFE_T1.type)).toBe(true);
+        expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
 
     it("an unforced annul risks every mod; nothing stays guaranteed", () => {
         const c = craft("poe1", rareRing(["IncreasedLife1"], ["FireResist1"]), [op("annul")]);
         const r = check(c, ctx);
-        expect(r.finalState?.guaranteed.size).toBe(0);
+        expect(guaranteedTypes(r.finalState!).size).toBe(0);
     });
 });
 
@@ -171,7 +172,7 @@ describe("checker — loops (loop-exit-as-proof)", () => {
         ]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState?.excluded.has(FIRE_RESIST.type)).toBe(true);
+        expect(excludedTypes(r.finalState!).has(FIRE_RESIST.type)).toBe(true);
     });
 
     it("rejects `until has X { exalt }` — exalt may fail once the item fills up", () => {
@@ -267,6 +268,21 @@ describe("checker — boolean predicates (and / or)", () => {
         expect(check(c, ctx).diagnostics).toEqual([]);
     });
 
+    it("keeps a disjunction across a loop join: `not(X) and not(Y)` after is dead", () => {
+        // After `until has X or has Y { chaos }`, at least one of X/Y is present.
+        // A later `if not X and not Y` is therefore unreachable — the presence BDD
+        // preserves the disjunction through the loop-exit join, which the old
+        // per-type sets (intersecting to ∅) could not. This is the whole point of
+        // the relational domain.
+        const c = craft("poe1", rareRing(), [
+            until(orp(has("IncreasedLife1"), has("FireResist1")), [op("chaos")]),
+            iff(andp(notp(has("IncreasedLife1")), notp(has("FireResist1"))), [op("annul")]),
+        ]);
+        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("can never run"))).toBe(
+            true,
+        );
+    });
+
     it("`not (X or Y)` drains both: the loop proves both absent on exit", () => {
         // De Morgan: exiting when `not (has life or has fire)` proves neither is
         // present. The draining annul keeps the loop sound.
@@ -275,8 +291,8 @@ describe("checker — boolean predicates (and / or)", () => {
         ]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState?.excluded.has(LIFE_T1.type)).toBe(true);
-        expect(r.finalState?.excluded.has(FIRE_RESIST.type)).toBe(true);
+        expect(excludedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
+        expect(excludedTypes(r.finalState!).has(FIRE_RESIST.type)).toBe(true);
     });
 });
 
@@ -305,7 +321,7 @@ describe("checker — omens direct operations (typing rules §10)", () => {
         const r = check(c, ctx);
         expect(r.ok).toBe(true);
         // Removal forced to a prefix, so the suffix Fire Resist survives.
-        expect(r.finalState?.guaranteed.has(FIRE_RESIST.type)).toBe(true);
+        expect(guaranteedTypes(r.finalState!).has(FIRE_RESIST.type)).toBe(true);
     });
 
     it("flags contradictory omens on one operation", () => {
@@ -340,7 +356,7 @@ describe("checker — resolve-time errors", () => {
         const c = craft("poe1", rareRing(["T1 Life"]), [op("exalt")]);
         const r = check(c, ctx);
         expect(r.ok).toBe(true);
-        expect(r.finalState?.guaranteed.has(LIFE_T1.type)).toBe(true);
+        expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
 });
 

@@ -114,7 +114,7 @@ own tsconfig, does NOT extend the ESM base).
 ### Commands (run from anywhere; do not `cd`)
 
 ```
-pnpm -C c:/git/hinekora test           # vitest run — currently 197 passing
+pnpm -C c:/git/hinekora test           # vitest run — currently 204 passing
 pnpm -C c:/git/hinekora exec tsc -b    # typecheck + build all packages
 pnpm -C c:/git/hinekora lint           # eslint .
 pnpm -C c:/git/hinekora format         # prettier --write .
@@ -280,6 +280,21 @@ the op required." `describePred`, `resolveMessage` for other diagnostics.
 
 ## 7. Recent work (changelog, newest first)
 
+### Presence-BDD domain (relational precision) — §11 realized
+
+- `AItem`'s `guaranteed`/`excluded` sets are gone; presence knowledge is now one
+  `presence: Bdd` over type-presence variables (`check/bdd.ts`, a small hash-consed
+  ROBDD), plus a `bdd: BddManager` carried on the state (one per check). `possible`
+  stays a plain pool-whitelist set.
+- Accessors `isGuaranteed`/`isExcluded`/`guaranteedTypes`/`excludedTypes`/`presenceFacts`
+  are the views; `refine has` = BDD-AND var, `refine not-has` = AND ¬var, **`join` =
+  BDD-OR**, `stateEqual` = `presence ===` (canonical). Transfer functions still reason
+  in guaranteed/excluded sets and re-materialise presence via `presenceFacts`
+  (disjunctions live through control flow, are flattened at operations — sound).
+- **Q2 fixed:** after `until has X or has Y { … }`, a later `if not X and not Y` is now
+  correctly flagged dead — the disjunction survives the loop-exit join. Regression test
+  added.
+
 ### `or` / `and` predicates
 
 - `BinaryPred` in the AST; parser precedence `or` < `and` < `not` < atom (left-assoc, parens
@@ -388,7 +403,7 @@ To preview hover/completion without VSCode: a throwaway `.mjs` placed **inside
   holds"); negation swaps. Loop-exit proves the disjunction (a weaker fact — `guaranteed`
   stays empty when the exit is `X or Y`, which is correct). Completion doesn't yet offer
   `or`/`and` mid-predicate (minor gap).
-- **Local predicate functions — NEXT.** `def name(args) = <predicate>` — named, parameterized,
+- **Local predicate functions (after essences).** `def name(args) = <predicate>` — named, parameterized,
   PURE predicates (no item side-effects), file-level scope. Args substitute into the body;
   no new checker machinery beyond substitution. **Param types are INFERRED from usage** (a
   param in `t1`/count position ⇒ int; in `has p` ⇒ mod-name), each use a constraint, unify;
@@ -478,7 +493,7 @@ Options weighed:
 
 - **Special-case "≥1 present" groups** — rejected: throwaway once we go general.
 - **Powerset / DNF of states** — = enumeration, violates the intensional-union rule.
-- **BDD over type-presence — CHOSEN.** Represent presence knowledge as one boolean
+- **BDD over type-presence — DONE (§7).** Represent presence knowledge as one boolean
   function (a reduced, ordered Binary Decision Diagram over presence variables).
   `guaranteed`/`possible`/`excluded` become _views_ of it; `refine` = BDD-AND;
   **`join` = BDD-OR** (keeps disjunctions compact & symbolic — NOT enumeration);

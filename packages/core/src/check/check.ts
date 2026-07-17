@@ -30,6 +30,7 @@ import {
     refine,
     stateEqual,
 } from "./astate.js";
+import { BddManager } from "./bdd.js";
 import {
     type CheckDiagnostic,
     describePred,
@@ -120,6 +121,9 @@ class Checker {
      */
     private quiet = 0;
     private readonly trace: TraceEntry[] = [];
+    /** One BDD manager per check — all states in this run share it, so their
+     *  `presence` ids are comparable (and `stateEqual` is just `===`). */
+    private readonly bdd = new BddManager();
 
     constructor(private readonly registry: Registry) {}
 
@@ -198,7 +202,7 @@ class Checker {
             suffixCount = cap;
         }
 
-        return initialState(game, base, item.ilvl, item.rarity, {
+        return initialState(this.bdd, game, base, item.ilvl, item.rarity, {
             prefixCount,
             suffixCount,
             present,

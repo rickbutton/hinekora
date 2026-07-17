@@ -49,6 +49,11 @@ export class BddManager {
         return this.mk(level, this.FALSE, this.TRUE);
     }
 
+    /** Every variable name allocated so far (in allocation order). */
+    variables(): string[] {
+        return [...this.varLevel.keys()];
+    }
+
     and(a: Bdd, b: Bdd): Bdd {
         return this.apply("and", a, b);
     }

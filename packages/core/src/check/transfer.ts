@@ -17,7 +17,16 @@ import type { Item } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
 import { pool } from "../pool/pool.js";
 import type { Registry } from "../resolve/registry.js";
-import { type AItem, type Range, normalize, rarityCap, suffixRange } from "./astate.js";
+import {
+    type AItem,
+    type Range,
+    excludedTypes,
+    guaranteedTypes,
+    normalize,
+    presenceFacts,
+    rarityCap,
+    suffixRange,
+} from "./astate.js";
 
 /** Why an operation's precondition fails on the current state. */
 export type PreconditionFailure =
@@ -108,9 +117,8 @@ export function scour(a: AItem): TransferResult {
         rarity: "normal",
         total: [0, 0],
         prefix: [0, 0],
-        guaranteed: new Set(),
+        presence: a.bdd.TRUE,
         possible: new Set(),
-        excluded: new Set(),
         tiers: new Map(),
     };
     return ok(normalize(next) ?? next);
@@ -128,7 +136,7 @@ function reroll(a: AItem, rarity: Rarity, total: Range, registry: Registry): AIt
     const prefix: Range = [Math.max(0, total[0] - cap), Math.min(cap, total[1])];
     // Over-approximate the pool from an EMPTY item of this base (no present mods
     // ⇒ the widest pool), exactly as `addableMods` does for an add.
-    const fresh = addableMods({ ...a, guaranteed: new Set() }, undefined, registry);
+    const fresh = addableMods({ ...a, presence: a.bdd.TRUE }, undefined, registry);
     const possible = new Set<TypeId>();
     const tiers = new Map<TypeId, ReadonlySet<ModId>>();
     for (const m of fresh) {
@@ -141,9 +149,8 @@ function reroll(a: AItem, rarity: Rarity, total: Range, registry: Registry): AIt
         rarity,
         total,
         prefix,
-        guaranteed: new Set(),
+        presence: a.bdd.TRUE, // reforge: nothing guaranteed, nothing excluded
         possible,
-        excluded: new Set(),
         tiers,
     };
     return normalize(next) ?? next;
@@ -175,11 +182,11 @@ function addOne(a: AItem, forcedGen: Gen | undefined, rarity: Rarity, registry: 
               ? a.prefix
               : [a.prefix[0], a.prefix[1] + 1]; // could land in either generation
 
-    // ADDITIVE: every prior mod survives, so `guaranteed` (and existing tier
-    // constraints) are unchanged. The added mod is one of the pool, so each
-    // pool type becomes `possible` and its tier overlay gains the specific pool
-    // mods it could be; a random add means we can no longer be sure any type is
-    // absent, so `excluded` is cleared.
+    // ADDITIVE: every prior mod survives, so existing guarantees (and tier
+    // constraints) hold. The added mod is one of the pool, so each pool type
+    // becomes `possible` and its tier overlay gains the specific pool mods it
+    // could be; a random add means we can no longer be sure any type is absent, so
+    // rebuild presence from the guarantees alone (exclusions dropped).
     const added = addableMods(a, forcedGen, registry);
     const possible = new Set(a.possible);
     const tiers = new Map(a.tiers);
@@ -188,7 +195,8 @@ function addOne(a: AItem, forcedGen: Gen | undefined, rarity: Rarity, registry: 
         const cur = tiers.get(m.type);
         tiers.set(m.type, cur ? new Set([...cur, m.id]) : new Set([m.id]));
     }
-    const next: AItem = { ...a, rarity, total, prefix, possible, excluded: new Set(), tiers };
+    const presence = presenceFacts(a.bdd, guaranteedTypes(a), []);
+    const next: AItem = { ...a, rarity, total, prefix, presence, possible, tiers };
     return normalize(next) ?? next;
 }
 
@@ -204,8 +212,13 @@ function removeOne(a: AItem, forcedGen: Gen | undefined, registry: Registry): AI
     // A guarantee survives a removal only if the removed affix could not have
     // been it: under a gen-forced removal, the OTHER generation's guarantees are
     // safe; an unforced removal could take any affix, so nothing stays guaranteed.
-    const guaranteed = survivingGuarantees(a, forcedGen, registry);
-    const next: AItem = { ...a, total, prefix, guaranteed };
+    // Exclusions survive (a removal never adds a mod), so they carry over.
+    const presence = presenceFacts(
+        a.bdd,
+        survivingGuarantees(a, forcedGen, registry),
+        excludedTypes(a),
+    );
+    const next: AItem = { ...a, total, prefix, presence };
     return normalize(next) ?? next;
 }
 
@@ -217,7 +230,7 @@ function survivingGuarantees(
     if (forcedGen === undefined) return new Set();
     const safeGen: Gen = forcedGen === "prefix" ? "suffix" : "prefix";
     const out = new Set<TypeId>();
-    for (const t of a.guaranteed) if (registry.genOfType(t) === safeGen) out.add(t);
+    for (const t of guaranteedTypes(a)) if (registry.genOfType(t) === safeGen) out.add(t);
     return out;
 }
 
@@ -242,7 +255,7 @@ function addableMods(a: AItem, forcedGen: Gen | undefined, registry: Registry): 
 function syntheticItem(a: AItem, registry: Registry): Item {
     const prefixes: Mod[] = [];
     const suffixes: Mod[] = [];
-    for (const t of a.guaranteed) {
+    for (const t of guaranteedTypes(a)) {
         const rep = representative(registry, t);
         if (!rep) continue;
         (rep.gen === "prefix" ? prefixes : suffixes).push(rep);
