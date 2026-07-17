@@ -33,7 +33,7 @@ item {
 transmute
 regal
 
-until has "maximum life" tier 1 {
+until has "maximum life" t1 {
     if prefixCount < 3 {
         exalt
     } else {
