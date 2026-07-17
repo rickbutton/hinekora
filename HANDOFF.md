@@ -114,7 +114,7 @@ own tsconfig, does NOT extend the ESM base).
 ### Commands (run from anywhere; do not `cd`)
 
 ```
-pnpm -C c:/git/hinekora test           # vitest run — currently 213 passing
+pnpm -C c:/git/hinekora test           # vitest run — currently 216 passing
 pnpm -C c:/git/hinekora exec tsc -b    # typecheck + build all packages
 pnpm -C c:/git/hinekora lint           # eslint .
 pnpm -C c:/git/hinekora format         # prettier --write .
@@ -291,8 +291,11 @@ the op required." `describePred`, `resolveMessage` for other diagnostics.
   with its tier pinned, fill from the pool capped at `min(ilvl, maxRandomModLevel)`. No
   ilvl gate (guaranteed mod forced at its tier). `registryOf` now passes `essences` through.
 - `examples/essence-life-boots.craft` checks clean (guaranteed maximum life on a reforged
-  Titan Greaves). **Not yet done:** essence-name completion + hover (a `essence "…"` string
-  currently gets mod completions / mod hover — wrong context).
+  Titan Greaves).
+- **Essence LSP done:** completion inside `essence "…"` offers essence names (new `essence`
+  context + `registry.essenceNames`); hover on the name shows its tier, reforge behaviour,
+  and the specific mod it guarantees on the current base's class; `essence`/`and`/`or` are
+  semantic-token keywords.
 
 ### Presence-BDD domain (relational precision) — §11 realized
 
