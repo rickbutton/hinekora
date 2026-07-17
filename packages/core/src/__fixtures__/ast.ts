@@ -14,6 +14,7 @@ import type {
     IfStmt,
     ItemBlock,
     NotPred,
+    EssenceStmt,
     OpStmt,
     Pred,
     RarityPred,
@@ -62,6 +63,12 @@ export const item = (spec: ItemSpec): ItemBlock => ({
 });
 
 export const op = (name: string): OpStmt => ({ kind: "op", name, span: DS });
+export const essence = (name: string, tier?: number): EssenceStmt => ({
+    kind: "essence",
+    name,
+    ...(tier !== undefined && { tier }),
+    span: DS,
+});
 export const restart = (): RestartStmt => ({ kind: "restart", span: DS });
 export const until = (pred: Pred, body: readonly Stmt[]): UntilStmt => ({
     kind: "until",

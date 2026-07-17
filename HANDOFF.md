@@ -114,7 +114,7 @@ own tsconfig, does NOT extend the ESM base).
 ### Commands (run from anywhere; do not `cd`)
 
 ```
-pnpm -C c:/git/hinekora test           # vitest run — currently 204 passing
+pnpm -C c:/git/hinekora test           # vitest run — currently 213 passing
 pnpm -C c:/git/hinekora exec tsc -b    # typecheck + build all packages
 pnpm -C c:/git/hinekora lint           # eslint .
 pnpm -C c:/git/hinekora format         # prettier --write .
@@ -279,6 +279,20 @@ the op required." `describePred`, `resolveMessage` for other diagnostics.
 ---
 
 ## 7. Recent work (changelog, newest first)
+
+### Essences (first op that grows `guaranteed`)
+
+- `essence "<name>" [t1]` statement — full name (`"Deafening Essence of Greed"`) or type +
+  tier (`essence "greed" t1`, t1 = Deafening = best). Parser + AST (`EssenceStmt`),
+  `registry.resolveEssence(name, tier?)` (fuzzy; ambiguous without a tier), checker dispatch.
+- `essence()` transfer (`transfer.ts`): precondition Normal-always / Rare-if-tier≥5 / never
+  Magic / class must be in `grants` (new `essenceRarity`/`essenceClass` failures); effect =
+  reforge to Rare `[4,6]`, inject the fixed class mod into `guaranteed` (`presence = var(type)`)
+  with its tier pinned, fill from the pool capped at `min(ilvl, maxRandomModLevel)`. No
+  ilvl gate (guaranteed mod forced at its tier). `registryOf` now passes `essences` through.
+- `examples/essence-life-boots.craft` checks clean (guaranteed maximum life on a reforged
+  Titan Greaves). **Not yet done:** essence-name completion + hover (a `essence "…"` string
+  currently gets mod completions / mod hover — wrong context).
 
 ### Presence-BDD domain (relational precision) — §11 realized
 

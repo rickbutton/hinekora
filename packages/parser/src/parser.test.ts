@@ -147,6 +147,25 @@ describe("parser — item block", () => {
     });
 });
 
+describe("parser — essence statement", () => {
+    const bodyOf = (pred: string) =>
+        parseOk(`craft in poe1 item { base: "R" ilvl: 1 rarity: normal } ${pred}`).body[0]!;
+
+    it("parses a full essence name", () => {
+        const s = bodyOf('essence "Deafening Essence of Greed"');
+        expect(s).toMatchObject({ kind: "essence", name: "Deafening Essence of Greed" });
+        expect("tier" in s).toBe(false);
+    });
+
+    it("parses the `type t1` shorthand", () => {
+        expect(bodyOf('essence "greed" t1')).toMatchObject({
+            kind: "essence",
+            name: "greed",
+            tier: 1,
+        });
+    });
+});
+
 describe("parser — predicates", () => {
     const wrap = (pred: string): Craft =>
         parseOk(`craft in poe1 item { base: "R" ilvl: 1 rarity: rare } until ${pred} { exalt }`);

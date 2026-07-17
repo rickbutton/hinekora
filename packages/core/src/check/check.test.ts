@@ -6,6 +6,7 @@ import {
     andp,
     craft,
     cmp,
+    essence,
     has,
     iff,
     isRarity,
@@ -16,13 +17,37 @@ import {
     until,
     withOmen,
 } from "../__fixtures__/ast.js";
-import { AMULET_BASE, CATALOG, FIRE_RESIST, LIFE_T1, RING_BASE } from "../__fixtures__/mods.js";
+import {
+    AMULET_BASE,
+    CATALOG,
+    CLASS_RING,
+    FIRE_RESIST,
+    LIFE_T1,
+    RING_BASE,
+} from "../__fixtures__/mods.js";
+import type { EssenceSpec } from "../model/sources.js";
+
+// Two fixture essences, both granting T1 life on a Ring: Deafening (ladder 7, so
+// it reforges Rare too) and Muttering (ladder 2, Normal-only).
+const ESS_DEAFENING: EssenceSpec = {
+    id: "TestGreedDeafening",
+    name: "Deafening Essence of Greed",
+    tier: 7,
+    grants: new Map([[CLASS_RING, LIFE_T1.id]]),
+};
+const ESS_MUTTERING: EssenceSpec = {
+    id: "TestGreedMuttering",
+    name: "Muttering Essence of Greed",
+    tier: 2,
+    grants: new Map([[CLASS_RING, LIFE_T1.id]]),
+};
 
 const registry = buildRegistry({
     bases: [RING_BASE, AMULET_BASE],
     mods: CATALOG,
     modAliases: { "T1 Life": "IncreasedLife1" },
     baseAliases: { "Iron Ring": "IronRing" },
+    essences: [ESS_DEAFENING, ESS_MUTTERING],
 });
 const ctx: CheckContext = { registry };
 
@@ -113,6 +138,56 @@ describe("checker — the wider currency set", () => {
             op("alchemy"),
         ]);
         expect(check(c, ctx).diagnostics[0]?.message).toContain("Requires a Normal item");
+    });
+});
+
+describe("checker — essences", () => {
+    const normalRing = () => item({ base: "Iron Ring", ilvl: 100, rarity: "normal" });
+
+    it("guarantees its mod, reforging a Normal item to Rare", () => {
+        const r = check(craft("poe1", normalRing(), [essence("Deafening Essence of Greed")]), ctx);
+        expect(r.ok).toBe(true);
+        expect(r.finalState?.rarity).toBe("rare");
+        expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
+    });
+
+    it("resolves the `type + t1` shorthand (t1 = Deafening = best)", () => {
+        const r = check(craft("poe1", normalRing(), [essence("greed", 1)]), ctx);
+        expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
+    });
+
+    it("a high-tier essence reforges a Rare item too", () => {
+        const r = check(
+            craft("poe1", rareRing(["random"]), [essence("Deafening Essence of Greed")]),
+            ctx,
+        );
+        expect(r.ok).toBe(true);
+        expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
+    });
+
+    it("rejects a low-tier essence on a Rare item", () => {
+        const c = craft("poe1", rareRing(), [essence("Muttering Essence of Greed")]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("Requires a Normal item");
+    });
+
+    it("rejects any essence on a Magic item", () => {
+        const c = craft("poe1", item({ base: "Iron Ring", ilvl: 100, rarity: "magic" }), [
+            essence("Deafening Essence of Greed"),
+        ]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("Magic item");
+    });
+
+    it("rejects an essence that grants nothing for the item's class", () => {
+        // The fixture essences only grant on Ring; a Coral Amulet has no grant.
+        const c = craft("poe1", item({ base: "CoralAmulet", ilvl: 100, rarity: "normal" }), [
+            essence("Deafening Essence of Greed"),
+        ]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("grants no mod");
+    });
+
+    it("reports an unknown essence", () => {
+        const c = craft("poe1", normalRing(), [essence("Bogus Essence of Nothing")]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("Unknown essence");
     });
 });
 

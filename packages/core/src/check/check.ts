@@ -44,6 +44,7 @@ import {
     annul,
     augment,
     chaos,
+    essence,
     exalt,
     regal,
     scour,
@@ -236,6 +237,8 @@ class Checker {
         switch (stmt.kind) {
             case "op":
                 return this.checkOp(a, stmt);
+            case "essence":
+                return this.checkEssence(a, stmt);
             case "restart":
                 return { kind: "restart" };
             case "until":
@@ -245,6 +248,20 @@ class Checker {
             case "withOmen":
                 return this.checkWithOmen(a, stmt);
         }
+    }
+
+    private checkEssence(a: AItem, stmt: Extract<Stmt, { kind: "essence" }>): Flow {
+        const spec = this.registry.resolveEssence(stmt.name, stmt.tier);
+        if (!spec.ok) {
+            this.diag(resolveMessage(spec.error), stmt.span);
+            return { kind: "fall", state: a };
+        }
+        const result = essence(a, spec.value, this.registry);
+        if (!result.ok) {
+            this.diag(preconditionMessage(a, result.failure), stmt.span);
+            return { kind: "fall", state: a };
+        }
+        return { kind: "fall", state: result.state };
     }
 
     // --- operations --------------------------------------------------------

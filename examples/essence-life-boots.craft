@@ -1,29 +1,24 @@
 # Essence spam: guarantee maximum Life on a pair of boots while fishing the
 # random (non-guaranteed) mods for a top-tier elemental resistance.
 #
-# NOTE: this is a DESIGN TARGET — it uses features still in progress:
-#   * the `essence` operation,
-#   * the `essence "<type>" t1` shorthand (t1 = Deafening, the best tier),
-#   * `or` in predicates.
-# It is not checkable yet; it shows the intended shape of an essence craft.
+# Deafening Essence of Greed guarantees "+ to maximum Life" and reforges every
+# other mod on each application. Being a top tier (>= Screaming), it can reforge
+# a RARE item — so after the first Normal -> Rare application the loop keeps
+# re-rolling. A low-tier essence would fail here: it only upgrades Normal items,
+# so the second iteration (now Rare) would have nothing to work on.
+#
+# `t1` selects the best tier (Deafening); we spin until the random fill happens to
+# include a T1 fire, cold, or lightning resistance — any of the three is a win.
+# (A future `def anyEleRes(t) = …` would let us write `until anyEleRes(1)`.)
 
 craft in poe1
 
 item {
-    base:   "Two-Toned Boots"
+    base:   "Titan Greaves"
     ilvl:   84            # high enough for T1 elemental resistances to roll
     rarity: normal
 }
 
-# Deafening Essence of Greed guarantees "+ to maximum Life" and reforges every
-# other mod on each application. Because it is a top tier (>= Screaming), it can
-# reforge a RARE item — so after the first Normal -> Rare application the loop can
-# keep re-rolling. A low-tier essence would fail here: it only upgrades Normal
-# items, so the second iteration (now Rare) would have nothing to work on.
-#
-# `t1` selects the best tier (Deafening), the same T1-is-best convention used for
-# mod tiers. We spin until the random fill happens to include a T1 fire, cold, or
-# lightning resistance — any of the three is a win.
 until has "fire resistance" t1
    or has "cold resistance" t1
    or has "lightning resistance" t1 {

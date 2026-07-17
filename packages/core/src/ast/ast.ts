@@ -44,12 +44,24 @@ export interface ItemBlock {
 
 // --- Statements (surface §3–§4) -------------------------------------------
 
-export type Stmt = OpStmt | RestartStmt | UntilStmt | IfStmt | WithOmenStmt;
+export type Stmt = OpStmt | EssenceStmt | RestartStmt | UntilStmt | IfStmt | WithOmenStmt;
 
 /** A currency/operation line — a single (still-unresolved) currency name. */
 export interface OpStmt {
     readonly kind: "op";
     readonly name: string;
+    readonly span: SourceSpan;
+}
+
+/**
+ * `essence "<name>" [t1]` — apply an essence. `name` is a full name
+ * ("Deafening Essence of Greed") or, with a `tier`, an essence type ("greed",
+ * `t1` = best). Resolution and semantics are the checker's job.
+ */
+export interface EssenceStmt {
+    readonly kind: "essence";
+    readonly name: string;
+    readonly tier?: number;
     readonly span: SourceSpan;
 }
 

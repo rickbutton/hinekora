@@ -16,8 +16,14 @@
 import type { Base } from "../model/base.js";
 import type { Game, Gen, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
+import type { EssenceSpec } from "../model/sources.js";
 import { buildTypeIndex, matchTypes, normalizeText } from "./fuzzy.js";
 import { rollableTiers } from "./tiers.js";
+
+/** The essence type suffix — "Deafening Essence of Greed" → "Greed". */
+const essenceType = (name: string): string => name.split(/\bof\b/i).pop() ?? name;
+/** DSL tier (T1 = best) → catalog ladder level (Deafening = 7, Whispering = 1). */
+const ladderOf = (tier: number): number => 8 - tier;
 
 /** A stat-description completion suggestion. */
 export interface StatSuggestion {
@@ -76,6 +82,7 @@ export type ResolveError =
     | { readonly kind: "unknownMod"; readonly name: string }
     | { readonly kind: "unknownCurrency"; readonly name: string }
     | { readonly kind: "unknownOmen"; readonly name: string }
+    | { readonly kind: "unknownEssence"; readonly name: string }
     | { readonly kind: "ambiguous"; readonly name: string; readonly candidates: readonly string[] };
 
 export type Resolved<T> =
@@ -106,6 +113,13 @@ export interface Registry {
     resolveModType(name: string, ctx?: ModTypeContext): Resolved<TypeId>;
     resolveCurrency(name: string): Resolved<CurrencySpec>;
     resolveOmen(name: string): Resolved<OmenSpec>;
+    /**
+     * Resolve an essence. Two spellings: a full name (`"Deafening Essence of
+     * Greed"`), or a type + tier (`name = "greed"`, `tier = 1`, where T1 =
+     * Deafening = best). Ambiguous without a tier (all seven Greed essences match
+     * `"greed"`), so the tier or a ladder prefix in the name disambiguates.
+     */
+    resolveEssence(name: string, tier?: number): Resolved<EssenceSpec>;
     /** The generation (prefix/suffix) a ModType always occupies, if known. */
     genOfType(type: TypeId): Gen | undefined;
     /**
@@ -206,6 +220,7 @@ export interface RegistryData {
     readonly baseAliases?: Readonly<Record<string, string>>;
     readonly currencies?: readonly CurrencySpec[];
     readonly omens?: readonly OmenSpec[];
+    readonly essences?: readonly EssenceSpec[];
 }
 
 /**
@@ -245,6 +260,7 @@ export function buildRegistry(data: RegistryData): Registry {
     const omenByName = new Map(
         (data.omens ?? STANDARD_OMENS).map((o) => [norm(o.name), o] as const),
     );
+    const essences = data.essences ?? [];
 
     const typeGen = new Map<TypeId, Gen>();
     for (const m of data.mods) if (!typeGen.has(m.type)) typeGen.set(m.type, m.gen);
@@ -330,6 +346,23 @@ export function buildRegistry(data: RegistryData): Registry {
         resolveOmen(name) {
             const o = omenByName.get(norm(name));
             return o ? found(o) : fail({ kind: "unknownOmen", name });
+        },
+
+        resolveEssence(name, tier) {
+            const q = normalizeText(name);
+            if (q.length === 0) return fail({ kind: "unknownEssence", name });
+            // With a tier, match the type suffix ("greed") among that ladder rung;
+            // without one, match the whole name ("deafening essence of greed").
+            const matches = essences.filter((e) => {
+                if (tier !== undefined && e.tier !== ladderOf(tier)) return false;
+                const tokens = new Set(
+                    normalizeText(tier === undefined ? e.name : essenceType(e.name)),
+                );
+                return q.every((w) => tokens.has(w));
+            });
+            if (matches.length === 1) return found(matches[0]!);
+            if (matches.length === 0) return fail({ kind: "unknownEssence", name });
+            return fail({ kind: "ambiguous", name, candidates: matches.map((e) => e.name) });
         },
 
         genOfType(type) {

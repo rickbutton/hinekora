@@ -14,6 +14,7 @@
 import {
     type Cmp,
     type Craft,
+    type EssenceStmt,
     type IfStmt,
     type ItemBlock,
     type Pos,
@@ -263,6 +264,7 @@ class Parser {
         if (this.atKeyword("until")) return this.parseUntil();
         if (this.atKeyword("if")) return this.parseIf();
         if (this.atKeyword("with")) return this.parseWith();
+        if (this.atKeyword("essence")) return this.parseEssence();
         if (this.atKeyword("restart")) {
             const t = this.advance();
             return { kind: "restart", span: t.span };
@@ -290,6 +292,27 @@ class Parser {
         const omen = this.expect("string", "a quoted omen name").text;
         const body = this.parseBlock();
         return { kind: "withOmen", omen, body, span: span(start, this.prev.span.end) };
+    }
+
+    private parseEssence(): EssenceStmt {
+        const start = this.expectKeyword("essence").span.start;
+        const nameTok = this.expect("string", "a quoted essence name after 'essence'");
+        // Optional `t1` tier shorthand (T1 = best), same form as on `has`.
+        let tier: number | undefined;
+        let end = nameTok.span.end;
+        const short = this.peek();
+        const m = short.kind === "ident" ? /^t(\d+)$/i.exec(short.text) : null;
+        if (m) {
+            this.advance();
+            tier = Number(m[1]);
+            end = short.span.end;
+        }
+        return {
+            kind: "essence",
+            name: nameTok.text,
+            ...(tier !== undefined && { tier }),
+            span: span(start, end),
+        };
     }
 
     private parseIf(): IfStmt {

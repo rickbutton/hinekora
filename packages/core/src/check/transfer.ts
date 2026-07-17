@@ -12,9 +12,10 @@
  * single generation, which both tightens the counts and changes which
  * guarantees survive.
  */
-import type { Gen, ModId, Rarity, TypeId } from "../model/ids.js";
+import type { ClassId, Gen, ModId, Rarity, TypeId } from "../model/ids.js";
 import type { Item } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
+import type { EssenceSpec } from "../model/sources.js";
 import { pool } from "../pool/pool.js";
 import type { Registry } from "../resolve/registry.js";
 import {
@@ -32,7 +33,9 @@ import {
 export type PreconditionFailure =
     | { readonly kind: "wrongRarity"; readonly needed: Rarity; readonly actual: Rarity }
     | { readonly kind: "noOpenSlot"; readonly gen?: Gen }
-    | { readonly kind: "nothingToRemove"; readonly gen?: Gen };
+    | { readonly kind: "nothingToRemove"; readonly gen?: Gen }
+    | { readonly kind: "essenceRarity"; readonly tier: number; readonly actual: Rarity }
+    | { readonly kind: "essenceClass"; readonly essence: string; readonly itemClass: ClassId };
 
 export type TransferResult =
     | { readonly ok: true; readonly state: AItem }
@@ -121,6 +124,53 @@ export function scour(a: AItem): TransferResult {
         possible: new Set(),
         tiers: new Map(),
     };
+    return ok(normalize(next) ?? next);
+}
+
+/**
+ * Apply an essence: reforge to Rare with one GUARANTEED mod (fixed per item
+ * class) plus a random fill. Preconditions: **Normal** always, **Rare** only for
+ * ladder tier ≥ 5, **never Magic**; the essence must cover the item's class.
+ * There is NO item-level gate — the guaranteed mod is forced at its fixed tier
+ * regardless of ilvl. This is the first op that grows `guaranteed`.
+ */
+export function essence(a: AItem, spec: EssenceSpec, registry: Registry): TransferResult {
+    if (a.rarity === "magic" || (a.rarity === "rare" && spec.tier < 5)) {
+        return fail({ kind: "essenceRarity", tier: spec.tier, actual: a.rarity });
+    }
+    const modId = spec.grants.get(a.base.itemClass);
+    const guaranteedMod = modId && registry.catalog.find((m) => m.id === modId);
+    if (!guaranteedMod) {
+        return fail({ kind: "essenceClass", essence: spec.name, itemClass: a.base.itemClass });
+    }
+
+    // Reforge to a full Rare (4–6 mods), one of which is the guaranteed mod.
+    const cap = rarityCap("rare");
+    const total: Range = [4, 2 * cap];
+    const spread: Range = [Math.max(0, total[0] - cap), Math.min(cap, total[1])];
+    const prefix: Range =
+        guaranteedMod.gen === "prefix"
+            ? [Math.max(spread[0], 1), spread[1]] // ≥ 1 prefix
+            : [spread[0], Math.min(spread[1], total[1] - 1)]; // ≥ 1 suffix
+
+    // The random fill is drawn from the normal pool this base can roll, capped by
+    // BOTH the item level and the essence's max random-mod level.
+    const fillCap = Math.min(a.ilvl, spec.maxRandomModLevel ?? Infinity);
+    const fill = addableMods({ ...a, presence: a.bdd.TRUE }, undefined, registry).filter(
+        (m) => m.minLevel <= fillCap,
+    );
+    const possible = new Set<TypeId>([guaranteedMod.type]);
+    const tiers = new Map<TypeId, ReadonlySet<ModId>>([[guaranteedMod.type, new Set([modId])]]);
+    for (const m of fill) {
+        possible.add(m.type);
+        if (m.type === guaranteedMod.type) continue; // keep the guaranteed tier pinned
+        const cur = tiers.get(m.type);
+        tiers.set(m.type, cur ? new Set([...cur, m.id]) : new Set([m.id]));
+    }
+
+    // The guaranteed mod is FORCED present (the reforge otherwise knows nothing).
+    const presence = a.bdd.variable(guaranteedMod.type);
+    const next: AItem = { ...a, rarity: "rare", total, prefix, presence, possible, tiers };
     return ok(normalize(next) ?? next);
 }
 
