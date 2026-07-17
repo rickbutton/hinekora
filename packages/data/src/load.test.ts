@@ -35,6 +35,21 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         expect(data.essences.every((e) => e.grants.size > 0)).toBe(true);
     });
 
+    it("resolves essences by full name, by type + tier, and flags conflicts", () => {
+        const name = (r: ReturnType<typeof registry.resolveEssence>) =>
+            r.ok ? r.value.name : null;
+        expect(name(registry.resolveEssence("Deafening Essence of Greed"))).toBe(
+            "Deafening Essence of Greed",
+        );
+        // Type + tier: t1 = Deafening = best.
+        expect(name(registry.resolveEssence("greed", 1))).toBe("Deafening Essence of Greed");
+        // Full name + a matching tier is fine; a bare type without one is ambiguous.
+        expect(registry.resolveEssence("Deafening Essence of Greed", 1).ok).toBe(true);
+        expect(registry.resolveEssence("greed").ok).toBe(false);
+        // Full name + a DISAGREEING tier does not silently resolve.
+        expect(registry.resolveEssence("Deafening Essence of Greed", 2).ok).toBe(false);
+    });
+
     it("stamps a source on every mod, and isolates natural from essence", () => {
         expect(data.mods.every((m) => m.source !== undefined)).toBe(true);
         const bySource = (s: string) => data.mods.filter((m) => m.source === s).length;

@@ -20,8 +20,6 @@ import type { EssenceSpec } from "../model/sources.js";
 import { buildTypeIndex, matchTypes, normalizeText } from "./fuzzy.js";
 import { rollableTiers } from "./tiers.js";
 
-/** The essence type suffix — "Deafening Essence of Greed" → "Greed". */
-const essenceType = (name: string): string => name.split(/\bof\b/i).pop() ?? name;
 /** DSL tier (T1 = best) → catalog ladder level (Deafening = 7, Whispering = 1). */
 const ladderOf = (tier: number): number => 8 - tier;
 
@@ -351,13 +349,14 @@ export function buildRegistry(data: RegistryData): Registry {
         resolveEssence(name, tier) {
             const q = normalizeText(name);
             if (q.length === 0) return fail({ kind: "unknownEssence", name });
-            // With a tier, match the type suffix ("greed") among that ladder rung;
-            // without one, match the whole name ("deafening essence of greed").
+            // Always match the query against the FULL name, so a bare type
+            // ("greed") and a full name ("deafening essence of greed") both work
+            // (a subset test — every query token must appear). A tier then narrows
+            // to that ladder rung, which both disambiguates a bare type AND rejects
+            // a name that disagrees with the tier ("Deafening…" + t2 → no match).
             const matches = essences.filter((e) => {
                 if (tier !== undefined && e.tier !== ladderOf(tier)) return false;
-                const tokens = new Set(
-                    normalizeText(tier === undefined ? e.name : essenceType(e.name)),
-                );
+                const tokens = new Set(normalizeText(e.name));
                 return q.every((w) => tokens.has(w));
             });
             if (matches.length === 1) return found(matches[0]!);
