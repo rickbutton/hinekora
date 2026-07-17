@@ -17,6 +17,6 @@ until has "maximum life" t1 {
     }
 }
 
-if has "cold res" t1 {
+if not has "cold res" t1 {
 
 }

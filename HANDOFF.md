@@ -452,3 +452,50 @@ maxRandomModLevel?, grants: class→modId}`. Needs `resolveEssence` + a transfer
 - Soundness principle: tightening the abstract domain (like the normalize coupling) only
   ever **removes false positives** — it can't introduce false negatives — so existing
   green tests staying green is evidence the tightening is sound.
+
+---
+
+## 11. Design note — relational precision (VC / SMT / BDD)
+
+A **VC (verification condition)** is a proof obligation: a formula whose validity
+(or, for inhabitation, satisfiability) certifies a property. The design docs
+(`IMPLEMENTATION_BRIEF` §7, typing-rules §2.1/§4.7) frame `wf`, dead-arm
+inhabitation, and refinement as VCs in an **SMT-decidable fragment** — _linear
+arithmetic over counts + set membership_ — with the guidance: **"start hand-rolled;
+reach for Z3 only if something genuinely needs it."**
+
+`AItem` **is** that hand-rolled decision procedure — but **non-relational**: each
+type is tracked independently (`guaranteed`/`possible`/`excluded`) plus the coupled
+counts. So it cannot represent a **disjunctive fact across types**. Concretely,
+after `until has "fire res" t1 or has "cold res" t1 or has "lightning res" t1 { … }`
+the loop exit `join`s three states, and `join`'s `guaranteed` = the intersection =
+∅ — so "≥1 of the three is present" is lost. A later
+`if not has fire and not has cold and not has lightning` is then **not** flagged
+dead even though it's unreachable. This is a **precision** loss, not unsoundness —
+we never accept a failing op, we just miss a helpful warning.
+
+Options weighed:
+
+- **Special-case "≥1 present" groups** — rejected: throwaway once we go general.
+- **Powerset / DNF of states** — = enumeration, violates the intensional-union rule.
+- **BDD over type-presence — CHOSEN.** Represent presence knowledge as one boolean
+  function (a reduced, ordered Binary Decision Diagram over presence variables).
+  `guaranteed`/`possible`/`excluded` become _views_ of it; `refine` = BDD-AND;
+  **`join` = BDD-OR** (keeps disjunctions compact & symbolic — NOT enumeration);
+  dead-arm = the BDD is `false`. Dependency-free, deterministic, pure TS; keeps the
+  abstract-interpretation fixpoint. Bounded by the number of types touched (a
+  handful) so tiny in practice; worst-case exponential but irrelevant for real
+  crafts; finite domain ⇒ fixpoints still terminate. Also handles the future
+  need where a disjunction interacts with `guaranteed` unit facts.
+- **Z3 / SMT (via wasm)** — strictly more general: handles presence AND count
+  disjunctions AND their interaction (the whole VC fragment). But heavy async
+  dependency (breaks `core`'s purity), less deterministic, worse diagnostics
+  (UNSAT-core vs our state-rendered errors), and it does **not** remove the loop-
+  **invariant** fixpoint (SMT decides fixed formulas; invariant synthesis needs the
+  AI fixpoint, or Z3's heavier Horn/Spacer engine). By the brief's own bar the
+  current gap doesn't "genuinely need" Z3 (it's sound). **Reserved** for a genuine
+  presence-×-count disjunction need or a wholesale VC offload. A hybrid (hand-rolled
+  fast path + Z3 oracle only for hard disjunctive queries) is possible but adds
+  moving parts.
+
+**Roadmap:** BDD-presence domain → essences transfer function → predicate `def`s.
