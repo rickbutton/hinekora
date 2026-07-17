@@ -98,9 +98,13 @@ function projectEssences(raw) {
             // corrupted). NOT `e.type.tier`, which is a mod-category number. The
             // ladder is what gates usage: level >= 5 may reforge a Rare item.
             tier: e.level ?? 0,
-            // Absent `item_level_restriction` means no minimum (high-tier essences).
-            itemLevel: e.item_level_restriction ?? 1,
-            grants: e.mods ?? {}, // item class → guaranteed mod id
+            // `item_level_restriction` caps the RANDOM fill mods' level (absent =
+            // no cap). It is NOT an item-level requirement — essences work on any
+            // item level; the guaranteed mod is forced at its fixed tier.
+            ...(e.item_level_restriction != null && {
+                maxRandomModLevel: e.item_level_restriction,
+            }),
+            grants: e.mods, // item class → guaranteed mod id
         };
     }
     return out;

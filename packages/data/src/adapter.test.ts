@@ -75,7 +75,7 @@ describe("adaptEssence / adaptBench", () => {
         const raw: RepoeEssence = {
             name: "Whispering Essence of Hatred",
             tier: 1,
-            itemLevel: 35,
+            maxRandomModLevel: 35,
             grants: { Ring: "ColdDamagePercentEssence1", Belt: "ColdResist1" },
         };
         const e = adaptEssence("CurrencyEssenceHatred1", raw);
@@ -83,7 +83,7 @@ describe("adaptEssence / adaptBench", () => {
             id: "CurrencyEssenceHatred1",
             name: raw.name,
             tier: 1,
-            itemLevel: 35,
+            maxRandomModLevel: 35,
         });
         expect(e.grants.get("Ring" as never)).toBe("ColdDamagePercentEssence1");
         expect(e.grants.size).toBe(2);

@@ -96,7 +96,13 @@ export function adaptMod(id: string, m: RepoeMod): Mod | null {
 export function adaptEssence(id: string, e: RepoeEssence): EssenceSpec {
     const grants = new Map<ClassId, ModId>();
     for (const [cls, modId] of Object.entries(e.grants)) grants.set(ClassId(cls), ModId(modId));
-    return { id, name: e.name, tier: e.tier, itemLevel: e.itemLevel, grants };
+    return {
+        id,
+        name: e.name,
+        tier: e.tier,
+        ...(e.maxRandomModLevel != null && { maxRandomModLevel: e.maxRandomModLevel }),
+        grants,
+    };
 }
 
 export function adaptBench(b: RepoeBench): BenchCraft {

@@ -35,10 +35,17 @@ export type ModSource =
 export interface EssenceSpec {
     readonly id: string;
     readonly name: string;
-    /** Essence tier (1 = weakest). */
+    /** Ladder tier: 1 = Whispering … 7 = Deafening, 8 = corrupted. Tier >= 5 may
+     *  reforge a Rare item; lower tiers only upgrade a Normal item. */
     readonly tier: number;
-    /** Minimum item level the essence can be applied to. */
-    readonly itemLevel: number;
+    /**
+     * Cap on the level of the RANDOM fill mods (absent = no cap). NOT an
+     * item-level requirement: essences work on any item level, and the
+     * guaranteed mod is forced at its fixed tier regardless of the item's level
+     * (a Deafening essence puts its level-82 mod on an ilvl-1 item). Only the
+     * non-guaranteed fill respects `min(item.ilvl, maxRandomModLevel)`.
+     */
+    readonly maxRandomModLevel?: number;
     /** Item class → the mod this essence guarantees on that class. */
     readonly grants: ReadonlyMap<ClassId, ModId>;
 }

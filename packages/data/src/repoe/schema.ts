@@ -51,7 +51,8 @@ export type RepoeBases = Readonly<Record<string, RepoeBase>>;
 export interface RepoeEssence {
     readonly name: string;
     readonly tier: number;
-    readonly itemLevel: number;
+    /** Cap on random fill-mod level; absent = no cap. See `EssenceSpec`. */
+    readonly maxRandomModLevel?: number;
     /** Item class name → guaranteed mod id. */
     readonly grants: Readonly<Record<string, string>>;
 }
