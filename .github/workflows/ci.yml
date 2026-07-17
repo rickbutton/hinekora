@@ -1,0 +1,59 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+
+permissions:
+    contents: read
+
+jobs:
+    ci:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: pnpm
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Typecheck
+              run: pnpm typecheck
+
+            - name: Lint
+              run: pnpm lint
+
+            - name: Format check
+              run: pnpm format:check
+
+            - name: Test with coverage
+              run: pnpm test:coverage
+
+            - name: Coverage summary
+              if: always()
+              run: |
+                  f=coverage/coverage-summary.json
+                  [ -f "$f" ] || exit 0
+                  {
+                    echo "## Coverage"
+                    echo "| metric | % | covered / total |"
+                    echo "| --- | --- | --- |"
+                    jq -r '.total | "| lines | \(.lines.pct)% | \(.lines.covered) / \(.lines.total) |\n| statements | \(.statements.pct)% | \(.statements.covered) / \(.statements.total) |\n| functions | \(.functions.pct)% | \(.functions.covered) / \(.functions.total) |\n| branches | \(.branches.pct)% | \(.branches.covered) / \(.branches.total) |"' "$f"
+                  } >> "$GITHUB_STEP_SUMMARY"
+
+            - name: Upload coverage report
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: coverage
+                  path: coverage/
+                  if-no-files-found: ignore

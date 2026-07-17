@@ -25,5 +25,12 @@ export default defineConfig({
     },
     test: {
         projects: ["packages/*"],
+        coverage: {
+            provider: "v8",
+            reporter: ["text", "html", "lcov", "json-summary"],
+            reportsDirectory: "./coverage",
+            include: ["packages/*/src/**/*.ts"],
+            exclude: ["**/*.test.ts", "**/__fixtures__/**", "**/index.ts"],
+        },
     },
 });
