@@ -144,12 +144,6 @@ export interface Registry {
      * Falls back to the raw TypeId when the type carries no rollable text.
      */
     typeLabel(type: TypeId): string;
-    /**
-     * A representative FULL stat text for a ModType (e.g. "+(20-30)% to Fire
-     * Resistance"), before range-stripping — for item-tooltip rendering. Undefined
-     * when the type carries no rollable text.
-     */
-    typeText(type: TypeId): string | undefined;
 
     // --- completion lists (precomputed) ---
     /** Currency alias names. */
@@ -458,10 +452,6 @@ export function buildRegistry(data: RegistryData): Registry {
         typeLabel(type) {
             const entry = typeIndex.get(type);
             return entry ? normalizeText(entry.text).join(" ") : type;
-        },
-
-        typeText(type) {
-            return typeIndex.get(type)?.text;
         },
     };
 }

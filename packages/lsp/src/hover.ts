@@ -8,11 +8,12 @@
  *   projection   → what it counts, and its current range
  *   keyword      → a one-line note on the construct
  *
- * Below the signature we append a "state here" footer — the abstract item
- * before (and, for a completed statement, after) the hovered point. That footer
- * is the debugger-watch half; the signature is the hover half. Note the footer
- * leads with the total affix count, because prefix/suffix are coupled ranges
- * (`prefix + suffix = total`) and reading them independently is misleading.
+ * Below the signature we append an item TOOLTIP — a Path-of-Exile-style view of
+ * the abstract state at that point: each modifier on its own `(P)`/`(S)`-tagged
+ * line (its resolved text, or the roll span when the tier isn't pinned),
+ * disjunctive guarantees as "at least one of …", and a count of the still-
+ * undetermined slots. That tooltip is the debugger-watch half; the signature is
+ * the hover half.
  */
 import {
     type AItem,
@@ -187,25 +188,50 @@ function fmtRange(r: Range): string {
 const RARITY_NAME: Record<string, string> = { normal: "Normal", magic: "Magic", rare: "Rare" };
 const GEN_TAG: Record<Gen, string> = { prefix: "(P)", suffix: "(S)" };
 
-/** Collapse a mod's roll ranges to `#` — "+(20-30)% to Fire Resistance" ⇒
- *  "+#% to Fire Resistance". Used when the exact tier isn't known. */
-function hashRanges(text: string): string {
-    return text.replace(/\(-?[\d.]+-[\d.]+\)/g, "#");
+const oneLine = (text: string): string => text.replace(/\n/g, " / ");
+
+/**
+ * Merge several tiers' texts into one showing the OVERALL roll span — e.g. tiers
+ * "+(70-84) to maximum Life" and "+(20-29) to maximum Life" ⇒ "+(20-84) to
+ * maximum Life". Each `(lo-hi)` range is widened to min-lo…max-hi across the
+ * tiers. Falls back to the first text if the tiers don't share a range structure.
+ */
+const RANGE = /\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)/g;
+function rollSpan(texts: readonly string[]): string {
+    if (texts.length === 1) return texts[0]!;
+    const nums = (s: string): [number, number][] =>
+        [...s.matchAll(RANGE)].map((m) => [Number(m[1]), Number(m[2])]);
+    const perTier = texts.map(nums);
+    const n = perTier[0]!.length;
+    if (n === 0 || perTier.some((r) => r.length !== n)) return texts[0]!; // structure differs
+    const lo = Array.from({ length: n }, (_, i) => Math.min(...perTier.map((r) => r[i]![0])));
+    const hi = Array.from({ length: n }, (_, i) => Math.max(...perTier.map((r) => r[i]![1])));
+    let i = 0;
+    return texts[0]!.replace(RANGE, () => `(${lo[i]}-${hi[i++]})`);
 }
 
 /**
  * One tooltip line for a guaranteed mod. When the tier is pinned to a single mod
- * we show its exact rolled text; otherwise the type's representative stat text
- * with roll ranges shown as `#` (the tier — the numbers — isn't determined yet).
+ * we show its exact rolled text; otherwise the roll SPAN across every tier the
+ * item could carry here (base + ilvl), so the magnitude is honest without
+ * committing to a tier we don't know.
  */
 function modLine(a: AItem, type: TypeId, registry: Registry): string {
-    const tiers = a.tiers.get(type);
-    if (tiers && tiers.size === 1) {
-        const m = registry.resolveMod([...tiers][0]!);
-        if (m.ok && m.value.text) return m.value.text.replace(/\n/g, " / ");
-    }
-    const text = registry.typeText(type);
-    return text ? hashRanges(text.replace(/\n/g, " / ")) : registry.typeLabel(type);
+    const pinned = a.tiers.get(type);
+    // The tiers the item could carry: the pinned set if constrained, else every
+    // tier rollable on this base + ilvl.
+    const mods =
+        pinned && pinned.size > 0
+            ? [...pinned].flatMap((id) => {
+                  const r = registry.resolveMod(id);
+                  return r.ok ? [r.value] : [];
+              })
+            : rollableTiers(registry.catalog, a.game, a.base, a.ilvl, type);
+    const texts = mods
+        .map((m) => m.text)
+        .filter((t): t is string => t !== undefined)
+        .map(oneLine);
+    return texts.length > 0 ? rollSpan(texts) : registry.typeLabel(type);
 }
 
 /**
