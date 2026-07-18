@@ -132,6 +132,69 @@ export function excludedTypes(a: AItem): Set<TypeId> {
     return out;
 }
 
+/** Guard: skip disjunction extraction past this many uncertain variables (2^n). */
+const MAX_DISJUNCTION_VARS = 12;
+
+/**
+ * Disjunctive guarantees: minimal sets of types where `presence` forces *at least
+ * one* to be present — e.g. after `until has X or has Y`, `{X, Y}`. These are the
+ * positive prime implicates of the presence function over its still-uncertain
+ * variables (individually guaranteed/excluded types are handled separately). Only
+ * a handful of types ever appear as presence variables (those the craft refines),
+ * so the subset search is cheap; it is skipped entirely past a small bound.
+ *
+ * A set S is a guarantee iff `presence ⊨ ⋁S` (setting all of S absent is
+ * impossible). "Minimal" means no proper subset is already a guarantee, so we
+ * search by ascending size and skip supersets of anything found.
+ */
+export function disjunctiveGuarantees(a: AItem): TypeId[][] {
+    const guaranteed = guaranteedTypes(a);
+    const excluded = excludedTypes(a);
+    const cand = a.bdd
+        .variables()
+        .map((v) => TypeId(v))
+        .filter((t) => !guaranteed.has(t) && !excluded.has(t) && a.possible.has(t));
+    if (cand.length < 2 || cand.length > MAX_DISJUNCTION_VARS) return [];
+
+    const entailsAnyOf = (set: readonly TypeId[]): boolean => {
+        let clause = a.bdd.FALSE;
+        for (const t of set) clause = a.bdd.or(clause, a.bdd.variable(t));
+        return a.bdd.entails(a.presence, clause);
+    };
+
+    const found: TypeId[][] = [];
+    const supersetOfFound = (s: readonly TypeId[]): boolean =>
+        found.some((f) => f.every((x) => s.includes(x)));
+
+    for (let size = 2; size <= cand.length; size++) {
+        for (const combo of combinations(cand, size)) {
+            if (supersetOfFound(combo)) continue; // keep only minimal clauses
+            if (entailsAnyOf(combo)) found.push(combo);
+        }
+    }
+    return found;
+}
+
+/** All size-`k` subsets of `xs` (k small; used only for the bounded search above). */
+function combinations<T>(xs: readonly T[], k: number): T[][] {
+    if (k === 0) return [[]];
+    if (k > xs.length) return [];
+    const out: T[][] = [];
+    const rec = (start: number, pick: T[]): void => {
+        if (pick.length === k) {
+            out.push([...pick]);
+            return;
+        }
+        for (let i = start; i < xs.length; i++) {
+            pick.push(xs[i]!);
+            rec(i + 1, pick);
+            pick.pop();
+        }
+    };
+    rec(0, []);
+    return out;
+}
+
 /**
  * Re-establish the invariants after a field is changed: clamp `prefix` so that
  * both it and the derived suffix stay within `[0, cap]` and consistent with

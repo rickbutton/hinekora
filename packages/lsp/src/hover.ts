@@ -20,7 +20,7 @@ import {
     type CurrencyKind,
     type Def,
     describePred,
-    excludedTypes,
+    disjunctiveGuarantees,
     type Gen,
     guaranteedTypes,
     type Range,
@@ -185,73 +185,73 @@ function fmtRange(r: Range): string {
 }
 
 const RARITY_NAME: Record<string, string> = { normal: "Normal", magic: "Magic", rare: "Rare" };
+const GEN_TAG: Record<Gen, string> = { prefix: "(P)", suffix: "(S)" };
 
-/** Above this many candidates for an undetermined slot, we say "any", not a list. */
-const POSSIBLE_LIMIT = 10;
+/** Collapse a mod's roll ranges to `#` — "+(20-30)% to Fire Resistance" ⇒
+ *  "+#% to Fire Resistance". Used when the exact tier isn't known. */
+function hashRanges(text: string): string {
+    return text.replace(/\(-?[\d.]+-[\d.]+\)/g, "#");
+}
 
-/** One tooltip line for a guaranteed mod: its rolled text if the tier is pinned,
- *  else the canonical stat wording. */
+/**
+ * One tooltip line for a guaranteed mod. When the tier is pinned to a single mod
+ * we show its exact rolled text; otherwise the type's representative stat text
+ * with roll ranges shown as `#` (the tier — the numbers — isn't determined yet).
+ */
 function modLine(a: AItem, type: TypeId, registry: Registry): string {
     const tiers = a.tiers.get(type);
     if (tiers && tiers.size === 1) {
         const m = registry.resolveMod([...tiers][0]!);
         if (m.ok && m.value.text) return m.value.text.replace(/\n/g, " / ");
     }
-    return registry.typeLabel(type);
+    const text = registry.typeText(type);
+    return text ? hashRanges(text.replace(/\n/g, " / ")) : registry.typeLabel(type);
 }
 
 /**
  * A Path-of-Exile-style item tooltip for the abstract state (replacing the terse
- * count-range footer): each guaranteed mod on its own line, grouped by
- * generation, with its rolled text where the tier is pinned. Undetermined slots
- * are summarised — naming the candidate mods when few, else "any". The header
- * leads with the TOTAL count so the coupled prefix/suffix ranges below can't be
- * misread as independent (surface §6).
+ * count-range footer): each modifier on its own line, prefixed with `(P)`/`(S)`
+ * for its generation and ordered prefixes-then-suffixes. Guaranteed mods show
+ * their resolved text; a disjunctive guarantee (`until has X or has Y`) becomes
+ * an "at least one of" line; and the count of still-undetermined slots per
+ * generation is noted (their contents can be anything the base can roll).
  */
 function tooltip(a: AItem, registry: Registry, caption?: string): string {
     const guaranteed = guaranteedTypes(a);
-    const excluded = excludedTypes(a);
     const genOf = (t: TypeId): Gen => registry.genOfType(t) ?? "prefix";
 
     const known: Record<Gen, TypeId[]> = { prefix: [], suffix: [] };
     for (const t of guaranteed) known[genOf(t)].push(t);
-    // Merely-possible mods (might be present, not guaranteed / not excluded) —
-    // the candidates that could fill an undetermined slot.
-    const possible: Record<Gen, TypeId[]> = { prefix: [], suffix: [] };
-    for (const t of a.possible) {
-        if (!guaranteed.has(t) && !excluded.has(t)) possible[genOf(t)].push(t);
-    }
+    const disjunctions = disjunctiveGuarantees(a);
+    const labels = (ts: readonly TypeId[]): string =>
+        ts.map((t) => registry.typeLabel(t)).join(", ");
 
-    // A section only appears when its generation can hold something here (a Normal
-    // item, cap 0, shows no prefix/suffix sections at all).
-    const section = (label: string, gen: Gen, count: Range): string | undefined => {
-        if (count[1] === 0) return undefined;
-        const rows = known[gen].map((t) => `- ${modLine(a, t, registry)}`);
+    const lines: string[] = [];
+    for (const gen of ["prefix", "suffix"] as const) {
+        for (const t of known[gen]) lines.push(`${GEN_TAG[gen]} ${modLine(a, t, registry)}`);
+        // Disjunctive guarantees whose members are all this generation.
+        for (const d of disjunctions) {
+            if (d.every((t) => genOf(t) === gen)) {
+                lines.push(`${GEN_TAG[gen]} _at least one of:_ ${labels(d)}`);
+            }
+        }
+        // The remaining, undetermined slots of this generation (contents unknown).
+        const count = gen === "prefix" ? a.prefix : suffixRange(a);
         const undetHi = count[1] - known[gen].length;
         if (undetHi > 0) {
             const undetLo = Math.max(0, count[0] - known[gen].length);
-            const cands = possible[gen];
-            const more =
-                cands.length > 0 && cands.length <= POSSIBLE_LIMIT
-                    ? `possibly ${cands.map((t) => registry.typeLabel(t)).join(", ")}`
-                    : `any ${gen}`;
-            rows.push(`- _${fmtRange([undetLo, undetHi])} more — ${more}_`);
+            lines.push(`${GEN_TAG[gen]} _${fmtRange([undetLo, undetHi])} undetermined_`);
         }
-        return [`**${label}** — ${fmtRange(count)}`, "", ...rows].join("\n");
-    };
+    }
+    // Rare: a disjunction spanning both generations — no single tag.
+    for (const d of disjunctions) {
+        const g0 = genOf(d[0]!);
+        if (!d.every((t) => genOf(t) === g0)) lines.push(`_at least one of:_ ${labels(d)}`);
+    }
 
     const head = `**${a.base.name ?? a.base.id}** · ${RARITY_NAME[a.rarity] ?? a.rarity} · ilvl ${a.ilvl}`;
-    const total =
-        a.total[1] === 0
-            ? "_no modifiers_"
-            : `_${fmtRange(a.total)} ${a.total[0] === 1 && a.total[1] === 1 ? "modifier" : "modifiers"}_`;
-    return [
-        caption ? `_${caption}_` : undefined,
-        head,
-        total,
-        section("Prefixes", "prefix", a.prefix),
-        section("Suffixes", "suffix", suffixRange(a)),
-    ]
+    const body = lines.length > 0 ? lines.join("  \n") : "_no modifiers_";
+    return [caption ? `_${caption}_` : undefined, head, body]
         .filter((x): x is string => x !== undefined)
         .join("\n\n");
 }

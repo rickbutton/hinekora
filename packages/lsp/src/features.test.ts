@@ -66,12 +66,28 @@ until has "maximum life" t1 { exalt }`;
         expect(md!).toMatch(/prefix|suffix/); // its generation
     });
 
-    it("leads the tooltip with the total modifier count (coupling guard)", () => {
-        // After regal the item has exactly two modifiers; the tooltip must lead
-        // with "2 modifiers" so the coupled prefix/suffix ranges can't be misread.
-        const offset = SRC.indexOf("regal") + 1;
-        const md = getHover(SRC, offset, registry);
-        expect(md!).toContain("2 modifiers");
+    it("renders the state as a tagged, one-mod-per-line tooltip with resolved text", () => {
+        const src = `craft in poe1
+item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: ["maximum life"] suffixes: ["fire resistance"] }
+bench "cold resistance"`;
+        const md = getHover(src, src.indexOf("bench") + 1, registry);
+        expect(md).not.toBeNull();
+        expect(md!).toContain("(P)"); // prefix tag
+        expect(md!).toContain("(S)"); // suffix tag
+        expect(md!).toMatch(/maximum Life/); // resolved text, not the "maximum life" label
+        expect(md!).not.toMatch(/\bmodifiers\b/); // no total-count line
+    });
+
+    it("shows a disjunctive guarantee as 'at least one of'", () => {
+        const src = `craft in poe1
+item { base: "Titan Greaves" ilvl: 84 rarity: normal }
+until has "fire resistance" t1 or has "cold resistance" t1 or has "lightning resistance" t1 {
+  essence "greed" t1
+}`;
+        const md = getHover(src, src.indexOf("until") + 1, registry);
+        expect(md).not.toBeNull();
+        expect(md!).toContain("at least one of:");
+        expect(md!).toMatch(/fire resistance/);
     });
 
     it("returns null in dead space", () => {

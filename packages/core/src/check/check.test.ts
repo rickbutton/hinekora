@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
-import { excludedTypes, guaranteedTypes } from "./astate.js";
+import { disjunctiveGuarantees, excludedTypes, guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import {
     andp,
@@ -308,6 +308,19 @@ describe("checker — predicate defs", () => {
     it("reports an unknown def", () => {
         const c = craft("poe1", rareRing(), [until(call("nope", [tierArg(1)]), [op("chaos")])]);
         expect(check(c, ctx).diagnostics[0]?.message).toContain(`unknown def "nope"`);
+    });
+
+    it("tracks a disjunctive guarantee after `until has X or has Y`", () => {
+        // On exit, at least one of {life, fire-res} is present — neither alone is
+        // guaranteed, but their disjunction is (the presence BDD keeps the OR).
+        const c = craft("poe1", rareRing(), [
+            until(orp(has("IncreasedLife1"), has("FireResist1")), [op("chaos")]),
+        ]);
+        const r = check(c, ctx);
+        expect(guaranteedTypes(r.finalState!).size).toBe(0); // neither individually
+        const disj = disjunctiveGuarantees(r.finalState!);
+        expect(disj).toHaveLength(1);
+        expect(new Set(disj[0])).toEqual(new Set([LIFE_T1.type, FIRE_RESIST.type]));
     });
 
     it("reports an arity mismatch", () => {

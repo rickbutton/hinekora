@@ -22,4 +22,4 @@ item {
     suffixes: [ "fire resistance", "lightning resistance" ]
 }
 
-bench "lightning resistance"
+bench "cold resistance"
