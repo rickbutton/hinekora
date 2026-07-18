@@ -264,6 +264,24 @@ describe("checker — predicate defs", () => {
         expect(check(c, ctx).diagnostics[0]?.message).toContain("should be a tier/number");
     });
 
+    it("flags a parameter that is never used", () => {
+        const d = def("f", ["t", "unused"], hasP("IncreasedLife1", param("t")));
+        const c = craft("poe1", rareRing(), [until(call("f", [1, 1]), [op("chaos")])], [d]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain(`parameter "unused"`);
+    });
+
+    it("does not flag a param that is only passed through to a nested call", () => {
+        const inner = def("hasLife", ["t"], hasP("IncreasedLife1", param("t")));
+        const outer = def("viaLife", ["t"], call("hasLife", [param("t")]));
+        const c = craft(
+            "poe1",
+            rareRing(),
+            [until(call("viaLife", [1]), [op("chaos")])],
+            [inner, outer],
+        );
+        expect(check(c, ctx).diagnostics.some((x) => x.message.includes("never used"))).toBe(false);
+    });
+
     it("reports an unknown def", () => {
         const c = craft("poe1", rareRing(), [until(call("nope", [1]), [op("chaos")])]);
         expect(check(c, ctx).diagnostics[0]?.message).toContain(`unknown def "nope"`);

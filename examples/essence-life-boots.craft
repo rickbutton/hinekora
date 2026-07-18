@@ -25,6 +25,6 @@ def anyEleRes(t) =
     or has "cold resistance" t
     or has "lightning resistance" t
 
-until anyEleRes(1) {
+until anyEleRes(t1) {
     essence "greed" t1
 }

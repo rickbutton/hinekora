@@ -499,12 +499,17 @@ class Checker {
                 this.diag(`duplicate def "${def.name}"`, def.span);
                 continue;
             }
-            const { types, conflicts } = inferParamTypes(def);
+            const { types, conflicts, used } = inferParamTypes(def);
             for (const p of conflicts) {
                 this.diag(
                     `parameter "${p}" of "${def.name}" is used as both a tier and a mod`,
                     def.span,
                 );
+            }
+            for (const p of def.params) {
+                if (!used.has(p)) {
+                    this.diag(`parameter "${p}" of "${def.name}" is never used`, def.span);
+                }
             }
             this.defs.set(def.name, { def, paramTypes: types, valid: conflicts.length === 0 });
         }
@@ -642,14 +647,21 @@ type ParamType = "int" | "mod";
 /**
  * Infer each parameter's type from where it is used in the body: a `tier` or
  * count slot ⇒ `int`, a `has` target ⇒ `mod`. A param used as both is a
- * `conflict` (reported at the def). Unmentioned params stay unconstrained.
+ * `conflict` (reported at the def). Also tracks which params are USED anywhere
+ * (value slots AND pass-through call args), so an unused param can be flagged.
  */
-function inferParamTypes(def: Def): { types: Map<string, ParamType>; conflicts: string[] } {
+function inferParamTypes(def: Def): {
+    types: Map<string, ParamType>;
+    conflicts: string[];
+    used: Set<string>;
+} {
     const types = new Map<string, ParamType>();
     const conflicts = new Set<string>();
+    const used = new Set<string>();
     const params = new Set(def.params);
     const note = (ref: ParamRef, ty: ParamType): void => {
         if (!params.has(ref.param)) return; // not a param of this def; ignore
+        used.add(ref.param);
         const prev = types.get(ref.param);
         if (prev === undefined) types.set(ref.param, ty);
         else if (prev !== ty) conflicts.add(ref.param);
@@ -671,13 +683,17 @@ function inferParamTypes(def: Def): { types: Map<string, ParamType>; conflicts: 
                 walk(p.left);
                 walk(p.right);
                 return;
+            case "call":
+                // A pass-through param arg counts as a use (its type is enforced
+                // at the callee, so it contributes no local type constraint).
+                for (const arg of p.args) if (arg.kind === "param") used.add(arg.param);
+                return;
             case "isRarity":
-            case "call": // call args are literals — no params to attribute
                 return;
         }
     };
     walk(def.body);
-    return { types, conflicts: [...conflicts] };
+    return { types, conflicts: [...conflicts], used };
 }
 
 /** Replace parameter references in a def body with the bound argument values. */
