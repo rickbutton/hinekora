@@ -321,8 +321,11 @@ the op required." `describePred`, `resolveMessage` for other diagnostics.
 - **`bench "<mod>" [t1]`** — add a specific bench mod. `resolveBench(name, itemClass?, tier?)`
   scores the mod text (so "maximum life" beats "minions … life") and restricts to the item's
   class; multiple bench _tiers_ of one mod pick the best (or the tier given). Transfer = an
-  additive add in the mod's generation + `withGuaranteed`; precondition = open slot in that
-  gen (a Normal item, cap 0, naturally fails). NOT modelled: the one-crafted-mod limit.
+  additive add in the mod's generation + `withGuaranteed`; preconditions = (1) an open slot
+  in that gen (a Normal item, cap 0, naturally fails) and (2) **group exclusivity** — the
+  mod's family must be provably absent (`sharesFamilyWithPossible` vs `possible`, via the new
+  `registry.familiesOfType`), since an item holds one mod per group. NOT modelled: the
+  one-crafted-mod limit, and a conflict hidden behind an anonymous "random" affix (no type).
 - Editor: `bench "…"` completion (`benchNames`), hover (keyword/name/tier share one signature
   via the generalized `namedAt`), `bench` highlighted. Parser: extracted `tierShorthand`
   (now shared by `has`/`essence`/`bench`).

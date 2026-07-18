@@ -1,0 +1,25 @@
+# Finishing a craft at the bench.
+#
+# You've rolled a Rare ring you're happy with — a life prefix and two of the three
+# suffixes you want — leaving one open suffix slot. Rather than gamble an Exalted
+# Orb on hitting the last resistance, the crafting bench adds a *guaranteed*
+# modifier into that slot: here, a cold resistance.
+#
+# The checker proves TWO preconditions for the bench craft:
+#   - an open slot in the mod's generation (cold resistance is a suffix, and one
+#     suffix slot is free) — fill all three suffixes and it errors instead; and
+#   - no group conflict: the item mustn't already carry a mod of that group. Cold
+#     resistance is a new group here; benching "fire resistance" instead would be
+#     rejected, since this ring already has one (an item holds one mod per group).
+
+craft in poe1
+
+item {
+    base:     "Iron Ring"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum life" ]
+    suffixes: [ "fire resistance", "lightning resistance" ]
+}
+
+bench "cold resistance"

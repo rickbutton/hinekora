@@ -33,6 +33,7 @@ import {
 export type PreconditionFailure =
     | { readonly kind: "wrongRarity"; readonly needed: Rarity; readonly actual: Rarity }
     | { readonly kind: "noOpenSlot"; readonly gen?: Gen }
+    | { readonly kind: "modConflict"; readonly group: string }
     | { readonly kind: "nothingToRemove"; readonly gen?: Gen }
     | { readonly kind: "essenceRarity"; readonly tier: number; readonly actual: Rarity }
     | { readonly kind: "essenceClass"; readonly essence: string; readonly itemClass: ClassId };
@@ -194,17 +195,34 @@ function withGuaranteed(a: AItem, mod: Mod): AItem {
 
 /**
  * Apply a crafting-bench mod: add the specific `mod` (guaranteed, pinned to its
- * exact tier) in its generation. Precondition: an OPEN slot in that generation —
- * which a Normal item (cap 0) never has, so it naturally can't be benched. The
- * mod's class fit is enforced upstream by `resolveBench`. (The one-crafted-mod
- * limit is not modelled yet.)
+ * exact tier) in its generation. Preconditions: (1) an OPEN slot in that
+ * generation — which a Normal item (cap 0) never has, so it naturally can't be
+ * benched; (2) the mod's GROUP is not already (possibly) present, since an item
+ * holds at most one mod per group. The mod's class fit is enforced upstream by
+ * `resolveBench`. (The one-crafted-mod limit is not modelled yet.)
  */
-export function bench(a: AItem, mod: Mod): TransferResult {
+export function bench(a: AItem, mod: Mod, registry: Registry): TransferResult {
     if (!hasOpenSlot(a, mod.gen)) return fail({ kind: "noOpenSlot", gen: mod.gen });
+    // Group exclusivity: if any type that MAY be present shares a family with the
+    // bench mod, the item might already carry that group — so the add isn't
+    // provably safe. (An anonymous "random" affix carries no type, so a conflict
+    // hidden behind one is not caught — a known modelling gap.)
+    if (sharesFamilyWithPossible(a, mod, registry)) {
+        return fail({ kind: "modConflict", group: registry.typeLabel(mod.type) });
+    }
     // Additive: +1 in the mod's generation, then force it present & pinned.
     const total: Range = [a.total[0] + 1, a.total[1] + 1];
     const prefix: Range = mod.gen === "prefix" ? [a.prefix[0] + 1, a.prefix[1] + 1] : a.prefix;
     return ok(withGuaranteed({ ...a, total, prefix }, mod));
+}
+
+/** Does any possibly-present type share a family (mod group) with `mod`? */
+function sharesFamilyWithPossible(a: AItem, mod: Mod, registry: Registry): boolean {
+    for (const type of a.possible) {
+        const fams = registry.familiesOfType(type);
+        for (const f of mod.families) if (fams.has(f)) return true;
+    }
+    return false;
 }
 
 /**

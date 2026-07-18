@@ -288,7 +288,7 @@ class Checker {
             this.diag(resolveMessage(mod.error), stmt.span); // data-integrity; never expected
             return { kind: "fall", state: a };
         }
-        const result = bench(a, mod.value);
+        const result = bench(a, mod.value, this.registry);
         if (!result.ok) {
             this.diag(preconditionMessage(a, result.failure), stmt.span);
             return { kind: "fall", state: a };

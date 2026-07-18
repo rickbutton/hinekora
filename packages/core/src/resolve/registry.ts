@@ -14,7 +14,7 @@
  * ("maximum life"), not a tier id ("IncreasedLife5").
  */
 import type { Base } from "../model/base.js";
-import type { ClassId, Game, Gen, TypeId } from "../model/ids.js";
+import type { ClassId, Game, Gen, GroupId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import type { BenchCraft, EssenceSpec } from "../model/sources.js";
 import { buildTypeIndex, matchTypes, normalizeText } from "./fuzzy.js";
@@ -22,6 +22,9 @@ import { rollableTiers } from "./tiers.js";
 
 /** DSL tier (T1 = best) → catalog ladder level (Deafening = 7, Whispering = 1). */
 const ladderOf = (tier: number): number => 8 - tier;
+
+/** Shared empty result for `familiesOfType` on an unknown type. */
+const EMPTY_FAMILIES: ReadonlySet<GroupId> = new Set();
 
 /** A stat-description completion suggestion. */
 export interface StatSuggestion {
@@ -129,6 +132,12 @@ export interface Registry {
     resolveBench(name: string, itemClass?: ClassId, tier?: number): Resolved<BenchCraft>;
     /** The generation (prefix/suffix) a ModType always occupies, if known. */
     genOfType(type: TypeId): Gen | undefined;
+    /**
+     * The mod GROUPS (families) a ModType belongs to — the union across its tiers.
+     * Two mods conflict iff their family sets intersect (PoE allows at most one mod
+     * per group), so this drives the bench-craft group-exclusivity check.
+     */
+    familiesOfType(type: TypeId): ReadonlySet<GroupId>;
     /**
      * A human-readable label for a ModType — the canonical stat wording
      * (range-stripped, e.g. "maximum life"), for display in hover/diagnostics.
@@ -278,6 +287,14 @@ export function buildRegistry(data: RegistryData): Registry {
     const typeGen = new Map<TypeId, Gen>();
     for (const m of data.mods) if (!typeGen.has(m.type)) typeGen.set(m.type, m.gen);
 
+    // Union of families per ModType — the group set used for bench conflict checks.
+    const typeFamilies = new Map<TypeId, Set<GroupId>>();
+    for (const m of data.mods) {
+        let fams = typeFamilies.get(m.type);
+        if (!fams) typeFamilies.set(m.type, (fams = new Set()));
+        for (const f of m.families) fams.add(f);
+    }
+
     const typeIndex = buildTypeIndex(data.mods);
 
     // --- precompute completion lists ---
@@ -426,6 +443,10 @@ export function buildRegistry(data: RegistryData): Registry {
 
         genOfType(type) {
             return typeGen.get(type);
+        },
+
+        familiesOfType(type) {
+            return typeFamilies.get(type) ?? EMPTY_FAMILIES;
         },
 
         typeLabel(type) {

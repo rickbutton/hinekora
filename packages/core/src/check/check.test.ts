@@ -218,6 +218,13 @@ describe("checker — bench crafts", () => {
         const c = craft("poe1", rareRing(), [bench("nonexistent")]);
         expect(check(c, ctx).diagnostics[0]?.message).toContain("bench craft");
     });
+
+    it("rejects a bench craft whose group is already present (one mod per group)", () => {
+        // The ring already carries a life prefix; benching another life mod would
+        // be a second mod of the same group — impossible in-game.
+        const c = craft("poe1", rareRing(["IncreasedLife1"]), [bench("maximum life")]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("at most one per group");
+    });
 });
 
 describe("checker — predicate defs", () => {
