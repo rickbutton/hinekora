@@ -164,6 +164,14 @@ describe("parser — essence statement", () => {
             tier: 1,
         });
     });
+
+    it("parses a bench craft, with and without a tier", () => {
+        expect(bodyOf('bench "increased life"')).toMatchObject({
+            kind: "bench",
+            name: "increased life",
+        });
+        expect(bodyOf('bench "life" t2')).toMatchObject({ kind: "bench", name: "life", tier: 2 });
+    });
 });
 
 describe("parser — predicates", () => {

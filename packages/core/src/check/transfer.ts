@@ -193,6 +193,21 @@ function withGuaranteed(a: AItem, mod: Mod): AItem {
 }
 
 /**
+ * Apply a crafting-bench mod: add the specific `mod` (guaranteed, pinned to its
+ * exact tier) in its generation. Precondition: an OPEN slot in that generation —
+ * which a Normal item (cap 0) never has, so it naturally can't be benched. The
+ * mod's class fit is enforced upstream by `resolveBench`. (The one-crafted-mod
+ * limit is not modelled yet.)
+ */
+export function bench(a: AItem, mod: Mod): TransferResult {
+    if (!hasOpenSlot(a, mod.gen)) return fail({ kind: "noOpenSlot", gen: mod.gen });
+    // Additive: +1 in the mod's generation, then force it present & pinned.
+    const total: Range = [a.total[0] + 1, a.total[1] + 1];
+    const prefix: Range = mod.gen === "prefix" ? [a.prefix[0] + 1, a.prefix[1] + 1] : a.prefix;
+    return ok(withGuaranteed({ ...a, total, prefix }, mod));
+}
+
+/**
  * A REFORGE: discard every current mod and lay down a fresh set of the given
  * rarity and affix-count range. Nothing stays `guaranteed`; the base's full
  * add-pool becomes `possible` (with the tier overlay recording which specific

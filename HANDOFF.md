@@ -114,7 +114,7 @@ own tsconfig, does NOT extend the ESM base).
 ### Commands (run from anywhere; do not `cd`)
 
 ```
-pnpm -C c:/git/hinekora test           # vitest run — currently 216 passing
+pnpm -C c:/git/hinekora test           # vitest run — currently 222 passing
 pnpm -C c:/git/hinekora exec tsc -b    # typecheck + build all packages
 pnpm -C c:/git/hinekora lint           # eslint .
 pnpm -C c:/git/hinekora format         # prettier --write .
@@ -279,6 +279,20 @@ the op required." `describePred`, `resolveMessage` for other diagnostics.
 ---
 
 ## 7. Recent work (changelog, newest first)
+
+### Bench crafts + the `withGuaranteed` primitive
+
+- Extracted **`withGuaranteed(state, mod)`** (transfer.ts) — force a specific mod present
+  (presence, tier pin, possible, gen-count floor); essence now uses it, bench is built on it.
+- **`bench "<mod>" [t1]`** — add a specific bench mod. `resolveBench(name, itemClass?, tier?)`
+  scores the mod text (so "maximum life" beats "minions … life") and restricts to the item's
+  class; multiple bench _tiers_ of one mod pick the best (or the tier given). Transfer = an
+  additive add in the mod's generation + `withGuaranteed`; precondition = open slot in that
+  gen (a Normal item, cap 0, naturally fails). NOT modelled: the one-crafted-mod limit.
+- Editor: `bench "…"` completion (`benchNames`), hover (keyword/name/tier share one signature
+  via the generalized `namedAt`), `bench` highlighted. Parser: extracted `tierShorthand`
+  (now shared by `has`/`essence`/`bench`).
+- Perf: cached the empty-item pool per (base, ilvl) — hover 78ms → 4ms.
 
 ### Essences (first op that grows `guaranteed`)
 

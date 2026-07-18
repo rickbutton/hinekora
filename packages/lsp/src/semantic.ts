@@ -32,6 +32,7 @@ const KEYWORDS = new Set([
     "omen",
     "restart",
     "essence",
+    "bench",
     "has",
     "not",
     "and",

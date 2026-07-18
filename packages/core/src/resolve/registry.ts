@@ -14,9 +14,9 @@
  * ("maximum life"), not a tier id ("IncreasedLife5").
  */
 import type { Base } from "../model/base.js";
-import type { Game, Gen, TypeId } from "../model/ids.js";
+import type { ClassId, Game, Gen, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
-import type { EssenceSpec } from "../model/sources.js";
+import type { BenchCraft, EssenceSpec } from "../model/sources.js";
 import { buildTypeIndex, matchTypes, normalizeText } from "./fuzzy.js";
 import { rollableTiers } from "./tiers.js";
 
@@ -81,6 +81,7 @@ export type ResolveError =
     | { readonly kind: "unknownCurrency"; readonly name: string }
     | { readonly kind: "unknownOmen"; readonly name: string }
     | { readonly kind: "unknownEssence"; readonly name: string }
+    | { readonly kind: "unknownBench"; readonly name: string }
     | { readonly kind: "ambiguous"; readonly name: string; readonly candidates: readonly string[] };
 
 export type Resolved<T> =
@@ -118,6 +119,14 @@ export interface Registry {
      * `"greed"`), so the tier or a ladder prefix in the name disambiguates.
      */
     resolveEssence(name: string, tier?: number): Resolved<EssenceSpec>;
+    /**
+     * Resolve a crafting-bench craft by the mod it adds — `name` is a mod
+     * description ("increased life"), narrowed to crafts that apply to
+     * `itemClass`. Multiple bench tiers of the same mod pick the best (highest)
+     * by default, or the tier given (`t1` = best). Ambiguous only across distinct
+     * mod families.
+     */
+    resolveBench(name: string, itemClass?: ClassId, tier?: number): Resolved<BenchCraft>;
     /** The generation (prefix/suffix) a ModType always occupies, if known. */
     genOfType(type: TypeId): Gen | undefined;
     /**
@@ -138,6 +147,8 @@ export interface Registry {
     readonly statSuggestions: readonly StatSuggestion[];
     /** Full essence names, for `essence "…"` completion. */
     readonly essenceNames: readonly string[];
+    /** Distinct bench-mod descriptions, for `bench "…"` completion. */
+    readonly benchNames: readonly string[];
 }
 
 /**
@@ -221,6 +232,7 @@ export interface RegistryData {
     readonly currencies?: readonly CurrencySpec[];
     readonly omens?: readonly OmenSpec[];
     readonly essences?: readonly EssenceSpec[];
+    readonly benchCrafts?: readonly BenchCraft[];
 }
 
 /**
@@ -261,6 +273,7 @@ export function buildRegistry(data: RegistryData): Registry {
         (data.omens ?? STANDARD_OMENS).map((o) => [norm(o.name), o] as const),
     );
     const essences = data.essences ?? [];
+    const benchCrafts = data.benchCrafts ?? [];
 
     const typeGen = new Map<TypeId, Gen>();
     for (const m of data.mods) if (!typeGen.has(m.type)) typeGen.set(m.type, m.gen);
@@ -290,6 +303,15 @@ export function buildRegistry(data: RegistryData): Registry {
         baseNames,
         statSuggestions,
         essenceNames: essences.map((e) => e.name),
+        benchNames: [
+            ...new Set(
+                benchCrafts
+                    .map((c) => modById.get(norm(c.mod))?.text)
+                    .filter((t): t is string => t !== undefined)
+                    .map((t) => normalizeText(t).join(" "))
+                    .filter((t) => t.length > 0),
+            ),
+        ],
 
         resolveBase(name) {
             const key = norm(name);
@@ -365,6 +387,41 @@ export function buildRegistry(data: RegistryData): Registry {
             if (matches.length === 1) return found(matches[0]!);
             if (matches.length === 0) return fail({ kind: "unknownEssence", name });
             return fail({ kind: "ambiguous", name, candidates: matches.map((e) => e.name) });
+        },
+
+        resolveBench(name, itemClass, tier) {
+            const q = normalizeText(name);
+            if (q.length === 0) return fail({ kind: "unknownBench", name });
+            // Bench crafts are keyed by the mod they add. Match the mod's text and
+            // (when known) restrict to crafts that apply to the item's class,
+            // SCORING each by how tightly the query covers the wording — so
+            // "maximum life" prefers the flat life mod over "minions have … life".
+            const scored: { craft: BenchCraft; mod: Mod; score: number }[] = [];
+            for (const craft of benchCrafts) {
+                if (itemClass !== undefined && !craft.itemClasses.has(itemClass)) continue;
+                const mod = modById.get(norm(craft.mod));
+                if (!mod?.text) continue;
+                const tokens = new Set(normalizeText(mod.text));
+                if (q.every((w) => tokens.has(w))) {
+                    scored.push({ craft, mod, score: q.length / tokens.size });
+                }
+            }
+            if (scored.length === 0) return fail({ kind: "unknownBench", name });
+            const top = Math.max(...scored.map((s) => s.score));
+            const best = scored.filter((s) => s.score === top);
+            // Genuine ambiguity is across mod FAMILIES; multiple bench tiers of one
+            // mod are not — pick the best (highest bench tier), or the tier given.
+            const types = new Set(best.map((s) => s.mod.type));
+            if (types.size > 1) {
+                return fail({
+                    kind: "ambiguous",
+                    name,
+                    candidates: [...new Set(best.map((s) => s.mod.text ?? ""))],
+                });
+            }
+            const sorted = best.sort((a, b) => b.craft.tier - a.craft.tier);
+            const pick = tier === undefined ? sorted[0] : sorted[tier - 1];
+            return pick ? found(pick.craft) : fail({ kind: "unknownBench", name });
         },
 
         genOfType(type) {

@@ -43,6 +43,7 @@ import {
     alteration,
     annul,
     augment,
+    bench,
     chaos,
     essence,
     exalt,
@@ -239,6 +240,8 @@ class Checker {
                 return this.checkOp(a, stmt);
             case "essence":
                 return this.checkEssence(a, stmt);
+            case "bench":
+                return this.checkBench(a, stmt);
             case "restart":
                 return { kind: "restart" };
             case "until":
@@ -257,6 +260,25 @@ class Checker {
             return { kind: "fall", state: a };
         }
         const result = essence(a, spec.value, this.registry);
+        if (!result.ok) {
+            this.diag(preconditionMessage(a, result.failure), stmt.span);
+            return { kind: "fall", state: a };
+        }
+        return { kind: "fall", state: result.state };
+    }
+
+    private checkBench(a: AItem, stmt: Extract<Stmt, { kind: "bench" }>): Flow {
+        const craft = this.registry.resolveBench(stmt.name, a.base.itemClass, stmt.tier);
+        if (!craft.ok) {
+            this.diag(resolveMessage(craft.error), stmt.span);
+            return { kind: "fall", state: a };
+        }
+        const mod = this.registry.resolveMod(craft.value.mod);
+        if (!mod.ok) {
+            this.diag(resolveMessage(mod.error), stmt.span); // data-integrity; never expected
+            return { kind: "fall", state: a };
+        }
+        const result = bench(a, mod.value);
         if (!result.ok) {
             this.diag(preconditionMessage(a, result.failure), stmt.span);
             return { kind: "fall", state: a };

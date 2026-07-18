@@ -32,6 +32,14 @@ describe("hover", () => {
         expect(md!).toMatch(/Guarantees/);
     });
 
+    it("hovers a bench mod with what it adds and its generation", () => {
+        const src = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nbench "maximum life"`;
+        const md = getHover(src, src.indexOf("maximum life") + 1, registry);
+        expect(md).not.toBeNull();
+        expect(md!).toContain("bench craft");
+        expect(md!).toMatch(/prefix|suffix/);
+    });
+
     it("resolves a mod string to its ModType signature", () => {
         const src = `craft in poe1
 item { base: "Iron Ring" ilvl: 84 rarity: rare }
@@ -90,6 +98,12 @@ describe("completion", () => {
         const labels = getCompletions(src, src.length, registry).map((c) => c.label);
         expect(labels).toContain("Deafening Essence of Greed");
         expect(labels).not.toContain("maximum life"); // not mod suggestions
+    });
+
+    it('offers bench mod names inside a `bench "` string', () => {
+        const src = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nbench "`;
+        const labels = getCompletions(src, src.length, registry).map((c) => c.label);
+        expect(labels).toContain("maximum life");
     });
 
     it("offers stat descriptions inside a has string", () => {

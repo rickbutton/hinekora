@@ -85,33 +85,34 @@ function stringIsBase(tokens: readonly Token[], i: number): boolean {
 }
 
 /**
- * If the token at `i` belongs to an `essence "<name>" [t1]` statement — the
- * `essence` keyword, the name string, OR the `t1` tier — return that essence's
- * (name, tier). All three tokens then share one hover.
+ * If the token at `i` belongs to a `<keyword> "<name>" [t1]` statement — the
+ * keyword, the name string, OR the `t1` tier — return that (name, tier). All
+ * three tokens then share one hover. Shared by `essence` and `bench`.
  */
-function essenceAt(
+function namedAt(
     tokens: readonly Token[],
     i: number,
+    keyword: string,
 ): { name: string; tier: number | undefined } | undefined {
     const tok = tokens[i];
     if (!tok) return undefined;
-    // The `essence` keyword: the name is the following string.
-    if (tok.kind === "ident" && tok.text === "essence") {
+    // The keyword: the name is the following string.
+    if (tok.kind === "ident" && tok.text === keyword) {
         const nameTok = tokens[i + 1];
         return nameTok?.kind === "string"
             ? { name: nameTok.text, tier: tierAfter(tokens, i + 1) }
             : undefined;
     }
-    // The name string, directly after `essence`.
+    // The name string, directly after the keyword.
     const kw = tokens[i - 1];
-    if (tok.kind === "string" && kw?.kind === "ident" && kw.text === "essence") {
+    if (tok.kind === "string" && kw?.kind === "ident" && kw.text === keyword) {
         return { name: tok.text, tier: tierAfter(tokens, i) };
     }
-    // The `t1` tier, after `essence "<name>"`.
+    // The `t1` tier, after `<keyword> "<name>"`.
     const m = tok.kind === "ident" ? /^t(\d+)$/i.exec(tok.text) : null;
     const str = tokens[i - 1];
-    const essKw = tokens[i - 2];
-    if (m && str?.kind === "string" && essKw?.kind === "ident" && essKw.text === "essence") {
+    const opKw = tokens[i - 2];
+    if (m && str?.kind === "string" && opKw?.kind === "ident" && opKw.text === keyword) {
         return { name: str.text, tier: Number(m[1]) };
     }
     return undefined;
@@ -169,10 +170,12 @@ function signature(
 ): string | null {
     const tok = tokens[i]!;
 
-    // `essence "<name>" [t1]` — the keyword, the name, and the tier all hover as
-    // the same essence signature.
-    const ess = essenceAt(tokens, i);
+    // `essence`/`bench "<name>" [t1]` — the keyword, name, and tier tokens all
+    // hover as one signature.
+    const ess = namedAt(tokens, i, "essence");
     if (ess) return essenceSignature(ess.name, ess.tier, entry, registry);
+    const bch = namedAt(tokens, i, "bench");
+    if (bch) return benchSignature(bch.name, bch.tier, entry, registry);
 
     if (tok.kind === "ident") {
         // A `t1` tier shorthand hovers exactly like the mod string it qualifies.
@@ -324,6 +327,28 @@ function essenceSignature(
         );
     }
     return blocks.join("\n\n");
+}
+
+/** The signature for a bench-craft mod: what it adds (with generation), on this base. */
+function benchSignature(
+    text: string,
+    tier: number | undefined,
+    entry: TraceEntry | undefined,
+    registry: Registry,
+): string {
+    const res = registry.resolveBench(text, entry?.before.base.itemClass, tier);
+    if (!res.ok) {
+        return res.error.kind === "ambiguous"
+            ? `**"${text}"** — ambiguous bench mod (${res.error.candidates.length} match; be more specific).`
+            : `**"${text}"** — no bench craft adds this here.`;
+    }
+    const mod = registry.resolveMod(res.value.mod);
+    if (!mod.ok) return "**bench craft** — adds a guaranteed mod.";
+    const m = mod.value;
+    return [
+        `**bench craft** — ${m.text ?? "a mod"}`,
+        `Adds this as a guaranteed **${m.gen}** (requires an open ${m.gen} slot).`,
+    ].join("\n\n");
 }
 
 export function getHover(source: string, offset: number, registry: Registry): string | null {

@@ -44,7 +44,8 @@ export interface ItemBlock {
 
 // --- Statements (surface §3–§4) -------------------------------------------
 
-export type Stmt = OpStmt | EssenceStmt | RestartStmt | UntilStmt | IfStmt | WithOmenStmt;
+export type Stmt =
+    OpStmt | EssenceStmt | BenchStmt | RestartStmt | UntilStmt | IfStmt | WithOmenStmt;
 
 /** A currency/operation line — a single (still-unresolved) currency name. */
 export interface OpStmt {
@@ -60,6 +61,18 @@ export interface OpStmt {
  */
 export interface EssenceStmt {
     readonly kind: "essence";
+    readonly name: string;
+    readonly tier?: number;
+    readonly span: SourceSpan;
+}
+
+/**
+ * `bench "<mod>" [t1]` — add a specific crafting-bench mod. `name` is a mod
+ * description ("increased life"); an optional `tier` picks the bench tier
+ * (`t1` = best). Resolution (to a `BenchCraft`) and semantics are the checker's.
+ */
+export interface BenchStmt {
+    readonly kind: "bench";
     readonly name: string;
     readonly tier?: number;
     readonly span: SourceSpan;

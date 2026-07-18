@@ -127,6 +127,7 @@ export const LIFE_T1: Mod = mkMod({
     minLevel: 60,
     families: ["Life"],
     spawn: [spawn(TAG_DEFAULT, known(1000))],
+    text: "+(70-84) to maximum Life",
 });
 
 /** "increased Life", T2 — low tier, gated at ilvl 30. SAME ModType as T1. */

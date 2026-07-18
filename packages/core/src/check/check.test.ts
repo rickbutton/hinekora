@@ -4,6 +4,7 @@ import { excludedTypes, guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import {
     andp,
+    bench,
     craft,
     cmp,
     essence,
@@ -25,7 +26,10 @@ import {
     LIFE_T1,
     RING_BASE,
 } from "../__fixtures__/mods.js";
-import type { EssenceSpec } from "../model/sources.js";
+import type { BenchCraft, EssenceSpec } from "../model/sources.js";
+
+// A fixture bench craft that adds T1 life (a prefix) on a Ring.
+const BENCH_LIFE: BenchCraft = { mod: LIFE_T1.id, tier: 1, itemClasses: new Set([CLASS_RING]) };
 
 // Two fixture essences, both granting T1 life on a Ring: Deafening (ladder 7, so
 // it reforges Rare too) and Muttering (ladder 2, Normal-only).
@@ -48,6 +52,7 @@ const registry = buildRegistry({
     modAliases: { "T1 Life": "IncreasedLife1" },
     baseAliases: { "Iron Ring": "IronRing" },
     essences: [ESS_DEAFENING, ESS_MUTTERING],
+    benchCrafts: [BENCH_LIFE],
 });
 const ctx: CheckContext = { registry };
 
@@ -188,6 +193,25 @@ describe("checker — essences", () => {
     it("reports an unknown essence", () => {
         const c = craft("poe1", normalRing(), [essence("Bogus Essence of Nothing")]);
         expect(check(c, ctx).diagnostics[0]?.message).toContain("Unknown essence");
+    });
+});
+
+describe("checker — bench crafts", () => {
+    it("adds a guaranteed mod into its open slot", () => {
+        const r = check(craft("poe1", rareRing(), [bench("maximum life")]), ctx);
+        expect(r.ok).toBe(true);
+        expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
+    });
+
+    it("rejects a bench craft when its generation is full", () => {
+        // Life is a prefix; a 3-prefix Rare has no open prefix.
+        const c = craft("poe1", rareRing(["random", "random", "random"]), [bench("maximum life")]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("open prefix slot");
+    });
+
+    it("reports an unresolvable bench mod", () => {
+        const c = craft("poe1", rareRing(), [bench("nonexistent")]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("bench craft");
     });
 });
 

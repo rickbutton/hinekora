@@ -111,6 +111,8 @@ export function resolveMessage(error: ResolveError): string {
             return `Unknown omen "${error.name}".`;
         case "unknownEssence":
             return `Unknown essence "${error.name}".`;
+        case "unknownBench":
+            return `No bench craft adds "${error.name}" to this item.`;
         case "ambiguous":
             return `Ambiguous name "${error.name}" — candidates: ${error.candidates.join(", ")}.`;
     }

@@ -12,6 +12,7 @@
  * a `ParseResult` at the `parse` boundary.
  */
 import {
+    type BenchStmt,
     type Cmp,
     type Craft,
     type EssenceStmt,
@@ -265,6 +266,7 @@ class Parser {
         if (this.atKeyword("if")) return this.parseIf();
         if (this.atKeyword("with")) return this.parseWith();
         if (this.atKeyword("essence")) return this.parseEssence();
+        if (this.atKeyword("bench")) return this.parseBench();
         if (this.atKeyword("restart")) {
             const t = this.advance();
             return { kind: "restart", span: t.span };
@@ -294,21 +296,35 @@ class Parser {
         return { kind: "withOmen", omen, body, span: span(start, this.prev.span.end) };
     }
 
+    /** An optional `t1` tier shorthand: consumes and returns the number, else undefined. */
+    private tierShorthand(): number | undefined {
+        const tok = this.peek();
+        const m = tok.kind === "ident" ? /^t(\d+)$/i.exec(tok.text) : null;
+        if (!m) return undefined;
+        this.advance();
+        return Number(m[1]);
+    }
+
     private parseEssence(): EssenceStmt {
         const start = this.expectKeyword("essence").span.start;
         const nameTok = this.expect("string", "a quoted essence name after 'essence'");
-        // Optional `t1` tier shorthand (T1 = best), same form as on `has`.
-        let tier: number | undefined;
-        let end = nameTok.span.end;
-        const short = this.peek();
-        const m = short.kind === "ident" ? /^t(\d+)$/i.exec(short.text) : null;
-        if (m) {
-            this.advance();
-            tier = Number(m[1]);
-            end = short.span.end;
-        }
+        const tier = this.tierShorthand();
+        const end = tier !== undefined ? this.prev.span.end : nameTok.span.end;
         return {
             kind: "essence",
+            name: nameTok.text,
+            ...(tier !== undefined && { tier }),
+            span: span(start, end),
+        };
+    }
+
+    private parseBench(): BenchStmt {
+        const start = this.expectKeyword("bench").span.start;
+        const nameTok = this.expect("string", "a quoted mod name after 'bench'");
+        const tier = this.tierShorthand();
+        const end = tier !== undefined ? this.prev.span.end : nameTok.span.end;
+        return {
+            kind: "bench",
             name: nameTok.text,
             ...(tier !== undefined && { tier }),
             span: span(start, end),
@@ -389,16 +405,9 @@ class Parser {
         if (t.text === "has") {
             this.advance();
             const modTok = this.expect("string", "a quoted mod name after 'has'");
-            // Optional tier qualifier `t1`: a single `t<digits>` ident, T1 = best.
-            let tier: number | undefined;
-            let end = modTok.span.end;
-            const short = this.peek();
-            const m = short.kind === "ident" ? /^t(\d+)$/i.exec(short.text) : null;
-            if (m) {
-                this.advance();
-                tier = Number(m[1]);
-                end = short.span.end;
-            }
+            // Optional tier qualifier `t1` (T1 = best).
+            const tier = this.tierShorthand();
+            const end = tier !== undefined ? this.prev.span.end : modTok.span.end;
             return {
                 kind: "has",
                 mod: modTok.text,
