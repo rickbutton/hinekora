@@ -1,23 +1,12 @@
 /**
- * The base currency library (typing rules §4.1–4.4) — the four operations that
- * are identical in both games (`g` free), so they live in a shared module both
- * PoE1 and PoE2 re-export. Game-specific currencies (chaos, essence, …) come
- * later, in per-game modules.
+ * The base currency library (typing rules §4.1–4.4): transmute, regal, exalt,
+ * annul — the four ops shared by both games.
  *
- *   transmute  Normal → Magic, add one           (§4.1)
- *   regal      Magic  → Rare,  add one           (§4.2)
- *   exalt      Rare,          add one into a slot (§4.3)
- *   annul      Rare,          remove one at random (§4.4)
- *
- * A NOTE ON `pool` AND RARITY PROMOTION (a deliberate reading of §4.1/§4.2).
- * The rules write the after-union as a sum over `pool it`, but for transmute
- * `it` is Normal (0 slot caps) and for regal `it` is Magic (1/1 caps) — while
- * the mod actually lands on the *promoted* item (Magic 1/1, Rare 3/3). Drawing
- * the pool against the un-promoted rarity would wrongly yield an empty set (a
- * Normal item has no open slots at all). So each add-op PROMOTES rarity first,
- * then draws `pool` against the promoted item. The present-set and collisions
- * are unchanged by promotion; only the slot caps open up, which is exactly the
- * intent. `AddOne.base` therefore already carries the result rarity.
+ * Rarity promotion note: each add-op promotes rarity FIRST, then draws `pool`
+ * against the promoted item. Drawing against the un-promoted rarity would
+ * wrongly yield an empty pool (a Normal item has no open slots); promotion only
+ * opens the slot caps, leaving the present-set and collisions unchanged. So
+ * `AddOne.base` already carries the result rarity.
  */
 import type { Item } from "../model/item.js";
 import { removable } from "../model/effects.js";
@@ -61,8 +50,8 @@ export const exalt: Operation = (ctx, it) => {
     if (it.rarity !== "rare") {
         return err({ kind: "wrongRarity", needed: "rare", actual: it.rarity });
     }
-    // p + s < 6: the refinement that makes "exalt a full item" a precondition
-    // error. `pool` still enforces the per-generation slot caps.
+    // `pool` still enforces the per-generation slot caps; this makes "exalt a
+    // full item" its own precondition error.
     if (it.prefixes.length + it.suffixes.length >= 6) {
         return err({
             kind: "noOpenSlot",

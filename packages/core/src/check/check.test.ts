@@ -378,8 +378,8 @@ describe("checker — predicate defs", () => {
         const d = def("weird", ["x"], orp(hasP(param("x")), hasP("IncreasedLife1", param("x"))));
         const c = craft("poe1", rareRing(), [until(call("weird", ["life"]), [op("chaos")])], [d]);
         const msgs = check(c, ctx).diagnostics.map((x) => x.message);
-        expect(msgs.some((m) => m.includes("conflicting sorts"))).toBe(true);
-        expect(msgs.some((m) => m.includes("unbound parameter"))).toBe(false);
+        expect(msgs.some((m) => m.includes("used in conflicting ways"))).toBe(true);
+        expect(msgs.some((m) => m.includes("never given a value"))).toBe(false);
     });
 });
 

@@ -1,15 +1,7 @@
 /**
- * Tokens — the lexer's output alphabet.
- *
- * The surface language is brace-delimited and whitespace-insignificant (C-style
- * blocks), so there are NO layout tokens: newlines, tabs, and spaces are trivia
- * the lexer discards. Blocks are delimited by `{ }` and statements are
- * self-delimiting, so nothing structural rides on whitespace.
- *
- * There is also no separate "keyword" token kind: every word lexes as `ident`
- * and the PARSER decides, by text, whether it is a keyword (`until`, `has`,
- * `isRare`, …) or a currency name (`exalt`). This keeps the lexer tiny and puts
- * all vocabulary knowledge in one place.
+ * Tokens — the lexer's output alphabet. No layout tokens (whitespace is
+ * trivia) and no keyword kind: every word lexes as `ident` and the parser
+ * decides by text, keeping all vocabulary knowledge in one place.
  */
 import type { SourceSpan } from "@hinekora/core";
 

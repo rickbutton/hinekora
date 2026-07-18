@@ -1,10 +1,7 @@
 /**
- * The end-to-end check: source text → parse → check → formatted output.
- *
- * This is the pure heart of the CLI (no file I/O, no process): given a craft's
- * source, a filename (for messages), and a resolved `Registry`, it runs the
- * whole pipeline and returns the text to print plus whether it passed. The
- * `cli` shell adds file reading, data loading, and exit codes.
+ * The end-to-end check, pure (no I/O): source → parse → check → the text to
+ * print plus whether it passed. The `cli` shell adds file reading, data
+ * loading, and exit codes.
  */
 import { check, type Registry, renderState } from "@hinekora/core";
 import { parse } from "@hinekora/parser";

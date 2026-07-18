@@ -32,9 +32,8 @@ only ever surface as a plain rendering of the item's current state.
 
 ## 0.1 Concrete syntax finalized (v0 parser)
 
-The brief (§7) left the header/item-block casing and block style open "to
-finalize as the parser is written". Finalized decisions, reflected in every
-example below:
+The header/item-block casing and block style were left open "to finalize as the
+parser is written". Finalized decisions, reflected in every example below:
 
 - **`craft in <game>` is a top-level declaration.** It must come first, before
   anything else; the item block and the statement body then follow directly at
@@ -129,6 +128,13 @@ exalt
 A complete, type-checked program. No types written. Each op's precondition is
 checked against the inferred current state; a failure renders the state (§6).
 
+Two operations take a name (and an optional `t<n>` tier, T1 = best):
+
+- `essence "<name>" [t1]` — apply an essence: a full name
+  (`"Deafening Essence of Greed"`) or a type + tier (`essence "greed" t1`).
+- `bench "<mod>" [t1]` — add a specific crafting-bench mod, named by the mod it
+  adds (`bench "maximum life"`).
+
 ---
 
 ## 4. Control constructs
@@ -213,22 +219,29 @@ This reads like expressions in any language and is trivial to lex/parse.
 
 ```
 pred := isRare | isMagic | isNormal      # niladic predicate symbols (bool)
-      | has "<mod>" (tier <int>)?          # presence of a mod (optionally at a tier)
+      | has "<mod>" (t<n>)?                # presence of a mod (optionally at a tier)
       | <proj> <cmp> <int>                 # relational expression (bool)
       | not <pred>                         # general negation (composes with all)
+      | <pred> and <pred>                  # conjunction (binds tighter than or)
+      | <pred> or <pred>                   # disjunction
+      | ( <pred> )                         # grouping
+      | <name>(<arg>, …)                   # call a local def (§5.1)
 
 proj := prefixCount | suffixCount          # projection symbols (yield a number)
 cmp  := == | != | < | <= | > | >=
 ```
 
+Precedence, loosest first: `or` < `and` < `not` < atom; binary operators are
+left-associative.
+
 **Mod names + tiers.** `"<mod>"` is a human stat description (`"maximum life"`,
-`"fire resistance"`), fuzzy-matched to a ModType (surface §2). Because every
+`"fire resistance"`), fuzzy-matched to a ModType (§2). Because every
 tier of a mod shares the same wording and differs only in the numbers, the match
 lands on the *type* (the family). `has "maximum life"` means "any tier of
-maximum life is present". An optional `tier <int>` qualifier (T1 = the best tier
+maximum life is present". An optional `t<n>` qualifier (T1 = the best tier
 that can roll on this base at this ilvl) narrows to a specific tier:
-`has "maximum life" tier 1`. Tiers are derived per-base from the actual roll
-pool, so `tier 1` on a ring differs from `tier 1` on body armour, and asking for
+`has "maximum life" t1`. Tiers are derived per-base from the actual roll
+pool, so `t1` on a ring differs from `t1` on body armour, and asking for
 a tier that can't roll here is an error. The checker tracks tiers through
 operations, so a mod narrowed to T1 is provably not T2.
 
@@ -248,11 +261,25 @@ Examples:
 
 ```
 isRare
-has "T1 Life"
+has "maximum life" t1
 not has "+1 Suffix Modifier"
 prefixCount == 3
 suffixCount < 2
 not (prefixCount == 3)
+has "fire res" t1 or has "cold res" t1
+```
+
+### 5.1 Predicate defs
+
+`def name(params) = <pred>` declares a local, parameterized, pure predicate,
+usable wherever a predicate is (`until anyEleRes(1)`). Defs may appear anywhere
+at file scope. Parameter sorts are inferred from use — a tier slot, a count
+slot, or a mod-name slot; the three are distinct (`t1` is not the number `1`),
+and a parameter used in conflicting ways is an error. Parameters may be
+forwarded to nested calls; recursion is rejected.
+
+```
+def anyEleRes(t) = has "fire res" t or has "cold res" t or has "lightning res" t
 ```
 
 ---
@@ -287,17 +314,10 @@ Error categories:
 
 ## 7. Deferred / future (surface)
 
-- **Multi-item crafts**: recombination, PoE1 orbs that destroy one item to move
-  a mod onto another. Needs multiple named item contexts threaded at once. Most
-  crafts are single-item; this is an optional extension, not core.
-- **English negation spellings** (`doesn't have`, `isn't`): sugar over `not`.
-- **"Omen next op only"** sugar over `with omen`.
-- **Power-user annotation tier**: explicit indexed signatures for authoring
-  reusable composite techniques for the standard/community library (e.g. a
-  parametric `forceModThenProtect<M>`). Opt-in; NOT the default surface. Most
-  users never touch it.
-- **Cost / expected-attempts model**: layered over loops and omen usage;
-  separate from the type system, which only checks per-op logic.
+See `HANDOFF.md` §6 ("Pending / possible next work") — the single list of
+deferred and future work, including the surface-level sugar (English negation
+spellings, "omen next op only", multi-item crafts, the power-user annotation
+tier) and the cost/expected-attempts model.
 
 ---
 

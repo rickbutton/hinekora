@@ -1,16 +1,9 @@
 /**
- * Currency transfer functions over the abstract state (brief §5).
- *
- * Each operation is a function `AItem → (AItem | precondition failure)`. These
- * are the abstract counterparts of the concrete currency library (§4 typing
- * rules / the M2 `currency` module): where M2 produced a symbolic `Outcome` from
- * a concrete item, these fold that outcome's *summary* straight into the
- * threaded `AItem`, so the checker never holds a concrete item or an enumerated
- * union.
- *
- * `forcedGen` is set by an active omen (§10.2): it constrains an add/remove to a
- * single generation, which both tightens the counts and changes which
- * guarantees survive.
+ * Currency transfer functions: each operation is `AItem → (AItem | precondition
+ * failure)`, folding the op's outcome summary straight into the abstract state
+ * — the checker never holds a concrete item or an enumerated union. `forcedGen`
+ * (set by an active omen) constrains an add/remove to one generation, which
+ * tightens counts and changes which guarantees survive.
  */
 import type { ClassId, Gen, ModId, Rarity, TypeId } from "../model/ids.js";
 import type { Item } from "../model/item.js";
@@ -65,9 +58,8 @@ export function exalt(a: AItem, forcedGen: Gen | undefined, registry: Registry):
 }
 
 export function annul(a: AItem, forcedGen: Gen | undefined, registry: Registry): TransferResult {
-    // Annulment works on any item with a removable mod — Magic OR Rare. There is
-    // no rarity gate: a Normal item has no mods, so `hasRemovable` fails for it
-    // with the accurate "nothing to remove" reason on its own.
+    // No rarity gate — annul works on anything with a removable mod, and a
+    // Normal item already fails `hasRemovable` with the accurate reason.
     if (!hasRemovable(a, forcedGen))
         return fail({ kind: "nothingToRemove", ...(forcedGen && { gen: forcedGen }) });
     return ok(removeOne(a, forcedGen, registry));
@@ -78,11 +70,9 @@ const wrongRarity = (needed: Rarity, actual: Rarity): TransferResult =>
 
 // --- the other common currencies ------------------------------------------
 //
-// These reuse the same two primitives as the base four — an ADDITIVE add
-// (`addOne`) and a REFORGE (`reroll`, below) — so nothing here enumerates
-// outcomes; each folds into the same symbolic summary. Semantics are hand-
-// modelled (the intent, from the game descriptions); the currency catalog only
-// supplies display text.
+// All ops reduce to two primitives: an ADDITIVE add (`addOne`) and a REFORGE
+// (`reroll`). Semantics are hand-modelled; the currency catalog only supplies
+// display text.
 
 /** Orb of Augmentation: add a mod to a Magic item (needs an open slot). */
 export function augment(a: AItem, registry: Registry): TransferResult {
@@ -109,11 +99,8 @@ export function chaos(a: AItem, registry: Registry): TransferResult {
     return ok(reroll(a, "rare", [4, 6], registry));
 }
 
-/**
- * Orb of Scouring: strip every mod, returning the item to Normal. Precondition
- * is "has a removable mod" (`nothingToRemove` otherwise) — scouring an item with
- * no mods is wasted currency, which is exactly what the checker exists to catch.
- */
+/** Orb of Scouring: strip every mod, returning the item to Normal. Scouring an
+ *  item with no mods is wasted currency, so that fails the precondition. */
 export function scour(a: AItem): TransferResult {
     if (!hasRemovable(a, undefined)) return fail({ kind: "nothingToRemove" });
     const next: AItem = {
@@ -129,11 +116,11 @@ export function scour(a: AItem): TransferResult {
 }
 
 /**
- * Apply an essence: reforge to Rare with one GUARANTEED mod (fixed per item
- * class) plus a random fill. Preconditions: **Normal** always, **Rare** only for
- * ladder tier ≥ 5, **never Magic**; the essence must cover the item's class.
- * There is NO item-level gate — the guaranteed mod is forced at its fixed tier
- * regardless of ilvl. This is the first op that grows `guaranteed`.
+ * Apply an essence: reforge to Rare with one guaranteed mod (fixed per item
+ * class) plus a random fill. Preconditions: Normal always, Rare only for ladder
+ * tier ≥ 5, never Magic; the essence must cover the item's class. There is no
+ * item-level gate — the guaranteed mod lands at its fixed tier regardless of
+ * ilvl; only the random fill respects level caps.
  */
 export function essence(a: AItem, spec: EssenceSpec, registry: Registry): TransferResult {
     if (a.rarity === "magic" || (a.rarity === "rare" && spec.tier < 5)) {
@@ -145,8 +132,8 @@ export function essence(a: AItem, spec: EssenceSpec, registry: Registry): Transf
         return fail({ kind: "essenceClass", essence: spec.name, itemClass: a.base.itemClass });
     }
 
-    // Reforge to a full Rare (4–6 mods) — the RANDOM fill — from the normal pool,
-    // capped by BOTH the item level and the essence's max random-mod level.
+    // The random fill: reforge to a full Rare (4–6 mods) from the normal pool,
+    // capped by both the item level and the essence's max random-mod level.
     const cap = rarityCap("rare");
     const total: Range = [4, 2 * cap];
     const fillCap = Math.min(a.ilvl, spec.maxRandomModLevel ?? Infinity);
@@ -169,16 +156,13 @@ export function essence(a: AItem, spec: EssenceSpec, registry: Registry): Transf
         possible,
         tiers,
     };
-    // …then FORCE the essence's guaranteed mod present, pinned to its exact tier.
     return ok(withGuaranteed(reforged, guaranteedMod));
 }
 
 /**
- * Force a SPECIFIC mod present on a state: it becomes guaranteed (`presence`),
- * pinned to that exact tier (the overlay), added to `possible`, and its
- * generation gets ≥ 1 affix (and total ≥ 1). The total count is the caller's to
- * set — an essence reforges to a range first; a bench add bumps it by one.
- * Shared by `essence()` and `bench()`.
+ * Force a specific mod present: guaranteed, pinned to its exact tier, in
+ * `possible`, with ≥1 affix in its generation. The total count is the caller's
+ * to set (essence reforges to a range first; bench bumps by one).
  */
 function withGuaranteed(a: AItem, mod: Mod): AItem {
     const presence = a.bdd.and(a.presence, a.bdd.variable(mod.type));
@@ -194,23 +178,20 @@ function withGuaranteed(a: AItem, mod: Mod): AItem {
 }
 
 /**
- * Apply a crafting-bench mod: add the specific `mod` (guaranteed, pinned to its
- * exact tier) in its generation. Preconditions: (1) an OPEN slot in that
- * generation — which a Normal item (cap 0) never has, so it naturally can't be
- * benched; (2) the mod's GROUP is not already (possibly) present, since an item
- * holds at most one mod per group. The mod's class fit is enforced upstream by
- * `resolveBench`. (The one-crafted-mod limit is not modelled yet.)
+ * Apply a crafting-bench mod: add the specific `mod`, guaranteed and pinned.
+ * Preconditions: an open slot in its generation (a Normal item, cap 0,
+ * naturally has none), and the mod's group not already possibly present. Class
+ * fit is enforced upstream by `resolveBench`; the one-crafted-mod limit is not
+ * modelled yet.
  */
 export function bench(a: AItem, mod: Mod, registry: Registry): TransferResult {
     if (!hasOpenSlot(a, mod.gen)) return fail({ kind: "noOpenSlot", gen: mod.gen });
-    // Group exclusivity: if any type that MAY be present shares a family with the
-    // bench mod, the item might already carry that group — so the add isn't
-    // provably safe. (An anonymous "random" affix carries no type, so a conflict
-    // hidden behind one is not caught — a known modelling gap.)
+    // If any possibly-present type shares a family with the bench mod, the add
+    // isn't provably safe (an item holds one mod per group). A conflict hidden
+    // behind an anonymous "random" affix is not caught — known modelling gap.
     if (sharesFamilyWithPossible(a, mod, registry)) {
         return fail({ kind: "modConflict", group: registry.typeLabel(mod.type) });
     }
-    // Additive: +1 in the mod's generation, then force it present & pinned.
     const total: Range = [a.total[0] + 1, a.total[1] + 1];
     const prefix: Range = mod.gen === "prefix" ? [a.prefix[0] + 1, a.prefix[1] + 1] : a.prefix;
     return ok(withGuaranteed({ ...a, total, prefix }, mod));
@@ -226,17 +207,14 @@ function sharesFamilyWithPossible(a: AItem, mod: Mod, registry: Registry): boole
 }
 
 /**
- * A REFORGE: discard every current mod and lay down a fresh set of the given
- * rarity and affix-count range. Nothing stays `guaranteed`; the base's full
- * add-pool becomes `possible` (with the tier overlay recording which specific
- * mods each type could be), and `excluded` clears. Shared by alteration /
- * alchemy / chaos — the counterpart of `addOne` for the "all new mods" ops.
+ * A reforge: discard every current mod and lay down a fresh set of the given
+ * rarity and count range. Nothing stays guaranteed; the base's full add-pool
+ * becomes `possible`; exclusions clear. Shared by alteration/alchemy/chaos.
  */
 function reroll(a: AItem, rarity: Rarity, total: Range, registry: Registry): AItem {
     const cap = rarityCap(rarity);
     const prefix: Range = [Math.max(0, total[0] - cap), Math.min(cap, total[1])];
-    // Over-approximate the pool from an EMPTY item of this base (no present mods
-    // ⇒ the widest pool), exactly as `addableMods` does for an add.
+    // An empty item of this base has the widest pool — a sound over-approximation.
     const fresh = addableMods({ ...a, presence: a.bdd.TRUE }, undefined, registry);
     const possible = new Set<TypeId>();
     const tiers = new Map<TypeId, ReadonlySet<ModId>>();
@@ -283,11 +261,10 @@ function addOne(a: AItem, forcedGen: Gen | undefined, rarity: Rarity, registry: 
               ? a.prefix
               : [a.prefix[0], a.prefix[1] + 1]; // could land in either generation
 
-    // ADDITIVE: every prior mod survives, so existing guarantees (and tier
-    // constraints) hold. The added mod is one of the pool, so each pool type
-    // becomes `possible` and its tier overlay gains the specific pool mods it
-    // could be; a random add means we can no longer be sure any type is absent, so
-    // rebuild presence from the guarantees alone (exclusions dropped).
+    // Additive: every prior mod survives, so guarantees and tier constraints
+    // hold. Each pool type becomes `possible`; and since a random add could be
+    // any of them, no type can stay excluded — rebuild presence from the
+    // guarantees alone.
     const added = addableMods(a, forcedGen, registry);
     const possible = new Set(a.possible);
     const tiers = new Map(a.tiers);
@@ -310,10 +287,9 @@ function removeOne(a: AItem, forcedGen: Gen | undefined, registry: Registry): AI
               ? a.prefix
               : [Math.max(0, a.prefix[0] - 1), a.prefix[1]];
 
-    // A guarantee survives a removal only if the removed affix could not have
-    // been it: under a gen-forced removal, the OTHER generation's guarantees are
-    // safe; an unforced removal could take any affix, so nothing stays guaranteed.
-    // Exclusions survive (a removal never adds a mod), so they carry over.
+    // A guarantee survives only if the removed affix could not have been it:
+    // a gen-forced removal spares the other generation; an unforced one could
+    // take anything. Exclusions always survive (a removal never adds a mod).
     const presence = presenceFacts(
         a.bdd,
         survivingGuarantees(a, forcedGen, registry),
@@ -338,11 +314,10 @@ function survivingGuarantees(
 // --- abstract pool (which types an add could introduce) -------------------
 
 /**
- * Over-approximate the specific mods an add could introduce. Built by running
- * the real `pool` against a synthetic item carrying only the guaranteed mods
- * (fewer present mods ⇒ a superset of every arm's real pool), at the maximal
- * (rare) slot caps. Restricted to `forcedGen` when the add is omen-directed.
- * Returns mods (not just types) so the tier overlay can record which tiers.
+ * Over-approximate the mods an add could introduce: run the real `pool` on a
+ * synthetic item carrying only the guaranteed mods at rare caps (fewer present
+ * mods ⇒ a superset of every arm's real pool). Returns mods, not just types,
+ * so the tier overlay can record which tiers.
  */
 function addableMods(a: AItem, forcedGen: Gen | undefined, registry: Registry): Mod[] {
     const synthetic = syntheticItem(a, registry);

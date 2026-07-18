@@ -1,18 +1,8 @@
 /**
- * Fuzzy resolution of a human stat description to a ModType (surface §2 tier 3).
- *
- * A user writes `has "maximum life"`, not `has "IncreasedLife5"`. We match that
- * text against each mod's `text` — RANGE-STRIPPED, because every tier of a mod
- * shares the same wording and differs only in the numbers ("+(10-24) to maximum
- * Life", "+(70-84) to maximum Life", …). So fuzzy matching lands on the
- * ModTYPE (the family of tiers); picking a specific tier is a separate step
- * (`tiers.ts`), which is why the design needs both a text match AND a tier.
- *
- * Matching is deliberately simple and predictable: normalize to a token set,
- * require every query token to appear in a type's tokens, and rank by how
- * specific the match is (a query that covers all of the type's words beats one
- * that covers only some). A tie at the top is reported as ambiguous rather than
- * guessed.
+ * Fuzzy resolution of a stat description to a ModType. Matching is against
+ * range-stripped mod text (all tiers share the wording), so it lands on the
+ * TYPE; picking a tier is `tiers.ts`. Deliberately simple: token-set subset
+ * match, ranked by specificity; a tie at the top is ambiguous, never guessed.
  */
 import type { TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
@@ -77,12 +67,8 @@ export interface TypeMatch {
     readonly score: number;
 }
 
-/**
- * A query token matches an entry token exactly, or — when it is at least 3 chars
- * — as a PREFIX, so abbreviations resolve ("max" → "maximum", "inc" →
- * "increased"). The length floor keeps 1–2 char fragments from matching half the
- * catalog.
- */
+/** Exact token match, or a ≥3-char prefix so abbreviations resolve ("max" →
+ *  "maximum"); the length floor keeps fragments from matching half the catalog. */
 function tokenMatches(w: string, tokens: ReadonlySet<string>): boolean {
     if (tokens.has(w)) return true;
     if (w.length < 3) return false;
@@ -90,11 +76,8 @@ function tokenMatches(w: string, tokens: ReadonlySet<string>): boolean {
     return false;
 }
 
-/**
- * Types whose wording covers every query token (exact or as an abbreviation
- * prefix), ranked most-specific first. `score = query tokens / entry tokens`, so
- * a query that names the whole wording (1.0) outranks one that names a fragment.
- */
+/** Types whose wording covers every query token, ranked most-specific first
+ *  (`score = query tokens / entry tokens`). */
 export function matchTypes(index: Map<TypeId, TypeEntry>, query: string): TypeMatch[] {
     const q = [...new Set(normalizeText(query))];
     if (q.length === 0) return [];

@@ -1,17 +1,8 @@
 /**
- * Name resolution (brief §3 `/core/resolve`, surface doc §2).
- *
- * The parser leaves every name as a raw string (`"exalt"`, `"T1 Life"`,
- * `"Cobalt Jewel"`). Resolution turns those into internal entities — a
- * `CurrencySpec`, a `Mod`, a `Base` — against a `Registry` of known data.
- *
- * Resolution failures are a DISTINCT error class from type errors (surface §2):
- * they happen during elaboration of text → entities, before the checker runs.
- *
- * Resolution tiers (surface §2): (1) exact id, (2) curated alias, (3) fuzzy
- * text match. Mods additionally support fuzzy resolution to a ModTYPE via
- * `resolveModType` (see `fuzzy.ts`), since a human writes a stat description
- * ("maximum life"), not a tier id ("IncreasedLife5").
+ * Name resolution (surface doc §2): raw strings from the parser → internal
+ * entities, in tiers — (1) exact id, (2) curated alias, (3) fuzzy text match.
+ * Mods also resolve fuzzily to a ModTYPE (`resolveModType`, see `fuzzy.ts`),
+ * since a human writes a stat description, not a tier id.
  */
 import type { Base } from "../model/base.js";
 import type { ClassId, Game, Gen, GroupId, TypeId } from "../model/ids.js";
@@ -49,12 +40,9 @@ export type CurrencyKind =
     | "scour";
 
 /**
- * A currency in the catalog. `name`/`kind` drive the language (the DSL alias and
- * which hand-written transfer function governs it); `displayName`/`description`
- * are pure DISPLAY metadata for the editor (hover + completion), NOT used by the
- * checker. This is the split the catalog exists for: we curate the real in-game
- * name and description (RePoE ships neither for currencies), while the semantics
- * stay hand-modelled and are linked only by `kind`.
+ * A currency in the catalog. `name`/`kind` drive the language (alias + which
+ * transfer function governs it); `displayName`/`description` are display-only
+ * metadata for hover/completion, curated here because RePoE ships neither.
  */
 export interface CurrencySpec {
     /** The alias written in a craft, e.g. "exalt". */
@@ -68,9 +56,8 @@ export interface CurrencySpec {
 }
 
 /**
- * A PoE2 omen that directs an operation (typing rules §10.2). Dextral = right =
- * suffix; Sinistral = left = prefix. Each omen forces a specific operation to a
- * specific generation.
+ * A PoE2 omen that forces a specific operation to a specific generation.
+ * Dextral = right = suffix; Sinistral = left = prefix.
  */
 export interface OmenSpec {
     readonly name: string;
@@ -106,43 +93,32 @@ export interface Registry {
     resolveBase(name: string): Resolved<Base>;
     resolveMod(name: string): Resolved<Mod>;
     /**
-     * Fuzzy-resolve a stat description (or an exact mod id) to its ModType.
-     * When `ctx` (the item's base + ilvl) is given, candidates are narrowed to
-     * types that can actually roll there — which resolves the common case where
-     * several distinct ModTypes share identical wording but only one is
-     * rollable on the item at hand.
+     * Fuzzy-resolve a stat description (or exact mod id) to its ModType. With
+     * `ctx`, candidates narrow to types that can roll on that base/ilvl —
+     * disambiguating identically-worded types of which only one rolls here.
      */
     resolveModType(name: string, ctx?: ModTypeContext): Resolved<TypeId>;
     resolveCurrency(name: string): Resolved<CurrencySpec>;
     resolveOmen(name: string): Resolved<OmenSpec>;
     /**
-     * Resolve an essence. Two spellings: a full name (`"Deafening Essence of
-     * Greed"`), or a type + tier (`name = "greed"`, `tier = 1`, where T1 =
-     * Deafening = best). Ambiguous without a tier (all seven Greed essences match
-     * `"greed"`), so the tier or a ladder prefix in the name disambiguates.
+     * Resolve an essence by full name (`"Deafening Essence of Greed"`) or
+     * type + tier (`"greed"`, `tier = 1` where T1 = Deafening = best); a bare
+     * type without a tier is ambiguous.
      */
     resolveEssence(name: string, tier?: number): Resolved<EssenceSpec>;
     /**
-     * Resolve a crafting-bench craft by the mod it adds — `name` is a mod
-     * description ("increased life"), narrowed to crafts that apply to
-     * `itemClass`. Multiple bench tiers of the same mod pick the best (highest)
-     * by default, or the tier given (`t1` = best). Ambiguous only across distinct
-     * mod families.
+     * Resolve a bench craft by the mod it adds, narrowed to `itemClass`.
+     * Multiple bench tiers of one mod pick the best (or the tier given);
+     * ambiguity is only across distinct mod families.
      */
     resolveBench(name: string, itemClass?: ClassId, tier?: number): Resolved<BenchCraft>;
     /** The generation (prefix/suffix) a ModType always occupies, if known. */
     genOfType(type: TypeId): Gen | undefined;
-    /**
-     * The mod GROUPS (families) a ModType belongs to — the union across its tiers.
-     * Two mods conflict iff their family sets intersect (PoE allows at most one mod
-     * per group), so this drives the bench-craft group-exclusivity check.
-     */
+    /** The mod groups (families) a ModType belongs to, across its tiers —
+     *  drives the bench group-exclusivity check. */
     familiesOfType(type: TypeId): ReadonlySet<GroupId>;
-    /**
-     * A human-readable label for a ModType — the canonical stat wording
-     * (range-stripped, e.g. "maximum life"), for display in hover/diagnostics.
-     * Falls back to the raw TypeId when the type carries no rollable text.
-     */
+    /** Canonical range-stripped wording for a ModType ("maximum life"), for
+     *  hover/diagnostics; falls back to the raw TypeId. */
     typeLabel(type: TypeId): string;
 
     // --- completion lists (precomputed) ---
@@ -161,10 +137,8 @@ export interface Registry {
 }
 
 /**
- * The default currency catalog (the base ops, shared across games). `displayName`
- * and `description` are the curated in-game text — RePoE does not export currency
- * descriptions, so these are authored here. Adding a new currency means adding a
- * transfer function for its `kind` AND an entry here.
+ * The default currency catalog. Adding a new currency means adding a transfer
+ * function for its `kind` AND an entry here.
  */
 export const STANDARD_CURRENCIES: readonly CurrencySpec[] = [
     {
@@ -223,7 +197,7 @@ export const STANDARD_CURRENCIES: readonly CurrencySpec[] = [
     },
 ];
 
-/** The default omen table (the four Dextral/Sinistral directors we model in M5). */
+/** The default omen table (the four Dextral/Sinistral directors modelled so far). */
 export const STANDARD_OMENS: readonly OmenSpec[] = [
     { name: "Dextral Exaltation", directs: "exalt", gen: "suffix" },
     { name: "Sinistral Exaltation", directs: "exalt", gen: "prefix" },
@@ -246,7 +220,7 @@ export interface RegistryData {
 
 /**
  * Build a registry from loaded data. Lookups are case-insensitive on the whole
- * name; ids and aliases are both accepted (surface §2 tiers 1 and 2).
+ * name; ids and aliases are both accepted.
  */
 export function buildRegistry(data: RegistryData): Registry {
     const norm = (s: string): string => s.trim().toLowerCase();
@@ -257,8 +231,7 @@ export function buildRegistry(data: RegistryData): Registry {
             ([alias, id]) => [norm(alias), norm(id)] as const,
         ),
     );
-    // Display names are NOT unique (hundreds of bases share one — maps, gems, …),
-    // so a name maps to a LIST; a lookup that hits more than one is ambiguous.
+    // Display names are not unique, so a name maps to a list; >1 hit = ambiguous.
     const baseByName = new Map<string, Base[]>();
     for (const b of data.bases) {
         if (b.name === undefined) continue;
@@ -391,11 +364,9 @@ export function buildRegistry(data: RegistryData): Registry {
         resolveEssence(name, tier) {
             const q = normalizeText(name);
             if (q.length === 0) return fail({ kind: "unknownEssence", name });
-            // Always match the query against the FULL name, so a bare type
-            // ("greed") and a full name ("deafening essence of greed") both work
-            // (a subset test — every query token must appear). A tier then narrows
-            // to that ladder rung, which both disambiguates a bare type AND rejects
-            // a name that disagrees with the tier ("Deafening…" + t2 → no match).
+            // Match against the FULL name so a bare type and a full name both
+            // work; a tier narrows to that rung AND rejects a name that
+            // disagrees with it ("Deafening…" + t2 → no match).
             const matches = essences.filter((e) => {
                 if (tier !== undefined && e.tier !== ladderOf(tier)) return false;
                 const tokens = new Set(normalizeText(e.name));
@@ -409,9 +380,7 @@ export function buildRegistry(data: RegistryData): Registry {
         resolveBench(name, itemClass, tier) {
             const q = normalizeText(name);
             if (q.length === 0) return fail({ kind: "unknownBench", name });
-            // Bench crafts are keyed by the mod they add. Match the mod's text and
-            // (when known) restrict to crafts that apply to the item's class,
-            // SCORING each by how tightly the query covers the wording — so
+            // Score by how tightly the query covers the mod's wording, so
             // "maximum life" prefers the flat life mod over "minions have … life".
             const scored: { craft: BenchCraft; mod: Mod; score: number }[] = [];
             for (const craft of benchCrafts) {
@@ -426,8 +395,8 @@ export function buildRegistry(data: RegistryData): Registry {
             if (scored.length === 0) return fail({ kind: "unknownBench", name });
             const top = Math.max(...scored.map((s) => s.score));
             const best = scored.filter((s) => s.score === top);
-            // Genuine ambiguity is across mod FAMILIES; multiple bench tiers of one
-            // mod are not — pick the best (highest bench tier), or the tier given.
+            // Only distinct mod families are genuinely ambiguous; tiers of one
+            // mod just pick the best (or the tier given).
             const types = new Set(best.map((s) => s.mod.type));
             if (types.size > 1) {
                 return fail({

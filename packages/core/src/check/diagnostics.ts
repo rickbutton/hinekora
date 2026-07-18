@@ -1,10 +1,7 @@
 /**
- * Checker diagnostics and how they render.
- *
- * Every diagnostic carries a source span and a message. Precondition messages
- * follow the surface-§6 stance — render the item's current (abstract) state,
- * then say what the operation needed — reusing the same "state first, no
- * lecturing" shape as the concrete renderer, adapted to ranges.
+ * Checker diagnostics. Precondition messages follow the surface doc's §6
+ * stance: render the item's state at that point, then what the op needed —
+ * no lecturing.
  */
 import type { Pred } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
@@ -32,14 +29,10 @@ function renderRange(range: Range, noun: string): string {
 }
 
 /**
- * The one-line abstract-state summary shown in errors and hover (surface §6).
- *
- * Counts lead with the TOTAL affix range, then the prefix/suffix split. This
- * ordering matters: the domain tracks `total` and `prefix` as coupled ranges
- * (`prefix + suffix = total`), but the two side-ranges rendered alone read as
- * independent — e.g. after a transmute both sides show 0–1, which would imply
- * (0,0) or (1,1) is reachable when neither is. Showing `total` (here, "1 affix")
- * restores the correlation the reader needs.
+ * The one-line item-state summary shown in errors and hover. It leads with the
+ * total affix range because the side-ranges alone read as independent (after a
+ * transmute both show 0–1, implying an impossible (0,0)/(1,1)); the total
+ * restores the correlation.
  */
 export function renderState(a: AItem): string {
     return [
@@ -52,9 +45,8 @@ export function renderState(a: AItem): string {
     ].join(" · ");
 }
 
-/** Human description of a surface predicate, for dead-arm / unreachable messages. */
+/** Human description of a surface predicate, for diagnostics and hover. */
 export function describePred(pred: Pred): string {
-    // A value slot is a literal or (inside a def body) a parameter name.
     const val = (v: string | number | { param: string }): string =>
         typeof v === "object" ? v.param : String(v);
     switch (pred.kind) {

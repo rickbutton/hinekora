@@ -1,11 +1,7 @@
 /**
- * The transport-free language service — the reusable intelligence.
- *
- * Pure functions over `(source, registry)`; no LSP connection, no Node, no DOM.
- * This is what the Node entry (VSCode) and, later, the browser-worker entry
- * (Monaco playground) both wrap. Diagnostics fall out almost directly: the
- * parser and checker already return `{ message, span }`; we only convert our
- * 1-based spans to LSP's 0-based ranges.
+ * The transport-free language service: pure functions over (source, registry),
+ * wrapped by the Node entry now and a browser worker later. The parser and
+ * checker already return `{ message, span }`; this only converts spans.
  */
 import { type Diagnostic, DiagnosticSeverity, type Range } from "vscode-languageserver-types";
 import { check, type Registry, type SourceSpan } from "@hinekora/core";

@@ -1,11 +1,7 @@
 /**
- * Semantic tokens — type-aware highlighting on top of the TextMate grammar.
- *
- * Driven by OUR lexer (so it always matches the language) plus the registry:
- * words are classified as keyword / property (item field) / function (a
- * resolved currency name). The last one is the payoff — a plain grammar can't
- * know which identifiers are real currencies; we do. Robust to invalid input:
- * if the source doesn't lex, we return no tokens and the grammar carries on.
+ * Semantic tokens — registry-aware highlighting on top of the TextMate
+ * grammar: keyword / item field / resolved currency name (the payoff a plain
+ * grammar can't provide). Unlexable source returns no tokens.
  */
 import type { Registry } from "@hinekora/core";
 import { tokenize } from "@hinekora/parser";

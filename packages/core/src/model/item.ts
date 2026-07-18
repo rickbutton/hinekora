@@ -1,23 +1,9 @@
 /**
- * The item, and its type index.
- *
- * Two views of the same thing (typing rules §2):
- *
- *   - `Item` is the RUNTIME RECORD — the concrete value the checker holds and
- *     that `pool` reads. It has the actual prefix/suffix mod lists.
- *   - `ItemIndex` is the TYPE INDEX — the projection the type system branches
- *     on: `Item[game, rarity, |prefixes|, |suffixes|, ilvl, present]`. Counts +
- *     rarity drive slot rules; `present` drives loop-exit guarantees; `game`
- *     isolates the two rulesets.
- *
- * We keep the runtime record and compute the index from it. In M1 nothing yet
- * consumes the index for checking, but it is the object errors and the state
- * renderer (a later milestone) will speak in, so we build the projection now.
- *
- * NOTE on effects: the item deliberately has NO `effects` field. Active effects
- * are a pure projection over the mods (and, later, augments) actually present
- * — see `effects.ts`. Storing them would risk desync; deriving them makes
- * desync impossible by construction (typing rules §2).
+ * The concrete item (typing rules §2): the runtime record `pool` and the
+ * currency library read, plus `ItemIndex`, the projection the type rules
+ * branch on. The item deliberately has NO `effects` field — active effects are
+ * derived from the present mods (`effects.ts`), so desync is impossible by
+ * construction.
  */
 import type { Base } from "./base.js";
 import type { Game, GroupId, Rarity, TypeId } from "./ids.js";
@@ -33,12 +19,8 @@ export interface Item {
     readonly suffixes: readonly Mod[];
 }
 
-/**
- * The type index — the meaningful projection the indexed monad threads.
- * `present` is the set of ModType facts we track for guarantees ("has mod X").
- * (The design's fuller (TypeId, GroupId) fact form is a later refinement; M1
- * keys guarantees on ModType, which is what the collision and has-X rules use.)
- */
+/** The type index: `present` is the set of ModType facts tracked for
+ *  guarantees ("has mod X"). */
 export interface ItemIndex {
     readonly game: Game;
     readonly rarity: Rarity;

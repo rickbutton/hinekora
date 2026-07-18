@@ -1,15 +1,8 @@
 /**
- * The shared shape of a currency operation and its result.
- *
- * Currencies are LIBRARY VALUES, not language features (typing rules §4): each
- * is a function of a uniform `Operation` type. The core supplies the machinery
- * (pool, outcomes, wf); a currency composes it into a typed state-transformer.
- *
- * An operation applied to a known item either fails a PRECONDITION — the "seam"
- * the indexed monad enforces, e.g. "can't Exalt a Magic item" — or succeeds
- * with a symbolic `Outcome`. We surface preconditions as structured errors (not
- * exceptions) so the state renderer can later show "what the item was + what the
- * op needed" (surface doc §6).
+ * The shared shape of a currency operation: a state-transformer over the item
+ * model that either fails a precondition or succeeds with a symbolic `Outcome`.
+ * Preconditions are structured errors (not exceptions) so the renderer can show
+ * "what the item was + what the op needed".
  */
 import type { Rarity } from "../model/ids.js";
 import type { Item } from "../model/item.js";
@@ -17,11 +10,8 @@ import type { WfViolation } from "../model/wf.js";
 import type { Outcome } from "../outcome/outcome.js";
 import type { ModCatalog } from "../pool/pool.js";
 
-/**
- * What an operation needs to run: the mod catalog `pool` draws from. Later
- * milestones extend this (the omen context Ω, the active game module), which is
- * why it is a context object rather than a bare catalog parameter.
- */
+/** What an operation needs to run. A context object (not a bare catalog
+ *  parameter) so future additions don't ripple through every signature. */
 export interface OpContext {
     readonly catalog: ModCatalog;
 }

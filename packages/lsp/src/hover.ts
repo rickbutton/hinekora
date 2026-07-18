@@ -1,19 +1,7 @@
 /**
- * Hover: the signature + docs of the token under the cursor, the way hovering a
- * function shows its signature. What the "signature" IS depends on the token:
- *
- *   currency op  → what it requires and does (the real function-call analog)
- *   base string  → the resolved base item (class, domain)
- *   mod  string  → the resolved ModType (prefix/suffix, source, tiers here)
- *   projection   → what it counts, and its current range
- *   keyword      → a one-line note on the construct
- *
- * Below the signature we append an item TOOLTIP — a Path-of-Exile-style view of
- * the abstract state at that point: each modifier on its own `(P)`/`(S)`-tagged
- * line (its resolved text, or the roll span when the tier isn't pinned),
- * disjunctive guarantees as "at least one of …", and a count of the still-
- * undetermined slots. That tooltip is the debugger-watch half; the signature is
- * the hover half.
+ * Hover: the signature of the token under the cursor (currency op, mod, base,
+ * essence/bench, def, projection, keyword), plus a PoE-style item tooltip of
+ * the checker's state at that point (see HANDOFF.md §3d).
  */
 import {
     type AItem,
@@ -36,11 +24,7 @@ import { parse, type Token, tokenize } from "@hinekora/parser";
 
 // --- doc tables ------------------------------------------------------------
 
-/**
- * The checker-derived precondition for each currency kind — what the abstract
- * interpreter actually enforces. This is analysis info (it mirrors `transfer.ts`),
- * distinct from the game description, which comes from the currency catalog.
- */
+/** What each currency requires — mirrors the preconditions in `transfer.ts`. */
 const REQUIRES: Record<CurrencyKind, string> = {
     transmute: "a Normal item",
     augment: "a Magic item with an open affix slot",
@@ -54,8 +38,8 @@ const REQUIRES: Record<CurrencyKind, string> = {
 };
 
 const KEYWORD_DOC: Record<string, string> = {
-    until: "`until <pred> { … }` — repeat the block until the predicate holds. On exit the predicate is proven true (loop-exit-as-proof).",
-    if: "`if <pred> { … } else { … }` — branch on the item's abstract state. A branch that can never run is flagged.",
+    until: "`until <pred> { … }` — repeat the block until the condition is true. After the loop, the item is known to satisfy it.",
+    if: "`if <pred> { … } else { … }` — branch on the item's state at this point. A branch that can never run is flagged.",
     else: "The alternative branch of an `if`.",
     with: "`with <omen> { … }` — apply an omen that directs the operations inside (e.g. forcing an add/remove onto one side).",
     restart: "`restart` — abandon this attempt and re-run the enclosing loop from the top.",
@@ -124,10 +108,8 @@ function namedAt(
 }
 
 /**
- * If the ident at `i` names a local def — as its declaration (`def NAME`), a call
- * (`NAME(`), or one of its parameters inside the def body — return that def. All
- * three then share one hover (the def's signature), mirroring the essence/bench
- * treatment where every token of a construct hovers alike.
+ * If the ident at `i` names a local def — its declaration, a call, or one of
+ * its parameters inside the body — return that def; all three share one hover.
  */
 function defAt(tokens: readonly Token[], i: number, defs: readonly Def[]): Def | undefined {
     const tok = tokens[i];
@@ -193,10 +175,9 @@ const numberWord = (n: number): string => NUMBER_WORDS[n] ?? String(n);
 const oneLine = (text: string): string => text.replace(/\n/g, " / ");
 
 /**
- * Merge several tiers' texts into one showing the OVERALL roll span — e.g. tiers
- * "+(70-84) to maximum Life" and "+(20-29) to maximum Life" ⇒ "+(20-84) to
- * maximum Life". Each `(lo-hi)` range is widened to min-lo…max-hi across the
- * tiers. Falls back to the first text if the tiers don't share a range structure.
+ * Merge several tiers' texts into one overall roll span: "+(70-84) …" and
+ * "+(20-29) …" ⇒ "+(20-84) …". Falls back to the first text if the tiers don't
+ * share a range structure.
  */
 const RANGE = /\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)/g;
 function rollSpan(texts: readonly string[]): string {
@@ -213,15 +194,12 @@ function rollSpan(texts: readonly string[]): string {
 }
 
 /**
- * One tooltip line for a guaranteed mod. When the tier is pinned to a single mod
- * we show its exact rolled text; otherwise the roll SPAN across every tier the
- * item could carry here (base + ilvl), so the magnitude is honest without
- * committing to a tier we don't know.
+ * One tooltip line for a guaranteed mod: the exact rolled text when the tier is
+ * pinned, else the roll span across every tier the item could carry here — the
+ * magnitude stays honest without committing to a tier we don't know.
  */
 function modLine(a: AItem, type: TypeId, registry: Registry): string {
     const pinned = a.tiers.get(type);
-    // The tiers the item could carry: the pinned set if constrained, else every
-    // tier rollable on this base + ilvl.
     const mods =
         pinned && pinned.size > 0
             ? [...pinned].flatMap((id) => {
@@ -237,12 +215,9 @@ function modLine(a: AItem, type: TypeId, registry: Registry): string {
 }
 
 /**
- * A Path-of-Exile-style item tooltip for the abstract state (replacing the terse
- * count-range footer): each modifier on its own line, prefixed with `(P)`/`(S)`
- * for its generation and ordered prefixes-then-suffixes. Guaranteed mods show
- * their resolved text; a disjunctive guarantee (`until has X or has Y`) becomes
- * an "at least one of" line; and the count of still-undetermined slots per
- * generation is noted (their contents can be anything the base can roll).
+ * A PoE-style item tooltip for the state: one `(P)`/`(S)`-tagged line per mod,
+ * prefixes then suffixes; "one of" blocks for disjunctive guarantees; one
+ * coupled line for the undetermined remainder.
  */
 function tooltip(a: AItem, registry: Registry, caption?: string): string {
     const guaranteed = guaranteedTypes(a);
@@ -252,11 +227,9 @@ function tooltip(a: AItem, registry: Registry, caption?: string): string {
     for (const t of guaranteed) known[genOf(t)].push(t);
     const genHi = { prefix: a.prefix[1], suffix: suffixRange(a)[1] };
 
-    // Classify each cardinality guarantee ("≥k of these"): its generation (if
-    // homogeneous) and whether the count forces EXACTLY k present. It guarantees
-    // ≥k; it's exactly-k when at most k can fit — its generation has exactly k
-    // undetermined slots (genHi − individually-known-of-that-gen), or, spanning
-    // both, the whole item has k undetermined slots.
+    // A cardinality guarantee is ≥k; it becomes EXACTLY k when at most k can
+    // fit — its generation (or, spanning both, the whole item) has only k
+    // undetermined slots.
     const knownTotal = known.prefix.length + known.suffix.length;
     const cardinalities = cardinalityGuarantees(a).map((c) => {
         const gens = new Set(c.types.map(genOf));
@@ -265,9 +238,8 @@ function tooltip(a: AItem, registry: Registry, caption?: string): string {
         return { ...c, gen, exact: slots <= c.atLeast };
     });
 
-    // A cardinality block: the `(tag) [exactly|at least] N of:` header, then each
-    // candidate on its own line, indented (non-breaking spaces) so it hangs under
-    // the header rather than reading as another top-level mod.
+    // Candidates indent (non-breaking spaces) under the `N of:` header so they
+    // don't read as more top-level mods.
     const INDENT = "    ";
     const cardBlock = (x: (typeof cardinalities)[number]): string[] => [
         `${x.gen ? GEN_TAG[x.gen] : "(P/S)"} _${x.exact ? "exactly" : "at least"} ${numberWord(x.atLeast)} of:_`,
@@ -281,10 +253,8 @@ function tooltip(a: AItem, registry: Registry, caption?: string): string {
     }
     for (const x of cardinalities) if (x.gen === undefined) lines.push(...cardBlock(x));
 
-    // The undetermined REMAINDER — mods beyond the individually-known ones and the
-    // ≥k each cardinality already accounts for. Reported as ONE line respecting the
-    // coupling: a fixed total split flexibly across generations reads as "a prefix
-    // or a suffix", not two independent per-generation ranges.
+    // The undetermined remainder, as ONE line respecting the count coupling —
+    // "a prefix or a suffix", not two independent per-generation ranges.
     const cardSlots = (g?: Gen): number =>
         cardinalities.filter((x) => x.gen === g).reduce((s, x) => s + x.atLeast, 0);
     const accounted = knownTotal + cardinalities.reduce((s, x) => s + x.atLeast, 0);
@@ -362,8 +332,6 @@ function signature(
             if (!b.ok) return `**"${tok.text}"** — unknown base.`;
             return `**${b.value.name ?? b.value.id}** — base item · class \`${b.value.itemClass}\``;
         }
-        // A mod string is fuzzy — resolve it against the item at this point
-        // (base + ilvl) so we pick the tier family that can actually roll here.
         return modSignature(tok.text, tierAfter(tokens, i), entry, registry);
     }
 
@@ -376,11 +344,9 @@ const MAX_TIERS = 12;
 const rollText = (m: { text?: string }): string => (m.text ?? "—").replace(/\n/g, " / ");
 
 /**
- * The signature for a (fuzzy) mod string: show WHAT it resolved to — the
- * canonical wording and the `TypeId` — then the tiers rollable on this item,
- * each with its own fully-resolved roll range. When the predicate names a
- * `tier N`, that specific tier is spotlit above the table and its row is bolded
- * (the tier id rarely matches the T-number — `IncreasedLife11` is tier 1).
+ * The signature for a (fuzzy) mod string: what it resolved to, then the tiers
+ * rollable on this item. A `t<n>` qualifier spotlights that tier and bolds its
+ * row (tier ids rarely match T-numbers — `IncreasedLife11` can be T1).
  */
 function modSignature(
     text: string,
@@ -401,8 +367,6 @@ function modSignature(
     const type = t.value;
     const gen = registry.genOfType(type) ?? "affix";
     const label = registry.typeLabel(type);
-    // Header: the fuzzy input, the resolved canonical wording (only if it differs),
-    // the generation, and the resolved TypeId.
     const resolved = label && label.toLowerCase() !== text.toLowerCase() ? `**${label}** · ` : "";
     const header = `**"${text}"** → ${resolved}${gen} · \`${type}\``;
 

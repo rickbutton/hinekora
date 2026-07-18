@@ -1,10 +1,7 @@
 /**
- * Hardcoded mini mod/base set for M1 tests.
- *
- * This is NOT real game data — it is a small, deliberately-shaped catalog where
- * each fixture isolates one `pool`/`wf` rule so tests can attribute a
- * pass/reject to a single cause. The real per-domain catalog arrives with the
- * data package (milestone 6); until then these prove the model's logic.
+ * Hardcoded mini mod/base set for tests — NOT real game data. A small,
+ * deliberately-shaped catalog where each fixture isolates one `pool`/`wf` rule
+ * so tests can attribute a pass/reject to a single cause.
  *
  * Shape summary:
  *   - Two domains (item, flask) to isolate the domain gate.

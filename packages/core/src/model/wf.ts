@@ -1,25 +1,10 @@
 /**
- * Well-formedness (typing rules §2.1) — the refinement invariant every item
- * must satisfy at all times.
- *
- *   wf(it) :=
- *        |prefixes| <= maxPre(rarity, effects)   -- slot caps, effect-adjusted
- *     && |suffixes| <= maxSuf(rarity, effects)
- *     && all affix ModTypes distinct             -- (1) no duplicate mod
- *     && all affix Families pairwise disjoint     -- (2) mutual exclusion
- *     && every affix.minLevel <= ilvl             -- tier gate
- *     && every affix.domain == base.domain        -- domain match
- *
- * Crucially, TAGS APPEAR NOWHERE here. Coexistence is ModType-distinct +
- * Family-disjoint + slot counts + tier gate + domain match. Tags are an
- * eligibility concern (spawn weights), not a coexistence rule — a correction
- * the design calls out explicitly.
- *
- * The design discharges wf to an SMT solver; the constraints are small linear
- * arithmetic over counts plus set membership, so M1 hand-rolls the decision
- * procedure (brief §7 "start hand-rolled"). We return a structured list of
- * violations rather than a bare boolean: the same data powers the state
- * renderer, precondition errors, and precise tests.
+ * Well-formedness (typing rules §2.1) — the invariant every item must satisfy:
+ * slot caps (effect-adjusted), distinct affix ModTypes, pairwise-disjoint
+ * families, the tier gate, and domain match. Tags appear NOWHERE here — they
+ * are an eligibility concern (spawn weights), not a coexistence rule. We
+ * return a structured violation list rather than a boolean so the same data
+ * powers rendering, errors, and tests.
  */
 import type { Gen, GroupId, TypeId } from "./ids.js";
 import { slotDelta } from "./effects.js";
@@ -39,7 +24,7 @@ function baseSlotCap(it: Item): number {
     }
 }
 
-/** Effect-adjusted cap for one generation. `SlotDelta` effects (§9.4) shift it. */
+/** Effect-adjusted cap for one generation; `SlotDelta` effects shift it. */
 export function slotCap(it: Item, gen: Gen): number {
     return baseSlotCap(it) + slotDelta(it, gen);
 }
@@ -47,10 +32,7 @@ export function slotCap(it: Item, gen: Gen): number {
 export const maxPre = (it: Item): number => slotCap(it, "prefix");
 export const maxSuf = (it: Item): number => slotCap(it, "suffix");
 
-/**
- * Is there room for another affix of generation `gen`? Used by `pool`'s slot
- * rule and by the currency-op preconditions later.
- */
+/** Is there room for another affix of generation `gen`? */
 export function slotOpen(it: Item, gen: Gen): boolean {
     const count = gen === "prefix" ? prefixCount(it) : suffixCount(it);
     return count < slotCap(it, gen);
@@ -70,11 +52,8 @@ export type WfViolation =
       }
     | { readonly kind: "domainMismatch"; readonly mod: Mod };
 
-/**
- * Every way in which `it` violates well-formedness. Empty ⇔ the item is wf.
- * Checks are independent, so all violations are reported at once (better errors
- * than failing on the first).
- */
+/** Every way in which `it` violates well-formedness; empty ⇔ wf. All checks
+ *  run so every violation is reported at once. */
 export function wfViolations(it: Item): readonly WfViolation[] {
     const violations: WfViolation[] = [];
     const all = affixes(it);

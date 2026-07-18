@@ -1,23 +1,8 @@
 /**
- * The state renderer (brief §3 `/render`, surface doc §6): item state → plain,
- * jargon-free text. This one renderer is the keystone of the error experience —
- * it powers precondition errors, step inspection ("what is my item after line
- * N"), and (later) unreachable-loop diagnostics. It is inherently jargon-free
- * because the things it renders are already domain concepts: rarity, affix
- * counts, present mods, ilvl.
- *
- * Design stance (surface §6): errors RENDER STATE, they don't teach. A rejected
- * op shows what the item actually is at that point plus what the op needed — no
- * rule explanations, no fix suggestions. Users know the game's rules; a rej
- * means their mental model drifted from what their own prior steps guaranteed.
- *
- * Two things worth noting:
- *   - It renders UNIONS without enumerating them. An `addOne`/`removeOne`
- *     outcome is summarized from the intensional queries (count ranges, the
- *     guaranteed floor, the candidate/removable lists) — never by walking arms.
- *   - Mods are labelled by their id for now (e.g. "IncreasedLife1"). Human
- *     display names arrive with data ingestion (milestone 6); `modLabel` is the
- *     single seam to swap when they do.
+ * The state renderer: item state → plain text, for errors and inspection.
+ * Errors render state, they don't teach (surface doc §6). Unions render from
+ * the symbolic queries (count ranges, guaranteed floor, candidate lists) —
+ * never by walking arms.
  */
 import type { Base } from "../model/base.js";
 import type { Rarity } from "../model/ids.js";
@@ -35,7 +20,7 @@ import {
 
 // --- Small text helpers ---------------------------------------------------
 
-/** The label shown for a mod. The one seam where real display names plug in later. */
+/** The label shown for a mod — the single seam to swap for display names later. */
 export function modLabel(m: Mod): string {
     return m.id;
 }
@@ -51,11 +36,7 @@ const RARITY_LABEL: Record<Rarity, string> = {
     rare: "Rare",
 };
 
-/**
- * Pluralize the nouns we use. Words ending in a sibilant (s, x, z, ch, sh) take
- * `-es` (`prefix`→`prefixes`, `suffix`→`suffixes`); everything else takes `-s`
- * (`outcome`→`outcomes`).
- */
+/** Pluralize: sibilant endings take `-es` (`prefix`→`prefixes`), else `-s`. */
 function plural(noun: string, n: number): string {
     if (n === 1) return noun;
     return /(?:s|x|z|ch|sh)$/.test(noun) ? `${noun}es` : `${noun}s`;
@@ -80,10 +61,7 @@ function renderModList(mods: readonly Mod[]): string {
 
 // --- Item rendering -------------------------------------------------------
 
-/**
- * The one-line summary (surface §6's "Magic · 1 prefix · 1 suffix · ilvl 82").
- * Prefixed with the base id and rarity.
- */
+/** The one-line summary: "IronRing · Magic · 1 prefix · 1 suffix · ilvl 82". */
 export function renderItemSummary(it: Item): string {
     return [
         baseLabel(it.base),
@@ -106,9 +84,8 @@ export function renderItem(it: Item): string {
 // --- Outcome / union rendering (no enumeration) ---------------------------
 
 /**
- * Summarize an outcome. A `certain` outcome renders as its item; a union
- * renders from the intensional queries — the shared count ranges, how many arms
- * there are, and what is guaranteed / varies — without materializing any arm.
+ * Summarize an outcome: a `certain` outcome renders as its item; a union
+ * renders from the symbolic queries without materializing any arm.
  */
 export function renderOutcome(o: Outcome): string {
     if (o.kind === "certain") {
@@ -162,7 +139,7 @@ export function renderWfViolation(v: WfViolation): string {
     }
 }
 
-/** What the failed operation needed — the second half of a §6 error. */
+/** What the failed operation needed — the second half of the error. */
 function renderNeed(e: OpError): string {
     switch (e.kind) {
         case "wrongRarity":
@@ -182,11 +159,7 @@ function renderNeed(e: OpError): string {
     }
 }
 
-/**
- * A full precondition error (surface §6): the item's current state, then what
- * the operation required. State first, because that is what the author needs to
- * see to reconcile their model with reality.
- */
+/** A full precondition error: the item's current state, then what the op needed. */
 export function renderOpError(it: Item, e: OpError): string {
     return [`at this point the item is: ${renderItemSummary(it)}`, renderNeed(e)].join("\n");
 }

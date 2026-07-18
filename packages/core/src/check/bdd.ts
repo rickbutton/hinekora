@@ -1,22 +1,10 @@
 /**
  * A tiny reduced, ordered Binary Decision Diagram (ROBDD) over named boolean
- * variables — the symbolic boolean domain the checker uses to track mod-PRESENCE
- * knowledge relationally. One boolean function stands for "the set of
- * type-presence configurations still possible for the item".
- *
- * Why a BDD and not three per-type sets (guaranteed/possible/excluded): it can
- * represent DISJUNCTIONS across types ("at least one of fire/cold/lightning is
- * present") and preserve them across control-flow joins — `join` is just BDD-OR,
- * which stays compact via hash-consing rather than enumerating the 2^n
- * assignments. That keeps us inside the intensional-union rule (symbolic, never
- * enumerated) while gaining the relational precision a non-relational domain
- * (independent sets) throws away at every branch/loop merge.
- *
- * Design: nodes are hash-consed into a canonical form, so two structurally-equal
- * functions share one integer id — equality (needed for loop fixpoints) is then
- * just `===`. Variables are ordered by first-seen; ordering affects size, never
- * correctness. No complement edges (kept simple); `not` is an explicit, memoized
- * traversal.
+ * variables — the checker's presence domain (why a BDD: HANDOFF.md §8). Nodes
+ * are hash-consed into canonical form, so structurally-equal functions share
+ * one integer id and equality is `===`. Variables are ordered by first-seen;
+ * ordering affects size, never correctness. No complement edges — `not` is an
+ * explicit, memoized traversal.
  */
 
 /** A handle to a boolean function. 0 = false, 1 = true; larger ids are nodes. */

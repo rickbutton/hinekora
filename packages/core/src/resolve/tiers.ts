@@ -1,12 +1,8 @@
 /**
- * Tier resolution — which specific mods (tiers) of a ModType can roll on a
- * given base at a given ilvl, ranked so that "T1" is the best available.
- *
- * Tiers are inherently BASE- and ILVL-dependent: the same "maximum life" family
- * has different tiers available on a ring vs a jewel, and a higher tier only
- * appears once the item level allows it. Rather than invent a tier table, we
- * derive it from `pool` (which already answers "what can roll here") and rank by
- * `minLevel` descending — the highest-requirement tier that can appear is T1.
+ * Tier resolution: which mods (tiers) of a ModType can roll on a base at an
+ * ilvl. Tiers are base- and ilvl-dependent, so rather than invent a tier
+ * table we derive it from `pool` and rank by `minLevel` descending — the
+ * highest-requirement tier that can appear is T1.
  */
 import type { Base } from "../model/base.js";
 import type { Game, TypeId } from "../model/ids.js";
@@ -15,16 +11,10 @@ import type { Mod } from "../model/mod.js";
 import { type ModCatalog, pool } from "../pool/pool.js";
 
 /**
- * The rollable tiers of `type` on `base` at `ilvl`, best (T1) first. Empty if
- * the type cannot roll here at all.
- */
-/**
- * The "empty Rare item" pool for a base/ilvl — the full add-pool — MEMOIZED. This
- * one scan of the ~12k-mod catalog is what `rollableTiers`, `rollableTypes`, and
- * base-aware `resolveModType` all repeat (per predicate, per fixpoint pass, per
- * hover), so caching it is the single biggest checker/LSP speedup. Keyed by the
- * catalog *identity* (a WeakMap) so different registries never share a cache and
- * it's freed with the registry.
+ * The "empty Rare item" pool per (base, ilvl), memoized — this catalog scan is
+ * repeated per predicate, per fixpoint pass, per hover, so caching it is the
+ * single biggest checker/LSP speedup. Keyed by catalog identity (a WeakMap) so
+ * different registries never share a cache.
  */
 const emptyPoolCache = new WeakMap<ModCatalog, Map<string, ReturnType<typeof pool>>>();
 
@@ -49,6 +39,7 @@ function emptyPool(
     return cached;
 }
 
+/** The rollable tiers of `type` on `base` at `ilvl`, best (T1) first. */
 export function rollableTiers(
     catalog: ModCatalog,
     game: Game,
@@ -62,11 +53,7 @@ export function rollableTiers(
         .sort((a, b) => b.minLevel - a.minLevel);
 }
 
-/**
- * Every ModType that can roll on `base` at `ilvl` — the type-level pool. Editor
- * completion uses this to hide mods that cannot appear on the item being crafted
- * (e.g. jewel or weapon mods on a ring).
- */
+/** Every ModType that can roll on `base` at `ilvl` — the type-level pool. */
 export function rollableTypes(
     catalog: ModCatalog,
     game: Game,

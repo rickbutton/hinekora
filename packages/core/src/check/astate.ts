@@ -1,27 +1,10 @@
 /**
- * The abstract item state — the checker's threaded index (brief §5).
- *
- * This is the intensional-union rule applied to CHECKING. Rather than a concrete
- * item, or an enumerated list of a union's arms, the checker carries a symbolic
- * SUMMARY of the union:
- *
- *   - `total` and `prefix` are integer RANGES `[min, max]`. `total` is the
- *     affix count and stays a tight point except where control flow joins
- *     branches; `prefix` spreads to a range after an unforced add/remove (the
- *     mod could land in / leave either generation). The suffix range is DERIVED
- *     (`suffix = total − prefix`), so the prefix/suffix/total correlation is
- *     preserved — the abstraction stays tight enough that "exalt; exalt" is
- *     range arithmetic, not a 200×200 product.
- *   - `presence` is a BDD (see `bdd.ts`) over type-presence variables — the
- *     RELATIONAL mod-knowledge. "Guaranteed X" = presence entails X; "excluded X"
- *     = presence entails ¬X; a disjunction ("one of these three is present")
- *     survives a control-flow `join` because join is BDD-OR. `possible` stays a
- *     plain set: the pool whitelist of types that *could* roll on the item.
- *
- * Operations are transfer functions over this summary (see `transfer.ts`);
- * narrowing is `refine` (below); loop-exit-as-proof is `refine` by the exit
- * predicate. `null` from `refine`/`normalize` means an UNINHABITED state — a
- * provably-impossible arm, which the checker reports as a dead-arm error.
+ * The abstract item state `AItem` — the symbolic summary the checker threads
+ * instead of concrete items or enumerated outcome arms (see HANDOFF.md §4).
+ * Counts are coupled ranges (`total`, `prefix`; suffix derived); mod-presence
+ * knowledge is one BDD (`bdd.ts`) so disjunctions survive control-flow joins.
+ * `refine` narrows by a predicate; `null` from `refine`/`normalize` means the
+ * state is impossible — the dead-branch signal.
  */
 import type { Base } from "../model/base.js";
 import type { Cmp } from "../ast/ast.js";
@@ -41,25 +24,19 @@ export interface AItem {
     readonly total: Range;
     /** Prefix count range; the suffix range is derived as `total − prefix`. */
     readonly prefix: Range;
-    /** The BDD manager shared by every state in one check (ids only mean something
-     *  within one manager); injected by `initialState`, threaded via `...a`. */
+    /** Shared per-check BDD manager — ids only mean something within one manager. */
     readonly bdd: BddManager;
-    /** Relational presence knowledge: a boolean function over type presence.
-     *  Guaranteed/excluded/disjunctions are all views of this (see `bdd.ts`). */
+    /** Presence knowledge as one boolean function over type-presence variables;
+     *  guaranteed/excluded/disjunctions are views of it. */
     readonly presence: Bdd;
-    /** ModTypes that MAY be present — the pool whitelist (a plain over-approx). */
+    /** ModTypes that MAY be present — the pool whitelist. */
     readonly possible: ReadonlySet<TypeId>;
-    /**
-     * TIER OVERLAY. For a type that is present (in any arm), which specific mods
-     * (tiers) it could be. Absent from the map ⇒ unconstrained (any tier). This
-     * is what lets the checker prove "has X at tier N" without dropping to full
-     * per-mod state: the type-level sets above stay authoritative, and this only
-     * refines *which tier* a present type is.
-     */
+    /** Tier overlay: for a present type, which specific mods (tiers) it could
+     *  be. Absent from the map ⇒ any tier. */
     readonly tiers: ReadonlyMap<TypeId, ReadonlySet<ModId>>;
 }
 
-/** Base per-generation slot cap by rarity (M5 ignores slot-effect deltas). */
+/** Per-generation slot cap by rarity (slot-effect deltas not yet modelled). */
 export function rarityCap(rarity: Rarity): number {
     switch (rarity) {
         case "normal":
@@ -91,11 +68,9 @@ export function suffixRange(a: AItem): Range {
 // --- presence knowledge (views over the BDD) ------------------------------
 
 /**
- * Materialise a presence BDD from UNIT facts — each guaranteed type forced true,
- * each excluded type forced false. Transfer functions reason in terms of those
- * sets, so they rebuild presence this way; it drops any disjunction, which is
- * fine because disjunctions arise from control flow (refine/join) and are
- * consumed there, not carried across an operation.
+ * A presence BDD from unit facts: guaranteed types forced true, excluded ones
+ * false. Rebuilding this way drops disjunctions — sound, because disjunctions
+ * arise from and are consumed by control flow, not carried across operations.
  */
 export function presenceFacts(
     bdd: BddManager,
@@ -136,16 +111,11 @@ export function excludedTypes(a: AItem): Set<TypeId> {
 const MAX_DISJUNCTION_VARS = 12;
 
 /**
- * Disjunctive guarantees: minimal sets of types where `presence` forces *at least
- * one* to be present — e.g. after `until has X or has Y`, `{X, Y}`. These are the
- * positive prime implicates of the presence function over its still-uncertain
- * variables (individually guaranteed/excluded types are handled separately). Only
- * a handful of types ever appear as presence variables (those the craft refines),
- * so the subset search is cheap; it is skipped entirely past a small bound.
- *
- * A set S is a guarantee iff `presence ⊨ ⋁S` (setting all of S absent is
- * impossible). "Minimal" means no proper subset is already a guarantee, so we
- * search by ascending size and skip supersets of anything found.
+ * Disjunctive guarantees: minimal sets of types where `presence` forces at
+ * least one present — the positive prime implicates over the still-uncertain
+ * variables. A set S qualifies iff `presence ⊨ ⋁S`; searching by ascending size
+ * and skipping supersets of hits keeps only minimal clauses. Only the handful
+ * of types a craft refines appear as variables, so the search is cheap.
  */
 export function disjunctiveGuarantees(a: AItem): TypeId[][] {
     const guaranteed = guaranteedTypes(a);
@@ -175,7 +145,7 @@ export function disjunctiveGuarantees(a: AItem): TypeId[][] {
     return found;
 }
 
-/** All size-`k` subsets of `xs` (k small; used only for the bounded search above). */
+/** All size-`k` subsets of `xs`. */
 function combinations<T>(xs: readonly T[], k: number): T[][] {
     if (k === 0) return [[]];
     if (k > xs.length) return [];
@@ -201,7 +171,7 @@ export interface CardinalityGuarantee {
     readonly types: TypeId[];
 }
 
-/** Binomial coefficient C(n, k) — small n; used to recognise "all m-subsets". */
+/** Binomial coefficient C(n, k). */
 function binom(n: number, k: number): number {
     if (k < 0 || k > n) return 0;
     let r = 1;
@@ -210,13 +180,12 @@ function binom(n: number, k: number): number {
 }
 
 /**
- * Fold the disjunctive guarantees into cardinality form. A "≥k of n" fact appears
- * as ALL the (n−k+1)-subsets of an n-set among the prime implicates — e.g. "≥2 of
- * {a,b,c}" is exactly the three pairs `(a∨b) ∧ (a∨c) ∧ (b∨c)`. So group clauses
- * that share variables (one connected component per independent fact); when a
- * component is exactly the C(n, m) uniform m-subsets of its n-variable union, it
- * collapses to `atLeast = n − m + 1`. A lone clause (m = n) is `atLeast = 1` — an
- * ordinary disjunction. Components that don't match stay as individual clauses.
+ * Fold disjunctive guarantees into cardinality form. A "≥k of n" fact appears
+ * as ALL the (n−k+1)-subsets of an n-set among the prime implicates ("≥2 of
+ * {a,b,c}" is exactly the three pairs), so: group clauses sharing variables
+ * into connected components; a component that is exactly the C(n, m) uniform
+ * m-subsets of its n-variable union collapses to `atLeast = n − m + 1`. A lone
+ * clause is `atLeast = 1`; non-matching components stay individual clauses.
  */
 export function cardinalityGuarantees(a: AItem): CardinalityGuarantee[] {
     const clauses = disjunctiveGuarantees(a);
@@ -266,14 +235,12 @@ export function cardinalityGuarantees(a: AItem): CardinalityGuarantee[] {
  */
 export function normalize(a: AItem): AItem | null {
     const cap = rarityCap(a.rarity);
-    // `total`, `prefix`, and the derived `suffix = total − prefix` constrain each
-    // other; each bound tightens the others, so we iterate to a fixpoint. Two
-    // couplings, from prefix ∈ [0, cap] and suffix ∈ [0, cap]:
-    //   prefix ∈ [total − cap, total]        (suffix ≥ 0 and suffix ≤ cap)
-    //   total  ∈ [prefix, prefix + cap]       (suffix ≥ 0 and suffix ≤ cap)
-    // Propagating BOTH ways is load-bearing: without the second, refining
-    // `prefixCount < 3` would leave `total` at its old max, so an exalt guarded
-    // by that very check would spuriously look "possibly full".
+    // `total`, `prefix`, and the derived suffix bound each other, so iterate to
+    // a fixpoint over both couplings:
+    //   prefix ∈ [total − cap, total]     total ∈ [prefix, prefix + cap]
+    // Propagating BOTH ways matters: without the second, refining
+    // `prefixCount < 3` leaves `total` at its old max, and an exalt guarded by
+    // that very check spuriously looks "possibly full".
     let prefix = a.prefix;
     let total = a.total;
     for (let i = 0; i < 4; i++) {
@@ -321,8 +288,6 @@ export function initialState(
         bdd,
         presence: presenceFacts(bdd, counts.present, []),
         possible: new Set(counts.present),
-        // Each declared mod is pinned to its exact tier, so the tier overlay
-        // starts with a singleton {mod} for every pinned type.
         tiers: new Map([...counts.pinned].map(([type, mod]) => [type, new Set([mod])])),
     };
 }
@@ -330,12 +295,10 @@ export function initialState(
 // --- join (merge two branch states) ---------------------------------------
 
 /**
- * The least-upper-bound of two states reaching the same program point (e.g. the
- * two arms of an if/else). Ranges widen; `possible` unions; **`presence` is
- * BDD-OR** — the key move, since it keeps a disjunctive fact ("one of these is
- * present") that intersecting per-type sets would have destroyed. Rarity is
- * assumed equal across branches from a shared start (M5 does not model
- * rarity-divergent joins); the first branch's rarity is kept.
+ * The least-upper-bound of two states reaching the same program point. Ranges
+ * widen; `possible` unions; `presence` is BDD-OR — which is what keeps a
+ * disjunctive fact alive where intersecting per-type sets would destroy it.
+ * Rarity is assumed equal across branches from a shared start.
  */
 export function join(a: AItem, b: AItem): AItem {
     return {
@@ -353,10 +316,9 @@ export function join(a: AItem, b: AItem): AItem {
 }
 
 /**
- * Join two tier overlays. A tier possible in either branch is possible, so
- * shared types union their tier sets. A type constrained in one branch but
- * unconstrained in the other becomes unconstrained (dropped) — we can't claim a
- * tier bound the other branch didn't have.
+ * Join two tier overlays: shared types union their tier sets; a type
+ * constrained in only one branch drops to unconstrained (we can't claim a
+ * bound the other branch didn't have).
  */
 function joinTiers(
     a: ReadonlyMap<TypeId, ReadonlySet<ModId>>,
@@ -371,8 +333,8 @@ function joinTiers(
 }
 
 /**
- * Structural equality of two states, used to detect a loop-invariant fixpoint.
- * (`game`/`base`/`ilvl` never change within a loop, so they are not compared.)
+ * Structural equality, used to detect a loop fixpoint. `game`/`base`/`ilvl`
+ * never change within a loop, so they are not compared.
  */
 export function stateEqual(a: AItem, b: AItem): boolean {
     const rangeEq = (x: Range, y: Range): boolean => x[0] === y[0] && x[1] === y[1];
@@ -457,10 +419,8 @@ export function refine(a: AItem, pred: RPred, positive = true): AItem | null {
                 pred.value,
             );
 
-        // Boolean combinations, via De Morgan. Refining a CONJUNCTION is
-        // sequential (narrow by both); refining a DISJUNCTION is a `join` (the
-        // least-upper-bound over-approximates "one of them holds"). Negation
-        // swaps the two: ¬(A∧B) = ¬A ∨ ¬B, and ¬(A∨B) = ¬A ∧ ¬B.
+        // Conjunction narrows sequentially; disjunction joins (the LUB
+        // over-approximates "one of them holds"); negation swaps via De Morgan.
         case "and":
             return positive
                 ? refineBoth(a, pred.left, pred.right, true)
@@ -478,11 +438,8 @@ function refineBoth(a: AItem, left: RPred, right: RPred, positive: boolean): AIt
     return s === null ? null : refine(s, right, positive);
 }
 
-/**
- * The least-upper-bound of two sub-states, treating `null` (an uninhabited
- * branch) as absent: the disjunction is inhabited if either side is. Only `null`
- * when BOTH sides are uninhabited — which is exactly the dead-arm signal.
- */
+/** Join two sub-states, treating `null` (impossible) as absent; `null` only
+ *  when both sides are impossible. */
 function joinOrNull(s1: AItem | null, s2: AItem | null): AItem | null {
     if (s1 === null) return s2;
     if (s2 === null) return s1;
@@ -497,12 +454,11 @@ function tierAllows(a: AItem, type: TypeId, tierMod: ModId | undefined): boolean
 }
 
 function refineHas(a: AItem, type: TypeId, gen: Gen, tierMod: ModId | undefined): AItem | null {
-    if (isExcluded(a, type)) return null; // proven absent → dead arm
+    if (isExcluded(a, type)) return null;
     const alreadyPresent = isGuaranteed(a, type);
-    if (!alreadyPresent && !a.possible.has(type)) return null; // cannot be present → dead arm
-    if (!tierAllows(a, type, tierMod)) return null; // that tier can't occur → dead arm
+    if (!alreadyPresent && !a.possible.has(type)) return null;
+    if (!tierAllows(a, type, tierMod)) return null;
 
-    // Constrain the tier when one was requested.
     const tiers: ReadonlyMap<TypeId, ReadonlySet<ModId>> = tierMod === undefined
         ? a.tiers
         : new Map(a.tiers).set(type, new Set([tierMod]));
@@ -511,11 +467,9 @@ function refineHas(a: AItem, type: TypeId, gen: Gen, tierMod: ModId | undefined)
         return tierMod === undefined ? a : { ...a, tiers };
     }
 
-    // Learn it present: force the presence variable true (this AND preserves any
-    // disjunction already recorded), and record what it implies about counts. A
-    // present mod means ≥1 affix (total ≥ 1) and ≥1 in its own generation. The
-    // `total ≥ 1` part is load-bearing: it stops a "remove until X gone" loop from
-    // spuriously concluding the item could be empty while X is still present.
+    // Learn it present, and what that implies about counts: ≥1 affix total and
+    // ≥1 in its generation. The `total ≥ 1` part stops a "remove until X gone"
+    // loop from concluding the item could be empty while X is still present.
     const presence = a.bdd.and(a.presence, a.bdd.variable(type));
     const total: Range = [Math.max(a.total[0], 1), a.total[1]];
     const prefix: Range =
@@ -528,9 +482,8 @@ function refineHas(a: AItem, type: TypeId, gen: Gen, tierMod: ModId | undefined)
 
 function refineLacks(a: AItem, type: TypeId, tierMod: ModId | undefined): AItem | null {
     if (tierMod !== undefined) {
-        // "not has X tier M": X is not present as tier M (X may still be present
-        // as another tier). We don't exclude the type — we remove M from its
-        // possible tiers.
+        // "not has X t<n>": X may still be present at another tier, so remove
+        // just that mod from its possible tiers rather than excluding the type.
         const allowed = a.tiers.get(type);
         if (
             isGuaranteed(a, type) &&
@@ -550,9 +503,8 @@ function refineLacks(a: AItem, type: TypeId, tierMod: ModId | undefined): AItem 
         return { ...a, tiers };
     }
 
-    // Force the presence variable false. If it was guaranteed, the BDD collapses
-    // to FALSE (uninhabited → dead arm); if a disjunction relied on it, that
-    // disjunct is pruned — this is where the relational precision lives.
+    // Force the presence variable false: a guaranteed type collapses the BDD to
+    // FALSE (impossible); a disjunction that relied on it gets pruned.
     const presence = a.bdd.and(a.presence, a.bdd.not(a.bdd.variable(type)));
     if (a.bdd.isFalse(presence)) return null; // known present → cannot lack it
     const tiers = new Map(a.tiers);

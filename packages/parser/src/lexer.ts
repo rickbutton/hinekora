@@ -1,16 +1,7 @@
 /**
- * The lexer: source text → a flat token stream, hand-rolled (no generators).
- *
- * The surface language uses C-style brace-delimited blocks and is
- * WHITESPACE-INSIGNIFICANT: spaces, tabs, and newlines are all just trivia
- * separating tokens, and `#` runs to end of line as a comment. There is no
- * off-side rule, so this lexer is a straightforward "skip trivia, scan one
- * token" loop — no indentation tracking, no synthetic layout tokens.
- *
- * Positions (line/column) are still tracked so errors can point precisely.
- *
- * Vocabulary note: words are ALL lexed as `ident`. Whether a word is a keyword
- * or a currency name is the parser's call — the lexer stays vocabulary-free.
+ * The lexer: source text → a flat token stream. Whitespace (incl. newlines) is
+ * trivia and `#` comments run to end of line; positions are tracked for
+ * errors. All words lex as `ident` — vocabulary is the parser's call.
  */
 import { type Pos, span } from "@hinekora/core";
 import { CraftSyntaxError } from "./errors.js";

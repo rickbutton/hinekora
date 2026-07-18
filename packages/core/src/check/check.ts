@@ -1,21 +1,10 @@
 /**
- * The checker (brief §5): wire the parsed `Craft` over the model, threading the
- * abstract index (`AItem`) through the statement sequence.
- *
- * Control flow is modelled with a small `Flow` type: a statement either FALLS
- * through with a new state, or RESTARTS (diverges, re-entering the enclosing
- * loop). Branch joins (`if`/`else`) merge the falling states; loops prove their
- * exit predicate into the after-state (loop-exit-as-proof).
- *
- * Errors are collected as diagnostics rather than thrown — a craft can have
- * several independent problems, and each renders the state at its point.
- *
- * The lowering the surface doc describes (`with omen` → enable/disable, English
- * negation, multi-exit loops) is minimal here: `with omen` scopes the omen
- * context Ω directly, and `until`/`if` map to loop/narrow. Deferred: chaos /
- * essence (need game catalogs), protection metamods, and full loop-invariant
- * fixpointing (the body is checked once from the entry state — sound for the
- * single-op-body loops these crafts use; wider invariants are future work).
+ * The checker: thread the abstract item state (`AItem`) through a parsed
+ * `Craft`, verifying every operation's precondition on every path. A statement
+ * either falls through with a new state or restarts (diverges); `if`/`else`
+ * joins its arms; `until` computes a loop invariant and proves its exit
+ * predicate into the after-state. Errors are collected as diagnostics, not
+ * thrown — a craft can have several independent problems.
  */
 import type { AffixDecl, Arg, Craft, Def, ItemBlock, ParamRef, Pred, Stmt } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
@@ -99,11 +88,10 @@ export function traceAt(trace: readonly TraceEntry[], offset: number): TraceEntr
     return best;
 }
 
-/** Item-block affix names that mean "some unspecified affix" (surface §8). */
+/** Item-block affix names that mean "some unspecified affix". */
 const PLACEHOLDERS = /^random\b|^\?$/;
 
-/** Safety cap on loop-invariant fixpoint iterations (the lattice is bounded, so
- * convergence is far below this — it only guards against a bug). */
+/** Backstop on loop-invariant iterations; the bounded lattice converges long before this. */
 const MAX_LOOP_ITERS = 64;
 
 type Flow = { readonly kind: "fall"; readonly state: AItem } | { readonly kind: "restart" };
@@ -114,21 +102,16 @@ export function check(craft: Craft, ctx: CheckContext): CheckResult {
 
 class Checker {
     private readonly diagnostics: CheckDiagnostic[] = [];
-    /** Currently-enabled omens (the context Ω), innermost scope last. */
+    /** Currently-enabled omens, innermost scope last. */
     private readonly omens: OmenSpec[] = [];
-    /**
-     * When > 0, diagnostics are suppressed. Loop-invariant computation re-checks
-     * the body several times; those exploratory passes must not emit (duplicate)
-     * diagnostics — only the final, real pass does.
-     */
+    /** When > 0, suppress diagnostics — loop-invariant passes re-check the body
+     *  and must not emit duplicates; only the final, real pass does. */
     private quiet = 0;
     private readonly trace: TraceEntry[] = [];
-    /** One BDD manager per check — all states in this run share it, so their
-     *  `presence` ids are comparable (and `stateEqual` is just `===`). */
+    /** One BDD manager per check, shared by all states so `presence` ids compare. */
     private readonly bdd = new BddManager();
-    /** Local predicate defs by name, with their inferred parameter types.
-     *  `valid` is false when the def is itself ill-formed (e.g. a param used
-     *  inconsistently) — calls to it are then dropped without a cascade. */
+    /** Local predicate defs. `valid: false` marks an ill-formed def whose calls
+     *  are dropped without cascading errors. */
     private readonly defs = new Map<
         string,
         { def: Def; paramTypes: Map<string, ParamType>; valid: boolean }
@@ -170,9 +153,8 @@ class Checker {
         }
         const base = baseRes.value;
         const present = new Set<TypeId>();
-        // Each declared mod is pinned to a specific tier — the starting item is
-        // concrete, so the checker (and the hover) know the exact mods, not just
-        // their types. Placeholders (`"random"`) stay anonymous.
+        // Named mods pin an exact tier so the starting item is fully concrete;
+        // placeholders (`"random"`) stay anonymous.
         const pinned = new Map<TypeId, ModId>();
         const ctx = { game, base, ilvl: item.ilvl };
 
@@ -182,9 +164,8 @@ class Checker {
             }
         };
 
-        // Resolve one declared affix to a specific tier-mod, or report why it
-        // can't. A named mod pins a tier via (1) an exact id/alias, or (2) a stat
-        // description plus a `t<n>` tier; a bare description is an error.
+        // A named mod pins a tier via an exact id/alias, or a stat description
+        // plus `t<n>`; a bare description is an error.
         const pinAffix = (affix: AffixDecl, gen: Gen): void => {
             const byId = this.registry.resolveMod(affix.mod);
             if (byId.ok) {
@@ -202,7 +183,7 @@ class Checker {
             checkGen(affix.mod, this.registry.genOfType(type), gen);
             if (affix.tier === undefined) {
                 this.diag(
-                    `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t1\`) — a starting item's mods must be concrete.`,
+                    `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t1\`) — a starting item's mods must name a specific tier.`,
                     item.span,
                 );
                 present.add(type); // still count it as present, just untiered
@@ -380,7 +361,7 @@ class Checker {
         }
     }
 
-    /** The generation an active omen forces this op into, if any (typing rules §10). */
+    /** The generation an active omen forces this op into, if any. */
     private forcedGenFor(
         kind: CurrencyKind,
         span: CheckDiagnostic["span"],
@@ -444,35 +425,28 @@ class Checker {
     private checkUntil(a: AItem, stmt: Extract<Stmt, { kind: "until" }>): Flow {
         const rpred = this.resolvePred(stmt.pred, a);
 
-        // (a) REACHABILITY. Can the exit predicate ever hold? Test it after one
-        // clean iteration from the entry (where the body's preconditions surely
-        // hold). If it cannot, the loop can never exit — the root cause — so
-        // report that and stop, rather than a downstream symptom.
+        // Reachability first: if the exit predicate can never be satisfied after
+        // one clean iteration, report that root cause instead of a downstream
+        // symptom.
         const entryEnd = this.checkBodyQuiet(a, stmt.body);
         const exitReachable = rpred === null ? entryEnd : refine(entryEnd, rpred, true);
         if (rpred !== null && exitReachable === null) {
             this.diag(
-                `this loop can never exit: ${describePred(stmt.pred)} can never hold here`,
+                `this loop can never exit: ${describePred(stmt.pred)} can never become true here`,
                 stmt.pred.span,
             );
             return { kind: "fall", state: entryEnd };
         }
 
-        // (b) SOUNDNESS ACROSS ITERATIONS. Compute the loop invariant — a
-        // fixpoint over-approximating every loop-head state — and check the body
-        // against it. This is what catches an operation whose precondition only
-        // fails on a LATER iteration: e.g. `until has X { exalt }` fills the item
-        // over successive exalts, and exalt eventually has no open slot. The
-        // invariant's affix count widens to "possibly full", so the exalt in this
-        // pass fails and is reported. (A reroll-style body keeps the count fixed,
-        // so its invariant is the entry state and it checks clean.)
+        // Check the body from the loop invariant, not just the entry state —
+        // this catches a precondition that only fails on a later iteration
+        // (`until has X { exalt }` eventually fills the item).
         const invariant = this.loopInvariant(a, stmt.body, rpred);
         const invFlow = this.checkSeq(invariant, stmt.body);
         const invEnd = invFlow.kind === "fall" ? invFlow.state : invariant;
 
-        // (c) LOOP-EXIT-AS-PROOF. After the loop, the exit predicate is proven of
-        // the item. Fall back to the reachability-pass exit if the invariant pass
-        // hit a precondition failure (the craft is already rejected).
+        // On exit the predicate is known to hold; refine it into the after-state.
+        // Fall back to the reachability pass if the invariant pass failed.
         const exit = rpred === null ? invEnd : refine(invEnd, rpred, true);
         return { kind: "fall", state: exit ?? exitReachable ?? invariant };
     }
@@ -489,12 +463,9 @@ class Checker {
     }
 
     /**
-     * The loop-invariant fixpoint: the least state (join) that covers the entry
-     * and every "continue" state (body ran, exit predicate still false). The
-     * abstract lattice is finite (bounded ranges + finite ModType sets) and the
-     * iteration is monotone, so it converges quickly; `MAX_LOOP_ITERS` is a bug
-     * backstop. Computed with diagnostics suppressed — only the caller's real
-     * body pass emits.
+     * The loop invariant: the least state (by join) covering the entry and every
+     * "continue" state (body ran, exit predicate still false). The lattice is
+     * finite and the iteration monotone, so this converges quickly.
      */
     private loopInvariant(entry: AItem, body: readonly Stmt[], rpred: RPred | null): AItem {
         let invariant = entry;
@@ -540,8 +511,9 @@ class Checker {
             }
             const { types, conflicts, used } = inferParamTypes(def);
             for (const c of conflicts) {
+                const ways = c.sorts.map((s) => SORT_LABEL[s]).join(" and as ");
                 this.diag(
-                    `parameter "${c.param}" of "${def.name}" is used at conflicting sorts (${c.sorts.join(", ")}) — a tier, a count, and a mod are distinct`,
+                    `parameter "${c.param}" of "${def.name}" is used in conflicting ways (as ${ways})`,
                     def.span,
                 );
             }
@@ -675,36 +647,39 @@ class Checker {
         return { kind: "has", type, gen, tierMod: mod.id };
     }
 
-    /** Narrow a value slot to a literal; a leftover ParamRef means an unbound param. */
+    /** Narrow a value slot to a literal; a leftover ParamRef never got a value. */
     private literalInt(v: number | ParamRef, span: SourceSpan): number | null {
         if (typeof v === "number") return v;
-        this.diag(`unbound parameter "${v.param}"`, span);
+        this.diag(`parameter "${v.param}" was never given a value`, span);
         return null;
     }
 
     private literalString(v: string | ParamRef, span: SourceSpan): string | null {
         if (typeof v === "string") return v;
-        this.diag(`unbound parameter "${v.param}"`, span);
+        this.diag(`parameter "${v.param}" was never given a value`, span);
         return null;
     }
 }
 
 // --- def parameter types + substitution (module-level, pure) --------------
 
-/** A parameter is used either as an int (tier/count) or as a mod name. */
 /**
- * The sort of a def parameter — three DISTINCT kinds even though a tier and a
- * count are both written with digits. A `tier` (t1) indexes a mod's tier ladder;
- * a `count` is a number of affixes; a `mod` is a stat description.
+ * The sort of a def parameter — three distinct kinds even though a tier and a
+ * count are both written with digits: a `tier` (t1) indexes a mod's tier
+ * ladder, a `count` is a number of affixes, a `mod` is a stat description.
  */
 type ParamType = "tier" | "count" | "mod";
 
+const SORT_LABEL: Record<ParamType, string> = {
+    tier: "a tier",
+    count: "a count",
+    mod: "a mod name",
+};
+
 /**
- * Infer each parameter's sort from where it is used: a `has` tier slot ⇒ `tier`,
- * a count comparison ⇒ `count`, a `has` target ⇒ `mod`. A param used at two
- * different sorts is a `conflict` (they don't unify). Also tracks which params
- * are USED at all (value slots AND pass-through call args), so an unused one can
- * be flagged.
+ * Infer each parameter's sort from where it is used; uses at two different
+ * sorts conflict. Also tracks which params are used at all (value slots and
+ * pass-through call args), so an unused one can be flagged.
  */
 function inferParamTypes(def: Def): {
     types: Map<string, ParamType>;

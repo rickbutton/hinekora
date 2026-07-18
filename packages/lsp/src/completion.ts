@@ -1,16 +1,9 @@
 /**
- * Completion. The cursor's syntactic context is inferred by a small backward
- * text scan (robust to the half-typed, invalid source you always have while
- * editing) — inside a string after `base:` → base names; inside any other
- * string → mod suggestions; otherwise → currencies + control keywords.
- *
- * Mod suggestions are narrowed to what is actually POSSIBLE at the cursor:
- *   1. rollable on the item's base + ilvl (a jewel mod never shows on a ring);
- *   2. not proven-absent by the checker's abstract state at that point (a mod
- *      `excluded` by an earlier `not has …` refinement disappears).
- * Both filters are best-effort: if the base can't be read or the craft doesn't
- * parse (as it usually won't mid-string), that filter is simply skipped, so the
- * list degrades to "all mods" rather than to nothing.
+ * Completion. The cursor's context comes from a small backward text scan
+ * (robust to half-typed source). Mod suggestions are narrowed to what is
+ * possible at the cursor — rollable on the base + ilvl and not proven absent
+ * by the checker — with each filter degrading to "all mods" when the source
+ * can't be read, never to nothing.
  */
 import {
     type Base,
@@ -43,8 +36,7 @@ const PREDICATE_KEYWORDS: { label: string; detail: string; kind: CompletionItemK
 /** Keywords after which a predicate begins (control headers + logical connectives). */
 const PREDICATE_INTRODUCERS = new Set(["if", "until", "not", "and", "or"]);
 
-/** Local `def` names (+ their param text), scraped from the source. Robust to a
- *  half-typed craft — a regex, not a parse — so it works mid-edit. */
+/** Local `def` names (+ param text), scraped by regex so it works mid-edit. */
 function localDefs(source: string): { name: string; params: string }[] {
     const out: { name: string; params: string }[] = [];
     for (const m of source.matchAll(/\bdef\s+([A-Za-z_]\w*)\s*\(([^)]*)\)/g)) {
@@ -72,9 +64,8 @@ function contextAt(source: string, offset: number): Context {
     }
 
     if (!inString) {
-        // At a statement/predicate boundary. If the completed word just before
-        // the cursor introduces a predicate (`if`/`until`/`not`), offer predicate
-        // keywords; otherwise it's a statement position.
+        // Predicate position iff the completed word before the cursor introduces
+        // a predicate; otherwise a statement position.
         if (isSpace(source[offset - 1])) {
             let j = offset - 1;
             while (j >= 0 && isSpace(source[j])) j--;
@@ -122,9 +113,8 @@ function itemContext(
 }
 
 /**
- * The ModTypes proven absent at `offset`, if the craft parses. The source is
- * usually mid-string here, so we also try a copy with the string closed — enough
- * for the surrounding statement to parse and its entry state to be read.
+ * The ModTypes proven absent at `offset`. The source is usually mid-string
+ * here, so also try a copy with the open string closed.
  */
 function excludedAt(source: string, offset: number, registry: Registry): ReadonlySet<TypeId> {
     const repaired = source.slice(0, offset) + '"' + source.slice(offset);

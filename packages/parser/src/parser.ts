@@ -1,15 +1,8 @@
 /**
- * The parser: a hand-written recursive-descent parser over the token stream.
- *
- * Each grammar production is one method; the structure of the code mirrors the
- * grammar in the surface doc (§1 item block, §3 operations, §4 control
- * constructs, §5 predicates). Blocks are C-style `{ … }`; whitespace is
- * insignificant and statements are self-delimiting (each op is a single word;
- * control constructs are brace-delimited), so there are no separators to consume.
- *
- * All vocabulary knowledge lives here (not the lexer): keywords are just idents
- * with a known spelling. Errors are thrown as `CraftSyntaxError` and turned into
- * a `ParseResult` at the `parse` boundary.
+ * A hand-written recursive-descent parser; each grammar production is one
+ * method, mirroring the surface doc's grammar. All vocabulary lives here (the
+ * lexer emits only idents). Errors are thrown as `CraftSyntaxError` and turned
+ * into a `ParseResult` at the `parse` boundary.
  */
 import {
     type AffixDecl,
@@ -58,12 +51,8 @@ export function parseTokens(tokens: Token[]): Craft {
 class Parser {
     private index = 0;
     private prev: Token;
-    /**
-     * The parameters of the def currently being parsed. A bare ident in a value
-     * slot (`has X t`, `prefixCount < n`) is a parameter reference only when it
-     * names one of these; empty at top level, so top-level predicates can't
-     * accidentally reference params.
-     */
+    /** Params of the def being parsed; a bare ident in a value slot is a param
+     *  reference only when it names one of these. Empty at top level. */
     private defParams = new Set<string>();
 
     constructor(private readonly tokens: Token[]) {
@@ -118,19 +107,16 @@ class Parser {
     parseCraft(): Craft {
         const start = this.peek().span.start;
 
-        // `craft in <game>` is a bare top-level declaration that must come first;
-        // the item block and the statement body follow directly at file scope
-        // (no braces wrap the whole craft). Requiring it here, before the item
-        // block and body, is what enforces "declaration first".
+        // `craft in <game>` must come first; the item block and body follow at
+        // file scope (no braces wrap the craft).
         this.expectKeyword("craft");
         this.expectKeyword("in");
         const game = this.parseGame();
 
         const item = this.parseItemBlock();
 
-        // The body is a flat sequence of statements, with `def`s interleaved.
-        // Defs are collected separately (they are file-level bindings, not steps);
-        // they may appear anywhere and are usable in any predicate.
+        // Defs are file-level bindings, not steps — collected separately, and
+        // may appear anywhere in the body.
         const defs: Def[] = [];
         const body: Stmt[] = [];
         while (!this.at("eof") && !this.at("rbrace")) {
@@ -143,7 +129,7 @@ class Parser {
         return { kind: "craft", game, item, defs, body, span: span(start, this.prev.span.end) };
     }
 
-    // --- predicate defs (surface §5.1) -------------------------------------
+    // --- predicate defs ----------------------------------------------------
 
     private parseDef(): Def {
         const start = this.expectKeyword("def").span.start;
@@ -158,8 +144,6 @@ class Parser {
         this.expect("rparen", "')' to close the parameter list");
         this.expect("assign", "'=' before the def body");
 
-        // Parse the body with these params in scope, so bare idents in value
-        // slots resolve to parameter references.
         this.defParams = new Set(params);
         const body = this.parsePred();
         this.defParams = new Set();
@@ -174,7 +158,7 @@ class Parser {
         throw this.error(`unknown game '${t.text}' (expected 'poe1' or 'poe2')`, t.span);
     }
 
-    // --- item block (surface §1) -------------------------------------------
+    // --- item block --------------------------------------------------------
 
     private parseItemBlock(): ItemBlock {
         const start = this.peek().span.start;
@@ -310,7 +294,7 @@ class Parser {
         return items;
     }
 
-    // --- statements (surface §3–§4) ----------------------------------------
+    // --- statements --------------------------------------------------------
 
     private parseStatements(): Stmt[] {
         const stmts: Stmt[] = [];
@@ -411,11 +395,10 @@ class Parser {
         return { kind: "if", pred, body, span: span(start, this.prev.span.end) };
     }
 
-    // --- predicates (surface §5) -------------------------------------------
+    // --- predicates ---------------------------------------------------------
 
-    // Predicate grammar by precedence, loosest first: `or` < `and` < `not` <
-    // atom. So `a or b and c` parses as `a or (b and c)`, and `not a and b` as
-    // `(not a) and b`. All binary operators are left-associative.
+    // Precedence, loosest first: `or` < `and` < `not` < atom; binary operators
+    // are left-associative.
     private parsePred(): Pred {
         return this.parseOr();
     }
@@ -476,7 +459,6 @@ class Parser {
         if (t.text === "has") {
             this.advance();
             const mod = this.parseModOrParam();
-            // Optional tier qualifier `t1` (T1 = best), or a parameter.
             const tier = this.parseTierOrParam();
             return {
                 kind: "has",
@@ -523,13 +505,10 @@ class Parser {
         };
     }
 
-    /**
-     * A call argument: an int (`1` or `t1` shorthand), a quoted string, or — in a
-     * def body — an in-scope parameter passed straight through to a nested call.
-     */
+    /** A call argument: a `t1` tier, an int, a quoted string, or (in a def
+     *  body) a parameter forwarded to a nested call. */
     private parseArg(): Arg {
         const t = this.peek();
-        // A `t1` tier is its own sort — NOT a bare integer count.
         const m = t.kind === "ident" ? /^t(\d+)$/i.exec(t.text) : null;
         if (m) {
             this.advance();

@@ -1,16 +1,8 @@
 /**
- * Mod acquisition sources, and the catalogs for source-specific crafting.
- *
- * A mod's SOURCE is how it can get onto an item. It is derivable from the raw
- * data (domain + generation type + the essence flag) and stamped onto each mod
- * at ingest. The point is to make explicit what `pool` already enforces
- * implicitly: only `natural` mods roll via chaos/exalt (they have real spawn
- * weights on an item-domain base), while `essence`/`bench`/`veiled`/… mods come
- * from their own currency items and live in their own domains.
- *
- * The full taxonomy is listed; our current (affix-only) data populates the
- * affix sources. Implicit-slot sources (`corrupted`, `enchant`, `eldritch`) are
- * defined for completeness — they arrive when the model grows an implicit slot.
+ * Mod acquisition sources (stamped at ingest) and the catalogs for
+ * source-specific crafting. Only `natural` mods roll via chaos/exalt;
+ * essence/bench/veiled/… mods come from their own currency items.
+ * Implicit-slot sources are defined for completeness but not yet modelled.
  */
 import type { ClassId, ModId } from "./ids.js";
 
@@ -28,9 +20,8 @@ export type ModSource =
     | "other"; // anything else (monster/area mods, non-spawnable specials)
 
 /**
- * An Essence: it rerolls the item (chaos-style) but GUARANTEES one specific mod,
- * chosen by the item's class (the same essence grants different mods on a Ring
- * vs a Body Armour). The guaranteed mod may itself be `natural` or `essence`.
+ * An Essence: rerolls the item but guarantees one specific mod, chosen by the
+ * item's class.
  */
 export interface EssenceSpec {
     readonly id: string;
@@ -40,10 +31,8 @@ export interface EssenceSpec {
     readonly tier: number;
     /**
      * Cap on the level of the RANDOM fill mods (absent = no cap). NOT an
-     * item-level requirement: essences work on any item level, and the
-     * guaranteed mod is forced at its fixed tier regardless of the item's level
-     * (a Deafening essence puts its level-82 mod on an ilvl-1 item). Only the
-     * non-guaranteed fill respects `min(item.ilvl, maxRandomModLevel)`.
+     * item-level requirement — the guaranteed mod lands at its fixed tier on
+     * any ilvl; only the fill respects `min(item.ilvl, maxRandomModLevel)`.
      */
     readonly maxRandomModLevel?: number;
     /** Item class → the mod this essence guarantees on that class. */

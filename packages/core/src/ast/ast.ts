@@ -1,22 +1,13 @@
 /**
- * The surface AST (brief §3 `/core/ast`).
- *
- * This is the contract between the parser (which produces it) and the checker
- * (which consumes it). It lives in core so the checker can depend on it without
- * depending on the parser — the one-way arrow. Nodes are discriminated unions
- * with a `kind` tag, matching the codebase discipline for exhaustive switches.
- *
- * The AST is DELIBERATELY SHALLOW: it mirrors the surface syntax (surface doc
- * §1–§5) and does no resolution or lowering. Mod and currency names stay raw
- * strings — turning "exalt" into a currency value, or "T1 Life" into a mod, is
- * the resolver's job (a later milestone); desugaring `with omen`/multi-exit
- * loops into primitives is the checker's. Keeping those out of the AST keeps the
- * parser a pure syntax-to-tree transform.
+ * The surface AST — the contract between parser and checker. It lives in core
+ * so the checker doesn't depend on the parser. Deliberately shallow: it mirrors
+ * the surface syntax and does no resolution or lowering; names stay raw
+ * strings, keeping the parser a pure syntax-to-tree transform.
  */
 import type { Game, Rarity } from "../model/ids.js";
 import type { SourceSpan } from "./span.js";
 
-/** A whole craft file: `craft in <game>:` header, an item block, then a body. */
+/** A whole craft file: `craft in <game>` header, an item block, then a body. */
 export interface Craft {
     readonly kind: "craft";
     readonly game: Game;
@@ -28,10 +19,9 @@ export interface Craft {
 }
 
 /**
- * A local, parameterized PREDICATE definition: `def anyEleRes(t) = has … t or …`.
- * Pure (no item side effects). A call substitutes arguments into `body`. Parameter
- * types are inferred from where each param is used (a `tier` slot ⇒ int, a `has`
- * slot ⇒ mod name).
+ * A local, parameterized predicate definition: `def anyEleRes(t) = has … t or …`.
+ * Pure; a call substitutes arguments into `body`. Parameter sorts are inferred
+ * from use (see the checker).
  */
 export interface Def {
     readonly kind: "def";
@@ -48,10 +38,8 @@ export interface ParamRef {
 }
 
 /**
- * An argument to a def call. Tiers and counts are DISTINCT sorts even though both
- * are written with digits: a `tier` (`t1`, an ordinal into a mod's tier ladder)
- * is not an `int` count. `param` is a parameter passed straight through to a
- * nested call (`def a(t) = b(t)`).
+ * An argument to a def call. A `tier` (`t1`) is a distinct sort from an `int`
+ * count; `param` is a parameter forwarded to a nested call (`def a(t) = b(t)`).
  */
 export type Arg =
     | { readonly kind: "tier"; readonly value: number; readonly span: SourceSpan }
@@ -60,10 +48,9 @@ export type Arg =
     | { readonly kind: "param"; readonly param: string; readonly span: SourceSpan };
 
 /**
- * A declared affix in the item block: a named modifier with its tier (`"maximum
- * life" t1`), or a `"random"`/`"?"` placeholder standing for an unspecified affix
- * (no tier). A named mod must pin a specific tier — either the explicit `tier`
- * here or by naming an exact mod id/alias — so the starting item is concrete.
+ * A declared affix in the item block: a named modifier with its tier
+ * (`"maximum life" t1`), or a `"random"`/`"?"` placeholder (no tier). A named
+ * mod must pin a specific tier so the starting item is concrete.
  */
 export interface AffixDecl {
     readonly mod: string;
@@ -71,8 +58,7 @@ export interface AffixDecl {
 }
 
 /**
- * The item declaration — the only place state is given rather than inferred
- * (surface §1). Mod/base/augment names are raw strings (resolved later).
+ * The item declaration — the only place state is given rather than inferred.
  * Optional fields default: `augments` to none, `quality` to 0.
  */
 export interface ItemBlock {
@@ -123,13 +109,13 @@ export interface BenchStmt {
     readonly span: SourceSpan;
 }
 
-/** `restart` — re-enter the enclosing craft/loop from its start (surface §4.4). */
+/** `restart` — re-enter the enclosing craft/loop from its start. */
 export interface RestartStmt {
     readonly kind: "restart";
     readonly span: SourceSpan;
 }
 
-/** `until <pred>:` — loop with proof-on-exit (surface §4.1 → loop primitive). */
+/** `until <pred> { … }` — loop; on exit the predicate is known to hold. */
 export interface UntilStmt {
     readonly kind: "until";
     readonly pred: Pred;
@@ -137,7 +123,7 @@ export interface UntilStmt {
     readonly span: SourceSpan;
 }
 
-/** `if <pred>:` / optional `else:` — narrow an outcome (surface §4.2). */
+/** `if <pred> { … }` with an optional `else { … }`. */
 export interface IfStmt {
     readonly kind: "if";
     readonly pred: Pred;
@@ -146,7 +132,7 @@ export interface IfStmt {
     readonly span: SourceSpan;
 }
 
-/** `with omen "<name>":` — omen-directed scope (surface §4.3 → omen context Ω). */
+/** `with omen "<name>" { … }` — omen-directed scope. */
 export interface WithOmenStmt {
     readonly kind: "withOmen";
     readonly omen: string;
@@ -169,9 +155,9 @@ export interface RarityPred {
 }
 
 /**
- * `has "<mod>"` — presence of a (raw, unresolved) mod, matched fuzzily to a
- * ModType. An optional `tier N` qualifier (T1 = best) narrows to a specific
- * tier of that type; without it, `has` means "any tier of this type present".
+ * `has "<mod>"` — presence of a mod, matched fuzzily to a ModType. An optional
+ * `t<n>` qualifier (T1 = best) narrows to a specific tier; without it, any
+ * tier counts.
  */
 export interface HasPred {
     readonly kind: "has";
@@ -198,7 +184,7 @@ export interface CallPred {
     readonly span: SourceSpan;
 }
 
-/** `not <pred>` — the single, general negation (surface §5). */
+/** `not <pred>` — the single, general negation. */
 export interface NotPred {
     readonly kind: "not";
     readonly inner: Pred;

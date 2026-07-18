@@ -1,32 +1,10 @@
 /**
- * Outcomes — the symbolic tagged-union machinery (typing rules §4, "Random
- * outcomes produce a tagged union as the result/after").
- *
- * THIS FILE IS WHERE THE INTENSIONAL-UNION RULE LIVES (brief §2/§4). An
- * `Outcome` is a SYMBOLIC DESCRIPTION of how an item changed, never a
- * materialized list of the ~100–200 concrete item states it could become:
- *
- *   - `AddOne`    describes "prior item + one mod drawn from `candidates`"
- *                 (transmute / regal / exalt). O(1) to construct: it just holds
- *                 the base item and the pool — it does NOT expand the arms.
- *   - `RemoveOne` describes "prior item − one affix drawn from `removables`"
- *                 (annul). Likewise symbolic.
- *   - `Certain`   is the degenerate one-arm case (a deterministic op).
- *
- * Summary queries answer WITHOUT enumerating:
- *   - `guaranteedPresent` / `possiblePresent` are membership computations over
- *     the base's present-set and the candidate/removable type-sets — the
- *     "floor" every arm shares, and the "could-happen" possibility. This is how
- *     narrowing (a later milestone) will filter a union by `has X`: a set test,
- *     not a walk over arms.
- *   - the count ranges are computed from which generations the candidates /
- *     removables touch, again without building arms.
- *
- * `arms()` DOES enumerate — but that is the *rendering / probability* path, run
- * on demand (inspect a step, count outcomes), never in the checker's per-step
- * hot loop. Enumerating one step's arms is the cheap bounded thing §4 budgets;
- * what stays forbidden is materializing them and taking the product across
- * chained ops. Chaining consumes an Outcome's *description*, not its expansion.
+ * Outcomes — the symbolic tagged-union machinery (typing rules §4). An
+ * `Outcome` is a description of how an item changed ("prior item + one mod
+ * drawn from `candidates`"), never a materialized list of the concrete states
+ * it could become; the summary queries below answer without enumerating.
+ * `arms()` does enumerate, but only on the on-demand rendering/probability
+ * path — chaining consumes a description, not an expansion.
  */
 import type { Gen, Rarity, TypeId } from "../model/ids.js";
 import type { Item } from "../model/item.js";
@@ -42,9 +20,8 @@ export interface CertainOutcome {
 
 /**
  * "Add one mod drawn from `candidates` to `base`." `base` already carries the
- * RESULT rarity (e.g. transmute promotes to Magic before the pool is drawn — see
- * the currency module), so every arm is `base` with one candidate appended.
- * ADDITIVE: every mod already on `base` survives into every arm.
+ * RESULT rarity (see the currency module's promotion note), so every arm is
+ * `base` plus one candidate; every mod already on `base` survives.
  */
 export interface AddOneOutcome {
     readonly kind: "addOne";
@@ -93,7 +70,7 @@ function withoutMod(it: Item, m: Mod): Item {
 
 // --- Enumeration (on-demand: render / probability, not the hot path) -------
 
-/** Materialize every arm. Bounded by |candidates| or |removables| — one step. */
+/** Materialize every arm. Bounded by |candidates| or |removables|. */
 export function arms(o: Outcome): readonly Item[] {
     switch (o.kind) {
         case "certain":
@@ -117,16 +94,13 @@ export function armCount(o: Outcome): number {
     }
 }
 
-/**
- * An outcome is INHABITED iff it has at least one arm. An uninhabited outcome
- * (empty pool for an add, nothing removable for a remove) is a type error in
- * the checker (typing rules §4.7 / §10.3); here we just expose the predicate.
- */
+/** An outcome is inhabited iff it has at least one arm (empty pool / nothing
+ *  removable ⇒ uninhabited, which the checker reports as an error). */
 export function isInhabited(o: Outcome): boolean {
     return armCount(o) > 0;
 }
 
-/** The rarity shared by every arm (all M2 ops fix the result rarity). */
+/** The rarity shared by every arm (every op fixes the result rarity). */
 export function outcomeRarity(o: Outcome): Rarity {
     return o.kind === "certain" ? o.item.rarity : o.base.rarity;
 }
@@ -134,14 +108,9 @@ export function outcomeRarity(o: Outcome): Rarity {
 // --- Presence queries (the intensional floor / possibility) ---------------
 
 /**
- * ModTypes guaranteed present in EVERY arm — the "floor" narrowing can rely on
- * without inspecting a branch.
- *   - certain: exactly what's on the item.
- *   - addOne:  base's present set (the added mod varies, so it is NOT floor).
- *              → this is why "Exalt preserves X": X ∈ base ⇒ X ∈ floor.
- *   - removeOne: base's present set MINUS any type that some arm removes
- *              (every removable type dies in one arm).
- *              → this is why "Annul risks X": a removable X drops out of floor.
+ * ModTypes guaranteed present in EVERY arm — the floor narrowing can rely on.
+ * addOne keeps the base's whole present set (why exalt preserves a mod);
+ * removeOne subtracts every removable type (why annul risks one).
  */
 export function guaranteedPresent(o: Outcome): ReadonlySet<TypeId> {
     switch (o.kind) {
@@ -157,10 +126,9 @@ export function guaranteedPresent(o: Outcome): ReadonlySet<TypeId> {
 }
 
 /**
- * ModTypes present in AT LEAST ONE arm — "could this outcome have X".
- *   - addOne: base's present set plus every candidate's type.
- *   - removeOne: base's present set, except when there is exactly ONE removable
- *     affix (its type is removed in the sole arm, so it cannot survive).
+ * ModTypes present in AT LEAST ONE arm — "could this outcome have X". With
+ * exactly one removable affix, its type is removed in the sole arm and so
+ * cannot survive.
  */
 export function possiblePresent(o: Outcome): ReadonlySet<TypeId> {
     switch (o.kind) {

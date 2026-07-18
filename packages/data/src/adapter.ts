@@ -1,11 +1,8 @@
 /**
- * The adapter: RePoE JSON entries → normalized core `Mod` / `Base`.
- *
- * This is the seam the brief calls out (§3 `/data/adapter`): it isolates the
- * source data's shape from the core model, so a different source (PoE2 community
- * data, raw dat-schema dumps) becomes a different adapter feeding the SAME core
- * types. PoE1 weights are ground-truth, so every spawn weight is tagged `Known`
- * (including `Known 0`, which disables a mod on bases carrying that tag).
+ * The adapter: RePoE JSON entries → normalized core `Mod` / `Base`. It
+ * isolates the source data's shape from the core model, so a different source
+ * becomes a different adapter feeding the same types. PoE1 weights are ground
+ * truth, so every spawn weight is tagged `Known` (including `Known 0`).
  */
 import {
     type Base,
@@ -31,12 +28,7 @@ function toGen(generationType: string): Gen | null {
     return generationType === "prefix" || generationType === "suffix" ? generationType : null;
 }
 
-/**
- * Classify a mod's acquisition source from the raw fields (surface §2 / model
- * `ModSource`). This makes explicit what `pool` enforces implicitly: only
- * `natural` mods roll via chaos/exalt; the rest come from their own currencies
- * and live in their own domains.
- */
+/** Classify a mod's acquisition source (`ModSource`) from the raw fields. */
 export function classifySource(m: RepoeMod): ModSource {
     if (m.generation_type !== "prefix" && m.generation_type !== "suffix") {
         switch (m.generation_type) {
