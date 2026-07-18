@@ -195,6 +195,70 @@ function combinations<T>(xs: readonly T[], k: number): T[][] {
     return out;
 }
 
+/** A cardinality guarantee: at least `atLeast` of `types` are present. */
+export interface CardinalityGuarantee {
+    readonly atLeast: number;
+    readonly types: TypeId[];
+}
+
+/** Binomial coefficient C(n, k) — small n; used to recognise "all m-subsets". */
+function binom(n: number, k: number): number {
+    if (k < 0 || k > n) return 0;
+    let r = 1;
+    for (let i = 0; i < k; i++) r = (r * (n - i)) / (i + 1);
+    return Math.round(r);
+}
+
+/**
+ * Fold the disjunctive guarantees into cardinality form. A "≥k of n" fact appears
+ * as ALL the (n−k+1)-subsets of an n-set among the prime implicates — e.g. "≥2 of
+ * {a,b,c}" is exactly the three pairs `(a∨b) ∧ (a∨c) ∧ (b∨c)`. So group clauses
+ * that share variables (one connected component per independent fact); when a
+ * component is exactly the C(n, m) uniform m-subsets of its n-variable union, it
+ * collapses to `atLeast = n − m + 1`. A lone clause (m = n) is `atLeast = 1` — an
+ * ordinary disjunction. Components that don't match stay as individual clauses.
+ */
+export function cardinalityGuarantees(a: AItem): CardinalityGuarantee[] {
+    const clauses = disjunctiveGuarantees(a);
+    if (clauses.length === 0) return [];
+
+    // Union-find the clauses into connected components (sharing a type).
+    const parent = clauses.map((_, i) => i);
+    const find = (x: number): number => {
+        while (parent[x] !== x) x = parent[x] = parent[parent[x]!]!;
+        return x;
+    };
+    const seen = new Map<TypeId, number>();
+    clauses.forEach((c, i) => {
+        for (const t of c) {
+            const j = seen.get(t);
+            if (j === undefined) seen.set(t, i);
+            else parent[find(i)] = find(j);
+        }
+    });
+    const components = new Map<number, number[]>();
+    clauses.forEach((_, i) => {
+        const r = find(i);
+        (components.get(r) ?? components.set(r, []).get(r)!).push(i);
+    });
+
+    const out: CardinalityGuarantee[] = [];
+    for (const idxs of components.values()) {
+        const cls = idxs.map((i) => clauses[i]!);
+        const union = new Set<TypeId>();
+        for (const c of cls) for (const t of c) union.add(t);
+        const n = union.size;
+        const m = cls[0]!.length;
+        // All clauses the same size and exactly every m-subset of the union?
+        if (cls.every((c) => c.length === m) && cls.length === binom(n, m)) {
+            out.push({ atLeast: n - m + 1, types: [...union] });
+        } else {
+            for (const c of cls) out.push({ atLeast: 1, types: [...c] });
+        }
+    }
+    return out;
+}
+
 /**
  * Re-establish the invariants after a field is changed: clamp `prefix` so that
  * both it and the derived suffix stay within `[0, cap]` and consistent with

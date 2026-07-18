@@ -19,9 +19,9 @@ import {
     type AItem,
     check,
     type CurrencyKind,
+    cardinalityGuarantees,
     type Def,
     describePred,
-    disjunctiveGuarantees,
     type Gen,
     guaranteedTypes,
     type Range,
@@ -187,6 +187,8 @@ function fmtRange(r: Range): string {
 
 const RARITY_NAME: Record<string, string> = { normal: "Normal", magic: "Magic", rare: "Rare" };
 const GEN_TAG: Record<Gen, string> = { prefix: "(P)", suffix: "(S)" };
+const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six"];
+const numberWord = (n: number): string => NUMBER_WORDS[n] ?? String(n);
 
 const oneLine = (text: string): string => text.replace(/\n/g, " / ");
 
@@ -250,46 +252,47 @@ function tooltip(a: AItem, registry: Registry, caption?: string): string {
     for (const t of guaranteed) known[genOf(t)].push(t);
     const genHi = { prefix: a.prefix[1], suffix: suffixRange(a)[1] };
 
-    // Classify each disjunction: its generation (if homogeneous) and whether the
-    // count forces EXACTLY one present. A disjunction guarantees ≥1 of its members;
-    // it is exactly-one when at most one can fit — its generation has a single
-    // undetermined slot (genHi − individually-known-of-that-gen ≤ 1), or, spanning
-    // both, the whole item has one undetermined slot.
+    // Classify each cardinality guarantee ("≥k of these"): its generation (if
+    // homogeneous) and whether the count forces EXACTLY k present. It guarantees
+    // ≥k; it's exactly-k when at most k can fit — its generation has exactly k
+    // undetermined slots (genHi − individually-known-of-that-gen), or, spanning
+    // both, the whole item has k undetermined slots.
     const knownTotal = known.prefix.length + known.suffix.length;
-    const disjunctions = disjunctiveGuarantees(a).map((d) => {
-        const gens = new Set(d.map(genOf));
+    const cardinalities = cardinalityGuarantees(a).map((c) => {
+        const gens = new Set(c.types.map(genOf));
         const gen = gens.size === 1 ? [...gens][0]! : undefined;
         const slots = gen ? genHi[gen] - known[gen].length : a.total[1] - knownTotal;
-        return { d, gen, exactlyOne: slots <= 1 };
+        return { ...c, gen, exact: slots <= c.atLeast };
     });
 
-    // A disjunction block: the `(tag) [exactly|at least] one of:` header, then each
+    // A cardinality block: the `(tag) [exactly|at least] N of:` header, then each
     // candidate on its own line, indented (non-breaking spaces) so it hangs under
     // the header rather than reading as another top-level mod.
     const INDENT = "    ";
-    const disjBlock = (x: (typeof disjunctions)[number]): string[] => [
-        `${x.gen ? GEN_TAG[x.gen] : "(P/S)"} _${x.exactlyOne ? "exactly" : "at least"} one of:_`,
-        ...x.d.map((t) => `${INDENT}${modLine(a, t, registry)}`),
+    const cardBlock = (x: (typeof cardinalities)[number]): string[] => [
+        `${x.gen ? GEN_TAG[x.gen] : "(P/S)"} _${x.exact ? "exactly" : "at least"} ${numberWord(x.atLeast)} of:_`,
+        ...x.types.map((t) => `${INDENT}${modLine(a, t, registry)}`),
     ];
 
     const lines: string[] = [];
     for (const gen of ["prefix", "suffix"] as const) {
         for (const t of known[gen]) lines.push(`${GEN_TAG[gen]} ${modLine(a, t, registry)}`);
-        for (const x of disjunctions) if (x.gen === gen) lines.push(...disjBlock(x));
+        for (const x of cardinalities) if (x.gen === gen) lines.push(...cardBlock(x));
     }
-    for (const x of disjunctions) if (x.gen === undefined) lines.push(...disjBlock(x));
+    for (const x of cardinalities) if (x.gen === undefined) lines.push(...cardBlock(x));
 
     // The undetermined REMAINDER — mods beyond the individually-known ones and the
-    // ≥1 each disjunction already accounts for. Reported as ONE line respecting the
+    // ≥k each cardinality already accounts for. Reported as ONE line respecting the
     // coupling: a fixed total split flexibly across generations reads as "a prefix
     // or a suffix", not two independent per-generation ranges.
-    const accounted = knownTotal + disjunctions.length;
+    const cardSlots = (g?: Gen): number =>
+        cardinalities.filter((x) => x.gen === g).reduce((s, x) => s + x.atLeast, 0);
+    const accounted = knownTotal + cardinalities.reduce((s, x) => s + x.atLeast, 0);
     const extraHi = a.total[1] - accounted;
     if (extraHi > 0) {
         const extraLo = Math.max(0, a.total[0] - accounted);
-        const disjOf = (g: Gen): number => disjunctions.filter((x) => x.gen === g).length;
-        const prefCap = a.prefix[1] - known.prefix.length - disjOf("prefix");
-        const sufCap = genHi.suffix - known.suffix.length - disjOf("suffix");
+        const prefCap = a.prefix[1] - known.prefix.length - cardSlots("prefix");
+        const sufCap = genHi.suffix - known.suffix.length - cardSlots("suffix");
         const range = fmtRange([extraLo, extraHi]);
         if (sufCap <= 0) lines.push(`${GEN_TAG.prefix} _${range} undetermined_`);
         else if (prefCap <= 0) lines.push(`${GEN_TAG.suffix} _${range} undetermined_`);

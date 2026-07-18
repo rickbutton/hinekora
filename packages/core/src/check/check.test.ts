@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
-import { disjunctiveGuarantees, excludedTypes, guaranteedTypes } from "./astate.js";
+import {
+    cardinalityGuarantees,
+    disjunctiveGuarantees,
+    excludedTypes,
+    guaranteedTypes,
+} from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import {
     andp,
@@ -27,8 +32,10 @@ import {
     AMULET_BASE,
     CATALOG,
     CLASS_RING,
+    COLD_RESIST,
     FIRE_RESIST,
     LIFE_T1,
+    LIGHTNING_RESIST,
     RING_BASE,
 } from "../__fixtures__/mods.js";
 import type { BenchCraft, EssenceSpec } from "../model/sources.js";
@@ -308,6 +315,27 @@ describe("checker — predicate defs", () => {
     it("reports an unknown def", () => {
         const c = craft("poe1", rareRing(), [until(call("nope", [tierArg(1)]), [op("chaos")])]);
         expect(check(c, ctx).diagnostics[0]?.message).toContain(`unknown def "nope"`);
+    });
+
+    it("collapses the pairwise clauses of `≥2 of 3` into one cardinality", () => {
+        // (fire∨cold) ∧ (fire∨lightning) ∧ (cold∨lightning) is exactly "≥2 of 3";
+        // disjunctiveGuarantees yields the three pairs, cardinality folds them.
+        const twoOfThree = andp(
+            andp(
+                orp(has("FireResist1"), has("ColdResist1")),
+                orp(has("FireResist1"), has("LightningResist1")),
+            ),
+            orp(has("ColdResist1"), has("LightningResist1")),
+        );
+        const c = craft("poe1", rareRing(), [until(twoOfThree, [op("chaos")])]);
+        const r = check(c, ctx);
+        expect(disjunctiveGuarantees(r.finalState!)).toHaveLength(3); // the pairs
+        const cards = cardinalityGuarantees(r.finalState!);
+        expect(cards).toHaveLength(1);
+        expect(cards[0]!.atLeast).toBe(2);
+        expect(new Set(cards[0]!.types)).toEqual(
+            new Set([FIRE_RESIST.type, COLD_RESIST.type, LIGHTNING_RESIST.type]),
+        );
     });
 
     it("tracks a disjunctive guarantee after `until has X or has Y`", () => {
