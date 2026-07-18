@@ -250,10 +250,12 @@ function tooltip(a: AItem, registry: Registry, caption?: string): string {
     for (const t of guaranteed) known[genOf(t)].push(t);
     const disjunctions = disjunctiveGuarantees(a);
     // A disjunctive guarantee: the `(tag) at least one of:` header, then each
-    // candidate on its own line with its resolved text.
+    // candidate on its own line, indented (non-breaking spaces) so it hangs under
+    // the header rather than reading as another top-level mod.
+    const INDENT = "    ";
     const disjLines = (d: readonly TypeId[], tag: string): string[] => [
         `${tag} _at least one of:_`,
-        ...d.map((t) => `· ${modLine(a, t, registry)}`),
+        ...d.map((t) => `${INDENT}${modLine(a, t, registry)}`),
     ];
 
     const lines: string[] = [];
