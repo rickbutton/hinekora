@@ -803,6 +803,21 @@ describe("checker — count refinement through disjunctions", () => {
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.prefix).toEqual([1, 1]); // the benched life prefix
     });
+
+    it("keeps a disjunctive guarantee through an additive op (exalt)", () => {
+        // `A or B` is proven on loop exit; an exalt only ADDS a mod, so it must
+        // survive — a following `not A and not B` is then provably dead.
+        const c = craft("poe1", item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [
+            op("transmute"),
+            op("regal"),
+            until(orp(has("IncreasedLife1"), has("FireResist1")), [op("annul"), op("exalt")]),
+            op("exalt"), // additive; must not forget "A or B"
+            iff(andp(notp(has("IncreasedLife1")), notp(has("FireResist1"))), [op("annul")]),
+        ]);
+        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("can never run"))).toBe(
+            true,
+        );
+    });
 });
 
 describe("checker — the one-crafted-mod limit", () => {

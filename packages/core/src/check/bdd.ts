@@ -67,6 +67,11 @@ export class BddManager {
         return level === undefined ? a : this.restrictLevel(a, level, value);
     }
 
+    /** Existentially quantify `name` out of `a` (`∃x. a`). No-op if unknown. */
+    exists(a: Bdd, name: string): Bdd {
+        return this.or(this.restrict(a, name, false), this.restrict(a, name, true));
+    }
+
     /** Does `a` entail `b` — is every model of `a` also a model of `b`? */
     entails(a: Bdd, b: Bdd): boolean {
         return this.and(a, this.not(b)) === this.FALSE;

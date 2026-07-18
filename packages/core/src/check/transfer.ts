@@ -14,6 +14,7 @@ import type { Registry } from "../resolve/registry.js";
 import {
     type AItem,
     type Range,
+    admitAdd,
     canBeRare,
     excludedTypes,
     guaranteedTypes,
@@ -323,7 +324,7 @@ function addOne(a: AItem, forcedGen: Gen | undefined, rarity: Rarity, registry: 
         const cur = tiers.get(m.type);
         tiers.set(m.type, cur ? new Set([...cur, m.id]) : new Set([m.id]));
     }
-    const presence = presenceFacts(a.bdd, guaranteedTypes(a), []);
+    const presence = admitAdd(a, added);
     const next: AItem = { ...a, rarity, total, prefix, presence, possible, tiers };
     return settled(next);
 }

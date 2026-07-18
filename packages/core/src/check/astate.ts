@@ -191,6 +191,34 @@ export function disjunctiveTier(a: AItem, types: readonly TypeId[]): Map<TypeId,
     return a.bdd.entails(a.presence, clause) ? pick : new Map<TypeId, ModId>();
 }
 
+/**
+ * Presence after an additive add of one of `added`: keep every positive fact,
+ * relax only the excluded-and-addable atoms (an add removes nothing).
+ *
+ * Only atoms that are ALREADY BDD variables can be excluded — and we must not
+ * touch the rest, because `bdd.variable(name)` ALLOCATES a variable. Allocating
+ * one per addable mod would flood `bdd.variables()` (used by the presence views,
+ * e.g. `disjunctiveGuarantees`'s `MAX_DISJUNCTION_VARS` guard) with hundreds of
+ * spurious entries.
+ */
+export function admitAdd(
+    a: AItem,
+    added: Iterable<{ readonly type: TypeId; readonly id: ModId }>,
+): Bdd {
+    const allocated = new Set(a.bdd.variables());
+    let p = a.presence;
+    const free = (atom: string): void => {
+        if (allocated.has(atom) && a.bdd.entails(p, a.bdd.not(a.bdd.variable(atom)))) {
+            p = a.bdd.exists(p, atom);
+        }
+    };
+    for (const m of added) {
+        free(m.type);
+        free(tierAtomName(m.type, m.id));
+    }
+    return p;
+}
+
 /** Is `type` guaranteed present — forced true in every model of `presence`? */
 export function isGuaranteed(a: AItem, type: TypeId): boolean {
     return a.bdd.entails(a.presence, a.bdd.variable(type));

@@ -341,15 +341,15 @@ Near-term candidates:
   (so a 4+-way disjunction exceeded it and returned an UNSOUND non-fixpoint); now every
   loop in the suite converges within **6** iterations. NOTE: an earlier attempt that ALSO
   interval-widened the counts corrupted the after-state total — widen presence ONLY.
-- **Additive-op disjunction survival (STILL OPEN).** `addOne` rebuilds presence from unit
-  guarantees, DROPPING disjunctions/tier atoms — so a proven `A or B` is forgotten across
-  an `exalt`, and a following `not A and not B` isn't flagged dead (a real precision loss).
-  The sound fix (keep the disjunction: free only the excluded-addable atoms via a BDD `∃`)
-  is implemented and reverted twice: even WITH widening it subtly collapses the canonical
-  `≥2 of 3` after-state (the exit `refine(A or B)` returns one guaranteed arm instead of
-  the disjunction — one arm's `refine` goes null via a `possible`/convergence interaction I
-  couldn't pin down). Needs a focused debug of the widened-invariant → `invEnd` → exit-refine
-  path before re-landing. Low priority (niche precision, not soundness).
+- **Additive-op disjunction survival — DONE.** `addOne` now calls `admitAdd`, which keeps
+  the whole presence BDD and frees only the excluded-and-addable atoms (a BDD `∃`), rather
+  than rebuilding from unit guarantees — so a proven `A or B` survives an `exalt` and a
+  following `not A and not B` is flagged dead. The subtle bug that made this collapse the
+  `≥2 of 3` after-state: `admitAdd` tested exclusion with `bdd.variable(atom)`, which
+  ALLOCATES a variable, so it created a BDD variable per addable mod (hundreds). That
+  flooded `bdd.variables()` and tripped `disjunctiveGuarantees`'s `MAX_DISJUNCTION_VARS`
+  guard, which bailed. Fix: only test atoms already allocated (an unallocated atom can't be
+  excluded). Depends on the widening above to bound loop-body accumulation.
 - **Negative facts in the tooltip** — `not has X` yields an exclusion that is filtered
   from candidates but never shown; surface it as a "without …" line. An additive LAYER
   over the presence decomposition (units → prime implicates → cardinality), not a
