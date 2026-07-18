@@ -393,6 +393,20 @@ export function settled(a: AItem): AItem {
     return normalize(a) ?? normalize(empty) ?? empty;
 }
 
+/**
+ * Widening for the loop-invariant fixpoint. The presence BDD's disjunctive/tier
+ * structure has a lattice ~2^atoms tall, so a `≥k of n` tier-qualified loop can
+ * crawl toward a fixpoint over dozens of iterations (and, past the cap, return an
+ * unsound non-fixpoint). Over-approximate the invariant's presence to its UNIT
+ * facts (guarantees + exclusions), dropping that tall part — sound (it only
+ * forgets), and the loop's after-state re-establishes the disjunction via the
+ * exit-predicate refine. Counts/`possible`/tiers converge on their own (bounded),
+ * so they are left exact.
+ */
+export function widenPresence(a: AItem): AItem {
+    return { ...a, presence: presenceFacts(a.bdd, guaranteedTypes(a), excludedTypes(a)) };
+}
+
 // --- construction ---------------------------------------------------------
 
 export interface InitialCounts {

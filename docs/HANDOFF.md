@@ -332,20 +332,24 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 
 Near-term candidates:
 
-- **Loop-invariant WIDENING (soundness) + additive-op disjunction survival.** These two
-  are entangled; do them together. (a) The invariant fixpoint has no widening: a `≥k of n`
-  tier-qualified disjunction has a presence lattice ~2^atoms tall, and the canonical
-  `≥2 of 3` (example.craft) already converges at **57–64 of the 64-iteration cap**. A
-  larger disjunction (4+ resistances) exceeds it, and the loop then returns a NON-fixpoint
-  invariant — **unsound** (a body error on a later iteration can be missed). (b) `addOne`
-  rebuilds presence from unit guarantees, DROPPING disjunctions and tier atoms — so a
-  proven `A or B` is forgotten across an `exalt` (a real precision loss; a following
-  `not A and not B` isn't flagged dead). Fixing (b) naively (keep the disjunction, via a
-  BDD `∃`-free of excluded-addable atoms) is sound but makes additive loop BODIES
-  accumulate disjunctions, pushing convergence past the cap — so it needs (a) first. A
-  correct widening (drop the invariant's disjunctive presence to a bounded over-approx
-  while the exit predicate re-narrows the after-state) closes the soundness gap AND unlocks
-  (b). First attempt broke the exit-refine (lost the disjunction/counts); needs care.
+- **Loop-invariant widening — DONE.** `widenPresence` (astate) over-approximates the
+  invariant's presence to its UNIT facts (guarantees + exclusions) once past `WIDEN_AFTER`
+  exact iterations, dropping the disjunctive/tier structure whose lattice is ~2^atoms tall.
+  Counts/`possible`/tiers converge on their own, so they're left exact, and the loop's
+  after-state re-establishes any disjunction via the exit-predicate refine. Before this a
+  `≥2 of 3` tier-qualified loop crawled to a fixpoint at **57–64 of the 64-iteration cap**
+  (so a 4+-way disjunction exceeded it and returned an UNSOUND non-fixpoint); now every
+  loop in the suite converges within **6** iterations. NOTE: an earlier attempt that ALSO
+  interval-widened the counts corrupted the after-state total — widen presence ONLY.
+- **Additive-op disjunction survival (STILL OPEN).** `addOne` rebuilds presence from unit
+  guarantees, DROPPING disjunctions/tier atoms — so a proven `A or B` is forgotten across
+  an `exalt`, and a following `not A and not B` isn't flagged dead (a real precision loss).
+  The sound fix (keep the disjunction: free only the excluded-addable atoms via a BDD `∃`)
+  is implemented and reverted twice: even WITH widening it subtly collapses the canonical
+  `≥2 of 3` after-state (the exit `refine(A or B)` returns one guaranteed arm instead of
+  the disjunction — one arm's `refine` goes null via a `possible`/convergence interaction I
+  couldn't pin down). Needs a focused debug of the widened-invariant → `invEnd` → exit-refine
+  path before re-landing. Low priority (niche precision, not soundness).
 - **Negative facts in the tooltip** — `not has X` yields an exclusion that is filtered
   from candidates but never shown; surface it as a "without …" line. An additive LAYER
   over the presence decomposition (units → prime implicates → cardinality), not a

@@ -21,6 +21,7 @@ import {
     refine,
     sideCap,
     stateEqual,
+    widenPresence,
 } from "./astate.js";
 import { BddManager } from "./bdd.js";
 import {
@@ -103,11 +104,12 @@ export function traceAt(trace: readonly TraceEntry[], offset: number): TraceEntr
 /** Item-block affix names that mean "some unspecified affix". */
 const PLACEHOLDERS = /^random\b|^\?$/;
 
-/** Cap on loop-invariant iterations. Most converge in a handful; a `≥k of n`
- *  tier-qualified disjunction has a presence lattice ~2^atoms tall and can need
- *  dozens. KNOWN GAP (docs HANDOFF §6): a large enough disjunction exceeds this
- *  and the non-fixpoint invariant is unsound — needs a widening operator. */
-const MAX_LOOP_ITERS = 64;
+/** Exact join iterations before widening kicks in (`widenPresence`): a small loop
+ *  reaches a precise fixpoint first, a tall disjunction then gets over-approximated. */
+const WIDEN_AFTER = 3;
+/** Cap on loop-invariant iterations. With widening every loop converges in a
+ *  handful (the whole test suite passes at 6), so this is a wide safety backstop. */
+const MAX_LOOP_ITERS = 32;
 
 type Flow = { readonly kind: "fall"; readonly state: AItem } | { readonly kind: "restart" };
 
@@ -528,7 +530,11 @@ class Checker {
                 const end = flow.kind === "fall" ? flow.state : invariant;
                 const cont = rpred === null ? end : refine(end, rpred, false);
                 if (cont === null) break; // predicate always holds after the body → no other heads
-                const next = join(invariant, cont);
+                const joined = join(invariant, cont);
+                // Widen once past a few exact iterations: a small loop reaches a
+                // precise fixpoint first; a tall `≥k of n` disjunction is
+                // over-approximated so it converges (soundly) instead of crawling.
+                const next = i >= WIDEN_AFTER ? widenPresence(joined) : joined;
                 if (stateEqual(next, invariant)) break; // fixpoint reached
                 invariant = next;
             }
