@@ -103,7 +103,10 @@ export function traceAt(trace: readonly TraceEntry[], offset: number): TraceEntr
 /** Item-block affix names that mean "some unspecified affix". */
 const PLACEHOLDERS = /^random\b|^\?$/;
 
-/** Backstop on loop-invariant iterations; the bounded lattice converges long before this. */
+/** Cap on loop-invariant iterations. Most converge in a handful; a `≥k of n`
+ *  tier-qualified disjunction has a presence lattice ~2^atoms tall and can need
+ *  dozens. KNOWN GAP (docs HANDOFF §6): a large enough disjunction exceeds this
+ *  and the non-fixpoint invariant is unsound — needs a widening operator. */
 const MAX_LOOP_ITERS = 64;
 
 type Flow = { readonly kind: "fall"; readonly state: AItem } | { readonly kind: "restart" };

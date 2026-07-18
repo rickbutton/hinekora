@@ -217,6 +217,9 @@ The heart. Abstract interpretation over a symbolic item summary.
 - `tiers`: an overlay `Map<TypeId, Set<ModId>>` refining which specific mod (tier) a
   present type could be. The overlay is non-relational, so it is joined per-type and a
   tier known in only one branch drops to unconstrained.
+- `crafted`: a RANGE — how many bench-crafted mods are present. `bench` requires it
+  provably `< 1` (one crafted mod per item); reforges/scour clear it to 0, an unforced
+  `annul` drops its lower bound (the crafted mod may have been removed).
 - **Tier presence atoms.** A tier-qualified predicate (`has X t1`) also asserts a SECOND
   BDD variable (`type` + NUL + `modId`) — so a disjunction of tier-qualified clauses
   (`fire@t1 ∨ cold@t1 ∨ light@t1`) survives a `join` where the flat overlay would drop
@@ -289,10 +292,12 @@ Notes:
   possible + count floors). `essence()` = reforge to Rare `[4,6]` + `withGuaranteed`
   (precondition: Normal always, Rare only at ladder tier ≥ 5, never Magic, class must
   be in `grants`; fill capped at `min(ilvl, maxRandomModLevel)`). `bench()` = additive
-  add + `withGuaranteed` (preconditions: open slot in the mod's generation, and **group
-  exclusivity** — the mod's family must not be possibly-present, via
-  `familiesOfType`). Not modelled: the one-crafted-mod limit; a conflict hidden behind
-  an anonymous "random" affix.
+  add + `withGuaranteed` (preconditions: open slot in the mod's generation; **the
+  one-crafted-mod limit** — `AItem.crafted` is the count of bench-crafted mods present, a
+  range that `bench` requires provably `< 1` and reforges/scour clear to 0; and **group
+  exclusivity** — the mod's family must not be possibly-present, via `familiesOfType`).
+  Not modelled: a conflict hidden behind an anonymous "random" affix; the metacraft that
+  raises the crafted-mod limit above one.
 
 ### `diagnostics.ts` — messages
 
@@ -327,6 +332,20 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 
 Near-term candidates:
 
+- **Loop-invariant WIDENING (soundness) + additive-op disjunction survival.** These two
+  are entangled; do them together. (a) The invariant fixpoint has no widening: a `≥k of n`
+  tier-qualified disjunction has a presence lattice ~2^atoms tall, and the canonical
+  `≥2 of 3` (example.craft) already converges at **57–64 of the 64-iteration cap**. A
+  larger disjunction (4+ resistances) exceeds it, and the loop then returns a NON-fixpoint
+  invariant — **unsound** (a body error on a later iteration can be missed). (b) `addOne`
+  rebuilds presence from unit guarantees, DROPPING disjunctions and tier atoms — so a
+  proven `A or B` is forgotten across an `exalt` (a real precision loss; a following
+  `not A and not B` isn't flagged dead). Fixing (b) naively (keep the disjunction, via a
+  BDD `∃`-free of excluded-addable atoms) is sound but makes additive loop BODIES
+  accumulate disjunctions, pushing convergence past the cap — so it needs (a) first. A
+  correct widening (drop the invariant's disjunctive presence to a bounded over-approx
+  while the exit predicate re-narrows the after-state) closes the soundness gap AND unlocks
+  (b). First attempt broke the exit-refine (lost the disjunction/counts); needs care.
 - **Negative facts in the tooltip** — `not has X` yields an exclusion that is filtered
   from candidates but never shown; surface it as a "without …" line. An additive LAYER
   over the presence decomposition (units → prime implicates → cardinality), not a

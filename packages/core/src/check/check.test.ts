@@ -804,3 +804,30 @@ describe("checker — count refinement through disjunctions", () => {
         expect(r.finalState!.prefix).toEqual([1, 1]); // the benched life prefix
     });
 });
+
+describe("checker — the one-crafted-mod limit", () => {
+    it("rejects a second bench craft — an item holds only one crafted mod", () => {
+        const c = craft("poe1", rareRing(), [bench("maximum life"), bench("maximum life")]);
+        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("only one"))).toBe(true);
+    });
+
+    it("tracks the crafted-mod count; a reforge clears it", () => {
+        const benched = check(craft("poe1", rareRing(), [bench("maximum life")]), ctx).finalState!;
+        expect(benched.crafted).toEqual([1, 1]);
+        const reforged = check(
+            craft("poe1", rareRing(), [bench("maximum life"), op("chaos")]),
+            ctx,
+        ).finalState!;
+        expect(reforged.crafted).toEqual([0, 0]); // chaos discards the crafted mod
+    });
+
+    it("an annul may or may not remove the crafted mod, so a re-bench stays blocked", () => {
+        const c = craft("poe1", rareRing(["random"]), [
+            bench("maximum life"),
+            op("annul"),
+            bench("maximum life"),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics.some((d) => d.message.includes("only one"))).toBe(true);
+    });
+});

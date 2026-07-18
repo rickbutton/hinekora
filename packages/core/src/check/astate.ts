@@ -34,6 +34,10 @@ export interface AItem {
     /** Tier overlay: for a present type, which specific mods (tiers) it could
      *  be. Absent from the map ⇒ any tier. */
     readonly tiers: ReadonlyMap<TypeId, ReadonlySet<ModId>>;
+    /** How many bench-CRAFTED mods are present (a range). An item holds at most
+     *  one — the "can have multiple crafted mods" metacraft is not modelled — so
+     *  `bench` requires this to be provably 0. Reforges/scour clear it to 0. */
+    readonly crafted: Range;
 }
 
 // --- affix caps -----------------------------------------------------------
@@ -366,7 +370,27 @@ export function normalize(a: AItem): AItem | null {
         total = t;
         if (stable) break;
     }
-    return { ...a, prefix, total };
+    // Crafted mods are a subset of the affixes, so the count can't exceed total.
+    const crafted: Range = [Math.min(a.crafted[0], total[1]), Math.min(a.crafted[1], total[1])];
+    return { ...a, prefix, total, crafted };
+}
+
+/**
+ * `normalize`, but total: on a contradictory count state — unreachable in
+ * practice, since each op pre-clamps its ranges to the caps — it falls back to a
+ * consistent zero-mod item rather than the raw, cap-violating state. Sound: a
+ * contradictory state over-approximates the empty set, so any consistent state
+ * stands in for it, and a zero-mod item never pollutes a later `join` with a
+ * bogus over-cap count.
+ */
+export function settled(a: AItem): AItem {
+    const empty = {
+        ...a,
+        total: [0, 0] as Range,
+        prefix: [0, 0] as Range,
+        crafted: [0, 0] as Range,
+    };
+    return normalize(a) ?? normalize(empty) ?? empty;
 }
 
 // --- construction ---------------------------------------------------------
@@ -401,6 +425,7 @@ export function initialState(
         presence: presenceFacts(bdd, counts.present, []),
         possible: new Set(counts.present),
         tiers: new Map([...counts.pinned].map(([type, mod]) => [type, new Set([mod])])),
+        crafted: [0, 0], // a declared item block has no bench-crafted mods
     };
 }
 
@@ -424,6 +449,7 @@ export function join(a: AItem, b: AItem): AItem {
         presence: a.bdd.or(a.presence, b.presence),
         possible: union(a.possible, b.possible),
         tiers: joinTiers(a.tiers, b.tiers),
+        crafted: rJoin(a.crafted, b.crafted),
     };
 }
 
@@ -470,6 +496,7 @@ export function stateEqual(a: AItem, b: AItem): boolean {
         a.rarity === b.rarity &&
         rangeEq(a.total, b.total) &&
         rangeEq(a.prefix, b.prefix) &&
+        rangeEq(a.crafted, b.crafted) &&
         a.presence === b.presence && // canonical BDD ⇒ structural equality is `===`
         setEq(a.possible, b.possible) &&
         tiersEq(a.tiers, b.tiers)

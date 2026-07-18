@@ -18,8 +18,8 @@ import {
     excludedTypes,
     guaranteedTypes,
     maxTotal,
-    normalize,
     presenceFacts,
+    settled,
     sideCap,
     suffixRange,
 } from "./astate.js";
@@ -32,7 +32,8 @@ export type PreconditionFailure =
     | { readonly kind: "nothingToRemove"; readonly gen?: Gen }
     | { readonly kind: "essenceRarity"; readonly tier: number; readonly actual: Rarity }
     | { readonly kind: "essenceClass"; readonly essence: string; readonly itemClass: ClassId }
-    | { readonly kind: "rarityUnsupported"; readonly rarity: Rarity };
+    | { readonly kind: "rarityUnsupported"; readonly rarity: Rarity }
+    | { readonly kind: "craftedLimit" };
 
 export type TransferResult =
     | { readonly ok: true; readonly state: AItem }
@@ -117,8 +118,9 @@ export function scour(a: AItem): TransferResult {
         presence: a.bdd.TRUE,
         possible: new Set(),
         tiers: new Map(),
+        crafted: [0, 0],
     };
-    return ok(normalize(next) ?? next);
+    return ok(settled(next));
 }
 
 /**
@@ -165,6 +167,7 @@ export function essence(a: AItem, spec: EssenceSpec, registry: Registry): Transf
         presence: a.bdd.TRUE,
         possible,
         tiers,
+        crafted: [0, 0], // a reforge discards any crafted mod
     };
     return ok(withGuaranteed(reforged, guaranteedMod));
 }
@@ -184,18 +187,21 @@ function withGuaranteed(a: AItem, mod: Mod): AItem {
             ? [Math.max(a.prefix[0], 1), a.prefix[1]] // ≥ 1 prefix
             : [a.prefix[0], Math.min(a.prefix[1], total[1] - 1)]; // ≥ 1 suffix
     const next: AItem = { ...a, presence, tiers, possible, total, prefix };
-    return normalize(next) ?? next;
+    return settled(next);
 }
 
 /**
  * Apply a crafting-bench mod: add the specific `mod`, guaranteed and pinned.
- * Preconditions: an open slot in its generation (a Normal item, cap 0,
- * naturally has none), and the mod's group not already possibly present. Class
- * fit is enforced upstream by `resolveBench`; the one-crafted-mod limit is not
- * modelled yet.
+ * Preconditions: an open slot in its generation (a Normal item, cap 0, naturally
+ * has none); no more than one crafted mod (the "can have multiple crafted mods"
+ * metacraft is not modelled); and the mod's group not already possibly present.
+ * Class fit is enforced upstream by `resolveBench`.
  */
 export function bench(a: AItem, mod: Mod, registry: Registry): TransferResult {
     if (!hasOpenSlot(a, mod.gen)) return fail({ kind: "noOpenSlot", gen: mod.gen });
+    // An item holds at most one bench-crafted mod. If one might already be present
+    // (crafted could be ≥ 1), a second isn't provably safe.
+    if (a.crafted[1] >= 1) return fail({ kind: "craftedLimit" });
     // If the item may already carry a mod in the bench mod's group, the add isn't
     // provably safe (an item holds one mod per group). A conflict hidden behind an
     // anonymous "random" affix is not caught — known modelling gap.
@@ -204,7 +210,8 @@ export function bench(a: AItem, mod: Mod, registry: Registry): TransferResult {
     }
     const total: Range = [a.total[0] + 1, a.total[1] + 1];
     const prefix: Range = mod.gen === "prefix" ? [a.prefix[0] + 1, a.prefix[1] + 1] : a.prefix;
-    return ok(withGuaranteed({ ...a, total, prefix }, mod));
+    const crafted: Range = [a.crafted[0] + 1, a.crafted[1] + 1];
+    return ok(withGuaranteed({ ...a, total, prefix, crafted }, mod));
 }
 
 /**
@@ -268,8 +275,9 @@ function reroll(a: AItem, rarity: Rarity, want: Range, registry: Registry): AIte
         presence: a.bdd.TRUE, // reforge: nothing guaranteed, nothing excluded
         possible,
         tiers,
+        crafted: [0, 0], // a reforge discards any crafted mod
     };
-    return normalize(next) ?? next;
+    return settled(next);
 }
 
 // --- precondition predicates (must hold in EVERY arm) ---------------------
@@ -293,7 +301,7 @@ function addOne(a: AItem, forcedGen: Gen | undefined, rarity: Rarity, registry: 
     // has NOT — on a base whose target-rarity total cap is 0 (a magic Simplex),
     // it adds nothing and just changes rarity (a blue base with no modifiers).
     const maxT = maxTotal(rarity, a.base);
-    if (a.total[0] >= maxT) return normalize({ ...a, rarity }) ?? { ...a, rarity };
+    if (a.total[0] >= maxT) return settled({ ...a, rarity });
 
     const total: Range = [a.total[0] + 1, Math.min(a.total[1] + 1, maxT)];
     const prefix: Range =
@@ -303,10 +311,10 @@ function addOne(a: AItem, forcedGen: Gen | undefined, rarity: Rarity, registry: 
               ? a.prefix
               : [a.prefix[0], a.prefix[1] + 1]; // could land in either generation
 
-    // Additive: every prior mod survives, so guarantees and tier constraints
-    // hold. Each pool type becomes `possible`; and since a random add could be
-    // any of them, no type can stay excluded — rebuild presence from the
-    // guarantees alone.
+    // Additive: every prior mod survives, so guarantees, disjunctions and tier
+    // pins all hold. Each addable type becomes `possible`; and since the new mod
+    // could be any of them, only THOSE types' exclusions are relaxed (`admitAdd`)
+    // — the rest of the presence knowledge is kept.
     const added = addableMods(a, forcedGen, registry);
     const possible = new Set(a.possible);
     const tiers = new Map(a.tiers);
@@ -317,7 +325,7 @@ function addOne(a: AItem, forcedGen: Gen | undefined, rarity: Rarity, registry: 
     }
     const presence = presenceFacts(a.bdd, guaranteedTypes(a), []);
     const next: AItem = { ...a, rarity, total, prefix, presence, possible, tiers };
-    return normalize(next) ?? next;
+    return settled(next);
 }
 
 function removeOne(a: AItem, forcedGen: Gen | undefined, registry: Registry): AItem {
@@ -337,8 +345,10 @@ function removeOne(a: AItem, forcedGen: Gen | undefined, registry: Registry): AI
         survivingGuarantees(a, forcedGen, registry),
         excludedTypes(a),
     );
-    const next: AItem = { ...a, total, prefix, presence };
-    return normalize(next) ?? next;
+    // The removed affix might have been the crafted mod, so the lower bound drops.
+    const crafted: Range = [Math.max(0, a.crafted[0] - 1), a.crafted[1]];
+    const next: AItem = { ...a, total, prefix, presence, crafted };
+    return settled(next);
 }
 
 function survivingGuarantees(

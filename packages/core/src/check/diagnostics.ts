@@ -114,6 +114,8 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return `This essence grants no mod for a ${failure.itemClass}, so it cannot be used on this item.`;
             case "rarityUnsupported":
                 return `A ${state.base.name ?? "flask"} cannot be made ${RARITY_LABEL[failure.rarity]} — it can only be Normal or Magic.`;
+            case "craftedLimit":
+                return "The item may already have a crafted modifier — an item holds only one, so this can't be benched.";
         }
     })();
     return `at this point the item is: ${renderState(state)}\n${need}`;
