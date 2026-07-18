@@ -18,6 +18,8 @@ import {
     type AItem,
     check,
     type CurrencyKind,
+    type Def,
+    describePred,
     guaranteedTypes,
     type Range,
     type Registry,
@@ -118,6 +120,49 @@ function namedAt(
     return undefined;
 }
 
+/**
+ * If the ident at `i` names a local def — as its declaration (`def NAME`), a call
+ * (`NAME(`), or one of its parameters inside the def body — return that def. All
+ * three then share one hover (the def's signature), mirroring the essence/bench
+ * treatment where every token of a construct hovers alike.
+ */
+function defAt(tokens: readonly Token[], i: number, defs: readonly Def[]): Def | undefined {
+    const tok = tokens[i];
+    if (!tok || tok.kind !== "ident") return undefined;
+    const byName = (n: string): Def | undefined => defs.find((d) => d.name === n);
+
+    // The declaration name (after `def`) or a call (name immediately before `(`).
+    const prev = tokens[i - 1];
+    if (prev?.kind === "ident" && prev.text === "def") {
+        const d = byName(tok.text);
+        if (d) return d;
+    }
+    if (tokens[i + 1]?.kind === "lparen") {
+        const d = byName(tok.text);
+        if (d) return d;
+    }
+    // A parameter reference inside the def's own span.
+    for (const d of defs) {
+        if (
+            d.params.includes(tok.text) &&
+            d.span.start.offset <= tok.span.start.offset &&
+            tok.span.end.offset <= d.span.end.offset
+        ) {
+            return d;
+        }
+    }
+    return undefined;
+}
+
+/** The signature block for a local predicate def: its shape and what it expands to. */
+function defSignature(def: Def): string {
+    const sig = `${def.name}(${def.params.join(", ")})`;
+    return [
+        `**\`def ${sig}\`** — local predicate`,
+        `Expands to: \`${describePred(def.body)}\``,
+    ].join("\n\n");
+}
+
 /** The tier in a `… "<mod>" t1` predicate, if the mod string is at `i`. */
 function tierAfter(tokens: readonly Token[], i: number): number | undefined {
     const next = tokens[i + 1];
@@ -167,8 +212,13 @@ function signature(
     i: number,
     entry: TraceEntry | undefined,
     registry: Registry,
+    defs: readonly Def[],
 ): string | null {
     const tok = tokens[i]!;
+
+    // A local def — its declaration, a call to it, or one of its params.
+    const d = defAt(tokens, i, defs);
+    if (d) return defSignature(d);
 
     // `essence`/`bench "<name>" [t1]` — the keyword, name, and tier tokens all
     // hover as one signature.
@@ -354,12 +404,13 @@ function benchSignature(
 export function getHover(source: string, offset: number, registry: Registry): string | null {
     const parsed = parse(source);
     const entry = parsed.ok ? traceAt(check(parsed.craft, { registry }).trace, offset) : undefined;
+    const defs = parsed.ok ? parsed.craft.defs : [];
 
     let sig: string | null = null;
     try {
         const tokens = tokenize(source);
         const i = tokenIndexAt(tokens, offset);
-        if (i >= 0) sig = signature(tokens, i, entry, registry);
+        if (i >= 0) sig = signature(tokens, i, entry, registry, defs);
     } catch {
         // Unlexable source (mid-edit): fall through to the state footer alone.
     }

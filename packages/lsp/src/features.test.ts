@@ -40,6 +40,20 @@ describe("hover", () => {
         expect(md!).toMatch(/prefix|suffix/);
     });
 
+    it("hovers a local def (declaration, call, and param share one signature)", () => {
+        const src = `craft in poe1
+item { base: "Iron Ring" ilvl: 84 rarity: rare }
+def anyEleRes(t) = has "fire resistance" t or has "cold resistance" t
+until anyEleRes(1) { chaos }`;
+        const decl = getHover(src, src.indexOf("anyEleRes") + 1, registry);
+        const callSite = getHover(src, src.lastIndexOf("anyEleRes") + 1, registry);
+        expect(decl).not.toBeNull();
+        expect(decl!).toContain("def anyEleRes(t)");
+        expect(decl!).toContain("local predicate");
+        expect(decl!).toContain('has "fire resistance" t'); // the expansion, param intact
+        expect(callSite).toContain("def anyEleRes(t)"); // call hovers the same
+    });
+
     it("resolves a mod string to its ModType signature", () => {
         const src = `craft in poe1
 item { base: "Iron Ring" ilvl: 84 rarity: rare }
@@ -104,6 +118,17 @@ describe("completion", () => {
         const src = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nbench "`;
         const labels = getCompletions(src, src.length, registry).map((c) => c.label);
         expect(labels).toContain("maximum life");
+    });
+
+    it("offers local def names as predicates (after a connective too)", () => {
+        const src = `craft in poe1
+item { base: "Iron Ring" ilvl: 84 rarity: rare }
+def anyEleRes(t) = has "fire resistance" t
+until has "life" or `;
+        const labels = getCompletions(src, src.length, registry).map((c) => c.label);
+        expect(labels).toContain("anyEleRes"); // the local def
+        expect(labels).toContain("has"); // and still the built-in predicates
+        expect(labels).not.toContain("exalt"); // not a statement position
     });
 
     it("offers stat descriptions inside a has string", () => {

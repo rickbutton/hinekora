@@ -40,8 +40,18 @@ const PREDICATE_KEYWORDS: { label: string; detail: string; kind: CompletionItemK
     { label: "suffixCount", detail: "suffixCount <op> N", kind: CompletionItemKind.Variable },
 ];
 
-/** Keywords after which a predicate begins. */
-const PREDICATE_INTRODUCERS = new Set(["if", "until", "not"]);
+/** Keywords after which a predicate begins (control headers + logical connectives). */
+const PREDICATE_INTRODUCERS = new Set(["if", "until", "not", "and", "or"]);
+
+/** Local `def` names (+ their param text), scraped from the source. Robust to a
+ *  half-typed craft — a regex, not a parse — so it works mid-edit. */
+function localDefs(source: string): { name: string; params: string }[] {
+    const out: { name: string; params: string }[] = [];
+    for (const m of source.matchAll(/\bdef\s+([A-Za-z_]\w*)\s*\(([^)]*)\)/g)) {
+        out.push({ name: m[1]!, params: m[2]!.trim() });
+    }
+    return out;
+}
 
 function isSpace(c: string | undefined): boolean {
     return c === " " || c === "\t" || c === "\n" || c === "\r";
@@ -134,11 +144,19 @@ export function getCompletions(
 ): CompletionItem[] {
     switch (contextAt(source, offset)) {
         case "predicate":
-            return PREDICATE_KEYWORDS.map((k) => ({
-                label: k.label,
-                detail: k.detail,
-                kind: k.kind,
-            }));
+            return [
+                ...PREDICATE_KEYWORDS.map((k) => ({
+                    label: k.label,
+                    detail: k.detail,
+                    kind: k.kind,
+                })),
+                // Local defs are callable predicates too.
+                ...localDefs(source).map((d) => ({
+                    label: d.name,
+                    detail: `${d.name}(${d.params})`,
+                    kind: CompletionItemKind.Function,
+                })),
+            ];
         case "base":
             return registry.baseNames.map((label) => ({ label, kind: CompletionItemKind.Value }));
         case "essence":

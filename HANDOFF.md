@@ -114,7 +114,7 @@ own tsconfig, does NOT extend the ESM base).
 ### Commands (run from anywhere; do not `cd`)
 
 ```
-pnpm -C c:/git/hinekora test           # vitest run — currently 231 passing
+pnpm -C c:/git/hinekora test           # vitest run — currently 236 passing
 pnpm -C c:/git/hinekora exec tsc -b    # typecheck + build all packages
 pnpm -C c:/git/hinekora lint           # eslint .
 pnpm -C c:/git/hinekora format         # prettier --write .
@@ -297,10 +297,15 @@ the op required." `describePred`, `resolveMessage` for other diagnostics.
   existing narrowing "just works"). **Param types are inferred** from use (tier/count slot
   ⇒ int, `has` target ⇒ mod); a param used as both is a hard error and the def is marked
   `valid:false` so calls drop without cascading. Recursion is caught (`expanding` set).
-  Args are literals only (no param-passthrough yet — a noted v1 limitation).
-- **LSP**: `def` highlighted. NOT yet done: completion/hover for LOCAL def names (needs
-  craft-local symbol extraction — the LSP currently only knows registry symbols). Good
-  next LSP task.
+  Recursion is caught (`expanding` set).
+- **Param pass-through**: a param can be forwarded to a nested call (`def a(t) = b(t)`).
+  `Arg` gained a `param` kind; substitution rewrites nested-call param args; type errors
+  surface at the callee (the substituted arg keeps the outer call site's span).
+- **LSP** (craft-local symbols — a first for the language service, which otherwise only
+  knows registry symbols): `def` highlighted; local def names complete as predicates
+  (after `if`/`until`/`not`/`and`/`or`, via a regex scrape so it works mid-edit); and a
+  def's declaration, calls, and params all hover as one signature (`def name(p)` + the
+  `describePred`-rendered body). Predicate completion now also fires after `and`/`or`.
 
 ### Bench crafts + the `withGuaranteed` primitive
 

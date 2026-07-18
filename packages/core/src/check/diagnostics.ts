@@ -60,10 +60,16 @@ export function describePred(pred: Pred): string {
     switch (pred.kind) {
         case "isRarity":
             return `is${pred.rarity[0]!.toUpperCase()}${pred.rarity.slice(1)}`;
-        case "has":
-            return pred.tier === undefined
-                ? `has "${val(pred.mod)}"`
-                : `has "${val(pred.mod)}" t${val(pred.tier)}`;
+        case "has": {
+            // A literal tier prints as the `t1` shorthand; a param prints as its name.
+            const tier =
+                pred.tier === undefined
+                    ? ""
+                    : typeof pred.tier === "object"
+                      ? ` ${pred.tier.param}`
+                      : ` t${pred.tier}`;
+            return `has "${val(pred.mod)}"${tier}`;
+        }
         case "compare":
             return `${pred.projection} ${pred.op} ${val(pred.value)}`;
         case "not":
