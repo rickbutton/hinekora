@@ -42,6 +42,9 @@ export interface RepoeBase {
     readonly domain: string;
     readonly tags: readonly string[];
     readonly release_state?: string;
+    /** Projected at ingest from the base's affix-count implicit stats
+     * (`local_maximum_{prefixes,suffixes}_allowed_+`); absent ⇒ no delta. */
+    readonly capDelta?: { readonly prefix: number; readonly suffix: number };
 }
 
 /** `base_items.json`: metadata-path key → base. */

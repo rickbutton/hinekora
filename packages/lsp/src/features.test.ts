@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { rollableTiers } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { getCompletions } from "./completion.js";
 import { getHover } from "./hover.js";
@@ -114,6 +115,35 @@ until ${twoOf3} { annul annul exalt exalt }`;
         const md = getHover(src, src.indexOf("until") + 1, registry);
         expect(md!).toContain("exactly two of:"); // total 2, all suffixes ⇒ exactly two
         expect((md!.match(/one of:/g) ?? []).length).toBe(0); // not three pairwise blocks
+    });
+
+    it("pins the tier in a disjunctive block: shows the t1 roll, not the full span", () => {
+        const twoOf3 = `(has "fire resistance" t1 or has "cold resistance" t1) and (has "fire resistance" t1 or has "lightning resistance" t1) and (has "cold resistance" t1 or has "lightning resistance" t1)`;
+        const src = `craft in poe1
+item { base: "Vaal Regalia" ilvl: 84 rarity: normal }
+transmute
+regal
+until ${twoOf3} { annul annul exalt exalt }`;
+        const md = getHover(src, src.indexOf("until") + 1, registry)!;
+
+        // The T1 fire-resistance roll on this base — the block must show THIS, not
+        // the merged T1..Tn span the flat overlay fell back to.
+        const base = registry.resolveBase("Vaal Regalia");
+        expect(base.ok).toBe(true);
+        const type = registry.resolveModType("fire resistance", {
+            game: "poe1",
+            base: base.ok ? base.value : (undefined as never),
+            ilvl: 84,
+        });
+        expect(type.ok).toBe(true);
+        const t1 = rollableTiers(
+            registry.catalog,
+            "poe1",
+            base.ok ? base.value : (undefined as never),
+            84,
+            type.ok ? type.value : (undefined as never),
+        )[0]!;
+        expect(md).toContain(t1.text!); // the exact t1 roll, tier pinned through the join
     });
 
     it("reports a fixed undetermined count as one coupled prefix-or-suffix line", () => {

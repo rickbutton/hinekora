@@ -14,11 +14,13 @@ import type { Registry } from "../resolve/registry.js";
 import {
     type AItem,
     type Range,
+    canBeRare,
     excludedTypes,
     guaranteedTypes,
+    maxTotal,
     normalize,
     presenceFacts,
-    rarityCap,
+    sideCap,
     suffixRange,
 } from "./astate.js";
 
@@ -29,7 +31,8 @@ export type PreconditionFailure =
     | { readonly kind: "modConflict"; readonly group: string }
     | { readonly kind: "nothingToRemove"; readonly gen?: Gen }
     | { readonly kind: "essenceRarity"; readonly tier: number; readonly actual: Rarity }
-    | { readonly kind: "essenceClass"; readonly essence: string; readonly itemClass: ClassId };
+    | { readonly kind: "essenceClass"; readonly essence: string; readonly itemClass: ClassId }
+    | { readonly kind: "rarityUnsupported"; readonly rarity: Rarity };
 
 export type TransferResult =
     | { readonly ok: true; readonly state: AItem }
@@ -47,6 +50,7 @@ export function transmute(a: AItem, registry: Registry): TransferResult {
 
 export function regal(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "magic") return wrongRarity("magic", a.rarity);
+    if (!canBeRare(a.base)) return fail({ kind: "rarityUnsupported", rarity: "rare" });
     return ok(addOne(a, undefined, "rare", registry));
 }
 
@@ -90,6 +94,7 @@ export function alteration(a: AItem, registry: Registry): TransferResult {
 /** Orb of Alchemy: upgrade a Normal item to a Rare with 4–6 fresh mods. */
 export function alchemy(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "normal") return wrongRarity("normal", a.rarity);
+    if (!canBeRare(a.base)) return fail({ kind: "rarityUnsupported", rarity: "rare" });
     return ok(reroll(a, "rare", [4, 6], registry));
 }
 
@@ -99,10 +104,11 @@ export function chaos(a: AItem, registry: Registry): TransferResult {
     return ok(reroll(a, "rare", [4, 6], registry));
 }
 
-/** Orb of Scouring: strip every mod, returning the item to Normal. Scouring an
- *  item with no mods is wasted currency, so that fails the precondition. */
+/** Orb of Scouring: strip every mod, returning the item to Normal. Wasted only
+ *  on an already-Normal item — a Magic base with zero affixes (e.g. a magic
+ *  Simplex) still drops to Normal, so rarity, not mod count, is the gate. */
 export function scour(a: AItem): TransferResult {
-    if (!hasRemovable(a, undefined)) return fail({ kind: "nothingToRemove" });
+    if (a.rarity === "normal") return fail({ kind: "nothingToRemove" });
     const next: AItem = {
         ...a,
         rarity: "normal",
@@ -126,6 +132,7 @@ export function essence(a: AItem, spec: EssenceSpec, registry: Registry): Transf
     if (a.rarity === "magic" || (a.rarity === "rare" && spec.tier < 5)) {
         return fail({ kind: "essenceRarity", tier: spec.tier, actual: a.rarity });
     }
+    if (!canBeRare(a.base)) return fail({ kind: "rarityUnsupported", rarity: "rare" });
     const modId = spec.grants.get(a.base.itemClass);
     const guaranteedMod = modId && registry.catalog.find((m) => m.id === modId);
     if (!guaranteedMod) {
@@ -133,9 +140,12 @@ export function essence(a: AItem, spec: EssenceSpec, registry: Registry): Transf
     }
 
     // The random fill: reforge to a full Rare (4–6 mods) from the normal pool,
-    // capped by both the item level and the essence's max random-mod level.
-    const cap = rarityCap("rare");
-    const total: Range = [4, 2 * cap];
+    // capped by both the item level and the essence's max random-mod level. On a
+    // reduced-cap base the count clamps to what fits (Simplex: always 3).
+    const maxT = maxTotal("rare", a.base);
+    const total: Range = [Math.min(4, maxT), Math.min(6, maxT)];
+    const pCap = sideCap("prefix", "rare", a.base);
+    const sCap = sideCap("suffix", "rare", a.base);
     const fillCap = Math.min(a.ilvl, spec.maxRandomModLevel ?? Infinity);
     const fill = addableMods({ ...a, presence: a.bdd.TRUE }, undefined, registry).filter(
         (m) => m.minLevel <= fillCap,
@@ -151,7 +161,7 @@ export function essence(a: AItem, spec: EssenceSpec, registry: Registry): Transf
         ...a,
         rarity: "rare",
         total,
-        prefix: [Math.max(0, total[0] - cap), Math.min(cap, total[1])],
+        prefix: [Math.max(0, total[0] - sCap), Math.min(pCap, total[1])],
         presence: a.bdd.TRUE,
         possible,
         tiers,
@@ -211,9 +221,14 @@ function sharesFamilyWithPossible(a: AItem, mod: Mod, registry: Registry): boole
  * rarity and count range. Nothing stays guaranteed; the base's full add-pool
  * becomes `possible`; exclusions clear. Shared by alteration/alchemy/chaos.
  */
-function reroll(a: AItem, rarity: Rarity, total: Range, registry: Registry): AItem {
-    const cap = rarityCap(rarity);
-    const prefix: Range = [Math.max(0, total[0] - cap), Math.min(cap, total[1])];
+function reroll(a: AItem, rarity: Rarity, want: Range, registry: Registry): AItem {
+    // Clamp the fresh count to what this base can actually hold at that rarity —
+    // a reduced-cap base fills to fewer mods (chaos on a rare Simplex: 3, not 4–6).
+    const maxT = maxTotal(rarity, a.base);
+    const total: Range = [Math.min(want[0], maxT), Math.min(want[1], maxT)];
+    const pCap = sideCap("prefix", rarity, a.base);
+    const sCap = sideCap("suffix", rarity, a.base);
+    const prefix: Range = [Math.max(0, total[0] - sCap), Math.min(pCap, total[1])];
     // An empty item of this base has the widest pool — a sound over-approximation.
     const fresh = addableMods({ ...a, presence: a.bdd.TRUE }, undefined, registry);
     const possible = new Set<TypeId>();
@@ -238,10 +253,9 @@ function reroll(a: AItem, rarity: Rarity, total: Range, registry: Registry): AIt
 // --- precondition predicates (must hold in EVERY arm) ---------------------
 
 function hasOpenSlot(a: AItem, forcedGen: Gen | undefined): boolean {
-    const cap = rarityCap(a.rarity);
-    if (forcedGen === "prefix") return a.prefix[1] < cap; // prefix full in no arm
-    if (forcedGen === "suffix") return suffixRange(a)[1] < cap;
-    return a.total[1] < 2 * cap; // some slot open in every arm
+    if (forcedGen === "prefix") return a.prefix[1] < sideCap("prefix", a.rarity, a.base);
+    if (forcedGen === "suffix") return suffixRange(a)[1] < sideCap("suffix", a.rarity, a.base);
+    return a.total[1] < maxTotal(a.rarity, a.base); // some slot open in every arm
 }
 
 function hasRemovable(a: AItem, forcedGen: Gen | undefined): boolean {
@@ -253,7 +267,13 @@ function hasRemovable(a: AItem, forcedGen: Gen | undefined): boolean {
 // --- the add / remove summaries -------------------------------------------
 
 function addOne(a: AItem, forcedGen: Gen | undefined, rarity: Rarity, registry: Registry): AItem {
-    const total: Range = [a.total[0] + 1, a.total[1] + 1];
+    // A slot-gated caller (exalt/augment) has already ensured room; transmute
+    // has NOT — on a base whose target-rarity total cap is 0 (a magic Simplex),
+    // it adds nothing and just changes rarity (a blue base with no modifiers).
+    const maxT = maxTotal(rarity, a.base);
+    if (a.total[0] >= maxT) return normalize({ ...a, rarity }) ?? { ...a, rarity };
+
+    const total: Range = [a.total[0] + 1, Math.min(a.total[1] + 1, maxT)];
     const prefix: Range =
         forcedGen === "prefix"
             ? [a.prefix[0] + 1, a.prefix[1] + 1]

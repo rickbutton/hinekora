@@ -134,9 +134,11 @@ LSP. The lexer emits `eq` for `==` and `assign` for a lone `=` (the def binding)
 Ingest scripts (`scripts/ingest-poe1.mjs`) project the RePoE-fork JSON dump down to just
 the fields needed (mods, bases, essences, bench options), minified, with a **provenance
 manifest** (repoe commit SHA + sha256 hashes; gameVersion "unknown" because repoe doesn't
-stamp it). `adapter.ts` adapts rows into model types and stamps `ModSource` via
-`classifySource` (domain + generation_type + is_essence_only). `load.ts`:
-`loadDefaultPoe1()` → `LoadedData`, `registryOf(data)` → `Registry`.
+stamp it). For a base it also folds the affix-count implicit stats
+(`local_maximum_{prefixes,suffixes}_allowed_+`) into a `capDelta` (absent when zero).
+`adapter.ts` adapts rows into model types and stamps `ModSource` via `classifySource`
+(domain + generation_type + is_essence_only). `load.ts`: `loadDefaultPoe1()` →
+`LoadedData`, `registryOf(data)` → `Registry`.
 
 Essence data note: `maxRandomModLevel` caps only the random FILL mods. Essences have no
 item-level gate — the guaranteed mod is forced at its fixed tier regardless of ilvl
@@ -213,12 +215,29 @@ The heart. Abstract interpretation over a symbolic item summary.
   `guaranteedTypes`/`excludedTypes`/`disjunctiveGuarantees`/`cardinalityGuarantees`.
   `possible` stays a plain set: the pool whitelist of types that could roll.
 - `tiers`: an overlay `Map<TypeId, Set<ModId>>` refining which specific mod (tier) a
-  present type could be.
+  present type could be. The overlay is non-relational, so it is joined per-type and a
+  tier known in only one branch drops to unconstrained.
+- **Tier presence atoms.** A tier-qualified predicate (`has X t1`) also asserts a SECOND
+  BDD variable (`type` + NUL + `modId`) — so a disjunction of tier-qualified clauses
+  (`fire@t1 ∨ cold@t1 ∨ light@t1`) survives a `join` where the flat overlay would drop
+  the tier. Atoms are lazy (only tiers a predicate names) and the type-level views filter
+  them out; `disjunctiveTier(a, types)` reads them back for a known clause (drives the
+  hover so a disjunctive block shows the t1 roll, not the full span). We do NOT yet assert
+  `tierAtom ⇒ family` or tier mutual-exclusion — both only under-claim if omitted (sound).
 - **`normalize(a)`** enforces the total/prefix coupling to a fixpoint, BOTH directions:
-  `prefix ∈ [total−cap, total]` AND `total ∈ [prefix, prefix+cap]`. The second direction
-  is load-bearing — without it, refining `prefixCount < 3` tightens prefix but not
-  total, and a guarded exalt spuriously looks "possibly full". Returns `null` on an
-  uninhabited (contradictory) state. `rarityCap` = per-side slot cap (3 for rare).
+  `prefix ∈ [total−sCap, min(pCap, total)]` AND `total ∈ [prefix, min(tCap, prefix+sCap)]`.
+  The second direction is load-bearing — without it, refining `prefixCount < 3` tightens
+  prefix but not total, and a guarded exalt spuriously looks "possibly full". Returns
+  `null` on an uninhabited (contradictory) state.
+- **Affix caps are per-side and base-aware** (`sideCap`, `hardTotalCap`, `maxTotal`).
+  `sideCap(gen) = max(0, naturalPerSide(rarity, class) + base.capDelta[gen])` — the
+  natural limit (normal 0 / magic 1 / rare 3, jewels 2) shifted by an "experimented
+  base" implicit (Simplex Amulet −2/−1, Ratcheting Ring −3/+3), floored at 0. `hardTotalCap`
+  (`2×naturalPerSide`) is an INDEPENDENT bound on the two sides together — that is what
+  holds a magic Ratcheting to 0p/2s (raw suffix 1+3=4, hard total 2), not 0/4. The three
+  feed `normalize` as `pCap`/`sCap`/`tCap`. `capDelta` is ingested from the base's implicit
+  stats (`local_maximum_{prefixes,suffixes}_allowed_+`); see `transfer.ts` for how reforge/
+  add ops clamp their counts to `maxTotal` (transmute on a 0-cap magic base adds nothing).
 - `refine(a, pred, positive)` narrows by a resolved predicate (De Morgan for and/or:
   conjunction = sequential narrow, disjunction = `join`); `null` means the sub-state is
   impossible — the dead-branch signal. `join` is the branch-merge LUB; `stateEqual`
@@ -319,9 +338,17 @@ Near-term candidates:
 - **Fossils / veiled** — the third sourced currency; would justify a sourced-op surface
   refactor (essence + bench are the only two now — rule of three). Fossils reforge with
   weight biasing; veiled is add-then-unveil.
-- **Per-base affix caps** — `rarityCap` is a flat 3/side for every Rare, but jewels cap
-  at 4 total. A known soundness gap: a jewel modelled as 6-max can miss a "no open
-  slot" error. Affects exalt/annul/reforge alike.
+- **Per-base affix caps — DONE.** Caps are per-side and base-aware (`sideCap`/
+  `hardTotalCap`/`maxTotal` in `astate.ts`): jewels 2/side, and the 8 experimented bases
+  (Simplex/Focused amulets, Cogwork/Geodesic/Composite/Manifold/Ratcheting/Helical rings)
+  carry a `capDelta` ingested from their implicit. Reforge/add ops clamp to the cap
+  (transmute on a 0-cap magic base adds nothing; scour is gated on rarity, not mod count).
+- **Flask rarity — DONE.** Flask/tincture classes cap at Magic (`canBeRare` in `astate.ts`,
+  a `NO_RARE_CLASSES` set); `regal`/`alchemy`/`essence` fail with `rarityUnsupported`, and
+  the item block rejects a declared Rare flask. Still out of scope, by design: legacy
+  base-implicit variants, and split-beast / Awakener's / Harvest routes to reduced-cap
+  bases. Follow-on tightenings noted in the code: `tierAtom ⇒ family` and tier
+  mutual-exclusion.
 - **Generic functions containing operations** (after predicate defs) — reusable op
   sequences that mutate the item and compose like inlined blocks. Explicitly wanted as
   the follow-up to predicate defs.

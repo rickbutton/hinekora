@@ -115,5 +115,6 @@ export function adaptBase(key: string, b: RepoeBase): Base {
         itemClass: ClassId(b.item_class),
         domain: Domain(b.domain),
         tags: new Set(b.tags.map((t) => TagId(t))),
+        ...(b.capDelta && { capDelta: b.capDelta }),
     };
 }

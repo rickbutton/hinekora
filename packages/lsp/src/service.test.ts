@@ -52,4 +52,47 @@ exalt`,
         );
         expect(diags.some((d) => d.message.includes("Ambiguous"))).toBe(true);
     });
+
+    it("catches the reduced affix cap on a real Simplex Amulet (full after a reforge)", () => {
+        // A rare Simplex holds only 3 mods, so it is full after an alchemy —
+        // the exalt has no open slot. This exercises the real base's capDelta.
+        const full = getDiagnostics(
+            `craft in poe1
+item { base: "Simplex Amulet" ilvl: 84 rarity: normal }
+alchemy
+exalt`,
+            registry,
+        );
+        expect(full.some((d) => d.message.toLowerCase().includes("open"))).toBe(true);
+
+        // Annulling first reopens a slot, so the exalt is fine.
+        const reopened = getDiagnostics(
+            `craft in poe1
+item { base: "Simplex Amulet" ilvl: 84 rarity: normal }
+alchemy
+annul
+exalt`,
+            registry,
+        );
+        expect(reopened).toEqual([]);
+    });
+
+    it("rejects making a real flask Rare, but allows Magic crafting", () => {
+        const rare = getDiagnostics(
+            `craft in poe1
+item { base: "Quicksilver Flask" ilvl: 84 rarity: normal }
+alchemy`,
+            registry,
+        );
+        expect(rare.some((d) => d.message.includes("cannot be made Rare"))).toBe(true);
+
+        const magic = getDiagnostics(
+            `craft in poe1
+item { base: "Quicksilver Flask" ilvl: 84 rarity: normal }
+transmute
+augment`,
+            registry,
+        );
+        expect(magic).toEqual([]);
+    });
 });

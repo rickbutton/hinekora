@@ -13,10 +13,11 @@ import type { CurrencyKind, Registry, OmenSpec } from "../resolve/registry.js";
 import {
     type AItem,
     type RPred,
+    canBeRare,
     initialState,
     join,
-    rarityCap,
     refine,
+    sideCap,
     stateEqual,
 } from "./astate.js";
 import { BddManager } from "./bdd.js";
@@ -216,21 +217,30 @@ class Checker {
         let prefixCount = countAffixes(item.prefixes, "prefix");
         let suffixCount = countAffixes(item.suffixes, "suffix");
 
-        // wf: counts must fit the rarity's caps.
-        const cap = rarityCap(item.rarity);
-        if (prefixCount > cap) {
+        // wf: a flask/tincture can never be Rare.
+        if (item.rarity === "rare" && !canBeRare(base)) {
             this.diag(
-                `too many prefixes for a ${item.rarity} item: ${prefixCount} (max ${cap})`,
+                `a ${base.name ?? "flask"} cannot be Rare — flasks are Magic at most`,
                 item.span,
             );
-            prefixCount = cap;
         }
-        if (suffixCount > cap) {
+
+        // wf: counts must fit the base's per-side caps (implicit deltas included).
+        const pCap = sideCap("prefix", item.rarity, base);
+        const sCap = sideCap("suffix", item.rarity, base);
+        if (prefixCount > pCap) {
             this.diag(
-                `too many suffixes for a ${item.rarity} item: ${suffixCount} (max ${cap})`,
+                `too many prefixes for a ${item.rarity} ${base.name ?? "item"}: ${prefixCount} (max ${pCap})`,
                 item.span,
             );
-            suffixCount = cap;
+            prefixCount = pCap;
+        }
+        if (suffixCount > sCap) {
+            this.diag(
+                `too many suffixes for a ${item.rarity} ${base.name ?? "item"}: ${suffixCount} (max ${sCap})`,
+                item.span,
+            );
+            suffixCount = sCap;
         }
 
         return initialState(this.bdd, game, base, item.ilvl, item.rarity, {

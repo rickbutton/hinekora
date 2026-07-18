@@ -85,6 +85,13 @@ describe("registry resolution against real data", () => {
         expect(registry.resolveCurrency("exalt").ok).toBe(true);
         expect(registry.resolveOmen("Dextral Exaltation").ok).toBe(true);
     });
+
+    it("carries affix-cap deltas from experimented-base implicits", () => {
+        // Simplex: −2 prefix / −1 suffix (rare 1p/2s); Ratcheting: −3 / +3.
+        expect(base("Simplex Amulet").capDelta).toEqual({ prefix: -2, suffix: -1 });
+        expect(base("Ratcheting Ring").capDelta).toEqual({ prefix: -3, suffix: 3 });
+        expect(base("Iron Ring").capDelta).toBeUndefined(); // an ordinary base has none
+    });
 });
 
 describe("fuzzy mod resolution against real data", () => {

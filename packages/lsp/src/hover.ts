@@ -10,8 +10,10 @@ import {
     cardinalityGuarantees,
     type Def,
     describePred,
+    disjunctiveTier,
     type Gen,
     guaranteedTypes,
+    type ModId,
     type Range,
     type Registry,
     rollableTiers,
@@ -198,8 +200,8 @@ function rollSpan(texts: readonly string[]): string {
  * pinned, else the roll span across every tier the item could carry here — the
  * magnitude stays honest without committing to a tier we don't know.
  */
-function modLine(a: AItem, type: TypeId, registry: Registry): string {
-    const pinned = a.tiers.get(type);
+function modLine(a: AItem, type: TypeId, registry: Registry, pinMod?: ModId): string {
+    const pinned = pinMod !== undefined ? new Set([pinMod]) : a.tiers.get(type);
     const mods =
         pinned && pinned.size > 0
             ? [...pinned].flatMap((id) => {
@@ -241,10 +243,15 @@ function tooltip(a: AItem, registry: Registry, caption?: string): string {
     // Candidates indent (non-breaking spaces) under the `N of:` header so they
     // don't read as more top-level mods.
     const INDENT = "    ";
-    const cardBlock = (x: (typeof cardinalities)[number]): string[] => [
-        `${x.gen ? GEN_TAG[x.gen] : "(P/S)"} _${x.exact ? "exactly" : "at least"} ${numberWord(x.atLeast)} of:_`,
-        ...x.types.map((t) => `${INDENT}${modLine(a, t, registry)}`),
-    ];
+    const cardBlock = (x: (typeof cardinalities)[number]): string[] => {
+        // When the disjunction is tier-qualified (`X@t1 ∨ Y@t1`), pin each member
+        // to its tier rather than showing the whole roll span.
+        const tiers = disjunctiveTier(a, x.types);
+        return [
+            `${x.gen ? GEN_TAG[x.gen] : "(P/S)"} _${x.exact ? "exactly" : "at least"} ${numberWord(x.atLeast)} of:_`,
+            ...x.types.map((t) => `${INDENT}${modLine(a, t, registry, tiers.get(t))}`),
+        ];
+    };
 
     const lines: string[] = [];
     for (const gen of ["prefix", "suffix"] as const) {

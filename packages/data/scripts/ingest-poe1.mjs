@@ -71,16 +71,36 @@ function projectMods(raw) {
     return out;
 }
 
-function projectBases(raw) {
+// The two implicit stats that shift an "experimented base"'s affix limits
+// (Simplex Amulet, Ratcheting Ring, …). Signed integer deltas per generation.
+const CAP_PREFIX_STAT = "local_maximum_prefixes_allowed_+";
+const CAP_SUFFIX_STAT = "local_maximum_suffixes_allowed_+";
+
+/** Sum a base's implicit affix-slot deltas, or `undefined` if it has none. */
+function capDeltaOf(base, mods) {
+    let prefix = 0;
+    let suffix = 0;
+    for (const id of base.implicits ?? []) {
+        for (const s of mods[id]?.stats ?? []) {
+            if (s.id === CAP_PREFIX_STAT) prefix += s.min;
+            else if (s.id === CAP_SUFFIX_STAT) suffix += s.min;
+        }
+    }
+    return prefix || suffix ? { prefix, suffix } : undefined;
+}
+
+function projectBases(raw, mods) {
     const out = {};
     for (const [key, b] of Object.entries(raw)) {
         if (b.release_state !== "released" || !b.name) continue; // skip unreleased / nameless internals
+        const capDelta = capDeltaOf(b, mods);
         out[key] = {
             name: b.name,
             item_class: b.item_class,
             domain: b.domain,
             tags: b.tags,
             release_state: b.release_state,
+            ...(capDelta && { capDelta }),
         };
     }
     return out;
@@ -144,7 +164,7 @@ async function main() {
     const bench = await getSource(BENCH_URL, "REPOE_BENCH_FILE");
 
     const modsFile = writeJson("mods.json", projectMods(mods.json));
-    const basesFile = writeJson("base_items.json", projectBases(bases.json));
+    const basesFile = writeJson("base_items.json", projectBases(bases.json, mods.json));
     const essencesFile = writeJson("essences.json", projectEssences(essences.json));
     const benchFile = writeJson("bench.json", projectBench(bench.json));
 

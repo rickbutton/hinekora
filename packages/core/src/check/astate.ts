@@ -8,8 +8,8 @@
  */
 import type { Base } from "../model/base.js";
 import type { Cmp } from "../ast/ast.js";
-import type { Game, Gen, ModId, Rarity } from "../model/ids.js";
-import { TypeId } from "../model/ids.js";
+import type { Game, Gen, Rarity } from "../model/ids.js";
+import { ModId, TypeId } from "../model/ids.js";
 import { type Bdd, BddManager } from "./bdd.js";
 
 /** An inclusive integer range `[min, max]`. */
@@ -36,16 +36,64 @@ export interface AItem {
     readonly tiers: ReadonlyMap<TypeId, ReadonlySet<ModId>>;
 }
 
-/** Per-generation slot cap by rarity (slot-effect deltas not yet modelled). */
-export function rarityCap(rarity: Rarity): number {
+// --- affix caps -----------------------------------------------------------
+//
+// The count an item can hold is bounded three ways: each side by its natural
+// per-rarity limit shifted by the base's implicit `capDelta` (floored at 0), and
+// the two sides together by a hard per-rarity total. The total is INDEPENDENT of
+// the per-side sum — that is what makes a magic Ratcheting Ring "0 prefix / 2
+// suffix" (raw suffix 1+3=4, but the magic total is 2), not 0/4.
+
+/** Jewel classes cap at 2 affixes per side (4 total) instead of 3/6. */
+const JEWEL_CLASSES: ReadonlySet<string> = new Set(["Jewel", "AbyssJewel"]);
+
+/** Flasks and tinctures top out at Magic — there are no Rare flasks (wiki). */
+const NO_RARE_CLASSES: ReadonlySet<string> = new Set([
+    "LifeFlask",
+    "ManaFlask",
+    "HybridFlask",
+    "UtilityFlask",
+    "Tincture",
+]);
+
+/** Can this base be made Rare at all? (Flasks/tinctures cannot.) */
+export function canBeRare(base: Base): boolean {
+    return !NO_RARE_CLASSES.has(base.itemClass);
+}
+
+/** The per-side affix limit inherent to a rarity + base class, before implicit
+ *  deltas: normal 0, magic 1, rare 3 (2 for jewels). */
+function naturalPerSide(rarity: Rarity, base: Base): number {
     switch (rarity) {
         case "normal":
             return 0;
         case "magic":
             return 1;
         case "rare":
-            return 3;
+            return JEWEL_CLASSES.has(base.itemClass) ? 2 : 3;
     }
+}
+
+/** The hard cap on TOTAL affixes for this rarity — `2 × naturalPerSide`, an
+ *  independent bound the per-side deltas cannot exceed (magic = 2, rare = 6). */
+export function hardTotalCap(rarity: Rarity, base: Base): number {
+    return 2 * naturalPerSide(rarity, base);
+}
+
+/** The per-side affix cap: natural limit plus the base's implicit delta for that
+ *  generation, floored at 0. */
+export function sideCap(gen: Gen, rarity: Rarity, base: Base): number {
+    const delta = base.capDelta ? base.capDelta[gen] : 0;
+    return Math.max(0, naturalPerSide(rarity, base) + delta);
+}
+
+/** The most affixes this item can hold: the hard total, but never more than the
+ *  two per-side caps allow together (Simplex: `min(6, 1+2) = 3`). */
+export function maxTotal(rarity: Rarity, base: Base): number {
+    return Math.min(
+        hardTotalCap(rarity, base),
+        sideCap("prefix", rarity, base) + sideCap("suffix", rarity, base),
+    );
 }
 
 // --- range helpers --------------------------------------------------------
@@ -57,11 +105,11 @@ const rIntersect = (a: Range, b: Range): Range | null => {
 };
 const rJoin = (a: Range, b: Range): Range => [Math.min(a[0], b[0]), Math.max(a[1], b[1])];
 
-/** The derived suffix range: `total − prefix`, clamped to the cap. */
+/** The derived suffix range: `total − prefix`, clamped to the suffix cap. */
 export function suffixRange(a: AItem): Range {
-    const cap = rarityCap(a.rarity);
+    const sCap = sideCap("suffix", a.rarity, a.base);
     const lo = Math.max(0, a.total[0] - a.prefix[1]);
-    const hi = Math.min(cap, a.total[1] - a.prefix[0]);
+    const hi = Math.min(sCap, a.total[1] - a.prefix[0]);
     return [lo, hi];
 }
 
@@ -83,6 +131,62 @@ export function presenceFacts(
     return p;
 }
 
+// --- tier presence atoms --------------------------------------------------
+//
+// A family's presence is one BDD variable named by its `TypeId`. A tier-qualified
+// fact ("present AT this specific mod") is a SECOND variable, so a disjunction of
+// tier-qualified clauses (`fire@t1 ∨ cold@t1 ∨ light@t1`) survives a control-flow
+// join the same way a family disjunction does — where the flat `tiers` overlay,
+// joined per-type, would drop it. Atoms are introduced lazily by `refine`, only
+// for the tiers a predicate actually names.
+//
+// We do NOT assert `tierAtom ⇒ family` or tier mutual-exclusion. Both are true
+// facts we could AND in; omitting them only ever under-claims (loses precision,
+// never adds a false error — the soundness principle), and nothing yet needs them.
+
+const TIER_SEP = "\u0000"; // NUL: cannot occur in a TypeId/ModId string
+
+function tierAtomName(type: TypeId, mod: ModId): string {
+    return `${type}${TIER_SEP}${mod}`;
+}
+function isTierAtom(name: string): boolean {
+    return name.includes(TIER_SEP);
+}
+function tierAtomType(name: string): TypeId {
+    const i = name.indexOf(TIER_SEP);
+    return TypeId(i < 0 ? name : name.slice(0, i));
+}
+function tierAtomMod(name: string): ModId {
+    return ModId(name.slice(name.indexOf(TIER_SEP) + 1));
+}
+
+/** The tier atoms allocated for `type` (the specific mods a predicate has named). */
+function tierAtomsOf(a: AItem, type: TypeId): ModId[] {
+    const out: ModId[] = [];
+    for (const v of a.bdd.variables()) {
+        if (isTierAtom(v) && tierAtomType(v) === type) out.push(tierAtomMod(v));
+    }
+    return out;
+}
+
+/**
+ * For a known disjunctive clause over `types`, the specific tier each member is
+ * pinned to — but only when every member has exactly one named tier atom AND the
+ * tier-lifted clause is still entailed (so we never show a tier we can't prove).
+ * Empty when the clause carries no such tier (e.g. plain `has X` disjunctions).
+ */
+export function disjunctiveTier(a: AItem, types: readonly TypeId[]): Map<TypeId, ModId> {
+    const pick = new Map<TypeId, ModId>();
+    for (const t of types) {
+        const atoms = tierAtomsOf(a, t);
+        if (atoms.length !== 1) return new Map<TypeId, ModId>();
+        pick.set(t, atoms[0]!);
+    }
+    let clause = a.bdd.FALSE;
+    for (const [t, m] of pick) clause = a.bdd.or(clause, a.bdd.variable(tierAtomName(t, m)));
+    return a.bdd.entails(a.presence, clause) ? pick : new Map<TypeId, ModId>();
+}
+
 /** Is `type` guaranteed present — forced true in every model of `presence`? */
 export function isGuaranteed(a: AItem, type: TypeId): boolean {
     return a.bdd.entails(a.presence, a.bdd.variable(type));
@@ -96,14 +200,18 @@ export function isExcluded(a: AItem, type: TypeId): boolean {
 /** The types `presence` forces present (over the constrained variables only). */
 export function guaranteedTypes(a: AItem): Set<TypeId> {
     const out = new Set<TypeId>();
-    for (const t of a.bdd.variables()) if (isGuaranteed(a, TypeId(t))) out.add(TypeId(t));
+    for (const t of a.bdd.variables()) {
+        if (!isTierAtom(t) && isGuaranteed(a, TypeId(t))) out.add(TypeId(t));
+    }
     return out;
 }
 
 /** The types `presence` forces absent. */
 export function excludedTypes(a: AItem): Set<TypeId> {
     const out = new Set<TypeId>();
-    for (const t of a.bdd.variables()) if (isExcluded(a, TypeId(t))) out.add(TypeId(t));
+    for (const t of a.bdd.variables()) {
+        if (!isTierAtom(t) && isExcluded(a, TypeId(t))) out.add(TypeId(t));
+    }
     return out;
 }
 
@@ -122,6 +230,7 @@ export function disjunctiveGuarantees(a: AItem): TypeId[][] {
     const excluded = excludedTypes(a);
     const cand = a.bdd
         .variables()
+        .filter((v) => !isTierAtom(v))
         .map((v) => TypeId(v))
         .filter((t) => !guaranteed.has(t) && !excluded.has(t) && a.possible.has(t));
     if (cand.length < 2 || cand.length > MAX_DISJUNCTION_VARS) return [];
@@ -234,19 +343,22 @@ export function cardinalityGuarantees(a: AItem): CardinalityGuarantee[] {
  * `total`. Returns `null` if no consistent assignment remains (uninhabited).
  */
 export function normalize(a: AItem): AItem | null {
-    const cap = rarityCap(a.rarity);
+    const pCap = sideCap("prefix", a.rarity, a.base);
+    const sCap = sideCap("suffix", a.rarity, a.base);
+    const tCap = hardTotalCap(a.rarity, a.base);
     // `total`, `prefix`, and the derived suffix bound each other, so iterate to
     // a fixpoint over both couplings:
-    //   prefix ∈ [total − cap, total]     total ∈ [prefix, prefix + cap]
+    //   prefix ∈ [total − sCap, min(pCap, total)]   total ∈ [prefix, min(tCap, prefix + sCap)]
     // Propagating BOTH ways matters: without the second, refining
     // `prefixCount < 3` leaves `total` at its old max, and an exalt guarded by
-    // that very check spuriously looks "possibly full".
+    // that very check spuriously looks "possibly full". The `tCap` bound is what
+    // holds a +delta side to the hard rarity total (magic Ratcheting: ≤ 2, not 4).
     let prefix = a.prefix;
     let total = a.total;
     for (let i = 0; i < 4; i++) {
-        const p = rIntersect(prefix, [Math.max(0, total[0] - cap), Math.min(cap, total[1])]);
+        const p = rIntersect(prefix, [Math.max(0, total[0] - sCap), Math.min(pCap, total[1])]);
         if (p === null) return null;
-        const t = rIntersect(total, [Math.max(0, p[0]), Math.min(2 * cap, p[1] + cap)]);
+        const t = rIntersect(total, [Math.max(0, p[0]), Math.min(tCap, p[1] + sCap)]);
         if (t === null) return null;
         const stable =
             p[0] === prefix[0] && p[1] === prefix[1] && t[0] === total[0] && t[1] === total[1];
@@ -463,14 +575,19 @@ function refineHas(a: AItem, type: TypeId, gen: Gen, tierMod: ModId | undefined)
         ? a.tiers
         : new Map(a.tiers).set(type, new Set([tierMod]));
 
+    // A named tier is also a presence atom, so it rides through a control-flow
+    // join where the flat `tiers` overlay would drop it.
+    const withTier = (p: Bdd): Bdd =>
+        tierMod === undefined ? p : a.bdd.and(p, a.bdd.variable(tierAtomName(type, tierMod)));
+
     if (alreadyPresent) {
-        return tierMod === undefined ? a : { ...a, tiers };
+        return tierMod === undefined ? a : { ...a, presence: withTier(a.presence), tiers };
     }
 
     // Learn it present, and what that implies about counts: ≥1 affix total and
     // ≥1 in its generation. The `total ≥ 1` part stops a "remove until X gone"
     // loop from concluding the item could be empty while X is still present.
-    const presence = a.bdd.and(a.presence, a.bdd.variable(type));
+    const presence = withTier(a.bdd.and(a.presence, a.bdd.variable(type)));
     const total: Range = [Math.max(a.total[0], 1), a.total[1]];
     const prefix: Range =
         gen === "prefix"
@@ -482,8 +599,16 @@ function refineHas(a: AItem, type: TypeId, gen: Gen, tierMod: ModId | undefined)
 
 function refineLacks(a: AItem, type: TypeId, tierMod: ModId | undefined): AItem | null {
     if (tierMod !== undefined) {
-        // "not has X t<n>": X may still be present at another tier, so remove
-        // just that mod from its possible tiers rather than excluding the type.
+        // "not has X t<n>": X may still be present at another tier. Record that
+        // this specific tier is absent as a presence atom — that is what lets it
+        // contradict a surviving tier-qualified disjunction (`X@t1 ∨ Y@t1`).
+        const presence = a.bdd.and(
+            a.presence,
+            a.bdd.not(a.bdd.variable(tierAtomName(type, tierMod))),
+        );
+        if (a.bdd.isFalse(presence)) return null;
+
+        // The overlay also narrows the possible tiers rather than excluding X.
         const allowed = a.tiers.get(type);
         if (
             isGuaranteed(a, type) &&
@@ -493,14 +618,14 @@ function refineLacks(a: AItem, type: TypeId, tierMod: ModId | undefined): AItem 
         ) {
             return null; // guaranteed to be exactly tier M → cannot lack it
         }
-        if (allowed === undefined) return a; // unconstrained → can't refine precisely (sound)
+        if (allowed === undefined) return { ...a, presence }; // overlay unconstrained; keep the atom
         const narrowed = new Set(allowed);
         narrowed.delete(tierMod);
         if (narrowed.size === 0 && isGuaranteed(a, type)) return null; // present but only tier was M
         const tiers = new Map(a.tiers);
         if (narrowed.size === 0) tiers.delete(type);
         else tiers.set(type, narrowed);
-        return { ...a, tiers };
+        return { ...a, presence, tiers };
     }
 
     // Force the presence variable false: a guaranteed type collapses the BDD to

@@ -112,6 +112,8 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                     : "Requires a Normal item — only Screaming-tier and higher essences reforge a Rare.";
             case "essenceClass":
                 return `This essence grants no mod for a ${failure.itemClass}, so it cannot be used on this item.`;
+            case "rarityUnsupported":
+                return `A ${state.base.name ?? "flask"} cannot be made ${RARITY_LABEL[failure.rarity]} — it can only be Normal or Magic.`;
         }
     })();
     return `at this point the item is: ${renderState(state)}\n${need}`;

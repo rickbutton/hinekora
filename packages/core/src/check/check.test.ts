@@ -3,8 +3,10 @@ import { check, type CheckContext } from "./check.js";
 import {
     cardinalityGuarantees,
     disjunctiveGuarantees,
+    disjunctiveTier,
     excludedTypes,
     guaranteedTypes,
+    suffixRange,
 } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import {
@@ -34,9 +36,12 @@ import {
     CLASS_RING,
     COLD_RESIST,
     FIRE_RESIST,
+    FLASK_BASE,
     LIFE_T1,
     LIGHTNING_RESIST,
+    RATCHETING_BASE,
     RING_BASE,
+    SIMPLEX_BASE,
 } from "../__fixtures__/mods.js";
 import type { BenchCraft, EssenceSpec } from "../model/sources.js";
 
@@ -59,10 +64,15 @@ const ESS_MUTTERING: EssenceSpec = {
 };
 
 const registry = buildRegistry({
-    bases: [RING_BASE, AMULET_BASE],
+    bases: [RING_BASE, AMULET_BASE, SIMPLEX_BASE, RATCHETING_BASE, FLASK_BASE],
     mods: CATALOG,
     modAliases: { "T1 Life": "IncreasedLife1" },
-    baseAliases: { "Iron Ring": "IronRing" },
+    baseAliases: {
+        "Iron Ring": "IronRing",
+        "Simplex Amulet": "SimplexAmulet",
+        "Ratcheting Ring": "RatchetingRing",
+        "Life Flask": "LifeFlask",
+    },
     essences: [ESS_DEAFENING, ESS_MUTTERING],
     benchCrafts: [BENCH_LIFE],
 });
@@ -351,6 +361,36 @@ describe("checker — predicate defs", () => {
         expect(new Set(disj[0])).toEqual(new Set([LIFE_T1.type, FIRE_RESIST.type]));
     });
 
+    it("keeps each member's tier through a disjunctive join (`has X t1 or has Y t1`)", () => {
+        // On exit the guarantee is (life@t1 ∨ fire-res@t1); the tier of each member
+        // must survive the branch join, so a later hover/predicate sees t1 — not
+        // the full roll span. This is the fact the flat `tiers` overlay dropped.
+        const c = craft("poe1", rareRing(), [
+            until(orp(has("IncreasedLife1", 1), has("FireResist1", 1)), [op("chaos")]),
+        ]);
+        const st = check(c, ctx).finalState!;
+        const disj = disjunctiveGuarantees(st);
+        expect(disj).toHaveLength(1);
+        expect(disjunctiveTier(st, disj[0]!)).toEqual(
+            new Map([
+                [LIFE_T1.type, LIFE_T1.id],
+                [FIRE_RESIST.type, FIRE_RESIST.id],
+            ]),
+        );
+    });
+
+    it("a tier-negating branch after a tier-qualified disjunction is dead", () => {
+        // `until has X t1 or has Y t1 { chaos }` proves (X@t1 ∨ Y@t1) on exit; the
+        // following `if not X t1 and not Y t1` can therefore never run. Only works
+        // if the tier survives the join into the after-state.
+        const c = craft("poe1", rareRing(), [
+            until(orp(has("IncreasedLife1", 1), has("FireResist1", 1)), [op("chaos")]),
+            iff(andp(notp(has("IncreasedLife1", 1)), notp(has("FireResist1", 1))), [op("annul")]),
+        ]);
+        const diags = check(c, ctx).diagnostics;
+        expect(diags.some((d) => d.message.includes("'if' branch can never run"))).toBe(true);
+    });
+
     it("reports an arity mismatch", () => {
         const d = def("f", ["t"], hasP("IncreasedLife1", param("t")));
         const c = craft(
@@ -637,5 +677,94 @@ describe("checker — item-block well-formedness", () => {
         // FireResist1 is a suffix; listing it under prefixes is a mistake.
         const c = craft("poe1", rareRing(["FireResist1"]), []);
         expect(check(c, ctx).diagnostics[0]?.message).toContain("is a suffix");
+    });
+});
+
+describe("checker — per-base affix caps (experimented bases)", () => {
+    const normal = (base: string) => item({ base, ilvl: 100, rarity: "normal" });
+
+    it("a reforge on a reduced-cap base fills to its exact split (rare Simplex: 1p / 2s)", () => {
+        // alchemy wants 4–6 mods but the Simplex holds only 3 (1 prefix + 2
+        // suffixes), so the count clamps and the split is forced.
+        const st = check(craft("poe1", normal("Simplex Amulet"), [op("alchemy")]), ctx).finalState!;
+        expect(st.rarity).toBe("rare");
+        expect(st.total).toEqual([3, 3]);
+        expect(st.prefix).toEqual([1, 1]);
+        expect(suffixRange(st)).toEqual([2, 2]);
+    });
+
+    it("transmute on a 0-cap magic base adds no modifiers; augment then has no slot", () => {
+        const r = check(
+            craft("poe1", normal("Simplex Amulet"), [op("transmute"), op("augment")]),
+            ctx,
+        );
+        expect(r.finalState!.rarity).toBe("magic");
+        expect(r.finalState!.total).toEqual([0, 0]); // blue base, no explicit mods
+        expect(r.diagnostics.some((d) => d.message.toLowerCase().includes("open"))).toBe(true);
+    });
+
+    it("a magic +suffix base is held to the hard total of 2 (Ratcheting: 0p / 2s max)", () => {
+        // The +3 suffix would raw-cap at 4, but the magic hard total is 2. Two
+        // augments fill both suffixes; a third has no slot, and prefixes never appear.
+        const r = check(
+            craft("poe1", normal("Ratcheting Ring"), [
+                op("transmute"),
+                op("augment"),
+                op("augment"),
+            ]),
+            ctx,
+        );
+        expect(r.finalState!.total).toEqual([2, 2]);
+        expect(r.finalState!.prefix).toEqual([0, 0]);
+        expect(suffixRange(r.finalState!)).toEqual([2, 2]);
+    });
+
+    it("rare Simplex is full after a reforge: exalt fails, but works after an annul reopens a slot", () => {
+        const full = check(
+            craft("poe1", normal("Simplex Amulet"), [op("alchemy"), op("exalt")]),
+            ctx,
+        );
+        expect(full.diagnostics.some((d) => d.message.toLowerCase().includes("open"))).toBe(true);
+
+        const reopened = check(
+            craft("poe1", normal("Simplex Amulet"), [op("alchemy"), op("annul"), op("exalt")]),
+            ctx,
+        );
+        expect(reopened.diagnostics).toEqual([]);
+    });
+
+    it("scour on a 0-cap magic base is not wasted currency (blue → white)", () => {
+        const r = check(
+            craft("poe1", normal("Simplex Amulet"), [op("transmute"), op("scour")]),
+            ctx,
+        );
+        expect(r.diagnostics).toEqual([]); // scour still drops the rarity
+        expect(r.finalState!.rarity).toBe("normal");
+    });
+});
+
+describe("checker — flasks cap at Magic (no Rare flasks)", () => {
+    const flask = (rarity: "normal" | "magic" | "rare") =>
+        item({ base: "Life Flask", ilvl: 100, rarity });
+
+    it("transmute → augment on a flask is fine (Magic is allowed)", () => {
+        const r = check(craft("poe1", flask("normal"), [op("transmute")]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.rarity).toBe("magic");
+    });
+
+    it("alchemy on a flask is rejected — it cannot be made Rare", () => {
+        const r = check(craft("poe1", flask("normal"), [op("alchemy")]), ctx);
+        expect(r.diagnostics[0]?.message).toContain("cannot be made Rare");
+    });
+
+    it("regal on a magic flask is rejected", () => {
+        const r = check(craft("poe1", flask("normal"), [op("transmute"), op("regal")]), ctx);
+        expect(r.diagnostics.some((d) => d.message.includes("cannot be made Rare"))).toBe(true);
+    });
+
+    it("declaring a Rare flask in the item block is flagged", () => {
+        const r = check(craft("poe1", flask("rare"), []), ctx);
+        expect(r.diagnostics.some((d) => d.message.includes("cannot be Rare"))).toBe(true);
     });
 });

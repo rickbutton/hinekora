@@ -40,7 +40,7 @@ export const DOMAIN_FLASK = Domain("flask");
 
 export const CLASS_RING = ClassId("Ring");
 export const CLASS_AMULET = ClassId("Amulet");
-export const CLASS_FLASK = ClassId("Flask");
+export const CLASS_FLASK = ClassId("LifeFlask"); // a real flask class (caps at Magic)
 
 // --- Tags (for spawn-weight matching) -------------------------------------
 
@@ -74,6 +74,27 @@ export const FLASK_BASE: Base = {
     itemClass: CLASS_FLASK,
     domain: DOMAIN_FLASK,
     tags: new Set([TAG_DEFAULT, TAG_FLASK]),
+};
+
+/** Experimented amulet base (like the Simplex Amulet): −2 prefix / −1 suffix, so
+ *  a rare holds 1 prefix + 2 suffixes and a magic holds none. */
+export const SIMPLEX_BASE: Base = {
+    id: BaseId("SimplexAmulet"),
+    itemClass: CLASS_AMULET,
+    domain: DOMAIN_ITEM,
+    tags: new Set([TAG_DEFAULT, TAG_AMULET]),
+    capDelta: { prefix: -2, suffix: -1 },
+};
+
+/** Experimented ring base (like the Ratcheting Ring): −3 prefix / +3 suffix, so
+ *  a rare holds 0 prefixes + 6 suffixes and a magic 0 prefixes + 2 suffixes
+ *  (the +3 is held to the hard magic total of 2, not 4). */
+export const RATCHETING_BASE: Base = {
+    id: BaseId("RatchetingRing"),
+    itemClass: CLASS_RING,
+    domain: DOMAIN_ITEM,
+    tags: new Set([TAG_DEFAULT, TAG_RING]),
+    capDelta: { prefix: -3, suffix: 3 },
 };
 
 // --- Mod builder ----------------------------------------------------------

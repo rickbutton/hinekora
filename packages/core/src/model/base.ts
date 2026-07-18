@@ -26,4 +26,10 @@ export interface Base {
     readonly domain: Domain;
     /** `BaseItemTypes.TagsKeys` — matched against mod spawn tables for eligibility. */
     readonly tags: ReadonlySet<TagId>;
+    /**
+     * Signed per-generation affix-slot deltas from an "experimented base"
+     * implicit (Simplex Amulet: −2 prefix, −1 suffix; Ratcheting Ring: −3/+3).
+     * Applied to the rarity's natural per-side limit, floored at 0. Absent ⇒ 0/0.
+     */
+    readonly capDelta?: { readonly prefix: number; readonly suffix: number };
 }
