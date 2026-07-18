@@ -280,6 +280,23 @@ the op required." `describePred`, `resolveMessage` for other diagnostics.
 
 ## 7. Recent work (changelog, newest first)
 
+### Concrete starting items + item-tooltip hover
+
+- **Declared mods must pin a tier.** Item-block affixes are now `AffixDecl {mod, tier?}`
+  (parser: `[ "maximum life" t1, "random" ]`). `elaborateItem` requires each NAMED mod to
+  resolve to a specific tier — via an exact id/alias (`resolveMod`, id-only) or a stat
+  description + `t<n>`; a bare fuzzy description is an error ("declare the tier …").
+  Placeholders (`"random"`/`"?"`) stay anonymous. The pinned tier flows into `initialState`
+  as a singleton `tiers` overlay, so the starting item is fully concrete.
+- **Hover is a PoE-style item tooltip** (`tooltip()` in lsp/hover.ts, replacing the
+  count-range footer): one `(P)`/`(S)`-tagged line per mod, ordered prefixes→suffixes;
+  guaranteed mods show resolved text (exact roll when the tier is pinned — now always, for
+  declared mods — else the roll SPAN across candidate tiers); **disjunctive guarantees**
+  render as "at least one of …" via `disjunctiveGuarantees` (positive prime implicates of
+  the presence BDD, bounded subset search); undetermined slot counts per generation.
+- Bench **group exclusivity** (`sharesFamilyWithPossible` + `registry.familiesOfType`):
+  can't bench a mod whose family may already be present.
+
 ### Predicate defs (`def name(p) = <pred>`)
 
 - **Local, parameterized predicate definitions**, usable in any `until`/`if`. The

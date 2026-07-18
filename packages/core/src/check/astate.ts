@@ -233,6 +233,8 @@ export interface InitialCounts {
     readonly suffixCount: number;
     /** ModTypes known present from the item block (resolvable named affixes). */
     readonly present: ReadonlySet<TypeId>;
+    /** For each declared mod pinned to a specific tier, that exact mod (id). */
+    readonly pinned: ReadonlyMap<TypeId, ModId>;
 }
 
 export function initialState(
@@ -255,9 +257,9 @@ export function initialState(
         bdd,
         presence: presenceFacts(bdd, counts.present, []),
         possible: new Set(counts.present),
-        // Item-block affixes are declared by type (no tier), so tiers start
-        // unconstrained. Tier declarations in the item block are a future add.
-        tiers: new Map(),
+        // Each declared mod is pinned to its exact tier, so the tier overlay
+        // starts with a singleton {mod} for every pinned type.
+        tiers: new Map([...counts.pinned].map(([type, mod]) => [type, new Set([mod])])),
     };
 }
 

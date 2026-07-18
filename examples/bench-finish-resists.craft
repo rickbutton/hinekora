@@ -18,8 +18,8 @@ item {
     base:     "Iron Ring"
     ilvl:     84
     rarity:   rare
-    prefixes: [ "maximum life" ]
-    suffixes: [ "fire resistance", "lightning resistance" ]
+    prefixes: [ "maximum life" t2 ]
+    suffixes: [ "fire resistance" t3, "lightning resistance" t3 ]
 }
 
 bench "cold resistance"

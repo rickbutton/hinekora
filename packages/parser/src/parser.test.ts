@@ -46,11 +46,18 @@ describe("parser — the canonical craft (surface §8)", () => {
             base: "Cobalt Jewel",
             ilvl: 82,
             rarity: "rare",
-            prefixes: ["random prefix", "+1 Suffix Modifier"],
-            suffixes: ["random suffix", "random suffix"],
+            prefixes: [{ mod: "random prefix" }, { mod: "+1 Suffix Modifier" }],
+            suffixes: [{ mod: "random suffix" }, { mod: "random suffix" }],
             augments: [],
             quality: 0,
         });
+    });
+
+    it("parses a `t1` tier on a declared affix", () => {
+        const c = parseOk(
+            `craft in poe1 item { base: "R" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1, "random" ] }`,
+        );
+        expect(c.item.prefixes).toEqual([{ mod: "maximum life", tier: 1 }, { mod: "random" }]);
     });
 
     it("parses the body: an op, then an omen scope wrapping an until-loop", () => {

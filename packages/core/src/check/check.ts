@@ -17,9 +17,9 @@
  * fixpointing (the body is checked once from the entry state — sound for the
  * single-op-body loops these crafts use; wider invariants are future work).
  */
-import type { Arg, Craft, Def, ItemBlock, ParamRef, Pred, Stmt } from "../ast/ast.js";
+import type { AffixDecl, Arg, Craft, Def, ItemBlock, ParamRef, Pred, Stmt } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
-import type { Game, TypeId } from "../model/ids.js";
+import type { Game, Gen, ModId, TypeId } from "../model/ids.js";
 import type { CurrencyKind, Registry, OmenSpec } from "../resolve/registry.js";
 import {
     type AItem,
@@ -170,28 +170,66 @@ class Checker {
         }
         const base = baseRes.value;
         const present = new Set<TypeId>();
+        // Each declared mod is pinned to a specific tier — the starting item is
+        // concrete, so the checker (and the hover) know the exact mods, not just
+        // their types. Placeholders (`"random"`) stay anonymous.
+        const pinned = new Map<TypeId, ModId>();
         const ctx = { game, base, ilvl: item.ilvl };
 
-        const countAffixes = (names: readonly string[], gen: "prefix" | "suffix"): number => {
-            for (const name of names) {
-                if (PLACEHOLDERS.test(name.trim().toLowerCase())) continue; // anonymous affix
-                // Item-block mods resolve fuzzily (a stat description or an exact
-                // id) to a ModType; the declared generation is checked against it.
-                const typeRes = this.registry.resolveModType(name, ctx);
-                if (!typeRes.ok) {
-                    this.diag(resolveMessage(typeRes.error), item.span);
-                    continue; // count it, but track no type
-                }
-                const modGen = this.registry.genOfType(typeRes.value);
-                if (modGen !== undefined && modGen !== gen) {
-                    this.diag(
-                        `"${name}" is a ${modGen}, but it is listed under ${gen}es.`,
-                        item.span,
-                    );
-                }
-                present.add(typeRes.value);
+        const checkGen = (name: string, modGen: Gen | undefined, gen: Gen): void => {
+            if (modGen !== undefined && modGen !== gen) {
+                this.diag(`"${name}" is a ${modGen}, but it is listed under ${gen}es.`, item.span);
             }
-            return names.length;
+        };
+
+        // Resolve one declared affix to a specific tier-mod, or report why it
+        // can't. A named mod pins a tier via (1) an exact id/alias, or (2) a stat
+        // description plus a `t<n>` tier; a bare description is an error.
+        const pinAffix = (affix: AffixDecl, gen: Gen): void => {
+            const byId = this.registry.resolveMod(affix.mod);
+            if (byId.ok) {
+                checkGen(affix.mod, byId.value.gen, gen);
+                present.add(byId.value.type);
+                pinned.set(byId.value.type, byId.value.id);
+                return;
+            }
+            const typeRes = this.registry.resolveModType(affix.mod, ctx);
+            if (!typeRes.ok) {
+                this.diag(resolveMessage(typeRes.error), item.span);
+                return;
+            }
+            const type = typeRes.value;
+            checkGen(affix.mod, this.registry.genOfType(type), gen);
+            if (affix.tier === undefined) {
+                this.diag(
+                    `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t1\`) — a starting item's mods must be concrete.`,
+                    item.span,
+                );
+                present.add(type); // still count it as present, just untiered
+                return;
+            }
+            const tiers = rollableTiers(this.registry.catalog, game, base, item.ilvl, type);
+            const mod = tierMod(tiers, affix.tier);
+            if (mod === undefined) {
+                this.diag(
+                    `tier ${affix.tier} is out of range for "${affix.mod}" (only ${tiers.length} tier${
+                        tiers.length === 1 ? "" : "s"
+                    } roll here).`,
+                    item.span,
+                );
+                present.add(type);
+                return;
+            }
+            present.add(type);
+            pinned.set(type, mod.id);
+        };
+
+        const countAffixes = (affixes: readonly AffixDecl[], gen: Gen): number => {
+            for (const affix of affixes) {
+                if (PLACEHOLDERS.test(affix.mod.trim().toLowerCase())) continue; // anonymous affix
+                pinAffix(affix, gen);
+            }
+            return affixes.length;
         };
 
         let prefixCount = countAffixes(item.prefixes, "prefix");
@@ -218,6 +256,7 @@ class Checker {
             prefixCount,
             suffixCount,
             present,
+            pinned,
         });
     }
 

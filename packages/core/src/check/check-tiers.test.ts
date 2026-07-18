@@ -8,7 +8,7 @@ import { FIRE_RES_TIERED, MAXLIFE_T1, RING_BASE, TIERED_CATALOG } from "../__fix
 
 const registry = buildRegistry({ bases: [RING_BASE], mods: TIERED_CATALOG });
 const ctx: CheckContext = { registry };
-const rareRing = (prefixes: string[] = []) =>
+const rareRing = (prefixes: readonly (string | { mod: string; tier?: number })[] = []) =>
     item({ base: "IronRing", ilvl: 100, rarity: "rare", prefixes });
 
 describe("fuzzy resolution + tier ranking (unit)", () => {
@@ -36,11 +36,18 @@ describe("fuzzy resolution + tier ranking (unit)", () => {
 });
 
 describe("checker — fuzzy names in predicates and item blocks", () => {
-    it("resolves a fuzzy stat description in the item block", () => {
-        const c = craft("poe1", rareRing(["maximum life"]), []);
+    it("pins a declared mod's tier from a stat description + `t1`", () => {
+        const c = craft("poe1", rareRing([{ mod: "maximum life", tier: 1 }]), []);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteedTypes(r.finalState!).has(MAXLIFE_T1.type)).toBe(true);
+    });
+
+    it("errors on a declared stat description with no tier", () => {
+        const c = craft("poe1", rareRing(["maximum life"]), []);
+        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("declare the tier"))).toBe(
+            true,
+        );
     });
 
     it("errors on a tier that doesn't roll on this item", () => {

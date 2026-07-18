@@ -7,6 +7,7 @@
  * span (the checker's logic doesn't depend on span values, only carries them).
  */
 import type {
+    AffixDecl,
     Arg,
     CallPred,
     ComparePred,
@@ -37,15 +38,20 @@ const DS: SourceSpan = {
     end: { offset: 0, line: 1, column: 1 },
 };
 
+/** A test affix: a bare mod id/alias (tier pinned by the id) or `{ mod, tier }`. */
+type AffixSpec = string | AffixDecl;
+
 interface ItemSpec {
     readonly base: string;
     readonly ilvl: number;
     readonly rarity: Rarity;
-    readonly prefixes?: readonly string[];
-    readonly suffixes?: readonly string[];
+    readonly prefixes?: readonly AffixSpec[];
+    readonly suffixes?: readonly AffixSpec[];
     readonly augments?: readonly string[];
     readonly quality?: number;
 }
+
+const affix = (a: AffixSpec): AffixDecl => (typeof a === "string" ? { mod: a } : a);
 
 export const craft = (
     game: Game,
@@ -66,8 +72,8 @@ export const item = (spec: ItemSpec): ItemBlock => ({
     base: spec.base,
     ilvl: spec.ilvl,
     rarity: spec.rarity,
-    prefixes: spec.prefixes ?? [],
-    suffixes: spec.suffixes ?? [],
+    prefixes: (spec.prefixes ?? []).map(affix),
+    suffixes: (spec.suffixes ?? []).map(affix),
     augments: spec.augments ?? [],
     quality: spec.quality ?? 0,
     span: DS,

@@ -36,10 +36,18 @@ exalt`);
         expect(r.output).toMatch(/test\.craft:\d+:\d+: error:/);
     });
 
-    it("resolves fuzzy stat names in a real craft", () => {
+    it("resolves fuzzy stat names (with a declared tier) in a real craft", () => {
+        const r = run(`craft in poe1
+item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] }
+exalt`);
+        expect(r.ok).toBe(true);
+    });
+
+    it("rejects a declared mod with no tier", () => {
         const r = run(`craft in poe1
 item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" ] }
 exalt`);
-        expect(r.ok).toBe(true);
+        expect(r.ok).toBe(false);
+        expect(r.output).toContain("declare the tier");
     });
 });

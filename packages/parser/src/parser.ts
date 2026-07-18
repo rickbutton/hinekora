@@ -12,6 +12,7 @@
  * a `ParseResult` at the `parse` boundary.
  */
 import {
+    type AffixDecl,
     type Arg,
     type BenchStmt,
     type CallPred,
@@ -183,8 +184,8 @@ class Parser {
         let base: string | undefined;
         let ilvl: number | undefined;
         let rarity: Rarity | undefined;
-        let prefixes: readonly string[] | undefined;
-        let suffixes: readonly string[] | undefined;
+        let prefixes: readonly AffixDecl[] | undefined;
+        let suffixes: readonly AffixDecl[] | undefined;
         let augments: readonly string[] | undefined;
         let quality: number | undefined;
 
@@ -219,10 +220,10 @@ class Parser {
                     rarity = setOnce(rarity, key, this.parseRarityWord(), keyTok.span);
                     break;
                 case "prefixes":
-                    prefixes = setOnce(prefixes, key, this.parseStringList(), keyTok.span);
+                    prefixes = setOnce(prefixes, key, this.parseAffixList(), keyTok.span);
                     break;
                 case "suffixes":
-                    suffixes = setOnce(suffixes, key, this.parseStringList(), keyTok.span);
+                    suffixes = setOnce(suffixes, key, this.parseAffixList(), keyTok.span);
                     break;
                 case "augments":
                     augments = setOnce(augments, key, this.parseStringList(), keyTok.span);
@@ -277,6 +278,28 @@ class Parser {
         const items: string[] = [];
         while (!this.at("rbracket")) {
             items.push(this.expect("string", "a quoted string").text);
+            if (this.at("comma")) {
+                this.advance();
+            } else {
+                break;
+            }
+        }
+        this.expect("rbracket", "']' to close the list");
+        return items;
+    }
+
+    /**
+     * A prefix/suffix affix list: `[ "<mod>" [t1], … ]`. Each entry is a quoted
+     * mod name with an optional `t1` tier (the checker requires a tier for named
+     * mods; a `"random"`/`"?"` placeholder takes none).
+     */
+    private parseAffixList(): readonly AffixDecl[] {
+        this.expect("lbracket", "'[' to open a list");
+        const items: AffixDecl[] = [];
+        while (!this.at("rbracket")) {
+            const mod = this.expect("string", "a quoted mod name").text;
+            const tier = this.tierShorthand();
+            items.push(tier !== undefined ? { mod, tier } : { mod });
             if (this.at("comma")) {
                 this.advance();
             } else {

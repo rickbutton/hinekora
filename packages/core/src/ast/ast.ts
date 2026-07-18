@@ -60,6 +60,17 @@ export type Arg =
     | { readonly kind: "param"; readonly param: string; readonly span: SourceSpan };
 
 /**
+ * A declared affix in the item block: a named modifier with its tier (`"maximum
+ * life" t1`), or a `"random"`/`"?"` placeholder standing for an unspecified affix
+ * (no tier). A named mod must pin a specific tier — either the explicit `tier`
+ * here or by naming an exact mod id/alias — so the starting item is concrete.
+ */
+export interface AffixDecl {
+    readonly mod: string;
+    readonly tier?: number;
+}
+
+/**
  * The item declaration — the only place state is given rather than inferred
  * (surface §1). Mod/base/augment names are raw strings (resolved later).
  * Optional fields default: `augments` to none, `quality` to 0.
@@ -69,8 +80,8 @@ export interface ItemBlock {
     readonly base: string;
     readonly ilvl: number;
     readonly rarity: Rarity;
-    readonly prefixes: readonly string[];
-    readonly suffixes: readonly string[];
+    readonly prefixes: readonly AffixDecl[];
+    readonly suffixes: readonly AffixDecl[];
     readonly augments: readonly string[];
     readonly quality: number;
     readonly span: SourceSpan;

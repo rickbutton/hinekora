@@ -68,7 +68,7 @@ until has "maximum life" t1 { exalt }`;
 
     it("renders the state as a tagged, one-mod-per-line tooltip with resolved text", () => {
         const src = `craft in poe1
-item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: ["maximum life"] suffixes: ["fire resistance"] }
+item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: ["maximum life" t1] suffixes: ["fire resistance" t2] }
 bench "cold resistance"`;
         const md = getHover(src, src.indexOf("bench") + 1, registry);
         expect(md).not.toBeNull();
