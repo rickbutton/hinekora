@@ -121,7 +121,8 @@ class Lexer {
 
         switch (c) {
             case "=":
-                this.expectTwoChar("=", "=", "eq");
+                // `==` is equality; a lone `=` is the def binding.
+                this.scanLtGt("=", "eq", "assign");
                 return;
             case "!":
                 this.expectTwoChar("!", "=", "neq");

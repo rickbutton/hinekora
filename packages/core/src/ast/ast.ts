@@ -21,9 +21,36 @@ export interface Craft {
     readonly kind: "craft";
     readonly game: Game;
     readonly item: ItemBlock;
+    /** Local predicate definitions (`def name(p) = <pred>`), usable in any predicate. */
+    readonly defs: readonly Def[];
     readonly body: readonly Stmt[];
     readonly span: SourceSpan;
 }
+
+/**
+ * A local, parameterized PREDICATE definition: `def anyEleRes(t) = has … t or …`.
+ * Pure (no item side effects). A call substitutes arguments into `body`. Parameter
+ * types are inferred from where each param is used (a `tier` slot ⇒ int, a `has`
+ * slot ⇒ mod name).
+ */
+export interface Def {
+    readonly kind: "def";
+    readonly name: string;
+    readonly params: readonly string[];
+    readonly body: Pred;
+    readonly span: SourceSpan;
+}
+
+/** A reference to a def parameter, appearing in a value slot of the def body. */
+export interface ParamRef {
+    readonly param: string;
+    readonly span: SourceSpan;
+}
+
+/** A literal argument to a def call — an int or a (mod-name) string. */
+export type Arg =
+    | { readonly kind: "int"; readonly value: number; readonly span: SourceSpan }
+    | { readonly kind: "string"; readonly value: string; readonly span: SourceSpan };
 
 /**
  * The item declaration — the only place state is given rather than inferred
@@ -111,7 +138,7 @@ export interface WithOmenStmt {
 
 // --- Predicates (surface §5) ----------------------------------------------
 
-export type Pred = RarityPred | HasPred | ComparePred | NotPred | BinaryPred;
+export type Pred = RarityPred | HasPred | ComparePred | NotPred | BinaryPred | CallPred;
 
 /** Comparison operators for count projections. */
 export type Cmp = "==" | "!=" | "<" | "<=" | ">" | ">=";
@@ -130,8 +157,9 @@ export interface RarityPred {
  */
 export interface HasPred {
     readonly kind: "has";
-    readonly mod: string;
-    readonly tier?: number;
+    /** A mod description, or (inside a def body) a parameter standing in for one. */
+    readonly mod: string | ParamRef;
+    readonly tier?: number | ParamRef;
     readonly span: SourceSpan;
 }
 
@@ -140,7 +168,15 @@ export interface ComparePred {
     readonly kind: "compare";
     readonly projection: "prefixCount" | "suffixCount";
     readonly op: Cmp;
-    readonly value: number;
+    readonly value: number | ParamRef;
+    readonly span: SourceSpan;
+}
+
+/** `name(arg, …)` — a call to a local def, in predicate position. */
+export interface CallPred {
+    readonly kind: "call";
+    readonly name: string;
+    readonly args: readonly Arg[];
     readonly span: SourceSpan;
 }
 

@@ -9,7 +9,6 @@
 #
 # `t1` selects the best tier (Deafening); we spin until the random fill happens to
 # include a T1 fire, cold, or lightning resistance — any of the three is a win.
-# (A future `def anyEleRes(t) = …` would let us write `until anyEleRes(1)`.)
 
 craft in poe1
 
@@ -19,8 +18,13 @@ item {
     rarity: normal
 }
 
-until has "fire resistance" t1
-   or has "cold resistance" t1
-   or has "lightning resistance" t1 {
+# A local predicate def factors the three-way disjunction behind a name, with the
+# tier as a parameter (inferred as an int from its use in the `t1`-style slot).
+def anyEleRes(t) =
+    has "fire resistance" t
+    or has "cold resistance" t
+    or has "lightning resistance" t
+
+until anyEleRes(1) {
     essence "greed" t1
 }

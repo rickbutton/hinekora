@@ -12,12 +12,16 @@
  * a `ParseResult` at the `parse` boundary.
  */
 import {
+    type Arg,
     type BenchStmt,
+    type CallPred,
     type Cmp,
     type Craft,
+    type Def,
     type EssenceStmt,
     type IfStmt,
     type ItemBlock,
+    type ParamRef,
     type Pos,
     type Pred,
     type Rarity,
@@ -53,6 +57,13 @@ export function parseTokens(tokens: Token[]): Craft {
 class Parser {
     private index = 0;
     private prev: Token;
+    /**
+     * The parameters of the def currently being parsed. A bare ident in a value
+     * slot (`has X t`, `prefixCount < n`) is a parameter reference only when it
+     * names one of these; empty at top level, so top-level predicates can't
+     * accidentally reference params.
+     */
+    private defParams = new Set<string>();
 
     constructor(private readonly tokens: Token[]) {
         // There is always at least the synthetic EOF token.
@@ -115,11 +126,44 @@ class Parser {
         const game = this.parseGame();
 
         const item = this.parseItemBlock();
-        const body = this.parseStatements();
 
-        this.expect("eof", "end of input");
+        // The body is a flat sequence of statements, with `def`s interleaved.
+        // Defs are collected separately (they are file-level bindings, not steps);
+        // they may appear anywhere and are usable in any predicate.
+        const defs: Def[] = [];
+        const body: Stmt[] = [];
+        while (!this.at("eof") && !this.at("rbrace")) {
+            if (this.atKeyword("def")) defs.push(this.parseDef());
+            else body.push(this.parseStatement());
+        }
 
-        return { kind: "craft", game, item, body, span: span(start, this.prev.span.end) };
+        this.expect("eof", "end of input"); // a stray '}' lands here
+
+        return { kind: "craft", game, item, defs, body, span: span(start, this.prev.span.end) };
+    }
+
+    // --- predicate defs (surface §5.1) -------------------------------------
+
+    private parseDef(): Def {
+        const start = this.expectKeyword("def").span.start;
+        const name = this.expect("ident", "a def name after 'def'").text;
+        this.expect("lparen", "'(' after the def name");
+        const params: string[] = [];
+        while (!this.at("rparen")) {
+            params.push(this.expect("ident", "a parameter name").text);
+            if (this.at("comma")) this.advance();
+            else break;
+        }
+        this.expect("rparen", "')' to close the parameter list");
+        this.expect("assign", "'=' before the def body");
+
+        // Parse the body with these params in scope, so bare idents in value
+        // slots resolve to parameter references.
+        this.defParams = new Set(params);
+        const body = this.parsePred();
+        this.defParams = new Set();
+
+        return { kind: "def", name, params, body, span: span(start, this.prev.span.end) };
     }
 
     private parseGame(): "poe1" | "poe2" {
@@ -396,6 +440,10 @@ class Parser {
             throw this.error("expected a predicate (isRare, has, prefixCount, …)");
         }
 
+        // A def call `name(args)` — an ident immediately followed by `(`. Checked
+        // first so a call name is never mistaken for a built-in predicate.
+        if (this.peek(1).kind === "lparen") return this.parseCall();
+
         const rarity = RARITY_PREDICATES[t.text];
         if (rarity !== undefined) {
             this.advance();
@@ -404,28 +452,27 @@ class Parser {
 
         if (t.text === "has") {
             this.advance();
-            const modTok = this.expect("string", "a quoted mod name after 'has'");
-            // Optional tier qualifier `t1` (T1 = best).
-            const tier = this.tierShorthand();
-            const end = tier !== undefined ? this.prev.span.end : modTok.span.end;
+            const mod = this.parseModOrParam();
+            // Optional tier qualifier `t1` (T1 = best), or a parameter.
+            const tier = this.parseTierOrParam();
             return {
                 kind: "has",
-                mod: modTok.text,
+                mod,
                 ...(tier !== undefined && { tier }),
-                span: span(t.span.start, end),
+                span: span(t.span.start, this.prev.span.end),
             };
         }
 
         if (PROJECTIONS.has(t.text)) {
             this.advance();
             const op = this.parseCmp();
-            const valueTok = this.expect("int", "an integer to compare against");
+            const value = this.parseIntOrParam();
             return {
                 kind: "compare",
                 projection: t.text as "prefixCount" | "suffixCount",
                 op,
-                value: Number(valueTok.text),
-                span: span(t.span.start, valueTok.span.end),
+                value,
+                span: span(t.span.start, this.prev.span.end),
             };
         }
 
@@ -433,6 +480,76 @@ class Parser {
             `expected a predicate (isRare, has, prefixCount, …), found '${t.text}'`,
             t.span,
         );
+    }
+
+    private parseCall(): CallPred {
+        const nameTok = this.advance(); // the call name
+        this.expect("lparen", "'(' after a predicate name");
+        const args: Arg[] = [];
+        while (!this.at("rparen")) {
+            args.push(this.parseArg());
+            if (this.at("comma")) this.advance();
+            else break;
+        }
+        const close = this.expect("rparen", "')' to close the argument list");
+        return {
+            kind: "call",
+            name: nameTok.text,
+            args,
+            span: span(nameTok.span.start, close.span.end),
+        };
+    }
+
+    /** A call argument: an int (`1` or `t1` shorthand) or a quoted string. */
+    private parseArg(): Arg {
+        const t = this.peek();
+        if (t.kind === "int") {
+            this.advance();
+            return { kind: "int", value: Number(t.text), span: t.span };
+        }
+        if (t.kind === "string") {
+            this.advance();
+            return { kind: "string", value: t.text, span: t.span };
+        }
+        const m = t.kind === "ident" ? /^t(\d+)$/i.exec(t.text) : null;
+        if (m) {
+            this.advance();
+            return { kind: "int", value: Number(m[1]), span: t.span };
+        }
+        throw this.error("expected an argument (a number, a `t1` tier, or a quoted string)");
+    }
+
+    /** A `has` target: a quoted mod name, or a param standing in for one. */
+    private parseModOrParam(): string | ParamRef {
+        if (this.at("string")) return this.advance().text;
+        const p = this.paramRef();
+        if (p) return p;
+        throw this.error("expected a quoted mod name after 'has'");
+    }
+
+    /** An optional tier: the `t1` shorthand, a param, or nothing. */
+    private parseTierOrParam(): number | ParamRef | undefined {
+        const lit = this.tierShorthand();
+        if (lit !== undefined) return lit;
+        return this.paramRef();
+    }
+
+    /** An int to compare against, or a param standing in for one. */
+    private parseIntOrParam(): number | ParamRef {
+        if (this.at("int")) return Number(this.advance().text);
+        const p = this.paramRef();
+        if (p) return p;
+        throw this.error("expected an integer to compare against");
+    }
+
+    /** If the next token is an in-scope def parameter, consume it as a reference. */
+    private paramRef(): ParamRef | undefined {
+        const t = this.peek();
+        if (t.kind === "ident" && this.defParams.has(t.text)) {
+            this.advance();
+            return { param: t.text, span: t.span };
+        }
+        return undefined;
     }
 
     private parseCmp(): Cmp {

@@ -17,7 +17,7 @@
  * fixpointing (the body is checked once from the entry state — sound for the
  * single-op-body loops these crafts use; wider invariants are future work).
  */
-import type { Craft, ItemBlock, Pred, Stmt } from "../ast/ast.js";
+import type { Arg, Craft, Def, ItemBlock, ParamRef, Pred, Stmt } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import type { Game, TypeId } from "../model/ids.js";
 import type { CurrencyKind, Registry, OmenSpec } from "../resolve/registry.js";
@@ -126,10 +126,20 @@ class Checker {
     /** One BDD manager per check — all states in this run share it, so their
      *  `presence` ids are comparable (and `stateEqual` is just `===`). */
     private readonly bdd = new BddManager();
+    /** Local predicate defs by name, with their inferred parameter types.
+     *  `valid` is false when the def is itself ill-formed (e.g. a param used
+     *  inconsistently) — calls to it are then dropped without a cascade. */
+    private readonly defs = new Map<
+        string,
+        { def: Def; paramTypes: Map<string, ParamType>; valid: boolean }
+    >();
+    /** Defs currently being expanded — guards against (mutual) recursion. */
+    private readonly expanding = new Set<string>();
 
     constructor(private readonly registry: Registry) {}
 
     run(craft: Craft): CheckResult {
+        this.collectDefs(craft.defs);
         const initial = this.elaborateItem(craft.game, craft.item);
         if (initial === null) {
             return { ok: false, diagnostics: this.diagnostics, trace: this.trace };
@@ -480,19 +490,38 @@ class Checker {
         return flow;
     }
 
+    // --- predicate defs ----------------------------------------------------
+
+    /** Register defs by name (rejecting duplicates) and infer their param types. */
+    private collectDefs(defs: readonly Def[]): void {
+        for (const def of defs) {
+            if (this.defs.has(def.name)) {
+                this.diag(`duplicate def "${def.name}"`, def.span);
+                continue;
+            }
+            const { types, conflicts } = inferParamTypes(def);
+            for (const p of conflicts) {
+                this.diag(
+                    `parameter "${p}" of "${def.name}" is used as both a tier and a mod`,
+                    def.span,
+                );
+            }
+            this.defs.set(def.name, { def, paramTypes: types, valid: conflicts.length === 0 });
+        }
+    }
+
     // --- predicate resolution ---------------------------------------------
 
     private resolvePred(pred: Pred, a: AItem): RPred | null {
         switch (pred.kind) {
             case "isRarity":
                 return { kind: "isRarity", rarity: pred.rarity };
-            case "compare":
-                return {
-                    kind: "compare",
-                    projection: pred.projection,
-                    op: pred.op,
-                    value: pred.value,
-                };
+            case "compare": {
+                const value = this.literalInt(pred.value, pred.span);
+                return value === null
+                    ? null
+                    : { kind: "compare", projection: pred.projection, op: pred.op, value };
+            }
             case "not": {
                 const inner = this.resolvePred(pred.inner, a);
                 return inner === null ? null : { kind: "not", inner };
@@ -508,12 +537,62 @@ class Checker {
             }
             case "has":
                 return this.resolveHas(pred, a);
+            case "call":
+                return this.resolveCall(pred, a);
         }
     }
 
+    /** Expand a def call: check arity + arg types, substitute, resolve the body. */
+    private resolveCall(pred: Extract<Pred, { kind: "call" }>, a: AItem): RPred | null {
+        const entry = this.defs.get(pred.name);
+        if (!entry) {
+            this.diag(`unknown def "${pred.name}"`, pred.span);
+            return null;
+        }
+        const { def, paramTypes, valid } = entry;
+        if (!valid) return null; // the def's own error was already reported
+        if (pred.args.length !== def.params.length) {
+            const n = def.params.length;
+            this.diag(
+                `"${pred.name}" expects ${n} argument${n === 1 ? "" : "s"}, got ${pred.args.length}`,
+                pred.span,
+            );
+            return null;
+        }
+        if (this.expanding.has(pred.name)) {
+            this.diag(`recursive def "${pred.name}" is not allowed`, pred.span);
+            return null;
+        }
+        // Bind args to params, checking each arg against the param's inferred type.
+        const env = new Map<string, Arg>();
+        let bad = false;
+        def.params.forEach((p, i) => {
+            const arg = pred.args[i]!;
+            const want = paramTypes.get(p); // undefined ⇒ param unused, unconstrained
+            if (
+                (want === "int" && arg.kind !== "int") ||
+                (want === "mod" && arg.kind !== "string")
+            ) {
+                const label = want === "int" ? "a tier/number" : "a quoted mod name";
+                this.diag(`argument ${i + 1} of "${pred.name}" should be ${label}`, arg.span);
+                bad = true;
+            }
+            env.set(p, arg);
+        });
+        if (bad) return null;
+
+        const body = substitute(def.body, env);
+        this.expanding.add(pred.name);
+        const resolved = this.resolvePred(body, a);
+        this.expanding.delete(pred.name);
+        return resolved;
+    }
+
     private resolveHas(pred: Extract<Pred, { kind: "has" }>, a: AItem): RPred | null {
+        const modName = this.literalString(pred.mod, pred.span);
+        if (modName === null) return null;
         const ctx = { game: a.game, base: a.base, ilvl: a.ilvl };
-        const typeRes = this.registry.resolveModType(pred.mod, ctx);
+        const typeRes = this.registry.resolveModType(modName, ctx);
         if (!typeRes.ok) {
             this.diag(resolveMessage(typeRes.error), pred.span);
             return null;
@@ -524,12 +603,14 @@ class Checker {
         if (pred.tier === undefined) {
             return { kind: "has", type, gen };
         }
+        const tier = this.literalInt(pred.tier, pred.span);
+        if (tier === null) return null;
         // Resolve the requested tier to a specific mod (T1 = best rollable here).
         const tiers = rollableTiers(this.registry.catalog, a.game, a.base, a.ilvl, type);
-        const mod = tierMod(tiers, pred.tier);
+        const mod = tierMod(tiers, tier);
         if (mod === undefined) {
             this.diag(
-                `tier ${pred.tier} is out of range for "${pred.mod}" (only ${tiers.length} tier${
+                `tier ${tier} is out of range for "${modName}" (only ${tiers.length} tier${
                     tiers.length === 1 ? "" : "s"
                 } roll here)`,
                 pred.span,
@@ -537,5 +618,95 @@ class Checker {
             return null;
         }
         return { kind: "has", type, gen, tierMod: mod.id };
+    }
+
+    /** Narrow a value slot to a literal; a leftover ParamRef means an unbound param. */
+    private literalInt(v: number | ParamRef, span: SourceSpan): number | null {
+        if (typeof v === "number") return v;
+        this.diag(`unbound parameter "${v.param}"`, span);
+        return null;
+    }
+
+    private literalString(v: string | ParamRef, span: SourceSpan): string | null {
+        if (typeof v === "string") return v;
+        this.diag(`unbound parameter "${v.param}"`, span);
+        return null;
+    }
+}
+
+// --- def parameter types + substitution (module-level, pure) --------------
+
+/** A parameter is used either as an int (tier/count) or as a mod name. */
+type ParamType = "int" | "mod";
+
+/**
+ * Infer each parameter's type from where it is used in the body: a `tier` or
+ * count slot ⇒ `int`, a `has` target ⇒ `mod`. A param used as both is a
+ * `conflict` (reported at the def). Unmentioned params stay unconstrained.
+ */
+function inferParamTypes(def: Def): { types: Map<string, ParamType>; conflicts: string[] } {
+    const types = new Map<string, ParamType>();
+    const conflicts = new Set<string>();
+    const params = new Set(def.params);
+    const note = (ref: ParamRef, ty: ParamType): void => {
+        if (!params.has(ref.param)) return; // not a param of this def; ignore
+        const prev = types.get(ref.param);
+        if (prev === undefined) types.set(ref.param, ty);
+        else if (prev !== ty) conflicts.add(ref.param);
+    };
+    const walk = (p: Pred): void => {
+        switch (p.kind) {
+            case "has":
+                if (typeof p.mod === "object") note(p.mod, "mod");
+                if (p.tier !== undefined && typeof p.tier === "object") note(p.tier, "int");
+                return;
+            case "compare":
+                if (typeof p.value === "object") note(p.value, "int");
+                return;
+            case "not":
+                walk(p.inner);
+                return;
+            case "and":
+            case "or":
+                walk(p.left);
+                walk(p.right);
+                return;
+            case "isRarity":
+            case "call": // call args are literals — no params to attribute
+                return;
+        }
+    };
+    walk(def.body);
+    return { types, conflicts: [...conflicts] };
+}
+
+/** Replace parameter references in a def body with the bound argument values. */
+function substitute(pred: Pred, env: Map<string, Arg>): Pred {
+    const sub = <T extends string | number>(v: T | ParamRef): T | ParamRef => {
+        if (typeof v !== "object") return v;
+        const arg = env.get(v.param);
+        return arg ? (arg.value as T) : v; // unbound stays a ref (arity already checked)
+    };
+    switch (pred.kind) {
+        case "isRarity":
+        case "call": // call args are literals — nothing to substitute
+            return pred;
+        case "has": {
+            const mod = sub(pred.mod);
+            return pred.tier === undefined
+                ? { ...pred, mod }
+                : { ...pred, mod, tier: sub(pred.tier) };
+        }
+        case "compare":
+            return { ...pred, value: sub(pred.value) };
+        case "not":
+            return { ...pred, inner: substitute(pred.inner, env) };
+        case "and":
+        case "or":
+            return {
+                ...pred,
+                left: substitute(pred.left, env),
+                right: substitute(pred.right, env),
+            };
     }
 }

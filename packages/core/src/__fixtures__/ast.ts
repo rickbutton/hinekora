@@ -7,9 +7,12 @@
  * span (the checker's logic doesn't depend on span values, only carries them).
  */
 import type {
+    Arg,
+    CallPred,
     ComparePred,
     Craft,
     BinaryPred,
+    Def,
     HasPred,
     IfStmt,
     ItemBlock,
@@ -17,6 +20,7 @@ import type {
     BenchStmt,
     EssenceStmt,
     OpStmt,
+    ParamRef,
     Pred,
     RarityPred,
     RestartStmt,
@@ -43,10 +47,16 @@ interface ItemSpec {
     readonly quality?: number;
 }
 
-export const craft = (game: Game, item: ItemBlock, body: readonly Stmt[]): Craft => ({
+export const craft = (
+    game: Game,
+    item: ItemBlock,
+    body: readonly Stmt[],
+    defs: readonly Def[] = [],
+): Craft => ({
     kind: "craft",
     game,
     item,
+    defs,
     body,
     span: DS,
 });
@@ -118,3 +128,30 @@ export const andp = (left: Pred, right: Pred): BinaryPred => ({
     span: DS,
 });
 export const orp = (left: Pred, right: Pred): BinaryPred => ({ kind: "or", left, right, span: DS });
+
+// predicate defs
+export const param = (name: string): ParamRef => ({ param: name, span: DS });
+/** A `has` with a param in the tier and/or mod slot (for building def bodies). */
+export const hasP = (mod: string | ParamRef, tier?: number | ParamRef): HasPred => ({
+    kind: "has",
+    mod,
+    ...(tier !== undefined && { tier }),
+    span: DS,
+});
+export const def = (name: string, params: readonly string[], body: Pred): Def => ({
+    kind: "def",
+    name,
+    params,
+    body,
+    span: DS,
+});
+export const arg = (value: number | string): Arg =>
+    typeof value === "number"
+        ? { kind: "int", value, span: DS }
+        : { kind: "string", value, span: DS };
+export const call = (name: string, args: readonly (number | string)[] = []): CallPred => ({
+    kind: "call",
+    name,
+    args: args.map(arg),
+    span: DS,
+});

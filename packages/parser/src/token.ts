@@ -27,6 +27,7 @@ export type TokenKind =
     | "rbracket"
     | "lbrace"
     | "rbrace"
+    | "assign" // = (def binding)
     // comparison operators
     | "eq" // ==
     | "neq" // !=

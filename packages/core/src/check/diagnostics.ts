@@ -54,21 +54,26 @@ export function renderState(a: AItem): string {
 
 /** Human description of a surface predicate, for dead-arm / unreachable messages. */
 export function describePred(pred: Pred): string {
+    // A value slot is a literal or (inside a def body) a parameter name.
+    const val = (v: string | number | { param: string }): string =>
+        typeof v === "object" ? v.param : String(v);
     switch (pred.kind) {
         case "isRarity":
             return `is${pred.rarity[0]!.toUpperCase()}${pred.rarity.slice(1)}`;
         case "has":
             return pred.tier === undefined
-                ? `has "${pred.mod}"`
-                : `has "${pred.mod}" tier ${pred.tier}`;
+                ? `has "${val(pred.mod)}"`
+                : `has "${val(pred.mod)}" t${val(pred.tier)}`;
         case "compare":
-            return `${pred.projection} ${pred.op} ${pred.value}`;
+            return `${pred.projection} ${pred.op} ${val(pred.value)}`;
         case "not":
             return `not ${describePred(pred.inner)}`;
         case "and":
             return `(${describePred(pred.left)} and ${describePred(pred.right)})`;
         case "or":
             return `(${describePred(pred.left)} or ${describePred(pred.right)})`;
+        case "call":
+            return `${pred.name}(${pred.args.map((a) => (a.kind === "string" ? `"${a.value}"` : a.value)).join(", ")})`;
     }
 }
 

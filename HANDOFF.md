@@ -114,7 +114,7 @@ own tsconfig, does NOT extend the ESM base).
 ### Commands (run from anywhere; do not `cd`)
 
 ```
-pnpm -C c:/git/hinekora test           # vitest run — currently 222 passing
+pnpm -C c:/git/hinekora test           # vitest run — currently 231 passing
 pnpm -C c:/git/hinekora exec tsc -b    # typecheck + build all packages
 pnpm -C c:/git/hinekora lint           # eslint .
 pnpm -C c:/git/hinekora format         # prettier --write .
@@ -279,6 +279,28 @@ the op required." `describePred`, `resolveMessage` for other diagnostics.
 ---
 
 ## 7. Recent work (changelog, newest first)
+
+### Predicate defs (`def name(p) = <pred>`)
+
+- **Local, parameterized predicate definitions**, usable in any `until`/`if`. The
+  motivating win: `def anyEleRes(t) = has "fire res" t or has "cold res" t or …`,
+  then `until anyEleRes(1)`. Both examples now use it.
+- **Parametric AST**: params appear in VALUE slots, so `HasPred.mod`/`.tier` and
+  `ComparePred.value` became `T | ParamRef`. New `Def`, `CallPred`, `Arg`, `ParamRef`
+  nodes; `Craft.defs` collects defs (parser separates them from the body). New `assign`
+  (`=`) token — the lexer emits `eq` for `==`, `assign` for a lone `=`.
+- **Parser**: `parseDef`; a call is `ident(` in predicate position; a bare in-scope
+  param in a value slot lexes as a `ParamRef` (instance state `defParams`, empty at top
+  level so only def bodies can reference params).
+- **Checker** (`resolveCall` + module-level `substitute`/`inferParamTypes`): a call
+  checks arity + arg types, substitutes args → a concrete pred, then resolves it (so all
+  existing narrowing "just works"). **Param types are inferred** from use (tier/count slot
+  ⇒ int, `has` target ⇒ mod); a param used as both is a hard error and the def is marked
+  `valid:false` so calls drop without cascading. Recursion is caught (`expanding` set).
+  Args are literals only (no param-passthrough yet — a noted v1 limitation).
+- **LSP**: `def` highlighted. NOT yet done: completion/hover for LOCAL def names (needs
+  craft-local symbol extraction — the LSP currently only knows registry symbols). Good
+  next LSP task.
 
 ### Bench crafts + the `withGuaranteed` primitive
 
