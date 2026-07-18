@@ -280,7 +280,33 @@ the op required." `describePred`, `resolveMessage` for other diagnostics.
 
 ## 7. Recent work (changelog, newest first)
 
-### Concrete starting items + item-tooltip hover
+### Item-tooltip hover: a layered decomposition of the presence state
+
+The hover state footer is now a PoE-style item tooltip (`tooltip()` in lsp/hover.ts).
+It is built as **three general layers over the presence BDD**, not per-case handlers —
+adding a new readable form means adding a layer, not a special case:
+
+1. **Units** — `guaranteedTypes` / `excludedTypes`: forced-present/absent types.
+2. **Prime implicates** — `disjunctiveGuarantees(a)`: the minimal positive disjunctive
+   clauses the presence function entails (bounded subset search over the few refined BDD
+   vars, `entails(presence, ⋁S)`, keep minimal). The canonical "one-of" normal form.
+3. **Cardinality fold** — `cardinalityGuarantees(a)`: recognises "≥k of n" generically
+   (its prime implicates are all C(n, n−k+1) uniform subsets of an n-set). Groups clauses
+   into connected components; a matching component folds to `atLeast = n−m+1`. A lone
+   clause is `atLeast = 1` (an ordinary disjunction).
+
+Rendering: one `(P)`/`(S)`-tagged line per mod, ordered prefixes→suffixes; each mod shows
+**resolved text** — exact roll when the tier is pinned (declared mods now always are), else
+the roll SPAN across candidate tiers (`rollSpan`). A cardinality renders `(tag) [exactly|at
+least] N of:` with candidates indented (non-breaking spaces). **Count coupling**: a
+cardinality tightens ≥k → _exactly_ k when its generation has k undetermined slots (sound:
+genHi is an upper bound, so it only ever under-claims); the undetermined remainder is ONE
+coupled line ("1 undetermined — a prefix or a suffix"), not two independent per-gen ranges.
+No leading total-count line (count the mods). Known gaps: negative facts (`not has`) aren't
+surfaced; asymmetric non-cardinality clause sets fall back to listing clauses (honest —
+optimal English for an arbitrary boolean fn is Boolean minimisation, NP-hard).
+
+### Concrete starting items
 
 - **Declared mods must pin a tier.** Item-block affixes are now `AffixDecl {mod, tier?}`
   (parser: `[ "maximum life" t1, "random" ]`). `elaborateItem` requires each NAMED mod to
@@ -288,14 +314,10 @@ the op required." `describePred`, `resolveMessage` for other diagnostics.
   description + `t<n>`; a bare fuzzy description is an error ("declare the tier …").
   Placeholders (`"random"`/`"?"`) stay anonymous. The pinned tier flows into `initialState`
   as a singleton `tiers` overlay, so the starting item is fully concrete.
-- **Hover is a PoE-style item tooltip** (`tooltip()` in lsp/hover.ts, replacing the
-  count-range footer): one `(P)`/`(S)`-tagged line per mod, ordered prefixes→suffixes;
-  guaranteed mods show resolved text (exact roll when the tier is pinned — now always, for
-  declared mods — else the roll SPAN across candidate tiers); **disjunctive guarantees**
-  render as "at least one of …" via `disjunctiveGuarantees` (positive prime implicates of
-  the presence BDD, bounded subset search); undetermined slot counts per generation.
 - Bench **group exclusivity** (`sharesFamilyWithPossible` + `registry.familiesOfType`):
   can't bench a mod whose family may already be present.
+- **TextMate grammar synced** (`editors/vscode/syntaxes/hinekora.tmLanguage.json`) — `def`,
+  `essence`, `bench`, `and`/`or`, `=`, and `t<n>` tiers highlight before the LSP loads.
 
 ### Predicate defs (`def name(p) = <pred>`)
 
