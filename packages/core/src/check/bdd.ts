@@ -1,6 +1,6 @@
 /**
  * A tiny reduced, ordered Binary Decision Diagram (ROBDD) over named boolean
- * variables — the checker's presence domain (why a BDD: HANDOFF.md §8). Nodes
+ * variables — the checker's presence domain (why a BDD: docs/HANDOFF.md §8). Nodes
  * are hash-consed into canonical form, so structurally-equal functions share
  * one integer id and equality is `===`. Variables are ordered by first-seen;
  * ordering affects size, never correctness. No complement edges — `not` is an

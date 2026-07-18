@@ -4,12 +4,13 @@ Hinekora is a **statically-checked DSL for Path of Exile crafting guides**. A ch
 proves each currency operation's precondition holds on every path (via abstract
 interpretation) before real currency is spent.
 
-**Docs** — each detail lives in exactly one place; link rather than duplicate:
+**Docs** (in `docs/`) — each detail lives in exactly one place; link rather than duplicate:
 
-- `HANDOFF.md` — what exists and where: architecture, key files, pending work, gotchas.
-  **Read it first.**
-- `crafting-lang-surface-v0.md` — the surface language design (syntax, predicates, errors).
-- `crafting-lang-typing-rules-v0.md` — the formal item/currency model.
+- `docs/HANDOFF.md` — what exists and where: architecture, key files, pending work,
+  gotchas. **Read it first.**
+- `docs/crafting-lang-surface-v0.md` — the surface language design (syntax, predicates,
+  errors).
+- `docs/crafting-lang-typing-rules-v0.md` — the formal item/currency model.
 
 ## The load-bearing invariant
 

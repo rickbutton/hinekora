@@ -1,6 +1,6 @@
 /**
  * The abstract item state `AItem` — the symbolic summary the checker threads
- * instead of concrete items or enumerated outcome arms (see HANDOFF.md §4).
+ * instead of concrete items or enumerated outcome arms (see docs/HANDOFF.md §4).
  * Counts are coupled ranges (`total`, `prefix`; suffix derived); mod-presence
  * knowledge is one BDD (`bdd.ts`) so disjunctions survive control-flow joins.
  * `refine` narrows by a predicate; `null` from `refine`/`normalize` means the

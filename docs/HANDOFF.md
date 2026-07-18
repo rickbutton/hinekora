@@ -2,7 +2,7 @@
 
 > Purpose: hand the project to a fresh context (a new Claude session or a human).
 > This doc is the ground truth for _what exists and where_. Conventions, the build
-> gate, and working style live in `CLAUDE.md`; design intent lives in
+> gate, and working style live in `../CLAUDE.md`; design intent lives in
 > `crafting-lang-surface-v0.md` (surface language) and
 > `crafting-lang-typing-rules-v0.md` (formal model). Recent history lives in `git log`.
 
@@ -51,7 +51,7 @@ the loop join).
 **Why TypeScript** (settled): the design needed fast iteration, the tool wants a browser
 playground, and the data is JSON-heavy. Performance never distinguishes the languages
 here — a pool computation is ~200 mods × ~25 cheap checks per step, microseconds — as
-long as the intensional-union invariant (`CLAUDE.md`) is respected. That invariant is an
+long as the intensional-union invariant (`../CLAUDE.md`) is respected. That invariant is an
 algorithm choice, not a language choice.
 
 ---
@@ -71,6 +71,8 @@ editors/
 examples/
   example.craft              — the demo craft (open in the Extension Dev Host).
   essence-life-boots.craft   — essence + def + or example.
+docs/
+  HANDOFF.md + the two design docs (CLAUDE.md stays at the repo root).
 ```
 
 Build system: **tsc project references** (`tsc -b`), root solution tsconfig, each package
@@ -78,7 +80,7 @@ has its own tsconfig. Core is ESM (NodeNext). The **vscode extension is CommonJS
 own tsconfig, does NOT extend the ESM base). The dependency arrow is one-way: cli/lsp/
 editors depend on core; core depends on nothing UI; data feeds core plain structures.
 
-Build/test/lint/format commands: the gate in `CLAUDE.md`.
+Build/test/lint/format commands: the gate in `../CLAUDE.md`.
 
 ---
 
