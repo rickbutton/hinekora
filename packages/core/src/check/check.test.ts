@@ -768,3 +768,39 @@ describe("checker — flasks cap at Magic (no Rare flasks)", () => {
         expect(r.diagnostics.some((d) => d.message.includes("cannot be Rare"))).toBe(true);
     });
 });
+
+describe("checker — count refinement through disjunctions", () => {
+    // Mirrors example.craft: a 2-mod item proven to hold ≥2 resistances (all
+    // suffixes) must have 0 prefixes — so benching a life PREFIX is safe.
+    const twoEleRes = orp(
+        orp(
+            andp(has("FireResist1", 1), has("ColdResist1", 1)),
+            andp(has("FireResist1", 1), has("LightningResist1", 1)),
+        ),
+        andp(has("ColdResist1", 1), has("LightningResist1", 1)),
+    );
+
+    it("pushes a `≥2 of {suffixes}` disjunction into the suffix count (⇒ 0 prefixes)", () => {
+        const c = craft("poe1", item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [
+            op("transmute"),
+            op("regal"),
+            until(twoEleRes, [op("annul"), op("exalt")]),
+        ]);
+        const st = check(c, ctx).finalState!;
+        expect(st.total).toEqual([2, 2]);
+        expect(st.prefix).toEqual([0, 0]); // both affixes are the proven suffixes
+        expect(suffixRange(st)).toEqual([2, 2]);
+    });
+
+    it("allows benching a life prefix afterwards — the group is provably absent", () => {
+        const c = craft("poe1", item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [
+            op("transmute"),
+            op("regal"),
+            until(twoEleRes, [op("annul"), op("exalt")]),
+            bench("maximum life"),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.prefix).toEqual([1, 1]); // the benched life prefix
+    });
+});

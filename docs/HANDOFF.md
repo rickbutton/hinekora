@@ -331,10 +331,14 @@ Near-term candidates:
   from candidates but never shown; surface it as a "without …" line. An additive LAYER
   over the presence decomposition (units → prime implicates → cardinality), not a
   special case — that's the point of building it layered.
-- **Tighten count refinement through disjunctions** (checker, not display): a proven
-  "≥2 of {fire,cold,lightning}" (all suffixes) doesn't currently push `suffix ≥ 2`.
-  Only ever under-claims today (the tooltip's "exactly k" is driven by the sound upper
-  bound), but pushing `≥k of gen G ⇒ genCount ≥ k` would make the state precise.
+- **Count refinement through disjunctions — DONE.** `Checker.tightenCounts` pushes a
+  proven "≥k of {types all in gen G}" (and guaranteed types) into that generation's count
+  (`≥k of gen G ⇒ genCount ≥ k`), applied at loop-exit and if-join. So a "≥2 of three
+  resistance suffixes" item pins `suffix = 2, prefix = 0` — which also lets a later
+  `bench` of the other generation through (the bench group-conflict check is now
+  count-aware: a possible mod only conflicts if its generation still holds an
+  unidentified affix). This is what makes `example.craft`'s closing `bench "maximum life"`
+  check clean.
 - **Fossils / veiled** — the third sourced currency; would justify a sourced-op surface
   refactor (essence + bench are the only two now — rule of three). Fossils reforge with
   weight biasing; veiled is add-then-unveil.

@@ -14,6 +14,8 @@ import {
     type AItem,
     type RPred,
     canBeRare,
+    cardinalityGuarantees,
+    guaranteedTypes,
     initialState,
     join,
     refine,
@@ -46,6 +48,15 @@ import {
 export interface CheckContext {
     readonly registry: Registry;
 }
+
+/** A resolved `<projection> >= value` count predicate, for pushing a proven
+ *  lower bound into the count ranges. */
+const cmpAtLeast = (projection: "prefixCount" | "suffixCount", value: number): RPred => ({
+    kind: "compare",
+    projection,
+    op: ">=",
+    value,
+});
 
 /** The abstract item state before and after a statement (or the item block). */
 export interface TraceEntry {
@@ -427,7 +438,7 @@ class Checker {
         if (falls.length === 0) {
             return anyRestart ? { kind: "restart" } : { kind: "fall", state: a };
         }
-        return { kind: "fall", state: falls.reduce(join) };
+        return { kind: "fall", state: this.tightenCounts(falls.reduce(join)) };
     }
 
     // --- loops (until) -----------------------------------------------------
@@ -458,7 +469,35 @@ class Checker {
         // On exit the predicate is known to hold; refine it into the after-state.
         // Fall back to the reachability pass if the invariant pass failed.
         const exit = rpred === null ? invEnd : refine(invEnd, rpred, true);
-        return { kind: "fall", state: exit ?? exitReachable ?? invariant };
+        return { kind: "fall", state: this.tightenCounts(exit ?? exitReachable ?? invariant) };
+    }
+
+    /**
+     * Push presence knowledge into the count ranges: a proven "≥k of {types}"
+     * where all those types sit in one generation forces that generation's count
+     * ≥ k (and guaranteed types each count for one). A disjunction of resistance
+     * suffixes therefore pins the suffix count — and, via the total coupling, the
+     * prefix count — where the presence BDD alone left it a range. A sound
+     * tightening: it only ever removes a spurious slot, never adds one.
+     */
+    private tightenCounts(a: AItem): AItem {
+        const genOf = (t: TypeId): Gen => this.registry.genOfType(t) ?? "prefix";
+        const guaranteed = guaranteedTypes(a);
+        const cards = cardinalityGuarantees(a);
+        const minFor = (gen: Gen): number => {
+            let n = 0;
+            for (const t of guaranteed) if (genOf(t) === gen) n++;
+            for (const c of cards) if (c.types.every((t) => genOf(t) === gen)) n += c.atLeast;
+            return n;
+        };
+        let s: AItem | null = a;
+        const minS = minFor("suffix");
+        if (minS > 0) s = refine(s, cmpAtLeast("suffixCount", minS));
+        if (s !== null) {
+            const minP = minFor("prefix");
+            if (minP > 0) s = refine(s, cmpAtLeast("prefixCount", minP));
+        }
+        return s ?? a;
     }
 
     /** Run the body from `entry` with diagnostics suppressed; return its fall state. */

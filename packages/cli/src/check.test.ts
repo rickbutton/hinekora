@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { checkSource } from "./check.js";
@@ -49,5 +51,16 @@ item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" ] }
 exalt`);
         expect(r.ok).toBe(false);
         expect(r.output).toContain("declare the tier");
+    });
+
+    it("checks the bundled example.craft clean (bench after a proven-suffix reforge)", () => {
+        const src = readFileSync(
+            fileURLToPath(new URL("../../../examples/example.craft", import.meta.url)),
+            "utf8",
+        );
+        const r = run(src);
+        expect(r.ok).toBe(true);
+        // 1 prefix (the benched life) + 2 suffixes (the proven resistances).
+        expect(r.output).toContain("1 prefix · 2 suffixes");
     });
 });

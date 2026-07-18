@@ -196,10 +196,10 @@ function withGuaranteed(a: AItem, mod: Mod): AItem {
  */
 export function bench(a: AItem, mod: Mod, registry: Registry): TransferResult {
     if (!hasOpenSlot(a, mod.gen)) return fail({ kind: "noOpenSlot", gen: mod.gen });
-    // If any possibly-present type shares a family with the bench mod, the add
-    // isn't provably safe (an item holds one mod per group). A conflict hidden
-    // behind an anonymous "random" affix is not caught — known modelling gap.
-    if (sharesFamilyWithPossible(a, mod, registry)) {
+    // If the item may already carry a mod in the bench mod's group, the add isn't
+    // provably safe (an item holds one mod per group). A conflict hidden behind an
+    // anonymous "random" affix is not caught — known modelling gap.
+    if (sharesFamilyWithPresent(a, mod, registry)) {
         return fail({ kind: "modConflict", group: registry.typeLabel(mod.type) });
     }
     const total: Range = [a.total[0] + 1, a.total[1] + 1];
@@ -207,11 +207,33 @@ export function bench(a: AItem, mod: Mod, registry: Registry): TransferResult {
     return ok(withGuaranteed({ ...a, total, prefix }, mod));
 }
 
-/** Does any possibly-present type share a family (mod group) with `mod`? */
-function sharesFamilyWithPossible(a: AItem, mod: Mod, registry: Registry): boolean {
-    for (const type of a.possible) {
+/**
+ * Could a mod in `mod`'s group already sit on the item? A guaranteed same-group
+ * type definitely conflicts. A merely POSSIBLE one conflicts only when its
+ * generation still holds an unidentified affix that could be it — a generation
+ * whose count is fully accounted for by guaranteed types rules it out (so a
+ * proven "2 suffixes, 0 prefixes" item can still take a benched prefix).
+ */
+function sharesFamilyWithPresent(a: AItem, mod: Mod, registry: Registry): boolean {
+    const guaranteed = guaranteedTypes(a);
+    const shares = (type: TypeId): boolean => {
         const fams = registry.familiesOfType(type);
         for (const f of mod.families) if (fams.has(f)) return true;
+        return false;
+    };
+    for (const type of guaranteed) if (shares(type)) return true; // definitely present
+
+    // Affixes in a generation not pinned to a guaranteed type: if none, no
+    // non-guaranteed member of that generation can be present.
+    const unidentifiedIn = (gen: Gen): number => {
+        let named = 0;
+        for (const t of guaranteed) if ((registry.genOfType(t) ?? "prefix") === gen) named++;
+        const max = gen === "prefix" ? a.prefix[1] : suffixRange(a)[1];
+        return max - named;
+    };
+    for (const type of a.possible) {
+        if (guaranteed.has(type) || !shares(type)) continue;
+        if (unidentifiedIn(registry.genOfType(type) ?? "prefix") > 0) return true;
     }
     return false;
 }

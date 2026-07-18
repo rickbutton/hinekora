@@ -23,3 +23,5 @@ until hasTwoEleRes() {
     annul
     exalt
 }
+
+bench "maximum life"
