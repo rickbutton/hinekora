@@ -12,15 +12,16 @@ transmute
 regal`;
 
 describe("hover", () => {
-    it("shows a currency op's signature plus the state footer", () => {
+    it("shows a currency op's signature plus the item tooltip", () => {
         // Offset inside "regal" (last line): the headline is regal's signature,
-        // the footer shows the item (Magic before regal — transmute made it so).
+        // the tooltip is the item AFTER regal — a Rare.
         const offset = SRC.indexOf("regal") + 1;
         const md = getHover(SRC, offset, registry);
         expect(md).not.toBeNull();
         expect(md!).toContain("Regal Orb"); // the signature headline
         expect(md!).toContain("Requires:");
-        expect(md!).toContain("Iron Ring · Magic"); // before regal, in the footer
+        expect(md!).toContain("Iron Ring"); // the tooltip header
+        expect(md!).toContain("Rare"); // after regal
     });
 
     it("hovers an essence name with its tier and the mod it guarantees here", () => {
@@ -65,12 +66,12 @@ until has "maximum life" t1 { exalt }`;
         expect(md!).toMatch(/prefix|suffix/); // its generation
     });
 
-    it("leads the state footer with the total affix count", () => {
-        // After transmute the item has exactly one affix; the footer must say
-        // "1 affix" so the coupled prefix/suffix ranges can't be misread.
+    it("leads the tooltip with the total modifier count (coupling guard)", () => {
+        // After regal the item has exactly two modifiers; the tooltip must lead
+        // with "2 modifiers" so the coupled prefix/suffix ranges can't be misread.
         const offset = SRC.indexOf("regal") + 1;
         const md = getHover(SRC, offset, registry);
-        expect(md!).toContain("1 affix");
+        expect(md!).toContain("2 modifiers");
     });
 
     it("returns null in dead space", () => {

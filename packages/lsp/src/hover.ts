@@ -20,14 +20,16 @@ import {
     type CurrencyKind,
     type Def,
     describePred,
+    excludedTypes,
+    type Gen,
     guaranteedTypes,
     type Range,
     type Registry,
-    renderState,
     rollableTiers,
     suffixRange,
     traceAt,
     type TraceEntry,
+    type TypeId,
 } from "@hinekora/core";
 import { parse, type Token, tokenize } from "@hinekora/parser";
 
@@ -182,28 +184,76 @@ function fmtRange(r: Range): string {
     return r[0] === r[1] ? String(r[0]) : `${r[0]}–${r[1]}`;
 }
 
-/** The "state here" footer: before → after (labelled by what produced the entry). */
-function footer(entry: TraceEntry, registry: Registry): string {
-    const before = renderState(entry.before);
-    const after = entry.after ? renderState(entry.after) : undefined;
+const RARITY_NAME: Record<string, string> = { normal: "Normal", magic: "Magic", rare: "Rare" };
 
-    const lines: string[] = [];
-    if (after === undefined || after === before) {
-        lines.push(`_state:_ ${before}`);
-    } else {
-        const afterLabel = entry.kind === "until" ? "after the loop" : "after";
-        lines.push(`_before:_ ${before}`);
-        lines.push(`_${afterLabel}:_ ${after}`);
+/** Above this many candidates for an undetermined slot, we say "any", not a list. */
+const POSSIBLE_LIMIT = 10;
+
+/** One tooltip line for a guaranteed mod: its rolled text if the tier is pinned,
+ *  else the canonical stat wording. */
+function modLine(a: AItem, type: TypeId, registry: Registry): string {
+    const tiers = a.tiers.get(type);
+    if (tiers && tiers.size === 1) {
+        const m = registry.resolveMod([...tiers][0]!);
+        if (m.ok && m.value.text) return m.value.text.replace(/\n/g, " / ");
+    }
+    return registry.typeLabel(type);
+}
+
+/**
+ * A Path-of-Exile-style item tooltip for the abstract state (replacing the terse
+ * count-range footer): each guaranteed mod on its own line, grouped by
+ * generation, with its rolled text where the tier is pinned. Undetermined slots
+ * are summarised — naming the candidate mods when few, else "any". The header
+ * leads with the TOTAL count so the coupled prefix/suffix ranges below can't be
+ * misread as independent (surface §6).
+ */
+function tooltip(a: AItem, registry: Registry, caption?: string): string {
+    const guaranteed = guaranteedTypes(a);
+    const excluded = excludedTypes(a);
+    const genOf = (t: TypeId): Gen => registry.genOfType(t) ?? "prefix";
+
+    const known: Record<Gen, TypeId[]> = { prefix: [], suffix: [] };
+    for (const t of guaranteed) known[genOf(t)].push(t);
+    // Merely-possible mods (might be present, not guaranteed / not excluded) —
+    // the candidates that could fill an undetermined slot.
+    const possible: Record<Gen, TypeId[]> = { prefix: [], suffix: [] };
+    for (const t of a.possible) {
+        if (!guaranteed.has(t) && !excluded.has(t)) possible[genOf(t)].push(t);
     }
 
-    const state = entry.after ?? entry.before;
-    const guaranteed = guaranteedTypes(state);
-    if (guaranteed.size > 0) {
-        const note = entry.kind === "until" ? " (on every exit)" : "";
-        const names = [...guaranteed].map((t) => registry.typeLabel(t));
-        lines.push(`_guaranteed${note}:_ ${names.join(", ")}`);
-    }
-    return lines.join("\n\n");
+    // A section only appears when its generation can hold something here (a Normal
+    // item, cap 0, shows no prefix/suffix sections at all).
+    const section = (label: string, gen: Gen, count: Range): string | undefined => {
+        if (count[1] === 0) return undefined;
+        const rows = known[gen].map((t) => `- ${modLine(a, t, registry)}`);
+        const undetHi = count[1] - known[gen].length;
+        if (undetHi > 0) {
+            const undetLo = Math.max(0, count[0] - known[gen].length);
+            const cands = possible[gen];
+            const more =
+                cands.length > 0 && cands.length <= POSSIBLE_LIMIT
+                    ? `possibly ${cands.map((t) => registry.typeLabel(t)).join(", ")}`
+                    : `any ${gen}`;
+            rows.push(`- _${fmtRange([undetLo, undetHi])} more — ${more}_`);
+        }
+        return [`**${label}** — ${fmtRange(count)}`, "", ...rows].join("\n");
+    };
+
+    const head = `**${a.base.name ?? a.base.id}** · ${RARITY_NAME[a.rarity] ?? a.rarity} · ilvl ${a.ilvl}`;
+    const total =
+        a.total[1] === 0
+            ? "_no modifiers_"
+            : `_${fmtRange(a.total)} ${a.total[0] === 1 && a.total[1] === 1 ? "modifier" : "modifiers"}_`;
+    return [
+        caption ? `_${caption}_` : undefined,
+        head,
+        total,
+        section("Prefixes", "prefix", a.prefix),
+        section("Suffixes", "suffix", suffixRange(a)),
+    ]
+        .filter((x): x is string => x !== undefined)
+        .join("\n\n");
 }
 
 /** The signature block for a token, or null if the token carries no docs. */
@@ -417,7 +467,10 @@ export function getHover(source: string, offset: number, registry: Registry): st
 
     const blocks: string[] = [];
     if (sig) blocks.push(sig);
-    if (entry) blocks.push(footer(entry, registry));
+    if (entry) {
+        const caption = entry.kind === "until" && entry.after ? "after the loop" : undefined;
+        blocks.push(tooltip(entry.after ?? entry.before, registry, caption));
+    }
     if (blocks.length === 0) return null;
     return blocks.join("\n\n---\n\n");
 }
