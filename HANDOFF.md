@@ -502,6 +502,23 @@ To preview hover/completion without VSCode: a throwaway `.mjs` placed **inside
 
 ## 9. Pending / possible next work (none committed yet)
 
+### Next up (from the item-tooltip / coupling work)
+
+- **Negative facts in the tooltip** — the one clean layer still missing. `not has X`
+  yields an exclusion (currently filtered from candidates but never shown); surface it as a
+  "without …" line. Same idea for implication facts (`¬a ∨ b`) if they arise. This is an
+  additive LAYER over the presence decomposition (units → prime implicates → cardinality),
+  not a special case — the point of building it layered.
+- **Tighten count refinement through disjunctions** (checker, not display). Refining a
+  disjunctive/cardinality presence fact does not currently tighten the count: e.g. after a
+  proven "≥2 of {fire,cold,lightning}" (all suffixes) on a 2-mod item, `suffix` stays
+  `[1,2]` when `[2,2]` is true. Only ever _under_-claims today (the tooltip's exactly-k is
+  driven by the sound upper bound `genHi`, so it degrades to "at least" rather than lying),
+  but tightening `refine` to push `≥k of gen G ⇒ genCount ≥ k` would make the state precise.
+- **Fossils / veiled** — the third sourced-currency. Would finally give the sourced-op
+  surface refactor its third example (essence + bench are the only two now); see the
+  rule-of-three note. Fossils reforge with weight biasing; veiled is add-then-unveil.
+
 ### Designed & queued (essence + language features)
 
 - **`or` / `and` in predicates — DONE.** `BinaryPred {kind:"and"|"or", left, right}`; parser
