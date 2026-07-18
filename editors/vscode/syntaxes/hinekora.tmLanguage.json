@@ -5,6 +5,7 @@
     "patterns": [
         { "include": "#comments" },
         { "include": "#strings" },
+        { "include": "#tiers" },
         { "include": "#numbers" },
         { "include": "#keywords" },
         { "include": "#operators" }
@@ -20,6 +21,10 @@
             "end": "\"",
             "patterns": [{ "match": "\\\\.", "name": "constant.character.escape.hinekora" }]
         },
+        "tiers": {
+            "match": "\\bt\\d+\\b",
+            "name": "constant.numeric.tier.hinekora"
+        },
         "numbers": {
             "match": "\\b\\d+\\b",
             "name": "constant.numeric.hinekora"
@@ -30,7 +35,9 @@
                     "match": "\\b(craft|in|item|until|if|else|with|omen|restart)\\b",
                     "name": "keyword.control.hinekora"
                 },
-                { "match": "\\b(has|not|tier)\\b", "name": "keyword.other.hinekora" },
+                { "match": "\\b(def)\\b", "name": "storage.type.hinekora" },
+                { "match": "\\b(essence|bench)\\b", "name": "keyword.other.operation.hinekora" },
+                { "match": "\\b(has|not|and|or)\\b", "name": "keyword.other.hinekora" },
                 {
                     "match": "\\b(isRare|isMagic|isNormal|prefixCount|suffixCount)\\b",
                     "name": "support.function.hinekora"
@@ -46,7 +53,7 @@
             ]
         },
         "operators": {
-            "match": "(==|!=|<=|>=|<|>|:|,)",
+            "match": "(==|!=|<=|>=|<|>|=|:|,)",
             "name": "keyword.operator.hinekora"
         }
     }
