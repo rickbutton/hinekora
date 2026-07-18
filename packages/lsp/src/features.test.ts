@@ -86,8 +86,34 @@ until has "fire resistance" t1 or has "cold resistance" t1 or has "lightning res
 }`;
         const md = getHover(src, src.indexOf("until") + 1, registry);
         expect(md).not.toBeNull();
-        expect(md!).toContain("at least one of:");
+        expect(md!).toContain("at least one of:"); // 4–6 mods ⇒ could be more than one
         expect(md!).toMatch(/to Fire Resistance/); // resolved text, not the bare label
+    });
+
+    it("tightens a disjunction to 'exactly one of' when only one slot remains", () => {
+        // annul leaves a single mod; the loop proves it's fire-or-cold, so exactly
+        // one is present (never both — there is no room).
+        const src = `craft in poe1
+item { base: "Vaal Regalia" ilvl: 84 rarity: normal }
+transmute
+regal
+annul
+until has "fire res" t1 or has "cold res" t1 { annul exalt }`;
+        const md = getHover(src, src.indexOf("until") + 1, registry);
+        expect(md!).toContain("exactly one of:");
+        expect(md!).not.toContain("at least one of:");
+    });
+
+    it("reports a fixed undetermined count as one coupled prefix-or-suffix line", () => {
+        // After annul the item has exactly one mod — a prefix OR a suffix, not the
+        // misleading independent "0–1 prefix" and "0–1 suffix".
+        const src = `craft in poe1
+item { base: "Vaal Regalia" ilvl: 84 rarity: normal }
+transmute
+regal
+annul`;
+        const md = getHover(src, src.lastIndexOf("annul") + 1, registry);
+        expect(md!).toContain("1 undetermined — a prefix or a suffix");
     });
 
     it("returns null in dead space", () => {

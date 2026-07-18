@@ -248,34 +248,55 @@ function tooltip(a: AItem, registry: Registry, caption?: string): string {
 
     const known: Record<Gen, TypeId[]> = { prefix: [], suffix: [] };
     for (const t of guaranteed) known[genOf(t)].push(t);
-    const disjunctions = disjunctiveGuarantees(a);
-    // A disjunctive guarantee: the `(tag) at least one of:` header, then each
+    const genHi = { prefix: a.prefix[1], suffix: suffixRange(a)[1] };
+
+    // Classify each disjunction: its generation (if homogeneous) and whether the
+    // count forces EXACTLY one present. A disjunction guarantees ≥1 of its members;
+    // it is exactly-one when at most one can fit — its generation has a single
+    // undetermined slot (genHi − individually-known-of-that-gen ≤ 1), or, spanning
+    // both, the whole item has one undetermined slot.
+    const knownTotal = known.prefix.length + known.suffix.length;
+    const disjunctions = disjunctiveGuarantees(a).map((d) => {
+        const gens = new Set(d.map(genOf));
+        const gen = gens.size === 1 ? [...gens][0]! : undefined;
+        const slots = gen ? genHi[gen] - known[gen].length : a.total[1] - knownTotal;
+        return { d, gen, exactlyOne: slots <= 1 };
+    });
+
+    // A disjunction block: the `(tag) [exactly|at least] one of:` header, then each
     // candidate on its own line, indented (non-breaking spaces) so it hangs under
     // the header rather than reading as another top-level mod.
     const INDENT = "    ";
-    const disjLines = (d: readonly TypeId[], tag: string): string[] => [
-        `${tag} _at least one of:_`,
-        ...d.map((t) => `${INDENT}${modLine(a, t, registry)}`),
+    const disjBlock = (x: (typeof disjunctions)[number]): string[] => [
+        `${x.gen ? GEN_TAG[x.gen] : "(P/S)"} _${x.exactlyOne ? "exactly" : "at least"} one of:_`,
+        ...x.d.map((t) => `${INDENT}${modLine(a, t, registry)}`),
     ];
 
     const lines: string[] = [];
     for (const gen of ["prefix", "suffix"] as const) {
         for (const t of known[gen]) lines.push(`${GEN_TAG[gen]} ${modLine(a, t, registry)}`);
-        // Disjunctive guarantees whose members are all this generation.
-        for (const d of disjunctions) {
-            if (d.every((t) => genOf(t) === gen)) lines.push(...disjLines(d, GEN_TAG[gen]));
-        }
-        // The remaining, undetermined slots of this generation (contents unknown).
-        const count = gen === "prefix" ? a.prefix : suffixRange(a);
-        const undetHi = count[1] - known[gen].length;
-        if (undetHi > 0) {
-            const undetLo = Math.max(0, count[0] - known[gen].length);
-            lines.push(`${GEN_TAG[gen]} _${fmtRange([undetLo, undetHi])} undetermined_`);
-        }
+        for (const x of disjunctions) if (x.gen === gen) lines.push(...disjBlock(x));
     }
-    // Rare: a disjunction spanning both generations — no single tag.
-    for (const d of disjunctions) {
-        if (!d.every((t) => genOf(t) === genOf(d[0]!))) lines.push(...disjLines(d, "(P/S)"));
+    for (const x of disjunctions) if (x.gen === undefined) lines.push(...disjBlock(x));
+
+    // The undetermined REMAINDER — mods beyond the individually-known ones and the
+    // ≥1 each disjunction already accounts for. Reported as ONE line respecting the
+    // coupling: a fixed total split flexibly across generations reads as "a prefix
+    // or a suffix", not two independent per-generation ranges.
+    const accounted = knownTotal + disjunctions.length;
+    const extraHi = a.total[1] - accounted;
+    if (extraHi > 0) {
+        const extraLo = Math.max(0, a.total[0] - accounted);
+        const disjOf = (g: Gen): number => disjunctions.filter((x) => x.gen === g).length;
+        const prefCap = a.prefix[1] - known.prefix.length - disjOf("prefix");
+        const sufCap = genHi.suffix - known.suffix.length - disjOf("suffix");
+        const range = fmtRange([extraLo, extraHi]);
+        if (sufCap <= 0) lines.push(`${GEN_TAG.prefix} _${range} undetermined_`);
+        else if (prefCap <= 0) lines.push(`${GEN_TAG.suffix} _${range} undetermined_`);
+        else {
+            const what = extraHi === 1 ? "a prefix or a suffix" : "prefixes and/or suffixes";
+            lines.push(`_${range} undetermined — ${what}_`);
+        }
     }
 
     const head = `**${a.base.name ?? a.base.id}** · ${RARITY_NAME[a.rarity] ?? a.rarity} · ilvl ${a.ilvl}`;
