@@ -249,17 +249,19 @@ function tooltip(a: AItem, registry: Registry, caption?: string): string {
     const known: Record<Gen, TypeId[]> = { prefix: [], suffix: [] };
     for (const t of guaranteed) known[genOf(t)].push(t);
     const disjunctions = disjunctiveGuarantees(a);
-    const labels = (ts: readonly TypeId[]): string =>
-        ts.map((t) => registry.typeLabel(t)).join(", ");
+    // A disjunctive guarantee: the `(tag) at least one of:` header, then each
+    // candidate on its own line with its resolved text.
+    const disjLines = (d: readonly TypeId[], tag: string): string[] => [
+        `${tag} _at least one of:_`,
+        ...d.map((t) => `· ${modLine(a, t, registry)}`),
+    ];
 
     const lines: string[] = [];
     for (const gen of ["prefix", "suffix"] as const) {
         for (const t of known[gen]) lines.push(`${GEN_TAG[gen]} ${modLine(a, t, registry)}`);
         // Disjunctive guarantees whose members are all this generation.
         for (const d of disjunctions) {
-            if (d.every((t) => genOf(t) === gen)) {
-                lines.push(`${GEN_TAG[gen]} _at least one of:_ ${labels(d)}`);
-            }
+            if (d.every((t) => genOf(t) === gen)) lines.push(...disjLines(d, GEN_TAG[gen]));
         }
         // The remaining, undetermined slots of this generation (contents unknown).
         const count = gen === "prefix" ? a.prefix : suffixRange(a);
@@ -271,8 +273,7 @@ function tooltip(a: AItem, registry: Registry, caption?: string): string {
     }
     // Rare: a disjunction spanning both generations — no single tag.
     for (const d of disjunctions) {
-        const g0 = genOf(d[0]!);
-        if (!d.every((t) => genOf(t) === g0)) lines.push(`_at least one of:_ ${labels(d)}`);
+        if (!d.every((t) => genOf(t) === genOf(d[0]!))) lines.push(...disjLines(d, "(P/S)"));
     }
 
     const head = `**${a.base.name ?? a.base.id}** · ${RARITY_NAME[a.rarity] ?? a.rarity} · ilvl ${a.ilvl}`;

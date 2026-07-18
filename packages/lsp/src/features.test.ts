@@ -87,7 +87,7 @@ until has "fire resistance" t1 or has "cold resistance" t1 or has "lightning res
         const md = getHover(src, src.indexOf("until") + 1, registry);
         expect(md).not.toBeNull();
         expect(md!).toContain("at least one of:");
-        expect(md!).toMatch(/fire resistance/);
+        expect(md!).toMatch(/to Fire Resistance/); // resolved text, not the bare label
     });
 
     it("returns null in dead space", () => {
