@@ -145,18 +145,23 @@ export const def = (name: string, params: readonly string[], body: Pred): Def =>
     body,
     span: DS,
 });
-export const arg = (value: number | string | ParamRef): Arg =>
-    typeof value === "number"
-        ? { kind: "int", value, span: DS }
-        : typeof value === "string"
-          ? { kind: "string", value, span: DS }
-          : { kind: "param", param: value.param, span: DS };
+/** A tier argument (`t1`) — a distinct sort from a bare-int count. */
+export const tierArg = (value: number): Arg => ({ kind: "tier", value, span: DS });
+const toArg = (v: number | string | ParamRef | Arg): Arg =>
+    typeof v === "number"
+        ? { kind: "int", value: v, span: DS }
+        : typeof v === "string"
+          ? { kind: "string", value: v, span: DS }
+          : "kind" in v // already an Arg (e.g. tierArg)
+            ? v
+            : { kind: "param", param: v.param, span: DS };
+export const arg = toArg;
 export const call = (
     name: string,
-    args: readonly (number | string | ParamRef)[] = [],
+    args: readonly (number | string | ParamRef | Arg)[] = [],
 ): CallPred => ({
     kind: "call",
     name,
-    args: args.map(arg),
+    args: args.map(toArg),
     span: DS,
 });

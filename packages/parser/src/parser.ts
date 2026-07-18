@@ -506,6 +506,12 @@ class Parser {
      */
     private parseArg(): Arg {
         const t = this.peek();
+        // A `t1` tier is its own sort — NOT a bare integer count.
+        const m = t.kind === "ident" ? /^t(\d+)$/i.exec(t.text) : null;
+        if (m) {
+            this.advance();
+            return { kind: "tier", value: Number(m[1]), span: t.span };
+        }
         if (t.kind === "int") {
             this.advance();
             return { kind: "int", value: Number(t.text), span: t.span };
@@ -513,11 +519,6 @@ class Parser {
         if (t.kind === "string") {
             this.advance();
             return { kind: "string", value: t.text, span: t.span };
-        }
-        const m = t.kind === "ident" ? /^t(\d+)$/i.exec(t.text) : null;
-        if (m) {
-            this.advance();
-            return { kind: "int", value: Number(m[1]), span: t.span };
         }
         const p = this.paramRef();
         if (p) return { kind: "param", param: p.param, span: p.span };

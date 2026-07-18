@@ -180,7 +180,7 @@ describe("parser — predicate defs", () => {
 
     it("collects defs separately from the body, with a param in the tier slot", () => {
         const c = parseDef(`def anyEleRes(t) = has "fire res" t or has "cold res" t
-until anyEleRes(1) { exalt }`);
+until anyEleRes(t1) { exalt }`);
         expect(c.defs).toHaveLength(1);
         expect(c.defs[0]).toMatchObject({ kind: "def", name: "anyEleRes", params: ["t"] });
         // `t` in the tier slot is a parameter reference, not a literal tier.
@@ -189,14 +189,14 @@ until anyEleRes(1) { exalt }`);
             kind: "or",
             left: { kind: "has", mod: "fire res", tier: { param: "t" } },
         });
-        // The call site.
+        // The call site — `t1` is a tier argument (its own sort, not a bare int).
         expect(c.body[0]).toMatchObject({
             kind: "until",
-            pred: { kind: "call", name: "anyEleRes", args: [{ kind: "int", value: 1 }] },
+            pred: { kind: "call", name: "anyEleRes", args: [{ kind: "tier", value: 1 }] },
         });
     });
 
-    it("accepts a param in the mod slot and the `t1` shorthand as an argument", () => {
+    it("distinguishes a `t1` tier argument from a bare-int count argument", () => {
         const c = parseDef(`def hasIt(m) = has m
 until hasIt("life") { exalt }`);
         expect(c.defs[0]!.body).toMatchObject({ kind: "has", mod: { param: "m" } });
@@ -204,7 +204,12 @@ until hasIt("life") { exalt }`);
         const c2 = parseDef(`def eleRes(t) = has "fire res" t
 until eleRes(t1) { exalt }`);
         expect(c2.body[0]).toMatchObject({
-            pred: { kind: "call", args: [{ kind: "int", value: 1 }] },
+            pred: { kind: "call", args: [{ kind: "tier", value: 1 }] },
+        });
+        const c3 = parseDef(`def few(n) = prefixCount < n
+until few(2) { exalt }`);
+        expect(c3.body[0]).toMatchObject({
+            pred: { kind: "call", args: [{ kind: "int", value: 2 }] },
         });
     });
 

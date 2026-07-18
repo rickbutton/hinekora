@@ -298,6 +298,13 @@ the op required." `describePred`, `resolveMessage` for other diagnostics.
   ⇒ int, `has` target ⇒ mod); a param used as both is a hard error and the def is marked
   `valid:false` so calls drop without cascading. Recursion is caught (`expanding` set).
   Recursion is caught (`expanding` set).
+- **Parameter sorts are `tier | count | mod` — three DISTINCT sorts**, not two. A `t1`
+  tier is NOT sugar for the int `1`: `Arg` has a separate `tier` kind, and a param
+  inferred from a `has`-tier slot won't accept a bare-int count (or flow into a
+  `prefixCount` comparison) — those are conflicts. This tightening removes well-typed
+  nonsense (`prefixCount > t1` never parsed anyway; the leak was only at the def-param
+  level). An **unused parameter is an error** (`used` set spans value slots + passthrough
+  args, so a forwarded-only param isn't falsely flagged).
 - **Param pass-through**: a param can be forwarded to a nested call (`def a(t) = b(t)`).
   `Arg` gained a `param` kind; substitution rewrites nested-call param args; type errors
   surface at the callee (the substituted arg keeps the outer call site's span).

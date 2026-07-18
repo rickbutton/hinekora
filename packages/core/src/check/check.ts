@@ -500,9 +500,9 @@ class Checker {
                 continue;
             }
             const { types, conflicts, used } = inferParamTypes(def);
-            for (const p of conflicts) {
+            for (const c of conflicts) {
                 this.diag(
-                    `parameter "${p}" of "${def.name}" is used as both a tier and a mod`,
+                    `parameter "${c.param}" of "${def.name}" is used at conflicting sorts (${c.sorts.join(", ")}) — a tier, a count, and a mod are distinct`,
                     def.span,
                 );
             }
@@ -571,15 +571,26 @@ class Checker {
         // Bind args to params, checking each arg against the param's inferred type.
         const env = new Map<string, Arg>();
         let bad = false;
+        // Each sort accepts exactly one arg kind (an unconstrained param — used
+        // only as a pass-through — accepts any and is re-checked at the callee).
+        const wantKind: Record<ParamType, Arg["kind"]> = {
+            tier: "tier",
+            count: "int",
+            mod: "string",
+        };
+        const wantLabel: Record<ParamType, string> = {
+            tier: "a tier (t1)",
+            count: "a number",
+            mod: "a quoted mod name",
+        };
         def.params.forEach((p, i) => {
             const arg = pred.args[i]!;
-            const want = paramTypes.get(p); // undefined ⇒ param unused, unconstrained
-            if (
-                (want === "int" && arg.kind !== "int") ||
-                (want === "mod" && arg.kind !== "string")
-            ) {
-                const label = want === "int" ? "a tier/number" : "a quoted mod name";
-                this.diag(`argument ${i + 1} of "${pred.name}" should be ${label}`, arg.span);
+            const want = paramTypes.get(p);
+            if (want !== undefined && arg.kind !== wantKind[want]) {
+                this.diag(
+                    `argument ${i + 1} of "${pred.name}" should be ${wantLabel[want]}`,
+                    arg.span,
+                );
                 bad = true;
             }
             env.set(p, arg);
@@ -642,38 +653,43 @@ class Checker {
 // --- def parameter types + substitution (module-level, pure) --------------
 
 /** A parameter is used either as an int (tier/count) or as a mod name. */
-type ParamType = "int" | "mod";
+/**
+ * The sort of a def parameter — three DISTINCT kinds even though a tier and a
+ * count are both written with digits. A `tier` (t1) indexes a mod's tier ladder;
+ * a `count` is a number of affixes; a `mod` is a stat description.
+ */
+type ParamType = "tier" | "count" | "mod";
 
 /**
- * Infer each parameter's type from where it is used in the body: a `tier` or
- * count slot ⇒ `int`, a `has` target ⇒ `mod`. A param used as both is a
- * `conflict` (reported at the def). Also tracks which params are USED anywhere
- * (value slots AND pass-through call args), so an unused param can be flagged.
+ * Infer each parameter's sort from where it is used: a `has` tier slot ⇒ `tier`,
+ * a count comparison ⇒ `count`, a `has` target ⇒ `mod`. A param used at two
+ * different sorts is a `conflict` (they don't unify). Also tracks which params
+ * are USED at all (value slots AND pass-through call args), so an unused one can
+ * be flagged.
  */
 function inferParamTypes(def: Def): {
     types: Map<string, ParamType>;
-    conflicts: string[];
+    conflicts: { param: string; sorts: ParamType[] }[];
     used: Set<string>;
 } {
-    const types = new Map<string, ParamType>();
-    const conflicts = new Set<string>();
+    const sorts = new Map<string, Set<ParamType>>();
     const used = new Set<string>();
     const params = new Set(def.params);
     const note = (ref: ParamRef, ty: ParamType): void => {
         if (!params.has(ref.param)) return; // not a param of this def; ignore
         used.add(ref.param);
-        const prev = types.get(ref.param);
-        if (prev === undefined) types.set(ref.param, ty);
-        else if (prev !== ty) conflicts.add(ref.param);
+        const seen = sorts.get(ref.param) ?? new Set<ParamType>();
+        seen.add(ty);
+        sorts.set(ref.param, seen);
     };
     const walk = (p: Pred): void => {
         switch (p.kind) {
             case "has":
                 if (typeof p.mod === "object") note(p.mod, "mod");
-                if (p.tier !== undefined && typeof p.tier === "object") note(p.tier, "int");
+                if (p.tier !== undefined && typeof p.tier === "object") note(p.tier, "tier");
                 return;
             case "compare":
-                if (typeof p.value === "object") note(p.value, "int");
+                if (typeof p.value === "object") note(p.value, "count");
                 return;
             case "not":
                 walk(p.inner);
@@ -684,8 +700,8 @@ function inferParamTypes(def: Def): {
                 walk(p.right);
                 return;
             case "call":
-                // A pass-through param arg counts as a use (its type is enforced
-                // at the callee, so it contributes no local type constraint).
+                // A pass-through param arg counts as a use (its sort is enforced
+                // at the callee, so it contributes no local sort constraint).
                 for (const arg of p.args) if (arg.kind === "param") used.add(arg.param);
                 return;
             case "isRarity":
@@ -693,7 +709,15 @@ function inferParamTypes(def: Def): {
         }
     };
     walk(def.body);
-    return { types, conflicts: [...conflicts], used };
+
+    // A param with exactly one sort is well-typed; more than one is a conflict.
+    const types = new Map<string, ParamType>();
+    const conflicts: { param: string; sorts: ParamType[] }[] = [];
+    for (const [param, seen] of sorts) {
+        if (seen.size === 1) types.set(param, [...seen][0]!);
+        else conflicts.push({ param, sorts: [...seen] });
+    }
+    return { types, conflicts, used };
 }
 
 /** Replace parameter references in a def body with the bound argument values. */
@@ -701,9 +725,12 @@ function substitute(pred: Pred, env: Map<string, Arg>): Pred {
     const sub = <T extends string | number>(v: T | ParamRef): T | ParamRef => {
         if (typeof v !== "object") return v;
         const arg = env.get(v.param);
-        // Bound to a literal ⇒ substitute; unbound (or bound to a not-yet-resolved
-        // passthrough param) ⇒ leave the ref, caught downstream as unbound.
-        return arg && (arg.kind === "int" || arg.kind === "string") ? (arg.value as T) : v;
+        // Bound to a literal (tier/count/mod) ⇒ substitute its value; unbound (or a
+        // not-yet-resolved pass-through param) ⇒ leave the ref, caught downstream.
+        if (arg && (arg.kind === "tier" || arg.kind === "int" || arg.kind === "string")) {
+            return arg.value as T;
+        }
+        return v;
     };
     switch (pred.kind) {
         case "isRarity":

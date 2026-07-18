@@ -79,12 +79,18 @@ export function describePred(pred: Pred): string {
         case "or":
             return `(${describePred(pred.left)} or ${describePred(pred.right)})`;
         case "call": {
-            const argText = (a: (typeof pred.args)[number]): string =>
-                a.kind === "string"
-                    ? `"${a.value}"`
-                    : a.kind === "param"
-                      ? a.param
-                      : String(a.value);
+            const argText = (a: (typeof pred.args)[number]): string => {
+                switch (a.kind) {
+                    case "string":
+                        return `"${a.value}"`;
+                    case "param":
+                        return a.param;
+                    case "tier":
+                        return `t${a.value}`;
+                    case "int":
+                        return String(a.value);
+                }
+            };
             return `${pred.name}(${pred.args.map(argText).join(", ")})`;
         }
     }

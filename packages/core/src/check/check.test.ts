@@ -19,6 +19,7 @@ import {
     op,
     orp,
     param,
+    tierArg,
     until,
     withOmen,
 } from "../__fixtures__/ast.js";
@@ -228,13 +229,23 @@ describe("checker — predicate defs", () => {
             ["t"],
             orp(hasP("IncreasedLife1", param("t")), hasP("FireResist1", param("t"))),
         );
-        const c = craft("poe1", rareRing(), [until(call("anyEle", [1]), [op("chaos")])], [d]);
+        const c = craft(
+            "poe1",
+            rareRing(),
+            [until(call("anyEle", [tierArg(1)]), [op("chaos")])],
+            [d],
+        );
         expect(check(c, ctx).diagnostics).toEqual([]);
     });
 
     it("a def-driven until guarantees the mod, exactly like the inlined predicate", () => {
         const d = def("hasLife", ["t"], hasP("IncreasedLife1", param("t")));
-        const c = craft("poe1", rareRing(), [until(call("hasLife", [1]), [op("chaos")])], [d]);
+        const c = craft(
+            "poe1",
+            rareRing(),
+            [until(call("hasLife", [tierArg(1)]), [op("chaos")])],
+            [d],
+        );
         expect(guaranteedTypes(check(c, ctx).finalState!).has(LIFE_T1.type)).toBe(true);
     });
 
@@ -245,14 +256,14 @@ describe("checker — predicate defs", () => {
         const c = craft(
             "poe1",
             rareRing(),
-            [until(call("viaLife", [1]), [op("chaos")])],
+            [until(call("viaLife", [tierArg(1)]), [op("chaos")])],
             [inner, outer],
         );
         expect(check(c, ctx).diagnostics).toEqual([]);
     });
 
     it("catches a passthrough type error at the nested call", () => {
-        // viaLife passes its arg to hasLife's tier (int) param; a string is wrong.
+        // viaLife forwards its arg to hasLife's tier param; a string is wrong.
         const inner = def("hasLife", ["t"], hasP("IncreasedLife1", param("t")));
         const outer = def("viaLife", ["t"], call("hasLife", [param("t")]));
         const c = craft(
@@ -261,12 +272,17 @@ describe("checker — predicate defs", () => {
             [until(call("viaLife", ["x"]), [op("chaos")])],
             [inner, outer],
         );
-        expect(check(c, ctx).diagnostics[0]?.message).toContain("should be a tier/number");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("should be a tier");
     });
 
     it("flags a parameter that is never used", () => {
         const d = def("f", ["t", "unused"], hasP("IncreasedLife1", param("t")));
-        const c = craft("poe1", rareRing(), [until(call("f", [1, 1]), [op("chaos")])], [d]);
+        const c = craft(
+            "poe1",
+            rareRing(),
+            [until(call("f", [tierArg(1), tierArg(1)]), [op("chaos")])],
+            [d],
+        );
         expect(check(c, ctx).diagnostics[0]?.message).toContain(`parameter "unused"`);
     });
 
@@ -276,34 +292,45 @@ describe("checker — predicate defs", () => {
         const c = craft(
             "poe1",
             rareRing(),
-            [until(call("viaLife", [1]), [op("chaos")])],
+            [until(call("viaLife", [tierArg(1)]), [op("chaos")])],
             [inner, outer],
         );
         expect(check(c, ctx).diagnostics.some((x) => x.message.includes("never used"))).toBe(false);
     });
 
     it("reports an unknown def", () => {
-        const c = craft("poe1", rareRing(), [until(call("nope", [1]), [op("chaos")])]);
+        const c = craft("poe1", rareRing(), [until(call("nope", [tierArg(1)]), [op("chaos")])]);
         expect(check(c, ctx).diagnostics[0]?.message).toContain(`unknown def "nope"`);
     });
 
     it("reports an arity mismatch", () => {
         const d = def("f", ["t"], hasP("IncreasedLife1", param("t")));
-        const c = craft("poe1", rareRing(), [until(call("f", [1, 2]), [op("chaos")])], [d]);
+        const c = craft(
+            "poe1",
+            rareRing(),
+            [until(call("f", [tierArg(1), tierArg(2)]), [op("chaos")])],
+            [d],
+        );
         expect(check(c, ctx).diagnostics[0]?.message).toContain("expects 1 argument");
+    });
+
+    it("rejects a bare-int count where a tier (t1) is expected", () => {
+        const d = def("f", ["t"], hasP("IncreasedLife1", param("t")));
+        const c = craft("poe1", rareRing(), [until(call("f", [1]), [op("chaos")])], [d]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("should be a tier (t1)");
     });
 
     it("reports an argument type mismatch (a string for a tier param)", () => {
         const d = def("f", ["t"], hasP("IncreasedLife1", param("t")));
         const c = craft("poe1", rareRing(), [until(call("f", ["oops"]), [op("chaos")])], [d]);
-        expect(check(c, ctx).diagnostics[0]?.message).toContain("should be a tier/number");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("should be a tier");
     });
 
-    it("flags a parameter used as both a tier and a mod, without cascading", () => {
+    it("flags a parameter used at conflicting sorts (tier vs mod), without cascading", () => {
         const d = def("weird", ["x"], orp(hasP(param("x")), hasP("IncreasedLife1", param("x"))));
         const c = craft("poe1", rareRing(), [until(call("weird", ["life"]), [op("chaos")])], [d]);
         const msgs = check(c, ctx).diagnostics.map((x) => x.message);
-        expect(msgs.some((m) => m.includes("used as both a tier and a mod"))).toBe(true);
+        expect(msgs.some((m) => m.includes("conflicting sorts"))).toBe(true);
         expect(msgs.some((m) => m.includes("unbound parameter"))).toBe(false);
     });
 });

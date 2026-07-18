@@ -44,7 +44,7 @@ describe("hover", () => {
         const src = `craft in poe1
 item { base: "Iron Ring" ilvl: 84 rarity: rare }
 def anyEleRes(t) = has "fire resistance" t or has "cold resistance" t
-until anyEleRes(1) { chaos }`;
+until anyEleRes(t1) { chaos }`;
         const decl = getHover(src, src.indexOf("anyEleRes") + 1, registry);
         const callSite = getHover(src, src.lastIndexOf("anyEleRes") + 1, registry);
         expect(decl).not.toBeNull();

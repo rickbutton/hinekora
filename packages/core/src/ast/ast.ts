@@ -48,10 +48,13 @@ export interface ParamRef {
 }
 
 /**
- * An argument to a def call: an int, a (mod-name) string, or — inside a def body
- * — a parameter passed straight through to a nested call (`def a(t) = b(t)`).
+ * An argument to a def call. Tiers and counts are DISTINCT sorts even though both
+ * are written with digits: a `tier` (`t1`, an ordinal into a mod's tier ladder)
+ * is not an `int` count. `param` is a parameter passed straight through to a
+ * nested call (`def a(t) = b(t)`).
  */
 export type Arg =
+    | { readonly kind: "tier"; readonly value: number; readonly span: SourceSpan }
     | { readonly kind: "int"; readonly value: number; readonly span: SourceSpan }
     | { readonly kind: "string"; readonly value: string; readonly span: SourceSpan }
     | { readonly kind: "param"; readonly param: string; readonly span: SourceSpan };
