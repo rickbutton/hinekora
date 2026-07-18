@@ -6,7 +6,7 @@
 > `crafting-lang-typing-rules-v0.md`) are the ground truth for _intent_; this doc
 > is the ground truth for _what exists and where_.
 
-Last updated: 2026-07-17.
+Last updated: 2026-07-18.
 
 ---
 
@@ -114,7 +114,7 @@ own tsconfig, does NOT extend the ESM base).
 ### Commands (run from anywhere; do not `cd`)
 
 ```
-pnpm -C c:/git/hinekora test           # vitest run — currently 236 passing
+pnpm -C c:/git/hinekora test           # vitest run — currently 249 passing
 pnpm -C c:/git/hinekora exec tsc -b    # typecheck + build all packages
 pnpm -C c:/git/hinekora lint           # eslint .
 pnpm -C c:/git/hinekora format         # prettier --write .
