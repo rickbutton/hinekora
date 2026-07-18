@@ -208,6 +208,18 @@ until eleRes(t1) { exalt }`);
         });
     });
 
+    it("parses a parameter passed through to a nested call", () => {
+        const c = parseDef(`def eleRes(t) = has "fire res" t
+def anyEle(t) = eleRes(t)
+until anyEle(1) { exalt }`);
+        // In `anyEle`, the argument to `eleRes` is the param `t`, not a literal.
+        expect(c.defs[1]!.body).toMatchObject({
+            kind: "call",
+            name: "eleRes",
+            args: [{ kind: "param", param: "t" }],
+        });
+    });
+
     it("rejects a bare `=` used as equality and vice versa", () => {
         // `def` needs a single `=`; a comparison still needs `==`.
         expect(() => parseDef(`def f(x) == has "life" x`)).toThrow();

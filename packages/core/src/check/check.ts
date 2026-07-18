@@ -685,12 +685,22 @@ function substitute(pred: Pred, env: Map<string, Arg>): Pred {
     const sub = <T extends string | number>(v: T | ParamRef): T | ParamRef => {
         if (typeof v !== "object") return v;
         const arg = env.get(v.param);
-        return arg ? (arg.value as T) : v; // unbound stays a ref (arity already checked)
+        // Bound to a literal ⇒ substitute; unbound (or bound to a not-yet-resolved
+        // passthrough param) ⇒ leave the ref, caught downstream as unbound.
+        return arg && (arg.kind === "int" || arg.kind === "string") ? (arg.value as T) : v;
     };
     switch (pred.kind) {
         case "isRarity":
-        case "call": // call args are literals — nothing to substitute
             return pred;
+        case "call":
+            // Pass-through: a param used as a nested call's argument is replaced by
+            // the value bound here (`def a(t) = b(t)`, called `a(1)` ⇒ `b(1)`).
+            return {
+                ...pred,
+                args: pred.args.map((arg) =>
+                    arg.kind === "param" ? (env.get(arg.param) ?? arg) : arg,
+                ),
+            };
         case "has": {
             const mod = sub(pred.mod);
             return pred.tier === undefined

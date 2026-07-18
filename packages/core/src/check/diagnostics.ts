@@ -72,8 +72,15 @@ export function describePred(pred: Pred): string {
             return `(${describePred(pred.left)} and ${describePred(pred.right)})`;
         case "or":
             return `(${describePred(pred.left)} or ${describePred(pred.right)})`;
-        case "call":
-            return `${pred.name}(${pred.args.map((a) => (a.kind === "string" ? `"${a.value}"` : a.value)).join(", ")})`;
+        case "call": {
+            const argText = (a: (typeof pred.args)[number]): string =>
+                a.kind === "string"
+                    ? `"${a.value}"`
+                    : a.kind === "param"
+                      ? a.param
+                      : String(a.value);
+            return `${pred.name}(${pred.args.map(argText).join(", ")})`;
+        }
     }
 }
 

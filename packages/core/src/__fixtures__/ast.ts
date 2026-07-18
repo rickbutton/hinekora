@@ -145,11 +145,16 @@ export const def = (name: string, params: readonly string[], body: Pred): Def =>
     body,
     span: DS,
 });
-export const arg = (value: number | string): Arg =>
+export const arg = (value: number | string | ParamRef): Arg =>
     typeof value === "number"
         ? { kind: "int", value, span: DS }
-        : { kind: "string", value, span: DS };
-export const call = (name: string, args: readonly (number | string)[] = []): CallPred => ({
+        : typeof value === "string"
+          ? { kind: "string", value, span: DS }
+          : { kind: "param", param: value.param, span: DS };
+export const call = (
+    name: string,
+    args: readonly (number | string | ParamRef)[] = [],
+): CallPred => ({
     kind: "call",
     name,
     args: args.map(arg),

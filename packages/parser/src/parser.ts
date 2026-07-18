@@ -500,7 +500,10 @@ class Parser {
         };
     }
 
-    /** A call argument: an int (`1` or `t1` shorthand) or a quoted string. */
+    /**
+     * A call argument: an int (`1` or `t1` shorthand), a quoted string, or — in a
+     * def body — an in-scope parameter passed straight through to a nested call.
+     */
     private parseArg(): Arg {
         const t = this.peek();
         if (t.kind === "int") {
@@ -516,6 +519,8 @@ class Parser {
             this.advance();
             return { kind: "int", value: Number(m[1]), span: t.span };
         }
+        const p = this.paramRef();
+        if (p) return { kind: "param", param: p.param, span: p.span };
         throw this.error("expected an argument (a number, a `t1` tier, or a quoted string)");
     }
 

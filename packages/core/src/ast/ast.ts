@@ -47,10 +47,14 @@ export interface ParamRef {
     readonly span: SourceSpan;
 }
 
-/** A literal argument to a def call — an int or a (mod-name) string. */
+/**
+ * An argument to a def call: an int, a (mod-name) string, or — inside a def body
+ * — a parameter passed straight through to a nested call (`def a(t) = b(t)`).
+ */
 export type Arg =
     | { readonly kind: "int"; readonly value: number; readonly span: SourceSpan }
-    | { readonly kind: "string"; readonly value: string; readonly span: SourceSpan };
+    | { readonly kind: "string"; readonly value: string; readonly span: SourceSpan }
+    | { readonly kind: "param"; readonly param: string; readonly span: SourceSpan };
 
 /**
  * The item declaration — the only place state is given rather than inferred

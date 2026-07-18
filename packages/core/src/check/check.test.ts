@@ -238,6 +238,32 @@ describe("checker — predicate defs", () => {
         expect(guaranteedTypes(check(c, ctx).finalState!).has(LIFE_T1.type)).toBe(true);
     });
 
+    it("passes a parameter through to a nested def call", () => {
+        // def hasLife(t) = has life t;  def viaLife(t) = hasLife(t)
+        const inner = def("hasLife", ["t"], hasP("IncreasedLife1", param("t")));
+        const outer = def("viaLife", ["t"], call("hasLife", [param("t")]));
+        const c = craft(
+            "poe1",
+            rareRing(),
+            [until(call("viaLife", [1]), [op("chaos")])],
+            [inner, outer],
+        );
+        expect(check(c, ctx).diagnostics).toEqual([]);
+    });
+
+    it("catches a passthrough type error at the nested call", () => {
+        // viaLife passes its arg to hasLife's tier (int) param; a string is wrong.
+        const inner = def("hasLife", ["t"], hasP("IncreasedLife1", param("t")));
+        const outer = def("viaLife", ["t"], call("hasLife", [param("t")]));
+        const c = craft(
+            "poe1",
+            rareRing(),
+            [until(call("viaLife", ["x"]), [op("chaos")])],
+            [inner, outer],
+        );
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("should be a tier/number");
+    });
+
     it("reports an unknown def", () => {
         const c = craft("poe1", rareRing(), [until(call("nope", [1]), [op("chaos")])]);
         expect(check(c, ctx).diagnostics[0]?.message).toContain(`unknown def "nope"`);
