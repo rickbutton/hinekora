@@ -26,6 +26,7 @@ import {
     op,
     orp,
     param,
+    restart,
     tierArg,
     until,
     withOmen,
@@ -512,6 +513,34 @@ describe("checker — loops (loop-exit-as-proof)", () => {
         const r = check(c, ctx);
         expect(r.ok).toBe(false);
         expect(r.diagnostics[0]?.message).toContain("can never exit");
+    });
+});
+
+describe("checker — restart is a loop back-edge", () => {
+    it("flags fill-up through a restart: `until has X { exalt; if not X { restart } }`", () => {
+        // The restart re-enters the loop head with the item having gained a mod
+        // but never lost one, so exalt can fill it to 6 before X rolls — the same
+        // danger as `until has X { exalt }`. Only caught if the restart state joins
+        // into the loop invariant.
+        const c = craft("poe1", rareRing(), [
+            until(has("IncreasedLife1"), [
+                op("exalt"),
+                iff(notp(has("IncreasedLife1")), [restart()]),
+            ]),
+        ]);
+        const r = check(c, ctx);
+        expect(r.ok).toBe(false);
+        expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
+    });
+
+    it("a draining recovery loop with restart stays clean (counts only shrink)", () => {
+        // annul removes a mod, restart re-drains — bounded below by 0, so no
+        // precondition ever fails. The restart back-edge must not manufacture a
+        // spurious fill-up here.
+        const c = craft("poe1", rareRing(["IncreasedLife1"], ["FireResist1"]), [
+            until(notp(has("FireResist1")), [op("annul"), iff(has("FireResist1"), [restart()])]),
+        ]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 });
 

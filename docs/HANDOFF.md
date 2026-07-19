@@ -332,6 +332,25 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 
 Near-term candidates:
 
+- **`restart` as a loop back-edge — DONE (soundness fix).** A `restart` inside an
+  `until` re-enters that loop's head, so the state at the `restart` is a loop-head
+  state that must join into the invariant — exactly like falling off the body end.
+  Previously it was dropped: `checkSeq` returned `{kind:"restart"}` and the loop
+  discarded it (and `checkIf` silently swallowed a restarting arm when its sibling
+  fell through), so any state a `restart` carried back to the head was invisible to
+  the fixpoint. Effect: `until has X { exalt; if not X { restart } }` checked CLEAN
+  even though — like `until has X { exalt }` — the restart back-edge lets exalt fill
+  the item to 6 before X rolls, stranding the next exalt (a missed precondition
+  failure / false negative). Fix: a `restartHeads` stack in `Checker` (one frame per
+  enclosing loop); the `restart` statement records its entering state into the
+  innermost frame; `loopInvariant` folds those states (refined by ¬exit) in as
+  back-edges alongside the fall-off-end state, `checkBodyQuiet` folds them into the
+  reachability probe, and `checkUntil` folds restart-then-exit states into the
+  after-state. Restart-free loops are byte-for-byte unchanged (single back-edge, same
+  refine). Draining recovery loops (`until not X { annul; if X { restart } }`) stay
+  clean — counts only shrink. A top-level `restart` (no enclosing loop) is unchanged:
+  its frame is absent, so whole-craft restart still just truncates (unmodelled, as
+  before). Regression tests in `check.test.ts` ("restart is a loop back-edge").
 - **Loop-invariant widening — DONE.** `widenPresence` (astate) over-approximates the
   invariant's presence to its UNIT facts (guarantees + exclusions) once past `WIDEN_AFTER`
   exact iterations, dropping the disjunctive/tier structure whose lattice is ~2^atoms tall.

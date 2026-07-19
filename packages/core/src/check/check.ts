@@ -135,6 +135,10 @@ class Checker {
     >();
     /** Defs currently being expanded — guards against (mutual) recursion. */
     private readonly expanding = new Set<string>();
+    /** Stack of `restart` back-edge collectors, innermost loop last. A `restart`
+     *  re-enters the innermost enclosing loop, so its state is a loop-head state
+     *  that must join into that loop's invariant. */
+    private readonly restartHeads: AItem[][] = [];
 
     constructor(private readonly registry: Registry) {}
 
@@ -298,8 +302,16 @@ class Checker {
                 return this.checkEssence(a, stmt);
             case "bench":
                 return this.checkBench(a, stmt);
-            case "restart":
+            case "restart": {
+                // Record the state re-entering the innermost loop, if any, so the
+                // loop invariant can fold in this back-edge (a `restart` after an
+                // additive op can fill the item the same way falling off the body
+                // end can). A top-level restart has no collector — behaviour there
+                // is unchanged.
+                const frame = this.restartHeads[this.restartHeads.length - 1];
+                if (frame !== undefined) frame.push(a);
                 return { kind: "restart" };
+            }
             case "until":
                 return this.checkUntil(a, stmt);
             case "if":
@@ -468,13 +480,32 @@ class Checker {
         // this catches a precondition that only fails on a later iteration
         // (`until has X { exalt }` eventually fills the item).
         const invariant = this.loopInvariant(a, stmt.body, rpred);
-        const invFlow = this.checkSeq(invariant, stmt.body);
+        const { flow: invFlow, restarts } = this.runBody(invariant, stmt.body);
         const invEnd = invFlow.kind === "fall" ? invFlow.state : invariant;
 
-        // On exit the predicate is known to hold; refine it into the after-state.
-        // Fall back to the reachability pass if the invariant pass failed.
-        const exit = rpred === null ? invEnd : refine(invEnd, rpred, true);
+        // On exit the predicate is known to hold. The loop can leave either by
+        // falling off the body end or by a `restart` reaching the head with the
+        // predicate already satisfied; refine each such head by the exit predicate
+        // and join. Fall back to the reachability pass if none survives.
+        const exitHeads = invFlow.kind === "fall" ? [invEnd, ...restarts] : restarts;
+        let exit: AItem | null = null;
+        for (const h of exitHeads) {
+            const e = rpred === null ? h : refine(h, rpred, true);
+            if (e !== null) exit = exit === null ? e : join(exit, e);
+        }
         return { kind: "fall", state: this.tightenCounts(exit ?? exitReachable ?? invariant) };
+    }
+
+    /** Run a loop body while collecting the states of any `restart` inside it
+     *  (back-edges to this loop's head). */
+    private runBody(entry: AItem, body: readonly Stmt[]): { flow: Flow; restarts: AItem[] } {
+        const frame: AItem[] = [];
+        this.restartHeads.push(frame);
+        try {
+            return { flow: this.checkSeq(entry, body), restarts: frame };
+        } finally {
+            this.restartHeads.pop();
+        }
     }
 
     /**
@@ -505,12 +536,17 @@ class Checker {
         return s ?? a;
     }
 
-    /** Run the body from `entry` with diagnostics suppressed; return its fall state. */
+    /** Run the body from `entry` with diagnostics suppressed; return the state at
+     *  the loop head after one iteration — the fall-off-end state joined with any
+     *  `restart` back-edge (so the reachability probe sees a mod an op added even
+     *  when the only path back to the head is a restart). */
     private checkBodyQuiet(entry: AItem, body: readonly Stmt[]): AItem {
         this.quiet++;
         try {
-            const flow = this.checkSeq(entry, body);
-            return flow.kind === "fall" ? flow.state : entry;
+            const { flow, restarts } = this.runBody(entry, body);
+            let end: AItem | null = flow.kind === "fall" ? flow.state : null;
+            for (const r of restarts) end = end === null ? r : join(end, r);
+            return end ?? entry;
         } finally {
             this.quiet--;
         }
@@ -526,11 +562,21 @@ class Checker {
         this.quiet++;
         try {
             for (let i = 0; i < MAX_LOOP_ITERS; i++) {
-                const flow = this.checkSeq(invariant, body);
-                const end = flow.kind === "fall" ? flow.state : invariant;
-                const cont = rpred === null ? end : refine(end, rpred, false);
-                if (cont === null) break; // predicate always holds after the body → no other heads
-                const joined = join(invariant, cont);
+                const { flow, restarts } = this.runBody(invariant, body);
+                // Every path back to the loop head is a new head-state: falling
+                // off the body end, and every `restart`. Each re-enters the head,
+                // so the body runs again only where the exit predicate is still
+                // false — refine each by ¬exit before joining.
+                const backedges = flow.kind === "fall" ? [flow.state, ...restarts] : restarts;
+                let joined = invariant;
+                let grew = false;
+                for (const be of backedges) {
+                    const cont = rpred === null ? be : refine(be, rpred, false);
+                    if (cont === null) continue; // this head always exits → not a body-entry
+                    joined = join(joined, cont);
+                    grew = true;
+                }
+                if (!grew) break; // no live back-edge → no further heads
                 // Widen once past a few exact iterations: a small loop reaches a
                 // precise fixpoint first; a tall `≥k of n` disjunction is
                 // over-approximated so it converges (soundly) instead of crawling.
