@@ -4,9 +4,19 @@
  * either falls through with a new state or restarts (diverges); `if`/`else`
  * joins its arms; `until` computes a loop invariant and proves its exit
  * predicate into the after-state. Errors are collected as diagnostics, not
- * thrown — a craft can have several independent problems.
+ * thrown, a craft can have several independent problems.
  */
-import type { AffixDecl, Arg, Craft, Def, ItemBlock, ParamRef, Pred, Stmt } from "../ast/ast.js";
+import type {
+    AffixDecl,
+    Arg,
+    Craft,
+    Def,
+    ItemBlock,
+    ParamRef,
+    Pred,
+    ProcDef,
+    Stmt,
+} from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import type { Game, Gen, ModId, TypeId } from "../model/ids.js";
 import type { CurrencyKind, Registry, OmenSpec } from "../resolve/registry.js";
@@ -62,7 +72,7 @@ const cmpAtLeast = (projection: "prefixCount" | "suffixCount", value: number): R
 /** The abstract item state before and after a statement (or the item block). */
 export interface TraceEntry {
     readonly span: SourceSpan;
-    /** What produced this entry — the statement kind, or "item" for the block. */
+    /** What produced this entry, the statement kind, or "item" for the block. */
     readonly kind: Stmt["kind"] | "item";
     /** State entering the statement. */
     readonly before: AItem;
@@ -84,7 +94,7 @@ export interface CheckResult {
 }
 
 /**
- * The innermost (smallest-span) trace entry containing `offset` — the statement
+ * The innermost (smallest-span) trace entry containing `offset`, the statement
  * whose before/after state the cursor is on. Powers the LSP hover. Hovering a
  * loop (whose span runs through its closing `}`) yields the loop entry, whose
  * `after` is the proven post-loop state.
@@ -113,6 +123,14 @@ const MAX_LOOP_ITERS = 32;
 
 type Flow = { readonly kind: "fall"; readonly state: AItem } | { readonly kind: "restart" };
 
+/** Join a list of branch states into their LUB; `null` when the list is empty. */
+function foldJoin(states: readonly AItem[]): AItem | null {
+    return states.length === 0 ? null : states.reduce(join);
+}
+
+/** Type guard for a live (non-dead) sub-state, `refine` returns `null` for dead. */
+const isLive = (s: AItem | null): s is AItem => s !== null;
+
 export function check(craft: Craft, ctx: CheckContext): CheckResult {
     return new Checker(ctx.registry).run(craft);
 }
@@ -121,7 +139,7 @@ class Checker {
     private readonly diagnostics: CheckDiagnostic[] = [];
     /** Currently-enabled omens, innermost scope last. */
     private readonly omens: OmenSpec[] = [];
-    /** When > 0, suppress diagnostics — loop-invariant passes re-check the body
+    /** When > 0, suppress diagnostics, loop-invariant passes re-check the body
      *  and must not emit duplicates; only the final, real pass does. */
     private quiet = 0;
     private readonly trace: TraceEntry[] = [];
@@ -133,8 +151,17 @@ class Checker {
         string,
         { def: Def; paramTypes: Map<string, ParamType>; valid: boolean }
     >();
-    /** Defs currently being expanded — guards against (mutual) recursion. */
+    /** Local operation functions (`def name(p) { … }`); `valid: false` marks an
+     *  ill-formed proc whose calls are dropped without cascading errors. */
+    private readonly procs = new Map<
+        string,
+        { proc: ProcDef; paramTypes: Map<string, ParamType>; valid: boolean }
+    >();
+    /** Defs/procs currently being expanded, guards against (mutual) recursion. */
     private readonly expanding = new Set<string>();
+    /** When > 0, don't record trace entries, a proc call is a black box for
+     *  hover: only the call site itself gets an entry, not the inlined body. */
+    private suppressTrace = 0;
     /** Stack of `restart` back-edge collectors, innermost loop last. A `restart`
      *  re-enters the innermost enclosing loop, so its state is a loop-head state
      *  that must join into that loop's invariant. */
@@ -144,6 +171,7 @@ class Checker {
 
     run(craft: Craft): CheckResult {
         this.collectDefs(craft.defs);
+        this.collectProcs(craft.procs);
         const initial = this.elaborateItem(craft.game, craft.item);
         if (initial === null) {
             return { ok: false, diagnostics: this.diagnostics, trace: this.trace };
@@ -164,13 +192,35 @@ class Checker {
         this.diagnostics.push({ message, span });
     }
 
+    /** Run `fn` with diagnostics AND trace suppressed, a probe/fixpoint pass that
+     *  must not emit duplicates or pollute the real trace. */
+    private quietly<T>(fn: () => T): T {
+        this.quiet++;
+        try {
+            return fn();
+        } finally {
+            this.quiet--;
+        }
+    }
+
+    /** Run `fn` with trace recording suppressed but diagnostics kept, an inlined
+     *  proc body is a hover black box, yet its precondition failures still matter. */
+    private untraced<T>(fn: () => T): T {
+        this.suppressTrace++;
+        try {
+            return fn();
+        } finally {
+            this.suppressTrace--;
+        }
+    }
+
     // --- item block → initial state ---------------------------------------
 
     private elaborateItem(game: Game, item: ItemBlock): AItem | null {
         const baseRes = this.registry.resolveBase(item.base);
         if (!baseRes.ok) {
             this.diag(resolveMessage(baseRes.error), item.span);
-            return null; // without a base we cannot compute pools — abort
+            return null; // without a base we cannot compute pools, abort
         }
         const base = baseRes.value;
         const present = new Set<TypeId>();
@@ -204,7 +254,7 @@ class Checker {
             checkGen(affix.mod, this.registry.genOfType(type), gen);
             if (affix.tier === undefined) {
                 this.diag(
-                    `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t1\`) — a starting item's mods must name a specific tier.`,
+                    `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t1\`), a starting item's mods must name a specific tier.`,
                     item.span,
                 );
                 present.add(type); // still count it as present, just untiered
@@ -240,7 +290,7 @@ class Checker {
         // wf: a flask/tincture can never be Rare.
         if (item.rarity === "rare" && !canBeRare(base)) {
             this.diag(
-                `a ${base.name ?? "flask"} cannot be Rare — flasks are Magic at most`,
+                `a ${base.name ?? "flask"} cannot be Rare, flasks are Magic at most`,
                 item.span,
             );
         }
@@ -278,9 +328,9 @@ class Checker {
         for (const stmt of stmts) {
             const before = state;
             const flow = this.checkStmt(before, stmt);
-            // Record before/after for hover — only on the real (non-quiet) pass,
+            // Record before/after for hover, only on the real (non-quiet) pass,
             // so each source statement appears exactly once.
-            if (this.quiet === 0) {
+            if (this.quiet === 0 && this.suppressTrace === 0) {
                 this.trace.push({
                     span: stmt.span,
                     kind: stmt.kind,
@@ -306,7 +356,7 @@ class Checker {
                 // Record the state re-entering the innermost loop, if any, so the
                 // loop invariant can fold in this back-edge (a `restart` after an
                 // additive op can fill the item the same way falling off the body
-                // end can). A top-level restart has no collector — behaviour there
+                // end can). A top-level restart has no collector, behaviour there
                 // is unchanged.
                 const frame = this.restartHeads[this.restartHeads.length - 1];
                 if (frame !== undefined) frame.push(a);
@@ -318,11 +368,16 @@ class Checker {
                 return this.checkIf(a, stmt);
             case "withOmen":
                 return this.checkWithOmen(a, stmt);
+            case "call":
+                return this.checkCall(a, stmt);
         }
     }
 
     private checkEssence(a: AItem, stmt: Extract<Stmt, { kind: "essence" }>): Flow {
-        const spec = this.registry.resolveEssence(stmt.name, stmt.tier);
+        const name = this.literalString(stmt.name, stmt.span);
+        const tier = this.literalTier(stmt.tier, stmt.span);
+        if (name === null || tier === null) return { kind: "fall", state: a };
+        const spec = this.registry.resolveEssence(name, tier);
         if (!spec.ok) {
             this.diag(resolveMessage(spec.error), stmt.span);
             return { kind: "fall", state: a };
@@ -336,7 +391,10 @@ class Checker {
     }
 
     private checkBench(a: AItem, stmt: Extract<Stmt, { kind: "bench" }>): Flow {
-        const craft = this.registry.resolveBench(stmt.name, a.base.itemClass, stmt.tier);
+        const name = this.literalString(stmt.name, stmt.span);
+        const tier = this.literalTier(stmt.tier, stmt.span);
+        if (name === null || tier === null) return { kind: "fall", state: a };
+        const craft = this.registry.resolveBench(name, a.base.itemClass, tier);
         if (!craft.ok) {
             this.diag(resolveMessage(craft.error), stmt.span);
             return { kind: "fall", state: a };
@@ -476,23 +534,15 @@ class Checker {
             return { kind: "fall", state: entryEnd };
         }
 
-        // Check the body from the loop invariant, not just the entry state —
-        // this catches a precondition that only fails on a later iteration
-        // (`until has X { exalt }` eventually fills the item).
+        // Compute the loop invariant (a quiet join-fixpoint), then run the body
+        // once more FROM it, the real pass that emits the loop's diagnostics and
+        // trace, and catches a precondition that only fails on a later iteration
+        // (`until has X { exalt }` eventually fills the item). On exit the exit
+        // predicate is known to hold: the after-state is the join of every
+        // loop-head state refined by it. Fall back to the reachability pass if none
+        // survives.
         const invariant = this.loopInvariant(a, stmt.body, rpred);
-        const { flow: invFlow, restarts } = this.runBody(invariant, stmt.body);
-        const invEnd = invFlow.kind === "fall" ? invFlow.state : invariant;
-
-        // On exit the predicate is known to hold. The loop can leave either by
-        // falling off the body end or by a `restart` reaching the head with the
-        // predicate already satisfied; refine each such head by the exit predicate
-        // and join. Fall back to the reachability pass if none survives.
-        const exitHeads = invFlow.kind === "fall" ? [invEnd, ...restarts] : restarts;
-        let exit: AItem | null = null;
-        for (const h of exitHeads) {
-            const e = rpred === null ? h : refine(h, rpred, true);
-            if (e !== null) exit = exit === null ? e : join(exit, e);
-        }
+        const exit = foldJoin(this.refineHeads(this.headStates(invariant, stmt.body), rpred, true));
         return { kind: "fall", state: this.tightenCounts(exit ?? exitReachable ?? invariant) };
     }
 
@@ -508,12 +558,26 @@ class Checker {
         }
     }
 
+    /** Run the body once from `entry` and return every state that re-enters the
+     *  loop head: the fall-off-end state (when the body falls through) plus every
+     *  `restart` back-edge collected inside it. */
+    private headStates(entry: AItem, body: readonly Stmt[]): AItem[] {
+        const { flow, restarts } = this.runBody(entry, body);
+        return flow.kind === "fall" ? [flow.state, ...restarts] : restarts;
+    }
+
+    /** Refine each loop-head state by the exit predicate (`positive`) or its
+     *  negation, dropping the dead ones, the exit-states or the continue-states. */
+    private refineHeads(states: readonly AItem[], rpred: RPred | null, positive: boolean): AItem[] {
+        return states.map((h) => (rpred === null ? h : refine(h, rpred, positive))).filter(isLive);
+    }
+
     /**
      * Push presence knowledge into the count ranges: a proven "≥k of {types}"
      * where all those types sit in one generation forces that generation's count
      * ≥ k (and guaranteed types each count for one). A disjunction of resistance
-     * suffixes therefore pins the suffix count — and, via the total coupling, the
-     * prefix count — where the presence BDD alone left it a range. A sound
+     * suffixes therefore pins the suffix count, and, via the total coupling, the
+     * prefix count, where the presence BDD alone left it a range. A sound
      * tightening: it only ever removes a spurious slot, never adds one.
      */
     private tightenCounts(a: AItem): AItem {
@@ -536,47 +600,27 @@ class Checker {
         return s ?? a;
     }
 
-    /** Run the body from `entry` with diagnostics suppressed; return the state at
-     *  the loop head after one iteration — the fall-off-end state joined with any
-     *  `restart` back-edge (so the reachability probe sees a mod an op added even
-     *  when the only path back to the head is a restart). */
+    /** The loop-head state after one iteration from `entry`, diagnostics
+     *  suppressed, the join of every back-edge (fall-off-end and every `restart`).
+     *  Used to probe reachability, so it sees a mod an op added even when the only
+     *  path back to the head is a restart. */
     private checkBodyQuiet(entry: AItem, body: readonly Stmt[]): AItem {
-        this.quiet++;
-        try {
-            const { flow, restarts } = this.runBody(entry, body);
-            let end: AItem | null = flow.kind === "fall" ? flow.state : null;
-            for (const r of restarts) end = end === null ? r : join(end, r);
-            return end ?? entry;
-        } finally {
-            this.quiet--;
-        }
+        return this.quietly(() => foldJoin(this.headStates(entry, body)) ?? entry);
     }
 
     /**
      * The loop invariant: the least state (by join) covering the entry and every
-     * "continue" state (body ran, exit predicate still false). The lattice is
-     * finite and the iteration monotone, so this converges quickly.
+     * "continue" state (a back-edge whose exit predicate is still false). The
+     * lattice is finite and the iteration monotone, so this converges quickly;
+     * widening past a few exact iterations bounds the tall disjunctive part.
      */
     private loopInvariant(entry: AItem, body: readonly Stmt[], rpred: RPred | null): AItem {
-        let invariant = entry;
-        this.quiet++;
-        try {
+        return this.quietly(() => {
+            let invariant = entry;
             for (let i = 0; i < MAX_LOOP_ITERS; i++) {
-                const { flow, restarts } = this.runBody(invariant, body);
-                // Every path back to the loop head is a new head-state: falling
-                // off the body end, and every `restart`. Each re-enters the head,
-                // so the body runs again only where the exit predicate is still
-                // false — refine each by ¬exit before joining.
-                const backedges = flow.kind === "fall" ? [flow.state, ...restarts] : restarts;
-                let joined = invariant;
-                let grew = false;
-                for (const be of backedges) {
-                    const cont = rpred === null ? be : refine(be, rpred, false);
-                    if (cont === null) continue; // this head always exits → not a body-entry
-                    joined = join(joined, cont);
-                    grew = true;
-                }
-                if (!grew) break; // no live back-edge → no further heads
+                const continues = this.refineHeads(this.headStates(invariant, body), rpred, false);
+                if (continues.length === 0) break; // no live back-edge → no further heads
+                const joined = [invariant, ...continues].reduce(join);
                 // Widen once past a few exact iterations: a small loop reaches a
                 // precise fixpoint first; a tall `≥k of n` disjunction is
                 // over-approximated so it converges (soundly) instead of crawling.
@@ -584,10 +628,8 @@ class Checker {
                 if (stateEqual(next, invariant)) break; // fixpoint reached
                 invariant = next;
             }
-        } finally {
-            this.quiet--;
-        }
-        return invariant;
+            return invariant;
+        });
     }
 
     // --- omen scope --------------------------------------------------------
@@ -630,6 +672,103 @@ class Checker {
         }
     }
 
+    /** Register operation functions by name and infer their param types. Shares
+     *  the name space with predicate defs, a name can't be both. */
+    private collectProcs(procs: readonly ProcDef[]): void {
+        for (const proc of procs) {
+            if (this.defs.has(proc.name) || this.procs.has(proc.name)) {
+                this.diag(`duplicate def "${proc.name}"`, proc.span);
+                continue;
+            }
+            const { types, conflicts, used } = inferProcParamTypes(proc);
+            for (const c of conflicts) {
+                const ways = c.sorts.map((s) => SORT_LABEL[s]).join(" and as ");
+                this.diag(
+                    `parameter "${c.param}" of "${proc.name}" is used in conflicting ways (as ${ways})`,
+                    proc.span,
+                );
+            }
+            for (const p of proc.params) {
+                if (!used.has(p)) {
+                    this.diag(`parameter "${p}" of "${proc.name}" is never used`, proc.span);
+                }
+            }
+            this.procs.set(proc.name, { proc, paramTypes: types, valid: conflicts.length === 0 });
+        }
+    }
+
+    /** Check a call to an operation function: resolve it, bind args, then inline
+     *  the substituted body. Inlining threads the item state through and lets a
+     *  `restart` inside the body re-enter the caller's enclosing loop, the body
+     *  composes exactly as if written in place. The inlined body is a trace black
+     *  box (only the call site is recorded for hover). */
+    private checkCall(a: AItem, stmt: Extract<Stmt, { kind: "call" }>): Flow {
+        const entry = this.procs.get(stmt.name);
+        if (!entry) {
+            if (this.defs.has(stmt.name)) {
+                this.diag(
+                    `"${stmt.name}" is a condition, use it inside 'if' or 'until', not as a step`,
+                    stmt.span,
+                );
+            } else {
+                this.diag(`unknown def "${stmt.name}"`, stmt.span);
+            }
+            return { kind: "fall", state: a };
+        }
+        const { proc, paramTypes, valid } = entry;
+        if (!valid) return { kind: "fall", state: a }; // the proc's own error was reported
+        if (this.expanding.has(stmt.name)) {
+            this.diag(`recursive def "${stmt.name}" is not allowed`, stmt.span);
+            return { kind: "fall", state: a };
+        }
+        const env = this.bindArgs(stmt.name, proc.params, paramTypes, stmt.args, stmt.span);
+        if (env === null) return { kind: "fall", state: a };
+
+        const body = substituteStmts(proc.body, env);
+        this.expanding.add(stmt.name);
+        try {
+            return this.untraced(() => this.checkSeq(a, body));
+        } finally {
+            this.expanding.delete(stmt.name);
+        }
+    }
+
+    /** Bind call arguments to parameters, checking arity and each arg's sort.
+     *  Returns the environment, or `null` if any check failed (already reported). */
+    private bindArgs(
+        callName: string,
+        params: readonly string[],
+        paramTypes: Map<string, ParamType>,
+        args: readonly Arg[],
+        span: SourceSpan,
+    ): Map<string, Arg> | null {
+        if (args.length !== params.length) {
+            const n = params.length;
+            this.diag(
+                `"${callName}" expects ${n} argument${n === 1 ? "" : "s"}, got ${args.length}`,
+                span,
+            );
+            return null;
+        }
+        const env = new Map<string, Arg>();
+        let bad = false;
+        params.forEach((p, i) => {
+            const arg = args[i]!;
+            const want = paramTypes.get(p);
+            // A param with no inferred sort is a pass-through: any arg kind is
+            // accepted here and re-checked at the callee.
+            if (want !== undefined && arg.kind !== WANT_KIND[want]) {
+                this.diag(
+                    `argument ${i + 1} of "${callName}" should be ${WANT_LABEL[want]}`,
+                    arg.span,
+                );
+                bad = true;
+            }
+            env.set(p, arg);
+        });
+        return bad ? null : env;
+    }
+
     // --- predicate resolution ---------------------------------------------
 
     private resolvePred(pred: Pred, a: AItem): RPred | null {
@@ -649,7 +788,7 @@ class Checker {
             case "and":
             case "or": {
                 // An unresolvable sub-predicate (already reported) makes the whole
-                // combination unknown — return null so we skip narrowing entirely
+                // combination unknown, return null so we skip narrowing entirely
                 // rather than narrow by a half-understood condition.
                 const left = this.resolvePred(pred.left, a);
                 const right = this.resolvePred(pred.right, a);
@@ -666,51 +805,24 @@ class Checker {
     private resolveCall(pred: Extract<Pred, { kind: "call" }>, a: AItem): RPred | null {
         const entry = this.defs.get(pred.name);
         if (!entry) {
-            this.diag(`unknown def "${pred.name}"`, pred.span);
+            if (this.procs.has(pred.name)) {
+                this.diag(
+                    `"${pred.name}" runs operations, use it as a step, not inside a condition`,
+                    pred.span,
+                );
+            } else {
+                this.diag(`unknown def "${pred.name}"`, pred.span);
+            }
             return null;
         }
         const { def, paramTypes, valid } = entry;
         if (!valid) return null; // the def's own error was already reported
-        if (pred.args.length !== def.params.length) {
-            const n = def.params.length;
-            this.diag(
-                `"${pred.name}" expects ${n} argument${n === 1 ? "" : "s"}, got ${pred.args.length}`,
-                pred.span,
-            );
-            return null;
-        }
         if (this.expanding.has(pred.name)) {
             this.diag(`recursive def "${pred.name}" is not allowed`, pred.span);
             return null;
         }
-        // Bind args to params, checking each arg against the param's inferred type.
-        const env = new Map<string, Arg>();
-        let bad = false;
-        // Each sort accepts exactly one arg kind (an unconstrained param — used
-        // only as a pass-through — accepts any and is re-checked at the callee).
-        const wantKind: Record<ParamType, Arg["kind"]> = {
-            tier: "tier",
-            count: "int",
-            mod: "string",
-        };
-        const wantLabel: Record<ParamType, string> = {
-            tier: "a tier (t1)",
-            count: "a number",
-            mod: "a quoted mod name",
-        };
-        def.params.forEach((p, i) => {
-            const arg = pred.args[i]!;
-            const want = paramTypes.get(p);
-            if (want !== undefined && arg.kind !== wantKind[want]) {
-                this.diag(
-                    `argument ${i + 1} of "${pred.name}" should be ${wantLabel[want]}`,
-                    arg.span,
-                );
-                bad = true;
-            }
-            env.set(p, arg);
-        });
-        if (bad) return null;
+        const env = this.bindArgs(pred.name, def.params, paramTypes, pred.args, pred.span);
+        if (env === null) return null;
 
         const body = substitute(def.body, env);
         this.expanding.add(pred.name);
@@ -763,12 +875,22 @@ class Checker {
         this.diag(`parameter "${v.param}" was never given a value`, span);
         return null;
     }
+
+    /** An optional tier slot (essence/bench): absent stays `undefined`; a leftover
+     *  ParamRef is an unbound-param error (`null`). */
+    private literalTier(
+        v: number | ParamRef | undefined,
+        span: SourceSpan,
+    ): number | undefined | null {
+        if (v === undefined) return undefined;
+        return this.literalInt(v, span);
+    }
 }
 
 // --- def parameter types + substitution (module-level, pure) --------------
 
 /**
- * The sort of a def parameter — three distinct kinds even though a tier and a
+ * The sort of a def parameter, three distinct kinds even though a tier and a
  * count are both written with digits: a `tier` (t1) indexes a mod's tier
  * ladder, a `count` is a number of affixes, a `mod` is a stat description.
  */
@@ -780,96 +902,155 @@ const SORT_LABEL: Record<ParamType, string> = {
     mod: "a mod name",
 };
 
-/**
- * Infer each parameter's sort from where it is used; uses at two different
- * sorts conflict. Also tracks which params are used at all (value slots and
- * pass-through call args), so an unused one can be flagged.
- */
-function inferParamTypes(def: Def): {
+/** The one argument kind each sort accepts (a pass-through param has no sort and
+ *  accepts any kind, re-checked at the callee). */
+const WANT_KIND: Record<ParamType, Arg["kind"]> = {
+    tier: "tier",
+    count: "int",
+    mod: "string",
+};
+const WANT_LABEL: Record<ParamType, string> = {
+    tier: "a tier (t1)",
+    count: "a number",
+    mod: "a quoted mod name",
+};
+
+/** Accumulates where each parameter is used, so its sort can be inferred (uses at
+ *  two different sorts conflict) and an unused one flagged. */
+interface ParamUses {
+    readonly params: Set<string>;
+    readonly sorts: Map<string, Set<ParamType>>;
+    readonly used: Set<string>;
+}
+
+function noteSort(u: ParamUses, ref: ParamRef, ty: ParamType): void {
+    if (!u.params.has(ref.param)) return; // not a param here; ignore
+    u.used.add(ref.param);
+    const seen = u.sorts.get(ref.param) ?? new Set<ParamType>();
+    seen.add(ty);
+    u.sorts.set(ref.param, seen);
+}
+
+/** A pass-through arg counts as a use but adds no local sort constraint (its sort
+ *  is enforced at the callee). */
+function markUsed(u: ParamUses, param: string): void {
+    if (u.params.has(param)) u.used.add(param);
+}
+
+function notePredUses(u: ParamUses, p: Pred): void {
+    switch (p.kind) {
+        case "has":
+            if (typeof p.mod === "object") noteSort(u, p.mod, "mod");
+            if (p.tier !== undefined && typeof p.tier === "object") noteSort(u, p.tier, "tier");
+            return;
+        case "compare":
+            if (typeof p.value === "object") noteSort(u, p.value, "count");
+            return;
+        case "not":
+            notePredUses(u, p.inner);
+            return;
+        case "and":
+        case "or":
+            notePredUses(u, p.left);
+            notePredUses(u, p.right);
+            return;
+        case "call":
+            for (const arg of p.args) if (arg.kind === "param") markUsed(u, arg.param);
+            return;
+        case "isRarity":
+            return;
+    }
+}
+
+function noteStmtUses(u: ParamUses, s: Stmt): void {
+    switch (s.kind) {
+        case "op":
+        case "restart":
+            return;
+        case "essence":
+        case "bench":
+            if (typeof s.name === "object") noteSort(u, s.name, "mod");
+            if (s.tier !== undefined && typeof s.tier === "object") noteSort(u, s.tier, "tier");
+            return;
+        case "until":
+            notePredUses(u, s.pred);
+            for (const b of s.body) noteStmtUses(u, b);
+            return;
+        case "if":
+            notePredUses(u, s.pred);
+            for (const b of s.body) noteStmtUses(u, b);
+            if (s.elseBody !== undefined) for (const b of s.elseBody) noteStmtUses(u, b);
+            return;
+        case "withOmen":
+            for (const b of s.body) noteStmtUses(u, b);
+            return;
+        case "call":
+            for (const arg of s.args) if (arg.kind === "param") markUsed(u, arg.param);
+            return;
+    }
+}
+
+/** Resolve accumulated uses into inferred sorts: exactly one sort is well-typed,
+ *  more than one is a conflict. */
+function finishUses(u: ParamUses): {
     types: Map<string, ParamType>;
     conflicts: { param: string; sorts: ParamType[] }[];
     used: Set<string>;
 } {
-    const sorts = new Map<string, Set<ParamType>>();
-    const used = new Set<string>();
-    const params = new Set(def.params);
-    const note = (ref: ParamRef, ty: ParamType): void => {
-        if (!params.has(ref.param)) return; // not a param of this def; ignore
-        used.add(ref.param);
-        const seen = sorts.get(ref.param) ?? new Set<ParamType>();
-        seen.add(ty);
-        sorts.set(ref.param, seen);
-    };
-    const walk = (p: Pred): void => {
-        switch (p.kind) {
-            case "has":
-                if (typeof p.mod === "object") note(p.mod, "mod");
-                if (p.tier !== undefined && typeof p.tier === "object") note(p.tier, "tier");
-                return;
-            case "compare":
-                if (typeof p.value === "object") note(p.value, "count");
-                return;
-            case "not":
-                walk(p.inner);
-                return;
-            case "and":
-            case "or":
-                walk(p.left);
-                walk(p.right);
-                return;
-            case "call":
-                // A pass-through param arg counts as a use (its sort is enforced
-                // at the callee, so it contributes no local sort constraint).
-                for (const arg of p.args) if (arg.kind === "param") used.add(arg.param);
-                return;
-            case "isRarity":
-                return;
-        }
-    };
-    walk(def.body);
-
-    // A param with exactly one sort is well-typed; more than one is a conflict.
     const types = new Map<string, ParamType>();
     const conflicts: { param: string; sorts: ParamType[] }[] = [];
-    for (const [param, seen] of sorts) {
+    for (const [param, seen] of u.sorts) {
         if (seen.size === 1) types.set(param, [...seen][0]!);
         else conflicts.push({ param, sorts: [...seen] });
     }
-    return { types, conflicts, used };
+    return { types, conflicts, used: u.used };
 }
 
-/** Replace parameter references in a def body with the bound argument values. */
+function inferParamTypes(def: Def): ReturnType<typeof finishUses> {
+    const u: ParamUses = { params: new Set(def.params), sorts: new Map(), used: new Set() };
+    notePredUses(u, def.body);
+    return finishUses(u);
+}
+
+function inferProcParamTypes(proc: ProcDef): ReturnType<typeof finishUses> {
+    const u: ParamUses = { params: new Set(proc.params), sorts: new Map(), used: new Set() };
+    for (const s of proc.body) noteStmtUses(u, s);
+    return finishUses(u);
+}
+
+/** Substitute a bound value into a `mod`/`tier`/`count` slot. Bound to a literal
+ *  ⇒ its value; unbound (or a not-yet-resolved pass-through param) ⇒ the ref,
+ *  caught downstream. */
+function subValue<T extends string | number>(v: T | ParamRef, env: Map<string, Arg>): T | ParamRef {
+    if (typeof v !== "object") return v;
+    const arg = env.get(v.param);
+    if (arg && (arg.kind === "tier" || arg.kind === "int" || arg.kind === "string")) {
+        return arg.value as T;
+    }
+    return v;
+}
+
+/** A pass-through param arg (`… b(t) …` called with `t` bound) is replaced by the
+ *  value bound here; other args pass unchanged. */
+function subArgs(args: readonly Arg[], env: Map<string, Arg>): Arg[] {
+    return args.map((arg) => (arg.kind === "param" ? (env.get(arg.param) ?? arg) : arg));
+}
+
+/** Replace parameter references in a predicate with the bound argument values. */
 function substitute(pred: Pred, env: Map<string, Arg>): Pred {
-    const sub = <T extends string | number>(v: T | ParamRef): T | ParamRef => {
-        if (typeof v !== "object") return v;
-        const arg = env.get(v.param);
-        // Bound to a literal (tier/count/mod) ⇒ substitute its value; unbound (or a
-        // not-yet-resolved pass-through param) ⇒ leave the ref, caught downstream.
-        if (arg && (arg.kind === "tier" || arg.kind === "int" || arg.kind === "string")) {
-            return arg.value as T;
-        }
-        return v;
-    };
     switch (pred.kind) {
         case "isRarity":
             return pred;
         case "call":
-            // Pass-through: a param used as a nested call's argument is replaced by
-            // the value bound here (`def a(t) = b(t)`, called `a(1)` ⇒ `b(1)`).
-            return {
-                ...pred,
-                args: pred.args.map((arg) =>
-                    arg.kind === "param" ? (env.get(arg.param) ?? arg) : arg,
-                ),
-            };
+            return { ...pred, args: subArgs(pred.args, env) };
         case "has": {
-            const mod = sub(pred.mod);
+            const mod = subValue(pred.mod, env);
             return pred.tier === undefined
                 ? { ...pred, mod }
-                : { ...pred, mod, tier: sub(pred.tier) };
+                : { ...pred, mod, tier: subValue(pred.tier, env) };
         }
         case "compare":
-            return { ...pred, value: sub(pred.value) };
+            return { ...pred, value: subValue(pred.value, env) };
         case "not":
             return { ...pred, inner: substitute(pred.inner, env) };
         case "and":
@@ -879,5 +1060,44 @@ function substitute(pred: Pred, env: Map<string, Arg>): Pred {
                 left: substitute(pred.left, env),
                 right: substitute(pred.right, env),
             };
+    }
+}
+
+/** Replace parameter references throughout a proc body's statements. */
+function substituteStmts(stmts: readonly Stmt[], env: Map<string, Arg>): Stmt[] {
+    return stmts.map((s) => substituteStmt(s, env));
+}
+
+function substituteStmt(stmt: Stmt, env: Map<string, Arg>): Stmt {
+    switch (stmt.kind) {
+        case "op":
+        case "restart":
+            return stmt;
+        case "essence":
+        case "bench": {
+            const name = subValue(stmt.name, env);
+            return stmt.tier === undefined
+                ? { ...stmt, name }
+                : { ...stmt, name, tier: subValue(stmt.tier, env) };
+        }
+        case "until":
+            return {
+                ...stmt,
+                pred: substitute(stmt.pred, env),
+                body: substituteStmts(stmt.body, env),
+            };
+        case "if":
+            return {
+                ...stmt,
+                pred: substitute(stmt.pred, env),
+                body: substituteStmts(stmt.body, env),
+                ...(stmt.elseBody !== undefined && {
+                    elseBody: substituteStmts(stmt.elseBody, env),
+                }),
+            };
+        case "withOmen":
+            return { ...stmt, body: substituteStmts(stmt.body, env) };
+        case "call":
+            return { ...stmt, args: subArgs(stmt.args, env) };
     }
 }

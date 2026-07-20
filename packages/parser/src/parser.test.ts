@@ -238,6 +238,63 @@ until anyEle(1) { exalt }`);
     });
 });
 
+describe("parser — operation functions", () => {
+    const parseDef = (src: string): Craft =>
+        parseOk(`craft in poe1 item { base: "R" ilvl: 1 rarity: rare } ${src}`);
+
+    it("collects a `def name(p) { … }` as a proc, separate from preds and body", () => {
+        const c = parseDef(`def spam(m) { until has m { scour alch } }
+spam("life")`);
+        expect(c.defs).toHaveLength(0);
+        expect(c.procs).toHaveLength(1);
+        expect(c.procs[0]).toMatchObject({ kind: "procDef", name: "spam", params: ["m"] });
+        // `m` in the loop guard is a parameter reference.
+        expect(c.procs[0]!.body[0]).toMatchObject({
+            kind: "until",
+            pred: { kind: "has", mod: { param: "m" } },
+            body: [
+                { kind: "op", name: "scour" },
+                { kind: "op", name: "alch" },
+            ],
+        });
+        // The call site parses as a statement-position call.
+        expect(c.body[0]).toMatchObject({
+            kind: "call",
+            name: "spam",
+            args: [{ kind: "string", value: "life" }],
+        });
+    });
+
+    it("dispatches def body on `{` vs `=` (proc vs predicate)", () => {
+        const c = parseDef(`def p(t) = has "life" t
+def q() { exalt }`);
+        expect(c.defs).toHaveLength(1);
+        expect(c.procs).toHaveLength(1);
+        expect(c.procs[0]).toMatchObject({ name: "q", params: [] });
+    });
+
+    it("parses a param in a bench mod-name slot", () => {
+        const c = parseDef(`def add(m) { bench m }
+add("life")`);
+        expect(c.procs[0]!.body[0]).toMatchObject({ kind: "bench", name: { param: "m" } });
+    });
+
+    it("parses a param in an essence tier slot", () => {
+        const c = parseDef(`def e(k) { essence "greed" k }
+e(t1)`);
+        expect(c.procs[0]!.body[0]).toMatchObject({
+            kind: "essence",
+            name: "greed",
+            tier: { param: "k" },
+        });
+    });
+
+    it("still parses a bare currency name as an op, not a call", () => {
+        const c = parseDef(`exalt`);
+        expect(c.body[0]).toMatchObject({ kind: "op", name: "exalt" });
+    });
+});
+
 describe("parser — predicates", () => {
     const wrap = (pred: string): Craft =>
         parseOk(`craft in poe1 item { base: "R" ilvl: 1 rarity: rare } until ${pred} { exalt }`);

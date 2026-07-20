@@ -77,6 +77,28 @@ exalt`,
         expect(reopened).toEqual([]);
     });
 
+    it("inlines an operation function through the real pipeline", () => {
+        const diags = getDiagnostics(
+            `craft in poe1
+item { base: "Iron Ring" ilvl: 84 rarity: normal }
+def prep() { transmute regal }
+prep()`,
+            registry,
+        );
+        expect(diags).toEqual([]);
+    });
+
+    it("expands a mod-name parameter into a loop guard", () => {
+        const diags = getDiagnostics(
+            `craft in poe1
+item { base: "Iron Ring" ilvl: 84 rarity: rare }
+def fill(m) { until has m { chaos } }
+fill("maximum life")`,
+            registry,
+        );
+        expect(diags).toEqual([]);
+    });
+
     it("rejects making a real flask Rare, but allows Magic crafting", () => {
         const rare = getDiagnostics(
             `craft in poe1

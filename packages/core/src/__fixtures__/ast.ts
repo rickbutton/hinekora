@@ -10,6 +10,7 @@ import type {
     AffixDecl,
     Arg,
     CallPred,
+    CallStmt,
     ComparePred,
     Craft,
     BinaryPred,
@@ -23,6 +24,7 @@ import type {
     OpStmt,
     ParamRef,
     Pred,
+    ProcDef,
     RarityPred,
     RestartStmt,
     SourceSpan,
@@ -58,11 +60,13 @@ export const craft = (
     item: ItemBlock,
     body: readonly Stmt[],
     defs: readonly Def[] = [],
+    procs: readonly ProcDef[] = [],
 ): Craft => ({
     kind: "craft",
     game,
     item,
     defs,
+    procs,
     body,
     span: DS,
 });
@@ -80,13 +84,13 @@ export const item = (spec: ItemSpec): ItemBlock => ({
 });
 
 export const op = (name: string): OpStmt => ({ kind: "op", name, span: DS });
-export const essence = (name: string, tier?: number): EssenceStmt => ({
+export const essence = (name: string | ParamRef, tier?: number | ParamRef): EssenceStmt => ({
     kind: "essence",
     name,
     ...(tier !== undefined && { tier }),
     span: DS,
 });
-export const bench = (name: string, tier?: number): BenchStmt => ({
+export const bench = (name: string | ParamRef, tier?: number | ParamRef): BenchStmt => ({
     kind: "bench",
     name,
     ...(tier !== undefined && { tier }),
@@ -151,6 +155,18 @@ export const def = (name: string, params: readonly string[], body: Pred): Def =>
     body,
     span: DS,
 });
+/** An operation function (`def name(params) { body }`). */
+export const procDef = (
+    name: string,
+    params: readonly string[],
+    body: readonly Stmt[],
+): ProcDef => ({
+    kind: "procDef",
+    name,
+    params,
+    body,
+    span: DS,
+});
 /** A tier argument (`t1`) — a distinct sort from a bare-int count. */
 export const tierArg = (value: number): Arg => ({ kind: "tier", value, span: DS });
 const toArg = (v: number | string | ParamRef | Arg): Arg =>
@@ -166,6 +182,16 @@ export const call = (
     name: string,
     args: readonly (number | string | ParamRef | Arg)[] = [],
 ): CallPred => ({
+    kind: "call",
+    name,
+    args: args.map(toArg),
+    span: DS,
+});
+/** A call to an operation function, in statement position. */
+export const callStmt = (
+    name: string,
+    args: readonly (number | string | ParamRef | Arg)[] = [],
+): CallStmt => ({
     kind: "call",
     name,
     args: args.map(toArg),

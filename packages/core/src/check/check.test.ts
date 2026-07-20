@@ -13,6 +13,7 @@ import {
     andp,
     bench,
     call,
+    callStmt,
     craft,
     cmp,
     def,
@@ -26,6 +27,7 @@ import {
     op,
     orp,
     param,
+    procDef,
     restart,
     tierArg,
     until,
@@ -105,7 +107,7 @@ describe("checker — the wider currency set", () => {
         const r = check(c, ctx);
         expect(r.ok).toBe(true);
         expect(r.finalState?.rarity).toBe("rare");
-        expect(r.finalState?.total).toEqual([4, 6]);
+        expect(r.finalState?.counts.total).toEqual([4, 6]);
     });
 
     it("chaos reforges a Rare — no prior mod stays guaranteed", () => {
@@ -129,7 +131,7 @@ describe("checker — the wider currency set", () => {
         const r = check(c, ctx);
         expect(r.ok).toBe(true);
         expect(r.finalState?.rarity).toBe("normal");
-        expect(r.finalState?.total).toEqual([0, 0]);
+        expect(r.finalState?.counts.total).toEqual([0, 0]);
     });
 
     it("rejects scouring an item that has no mods (wasted currency)", () => {
@@ -421,6 +423,128 @@ describe("checker — predicate defs", () => {
         const msgs = check(c, ctx).diagnostics.map((x) => x.message);
         expect(msgs.some((m) => m.includes("used in conflicting ways"))).toBe(true);
         expect(msgs.some((m) => m.includes("never given a value"))).toBe(false);
+    });
+});
+
+describe("checker — operation functions", () => {
+    const normalRing = () => item({ base: "Iron Ring", ilvl: 100, rarity: "normal" });
+
+    it("inlines a proc body, threading item state through the call", () => {
+        // def prep() { transmute regal } — a Normal item ends up Rare afterwards.
+        const p = procDef("prep", [], [op("transmute"), op("regal")]);
+        const c = craft("poe1", normalRing(), [callStmt("prep")], [], [p]);
+        const r = check(c, ctx);
+        expect(r.ok).toBe(true);
+        expect(r.finalState!.rarity).toBe("rare");
+    });
+
+    it("expands a mod-name param used in a loop guard, proving the exit clean", () => {
+        // def spam(m) { until has m { chaos } } — chaos reforges, exit reachable;
+        // afterwards the named mod is guaranteed, exactly like the inlined form.
+        const p = procDef("spam", ["m"], [until(hasP(param("m")), [op("chaos")])]);
+        const c = craft("poe1", rareRing(), [callStmt("spam", ["maximum life"])], [], [p]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
+    });
+
+    it("expands a mod-name param in a bench statement", () => {
+        const p = procDef("add", ["m"], [bench(param("m"))]);
+        const c = craft("poe1", rareRing(), [callStmt("add", ["maximum life"])], [], [p]);
+        const r = check(c, ctx);
+        expect(r.ok).toBe(true);
+        expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
+    });
+
+    it("reports a precondition failure inside the inlined body", () => {
+        // exalt inside the proc fails on a full 3+3 Rare, just as if written inline.
+        const p = procDef("go", [], [op("exalt")]);
+        const full = rareRing(["random", "random", "random"], ["random", "random", "random"]);
+        const c = craft("poe1", full, [callStmt("go")], [], [p]);
+        const r = check(c, ctx);
+        expect(r.ok).toBe(false);
+        expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
+    });
+
+    it("a `restart` inside a proc re-enters the caller's loop (fill-up is flagged)", () => {
+        // The proc-inlined `exalt; if not X { restart }` is the same fill-up danger
+        // as writing it directly in the loop body — the restart back-edge must reach
+        // the caller's loop invariant across the call boundary.
+        const step = procDef(
+            "step",
+            [],
+            [op("exalt"), iff(notp(has("IncreasedLife1")), [restart()])],
+        );
+        const c = craft(
+            "poe1",
+            rareRing(),
+            [until(has("IncreasedLife1"), [callStmt("step")])],
+            [],
+            [step],
+        );
+        const r = check(c, ctx);
+        expect(r.ok).toBe(false);
+        expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
+    });
+
+    it("reports an arity mismatch on a call", () => {
+        const p = procDef("add", ["m"], [bench(param("m"))]);
+        const c = craft("poe1", rareRing(), [callStmt("add")], [], [p]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("expects 1 argument");
+    });
+
+    it("reports an argument sort mismatch (a tier where a mod name is expected)", () => {
+        const p = procDef("add", ["m"], [bench(param("m"))]);
+        const c = craft("poe1", rareRing(), [callStmt("add", [tierArg(1)])], [], [p]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("should be a quoted mod name");
+    });
+
+    it("reports an unknown operation function", () => {
+        const c = craft("poe1", rareRing(), [callStmt("nope")]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain(`unknown def "nope"`);
+    });
+
+    it("rejects calling a predicate def as a step", () => {
+        const d = def("hasLife", ["t"], hasP("IncreasedLife1", param("t")));
+        const c = craft("poe1", rareRing(), [callStmt("hasLife", [tierArg(1)])], [d]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("is a condition");
+    });
+
+    it("rejects calling a proc inside a condition", () => {
+        const p = procDef("go", [], [op("exalt")]);
+        const c = craft("poe1", rareRing(), [until(call("go"), [op("chaos")])], [], [p]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("runs operations");
+    });
+
+    it("rejects a recursive proc", () => {
+        const p = procDef("loop", [], [op("scour"), callStmt("loop")]);
+        const c = craft("poe1", rareRing(), [callStmt("loop")], [], [p]);
+        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("recursive"))).toBe(true);
+    });
+
+    it("flags a proc parameter that is never used", () => {
+        const p = procDef("f", ["m", "unused"], [bench(param("m"))]);
+        const c = craft("poe1", rareRing(), [callStmt("f", ["maximum life", "x"])], [], [p]);
+        expect(check(c, ctx).diagnostics.some((d) => d.message.includes(`"unused"`))).toBe(true);
+    });
+
+    it("flags a proc name that collides with a predicate def", () => {
+        const d = def("dup", ["t"], hasP("IncreasedLife1", param("t")));
+        const p = procDef("dup", [], [op("scour")]);
+        const c = craft("poe1", rareRing(), [], [d], [p]);
+        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("duplicate def"))).toBe(
+            true,
+        );
+    });
+
+    it("records a single trace entry for the call, not the inlined body", () => {
+        const p = procDef("prep", [], [op("transmute"), op("regal")]);
+        const c = craft("poe1", normalRing(), [callStmt("prep")], [], [p]);
+        const trace = check(c, ctx).trace;
+        const calls = trace.filter((e) => e.kind === "call");
+        expect(calls).toHaveLength(1);
+        // The inlined transmute/regal are a black box — no op entries leak into the trace.
+        expect(trace.some((e) => e.kind === "op")).toBe(false);
     });
 });
 
@@ -717,8 +841,8 @@ describe("checker — per-base affix caps (experimented bases)", () => {
         // suffixes), so the count clamps and the split is forced.
         const st = check(craft("poe1", normal("Simplex Amulet"), [op("alchemy")]), ctx).finalState!;
         expect(st.rarity).toBe("rare");
-        expect(st.total).toEqual([3, 3]);
-        expect(st.prefix).toEqual([1, 1]);
+        expect(st.counts.total).toEqual([3, 3]);
+        expect(st.counts.prefix).toEqual([1, 1]);
         expect(suffixRange(st)).toEqual([2, 2]);
     });
 
@@ -728,7 +852,7 @@ describe("checker — per-base affix caps (experimented bases)", () => {
             ctx,
         );
         expect(r.finalState!.rarity).toBe("magic");
-        expect(r.finalState!.total).toEqual([0, 0]); // blue base, no explicit mods
+        expect(r.finalState!.counts.total).toEqual([0, 0]); // blue base, no explicit mods
         expect(r.diagnostics.some((d) => d.message.toLowerCase().includes("open"))).toBe(true);
     });
 
@@ -743,8 +867,8 @@ describe("checker — per-base affix caps (experimented bases)", () => {
             ]),
             ctx,
         );
-        expect(r.finalState!.total).toEqual([2, 2]);
-        expect(r.finalState!.prefix).toEqual([0, 0]);
+        expect(r.finalState!.counts.total).toEqual([2, 2]);
+        expect(r.finalState!.counts.prefix).toEqual([0, 0]);
         expect(suffixRange(r.finalState!)).toEqual([2, 2]);
     });
 
@@ -816,8 +940,8 @@ describe("checker — count refinement through disjunctions", () => {
             until(twoEleRes, [op("annul"), op("exalt")]),
         ]);
         const st = check(c, ctx).finalState!;
-        expect(st.total).toEqual([2, 2]);
-        expect(st.prefix).toEqual([0, 0]); // both affixes are the proven suffixes
+        expect(st.counts.total).toEqual([2, 2]);
+        expect(st.counts.prefix).toEqual([0, 0]); // both affixes are the proven suffixes
         expect(suffixRange(st)).toEqual([2, 2]);
     });
 
@@ -830,7 +954,7 @@ describe("checker — count refinement through disjunctions", () => {
         ]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.prefix).toEqual([1, 1]); // the benched life prefix
+        expect(r.finalState!.counts.prefix).toEqual([1, 1]); // the benched life prefix
     });
 
     it("keeps a disjunctive guarantee through an additive op (exalt)", () => {

@@ -9,6 +9,7 @@ import {
     type Arg,
     type BenchStmt,
     type CallPred,
+    type CallStmt,
     type Cmp,
     type Craft,
     type Def,
@@ -18,6 +19,7 @@ import {
     type ParamRef,
     type Pos,
     type Pred,
+    type ProcDef,
     type Rarity,
     type SourceSpan,
     span,
@@ -116,22 +118,35 @@ class Parser {
         const item = this.parseItemBlock();
 
         // Defs are file-level bindings, not steps — collected separately, and
-        // may appear anywhere in the body.
+        // may appear anywhere in the body. A `def` is either a predicate (`= …`)
+        // or an operation function (`{ … }`); the body form decides which.
         const defs: Def[] = [];
+        const procs: ProcDef[] = [];
         const body: Stmt[] = [];
         while (!this.at("eof") && !this.at("rbrace")) {
-            if (this.atKeyword("def")) defs.push(this.parseDef());
-            else body.push(this.parseStatement());
+            if (this.atKeyword("def")) {
+                const d = this.parseDef();
+                if (d.kind === "def") defs.push(d);
+                else procs.push(d);
+            } else body.push(this.parseStatement());
         }
 
         this.expect("eof", "end of input"); // a stray '}' lands here
 
-        return { kind: "craft", game, item, defs, body, span: span(start, this.prev.span.end) };
+        return {
+            kind: "craft",
+            game,
+            item,
+            defs,
+            procs,
+            body,
+            span: span(start, this.prev.span.end),
+        };
     }
 
-    // --- predicate defs ----------------------------------------------------
+    // --- defs (predicate or operation function) ----------------------------
 
-    private parseDef(): Def {
+    private parseDef(): Def | ProcDef {
         const start = this.expectKeyword("def").span.start;
         const name = this.expect("ident", "a def name after 'def'").text;
         this.expect("lparen", "'(' after the def name");
@@ -142,13 +157,28 @@ class Parser {
             else break;
         }
         this.expect("rparen", "')' to close the parameter list");
-        this.expect("assign", "'=' before the def body");
 
+        // Params are in scope for the whole body (predicate or block).
         this.defParams = new Set(params);
-        const body = this.parsePred();
-        this.defParams = new Set();
-
-        return { kind: "def", name, params, body, span: span(start, this.prev.span.end) };
+        try {
+            // `{` opens an operation function; `=` a predicate. Anything else is
+            // a syntax error phrased around the two forms.
+            if (this.at("lbrace")) {
+                const body = this.parseBlock();
+                return {
+                    kind: "procDef",
+                    name,
+                    params,
+                    body,
+                    span: span(start, this.prev.span.end),
+                };
+            }
+            this.expect("assign", "'=' or '{' before the def body");
+            const body = this.parsePred();
+            return { kind: "def", name, params, body, span: span(start, this.prev.span.end) };
+        } finally {
+            this.defParams = new Set();
+        }
     }
 
     private parseGame(): "poe1" | "poe2" {
@@ -325,11 +355,32 @@ class Parser {
         if (this.atKeyword("else")) {
             throw this.error("'else' without a matching 'if'");
         }
+        // A call to an operation function — an ident immediately followed by
+        // `(`. Checked before the bare-ident currency case.
+        if (this.at("ident") && this.peek(1).kind === "lparen") return this.parseCallStmt();
         if (this.at("ident")) {
             const t = this.advance();
             return { kind: "op", name: t.text, span: t.span };
         }
         throw this.error("expected an operation or control statement");
+    }
+
+    private parseCallStmt(): CallStmt {
+        const nameTok = this.advance(); // the call name
+        this.expect("lparen", "'(' after an operation-function name");
+        const args: Arg[] = [];
+        while (!this.at("rparen")) {
+            args.push(this.parseArg());
+            if (this.at("comma")) this.advance();
+            else break;
+        }
+        const close = this.expect("rparen", "')' to close the argument list");
+        return {
+            kind: "call",
+            name: nameTok.text,
+            args,
+            span: span(nameTok.span.start, close.span.end),
+        };
     }
 
     private parseUntil(): UntilStmt {
@@ -358,28 +409,34 @@ class Parser {
 
     private parseEssence(): EssenceStmt {
         const start = this.expectKeyword("essence").span.start;
-        const nameTok = this.expect("string", "a quoted essence name after 'essence'");
-        const tier = this.tierShorthand();
-        const end = tier !== undefined ? this.prev.span.end : nameTok.span.end;
+        const name = this.parseStringOrParam("a quoted essence name after 'essence'");
+        const tier = this.parseTierOrParam();
         return {
             kind: "essence",
-            name: nameTok.text,
+            name,
             ...(tier !== undefined && { tier }),
-            span: span(start, end),
+            span: span(start, this.prev.span.end),
         };
     }
 
     private parseBench(): BenchStmt {
         const start = this.expectKeyword("bench").span.start;
-        const nameTok = this.expect("string", "a quoted mod name after 'bench'");
-        const tier = this.tierShorthand();
-        const end = tier !== undefined ? this.prev.span.end : nameTok.span.end;
+        const name = this.parseStringOrParam("a quoted mod name after 'bench'");
+        const tier = this.parseTierOrParam();
         return {
             kind: "bench",
-            name: nameTok.text,
+            name,
             ...(tier !== undefined && { tier }),
-            span: span(start, end),
+            span: span(start, this.prev.span.end),
         };
+    }
+
+    /** A quoted string, or (in a proc body) a param standing in for one. */
+    private parseStringOrParam(expected: string): string | ParamRef {
+        if (this.at("string")) return this.advance().text;
+        const p = this.paramRef();
+        if (p) return p;
+        throw this.error(expected);
     }
 
     private parseIf(): IfStmt {
