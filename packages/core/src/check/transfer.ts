@@ -1,7 +1,7 @@
 /**
  * Currency transfer functions: each operation is `AItem → (AItem | precondition
  * failure)`, folding the op's outcome summary straight into the abstract state
- * — the checker never holds a concrete item or an enumerated union. `forcedGen`
+ *, the checker never holds a concrete item or an enumerated union. `forcedGen`
  * (set by an active omen) constrains an add/remove to one generation, which
  * tightens counts and changes which guarantees survive.
  */
@@ -24,6 +24,7 @@ import {
     sideCap,
     suffixRange,
 } from "./astate.js";
+import { CountDomain } from "./counts.js";
 
 /** Why an operation's precondition fails on the current state. */
 export type PreconditionFailure =
@@ -64,7 +65,7 @@ export function exalt(a: AItem, forcedGen: Gen | undefined, registry: Registry):
 }
 
 export function annul(a: AItem, forcedGen: Gen | undefined, registry: Registry): TransferResult {
-    // No rarity gate — annul works on anything with a removable mod, and a
+    // No rarity gate, annul works on anything with a removable mod, and a
     // Normal item already fails `hasRemovable` with the accurate reason.
     if (!hasRemovable(a, forcedGen))
         return fail({ kind: "nothingToRemove", ...(forcedGen && { gen: forcedGen }) });
@@ -107,15 +108,14 @@ export function chaos(a: AItem, registry: Registry): TransferResult {
 }
 
 /** Orb of Scouring: strip every mod, returning the item to Normal. Wasted only
- *  on an already-Normal item — a Magic base with zero affixes (e.g. a magic
+ *  on an already-Normal item, a Magic base with zero affixes (e.g. a magic
  *  Simplex) still drops to Normal, so rarity, not mod count, is the gate. */
 export function scour(a: AItem): TransferResult {
     if (a.rarity === "normal") return fail({ kind: "nothingToRemove" });
     const next: AItem = {
         ...a,
         rarity: "normal",
-        total: [0, 0],
-        prefix: [0, 0],
+        counts: CountDomain.empty(),
         presence: a.bdd.TRUE,
         possible: new Set(),
         tiers: new Map(),
@@ -128,7 +128,7 @@ export function scour(a: AItem): TransferResult {
  * Apply an essence: reforge to Rare with one guaranteed mod (fixed per item
  * class) plus a random fill. Preconditions: Normal always, Rare only for ladder
  * tier ≥ 5, never Magic; the essence must cover the item's class. There is no
- * item-level gate — the guaranteed mod lands at its fixed tier regardless of
+ * item-level gate, the guaranteed mod lands at its fixed tier regardless of
  * ilvl; only the random fill respects level caps.
  */
 export function essence(a: AItem, spec: EssenceSpec, registry: Registry): TransferResult {
@@ -163,8 +163,7 @@ export function essence(a: AItem, spec: EssenceSpec, registry: Registry): Transf
     const reforged: AItem = {
         ...a,
         rarity: "rare",
-        total,
-        prefix: [Math.max(0, total[0] - sCap), Math.min(pCap, total[1])],
+        counts: { total, prefix: [Math.max(0, total[0] - sCap), Math.min(pCap, total[1])] },
         presence: a.bdd.TRUE,
         possible,
         tiers,
@@ -182,13 +181,9 @@ function withGuaranteed(a: AItem, mod: Mod): AItem {
     const presence = a.bdd.and(a.presence, a.bdd.variable(mod.type));
     const tiers = new Map(a.tiers).set(mod.type, new Set([mod.id]));
     const possible = new Set(a.possible).add(mod.type);
-    const total: Range = [Math.max(a.total[0], 1), a.total[1]];
-    const prefix: Range =
-        mod.gen === "prefix"
-            ? [Math.max(a.prefix[0], 1), a.prefix[1]] // ≥ 1 prefix
-            : [a.prefix[0], Math.min(a.prefix[1], total[1] - 1)]; // ≥ 1 suffix
-    const next: AItem = { ...a, presence, tiers, possible, total, prefix };
-    return settled(next);
+    // ≥1 affix, and ≥1 in the mod's generation, the same count fact `has` learns.
+    const counts = CountDomain.learnPresent(a.counts, mod.gen);
+    return settled({ ...a, presence, tiers, possible, counts });
 }
 
 /**
@@ -205,20 +200,21 @@ export function bench(a: AItem, mod: Mod, registry: Registry): TransferResult {
     if (a.crafted[1] >= 1) return fail({ kind: "craftedLimit" });
     // If the item may already carry a mod in the bench mod's group, the add isn't
     // provably safe (an item holds one mod per group). A conflict hidden behind an
-    // anonymous "random" affix is not caught — known modelling gap.
+    // anonymous "random" affix is not caught, known modelling gap.
     if (sharesFamilyWithPresent(a, mod, registry)) {
         return fail({ kind: "modConflict", group: registry.typeLabel(mod.type) });
     }
-    const total: Range = [a.total[0] + 1, a.total[1] + 1];
-    const prefix: Range = mod.gen === "prefix" ? [a.prefix[0] + 1, a.prefix[1] + 1] : a.prefix;
+    const total: Range = [a.counts.total[0] + 1, a.counts.total[1] + 1];
+    const prefix: Range =
+        mod.gen === "prefix" ? [a.counts.prefix[0] + 1, a.counts.prefix[1] + 1] : a.counts.prefix;
     const crafted: Range = [a.crafted[0] + 1, a.crafted[1] + 1];
-    return ok(withGuaranteed({ ...a, total, prefix, crafted }, mod));
+    return ok(withGuaranteed({ ...a, counts: { total, prefix }, crafted }, mod));
 }
 
 /**
  * Could a mod in `mod`'s group already sit on the item? A guaranteed same-group
  * type definitely conflicts. A merely POSSIBLE one conflicts only when its
- * generation still holds an unidentified affix that could be it — a generation
+ * generation still holds an unidentified affix that could be it, a generation
  * whose count is fully accounted for by guaranteed types rules it out (so a
  * proven "2 suffixes, 0 prefixes" item can still take a benched prefix).
  */
@@ -236,7 +232,7 @@ function sharesFamilyWithPresent(a: AItem, mod: Mod, registry: Registry): boolea
     const unidentifiedIn = (gen: Gen): number => {
         let named = 0;
         for (const t of guaranteed) if ((registry.genOfType(t) ?? "prefix") === gen) named++;
-        const max = gen === "prefix" ? a.prefix[1] : suffixRange(a)[1];
+        const max = gen === "prefix" ? a.counts.prefix[1] : suffixRange(a)[1];
         return max - named;
     };
     for (const type of a.possible) {
@@ -252,14 +248,14 @@ function sharesFamilyWithPresent(a: AItem, mod: Mod, registry: Registry): boolea
  * becomes `possible`; exclusions clear. Shared by alteration/alchemy/chaos.
  */
 function reroll(a: AItem, rarity: Rarity, want: Range, registry: Registry): AItem {
-    // Clamp the fresh count to what this base can actually hold at that rarity —
+    // Clamp the fresh count to what this base can actually hold at that rarity:
     // a reduced-cap base fills to fewer mods (chaos on a rare Simplex: 3, not 4–6).
     const maxT = maxTotal(rarity, a.base);
     const total: Range = [Math.min(want[0], maxT), Math.min(want[1], maxT)];
     const pCap = sideCap("prefix", rarity, a.base);
     const sCap = sideCap("suffix", rarity, a.base);
     const prefix: Range = [Math.max(0, total[0] - sCap), Math.min(pCap, total[1])];
-    // An empty item of this base has the widest pool — a sound over-approximation.
+    // An empty item of this base has the widest pool, a sound over-approximation.
     const fresh = addableMods({ ...a, presence: a.bdd.TRUE }, undefined, registry);
     const possible = new Set<TypeId>();
     const tiers = new Map<TypeId, ReadonlySet<ModId>>();
@@ -271,8 +267,7 @@ function reroll(a: AItem, rarity: Rarity, want: Range, registry: Registry): AIte
     const next: AItem = {
         ...a,
         rarity,
-        total,
-        prefix,
+        counts: { total, prefix },
         presence: a.bdd.TRUE, // reforge: nothing guaranteed, nothing excluded
         possible,
         tiers,
@@ -284,38 +279,38 @@ function reroll(a: AItem, rarity: Rarity, want: Range, registry: Registry): AIte
 // --- precondition predicates (must hold in EVERY arm) ---------------------
 
 function hasOpenSlot(a: AItem, forcedGen: Gen | undefined): boolean {
-    if (forcedGen === "prefix") return a.prefix[1] < sideCap("prefix", a.rarity, a.base);
+    if (forcedGen === "prefix") return a.counts.prefix[1] < sideCap("prefix", a.rarity, a.base);
     if (forcedGen === "suffix") return suffixRange(a)[1] < sideCap("suffix", a.rarity, a.base);
-    return a.total[1] < maxTotal(a.rarity, a.base); // some slot open in every arm
+    return a.counts.total[1] < maxTotal(a.rarity, a.base); // some slot open in every arm
 }
 
 function hasRemovable(a: AItem, forcedGen: Gen | undefined): boolean {
-    if (forcedGen === "prefix") return a.prefix[0] >= 1; // a prefix present in every arm
+    if (forcedGen === "prefix") return a.counts.prefix[0] >= 1; // a prefix present in every arm
     if (forcedGen === "suffix") return suffixRange(a)[0] >= 1;
-    return a.total[0] >= 1;
+    return a.counts.total[0] >= 1;
 }
 
 // --- the add / remove summaries -------------------------------------------
 
 function addOne(a: AItem, forcedGen: Gen | undefined, rarity: Rarity, registry: Registry): AItem {
     // A slot-gated caller (exalt/augment) has already ensured room; transmute
-    // has NOT — on a base whose target-rarity total cap is 0 (a magic Simplex),
+    // has NOT, on a base whose target-rarity total cap is 0 (a magic Simplex),
     // it adds nothing and just changes rarity (a blue base with no modifiers).
     const maxT = maxTotal(rarity, a.base);
-    if (a.total[0] >= maxT) return settled({ ...a, rarity });
+    if (a.counts.total[0] >= maxT) return settled({ ...a, rarity });
 
-    const total: Range = [a.total[0] + 1, Math.min(a.total[1] + 1, maxT)];
+    const total: Range = [a.counts.total[0] + 1, Math.min(a.counts.total[1] + 1, maxT)];
     const prefix: Range =
         forcedGen === "prefix"
-            ? [a.prefix[0] + 1, a.prefix[1] + 1]
+            ? [a.counts.prefix[0] + 1, a.counts.prefix[1] + 1]
             : forcedGen === "suffix"
-              ? a.prefix
-              : [a.prefix[0], a.prefix[1] + 1]; // could land in either generation
+              ? a.counts.prefix
+              : [a.counts.prefix[0], a.counts.prefix[1] + 1]; // could land in either generation
 
     // Additive: every prior mod survives, so guarantees, disjunctions and tier
     // pins all hold. Each addable type becomes `possible`; and since the new mod
     // could be any of them, only THOSE types' exclusions are relaxed (`admitAdd`)
-    // — the rest of the presence knowledge is kept.
+    //, the rest of the presence knowledge is kept.
     const added = addableMods(a, forcedGen, registry);
     const possible = new Set(a.possible);
     const tiers = new Map(a.tiers);
@@ -325,18 +320,18 @@ function addOne(a: AItem, forcedGen: Gen | undefined, rarity: Rarity, registry: 
         tiers.set(m.type, cur ? new Set([...cur, m.id]) : new Set([m.id]));
     }
     const presence = admitAdd(a, added);
-    const next: AItem = { ...a, rarity, total, prefix, presence, possible, tiers };
+    const next: AItem = { ...a, rarity, counts: { total, prefix }, presence, possible, tiers };
     return settled(next);
 }
 
 function removeOne(a: AItem, forcedGen: Gen | undefined, registry: Registry): AItem {
-    const total: Range = [Math.max(0, a.total[0] - 1), Math.max(0, a.total[1] - 1)];
+    const total: Range = [Math.max(0, a.counts.total[0] - 1), Math.max(0, a.counts.total[1] - 1)];
     const prefix: Range =
         forcedGen === "prefix"
-            ? [Math.max(0, a.prefix[0] - 1), Math.max(0, a.prefix[1] - 1)]
+            ? [Math.max(0, a.counts.prefix[0] - 1), Math.max(0, a.counts.prefix[1] - 1)]
             : forcedGen === "suffix"
-              ? a.prefix
-              : [Math.max(0, a.prefix[0] - 1), a.prefix[1]];
+              ? a.counts.prefix
+              : [Math.max(0, a.counts.prefix[0] - 1), a.counts.prefix[1]];
 
     // A guarantee survives only if the removed affix could not have been it:
     // a gen-forced removal spares the other generation; an unforced one could
@@ -348,7 +343,7 @@ function removeOne(a: AItem, forcedGen: Gen | undefined, registry: Registry): AI
     );
     // The removed affix might have been the crafted mod, so the lower bound drops.
     const crafted: Range = [Math.max(0, a.crafted[0] - 1), a.crafted[1]];
-    const next: AItem = { ...a, total, prefix, presence, crafted };
+    const next: AItem = { ...a, counts: { total, prefix }, presence, crafted };
     return settled(next);
 }
 

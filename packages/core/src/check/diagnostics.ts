@@ -1,6 +1,6 @@
 /**
  * Checker diagnostics. Precondition messages follow the surface doc's §6
- * stance: render the item's state at that point, then what the op needed —
+ * stance: render the item's state at that point, then what the op needed,
  * no lecturing.
  */
 import type { Pred } from "../ast/ast.js";
@@ -38,8 +38,8 @@ export function renderState(a: AItem): string {
     return [
         baseLabel(a.base),
         RARITY_LABEL[a.rarity],
-        renderRange(a.total, "affix"),
-        renderRange(a.prefix, "prefix"),
+        renderRange(a.counts.total, "affix"),
+        renderRange(a.counts.prefix, "prefix"),
         renderRange(suffixRange(a), "suffix"),
         `ilvl ${a.ilvl}`,
     ].join(" · ");

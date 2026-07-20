@@ -1,7 +1,7 @@
 /**
  * Hover: the signature of the token under the cursor (currency op, mod, base,
  * essence/bench, def, projection, keyword), plus a PoE-style item tooltip of
- * the checker's state at that point (see docs/HANDOFF.md §3d).
+ * the checker's state at that point (see docs/REFERENCE.md §3d).
  */
 import {
     type AItem,
@@ -26,7 +26,7 @@ import { parse, type Token, tokenize } from "@hinekora/parser";
 
 // --- doc tables ------------------------------------------------------------
 
-/** What each currency requires — mirrors the preconditions in `transfer.ts`. */
+/** What each currency requires, mirrors the preconditions in `transfer.ts`. */
 const REQUIRES: Record<CurrencyKind, string> = {
     transmute: "a Normal item",
     augment: "a Magic item with an open affix slot",
@@ -53,7 +53,7 @@ const KEYWORD_DOC: Record<string, string> = {
 };
 
 const PROJECTION: Record<string, { measures: string; of: (a: AItem) => Range }> = {
-    prefixCount: { measures: "the number of prefixes on the item", of: (a) => a.prefix },
+    prefixCount: { measures: "the number of prefixes on the item", of: (a) => a.counts.prefix },
     suffixCount: { measures: "the number of suffixes on the item", of: (a) => suffixRange(a) },
 };
 
@@ -76,8 +76,8 @@ function stringIsBase(tokens: readonly Token[], i: number): boolean {
 }
 
 /**
- * If the token at `i` belongs to a `<keyword> "<name>" [t1]` statement — the
- * keyword, the name string, OR the `t1` tier — return that (name, tier). All
+ * If the token at `i` belongs to a `<keyword> "<name>" [t1]` statement, the
+ * keyword, the name string, OR the `t1` tier, return that (name, tier). All
  * three tokens then share one hover. Shared by `essence` and `bench`.
  */
 function namedAt(
@@ -110,8 +110,8 @@ function namedAt(
 }
 
 /**
- * If the ident at `i` names a local def — its declaration, a call, or one of
- * its parameters inside the body — return that def; all three share one hover.
+ * If the ident at `i` names a local def, its declaration, a call, or one of
+ * its parameters inside the body, return that def; all three share one hover.
  */
 function defAt(tokens: readonly Token[], i: number, defs: readonly Def[]): Def | undefined {
     const tok = tokens[i];
@@ -197,7 +197,7 @@ function rollSpan(texts: readonly string[]): string {
 
 /**
  * One tooltip line for a guaranteed mod: the exact rolled text when the tier is
- * pinned, else the roll span across every tier the item could carry here — the
+ * pinned, else the roll span across every tier the item could carry here, the
  * magnitude stays honest without committing to a tier we don't know.
  */
 function modLine(a: AItem, type: TypeId, registry: Registry, pinMod?: ModId): string {
@@ -227,16 +227,16 @@ function tooltip(a: AItem, registry: Registry, caption?: string): string {
 
     const known: Record<Gen, TypeId[]> = { prefix: [], suffix: [] };
     for (const t of guaranteed) known[genOf(t)].push(t);
-    const genHi = { prefix: a.prefix[1], suffix: suffixRange(a)[1] };
+    const genHi = { prefix: a.counts.prefix[1], suffix: suffixRange(a)[1] };
 
     // A cardinality guarantee is ≥k; it becomes EXACTLY k when at most k can
-    // fit — its generation (or, spanning both, the whole item) has only k
+    // fit, its generation (or, spanning both, the whole item) has only k
     // undetermined slots.
     const knownTotal = known.prefix.length + known.suffix.length;
     const cardinalities = cardinalityGuarantees(a).map((c) => {
         const gens = new Set(c.types.map(genOf));
         const gen = gens.size === 1 ? [...gens][0]! : undefined;
-        const slots = gen ? genHi[gen] - known[gen].length : a.total[1] - knownTotal;
+        const slots = gen ? genHi[gen] - known[gen].length : a.counts.total[1] - knownTotal;
         return { ...c, gen, exact: slots <= c.atLeast };
     });
 
@@ -260,15 +260,15 @@ function tooltip(a: AItem, registry: Registry, caption?: string): string {
     }
     for (const x of cardinalities) if (x.gen === undefined) lines.push(...cardBlock(x));
 
-    // The undetermined remainder, as ONE line respecting the count coupling —
+    // The undetermined remainder, as ONE line respecting the count coupling:
     // "a prefix or a suffix", not two independent per-generation ranges.
     const cardSlots = (g?: Gen): number =>
         cardinalities.filter((x) => x.gen === g).reduce((s, x) => s + x.atLeast, 0);
     const accounted = knownTotal + cardinalities.reduce((s, x) => s + x.atLeast, 0);
-    const extraHi = a.total[1] - accounted;
+    const extraHi = a.counts.total[1] - accounted;
     if (extraHi > 0) {
-        const extraLo = Math.max(0, a.total[0] - accounted);
-        const prefCap = a.prefix[1] - known.prefix.length - cardSlots("prefix");
+        const extraLo = Math.max(0, a.counts.total[0] - accounted);
+        const prefCap = a.counts.prefix[1] - known.prefix.length - cardSlots("prefix");
         const sufCap = genHi.suffix - known.suffix.length - cardSlots("suffix");
         const range = fmtRange([extraLo, extraHi]);
         if (sufCap <= 0) lines.push(`${GEN_TAG.prefix} _${range} undetermined_`);
@@ -296,11 +296,11 @@ function signature(
 ): string | null {
     const tok = tokens[i]!;
 
-    // A local def — its declaration, a call to it, or one of its params.
+    // A local def, its declaration, a call to it, or one of its params.
     const d = defAt(tokens, i, defs);
     if (d) return defSignature(d);
 
-    // `essence`/`bench "<name>" [t1]` — the keyword, name, and tier tokens all
+    // `essence`/`bench "<name>" [t1]`, the keyword, name, and tier tokens all
     // hover as one signature.
     const ess = namedAt(tokens, i, "essence");
     if (ess) return essenceSignature(ess.name, ess.tier, entry, registry);
@@ -353,7 +353,7 @@ const rollText = (m: { text?: string }): string => (m.text ?? "—").replace(/\n
 /**
  * The signature for a (fuzzy) mod string: what it resolved to, then the tiers
  * rollable on this item. A `t<n>` qualifier spotlights that tier and bolds its
- * row (tier ids rarely match T-numbers — `IncreasedLife11` can be T1).
+ * row (tier ids rarely match T-numbers, `IncreasedLife11` can be T1).
  */
 function modSignature(
     text: string,
@@ -418,8 +418,8 @@ function modSignature(
 }
 
 /**
- * The signature for an essence name: its tier, reforge behaviour, and — using the
- * item at the cursor — the SPECIFIC mod it guarantees on this base's item class.
+ * The signature for an essence name: its tier, reforge behaviour, and, using the
+ * item at the cursor, the SPECIFIC mod it guarantees on this base's item class.
  */
 function essenceSignature(
     text: string,
