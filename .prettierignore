@@ -5,6 +5,9 @@ pnpm-lock.yaml
 # Ingested game data (RePoE exports) — verbatim upstream JSON, not ours to reformat.
 packages/data/data/**
 
+# Vendored third-party detector — verbatim upstream, not ours to reformat.
+tools/ai-writing/patterns.js
+
 # Design docs are ground-truth spec — leave their formatting untouched.
 IMPLEMENTATION_BRIEF.md
 crafting-lang-typing-rules-v0.md

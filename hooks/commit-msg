@@ -1,0 +1,5 @@
+#!/bin/sh
+# Screen the commit message for AI-writing tells (em-dash overuse, hollow
+# intensifiers, etc.). Warns always; blocks only above the hard score threshold.
+# See tools/ai-writing/. Enable with: git config core.hooksPath hooks
+node tools/ai-writing/check.mjs "$1"

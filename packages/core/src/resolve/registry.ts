@@ -1,6 +1,6 @@
 /**
  * Name resolution (surface doc §2): raw strings from the parser → internal
- * entities, in tiers — (1) exact id, (2) curated alias, (3) fuzzy text match.
+ * entities, in tiers, (1) exact id, (2) curated alias, (3) fuzzy text match.
  * Mods also resolve fuzzily to a ModTYPE (`resolveModType`, see `fuzzy.ts`),
  * since a human writes a stat description, not a tier id.
  */
@@ -23,7 +23,7 @@ export interface StatSuggestion {
     readonly label: string;
     /** A representative full stat text (e.g. "+(10-24) to maximum Life"). */
     readonly detail: string;
-    /** The ModType this suggestion resolves to — lets completion filter by rollability. */
+    /** The ModType this suggestion resolves to, lets completion filter by rollability. */
     readonly type: TypeId;
 }
 
@@ -94,7 +94,7 @@ export interface Registry {
     resolveMod(name: string): Resolved<Mod>;
     /**
      * Fuzzy-resolve a stat description (or exact mod id) to its ModType. With
-     * `ctx`, candidates narrow to types that can roll on that base/ilvl —
+     * `ctx`, candidates narrow to types that can roll on that base/ilvl,
      * disambiguating identically-worded types of which only one rolls here.
      */
     resolveModType(name: string, ctx?: ModTypeContext): Resolved<TypeId>;
@@ -114,7 +114,7 @@ export interface Registry {
     resolveBench(name: string, itemClass?: ClassId, tier?: number): Resolved<BenchCraft>;
     /** The generation (prefix/suffix) a ModType always occupies, if known. */
     genOfType(type: TypeId): Gen | undefined;
-    /** The mod groups (families) a ModType belongs to, across its tiers —
+    /** The mod groups (families) a ModType belongs to, across its tiers;
      *  drives the bench group-exclusivity check. */
     familiesOfType(type: TypeId): ReadonlySet<GroupId>;
     /** Canonical range-stripped wording for a ModType ("maximum life"), for
@@ -260,7 +260,7 @@ export function buildRegistry(data: RegistryData): Registry {
     const typeGen = new Map<TypeId, Gen>();
     for (const m of data.mods) if (!typeGen.has(m.type)) typeGen.set(m.type, m.gen);
 
-    // Union of families per ModType — the group set used for bench conflict checks.
+    // Union of families per ModType, the group set used for bench conflict checks.
     const typeFamilies = new Map<TypeId, Set<GroupId>>();
     for (const m of data.mods) {
         let fams = typeFamilies.get(m.type);
@@ -395,8 +395,8 @@ export function buildRegistry(data: RegistryData): Registry {
             if (scored.length === 0) return fail({ kind: "unknownBench", name });
             const top = Math.max(...scored.map((s) => s.score));
             const best = scored.filter((s) => s.score === top);
-            // Only distinct mod families are genuinely ambiguous; tiers of one
-            // mod just pick the best (or the tier given).
+            // Only distinct mod families are ambiguous; tiers of one mod just
+            // pick the best (or the tier given).
             const types = new Set(best.map((s) => s.mod.type));
             if (types.size > 1) {
                 return fail({

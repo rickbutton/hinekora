@@ -1,6 +1,6 @@
 /**
  * Completion. The cursor's context comes from a small backward text scan
- * (robust to half-typed source). Mod suggestions are narrowed to what is
+ * (tolerant of half-typed source). Mod suggestions are narrowed to what is
  * possible at the cursor — rollable on the base + ilvl and not proven absent
  * by the checker — with each filter degrading to "all mods" when the source
  * can't be read, never to nothing.
@@ -97,7 +97,7 @@ function contextAt(source: string, offset: number): Context {
     return "mod";
 }
 
-/** Best-effort base + ilvl + game for the craft, read from the text (robust to a broken tail). */
+/** Best-effort base + ilvl + game for the craft, read from the text (tolerant of a broken tail). */
 function itemContext(
     source: string,
     registry: Registry,

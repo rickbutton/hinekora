@@ -1,7 +1,7 @@
 /**
  * The data manifest — provenance for an ingested data set.
  *
- * This is the load-bearing artifact for reproducibility: it records exactly
+ * This is the critical artifact for reproducibility: it records exactly
  * WHICH RePoE dump the catalog came from (commit + publish date) and WHICH game
  * version it targets, so a checked craft can always be traced to a concrete data
  * snapshot. (repoe-fork does not stamp the PoE patch anywhere, so `gameVersion`

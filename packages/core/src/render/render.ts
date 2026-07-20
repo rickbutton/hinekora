@@ -1,7 +1,7 @@
 /**
  * The state renderer: item state → plain text, for errors and inspection.
  * Errors render state, they don't teach (surface doc §6). Unions render from
- * the symbolic queries (count ranges, guaranteed floor, candidate lists) —
+ * the symbolic queries (count ranges, guaranteed floor, candidate lists),
  * never by walking arms.
  */
 import type { Base } from "../model/base.js";
@@ -20,7 +20,7 @@ import {
 
 // --- Small text helpers ---------------------------------------------------
 
-/** The label shown for a mod — the single seam to swap for display names later. */
+/** The label shown for a mod, the single seam to swap for display names later. */
 export function modLabel(m: Mod): string {
     return m.id;
 }
@@ -139,7 +139,7 @@ export function renderWfViolation(v: WfViolation): string {
     }
 }
 
-/** What the failed operation needed — the second half of the error. */
+/** What the failed operation needed, the second half of the error. */
 function renderNeed(e: OpError): string {
     switch (e.kind) {
         case "wrongRarity":

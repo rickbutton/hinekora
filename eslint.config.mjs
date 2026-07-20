@@ -12,6 +12,9 @@ export default tseslint.config(
             "**/*.tsbuildinfo",
             "**/coverage/**",
             "**/scripts/**",
+            // Standalone tooling (vendored detector + its CLI), run directly by
+            // node, not part of any package build.
+            "tools/**",
             // The VSCode extension is a standalone CommonJS app (own tsconfig,
             // `require.resolve`); typechecked separately, not part of this lint.
             "editors/**",

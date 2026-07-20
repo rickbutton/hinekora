@@ -1,6 +1,6 @@
 /**
  * The base currency library (typing rules §4.1–4.4): transmute, regal, exalt,
- * annul — the four ops shared by both games.
+ * annul, the four ops shared by both games.
  *
  * Rarity promotion note: each add-op promotes rarity FIRST, then draws `pool`
  * against the promoted item. Drawing against the un-promoted rarity would
@@ -21,7 +21,7 @@ function wfError(it: Item): OpError | null {
     return violations.length > 0 ? { kind: "notWellFormed", violations } : null;
 }
 
-/** Transmute — Normal → Magic, add one random mod. */
+/** Transmute, Normal → Magic, add one random mod. */
 export const transmute: Operation = (ctx, it) => {
     const bad = wfError(it);
     if (bad) return err(bad);
@@ -32,7 +32,7 @@ export const transmute: Operation = (ctx, it) => {
     return ok(addOne(promoted, pool(ctx.catalog, promoted)));
 };
 
-/** Regal — Magic → Rare, add one random mod. */
+/** Regal, Magic → Rare, add one random mod. */
 export const regal: Operation = (ctx, it) => {
     const bad = wfError(it);
     if (bad) return err(bad);
@@ -43,7 +43,7 @@ export const regal: Operation = (ctx, it) => {
     return ok(addOne(promoted, pool(ctx.catalog, promoted)));
 };
 
-/** Exalt — Rare, add one random mod into an open slot. */
+/** Exalt, Rare, add one random mod into an open slot. */
 export const exalt: Operation = (ctx, it) => {
     const bad = wfError(it);
     if (bad) return err(bad);
@@ -62,7 +62,7 @@ export const exalt: Operation = (ctx, it) => {
     return ok(addOne(it, pool(ctx.catalog, it)));
 };
 
-/** Annul — Rare, remove one random (removable) affix. */
+/** Annul, Rare, remove one random (removable) affix. */
 export const annul: Operation = (_ctx, it) => {
     const bad = wfError(it);
     if (bad) return err(bad);

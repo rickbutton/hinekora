@@ -1,5 +1,5 @@
 /**
- * Hardcoded mini mod/base set for tests — NOT real game data. A small,
+ * Hardcoded mini mod/base set for tests, NOT real game data. A small,
  * deliberately-shaped catalog where each fixture isolates one `pool`/`wf` rule
  * so tests can attribute a pass/reject to a single cause.
  *
@@ -137,7 +137,7 @@ const spawn = (tag: TagId, w: SpawnEntry["weight"]): SpawnEntry => ({ tag, weigh
 
 // --- The catalog ----------------------------------------------------------
 
-/** "increased Life", T1 — high tier, gated at ilvl 60. Prefix, family Life. */
+/** "increased Life", T1, high tier, gated at ilvl 60. Prefix, family Life. */
 export const LIFE_T1: Mod = mkMod({
     id: "IncreasedLife1",
     type: "IncreasedLife",
@@ -148,7 +148,7 @@ export const LIFE_T1: Mod = mkMod({
     text: "+(70-84) to maximum Life",
 });
 
-/** "increased Life", T2 — low tier, gated at ilvl 30. SAME ModType as T1. */
+/** "increased Life", T2, low tier, gated at ilvl 30. SAME ModType as T1. */
 export const LIFE_T2: Mod = mkMod({
     id: "IncreasedLife2",
     type: "IncreasedLife",
@@ -178,7 +178,7 @@ export const INCREASED_ARMOUR: Mod = mkMod({
     spawn: [spawn(TAG_DEFAULT, known(1000))],
 });
 
-/** Fire Resistance — suffix, family ResistFire. */
+/** Fire Resistance, suffix, family ResistFire. */
 export const FIRE_RESIST: Mod = mkMod({
     id: "FireResist1",
     type: "FireResist",
@@ -188,7 +188,7 @@ export const FIRE_RESIST: Mod = mkMod({
     spawn: [spawn(TAG_DEFAULT, known(500))],
 });
 
-/** Fire & Chaos Resistance — DIFFERENT ModType, but SHARES family ResistFire. */
+/** Fire & Chaos Resistance, DIFFERENT ModType, but SHARES family ResistFire. */
 export const FIRE_CHAOS_RESIST: Mod = mkMod({
     id: "FireChaosResist1",
     type: "FireChaosResist",
@@ -217,7 +217,7 @@ export const LIGHTNING_RESIST: Mod = mkMod({
     spawn: [spawn(TAG_DEFAULT, known(500))],
 });
 
-/** Amulet-only prefix — isolates the class-restriction gate. */
+/** Amulet-only prefix, isolates the class-restriction gate. */
 export const AMULET_ONLY: Mod = mkMod({
     id: "AmuletOnly1",
     type: "AllAttributes",
@@ -228,7 +228,7 @@ export const AMULET_ONLY: Mod = mkMod({
 });
 
 /**
- * Disabled-on-rings suffix — spawn is ORDERED so that on a ring base the first
+ * Disabled-on-rings suffix, spawn is ORDERED so that on a ring base the first
  * matching tag (`ring`) yields weight 0 (disabled), while on other bases the
  * `default` entry (weight 100) applies. Isolates spawn first-match + zero-disable.
  */
@@ -240,7 +240,7 @@ export const RING_DISABLED: Mod = mkMod({
     spawn: [spawn(TAG_RING, known(0)), spawn(TAG_DEFAULT, known(100))],
 });
 
-/** Flask-domain prefix whose weight WOULD match any base (default tag) — so the
+/** Flask-domain prefix whose weight WOULD match any base (default tag), so the
  * domain gate is the sole reason it is excluded from item-domain bases. */
 export const FLASK_MOD: Mod = mkMod({
     id: "FlaskRecovery1",
@@ -251,7 +251,7 @@ export const FLASK_MOD: Mod = mkMod({
     spawn: [spawn(TAG_DEFAULT, known(100))],
 });
 
-/** Jewel-only spawn tag that no fixture base carries — isolates the "no matching
+/** Jewel-only spawn tag that no fixture base carries, isolates the "no matching
  * spawn tag" (null weight) path. */
 export const JEWEL_ONLY_SPAWN: Mod = mkMod({
     id: "JewelOnly1",
@@ -261,7 +261,7 @@ export const JEWEL_ONLY_SPAWN: Mod = mkMod({
     spawn: [spawn(TAG_JEWEL, known(100))],
 });
 
-/** Unknown-weight suffix (PoE2 sentinel) — eligible despite no numeric weight. */
+/** Unknown-weight suffix (PoE2 sentinel), eligible despite no numeric weight. */
 export const UNKNOWN_WEIGHT_MOD: Mod = mkMod({
     id: "UnknownWeight1",
     type: "UnknownThing",
@@ -284,7 +284,7 @@ export const PROTECT_PREFIXES_CARRIER: Mod = mkMod({
     effects: [{ kind: "protect", target: { by: "gen", gen: "prefix" } }],
 });
 
-/** Approx-zero-weight suffix — ineligible (provably zero, PoE2 estimate). */
+/** Approx-zero-weight suffix, ineligible (provably zero, PoE2 estimate). */
 export const APPROX_ZERO_MOD: Mod = mkMod({
     id: "ApproxZero1",
     type: "ApproxZeroThing",

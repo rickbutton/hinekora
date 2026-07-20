@@ -1,7 +1,7 @@
 /**
- * `pool(catalog, it)` — the candidate pool (typing rules §3): given a known
+ * `pool(catalog, it)`, the candidate pool (typing rules §3): given a known
  * item, which mods can be added, at what weight. It returns candidate
- * descriptors — (mod, weight) pairs, a cheap bounded scan — not item states;
+ * descriptors, (mod, weight) pairs, a cheap bounded scan, not item states;
  * the outcome union stays a symbolic delta over this list (the
  * intensional-union rule, CLAUDE.md). The catalog is passed in because the
  * core is pure and takes loaded data as input.
@@ -14,7 +14,7 @@ import type { Mod } from "../model/mod.js";
 import { slotOpen } from "../model/wf.js";
 import { isNonzero, type Weight } from "../model/weight.js";
 
-/** The universe of mods `pool` draws from — the loaded catalog for this context. */
+/** The universe of mods `pool` draws from, the loaded catalog for this context. */
 export type ModCatalog = readonly Mod[];
 
 /** One candidate: a mod that can be added, with the weight it rolls at here. */
@@ -25,7 +25,7 @@ export interface PoolCandidate {
 
 /**
  * Resolve a mod's spawn weight against a base's tags. Spawn entries are
- * ordered and FIRST MATCH WINS — an early zero-weight entry disables the mod
+ * ordered and FIRST MATCH WINS, an early zero-weight entry disables the mod
  * for bases carrying that tag even if a later entry would allow it. `null`
  * when no spawn tag matches at all (the mod cannot roll here).
  */
