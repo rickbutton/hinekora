@@ -23,7 +23,7 @@
         // strictBindCallApply, strictPropertyInitialization, noImplicitAny,
         // noImplicitThis, alwaysStrict, and useUnknownInCatchVariables.
         "strict": true,
-        // The extra flags the brief calls out by name, plus the rest of the
+        // The extra strictness flags this codebase requires, plus the rest of the
         // best-practice set. Each one is a deliberate discipline for this codebase:
         "noUncheckedIndexedAccess": true, //  arr[i] is T | undefined — forces bounds thinking
         "noImplicitOverride": true, //         `override` keyword required when overriding

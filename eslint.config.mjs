@@ -55,7 +55,7 @@ export default tseslint.config(
         },
     },
 
-    // Enforce the brief's one-way dependency arrow at lint time: @hinekora/core
+    // Enforce the one-way dependency arrow at lint time: @hinekora/core
     // is PURE. It may not import UI/IO packages, and may not do Node I/O
     // (fs/path/etc). This makes the "core depends on nothing UI" rule mechanical
     // rather than a matter of vigilance.

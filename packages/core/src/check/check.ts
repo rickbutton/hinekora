@@ -118,7 +118,7 @@ const PLACEHOLDERS = /^random\b|^\?$/;
  *  reaches a precise fixpoint first, a tall disjunction then gets over-approximated. */
 const WIDEN_AFTER = 3;
 /** Cap on loop-invariant iterations. With widening every loop converges in a
- *  handful (the whole test suite passes at 6), so this is a wide safety backstop. */
+ *  handful, so this is a wide safety backstop. */
 const MAX_LOOP_ITERS = 32;
 
 type Flow = { readonly kind: "fall"; readonly state: AItem } | { readonly kind: "restart" };

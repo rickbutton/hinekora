@@ -42,6 +42,12 @@ outcomes in the checker, stop; that violates the design and won't scale.
   better), skip hollow intensifiers ("genuinely", "significantly"), don't inflate
   significance. `tools/ai-writing/check.mjs` runs the detector and the `commit-msg` hook
   screens each message. Enable the hook once per clone with `git config core.hooksPath hooks`.
+- **Comments and commit messages stand alone.** They must be understandable from the repo
+  alone, with no memory of the conversation, task, or plan that produced them. No session
+  or task references ("audit findings", "1/3", "as discussed", "per the plan", "as
+  requested"), no progress or milestone notes, and no point-in-time process artifacts (a
+  specific test count, "gate green", "all four green"). Describe the change and its why the
+  way a human would when revisiting the code a year later.
 - **Vitest**, with extensive tests. **PoE1 only** for now.
 - Surface syntax: C-style braces; a file opens with `craft in <game>`.
 
