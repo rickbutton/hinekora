@@ -211,7 +211,7 @@ removeThenAddDet it mX =                   -- deterministic remove-random + add 
          lvl, (P \ {m.type}) ∪ {mX.type}]
 ```
 
-The `such that wf(...)` filter in `removeThenAddDet` is load-bearing — it is
+The `such that wf(...)` filter in `removeThenAddDet` is essential — it is
 what makes perfect-essence deterministic on a full-suffix item (§4.7).
 
 ---
@@ -401,7 +401,7 @@ Given a value of union type `Sum over i of T_i`, the narrow construct:
 - If NO wide fall-through and NO arm covers a case, that's fine ("silent
   wide") **only if** nothing after depends on the missing arm's facts.
   The moment something does, it fails to type-check. Validation is never
-  skippable when it's load-bearing.
+  skippable when it's essential.
 
 ---
 

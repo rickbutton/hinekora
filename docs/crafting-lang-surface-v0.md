@@ -135,6 +135,9 @@ Two operations take a name (and an optional `t<n>` tier, T1 = best):
 - `bench "<mod>" [t1]` — add a specific crafting-bench mod, named by the mod it
   adds (`bench "maximum life"`).
 
+A statement can also be a **call to an operation function** — `<name>(<arg>, …)`
+— which inlines that function's body here (§4.5).
+
 ---
 
 ## 4. Control constructs
@@ -204,6 +207,32 @@ Used in failure branches (e.g. after losing a forced mod). Lowers to
 re-entering the enclosing structured loop, whose exit-type re-establishes the
 guarantee. Composite/multi-item crafts are a future extension (§7).
 
+### 4.5 Operation functions — reusable, parameterized op sequences
+
+`def name(params) { <statements> }` declares a local, parameterized sequence of
+operations, callable as a step. Same `def` keyword as a predicate def (§5.1); a
+`{ … }` body makes it an operation function, an `= <pred>` body a predicate. A
+call `name(args)` **inlines** the body — the item state threads through it, a
+`restart` inside re-enters the caller's enclosing loop, and a precondition
+failure inside is reported at the failing step. Parameter sorts are inferred from
+use (a tier, a count, or a mod name), exactly as for a predicate def, and a
+parameter may fill a `has`/`bench`/`essence` mod-name or tier slot.
+
+```
+def guarantee(m) {
+    until has m {
+        scour
+        alch
+    }
+}
+
+guarantee("maximum life")
+```
+
+Operation functions are pure inlining: recursion is rejected, and a name can be
+either a predicate def or an operation function, not both. Calling a predicate as
+a step (or an operation function inside a condition) is an error.
+
 ---
 
 ## 5. Predicate grammar (v0)
@@ -272,11 +301,12 @@ has "fire res" t1 or has "cold res" t1
 ### 5.1 Predicate defs
 
 `def name(params) = <pred>` declares a local, parameterized, pure predicate,
-usable wherever a predicate is (`until anyEleRes(1)`). Defs may appear anywhere
-at file scope. Parameter sorts are inferred from use — a tier slot, a count
-slot, or a mod-name slot; the three are distinct (`t1` is not the number `1`),
-and a parameter used in conflicting ways is an error. Parameters may be
-forwarded to nested calls; recursion is rejected.
+usable wherever a predicate is (`until anyEleRes(1)`). The same `def` keyword
+with a `{ … }` body instead declares an **operation function** (§4.5). Defs may
+appear anywhere at file scope. Parameter sorts are inferred from use — a tier
+slot, a count slot, or a mod-name slot; the three are distinct (`t1` is not the
+number `1`), and a parameter used in conflicting ways is an error. Parameters may
+be forwarded to nested calls; recursion is rejected.
 
 ```
 def anyEleRes(t) = has "fire res" t or has "cold res" t or has "lightning res" t
@@ -314,10 +344,9 @@ Error categories:
 
 ## 7. Deferred / future (surface)
 
-See `HANDOFF.md` §6 ("Pending / possible next work") — the single list of
-deferred and future work, including the surface-level sugar (English negation
-spellings, "omen next op only", multi-item crafts, the power-user annotation
-tier) and the cost/expected-attempts model.
+See `ROADMAP.md` — the single list of deferred and future work, including the
+surface-level sugar (English negation spellings, "omen next op only", multi-item
+crafts, the power-user annotation tier) and the cost/expected-attempts model.
 
 ---
 
