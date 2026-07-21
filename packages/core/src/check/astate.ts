@@ -119,6 +119,35 @@ function tierAtomMod(name: string): ModId {
     return ModId(name.slice(name.indexOf(TIER_SEP) + 1));
 }
 
+// --- fracture atoms -------------------------------------------------------
+//
+// "type X is the fractured (locked) mod" is a BDD variable `frac@X`, distinct
+// from X's presence variable, so an unproven Fracturing Orb ("one of these mods
+// is fractured") rides as a disjunction that a `fractured X` branch collapses.
+// Two facts are asserted with a fracture: `frac@X ⇒ present@X` (a locked mod is
+// present) and exactly-one over the candidates (the one-fracture-max rule).
+
+const FRAC_PREFIX_CODE = 1; // SOH
+/** "some mod is fractured" — the sentinel atom, set by every fracture so a
+ *  fracture on an anonymous (unnamed) mod is still tracked. */
+const FRAC_EXISTS = String.fromCharCode(FRAC_PREFIX_CODE);
+function fracAtomName(type: TypeId): string {
+    return `${FRAC_EXISTS}${type}`;
+}
+function isFracAtom(name: string): boolean {
+    return name.charCodeAt(0) === FRAC_PREFIX_CODE;
+}
+/** The type a fracture atom names, or "" for the `FRAC_EXISTS` sentinel. */
+function fracAtomType(name: string): TypeId {
+    return TypeId(name.slice(1));
+}
+
+/** A BDD variable that is not a plain type-presence variable (a tier or fracture
+ *  atom); the presence-view scans skip these. */
+function isAtom(name: string): boolean {
+    return isTierAtom(name) || isFracAtom(name);
+}
+
 /** The tier atoms allocated for `type` (the specific mods a predicate has named). */
 function tierAtomsOf(a: AItem, type: TypeId): ModId[] {
     const out: ModId[] = [];
@@ -188,7 +217,7 @@ export function isExcluded(a: AItem, type: TypeId): boolean {
 export function guaranteedTypes(a: AItem): Set<TypeId> {
     const out = new Set<TypeId>();
     for (const t of a.bdd.variables()) {
-        if (!isTierAtom(t) && isGuaranteed(a, TypeId(t))) out.add(TypeId(t));
+        if (!isAtom(t) && isGuaranteed(a, TypeId(t))) out.add(TypeId(t));
     }
     return out;
 }
@@ -197,9 +226,51 @@ export function guaranteedTypes(a: AItem): Set<TypeId> {
 export function excludedTypes(a: AItem): Set<TypeId> {
     const out = new Set<TypeId>();
     for (const t of a.bdd.variables()) {
-        if (!isTierAtom(t) && isExcluded(a, TypeId(t))) out.add(TypeId(t));
+        if (!isAtom(t) && isExcluded(a, TypeId(t))) out.add(TypeId(t));
     }
     return out;
+}
+
+/** Is `type` the fractured (locked) mod, forced in every model of `presence`? */
+export function isFractured(a: AItem, type: TypeId): boolean {
+    return a.bdd.entails(a.presence, a.bdd.variable(fracAtomName(type)));
+}
+
+/** The types proven to be the fractured (locked) mod. At most one under the
+ *  exactly-one invariant; empty when a fracture exists but isn't yet pinned. */
+export function fracturedTypes(a: AItem): Set<TypeId> {
+    const out = new Set<TypeId>();
+    for (const v of a.bdd.variables()) {
+        if (isFracAtom(v) && v !== FRAC_EXISTS && a.bdd.entails(a.presence, a.bdd.variable(v))) {
+            out.add(fracAtomType(v));
+        }
+    }
+    return out;
+}
+
+/** Does the item carry a fracture at all (proven or not)? Tracked by the
+ *  `FRAC_EXISTS` sentinel, so it holds even for a fracture on an anonymous mod. */
+export function hasFracture(a: AItem): boolean {
+    return (
+        a.bdd.variables().includes(FRAC_EXISTS) &&
+        a.bdd.entails(a.presence, a.bdd.variable(FRAC_EXISTS))
+    );
+}
+
+/** The fracture facts alone: `presence` existentially reduced to the fracture
+ *  atoms and their coupled presence variables. A reforge keeps this (the locked
+ *  mod is permanent) and rerolls everything else. */
+export function fractureProjection(a: AItem): Bdd {
+    const keep = new Set<string>();
+    for (const v of a.bdd.variables()) {
+        if (isFracAtom(v)) {
+            keep.add(v);
+            if (v !== FRAC_EXISTS) keep.add(fracAtomType(v)); // the locked mod's presence variable
+        }
+    }
+    let p = a.presence;
+    for (const v of a.bdd.variables()) if (!keep.has(v)) p = a.bdd.exists(p, v);
+    return p;
 }
 
 /** Guard: skip disjunction extraction past this many uncertain variables (2^n). */
@@ -217,7 +288,7 @@ export function disjunctiveGuarantees(a: AItem): TypeId[][] {
     const excluded = excludedTypes(a);
     const cand = a.bdd
         .variables()
-        .filter((v) => !isTierAtom(v))
+        .filter((v) => !isAtom(v))
         .map((v) => TypeId(v))
         .filter((t) => !guaranteed.has(t) && !excluded.has(t) && a.possible.has(t));
     if (cand.length < 2 || cand.length > MAX_DISJUNCTION_VARS) return [];
@@ -375,6 +446,8 @@ export interface InitialCounts {
     readonly present: ReadonlySet<TypeId>;
     /** For each declared mod pinned to a specific tier, that exact mod (id). */
     readonly pinned: ReadonlyMap<TypeId, ModId>;
+    /** The declared fractured (locked) mod's type, if the item block marks one. */
+    readonly fractured?: TypeId;
 }
 
 export function initialState(
@@ -394,7 +467,14 @@ export function initialState(
         rarity,
         counts: CountDomain.point(p, s),
         bdd,
-        presence: presenceFacts(bdd, counts.present, []),
+        presence:
+            counts.fractured === undefined
+                ? presenceFacts(bdd, counts.present, [])
+                : assertDeclaredFracture(
+                      bdd,
+                      presenceFacts(bdd, counts.present, []),
+                      counts.fractured,
+                  ),
         possible: new Set(counts.present),
         tiers: new Map([...counts.pinned].map(([type, mod]) => [type, new Set([mod])])),
         crafted: [0, 0], // a declared item block has no bench-crafted mods
@@ -490,6 +570,7 @@ export type RPred =
           readonly op: Cmp;
           readonly value: number;
       }
+    | { readonly kind: "fractured"; readonly type: TypeId }
     | { readonly kind: "not"; readonly inner: RPred }
     | { readonly kind: "and" | "or"; readonly left: RPred; readonly right: RPred };
 
@@ -514,6 +595,9 @@ export function refine(a: AItem, pred: RPred, positive = true): AItem | null {
             return positive
                 ? refineHas(a, pred.type, pred.gen, pred.tierMod)
                 : refineLacks(a, pred.type, pred.tierMod);
+
+        case "fractured":
+            return positive ? refineFractured(a, pred.type) : refineNotFractured(a, pred.type);
 
         case "compare":
             return refineCompare(
@@ -621,6 +705,72 @@ function refineLacks(a: AItem, type: TypeId, tierMod: ModId | undefined): AItem 
     const tiers = new Map(a.tiers);
     tiers.delete(type); // absent ⇒ no tier info
     return { ...a, presence, tiers };
+}
+
+/** Is `type` a fracture candidate — i.e. does its fracture atom exist? Only the
+ *  declared/Orb assertions allocate one, so allocation ⇔ candidacy. */
+function isFractureCandidate(a: AItem, type: TypeId): boolean {
+    return a.bdd.variables().includes(fracAtomName(type));
+}
+
+/** Narrow to "X is the fractured mod". A non-candidate can never be fractured,
+ *  so the branch is dead; otherwise assert the fracture atom (exactly-one then
+ *  forces the other candidates unfractured, and the `frac ⇒ present` coupling
+ *  makes X present). */
+function refineFractured(a: AItem, type: TypeId): AItem | null {
+    if (!isFractureCandidate(a, type)) return null;
+    const presence = a.bdd.and(a.presence, a.bdd.variable(fracAtomName(type)));
+    if (a.bdd.isFalse(presence)) return null;
+    return normalize({ ...a, presence });
+}
+
+/** Narrow to "X is not the fractured mod". A non-candidate is trivially not
+ *  fractured; otherwise force the fracture atom false (a proven fracture on X
+ *  makes this impossible). */
+function refineNotFractured(a: AItem, type: TypeId): AItem | null {
+    if (!isFractureCandidate(a, type)) return a;
+    const presence = a.bdd.and(a.presence, a.bdd.not(a.bdd.variable(fracAtomName(type))));
+    if (a.bdd.isFalse(presence)) return null;
+    return normalize({ ...a, presence });
+}
+
+/** Assert a definite fracture on `type` (a declared fractured affix): a fracture
+ *  exists, it is present, and it is the locked mod (the sole candidate). */
+export function assertDeclaredFracture(bdd: BddManager, presence: Bdd, type: TypeId): Bdd {
+    let p = bdd.and(presence, bdd.variable(FRAC_EXISTS));
+    p = bdd.and(p, bdd.variable(type)); // present
+    return bdd.and(p, bdd.variable(fracAtomName(type))); // fractured
+}
+
+/**
+ * Assert a Fracturing Orb: a fracture exists and exactly one of `candidates` is
+ * it (pairwise-exclusive, each implying its mod present). `exhaustive` is true
+ * when the candidates cover every mod (no anonymous ones), which lets a branch
+ * chain over them prove the fracture landed on one of the named mods.
+ */
+export function assertFractureDisjunction(
+    bdd: BddManager,
+    presence: Bdd,
+    candidates: readonly TypeId[],
+    exhaustive: boolean,
+): Bdd {
+    let p = bdd.and(presence, bdd.variable(FRAC_EXISTS));
+    const fracOf = (t: TypeId): Bdd => bdd.variable(fracAtomName(t));
+    // Each candidate: frac ⇒ present.
+    for (const c of candidates) p = bdd.and(p, bdd.or(bdd.not(fracOf(c)), bdd.variable(c)));
+    // At most one fractured (pairwise exclusion).
+    for (let i = 0; i < candidates.length; i++) {
+        for (let j = i + 1; j < candidates.length; j++) {
+            p = bdd.and(p, bdd.not(bdd.and(fracOf(candidates[i]!), fracOf(candidates[j]!))));
+        }
+    }
+    // If the named candidates are all the mods, the fracture is one of them.
+    if (exhaustive && candidates.length > 0) {
+        let atLeast = bdd.FALSE;
+        for (const c of candidates) atLeast = bdd.or(atLeast, fracOf(c));
+        p = bdd.and(p, bdd.or(bdd.not(bdd.variable(FRAC_EXISTS)), atLeast));
+    }
+    return p;
 }
 
 function refineCompare(

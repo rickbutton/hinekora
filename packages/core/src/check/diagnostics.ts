@@ -62,6 +62,8 @@ export function describePred(pred: Pred): string {
                       : ` t${pred.tier}`;
             return `has "${val(pred.mod)}"${tier}`;
         }
+        case "fractured":
+            return `fractured "${val(pred.mod)}"`;
         case "compare":
             return `${pred.projection} ${pred.op} ${val(pred.value)}`;
         case "not":
@@ -122,6 +124,10 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return `No ${failure.tag} modifier can appear on a ${state.base.name ?? "item"} at this item level.`;
             case "metamodBlocks":
                 return "This currency can't be used while a metacraft modifier is on the item — remove it first.";
+            case "tooFewMods":
+                return `A Fracturing Orb needs at least ${failure.needed} modifiers on the item.`;
+            case "alreadyFractured":
+                return "The item already has a fractured modifier — it can hold only one.";
         }
     })();
     return `at this point the item is: ${renderState(state)}\n${need}`;

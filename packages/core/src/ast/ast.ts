@@ -72,6 +72,8 @@ export type Arg =
 export interface AffixDecl {
     readonly mod: string;
     readonly tier?: number;
+    /** Marked `fractured` — the mod is locked (can't be removed or rerolled). */
+    readonly fractured?: boolean;
 }
 
 /**
@@ -191,7 +193,8 @@ export interface WithOmenStmt {
 
 // --- Predicates (surface §5) ----------------------------------------------
 
-export type Pred = RarityPred | HasPred | ComparePred | NotPred | BinaryPred | CallPred;
+export type Pred =
+    RarityPred | HasPred | FracturedPred | ComparePred | NotPred | BinaryPred | CallPred;
 
 /** Comparison operators for count projections. */
 export type Cmp = "==" | "!=" | "<" | "<=" | ">" | ">=";
@@ -213,6 +216,17 @@ export interface HasPred {
     /** A mod description, or (inside a def body) a parameter standing in for one. */
     readonly mod: string | ParamRef;
     readonly tier?: number | ParamRef;
+    readonly span: SourceSpan;
+}
+
+/**
+ * `fractured "<mod>"`, whether that mod is the item's fractured (locked) one.
+ * Used to prove which mod a Fracturing Orb locked (the target is random until a
+ * branch narrows it).
+ */
+export interface FracturedPred {
+    readonly kind: "fractured";
+    readonly mod: string | ParamRef;
     readonly span: SourceSpan;
 }
 

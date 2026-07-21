@@ -347,6 +347,16 @@ protected side — see metamods). Notes:
   (`keepProtectedReroll` — protected guarantees + tier pins + a count floor survive, open
   protected slots may fill from the fresh pool, the metamod on the rerolled side goes). The
   curated id→effect table is `model/metamods.ts`.
+- **Fractures** are a per-mod lock, tracked as `frac@type` atoms in the presence BDD (the
+  tier-atom pattern; a `FRAC_EXISTS` sentinel marks "some mod is fractured" so a fracture on an
+  anonymous mod still counts). A declared `fractured "…"` affix asserts a definite fracture;
+  the **Fracturing Orb** (`fracture`, needs Rare + ≥4 mods, one per item) asserts "exactly one
+  of the current mods is fractured" — pinnable by a `fractured X` branch (`refine`). Removal,
+  `chaos`, `scour`, and harvest reforge keep the fracture by preserving `fractureProjection(a)`
+  (the presence BDD reduced to the fracture atoms + their coupled presence) and rerolling the
+  rest, so a proven fracture keeps its type and an unproven one keeps the survivor disjunction.
+  **Scour** drops to the minimum rarity that holds the survivors (`minRarityFor`): a fractured
+  Rare scours to a 1-mod Magic.
 - **Harvest** (tag-directed): `harvestReforge(a, tag)` = `reroll` plus a DISJUNCTIVE
   guarantee — "at least one mod carrying `tag`" — ANDed into the presence BDD as one OR
   clause over the tagged types (never an enumerated union; a wide clause is sound, just

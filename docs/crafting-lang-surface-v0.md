@@ -74,6 +74,9 @@ item {
 
 - Fields are **givens**: the checker takes them as the initial index rather
   than inferring them.
+- An affix may be marked `fractured` (the keyword before the mod, e.g.
+  `prefixes: [ fractured "+1 to Level of Socketed Gems" t1 ]`) — a locked mod that
+  no currency can remove or reroll. An item holds at most one.
 - Omitted optional fields default (no augments, quality 0, etc.).
 - This block is also the boundary where human mod text is resolved to internal
   entities (§2), so ambiguity/unknown-mod errors surface here, before the type
@@ -147,6 +150,11 @@ The tag is one of the modifier categories: `attack`, `attribute`, `caster`,
 `chaos`, `cold`, `critical`, `defence`, `elemental`, `fire`, `life`, `lightning`,
 `mana`, `minion`, `physical`, `speed`. A tag that no modifier of the base can
 carry is rejected (the grayed-out case in crafting simulators).
+
+The **Fracturing Orb** (`fracture`) locks one random modifier on a Rare item with
+at least four modifiers (one fracture per item). The target is random, so no
+specific mod is proven locked until a `fractured "<mod>"` branch (§5) narrows it;
+until then a reforge keeps "one of these mods survives, still locked".
 
 A statement can also be a **call to an operation function** — `<name>(<arg>, …)`
 — which inlines that function's body here (§4.5).
@@ -263,6 +271,7 @@ This reads like expressions in any language and is trivial to lex/parse.
 ```
 pred := isRare | isMagic | isNormal      # niladic predicate symbols (bool)
       | has "<mod>" (t<n>)?                # presence of a mod (optionally at a tier)
+      | fractured "<mod>"                  # is that mod the item's fractured (locked) one
       | <proj> <cmp> <int>                 # relational expression (bool)
       | not <pred>                         # general negation (composes with all)
       | <pred> and <pred>                  # conjunction (binds tighter than or)

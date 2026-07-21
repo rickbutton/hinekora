@@ -312,9 +312,15 @@ class Parser {
         this.expect("lbracket", "'[' to open a list");
         const items: AffixDecl[] = [];
         while (!this.at("rbracket")) {
+            const fractured = this.atKeyword("fractured");
+            if (fractured) this.advance();
             const mod = this.expect("string", "a quoted mod name").text;
             const tier = this.tierShorthand();
-            items.push(tier !== undefined ? { mod, tier } : { mod });
+            items.push({
+                mod,
+                ...(tier !== undefined && { tier }),
+                ...(fractured && { fractured: true }),
+            });
             if (this.at("comma")) {
                 this.advance();
             } else {
@@ -539,6 +545,12 @@ class Parser {
                 ...(tier !== undefined && { tier }),
                 span: span(t.span.start, this.prev.span.end),
             };
+        }
+
+        if (t.text === "fractured") {
+            this.advance();
+            const mod = this.parseModOrParam();
+            return { kind: "fractured", mod, span: span(t.span.start, this.prev.span.end) };
         }
 
         if (PROJECTIONS.has(t.text)) {

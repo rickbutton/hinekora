@@ -37,6 +37,7 @@ const REQUIRES: Record<CurrencyKind, string> = {
     exalt: "a Rare item with an open affix slot",
     annul: "a Magic or Rare item with a removable affix",
     scour: "an item with at least one modifier",
+    fracture: "a Rare item with at least four modifiers",
 };
 
 const KEYWORD_DOC: Record<string, string> = {

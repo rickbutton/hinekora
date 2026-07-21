@@ -102,16 +102,16 @@ describe("protection (prefixes cannot be changed)", () => {
 });
 
 describe("scour respects protection", () => {
-    it("keeps the protected side and stays Rare", () => {
+    it("keeps the protected side, dropping to the min rarity for what survives", () => {
         const c = craft("poe1", rareRing(["T1 Life"]), [
             bench("prefixes cannot be changed"),
             op("scour"),
         ]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.rarity).toBe("rare");
+        // One prefix survives (suffixes + the metamod are gone) → a 1-mod Magic.
+        expect(r.finalState!.rarity).toBe("magic");
         expect(guaranteed(r)).toContain("IncreasedLife");
-        // Suffixes (incl. the metamod) are gone.
         expect(r.finalState!.counts.prefix).toEqual([1, 1]);
         expect(r.finalState!.crafted).toEqual([0, 0]);
     });

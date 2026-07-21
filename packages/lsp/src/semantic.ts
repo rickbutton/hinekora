@@ -34,6 +34,7 @@ const KEYWORDS = new Set([
     "augment",
     "def",
     "has",
+    "fractured",
     "not",
     "and",
     "or",

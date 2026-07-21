@@ -50,6 +50,7 @@ import {
     chaos,
     essence,
     exalt,
+    fracture,
     harvestAugment,
     harvestReforge,
     regal,
@@ -229,6 +230,7 @@ class Checker {
         // Named mods pin an exact tier so the starting item is fully concrete;
         // placeholders (`"random"`) stay anonymous.
         const pinned = new Map<TypeId, ModId>();
+        let fracturedType: TypeId | undefined;
         const ctx = { game, base, ilvl: item.ilvl };
 
         const checkGen = (name: string, modGen: Gen | undefined, gen: Gen): void => {
@@ -238,19 +240,20 @@ class Checker {
         };
 
         // A named mod pins a tier via an exact id/alias, or a stat description
-        // plus `t<n>`; a bare description is an error.
-        const pinAffix = (affix: AffixDecl, gen: Gen): void => {
+        // plus `t<n>`; a bare description is an error. Returns the resolved type
+        // (for the fractured marker), or undefined when resolution failed.
+        const pinAffix = (affix: AffixDecl, gen: Gen): TypeId | undefined => {
             const byId = this.registry.resolveMod(affix.mod);
             if (byId.ok) {
                 checkGen(affix.mod, byId.value.gen, gen);
                 present.add(byId.value.type);
                 pinned.set(byId.value.type, byId.value.id);
-                return;
+                return byId.value.type;
             }
             const typeRes = this.registry.resolveModType(affix.mod, ctx);
             if (!typeRes.ok) {
                 this.diag(resolveMessage(typeRes.error), item.span);
-                return;
+                return undefined;
             }
             const type = typeRes.value;
             checkGen(affix.mod, this.registry.genOfType(type), gen);
@@ -260,7 +263,7 @@ class Checker {
                     item.span,
                 );
                 present.add(type); // still count it as present, just untiered
-                return;
+                return type;
             }
             const tiers = rollableTiers(this.registry.catalog, game, base, item.ilvl, type);
             const mod = tierMod(tiers, affix.tier);
@@ -272,16 +275,24 @@ class Checker {
                     item.span,
                 );
                 present.add(type);
-                return;
+                return type;
             }
             present.add(type);
             pinned.set(type, mod.id);
+            return type;
         };
 
         const countAffixes = (affixes: readonly AffixDecl[], gen: Gen): number => {
             for (const affix of affixes) {
                 if (PLACEHOLDERS.test(affix.mod.trim().toLowerCase())) continue; // anonymous affix
-                pinAffix(affix, gen);
+                const type = pinAffix(affix, gen);
+                if (affix.fractured && type !== undefined) {
+                    if (fracturedType !== undefined) {
+                        this.diag("an item holds at most one fractured modifier.", item.span);
+                    } else {
+                        fracturedType = type;
+                    }
+                }
             }
             return affixes.length;
         };
@@ -320,6 +331,7 @@ class Checker {
             suffixCount,
             present,
             pinned,
+            ...(fracturedType !== undefined && { fractured: fracturedType }),
         });
     }
 
@@ -477,6 +489,8 @@ class Checker {
                 return annul(a, forced, this.registry);
             case "scour":
                 return scour(a, this.registry);
+            case "fracture":
+                return fracture(a);
         }
     }
 
@@ -819,9 +833,23 @@ class Checker {
             }
             case "has":
                 return this.resolveHas(pred, a);
+            case "fractured":
+                return this.resolveFractured(pred, a);
             case "call":
                 return this.resolveCall(pred, a);
         }
+    }
+
+    private resolveFractured(pred: Extract<Pred, { kind: "fractured" }>, a: AItem): RPred | null {
+        const modName = this.literalString(pred.mod, pred.span);
+        if (modName === null) return null;
+        const ctx = { game: a.game, base: a.base, ilvl: a.ilvl };
+        const typeRes = this.registry.resolveModType(modName, ctx);
+        if (!typeRes.ok) {
+            this.diag(resolveMessage(typeRes.error), pred.span);
+            return null;
+        }
+        return { kind: "fractured", type: typeRes.value };
     }
 
     /** Expand a def call: check arity + arg types, substitute, resolve the body. */
@@ -966,6 +994,9 @@ function notePredUses(u: ParamUses, p: Pred): void {
             if (typeof p.mod === "object") noteSort(u, p.mod, "mod");
             if (p.tier !== undefined && typeof p.tier === "object") noteSort(u, p.tier, "tier");
             return;
+        case "fractured":
+            if (typeof p.mod === "object") noteSort(u, p.mod, "mod");
+            return;
         case "compare":
             if (typeof p.value === "object") noteSort(u, p.value, "count");
             return;
@@ -1076,6 +1107,8 @@ function substitute(pred: Pred, env: Map<string, Arg>): Pred {
                 ? { ...pred, mod }
                 : { ...pred, mod, tier: subValue(pred.tier, env) };
         }
+        case "fractured":
+            return { ...pred, mod: subValue(pred.mod, env) };
         case "compare":
             return { ...pred, value: subValue(pred.value, env) };
         case "not":

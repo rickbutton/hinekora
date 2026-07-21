@@ -21,6 +21,7 @@ import type {
     NotPred,
     BenchStmt,
     EssenceStmt,
+    FracturedPred,
     HarvestStmt,
     OpStmt,
     ParamRef,
@@ -130,6 +131,11 @@ export const has = (mod: string, tier?: number): HasPred => ({
     kind: "has",
     mod,
     ...(tier !== undefined && { tier }),
+    span: DS,
+});
+export const fracturedP = (mod: string | ParamRef): FracturedPred => ({
+    kind: "fractured",
+    mod,
     span: DS,
 });
 export const cmp = (
