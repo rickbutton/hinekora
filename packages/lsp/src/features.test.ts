@@ -34,6 +34,13 @@ describe("hover", () => {
         expect(md!).toMatch(/Guarantees/);
     });
 
+    it("marks a fractured mod in the item tooltip", () => {
+        const src = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ fractured "maximum life" t1 ] }\nchaos`;
+        const md = getHover(src, src.indexOf("chaos") + 1, registry);
+        expect(md).not.toBeNull();
+        expect(md!).toContain("(Fractured)"); // the locked mod survives the chaos, flagged
+    });
+
     it("hovers a bench mod with what it adds and its generation", () => {
         const src = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nbench "maximum life"`;
         const md = getHover(src, src.indexOf("maximum life") + 1, registry);

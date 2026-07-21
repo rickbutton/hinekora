@@ -14,6 +14,7 @@ import {
     type Gen,
     type GroupId,
     guaranteedTypes,
+    isFractured,
     type ModId,
     type Range,
     type Registry,
@@ -258,7 +259,10 @@ function tooltip(a: AItem, registry: Registry, caption?: string): string {
 
     const lines: string[] = [];
     for (const gen of ["prefix", "suffix"] as const) {
-        for (const t of known[gen]) lines.push(`${GEN_TAG[gen]} ${modLine(a, t, registry)}`);
+        for (const t of known[gen]) {
+            const frac = isFractured(a, t) ? " (Fractured)" : "";
+            lines.push(`${GEN_TAG[gen]} ${modLine(a, t, registry)}${frac}`);
+        }
         for (const x of cardinalities) if (x.gen === gen) lines.push(...cardBlock(x));
     }
     for (const x of cardinalities) if (x.gen === undefined) lines.push(...cardBlock(x));
