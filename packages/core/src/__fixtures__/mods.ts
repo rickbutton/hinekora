@@ -109,6 +109,8 @@ interface ModSpec {
     readonly spawn: readonly SpawnEntry[];
     readonly classRestriction?: ReadonlySet<ClassId>;
     readonly effects?: readonly Effect[];
+    /** Category tags (fire, caster, life, …) for tag-directed crafting (harvest). */
+    readonly implicitTags?: readonly string[];
     readonly text?: string;
     readonly name?: string;
 }
@@ -125,6 +127,7 @@ function mkMod(spec: ModSpec): Mod {
         domain: spec.domain ?? DOMAIN_ITEM,
         minLevel: spec.minLevel,
         addsTags: new Set<TagId>(),
+        implicitTags: new Set<TagId>((spec.implicitTags ?? []).map(TagId)),
         spawn: spec.spawn,
         ...(spec.classRestriction !== undefined && { classRestriction: spec.classRestriction }),
         ...(spec.effects !== undefined && { effects: spec.effects }),
@@ -145,6 +148,7 @@ export const LIFE_T1: Mod = mkMod({
     minLevel: 60,
     families: ["Life"],
     spawn: [spawn(TAG_DEFAULT, known(1000))],
+    implicitTags: ["life"],
     text: "+(70-84) to maximum Life",
 });
 
@@ -156,6 +160,7 @@ export const LIFE_T2: Mod = mkMod({
     minLevel: 30,
     families: ["Life"],
     spawn: [spawn(TAG_DEFAULT, known(2000))],
+    implicitTags: ["life"],
 });
 
 /** A second, unrelated prefix so we can fill prefix slots with distinct types. */
@@ -166,6 +171,7 @@ export const INCREASED_MANA: Mod = mkMod({
     minLevel: 1,
     families: ["Mana"],
     spawn: [spawn(TAG_DEFAULT, known(1000))],
+    implicitTags: ["mana"],
 });
 
 /** A third prefix, for filling to a 3-prefix cap with distinct ModTypes. */
@@ -176,6 +182,7 @@ export const INCREASED_ARMOUR: Mod = mkMod({
     minLevel: 1,
     families: ["Defences"],
     spawn: [spawn(TAG_DEFAULT, known(1000))],
+    implicitTags: ["defences"],
 });
 
 /** Fire Resistance, suffix, family ResistFire. */
@@ -186,6 +193,7 @@ export const FIRE_RESIST: Mod = mkMod({
     minLevel: 20,
     families: ["ResistFire"],
     spawn: [spawn(TAG_DEFAULT, known(500))],
+    implicitTags: ["fire", "elemental", "resistance"],
 });
 
 /** Fire & Chaos Resistance, DIFFERENT ModType, but SHARES family ResistFire. */
@@ -196,6 +204,7 @@ export const FIRE_CHAOS_RESIST: Mod = mkMod({
     minLevel: 40,
     families: ["ResistFire", "ResistChaos"],
     spawn: [spawn(TAG_DEFAULT, known(200))],
+    implicitTags: ["fire", "chaos", "resistance"],
 });
 
 /** Two more distinct suffixes, for filling suffix slots to cap. */
@@ -206,6 +215,7 @@ export const COLD_RESIST: Mod = mkMod({
     minLevel: 1,
     families: ["ResistCold"],
     spawn: [spawn(TAG_DEFAULT, known(500))],
+    implicitTags: ["cold", "elemental", "resistance"],
 });
 
 export const LIGHTNING_RESIST: Mod = mkMod({
@@ -215,6 +225,7 @@ export const LIGHTNING_RESIST: Mod = mkMod({
     minLevel: 1,
     families: ["ResistLightning"],
     spawn: [spawn(TAG_DEFAULT, known(500))],
+    implicitTags: ["lightning", "elemental", "resistance"],
 });
 
 /** Amulet-only prefix, isolates the class-restriction gate. */
@@ -282,6 +293,53 @@ export const PROTECT_PREFIXES_CARRIER: Mod = mkMod({
     minLevel: 1,
     spawn: [spawn(TAG_DEFAULT, known(0))],
     effects: [{ kind: "protect", target: { by: "gen", gen: "prefix" } }],
+    text: "prefixes cannot be changed",
+});
+
+/** "Suffixes cannot be changed": a PREFIX-slot Protect(suffix) carrier. */
+export const PROTECT_SUFFIXES_CARRIER: Mod = mkMod({
+    id: "MetaSuffixesCannotChange",
+    type: "MetaSuffixesCannotChange",
+    gen: "prefix",
+    minLevel: 1,
+    spawn: [spawn(TAG_DEFAULT, known(0))],
+    effects: [{ kind: "protect", target: { by: "gen", gen: "suffix" } }],
+    text: "suffixes cannot be changed",
+});
+
+/** "Cannot roll attack modifiers": a SUFFIX pool-restrict carrier keyed on the
+ *  `attack` category tag. */
+export const CANNOT_ROLL_ATTACK_CARRIER: Mod = mkMod({
+    id: "MetaCannotRollAttack",
+    type: "MetaCannotRollAttack",
+    gen: "suffix",
+    minLevel: 1,
+    spawn: [spawn(TAG_DEFAULT, known(0))],
+    effects: [{ kind: "poolRestrict", allows: (m) => !m.implicitTags.has(TagId("attack")) }],
+    text: "cannot roll attack modifiers",
+});
+
+/** "Can have up to 3 crafted modifiers" (multimod): a SUFFIX craftedCap carrier. */
+export const MULTIMOD_CARRIER: Mod = mkMod({
+    id: "MetaMultimod",
+    type: "MetaMultimod",
+    gen: "suffix",
+    minLevel: 1,
+    spawn: [spawn(TAG_DEFAULT, known(0))],
+    effects: [{ kind: "craftedCap", cap: 3 }],
+    text: "can have up to 3 crafted modifiers",
+});
+
+/** An attack-tagged prefix, for testing that "cannot roll attack" excludes it. */
+export const ATTACK_PREFIX: Mod = mkMod({
+    id: "AddedAttack1",
+    type: "AddedAttackDamage",
+    gen: "prefix",
+    minLevel: 1,
+    families: ["AddedPhysical"],
+    spawn: [spawn(TAG_DEFAULT, known(500))],
+    implicitTags: ["attack", "physical"],
+    text: "adds physical attack damage",
 });
 
 /** Approx-zero-weight suffix, ineligible (provably zero, PoE2 estimate). */

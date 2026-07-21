@@ -205,6 +205,21 @@ describe("completion", () => {
         expect(labels).toContain("maximum life");
     });
 
+    it("offers harvest as a statement keyword, then its verbs, then tags", () => {
+        const stmt = getCompletions(SRC, SRC.length, registry).map((c) => c.label);
+        expect(stmt).toContain("harvest");
+
+        const verbSrc = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nharvest `;
+        const verbs = getCompletions(verbSrc, verbSrc.length, registry).map((c) => c.label);
+        expect(verbs).toEqual(expect.arrayContaining(["reforge", "augment"]));
+        expect(verbs).not.toContain("exalt");
+
+        const tagSrc = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nharvest reforge "`;
+        const tags = getCompletions(tagSrc, tagSrc.length, registry).map((c) => c.label);
+        expect(tags).toEqual(expect.arrayContaining(["fire", "caster", "life"]));
+        expect(tags).not.toContain("maximum life"); // tags, not mods
+    });
+
     it("offers local def names as predicates (after a connective too)", () => {
         const src = `craft in poe1
 item { base: "Iron Ring" ilvl: 84 rarity: rare }

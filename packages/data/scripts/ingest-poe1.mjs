@@ -61,6 +61,7 @@ function projectMods(raw) {
             required_level: m.required_level,
             spawn_weights: m.spawn_weights,
             adds_tags: m.adds_tags,
+            implicit_tags: m.implicit_tags ?? [], // tag-directed crafting (fossils, harvest)
             type: m.type,
             is_essence_only: m.is_essence_only ?? false, // for source classification
             // Human-readable fields, kept for fuzzy name resolution.

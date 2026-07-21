@@ -21,6 +21,7 @@ import type {
     NotPred,
     BenchStmt,
     EssenceStmt,
+    HarvestStmt,
     OpStmt,
     ParamRef,
     Pred,
@@ -94,6 +95,12 @@ export const bench = (name: string | ParamRef, tier?: number | ParamRef): BenchS
     kind: "bench",
     name,
     ...(tier !== undefined && { tier }),
+    span: DS,
+});
+export const harvest = (verb: "reforge" | "augment", tag: string | ParamRef): HarvestStmt => ({
+    kind: "harvest",
+    verb,
+    tag,
     span: DS,
 });
 export const restart = (): RestartStmt => ({ kind: "restart", span: DS });

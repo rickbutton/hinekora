@@ -92,7 +92,8 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
 
 ### 3a. `@hinekora/core`
 
-- **model/**: `Item`, `Mod` (one row per _tier_; `type` is the ModType bucket), `Base`
+- **model/**: `Item`, `Mod` (one row per _tier_; `type` is the ModType bucket;
+  `implicitTags` are its category tags for tag-directed crafting — harvest, fossils), `Base`
   (id = metadata path, since display names collide across hundreds of bases), `Weight`
   (provenance-tagged), `Effect` seam, `ModSource`, and the `wf` (well-formedness) rules.
   Branded id types in `model/ids.ts`.
@@ -106,7 +107,9 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
 - **render/**: plain-text renderers (`baseLabel`, item/outcome/error → text).
 - **resolve/**: `Registry` (the resolved data surface). Key methods:
     - `resolveBase / resolveMod / resolveModType(name, ctx?) / resolveCurrency /
-resolveOmen / resolveEssence / resolveBench`
+resolveOmen / resolveEssence / resolveBench / resolveHarvestTag`
+    - `resolveHarvestTag(name)` maps a surface category ("fire", "caster") to its
+      canonical `Mod.implicitTags` tag via the curated `HARVEST_TAGS` table.
     - `resolveModType` is **fuzzy and base-aware**: text → ModType, narrowed to types that
       can actually roll on the given base/ilvl (`ctx`), returning `ambiguous` with
       candidates when several match. Built on `fuzzy.ts`; a query token matches exactly OR
@@ -115,7 +118,7 @@ resolveOmen / resolveEssence / resolveBench`
       bench group-exclusivity check); `typeLabel(type)` → friendly wording for display.
     - Precomputed completion lists: `currencies`/`currencyNames`, `baseNames`,
       `statSuggestions` (each carries its `type` so completion can filter by
-      rollability), `essenceNames`, `benchNames`.
+      rollability), `essenceNames`, `benchNames`, `harvestTags`.
     - `STANDARD_CURRENCIES`: the 9-currency catalog. `name`/`kind` drive the language;
       `displayName`/`description` are curated display metadata (RePoE ships no currency
       descriptions) used only by hover/completion.
@@ -138,7 +141,8 @@ LSP. The lexer emits `eq` for `==` and `assign` for a lone `=` (the def binding)
 Ingest scripts (`scripts/ingest-poe1.mjs`) project the RePoE-fork JSON dump down to just
 the fields needed (mods, bases, essences, bench options), minified, with a **provenance
 manifest** (repoe commit SHA + sha256 hashes; gameVersion "unknown" because repoe doesn't
-stamp it). For a base it also folds the affix-count implicit stats
+stamp it). A mod's projection keeps `implicit_tags` (the category tags harvest and fossils
+filter on). For a base it also folds the affix-count implicit stats
 (`local_maximum_{prefixes,suffixes}_allowed_+`) into a `capDelta` (absent when zero).
 `adapter.ts` adapts rows into model types and stamps `ModSource` via `classifySource`
 (domain + generation_type + is_essence_only). `load.ts`: `loadDefaultPoe1()` →
@@ -309,14 +313,15 @@ Nine orbs, each `AItem → TransferResult` (`{ok, state}` or `{ok:false, failure
 transmute, augment, alteration, regal, alchemy, chaos, exalt, annul, scour. They reduce
 to two primitives: an ADDITIVE add (`addOne`, for transmute/augment/regal/exalt) and a
 REFORGE (`reroll`, for alteration/alchemy/chaos: fresh count range, nothing guaranteed,
-pool becomes `possible`); plus `removeOne` (annul) and `scour` (strip to Normal).
-Notes:
+pool becomes `possible`); plus `removeOne` (annul) and `scour` (strip to Normal, or keep a
+protected side — see metamods). Notes:
 
 - `annul` works on **Magic OR Rare**: the precondition is "has a removable mod", not a
   rarity gate. `scour` on a no-mod item fails as wasted currency.
-- `forcedGen` (from an active omen) constrains an add/remove to one generation, which
-  tightens counts and decides which guarantees survive a removal (unforced removal
-  drops all guarantees; a gen-forced one protects the other side).
+- Removal draws from an **allowed-gens** set = `(omen forcedGen ?? both) − protectedGens`;
+  `removeOne`/`hasRemovable`/`annul`/`harvestAugment` all share it. A guarantee whose
+  generation is not in that set survives (protected, or the omen-spared side); an empty set
+  means nothing is removable.
 - The add-pool is over-approximated by running the real `pool` on a synthetic item
   carrying only the guaranteed mods at rare caps.
 - `withGuaranteed(state, mod)` forces a specific mod present (presence + tier pin +
@@ -324,11 +329,34 @@ Notes:
   (precondition: Normal always, Rare only at ladder tier ≥ 5, never Magic, class must
   be in `grants`; fill capped at `min(ilvl, maxRandomModLevel)`). `bench()` = additive
   add + `withGuaranteed` (preconditions: open slot in the mod's generation; **the
-  one-crafted-mod limit**, where `AItem.crafted` is the count of bench-crafted mods
-  present, a range that `bench` requires provably `< 1` and reforges/scour clear to 0; and
-  **group exclusivity**, where the mod's family must not be possibly-present, via
-  `familiesOfType`). Not modelled: a conflict hidden behind an anonymous "random" affix;
-  the metacraft that raises the crafted-mod limit above one.
+  crafted-mod limit** `craftedCapOfState(a)` (one, or three under an active multimod), where
+  `AItem.crafted` is the count of bench-crafted mods present, a range that `bench` requires
+  provably below the cap and reforges/scour clear to 0; and **group exclusivity**, where the
+  mod's family must not be possibly-present, via `familiesOfType`). Not modelled: a conflict
+  hidden behind an anonymous "random" affix.
+- **Metamods** (bench meta-crafting mods) are effect-carriers: an effect is active iff its
+  carrier type is GUARANTEED present, the abstract analogue of §9's derived `effects(it)`.
+  `activeEffects(a, registry)` folds `registry.effectsOfType` over the guaranteed types;
+  `protectedGens`/`craftedCapOfState`/`metamodBlocksSourced` are views of it. Placement is
+  just `bench "prefixes cannot be changed"`. Wiring: **protect** shrinks the allowed-gens
+  removal set (annul/harvest augment respect it); **scour** keeps the protected side and
+  stays Rare (`scourKeeping`); **cannot-roll** is a `poolRestrict` that folds through `pool`
+  for free (the synthetic item carries the guaranteed carrier); **multimod** raises the
+  crafted cap; **essence** is blocked (`metamodBlocks`) by a protect or cannot-roll metamod;
+  **chaos** and **harvest reforge** keep the protected side and reroll the rest
+  (`keepProtectedReroll` — protected guarantees + tier pins + a count floor survive, open
+  protected slots may fill from the fresh pool, the metamod on the rerolled side goes). The
+  curated id→effect table is `model/metamods.ts`.
+- **Harvest** (tag-directed): `harvestReforge(a, tag)` = `reroll` plus a DISJUNCTIVE
+  guarantee — "at least one mod carrying `tag`" — ANDed into the presence BDD as one OR
+  clause over the tagged types (never an enumerated union; a wide clause is sound, just
+  skipped by `disjunctiveGuarantees`' variable guard). `harvestAugment(a, tag)` (Craft of
+  Exile's "Add/Remove") removes a random other mod then adds a tagged one: net count
+  unchanged, and the random removal reuses `removeOne` (unforced), so in v1 every present
+  mod is removable and all prior guarantees drop — the seam a future protect-effect
+  metacraft narrows so protected guarantees survive. A tag is matched against
+  `Mod.implicitTags`; an empty tagged pool fails (`harvestEmptyPool`). Preconditions: Rare;
+  augment also needs a removable mod.
 
 ### `diagnostics.ts`: messages
 

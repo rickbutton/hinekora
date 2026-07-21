@@ -181,6 +181,40 @@ describe("parser — essence statement", () => {
     });
 });
 
+describe("parser — harvest statement", () => {
+    const bodyOf = (src: string) =>
+        parseOk(`craft in poe1 item { base: "R" ilvl: 1 rarity: rare } ${src}`).body[0]!;
+
+    it("parses reforge and augment with a quoted tag", () => {
+        expect(bodyOf('harvest reforge "fire"')).toMatchObject({
+            kind: "harvest",
+            verb: "reforge",
+            tag: "fire",
+        });
+        expect(bodyOf('harvest augment "caster"')).toMatchObject({
+            kind: "harvest",
+            verb: "augment",
+            tag: "caster",
+        });
+    });
+
+    it("rejects a verb other than reforge/augment", () => {
+        expect(() => bodyOf('harvest remove "cold"')).toThrow(/reforge.*augment/);
+    });
+
+    it("parses a param in the tag slot inside a proc", () => {
+        const c = parseOk(
+            `craft in poe1 item { base: "R" ilvl: 1 rarity: rare } def h(t) { harvest reforge t }
+h("fire")`,
+        );
+        expect(c.procs[0]!.body[0]).toMatchObject({
+            kind: "harvest",
+            verb: "reforge",
+            tag: { param: "t" },
+        });
+    });
+});
+
 describe("parser — predicate defs", () => {
     const parseDef = (src: string): Craft =>
         parseOk(`craft in poe1 item { base: "R" ilvl: 1 rarity: rare } ${src}`);

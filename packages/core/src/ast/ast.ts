@@ -93,7 +93,15 @@ export interface ItemBlock {
 // --- Statements (surface §3–§4) -------------------------------------------
 
 export type Stmt =
-    OpStmt | EssenceStmt | BenchStmt | RestartStmt | UntilStmt | IfStmt | WithOmenStmt | CallStmt;
+    | OpStmt
+    | EssenceStmt
+    | BenchStmt
+    | HarvestStmt
+    | RestartStmt
+    | UntilStmt
+    | IfStmt
+    | WithOmenStmt
+    | CallStmt;
 
 /** A currency/operation line, a single (still-unresolved) currency name. */
 export interface OpStmt {
@@ -125,6 +133,20 @@ export interface BenchStmt {
     readonly kind: "bench";
     readonly name: string | ParamRef;
     readonly tier?: number | ParamRef;
+    readonly span: SourceSpan;
+}
+
+/**
+ * `harvest <verb> "<tag>"`, a tag-directed harvest craft. `reforge` rerolls the
+ * item guaranteeing a mod of the tag; `augment` adds a mod of the tag and removes
+ * a random other mod (Craft of Exile's "Add/Remove" method). `tag` is a modifier
+ * category ("fire", "caster"); inside a proc body it may be a `ParamRef`.
+ * Resolution and semantics are the checker's job.
+ */
+export interface HarvestStmt {
+    readonly kind: "harvest";
+    readonly verb: "reforge" | "augment";
+    readonly tag: string | ParamRef;
     readonly span: SourceSpan;
 }
 

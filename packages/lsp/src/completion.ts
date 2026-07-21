@@ -18,9 +18,14 @@ import {
 import { parse } from "@hinekora/parser";
 import { type CompletionItem, CompletionItemKind } from "vscode-languageserver-types";
 
-type Context = "statement" | "base" | "mod" | "predicate" | "essence" | "bench";
+type Context =
+    "statement" | "base" | "mod" | "predicate" | "essence" | "bench" | "harvestVerb" | "harvestTag";
 
 const CONTROL_KEYWORDS = ["until", "if", "else", "with", "restart"];
+/** Statement-starting keywords for the sourced/tag-directed crafts. */
+const SOURCED_KEYWORDS = ["essence", "bench", "harvest"];
+/** The two harvest actions, offered after `harvest`. */
+const HARVEST_VERBS = ["reforge", "augment"];
 
 /** The keywords that can START a predicate (after `if` / `until` / `not`). */
 const PREDICATE_KEYWORDS: { label: string; detail: string; kind: CompletionItemKind }[] = [
@@ -71,7 +76,9 @@ function contextAt(source: string, offset: number): Context {
             while (j >= 0 && isSpace(source[j])) j--;
             const end = j + 1;
             while (j >= 0 && isWord(source[j])) j--;
-            if (PREDICATE_INTRODUCERS.has(source.slice(j + 1, end))) return "predicate";
+            const word = source.slice(j + 1, end);
+            if (PREDICATE_INTRODUCERS.has(word)) return "predicate";
+            if (word === "harvest") return "harvestVerb";
         }
         return "statement";
     }
@@ -94,6 +101,7 @@ function contextAt(source: string, offset: number): Context {
     const word = source.slice(k + 1, end);
     if (word === "essence") return "essence";
     if (word === "bench") return "bench";
+    if (word === "reforge" || word === "augment") return "harvestTag";
     return "mod";
 }
 
@@ -156,6 +164,14 @@ export function getCompletions(
             }));
         case "bench":
             return registry.benchNames.map((label) => ({ label, kind: CompletionItemKind.Value }));
+        case "harvestVerb":
+            return HARVEST_VERBS.map((label) => ({
+                label,
+                detail: `harvest ${label} "<tag>"`,
+                kind: CompletionItemKind.Keyword,
+            }));
+        case "harvestTag":
+            return registry.harvestTags.map((label) => ({ label, kind: CompletionItemKind.Value }));
         case "mod": {
             const ctx = itemContext(source, registry);
             const rollable = ctx
@@ -175,6 +191,7 @@ export function getCompletions(
                     kind: CompletionItemKind.Function,
                 })),
                 ...CONTROL_KEYWORDS.map((label) => ({ label, kind: CompletionItemKind.Keyword })),
+                ...SOURCED_KEYWORDS.map((label) => ({ label, kind: CompletionItemKind.Keyword })),
             ];
     }
 }

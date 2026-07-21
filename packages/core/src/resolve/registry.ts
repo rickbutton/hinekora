@@ -5,7 +5,10 @@
  * since a human writes a stat description, not a tier id.
  */
 import type { Base } from "../model/base.js";
+import type { Effect } from "../model/effects.js";
 import type { ClassId, Game, Gen, GroupId, TypeId } from "../model/ids.js";
+import { TagId } from "../model/ids.js";
+import { withMetamodEffects } from "../model/metamods.js";
 import type { Mod } from "../model/mod.js";
 import type { BenchCraft, EssenceSpec } from "../model/sources.js";
 import { buildTypeIndex, matchTypes, normalizeText } from "./fuzzy.js";
@@ -16,6 +19,8 @@ const ladderOf = (tier: number): number => 8 - tier;
 
 /** Shared empty result for `familiesOfType` on an unknown type. */
 const EMPTY_FAMILIES: ReadonlySet<GroupId> = new Set();
+/** Shared empty result for `effectsOfType` on a non-carrier type. */
+const EMPTY_EFFECTS: readonly Effect[] = [];
 
 /** A stat-description completion suggestion. */
 export interface StatSuggestion {
@@ -72,7 +77,56 @@ export type ResolveError =
     | { readonly kind: "unknownOmen"; readonly name: string }
     | { readonly kind: "unknownEssence"; readonly name: string }
     | { readonly kind: "unknownBench"; readonly name: string }
+    | { readonly kind: "unknownHarvestTag"; readonly name: string }
     | { readonly kind: "ambiguous"; readonly name: string; readonly candidates: readonly string[] };
+
+/**
+ * The harvest modifier categories a craft can target, mapping the surface name a
+ * user writes to the canonical category tag (`Mod.implicitTags`). Curated: the
+ * game groups harvest crafts by these categories, and a couple of surface
+ * spellings ("defence") normalize to the data's tag ("defences").
+ */
+export const HARVEST_TAGS: ReadonlyMap<string, TagId> = new Map(
+    (
+        [
+            ["attack", "attack"],
+            ["attribute", "attribute"],
+            ["caster", "caster"],
+            ["chaos", "chaos"],
+            ["cold", "cold"],
+            ["critical", "critical"],
+            ["defence", "defences"],
+            ["defences", "defences"],
+            ["elemental", "elemental"],
+            ["fire", "fire"],
+            ["life", "life"],
+            ["lightning", "lightning"],
+            ["mana", "mana"],
+            ["minion", "minion"],
+            ["physical", "physical"],
+            ["speed", "speed"],
+        ] as const
+    ).map(([surface, tag]) => [surface, TagId(tag)] as const),
+);
+
+/** One surface label per category, for completion (drops the "defences" alias). */
+const HARVEST_TAG_LABELS: readonly string[] = [
+    "attack",
+    "attribute",
+    "caster",
+    "chaos",
+    "cold",
+    "critical",
+    "defence",
+    "elemental",
+    "fire",
+    "life",
+    "lightning",
+    "mana",
+    "minion",
+    "physical",
+    "speed",
+];
 
 export type Resolved<T> =
     { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: ResolveError };
@@ -100,6 +154,9 @@ export interface Registry {
     resolveModType(name: string, ctx?: ModTypeContext): Resolved<TypeId>;
     resolveCurrency(name: string): Resolved<CurrencySpec>;
     resolveOmen(name: string): Resolved<OmenSpec>;
+    /** Resolve a harvest modifier category ("fire", "caster") to its canonical
+     *  category tag (`Mod.implicitTags`). */
+    resolveHarvestTag(name: string): Resolved<TagId>;
     /**
      * Resolve an essence by full name (`"Deafening Essence of Greed"`) or
      * type + tier (`"greed"`, `tier = 1` where T1 = Deafening = best); a bare
@@ -117,6 +174,9 @@ export interface Registry {
     /** The mod groups (families) a ModType belongs to, across its tiers;
      *  drives the bench group-exclusivity check. */
     familiesOfType(type: TypeId): ReadonlySet<GroupId>;
+    /** The effects a ModType carries (non-empty only for metamod carriers);
+     *  drives the abstract metamod folds (protection, cannot-roll, multimod). */
+    effectsOfType(type: TypeId): readonly Effect[];
     /** Canonical range-stripped wording for a ModType ("maximum life"), for
      *  hover/diagnostics; falls back to the raw TypeId. */
     typeLabel(type: TypeId): string;
@@ -134,6 +194,8 @@ export interface Registry {
     readonly essenceNames: readonly string[];
     /** Distinct bench-mod descriptions, for `bench "…"` completion. */
     readonly benchNames: readonly string[];
+    /** Harvest category labels, for `harvest <verb> "…"` completion. */
+    readonly harvestTags: readonly string[];
 }
 
 /**
@@ -241,7 +303,11 @@ export function buildRegistry(data: RegistryData): Registry {
         else baseByName.set(nk, [b]);
     }
 
-    const modById = new Map(data.mods.map((m) => [norm(m.id), m] as const));
+    // Attach curated metamod effects (protect / cannot-roll / multimod) to the
+    // catalog; every downstream view reads this effect-bearing catalog.
+    const catalog = withMetamodEffects(data.mods);
+
+    const modById = new Map(catalog.map((m) => [norm(m.id), m] as const));
     const modAlias = new Map(
         Object.entries(data.modAliases ?? {}).map(
             ([alias, id]) => [norm(alias), norm(id)] as const,
@@ -258,17 +324,23 @@ export function buildRegistry(data: RegistryData): Registry {
     const benchCrafts = data.benchCrafts ?? [];
 
     const typeGen = new Map<TypeId, Gen>();
-    for (const m of data.mods) if (!typeGen.has(m.type)) typeGen.set(m.type, m.gen);
+    for (const m of catalog) if (!typeGen.has(m.type)) typeGen.set(m.type, m.gen);
 
     // Union of families per ModType, the group set used for bench conflict checks.
     const typeFamilies = new Map<TypeId, Set<GroupId>>();
-    for (const m of data.mods) {
+    for (const m of catalog) {
         let fams = typeFamilies.get(m.type);
         if (!fams) typeFamilies.set(m.type, (fams = new Set()));
         for (const f of m.families) fams.add(f);
     }
 
-    const typeIndex = buildTypeIndex(data.mods);
+    // Effects per ModType, from the effect-carrying mods (metamods). A carrier's
+    // type is unique to it, so a plain last-wins map is exact.
+    const typeEffects = new Map<TypeId, readonly Effect[]>();
+    for (const m of catalog)
+        if (m.effects && m.effects.length > 0) typeEffects.set(m.type, m.effects);
+
+    const typeIndex = buildTypeIndex(catalog);
 
     // --- precompute completion lists ---
     const currencies = [...new Set(currencyByName.values())];
@@ -287,7 +359,7 @@ export function buildRegistry(data: RegistryData): Registry {
     }
 
     return {
-        catalog: data.mods,
+        catalog,
         currencyNames,
         currencies,
         baseNames,
@@ -302,6 +374,7 @@ export function buildRegistry(data: RegistryData): Registry {
                     .filter((t) => t.length > 0),
             ),
         ],
+        harvestTags: HARVEST_TAG_LABELS,
 
         resolveBase(name) {
             const key = norm(name);
@@ -338,8 +411,7 @@ export function buildRegistry(data: RegistryData): Registry {
             // Narrow to types that can actually roll on this item, when known.
             if (ctx) {
                 const rollable = matches.filter(
-                    (m) =>
-                        rollableTiers(data.mods, ctx.game, ctx.base, ctx.ilvl, m.type).length > 0,
+                    (m) => rollableTiers(catalog, ctx.game, ctx.base, ctx.ilvl, m.type).length > 0,
                 );
                 if (rollable.length > 0) matches = rollable;
             }
@@ -359,6 +431,11 @@ export function buildRegistry(data: RegistryData): Registry {
         resolveOmen(name) {
             const o = omenByName.get(norm(name));
             return o ? found(o) : fail({ kind: "unknownOmen", name });
+        },
+
+        resolveHarvestTag(name) {
+            const tag = HARVEST_TAGS.get(norm(name));
+            return tag ? found(tag) : fail({ kind: "unknownHarvestTag", name });
         },
 
         resolveEssence(name, tier) {
@@ -416,6 +493,10 @@ export function buildRegistry(data: RegistryData): Registry {
 
         familiesOfType(type) {
             return typeFamilies.get(type) ?? EMPTY_FAMILIES;
+        },
+
+        effectsOfType(type) {
+            return typeEffects.get(type) ?? EMPTY_EFFECTS;
         },
 
         typeLabel(type) {

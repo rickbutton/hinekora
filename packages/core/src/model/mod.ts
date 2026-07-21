@@ -32,6 +32,13 @@ export interface Mod {
     /** `Mods.TagsKeys`, tags this mod ADDS to the item once present. */
     readonly addsTags: ReadonlySet<TagId>;
     /**
+     * The mod's own category tags (fire, caster, life, defences, …), which
+     * drive tag-directed crafting (harvest, fossils). Distinct from `spawn`
+     * (base-eligibility tags) and `addsTags` (tags this mod grants the item).
+     * `Mods.ImplicitTags` in the source data.
+     */
+    readonly implicitTags: ReadonlySet<TagId>;
+    /**
      * `SpawnWeight_TagsKeys ‖ _Values`, ordered spawn table. Eligibility and
      * weight are resolved by first-match against the BASE item's tags
      * (see `lookupWeight`). Order matters: earlier entries win, which is how a

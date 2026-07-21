@@ -5,7 +5,8 @@
  * (set by an active omen) constrains an add/remove to one generation, which
  * tightens counts and changes which guarantees survive.
  */
-import type { ClassId, Gen, ModId, Rarity, TypeId } from "../model/ids.js";
+import { craftedCapOf, type Effect } from "../model/effects.js";
+import type { ClassId, Gen, ModId, Rarity, TagId, TypeId } from "../model/ids.js";
 import type { Item } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
 import type { EssenceSpec } from "../model/sources.js";
@@ -35,7 +36,9 @@ export type PreconditionFailure =
     | { readonly kind: "essenceRarity"; readonly tier: number; readonly actual: Rarity }
     | { readonly kind: "essenceClass"; readonly essence: string; readonly itemClass: ClassId }
     | { readonly kind: "rarityUnsupported"; readonly rarity: Rarity }
-    | { readonly kind: "craftedLimit" };
+    | { readonly kind: "craftedLimit"; readonly cap: number }
+    | { readonly kind: "harvestEmptyPool"; readonly tag: TagId }
+    | { readonly kind: "metamodBlocks" };
 
 export type TransferResult =
     | { readonly ok: true; readonly state: AItem }
@@ -66,14 +69,64 @@ export function exalt(a: AItem, forcedGen: Gen | undefined, registry: Registry):
 
 export function annul(a: AItem, forcedGen: Gen | undefined, registry: Registry): TransferResult {
     // No rarity gate, annul works on anything with a removable mod, and a
-    // Normal item already fails `hasRemovable` with the accurate reason.
-    if (!hasRemovable(a, forcedGen))
+    // Normal item already fails `hasRemovable` with the accurate reason. A
+    // protection metamod shields its generation, so the removal draws only from
+    // the unprotected side.
+    const allowed = removalGens(a, forcedGen, registry);
+    if (!hasRemovable(a, allowed))
         return fail({ kind: "nothingToRemove", ...(forcedGen && { gen: forcedGen }) });
-    return ok(removeOne(a, forcedGen, registry));
+    return ok(removeOne(a, allowed, registry));
 }
 
 const wrongRarity = (needed: Rarity, actual: Rarity): TransferResult =>
     fail({ kind: "wrongRarity", needed, actual });
+
+// --- metamod effects (derived from guaranteed carriers) -------------------
+//
+// A metamod's effect is active iff its carrier type is GUARANTEED present.
+// Mirrors the concrete derived-effects model (§9): a merely-possible carrier is
+// treated as absent, which is sound in every direction — protection that
+// preserves guarantees, and restrictions/blocks that would constrain or reject a
+// later op, all require the carrier to be provably there.
+
+const ALL_GENS: readonly Gen[] = ["prefix", "suffix"];
+
+/** The effects active right now: the union over guaranteed effect-carriers. */
+function activeEffects(a: AItem, registry: Registry): readonly Effect[] {
+    const out: Effect[] = [];
+    for (const t of guaranteedTypes(a)) out.push(...registry.effectsOfType(t));
+    return out;
+}
+
+/** Generations shielded from removal by an active `protect(gen)` metamod. */
+function protectedGens(a: AItem, registry: Registry): ReadonlySet<Gen> {
+    const out = new Set<Gen>();
+    for (const e of activeEffects(a, registry)) {
+        if (e.kind === "protect" && e.target.by === "gen") out.add(e.target.gen);
+    }
+    return out;
+}
+
+/** The crafted-mod limit here, raised by an active "multimod" metamod. */
+function craftedCapOfState(a: AItem, registry: Registry): number {
+    return craftedCapOf(activeEffects(a, registry));
+}
+
+/** Do the active metamods block a sourced craft (essence/fossil)? Protection and
+ *  cannot-roll prevent it; multimod alone does not. */
+function metamodBlocksSourced(a: AItem, registry: Registry): boolean {
+    return activeEffects(a, registry).some(
+        (e) => e.kind === "protect" || e.kind === "poolRestrict",
+    );
+}
+
+/** The generations a removal may draw from: the omen-forced gen (or both),
+ *  minus any protected by a metamod. Empty ⇒ nothing is removable. */
+function removalGens(a: AItem, forcedGen: Gen | undefined, registry: Registry): ReadonlySet<Gen> {
+    const shielded = protectedGens(a, registry);
+    const base = forcedGen ? [forcedGen] : ALL_GENS;
+    return new Set(base.filter((g) => !shielded.has(g)));
+}
 
 // --- the other common currencies ------------------------------------------
 //
@@ -101,17 +154,29 @@ export function alchemy(a: AItem, registry: Registry): TransferResult {
     return ok(reroll(a, "rare", [4, 6], registry));
 }
 
-/** Chaos Orb: reforge a Rare item (4–6 fresh mods). */
+/** Chaos Orb: reforge a Rare item (4–6 fresh mods). A "cannot be changed" metamod
+ *  makes it keep that side and reroll only the other (see `keepProtectedReroll`). */
 export function chaos(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "rare") return wrongRarity("rare", a.rarity);
+    const shielded = protectedGens(a, registry);
+    if (shielded.size > 0) return ok(keepProtectedReroll(a, shielded, registry));
     return ok(reroll(a, "rare", [4, 6], registry));
 }
 
 /** Orb of Scouring: strip every mod, returning the item to Normal. Wasted only
  *  on an already-Normal item, a Magic base with zero affixes (e.g. a magic
- *  Simplex) still drops to Normal, so rarity, not mod count, is the gate. */
-export function scour(a: AItem): TransferResult {
+ *  Simplex) still drops to Normal, so rarity, not mod count, is the gate.
+ *  A protection metamod makes scour keep its side (see `scourKeeping`). */
+export function scour(a: AItem, registry: Registry): TransferResult {
     if (a.rarity === "normal") return fail({ kind: "nothingToRemove" });
+    const shielded = protectedGens(a, registry);
+    if (shielded.size > 0) {
+        // With a "cannot be changed" metamod, scour removes the WHOLE unprotected
+        // side (including the metamod) and keeps the protected side; the item
+        // stays Rare. Both sides protected ⇒ nothing to remove (wasted scour).
+        if (ALL_GENS.every((g) => shielded.has(g))) return fail({ kind: "nothingToRemove" });
+        return ok(scourKeeping(a, shielded, registry));
+    }
     const next: AItem = {
         ...a,
         rarity: "normal",
@@ -124,6 +189,33 @@ export function scour(a: AItem): TransferResult {
     return ok(settled(next));
 }
 
+/** Scour that respects protection: keep the protected generations (guarantees,
+ *  counts, tiers, pool) and clear the rest, staying at the current rarity. */
+function scourKeeping(a: AItem, keep: ReadonlySet<Gen>, registry: Registry): AItem {
+    const genOf = (t: TypeId): Gen => registry.genOfType(t) ?? "prefix";
+    const prefix: Range = keep.has("prefix") ? a.counts.prefix : [0, 0];
+    const suffix: Range = keep.has("suffix") ? suffixRange(a) : [0, 0];
+    const total: Range = [prefix[0] + suffix[0], prefix[1] + suffix[1]];
+
+    const keptGuarantees = new Set<TypeId>();
+    for (const t of guaranteedTypes(a)) if (keep.has(genOf(t))) keptGuarantees.add(t);
+    const possible = new Set<TypeId>();
+    for (const t of a.possible) if (keep.has(genOf(t))) possible.add(t);
+    const tiers = new Map<TypeId, ReadonlySet<ModId>>();
+    for (const [t, s] of a.tiers) if (keep.has(genOf(t))) tiers.set(t, s);
+
+    // Every guaranteed metamod carrier on the stripped side is provably crafted
+    // and provably gone, so drop it from the crafted count; any crafted mod on the
+    // kept side may survive, so the lower bound falls to zero.
+    let strippedCarriers = 0;
+    for (const t of guaranteedTypes(a)) {
+        if (!keep.has(genOf(t)) && registry.effectsOfType(t).length > 0) strippedCarriers++;
+    }
+    const crafted: Range = [0, Math.max(0, a.crafted[1] - strippedCarriers)];
+    const presence = presenceFacts(a.bdd, keptGuarantees, excludedTypes(a));
+    return settled({ ...a, counts: { total, prefix }, presence, possible, tiers, crafted });
+}
+
 /**
  * Apply an essence: reforge to Rare with one guaranteed mod (fixed per item
  * class) plus a random fill. Preconditions: Normal always, Rare only for ladder
@@ -132,6 +224,9 @@ export function scour(a: AItem): TransferResult {
  * ilvl; only the random fill respects level caps.
  */
 export function essence(a: AItem, spec: EssenceSpec, registry: Registry): TransferResult {
+    // Essences (like fossils) cannot be used while a protection or cannot-roll
+    // metamod is on the item; the multimod metamod alone does not block them.
+    if (metamodBlocksSourced(a, registry)) return fail({ kind: "metamodBlocks" });
     if (a.rarity === "magic" || (a.rarity === "rare" && spec.tier < 5)) {
         return fail({ kind: "essenceRarity", tier: spec.tier, actual: a.rarity });
     }
@@ -189,15 +284,16 @@ function withGuaranteed(a: AItem, mod: Mod): AItem {
 /**
  * Apply a crafting-bench mod: add the specific `mod`, guaranteed and pinned.
  * Preconditions: an open slot in its generation (a Normal item, cap 0, naturally
- * has none); no more than one crafted mod (the "can have multiple crafted mods"
- * metacraft is not modelled); and the mod's group not already possibly present.
- * Class fit is enforced upstream by `resolveBench`.
+ * has none); the crafted-mod count below the limit (one, or three under an active
+ * "Can have up to 3 Crafted Modifiers" metamod); and the mod's group not already
+ * possibly present. Class fit is enforced upstream by `resolveBench`.
  */
 export function bench(a: AItem, mod: Mod, registry: Registry): TransferResult {
     if (!hasOpenSlot(a, mod.gen)) return fail({ kind: "noOpenSlot", gen: mod.gen });
-    // An item holds at most one bench-crafted mod. If one might already be present
-    // (crafted could be ≥ 1), a second isn't provably safe.
-    if (a.crafted[1] >= 1) return fail({ kind: "craftedLimit" });
+    // An item holds at most `cap` bench-crafted mods (1, or 3 under multimod). If
+    // that many might already be present, another isn't provably safe.
+    const cap = craftedCapOfState(a, registry);
+    if (a.crafted[1] >= cap) return fail({ kind: "craftedLimit", cap });
     // If the item may already carry a mod in the bench mod's group, the add isn't
     // provably safe (an item holds one mod per group). A conflict hidden behind an
     // anonymous "random" affix is not caught, known modelling gap.
@@ -242,6 +338,107 @@ function sharesFamilyWithPresent(a: AItem, mod: Mod, registry: Registry): boolea
     return false;
 }
 
+// --- harvest (tag-directed crafting) --------------------------------------
+//
+// A harvest craft targets mods by category tag (`Mod.implicitTags`): fire,
+// caster, life, … The guarantee it produces is DISJUNCTIVE — "at least one mod
+// of the tag" — which folds into the presence BDD as one OR clause over the
+// tagged types, never an enumerated outcome union. A tag spans many types, so
+// that clause can be wide; `disjunctiveGuarantees`' variable guard simply skips
+// extracting it (sound: it only under-claims).
+
+/**
+ * Harvest reforge: reroll to a fresh Rare (like chaos), guaranteeing at least
+ * one mod carrying `tag`. Precondition: Rare, and at least one mod of the tag
+ * can roll on this base/ilvl (an empty tagged pool is the grayed-out case in the
+ * crafting UI).
+ */
+export function harvestReforge(a: AItem, tag: TagId, registry: Registry): TransferResult {
+    if (a.rarity !== "rare") return wrongRarity("rare", a.rarity);
+    // Tagged types the fresh reforge could lay down, drawn from the empty-item
+    // pool (the widest, matching what `reroll` fills from).
+    const tagged = taggedTypes(
+        addableMods({ ...a, presence: a.bdd.TRUE }, undefined, registry),
+        tag,
+    );
+    if (tagged.length === 0) return fail({ kind: "harvestEmptyPool", tag });
+    // A "cannot be changed" metamod keeps its side; otherwise a full reforge.
+    const shielded = protectedGens(a, registry);
+    const rerolled =
+        shielded.size > 0
+            ? keepProtectedReroll(a, shielded, registry)
+            : reroll(a, "rare", [4, 6], registry);
+    return ok(withTaggedDisjunction(rerolled, tagged));
+}
+
+/**
+ * Harvest augment (Craft of Exile's "Add/Remove"): add a mod carrying `tag` and
+ * remove a random OTHER mod. Net affix count unchanged; no open slot needed
+ * (the remove precedes the add). The removed mod is a random REMOVABLE one, so
+ * every removable guarantee could be it and drops; the only surviving new fact
+ * is "at least one mod of the tag" (the added mod, which is not the removed
+ * "other"). Precondition: Rare, a removable mod present, and a non-empty tagged
+ * pool.
+ */
+export function harvestAugment(a: AItem, tag: TagId, registry: Registry): TransferResult {
+    if (a.rarity !== "rare") return wrongRarity("rare", a.rarity);
+    // Remove a random removable mod, drawn only from the unprotected side: a
+    // "prefixes cannot be changed" spares every prefix guarantee here. `annul`
+    // and this share one removal notion, so protection folds in for free.
+    const allowed = removalGens(a, undefined, registry);
+    if (!hasRemovable(a, allowed)) return fail({ kind: "nothingToRemove" });
+    const removed = removeOne(a, allowed, registry);
+    // The tagged pool is taken AFTER the removal frees a slot.
+    const addable = addableMods(removed, undefined, registry).filter((m) =>
+        m.implicitTags.has(tag),
+    );
+    if (addable.length === 0) return fail({ kind: "harvestEmptyPool", tag });
+    return ok(addTagged(removed, addable, tag));
+}
+
+/** The distinct ModTypes among `mods` carrying `tag`. */
+function taggedTypes(mods: readonly Mod[], tag: TagId): TypeId[] {
+    const out = new Set<TypeId>();
+    for (const m of mods) if (m.implicitTags.has(tag)) out.add(m.type);
+    return [...out];
+}
+
+/** AND "at least one of `types` is present" into the presence BDD. */
+function withTaggedDisjunction(a: AItem, types: readonly TypeId[]): AItem {
+    let clause = a.bdd.FALSE;
+    for (const t of types) clause = a.bdd.or(clause, a.bdd.variable(t));
+    return settled({ ...a, presence: a.bdd.and(a.presence, clause) });
+}
+
+/**
+ * Additively lay down one mod drawn only from `added` (all carrying `tag`):
+ * bump the count by one, admit the tagged types into `possible`/`tiers`, and
+ * assert the tagged disjunction. Used by harvest augment after its removal.
+ */
+function addTagged(a: AItem, added: readonly Mod[], tag: TagId): AItem {
+    const maxT = maxTotal("rare", a.base);
+    const total: Range = [
+        Math.min(a.counts.total[0] + 1, maxT),
+        Math.min(a.counts.total[1] + 1, maxT),
+    ];
+    // The added mod could land in either generation, so the prefix range widens up.
+    const prefix: Range = [a.counts.prefix[0], Math.min(a.counts.prefix[1] + 1, maxT)];
+    const possible = new Set(a.possible);
+    const tiers = new Map(a.tiers);
+    for (const m of added) {
+        possible.add(m.type);
+        const cur = tiers.get(m.type);
+        tiers.set(m.type, cur ? new Set([...cur, m.id]) : new Set([m.id]));
+    }
+    // An add removes nothing, so relax exclusions on the added types, then assert
+    // that at least one of them is now present.
+    const presence = admitAdd(a, added);
+    return withTaggedDisjunction(
+        { ...a, counts: { total, prefix }, presence, possible, tiers },
+        taggedTypes(added, tag),
+    );
+}
+
 /**
  * A reforge: discard every current mod and lay down a fresh set of the given
  * rarity and count range. Nothing stays guaranteed; the base's full add-pool
@@ -276,6 +473,52 @@ function reroll(a: AItem, rarity: Rarity, want: Range, registry: Registry): AIte
     return settled(next);
 }
 
+/**
+ * A reforge that respects protection (chaos / harvest reforge on a "cannot be
+ * changed" item): keep the protected side's mods — guarantees, tier pins, and a
+ * count floor — and reroll the unprotected side, with open protected slots free
+ * to fill from the fresh pool. The metamod sits on the rerolled side, so it goes.
+ */
+function keepProtectedReroll(a: AItem, keep: ReadonlySet<Gen>, registry: Registry): AItem {
+    const genOf = (t: TypeId): Gen => registry.genOfType(t) ?? "prefix";
+    const pCap = sideCap("prefix", a.rarity, a.base);
+
+    // A kept side keeps its floor (existing mods survive) and may fill to cap; a
+    // rerolled side ranges over the whole 0..cap.
+    const prefix: Range = [keep.has("prefix") ? a.counts.prefix[0] : 0, pCap];
+    const suffixLo = keep.has("suffix") ? suffixRange(a)[0] : 0;
+    const total: Range = [prefix[0] + suffixLo, maxTotal(a.rarity, a.base)];
+
+    // Guarantees on the kept side survive; exclusions clear (a reforge or an
+    // open-slot fill can introduce any mod).
+    const kept = new Set<TypeId>();
+    for (const t of guaranteedTypes(a)) if (keep.has(genOf(t))) kept.add(t);
+    const presence = presenceFacts(a.bdd, kept, new Set());
+
+    // The fresh pool feeds the rerolled side and any open kept-side slots.
+    const fresh = addableMods({ ...a, presence: a.bdd.TRUE }, undefined, registry);
+    const possible = new Set<TypeId>();
+    const tiers = new Map<TypeId, ReadonlySet<ModId>>();
+    for (const t of a.possible) if (keep.has(genOf(t))) possible.add(t);
+    for (const [t, s] of a.tiers) if (keep.has(genOf(t))) tiers.set(t, s);
+    for (const m of fresh) {
+        possible.add(m.type);
+        if (kept.has(m.type)) continue; // keep the kept side's pinned tier
+        const cur = tiers.get(m.type);
+        tiers.set(m.type, cur ? new Set([...cur, m.id]) : new Set([m.id]));
+    }
+
+    // The metamod (on the rerolled side) is gone; a crafted mod on the kept side
+    // may survive — the same accounting as `scourKeeping`.
+    let strippedCarriers = 0;
+    for (const t of guaranteedTypes(a)) {
+        if (!keep.has(genOf(t)) && registry.effectsOfType(t).length > 0) strippedCarriers++;
+    }
+    const crafted: Range = [0, Math.max(0, a.crafted[1] - strippedCarriers)];
+
+    return settled({ ...a, counts: { total, prefix }, presence, possible, tiers, crafted });
+}
+
 // --- precondition predicates (must hold in EVERY arm) ---------------------
 
 function hasOpenSlot(a: AItem, forcedGen: Gen | undefined): boolean {
@@ -284,10 +527,11 @@ function hasOpenSlot(a: AItem, forcedGen: Gen | undefined): boolean {
     return a.counts.total[1] < maxTotal(a.rarity, a.base); // some slot open in every arm
 }
 
-function hasRemovable(a: AItem, forcedGen: Gen | undefined): boolean {
-    if (forcedGen === "prefix") return a.counts.prefix[0] >= 1; // a prefix present in every arm
-    if (forcedGen === "suffix") return suffixRange(a)[0] >= 1;
-    return a.counts.total[0] >= 1;
+function hasRemovable(a: AItem, allowed: ReadonlySet<Gen>): boolean {
+    if (allowed.size === 0) return false; // every side protected → nothing to remove
+    if (allowed.size === 2) return a.counts.total[0] >= 1; // any affix in every arm
+    // A single allowed generation: that side must hold an affix in every arm.
+    return allowed.has("prefix") ? a.counts.prefix[0] >= 1 : suffixRange(a)[0] >= 1;
 }
 
 // --- the add / remove summaries -------------------------------------------
@@ -324,21 +568,22 @@ function addOne(a: AItem, forcedGen: Gen | undefined, rarity: Rarity, registry: 
     return settled(next);
 }
 
-function removeOne(a: AItem, forcedGen: Gen | undefined, registry: Registry): AItem {
+function removeOne(a: AItem, allowed: ReadonlySet<Gen>, registry: Registry): AItem {
     const total: Range = [Math.max(0, a.counts.total[0] - 1), Math.max(0, a.counts.total[1] - 1)];
-    const prefix: Range =
-        forcedGen === "prefix"
-            ? [Math.max(0, a.counts.prefix[0] - 1), Math.max(0, a.counts.prefix[1] - 1)]
-            : forcedGen === "suffix"
-              ? a.counts.prefix
-              : [Math.max(0, a.counts.prefix[0] - 1), a.counts.prefix[1]];
+    const onlyPrefix = allowed.size === 1 && allowed.has("prefix");
+    const onlySuffix = allowed.size === 1 && allowed.has("suffix");
+    const prefix: Range = onlyPrefix
+        ? [Math.max(0, a.counts.prefix[0] - 1), Math.max(0, a.counts.prefix[1] - 1)]
+        : onlySuffix
+          ? a.counts.prefix
+          : [Math.max(0, a.counts.prefix[0] - 1), a.counts.prefix[1]];
 
-    // A guarantee survives only if the removed affix could not have been it:
-    // a gen-forced removal spares the other generation; an unforced one could
-    // take anything. Exclusions always survive (a removal never adds a mod).
+    // A guarantee survives only if the removed affix could not have been it: a
+    // guarantee in a generation the removal cannot reach (protected, or spared by
+    // an omen) holds. Exclusions always survive (a removal never adds a mod).
     const presence = presenceFacts(
         a.bdd,
-        survivingGuarantees(a, forcedGen, registry),
+        survivingGuarantees(a, allowed, registry),
         excludedTypes(a),
     );
     // The removed affix might have been the crafted mod, so the lower bound drops.
@@ -347,15 +592,17 @@ function removeOne(a: AItem, forcedGen: Gen | undefined, registry: Registry): AI
     return settled(next);
 }
 
+/** Guarantees the removal cannot reach: a guaranteed type whose generation is not
+ *  in the removable set (protected, or the omen-spared side) survives. */
 function survivingGuarantees(
     a: AItem,
-    forcedGen: Gen | undefined,
+    allowed: ReadonlySet<Gen>,
     registry: Registry,
 ): ReadonlySet<TypeId> {
-    if (forcedGen === undefined) return new Set();
-    const safeGen: Gen = forcedGen === "prefix" ? "suffix" : "prefix";
     const out = new Set<TypeId>();
-    for (const t of guaranteedTypes(a)) if (registry.genOfType(t) === safeGen) out.add(t);
+    for (const t of guaranteedTypes(a)) {
+        if (!allowed.has(registry.genOfType(t) ?? "prefix")) out.add(t);
+    }
     return out;
 }
 

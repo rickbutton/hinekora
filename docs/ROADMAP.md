@@ -10,9 +10,9 @@
   from completion candidates but never shown. Surface it as a "without …" line: an
   additive LAYER over the presence decomposition (units → prime implicates →
   cardinality), not a special case. That layering is the whole point of the hover design.
-- **Fossils / veiled:** the third and fourth sourced currencies. Adding them justifies a
-  sourced-op surface refactor (essence + bench are the only two now; the rule of three).
-  Fossils reforge with weight biasing; veiled is add-then-unveil.
+- **Fossils / veiled:** two more sourced currencies. Fossils reforge with weight biasing
+  keyed off the category tags harvest already ingests (`Mod.implicitTags`); veiled is
+  add-then-unveil.
 - **Operation-function follow-ons** (the feature shipped; these round it out):
     - statement-position **completion** of proc names (completion still lists only
       currencies + control keywords).

@@ -23,6 +23,10 @@ export interface RepoeMod {
     /** Ordered; first entry whose tag the base has wins (see core `lookupWeight`). */
     readonly spawn_weights: readonly RepoeSpawnWeight[];
     readonly adds_tags: readonly string[];
+    /** The tags that drive tag-directed crafting (fossils, harvest): a mod's
+     * category membership (fire, caster, life, defences, …). Optional because
+     * older projections omitted it. */
+    readonly implicit_tags?: readonly string[];
     readonly type: string;
     // The following are present in raw RePoE exports but dropped by the ingest
     // projection (the core model doesn't use them), so they are optional here.

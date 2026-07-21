@@ -20,7 +20,7 @@
     },
     "files": {
         "mods.json": {
-            "sha256": "96abec7841813694c8b9c034d10eeb0123ec04848252e78b8c0e468e7f7e3f43",
+            "sha256": "bbf68a27dfa3d29574268eba711d02c3cf0391059afb957486d6e03797e5cb75",
             "count": 12643
         },
         "base_items.json": {

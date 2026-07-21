@@ -52,6 +52,16 @@ describe("adaptMod", () => {
     it("stamps the acquisition source", () => {
         expect(adaptMod("X", LIFE)?.source).toBe("natural");
     });
+
+    it("carries the category (implicit) tags used for tag-directed crafting", () => {
+        const m = adaptMod("FireResist1", {
+            ...LIFE,
+            implicit_tags: ["fire", "elemental", "resistance"],
+        })!;
+        expect([...m.implicitTags]).toEqual(["fire", "elemental", "resistance"]);
+        // A projection without the field leaves the set empty, not undefined.
+        expect(adaptMod("X", LIFE)!.implicitTags.size).toBe(0);
+    });
 });
 
 describe("classifySource", () => {

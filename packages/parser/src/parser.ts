@@ -14,6 +14,7 @@ import {
     type Craft,
     type Def,
     type EssenceStmt,
+    type HarvestStmt,
     type IfStmt,
     type ItemBlock,
     type ParamRef,
@@ -348,6 +349,7 @@ class Parser {
         if (this.atKeyword("with")) return this.parseWith();
         if (this.atKeyword("essence")) return this.parseEssence();
         if (this.atKeyword("bench")) return this.parseBench();
+        if (this.atKeyword("harvest")) return this.parseHarvest();
         if (this.atKeyword("restart")) {
             const t = this.advance();
             return { kind: "restart", span: t.span };
@@ -429,6 +431,20 @@ class Parser {
             ...(tier !== undefined && { tier }),
             span: span(start, this.prev.span.end),
         };
+    }
+
+    private parseHarvest(): HarvestStmt {
+        const start = this.expectKeyword("harvest").span.start;
+        const verbTok = this.expect("ident", "a harvest action ('reforge' or 'augment')");
+        const verb = verbTok.text.toLowerCase();
+        if (verb !== "reforge" && verb !== "augment") {
+            throw this.error(
+                `a harvest action must be 'reforge' or 'augment', not '${verbTok.text}'`,
+                verbTok.span,
+            );
+        }
+        const tag = this.parseStringOrParam("a quoted modifier type after the harvest action");
+        return { kind: "harvest", verb, tag, span: span(start, this.prev.span.end) };
     }
 
     /** A quoted string, or (in a proc body) a param standing in for one. */

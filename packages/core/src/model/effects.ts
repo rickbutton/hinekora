@@ -17,6 +17,7 @@ export type Effect =
     | { readonly kind: "poolWiden"; readonly mods: ReadonlySet<Mod> } // grow add-side pool
     | { readonly kind: "protect"; readonly target: ProtectTarget } // shrink remove-side sum
     | { readonly kind: "slotDelta"; readonly gen: Gen; readonly delta: number } // shift wf slot cap
+    | { readonly kind: "craftedCap"; readonly cap: number } // raise the crafted-mod limit ("multimod")
     | { readonly kind: "opUnlock"; readonly capability: string }; // make an op legal
 
 /** What a `Protect` effect shields from removal: a whole generation, or specific mods. */
@@ -61,6 +62,12 @@ export function slotDelta(it: Item, gen: Gen): number {
     return ofKind(effects(it), "slotDelta")
         .filter((e) => e.gen === gen)
         .reduce((sum, e) => sum + e.delta, 0);
+}
+
+/** The crafted-mod limit under a set of effects: the max `craftedCap` if any
+ *  ("Can have up to 3 Crafted Modifiers"), else the base limit of one. */
+export function craftedCapOf(es: readonly Effect[]): number {
+    return ofKind(es, "craftedCap").reduce((cap, e) => Math.max(cap, e.cap), 1);
 }
 
 /** Does some active `Protect` effect shield mod `m` from removal? */

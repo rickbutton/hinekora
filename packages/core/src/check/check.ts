@@ -50,6 +50,8 @@ import {
     chaos,
     essence,
     exalt,
+    harvestAugment,
+    harvestReforge,
     regal,
     scour,
     transmute,
@@ -352,6 +354,8 @@ class Checker {
                 return this.checkEssence(a, stmt);
             case "bench":
                 return this.checkBench(a, stmt);
+            case "harvest":
+                return this.checkHarvest(a, stmt);
             case "restart": {
                 // Record the state re-entering the innermost loop, if any, so the
                 // loop invariant can fold in this back-edge (a `restart` after an
@@ -412,6 +416,25 @@ class Checker {
         return { kind: "fall", state: result.state };
     }
 
+    private checkHarvest(a: AItem, stmt: Extract<Stmt, { kind: "harvest" }>): Flow {
+        const name = this.literalString(stmt.tag, stmt.span);
+        if (name === null) return { kind: "fall", state: a };
+        const tag = this.registry.resolveHarvestTag(name);
+        if (!tag.ok) {
+            this.diag(resolveMessage(tag.error), stmt.span);
+            return { kind: "fall", state: a };
+        }
+        const result =
+            stmt.verb === "reforge"
+                ? harvestReforge(a, tag.value, this.registry)
+                : harvestAugment(a, tag.value, this.registry);
+        if (!result.ok) {
+            this.diag(preconditionMessage(a, result.failure), stmt.span);
+            return { kind: "fall", state: a };
+        }
+        return { kind: "fall", state: result.state };
+    }
+
     // --- operations --------------------------------------------------------
 
     private checkOp(a: AItem, stmt: Extract<Stmt, { kind: "op" }>): Flow {
@@ -453,7 +476,7 @@ class Checker {
             case "annul":
                 return annul(a, forced, this.registry);
             case "scour":
-                return scour(a);
+                return scour(a, this.registry);
         }
     }
 
@@ -972,6 +995,10 @@ function noteStmtUses(u: ParamUses, s: Stmt): void {
             if (typeof s.name === "object") noteSort(u, s.name, "mod");
             if (s.tier !== undefined && typeof s.tier === "object") noteSort(u, s.tier, "tier");
             return;
+        case "harvest":
+            // The tag is a quoted string, same slot sort as a mod name.
+            if (typeof s.tag === "object") noteSort(u, s.tag, "mod");
+            return;
         case "until":
             notePredUses(u, s.pred);
             for (const b of s.body) noteStmtUses(u, b);
@@ -1080,6 +1107,8 @@ function substituteStmt(stmt: Stmt, env: Map<string, Arg>): Stmt {
                 ? { ...stmt, name }
                 : { ...stmt, name, tier: subValue(stmt.tier, env) };
         }
+        case "harvest":
+            return { ...stmt, tag: subValue(stmt.tag, env) };
         case "until":
             return {
                 ...stmt,

@@ -36,7 +36,10 @@
                     "name": "keyword.control.hinekora"
                 },
                 { "match": "\\b(def)\\b", "name": "storage.type.hinekora" },
-                { "match": "\\b(essence|bench)\\b", "name": "keyword.other.operation.hinekora" },
+                {
+                    "match": "\\b(essence|bench|harvest|reforge|augment)\\b",
+                    "name": "keyword.other.operation.hinekora"
+                },
                 { "match": "\\b(has|not|and|or)\\b", "name": "keyword.other.hinekora" },
                 {
                     "match": "\\b(isRare|isMagic|isNormal|prefixCount|suffixCount)\\b",

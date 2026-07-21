@@ -135,6 +135,19 @@ Two operations take a name (and an optional `t<n>` tier, T1 = best):
 - `bench "<mod>" [t1]` — add a specific crafting-bench mod, named by the mod it
   adds (`bench "maximum life"`).
 
+A **harvest** craft targets mods by category tag, written `harvest <verb> "<tag>"`:
+
+- `harvest reforge "<tag>"` — reroll the item, guaranteeing at least one modifier
+  of the tag (`harvest reforge "fire"`).
+- `harvest augment "<tag>"` — add a modifier of the tag and remove a random other
+  modifier (Craft of Exile's "Add/Remove"): the affix count is unchanged, and no
+  open slot is needed.
+
+The tag is one of the modifier categories: `attack`, `attribute`, `caster`,
+`chaos`, `cold`, `critical`, `defence`, `elemental`, `fire`, `life`, `lightning`,
+`mana`, `minion`, `physical`, `speed`. A tag that no modifier of the base can
+carry is rejected (the grayed-out case in crafting simulators).
+
 A statement can also be a **call to an operation function** — `<name>(<arg>, …)`
 — which inlines that function's body here (§4.5).
 
@@ -216,7 +229,8 @@ call `name(args)` **inlines** the body — the item state threads through it, a
 `restart` inside re-enters the caller's enclosing loop, and a precondition
 failure inside is reported at the failing step. Parameter sorts are inferred from
 use (a tier, a count, or a mod name), exactly as for a predicate def, and a
-parameter may fill a `has`/`bench`/`essence` mod-name or tier slot.
+parameter may fill a `has`/`bench`/`essence` mod-name or tier slot, or a
+`harvest` tag slot.
 
 ```
 def guarantee(m) {

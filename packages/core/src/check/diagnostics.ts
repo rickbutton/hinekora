@@ -115,7 +115,13 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
             case "rarityUnsupported":
                 return `A ${state.base.name ?? "flask"} cannot be made ${RARITY_LABEL[failure.rarity]} — it can only be Normal or Magic.`;
             case "craftedLimit":
-                return "The item may already have a crafted modifier — an item holds only one, so this can't be benched.";
+                return failure.cap === 1
+                    ? "The item may already have a crafted modifier — an item holds only one, so this can't be benched (craft 'can have up to 3 crafted modifiers' first)."
+                    : `The item may already have ${failure.cap} crafted modifiers — that is the limit here, so this can't be benched.`;
+            case "harvestEmptyPool":
+                return `No ${failure.tag} modifier can appear on a ${state.base.name ?? "item"} at this item level.`;
+            case "metamodBlocks":
+                return "This currency can't be used while a metacraft modifier is on the item — remove it first.";
         }
     })();
     return `at this point the item is: ${renderState(state)}\n${need}`;
@@ -135,6 +141,8 @@ export function resolveMessage(error: ResolveError): string {
             return `Unknown essence "${error.name}".`;
         case "unknownBench":
             return `No bench craft adds "${error.name}" to this item.`;
+        case "unknownHarvestTag":
+            return `"${error.name}" is not a harvest modifier type.`;
         case "ambiguous":
             return `Ambiguous name "${error.name}" — candidates: ${error.candidates.join(", ")}.`;
     }
