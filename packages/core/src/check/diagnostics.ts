@@ -128,6 +128,12 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return `A Fracturing Orb needs at least ${failure.needed} modifiers on the item.`;
             case "alreadyFractured":
                 return "The item already has a fractured modifier — it can hold only one.";
+            case "noVeiledMod":
+                return "There is no veiled modifier on the item to unveil.";
+            case "unveilNotAvailable":
+                return `"${failure.mod}" is not an available unveil option on this item.`;
+            case "unveilNotGuaranteed":
+                return `"${failure.mod}" isn't guaranteed — ${failure.options} options can be offered, so block the pool to 3 or fewer first.`;
         }
     })();
     return `at this point the item is: ${renderState(state)}\n${need}`;

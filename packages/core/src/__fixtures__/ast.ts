@@ -24,6 +24,8 @@ import type {
     FracturedPred,
     HarvestStmt,
     OpStmt,
+    UnveilStmt,
+    VeiledStmt,
     ParamRef,
     Pred,
     ProcDef,
@@ -102,6 +104,12 @@ export const harvest = (verb: "reforge" | "augment", tag: string | ParamRef): Ha
     kind: "harvest",
     verb,
     tag,
+    span: DS,
+});
+export const veiled = (verb: "chaos" | "exalt"): VeiledStmt => ({ kind: "veiled", verb, span: DS });
+export const unveil = (mod?: string | ParamRef): UnveilStmt => ({
+    kind: "unveil",
+    ...(mod !== undefined && { mod }),
     span: DS,
 });
 export const restart = (): RestartStmt => ({ kind: "restart", span: DS });

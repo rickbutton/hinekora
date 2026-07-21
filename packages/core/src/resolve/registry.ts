@@ -347,6 +347,12 @@ export function buildRegistry(data: RegistryData): Registry {
     for (const m of catalog)
         if (m.effects && m.effects.length > 0) typeEffects.set(m.type, m.effects);
 
+    // Veiled result types: referenceable (an unveil can produce them) even though
+    // the domain gate makes them non-rollable, so `resolveModType` must keep them
+    // through the rollability narrowing.
+    const veiledTypes = new Set<TypeId>();
+    for (const m of catalog) if (m.source === "veiled") veiledTypes.add(m.type);
+
     const typeIndex = buildTypeIndex(catalog);
 
     // --- precompute completion lists ---
@@ -418,7 +424,9 @@ export function buildRegistry(data: RegistryData): Registry {
             // Narrow to types that can actually roll on this item, when known.
             if (ctx) {
                 const rollable = matches.filter(
-                    (m) => rollableTiers(catalog, ctx.game, ctx.base, ctx.ilvl, m.type).length > 0,
+                    (m) =>
+                        veiledTypes.has(m.type) ||
+                        rollableTiers(catalog, ctx.game, ctx.base, ctx.ilvl, m.type).length > 0,
                 );
                 if (rollable.length > 0) matches = rollable;
             }

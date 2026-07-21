@@ -19,6 +19,8 @@ import {
     type ItemBlock,
     type ParamRef,
     type Pos,
+    type UnveilStmt,
+    type VeiledStmt,
     type Pred,
     type ProcDef,
     type Rarity,
@@ -356,6 +358,8 @@ class Parser {
         if (this.atKeyword("essence")) return this.parseEssence();
         if (this.atKeyword("bench")) return this.parseBench();
         if (this.atKeyword("harvest")) return this.parseHarvest();
+        if (this.atKeyword("veiled")) return this.parseVeiled();
+        if (this.atKeyword("unveil")) return this.parseUnveil();
         if (this.atKeyword("restart")) {
             const t = this.advance();
             return { kind: "restart", span: t.span };
@@ -435,6 +439,30 @@ class Parser {
             kind: "bench",
             name,
             ...(tier !== undefined && { tier }),
+            span: span(start, this.prev.span.end),
+        };
+    }
+
+    private parseVeiled(): VeiledStmt {
+        const start = this.expectKeyword("veiled").span.start;
+        const verbTok = this.expect("ident", "a veiled currency ('chaos' or 'exalt')");
+        const verb = verbTok.text.toLowerCase();
+        if (verb !== "chaos" && verb !== "exalt") {
+            throw this.error(
+                `a veiled currency must be 'chaos' or 'exalt', not '${verbTok.text}'`,
+                verbTok.span,
+            );
+        }
+        return { kind: "veiled", verb, span: span(start, this.prev.span.end) };
+    }
+
+    private parseUnveil(): UnveilStmt {
+        const start = this.expectKeyword("unveil").span.start;
+        // An optional target: a quoted mod name (or a proc param).
+        const mod = this.at("string") ? this.advance().text : this.paramRef();
+        return {
+            kind: "unveil",
+            ...(mod !== undefined && { mod }),
             span: span(start, this.prev.span.end),
         };
     }

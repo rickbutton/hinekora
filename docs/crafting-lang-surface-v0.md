@@ -156,6 +156,17 @@ at least four modifiers (one fracture per item). The target is random, so no
 specific mod is proven locked until a `fractured "<mod>"` branch (§5) narrows it;
 until then a reforge keeps "one of these mods survives, still locked".
 
+The **veiled currencies** add a veiled modifier you reveal later:
+
+- `veiled chaos` — reforge a Rare so one new modifier is veiled.
+- `veiled exalt` — remove a random modifier and add a veiled one.
+- `unveil ["<mod>"]` — reveal the pending veiled modifier. Bare, it resolves to
+  one of the valid options (narrow it with a following `if has "<mod>"`). With a
+  mod name, it targets that outcome — provable only once you've *blocked* the
+  option pool down to three or fewer (bench a modifier that shares a group with an
+  option to remove it). Hovering the line shows the current options, split by
+  prefix and suffix.
+
 A statement can also be a **call to an operation function** — `<name>(<arg>, …)`
 — which inlines that function's body here (§4.5).
 

@@ -24,6 +24,7 @@ import {
     type Item,
     type Mod,
     ModId,
+    type ModSource,
     type Rarity,
     type SpawnEntry,
     TagId,
@@ -111,6 +112,7 @@ interface ModSpec {
     readonly effects?: readonly Effect[];
     /** Category tags (fire, caster, life, …) for tag-directed crafting (harvest). */
     readonly implicitTags?: readonly string[];
+    readonly source?: ModSource;
     readonly text?: string;
     readonly name?: string;
 }
@@ -131,6 +133,7 @@ function mkMod(spec: ModSpec): Mod {
         spawn: spec.spawn,
         ...(spec.classRestriction !== undefined && { classRestriction: spec.classRestriction }),
         ...(spec.effects !== undefined && { effects: spec.effects }),
+        ...(spec.source !== undefined && { source: spec.source }),
         ...(spec.text !== undefined && { text: spec.text }),
         ...(spec.name !== undefined && { name: spec.name }),
     };
@@ -341,6 +344,84 @@ export const ATTACK_PREFIX: Mod = mkMod({
     implicitTags: ["attack", "physical"],
     text: "adds physical attack damage",
 });
+
+// --- veiled crafting fixtures ---------------------------------------------
+// Two placeholders (added by veiled orbs) and four unveiled result mods
+// rollable on a ring, one sharing the Life family so a benched life mod blocks it.
+
+export const VEILED_PREFIX_MOD: Mod = mkMod({
+    id: "VeiledPrefix",
+    type: "VeiledPrefix",
+    gen: "prefix",
+    minLevel: 1,
+    spawn: [],
+    source: "veiled",
+});
+export const VEILED_SUFFIX_MOD: Mod = mkMod({
+    id: "VeiledSuffix",
+    type: "VeiledSuffix",
+    gen: "suffix",
+    minLevel: 1,
+    spawn: [],
+    source: "veiled",
+});
+const DOMAIN_VEILED = Domain("veiled");
+const mkVeiled = (
+    id: string,
+    gen: Gen,
+    families: readonly string[],
+    text: string,
+    tag: TagId = TAG_DEFAULT,
+): Mod =>
+    mkMod({
+        id,
+        type: id,
+        gen,
+        minLevel: 1,
+        domain: DOMAIN_VEILED, // the veiled domain keeps these out of the normal pool
+        families,
+        spawn: [spawn(tag, known(100))],
+        source: "veiled",
+        text,
+    });
+// A, B, C roll everywhere (default tag) → a ring's pool is exactly these three.
+export const VEILED_A: Mod = mkVeiled(
+    "VeiledDoubleDamage",
+    "suffix",
+    ["VDoubleDamage"],
+    "veiled double damage",
+);
+export const VEILED_B: Mod = mkVeiled(
+    "VeiledCastSpeed",
+    "suffix",
+    ["VCastSpeed"],
+    "veiled cast speed",
+);
+export const VEILED_C: Mod = mkVeiled(
+    "VeiledArmourAndLife",
+    "prefix",
+    ["VArmourLife"],
+    "veiled armour and life",
+);
+// D is amulet-only and shares the Life family, so an amulet's pool is four and a
+// benched life mod blocks D back out.
+export const VEILED_D: Mod = mkVeiled(
+    "VeiledLifeHybrid",
+    "prefix",
+    ["Life"],
+    "veiled life hybrid",
+    TAG_AMULET,
+);
+
+/** All veiled fixtures (placeholders + results), to append to a test catalog. */
+export const VEILED_CATALOG: readonly Mod[] = [
+    VEILED_PREFIX_MOD,
+    VEILED_SUFFIX_MOD,
+    VEILED_A,
+    VEILED_B,
+    VEILED_C,
+    VEILED_D,
+];
 
 /** Approx-zero-weight suffix, ineligible (provably zero, PoE2 estimate). */
 export const APPROX_ZERO_MOD: Mod = mkMod({

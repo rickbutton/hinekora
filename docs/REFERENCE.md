@@ -357,6 +357,13 @@ protected side — see metamods). Notes:
   rest, so a proven fracture keeps its type and an unproven one keeps the survivor disjunction.
   **Scour** drops to the minimum rarity that holds the survivors (`minRarityFor`): a fractured
   Rare scours to a 1-mod Magic.
+- **Veiled** (`veiledChaos` / `veiledExalt` / `unveil`): the orbs add a veiled placeholder (the
+  `VeiledPrefix ∨ VeiledSuffix` disjunction, generation fixed-random so unknown) on the reforge
+  / add-remove seams. `unveil` reads `veiledPool` (`pool/veiled.ts` — the unveiled result mods
+  valid on the base, minus families already present, which is "blocking") and either asserts the
+  pool disjunction (narrow with `if has`) or, with a target, guarantees it once the pool is ≤ 3.
+  The veiled `domain` keeps result mods out of the normal `pool`. Model helpers in
+  `model/veiled.ts`.
 - **Harvest** (tag-directed): `harvestReforge(a, tag)` = `reroll` plus a DISJUNCTIVE
   guarantee — "at least one mod carrying `tag`" — ANDed into the presence BDD as one OR
   clause over the tagged types (never an enumerated union; a wide clause is sound, just

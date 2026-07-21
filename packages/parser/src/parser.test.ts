@@ -181,6 +181,29 @@ describe("parser — essence statement", () => {
     });
 });
 
+describe("parser — veiled orbs and unveil", () => {
+    const bodyOf = (src: string) =>
+        parseOk(`craft in poe1 item { base: "R" ilvl: 1 rarity: rare } ${src}`).body[0]!;
+
+    it("parses veiled chaos / veiled exalt", () => {
+        expect(bodyOf("veiled chaos")).toMatchObject({ kind: "veiled", verb: "chaos" });
+        expect(bodyOf("veiled exalt")).toMatchObject({ kind: "veiled", verb: "exalt" });
+    });
+
+    it("rejects a veiled currency other than chaos/exalt", () => {
+        expect(() => bodyOf("veiled scour")).toThrow(/chaos.*exalt/);
+    });
+
+    it("parses unveil, bare and targeted", () => {
+        expect(bodyOf("unveil")).toMatchObject({ kind: "unveil" });
+        expect("mod" in bodyOf("unveil")).toBe(false);
+        expect(bodyOf('unveil "double damage"')).toMatchObject({
+            kind: "unveil",
+            mod: "double damage",
+        });
+    });
+});
+
 describe("parser — harvest statement", () => {
     const bodyOf = (src: string) =>
         parseOk(`craft in poe1 item { base: "R" ilvl: 1 rarity: rare } ${src}`).body[0]!;

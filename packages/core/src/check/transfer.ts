@@ -6,11 +6,13 @@
  * tightens counts and changes which guarantees survive.
  */
 import { craftedCapOf, type Effect } from "../model/effects.js";
-import type { ClassId, Gen, ModId, Rarity, TagId, TypeId } from "../model/ids.js";
+import type { ClassId, Gen, GroupId, ModId, Rarity, TagId, TypeId } from "../model/ids.js";
 import type { Item } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
 import type { EssenceSpec } from "../model/sources.js";
+import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
 import { pool } from "../pool/pool.js";
+import { veiledPool } from "../pool/veiled.js";
 import type { Registry } from "../resolve/registry.js";
 import {
     type AItem,
@@ -44,7 +46,10 @@ export type PreconditionFailure =
     | { readonly kind: "harvestEmptyPool"; readonly tag: TagId }
     | { readonly kind: "metamodBlocks" }
     | { readonly kind: "tooFewMods"; readonly needed: number }
-    | { readonly kind: "alreadyFractured" };
+    | { readonly kind: "alreadyFractured" }
+    | { readonly kind: "noVeiledMod" }
+    | { readonly kind: "unveilNotAvailable"; readonly mod: string }
+    | { readonly kind: "unveilNotGuaranteed"; readonly mod: string; readonly options: number };
 
 export type TransferResult =
     | { readonly ok: true; readonly state: AItem }
@@ -495,6 +500,120 @@ function addTagged(a: AItem, added: readonly Mod[], tag: TagId): AItem {
         { ...a, counts: { total, prefix }, presence, possible, tiers },
         taggedTypes(added, tag),
     );
+}
+
+// --- veiled orbs and unveiling --------------------------------------------
+//
+// A veiled orb adds a placeholder (`VeiledPrefix ∨ VeiledSuffix`, generation
+// fixed-random so unknown here) that `unveil` later replaces with an unveiled
+// result mod. Which result you get is RNG (3 of the valid pool), so `unveil`
+// yields the pool as a disjunction to narrow by branching; blocking a family
+// shrinks the pool, and a pool of ≤3 lets you guarantee a picked mod.
+
+/** Assert a veiled placeholder is present (one of the two placeholder types),
+ *  making them `possible`. The mod already occupies a reforged slot, so counts
+ *  are unchanged. */
+function withVeiledPlaceholder(a: AItem): AItem {
+    const clause = a.bdd.or(a.bdd.variable(VEILED_PREFIX), a.bdd.variable(VEILED_SUFFIX));
+    const presence = a.bdd.and(a.presence, clause);
+    const possible = new Set(a.possible).add(VEILED_PREFIX).add(VEILED_SUFFIX);
+    return settled({ ...a, presence, possible });
+}
+
+/** Add a veiled placeholder as a NEW mod (one more affix, generation unknown). */
+function addVeiledPlaceholder(a: AItem): AItem {
+    const maxT = maxTotal("rare", a.base);
+    const total: Range = [
+        Math.min(a.counts.total[0] + 1, maxT),
+        Math.min(a.counts.total[1] + 1, maxT),
+    ];
+    const prefix: Range = [a.counts.prefix[0], Math.min(a.counts.prefix[1] + 1, maxT)];
+    return withVeiledPlaceholder({ ...a, counts: { total, prefix } });
+}
+
+/** Is a veiled placeholder present (a mod awaiting unveil)? */
+function hasVeiledPlaceholder(a: AItem): boolean {
+    const clause = a.bdd.or(a.bdd.variable(VEILED_PREFIX), a.bdd.variable(VEILED_SUFFIX));
+    return a.bdd.entails(a.presence, clause);
+}
+
+/** Veiled Chaos Orb: reforge a Rare (respecting protection/fractures) so one of
+ *  the new mods is a veiled placeholder. */
+export function veiledChaos(a: AItem, registry: Registry): TransferResult {
+    if (a.rarity !== "rare") return wrongRarity("rare", a.rarity);
+    const shielded = protectedGens(a, registry);
+    const rerolled =
+        shielded.size > 0 || hasFracture(a)
+            ? keepProtectedReroll(a, shielded, registry)
+            : reroll(a, "rare", [4, 6], registry);
+    return ok(withVeiledPlaceholder(rerolled));
+}
+
+/** Veiled Exalted Orb: remove a random (removable) mod and add a veiled
+ *  placeholder. Net affix count unchanged. */
+export function veiledExalt(a: AItem, registry: Registry): TransferResult {
+    if (a.rarity !== "rare") return wrongRarity("rare", a.rarity);
+    const allowed = removalGens(a, undefined, registry);
+    if (!hasRemovable(a, allowed, registry)) return fail({ kind: "nothingToRemove" });
+    return ok(addVeiledPlaceholder(removeOne(a, allowed, registry)));
+}
+
+/**
+ * Unveil the pending veiled mod. Blocking is folded in: the offered pool
+ * (`veiledPool`) excludes any unveiled mod whose family is a guaranteed present
+ * one. With no `target` the placeholder resolves to the pool disjunction (narrow
+ * with `if has`); with a `target`, it is a guarantee only when ≤ 3 options remain
+ * (all are offered, so you pick it).
+ */
+export function unveil(
+    a: AItem,
+    target: TypeId | undefined,
+    targetName: string | undefined,
+    registry: Registry,
+): TransferResult {
+    if (!hasVeiledPlaceholder(a)) return fail({ kind: "noVeiledMod" });
+    const presentFamilies = new Set<GroupId>();
+    for (const t of guaranteedTypes(a)) {
+        for (const f of registry.familiesOfType(t)) presentFamilies.add(f);
+    }
+    const poolMods = veiledPool(registry.catalog, a.base, a.ilvl, presentFamilies);
+    const poolTypes = [...new Set(poolMods.map((m) => m.type))];
+    if (target !== undefined) {
+        if (!poolTypes.includes(target)) {
+            return fail({ kind: "unveilNotAvailable", mod: targetName ?? String(target) });
+        }
+        if (poolTypes.length > 3) {
+            return fail({
+                kind: "unveilNotGuaranteed",
+                mod: targetName ?? String(target),
+                options: poolTypes.length,
+            });
+        }
+        return ok(unveilResolve(a, [target], poolMods));
+    }
+    return ok(unveilResolve(a, poolTypes, poolMods));
+}
+
+/** Replace the veiled placeholder with the unveiled outcome: forget the
+ *  placeholder facts, assert the outcome disjunction over `assertTypes`, and add
+ *  the whole pool to `possible`/`tiers`. Counts are unchanged (same slot). */
+function unveilResolve(a: AItem, assertTypes: readonly TypeId[], poolMods: readonly Mod[]): AItem {
+    let presence = a.bdd.exists(a.bdd.exists(a.presence, VEILED_PREFIX), VEILED_SUFFIX);
+    let clause = a.bdd.FALSE;
+    for (const t of assertTypes) clause = a.bdd.or(clause, a.bdd.variable(t));
+    presence = a.bdd.and(presence, clause);
+    const possible = new Set(a.possible);
+    possible.delete(VEILED_PREFIX);
+    possible.delete(VEILED_SUFFIX);
+    const tiers = new Map(a.tiers);
+    tiers.delete(VEILED_PREFIX);
+    tiers.delete(VEILED_SUFFIX);
+    for (const m of poolMods) {
+        possible.add(m.type);
+        const cur = tiers.get(m.type);
+        tiers.set(m.type, cur ? new Set([...cur, m.id]) : new Set([m.id]));
+    }
+    return settled({ ...a, presence, possible, tiers });
 }
 
 /**

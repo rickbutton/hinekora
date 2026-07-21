@@ -19,13 +19,23 @@ import { parse } from "@hinekora/parser";
 import { type CompletionItem, CompletionItemKind } from "vscode-languageserver-types";
 
 type Context =
-    "statement" | "base" | "mod" | "predicate" | "essence" | "bench" | "harvestVerb" | "harvestTag";
+    | "statement"
+    | "base"
+    | "mod"
+    | "predicate"
+    | "essence"
+    | "bench"
+    | "harvestVerb"
+    | "harvestTag"
+    | "veiledVerb";
 
 const CONTROL_KEYWORDS = ["until", "if", "else", "with", "restart"];
 /** Statement-starting keywords for the sourced/tag-directed crafts. */
-const SOURCED_KEYWORDS = ["essence", "bench", "harvest"];
+const SOURCED_KEYWORDS = ["essence", "bench", "harvest", "veiled", "unveil"];
 /** The two harvest actions, offered after `harvest`. */
 const HARVEST_VERBS = ["reforge", "augment"];
+/** The two veiled currencies, offered after `veiled`. */
+const VEILED_VERBS = ["chaos", "exalt"];
 
 /** The keywords that can START a predicate (after `if` / `until` / `not`). */
 const PREDICATE_KEYWORDS: { label: string; detail: string; kind: CompletionItemKind }[] = [
@@ -80,6 +90,7 @@ function contextAt(source: string, offset: number): Context {
             const word = source.slice(j + 1, end);
             if (PREDICATE_INTRODUCERS.has(word)) return "predicate";
             if (word === "harvest") return "harvestVerb";
+            if (word === "veiled") return "veiledVerb";
         }
         return "statement";
     }
@@ -173,6 +184,12 @@ export function getCompletions(
             }));
         case "harvestTag":
             return registry.harvestTags.map((label) => ({ label, kind: CompletionItemKind.Value }));
+        case "veiledVerb":
+            return VEILED_VERBS.map((label) => ({
+                label,
+                detail: `veiled ${label}`,
+                kind: CompletionItemKind.Keyword,
+            }));
         case "mod": {
             const ctx = itemContext(source, registry);
             const rollable = ctx

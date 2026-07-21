@@ -99,6 +99,8 @@ export type Stmt =
     | EssenceStmt
     | BenchStmt
     | HarvestStmt
+    | VeiledStmt
+    | UnveilStmt
     | RestartStmt
     | UntilStmt
     | IfStmt
@@ -149,6 +151,29 @@ export interface HarvestStmt {
     readonly kind: "harvest";
     readonly verb: "reforge" | "augment";
     readonly tag: string | ParamRef;
+    readonly span: SourceSpan;
+}
+
+/**
+ * `veiled chaos` / `veiled exalt`, the two veiled currencies. Both add a veiled
+ * placeholder modifier (resolved later by `unveil`): chaos reforges the item,
+ * exalt removes a random mod first.
+ */
+export interface VeiledStmt {
+    readonly kind: "veiled";
+    readonly verb: "chaos" | "exalt";
+    readonly span: SourceSpan;
+}
+
+/**
+ * `unveil ["<mod>"]`, reveal the pending veiled modifier. Bare, it resolves to
+ * one of the valid unveil options; with a mod name, it targets that outcome
+ * (provable only once the option pool is small enough). Inside a proc body the
+ * name may be a `ParamRef`.
+ */
+export interface UnveilStmt {
+    readonly kind: "unveil";
+    readonly mod?: string | ParamRef;
     readonly span: SourceSpan;
 }
 

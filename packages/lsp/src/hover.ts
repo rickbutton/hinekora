@@ -12,6 +12,7 @@ import {
     describePred,
     disjunctiveTier,
     type Gen,
+    type GroupId,
     guaranteedTypes,
     type ModId,
     type Range,
@@ -21,6 +22,7 @@ import {
     traceAt,
     type TraceEntry,
     type TypeId,
+    veiledPool,
 } from "@hinekora/core";
 import { parse, type Token, tokenize } from "@hinekora/parser";
 
@@ -329,6 +331,9 @@ function signature(
             const line = `**${tok.text}** — ${proj.measures}.`;
             return entry ? `${line}\n\n_here:_ ${fmtRange(proj.of(entry.before))}` : line;
         }
+        if (tok.text === "veiled" || tok.text === "unveil") {
+            return unveilOptionsHover(entry, registry, tok.text);
+        }
         const kw = KEYWORD_DOC[tok.text];
         if (kw) return kw;
         return null;
@@ -344,6 +349,41 @@ function signature(
     }
 
     return null;
+}
+
+/**
+ * The unveil-options tooltip for a `veiled` / `unveil` line: the modifiers this
+ * item could reveal (the `veiledPool`), split by generation so the prefix/suffix
+ * choices are visible before committing. Blocked families are already excluded.
+ */
+function unveilOptionsHover(
+    entry: TraceEntry | undefined,
+    registry: Registry,
+    keyword: string,
+): string {
+    const head =
+        keyword === "veiled"
+            ? "**veiled** — adds a veiled modifier (`chaos` reforges, `exalt` swaps one) to unveil later"
+            : "**unveil** — reveal the pending veiled modifier";
+    if (!entry) return head;
+    const a = entry.before;
+    const families = new Set<GroupId>();
+    for (const t of guaranteedTypes(a)) for (const f of registry.familiesOfType(t)) families.add(f);
+    const pool = veiledPool(registry.catalog, a.base, a.ilvl, families);
+    if (pool.length === 0) return `${head}\n\n_no unveil options on this item_`;
+
+    const label = (m: { text?: string; type: TypeId }): string =>
+        (m.text ?? m.type).replace(/\n/g, " / ");
+    const pre = pool.filter((m) => m.gen === "prefix").map(label);
+    const suf = pool.filter((m) => m.gen === "suffix").map(label);
+    const note =
+        pool.length <= 3
+            ? "≤ 3 options — a chosen mod is guaranteed"
+            : "block conflicting groups to 3 or fewer to guarantee a chosen mod";
+    const lines = [head, `**Unveil options (${pool.length})** — ${note}`];
+    if (pre.length > 0) lines.push(`Prefixes: ${pre.join("; ")}`);
+    if (suf.length > 0) lines.push(`Suffixes: ${suf.join("; ")}`);
+    return lines.join("\n\n");
 }
 
 /** Max tiers to spell out in the hover table before summarising the tail. */

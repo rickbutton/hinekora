@@ -56,6 +56,9 @@ import {
     regal,
     scour,
     transmute,
+    unveil,
+    veiledChaos,
+    veiledExalt,
     type TransferResult,
 } from "./transfer.js";
 
@@ -368,6 +371,10 @@ class Checker {
                 return this.checkBench(a, stmt);
             case "harvest":
                 return this.checkHarvest(a, stmt);
+            case "veiled":
+                return this.checkVeiled(a, stmt);
+            case "unveil":
+                return this.checkUnveil(a, stmt);
             case "restart": {
                 // Record the state re-entering the innermost loop, if any, so the
                 // loop invariant can fold in this back-edge (a `restart` after an
@@ -440,6 +447,39 @@ class Checker {
             stmt.verb === "reforge"
                 ? harvestReforge(a, tag.value, this.registry)
                 : harvestAugment(a, tag.value, this.registry);
+        if (!result.ok) {
+            this.diag(preconditionMessage(a, result.failure), stmt.span);
+            return { kind: "fall", state: a };
+        }
+        return { kind: "fall", state: result.state };
+    }
+
+    private checkVeiled(a: AItem, stmt: Extract<Stmt, { kind: "veiled" }>): Flow {
+        const result =
+            stmt.verb === "chaos" ? veiledChaos(a, this.registry) : veiledExalt(a, this.registry);
+        if (!result.ok) {
+            this.diag(preconditionMessage(a, result.failure), stmt.span);
+            return { kind: "fall", state: a };
+        }
+        return { kind: "fall", state: result.state };
+    }
+
+    private checkUnveil(a: AItem, stmt: Extract<Stmt, { kind: "unveil" }>): Flow {
+        let type: TypeId | undefined;
+        let name: string | undefined;
+        if (stmt.mod !== undefined) {
+            const modName = this.literalString(stmt.mod, stmt.span);
+            if (modName === null) return { kind: "fall", state: a };
+            name = modName;
+            const ctx = { game: a.game, base: a.base, ilvl: a.ilvl };
+            const typeRes = this.registry.resolveModType(modName, ctx);
+            if (!typeRes.ok) {
+                this.diag(resolveMessage(typeRes.error), stmt.span);
+                return { kind: "fall", state: a };
+            }
+            type = typeRes.value;
+        }
+        const result = unveil(a, type, name, this.registry);
         if (!result.ok) {
             this.diag(preconditionMessage(a, result.failure), stmt.span);
             return { kind: "fall", state: a };
@@ -1030,6 +1070,11 @@ function noteStmtUses(u: ParamUses, s: Stmt): void {
             // The tag is a quoted string, same slot sort as a mod name.
             if (typeof s.tag === "object") noteSort(u, s.tag, "mod");
             return;
+        case "veiled":
+            return;
+        case "unveil":
+            if (s.mod !== undefined && typeof s.mod === "object") noteSort(u, s.mod, "mod");
+            return;
         case "until":
             notePredUses(u, s.pred);
             for (const b of s.body) noteStmtUses(u, b);
@@ -1142,6 +1187,10 @@ function substituteStmt(stmt: Stmt, env: Map<string, Arg>): Stmt {
         }
         case "harvest":
             return { ...stmt, tag: subValue(stmt.tag, env) };
+        case "veiled":
+            return stmt;
+        case "unveil":
+            return stmt.mod === undefined ? stmt : { ...stmt, mod: subValue(stmt.mod, env) };
         case "until":
             return {
                 ...stmt,
