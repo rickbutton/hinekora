@@ -19,6 +19,11 @@
     - proc-name **hover** signatures.
     - a currency- or block-valued **parameter** (only value params, tier/count/mod, for now).
 
+- **Rewrite IR** ([rewrite-ir-v0.md](rewrite-ir-v0.md)): have ops declare the rewrite they
+  perform instead of computing a new abstract state, so one interpreter owns the state and
+  the intrinsic guards (open slot, removable, survivors) cannot be skipped. A design study
+  with a staged plan, not a commitment.
+
 ## Smaller
 
 - Restrict **base** completion to craftable classes (mod completion is already filtered;
