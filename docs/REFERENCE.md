@@ -312,9 +312,9 @@ body)`, the states that re-enter the loop head after one iteration (fall-off-end
 Nine orbs, each `AItem → TransferResult` (`{ok, state}` or `{ok:false, failure}`):
 transmute, augment, alteration, regal, alchemy, chaos, exalt, annul, scour. They reduce
 to two primitives: an ADDITIVE add (`addOne`, for transmute/augment/regal/exalt) and a
-REFORGE (`reroll`, for alteration/alchemy/chaos: fresh count range, nothing guaranteed,
-pool becomes `possible`); plus `removeOne` (annul) and `scour` (strip to Normal, or keep a
-protected side — see metamods). Notes:
+REFORGE (`reforge`, for alteration/alchemy/chaos: fresh count range, nothing guaranteed,
+pool becomes `possible`); plus `removeOne` (annul) and `scour` (strip to Normal, or keep
+whatever survives — see `Survivors`). Notes:
 
 - `annul` works on **Magic OR Rare**: the precondition is "has a removable mod", not a
   rarity gate. `scour` on a no-mod item fails as wasted currency.
@@ -344,9 +344,17 @@ protected side — see metamods). Notes:
   for free (the synthetic item carries the guaranteed carrier); **multimod** raises the
   crafted cap; **essence** is blocked (`metamodBlocks`) by a protect or cannot-roll metamod;
   **chaos** and **harvest reforge** keep the protected side and reroll the rest
-  (`keepProtectedReroll` — protected guarantees + tier pins + a count floor survive, open
+  (`rerollKeeping`: protected guarantees + tier pins + a count floor survive, open
   protected slots may fill from the fresh pool, the metamod on the rerolled side goes). The
   curated id→effect table is `model/metamods.ts`.
+- **`Survivors`** (`transfer.ts`) answers "what does a rewrite keep here" once, for the two
+  mechanisms that shield mods: generation protection from a metamod, and a fracture's
+  per-mod lock. `survivors(a, registry)` reports the protected generations, the pinned
+  locked types, and whether an unpinned lock holds one mod of unknown generation.
+  `reforge` dispatches on it (plain `reroll`, or `rerollKeeping`), `scour` on it
+  (`scourKeeping`), and `hasRemovable` discounts locked mods through it. Every reforge goes
+  through `reforge`, including alteration: a Magic item can carry a fracture, since scouring
+  a fractured Rare leaves the locked mod behind.
 - **Fractures** are a per-mod lock, tracked as `frac@type` atoms in the presence BDD (the
   tier-atom pattern; a `FRAC_EXISTS` sentinel marks "some mod is fractured" so a fracture on an
   anonymous mod still counts). A declared `fractured "…"` affix asserts a definite fracture;
@@ -393,7 +401,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/check/counts.ts`                                   | `CountDomain` (caps, suffix, the total/prefix coupling, count refine, `learnPresent`)      |
 | `packages/core/src/check/bdd.ts`                                      | the hash-consed ROBDD behind `presence`                                                    |
 | `packages/core/src/check/check.ts`                                    | driver, `Flow`, loops/branches, defs, `TraceEntry`, `traceAt`                              |
-| `packages/core/src/check/transfer.ts`                                 | the abstract currency ops (`addOne` / `reroll` / `withGuaranteed` primitives)              |
+| `packages/core/src/check/transfer.ts`                                 | the abstract currency ops (`addOne` / `reforge` / `withGuaranteed` primitives)             |
 | `packages/core/src/check/diagnostics.ts`                              | `renderState`, message builders                                                            |
 | `packages/core/src/resolve/registry.ts`                               | `Registry`, `buildRegistry`, resolution, completion lists                                  |
 | `packages/core/src/resolve/fuzzy.ts` / `tiers.ts`                     | fuzzy mod matching / rollable tiers (+ the memoized empty pool)                            |

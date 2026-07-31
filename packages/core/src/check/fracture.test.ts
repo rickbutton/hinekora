@@ -69,6 +69,20 @@ describe("declared fractured mod is locked", () => {
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("removable");
     });
+
+    it("survives an alteration on the Magic item a scour leaves behind", () => {
+        const c = craft("poe1", fracturedRing(2), [op("scour"), op("alteration")]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(hasFracture(r.finalState!)).toBe(true);
+    });
+
+    it("still blocks an annul after that alteration", () => {
+        const c = craft("poe1", fracturedRing(2), [op("scour"), op("alteration"), op("annul")]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toHaveLength(1);
+        expect(r.diagnostics[0]!.message).toContain("removable");
+    });
 });
 
 describe("the fractured predicate", () => {

@@ -139,10 +139,73 @@ function removalGens(a: AItem, forcedGen: Gen | undefined, registry: Registry): 
     return new Set(base.filter((g) => !shielded.has(g)));
 }
 
+// --- what a rewrite keeps -------------------------------------------------
+//
+// Two unrelated mechanisms shield mods from being rewritten: a protection
+// metamod shields a whole generation for as long as its carrier is present, and
+// a fracture locks one specific mod permanently. They are not the same fact, but
+// every reforge, strip and removal asks them one question (what survives here),
+// so they answer it in one place.
+
+interface Survivors {
+    /** Generations kept whole by an active protection metamod. */
+    readonly gens: ReadonlySet<Gen>;
+    /** Types proven to be the locked (fractured) mod. */
+    readonly locked: ReadonlySet<TypeId>;
+    /** 1 when a fracture exists whose target is not pinned: one mod of unknown
+     *  generation survives without any type being known to be it. */
+    readonly unpinned: number;
+    /** Is a mod locked by a fracture, pinned or not? */
+    readonly hasLock: boolean;
+    /** Does anything at all survive a rewrite? False ⇒ the plain reroll applies. */
+    readonly any: boolean;
+    /** Is this type shielded, by either mechanism? */
+    keeps(type: TypeId): boolean;
+    /** Is this type shielded by generation protection alone? Guarantees survive on
+     *  that footing; a locked mod's facts come back through the fracture
+     *  projection instead. */
+    protects(type: TypeId): boolean;
+    /** How many locked mods sit in `gen`. */
+    lockedIn(gen: Gen): number;
+}
+
+function survivors(a: AItem, registry: Registry): Survivors {
+    const gens = protectedGens(a, registry);
+    const locked = fracturedTypes(a);
+    const unpinned = hasFracture(a) && locked.size === 0 ? 1 : 0;
+    const hasLock = locked.size > 0 || unpinned === 1;
+    const genOf = (t: TypeId): Gen => registry.genOfType(t) ?? "prefix";
+    return {
+        gens,
+        locked,
+        unpinned,
+        hasLock,
+        any: gens.size > 0 || hasLock,
+        keeps: (t) => gens.has(genOf(t)) || locked.has(t),
+        protects: (t) => gens.has(genOf(t)),
+        lockedIn: (g) => {
+            let n = 0;
+            for (const t of locked) if (genOf(t) === g) n++;
+            return n;
+        },
+    };
+}
+
+/** The crafted-mod range after a rewrite: a guaranteed effect carrier on a
+ *  rewritten slot is provably crafted and provably gone; a shielded one may
+ *  survive. Shared by the reforge and the strip. */
+function craftedAfterRewrite(a: AItem, s: Survivors, registry: Registry): Range {
+    let stripped = 0;
+    for (const t of guaranteedTypes(a)) {
+        if (!s.keeps(t) && registry.effectsOfType(t).length > 0) stripped++;
+    }
+    return [0, Math.max(0, a.crafted[1] - stripped)];
+}
+
 // --- the other common currencies ------------------------------------------
 //
 // All ops reduce to two primitives: an ADDITIVE add (`addOne`) and a REFORGE
-// (`reroll`). Semantics are hand-modelled; the currency catalog only supplies
+// (`reforge`). Semantics are hand-modelled; the currency catalog only supplies
 // display text.
 
 /** Orb of Augmentation: add a mod to a Magic item (needs an open slot). */
@@ -152,43 +215,41 @@ export function augment(a: AItem, registry: Registry): TransferResult {
     return ok(addOne(a, undefined, "magic", registry));
 }
 
-/** Orb of Alteration: reforge a Magic item (1–2 fresh mods). */
+/** Orb of Alteration: reforge a Magic item (1–2 fresh mods). A Magic item can
+ *  carry a fracture (scouring a fractured Rare drops it to Magic with the locked
+ *  mod kept), so this goes through `reforge` rather than a plain reroll. */
 export function alteration(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "magic") return wrongRarity("magic", a.rarity);
-    return ok(reroll(a, "magic", [1, 2], registry));
+    return ok(reforge(a, "magic", [1, 2], registry));
 }
 
 /** Orb of Alchemy: upgrade a Normal item to a Rare with 4–6 fresh mods. */
 export function alchemy(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "normal") return wrongRarity("normal", a.rarity);
     if (!canBeRare(a.base)) return fail({ kind: "rarityUnsupported", rarity: "rare" });
-    return ok(reroll(a, "rare", [4, 6], registry));
+    return ok(reforge(a, "rare", [4, 6], registry));
 }
 
-/** Chaos Orb: reforge a Rare item (4–6 fresh mods). A "cannot be changed" metamod
- *  makes it keep that side and reroll only the other (see `keepProtectedReroll`). */
+/** Chaos Orb: reforge a Rare item (4–6 fresh mods). */
 export function chaos(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "rare") return wrongRarity("rare", a.rarity);
-    const shielded = protectedGens(a, registry);
-    if (shielded.size > 0 || hasFracture(a)) return ok(keepProtectedReroll(a, shielded, registry));
-    return ok(reroll(a, "rare", [4, 6], registry));
+    return ok(reforge(a, "rare", [4, 6], registry));
 }
 
 /** Orb of Scouring: strip every mod, returning the item to Normal. Wasted only
  *  on an already-Normal item, a Magic base with zero affixes (e.g. a magic
- *  Simplex) still drops to Normal, so rarity, not mod count, is the gate.
- *  A protection metamod makes scour keep its side (see `scourKeeping`). */
+ *  Simplex) still drops to Normal, so rarity, not mod count, is the gate. */
 export function scour(a: AItem, registry: Registry): TransferResult {
     if (a.rarity === "normal") return fail({ kind: "nothingToRemove" });
-    const shielded = protectedGens(a, registry);
-    if (shielded.size > 0 || hasFracture(a)) {
-        // A "cannot be changed" metamod or a fractured mod makes scour keep that
-        // side (or that mod) and strip the rest, dropping to the lowest rarity the
-        // survivors fit. Both sides fully protected ⇒ nothing to remove.
-        if (shielded.size === ALL_GENS.length && !hasFracture(a)) {
+    const s = survivors(a, registry);
+    if (s.any) {
+        // Whatever survives is kept and the rest stripped, dropping to the lowest
+        // rarity the survivors fit. Both sides protected with nothing locked leaves
+        // nothing to strip at all.
+        if (s.gens.size === ALL_GENS.length && !s.hasLock) {
             return fail({ kind: "nothingToRemove" });
         }
-        return ok(scourKeeping(a, shielded, registry));
+        return ok(scourKeeping(a, s, registry));
     }
     const next: AItem = {
         ...a,
@@ -228,49 +289,32 @@ function minRarityFor(p: number, s: number): Rarity {
     return "rare";
 }
 
-/** Scour that keeps a side (metamod protection) and/or the fractured mod, strips
- *  the rest, and drops to the rarity the survivors fit. */
-function scourKeeping(a: AItem, keep: ReadonlySet<Gen>, registry: Registry): AItem {
-    const genOf = (t: TypeId): Gen => registry.genOfType(t) ?? "prefix";
-    const fractured = fracturedTypes(a);
-    const isKept = (t: TypeId): boolean => keep.has(genOf(t)) || fractured.has(t);
-    const fracIn = (g: Gen): number => {
-        let n = 0;
-        for (const t of fractured) if (genOf(t) === g) n++;
-        return n;
-    };
-    // An unproven fracture keeps one mod of unknown generation.
-    const unprovenLock = hasFracture(a) && fractured.size === 0 ? 1 : 0;
-
-    // Kept counts per side: the whole side if protected, else just its fractured mod.
-    const keptPrefix: Range = keep.has("prefix")
+/** Scour that keeps whatever survives a rewrite, strips the rest, and drops to
+ *  the rarity the survivors fit. */
+function scourKeeping(a: AItem, s: Survivors, registry: Registry): AItem {
+    // Kept counts per side: the whole side if protected, else just its locked mod.
+    const keptPrefix: Range = s.gens.has("prefix")
         ? a.counts.prefix
-        : [fracIn("prefix"), fracIn("prefix")];
-    const keptSuffix: Range = keep.has("suffix")
+        : [s.lockedIn("prefix"), s.lockedIn("prefix")];
+    const keptSuffix: Range = s.gens.has("suffix")
         ? suffixRange(a)
-        : [fracIn("suffix"), fracIn("suffix")];
-    const prefix: Range = [keptPrefix[0], keptPrefix[1] + unprovenLock];
+        : [s.lockedIn("suffix"), s.lockedIn("suffix")];
+    const prefix: Range = [keptPrefix[0], keptPrefix[1] + s.unpinned];
     const total: Range = [
-        keptPrefix[0] + keptSuffix[0] + unprovenLock,
-        keptPrefix[1] + keptSuffix[1] + unprovenLock,
+        keptPrefix[0] + keptSuffix[0] + s.unpinned,
+        keptPrefix[1] + keptSuffix[1] + s.unpinned,
     ];
     let rarity = minRarityFor(keptPrefix[1], keptSuffix[1]);
-    if (unprovenLock && rarity === "normal") rarity = "magic";
+    if (s.unpinned && rarity === "normal") rarity = "magic";
 
     const keptGuarantees = new Set<TypeId>();
-    for (const t of guaranteedTypes(a)) if (keep.has(genOf(t))) keptGuarantees.add(t);
+    for (const t of guaranteedTypes(a)) if (s.protects(t)) keptGuarantees.add(t);
     const possible = new Set<TypeId>();
-    for (const t of a.possible) if (isKept(t)) possible.add(t);
+    for (const t of a.possible) if (s.keeps(t)) possible.add(t);
     const tiers = new Map<TypeId, ReadonlySet<ModId>>();
-    for (const [t, s] of a.tiers) if (isKept(t)) tiers.set(t, s);
+    for (const [t, pins] of a.tiers) if (s.keeps(t)) tiers.set(t, pins);
 
-    // A guaranteed metamod carrier on the stripped side is provably crafted and
-    // provably gone; a kept (protected or fractured) one may survive.
-    let strippedCarriers = 0;
-    for (const t of guaranteedTypes(a)) {
-        if (!isKept(t) && registry.effectsOfType(t).length > 0) strippedCarriers++;
-    }
-    const crafted: Range = [0, Math.max(0, a.crafted[1] - strippedCarriers)];
+    const crafted = craftedAfterRewrite(a, s, registry);
     // Keep the protected-side guarantees and the permanent fracture facts.
     const presence = a.bdd.and(
         presenceFacts(a.bdd, keptGuarantees, excludedTypes(a)),
@@ -425,13 +469,7 @@ export function harvestReforge(a: AItem, tag: TagId, registry: Registry): Transf
         tag,
     );
     if (tagged.length === 0) return fail({ kind: "harvestEmptyPool", tag });
-    // A "cannot be changed" metamod or a fractured mod keeps its side; else a full reforge.
-    const shielded = protectedGens(a, registry);
-    const rerolled =
-        shielded.size > 0 || hasFracture(a)
-            ? keepProtectedReroll(a, shielded, registry)
-            : reroll(a, "rare", [4, 6], registry);
-    return ok(withTaggedDisjunction(rerolled, tagged));
+    return ok(withTaggedDisjunction(reforge(a, "rare", [4, 6], registry), tagged));
 }
 
 /**
@@ -537,16 +575,10 @@ function hasVeiledPlaceholder(a: AItem): boolean {
     return a.bdd.entails(a.presence, clause);
 }
 
-/** Veiled Chaos Orb: reforge a Rare (respecting protection/fractures) so one of
- *  the new mods is a veiled placeholder. */
+/** Veiled Chaos Orb: reforge a Rare so one of the new mods is a veiled placeholder. */
 export function veiledChaos(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "rare") return wrongRarity("rare", a.rarity);
-    const shielded = protectedGens(a, registry);
-    const rerolled =
-        shielded.size > 0 || hasFracture(a)
-            ? keepProtectedReroll(a, shielded, registry)
-            : reroll(a, "rare", [4, 6], registry);
-    return ok(withVeiledPlaceholder(rerolled));
+    return ok(withVeiledPlaceholder(reforge(a, "rare", [4, 6], registry)));
 }
 
 /** Veiled Exalted Orb: remove a random (removable) mod and add a veiled
@@ -617,9 +649,20 @@ function unveilResolve(a: AItem, assertTypes: readonly TypeId[], poolMods: reado
 }
 
 /**
- * A reforge: discard every current mod and lay down a fresh set of the given
- * rarity and count range. Nothing stays guaranteed; the base's full add-pool
- * becomes `possible`; exclusions clear. Shared by alteration/alchemy/chaos.
+ * The reforge every rewrite goes through: a plain reroll, or one that keeps
+ * whatever protection and fractures shield. Callers state the fresh rarity and
+ * count range they would lay down; the keeping form derives its own counts from
+ * what survives, so it ignores `want`.
+ */
+function reforge(a: AItem, rarity: Rarity, want: Range, registry: Registry): AItem {
+    const s = survivors(a, registry);
+    return s.any ? rerollKeeping(a, s, rarity, registry) : reroll(a, rarity, want, registry);
+}
+
+/**
+ * A plain reforge: discard every current mod and lay down a fresh set of the
+ * given rarity and count range. Nothing stays guaranteed; the base's full
+ * add-pool becomes `possible`; exclusions clear.
  */
 function reroll(a: AItem, rarity: Rarity, want: Range, registry: Registry): AItem {
     // Clamp the fresh count to what this base can actually hold at that rarity:
@@ -651,58 +694,41 @@ function reroll(a: AItem, rarity: Rarity, want: Range, registry: Registry): AIte
 }
 
 /**
- * A reforge that respects protection and fractures (chaos / harvest reforge): keep
- * the protected side's mods and the fractured mod — guarantees, tier pins, a count
- * floor, and the permanent fracture facts — and reroll the rest, with open kept-side
- * slots free to fill from the fresh pool. A metamod on the rerolled side goes.
+ * A reforge that keeps what survives: the protected side's mods and the locked
+ * mod hold their guarantees, tier pins, count floor and fracture facts, and the
+ * rest rerolls, with open kept-side slots free to fill from the fresh pool. A
+ * metamod on the rerolled side goes.
  */
-function keepProtectedReroll(a: AItem, keep: ReadonlySet<Gen>, registry: Registry): AItem {
-    const genOf = (t: TypeId): Gen => registry.genOfType(t) ?? "prefix";
-    const pCap = sideCap("prefix", a.rarity, a.base);
-    const fractured = fracturedTypes(a);
-    const isKept = (t: TypeId): boolean => keep.has(genOf(t)) || fractured.has(t);
-    const fracIn = (g: Gen): number => {
-        let n = 0;
-        for (const t of fractured) if (genOf(t) === g) n++;
-        return n;
-    };
-    // One extra kept mod of unknown generation when a fracture exists but isn't pinned.
-    const unprovenLock = hasFracture(a) && fractured.size === 0 ? 1 : 0;
+function rerollKeeping(a: AItem, s: Survivors, rarity: Rarity, registry: Registry): AItem {
+    const pCap = sideCap("prefix", rarity, a.base);
 
     // A kept side keeps its floor (existing mods survive) and may fill to cap; a
-    // rerolled side ranges over 0..cap but still floors on any fractured mod there.
-    const prefix: Range = [keep.has("prefix") ? a.counts.prefix[0] : fracIn("prefix"), pCap];
-    const suffixLo = keep.has("suffix") ? suffixRange(a)[0] : fracIn("suffix");
-    const total: Range = [prefix[0] + suffixLo + unprovenLock, maxTotal(a.rarity, a.base)];
+    // rerolled side ranges over 0..cap but still floors on any locked mod there.
+    const prefix: Range = [s.gens.has("prefix") ? a.counts.prefix[0] : s.lockedIn("prefix"), pCap];
+    const suffixLo = s.gens.has("suffix") ? suffixRange(a)[0] : s.lockedIn("suffix");
+    const total: Range = [prefix[0] + suffixLo + s.unpinned, maxTotal(rarity, a.base)];
 
     // Kept-side guarantees survive; exclusions clear (a reforge or open-slot fill
     // can introduce any mod). The permanent fracture facts are kept too.
     const kept = new Set<TypeId>();
-    for (const t of guaranteedTypes(a)) if (keep.has(genOf(t))) kept.add(t);
+    for (const t of guaranteedTypes(a)) if (s.protects(t)) kept.add(t);
     const presence = a.bdd.and(presenceFacts(a.bdd, kept, new Set()), fractureProjection(a));
 
     // The fresh pool feeds the rerolled side and any open kept-side slots.
     const fresh = addableMods({ ...a, presence: a.bdd.TRUE }, undefined, registry);
     const possible = new Set<TypeId>();
     const tiers = new Map<TypeId, ReadonlySet<ModId>>();
-    for (const t of a.possible) if (isKept(t)) possible.add(t);
-    for (const [t, s] of a.tiers) if (isKept(t)) tiers.set(t, s);
+    for (const t of a.possible) if (s.keeps(t)) possible.add(t);
+    for (const [t, pins] of a.tiers) if (s.keeps(t)) tiers.set(t, pins);
     for (const m of fresh) {
         possible.add(m.type);
-        if (kept.has(m.type) || fractured.has(m.type)) continue; // keep the pinned tier
+        if (kept.has(m.type) || s.locked.has(m.type)) continue; // keep the pinned tier
         const cur = tiers.get(m.type);
         tiers.set(m.type, cur ? new Set([...cur, m.id]) : new Set([m.id]));
     }
 
-    // A metamod on the rerolled side is gone; a crafted mod on the kept side may
-    // survive — the same accounting as `scourKeeping`.
-    let strippedCarriers = 0;
-    for (const t of guaranteedTypes(a)) {
-        if (!isKept(t) && registry.effectsOfType(t).length > 0) strippedCarriers++;
-    }
-    const crafted: Range = [0, Math.max(0, a.crafted[1] - strippedCarriers)];
-
-    return settled({ ...a, counts: { total, prefix }, presence, possible, tiers, crafted });
+    const crafted = craftedAfterRewrite(a, s, registry);
+    return settled({ ...a, rarity, counts: { total, prefix }, presence, possible, tiers, crafted });
 }
 
 // --- precondition predicates (must hold in EVERY arm) ---------------------
@@ -715,21 +741,15 @@ function hasOpenSlot(a: AItem, forcedGen: Gen | undefined): boolean {
 
 function hasRemovable(a: AItem, allowed: ReadonlySet<Gen>, registry: Registry): boolean {
     if (allowed.size === 0) return false; // every side protected → nothing to remove
-    // A fractured mod is locked, so it doesn't count toward what's removable; an
-    // unproven fracture likewise locks one mod (of unknown generation).
-    const fractured = fracturedTypes(a);
-    const unprovenLock = hasFracture(a) && fractured.size === 0 ? 1 : 0;
-    const fracIn = (g: Gen): number => {
-        let n = 0;
-        for (const t of fractured) if ((registry.genOfType(t) ?? "prefix") === g) n++;
-        return n;
-    };
+    // A locked mod doesn't count toward what's removable, whether or not the
+    // fracture has been pinned to a specific type.
+    const s = survivors(a, registry);
     if (allowed.size === 2) {
-        return a.counts.total[0] - fractured.size - unprovenLock >= 1; // any non-locked affix
+        return a.counts.total[0] - s.locked.size - s.unpinned >= 1; // any non-locked affix
     }
     const g: Gen = allowed.has("prefix") ? "prefix" : "suffix";
     const lower = g === "prefix" ? a.counts.prefix[0] : suffixRange(a)[0];
-    return lower - fracIn(g) - unprovenLock >= 1;
+    return lower - s.lockedIn(g) - s.unpinned >= 1;
 }
 
 // --- the add / remove summaries -------------------------------------------
@@ -802,7 +822,7 @@ function survivingGuarantees(
     for (const t of guaranteedTypes(a)) {
         if (!allowed.has(registry.genOfType(t) ?? "prefix")) out.add(t);
     }
-    for (const t of fracturedTypes(a)) out.add(t);
+    for (const t of survivors(a, registry).locked) out.add(t);
     return out;
 }
 
