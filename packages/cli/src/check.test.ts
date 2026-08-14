@@ -63,4 +63,12 @@ exalt`);
         // 1 prefix (the benched life) + 2 suffixes (the proven resistances).
         expect(r.output).toContain("1 prefix · 2 suffixes");
     });
+
+    it("checks phys-dot-weapon.craft clean (fractured reforge keeps its count and clears crafted)", () => {
+        const src = readFileSync(
+            fileURLToPath(new URL("../../../examples/phys-dot-weapon.craft", import.meta.url)),
+            "utf8",
+        );
+        expect(run(src).ok).toBe(true);
+    });
 });

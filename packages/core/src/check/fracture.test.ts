@@ -43,11 +43,13 @@ const guaranteed = (r: ReturnType<typeof check>): Set<string> =>
     new Set([...guaranteedTypes(r.finalState!)]);
 
 describe("declared fractured mod is locked", () => {
-    it("survives a chaos reforge", () => {
+    it("survives a chaos reforge, which still lays down its full 4–6 mods", () => {
         const r = check(craft("poe1", fracturedRing(2), [op("chaos")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.rarity).toBe("rare");
         expect(guaranteed(r)).toContain("IncreasedLife");
+        // The fractured mod is one of the reforged 4–6, not a lone survivor.
+        expect(r.finalState!.counts.total).toEqual([4, 6]);
     });
 
     it("survives an annul (a filler suffix is removed instead)", () => {

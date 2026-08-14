@@ -170,7 +170,8 @@ export function alchemy(a: AItem, registry: Registry): TransferResult {
 export function chaos(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "rare") return wrongRarity("rare", a.rarity);
     const shielded = protectedGens(a, registry);
-    if (shielded.size > 0 || hasFracture(a)) return ok(keepProtectedReroll(a, shielded, registry));
+    if (shielded.size > 0 || hasFracture(a))
+        return ok(keepProtectedReroll(a, shielded, [4, 6], registry));
     return ok(reroll(a, "rare", [4, 6], registry));
 }
 
@@ -429,7 +430,7 @@ export function harvestReforge(a: AItem, tag: TagId, registry: Registry): Transf
     const shielded = protectedGens(a, registry);
     const rerolled =
         shielded.size > 0 || hasFracture(a)
-            ? keepProtectedReroll(a, shielded, registry)
+            ? keepProtectedReroll(a, shielded, [4, 6], registry)
             : reroll(a, "rare", [4, 6], registry);
     return ok(withTaggedDisjunction(rerolled, tagged));
 }
@@ -544,7 +545,7 @@ export function veiledChaos(a: AItem, registry: Registry): TransferResult {
     const shielded = protectedGens(a, registry);
     const rerolled =
         shielded.size > 0 || hasFracture(a)
-            ? keepProtectedReroll(a, shielded, registry)
+            ? keepProtectedReroll(a, shielded, [4, 6], registry)
             : reroll(a, "rare", [4, 6], registry);
     return ok(withVeiledPlaceholder(rerolled));
 }
@@ -656,9 +657,16 @@ function reroll(a: AItem, rarity: Rarity, want: Range, registry: Registry): AIte
  * floor, and the permanent fracture facts — and reroll the rest, with open kept-side
  * slots free to fill from the fresh pool. A metamod on the rerolled side goes.
  */
-function keepProtectedReroll(a: AItem, keep: ReadonlySet<Gen>, registry: Registry): AItem {
+function keepProtectedReroll(
+    a: AItem,
+    keep: ReadonlySet<Gen>,
+    want: Range,
+    registry: Registry,
+): AItem {
     const genOf = (t: TypeId): Gen => registry.genOfType(t) ?? "prefix";
+    const maxT = maxTotal(a.rarity, a.base);
     const pCap = sideCap("prefix", a.rarity, a.base);
+    const sCap = sideCap("suffix", a.rarity, a.base);
     const fractured = fracturedTypes(a);
     const isKept = (t: TypeId): boolean => keep.has(genOf(t)) || fractured.has(t);
     const fracIn = (g: Gen): number => {
@@ -669,11 +677,20 @@ function keepProtectedReroll(a: AItem, keep: ReadonlySet<Gen>, registry: Registr
     // One extra kept mod of unknown generation when a fracture exists but isn't pinned.
     const unprovenLock = hasFracture(a) && fractured.size === 0 ? 1 : 0;
 
-    // A kept side keeps its floor (existing mods survive) and may fill to cap; a
-    // rerolled side ranges over 0..cap but still floors on any fractured mod there.
-    const prefix: Range = [keep.has("prefix") ? a.counts.prefix[0] : fracIn("prefix"), pCap];
-    const suffixLo = keep.has("suffix") ? suffixRange(a)[0] : fracIn("suffix");
-    const total: Range = [prefix[0] + suffixLo + unprovenLock, maxTotal(a.rarity, a.base)];
+    // With no PROTECTED side (a pure fracture, or nothing), the reforge lays down
+    // its full count — the fractured mod is one of them — so the `want` range
+    // applies to the total. A protected side is kept as-is and only the other side
+    // rerolls, so the total floors on what's kept and can be below the reforge count.
+    let total: Range;
+    let prefix: Range;
+    if (keep.size === 0) {
+        total = [Math.min(want[0], maxT), Math.min(want[1], maxT)];
+        prefix = [Math.max(0, total[0] - sCap), Math.min(pCap, total[1])];
+    } else {
+        prefix = [keep.has("prefix") ? a.counts.prefix[0] : fracIn("prefix"), pCap];
+        const suffixLo = keep.has("suffix") ? suffixRange(a)[0] : fracIn("suffix");
+        total = [prefix[0] + suffixLo + unprovenLock, maxT];
+    }
 
     // Kept-side guarantees survive; exclusions clear (a reforge or open-slot fill
     // can introduce any mod). The permanent fracture facts are kept too.
@@ -694,13 +711,20 @@ function keepProtectedReroll(a: AItem, keep: ReadonlySet<Gen>, registry: Registr
         tiers.set(m.type, cur ? new Set([...cur, m.id]) : new Set([m.id]));
     }
 
-    // A metamod on the rerolled side is gone; a crafted mod on the kept side may
-    // survive — the same accounting as `scourKeeping`.
-    let strippedCarriers = 0;
-    for (const t of guaranteedTypes(a)) {
-        if (!isKept(t) && registry.effectsOfType(t).length > 0) strippedCarriers++;
+    // Crafted mods survive only on a KEPT protected side: a pure reforge (no
+    // protected side) rerolls them all away, and a fractured mod is never itself
+    // crafted. With a protected side, a metamod on the rerolled side is provably
+    // gone; a crafted mod on the kept side may survive.
+    let crafted: Range;
+    if (keep.size === 0) {
+        crafted = [0, 0];
+    } else {
+        let strippedCarriers = 0;
+        for (const t of guaranteedTypes(a)) {
+            if (!isKept(t) && registry.effectsOfType(t).length > 0) strippedCarriers++;
+        }
+        crafted = [0, Math.max(0, a.crafted[1] - strippedCarriers)];
     }
-    const crafted: Range = [0, Math.max(0, a.crafted[1] - strippedCarriers)];
 
     return settled({ ...a, counts: { total, prefix }, presence, possible, tiers, crafted });
 }

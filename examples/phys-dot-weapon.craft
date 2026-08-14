@@ -4,9 +4,22 @@ item {
     base: "Imbued Wand"
     ilvl: 84
     rarity: rare
-    prefixes: [fractured "physical damage over time multiplier" t1]
+    suffixes: [fractured "damage over time multiplier" t1]
 }
 
-until has "level all spell skill gems" and has "spell damage" t1 {
-    chaos
+def hasPrefixes() = has "level all spell skill gems" and has "spell damage" t1
+def oneOpenPrefix() = prefixCount == 2
+def atLeastOneOpenSuffix() = suffixCount <= 2
+
+until hasPrefixes() and oneOpenPrefix() and atLeastOneOpenSuffix() {
+    chaos # would fossil craft but this satisfies (but insane cost ofc)
+    
+    if hasPrefixes() and not oneOpenPrefix() {
+        annul
+        if not hasPrefixes() { restart }
+
+        if oneOpenPrefix() and not atLeastOneOpenSuffix() {
+            bench "maximum mana"
+        }
+    }
 }
