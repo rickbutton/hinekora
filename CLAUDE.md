@@ -35,13 +35,6 @@ outcomes in the checker, stop; that violates the design and won't scale.
 - **User-facing text speaks the game's language.** Errors, hover, and completion talk
   about items, mods, tiers, and slots, never type-system vocabulary (proofs, predicates
   "holding", abstract state).
-- **Prose reads like a human wrote it.** Write comments, docs, and commit messages in the
-  `avoid-ai-writing` skill's **technical** voice profile: plain copulatives ("X is Y"),
-  one idea per sentence, jargon defined on first use, and the common AI tells cut. Use
-  em-dashes sparingly (a comma, colon, parenthesis, or a new sentence usually reads
-  better), skip hollow intensifiers ("genuinely", "significantly"), don't inflate
-  significance. `tools/ai-writing/check.mjs` runs the detector and the `commit-msg` hook
-  screens each message. Enable the hook once per clone with `git config core.hooksPath hooks`.
 - **Comments and commit messages stand alone.** They must be understandable from the repo
   alone, with no memory of the conversation, task, or plan that produced them. No session
   or task references ("audit findings", "1/3", "as discussed", "per the plan", "as
