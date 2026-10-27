@@ -117,7 +117,7 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
   on — harvest, fossils), `Base` (id = metadata path, since display names collide across
   hundreds of bases), `Weight` (provenance-tagged), `Effect` seam, `ModSource`, and the `wf`
   (well-formedness) rules. Branded id types in `model/ids.ts`.
-- **pool/**: `pool(catalog, item)`, which mods can roll on an item: the wiki's
+- **pool/**: `pool(catalog, item[, maybeTags])`, which mods can roll on an item: the wiki's
   [spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag) rule (the item's
   tags, `itemTags`: the base's plus the `adds_tags` of present mods, a rule the data
   carries rather than the wiki (`QUESTIONS.md` Q2), vs the mod's spawn table,
@@ -432,7 +432,7 @@ metamods). Notes:
   ≥4 mods, not already fractured) asserts "exactly one of the current mods is fractured" —
   pinnable by a `fractured X` branch (`refine`). Hinekora therefore models at most one
   fracture per item; the wiki's multi-fracture routes (Synthesis, Necropolis, beastcrafting)
-  are not modelled. Removal, `alteration`, `chaos`, `scour`, essence and harvest reforge keep the fracture by
+  are not modelled. Removal, `alteration`, `chaos`, `scour`, essence, the veiled chaos and harvest reforge keep the fracture by
   preserving `fractureProjection(a)` (the presence BDD reduced to the fracture atoms + their
   coupled presence) and rerolling the rest, so a proven fracture keeps its type and an
   unproven one keeps the survivor disjunction. **Scour** drops to the minimum rarity that
