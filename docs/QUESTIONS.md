@@ -103,8 +103,8 @@ Orb the wiki says only that it "cannot be used to obtain multiple veiled modifie
 **Procure:** a Rare with an unveiled modifier (veiled chaos, then unveil) and a Veiled
 Chaos Orb.
 **Steps:** try to apply it. **Record:** accepted or refused.
-**Assumed meanwhile:** refused, the stricter reading, in `check/transfer.ts`
-(`veiledChaos`) and the Veiled Chaos Orb row of `operations.md`.
+**Assumed meanwhile:** refused, the stricter reading, in `check/library.ts`
+(`VEILED_CHAOS`) and the Veiled Chaos Orb row of `operations.md`.
 **Answer:**
 
 ### Q13 · game probe · open
@@ -120,7 +120,7 @@ enabled row is not stated on the wiki.
 staff modifier together with a modifier the `not_int` tag would otherwise block.
 **Record:** any such pair, or none after many tries.
 **Assumed meanwhile:** yes, the stricter reading for the checker: the add-pool admits
-every row an admitted row's tag would enable, to a fixpoint (`check/transfer.ts`
+every row an admitted row's tag would enable, to a fixpoint (`check/ops.ts`
 `addableMods`, `pool/pool.ts` `lookupWeight`).
 **Answer:**
 
@@ -209,8 +209,8 @@ provenance), `1eeee60` (item-block fields).
 **Question:** Go ahead with the core-operations redesign proposed in
 `operations.md` (every crafting method compiled to a handful of primitive effects on
 the abstract item), or keep one transfer function per currency?
-**Context:** the analysis in that doc; it changes the shape of `check/transfer.ts` but not
-the abstract domain, and it is what makes the remaining crafting surface tractable.
+**Context:** the analysis in that doc; it changes the shape of the checker's operation
+layer but not the abstract domain, and it is what makes the remaining crafting surface tractable.
 **Assumed meanwhile:** the bug fixes land first in the current structure (their tests
 carry over); the redesign waits for the answer.
 **Where the assumption lives:** nowhere yet.

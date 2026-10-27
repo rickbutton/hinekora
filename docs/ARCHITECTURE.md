@@ -163,30 +163,34 @@ later "if neither A nor B" could not be flagged dead. The BDD keeps it. (Why not
 whole thing to an SMT solver, per [REFERENCE §7](REFERENCE.md): worse diagnostics, a heavy
 async dependency, and you would still need the loop fixpoint yourself.)
 
-### 4.3 Transfer functions: operations as state transformers
+### 4.3 Operations: methods as sequences of state transformers
 
-Each currency op is a function `AItem → AItem` (or a precondition failure). Nine of the
-ten orbs reduce to two primitives (an **additive add** and a **reforge**) plus remove and
-scour; the Fracturing Orb only asserts a fracture fact in the presence BDD. Essence and
-bench build on the primitives with a "force this specific mod present" step.
+Each primitive operation is a function `AItem → AItem`, and a crafting method is an
+ordered sequence of them ([operations.md](operations.md)): `require` a check, `strip`
+to what is kept, `fill` from a pool, `remove` one, set the `rarity`, `lock` one. A
+Chaos Orb is `require(rare); strip; fill(natural, reforge 4–6)`; a bench craft is three
+checks and a one-row fill; the Fracturing Orb's `lock` only asserts a fracture fact in
+the presence BDD. A method is all or nothing: a failed check anywhere leaves the item as
+it was, and the metamods in force are read once, when the method is applied.
 
-The discipline is the core invariant: a transfer function _folds_ the op's effect
-into the summary; it never materialises a list of concrete outcomes. An add over-
-approximates "the new mod could be any addable type" by relaxing exactly those types'
-facts. A reforge resets presence to "any of the base's pool." That is what keeps chaining
-cheap.
+The discipline is the core invariant: an operation _folds_ its effect into the summary;
+it never materialises a list of concrete outcomes. A fill over-approximates "the new mod
+could be any of the pool" by relaxing exactly those types' facts. A strip forgets the
+stripped types' facts and a fill from the natural pool makes the pool `possible`. That
+is what keeps chaining cheap.
 
-Transfer functions are _transformers_, not part of any domain, which is why they live in
-their own file (`check/transfer.ts`) and do not shrink when the domains are refactored.
-This split is standard for abstract interpretation: the domains supply the lattice; the
-transfer functions supply the abstract semantics of the operations.
+The operations are _transformers_, not part of any domain, which is why they live in
+their own file (`check/ops.ts`, with the library of methods in `check/library.ts`) and
+do not shrink when the domains are refactored. This split is standard for abstract
+interpretation: the domains supply the lattice; the transformers supply the abstract
+semantics of the operations.
 
 ### 4.4 The driver: sequencing, branches, loops
 
 `check.ts` threads a summary through the program. A statement either _falls through_ with a
 new summary or _restarts_ (diverges, re-entering the enclosing loop).
 
-- **Sequence**: fold each statement's transfer function.
+- **Sequence**: run each statement's method.
 - **Branch (`if`)**: refine the summary into each arm (narrow by the condition), check
   each, then `join` the arms that fall through. An arm whose condition is impossible here
   is flagged as dead.

@@ -19,21 +19,22 @@ The audit of the code against `item-model.md` is applied: its decisions are reso
 `QUESTIONS.md`, its bugs fixed, the §8 rules the checker can express are enforced by its
 item block and transfer functions and the §9 facts are data tests. What remains is a
 re-audit of the code against
-`item-model.md` §§4–9, rule by rule, once Step 2 has settled the shape of the transfer
-layer. The expected remaining divergence is influence (Step 4) and nothing else.
+`item-model.md` §§4–9, rule by rule, now that Step 2 has settled the shape of the
+operations. The expected remaining divergence is influence (Step 4) and nothing else.
 
 ## Step 2. The operations model (Q5)
 
-Replace the per-currency transfer functions with the primitives of `operations.md` §2
-and a library of entries (`operations.md` §3): pools and selectors as descriptions, an
-interpreter in the checker, and one generic operation statement in the AST whose
-arguments the library's signature drives (parser, completion and hover stop knowing
-each method). Every existing test stays green; the diagnostics keep their wording. This
-is a refactor commit series followed by a deletion of the old functions. One rule the
-model must state: a precondition that needs a pool to be non-empty (the harvest crafts'
-`harvestEmptyPool`) must read a pool that is a subset of every path's real pool, while an
-add reads a superset; today both read the add-pool, so a greyed-out harvest craft whose
-tagged pool a possibly present modifier empties can be accepted.
+The checker runs every method as a sequence of the primitives of `operations.md` §2
+from the library of `check/library.ts`. What remains:
+
+- One generic operation statement in the AST whose arguments the library's signature
+  drives, so the parser, completion and hover stop knowing each method.
+- A `require` that needs a pool to be non-empty (the harvest crafts' `harvestEmptyPool`)
+  must read a pool that is a subset of every path's real pool, while a fill reads a
+  superset; today both read the add-pool, so a greyed-out harvest craft whose tagged pool
+  a possibly present modifier empties can be accepted.
+- The rarity after a scour is one value; a protected side plus an unproven lock may leave
+  Magic or Rare in the game, and the state says Rare. A set of rarities would say both.
 
 ## Step 3. The remaining single-item methods
 

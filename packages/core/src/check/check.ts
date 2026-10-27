@@ -19,7 +19,7 @@ import type {
 } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import type { Gen, GroupId, ModId, TypeId } from "../model/ids.js";
-import type { CurrencyKind, Registry } from "../resolve/registry.js";
+import type { Registry } from "../resolve/registry.js";
 import {
     type AItem,
     type RPred,
@@ -43,25 +43,16 @@ import {
 } from "./diagnostics.js";
 import { rollableGen, rollableTiers, tierMod } from "../resolve/tiers.js";
 import {
-    alchemy,
-    alteration,
-    annul,
-    augment,
-    bench,
-    chaos,
-    essence,
-    exalt,
-    fracture,
-    harvestAugment,
-    harvestReforge,
-    regal,
-    scour,
-    transmute,
-    unveil,
-    veiledChaos,
-    veiledExalt,
-    type TransferResult,
-} from "./transfer.js";
+    benchOps,
+    currencyOps,
+    essenceOps,
+    harvestAugmentOps,
+    harvestReforgeOps,
+    unveilOps,
+    VEILED_CHAOS,
+    VEILED_EXALT,
+} from "./library.js";
+import { runMethod } from "./ops.js";
 
 export interface CheckContext {
     readonly registry: Registry;
@@ -466,7 +457,7 @@ class Checker {
             this.diag(resolveMessage(spec.error), stmt.span);
             return { kind: "fall", state: a };
         }
-        const result = essence(a, spec.value, this.registry);
+        const result = runMethod(a, essenceOps(spec.value, a.ilvl), this.registry);
         if (!result.ok) {
             this.diag(preconditionMessage(a, result.failure), stmt.span);
             return { kind: "fall", state: a };
@@ -488,7 +479,7 @@ class Checker {
             this.diag(resolveMessage(mod.error), stmt.span); // data-integrity; never expected
             return { kind: "fall", state: a };
         }
-        const result = bench(a, mod.value, this.registry);
+        const result = runMethod(a, benchOps(mod.value), this.registry);
         if (!result.ok) {
             this.diag(preconditionMessage(a, result.failure), stmt.span);
             return { kind: "fall", state: a };
@@ -504,10 +495,9 @@ class Checker {
             this.diag(resolveMessage(tag.error), stmt.span);
             return { kind: "fall", state: a };
         }
-        const result =
-            stmt.verb === "reforge"
-                ? harvestReforge(a, tag.value, this.registry)
-                : harvestAugment(a, tag.value, this.registry);
+        const ops =
+            stmt.verb === "reforge" ? harvestReforgeOps(tag.value) : harvestAugmentOps(tag.value);
+        const result = runMethod(a, ops, this.registry);
         if (!result.ok) {
             this.diag(preconditionMessage(a, result.failure), stmt.span);
             return { kind: "fall", state: a };
@@ -516,8 +506,11 @@ class Checker {
     }
 
     private checkVeiled(a: AItem, stmt: Extract<Stmt, { kind: "veiled" }>): Flow {
-        const result =
-            stmt.verb === "chaos" ? veiledChaos(a, this.registry) : veiledExalt(a, this.registry);
+        const result = runMethod(
+            a,
+            stmt.verb === "chaos" ? VEILED_CHAOS : VEILED_EXALT,
+            this.registry,
+        );
         if (!result.ok) {
             this.diag(preconditionMessage(a, result.failure), stmt.span);
             return { kind: "fall", state: a };
@@ -540,7 +533,8 @@ class Checker {
             }
             type = typeRes.value;
         }
-        const result = unveil(a, type, name, this.registry);
+        const target = type !== undefined && name !== undefined ? { type, name } : undefined;
+        const result = runMethod(a, unveilOps(target), this.registry);
         if (!result.ok) {
             this.diag(preconditionMessage(a, result.failure), stmt.span);
             return { kind: "fall", state: a };
@@ -556,37 +550,12 @@ class Checker {
             this.diag(resolveMessage(currency.error), stmt.span);
             return { kind: "fall", state: a };
         }
-        const result = this.applyCurrency(a, currency.value.kind);
+        const result = runMethod(a, currencyOps(currency.value.kind), this.registry);
         if (!result.ok) {
             this.diag(preconditionMessage(a, result.failure), stmt.span);
             return { kind: "fall", state: a }; // op skipped; keep checking downstream
         }
         return { kind: "fall", state: result.state };
-    }
-
-    private applyCurrency(a: AItem, kind: CurrencyKind): TransferResult {
-        switch (kind) {
-            case "transmute":
-                return transmute(a, this.registry);
-            case "augment":
-                return augment(a, this.registry);
-            case "alteration":
-                return alteration(a, this.registry);
-            case "regal":
-                return regal(a, this.registry);
-            case "alchemy":
-                return alchemy(a, this.registry);
-            case "chaos":
-                return chaos(a, this.registry);
-            case "exalt":
-                return exalt(a, this.registry);
-            case "annul":
-                return annul(a, this.registry);
-            case "scour":
-                return scour(a, this.registry);
-            case "fracture":
-                return fracture(a);
-        }
     }
 
     // --- narrowing (if / else) --------------------------------------------

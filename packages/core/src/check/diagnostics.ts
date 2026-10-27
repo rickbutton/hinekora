@@ -9,7 +9,7 @@ import type { Rarity } from "../model/ids.js";
 import type { ResolveError } from "../resolve/registry.js";
 import { baseLabel } from "../render/render.js";
 import { type AItem, type Range, suffixRange } from "./astate.js";
-import type { PreconditionFailure } from "./transfer.js";
+import type { PreconditionFailure } from "./ops.js";
 
 export interface CheckDiagnostic {
     readonly message: string;

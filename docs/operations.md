@@ -2,10 +2,10 @@
 
 > How every crafting method is expressed as a short program over a handful of primitive
 > effects on the checker's abstract item, so that a method is a library entry rather
-> than a hand-written transfer function. §2 is the primitive set and its abstract
-> semantics; §3 is the ledger of the game's methods, each with its composition and its
-> status; §4 is what the surface language sees. The checker's `transfer` layer is audited
-> against this doc.
+> than a hand-written function. §2 is the primitive set and its abstract semantics; §3
+> is the ledger of the game's methods, each with its composition and its status; §4 is
+> what the surface language sees. The checker's `check/ops.ts` and `check/library.ts`
+> are audited against this doc.
 >
 > Game rules are not restated here; each method links the wiki section that defines it.
 > The abstract item is [ARCHITECTURE.md](ARCHITECTURE.md) §4 and [REFERENCE.md](REFERENCE.md)
@@ -86,7 +86,7 @@ probability layer, and **numeric values** (Divine Orb, lucky rolls, mirrored sca
 
 ## 3. The library
 
-Status: **built** (a transfer function exists today), **composes** (expressible with §2,
+Status: **built** (a library entry exists today), **composes** (expressible with §2,
 not yet built), **probe** (expressible once an in-game question in `QUESTIONS.md` is
 settled), **later** (needs a component the abstract item does not have yet, named), **out**
 (not an operation on one item's explicit modifiers: multi-item, unique-only, implicit,
