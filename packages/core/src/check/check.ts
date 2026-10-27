@@ -29,6 +29,7 @@ import {
     initialState,
     join,
     refine,
+    maxTotal,
     sideCap,
     stateEqual,
     widenPresence,
@@ -327,6 +328,17 @@ class Checker {
                 item.span,
             );
             suffixCount = sCap;
+        }
+        // wf: the two sides together are held to the rarity's total, which a
+        // +delta side cap can exceed (a magic Ratcheting Ring holds two suffixes).
+        const tCap = maxTotal(item.rarity, base);
+        if (prefixCount + suffixCount > tCap) {
+            this.diag(
+                `too many modifiers for a ${item.rarity} ${base.name ?? "item"}: ${prefixCount + suffixCount} (max ${tCap})`,
+                item.span,
+            );
+            suffixCount = Math.max(0, Math.min(suffixCount, tCap - prefixCount));
+            prefixCount = Math.min(prefixCount, tCap - suffixCount);
         }
 
         return initialState(this.bdd, game, base, item.ilvl, item.rarity, {

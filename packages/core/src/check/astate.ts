@@ -459,7 +459,7 @@ export function initialState(
 ): AItem {
     const p = counts.prefixCount;
     const s = counts.suffixCount;
-    return {
+    return settled({
         game,
         base,
         ilvl,
@@ -477,7 +477,7 @@ export function initialState(
         possible: new Set(counts.present),
         tiers: new Map([...counts.pinned].map(([type, mod]) => [type, new Set([mod])])),
         crafted: [0, 0], // a declared item block has no bench-crafted mods
-    };
+    });
 }
 
 // --- join (merge two branch states) ---------------------------------------

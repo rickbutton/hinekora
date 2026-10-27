@@ -873,6 +873,21 @@ describe("checker — per-base affix caps (experimented bases)", () => {
         expect(suffixRange(r.finalState!)).toEqual([2, 2]);
     });
 
+    it("the item block rejects a count over the combined cap (three suffixes on a magic Ratcheting)", () => {
+        // Each side fits its own cap (suffix cap four) but the magic total is two;
+        // the declared item is reported and the state starts within the cap rather
+        // than silently emptying at the first normalize.
+        const over = item({
+            base: "Ratcheting Ring",
+            ilvl: 100,
+            rarity: "magic",
+            suffixes: ["random", "random", "random"],
+        });
+        const r = check(craft("poe1", over, []), ctx);
+        expect(r.diagnostics[0]?.message).toContain("too many modifiers");
+        expect(r.finalState!.counts.total).toEqual([2, 2]);
+    });
+
     it("a named side also needs the total under its cap (bench a suffix on a full magic Ratcheting)", () => {
         // Two suffixes fill the magic total of 2 although the suffix side cap is 4,
         // so a benched suffix has no slot: the open-slot check on a named side
