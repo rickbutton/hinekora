@@ -433,7 +433,8 @@ metamods). Notes:
   [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb) and the
   three-option unveil of [Veiled modifier § How to obtain](https://www.poewiki.net/wiki/Veiled_modifier#How_to_obtain)):
   the orbs add a veiled placeholder (the `VeiledPrefix ∨ VeiledSuffix` disjunction,
-  generation fixed-random so unknown) on the reforge / add-remove seams. `unveil` reads
+  generation fixed-random so unknown) on the reforge / add-remove seams; both refuse an
+  item that may already carry a placeholder or an unveiled result mod (`mayHaveVeiled`). `unveil` reads
   `veiledPool` (`pool/veiled.ts` — the unveiled result mods valid on the base, minus families
   already present, which is "blocking") and either asserts the pool disjunction (narrow with
   `if has`) or, with a target, guarantees it once the pool is ≤ 3. The veiled `domain` keeps

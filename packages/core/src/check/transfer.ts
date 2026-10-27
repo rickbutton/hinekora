@@ -25,6 +25,7 @@ import {
     fracturedTypes,
     guaranteedTypes,
     hasFracture,
+    isExcluded,
     maxTotal,
     presenceFacts,
     settled,
@@ -48,6 +49,7 @@ export type PreconditionFailure =
     | { readonly kind: "tooFewMods"; readonly needed: number }
     | { readonly kind: "alreadyFractured" }
     | { readonly kind: "noVeiledMod" }
+    | { readonly kind: "alreadyVeiled" }
     | { readonly kind: "unveilNotAvailable"; readonly mod: string }
     | { readonly kind: "unveilNotGuaranteed"; readonly mod: string; readonly options: number };
 
@@ -562,10 +564,25 @@ function hasVeiledPlaceholder(a: AItem): boolean {
     return a.bdd.entails(a.presence, clause);
 }
 
+/** Might the item carry a veiled placeholder or an unveiled result mod? A veiled
+ *  orb refuses both ("an item with a veiled modifier or its craftable versions",
+ *  Veiled Exalted Orb; "cannot be used to obtain multiple veiled modifiers",
+ *  Crafting), and the precondition must hold on every path, so a possible one
+ *  is enough to refuse. */
+function mayHaveVeiled(a: AItem, registry: Registry): boolean {
+    for (const t of a.possible) {
+        if (isExcluded(a, t)) continue;
+        if (t === VEILED_PREFIX || t === VEILED_SUFFIX) return true;
+        if (representative(registry, t)?.source === "veiled") return true;
+    }
+    return false;
+}
+
 /** Veiled Chaos Orb: reforge a Rare (respecting protection/fractures) so one of
  *  the new mods is a veiled placeholder. */
 export function veiledChaos(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "rare") return wrongRarity("rare", a.rarity);
+    if (mayHaveVeiled(a, registry)) return fail({ kind: "alreadyVeiled" });
     const shielded = protectedGens(a, registry);
     const rerolled =
         shielded.size > 0 || hasFracture(a)
@@ -578,6 +595,7 @@ export function veiledChaos(a: AItem, registry: Registry): TransferResult {
  *  placeholder. Net affix count unchanged. */
 export function veiledExalt(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "rare") return wrongRarity("rare", a.rarity);
+    if (mayHaveVeiled(a, registry)) return fail({ kind: "alreadyVeiled" });
     const allowed = removalGens(a, undefined, registry);
     if (!hasRemovable(a, allowed, registry)) return fail({ kind: "nothingToRemove" });
     return ok(addVeiledPlaceholder(removeOne(a, allowed, registry)));

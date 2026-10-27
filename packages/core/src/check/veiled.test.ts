@@ -51,6 +51,21 @@ describe("veiled orbs", () => {
         expect(r.diagnostics[0]!.message).toContain("veiled modifier");
     });
 
+    it("a veiled orb is refused while a veiled modifier is pending", () => {
+        const r = check(craft("poe1", rareRing(), [veiled("chaos"), veiled("exalt")]), ctx);
+        expect(r.diagnostics).toHaveLength(1);
+        expect(r.diagnostics[0]!.message).toContain("veiled or unveiled modifier");
+    });
+
+    it("a veiled orb is refused once an unveiled modifier may be on the item", () => {
+        const r = check(
+            craft("poe1", rareRing(), [veiled("chaos"), unveil(), veiled("chaos")]),
+            ctx,
+        );
+        expect(r.diagnostics).toHaveLength(1);
+        expect(r.diagnostics[0]!.message).toContain("veiled or unveiled modifier");
+    });
+
     it("veiled exalt keeps the affix count (removes one, adds the veiled mod)", () => {
         const r = check(craft("poe1", rareRing(["random", "random"]), [veiled("exalt")]), ctx);
         expect(r.diagnostics).toEqual([]);
