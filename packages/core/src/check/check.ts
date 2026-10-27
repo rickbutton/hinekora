@@ -563,8 +563,15 @@ class Checker {
     private checkIf(a: AItem, stmt: Extract<Stmt, { kind: "if" }>): Flow {
         const rpred = this.resolvePred(stmt.pred, a);
 
-        const thenState = rpred === null ? a : refine(a, rpred, true);
-        const elseState = rpred === null ? a : refine(a, rpred, false);
+        // A narrowed count may leave a proven "≥k of these suffixes" below the
+        // suffix count's new floor, so the presence facts are pushed back in.
+        const narrow = (positive: boolean): AItem | null => {
+            if (rpred === null) return a;
+            const s = refine(a, rpred, positive);
+            return s === null ? null : this.tightenCounts(s);
+        };
+        const thenState = narrow(true);
+        const elseState = narrow(false);
 
         if (thenState === null) {
             this.diag(

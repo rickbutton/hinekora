@@ -1043,6 +1043,24 @@ describe("checker — count refinement through disjunctions", () => {
         expect(r.finalState!.counts.prefix).toEqual([1, 1]); // the benched life prefix
     });
 
+    it("a branch's narrowed count keeps the proven suffix disjunction's floor", () => {
+        // 4–6 mods with ≥2 resistance suffixes proven: inside `prefixCount == 3`
+        // the total must be 5–6, not 4–6 (three prefixes and two suffixes at least).
+        const c = craft(rareRing(["random"]), [
+            op("chaos"),
+            until(twoEleRes, [op("annul"), op("exalt")]),
+            iff(cmp("prefixCount", "==", 3), [op("exalt")], []),
+        ]);
+        const r = check(c, ctx);
+        const inside = r.trace.find(
+            (e) =>
+                e.kind === "op" &&
+                e.before.counts.prefix[0] === 3 &&
+                e.before.counts.prefix[1] === 3,
+        );
+        expect(inside?.before.counts.total).toEqual([5, 6]);
+    });
+
     it("keeps a disjunctive guarantee through an additive op (exalt)", () => {
         // `A or B` is proven on loop exit; an exalt only ADDS a mod, so it must
         // survive — a following `not A and not B` is then provably dead.
