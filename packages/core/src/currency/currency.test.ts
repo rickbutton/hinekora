@@ -141,7 +141,7 @@ describe("annul under protection — a Protect effect makes it safe", () => {
         expect(o.kind).toBe("removeOne");
         // Only the carrier is removable; the protected Life prefix survives every
         // (single) arm — so it is guaranteed present. Protection turns a risky
-        // Annul into a safe one (typing rules §4.4 / §9.6).
+        // Annul into a safe one.
         expect(guarantees(o, LIFE_T1.type)).toBe(true);
         expect(armCount(o)).toBe(1);
     });

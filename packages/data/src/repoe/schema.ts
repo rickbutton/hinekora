@@ -4,7 +4,7 @@
  * These mirror the real `mods.json` / `base_items.json` entries (each file is a
  * JSON object keyed by id). Only the fields the core model needs are typed;
  * RePoE carries much more (stat rolls, granted effects, gold values, …) which we
- * intentionally ignore. Grounded in the dat-schema fields the typing rules cite:
+ * intentionally ignore. Grounded in the dat-schema fields the item model cites:
  * `type` is `Mods.ModType`, `groups` is `Mods.Families`, `spawn_weights` is
  * `SpawnWeight_TagsKeys ‖ _Values`, etc.
  */

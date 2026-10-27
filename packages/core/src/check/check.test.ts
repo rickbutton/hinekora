@@ -756,7 +756,7 @@ describe("checker — boolean predicates (and / or)", () => {
     });
 });
 
-describe("checker — omens direct operations (typing rules §10)", () => {
+describe("checker — omens direct operations", () => {
     it("Dextral Exaltation forces the added mod to a suffix", () => {
         // 3 prefixes (full), 1 suffix open → an unforced exalt is fine, but a
         // Dextral (suffix-forced) one is what we assert lands cleanly.

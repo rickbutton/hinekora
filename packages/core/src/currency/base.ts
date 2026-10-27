@@ -1,5 +1,5 @@
 /**
- * The base currency library (typing rules §4.1–4.4): transmute, regal, exalt,
+ * The base currency library (operations.md §3.1): transmute, regal, exalt,
  * annul, the four ops shared by both games.
  *
  * Rarity promotion note: each add-op promotes rarity FIRST, then draws `pool`

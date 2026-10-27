@@ -15,7 +15,8 @@ interpretation) before real currency is spent.
   linked to its wiki section.
 - `docs/crafting-lang-surface-v0.md`: the surface language design (syntax, predicates,
   errors).
-- `docs/crafting-lang-typing-rules-v0.md`: the formal item/currency model.
+- `docs/operations.md`: the operations model (primitive effects, the library of every
+  crafting method with its composition and status).
 - `docs/QUESTIONS.md`: open questions for the user and the assumptions made meanwhile.
 
 ## The core invariant

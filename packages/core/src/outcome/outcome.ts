@@ -1,5 +1,5 @@
 /**
- * Outcomes — the symbolic tagged-union machinery (typing rules §4). An
+ * Outcomes — the symbolic tagged-union machinery. An
  * `Outcome` is a description of how an item changed ("prior item + one mod
  * drawn from `candidates`"), never a materialized list of the concrete states
  * it could become; the summary queries below answer without enumerating.

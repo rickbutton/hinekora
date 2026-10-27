@@ -1,5 +1,5 @@
 /**
- * `Base`, a BaseItemTypes row (typing rules §1).
+ * `Base`, a BaseItemTypes row (item-model.md §4).
  *
  * The base item is physical ground truth: its class, its domain, and its tags.
  * Tags here play the eligibility role, they are matched against each mod's

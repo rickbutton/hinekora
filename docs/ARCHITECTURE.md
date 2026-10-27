@@ -8,7 +8,8 @@
 > - **Forward-looking work** → [ROADMAP.md](ROADMAP.md).
 > - **The surface language** (syntax, predicates, error style) →
 >   [crafting-lang-surface-v0.md](crafting-lang-surface-v0.md).
-> - **The formal item/currency model** → [crafting-lang-typing-rules-v0.md](crafting-lang-typing-rules-v0.md).
+> - **The operations model** (primitive effects and the library of crafting methods) →
+>   [operations.md](operations.md).
 > - **The item model** (what Hinekora models of items and modifiers, each rule linked to its
 >   wiki section) → [item-model.md](item-model.md).
 > - **Conventions, the build gate, working style** → [../CLAUDE.md](../CLAUDE.md).

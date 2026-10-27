@@ -1,5 +1,5 @@
 /**
- * The effects layer (typing rules §9). Carrier mods contribute effects —
+ * The effects layer (item-model.md §6). Carrier mods contribute effects —
  * modifications to the operation rules, active while the carrier is present.
  * Effects are DERIVED, never stored: `effects(it)` recomputes from the present
  * mods, so removing a carrier drops its effects for free and desync is

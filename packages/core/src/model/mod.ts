@@ -1,5 +1,5 @@
 /**
- * `Mod`, one row per TIER of the Mods table (typing rules §1).
+ * `Mod`, one row per TIER of the Mods table (item-model.md §5).
  *
  * A "mod" here is a single tier: "increased Life (T3)" is a different `Mod`
  * value from "increased Life (T1)", but both share a `type` (ModType) so they
@@ -54,7 +54,7 @@ export interface Mod {
     readonly classRestriction?: ReadonlySet<ClassId>;
 
     /**
-     * Effects this mod carries while present (typing rules §9). Absent for the
+     * Effects this mod carries while present (item-model.md §6). Absent for the
      * vast majority of mods, only carriers (bench metamods, effect-essences,
      * delirium slot mods, …) have any. Read via `effectsOf`; folded into `pool`
      * and `wf` through the derived `effects(it)` projection.

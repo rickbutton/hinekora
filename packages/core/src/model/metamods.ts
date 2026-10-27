@@ -3,7 +3,7 @@
  * These effects cannot be ingested from data — a `poolRestrict` is a predicate,
  * not a datum — so they are curated here by mod id and attached to the catalog
  * when the registry is built. The effects then flow through the same derived
- * `effects(it)` path (§9) that `pool` / `wf` / `removable` already consume.
+ * `effects(it)` path (item-model.md §6) that `pool` / `wf` / `removable` already consume.
  *
  * The legacy "required level above 28" metamod is intentionally omitted.
  */

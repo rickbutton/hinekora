@@ -285,7 +285,7 @@ export const UNKNOWN_WEIGHT_MOD: Mod = mkMod({
 });
 
 /**
- * A "prefixes cannot be changed" carrier (typing rules §9.6): a SUFFIX-slot mod
+ * A "prefixes cannot be changed" carrier: a SUFFIX-slot mod
  * that carries a Protect(prefix) effect. Placed directly onto items in tests
  * (not rolled), so its spawn weight is zero to keep it out of `pool`.
  */

@@ -6,8 +6,8 @@
 > The _shape_ of the implementation (the layers and the theory behind the checker) is
 > `ARCHITECTURE.md`; forward-looking work is `ROADMAP.md`; conventions, the build gate,
 > and working style live in `../CLAUDE.md`; design intent lives in
-> `crafting-lang-surface-v0.md` (surface language) and `crafting-lang-typing-rules-v0.md`
-> (formal model); the item and modifier model the code is audited against is
+> `crafting-lang-surface-v0.md` (surface language) and `operations.md`
+> (the operations model); the item and modifier model the code is audited against is
 > `item-model.md`. Recent history lives in `git log`.
 >
 > Game mechanics are not re-explained here. Each rule links to the section of the Path of
@@ -390,7 +390,7 @@ metamods). Notes:
 - **Metamods** ([Metamod](https://www.poewiki.net/wiki/Metamod), the
   [metacrafting bench options](https://www.poewiki.net/wiki/Crafting_Bench#Metacrafting_modifiers))
   are effect-carriers: an effect is active iff its carrier type is GUARANTEED present, the
-  abstract analogue of §9's derived `effects(it)`. `activeEffects(a, registry)` folds
+  abstract analogue of the concrete derived `effects(it)`. `activeEffects(a, registry)` folds
   `registry.effectsOfType` over the guaranteed types;
   `protectedGens`/`craftedCapOfState`/`metamodBlocksSourced` are views of it. Placement is
   just `bench "prefixes cannot be changed"`. Which currency respects which metamod is the
@@ -505,7 +505,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 
 ## 7. Design note: relational precision (why a BDD, and why not Z3)
 
-The typing rules frame `wf`, dead-branch checks, and refinement as verification
+The design framed `wf`, dead-branch checks, and refinement as verification
 conditions in an SMT-decidable fragment (linear arithmetic over counts + set
 membership), with the guidance "start hand-rolled; reach for Z3 only if something
 needs it". `AItem` IS that hand-rolled decision procedure.

@@ -1,5 +1,5 @@
 /**
- * The concrete item (typing rules §2): the runtime record `pool` and the
+ * The concrete item (item-model.md §7): the runtime record `pool` and the
  * currency library read, plus `ItemIndex`, the projection the type rules
  * branch on. The item deliberately has NO `effects` field — active effects are
  * derived from the present mods (`effects.ts`), so desync is impossible by

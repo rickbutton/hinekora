@@ -95,7 +95,7 @@ const wrongRarity = (needed: Rarity, actual: Rarity): TransferResult =>
 // --- metamod effects (derived from guaranteed carriers) -------------------
 //
 // A metamod's effect is active iff its carrier type is GUARANTEED present.
-// Mirrors the concrete derived-effects model (§9): a merely-possible carrier is
+// Mirrors the concrete derived-effects model (item-model.md §6): a merely-possible carrier is
 // treated as absent, which is sound in every direction — protection that
 // preserves guarantees, and restrictions/blocks that would constrain or reject a
 // later op, all require the carrier to be provably there.

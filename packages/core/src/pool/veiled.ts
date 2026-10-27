@@ -1,6 +1,6 @@
 /**
  * `veiledPool`: which unveiled modifiers a veiled mod on an item can reveal. A
- * sibling of `pool` (§3) restricted to the unveiled result mods, filtered by the
+ * sibling of `pool` restricted to the unveiled result mods, filtered by the
  * base (class + ilvl + spawn eligibility) and by the families already present —
  * the last of these is "blocking": a mod whose group is on the item is not an
  * offered choice, so bench-crafting a conflicting mod removes it.

@@ -77,7 +77,7 @@ vocabulary as design intent either way.
 
 **Asked:** 2026-10-26
 **Question:** Go ahead with the core-operations redesign proposed in
-`core-operations.md` (every crafting method compiled to a handful of primitive effects on
+`operations.md` (every crafting method compiled to a handful of primitive effects on
 the abstract item), or keep one transfer function per currency?
 **Context:** the analysis in that doc; it changes the shape of `check/transfer.ts` but not
 the abstract domain, and it is what makes the remaining crafting surface tractable.

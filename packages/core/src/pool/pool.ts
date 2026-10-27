@@ -1,5 +1,5 @@
 /**
- * `pool(catalog, it)`, the candidate pool (typing rules §3): given a known
+ * `pool(catalog, it)`, the candidate pool (ARCHITECTURE.md §3): given a known
  * item, which mods can be added, at what weight. It returns candidate
  * descriptors, (mod, weight) pairs, a cheap bounded scan, not item states;
  * the outcome union stays a symbolic delta over this list (the
@@ -42,8 +42,7 @@ function classPermitted(m: Mod, itemClass: ClassId): boolean {
 }
 
 /**
- * The candidate pool for `it`. Each clause is one line of the typing rules'
- * §3 set-comprehension; a mod is a candidate iff it passes all of them.
+ * The candidate pool for `it`: a mod is a candidate iff it passes every clause.
  */
 export function pool(catalog: ModCatalog, it: Item): readonly PoolCandidate[] {
     const restrict = poolRestrictPredicate(it); // pool-restrict effects shrink the set

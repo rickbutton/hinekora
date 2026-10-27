@@ -1,5 +1,5 @@
 /**
- * Well-formedness (typing rules §2.1) — the invariant every item must satisfy:
+ * Well-formedness (item-model.md §8) — the invariant every item must satisfy:
  * slot caps (effect-adjusted), distinct affix ModTypes, pairwise-disjoint
  * families, the tier gate, and domain match. Tags appear NOWHERE here — they
  * are an eligibility concern (spawn weights), not a coexistence rule. We
