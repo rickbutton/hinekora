@@ -1,0 +1,11 @@
+{
+    "name": "@hinekora/poewiki-tools",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Local cache of poewiki.net: full export, incremental sync, and on-demand rendering to Markdown.",
+    "type": "module",
+    "dependencies": {
+        "turndown": "^7.2.0",
+        "turndown-plugin-gfm": "^1.0.2"
+    }
+}
