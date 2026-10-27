@@ -451,8 +451,9 @@ function essenceGrant(a: AItem, spec: EssenceSpec, registry: Registry): Mod | un
 
 /**
  * Every modifier goes but those on a protected side and the fractured one.
- * Counts fall to what is kept; guarantees, tier pins and `possible` survive only
- * for kept types; exclusions stay (nothing is added); the fracture facts are
+ * Counts fall to what is kept; guarantees survive only for kept types, tier pins
+ * and `possible` for kept types and, under an unproven lock, for every current
+ * type; exclusions stay (nothing is added); the fracture facts are
  * permanent; the crafted range keeps only what the kept side could hold.
  */
 function strip(a: AItem, rules: Rules, registry: Registry): AItem {
@@ -472,12 +473,10 @@ function strip(a: AItem, rules: Rules, registry: Registry): AItem {
         ? suffixRange(a)
         : [fracIn("suffix"), fracIn("suffix")];
     const prefix: Range = [keptPrefix[0], keptPrefix[1] + unprovenLock];
-    // With a kept side the unproven lock may sit on one of its mods, so it adds
-    // to the floor only what the kept side cannot already account for.
+    // The unproven lock may sit on a kept mod, so it adds to the floor only
+    // what the kept side cannot already account for.
     const total: Range = [
-        keep.size === 0
-            ? keptPrefix[0] + keptSuffix[0] + unprovenLock
-            : Math.max(keptPrefix[0] + keptSuffix[0], unprovenLock),
+        Math.max(keptPrefix[0] + keptSuffix[0], unprovenLock),
         keptPrefix[1] + keptSuffix[1] + unprovenLock,
     ];
 
