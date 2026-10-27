@@ -237,7 +237,9 @@ describe("a scour that keeps a side drops to the rarity the survivors fit", () =
         );
         const r = check(c, ctx);
         expect(r.diagnostics[0]?.message).toContain("Requires a Rare item");
-        expect(r.trace.find((e) => e.kind === "op" && e.before.rarity === "magic")).toBeDefined();
+        const scoured = r.trace.find((e) => e.kind === "op" && e.before.rarity === "magic")!;
+        // The lock may sit on the kept prefix, so the floor is one, not two.
+        expect(scoured.before.counts.total).toEqual([1, 2]);
     });
 
     it("a scour whose kept side's count is uncertain is refused", () => {

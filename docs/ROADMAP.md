@@ -35,9 +35,7 @@ from the library of `check/library.ts`. What remains:
   a possibly present modifier empties can be accepted.
 - The rarity after a scour is one value, read from what the strip kept; when a kept side's
   count is uncertain the scour is refused until the count is narrowed. A set of rarities
-  would accept it and say both. In the same strip, an unproven lock is counted as one more
-  kept modifier even when it may sit on a kept one, so the kept total can overstate the
-  floor by one.
+  would accept it and say both.
 
 ## Step 3. The remaining single-item methods
 

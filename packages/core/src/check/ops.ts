@@ -472,8 +472,12 @@ function strip(a: AItem, rules: Rules, registry: Registry): AItem {
         ? suffixRange(a)
         : [fracIn("suffix"), fracIn("suffix")];
     const prefix: Range = [keptPrefix[0], keptPrefix[1] + unprovenLock];
+    // With a kept side the unproven lock may sit on one of its mods, so it adds
+    // to the floor only what the kept side cannot already account for.
     const total: Range = [
-        keptPrefix[0] + keptSuffix[0] + unprovenLock,
+        keep.size === 0
+            ? keptPrefix[0] + keptSuffix[0] + unprovenLock
+            : Math.max(keptPrefix[0] + keptSuffix[0], unprovenLock),
         keptPrefix[1] + keptSuffix[1] + unprovenLock,
     ];
 
