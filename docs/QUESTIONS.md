@@ -66,8 +66,8 @@ concrete item gains fields only when the pool needs them.
 **Question:** Delete the dead effect kinds (`poolWiden`, `protect` by mods, `slotDelta`,
 `opUnlock`) and the five unreachable `ModSource` values (recommended), or keep them as
 PoE2 design intent?
-**Context:** plan doc Decision 4. Nothing constructs them; the typing-rules doc keeps the
-vocabulary as design intent either way.
+**Context:** plan doc Decision 4. Nothing constructs them; the design that introduced
+them (PoE2 socket augments, quality unlocks) is out of scope.
 **Assumed meanwhile:** delete.
 **Where the assumption lives:** `packages/core/src/model/effects.ts`,
 `packages/core/src/model/sources.ts`, `packages/data/src/adapter.ts`.
@@ -84,6 +84,73 @@ the abstract domain, and it is what makes the remaining crafting surface tractab
 **Assumed meanwhile:** the bug fixes land first in the current structure (their tests
 carry over); the redesign waits for the answer.
 **Where the assumption lives:** nowhere yet.
+**Answer:**
+
+### Q6 · decision · open
+
+**Asked:** 2026-10-26
+**Question:** The typing-rules design doc (crafting-lang-typing-rules-v0.md, now deleted) was retired in
+favour of `operations.md`. Most of it described designs never built (`narrow`, game
+modules, PoE2 operations, augments, `OpUnlock`, `placeMeta`); what was built is covered by
+`ARCHITECTURE.md`, `item-model.md` and `operations.md`. Keep it retired, or restore it as
+an explicitly historical design record?
+**Assumed meanwhile:** retired; git history keeps it.
+**Where the assumption lives:** `docs/`, the code comments that used to cite its sections.
+**Answer:**
+
+### Q7 · game probe · open
+
+**Asked:** 2026-10-26
+**Goal:** the semantics of the two new bench recipes "Reroll three random modifiers on a
+Rare item" (3 Chaos) and "Reroll a random modifier" (8 Chaos), added in 3.29. The wiki
+([Version 3.29.0](https://www.poewiki.net/wiki/Version_3.29.0)) says only "reroll".
+**Procure:** any Rare with 6 modifiers, two of them of a known group, and a spare with
+"Prefixes Cannot Be Changed" benched.
+**Steps:** (1) apply "reroll three" to the full Rare several times; note whether the
+count stays 6 and whether the three rerolled modifiers can land on the other side (prefix
+count changing). (2) apply it to the metamod item; note whether prefixes are ever touched
+and whether the metamod itself can be rerolled. (3) apply "reroll a random modifier" to a
+Rare with one modifier of each side; note whether the result keeps the side.
+**Record:** before/after prefix and suffix counts for each try.
+**Assumed meanwhile:** `remove(unlocked, k); fill(natural, k)` (count preserved, side may
+change, metamods respected), as `operations.md` §3.2 states; not built until answered.
+**Answer:**
+
+### Q8 · game probe · open
+
+**Asked:** 2026-10-26
+**Goal:** whether a Chaotic Resonator (fossils) accepts a Normal item.
+[Crafting](https://www.poewiki.net/wiki/Crafting) says fossils are "only usable on rare
+items"; [Resonator](https://www.poewiki.net/wiki/Resonator) likens the Chaotic one to a
+Chaos Orb and the Alchemical one to an Orb of Alchemy.
+**Procure:** a Normal base, a Chaotic Resonator with one fossil.
+**Steps:** try to apply it. **Record:** accepted or refused.
+**Assumed meanwhile:** Chaotic needs Rare, Alchemical needs Normal (the Resonator page).
+**Answer:**
+
+### Q9 · game probe · open
+
+**Asked:** 2026-10-26
+**Goal:** the two Metamod-table cells the wiki itself marks unconfirmed
+([Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions)):
+does a Harvest "reforge including a Fire modifier" respect "Cannot roll Caster Modifiers"
+on its own, or only together with "Suffixes Cannot Be Changed"? Same for "reforge more
+likely".
+**Procure:** a Rare with "Cannot roll Caster Modifiers" benched and no other metamod;
+Harvest reforge lifeforce.
+**Steps:** reforge (fire) ten times; note whether any caster-tagged modifier ever rolls.
+**Record:** the modifiers rolled.
+**Assumed meanwhile:** the cannot-roll metamod is respected whenever its carrier
+survives the reforge (the checker's current wiring).
+**Answer:**
+
+### Q10 · clarification · open
+
+**Asked:** 2026-10-26
+**Question:** [Rog](https://www.poewiki.net/wiki/Rog)'s crafting options are not listed on
+the wiki. Is Rog in scope for the crafting surface, and if so what source should define
+his options (poedb, in-game notes)?
+**Assumed meanwhile:** out of scope until a source exists.
 **Answer:**
 
 ---
