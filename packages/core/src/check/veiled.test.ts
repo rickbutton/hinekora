@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, has, iff, item, op, unveil, veiled } from "../__fixtures__/ast.js";
+import { craft, has, iff, item, notp, op, orp, unveil, veiled } from "../__fixtures__/ast.js";
 import { AMULET_BASE, CATALOG, RING_BASE, VEILED_CATALOG } from "../__fixtures__/mods.js";
 import { veiledPool } from "../pool/veiled.js";
 import { GroupId, TypeId } from "../model/ids.js";
@@ -106,5 +106,20 @@ describe("unveil", () => {
         // The `if has "cast speed"` branch is reachable (one possible unveil outcome),
         // so no dead-branch diagnostic.
         expect(r.diagnostics).toEqual([]);
+    });
+});
+
+describe("a veiled orb on an item whose placeholders were proven absent", () => {
+    it("relaxes the exclusion before asserting the placeholder", () => {
+        // Inside the branch both placeholder types are excluded; the orb's fill
+        // must lift that before it asserts one is present, or the state is a
+        // contradiction under which every later check holds vacuously.
+        const c = craft(
+            item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes: ["random"] }),
+            [iff(notp(orp(has("VeiledPrefix"), has("VeiledSuffix"))), [veiled("chaos")])],
+        );
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.presence).not.toBe(r.finalState!.bdd.FALSE);
     });
 });

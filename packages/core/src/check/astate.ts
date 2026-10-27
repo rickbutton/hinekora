@@ -170,7 +170,7 @@ export function disjunctiveTier(a: AItem, types: readonly TypeId[]): Map<TypeId,
  */
 export function admitAdd(
     a: AItem,
-    added: Iterable<{ readonly type: TypeId; readonly id: ModId }>,
+    added: Iterable<{ readonly type: TypeId; readonly id?: ModId }>,
 ): Bdd {
     const allocated = new Set(a.bdd.variables());
     let p = a.presence;
@@ -181,7 +181,7 @@ export function admitAdd(
     };
     for (const m of added) {
         free(m.type);
-        free(tierAtomName(m.type, m.id));
+        if (m.id !== undefined) free(tierAtomName(m.type, m.id));
     }
     return p;
 }

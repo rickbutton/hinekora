@@ -672,7 +672,12 @@ function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry
         const cur = tiers.get(m.type);
         tiers.set(m.type, one ? new Set([m.id]) : cur ? new Set([...cur, m.id]) : new Set([m.id]));
     }
-    presence = admitAdd({ ...a, presence }, drawn.mods);
+    // The draw may be any of the pool's types, rows or not (the veiled
+    // placeholders have no row), so an exclusion on any of them is relaxed.
+    presence = admitAdd({ ...a, presence }, [
+        ...drawn.mods,
+        ...drawn.types.map((type) => ({ type })),
+    ]);
     if (drawn.assert.length > 0) {
         let clause = a.bdd.FALSE;
         for (const t of drawn.assert) clause = a.bdd.or(clause, a.bdd.variable(t));
