@@ -93,7 +93,7 @@ function wordExists(word) {
 /** Does a backticked path refer to something on disk? Bare file names resolve by
  *  basename anywhere under the source roots. */
 function pathExists(p) {
-    if (existsSync(join(root, p))) return true;
+    if (existsSync(join(root, p)) || existsSync(join(root, "docs", p))) return true;
     const base = p.split("/").pop();
     return sourceFiles.some((f) => f.endsWith(`${"/"}${base}`) || f.endsWith(`\\${base}`));
 }
@@ -102,7 +102,7 @@ for (const doc of DOCS) {
     lines(doc).forEach((text, i) => {
         for (const m of text.matchAll(/`([^`\n]+)`/g)) {
             const tok = m[1].trim();
-            if (PATH_RE.test(tok) && tok.includes("/")) {
+            if (PATH_RE.test(tok)) {
                 if (!pathExists(tok)) fail(doc, i + 1, `path does not exist: \`${tok}\``);
                 continue;
             }
