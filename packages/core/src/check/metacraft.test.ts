@@ -222,6 +222,18 @@ describe("cannot roll attack modifiers shields attack mods from removal", () => 
         }
     });
 
+    it("an unproven lock may sit on the one modifier that would prove a removal", () => {
+        // After the Fracturing Orb the lock may be on the carrier, the only
+        // guaranteed unshielded mod, so no removal is proven.
+        const c = craft("poe1", rareRing(["AddedAttack1"], ["random", "random"]), [
+            bench("cannot roll attack modifiers"),
+            op("fracture"),
+            op("annul"),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics[0]?.message).toContain("removable");
+    });
+
     it("an annul forced to the prefixes has nothing it may remove", () => {
         const c = craft("poe1", attackRing(), [
             bench("cannot roll attack modifiers"),

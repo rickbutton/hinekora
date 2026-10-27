@@ -67,7 +67,9 @@ describe("veiled orbs", () => {
     });
 
     it("a veiled orb is refused on an item that declares an unveiled modifier", () => {
-        const r = check(craft("poe1", rareRing(["VeiledDoubleDamage"]), [veiled("exalt")]), ctx);
+        // The declared row shares its type with a natural row listed first, so only
+        // the rows the type may be, not the first row, reveal it as unveiled.
+        const r = check(craft("poe1", rareRing(["SharedVeilUnveiled1"]), [veiled("exalt")]), ctx);
         expect(r.diagnostics[0]!.message).toContain("veiled or unveiled modifier");
     });
 

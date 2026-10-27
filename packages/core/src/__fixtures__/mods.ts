@@ -422,10 +422,36 @@ export const VEILED_D: Mod = mkVeiled(
     TAG_AMULET,
 );
 
+/**
+ * One ModType with a natural row listed before its unveiled row, as most unveiled
+ * rows are in the data; neither rolls anywhere (declared by id in tests).
+ */
+export const SHARED_NATURAL: Mod = mkMod({
+    id: "SharedVeilNatural1",
+    type: "SharedVeil",
+    gen: "suffix",
+    minLevel: 1,
+    families: ["SharedVeil"],
+    spawn: [spawn(TAG_DEFAULT, known(0))],
+    source: "natural",
+});
+export const SHARED_UNVEILED: Mod = mkMod({
+    id: "SharedVeilUnveiled1",
+    type: "SharedVeil",
+    gen: "suffix",
+    minLevel: 1,
+    domain: DOMAIN_UNVEILED,
+    families: ["SharedVeil"],
+    spawn: [spawn(TAG_DEFAULT, known(0))],
+    source: "veiled",
+});
+
 /** All veiled fixtures (placeholders + results), to append to a test catalog. */
 export const VEILED_CATALOG: readonly Mod[] = [
     VEILED_PREFIX_MOD,
     VEILED_SUFFIX_MOD,
+    SHARED_NATURAL,
+    SHARED_UNVEILED,
     VEILED_A,
     VEILED_B,
     VEILED_C,

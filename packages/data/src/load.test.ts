@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type Base, isNonzero, type Item, pool } from "@hinekora/core";
+import { type Base, isNonzero, type Item, pool, TagId } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "./load.js";
 
 const data = loadDefaultPoe1();
@@ -122,6 +122,17 @@ describe("catalog-level facts of the item model", () => {
         const essenceRows = registry.catalog.filter((m) => m.source === "essence");
         expect(essenceRows.length).toBeGreaterThan(400);
         expect(essenceRows.every((m) => m.spawn.every((e) => !isNonzero(e.weight)))).toBe(true);
+    });
+
+    it("a ModType's rows agree on the attack and caster tags", () => {
+        // The cannot-roll shield reads a type's first row; it is exact only while
+        // every row of the type carries the same attack and caster tags.
+        for (const rows of byType.values()) {
+            const key = (m: (typeof rows)[number]) =>
+                `${m.implicitTags.has(TagId("attack"))}/${m.implicitTags.has(TagId("caster"))}`;
+            const first = key(rows[0]!);
+            expect(rows.every((r) => key(r) === first)).toBe(true);
+        }
     });
 
     it("the five metamods are the only effect carriers, all bench-placed", () => {
