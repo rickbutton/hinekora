@@ -6,12 +6,12 @@
  * intensional-union rule, CLAUDE.md). The catalog is passed in because the
  * core is pure and takes loaded data as input.
  */
-import type { ClassId, TagId } from "../model/ids.js";
+import { maxTotal, sideCap } from "../model/capacity.js";
 import { poolRestrictPredicate } from "../model/effects.js";
+import type { ClassId, Gen, TagId } from "../model/ids.js";
 import type { Item } from "../model/item.js";
 import { affixes, presentFamilies, presentTypes } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
-import { slotOpen } from "../model/wf.js";
 import { isNonzero, type Weight } from "../model/weight.js";
 
 /** The universe of mods `pool` draws from, the loaded catalog for this context. */
@@ -50,6 +50,16 @@ export function itemTags(it: Item): ReadonlySet<TagId> {
     const tags = new Set(it.base.tags);
     for (const m of affixes(it)) for (const t of m.addsTags) tags.add(t);
     return tags;
+}
+
+/** Is there room for another affix of generation `gen`? Its side must be under
+ *  its cap and the item under the combined cap. */
+export function slotOpen(it: Item, gen: Gen): boolean {
+    const count = gen === "prefix" ? it.prefixes.length : it.suffixes.length;
+    return (
+        count < sideCap(gen, it.rarity, it.base) &&
+        affixes(it).length < maxTotal(it.rarity, it.base)
+    );
 }
 
 /** Class restriction: unrestricted, or the base's class is allowed. */

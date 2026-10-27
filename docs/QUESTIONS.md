@@ -18,36 +18,6 @@ The next session applies it, records the commit, and moves the entry to Resolved
 
 ## Open
 
-### Q1 · decision · open
-
-**Asked:** 2026-10-26
-**Question:** Affix capacity is computed in three places (`check/counts.ts`, `model/wf.ts`,
-and a literal 6 in `currency/base.ts`). Route the concrete layer and the pool through
-`counts.ts` (recommended), delete the concrete library instead, or merge the two modules?
-**Context:** `pool.slotOpen` used the incomplete `wf.ts` formula and sits on the
-checker's path, so on a rare Ratcheting Ring the add-pool was wrong in the unsound
-direction (ROADMAP Step 1 bug 10).
-**Applied meanwhile:** option 1. The formula lives once in `model/capacity.ts`; `wf`,
-the pool, the concrete exalt and the count domain read it, and `wf` gained the
-combined-cap clause. Ruling otherwise means moving or duplicating that module.
-**Where the assumption lives:** `packages/core/src/model/wf.ts`,
-`packages/core/src/pool/pool.ts`, `packages/core/src/currency/base.ts`, their tests.
-**Answer:**
-
-### Q2 · decision · open
-
-**Asked:** 2026-10-26
-**Question:** The item's tag set. Implement the tags a present modifier adds
-(`adds_tags`) in the pool now and defer influence (recommended), implement both, or
-leave the pool matching on base tags only?
-**Context:** 235 jewel modifiers key on a `specific_weapon` tag that
-another jewel modifier adds; without it the jewel pool overstates what can roll, which
-makes `until has X` look reachable when it is not.
-**Applied meanwhile:** added tags only (`pool.itemTags`); influence arrives with the
-influence currencies (ROADMAP Step 4).
-**Where the assumption lives:** `packages/core/src/pool/pool.ts`, `pool.test.ts`.
-**Answer:**
-
 ### Q3 · decision · open
 
 **Asked:** 2026-10-26
@@ -206,4 +176,35 @@ his options (poedb, in-game notes)?
 
 ## Resolved
 
-_None yet._
+### Q1 · decision · resolved
+
+**Asked:** 2026-10-26
+**Question:** Affix capacity was computed in three places (the checker's count domain, the
+concrete item validator, and a literal 6 in the concrete exalt). Route the concrete layer
+and the pool through the count domain (recommended), delete the concrete library instead,
+or merge the two modules?
+**Context:** the pool's open-slot check used the validator's incomplete formula and sits
+on the checker's path, so on a rare Ratcheting Ring the add-pool was wrong in the unsound
+direction (ROADMAP Step 1 bug 10).
+**Applied meanwhile:** option 1. The formula lives once in `model/capacity.ts`; the
+validator, the pool, the concrete exalt and the count domain read it, and the validator
+gained the combined-cap clause.
+**Where the assumption lives:** `packages/core/src/model/capacity.ts`,
+`packages/core/src/pool/pool.ts`, `packages/core/src/check/counts.ts`, their tests.
+**Answer:** option 1 (2026-10-27). Applied in `67003d1`. The concrete validator and
+currency library were deleted afterwards under Q3; the pool and the checker remain the
+formula's two readers.
+
+### Q2 · decision · resolved
+
+**Asked:** 2026-10-26
+**Question:** The item's tag set. Implement the tags a present modifier adds
+(`adds_tags`) in the pool now and defer influence (recommended), implement both, or
+leave the pool matching on base tags only?
+**Context:** 235 jewel modifiers key on a `specific_weapon` tag that
+another jewel modifier adds; without it the jewel pool overstates what can roll, which
+makes `until has X` look reachable when it is not.
+**Applied meanwhile:** added tags only (`pool.itemTags`); influence arrives with the
+influence currencies (ROADMAP Step 4).
+**Where the assumption lives:** `packages/core/src/pool/pool.ts`, `pool.test.ts`.
+**Answer:** option 1 (2026-10-27). Applied in `1a3c83e` and `138cb13`.

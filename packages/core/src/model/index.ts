@@ -8,4 +8,3 @@ export * from "./capacity.js";
 export * from "./item.js";
 export * from "./effects.js";
 export * from "./veiled.js";
-export * from "./wf.js";

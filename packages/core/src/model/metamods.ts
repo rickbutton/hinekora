@@ -2,8 +2,8 @@
  * The bench meta-crafting modifiers ("metamods") and the effects they carry.
  * These effects cannot be ingested from data — a `poolRestrict` is a predicate,
  * not a datum — so they are curated here by mod id and attached to the catalog
- * when the registry is built. The effects then flow through the same derived
- * `effects(it)` path (item-model.md §6) that `pool` / `wf` / `removable` already consume.
+ * when the registry is built. The effects are then derived from the present
+ * mods (item-model.md §6) by the pool and the checker.
  *
  * The legacy "required level above 28" metamod is intentionally omitted.
  */

@@ -66,8 +66,8 @@ algorithm choice, not a language choice.
 
 ```
 packages/
-  core/     @hinekora/core   - pure, UI-agnostic kernel (model, pool, outcome,
-                                currency, render, resolve, check). No I/O.
+  core/     @hinekora/core   - pure, UI-agnostic kernel (model, pool, render,
+                                resolve, check). No I/O.
   parser/   @hinekora/parser - hand-written lexer + parser: source → Craft AST.
   data/     @hinekora/data   - loads projected RePoE JSON, builds a Registry.
   lsp/      @hinekora/lsp    - transport-free language service + stdio server.
@@ -115,21 +115,17 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
   [mod groups](https://www.poewiki.net/wiki/Modifier#Group/family), `implicitTags` the
   [mod tags](https://www.poewiki.net/wiki/Modifier#Mod_tag) that tag-directed crafting selects
   on — harvest, fossils), `Base` (id = metadata path, since display names collide across
-  hundreds of bases), `Weight` (provenance-tagged), `Effect` seam, `ModSource`, and the `wf`
-  (well-formedness) rules. Branded id types in `model/ids.ts`.
+  hundreds of bases), `Weight` (provenance-tagged), `Effect` seam, `ModSource`, and the affix caps
+  (`model/capacity.ts`). Branded id types in `model/ids.ts`. The item-model's
+  well-formedness rules (§8) are enforced by the checker's item block and transfer
+  functions; there is no concrete validator.
 - **pool/**: `pool(catalog, item[, maybeTags])`, which mods can roll on an item: the wiki's
   [spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag) rule (the item's
   tags, `itemTags`: the base's plus the `adds_tags` of present mods, a rule the data
   carries rather than the wiki (`QUESTIONS.md` Q2), vs the mod's spawn table,
   first match wins, zero disables) plus the
   [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) gate.
-- **outcome/**: the symbolic outcome-union machinery. Intensional: chaining consumes a
-  description; `arms()` expands one only on the on-demand render/probability path.
-- **currency/**: the concrete base currency library (transmute/regal/exalt/annul) that
-  produces symbolic `Outcome`s from a concrete item. Shares op names with the checker's
-  transfer functions; `check/index.ts` re-exports only the transfer _types_ to avoid an
-  ambiguous barrel re-export.
-- **render/**: plain-text renderers (`baseLabel`, item/outcome/error → text).
+- **render/**: the labels diagnostics and hover show (`modLabel`, `baseLabel`).
 - **resolve/**: `Registry` (the resolved data surface). Key methods:
     - `resolveBase / resolveMod / resolveModType(name, ctx?) / resolveCurrency /
 resolveOmen / resolveEssence / resolveBench / resolveHarvestTag`
@@ -296,7 +292,7 @@ total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = t
   `prefixCount < 3` tightens prefix but not total, and a guarded exalt spuriously looks
   "possibly full". Returns `null` on an uninhabited (contradictory) state.
 - **Affix caps are per-side and base-aware** (`sideCap`, `hardTotalCap`, `maxTotal` in
-  `model/capacity.ts`, the one formula the concrete `wf`/`pool` and the checker share).
+  `model/capacity.ts`, the one formula the pool and the checker share).
   `sideCap(gen) = max(0, naturalPerSide(rarity, class) + base.capDelta[gen])`: the
   natural limit per [rarity](https://www.poewiki.net/wiki/Rarity#Rarities) (normal 0 / magic
   1 / rare 3; [jewels](https://www.poewiki.net/wiki/Jewel#Affixes) 2) shifted by an
@@ -403,8 +399,8 @@ metamods). Notes:
   modelled: a conflict hidden behind an anonymous "random" affix.
 - **Metamods** ([Metamod](https://www.poewiki.net/wiki/Metamod), the
   [metacrafting bench options](https://www.poewiki.net/wiki/Crafting_Bench#Metacrafting_modifiers))
-  are effect-carriers: an effect is active iff its carrier type is GUARANTEED present, the
-  abstract analogue of the concrete derived `effects(it)`. `activeEffects(a, registry)` folds
+  are effect-carriers: an effect is active iff its carrier type is GUARANTEED present.
+  `activeEffects(a, registry)` folds
   `registry.effectsOfType` over the guaranteed types;
   `protectedGens`/`craftedCapOfState`/`metamodBlocksSourced` are views of it. Placement is
   just `bench "prefixes cannot be changed"`. Which currency respects which metamod is the
@@ -475,36 +471,36 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 
 ## 5. Key files index
 
-| Path                                                                  | What                                                                                          |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `packages/core/src/check/astate.ts`                                   | `AItem` (the reduced product), `normalize`, `refine`, `join`, `TierDomain`, presence views    |
-| `packages/core/src/check/domain.ts`                                   | `Domain<T>` contract, `RangeDomain`, `SetDomain`, range algebra                               |
-| `packages/core/src/model/capacity.ts`                                 | the affix caps (`sideCap`, `hardTotalCap`, `maxTotal`, `caps`), shared by `wf`/`pool`/checker |
-| `packages/core/src/check/counts.ts`                                   | `CountDomain` (suffix, the total/prefix coupling, count refine, `learnPresent`)               |
-| `packages/core/src/check/bdd.ts`                                      | the hash-consed ROBDD behind `presence`                                                       |
-| `packages/core/src/check/check.ts`                                    | driver, `Flow`, loops/branches, defs, `TraceEntry`, `traceAt`                                 |
-| `packages/core/src/check/transfer.ts`                                 | the abstract currency ops (`addOne` / `reroll` / `withGuaranteed` primitives)                 |
-| `packages/core/src/check/diagnostics.ts`                              | `renderState`, message builders                                                               |
-| `packages/core/src/model/metamods.ts`                                 | the curated metamod id → effect table, attached to the catalog at registry build              |
-| `packages/core/src/model/veiled.ts`                                   | veiled placeholder types and the unveiled-result predicate                                    |
-| `packages/core/src/pool/veiled.ts`                                    | `veiledPool`: which unveiled mods an `unveil` can reveal on an item                           |
-| `packages/core/src/resolve/registry.ts`                               | `Registry`, `buildRegistry`, resolution, completion lists                                     |
-| `packages/core/src/resolve/fuzzy.ts` / `tiers.ts`                     | fuzzy mod matching / rollable tiers (+ the memoized empty pool)                               |
-| `packages/core/src/pool/pool.ts`                                      | eligibility + weights                                                                         |
-| `packages/parser/src/{lexer,parser,token}.ts`                         | lexer / parser / token types                                                                  |
-| `packages/parser/src/vocabulary.ts`                                   | the surface vocabulary (keywords, predicate words, item fields, verbs)                        |
-| `packages/data/src/{load,adapter}.ts` + `scripts/ingest-poe1.mjs`     | data load + ingest                                                                            |
-| `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts` | LSP features                                                                                  |
-| `packages/core/src/check/check.test.ts`                               | checker tests (currency set, count-coupling regression, loops, omens, defs)                   |
-| `packages/core/src/check/check-tiers.test.ts`                         | tier-pinned predicates and the tier overlay through the checker                               |
-| `packages/core/src/check/counts.test.ts`                              | `CountDomain` in isolation (caps, coupling, refine)                                           |
-| `packages/core/src/check/bdd.test.ts`                                 | the ROBDD manager (canonicity, operators)                                                     |
-| `packages/core/src/check/fracture.test.ts`                            | fractured items and the Fracturing Orb through the checker                                    |
-| `packages/core/src/check/harvest.test.ts`                             | harvest reforge / augment through the checker                                                 |
-| `packages/core/src/check/metacraft.test.ts`                           | metamods: protection, cannot-roll, multimod, essence blocking                                 |
-| `packages/core/src/check/veiled.test.ts`                              | veiled orbs and `unveil` through the checker                                                  |
-| `packages/lsp/src/features.test.ts`                                   | hover / completion / semantic-token tests                                                     |
-| `packages/lsp/src/service.test.ts`                                    | `getDiagnostics` over the real data pipeline                                                  |
+| Path                                                                  | What                                                                                               |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `packages/core/src/check/astate.ts`                                   | `AItem` (the reduced product), `normalize`, `refine`, `join`, `TierDomain`, presence views         |
+| `packages/core/src/check/domain.ts`                                   | `Domain<T>` contract, `RangeDomain`, `SetDomain`, range algebra                                    |
+| `packages/core/src/model/capacity.ts`                                 | the affix caps (`sideCap`, `hardTotalCap`, `maxTotal`, `caps`), shared by the pool and the checker |
+| `packages/core/src/check/counts.ts`                                   | `CountDomain` (suffix, the total/prefix coupling, count refine, `learnPresent`)                    |
+| `packages/core/src/check/bdd.ts`                                      | the hash-consed ROBDD behind `presence`                                                            |
+| `packages/core/src/check/check.ts`                                    | driver, `Flow`, loops/branches, defs, `TraceEntry`, `traceAt`                                      |
+| `packages/core/src/check/transfer.ts`                                 | the abstract currency ops (`addOne` / `reroll` / `withGuaranteed` primitives)                      |
+| `packages/core/src/check/diagnostics.ts`                              | `renderState`, message builders                                                                    |
+| `packages/core/src/model/metamods.ts`                                 | the curated metamod id → effect table, attached to the catalog at registry build                   |
+| `packages/core/src/model/veiled.ts`                                   | veiled placeholder types and the unveiled-result predicate                                         |
+| `packages/core/src/pool/veiled.ts`                                    | `veiledPool`: which unveiled mods an `unveil` can reveal on an item                                |
+| `packages/core/src/resolve/registry.ts`                               | `Registry`, `buildRegistry`, resolution, completion lists                                          |
+| `packages/core/src/resolve/fuzzy.ts` / `tiers.ts`                     | fuzzy mod matching / rollable tiers (+ the memoized empty pool)                                    |
+| `packages/core/src/pool/pool.ts`                                      | eligibility + weights                                                                              |
+| `packages/parser/src/{lexer,parser,token}.ts`                         | lexer / parser / token types                                                                       |
+| `packages/parser/src/vocabulary.ts`                                   | the surface vocabulary (keywords, predicate words, item fields, verbs)                             |
+| `packages/data/src/{load,adapter}.ts` + `scripts/ingest-poe1.mjs`     | data load + ingest                                                                                 |
+| `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts` | LSP features                                                                                       |
+| `packages/core/src/check/check.test.ts`                               | checker tests (currency set, count-coupling regression, loops, omens, defs)                        |
+| `packages/core/src/check/check-tiers.test.ts`                         | tier-pinned predicates and the tier overlay through the checker                                    |
+| `packages/core/src/check/counts.test.ts`                              | `CountDomain` in isolation (caps, coupling, refine)                                                |
+| `packages/core/src/check/bdd.test.ts`                                 | the ROBDD manager (canonicity, operators)                                                          |
+| `packages/core/src/check/fracture.test.ts`                            | fractured items and the Fracturing Orb through the checker                                         |
+| `packages/core/src/check/harvest.test.ts`                             | harvest reforge / augment through the checker                                                      |
+| `packages/core/src/check/metacraft.test.ts`                           | metamods: protection, cannot-roll, multimod, essence blocking                                      |
+| `packages/core/src/check/veiled.test.ts`                              | veiled orbs and `unveil` through the checker                                                       |
+| `packages/lsp/src/features.test.ts`                                   | hover / completion / semantic-token tests                                                          |
+| `packages/lsp/src/service.test.ts`                                    | `getDiagnostics` over the real data pipeline                                                       |
 
 ---
 
@@ -516,9 +512,6 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 - **The vscode extension is CommonJS**: don't make it extend the ESM base tsconfig.
 - Base **display names are not unique**; resolution treats a name collision as
   `ambiguous`, and ids are metadata paths.
-- The concrete currency library (`currency/`) is the typed model of ops over concrete
-  items; the checker's `transfer.ts` is their abstract counterpart. Same op names, on
-  purpose.
 - **Loop widening over-approximates PRESENCE only.** Counts/`possible`/tiers converge on
   their own, so they are left exact; an earlier attempt that also interval-widened the
   counts corrupted the after-state total. Widen presence, leave the rest.

@@ -1,7 +1,7 @@
 /**
  * The effects layer (item-model.md §6). Carrier mods contribute effects —
  * modifications to the operation rules, active while the carrier is present.
- * Effects are DERIVED, never stored: `effects(it)` recomputes from the present
+ * Effects are DERIVED, never stored: they are recomputed from the present
  * mods, so removing a carrier drops its effects for free and desync is
  * impossible. The ingested data carries no effects; the metamod effects are
  * curated in `metamods.ts` and attached to the catalog when the registry is built.
@@ -27,7 +27,7 @@ export function effects(it: Item): readonly Effect[] {
     return affixes(it).flatMap(effectsOf);
 }
 
-// --- Folds the pool and wf formulas consume -------------------------------
+// --- Folds the pool and the checker consume --------------------------------
 
 /** Filter to one discriminant arm; the type-predicate + `Extract` recovers the
  *  specific arm type that plain `filter` would lose. */
@@ -48,18 +48,4 @@ export function poolRestrictPredicate(it: Item): (m: Mod) => boolean {
  *  ("Can have up to 3 Crafted Modifiers"), else the base limit of one. */
 export function craftedCapOf(es: readonly Effect[]): number {
     return ofKind(es, "craftedCap").reduce((cap, e) => Math.max(cap, e.cap), 1);
-}
-
-/** Does some active `protect` effect shield mod `m` from removal? */
-export function isProtected(it: Item, m: Mod): boolean {
-    return ofKind(effects(it), "protect").some((e) => e.gen === m.gen);
-}
-
-/**
- * The affixes a random removal may actually take: present affixes minus those
- * shielded by an active protection effect. Protection targets whatever occupies
- * the generation at the time, so it removes those affixes' arms from the sum.
- */
-export function removable(it: Item): readonly Mod[] {
-    return affixes(it).filter((m) => !isProtected(it, m));
 }

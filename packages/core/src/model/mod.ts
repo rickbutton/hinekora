@@ -55,8 +55,8 @@ export interface Mod {
 
     /**
      * Effects this mod carries while present (item-model.md §6). Absent for
-     * every row but the five bench metamods. Read via `effectsOf`; folded into
-     * `pool` and the removal rules through the derived `effects(it)` projection.
+     * every row but the five bench metamods. Read via `effectsOf`; the pool and
+     * the checker derive the active effects from the present mods.
      */
     readonly effects?: readonly Effect[];
 

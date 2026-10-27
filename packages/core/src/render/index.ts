@@ -1,2 +1,2 @@
-/** Barrel for the state renderer. */
+/** Barrel for the labels. */
 export * from "./render.js";

@@ -1,9 +1,8 @@
 /**
- * The concrete item (item-model.md §7): the runtime record `pool` and the
- * currency library read, plus `ItemIndex`, the projection the type rules
- * branch on. The item deliberately has NO `effects` field — active effects are
- * derived from the present mods (`effects.ts`), so desync is impossible by
- * construction.
+ * The concrete item (item-model.md §7): the record `pool` reads, plus
+ * `ItemIndex`, its type-level projection. The item deliberately has NO
+ * `effects` field — active effects are derived from the present mods
+ * (`effects.ts`), so desync is impossible by construction.
  */
 import type { Base } from "./base.js";
 import type { Game, GroupId, Rarity, TypeId } from "./ids.js";
