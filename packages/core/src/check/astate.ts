@@ -241,18 +241,18 @@ export function hasFracture(a: AItem): boolean {
 }
 
 /** The fracture facts alone: `presence` existentially reduced to the fracture
- *  atoms and their coupled presence variables. A reforge keeps this (the locked
- *  mod is permanent) and rerolls everything else. */
+ *  atoms, with the coupling `frac ⇒ present` re-asserted for each candidate. A
+ *  strip or a removal keeps this (the locked mod is permanent) and forgets the
+ *  rest; keeping a candidate's own presence variable instead would carry its
+ *  pre-strip guarantee across the operation that may have removed it. */
 export function fractureProjection(a: AItem): Bdd {
-    const keep = new Set<string>();
-    for (const v of a.bdd.variables()) {
-        if (isFracAtom(v)) {
-            keep.add(v);
-            if (v !== FRAC_EXISTS) keep.add(fracAtomType(v)); // the locked mod's presence variable
-        }
-    }
+    const fracAtoms = a.bdd.variables().filter(isFracAtom);
     let p = a.presence;
-    for (const v of a.bdd.variables()) if (!keep.has(v)) p = a.bdd.exists(p, v);
+    for (const v of a.bdd.variables()) if (!fracAtoms.includes(v)) p = a.bdd.exists(p, v);
+    for (const v of fracAtoms) {
+        if (v === FRAC_EXISTS) continue;
+        p = a.bdd.and(p, a.bdd.or(a.bdd.not(a.bdd.variable(v)), a.bdd.variable(fracAtomType(v))));
+    }
     return p;
 }
 

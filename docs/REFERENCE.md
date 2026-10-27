@@ -436,9 +436,10 @@ in it. Notes:
   pinnable by a `fractured X` branch (`refine`). Hinekora therefore models at most one
   fracture per item; the wiki's multi-fracture routes (Synthesis, Necropolis, beastcrafting)
   are not modelled. `remove` and `strip` keep the fracture by preserving
-  `fractureProjection(a)` (the presence BDD reduced to the fracture atoms + their coupled
-  presence), so a proven fracture keeps its type and an unproven one keeps the survivor
-  disjunction. **Scour** drops to the lowest rarity that holds the survivors
+  `fractureProjection(a)` (the presence BDD reduced to the fracture atoms, with
+  "a locked mod is present" re-asserted; a candidate's own presence is forgotten, since
+  the operation may have removed it), so a proven fracture keeps its type and an unproven
+  one keeps the survivor disjunction. **Scour** drops to the lowest rarity that holds the survivors
   (`lowestRarity`, read per side from what the strip kept): a fractured Rare scours to a
   1-mod Magic, as the wiki states. The rarity is one value, so a scour whose kept side's
   count is uncertain is refused (`scourRarityUnknown`) until an `if` on the count narrows

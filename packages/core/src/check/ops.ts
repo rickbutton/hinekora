@@ -483,10 +483,12 @@ function strip(a: AItem, rules: Rules, registry: Registry): AItem {
 
     const keptGuarantees = new Set<TypeId>();
     for (const t of guaranteedTypes(a)) if (keep.has(genOfT(t))) keptGuarantees.add(t);
+    // Under an unproven lock the surviving mod may be any current one.
+    const mayRemain = (t: TypeId): boolean => isKept(t) || unprovenLock > 0;
     const possible = new Set<TypeId>();
-    for (const t of a.possible) if (isKept(t)) possible.add(t);
+    for (const t of a.possible) if (mayRemain(t)) possible.add(t);
     const tiers = new Map<TypeId, ReadonlySet<ModId>>();
-    for (const [t, s] of a.tiers) if (isKept(t)) tiers.set(t, s);
+    for (const [t, s] of a.tiers) if (mayRemain(t)) tiers.set(t, s);
 
     // A guaranteed metamod carrier on the stripped side is provably crafted and
     // provably gone; a kept (protected or fractured) one may survive, and an

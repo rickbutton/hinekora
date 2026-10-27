@@ -2,7 +2,18 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { disjunctiveGuarantees, guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { bench, cmp, craft, essence, harvest, iff, item, op, veiled } from "../__fixtures__/ast.js";
+import {
+    bench,
+    cmp,
+    craft,
+    essence,
+    harvest,
+    has,
+    iff,
+    item,
+    op,
+    veiled,
+} from "../__fixtures__/ast.js";
 import {
     ATTACK_PREFIX,
     CANNOT_ROLL_ATTACK_CARRIER,
@@ -272,6 +283,23 @@ describe("a scour that keeps a side drops to the rarity the survivors fit", () =
         );
         const r = check(c, ctx);
         expect(r.diagnostics[0]?.message).toContain("Requires a Rare item");
+    });
+});
+
+describe("an unproven fracture through a scour", () => {
+    it("keeps no candidate guaranteed: the lock may be on any one of them", () => {
+        // After the Fracturing Orb any present mod may be the locked one; a scour
+        // keeps only that one, so no named mod is proven to survive and a branch
+        // on one of them is live both ways.
+        const c = craft(rareRing(["T1 Life", "random"], ["FireResist1", "random"]), [
+            op("fracture"),
+            op("scour"),
+            iff(has("FireResist1"), [], [op("regal")]),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        const scoured = r.trace.find((e) => e.kind === "op" && e.after?.rarity === "magic")!;
+        expect(guaranteedTypes(scoured.after!).size).toBe(0);
     });
 });
 
