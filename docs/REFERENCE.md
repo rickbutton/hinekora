@@ -116,7 +116,7 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
   [mod groups](https://www.poewiki.net/wiki/Modifier#Group/family), `implicitTags` the
   [mod tags](https://www.poewiki.net/wiki/Modifier#Mod_tag) that tag-directed crafting selects
   on — harvest, fossils), `Base` (id = metadata path, since display names collide across
-  hundreds of bases), `Weight` (provenance-tagged), `Effect` seam, `ModSource`, and the affix caps
+  hundreds of bases), `Effect` seam, `ModSource`, and the affix caps
   (`model/capacity.ts`). Branded id types in `model/ids.ts`. There is no concrete
   validator: the item block checks the declared item against item-model.md §8 (side,
   caps, the rarity ceiling, distinct modifiers, disjoint groups, and for a row named by

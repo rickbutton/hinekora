@@ -39,10 +39,8 @@ read only where this doc says so.
 | `ItemClass` | Spelling read in two places: the four-affix classes and the never-Rare classes (§4).                                                                                                                                                                                                                                                   | [Item class](https://www.poewiki.net/wiki/Item_class)              |
 | `ModDomain` | The partition a row or base belongs to (§3).                                                                                                                                                                                                                                                                                           | [Domain](https://www.poewiki.net/wiki/Modifier#Domain)             |
 
-A spawn weight is `(provenance, weight?)`: PoE1 ships its weights (`known`); `approx` and
-`unknown` exist for data without them. `can_roll` is `provenance = unknown or weight > 0`:
-zero discards the modifier, an unrecorded weight means "can roll, odds unknown". A weight is
-recorded unless its provenance is `unknown`.
+A spawn weight is a number the data ships for every row. `can_roll` is `weight > 0`: zero
+discards the modifier.
 
 ---
 

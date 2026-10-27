@@ -8,12 +8,12 @@
 import type { Effect } from "./effects.js";
 import type { ClassId, Domain, Gen, GroupId, ModId, TagId, TypeId } from "./ids.js";
 import type { ModSource } from "./sources.js";
-import type { Weight } from "./weight.js";
 
-/** One (tag, weight) entry of a mod's spawn-weight array. */
+/** One (tag, weight) entry of a mod's spawn-weight array; a zero weight on a
+ *  matched tag disables the mod. */
 export interface SpawnEntry {
     readonly tag: TagId;
-    readonly weight: Weight;
+    readonly weight: number;
 }
 
 export interface Mod {

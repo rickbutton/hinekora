@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { isNonzero } from "@hinekora/core";
 import { adaptBase, adaptBench, adaptEssence, adaptMod, classifySource } from "./adapter.js";
 import type { RepoeBase, RepoeBench, RepoeEssence, RepoeMod } from "./repoe/schema.js";
 
@@ -36,12 +35,9 @@ describe("adaptMod", () => {
     it("tags PoE1 weights as Known (including a disabling zero)", () => {
         const m = adaptMod("IncreasedLife1", LIFE)!;
         expect(m.spawn.map((s) => [s.tag, s.weight])).toEqual([
-            ["weapon", { kind: "known", value: 0 }],
-            ["default", { kind: "known", value: 1000 }],
+            ["weapon", 0],
+            ["default", 1000],
         ]);
-        // The zero-weight entry is Known-and-ineligible; the default is eligible.
-        expect(isNonzero(m.spawn[0]!.weight)).toBe(false);
-        expect(isNonzero(m.spawn[1]!.weight)).toBe(true);
     });
 
     it("skips non-affix generation types", () => {

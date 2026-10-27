@@ -11,7 +11,6 @@ import { poolRestrictPredicate } from "../model/effects.js";
 import type { ClassId, Gen, TagId } from "../model/ids.js";
 import type { ItemFacts } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
-import { isNonzero, type Weight } from "../model/weight.js";
 
 /** The universe of mods `pool` draws from, the loaded catalog for this context. */
 export type ModCatalog = readonly Mod[];
@@ -19,7 +18,7 @@ export type ModCatalog = readonly Mod[];
 /** One candidate: a mod that can be added, with the weight it rolls at here. */
 export interface PoolCandidate {
     readonly mod: Mod;
-    readonly weight: Weight;
+    readonly weight: number;
 }
 
 /**
@@ -32,12 +31,12 @@ export function lookupWeight(
     m: Mod,
     tags: ReadonlySet<TagId>,
     maybeTags?: ReadonlySet<TagId>,
-): Weight | null {
+): number | null {
     for (const entry of m.spawn) {
         if (tags.has(entry.tag)) return entry.weight;
         // A tag the item may carry can only ever help: a positive entry on it
         // counts, a zero entry on it is skipped, so the answer covers both cases.
-        if (maybeTags?.has(entry.tag) && isNonzero(entry.weight)) return entry.weight;
+        if (maybeTags?.has(entry.tag) && entry.weight > 0) return entry.weight;
     }
     return null;
 }
@@ -85,7 +84,7 @@ export function pool(
         if (!restrict(m)) continue;
         // eligibility: a matching, nonzero spawn weight
         const weight = lookupWeight(m, it.tags, maybeTags);
-        if (weight === null || !isNonzero(weight)) continue;
+        if (weight === null || weight <= 0) continue;
 
         candidates.push({ mod: m, weight });
     }

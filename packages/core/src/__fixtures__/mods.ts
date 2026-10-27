@@ -9,7 +9,6 @@
  *   - Life mods (two tiers, same ModType) to test ilvl gating and dup-type.
  *   - Fire-resist + Fire-and-Chaos-resist (shared family) to test exclusion.
  *   - A ring-disabled mod (zero-weight first match) to test spawn ordering.
- *   - An unknown-weight mod (PoE2 sentinel) to test eligibility.
  */
 import {
     type Base,
@@ -30,7 +29,6 @@ import {
     TypeId,
 } from "../model/index.js";
 import { effectsOf } from "../model/effects.js";
-import { approx, known, unknown } from "../model/weight.js";
 
 // --- Domains --------------------------------------------------------------
 
@@ -152,7 +150,7 @@ export const LIFE_T1: Mod = mkMod({
     gen: "prefix",
     minLevel: 60,
     families: ["Life"],
-    spawn: [spawn(TAG_DEFAULT, known(1000))],
+    spawn: [spawn(TAG_DEFAULT, 1000)],
     implicitTags: ["life"],
     text: "+(70-84) to maximum Life",
 });
@@ -164,7 +162,7 @@ export const LIFE_T2: Mod = mkMod({
     gen: "prefix",
     minLevel: 30,
     families: ["Life"],
-    spawn: [spawn(TAG_DEFAULT, known(2000))],
+    spawn: [spawn(TAG_DEFAULT, 2000)],
     implicitTags: ["life"],
 });
 
@@ -175,7 +173,7 @@ export const INCREASED_MANA: Mod = mkMod({
     gen: "prefix",
     minLevel: 1,
     families: ["Mana"],
-    spawn: [spawn(TAG_DEFAULT, known(1000))],
+    spawn: [spawn(TAG_DEFAULT, 1000)],
     implicitTags: ["mana"],
 });
 
@@ -186,7 +184,7 @@ export const INCREASED_ARMOUR: Mod = mkMod({
     gen: "prefix",
     minLevel: 1,
     families: ["Defences"],
-    spawn: [spawn(TAG_DEFAULT, known(1000))],
+    spawn: [spawn(TAG_DEFAULT, 1000)],
     implicitTags: ["defences"],
 });
 
@@ -197,7 +195,7 @@ export const FIRE_RESIST: Mod = mkMod({
     gen: "suffix",
     minLevel: 20,
     families: ["ResistFire"],
-    spawn: [spawn(TAG_DEFAULT, known(500))],
+    spawn: [spawn(TAG_DEFAULT, 500)],
     implicitTags: ["fire", "elemental", "resistance"],
 });
 
@@ -208,7 +206,7 @@ export const FIRE_CHAOS_RESIST: Mod = mkMod({
     gen: "suffix",
     minLevel: 40,
     families: ["ResistFire", "ResistChaos"],
-    spawn: [spawn(TAG_DEFAULT, known(200))],
+    spawn: [spawn(TAG_DEFAULT, 200)],
     implicitTags: ["fire", "chaos", "resistance"],
 });
 
@@ -219,7 +217,7 @@ export const COLD_RESIST: Mod = mkMod({
     gen: "suffix",
     minLevel: 1,
     families: ["ResistCold"],
-    spawn: [spawn(TAG_DEFAULT, known(500))],
+    spawn: [spawn(TAG_DEFAULT, 500)],
     implicitTags: ["cold", "elemental", "resistance"],
 });
 
@@ -229,7 +227,7 @@ export const LIGHTNING_RESIST: Mod = mkMod({
     gen: "suffix",
     minLevel: 1,
     families: ["ResistLightning"],
-    spawn: [spawn(TAG_DEFAULT, known(500))],
+    spawn: [spawn(TAG_DEFAULT, 500)],
     implicitTags: ["lightning", "elemental", "resistance"],
 });
 
@@ -239,7 +237,7 @@ export const AMULET_ONLY: Mod = mkMod({
     type: "AllAttributes",
     gen: "prefix",
     minLevel: 1,
-    spawn: [spawn(TAG_DEFAULT, known(300))],
+    spawn: [spawn(TAG_DEFAULT, 300)],
     classRestriction: new Set([CLASS_AMULET]),
 });
 
@@ -253,7 +251,7 @@ export const RING_DISABLED: Mod = mkMod({
     type: "SpecialSuffix",
     gen: "suffix",
     minLevel: 1,
-    spawn: [spawn(TAG_RING, known(0)), spawn(TAG_DEFAULT, known(100))],
+    spawn: [spawn(TAG_RING, 0), spawn(TAG_DEFAULT, 100)],
 });
 
 /** Flask-domain prefix whose weight WOULD match any base (default tag), so the
@@ -264,7 +262,7 @@ export const FLASK_MOD: Mod = mkMod({
     gen: "prefix",
     minLevel: 1,
     domain: DOMAIN_FLASK,
-    spawn: [spawn(TAG_DEFAULT, known(100))],
+    spawn: [spawn(TAG_DEFAULT, 100)],
 });
 
 /** Jewel-only spawn tag that no fixture base carries, isolates the "no matching
@@ -274,16 +272,7 @@ export const JEWEL_ONLY_SPAWN: Mod = mkMod({
     type: "JewelThing",
     gen: "suffix",
     minLevel: 1,
-    spawn: [spawn(TAG_JEWEL, known(100))],
-});
-
-/** Unknown-weight suffix (PoE2 sentinel), eligible despite no numeric weight. */
-export const UNKNOWN_WEIGHT_MOD: Mod = mkMod({
-    id: "UnknownWeight1",
-    type: "UnknownThing",
-    gen: "suffix",
-    minLevel: 1,
-    spawn: [spawn(TAG_DEFAULT, unknown)],
+    spawn: [spawn(TAG_JEWEL, 100)],
 });
 
 /**
@@ -297,7 +286,7 @@ export const PROTECT_PREFIXES_CARRIER: Mod = mkMod({
     source: "bench",
     gen: "suffix",
     minLevel: 1,
-    spawn: [spawn(TAG_DEFAULT, known(0))],
+    spawn: [spawn(TAG_DEFAULT, 0)],
     effects: [{ kind: "protect", gen: "prefix" }],
     text: "prefixes cannot be changed",
 });
@@ -309,7 +298,7 @@ export const PROTECT_SUFFIXES_CARRIER: Mod = mkMod({
     source: "bench",
     gen: "prefix",
     minLevel: 1,
-    spawn: [spawn(TAG_DEFAULT, known(0))],
+    spawn: [spawn(TAG_DEFAULT, 0)],
     effects: [{ kind: "protect", gen: "suffix" }],
     text: "suffixes cannot be changed",
 });
@@ -322,7 +311,7 @@ export const CANNOT_ROLL_ATTACK_CARRIER: Mod = mkMod({
     source: "bench",
     gen: "suffix",
     minLevel: 1,
-    spawn: [spawn(TAG_DEFAULT, known(0))],
+    spawn: [spawn(TAG_DEFAULT, 0)],
     effects: [{ kind: "poolRestrict", allows: (m) => !m.implicitTags.has(TagId("attack")) }],
     text: "cannot roll attack modifiers",
 });
@@ -334,7 +323,7 @@ export const MULTIMOD_CARRIER: Mod = mkMod({
     source: "bench",
     gen: "suffix",
     minLevel: 1,
-    spawn: [spawn(TAG_DEFAULT, known(0))],
+    spawn: [spawn(TAG_DEFAULT, 0)],
     effects: [{ kind: "craftedCap", cap: 3 }],
     text: "can have up to 3 crafted modifiers",
 });
@@ -346,7 +335,7 @@ export const ATTACK_PREFIX: Mod = mkMod({
     gen: "prefix",
     minLevel: 1,
     families: ["AddedPhysical"],
-    spawn: [spawn(TAG_DEFAULT, known(500))],
+    spawn: [spawn(TAG_DEFAULT, 500)],
     implicitTags: ["attack", "physical"],
     text: "adds physical attack damage",
 });
@@ -389,7 +378,7 @@ const mkVeiled = (
         minLevel: 1,
         domain: DOMAIN_UNVEILED, // no base shares it, so the normal pool never rolls these
         families,
-        spawn: [spawn(tag, known(100))],
+        spawn: [spawn(tag, 100)],
         source: "veiled",
         text,
     });
@@ -432,7 +421,7 @@ export const SHARED_NATURAL: Mod = mkMod({
     gen: "suffix",
     minLevel: 1,
     families: ["SharedVeil"],
-    spawn: [spawn(TAG_DEFAULT, known(0))],
+    spawn: [spawn(TAG_DEFAULT, 0)],
     source: "natural",
 });
 export const SHARED_UNVEILED: Mod = mkMod({
@@ -442,7 +431,7 @@ export const SHARED_UNVEILED: Mod = mkMod({
     minLevel: 1,
     domain: DOMAIN_UNVEILED,
     families: ["SharedVeil"],
-    spawn: [spawn(TAG_DEFAULT, known(0))],
+    spawn: [spawn(TAG_DEFAULT, 0)],
     source: "veiled",
 });
 
@@ -458,15 +447,6 @@ export const VEILED_CATALOG: readonly Mod[] = [
     VEILED_D,
 ];
 
-/** Approx-zero-weight suffix, ineligible (provably zero, PoE2 estimate). */
-export const APPROX_ZERO_MOD: Mod = mkMod({
-    id: "ApproxZero1",
-    type: "ApproxZeroThing",
-    gen: "suffix",
-    minLevel: 1,
-    spawn: [spawn(TAG_DEFAULT, approx(0))],
-});
-
 // --- Tiered fixtures (with text, for fuzzy + tier tests) ------------------
 // Three tiers of one "maximum life" ModType and one fire-resist type, all
 // rollable on a ring. Kept in a SEPARATE catalog so the exact-count pool tests
@@ -478,7 +458,7 @@ export const MAXLIFE_T3: Mod = mkMod({
     gen: "prefix",
     minLevel: 1,
     families: ["MaxLife"],
-    spawn: [spawn(TAG_DEFAULT, known(1000))],
+    spawn: [spawn(TAG_DEFAULT, 1000)],
     text: "+(10-24) to maximum Life",
     name: "Healthy",
 });
@@ -488,7 +468,7 @@ export const MAXLIFE_T2: Mod = mkMod({
     gen: "prefix",
     minLevel: 30,
     families: ["MaxLife"],
-    spawn: [spawn(TAG_DEFAULT, known(1000))],
+    spawn: [spawn(TAG_DEFAULT, 1000)],
     text: "+(70-84) to maximum Life",
     name: "Robust",
 });
@@ -498,7 +478,7 @@ export const MAXLIFE_T1: Mod = mkMod({
     gen: "prefix",
     minLevel: 60,
     families: ["MaxLife"],
-    spawn: [spawn(TAG_DEFAULT, known(1000))],
+    spawn: [spawn(TAG_DEFAULT, 1000)],
     text: "+(115-129) to maximum Life",
     name: "Virile",
 });
@@ -508,7 +488,7 @@ export const FIRE_RES_TIERED: Mod = mkMod({
     gen: "suffix",
     minLevel: 1,
     families: ["ResistFireT"],
-    spawn: [spawn(TAG_DEFAULT, known(500))],
+    spawn: [spawn(TAG_DEFAULT, 500)],
     text: "+(6-11)% to Fire Resistance",
     name: "of the Salamander",
 });
@@ -523,7 +503,7 @@ export const DUAL_SIDE_RING_PREFIX: Mod = mkMod({
     gen: "prefix",
     minLevel: 1,
     families: ["DualSide"],
-    spawn: [spawn(TAG_RING, known(500)), spawn(TAG_DEFAULT, known(0))],
+    spawn: [spawn(TAG_RING, 500), spawn(TAG_DEFAULT, 0)],
     text: "dual side modifier",
 });
 export const DUAL_SIDE_AMULET_SUFFIX: Mod = mkMod({
@@ -532,7 +512,7 @@ export const DUAL_SIDE_AMULET_SUFFIX: Mod = mkMod({
     gen: "suffix",
     minLevel: 1,
     families: ["DualSide"],
-    spawn: [spawn(TAG_AMULET, known(500)), spawn(TAG_DEFAULT, known(0))],
+    spawn: [spawn(TAG_AMULET, 500), spawn(TAG_DEFAULT, 0)],
     text: "dual side modifier",
 });
 
@@ -548,7 +528,7 @@ export const SPECIFIC_WEAPON_A: Mod = mkMod({
     gen: "prefix",
     minLevel: 1,
     families: ["SpecificWeaponA"],
-    spawn: [spawn(TAG_DEFAULT, known(500))],
+    spawn: [spawn(TAG_DEFAULT, 500)],
     addsTags: ["specific_weapon"],
     text: "specific weapon alpha",
 });
@@ -558,7 +538,7 @@ export const SPECIFIC_WEAPON_B: Mod = mkMod({
     gen: "suffix",
     minLevel: 1,
     families: ["SpecificWeaponB"],
-    spawn: [spawn(TAG_SPECIFIC_WEAPON, known(0)), spawn(TAG_DEFAULT, known(500))],
+    spawn: [spawn(TAG_SPECIFIC_WEAPON, 0), spawn(TAG_DEFAULT, 500)],
     text: "specific weapon beta",
 });
 
@@ -575,7 +555,7 @@ export const STAFFY_ADDER: Mod = mkMod({
     gen: "prefix",
     minLevel: 1,
     families: ["StaffyAdder"],
-    spawn: [spawn(TAG_DEFAULT, known(500))],
+    spawn: [spawn(TAG_DEFAULT, 500)],
     addsTags: ["staffy"],
     text: "staffy adder",
 });
@@ -585,12 +565,19 @@ export const STAFFY_ENABLED: Mod = mkMod({
     gen: "suffix",
     minLevel: 1,
     families: ["StaffyEnabled"],
-    spawn: [
-        spawn(TAG_STAFFY, known(500)),
-        spawn(TAG_RING, known(0)),
-        spawn(TAG_DEFAULT, known(500)),
-    ],
+    spawn: [spawn(TAG_STAFFY, 500), spawn(TAG_RING, 0), spawn(TAG_DEFAULT, 500)],
     text: "staffy enabled",
+});
+
+/** A fourth plain ring suffix, outside `CATALOG`, for tests that need a
+ *  suffix left to roll once the three resistances are on. */
+export const ATTACK_SPEED: Mod = mkMod({
+    id: "AttackSpeed1",
+    type: "AttackSpeed",
+    gen: "suffix",
+    minLevel: 1,
+    families: ["AttackSpeed"],
+    spawn: [spawn(TAG_DEFAULT, 500)],
 });
 
 /** Catalog for fuzzy/tier tests: a 3-tier life type + a fire resist, on rings. */
@@ -610,8 +597,6 @@ export const CATALOG: readonly Mod[] = [
     RING_DISABLED,
     FLASK_MOD,
     JEWEL_ONLY_SPAWN,
-    UNKNOWN_WEIGHT_MOD,
-    APPROX_ZERO_MOD,
 ];
 
 // --- Item builder ---------------------------------------------------------

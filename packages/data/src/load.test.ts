@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type Base, emptyItem, isNonzero, type ItemFacts, pool, TagId } from "@hinekora/core";
+import { type Base, emptyItem, type ItemFacts, pool, TagId } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "./load.js";
 
 const data = loadDefaultPoe1();
@@ -120,7 +120,7 @@ describe("catalog-level facts of the item model", () => {
     it("essence-only rows carry no positive weight anywhere", () => {
         const essenceRows = registry.catalog.filter((m) => m.source === "essence");
         expect(essenceRows.length).toBeGreaterThan(400);
-        expect(essenceRows.every((m) => m.spawn.every((e) => !isNonzero(e.weight)))).toBe(true);
+        expect(essenceRows.every((m) => m.spawn.every((e) => e.weight === 0))).toBe(true);
     });
 
     it("a ModType's rows agree on the attack and caster tags", () => {

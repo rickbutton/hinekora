@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { pool, lookupWeight } from "./pool.js";
-import { known } from "../model/weight.js";
 import {
     AMULET_BASE,
     AMULET_ONLY,
-    APPROX_ZERO_MOD,
+    ATTACK_SPEED,
     CATALOG,
     COLD_RESIST,
     FIRE_CHAOS_RESIST,
@@ -28,7 +27,6 @@ import {
     mkItem,
     RING_BASE,
     RING_DISABLED,
-    UNKNOWN_WEIGHT_MOD,
 } from "../__fixtures__/mods.js";
 
 describe("pool — the full comprehension on an empty rare ring", () => {
@@ -46,7 +44,6 @@ describe("pool — the full comprehension on an empty rare ring", () => {
                 FIRE_CHAOS_RESIST.id,
                 COLD_RESIST.id,
                 LIGHTNING_RESIST.id,
-                UNKNOWN_WEIGHT_MOD.id,
             ]),
         );
     });
@@ -56,12 +53,6 @@ describe("pool — the full comprehension on an empty rare ring", () => {
         expect(ids.has(FLASK_MOD.id)).toBe(false); // domain: flask
         expect(ids.has(AMULET_ONLY.id)).toBe(false); // class: amulet-only
         expect(ids.has(JEWEL_ONLY_SPAWN.id)).toBe(false); // no matching spawn tag
-    });
-
-    it("treats an Unknown weight as eligible but a zero weight as not", () => {
-        const ids = idsOf(pool(CATALOG, it0));
-        expect(ids.has(UNKNOWN_WEIGHT_MOD.id)).toBe(true);
-        expect(ids.has(APPROX_ZERO_MOD.id)).toBe(false);
     });
 });
 
@@ -174,7 +165,7 @@ describe("pool — slot cardinality on an experimented base", () => {
             base: RATCHETING_BASE,
             suffixes: [FIRE_RESIST, COLD_RESIST, LIGHTNING_RESIST],
         });
-        const cands = pool(CATALOG, three);
+        const cands = pool([...CATALOG, ATTACK_SPEED], three);
         expect(cands.some((c) => c.mod.gen === "suffix")).toBe(true);
         expect(cands.some((c) => c.mod.gen === "prefix")).toBe(false);
     });
@@ -232,11 +223,11 @@ describe("pool — class restriction and spawn ordering", () => {
 
 describe("lookupWeight — spawn resolution", () => {
     it("first matching tag wins, so an earlier zero entry disables the mod", () => {
-        expect(lookupWeight(RING_DISABLED, RING_BASE.tags)).toEqual(known(0));
+        expect(lookupWeight(RING_DISABLED, RING_BASE.tags)).toBe(0);
     });
 
     it("falls through to a later default entry when the earlier tag is absent", () => {
-        expect(lookupWeight(RING_DISABLED, AMULET_BASE.tags)).toEqual(known(100));
+        expect(lookupWeight(RING_DISABLED, AMULET_BASE.tags)).toBe(100);
     });
 
     it("returns null when no spawn tag matches the base", () => {

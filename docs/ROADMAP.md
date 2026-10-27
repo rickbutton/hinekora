@@ -74,8 +74,7 @@ influence's rows ([Influenced item](https://www.poewiki.net/wiki/Influenced_item
 ## Deferred by design (don't build until called for)
 
 - the **cost/probability layer** (expected attempts, spawn weights, fossil and Harvest
-  biases, memory strands; needs the Known/Approx/Unknown weight provenance already in the
-  model).
+  biases, memory strands).
 - **multi-item crafts** (Awakener's Orb, Recombinator, Reflecting Mist, Kishara's Ducat)
   and **choice over an operation's outcomes** (Hinekora's Lock, Allflame crafting).
 - English negation sugar (`doesn't have` → `not has`); a power-user annotation tier for

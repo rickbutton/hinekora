@@ -9,7 +9,6 @@ import type { Base } from "../model/base.js";
 import type { GroupId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import { isUnveiledResult } from "../model/veiled.js";
-import { isNonzero } from "../model/weight.js";
 import { lookupWeight } from "./pool.js";
 
 /** The unveiled mods this item could reveal, each carrying its generation so a
@@ -27,7 +26,7 @@ export function veiledPool(
         if (m.classRestriction && !m.classRestriction.has(base.itemClass)) continue;
         if (!disjoint(m.families, presentFamilies)) continue; // blocking
         const weight = lookupWeight(m, base.tags); // eligibility on this base
-        if (weight === null || !isNonzero(weight)) continue;
+        if (weight === null || weight <= 0) continue;
         out.push(m);
     }
     return out;

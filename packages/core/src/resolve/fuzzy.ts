@@ -6,7 +6,6 @@
  */
 import type { TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
-import { isNonzero } from "../model/weight.js";
 
 const STOPWORDS = new Set(["to", "a", "an", "of", "the", "per"]);
 
@@ -34,7 +33,7 @@ export function buildTypeIndex(mods: readonly Mod[]): Map<TypeId, TypeEntry> {
     const byType = new Map<TypeId, Map<string, number>>();
     for (const m of mods) {
         if (!m.text) continue;
-        if (!m.spawn.some((s) => isNonzero(s.weight))) continue; // skip non-spawnable variants
+        if (!m.spawn.some((s) => s.weight > 0)) continue; // skip non-spawnable variants
         let counts = byType.get(m.type);
         if (!counts) {
             counts = new Map();

@@ -1,8 +1,7 @@
 /**
  * The adapter: RePoE JSON entries → normalized core `Mod` / `Base`. It
  * isolates the source data's shape from the core model, so a different source
- * becomes a different adapter feeding the same types. PoE1 weights are ground
- * truth, so every spawn weight is tagged `Known` (including `Known 0`).
+ * becomes a different adapter feeding the same types.
  */
 import {
     type Base,
@@ -13,7 +12,6 @@ import {
     type EssenceSpec,
     type Gen,
     GroupId,
-    known,
     type Mod,
     ModId,
     type ModSource,
@@ -59,7 +57,7 @@ export function adaptMod(id: string, m: RepoeMod): Mod | null {
         minLevel: m.required_level,
         addsTags: new Set(m.adds_tags.map((t) => TagId(t))),
         implicitTags: new Set((m.implicit_tags ?? []).map((t) => TagId(t))),
-        spawn: m.spawn_weights.map((w) => ({ tag: TagId(w.tag), weight: known(w.weight) })),
+        spawn: m.spawn_weights.map((w) => ({ tag: TagId(w.tag), weight: w.weight })),
         source: classifySource(m),
         // Human-readable fields (omit empties so the field stays absent).
         ...(m.name ? { name: m.name } : {}),
