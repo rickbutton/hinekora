@@ -17,7 +17,8 @@ import { type Caps, type Counts, CountDomain, caps } from "./counts.js";
 // The sub-domains live in their own modules (`domain.ts`, `counts.ts`); re-export
 // the surface existing importers reach through `astate` (the caps + `Range`).
 export type { Range } from "./domain.js";
-export { canBeRare, hardTotalCap, maxTotal, sideCap } from "./counts.js";
+export { hardTotalCap, maxTotal, sideCap } from "./counts.js";
+export { canBeRare } from "../model/capacity.js";
 
 /** The tier overlay as a lattice element: for each present type, the specific
  *  mods (tiers) it could be. Absent from the map ⇒ any tier. */

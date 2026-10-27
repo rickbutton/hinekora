@@ -16,7 +16,7 @@ import type { Caps } from "../model/capacity.js";
 import type { Gen } from "../model/ids.js";
 import { type Domain, type Range, RangeDomain, rIntersect, refineRange } from "./domain.js";
 
-export { type Caps, canBeRare, caps, hardTotalCap, maxTotal, sideCap } from "../model/capacity.js";
+export { type Caps, caps, hardTotalCap, maxTotal, sideCap } from "../model/capacity.js";
 
 /** A count-domain element: the total affix range and the prefix range; the
  *  suffix range is derived (`total − prefix`, clamped to its cap). */
