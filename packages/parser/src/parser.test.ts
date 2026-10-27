@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Craft, IfStmt, UntilStmt, WithOmenStmt } from "@hinekora/core";
+import type { Craft, IfStmt, UntilStmt } from "@hinekora/core";
 import { parse } from "./index.js";
 import type { SyntaxDiagnostic } from "./errors.js";
 
@@ -27,10 +27,8 @@ item {
 
 exalt
 
-with omen "Sinistral Annulment" {
-    until not has "+1 Suffix Modifier" {
-        annul
-    }
+until not has "+1 Suffix Modifier" {
+    annul
 }
 `;
 
@@ -60,16 +58,11 @@ describe("parser — the canonical craft (surface §8)", () => {
         expect(c.item.prefixes).toEqual([{ mod: "maximum life", tier: 1 }, { mod: "random" }]);
     });
 
-    it("parses the body: an op, then an omen scope wrapping an until-loop", () => {
+    it("parses the body: an op, then an until-loop", () => {
         expect(craft.body).toHaveLength(2);
         expect(craft.body[0]).toMatchObject({ kind: "op", name: "exalt" });
 
-        const withOmen = craft.body[1] as WithOmenStmt;
-        expect(withOmen.kind).toBe("withOmen");
-        expect(withOmen.omen).toBe("Sinistral Annulment");
-        expect(withOmen.body).toHaveLength(1);
-
-        const until = withOmen.body[0] as UntilStmt;
+        const until = craft.body[1] as UntilStmt;
         expect(until.kind).toBe("until");
         expect(until.pred).toMatchObject({
             kind: "not",

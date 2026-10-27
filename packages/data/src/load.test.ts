@@ -80,10 +80,9 @@ describe("registry resolution against real data", () => {
         }
     });
 
-    it("resolves mods by id and provides the standard currencies/omens", () => {
+    it("resolves mods by id and provides the standard currencies", () => {
         expect(registry.resolveMod("Strength1").ok).toBe(true);
         expect(registry.resolveCurrency("exalt").ok).toBe(true);
-        expect(registry.resolveOmen("Dextral Exaltation").ok).toBe(true);
     });
 
     it("carries affix-cap deltas from experimented-base implicits", () => {

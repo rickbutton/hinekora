@@ -63,21 +63,10 @@ export interface CurrencySpec {
     readonly description: string;
 }
 
-/**
- * A PoE2 omen that forces a specific operation to a specific generation.
- * Dextral = right = suffix; Sinistral = left = prefix.
- */
-export interface OmenSpec {
-    readonly name: string;
-    readonly directs: "exalt" | "annul";
-    readonly gen: Gen;
-}
-
 export type ResolveError =
     | { readonly kind: "unknownBase"; readonly name: string }
     | { readonly kind: "unknownMod"; readonly name: string }
     | { readonly kind: "unknownCurrency"; readonly name: string }
-    | { readonly kind: "unknownOmen"; readonly name: string }
     | { readonly kind: "unknownEssence"; readonly name: string }
     | { readonly kind: "unknownBench"; readonly name: string }
     | { readonly kind: "unknownHarvestTag"; readonly name: string }
@@ -156,7 +145,6 @@ export interface Registry {
      */
     resolveModType(name: string, ctx?: ModTypeContext): Resolved<TypeId>;
     resolveCurrency(name: string): Resolved<CurrencySpec>;
-    resolveOmen(name: string): Resolved<OmenSpec>;
     /** Resolve a harvest modifier category ("fire", "caster") to its canonical
      *  category tag (`Mod.implicitTags`). */
     resolveHarvestTag(name: string): Resolved<TagId>;
@@ -270,14 +258,6 @@ export const STANDARD_CURRENCIES: readonly CurrencySpec[] = [
     },
 ];
 
-/** The default omen table (the four Dextral/Sinistral directors modelled so far). */
-export const STANDARD_OMENS: readonly OmenSpec[] = [
-    { name: "Dextral Exaltation", directs: "exalt", gen: "suffix" },
-    { name: "Sinistral Exaltation", directs: "exalt", gen: "prefix" },
-    { name: "Dextral Annulment", directs: "annul", gen: "suffix" },
-    { name: "Sinistral Annulment", directs: "annul", gen: "prefix" },
-];
-
 export interface RegistryData {
     readonly bases: readonly Base[];
     readonly mods: readonly Mod[];
@@ -286,7 +266,6 @@ export interface RegistryData {
     /** Optional base aliases → base id. */
     readonly baseAliases?: Readonly<Record<string, string>>;
     readonly currencies?: readonly CurrencySpec[];
-    readonly omens?: readonly OmenSpec[];
     readonly essences?: readonly EssenceSpec[];
     readonly benchCrafts?: readonly BenchCraft[];
 }
@@ -327,9 +306,6 @@ export function buildRegistry(data: RegistryData): Registry {
 
     const currencyByName = new Map(
         (data.currencies ?? STANDARD_CURRENCIES).map((c) => [norm(c.name), c] as const),
-    );
-    const omenByName = new Map(
-        (data.omens ?? STANDARD_OMENS).map((o) => [norm(o.name), o] as const),
     );
     const essences = data.essences ?? [];
     const benchCrafts = data.benchCrafts ?? [];
@@ -452,11 +428,6 @@ export function buildRegistry(data: RegistryData): Registry {
         resolveCurrency(name) {
             const c = currencyByName.get(norm(name));
             return c ? found(c) : fail({ kind: "unknownCurrency", name });
-        },
-
-        resolveOmen(name) {
-            const o = omenByName.get(norm(name));
-            return o ? found(o) : fail({ kind: "unknownOmen", name });
         },
 
         resolveHarvestTag(name) {

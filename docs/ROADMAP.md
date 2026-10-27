@@ -63,7 +63,6 @@ influence's rows ([Influenced item](https://www.poewiki.net/wiki/Influenced_item
 - Statement-position **completion** of proc names and proc-name **hover** signatures.
 - A currency- or block-valued **parameter** (only value params, tier/count/mod, for now).
 - Restrict **base** completion to craftable classes.
-- `with omen "…"` **completion**: today the mod list is offered inside the quotes.
 - **Completion perf:** `getCompletions` runs a full check per mod-string request;
   memoize if latency shows.
 - **Tier-atom tightenings:** assert `tierAtom ⇒ family` and tier mutual-exclusion in the
@@ -79,10 +78,8 @@ influence's rows ([Influenced item](https://www.poewiki.net/wiki/Influenced_item
   model).
 - **multi-item crafts** (Awakener's Orb, Recombinator, Reflecting Mist, Kishara's Ducat)
   and **choice over an operation's outcomes** (Hinekora's Lock, Allflame crafting).
-- the **PoE2 module** (the omen machinery is modelled; PoE2 data ingest is not the
-  target yet).
-- English negation sugar (`doesn't have` → `not has`); "omen next op only" sugar; a
-  power-user annotation tier for reusable techniques.
+- English negation sugar (`doesn't have` → `not has`); a power-user annotation tier for
+  reusable techniques.
 - **reduced-cap base edge cases:** the split-beast, Awakener's Orb and Harvest routes
   that put modifiers on a magic Simplex Amulet, which no ordinary currency can
   ([Simplex Amulet § Special Crafting Considerations](https://www.poewiki.net/wiki/Simplex_Amulet#Special_Crafting_Considerations)),

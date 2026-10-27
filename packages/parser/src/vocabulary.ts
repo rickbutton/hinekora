@@ -15,8 +15,6 @@ export const KEYWORDS = [
     "until",
     "if",
     "else",
-    "with",
-    "omen",
     "restart",
     "essence",
     "bench",

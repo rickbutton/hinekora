@@ -104,7 +104,6 @@ export type Stmt =
     | RestartStmt
     | UntilStmt
     | IfStmt
-    | WithOmenStmt
     | CallStmt;
 
 /** A currency/operation line, a single (still-unresolved) currency name. */
@@ -205,14 +204,6 @@ export interface IfStmt {
     readonly pred: Pred;
     readonly body: readonly Stmt[];
     readonly elseBody?: readonly Stmt[];
-    readonly span: SourceSpan;
-}
-
-/** `with omen "<name>" { … }`, omen-directed scope. */
-export interface WithOmenStmt {
-    readonly kind: "withOmen";
-    readonly omen: string;
-    readonly body: readonly Stmt[];
     readonly span: SourceSpan;
 }
 

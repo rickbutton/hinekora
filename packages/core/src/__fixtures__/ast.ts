@@ -34,7 +34,6 @@ import type {
     SourceSpan,
     Stmt,
     UntilStmt,
-    WithOmenStmt,
 } from "../ast/index.js";
 import type { Cmp } from "../ast/ast.js";
 import type { Game, Rarity } from "../model/ids.js";
@@ -116,12 +115,6 @@ export const restart = (): RestartStmt => ({ kind: "restart", span: DS });
 export const until = (pred: Pred, body: readonly Stmt[]): UntilStmt => ({
     kind: "until",
     pred,
-    body,
-    span: DS,
-});
-export const withOmen = (omen: string, body: readonly Stmt[]): WithOmenStmt => ({
-    kind: "withOmen",
-    omen,
     body,
     span: DS,
 });

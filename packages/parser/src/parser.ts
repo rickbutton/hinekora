@@ -29,7 +29,6 @@ import {
     span,
     type Stmt,
     type UntilStmt,
-    type WithOmenStmt,
 } from "@hinekora/core";
 import { CraftSyntaxError } from "./errors.js";
 import type { Token, TokenKind } from "./token.js";
@@ -360,7 +359,6 @@ class Parser {
     private parseStatement(): Stmt {
         if (this.atKeyword("until")) return this.parseUntil();
         if (this.atKeyword("if")) return this.parseIf();
-        if (this.atKeyword("with")) return this.parseWith();
         if (this.atKeyword("essence")) return this.parseEssence();
         if (this.atKeyword("bench")) return this.parseBench();
         if (this.atKeyword("harvest")) return this.parseHarvest();
@@ -406,14 +404,6 @@ class Parser {
         const pred = this.parsePred();
         const body = this.parseBlock();
         return { kind: "until", pred, body, span: span(start, this.prev.span.end) };
-    }
-
-    private parseWith(): WithOmenStmt {
-        const start = this.expectKeyword("with").span.start;
-        this.expectKeyword("omen");
-        const omen = this.expect("string", "a quoted omen name").text;
-        const body = this.parseBlock();
-        return { kind: "withOmen", omen, body, span: span(start, this.prev.span.end) };
     }
 
     /** An optional `t1` tier shorthand: consumes and returns the number, else undefined. */

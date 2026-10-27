@@ -48,7 +48,6 @@ const KEYWORD_DOC: Record<string, string> = {
     until: "`until <pred> { … }` — repeat the block until the condition is true. After the loop, the item is known to satisfy it.",
     if: "`if <pred> { … } else { … }` — branch on the item's state at this point. A branch that can never run is flagged.",
     else: "The alternative branch of an `if`.",
-    with: "`with <omen> { … }` — apply an omen that directs the operations inside (e.g. forcing an add/remove onto one side).",
     restart: "`restart` — abandon this attempt and re-run the enclosing loop from the top.",
     has: '`has "<mod>" [t1]` — true when the item is guaranteed to carry that mod (optionally at that tier; `t1` = best).',
     not: "`not <pred>` — logical negation of a predicate.",

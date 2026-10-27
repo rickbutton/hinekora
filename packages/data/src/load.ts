@@ -61,7 +61,7 @@ export function loadDefaultPoe1(): LoadedData {
     return loadPoe1(defaultPoe1Dir());
 }
 
-/** Build a core `Registry` (with the standard currencies + omens) from loaded data. */
+/** Build a core `Registry` (with the standard currencies) from loaded data. */
 export function registryOf(data: LoadedData): Registry {
     return buildRegistry({
         bases: data.bases,

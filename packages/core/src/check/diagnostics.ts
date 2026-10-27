@@ -149,8 +149,6 @@ export function resolveMessage(error: ResolveError): string {
             return `Unknown mod "${error.name}".`;
         case "unknownCurrency":
             return `Unknown currency "${error.name}".`;
-        case "unknownOmen":
-            return `Unknown omen "${error.name}".`;
         case "unknownEssence":
             return `Unknown essence "${error.name}".`;
         case "unknownBench":

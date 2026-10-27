@@ -9,7 +9,7 @@
  *   - names, in the surface doc, a lowercase word in backticks that is not a word of
  *     the language (the parser's vocabulary, a currency, a harvest tag);
  *   - omits a word of the language: every word of the parser's vocabulary, every
- *     currency name, every harvest tag and every omen must be documented in the
+ *     currency name and every harvest tag must be documented in the
  *     surface doc, the vocabulary must be coloured by the VSCode grammar, and every
  *     field of the checker's abstract state must be named in REFERENCE.md §4;
  *   - links a poewiki.net page or section that the local wiki cache does not hold
@@ -111,9 +111,6 @@ const harvestTags = new Set(
         (m) => m[1],
     ),
 );
-const omens = [...block(registry, "STANDARD_OMENS", "];").matchAll(/name: "([A-Za-z ]+)"/g)].map(
-    (m) => m[1],
-);
 const astate = read("packages/core/src/check/astate.ts");
 const aitemFields = [
     ...block(astate, "export interface AItem {", "\n}").matchAll(/readonly (\w+):/g),
@@ -186,9 +183,6 @@ for (const c of currencies) {
 }
 for (const t of harvestTags) {
     if (!documented(t)) fail(SURFACE, 1, `the harvest tag \`${t}\` is not documented`);
-}
-for (const o of omens) {
-    if (!surface.includes(o)) fail(SURFACE, 1, `the omen "${o}" is not documented`);
 }
 const grammar = read(GRAMMAR);
 for (const w of vocabulary) {

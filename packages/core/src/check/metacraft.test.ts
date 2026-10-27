@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { disjunctiveGuarantees, guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { bench, craft, essence, harvest, item, op, veiled, withOmen } from "../__fixtures__/ast.js";
+import { bench, craft, essence, harvest, item, op, veiled } from "../__fixtures__/ast.js";
 import {
     ATTACK_PREFIX,
     CANNOT_ROLL_ATTACK_CARRIER,
@@ -232,15 +232,6 @@ describe("cannot roll attack modifiers shields attack mods from removal", () => 
         ]);
         const r = check(c, ctx);
         expect(r.diagnostics[0]?.message).toContain("removable");
-    });
-
-    it("an annul forced to the prefixes has nothing it may remove", () => {
-        const c = craft("poe1", attackRing(), [
-            bench("cannot roll attack modifiers"),
-            withOmen("Sinistral Annulment", [op("annul")]),
-        ]);
-        const r = check(c, ctx);
-        expect(r.diagnostics[0]?.message).toContain("removable prefix");
     });
 });
 

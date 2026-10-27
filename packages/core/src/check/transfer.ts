@@ -1,8 +1,8 @@
 /**
  * Currency transfer functions: each operation is `AItem → (AItem | precondition
- * failure)`, folding the op's outcome summary straight into the abstract state
- *, the checker never holds a concrete item or an enumerated union. `forcedGen`
- * (set by an active omen) constrains an add/remove to one generation, which
+ * failure)`, folding the op's outcome summary straight into the abstract state;
+ * the checker never holds a concrete item or an enumerated union. A `gen`
+ * constrains an add or a removal to one generation (a bench row's side), which
  * tightens counts and changes which guarantees survive.
  */
 import { craftedCapOf, type Effect } from "../model/effects.js";
@@ -79,22 +79,20 @@ export function regal(a: AItem, registry: Registry): TransferResult {
     return ok(addOne(a, undefined, "rare", registry));
 }
 
-export function exalt(a: AItem, forcedGen: Gen | undefined, registry: Registry): TransferResult {
+export function exalt(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "rare") return wrongRarity("rare", a.rarity);
-    if (!hasOpenSlot(a, forcedGen))
-        return fail({ kind: "noOpenSlot", ...(forcedGen && { gen: forcedGen }) });
-    return ok(addOne(a, forcedGen, "rare", registry));
+    if (!hasOpenSlot(a, undefined)) return fail({ kind: "noOpenSlot" });
+    return ok(addOne(a, undefined, "rare", registry));
 }
 
-export function annul(a: AItem, forcedGen: Gen | undefined, registry: Registry): TransferResult {
+export function annul(a: AItem, registry: Registry): TransferResult {
     // No rarity gate, annul works on anything with a removable mod, and a
     // Normal item already fails `hasRemovable` with the accurate reason. A
     // protection metamod shields its generation, so the removal draws only from
     // the unprotected side.
-    const allowed = removalGens(a, forcedGen, registry);
+    const allowed = removalGens(a, registry);
     const shield = cannotRollShield(a, registry);
-    if (!hasRemovable(a, allowed, registry, shield))
-        return fail({ kind: "nothingToRemove", ...(forcedGen && { gen: forcedGen }) });
+    if (!hasRemovable(a, allowed, registry, shield)) return fail({ kind: "nothingToRemove" });
     return ok(removeOne(a, allowed, registry, shield));
 }
 
@@ -161,12 +159,11 @@ function cannotRollShield(a: AItem, registry: Registry): Shield | null {
     return { types };
 }
 
-/** The generations a removal may draw from: the omen-forced gen (or both),
- *  minus any protected by a metamod. Empty ⇒ nothing is removable. */
-function removalGens(a: AItem, forcedGen: Gen | undefined, registry: Registry): ReadonlySet<Gen> {
+/** The generations a removal may draw from: both, minus any protected by a
+ *  metamod. Empty ⇒ nothing is removable. */
+function removalGens(a: AItem, registry: Registry): ReadonlySet<Gen> {
     const shielded = protectedGens(a, registry);
-    const base = forcedGen ? [forcedGen] : ALL_GENS;
-    return new Set(base.filter((g) => !shielded.has(g)));
+    return new Set(ALL_GENS.filter((g) => !shielded.has(g)));
 }
 
 // --- the other common currencies ------------------------------------------
@@ -510,7 +507,7 @@ export function harvestAugment(a: AItem, tag: TagId, registry: Registry): Transf
     // Remove a random removable mod, drawn only from the unprotected side: a
     // "prefixes cannot be changed" spares every prefix guarantee here. `annul`
     // and this share one removal notion, so protection folds in for free.
-    const allowed = removalGens(a, undefined, registry);
+    const allowed = removalGens(a, registry);
     if (!hasRemovable(a, allowed, registry, null)) return fail({ kind: "nothingToRemove" });
     const removed = removeOne(a, allowed, registry, null);
     // The tagged pool is taken AFTER the removal frees a slot.
@@ -639,7 +636,7 @@ export function veiledChaos(a: AItem, registry: Registry): TransferResult {
 export function veiledExalt(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "rare") return wrongRarity("rare", a.rarity);
     if (mayHaveVeiled(a, registry)) return fail({ kind: "alreadyVeiled" });
-    const allowed = removalGens(a, undefined, registry);
+    const allowed = removalGens(a, registry);
     if (!hasRemovable(a, allowed, registry, null)) return fail({ kind: "nothingToRemove" });
     return ok(addVeiledPlaceholder(removeOne(a, allowed, registry, null)));
 }
@@ -822,14 +819,14 @@ function keepProtectedReroll(
 
 // --- precondition predicates (must hold in EVERY arm) ---------------------
 
-/** Is a slot provably open (in `forcedGen`, or anywhere)? A side's cap is not
+/** Is a slot provably open (in `gen`, or anywhere)? A side's cap is not
  *  enough on its own: the two sides together are also held to the rarity's total
  *  (a magic Ratcheting Ring may take four suffixes by its side cap but two by its
  *  total), so a named side must also leave the total under its cap. */
-function hasOpenSlot(a: AItem, forcedGen: Gen | undefined): boolean {
+function hasOpenSlot(a: AItem, gen: Gen | undefined): boolean {
     if (a.counts.total[1] >= maxTotal(a.rarity, a.base)) return false; // full in some arm
-    if (forcedGen === "prefix") return a.counts.prefix[1] < sideCap("prefix", a.rarity, a.base);
-    if (forcedGen === "suffix") return suffixRange(a)[1] < sideCap("suffix", a.rarity, a.base);
+    if (gen === "prefix") return a.counts.prefix[1] < sideCap("prefix", a.rarity, a.base);
+    if (gen === "suffix") return suffixRange(a)[1] < sideCap("suffix", a.rarity, a.base);
     return true;
 }
 
@@ -870,7 +867,7 @@ function hasRemovable(
 
 // --- the add / remove summaries -------------------------------------------
 
-function addOne(a: AItem, forcedGen: Gen | undefined, rarity: Rarity, registry: Registry): AItem {
+function addOne(a: AItem, gen: Gen | undefined, rarity: Rarity, registry: Registry): AItem {
     // A slot-gated caller (exalt/augment) has already ensured room; transmute
     // has NOT, on a base whose target-rarity total cap is 0 (a magic Simplex),
     // it adds nothing and just changes rarity (a blue base with no modifiers).
@@ -879,9 +876,9 @@ function addOne(a: AItem, forcedGen: Gen | undefined, rarity: Rarity, registry: 
 
     const total: Range = [a.counts.total[0] + 1, Math.min(a.counts.total[1] + 1, maxT)];
     const prefix: Range =
-        forcedGen === "prefix"
+        gen === "prefix"
             ? [a.counts.prefix[0] + 1, a.counts.prefix[1] + 1]
-            : forcedGen === "suffix"
+            : gen === "suffix"
               ? a.counts.prefix
               : [a.counts.prefix[0], a.counts.prefix[1] + 1]; // could land in either generation
 
@@ -889,7 +886,7 @@ function addOne(a: AItem, forcedGen: Gen | undefined, rarity: Rarity, registry: 
     // pins all hold. Each addable type becomes `possible`; and since the new mod
     // could be any of them, only THOSE types' exclusions are relaxed (`admitAdd`)
     //, the rest of the presence knowledge is kept.
-    const added = addableMods(a, forcedGen, registry);
+    const added = addableMods(a, gen, registry);
     const possible = new Set(a.possible);
     const tiers = new Map(a.tiers);
     for (const m of added) {
@@ -918,8 +915,7 @@ function removeOne(
           : [Math.max(0, a.counts.prefix[0] - 1), a.counts.prefix[1]];
 
     // A guarantee survives only if the removed affix could not have been it: a
-    // guarantee in a generation the removal cannot reach (protected, or spared by
-    // an omen) holds. Exclusions always survive (a removal never adds a mod). The
+    // guarantee in a generation the removal cannot reach (protected) holds. Exclusions always survive (a removal never adds a mod). The
     // fracture facts are kept too (a locked mod is never removed).
     const presence = a.bdd.and(
         presenceFacts(a.bdd, survivingGuarantees(a, allowed, registry, shield), excludedTypes(a)),
@@ -932,7 +928,7 @@ function removeOne(
 }
 
 /** Guarantees the removal cannot reach: a guaranteed type whose generation is not
- *  in the removable set (protected, or the omen-spared side), one the shield
+ *  in the removable set (protected), one the shield
  *  covers, or a fractured type (locked), survives. */
 function survivingGuarantees(
     a: AItem,
@@ -957,7 +953,7 @@ function survivingGuarantees(
  * superset of every arm's real pool). Returns mods, not just types, so the
  * tier overlay can record which tiers.
  */
-function addableMods(a: AItem, forcedGen: Gen | undefined, registry: Registry): Mod[] {
+function addableMods(a: AItem, gen: Gen | undefined, registry: Registry): Mod[] {
     const facts = guaranteedFacts(a, registry);
     // Tags a possibly present mod would add may enable a row (the staff jewel mods
     // on a Strength jewel), so the pool admits what they would: the tags of the
@@ -982,7 +978,7 @@ function addableMods(a: AItem, forcedGen: Gen | undefined, registry: Registry): 
     }
     const out: Mod[] = [];
     for (const c of candidates) {
-        if (forcedGen === undefined || c.mod.gen === forcedGen) out.push(c.mod);
+        if (gen === undefined || c.mod.gen === gen) out.push(c.mod);
     }
     return out;
 }

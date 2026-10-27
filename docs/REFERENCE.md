@@ -128,7 +128,7 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
 - **render/**: the labels diagnostics and hover show (`modLabel`, `baseLabel`).
 - **resolve/**: `Registry` (the resolved data surface). Key methods:
     - `resolveBase / resolveMod / resolveModType(name, ctx?) / resolveCurrency /
-resolveOmen / resolveEssence / resolveBench / resolveHarvestTag`
+resolveEssence / resolveBench / resolveHarvestTag`
     - `effectsOfType(type)`: the effects a carrier type contributes (the metamod seam the
       checker folds over guaranteed types; empty for everything else).
     - `resolveHarvestTag(name)` maps a surface category ("fire", "caster") to its
@@ -371,10 +371,10 @@ metamods). Notes:
 - A reforge's count range is the Chaos Orb's 4–6 affixes
   ([Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Chaos_Orb#Mechanics)); the 8:3:1 odds
   are not modelled, only the range.
-- Removal draws from an **allowed-gens** set = `(omen forcedGen ?? both) − protectedGens`;
+- Removal draws from an **allowed-gens** set = `both − protectedGens`;
   `removeOne`/`hasRemovable`/`annul`/`harvestAugment` all share it. A guarantee whose
-  generation is not in that set survives (protected, or the omen-spared side); an empty set
-  means nothing is removable.
+  generation is not in that set survives (protected); an empty set means nothing is
+  removable.
 - The add-pool is over-approximated by running the real `pool` on the facts of the
   guaranteed mods alone at rare caps (`guaranteedFacts`), with the tags a possibly present mod
   would add passed as "maybe" tags: a positive spawn entry on one admits the row, a zero
@@ -491,7 +491,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/parser/src/vocabulary.ts`                                   | the surface vocabulary (keywords, predicate words, item fields, verbs)                             |
 | `packages/data/src/{load,adapter}.ts` + `scripts/ingest-poe1.mjs`     | data load + ingest                                                                                 |
 | `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts` | LSP features                                                                                       |
-| `packages/core/src/check/check.test.ts`                               | checker tests (currency set, count-coupling regression, loops, omens, defs)                        |
+| `packages/core/src/check/check.test.ts`                               | checker tests (currency set, count-coupling regression, loops, defs)                               |
 | `packages/core/src/check/check-tiers.test.ts`                         | tier-pinned predicates and the tier overlay through the checker                                    |
 | `packages/core/src/check/counts.test.ts`                              | `CountDomain` in isolation (caps, coupling, refine)                                                |
 | `packages/core/src/check/bdd.test.ts`                                 | the ROBDD manager (canonicity, operators)                                                          |

@@ -19,7 +19,7 @@ import type {
 } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import type { Game, Gen, ModId, TypeId } from "../model/ids.js";
-import type { CurrencyKind, Registry, OmenSpec } from "../resolve/registry.js";
+import type { CurrencyKind, Registry } from "../resolve/registry.js";
 import {
     type AItem,
     type RPred,
@@ -144,8 +144,6 @@ export function check(craft: Craft, ctx: CheckContext): CheckResult {
 
 class Checker {
     private readonly diagnostics: CheckDiagnostic[] = [];
-    /** Currently-enabled omens, innermost scope last. */
-    private readonly omens: OmenSpec[] = [];
     /** When > 0, suppress diagnostics, loop-invariant passes re-check the body
      *  and must not emit duplicates; only the final, real pass does. */
     private quiet = 0;
@@ -411,8 +409,6 @@ class Checker {
                 return this.checkUntil(a, stmt);
             case "if":
                 return this.checkIf(a, stmt);
-            case "withOmen":
-                return this.checkWithOmen(a, stmt);
             case "call":
                 return this.checkCall(a, stmt);
         }
@@ -517,9 +513,7 @@ class Checker {
             this.diag(resolveMessage(currency.error), stmt.span);
             return { kind: "fall", state: a };
         }
-        const kind = currency.value.kind;
-        const forced = this.forcedGenFor(kind, stmt.span);
-        const result = this.applyCurrency(a, kind, forced);
+        const result = this.applyCurrency(a, currency.value.kind);
         if (!result.ok) {
             this.diag(preconditionMessage(a, result.failure), stmt.span);
             return { kind: "fall", state: a }; // op skipped; keep checking downstream
@@ -527,11 +521,7 @@ class Checker {
         return { kind: "fall", state: result.state };
     }
 
-    private applyCurrency(
-        a: AItem,
-        kind: CurrencyKind,
-        forced: "prefix" | "suffix" | undefined,
-    ): TransferResult {
+    private applyCurrency(a: AItem, kind: CurrencyKind): TransferResult {
         switch (kind) {
             case "transmute":
                 return transmute(a, this.registry);
@@ -546,32 +536,14 @@ class Checker {
             case "chaos":
                 return chaos(a, this.registry);
             case "exalt":
-                return exalt(a, forced, this.registry);
+                return exalt(a, this.registry);
             case "annul":
-                return annul(a, forced, this.registry);
+                return annul(a, this.registry);
             case "scour":
                 return scour(a, this.registry);
             case "fracture":
                 return fracture(a);
         }
-    }
-
-    /** The generation an active omen forces this op into, if any. */
-    private forcedGenFor(
-        kind: CurrencyKind,
-        span: CheckDiagnostic["span"],
-    ): "prefix" | "suffix" | undefined {
-        if (kind !== "exalt" && kind !== "annul") return undefined;
-        const gens = this.omens.filter((o) => o.directs === kind).map((o) => o.gen);
-        const distinct = new Set(gens);
-        if (distinct.size > 1) {
-            this.diag(
-                `contradictory omens: this ${kind} is forced to both prefix and suffix`,
-                span,
-            );
-            return undefined;
-        }
-        return gens[0];
     }
 
     // --- narrowing (if / else) --------------------------------------------
@@ -730,20 +702,6 @@ class Checker {
             }
             return invariant;
         });
-    }
-
-    // --- omen scope --------------------------------------------------------
-
-    private checkWithOmen(a: AItem, stmt: Extract<Stmt, { kind: "withOmen" }>): Flow {
-        const omenRes = this.registry.resolveOmen(stmt.omen);
-        if (!omenRes.ok) {
-            this.diag(resolveMessage(omenRes.error), stmt.span);
-            return this.checkSeq(a, stmt.body); // still check the body
-        }
-        this.omens.push(omenRes.value);
-        const flow = this.checkSeq(a, stmt.body);
-        this.omens.pop();
-        return flow;
     }
 
     // --- predicate defs ----------------------------------------------------
@@ -1107,9 +1065,6 @@ function noteStmtUses(u: ParamUses, s: Stmt): void {
             for (const b of s.body) noteStmtUses(u, b);
             if (s.elseBody !== undefined) for (const b of s.elseBody) noteStmtUses(u, b);
             return;
-        case "withOmen":
-            for (const b of s.body) noteStmtUses(u, b);
-            return;
         case "call":
             for (const arg of s.args) if (arg.kind === "param") markUsed(u, arg.param);
             return;
@@ -1229,8 +1184,6 @@ function substituteStmt(stmt: Stmt, env: Map<string, Arg>): Stmt {
                     elseBody: substituteStmts(stmt.elseBody, env),
                 }),
             };
-        case "withOmen":
-            return { ...stmt, body: substituteStmts(stmt.body, env) };
         case "call":
             return { ...stmt, args: subArgs(stmt.args, env) };
     }

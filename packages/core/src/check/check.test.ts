@@ -32,7 +32,6 @@ import {
     restart,
     tierArg,
     until,
-    withOmen,
 } from "../__fixtures__/ast.js";
 import {
     AMULET_BASE,
@@ -53,6 +52,7 @@ import {
     SPECIFIC_WEAPON_B,
     STAFFY_ADDER,
     STAFFY_ENABLED,
+    PROTECT_SUFFIXES_CARRIER,
 } from "../__fixtures__/mods.js";
 import { ClassId } from "../model/ids.js";
 import type { BenchCraft, EssenceSpec } from "../model/sources.js";
@@ -765,42 +765,6 @@ describe("checker — boolean predicates (and / or)", () => {
     });
 });
 
-describe("checker — omens direct operations", () => {
-    it("Dextral Exaltation forces the added mod to a suffix", () => {
-        // 3 prefixes (full), 1 suffix open → an unforced exalt is fine, but a
-        // Dextral (suffix-forced) one is what we assert lands cleanly.
-        const c = craft("poe1", rareRing(["random", "random", "random"], ["random"]), [
-            withOmen("Dextral Exaltation", [op("exalt")]),
-        ]);
-        expect(check(c, ctx).diagnostics).toEqual([]);
-    });
-
-    it("errors when the omen's forced generation has no open slot", () => {
-        // 3 suffixes (full) under Dextral Exaltation (suffix-forced) → no target.
-        const c = craft("poe1", rareRing([], ["random", "random", "random"]), [
-            withOmen("Dextral Exaltation", [op("exalt")]),
-        ]);
-        expect(check(c, ctx).diagnostics[0]?.message).toContain("open suffix slot");
-    });
-
-    it("a Sinistral Annulment preserves a guaranteed suffix", () => {
-        const c = craft("poe1", rareRing(["random"], ["FireResist1"]), [
-            withOmen("Sinistral Annulment", [op("annul")]),
-        ]);
-        const r = check(c, ctx);
-        expect(r.ok).toBe(true);
-        // Removal forced to a prefix, so the suffix Fire Resist survives.
-        expect(guaranteedTypes(r.finalState!).has(FIRE_RESIST.type)).toBe(true);
-    });
-
-    it("flags contradictory omens on one operation", () => {
-        const c = craft("poe1", rareRing([], ["random"]), [
-            withOmen("Dextral Exaltation", [withOmen("Sinistral Exaltation", [op("exalt")])]),
-        ]);
-        expect(check(c, ctx).diagnostics[0]?.message).toContain("contradictory omens");
-    });
-});
-
 describe("checker — resolve-time errors", () => {
     it("reports an unknown currency", () => {
         const c = craft("poe1", rareRing(), [op("bogus")]);
@@ -910,7 +874,12 @@ describe("checker — per-base affix caps (experimented bases)", () => {
     it("the add-pool and a removal place a dual-side modifier on the base's side", () => {
         const dual = buildRegistry({
             bases: [RING_BASE, AMULET_BASE],
-            mods: [...CATALOG, DUAL_SIDE_RING_PREFIX, DUAL_SIDE_AMULET_SUFFIX],
+            mods: [
+                ...CATALOG,
+                DUAL_SIDE_RING_PREFIX,
+                DUAL_SIDE_AMULET_SUFFIX,
+                PROTECT_SUFFIXES_CARRIER,
+            ],
             baseAliases: { "Iron Ring": "IronRing", "Coral Amulet": "CoralAmulet" },
         });
         // On an amulet the type is a suffix: with two more suffixes the side is full,
@@ -924,18 +893,16 @@ describe("checker — per-base affix caps (experimented bases)", () => {
         const added = check(craft("poe1", fullSuffixes, [op("exalt")]), { registry: dual });
         expect(added.diagnostics).toEqual([]);
         expect(added.finalState!.possible.has(FIRE_RESIST.type)).toBe(false);
-        // A prefix-forced annul cannot reach the suffix, so its guarantee survives.
+        // With the suffixes protected, an annul cannot reach the suffix side, so
+        // the dual-side modifier's guarantee survives on the amulet.
         const withPrefix = item({
             base: "Coral Amulet",
             ilvl: 100,
             rarity: "rare",
-            prefixes: ["IncreasedLife1"],
+            prefixes: ["IncreasedLife1", PROTECT_SUFFIXES_CARRIER.id],
             suffixes: [{ mod: "dual side", tier: 1 }],
         });
-        const removed = check(
-            craft("poe1", withPrefix, [withOmen("Sinistral Annulment", [op("annul")])]),
-            { registry: dual },
-        );
+        const removed = check(craft("poe1", withPrefix, [op("annul")]), { registry: dual });
         expect(removed.diagnostics).toEqual([]);
         expect(guaranteedTypes(removed.finalState!).has(DUAL_SIDE_AMULET_SUFFIX.type)).toBe(true);
     });

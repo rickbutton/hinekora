@@ -20,7 +20,7 @@ relates to it.
 - **Errors show the item's state, they don't lecture.** A rejected operation renders what
   the item provably is at that point, then what the operation needed (§6).
 - **Few primitives, additive sugar.** Every construct is a currency operation, a loop, a
-  branch, an omen scope, or a definition; a future convenience will lower to one of these.
+  branch, or a definition; a future convenience will lower to one of these.
 
 ## 0.1 Concrete syntax
 
@@ -29,7 +29,7 @@ relates to it.
   catalog.
 - **Blocks are C-style `{ … }`.** Whitespace, including newlines, is insignificant.
 - **Text values are quoted**: `base: "Cobalt Jewel"`, mod names, essence and bench names,
-  harvest tags, omen names.
+  harvest tags.
 - **Comments** run from `#` to the end of the line.
 - **Statements are self-delimiting**; no separators.
 - **Case:** keywords and the camelCase predicate symbols are lowercase; `rarity` values and
@@ -163,7 +163,7 @@ Operations that take a name (and an optional `t<n>`):
   modifier that shares a group with an option. Hovering the line shows the current
   options by side.
 
-A statement may also be a **call**, `name(arg, …)`, to an operation function (§4.5).
+A statement may also be a **call**, `name(arg, …)`, to an operation function (§4.4).
 
 ---
 
@@ -187,21 +187,12 @@ hold; inside `else`, its negation. A branch whose condition is impossible here, 
 negation always holds, is reported as never running. After the branch, what both arms
 guarantee is kept, including disjunctions ("one of these three is present").
 
-### 4.3 `with omen "<name>" { … }`
-
-Enable a PoE2 [omen](https://www.poe2wiki.net/wiki/Omen) for the block. The four known
-omens force `exalt` or `annul` to one side: `Dextral Exaltation` / `Dextral Annulment`
-(suffix), `Sinistral Exaltation` / `Sinistral Annulment` (prefix). The forced side must
-have an open slot (or a removable modifier) on every path, else the operation is
-rejected. Two omens forcing one operation both ways is reported and the operation runs
-unforced. Omens are a scope, not a consumed resource; cost is out of scope.
-
-### 4.4 `restart`
+### 4.3 `restart`
 
 Re-enter the innermost enclosing `until` from its start (at top level: end the craft).
 Used in a failure branch, typically after a removal that may have taken a wanted modifier.
 
-### 4.5 Definitions
+### 4.4 Definitions
 
 `def name(params) = <pred>` declares a predicate; `def name(params) { <statements> }` an
 operation function. Both are local to the file, may appear anywhere at file scope, and are
@@ -268,7 +259,7 @@ guaranteed modifiers, their tiers or roll spans, and any "one of these" facts.
 Error categories:
 
 - **Resolution**: unknown or ambiguous base, mod, currency, essence, bench craft, harvest
-  tag or omen name; a mod without a tier in the item block; a tier that cannot roll here.
+  tag; a mod without a tier in the item block; a tier that cannot roll here.
 - **Precondition**: the operation does not fit the item on some path (§3).
 - **Control**: a loop that can never exit; a branch that can never run; a def with
   conflicting or unused parameters, recursion, or the wrong kind of call.

@@ -24,8 +24,6 @@ const KEYWORDS = new Set([
     "until",
     "if",
     "else",
-    "with",
-    "omen",
     "restart",
     "essence",
     "bench",
