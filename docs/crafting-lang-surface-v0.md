@@ -1,10 +1,9 @@
-# PoE Crafting Language — Surface Syntax v0
+# The Crafting Language
 
-The user-facing language: what a person writes to describe a craft, and how it
-lowers to the formal typing rules (`crafting-lang-typing-rules-v0.md`). Design
-goal: a craft reads like a written guide, with **no type annotations** and
-**no type-theory jargon**. Types are inferred from the operation sequence and
-only ever surface as a plain rendering of the item's current state.
+The language a person writes to describe a craft, as the parser and checker implement it
+today. A craft reads like a written guide: no type annotations, no type-theory vocabulary;
+the checker infers the item's state after every line and only ever shows it as a plain
+rendering. Anything not built yet is in [ROADMAP.md](ROADMAP.md), not here.
 
 Where a construct rests on a game rule, the rule is linked to its section of the Path of
 Exile wiki (poewiki.net) rather than restated; the text here says only how the construct
@@ -12,421 +11,291 @@ relates to it.
 
 ---
 
-## 0. Design principles
+## 0. Principles
 
-- **The item is implicit and threaded automatically.** A craft is an
-  imperative script; each statement is an operation acting on an ambient
-  "current item". The user never names or writes a type. Sequencing (statement
-  order) is the indexed-monad bind; each op's after-state is the next op's
-  before-state, checked invisibly.
-- **State is inferred, never declared** (except the input item, §1, which is
-  physical ground truth). After every line the checker knows the exact item
-  index; the user never writes it.
-- **Errors show the item's current state, they don't lecture.** Users know the
-  game's rules. A rejected op means their model of the current item drifted
-  from reality, so the error's payload is a jargon-free rendering of what the
-  item actually is at that point, plus what the op needed. No teaching, no
-  fix-suggestion engine. (See §6.)
-- **Minimal primitives, sugar is additive.** Surface constructs desugar to the
-  three primitives in the typing rules (loop, narrow, omen-context). Niceties
-  (English negation spellings, "omen next op only", etc.) are deferred and will
-  desugar to what v0 already supports — nothing built now is wasted.
+- **The item is implicit and threaded automatically.** A craft is an imperative script;
+  each statement acts on the ambient current item. The item is never named.
+- **State is inferred, never declared**, except the starting item (§1), which is physical
+  ground truth.
+- **Errors show the item's state, they don't lecture.** A rejected operation renders what
+  the item provably is at that point, then what the operation needed (§6).
+- **Few primitives, additive sugar.** Every construct is a currency operation, a loop, a
+  branch, an omen scope, or a definition; a future convenience will lower to one of these.
 
----
+## 0.1 Concrete syntax
 
-## 0.1 Concrete syntax finalized (v0 parser)
-
-The header/item-block casing and block style were left open "to finalize as the
-parser is written". Finalized decisions, reflected in every example below:
-
-- **`craft in <game>` is a top-level declaration.** It must come first, before
-  anything else; the item block and the statement body then follow directly at
-  file scope (the whole craft is NOT wrapped in braces). Requiring the
-  declaration up front is what fixes the game for the rest of the file.
-- **Blocks are C-style `{ … }`, not indentation.** Control constructs are
-  `until <pred> { … }`, `if <pred> { … } else { … }`, `with omen "…" { … }`.
-  Whitespace (including newlines) is **insignificant** — indentation is purely
-  cosmetic. This drops the off-side-rule machinery entirely and reads like a
-  conventional brace language.
-- **Text values are quoted.** `base: "Cobalt Jewel"`, mod strings quoted as
-  before. This makes every field value self-delimiting (a base name may contain
-  spaces, hyphens, or apostrophes) and keeps the lexer simple.
-- **`rarity` / game names are case-insensitive** (`rare` == `Rare`;
-  `poe2` == `PoE2`); keywords and the camelCase predicate symbols are lowercase.
-- **Statements are self-delimiting** — no separators or semicolons. Each op is a
-  single word; control constructs are brace-delimited.
+- **`craft in <game>` comes first.** Only `poe1` is supported: the data, the currencies
+  and every rule below are PoE1's. `poe2` parses but is checked against the same PoE1
+  catalog.
+- **Blocks are C-style `{ … }`.** Whitespace, including newlines, is insignificant.
+- **Text values are quoted**: `base: "Cobalt Jewel"`, mod names, essence and bench names,
+  harvest tags, omen names.
+- **Comments** run from `#` to the end of the line.
+- **Statements are self-delimiting**; no separators.
+- **Case:** keywords and the camelCase predicate symbols are lowercase; `rarity` values and
+  game names are case-insensitive.
 
 ---
 
-## 1. The item block (the only declarations)
-
-The input item is user-provided ground truth (ilvl, base, existing mods,
-augments) — not inferable, so it is declared. Everything else in a craft is
-inferred from here forward.
+## 1. The item block
 
 ```
 item {
-    base:     "Cobalt Jewel"
-    ilvl:     82
+    base:     "Iron Ring"
+    ilvl:     84
     rarity:   rare
-    prefixes: [ "+1 Suffix Modifier" ]
-    suffixes: [ "increased Attack Speed", "+% Fire Resistance" ]
-    augments: [ "can roll Marksman" ]      # optional; permanent implicits (no affix slot)
-    quality:  20                           # optional; defaults sensible
+    prefixes: [ "maximum life" t2 ]
+    suffixes: [ "fire resistance" t3, fractured "lightning resistance" t3, "random" ]
 }
 ```
 
-- Fields are **givens**: the checker takes them as the initial index rather
-  than inferring them.
-- An affix may be marked `fractured` (the keyword before the mod, e.g.
-  `prefixes: [ fractured "+1 to Level of Socketed Gems" t1 ]`): a
+- `base` resolves by display name against the catalog; a name shared by several bases is
+  rejected as ambiguous (the id, `Metadata/Items/...`, is the escape hatch).
+- `ilvl` is the [item level](https://www.poewiki.net/wiki/Item_level); it never changes.
+- `rarity` is `normal`, `magic` or `rare`. A base that can never be Rare (flasks,
+  tinctures) is rejected at `rare`, per [Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare).
+- `prefixes` / `suffixes` list the affixes. Each named affix **must pin a tier**: either a
+  mod name plus `t<n>` (§2) or an exact mod id. A bare name is an error, because a
+  starting item is a concrete item. `"random"` (or `"?"`) is an anonymous affix: counted,
+  not named. A count over the base's limit for the rarity is an error; a named mod listed
+  under the wrong side is an error.
+- `fractured "<mod>" t<n>` marks a
   [fractured modifier](https://www.poewiki.net/wiki/Fractured_item#Mechanics). Hinekora
   models at most one per item, the
   [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)'s own limit; the
   wiki's multi-fracture items are out of scope.
-- Omitted optional fields default (no augments, quality 0, etc.).
-- This block is also the boundary where human mod text is resolved to internal
-  entities (§2), so ambiguity/unknown-mod errors surface here, before the type
-  system runs.
+- `augments: [ … ]` and `quality: <n>` are accepted by the parser and ignored by the
+  checker; they are reserved and have no effect.
+
+Name resolution happens here, so an unknown or ambiguous name is reported on the item
+block before any operation is checked.
 
 ---
 
-## 2. Names: currencies and mods
+## 2. Names
 
-Human vocabulary in, internal entities out. Resolution priority:
+**Currencies** are written by their short name: `transmute`, `augment`, `alteration`,
+`regal`, `alchemy`, `chaos`, `exalt`, `annul`, `scour`, `fracture` (§3). There are no
+other aliases.
 
-1. **Exact real ID** always works (`IncreasedLife5`) — escape hatch for
-   precision or when fuzzy is ambiguous.
-2. **Registered aliases** — curated shorthands:
-   - currencies: `exalt` → [Exalted Orb](https://www.poewiki.net/wiki/Exalted_Orb),
-     `chaos` → [Chaos Orb](https://www.poewiki.net/wiki/Chaos_Orb), `annul` →
-     [Orb of Annulment](https://www.poewiki.net/wiki/Orb_of_Annulment), `regal` →
-     [Regal Orb](https://www.poewiki.net/wiki/Regal_Orb), `transmute` →
-     [Orb of Transmutation](https://www.poewiki.net/wiki/Orb_of_Transmutation), ...
-     (shared alias table).
-   - mods: short community forms may be aliased (`"phys%"`, `"T1 life"`).
-3. **Fuzzy match** on display/name text — MUST report ambiguity or unknown
-   rather than silently guessing.
-
-Resolution failures are **resolve-time errors** (during elaboration of text →
-entities), distinct from type errors. Ambiguity shows the candidates:
+**Mods** are written as a stat description, matched to a modifier _type_ (every tier of a
+modifier shares the wording and differs only in numbers). Matching is by word: a query
+word matches an entry word exactly or as a prefix of at least three letters, so
+`"max life"` finds "maximum Life" and `"fire res"` finds "Fire Resistance". The candidates
+are narrowed to the types that can roll on the craft's base at its item level, which is
+what keeps `"fire res"` from also meaning the fire-and-chaos hybrid on a base that cannot
+roll it. An exact mod id (`IncreasedLife5`) always resolves. A query that matches several
+types is an error listing them:
 
 ```
-    prefixes: [ "fire res" ]
-              └─ ambiguous — matches:
-                   "+#% to Fire Resistance"
-                   "+#% to Fire and Chaos Resistance"
-                 use a more specific name or the id.
+Ambiguous name "res" — candidates: fire resistance, cold resistance, lightning resistance.
 ```
+
+**Tiers.** `t<n>` names a tier, T1 the best. The game stores no tier numbers, only each
+row's [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level); Hinekora numbers the
+rows of a type that can roll on this base at this item level, best first. So `t1` on a
+ring is a different row from `t1` on body armour, and from the in-game display, which
+numbers tiers across all bases. A tier that cannot roll here is an error.
 
 ---
 
-## 3. Operations (the body)
+## 3. Operations
 
-Each statement is a currency/operation from the standard library (§4 of the
-typing rules), acting on the implicit item. The game is fixed by the craft
-header; cross-game ops are unavailable (enforced by the `game` tag in the
-index — the user just can't name a PoE1 op in a PoE2 craft).
+Each statement applies one operation to the current item. The checker proves the
+operation's precondition from the state it has inferred; a failure is reported as in §6
+and the operation is skipped so checking continues.
 
-```
-craft in poe2
+The ten **currencies**, grouped as the wiki's [Crafting](https://www.poewiki.net/wiki/Crafting)
+page groups them:
 
-item { base: "…" ilvl: 82 rarity: normal }
+| Written      | Currency                                                                               | Needs                                                           |
+| ------------ | -------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `transmute`  | [Orb of Transmutation](https://www.poewiki.net/wiki/Orb_of_Transmutation)              | Normal                                                          |
+| `alchemy`    | [Orb of Alchemy](https://www.poewiki.net/wiki/Orb_of_Alchemy)                          | Normal, a base that can be Rare                                 |
+| `regal`      | [Regal Orb](https://www.poewiki.net/wiki/Regal_Orb)                                    | Magic, a base that can be Rare                                  |
+| `alteration` | [Orb of Alteration](https://www.poewiki.net/wiki/Orb_of_Alteration)                    | Magic                                                           |
+| `chaos`      | [Chaos Orb](https://www.poewiki.net/wiki/Chaos_Orb)                                    | Rare                                                            |
+| `augment`    | [Orb of Augmentation](https://www.poewiki.net/wiki/Orb_of_Augmentation)                | Magic with an open slot                                         |
+| `exalt`      | [Exalted Orb](https://www.poewiki.net/wiki/Exalted_Orb)                                | Rare with an open slot                                          |
+| `annul`      | [Orb of Annulment](https://www.poewiki.net/wiki/Orb_of_Annulment)                      | a removable modifier (Magic or Rare)                            |
+| `scour`      | [Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring)                        | Magic or Rare                                                   |
+| `fracture`   | [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)                | Rare, at least four modifiers, not already fractured            |
 
-transmute
-regal
-exalt
-```
+"Open slot" and "removable" are decided by the checker's knowledge of the item: a slot is
+open only if it is open on every path, a modifier is removable only if one is present on
+every path and not locked (fractured, or shielded by a
+[metamod](https://www.poewiki.net/wiki/Metamod)). `fracture` locks a random modifier; no
+specific one is proven locked until a `fractured "<mod>"` branch (§5) narrows it, and
+until then every reforge keeps "one of the current modifiers survives, still locked".
 
-A complete, type-checked program. No types written. Each op's precondition is
-checked against the inferred current state; a failure renders the state (§6).
+Operations that take a name (and an optional `t<n>`):
 
-Two operations take a name (and an optional `t<n>` tier, T1 = best):
+- `essence "<name>" [t<n>]` applies an [essence](https://www.poewiki.net/wiki/Essence#Crafting):
+  a full name (`"Deafening Essence of Greed"`) or a type with a tier (`essence "greed" t1`,
+  T1 = Deafening). The tier table of that section decides what it accepts: a Normal item at
+  any tier, a Rare item from Screaming up, never a Magic item; the essence must grant a
+  modifier for the item's class, and no protection or cannot-roll metamod may be on the
+  item.
+- `bench "<mod>" [t<n>]` adds a [crafting bench](https://www.poewiki.net/wiki/Crafting_Bench)
+  modifier, named by the modifier it adds (`bench "maximum life"`). It needs an open slot
+  in the modifier's generation, the crafted-modifier limit not reached (one, or three under
+  the multimod metamod), and no modifier of the same
+  [group](https://www.poewiki.net/wiki/Modifier#Group/family) possibly present. The
+  metamods are benched the same way: `bench "prefixes cannot be changed"`.
+- `harvest reforge "<tag>"` and `harvest augment "<tag>"` are the two
+  [Harvest crafts](https://www.poewiki.net/wiki/Harvest_crafting) that target a
+  [modifier group](https://www.poewiki.net/wiki/Harvest_crafting#Modifier_groups): "Reforge
+  with random modifiers, including a [Type] modifier" and "Add a new [Type] modifier and
+  remove another random modifier". Tags: `attack`, `attribute`, `caster`, `chaos`, `cold`,
+  `critical`, `defence`, `elemental`, `fire`, `life`, `lightning`, `mana`, `minion`,
+  `physical`, `speed`. Both need a Rare item and a tag some modifier of the base can carry;
+  `augment` also needs a removable modifier.
+- `veiled chaos` and `veiled exalt` are the
+  [Veiled Chaos Orb](https://www.poewiki.net/wiki/Veiled_Chaos_Orb) and
+  [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb); both need a Rare
+  item, `veiled exalt` also a removable modifier.
+- `unveil ["<mod>"]` is the three-option unveil of
+  [Veiled modifier § How to obtain](https://www.poewiki.net/wiki/Veiled_modifier#How_to_obtain)
+  and needs a veiled modifier on the item. Bare, the result is one of the valid options
+  (narrow it with a following `if has "<mod>"`). With a name, that outcome is guaranteed
+  only when the option pool is three or fewer, which you reach by blocking: bench a
+  modifier that shares a group with an option. Hovering the line shows the current
+  options by side.
 
-- `essence "<name>" [t1]` — apply an
-  [essence](https://www.poewiki.net/wiki/Essence#Crafting): a full name
-  (`"Deafening Essence of Greed"`) or a type + tier (`essence "greed" t1`).
-- `bench "<mod>" [t1]` — add a [crafting bench](https://www.poewiki.net/wiki/Crafting_Bench)
-  mod, named by the mod it adds (`bench "maximum life"`).
-
-A **harvest** craft ([Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting))
-targets mods by tag, written `harvest <verb> "<tag>"`:
-
-- `harvest reforge "<tag>"` — the wiki's "Reforge a Rare item with random modifiers,
-  including a [Type] modifier" (`harvest reforge "fire"`).
-- `harvest augment "<tag>"` — the wiki's "Add a new [Type] modifier and remove another
-  random modifier" (Craft of Exile's "Add/Remove"): the affix count is unchanged, and no
-  open slot is needed.
-
-The tag is one of the wiki's
-[modifier groups](https://www.poewiki.net/wiki/Harvest_crafting#Modifier_groups): `attack`,
-`attribute`, `caster`, `chaos`, `cold`, `critical`, `defence`, `elemental`, `fire`, `life`,
-`lightning`, `mana`, `minion`, `physical`, `speed`. A tag that no modifier of the base can
-carry is rejected (the grayed-out case in crafting simulators).
-
-`fracture` applies a [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics).
-The target is random, so no specific mod is proven locked until a `fractured "<mod>"`
-branch (§5) narrows it; until then a reforge keeps "one of these mods survives, still
-locked".
-
-The **veiled currencies** add a
-[veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) you reveal later:
-
-- `veiled chaos` — a [Veiled Chaos Orb](https://www.poewiki.net/wiki/Veiled_Chaos_Orb).
-- `veiled exalt` — a [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb).
-- `unveil ["<mod>"]` — the three-option unveil of
-  [Veiled modifier § How to obtain](https://www.poewiki.net/wiki/Veiled_modifier#How_to_obtain).
-  Bare, it resolves to one of the valid options (narrow it with a following
-  `if has "<mod>"`). With a mod name, it targets that outcome — provable only once you've
-  *blocked* the option pool down to three or fewer (bench a modifier that shares a
-  [group](https://www.poewiki.net/wiki/Modifier#Group/family) with an option to remove it).
-  Hovering the line shows the current options, split by prefix and suffix.
-
-A statement can also be a **call to an operation function** — `<name>(<arg>, …)`
-— which inlines that function's body here (§4.5).
+A statement may also be a **call**, `name(arg, …)`, to an operation function (§4.5).
 
 ---
 
-## 4. Control constructs
+## 4. Control
 
-Three surface constructs, mapping to the three primitives. All share the
-predicate grammar (§5).
+### 4.1 `until <pred> { … }`
 
-### 4.1 `until <pred> { … }` — loop with proof-on-exit  (→ loop primitive)
-
-Run the body repeatedly until the predicate holds. On exit the predicate is
-**proven** of the item (loop-exit-as-proof), so subsequent statements may rely
-on it with no further check.
+Run the body until the predicate holds. On exit the predicate is proven, so later lines
+may rely on it. The checker proves the body safe on every iteration, not just the first
+(so `until has "X" { exalt }` is reported: the item fills before X is guaranteed), and
+reports a loop whose exit can never be true on this base:
 
 ```
-until has "T1 Life" {
-    chaos
-}
-# here the item provably HAS "T1 Life"
+this loop can never exit: has "fire resistance" can never become true here
 ```
 
-```
-until not has "+1 Suffix Modifier" {
-    annul
-}
-# here the item provably does NOT have "+1 Suffix Modifier"
-```
+### 4.2 `if <pred> { … } [else { … }]`
 
-If the exit predicate is provably unreachable (e.g. the mod can't roll on this
-base), that is a **write-time error** rendered as state: "this can't exit —
-`<mod>` isn't in the possible mods for this item."
+Branch on what is now true of the item. Inside the `if` body the predicate is known to
+hold; inside `else`, its negation. A branch whose condition is impossible here, or whose
+negation always holds, is reported as never running. After the branch, what both arms
+guarantee is kept, including disjunctions ("one of these three is present").
 
-### 4.2 `if <pred> { … } else { … }` — branch on an outcome  (→ narrow primitive)
+### 4.3 `with omen "<name>" { … }`
 
-Narrow the just-produced outcome union on the predicate. The `if` body sees the
-branch where the predicate holds (state known exactly there); `else` sees the
-rest. Required by the "silent wide" rule only when something downstream depends
-on the distinction — otherwise the `else` is omittable.
+Enable a PoE2 [omen](https://www.poe2wiki.net/wiki/Omen) for the block. The four known
+omens force `exalt` or `annul` to one side: `Dextral Exaltation` / `Dextral Annulment`
+(suffix), `Sinistral Exaltation` / `Sinistral Annulment` (prefix). The forced side must
+have an open slot (or a removable modifier) on every path, else the operation is
+rejected. Two omens forcing one operation both ways is reported and the operation runs
+unforced. Omens are a scope, not a consumed resource; cost is out of scope.
 
-```
-annul
-if not has "T1 Life" {
-    # branch where annul removed it — recover
-    restart
-}
-# (implicit else: it survived; continues here with "T1 Life" known present)
-```
+### 4.4 `restart`
 
-### 4.3 `with omen "<o>" { … }` — omen-directed scope  (→ omen context Ω)
+Re-enter the innermost enclosing `until` from its start (at top level: end the craft).
+Used in a failure branch, typically after a removal that may have taken a wanted modifier.
 
-Enable a PoE2 [omen](https://www.poe2wiki.net/wiki/Omen) for the duration of the block;
-operations inside read it and are directed accordingly (their outcome union is shrunk; impossible-under-omen
-becomes a state-error). Omens are a boolean context (enabled/disabled), not a
-consumed resource — cost/attempts accounting is a separate future layer.
+### 4.5 Definitions
+
+`def name(params) = <pred>` declares a predicate; `def name(params) { <statements> }` an
+operation function. Both are local to the file, may appear anywhere at file scope, and are
+inlined at each use. A parameter's sort is inferred from its use: a tier slot, a count
+slot, or a name slot (a mod name, a bench or essence name, a harvest tag, an unveil
+target); the three sorts are distinct (`t1` is not the number `1`), and conflicting uses,
+an unused parameter, recursion, or calling a predicate as a statement (or a function in a
+condition) are errors.
 
 ```
-with omen "Sinistral Annulment" {
-    annul            # forced to remove a prefix; if no removable prefix, state-error
-}
-```
+def anyEleRes(t) = has "fire res" t or has "cold res" t or has "lightning res" t
 
-Desugars to `enableOmen; body; disableOmen`. (A future "omen the next op only"
-sugar will desugar to the same.)
-
-### 4.4 `restart` — re-enter the enclosing craft/loop from its start
-
-Used in failure branches (e.g. after losing a forced mod). Lowers to
-re-entering the enclosing structured loop, whose exit-type re-establishes the
-guarantee. Composite/multi-item crafts are a future extension (§7).
-
-### 4.5 Operation functions — reusable, parameterized op sequences
-
-`def name(params) { <statements> }` declares a local, parameterized sequence of
-operations, callable as a step. Same `def` keyword as a predicate def (§5.1); a
-`{ … }` body makes it an operation function, an `= <pred>` body a predicate. A
-call `name(args)` **inlines** the body — the item state threads through it, a
-`restart` inside re-enters the caller's enclosing loop, and a precondition
-failure inside is reported at the failing step. Parameter sorts are inferred from
-use (a tier, a count, or a mod name), exactly as for a predicate def, and a
-parameter may fill a `has`/`bench`/`essence` mod-name or tier slot, or a
-`harvest` tag slot.
-
-```
 def guarantee(m) {
     until has m {
         scour
-        alch
+        alchemy
     }
 }
 
 guarantee("maximum life")
+until anyEleRes(t1) { chaos }
 ```
-
-Operation functions are pure inlining: recursion is rejected, and a name can be
-either a predicate def or an operation function, not both. Calling a predicate as
-a step (or an operation function inside a condition) is an error.
 
 ---
 
-## 5. Predicate grammar (v0)
-
-Predicates are **state queries** on the current item (backed by the inferred
-index, so each is a refinement query the checker can decide). No event/history
-predicates — everything asks about the item's *current* state.
-
-Design: everything named is a single spaceless **camelCase symbol**;
-comparisons use ordinary operators. Predicate names are niladic or unary
-symbols; numeric checks are a projection symbol compared with an operator.
-This reads like expressions in any language and is trivial to lex/parse.
+## 5. Predicates
 
 ```
-pred := isRare | isMagic | isNormal      # niladic predicate symbols (bool)
-      | has "<mod>" (t<n>)?                # presence of a mod (optionally at a tier)
-      | fractured "<mod>"                  # is that mod the item's fractured (locked) one
-      | <proj> <cmp> <int>                 # relational expression (bool)
-      | not <pred>                         # general negation (composes with all)
-      | <pred> and <pred>                  # conjunction (binds tighter than or)
-      | <pred> or <pred>                   # disjunction
-      | ( <pred> )                         # grouping
-      | <name>(<arg>, …)                   # call a local def (§5.1)
-
-proj := prefixCount | suffixCount          # projection symbols (yield a number)
+pred := isRare | isMagic | isNormal
+      | has "<mod>" [t<n>]                  # that modifier type is present (at that tier)
+      | fractured "<mod>"                   # that modifier is the fractured one
+      | prefixCount <cmp> <int>
+      | suffixCount <cmp> <int>
+      | not <pred>
+      | <pred> and <pred>
+      | <pred> or <pred>
+      | ( <pred> )
+      | <name>(<arg>, …)                    # a predicate def
 cmp  := == | != | < | <= | > | >=
 ```
 
-Precedence, loosest first: `or` < `and` < `not` < atom; binary operators are
-left-associative.
-
-**Mod names + tiers.** `"<mod>"` is a human stat description (`"maximum life"`,
-`"fire resistance"`), fuzzy-matched to a ModType (§2). Because every
-tier of a mod shares the same wording and differs only in the numbers, the match
-lands on the *type* (the family). `has "maximum life"` means "any tier of
-maximum life is present". An optional `t<n>` qualifier (T1 = the best tier
-that can roll on this base at this ilvl) narrows to a specific tier:
-`has "maximum life" t1`. The game stores no tier numbers, only each row's
-[mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level); tiers are derived per-base
-from the actual roll pool, so `t1` on a ring differs from `t1` on body armour (and from
-the in-game display, which numbers tiers across all base types), and asking for a tier
-that can't roll here is an error. The checker tracks tiers through
-operations, so a mod narrowed to T1 is provably not T2.
-
-- Named things (`isRare`, `has`, `prefixCount`, `suffixCount`) are single
-  camelCase tokens — no spaces, lexable as one identifier each.
-- `==`, `<`, `not` etc. are **operators**, not identifiers, so they are not
-  expected to be spaceless symbols — they are the normal expression operators
-  every programmer already reads.
-- `not` is the single, general negation. It composes with any predicate and is
-  what branch-selection uses under the hood (so `if not has "X"` selects the
-  outcome arms where X is absent). Guide-English spellings like `doesn't have`
-  are DEFERRED sugar that will desugar to `not has`.
-- Both `until` and `if` consume the same `pred` grammar — one predicate
-  language, two control constructs.
-
-Examples:
-
-```
-isRare
-has "maximum life" t1
-not has "+1 Suffix Modifier"
-prefixCount == 3
-suffixCount < 2
-not (prefixCount == 3)
-has "fire res" t1 or has "cold res" t1
-```
-
-### 5.1 Predicate defs
-
-`def name(params) = <pred>` declares a local, parameterized, pure predicate,
-usable wherever a predicate is (`until anyEleRes(1)`). The same `def` keyword
-with a `{ … }` body instead declares an **operation function** (§4.5). Defs may
-appear anywhere at file scope. Parameter sorts are inferred from use — a tier
-slot, a count slot, or a mod-name slot; the three are distinct (`t1` is not the
-number `1`), and a parameter used in conflicting ways is an error. Parameters may
-be forwarded to nested calls; recursion is rejected.
-
-```
-def anyEleRes(t) = has "fire res" t or has "cold res" t or has "lightning res" t
-```
+Precedence, loosest first: `or`, `and`, `not`, atom; binary operators are
+left-associative. A predicate asks about the item's current state only; there are no
+history predicates. `has "X"` means any tier of X; `has "X" t1` the specific tier, which the
+checker tracks through operations (a modifier narrowed to T1 is provably not T2).
 
 ---
 
-## 6. Errors: render the state, don't teach
+## 6. Errors
 
-A rejected operation renders the item's **current inferred state** in plain
-terms, plus what the op required. No rule explanation, no fix suggestion.
+A rejected operation reports the item's state, then the requirement, in the game's
+words:
 
 ```
-  exalt
-  └─ at this point the item is:  Magic · 1 prefix · 1 suffix · ilvl 82
-     Exalted Orb needs a Rare item.
+at this point the item is: Iron Ring · Magic · 2 affixes · 1 prefix · 1 suffix · ilvl 84
+Requires a Rare item — this item is Magic.
 ```
 
-The state line is a rendering of the inferred index at that program point. The
-same **state renderer** powers errors, hover/inspection ("what is my item after
-line N"), and unreachable-loop diagnostics. It is inherently jargon-free
-because the index components are already domain concepts (rarity, counts,
-present mods, ilvl). Building this one renderer well makes most of the error
-experience fall out.
+The state line leads with the base, the rarity, the total affix count (a range when the
+checker is not certain), the split by side, and the item level. The same renderer powers
+hover ("what is my item here"), where the state is shown as an item tooltip with the
+guaranteed modifiers, their tiers or roll spans, and any "one of these" facts.
 
 Error categories:
-- **Resolve-time** (§2): unknown/ambiguous mod or currency name. Shows
-  candidates.
-- **Type/precondition** (this section): op doesn't fit the current item. Shows
-  state + what was needed.
-- **Unreachable loop** (§4.1): `until` exit predicate provably unsatisfiable.
-  Shows why in state terms.
+
+- **Resolution**: unknown or ambiguous base, mod, currency, essence, bench craft, harvest
+  tag or omen name; a mod without a tier in the item block; a tier that cannot roll here.
+- **Precondition**: the operation does not fit the item on some path (§3).
+- **Control**: a loop that can never exit; a branch that can never run; a def with
+  conflicting or unused parameters, recursion, or the wrong kind of call.
 
 ---
 
-## 7. Deferred / future (surface)
-
-See `ROADMAP.md` — the single list of deferred and future work, including the
-surface-level sugar (English negation spellings, "omen next op only", multi-item
-crafts, the power-user annotation tier) and the cost/expected-attempts model.
-
----
-
-## 8. Full example (the delirium jewel craft, surface form)
+## 7. Example
 
 ```
-craft in poe2
+craft in poe1
 
 item {
-    base:     "Cobalt Jewel"
-    ilvl:     82
-    rarity:   rare
-    prefixes: [ "random prefix", "+1 Suffix Modifier" ]
-    suffixes: [ "random suffix", "random suffix" ]
+    base:   "Titan Greaves"
+    ilvl:   84
+    rarity: normal
 }
 
-exalt                                   # only open slot is a suffix → forced suffix (inferred)
+def anyEleRes(t) =
+    has "fire resistance" t
+    or has "cold resistance" t
+    or has "lightning resistance" t
 
-with omen "Sinistral Annulment" {
-    until not has "+1 Suffix Modifier" {
-        annul                           # forced to remove a prefix each time
-    }
+until anyEleRes(t1) {
+    essence "greed" t1
 }
-# item is now 1 prefix / 3 suffix; the +1 carrier is gone.
-# NOTE: the language will REJECT any later attempt to remove the +1 carrier
-#       from a 3-suffix state (wf-preservation) — but here it is already gone,
-#       having been removed while the cap still allowed it. Clean.
 ```
 
-Not one type annotation; reads like a checklist. All indexed-state threading,
-outcome-union narrowing (via `until`), omen direction, and wf-preservation
-happen underneath.
+Deafening Essence of Greed reforges the item each time with maximum Life guaranteed; the
+loop spins until the random fill includes a T1 elemental resistance. On exit the checker
+knows maximum Life is present at its essence tier and one of the three resistances is
+present at T1. More in `examples/`.
