@@ -120,7 +120,8 @@ export type PreconditionFailure =
     | { readonly kind: "noVeiledMod" }
     | { readonly kind: "alreadyVeiled" }
     | { readonly kind: "unveilNotAvailable"; readonly mod: string }
-    | { readonly kind: "unveilNotGuaranteed"; readonly mod: string; readonly options: number };
+    | { readonly kind: "unveilNotGuaranteed"; readonly mod: string; readonly options: number }
+    | { readonly kind: "scourRarityUnknown"; readonly lower: Rarity; readonly upper: Rarity };
 
 export type TransferResult =
     | { readonly ok: true; readonly state: AItem }
@@ -277,6 +278,14 @@ function failing(
             if (rules.protected.size === ALL_GENS.length && !hasFracture(a)) {
                 return { kind: "nothingToRemove" };
             }
+            // The rarity the scour leaves is one value; when the kept side's count
+            // is uncertain it may be either of two, so the scour waits for a
+            // narrowing of the count.
+            const kept = keptBounds(a, rules, registry);
+            const unprovenLock = hasFracture(a) && fracturedTypes(a).size === 0;
+            const lower = rarityFor(kept.prefix[0], kept.suffix[0], unprovenLock);
+            const upper = rarityFor(kept.prefix[1], kept.suffix[1], unprovenLock);
+            if (lower !== upper) return { kind: "scourRarityUnknown", lower, upper };
             return null;
         }
         case "atLeast":
@@ -362,11 +371,7 @@ function hasRemovable(
         }
         return provable - unprovenLock >= 1;
     }
-    const fracIn = (g: Gen): number => {
-        let n = 0;
-        for (const t of fractured) if (genOf(a, registry, t) === g) n++;
-        return n;
-    };
+    const fracIn = (g: Gen): number => fracturedIn(a, registry, g);
     if (allowed.size === 2) {
         return a.counts.total[0] - fractured.size - unprovenLock >= 1; // any non-locked affix
     }
@@ -455,11 +460,7 @@ function strip(a: AItem, rules: Rules, registry: Registry): AItem {
     const genOfT = (t: TypeId): Gen => genOf(a, registry, t);
     const fractured = fracturedTypes(a);
     const isKept = (t: TypeId): boolean => keep.has(genOfT(t)) || fractured.has(t);
-    const fracIn = (g: Gen): number => {
-        let n = 0;
-        for (const t of fractured) if (genOfT(t) === g) n++;
-        return n;
-    };
+    const fracIn = (g: Gen): number => fracturedIn(a, registry, g);
     // An unproven fracture keeps one mod of unknown generation.
     const unprovenLock = hasFracture(a) && fractured.size === 0 ? 1 : 0;
 
@@ -516,26 +517,43 @@ function fracturedCrafted(a: AItem, registry: Registry): number {
     return Math.min(n, a.crafted[1]);
 }
 
+/** The fractured mods on one side. */
+function fracturedIn(a: AItem, registry: Registry, gen: Gen): number {
+    let n = 0;
+    for (const t of fracturedTypes(a)) if (genOf(a, registry, t) === gen) n++;
+    return n;
+}
+
 /**
- * The lowest rarity whose per-side caps hold what a strip keeps: the protected
- * sides' counts and the fractured mod, read per side from the state the method
- * started on (after the strip the suffix range is derived from the total and
- * carries the prefix uncertainty, which would overstate it). None → Normal, at
- * most one each → Magic, otherwise Rare; an unproven lock keeps one mod.
+ * What a strip keeps, per side: the protected sides' counts and the fractured
+ * mod, read from the state the method started on (after the strip the suffix
+ * range is derived from the total and carries the prefix uncertainty).
  */
-function lowestRarity(a0: AItem, rules: Rules, registry: Registry): Rarity {
-    const fractured = fracturedTypes(a0);
-    const fracIn = (g: Gen): number => {
-        let n = 0;
-        for (const t of fractured) if (genOf(a0, registry, t) === g) n++;
-        return n;
+function keptBounds(a0: AItem, rules: Rules, registry: Registry): { prefix: Range; suffix: Range } {
+    const fp = fracturedIn(a0, registry, "prefix");
+    const fs = fracturedIn(a0, registry, "suffix");
+    return {
+        prefix: rules.protected.has("prefix") ? a0.counts.prefix : [fp, fp],
+        suffix: rules.protected.has("suffix") ? suffixRange(a0) : [fs, fs],
     };
-    const p = rules.protected.has("prefix") ? a0.counts.prefix[1] : fracIn("prefix");
-    const s = rules.protected.has("suffix") ? suffixRange(a0)[1] : fracIn("suffix");
-    const unprovenLock = hasFracture(a0) && fractured.size === 0;
+}
+
+/** The lowest rarity whose per-side caps hold `p` prefixes and `s` suffixes:
+ *  none → Normal, at most one each → Magic, otherwise Rare (Orb of Scouring);
+ *  an unproven lock keeps one mod, so never Normal. */
+function rarityFor(p: number, s: number, unprovenLock: boolean): Rarity {
     if (p + s === 0) return unprovenLock ? "magic" : "normal";
     if (p <= 1 && s <= 1) return "magic";
     return "rare";
+}
+
+/** The rarity a scour leaves: the lowest that holds what the strip keeps. The
+ *  rarity is one value, so the kept bounds must agree (`strippable` refuses the
+ *  scour when they do not); this reads the upper bound. */
+function lowestRarity(a0: AItem, rules: Rules, registry: Registry): Rarity {
+    const kept = keptBounds(a0, rules, registry);
+    const unprovenLock = hasFracture(a0) && fracturedTypes(a0).size === 0;
+    return rarityFor(kept.prefix[1], kept.suffix[1], unprovenLock);
 }
 
 // --- fill ---------------------------------------------------------------------

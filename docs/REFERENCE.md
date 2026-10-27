@@ -440,8 +440,9 @@ in it. Notes:
   presence), so a proven fracture keeps its type and an unproven one keeps the survivor
   disjunction. **Scour** drops to the lowest rarity that holds the survivors
   (`lowestRarity`, read per side from what the strip kept): a fractured Rare scours to a
-  1-mod Magic, as the wiki states. The rarity is one value; a kept side whose count is
-  uncertain says Rare where the game may leave Magic (`ROADMAP.md`, deferred).
+  1-mod Magic, as the wiki states. The rarity is one value, so a scour whose kept side's
+  count is uncertain is refused (`scourRarityUnknown`) until an `if` on the count narrows
+  it (`ROADMAP.md` lists the rarity set that would accept it).
 - **Veiled** (`VEILED_CHAOS` / `VEILED_EXALT` / `unveilOps`, the
   [Veiled Chaos Orb](https://www.poewiki.net/wiki/Veiled_Chaos_Orb),
   [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb) and the

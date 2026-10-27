@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { disjunctiveGuarantees, guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { bench, craft, essence, harvest, item, op, veiled } from "../__fixtures__/ast.js";
+import { bench, cmp, craft, essence, harvest, iff, item, op, veiled } from "../__fixtures__/ast.js";
 import {
     ATTACK_PREFIX,
     CANNOT_ROLL_ATTACK_CARRIER,
@@ -229,7 +229,8 @@ describe("cannot roll attack modifiers shields attack mods from removal", () => 
 describe("a scour that keeps a side drops to the rarity the survivors fit", () => {
     it("a kept prefix and an unproven lock leave a Magic item", () => {
         // The game keeps the protected prefix and the fractured mod, one or two
-        // modifiers: Magic on every path, so a chaos is refused afterwards.
+        // modifiers: Magic on every path under the lowest-rarity reading of the
+        // survivors (an open wiki question), so a chaos is refused afterwards.
         const c = craft(
             rareRing(["T1 Life"], [PROTECT_PREFIXES_CARRIER.id, "FireResist1", "ColdResist1"]),
             [op("fracture"), op("scour"), op("chaos")],
@@ -237,6 +238,24 @@ describe("a scour that keeps a side drops to the rarity the survivors fit", () =
         const r = check(c, ctx);
         expect(r.diagnostics[0]?.message).toContain("Requires a Rare item");
         expect(r.trace.find((e) => e.kind === "op" && e.before.rarity === "magic")).toBeDefined();
+    });
+
+    it("a scour whose kept side's count is uncertain is refused", () => {
+        // The exalt may have landed on the protected prefix side or not, so the
+        // scour would leave Normal or Magic; the rarity is one value, so the
+        // craft must narrow the count first.
+        const c = craft(rareRing([], [PROTECT_PREFIXES_CARRIER.id, "FireResist1"]), [
+            op("exalt"),
+            op("scour"),
+            op("augment"),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics[0]?.message).toContain("may be Normal or Magic");
+        const narrowed = craft(rareRing([], [PROTECT_PREFIXES_CARRIER.id, "FireResist1"]), [
+            op("exalt"),
+            iff(cmp("prefixCount", "==", 1), [op("scour"), op("augment")]),
+        ]);
+        expect(check(narrowed, ctx).diagnostics).toEqual([]);
     });
 
     it("a fractured suffix beside a protected side's carrier leaves a Magic item", () => {

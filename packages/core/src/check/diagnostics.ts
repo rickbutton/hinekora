@@ -134,6 +134,8 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return `"${failure.mod}" is not an available unveil option on this item.`;
             case "unveilNotGuaranteed":
                 return `"${failure.mod}" isn't guaranteed — ${failure.options} options can be offered, so block the pool to 3 or fewer first.`;
+            case "scourRarityUnknown":
+                return `After the scour the item may be ${RARITY_LABEL[failure.lower]} or ${RARITY_LABEL[failure.upper]} — narrow the modifier count first.`;
         }
     })();
     return `at this point the item is: ${renderState(state)}\n${need}`;
