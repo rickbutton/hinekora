@@ -17,7 +17,9 @@ try {
 } catch {
     process.exit(0);
 }
-if (!/(^|[;&|\s])git\s+(?:-\S+\s+)*commit(\s|$)/.test(command)) process.exit(0);
+// Any git invocation whose own argument list reaches a `commit` subcommand,
+// including `git -C <dir> commit` and `git -c k=v commit`.
+if (!/(^|[;&|\s])git\b[^|;&]*?\bcommit\b/.test(command)) process.exit(0);
 
 try {
     execSync("pnpm gate", { cwd: process.env.CLAUDE_PROJECT_DIR ?? process.cwd(), stdio: "pipe" });
