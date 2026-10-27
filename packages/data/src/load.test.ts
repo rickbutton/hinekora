@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type Base, isNonzero, type Item, pool, TagId } from "@hinekora/core";
+import { type Base, emptyItem, isNonzero, type ItemFacts, pool, TagId } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "./load.js";
 
 const data = loadDefaultPoe1();
@@ -190,14 +190,7 @@ describe("fuzzy mod resolution against real data", () => {
 
 describe("real pool — a Cobalt Jewel draws its jewel mods", () => {
     const jewelBase = base("Cobalt Jewel");
-    const empty = (b: Base): Item => ({
-        game: "poe1",
-        base: b,
-        ilvl: 82,
-        rarity: "rare",
-        prefixes: [],
-        suffixes: [],
-    });
+    const empty = (b: Base): ItemFacts => emptyItem(b, 82, "rare");
 
     it("computes a non-trivial pool, all in the jewel (misc) domain", () => {
         const candidates = pool(data.mods, empty(jewelBase));
@@ -209,10 +202,15 @@ describe("real pool — a Cobalt Jewel draws its jewel mods", () => {
         const distinct = pool(data.mods, empty(jewelBase))
             .map((c) => c.mod)
             .filter((m, i, all) => all.findIndex((x) => x.type === m.type) === i);
-        const full: Item = {
+        const prefixes = distinct.filter((m) => m.gen === "prefix").slice(0, 3);
+        const suffixes = distinct.filter((m) => m.gen === "suffix").slice(0, 3);
+        const mods = [...prefixes, ...suffixes];
+        const full: ItemFacts = {
             ...empty(jewelBase),
-            prefixes: distinct.filter((m) => m.gen === "prefix").slice(0, 3),
-            suffixes: distinct.filter((m) => m.gen === "suffix").slice(0, 3),
+            prefixCount: prefixes.length,
+            suffixCount: suffixes.length,
+            types: new Set(mods.map((m) => m.type)),
+            families: new Set(mods.flatMap((m) => [...m.families])),
         };
         expect(pool(data.mods, full)).toHaveLength(0);
     });

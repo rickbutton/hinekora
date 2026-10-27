@@ -18,18 +18,6 @@ The next session applies it, records the commit, and moves the entry to Resolved
 
 ## Open
 
-### Q3 · decision · open
-
-**Asked:** 2026-10-26
-**Question:** What the concrete `Item` carries. Only what the pool reads (influence, once
-it exists; recommended), a faithful item with fractured/veiled/influence marks, or the
-present subset with the spec stating that marks are checker-only?
-**Context:** `docs/item-model.md` §10 is the open question in the spec.
-**Assumed meanwhile:** option 3. Fracture and veiled state stay in the checker; the
-concrete item gains fields only when the pool needs them.
-**Where the assumption lives:** `docs/item-model.md` §7 and §10 once rewritten.
-**Answer:**
-
 ### Q4 · decision · open
 
 **Asked:** 2026-10-26
@@ -208,3 +196,18 @@ makes `until has X` look reachable when it is not.
 influence currencies (ROADMAP Step 4).
 **Where the assumption lives:** `packages/core/src/pool/pool.ts`, `pool.test.ts`.
 **Answer:** option 1 (2026-10-27). Applied in `1a3c83e` and `138cb13`.
+
+### Q3 · decision · resolved
+
+**Asked:** 2026-10-26
+**Question:** What the concrete `Item` carries. Only what the pool reads (influence, once
+it exists; recommended), a faithful item with fractured/veiled/influence marks, or the
+present subset with the spec stating that marks are checker-only?
+**Context:** `docs/item-model.md` §10 is the open question in the spec.
+**Assumed meanwhile:** option 3. Fracture and veiled state stay in the checker; the
+concrete item gains fields only when the pool needs them.
+**Where the assumption lived:** `docs/item-model.md` §7 and §10.
+**Answer:** none of the three (2026-10-27). A concrete item is an abstract state with no
+uncertainty, so the checker's state is the only item model; the pool reads a projection
+of it (`ItemFacts`). The concrete currency library and validator were deleted in
+`1f62c9d` and the pool's parameter became the projection in the commit after it.

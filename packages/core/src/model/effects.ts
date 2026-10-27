@@ -7,8 +7,6 @@
  * curated in `metamods.ts` and attached to the catalog when the registry is built.
  */
 import type { Gen } from "./ids.js";
-import type { Item } from "./item.js";
-import { affixes } from "./item.js";
 import type { Mod } from "./mod.js";
 
 /** What an effect does to the rules: the three kinds the five metamods need. */
@@ -20,11 +18,6 @@ export type Effect =
 /** The effects a single mod carries (usually none). */
 export function effectsOf(m: Mod): readonly Effect[] {
     return m.effects ?? [];
-}
-
-/** All effects active right now: the union over present carriers. */
-export function effects(it: Item): readonly Effect[] {
-    return affixes(it).flatMap(effectsOf);
 }
 
 // --- Folds the pool and the checker consume --------------------------------
@@ -39,8 +32,8 @@ function ofKind<K extends Effect["kind"]>(
 }
 
 /** Combined pool-restrict predicate: active restricts AND together. */
-export function poolRestrictPredicate(it: Item): (m: Mod) => boolean {
-    const restricts = ofKind(effects(it), "poolRestrict");
+export function poolRestrictPredicate(es: readonly Effect[]): (m: Mod) => boolean {
+    const restricts = ofKind(es, "poolRestrict");
     return (m: Mod) => restricts.every((e) => e.allows(m));
 }
 

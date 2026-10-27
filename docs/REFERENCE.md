@@ -110,7 +110,8 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
 
 ### 3a. `@hinekora/core`
 
-- **model/**: `Item`, `Mod` (one row per _tier_, i.e. one row of the game's `Mods` table;
+- **model/**: `ItemFacts` (what a roll depends on; the checker projects its state onto
+  it, there is no concrete item type), `Mod` (one row per _tier_, i.e. one row of the game's `Mods` table;
   `type` is the ModType bucket, `families` the
   [mod groups](https://www.poewiki.net/wiki/Modifier#Group/family), `implicitTags` the
   [mod tags](https://www.poewiki.net/wiki/Modifier#Mod_tag) that tag-directed crafting selects
@@ -119,12 +120,11 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
   (`model/capacity.ts`). Branded id types in `model/ids.ts`. The item-model's
   well-formedness rules (§8) are enforced by the checker's item block and transfer
   functions; there is no concrete validator.
-- **pool/**: `pool(catalog, item[, maybeTags])`, which mods can roll on an item: the wiki's
+- **pool/**: `pool(catalog, facts[, maybeTags])`, which mods can roll on an item: the wiki's
   [spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag) rule (the item's
-  tags, `itemTags`: the base's plus the `adds_tags` of present mods, a rule the data
-  carries rather than the wiki (`QUESTIONS.md` Q2), vs the mod's spawn table,
-  first match wins, zero disables) plus the
-  [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) gate.
+  tags, the base's plus the `adds_tags` of present mods, a rule the data carries rather
+  than the wiki (`QUESTIONS.md` Q2), vs the mod's spawn table, first match wins, zero
+  disables) plus the [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) gate.
 - **render/**: the labels diagnostics and hover show (`modLabel`, `baseLabel`).
 - **resolve/**: `Registry` (the resolved data surface). Key methods:
     - `resolveBase / resolveMod / resolveModType(name, ctx?) / resolveCurrency /
@@ -375,8 +375,8 @@ metamods). Notes:
   `removeOne`/`hasRemovable`/`annul`/`harvestAugment` all share it. A guarantee whose
   generation is not in that set survives (protected, or the omen-spared side); an empty set
   means nothing is removable.
-- The add-pool is over-approximated by running the real `pool` on a synthetic item
-  carrying only the guaranteed mods at rare caps, with the tags a possibly present mod
+- The add-pool is over-approximated by running the real `pool` on the facts of the
+  guaranteed mods alone at rare caps (`guaranteedFacts`), with the tags a possibly present mod
   would add passed as "maybe" tags: a positive spawn entry on one admits the row, a zero
   entry on one is skipped (`addsTagsOfType`). The maybe set is closed under the pool's own
   rows, since a reforge's later rolls see the tags of its earlier ones (`QUESTIONS.md`
@@ -407,8 +407,8 @@ metamods). Notes:
   table in [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions);
   the wiring follows it: **protect** shrinks the allowed-gens removal set (annul/harvest
   augment respect it); **scour** keeps the protected side and stays Rare (`scourKeeping`);
-  **cannot-roll** is a `poolRestrict` that folds through `pool` for free (the synthetic item
-  carries the guaranteed carrier); **multimod** raises the crafted cap; **essence** is
+  **cannot-roll** is a `poolRestrict` that folds through `pool` for free (the guaranteed
+  carrier's effect is among the facts); **multimod** raises the crafted cap; **essence** is
   blocked (`metamodBlocks`) by any protect or cannot-roll metamod ("usage prevented" in the
   table); **alteration**, **chaos** and **harvest reforge** keep the protected side and reroll the rest
   (`keepProtectedReroll` — protected guarantees + tier pins + a count floor survive, open

@@ -7,14 +7,14 @@
  */
 import { craftedCapOf, type Effect } from "../model/effects.js";
 import type { ClassId, Gen, GroupId, ModId, Rarity, TagId, TypeId } from "../model/ids.js";
-import type { Item } from "../model/item.js";
+import type { ItemFacts } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
 import type { EssenceSpec } from "../model/sources.js";
 import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
 import { pool } from "../pool/pool.js";
 import { veiledPool } from "../pool/veiled.js";
 import type { Registry } from "../resolve/registry.js";
-import { rollableGen, rollableTiers } from "../resolve/tiers.js";
+import { rollableGen } from "../resolve/tiers.js";
 import {
     type AItem,
     type Range,
@@ -952,13 +952,13 @@ function survivingGuarantees(
 // --- abstract pool (which types an add could introduce) -------------------
 
 /**
- * Over-approximate the mods an add could introduce: run the real `pool` on a
- * synthetic item carrying only the guaranteed mods at rare caps (fewer present
- * mods ⇒ a superset of every arm's real pool). Returns mods, not just types,
- * so the tier overlay can record which tiers.
+ * Over-approximate the mods an add could introduce: run the real `pool` on the
+ * facts of the guaranteed mods alone, at rare caps (fewer present mods ⇒ a
+ * superset of every arm's real pool). Returns mods, not just types, so the
+ * tier overlay can record which tiers.
  */
 function addableMods(a: AItem, forcedGen: Gen | undefined, registry: Registry): Mod[] {
-    const synthetic = syntheticItem(a, registry);
+    const facts = guaranteedFacts(a, registry);
     // Tags a possibly present mod would add may enable a row (the staff jewel mods
     // on a Strength jewel), so the pool admits what they would: the tags of the
     // state's possible mods, then, to a fixpoint, the tags of every row the pool
@@ -973,12 +973,12 @@ function addableMods(a: AItem, forcedGen: Gen | undefined, registry: Registry): 
         if (guaranteed.has(t) || excluded.has(t)) continue;
         for (const tag of registry.addsTagsOfType(t)) maybeTags.add(tag);
     }
-    let candidates = pool(registry.catalog, synthetic, maybeTags);
+    let candidates = pool(registry.catalog, facts, maybeTags);
     for (;;) {
         const before = maybeTags.size;
         for (const c of candidates) for (const tag of c.mod.addsTags) maybeTags.add(tag);
         if (maybeTags.size === before) break;
-        candidates = pool(registry.catalog, synthetic, maybeTags);
+        candidates = pool(registry.catalog, facts, maybeTags);
     }
     const out: Mod[] = [];
     for (const c of candidates) {
@@ -987,19 +987,30 @@ function addableMods(a: AItem, forcedGen: Gen | undefined, registry: Registry): 
     return out;
 }
 
-function syntheticItem(a: AItem, registry: Registry): Item {
-    const prefixes: Mod[] = [];
-    const suffixes: Mod[] = [];
-    for (const t of guaranteedTypes(a)) {
-        // A row that rolls on this base, so the side is the base's (a dual-side
-        // type); a type that rolls nowhere here (a bench row) keeps its own row.
-        const rep =
-            rollableTiers(registry.catalog, a.game, a.base, a.ilvl, t)[0] ??
-            representative(registry, t);
-        if (!rep) continue;
-        (rep.gen === "prefix" ? prefixes : suffixes).push(rep);
+/** The state's guaranteed mods as the facts the pool reads, at rare caps. */
+function guaranteedFacts(a: AItem, registry: Registry): ItemFacts {
+    const types = guaranteedTypes(a);
+    const families = new Set<GroupId>();
+    const tags = new Set(a.base.tags);
+    let prefixCount = 0;
+    let suffixCount = 0;
+    for (const t of types) {
+        if (genOf(a, registry, t) === "prefix") prefixCount++;
+        else suffixCount++;
+        for (const f of registry.familiesOfType(t)) families.add(f);
+        for (const tag of registry.addsTagsOfType(t)) tags.add(tag);
     }
-    return { game: a.game, base: a.base, ilvl: a.ilvl, rarity: "rare", prefixes, suffixes };
+    return {
+        base: a.base,
+        ilvl: a.ilvl,
+        rarity: "rare",
+        prefixCount,
+        suffixCount,
+        types,
+        families,
+        tags,
+        effects: activeEffects(a, registry),
+    };
 }
 
 function representative(registry: Registry, type: TypeId): Mod | undefined {

@@ -1,6 +1,6 @@
 /**
- * `pool(catalog, it)`, the candidate pool (ARCHITECTURE.md §3): given a known
- * item, which mods can be added, at what weight. It returns candidate
+ * `pool(catalog, it)`, the candidate pool (ARCHITECTURE.md §3): given the facts
+ * of an item, which mods can be added, at what weight. It returns candidate
  * descriptors, (mod, weight) pairs, a cheap bounded scan, not item states;
  * the outcome union stays a symbolic delta over this list (the
  * intensional-union rule, CLAUDE.md). The catalog is passed in because the
@@ -9,8 +9,7 @@
 import { maxTotal, sideCap } from "../model/capacity.js";
 import { poolRestrictPredicate } from "../model/effects.js";
 import type { ClassId, Gen, TagId } from "../model/ids.js";
-import type { Item } from "../model/item.js";
-import { affixes, presentFamilies, presentTypes } from "../model/item.js";
+import type { ItemFacts } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
 import { isNonzero, type Weight } from "../model/weight.js";
 
@@ -43,22 +42,13 @@ export function lookupWeight(
     return null;
 }
 
-/** The tags a roll matches against: the base's own plus those every present
- *  modifier adds to the item (Modifier § Tags), which is how a weapon-specific
- *  jewel modifier zeroes every other one's weight once it is on the item. */
-export function itemTags(it: Item): ReadonlySet<TagId> {
-    const tags = new Set(it.base.tags);
-    for (const m of affixes(it)) for (const t of m.addsTags) tags.add(t);
-    return tags;
-}
-
 /** Is there room for another affix of generation `gen`? Its side must be under
  *  its cap and the item under the combined cap. */
-export function slotOpen(it: Item, gen: Gen): boolean {
-    const count = gen === "prefix" ? it.prefixes.length : it.suffixes.length;
+export function slotOpen(it: ItemFacts, gen: Gen): boolean {
+    const count = gen === "prefix" ? it.prefixCount : it.suffixCount;
     return (
         count < sideCap(gen, it.rarity, it.base) &&
-        affixes(it).length < maxTotal(it.rarity, it.base)
+        it.prefixCount + it.suffixCount < maxTotal(it.rarity, it.base)
     );
 }
 
@@ -72,14 +62,10 @@ function classPermitted(m: Mod, itemClass: ClassId): boolean {
  */
 export function pool(
     catalog: ModCatalog,
-    it: Item,
+    it: ItemFacts,
     maybeTags?: ReadonlySet<TagId>,
 ): readonly PoolCandidate[] {
-    const restrict = poolRestrictPredicate(it); // pool-restrict effects shrink the set
-
-    const presentT = presentTypes(it);
-    const presentF = presentFamilies(it);
-    const tags = itemTags(it);
+    const restrict = poolRestrictPredicate(it.effects); // pool-restrict effects shrink the set
 
     const candidates: PoolCandidate[] = [];
     for (const m of catalog) {
@@ -90,15 +76,15 @@ export function pool(
         // item-class restriction
         if (!classPermitted(m, it.base.itemClass)) continue;
         // (1) no duplicate ModType
-        if (presentT.has(m.type)) continue;
+        if (it.types.has(m.type)) continue;
         // (2) family mutual-exclusion
-        if (!disjoint(m.families, presentF)) continue;
+        if (!disjoint(m.families, it.families)) continue;
         // (3) slot cardinality (effect-adjusted caps)
         if (!slotOpen(it, m.gen)) continue;
         // pool-restrict effects
         if (!restrict(m)) continue;
         // eligibility: a matching, nonzero spawn weight
-        const weight = lookupWeight(m, tags, maybeTags);
+        const weight = lookupWeight(m, it.tags, maybeTags);
         if (weight === null || !isNonzero(weight)) continue;
 
         candidates.push({ mod: m, weight });

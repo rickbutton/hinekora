@@ -17,11 +17,10 @@ import {
     ClassId,
     Domain,
     type Effect,
-    type Game,
     type Gen,
     type GroupId,
     GroupId as mkGroup,
-    type Item,
+    type ItemFacts,
     type Mod,
     ModId,
     type ModSource,
@@ -30,6 +29,7 @@ import {
     TagId,
     TypeId,
 } from "../model/index.js";
+import { effectsOf } from "../model/effects.js";
 import { approx, known, unknown } from "../model/weight.js";
 
 // --- Domains --------------------------------------------------------------
@@ -618,21 +618,44 @@ export const CATALOG: readonly Mod[] = [
 
 interface ItemSpec {
     readonly base?: Base; // defaults to RING_BASE
-    readonly game?: Game; // defaults to poe1
     readonly ilvl?: number; // defaults to 100 (ungated)
     readonly rarity: Rarity;
     readonly prefixes?: readonly Mod[];
     readonly suffixes?: readonly Mod[];
 }
 
-export function mkItem(spec: ItemSpec): Item {
+/** The facts of an item carrying exactly these mods. */
+export function mkItem(spec: ItemSpec): ItemFacts {
+    const base = spec.base ?? RING_BASE;
+    const prefixes = spec.prefixes ?? [];
+    const suffixes = spec.suffixes ?? [];
+    return itemFacts(base, spec.ilvl ?? 100, spec.rarity, prefixes, suffixes);
+}
+
+export function itemFacts(
+    base: Base,
+    ilvl: number,
+    rarity: Rarity,
+    prefixes: readonly Mod[],
+    suffixes: readonly Mod[],
+): ItemFacts {
+    const mods = [...prefixes, ...suffixes];
+    const tags = new Set(base.tags);
+    const families = new Set<GroupId>();
+    for (const m of mods) {
+        for (const t of m.addsTags) tags.add(t);
+        for (const f of m.families) families.add(f);
+    }
     return {
-        game: spec.game ?? "poe1",
-        base: spec.base ?? RING_BASE,
-        ilvl: spec.ilvl ?? 100,
-        rarity: spec.rarity,
-        prefixes: spec.prefixes ?? [],
-        suffixes: spec.suffixes ?? [],
+        base,
+        ilvl,
+        rarity,
+        prefixCount: prefixes.length,
+        suffixCount: suffixes.length,
+        types: new Set(mods.map((m) => m.type)),
+        families,
+        tags,
+        effects: mods.flatMap(effectsOf),
     };
 }
 

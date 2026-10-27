@@ -240,9 +240,11 @@ Checked against the ingested PoE1 data (12,643 affix rows, 4,561 bases):
 
 ---
 
-## 10. Open question
+## 10. The item in the implementation
 
-Fractured and veiled marks and influence are declared on the item here because the game
-treats them as item state. The implementation keeps fracture and veiled state only in the
-checker, reads the added tags of present modifiers in the pool, and has no influence
-notion yet. Whether the concrete item model should carry the marks is `QUESTIONS.md` Q3.
+The checker's abstract state is the implementation's only item: a declared item is a
+state with no uncertainty beyond its `"random"` affixes, and the marks of §7 live there
+(fracture and veiled state today; influence with its currencies, `ROADMAP.md` Step 4).
+The pool reads a projection of it, the facts of §7 a roll depends on: base, level, rarity,
+counts, present types and families, tags, active effects (`ItemFacts` in
+`packages/core/src/model/item.ts`). There is no concrete item type (`QUESTIONS.md` Q3).

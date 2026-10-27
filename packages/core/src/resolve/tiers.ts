@@ -6,7 +6,7 @@
  */
 import type { Base } from "../model/base.js";
 import type { Game, Gen, TypeId } from "../model/ids.js";
-import type { Item } from "../model/item.js";
+import { emptyItem } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
 import { type ModCatalog, pool } from "../pool/pool.js";
 
@@ -32,8 +32,7 @@ function emptyPool(
     const key = `${game}:${base.id}:${ilvl}`;
     let cached = byKey.get(key);
     if (cached === undefined) {
-        const empty: Item = { game, base, ilvl, rarity: "rare", prefixes: [], suffixes: [] };
-        cached = pool(catalog, empty);
+        cached = pool(catalog, emptyItem(base, ilvl, "rare"));
         byKey.set(key, cached);
     }
     return cached;
