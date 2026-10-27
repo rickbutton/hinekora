@@ -15,10 +15,10 @@ measured against that ledger.
 
 ## Step 1. The item model agrees with the code
 
-The audit of the code against `item-model.md` left four decisions (`QUESTIONS.md` Q1–Q4,
-applied under their recommendations and awaiting the user's ruling) and a list of bugs,
-all fixed; the §8 rules the checker can express are enforced by its item block and transfer
-functions and the §9 facts are data tests. What remains is a re-audit of the code against
+The audit of the code against `item-model.md` is applied: its decisions are resolved in
+`QUESTIONS.md`, its bugs fixed, the §8 rules the checker can express are enforced by its
+item block and transfer functions and the §9 facts are data tests. What remains is a
+re-audit of the code against
 `item-model.md` §§4–9, rule by rule, once Step 2 has settled the shape of the transfer
 layer. The expected remaining divergence is influence (Step 4) and nothing else.
 

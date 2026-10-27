@@ -200,6 +200,8 @@ six values. Restoring them is a revert of one commit.
 **Answer:** Rick ruled option 1 (2026-10-27), and wider: every PoE2 consideration goes (the
 omen scope, the game header's second value and the `Game` type, the weight provenance,
 the ignored item-block fields). Hinekora is PoE1 only, with no provision for PoE2.
+Applied in `7fdc664` (omen scope), `bd15774` (the `Game` type), `174ebf0` (weight
+provenance), `1eeee60` (item-block fields).
 
 ### Q5 · decision · resolved
 

@@ -23,7 +23,7 @@ every currency into those bins. In the checker each method has so far been its o
 function that re-derives the count arithmetic, the pool and the presence bookkeeping, and
 that duplication is where the rules drift apart. The alternative is a small set of
 **primitive effects** with fixed abstract semantics and a **library** that states, per
-method, its precondition and the primitives it composes. The checker interprets the
+method, the sequence of primitives it composes, its preconditions among them. The checker interprets the
 library; the surface language is sugar over library entries; adding a method is a table
 row plus a test.
 
