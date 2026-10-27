@@ -40,9 +40,8 @@ export interface AItem {
     /** Tier overlay (`TierDomain`): for a present type, which specific mods
      *  (tiers) it could be. Absent from the map ⇒ any tier. */
     readonly tiers: Tiers;
-    /** How many bench-CRAFTED mods are present (a range). An item holds at most
-     *  one, the "can have multiple crafted mods" metacraft is not modelled, so
-     *  `bench` requires this to be provably 0. Reforges/scour clear it to 0. */
+    /** How many bench-CRAFTED mods are present (a range). `bench` requires it
+     *  provably below the crafted cap (one, or three under an active multimod). */
     readonly crafted: Range;
 }
 

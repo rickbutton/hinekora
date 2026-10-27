@@ -3,7 +3,7 @@
  *
  * Downloads (or reads local) the RePoE `mods` / `base_items` exports, PROJECTS
  * them to just the fields the core model needs — dropping stat rolls, granted
- * effects, text, gold values, etc., which shrinks the mod data ~5x — filters to
+ * effects, gold values, etc., which shrinks the mod data ~5x — filters to
  * affix mods + released named bases, and writes minified, still-RePoE-shaped
  * JSON plus a provenance `manifest.json` (source commit, publish date, sha256s).
  *

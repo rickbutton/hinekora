@@ -39,7 +39,7 @@ const REQUIRES: Record<CurrencyKind, string> = {
     chaos: "a Rare item",
     exalt: "a Rare item with an open affix slot",
     annul: "a Magic or Rare item with a removable affix",
-    scour: "an item with at least one modifier",
+    scour: "a Magic or Rare item",
     fracture: "a Rare item with at least four modifiers",
 };
 

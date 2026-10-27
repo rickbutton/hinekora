@@ -34,7 +34,7 @@ export interface Def {
 }
 
 /**
- * A local operation function: `def spam(m) { until has m { scour; alch } }`.
+ * A local operation function: `def spam(m) { until has m { scour; alchemy } }`.
  * Its body is a statement block that mutates the item; a call inlines the body
  * with arguments substituted for parameters. Same `def` keyword as a predicate
  * `Def`, distinguished at parse time by a `{ … }` body instead of `= <pred>`.

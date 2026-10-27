@@ -3,8 +3,8 @@
  * modifications to the operation rules, active while the carrier is present.
  * Effects are DERIVED, never stored: `effects(it)` recomputes from the present
  * mods, so removing a carrier drops its effects for free and desync is
- * impossible. No current data carries an effect, so every fold reduces to base
- * behavior — but through the real code path `pool` and `wf` consume.
+ * impossible. The ingested data carries no effects; the metamod effects are
+ * curated in `metamods.ts` and attached to the catalog when the registry is built.
  */
 import type { Gen, ModId } from "./ids.js";
 import type { Item } from "./item.js";

@@ -77,6 +77,8 @@ editors/
 examples/
   example.craft              - the demo craft (open in the Extension Dev Host).
   essence-life-boots.craft   - essence + def + or example.
+  bench-finish-resists.craft - finishing a Rare at the bench (open slot + group rule).
+  phys-dot-weapon.craft      - a fractured Rare, chaos/annul/bench with predicate defs.
 docs/
   REFERENCE.md, ARCHITECTURE.md, ROADMAP.md, item-model.md, QUESTIONS.md + the two design docs
   (CLAUDE.md stays at the repo root).
@@ -119,7 +121,8 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
   [spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag) rule (base tags
   vs the mod's spawn table, first match wins, zero disables) plus the
   [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) gate.
-- **outcome/**: the symbolic outcome-union machinery. Intensional, never enumerated.
+- **outcome/**: the symbolic outcome-union machinery. Intensional: chaining consumes a
+  description; `arms()` expands one only on the on-demand render/probability path.
 - **currency/**: the concrete base currency library (transmute/regal/exalt/annul) that
   produces symbolic `Outcome`s from a concrete item. Shares op names with the checker's
   transfer functions; `check/index.ts` re-exports only the transfer _types_ to avoid an
@@ -128,6 +131,8 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
 - **resolve/**: `Registry` (the resolved data surface). Key methods:
     - `resolveBase / resolveMod / resolveModType(name, ctx?) / resolveCurrency /
 resolveOmen / resolveEssence / resolveBench / resolveHarvestTag`
+    - `effectsOfType(type)`: the effects a carrier type contributes (the metamod seam the
+      checker folds over guaranteed types; empty for everything else).
     - `resolveHarvestTag(name)` maps a surface category ("fire", "caster") to its
       canonical `Mod.implicitTags` tag via the curated `HARVEST_TAGS` table.
     - `resolveModType` is **fuzzy and base-aware**: text → ModType, narrowed to types that
@@ -139,7 +144,7 @@ resolveOmen / resolveEssence / resolveBench / resolveHarvestTag`
     - Precomputed completion lists: `currencies`/`currencyNames`, `baseNames`,
       `statSuggestions` (each carries its `type` so completion can filter by
       rollability), `essenceNames`, `benchNames`, `harvestTags`.
-    - `STANDARD_CURRENCIES`: the 9-currency catalog. `name`/`kind` drive the language;
+    - `STANDARD_CURRENCIES`: the 10-currency catalog. `name`/`kind` drive the language;
       `displayName`/`description` are curated display metadata (RePoE ships no currency
       descriptions) used only by hover/completion.
     - `tiers.ts`: `rollableTiers(catalog, game, base, ilvl, type)` (pool ∩ type, sorted
@@ -153,8 +158,9 @@ resolveOmen / resolveEssence / resolveBench / resolveHarvestTag`
 
 Lexer (`tokenize`) → `Token[]` (trivia-free; no keyword token kind, every word is an
 `ident` and the parser decides by text). `parse(source)` returns `{ ok, craft }` or
-`{ ok: false, error }` with a message + span. Tokens carry byte-offset spans used by the
-LSP. The lexer emits `eq` for `==` and `assign` for a lone `=` (the def binding).
+`{ ok: false, error }` with a message + span. Tokens carry spans whose `offset` is a
+UTF-16 code-unit index into the source (the LSP's own offset convention). The lexer
+emits `eq` for `==` and `assign` for a lone `=` (the def binding).
 
 ### 3c. `@hinekora/data`
 
@@ -196,10 +202,12 @@ Transport-free service functions + a stdio server:
     - `essence`/`bench "<name>" [t1]` and a def's declaration/calls/params each hover as
       one shared signature (`namedAt` / `defAt`).
 - `completion.ts`: `getCompletions`. A backward text-scan (`contextAt`) picks the
-  context: statement (currencies + control keywords), predicate (after
+  context: statement (currencies + control keywords + the sourced keywords `essence`,
+  `bench`, `harvest`, `veiled`, `unveil`), predicate (after
   `if`/`until`/`not`/`and`/`or`; includes local def names scraped by regex), base,
-  essence, bench, or mod. Mod candidates are **filtered to what's possible at the
-  cursor**: rollable on the item's base+ilvl (`rollableTypes`, base read from the text)
+  essence, bench, harvest verb (after `harvest`), harvest tag (after `reforge`/`augment`),
+  veiled verb (after `veiled`), or mod. Mod candidates are **filtered to what's possible
+  at the cursor**: rollable on the item's base+ilvl (`rollableTypes`, base read from the text)
   AND not proven-absent by the checker's state at that point (`excludedAt` parses the
   craft, retrying with the open string closed). Both filters degrade gracefully to "all
   mods" when the base can't be read / nothing parses.
@@ -246,9 +254,9 @@ one domain. The sub-domains:
   `[min,max]`; **suffix is DERIVED**: `CountDomain.suffix = [total.min − prefix.max,
 total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = total`
   correlation two independent side-ranges would lose. Owns the affix caps
-  (`sideCap`/`hardTotalCap`/`maxTotal`/`caps`, re-exported through `astate`), the coupling
-  `normalize`, count-comparison `refine`, and `learnPresent` (the "≥1 affix, ≥1 in gen"
-  bump shared by `has` and essence/bench). Independently unit-tested in `counts.test.ts`.
+  (`sideCap`/`hardTotalCap`/`maxTotal`/`caps`; the first three re-exported through
+  `astate`), the coupling `normalize`, count-comparison `refine`, and `learnPresent` (the
+  "≥1 affix, ≥1 in gen" bump shared by `has` and essence/bench). Independently unit-tested in `counts.test.ts`.
 - **`presence` is a BDD** (`bdd.ts`, a small hash-consed ROBDD over type-presence
   variables): the relational mod knowledge. "Guaranteed X" = presence entails X;
   "excluded X" = entails ¬X; a disjunction ("one of these three is present") survives a
@@ -262,8 +270,11 @@ total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = t
   domain.
 - `crafted`: a RANGE, how many [bench-crafted](https://www.poewiki.net/wiki/Crafting_Bench)
   mods are present. `bench` requires it provably below the crafted cap (one, or three under
-  the multimod [metamod](https://www.poewiki.net/wiki/Metamod)); reforges/scour clear it to
-  0, an unforced `annul` drops its lower bound (the crafted mod may have been removed).
+  the multimod [metamod](https://www.poewiki.net/wiki/Metamod)); a pure reforge or a plain
+  scour clears it to 0, while a reforge or scour that keeps a protected side
+  (`keepProtectedReroll`, `scourKeeping`) keeps `[0, max − stripped carriers]`, since a
+  crafted mod on the kept side may survive; an unforced `annul` drops its lower bound (the
+  crafted mod may have been removed).
 - **Tier presence atoms.** A tier-qualified predicate (`has X t1`) also asserts a SECOND
   BDD variable (`type` + NUL + `modId`), so a disjunction of tier-qualified clauses
   (`fire@t1 ∨ cold@t1 ∨ light@t1`) survives a `join` where the flat overlay would drop
@@ -325,8 +336,8 @@ body)`, the states that re-enter the loop head after one iteration (fall-off-end
   via `checkSeq` in the caller's context, so state threading, nested loops/ifs, and
   `restart` back-edges compose with no special handling. Param-sort inference walks the
   statements (`noteStmtUses`) and substitution recurses through them (`substituteStmt`);
-  a param can fill a `has`/`bench`/`essence` mod-name or tier slot. Procs share the def
-  name space and `expanding` guard; the inlined body is a trace black box (`suppressTrace`).
+  a param can fill a `has`/`bench`/`essence` mod-name or tier slot, a `harvest` tag, or an
+  `unveil` mod. Procs share the def name space and `expanding` guard; the inlined body is a trace black box (`suppressTrace`).
 - **Trace** (`TraceEntry[]`): `{ span, kind, before, after? }` per statement (and the
   item block), recorded only on the real (non-quiet) pass. `traceAt(trace, offset)`
   returns the innermost entry covering an offset; this powers hover.
@@ -337,10 +348,11 @@ body)`, the states that re-enter the loop head after one iteration (fall-off-end
 
 ### `transfer.ts`: abstract currency ops
 
-Nine orbs, each `AItem → TransferResult` (`{ok, state}` or `{ok:false, failure}`):
-transmute, augment, alteration, regal, alchemy, chaos, exalt, annul, scour (the wiki's
-[Crafting](https://www.poewiki.net/wiki/Crafting) page groups them the same way: rarity
-upgrades, reforges, augment/remove). They reduce to two primitives: an ADDITIVE add
+Ten orbs, each `AItem → TransferResult` (`{ok, state}` or `{ok:false, failure}`):
+transmute, augment, alteration, regal, alchemy, chaos, exalt, annul, scour, fracture (the
+wiki's [Crafting](https://www.poewiki.net/wiki/Crafting) page groups them the same way:
+rarity upgrades, reforges, augment/remove). All but `fracture` (a lock; see Fractures
+below) reduce to two primitives: an ADDITIVE add
 (`addOne`, for transmute/augment/regal/exalt) and a REFORGE (`reroll`, for
 alteration/alchemy/chaos: fresh count range, nothing guaranteed, pool becomes `possible`);
 plus `removeOne` (annul) and `scour` (strip to Normal, or keep a protected side — see
@@ -348,7 +360,9 @@ metamods). Notes:
 
 - `annul` works on **Magic OR Rare**: the precondition is "has a removable mod", not a
   rarity gate ([Orb of Annulment § Mechanics](https://www.poewiki.net/wiki/Orb_of_Annulment#Mechanics):
-  it never downgrades rarity). `scour` on a no-mod item fails as wasted currency.
+  it never downgrades rarity). `scour` requires a Magic or Rare item: rarity, not mod
+  count, is the gate, so a Magic base with zero affixes still drops to Normal and only a
+  Normal item fails as wasted currency.
 - A reforge's count range is the Chaos Orb's 4–6 affixes
   ([Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Chaos_Orb#Mechanics)); the 8:3:1 odds
   are not modelled, only the range.
@@ -366,9 +380,10 @@ metamods). Notes:
   tier ≥ 5, never Magic, class must be in `grants`; fill capped at
   `min(ilvl, maxRandomModLevel)`. `bench()` = additive add + `withGuaranteed`
   ([Crafting Bench](https://www.poewiki.net/wiki/Crafting_Bench); preconditions: open slot in
-  the mod's generation; **the crafted-mod limit** `craftedCapOfState(a)` (one, or three under
-  an active multimod), where `AItem.crafted` is the count of bench-crafted mods present, a
-  range that `bench` requires provably below the cap and reforges/scour clear to 0; and
+  the mod's generation; **the crafted-mod limit** `craftedCapOfState(a, registry)` (one, or
+  three under an active multimod), where `AItem.crafted` is the count of bench-crafted mods
+  present, a range that `bench` requires provably below the cap (what each op does to it is
+  under `crafted` in §4); and
   **group exclusivity** — the [mod group](https://www.poewiki.net/wiki/Modifier#Group/family)
   rule — where the mod's family must not be possibly-present, via `familiesOfType`). Not
   modelled: a conflict hidden behind an anonymous "random" affix.
@@ -449,6 +464,9 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/check/check.ts`                                    | driver, `Flow`, loops/branches, defs, `TraceEntry`, `traceAt`                              |
 | `packages/core/src/check/transfer.ts`                                 | the abstract currency ops (`addOne` / `reroll` / `withGuaranteed` primitives)              |
 | `packages/core/src/check/diagnostics.ts`                              | `renderState`, message builders                                                            |
+| `packages/core/src/model/metamods.ts`                                 | the curated metamod id → effect table, attached to the catalog at registry build           |
+| `packages/core/src/model/veiled.ts`                                   | veiled placeholder types and the unveiled-result predicate                                 |
+| `packages/core/src/pool/veiled.ts`                                    | `veiledPool`: which unveiled mods an `unveil` can reveal on an item                        |
 | `packages/core/src/resolve/registry.ts`                               | `Registry`, `buildRegistry`, resolution, completion lists                                  |
 | `packages/core/src/resolve/fuzzy.ts` / `tiers.ts`                     | fuzzy mod matching / rollable tiers (+ the memoized empty pool)                            |
 | `packages/core/src/pool/pool.ts`                                      | eligibility + weights                                                                      |
@@ -456,7 +474,15 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/data/src/{load,adapter}.ts` + `scripts/ingest-poe1.mjs`     | data load + ingest                                                                         |
 | `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts` | LSP features                                                                               |
 | `packages/core/src/check/check.test.ts`                               | checker tests (currency set, count-coupling regression, loops, omens, defs)                |
+| `packages/core/src/check/check-tiers.test.ts`                         | tier-pinned predicates and the tier overlay through the checker                            |
+| `packages/core/src/check/counts.test.ts`                              | `CountDomain` in isolation (caps, coupling, refine)                                        |
+| `packages/core/src/check/bdd.test.ts`                                 | the ROBDD manager (canonicity, operators)                                                  |
+| `packages/core/src/check/fracture.test.ts`                            | fractured items and the Fracturing Orb through the checker                                 |
+| `packages/core/src/check/harvest.test.ts`                             | harvest reforge / augment through the checker                                              |
+| `packages/core/src/check/metacraft.test.ts`                           | metamods: protection, cannot-roll, multimod, essence blocking                              |
+| `packages/core/src/check/veiled.test.ts`                              | veiled orbs and `unveil` through the checker                                               |
 | `packages/lsp/src/features.test.ts`                                   | hover / completion / semantic-token tests                                                  |
+| `packages/lsp/src/service.test.ts`                                    | `getDiagnostics` over the real data pipeline                                               |
 
 ---
 

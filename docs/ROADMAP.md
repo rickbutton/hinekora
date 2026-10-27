@@ -20,8 +20,8 @@
   already ingests (`Mod.implicitTags`); the fossil-only modifiers (domain 16) are mostly
   disabled since 3.10 and can be skipped at first.
 - **Operation-function follow-ons** (the feature shipped; these round it out):
-    - statement-position **completion** of proc names (completion still lists only
-      currencies + control keywords).
+    - statement-position **completion** of proc names (the statement list is currencies,
+      control keywords and the sourced keywords; no proc names).
     - proc-name **hover** signatures.
     - a currency- or block-valued **parameter** (only value params, tier/count/mod, for now).
 
@@ -31,10 +31,12 @@
   base completion lists everything).
 - `with omen "…"` **completion:** deferred until omens are properly modelled (a PoE2
   mechanic, [poe2wiki: Omen](https://www.poe2wiki.net/wiki/Omen); poewiki's
-  [Omen](https://www.poewiki.net/wiki/Omen) page is the unrelated PoE1 item); that position
-  currently falls through to the statement list (harmless).
-- **Completion perf:** `getCompletions` runs a full check per request; fine for small
-  crafts, memoize if latency shows.
+  [Omen](https://www.poewiki.net/wiki/Omen) page is the unrelated PoE1 item); inside the
+  quotes `contextAt` sees a bare word before the string and offers the mod list (harmless,
+  just unhelpful).
+- **Completion perf:** `getCompletions` runs a full check per mod-string request
+  (`excludedAt`, to drop proven-absent mods); fine for small crafts, memoize if latency
+  shows.
 - **Monaco playground** (a new `editors/` package) reusing the transport-free LSP service.
 - **PoE2 module:** the omen machinery is modelled; PoE2 data ingest is not the target yet.
 - **Tier-atom tightenings:** assert `tierAtom ⇒ family` and tier mutual-exclusion in the

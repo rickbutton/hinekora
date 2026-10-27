@@ -164,9 +164,10 @@ async dependency, and you would still need the loop fixpoint yourself.)
 
 ### 4.3 Transfer functions: operations as state transformers
 
-Each currency op is a function `AItem → AItem` (or a precondition failure). The nine orbs
-reduce to two primitives (an **additive add** and a **reforge**) plus remove and scour;
-essence and bench build on those with a "force this specific mod present" step.
+Each currency op is a function `AItem → AItem` (or a precondition failure). Nine of the
+ten orbs reduce to two primitives (an **additive add** and a **reforge**) plus remove and
+scour; the Fracturing Orb only asserts a fracture fact in the presence BDD. Essence and
+bench build on the primitives with a "force this specific mod present" step.
 
 The discipline is the core invariant: a transfer function _folds_ the op's effect
 into the summary; it never materialises a list of concrete outcomes. An add over-

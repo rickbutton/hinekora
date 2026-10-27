@@ -300,7 +300,7 @@ describe("parser — operation functions", () => {
         parseOk(`craft in poe1 item { base: "R" ilvl: 1 rarity: rare } ${src}`);
 
     it("collects a `def name(p) { … }` as a proc, separate from preds and body", () => {
-        const c = parseDef(`def spam(m) { until has m { scour alch } }
+        const c = parseDef(`def spam(m) { until has m { scour alchemy } }
 spam("life")`);
         expect(c.defs).toHaveLength(0);
         expect(c.procs).toHaveLength(1);
@@ -311,7 +311,7 @@ spam("life")`);
             pred: { kind: "has", mod: { param: "m" } },
             body: [
                 { kind: "op", name: "scour" },
-                { kind: "op", name: "alch" },
+                { kind: "op", name: "alchemy" },
             ],
         });
         // The call site parses as a statement-position call.
