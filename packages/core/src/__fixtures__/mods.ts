@@ -524,6 +524,7 @@ export const SPECIFIC_WEAPON_A: Mod = mkMod({
     families: ["SpecificWeaponA"],
     spawn: [spawn(TAG_DEFAULT, known(500))],
     addsTags: ["specific_weapon"],
+    text: "specific weapon alpha",
 });
 export const SPECIFIC_WEAPON_B: Mod = mkMod({
     id: "SpecificWeaponB1",
@@ -532,6 +533,7 @@ export const SPECIFIC_WEAPON_B: Mod = mkMod({
     minLevel: 1,
     families: ["SpecificWeaponB"],
     spawn: [spawn(TAG_SPECIFIC_WEAPON, known(0)), spawn(TAG_DEFAULT, known(500))],
+    text: "specific weapon beta",
 });
 
 /** Catalog for fuzzy/tier tests: a 3-tier life type + a fire resist, on rings. */

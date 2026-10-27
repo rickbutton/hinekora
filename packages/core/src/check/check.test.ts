@@ -49,6 +49,8 @@ import {
     RATCHETING_BASE,
     RING_BASE,
     SIMPLEX_BASE,
+    SPECIFIC_WEAPON_A,
+    SPECIFIC_WEAPON_B,
 } from "../__fixtures__/mods.js";
 import { ClassId } from "../model/ids.js";
 import type { BenchCraft, EssenceSpec } from "../model/sources.js";
@@ -934,6 +936,27 @@ describe("checker — per-base affix caps (experimented bases)", () => {
         );
         expect(removed.diagnostics).toEqual([]);
         expect(guaranteedTypes(removed.finalState!).has(DUAL_SIDE_AMULET_SUFFIX.type)).toBe(true);
+    });
+
+    it("a present modifier's added tag keeps a blocked modifier out of the add-pool", () => {
+        // Alpha adds a tag on which beta has a zero weight: with alpha guaranteed, no
+        // exalt can ever add beta, so a loop waiting for it can never exit.
+        const tagged = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...CATALOG, SPECIFIC_WEAPON_A, SPECIFIC_WEAPON_B],
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
+        const withAlpha = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: ["SpecificWeaponA1"],
+        });
+        const r = check(
+            craft("poe1", withAlpha, [until(has("specific weapon beta"), [op("exalt")])]),
+            { registry: tagged },
+        );
+        expect(r.diagnostics[0]?.message).toContain("can never exit");
     });
 
     it("the item block rejects a count over the combined cap (three suffixes on a magic Ratcheting)", () => {
