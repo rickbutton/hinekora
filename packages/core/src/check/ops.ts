@@ -84,7 +84,11 @@ export type Check =
     | { readonly kind: "atLeast"; readonly count: number }
     | { readonly kind: "noFracture" }
     | { readonly kind: "veiledPresent" }
+    /** No veiled or unveiled modifier at all (the Veiled Exalted Orb). */
     | { readonly kind: "noVeiled" }
+    /** No veiled or unveiled modifier the strip would keep (the Veiled Chaos Orb
+     *  reforges the rest away). */
+    | { readonly kind: "noVeiledKept" }
     | { readonly kind: "noBlockingMetamod" }
     | { readonly kind: "essenceRarity"; readonly tier: number }
     | { readonly kind: "essenceGrant"; readonly spec: EssenceSpec }
@@ -298,6 +302,13 @@ function failing(
             return hasVeiledPlaceholder(a) ? null : { kind: "noVeiledMod" };
         case "noVeiled":
             return mayHaveVeiled(a, registry) ? { kind: "alreadyVeiled" } : null;
+        case "noVeiledKept": {
+            const fractured = fracturedTypes(a);
+            const unprovenLock = hasFracture(a) && fractured.size === 0;
+            const kept = (t: TypeId): boolean =>
+                unprovenLock || fractured.has(t) || rules.protected.has(sideOf(a, registry, t));
+            return mayHaveVeiled(a, registry, kept) ? { kind: "alreadyVeiled" } : null;
+        }
         case "noBlockingMetamod":
             return rules.blocksSourced ? { kind: "metamodBlocks" } : null;
         case "essenceRarity":
@@ -423,15 +434,23 @@ function hasVeiledPlaceholder(a: AItem): boolean {
  *  Veiled Exalted Orb; "cannot be used to obtain multiple veiled modifiers",
  *  Crafting), and the precondition must hold on every path, so a possible one
  *  is enough to refuse. */
-function mayHaveVeiled(a: AItem, registry: Registry): boolean {
+function mayHaveVeiled(a: AItem, registry: Registry, among?: (t: TypeId) => boolean): boolean {
     for (const t of a.possible) {
         if (isExcluded(a, t)) continue;
+        if (among && !among(t)) continue;
         if (t === VEILED_PREFIX || t === VEILED_SUFFIX) return true;
         // Many unveiled rows share their type with natural rows, so the rows the
         // type may be (its tier overlay, else every row) decide, not the first row.
         if (rowsOf(a, t, registry).some((m) => m.source === "veiled")) return true;
     }
     return false;
+}
+
+/** The side a type sits on; the veiled placeholders name theirs. */
+function sideOf(a: AItem, registry: Registry, t: TypeId): Gen {
+    if (t === VEILED_PREFIX) return "prefix";
+    if (t === VEILED_SUFFIX) return "suffix";
+    return genOf(a, registry, t);
 }
 
 /** The rows a present type may be: its tier overlay, else every row of the type. */

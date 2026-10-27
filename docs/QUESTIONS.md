@@ -36,21 +36,6 @@ Rare with one modifier of each side; note whether the result keeps the side.
 change, metamods respected), as `operations.md` §3.2 states; not built until answered.
 **Answer:**
 
-### Q12 · game probe · open
-
-**Asked:** 2026-10-26
-**Goal:** whether a Veiled Chaos Orb refuses an item that carries an unveiled modifier.
-[Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb) says it cannot be
-used "on an item with a veiled modifier or its craftable versions"; for the Veiled Chaos
-Orb the wiki says only that it "cannot be used to obtain multiple veiled modifiers"
-([Crafting](https://www.poewiki.net/wiki/Crafting)).
-**Procure:** a Rare with an unveiled modifier (veiled chaos, then unveil) and a Veiled
-Chaos Orb.
-**Steps:** try to apply it. **Record:** accepted or refused.
-**Assumed meanwhile:** refused, the stricter reading, in `check/library.ts`
-(`VEILED_CHAOS`) and the Veiled Chaos Orb row of `operations.md`.
-**Answer:**
-
 ### Q13 · game probe · open
 
 **Asked:** 2026-10-26
@@ -248,3 +233,21 @@ one fractured suffix, one natural suffix, "Prefixes Cannot Be Changed" (a suffix
 the scour: the prefix and the fractured suffix. So the rarity goes by survivor count, as
 [Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) says: none Normal, one
 Magic, two or more Rare. Applied in `check/ops.ts` (`scouredRarity`).
+
+### Q12 · game probe · resolved
+
+**Asked:** 2026-10-26
+**Goal:** whether a Veiled Chaos Orb refuses an item that carries an unveiled modifier.
+[Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb) says it cannot be
+used "on an item with a veiled modifier or its craftable versions"; for the Veiled Chaos
+Orb the wiki says only that it "cannot be used to obtain multiple veiled modifiers"
+([Crafting](https://www.poewiki.net/wiki/Crafting)).
+**Procure:** a Rare with an unveiled modifier (veiled chaos, then unveil) and a Veiled
+Chaos Orb.
+**Steps:** try to apply it. **Record:** accepted or refused.
+**Assumed meanwhile:** refused, the stricter reading, in `check/library.ts`
+(`VEILED_CHAOS`) and the Veiled Chaos Orb row of `operations.md`.
+**Answer:** Rick knows this (2026-10-27): the Veiled Chaos Orb is refused only when a
+veiled or unveiled modifier would survive the reforge, that is, under a "cannot be
+changed" lock on its side (veiled or unveiled alike). Applied as the `noVeiledKept` check
+in `check/ops.ts`; the Veiled Exalted Orb keeps the stricter check.

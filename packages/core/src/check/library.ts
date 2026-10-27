@@ -137,10 +137,11 @@ export function harvestAugmentOps(tag: TagId): readonly Op[] {
     ];
 }
 
-/** Veiled Chaos Orb: a rare reforge, one of whose modifiers is veiled. */
+/** Veiled Chaos Orb: a rare reforge, one of whose modifiers is veiled. It is
+ *  refused only when a veiled or unveiled modifier would survive the reforge. */
 export const VEILED_CHAOS: readonly Op[] = [
     isRare,
-    require({ kind: "noVeiled" }),
+    require({ kind: "noVeiledKept" }),
     strip(),
     fill(natural, reforge(RARE_REFORGE)),
     fill(veiledPlaceholder, within),

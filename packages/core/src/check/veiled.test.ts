@@ -3,13 +3,19 @@ import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, has, iff, item, notp, op, orp, unveil, veiled } from "../__fixtures__/ast.js";
-import { AMULET_BASE, CATALOG, RING_BASE, VEILED_CATALOG } from "../__fixtures__/mods.js";
+import {
+    AMULET_BASE,
+    CATALOG,
+    PROTECT_PREFIXES_CARRIER,
+    RING_BASE,
+    VEILED_CATALOG,
+} from "../__fixtures__/mods.js";
 import { veiledPool } from "../pool/veiled.js";
 import { GroupId, TypeId } from "../model/ids.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE, AMULET_BASE],
-    mods: [...CATALOG, ...VEILED_CATALOG],
+    mods: [...CATALOG, ...VEILED_CATALOG, PROTECT_PREFIXES_CARRIER],
     baseAliases: { "Iron Ring": "IronRing", "Coral Amulet": "CoralAmulet" },
 });
 const ctx: CheckContext = { registry };
@@ -57,8 +63,8 @@ describe("veiled orbs", () => {
         expect(r.diagnostics[0]!.message).toContain("veiled or unveiled modifier");
     });
 
-    it("a veiled orb is refused once an unveiled modifier may be on the item", () => {
-        const r = check(craft(rareRing(), [veiled("chaos"), unveil(), veiled("chaos")]), ctx);
+    it("a veiled exalt is refused once an unveiled modifier may be on the item", () => {
+        const r = check(craft(rareRing(), [veiled("chaos"), unveil(), veiled("exalt")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("veiled or unveiled modifier");
     });
@@ -68,6 +74,28 @@ describe("veiled orbs", () => {
         // the rows the type may be, not the first row, reveal it as unveiled.
         const r = check(craft(rareRing(["SharedVeilUnveiled1"]), [veiled("exalt")]), ctx);
         expect(r.diagnostics[0]!.message).toContain("veiled or unveiled modifier");
+    });
+
+    it("a veiled chaos reforges an unveiled modifier away, so it is not refused", () => {
+        const r = check(craft(rareRing(["SharedVeilUnveiled1"]), [veiled("chaos")]), ctx);
+        expect(r.diagnostics).toEqual([]);
+    });
+
+    it("a veiled chaos is refused when a lock would keep the item's veiled modifier", () => {
+        // "Prefixes Cannot Be Changed" keeps the veiled prefix through the reforge,
+        // and the orb cannot add a second one; an unveiled suffix beside the same
+        // lock is rerolled away, so that orb goes through.
+        const kept = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: ["VeiledPrefix"],
+            suffixes: [PROTECT_PREFIXES_CARRIER.id],
+        });
+        const r = check(craft(kept, [veiled("chaos")]), ctx);
+        expect(r.diagnostics[0]!.message).toContain("veiled or unveiled modifier");
+        const rerolled = rareRing(["SharedVeilUnveiled1", PROTECT_PREFIXES_CARRIER.id]);
+        expect(check(craft(rerolled, [veiled("chaos")]), ctx).diagnostics).toEqual([]);
     });
 
     it("veiled exalt keeps the affix count (removes one, adds the veiled mod)", () => {
