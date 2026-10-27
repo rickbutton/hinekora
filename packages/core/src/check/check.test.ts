@@ -1138,3 +1138,31 @@ describe("checker — the one-crafted-mod limit", () => {
         expect(r.diagnostics.some((d) => d.message.includes("only one"))).toBe(true);
     });
 });
+
+describe("checker — the item block rejects modifiers that cannot share an item", () => {
+    it("the same modifier declared twice", () => {
+        const r = check(craft("poe1", rareRing(["IncreasedLife1", "IncreasedLife2"]), []), ctx);
+        expect(r.diagnostics[0]?.message).toContain("declared twice");
+    });
+
+    it("two modifiers of one group", () => {
+        const r = check(craft("poe1", rareRing([], ["FireResist1", "FireChaosResist1"]), []), ctx);
+        expect(r.diagnostics[0]?.message).toContain("same group");
+    });
+
+    it("a natural row above the item's level, named by id", () => {
+        const low = item({
+            base: "Iron Ring",
+            ilvl: 50,
+            rarity: "rare",
+            prefixes: ["IncreasedLife1"],
+        });
+        const r = check(craft("poe1", low, []), ctx);
+        expect(r.diagnostics[0]?.message).toContain("needs item level 60");
+    });
+
+    it("a row of another domain, named by id", () => {
+        const r = check(craft("poe1", rareRing(["FlaskRecovery1"]), []), ctx);
+        expect(r.diagnostics[0]?.message).toContain("cannot roll on");
+    });
+});

@@ -18,7 +18,7 @@ import type {
     Stmt,
 } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
-import type { Game, Gen, ModId, TypeId } from "../model/ids.js";
+import type { Game, Gen, GroupId, ModId, TypeId } from "../model/ids.js";
 import type { CurrencyKind, Registry } from "../resolve/registry.js";
 import {
     type AItem,
@@ -243,17 +243,58 @@ class Checker {
             }
         };
 
+        // Two declared modifiers cannot share an item when they are the same
+        // modifier or claim the same group (Modifier § Group/family).
+        const claimed = new Map<GroupId, string>();
+        const claim = (name: string, type: TypeId): void => {
+            if (present.has(type)) {
+                this.diag(
+                    `"${name}" is declared twice; an item holds each modifier once.`,
+                    item.span,
+                );
+                return;
+            }
+            for (const family of this.registry.familiesOfType(type)) {
+                const other = claimed.get(family);
+                if (other !== undefined) {
+                    this.diag(
+                        `"${name}" and "${other}" cannot both be on an item; they are modifiers of the same group.`,
+                        item.span,
+                    );
+                    break;
+                }
+                claimed.set(family, name);
+            }
+            present.add(type);
+        };
+
         // A named mod pins a tier via an exact id/alias, or a stat description
         // plus `t<n>`; a bare description is an error. Returns the resolved type
         // (for the fractured marker), or undefined when resolution failed.
         const pinAffix = (affix: AffixDecl, gen: Gen): TypeId | undefined => {
             const byId = this.registry.resolveMod(affix.mod);
             if (byId.ok) {
-                checkGen(affix.mod, byId.value.gen, gen);
-                present.add(byId.value.type);
-                pinned.set(byId.value.type, byId.value.id);
-                if (byId.value.source === "bench") crafted++;
-                return byId.value.type;
+                const mod = byId.value;
+                checkGen(affix.mod, mod.gen, gen);
+                // A naturally rolled row must fit the base's domain and item level;
+                // a row another mechanic placed (bench, essence) is exempt.
+                if ((mod.source ?? "natural") === "natural") {
+                    if (mod.domain !== base.domain) {
+                        this.diag(
+                            `"${affix.mod}" cannot roll on a ${base.name ?? "item"}.`,
+                            item.span,
+                        );
+                    } else if (mod.minLevel > item.ilvl) {
+                        this.diag(
+                            `"${affix.mod}" needs item level ${mod.minLevel}; this item is level ${item.ilvl}.`,
+                            item.span,
+                        );
+                    }
+                }
+                claim(affix.mod, mod.type);
+                pinned.set(mod.type, mod.id);
+                if (mod.source === "bench") crafted++;
+                return mod.type;
             }
             const typeRes = this.registry.resolveModType(affix.mod, ctx);
             if (!typeRes.ok) {
@@ -271,7 +312,7 @@ class Checker {
                     `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t1\`), a starting item's mods must name a specific tier.`,
                     item.span,
                 );
-                present.add(type); // still count it as present, just untiered
+                claim(affix.mod, type); // still count it as present, just untiered
                 return type;
             }
             const tiers = rollableTiers(this.registry.catalog, game, base, item.ilvl, type);
@@ -283,10 +324,10 @@ class Checker {
                     } roll here).`,
                     item.span,
                 );
-                present.add(type);
+                claim(affix.mod, type);
                 return type;
             }
-            present.add(type);
+            claim(affix.mod, type);
             pinned.set(type, mod.id);
             return type;
         };

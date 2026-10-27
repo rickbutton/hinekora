@@ -117,9 +117,11 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
   [mod tags](https://www.poewiki.net/wiki/Modifier#Mod_tag) that tag-directed crafting selects
   on — harvest, fossils), `Base` (id = metadata path, since display names collide across
   hundreds of bases), `Weight` (provenance-tagged), `Effect` seam, `ModSource`, and the affix caps
-  (`model/capacity.ts`). Branded id types in `model/ids.ts`. The item-model's
-  well-formedness rules (§8) are enforced by the checker's item block and transfer
-  functions; there is no concrete validator.
+  (`model/capacity.ts`). Branded id types in `model/ids.ts`. There is no concrete
+  validator: the item block checks the declared item against item-model.md §8 (side,
+  caps, the rarity ceiling, distinct modifiers, disjoint groups, and for a row named by
+  id the natural-row level and domain rules), and the transfer functions keep every
+  state within §8 from there.
 - **pool/**: `pool(catalog, facts[, maybeTags])`, which mods can roll on an item: the wiki's
   [spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag) rule (the item's
   tags, the base's plus the `adds_tags` of present mods, a rule the data carries rather
