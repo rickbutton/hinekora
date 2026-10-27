@@ -109,6 +109,8 @@ interface ModSpec {
     readonly families?: readonly string[];
     readonly spawn: readonly SpawnEntry[];
     readonly classRestriction?: ReadonlySet<ClassId>;
+    /** Tags the mod adds to the item while present. */
+    readonly addsTags?: readonly string[];
     readonly effects?: readonly Effect[];
     /** Category tags (fire, caster, life, …) for tag-directed crafting (harvest). */
     readonly implicitTags?: readonly string[];
@@ -128,7 +130,7 @@ function mkMod(spec: ModSpec): Mod {
         gen: spec.gen,
         domain: spec.domain ?? DOMAIN_ITEM,
         minLevel: spec.minLevel,
-        addsTags: new Set<TagId>(),
+        addsTags: new Set<TagId>((spec.addsTags ?? []).map(TagId)),
         implicitTags: new Set<TagId>((spec.implicitTags ?? []).map(TagId)),
         spawn: spec.spawn,
         ...(spec.classRestriction !== undefined && { classRestriction: spec.classRestriction }),
@@ -506,6 +508,30 @@ export const DUAL_SIDE_AMULET_SUFFIX: Mod = mkMod({
     families: ["DualSide"],
     spawn: [spawn(TAG_AMULET, known(500)), spawn(TAG_DEFAULT, known(0))],
     text: "dual side modifier",
+});
+
+/**
+ * Two "weapon-specific" jewel-style mods: the first adds the `specific_weapon` tag
+ * to the item, the second has a zero weight on that tag, so once the first is on
+ * the item the second can no longer roll. Not in `CATALOG`.
+ */
+export const TAG_SPECIFIC_WEAPON = TagId("specific_weapon");
+export const SPECIFIC_WEAPON_A: Mod = mkMod({
+    id: "SpecificWeaponA1",
+    type: "SpecificWeaponA",
+    gen: "prefix",
+    minLevel: 1,
+    families: ["SpecificWeaponA"],
+    spawn: [spawn(TAG_DEFAULT, known(500))],
+    addsTags: ["specific_weapon"],
+});
+export const SPECIFIC_WEAPON_B: Mod = mkMod({
+    id: "SpecificWeaponB1",
+    type: "SpecificWeaponB",
+    gen: "suffix",
+    minLevel: 1,
+    families: ["SpecificWeaponB"],
+    spawn: [spawn(TAG_SPECIFIC_WEAPON, known(0)), spawn(TAG_DEFAULT, known(500))],
 });
 
 /** Catalog for fuzzy/tier tests: a 3-tier life type + a fire resist, on rings. */

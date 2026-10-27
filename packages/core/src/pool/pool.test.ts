@@ -19,6 +19,8 @@ import {
     LIFE_T2,
     LIGHTNING_RESIST,
     RATCHETING_BASE,
+    SPECIFIC_WEAPON_A,
+    SPECIFIC_WEAPON_B,
     mkItem,
     RING_BASE,
     RING_DISABLED,
@@ -182,6 +184,16 @@ describe("pool — slot cardinality on an experimented base", () => {
             suffixes: [FIRE_RESIST, COLD_RESIST],
         });
         expect(pool(CATALOG, full)).toHaveLength(0);
+    });
+});
+
+describe("pool — tags a present modifier adds to the item", () => {
+    it("a zero weight on an added tag keeps the second mod out once the first is on", () => {
+        const catalog = [...CATALOG, SPECIFIC_WEAPON_A, SPECIFIC_WEAPON_B];
+        const empty = mkItem({ rarity: "rare" });
+        expect(idsOf(pool(catalog, empty)).has(SPECIFIC_WEAPON_B.id)).toBe(true);
+        const withA = mkItem({ rarity: "rare", prefixes: [SPECIFIC_WEAPON_A] });
+        expect(idsOf(pool(catalog, withA)).has(SPECIFIC_WEAPON_B.id)).toBe(false);
     });
 });
 

@@ -9,7 +9,7 @@
 import type { ClassId, TagId } from "../model/ids.js";
 import { poolRestrictPredicate } from "../model/effects.js";
 import type { Item } from "../model/item.js";
-import { presentFamilies, presentTypes } from "../model/item.js";
+import { affixes, presentFamilies, presentTypes } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
 import { slotOpen } from "../model/wf.js";
 import { isNonzero, type Weight } from "../model/weight.js";
@@ -36,6 +36,15 @@ export function lookupWeight(m: Mod, baseTags: ReadonlySet<TagId>): Weight | nul
     return null;
 }
 
+/** The tags a roll matches against: the base's own plus those every present
+ *  modifier adds to the item (Modifier § Tags), which is how a weapon-specific
+ *  jewel modifier zeroes every other one's weight once it is on the item. */
+export function itemTags(it: Item): ReadonlySet<TagId> {
+    const tags = new Set(it.base.tags);
+    for (const m of affixes(it)) for (const t of m.addsTags) tags.add(t);
+    return tags;
+}
+
 /** Class restriction: unrestricted, or the base's class is allowed. */
 function classPermitted(m: Mod, itemClass: ClassId): boolean {
     return m.classRestriction === undefined || m.classRestriction.has(itemClass);
@@ -49,6 +58,7 @@ export function pool(catalog: ModCatalog, it: Item): readonly PoolCandidate[] {
 
     const presentT = presentTypes(it);
     const presentF = presentFamilies(it);
+    const tags = itemTags(it);
 
     const candidates: PoolCandidate[] = [];
     for (const m of catalog) {
@@ -67,7 +77,7 @@ export function pool(catalog: ModCatalog, it: Item): readonly PoolCandidate[] {
         // pool-restrict effects
         if (!restrict(m)) continue;
         // eligibility: a matching, nonzero spawn weight
-        const weight = lookupWeight(m, it.base.tags);
+        const weight = lookupWeight(m, tags);
         if (weight === null || !isNonzero(weight)) continue;
 
         candidates.push({ mod: m, weight });

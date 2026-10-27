@@ -118,8 +118,10 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
   hundreds of bases), `Weight` (provenance-tagged), `Effect` seam, `ModSource`, and the `wf`
   (well-formedness) rules. Branded id types in `model/ids.ts`.
 - **pool/**: `pool(catalog, item)`, which mods can roll on an item: the wiki's
-  [spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag) rule (base tags
-  vs the mod's spawn table, first match wins, zero disables) plus the
+  [spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag) rule (the item's
+  tags, `itemTags`: the base's plus those present mods add per
+  [Modifier § Tags](https://www.poewiki.net/wiki/Modifier#Tags), vs the mod's spawn table,
+  first match wins, zero disables) plus the
   [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) gate.
 - **outcome/**: the symbolic outcome-union machinery. Intensional: chaining consumes a
   description; `arms()` expands one only on the on-demand render/probability path.
