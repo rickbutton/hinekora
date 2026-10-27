@@ -2,12 +2,22 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { fracturedTypes, guaranteedTypes, hasFracture } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, fracturedP, iff, item, notp, op } from "../__fixtures__/ast.js";
-import { CATALOG, RING_BASE } from "../__fixtures__/mods.js";
+import { craft, essence, fracturedP, iff, item, notp, op } from "../__fixtures__/ast.js";
+import { CATALOG, CLASS_RING, INCREASED_MANA, RING_BASE } from "../__fixtures__/mods.js";
+import type { EssenceSpec } from "../model/sources.js";
+
+// A Deafening-tier essence granting a mana prefix on a Ring, so it reforges a Rare.
+const ESS_MANA: EssenceSpec = {
+    id: "TestMana",
+    name: "Deafening Essence of Mana",
+    tier: 7,
+    grants: new Map([[CLASS_RING, INCREASED_MANA.id]]),
+};
 
 const registry = buildRegistry({
     bases: [RING_BASE],
     mods: CATALOG,
+    essences: [ESS_MANA],
     modAliases: {
         "T1 Life": "IncreasedLife1",
         life: "IncreasedLife1",
@@ -50,6 +60,35 @@ describe("declared fractured mod is locked", () => {
         expect(guaranteed(r)).toContain("IncreasedLife");
         // The fractured mod is one of the reforged 4–6, not a lone survivor.
         expect(r.finalState!.counts.total).toEqual([4, 6]);
+    });
+
+    it("survives an alteration after a scour, so a second Fracturing Orb is refused", () => {
+        // Scour leaves a 1-mod Magic item with the fractured life; alteration
+        // rerolls the rest but never the lock, so the item stays fractured and the
+        // orb, which refuses fractured items, is rejected after regal and exalts.
+        const r = check(
+            craft("poe1", fracturedRing(2), [
+                op("scour"),
+                op("alteration"),
+                op("regal"),
+                op("exalt"),
+                op("exalt"),
+                op("fracture"),
+            ]),
+            ctx,
+        );
+        expect(r.diagnostics.map((d) => d.message).join("\n")).toContain("fractured");
+        const afterAlteration = r.trace.find((t) => t.kind === "op" && t.after?.rarity === "magic");
+        expect(afterAlteration?.after && hasFracture(afterAlteration.after)).toBe(true);
+    });
+
+    it("survives an essence reforge, which still forces its own mod", () => {
+        const r = check(craft("poe1", fracturedRing(2), [essence("mana", 1)]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(hasFracture(r.finalState!)).toBe(true);
+        expect(guaranteed(r)).toContain("IncreasedLife");
+        expect(guaranteed(r)).toContain("IncreasedMana");
+        expect(fracturedTypes(r.finalState!)).toEqual(new Set(["IncreasedLife"]));
     });
 
     it("survives an annul (a filler suffix is removed instead)", () => {

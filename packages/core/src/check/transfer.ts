@@ -152,9 +152,13 @@ export function augment(a: AItem, registry: Registry): TransferResult {
     return ok(addOne(a, undefined, "magic", registry));
 }
 
-/** Orb of Alteration: reforge a Magic item (1–2 fresh mods). */
+/** Orb of Alteration: reforge a Magic item (1–2 fresh mods). A fractured mod
+ *  survives the reforge like it survives a chaos. */
 export function alteration(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "magic") return wrongRarity("magic", a.rarity);
+    const shielded = protectedGens(a, registry);
+    if (shielded.size > 0 || hasFracture(a))
+        return ok(keepProtectedReroll(a, shielded, [1, 2], registry));
     return ok(reroll(a, "magic", [1, 2], registry));
 }
 
@@ -319,11 +323,17 @@ export function essence(a: AItem, spec: EssenceSpec, registry: Registry): Transf
         const cur = tiers.get(m.type);
         tiers.set(m.type, cur ? new Set([...cur, m.id]) : new Set([m.id]));
     }
+    // A fractured mod is one of the reforged mods: its lock, presence and tier pin survive.
+    for (const t of fracturedTypes(a)) {
+        possible.add(t);
+        const pinned = a.tiers.get(t);
+        if (pinned) tiers.set(t, pinned);
+    }
     const reforged: AItem = {
         ...a,
         rarity: "rare",
         counts: { total, prefix: [Math.max(0, total[0] - sCap), Math.min(pCap, total[1])] },
-        presence: a.bdd.TRUE,
+        presence: fractureProjection(a),
         possible,
         tiers,
         crafted: [0, 0], // a reforge discards any crafted mod
