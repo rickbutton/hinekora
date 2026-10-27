@@ -731,10 +731,15 @@ function keepProtectedReroll(
 
 // --- precondition predicates (must hold in EVERY arm) ---------------------
 
+/** Is a slot provably open (in `forcedGen`, or anywhere)? A side's cap is not
+ *  enough on its own: the two sides together are also held to the rarity's total
+ *  (a magic Ratcheting Ring may take four suffixes by its side cap but two by its
+ *  total), so a named side must also leave the total under its cap. */
 function hasOpenSlot(a: AItem, forcedGen: Gen | undefined): boolean {
+    if (a.counts.total[1] >= maxTotal(a.rarity, a.base)) return false; // full in some arm
     if (forcedGen === "prefix") return a.counts.prefix[1] < sideCap("prefix", a.rarity, a.base);
     if (forcedGen === "suffix") return suffixRange(a)[1] < sideCap("suffix", a.rarity, a.base);
-    return a.counts.total[1] < maxTotal(a.rarity, a.base); // some slot open in every arm
+    return true;
 }
 
 function hasRemovable(a: AItem, allowed: ReadonlySet<Gen>, registry: Registry): boolean {

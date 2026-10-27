@@ -38,6 +38,7 @@ import {
     CATALOG,
     CLASS_RING,
     COLD_RESIST,
+    FIRE_RES_TIERED,
     FIRE_RESIST,
     FLASK_BASE,
     LIFE_T1,
@@ -870,6 +871,26 @@ describe("checker — per-base affix caps (experimented bases)", () => {
         expect(r.finalState!.counts.total).toEqual([2, 2]);
         expect(r.finalState!.counts.prefix).toEqual([0, 0]);
         expect(suffixRange(r.finalState!)).toEqual([2, 2]);
+    });
+
+    it("a named side also needs the total under its cap (bench a suffix on a full magic Ratcheting)", () => {
+        // Two suffixes fill the magic total of 2 although the suffix side cap is 4,
+        // so a benched suffix has no slot: the open-slot check on a named side
+        // must read the total cap as well as the side cap.
+        const suffixBench = buildRegistry({
+            bases: [RATCHETING_BASE],
+            mods: [...CATALOG, FIRE_RES_TIERED],
+            baseAliases: { "Ratcheting Ring": "RatchetingRing" },
+            benchCrafts: [{ mod: FIRE_RES_TIERED.id, tier: 1, itemClasses: new Set([CLASS_RING]) }],
+        });
+        const full = item({
+            base: "Ratcheting Ring",
+            ilvl: 100,
+            rarity: "magic",
+            suffixes: ["random", "random"],
+        });
+        const r = check(craft("poe1", full, [bench("fire resistance")]), { registry: suffixBench });
+        expect(r.diagnostics[0]?.message).toContain("open suffix slot");
     });
 
     it("rare Simplex is full after a reforge: exalt fails, but works after an annul reopens a slot", () => {
