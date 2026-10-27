@@ -29,7 +29,11 @@ and a library of entries (`operations.md` §3): pools and selectors as descripti
 interpreter in the checker, and one generic operation statement in the AST whose
 arguments the library's signature drives (parser, completion and hover stop knowing
 each method). Every existing test stays green; the diagnostics keep their wording. This
-is a refactor commit series followed by a deletion of the old functions.
+is a refactor commit series followed by a deletion of the old functions. One rule the
+model must state: a precondition that needs a pool to be non-empty (the harvest crafts'
+`harvestEmptyPool`) must read a pool that is a subset of every path's real pool, while an
+add reads a superset; today both read the add-pool, so a greyed-out harvest craft whose
+tagged pool a possibly present modifier empties can be accepted.
 
 ## Step 3. The remaining single-item methods
 
