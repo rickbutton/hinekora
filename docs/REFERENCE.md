@@ -381,7 +381,10 @@ metamods). Notes:
 - The add-pool is over-approximated by running the real `pool` on a synthetic item
   carrying only the guaranteed mods at rare caps, with the tags a possibly present mod
   would add passed as "maybe" tags: a positive spawn entry on one admits the row, a zero
-  entry on one is skipped (`addsTagsOfType`).
+  entry on one is skipped (`addsTagsOfType`). The maybe set is closed under the pool's own
+  rows, since a reforge's later rolls see the tags of its earlier ones (`QUESTIONS.md`
+  Q13). A declared `"random"` affix is outside `possible`, so an adder hidden behind one
+  is not seen, the same anonymous-affix gap as the bench group conflict.
 - `withGuaranteed(state, mod)` forces a specific mod present (presence + tier pin +
   possible + count floors). `essence()` = reforge to Rare `[4,6]` + `withGuaranteed`, the
   rules of [Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting) (tiers 1–4

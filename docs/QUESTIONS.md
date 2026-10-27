@@ -176,6 +176,23 @@ Chaos Orb.
 (`veiledChaos`) and the Veiled Chaos Orb row of `operations.md`.
 **Answer:**
 
+### Q13 · game probe · open
+
+**Asked:** 2026-10-26
+**Goal:** whether a reforge's later rolls see the tags its earlier rolls added. The data
+has rows that only roll once another row's added tag is on the item (the staff jewel
+modifiers on a Strength jewel carry `staff: 500` ahead of `not_int: 0`), and rows a tag
+disables (`specific_weapon`); whether one Chaos Orb can produce both the adder and the
+enabled row is not stated on the wiki.
+**Procure:** a Strength (Crimson) Jewel, Chaos Orbs or Orbs of Alteration.
+**Steps:** reforge repeatedly; note whether a jewel ever shows two staff modifiers, or a
+staff modifier together with a modifier the `not_int` tag would otherwise block.
+**Record:** any such pair, or none after many tries.
+**Assumed meanwhile:** yes, the stricter reading for the checker: the add-pool admits
+every row an admitted row's tag would enable, to a fixpoint (`check/transfer.ts`
+`addableMods`, `pool/pool.ts` `lookupWeight`).
+**Answer:**
+
 ### Q10 · clarification · open
 
 **Asked:** 2026-10-26

@@ -951,10 +951,13 @@ function survivingGuarantees(
  */
 function addableMods(a: AItem, forcedGen: Gen | undefined, registry: Registry): Mod[] {
     const synthetic = syntheticItem(a, registry);
-    // Tags a possibly present mod would add: they may enable a row (the staff
-    // jewel mods on a Strength jewel), so the pool admits what they would.
-    // (The set views scan the allocated variables; asking per type would allocate
-    // one per possible type and flood the BDD.)
+    // Tags a possibly present mod would add may enable a row (the staff jewel mods
+    // on a Strength jewel), so the pool admits what they would: the tags of the
+    // state's possible mods, then, to a fixpoint, the tags of every row the pool
+    // itself admits, since a reforge lays its rolls down one after another and a
+    // later roll sees the tags of an earlier one. A maybe tag only ever admits,
+    // so the closure is monotone. (The set views scan the allocated variables;
+    // asking per type would allocate one per possible type and flood the BDD.)
     const maybeTags = new Set<TagId>();
     const guaranteed = guaranteedTypes(a);
     const excluded = excludedTypes(a);
@@ -962,8 +965,15 @@ function addableMods(a: AItem, forcedGen: Gen | undefined, registry: Registry): 
         if (guaranteed.has(t) || excluded.has(t)) continue;
         for (const tag of registry.addsTagsOfType(t)) maybeTags.add(tag);
     }
+    let candidates = pool(registry.catalog, synthetic, maybeTags);
+    for (;;) {
+        const before = maybeTags.size;
+        for (const c of candidates) for (const tag of c.mod.addsTags) maybeTags.add(tag);
+        if (maybeTags.size === before) break;
+        candidates = pool(registry.catalog, synthetic, maybeTags);
+    }
     const out: Mod[] = [];
-    for (const c of pool(registry.catalog, synthetic, maybeTags)) {
+    for (const c of candidates) {
         if (forcedGen === undefined || c.mod.gen === forcedGen) out.push(c.mod);
     }
     return out;

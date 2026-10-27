@@ -961,6 +961,23 @@ describe("checker — per-base affix caps (experimented bases)", () => {
         expect(r.diagnostics[0]?.message).toContain("can never exit");
     });
 
+    it("a reforge's own rolls may enable a row for its later rolls", () => {
+        // A chaos can lay down the adder and then the row its tag enables, so a
+        // loop waiting for the enabled row is not one that can never exit.
+        const staffy = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...CATALOG, STAFFY_ADDER, STAFFY_ENABLED],
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
+        const ring = item({ base: "Iron Ring", ilvl: 100, rarity: "rare" });
+        const r = check(craft("poe1", ring, [op("chaos")]), { registry: staffy });
+        expect(r.finalState!.possible.has(STAFFY_ENABLED.type)).toBe(true);
+        const loop = check(craft("poe1", ring, [until(has("staffy enabled"), [op("chaos")])]), {
+            registry: staffy,
+        });
+        expect(loop.diagnostics).toEqual([]);
+    });
+
     it("a possibly present modifier's added tag admits the row it would enable", () => {
         // After a chaos the adder is possible but not guaranteed; the enabled row
         // must then be possible after the next add, or a later bench conflict could
