@@ -75,10 +75,7 @@ export interface AffixDecl {
     readonly fractured?: boolean;
 }
 
-/**
- * The item declaration, the only place state is given rather than inferred.
- * Optional fields default: `augments` to none, `quality` to 0.
- */
+/** The item declaration, the only place state is given rather than inferred. */
 export interface ItemBlock {
     readonly kind: "itemBlock";
     readonly base: string;
@@ -86,8 +83,6 @@ export interface ItemBlock {
     readonly rarity: Rarity;
     readonly prefixes: readonly AffixDecl[];
     readonly suffixes: readonly AffixDecl[];
-    readonly augments: readonly string[];
-    readonly quality: number;
     readonly span: SourceSpan;
 }
 

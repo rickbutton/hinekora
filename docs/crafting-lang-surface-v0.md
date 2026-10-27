@@ -65,8 +65,6 @@ item {
   models at most one per item, the
   [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)'s own limit; the
   wiki's multi-fracture items are out of scope.
-- `augments: [ … ]` and `quality: <n>` are accepted by the parser and ignored by the
-  checker; they are reserved and have no effect.
 
 Name resolution happens here, so an unknown or ambiguous name is reported on the item
 block before any operation is checked.

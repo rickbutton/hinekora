@@ -52,8 +52,6 @@ interface ItemSpec {
     readonly rarity: Rarity;
     readonly prefixes?: readonly AffixSpec[];
     readonly suffixes?: readonly AffixSpec[];
-    readonly augments?: readonly string[];
-    readonly quality?: number;
 }
 
 const affix = (a: AffixSpec): AffixDecl => (typeof a === "string" ? { mod: a } : a);
@@ -79,8 +77,6 @@ export const item = (spec: ItemSpec): ItemBlock => ({
     rarity: spec.rarity,
     prefixes: (spec.prefixes ?? []).map(affix),
     suffixes: (spec.suffixes ?? []).map(affix),
-    augments: spec.augments ?? [],
-    quality: spec.quality ?? 0,
     span: DS,
 });
 

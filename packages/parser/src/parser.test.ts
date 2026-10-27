@@ -42,8 +42,6 @@ describe("parser — the canonical craft (surface §8)", () => {
             rarity: "rare",
             prefixes: [{ mod: "random prefix" }, { mod: "+1 Suffix Modifier" }],
             suffixes: [{ mod: "random suffix" }, { mod: "random suffix" }],
-            augments: [],
-            quality: 0,
         });
     });
 
@@ -98,23 +96,15 @@ describe("parser — the craft declaration comes first", () => {
 });
 
 describe("parser — item block", () => {
-    it("accepts all fields including augments and quality", () => {
+    it("defaults the affix lists to empty", () => {
         const craft = parseOk(`craft in poe1
     item {
         base: "Vaal Regalia"
         ilvl: 86
         rarity: normal
-        augments: [ "can roll Marksman" ]
-        quality: 20
     }
     transmute`);
-        expect(craft.item).toMatchObject({
-            base: "Vaal Regalia",
-            augments: ["can roll Marksman"],
-            quality: 20,
-            prefixes: [],
-            suffixes: [],
-        });
+        expect(craft.item).toMatchObject({ base: "Vaal Regalia", prefixes: [], suffixes: [] });
     });
 
     it("normalizes rarity case-insensitively", () => {

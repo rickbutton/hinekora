@@ -32,16 +32,8 @@ export const RARITY_PREDICATES: Readonly<Record<string, Rarity>> = {
 };
 export const PROJECTIONS = ["prefixCount", "suffixCount"] as const;
 
-/** The item block's fields; `augments` and `quality` are accepted and ignored. */
-export const ITEM_FIELDS = [
-    "base",
-    "ilvl",
-    "rarity",
-    "prefixes",
-    "suffixes",
-    "augments",
-    "quality",
-] as const;
+/** The item block's fields. */
+export const ITEM_FIELDS = ["base", "ilvl", "rarity", "prefixes", "suffixes"] as const;
 export const RARITY_WORDS = ["normal", "magic", "rare"] as const;
 /** The one word the header accepts after `craft in`. */
 export const GAME = "poe1";

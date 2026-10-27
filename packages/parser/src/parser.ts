@@ -205,8 +205,6 @@ class Parser {
         let rarity: Rarity | undefined;
         let prefixes: readonly AffixDecl[] | undefined;
         let suffixes: readonly AffixDecl[] | undefined;
-        let augments: readonly string[] | undefined;
-        let quality: number | undefined;
 
         const setOnce = <T>(
             current: T | undefined,
@@ -244,12 +242,6 @@ class Parser {
                 case "suffixes":
                     suffixes = setOnce(suffixes, key, this.parseAffixList(), keyTok.span);
                     break;
-                case "augments":
-                    augments = setOnce(augments, key, this.parseStringList(), keyTok.span);
-                    break;
-                case "quality":
-                    quality = setOnce(quality, key, this.parseInt("quality"), keyTok.span);
-                    break;
                 default:
                     throw this.error(`unknown item field '${key}'`, keyTok.span);
             }
@@ -269,8 +261,6 @@ class Parser {
             rarity,
             prefixes: prefixes ?? [],
             suffixes: suffixes ?? [],
-            augments: augments ?? [],
-            quality: quality ?? 0,
             span: span(start, close.span.end),
         };
     }
@@ -290,21 +280,6 @@ class Parser {
             );
         }
         return word as Rarity;
-    }
-
-    private parseStringList(): readonly string[] {
-        this.expect("lbracket", "'[' to open a list");
-        const items: string[] = [];
-        while (!this.at("rbracket")) {
-            items.push(this.expect("string", "a quoted string").text);
-            if (this.at("comma")) {
-                this.advance();
-            } else {
-                break;
-            }
-        }
-        this.expect("rbracket", "']' to close the list");
-        return items;
     }
 
     /**

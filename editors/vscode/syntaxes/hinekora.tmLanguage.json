@@ -46,7 +46,7 @@
                     "name": "support.function.hinekora"
                 },
                 {
-                    "match": "\\b(base|ilvl|rarity|prefixes|suffixes|augments|quality)\\b",
+                    "match": "\\b(base|ilvl|rarity|prefixes|suffixes)\\b",
                     "name": "variable.parameter.hinekora"
                 },
                 {

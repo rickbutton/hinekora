@@ -48,7 +48,7 @@ const KEYWORDS = new Set([
     "rare",
     "poe1",
 ]);
-const FIELDS = new Set(["base", "ilvl", "rarity", "prefixes", "suffixes", "augments", "quality"]);
+const FIELDS = new Set(["base", "ilvl", "rarity", "prefixes", "suffixes"]);
 
 export function getSemanticTokens(source: string, registry: Registry): SemanticTokens {
     const builder = new SemanticTokensBuilder();
