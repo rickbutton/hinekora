@@ -951,8 +951,19 @@ function survivingGuarantees(
  */
 function addableMods(a: AItem, forcedGen: Gen | undefined, registry: Registry): Mod[] {
     const synthetic = syntheticItem(a, registry);
+    // Tags a possibly present mod would add: they may enable a row (the staff
+    // jewel mods on a Strength jewel), so the pool admits what they would.
+    // (The set views scan the allocated variables; asking per type would allocate
+    // one per possible type and flood the BDD.)
+    const maybeTags = new Set<TagId>();
+    const guaranteed = guaranteedTypes(a);
+    const excluded = excludedTypes(a);
+    for (const t of a.possible) {
+        if (guaranteed.has(t) || excluded.has(t)) continue;
+        for (const tag of registry.addsTagsOfType(t)) maybeTags.add(tag);
+    }
     const out: Mod[] = [];
-    for (const c of pool(registry.catalog, synthetic)) {
+    for (const c of pool(registry.catalog, synthetic, maybeTags)) {
         if (forcedGen === undefined || c.mod.gen === forcedGen) out.push(c.mod);
     }
     return out;

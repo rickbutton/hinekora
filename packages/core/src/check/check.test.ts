@@ -51,6 +51,8 @@ import {
     SIMPLEX_BASE,
     SPECIFIC_WEAPON_A,
     SPECIFIC_WEAPON_B,
+    STAFFY_ADDER,
+    STAFFY_ENABLED,
 } from "../__fixtures__/mods.js";
 import { ClassId } from "../model/ids.js";
 import type { BenchCraft, EssenceSpec } from "../model/sources.js";
@@ -957,6 +959,24 @@ describe("checker — per-base affix caps (experimented bases)", () => {
             { registry: tagged },
         );
         expect(r.diagnostics[0]?.message).toContain("can never exit");
+    });
+
+    it("a possibly present modifier's added tag admits the row it would enable", () => {
+        // After a chaos the adder is possible but not guaranteed; the enabled row
+        // must then be possible after the next add, or a later bench conflict could
+        // be missed.
+        const staffy = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...CATALOG, STAFFY_ADDER, STAFFY_ENABLED],
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
+        const ring = item({ base: "Iron Ring", ilvl: 100, rarity: "rare" });
+        // The annul reopens a slot, since a chaos may fill the item.
+        const r = check(craft("poe1", ring, [op("chaos"), op("annul"), op("exalt")]), {
+            registry: staffy,
+        });
+        expect(r.finalState!.possible.has(STAFFY_ADDER.type)).toBe(true);
+        expect(r.finalState!.possible.has(STAFFY_ENABLED.type)).toBe(true);
     });
 
     it("the item block rejects a count over the combined cap (three suffixes on a magic Ratcheting)", () => {

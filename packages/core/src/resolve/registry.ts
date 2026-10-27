@@ -17,6 +17,8 @@ import { rollableTiers } from "./tiers.js";
 /** DSL tier (T1 = best) → catalog ladder level (Deafening = 7, Whispering = 1). */
 const ladderOf = (tier: number): number => 8 - tier;
 
+/** Shared empty result for `addsTagsOfType` on a type that adds none. */
+const EMPTY_TAGS: ReadonlySet<TagId> = new Set();
 /** Shared empty result for `familiesOfType` on an unknown type. */
 const EMPTY_FAMILIES: ReadonlySet<GroupId> = new Set();
 /** Shared empty result for `effectsOfType` on a non-carrier type. */
@@ -175,6 +177,8 @@ export interface Registry {
     /** The mod groups (families) a ModType belongs to, across its tiers;
      *  drives the bench group-exclusivity check. */
     familiesOfType(type: TypeId): ReadonlySet<GroupId>;
+    /** The tags any row of a ModType adds to the item while present. */
+    addsTagsOfType(type: TypeId): ReadonlySet<TagId>;
     /** The effects a ModType carries (non-empty only for metamod carriers);
      *  drives the abstract metamod folds (protection, cannot-roll, multimod). */
     effectsOfType(type: TypeId): readonly Effect[];
@@ -334,6 +338,13 @@ export function buildRegistry(data: RegistryData): Registry {
     for (const m of catalog) if (!typeGen.has(m.type)) typeGen.set(m.type, m.gen);
 
     // Union of families per ModType, the group set used for bench conflict checks.
+    const typeAddsTags = new Map<TypeId, Set<TagId>>();
+    for (const m of catalog) {
+        if (m.addsTags.size === 0) continue;
+        let tags = typeAddsTags.get(m.type);
+        if (!tags) typeAddsTags.set(m.type, (tags = new Set()));
+        for (const t of m.addsTags) tags.add(t);
+    }
     const typeFamilies = new Map<TypeId, Set<GroupId>>();
     for (const m of catalog) {
         let fams = typeFamilies.get(m.type);
@@ -508,6 +519,10 @@ export function buildRegistry(data: RegistryData): Registry {
 
         familiesOfType(type) {
             return typeFamilies.get(type) ?? EMPTY_FAMILIES;
+        },
+
+        addsTagsOfType(type) {
+            return typeAddsTags.get(type) ?? EMPTY_TAGS;
         },
 
         effectsOfType(type) {

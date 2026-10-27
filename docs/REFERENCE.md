@@ -379,7 +379,9 @@ metamods). Notes:
   generation is not in that set survives (protected, or the omen-spared side); an empty set
   means nothing is removable.
 - The add-pool is over-approximated by running the real `pool` on a synthetic item
-  carrying only the guaranteed mods at rare caps.
+  carrying only the guaranteed mods at rare caps, with the tags a possibly present mod
+  would add passed as "maybe" tags: a positive spawn entry on one admits the row, a zero
+  entry on one is skipped (`addsTagsOfType`).
 - `withGuaranteed(state, mod)` forces a specific mod present (presence + tier pin +
   possible + count floors). `essence()` = reforge to Rare `[4,6]` + `withGuaranteed`, the
   rules of [Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting) (tiers 1–4

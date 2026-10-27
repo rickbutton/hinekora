@@ -21,6 +21,10 @@ import {
     RATCHETING_BASE,
     SPECIFIC_WEAPON_A,
     SPECIFIC_WEAPON_B,
+    STAFFY_ADDER,
+    STAFFY_ENABLED,
+    TAG_SPECIFIC_WEAPON,
+    TAG_STAFFY,
     mkItem,
     RING_BASE,
     RING_DISABLED,
@@ -194,6 +198,19 @@ describe("pool — tags a present modifier adds to the item", () => {
         expect(idsOf(pool(catalog, empty)).has(SPECIFIC_WEAPON_B.id)).toBe(true);
         const withA = mkItem({ rarity: "rare", prefixes: [SPECIFIC_WEAPON_A] });
         expect(idsOf(pool(catalog, withA)).has(SPECIFIC_WEAPON_B.id)).toBe(false);
+    });
+});
+
+describe("pool — tags the item may carry", () => {
+    it("a positive entry on a possible tag admits the row, a zero entry on it does not block", () => {
+        const catalog = [...CATALOG, STAFFY_ADDER, STAFFY_ENABLED];
+        const ring = mkItem({ rarity: "rare" });
+        expect(idsOf(pool(catalog, ring)).has(STAFFY_ENABLED.id)).toBe(false);
+        expect(idsOf(pool(catalog, ring, new Set([TAG_STAFFY]))).has(STAFFY_ENABLED.id)).toBe(true);
+        // A zero weight on a tag the item merely may carry is skipped, not applied.
+        expect(idsOf(pool(catalog, ring, new Set([TAG_SPECIFIC_WEAPON]))).has(LIFE_T1.id)).toBe(
+            true,
+        );
     });
 });
 

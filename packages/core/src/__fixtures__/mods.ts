@@ -536,6 +536,37 @@ export const SPECIFIC_WEAPON_B: Mod = mkMod({
     text: "specific weapon beta",
 });
 
+/**
+ * An added tag that enables a row: `TAG_STAFFY` is added by the first mod, and the
+ * second's spawn table puts a positive weight on it ahead of the zero on the ring
+ * tag, so on a ring the second rolls only once the first is on (the shape of the
+ * staff jewel mods on a Strength jewel). Not in `CATALOG`.
+ */
+export const TAG_STAFFY = TagId("staffy");
+export const STAFFY_ADDER: Mod = mkMod({
+    id: "StaffyAdder1",
+    type: "StaffyAdder",
+    gen: "prefix",
+    minLevel: 1,
+    families: ["StaffyAdder"],
+    spawn: [spawn(TAG_DEFAULT, known(500))],
+    addsTags: ["staffy"],
+    text: "staffy adder",
+});
+export const STAFFY_ENABLED: Mod = mkMod({
+    id: "StaffyEnabled1",
+    type: "StaffyEnabled",
+    gen: "suffix",
+    minLevel: 1,
+    families: ["StaffyEnabled"],
+    spawn: [
+        spawn(TAG_STAFFY, known(500)),
+        spawn(TAG_RING, known(0)),
+        spawn(TAG_DEFAULT, known(500)),
+    ],
+    text: "staffy enabled",
+});
+
 /** Catalog for fuzzy/tier tests: a 3-tier life type + a fire resist, on rings. */
 export const TIERED_CATALOG: readonly Mod[] = [MAXLIFE_T1, MAXLIFE_T2, MAXLIFE_T3, FIRE_RES_TIERED];
 

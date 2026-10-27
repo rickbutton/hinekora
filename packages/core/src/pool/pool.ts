@@ -29,9 +29,16 @@ export interface PoolCandidate {
  * for bases carrying that tag even if a later entry would allow it. `null`
  * when no spawn tag matches at all (the mod cannot roll here).
  */
-export function lookupWeight(m: Mod, baseTags: ReadonlySet<TagId>): Weight | null {
+export function lookupWeight(
+    m: Mod,
+    tags: ReadonlySet<TagId>,
+    maybeTags?: ReadonlySet<TagId>,
+): Weight | null {
     for (const entry of m.spawn) {
-        if (baseTags.has(entry.tag)) return entry.weight;
+        if (tags.has(entry.tag)) return entry.weight;
+        // A tag the item may carry can only ever help: a positive entry on it
+        // counts, a zero entry on it is skipped, so the answer covers both cases.
+        if (maybeTags?.has(entry.tag) && isNonzero(entry.weight)) return entry.weight;
     }
     return null;
 }
@@ -53,7 +60,11 @@ function classPermitted(m: Mod, itemClass: ClassId): boolean {
 /**
  * The candidate pool for `it`: a mod is a candidate iff it passes every clause.
  */
-export function pool(catalog: ModCatalog, it: Item): readonly PoolCandidate[] {
+export function pool(
+    catalog: ModCatalog,
+    it: Item,
+    maybeTags?: ReadonlySet<TagId>,
+): readonly PoolCandidate[] {
     const restrict = poolRestrictPredicate(it); // pool-restrict effects shrink the set
 
     const presentT = presentTypes(it);
@@ -77,7 +88,7 @@ export function pool(catalog: ModCatalog, it: Item): readonly PoolCandidate[] {
         // pool-restrict effects
         if (!restrict(m)) continue;
         // eligibility: a matching, nonzero spawn weight
-        const weight = lookupWeight(m, tags);
+        const weight = lookupWeight(m, tags, maybeTags);
         if (weight === null || !isNonzero(weight)) continue;
 
         candidates.push({ mod: m, weight });
