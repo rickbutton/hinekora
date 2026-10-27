@@ -73,10 +73,7 @@ describe("metamod effects are carried on the catalog", () => {
 
 describe("protection (prefixes cannot be changed)", () => {
     it("spares the protected side from annul", () => {
-        const c = craft("poe1", rareRing(["T1 Life"]), [
-            bench("prefixes cannot be changed"),
-            op("annul"),
-        ]);
+        const c = craft(rareRing(["T1 Life"]), [bench("prefixes cannot be changed"), op("annul")]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         // The life prefix is protected, so annul removes the suffix carrier instead
@@ -85,13 +82,13 @@ describe("protection (prefixes cannot be changed)", () => {
     });
 
     it("without the metamod, an unforced annul drops the guarantee", () => {
-        const c = craft("poe1", rareRing(["T1 Life"]), [op("annul")]);
+        const c = craft(rareRing(["T1 Life"]), [op("annul")]);
         const r = check(c, ctx);
         expect(guaranteed(r)).not.toContain("IncreasedLife");
     });
 
     it("spares the protected side from a harvest augment's random remove", () => {
-        const c = craft("poe1", rareRing(["T1 Life"]), [
+        const c = craft(rareRing(["T1 Life"]), [
             bench("prefixes cannot be changed"),
             harvest("augment", "fire"),
         ]);
@@ -103,10 +100,7 @@ describe("protection (prefixes cannot be changed)", () => {
 
 describe("scour respects protection", () => {
     it("keeps the protected side, dropping to the min rarity for what survives", () => {
-        const c = craft("poe1", rareRing(["T1 Life"]), [
-            bench("prefixes cannot be changed"),
-            op("scour"),
-        ]);
+        const c = craft(rareRing(["T1 Life"]), [bench("prefixes cannot be changed"), op("scour")]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         // One prefix survives (suffixes + the metamod are gone) → a 1-mod Magic.
@@ -117,7 +111,7 @@ describe("scour respects protection", () => {
     });
 
     it("without a metamod, scour strips to Normal", () => {
-        const c = craft("poe1", rareRing(["T1 Life"]), [op("scour")]);
+        const c = craft(rareRing(["T1 Life"]), [op("scour")]);
         const r = check(c, ctx);
         expect(r.finalState!.rarity).toBe("normal");
         expect(r.finalState!.counts.total).toEqual([0, 0]);
@@ -126,7 +120,7 @@ describe("scour respects protection", () => {
 
 describe("essence is blocked by a metamod", () => {
     it("fails while a protection metamod is present", () => {
-        const c = craft("poe1", rareRing(["T1 Life"]), [
+        const c = craft(rareRing(["T1 Life"]), [
             bench("prefixes cannot be changed"),
             essence("greed", 1),
         ]);
@@ -136,7 +130,7 @@ describe("essence is blocked by a metamod", () => {
     });
 
     it("is allowed under multimod alone (it does not affect mod outcomes)", () => {
-        const c = craft("poe1", rareRing(["T1 Life"]), [
+        const c = craft(rareRing(["T1 Life"]), [
             bench("can have up to 3 crafted modifiers"),
             essence("greed", 1),
         ]);
@@ -147,7 +141,7 @@ describe("essence is blocked by a metamod", () => {
 
 describe("multimod raises the crafted-mod limit", () => {
     it("blocks a second bench craft at the default limit of one", () => {
-        const c = craft("poe1", rareRing(), [
+        const c = craft(rareRing(), [
             bench("prefixes cannot be changed"),
             bench("suffixes cannot be changed"),
         ]);
@@ -157,7 +151,7 @@ describe("multimod raises the crafted-mod limit", () => {
     });
 
     it("allows three crafted mods once multimod is placed", () => {
-        const c = craft("poe1", rareRing(), [
+        const c = craft(rareRing(), [
             bench("can have up to 3 crafted modifiers"),
             bench("prefixes cannot be changed"),
             bench("suffixes cannot be changed"),
@@ -170,10 +164,7 @@ describe("multimod raises the crafted-mod limit", () => {
 
 describe("reforge respects protection (Stage B)", () => {
     it("chaos keeps the protected side's guarantees", () => {
-        const c = craft("poe1", rareRing(["T1 Life"]), [
-            bench("prefixes cannot be changed"),
-            op("chaos"),
-        ]);
+        const c = craft(rareRing(["T1 Life"]), [bench("prefixes cannot be changed"), op("chaos")]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.rarity).toBe("rare");
@@ -182,13 +173,13 @@ describe("reforge respects protection (Stage B)", () => {
     });
 
     it("without a metamod, chaos drops all guarantees", () => {
-        const c = craft("poe1", rareRing(["T1 Life"]), [op("chaos")]);
+        const c = craft(rareRing(["T1 Life"]), [op("chaos")]);
         const r = check(c, ctx);
         expect(guaranteed(r)).not.toContain("IncreasedLife");
     });
 
     it("harvest reforge keeps the protected side and still guarantees the tag", () => {
-        const c = craft("poe1", rareRing(["T1 Life"]), [
+        const c = craft(rareRing(["T1 Life"]), [
             bench("prefixes cannot be changed"),
             harvest("reforge", "fire"),
         ]);
@@ -204,7 +195,7 @@ describe("cannot roll attack modifiers shields attack mods from removal", () => 
     const attackRing = () => rareRing(["AddedAttack1"], []);
 
     it("an annul never removes the attack prefix, so its guarantee survives", () => {
-        const c = craft("poe1", attackRing(), [bench("cannot roll attack modifiers"), op("annul")]);
+        const c = craft(attackRing(), [bench("cannot roll attack modifiers"), op("annul")]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).toContain("AddedAttackDamage");
@@ -215,7 +206,7 @@ describe("cannot roll attack modifiers shields attack mods from removal", () => 
         // removals ignore cannot-roll, so the attack guarantee may be lost, and the
         // attack prefix being the only prefix is no obstacle to either.
         for (const step of [veiled("exalt"), harvest("augment", "life")]) {
-            const c = craft("poe1", attackRing(), [bench("cannot roll attack modifiers"), step]);
+            const c = craft(attackRing(), [bench("cannot roll attack modifiers"), step]);
             const r = check(c, ctx);
             expect(r.diagnostics).toEqual([]);
             expect(guaranteed(r)).not.toContain("AddedAttackDamage");
@@ -225,7 +216,7 @@ describe("cannot roll attack modifiers shields attack mods from removal", () => 
     it("an unproven lock may sit on the one modifier that would prove a removal", () => {
         // After the Fracturing Orb the lock may be on the carrier, the only
         // guaranteed unshielded mod, so no removal is proven.
-        const c = craft("poe1", rareRing(["AddedAttack1"], ["random", "random"]), [
+        const c = craft(rareRing(["AddedAttack1"], ["random", "random"]), [
             bench("cannot roll attack modifiers"),
             op("fracture"),
             op("annul"),
@@ -237,7 +228,7 @@ describe("cannot roll attack modifiers shields attack mods from removal", () => 
 
 describe("a declared bench-crafted mod counts toward the crafted limit", () => {
     it("a second bench craft is refused without multimod", () => {
-        const c = craft("poe1", rareRing([], [PROTECT_PREFIXES_CARRIER.id]), [
+        const c = craft(rareRing([], [PROTECT_PREFIXES_CARRIER.id]), [
             bench("cannot roll attack modifiers"),
         ]);
         const r = check(c, ctx);
@@ -245,9 +236,7 @@ describe("a declared bench-crafted mod counts toward the crafted limit", () => {
     });
 
     it("the declared metamod's effect is active from the start", () => {
-        const c = craft("poe1", rareRing(["T1 Life"], [PROTECT_PREFIXES_CARRIER.id]), [
-            op("annul"),
-        ]);
+        const c = craft(rareRing(["T1 Life"], [PROTECT_PREFIXES_CARRIER.id]), [op("annul")]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).toContain("IncreasedLife");
@@ -268,13 +257,13 @@ describe("a fractured bench row keeps its crafted count through a reforge", () =
         });
 
     it("after an essence", () => {
-        const r = check(craft("poe1", fracturedMultimod(), [essence("greed", 1)]), ctx);
+        const r = check(craft(fracturedMultimod(), [essence("greed", 1)]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.crafted).toEqual([0, 1]);
     });
 
     it("after a chaos", () => {
-        const r = check(craft("poe1", fracturedMultimod(), [op("chaos")]), ctx);
+        const r = check(craft(fracturedMultimod(), [op("chaos")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.crafted).toEqual([0, 1]);
     });
@@ -284,7 +273,7 @@ describe("a fractured bench row keeps its crafted count through a reforge", () =
         // essence then cannot be sure the crafted count fell to zero.
         const fourMods = rareRing(["T1 Life"], ["random", "random"]);
         for (const reforge of [op("chaos"), essence("greed", 1)]) {
-            const c = craft("poe1", fourMods, [
+            const c = craft(fourMods, [
                 bench("can have up to 3 crafted modifiers"),
                 op("fracture"),
                 reforge,
@@ -303,12 +292,12 @@ describe("a kept cannot-roll metamod restricts a reforge's fresh pool", () => {
         rareRing([PROTECT_SUFFIXES_CARRIER.id], [CANNOT_ROLL_ATTACK_CARRIER.id]);
 
     it("a harvest reforge for the restricted tag has an empty pool", () => {
-        const r = check(craft("poe1", lockedSuffixes(), [harvest("reforge", "attack")]), ctx);
+        const r = check(craft(lockedSuffixes(), [harvest("reforge", "attack")]), ctx);
         expect(r.diagnostics[0]?.message).toContain("No attack modifier");
     });
 
     it("a chaos keeps the restriction out of the rerolled side's pool", () => {
-        const r = check(craft("poe1", lockedSuffixes(), [op("chaos")]), ctx);
+        const r = check(craft(lockedSuffixes(), [op("chaos")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.possible.has(TypeId("AddedAttackDamage"))).toBe(false);
         expect(r.finalState!.possible.has(TypeId("IncreasedLife"))).toBe(true);
@@ -317,7 +306,7 @@ describe("a kept cannot-roll metamod restricts a reforge's fresh pool", () => {
 
 describe("cannot roll attack modifiers", () => {
     it("excludes attack-tagged types from a later exalt's pool", () => {
-        const c = craft("poe1", rareRing(), [bench("cannot roll attack modifiers"), op("exalt")]);
+        const c = craft(rareRing(), [bench("cannot roll attack modifiers"), op("exalt")]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.possible.has(TypeId("AddedAttackDamage"))).toBe(false);

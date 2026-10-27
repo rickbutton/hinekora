@@ -6,7 +6,7 @@
  */
 import type { Base } from "../model/base.js";
 import type { Effect } from "../model/effects.js";
-import type { ClassId, Game, Gen, GroupId, TypeId } from "../model/ids.js";
+import type { ClassId, Gen, GroupId, TypeId } from "../model/ids.js";
 import { TagId } from "../model/ids.js";
 import { withMetamodEffects } from "../model/metamods.js";
 import type { Mod } from "../model/mod.js";
@@ -128,7 +128,6 @@ const fail = <T>(error: ResolveError): Resolved<T> => ({ ok: false, error });
 
 /** Item context that lets fuzzy mod-type resolution filter by rollability. */
 export interface ModTypeContext {
-    readonly game: Game;
     readonly base: Base;
     readonly ilvl: number;
 }
@@ -413,7 +412,7 @@ export function buildRegistry(data: RegistryData): Registry {
                 const rollable = matches.filter(
                     (m) =>
                         veiledTypes.has(m.type) ||
-                        rollableTiers(catalog, ctx.game, ctx.base, ctx.ilvl, m.type).length > 0,
+                        rollableTiers(catalog, ctx.base, ctx.ilvl, m.type).length > 0,
                 );
                 if (rollable.length > 0) matches = rollable;
             }

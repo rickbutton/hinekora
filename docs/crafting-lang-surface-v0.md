@@ -24,9 +24,9 @@ relates to it.
 
 ## 0.1 Concrete syntax
 
-- **`craft in <game>` comes first.** Only `poe1` is supported: the data, the currencies
-  and every rule below are PoE1's. `poe2` parses but is checked against the same PoE1
-  catalog.
+- **`craft in poe1` comes first.** The data, the currencies and every rule below are
+  Path of Exile 1's; the header names the game the file is written for and no other
+  word is accepted.
 - **Blocks are C-style `{ … }`.** Whitespace, including newlines, is insignificant.
 - **Text values are quoted**: `base: "Cobalt Jewel"`, mod names, essence and bench names,
   harvest tags.

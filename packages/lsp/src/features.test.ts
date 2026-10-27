@@ -138,14 +138,12 @@ until ${twoOf3} { annul annul exalt exalt }`;
         const base = registry.resolveBase("Vaal Regalia");
         expect(base.ok).toBe(true);
         const type = registry.resolveModType("fire resistance", {
-            game: "poe1",
             base: base.ok ? base.value : (undefined as never),
             ilvl: 84,
         });
         expect(type.ok).toBe(true);
         const t1 = rollableTiers(
             registry.catalog,
-            "poe1",
             base.ok ? base.value : (undefined as never),
             84,
             type.ok ? type.value : (undefined as never),

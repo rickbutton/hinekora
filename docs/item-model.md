@@ -21,7 +21,7 @@ Out: candidate-pool eligibility (the
 an item; only the data it reads is declared here); currency operations and the
 essence/bench/fossil catalogues; the implicit layer (implicits, corruption, enchantments,
 synthesis: [Modifier § Types of modifiers](https://www.poewiki.net/wiki/Modifier#Types_of_modifiers));
-unique items ([Rarity § Unique](https://www.poewiki.net/wiki/Rarity#Unique)); PoE2 rules.
+unique items ([Rarity § Unique](https://www.poewiki.net/wiki/Rarity#Unique)).
 
 ---
 

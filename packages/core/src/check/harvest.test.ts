@@ -32,7 +32,7 @@ describe("harvest reforge", () => {
     it("guarantees a single-type tag as a plain guarantee", () => {
         // "life" resolves to exactly the IncreasedLife type here, so the
         // disjunction collapses to a guarantee.
-        const c = craft("poe1", rareRing(), [harvest("reforge", "life")]);
+        const c = craft(rareRing(), [harvest("reforge", "life")]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).toContain("IncreasedLife");
@@ -43,7 +43,7 @@ describe("harvest reforge", () => {
     it("guarantees a multi-type tag as a disjunction", () => {
         // "fire" spans two types (FireResist, FireChaosResist): neither is
         // guaranteed alone, but at least one is present.
-        const c = craft("poe1", rareRing(), [harvest("reforge", "fire")]);
+        const c = craft(rareRing(), [harvest("reforge", "fire")]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).not.toContain("FireResist");
@@ -52,7 +52,7 @@ describe("harvest reforge", () => {
     });
 
     it("rejects a tag no mod can roll here (the grayed-out case)", () => {
-        const c = craft("poe1", rareRing(), [harvest("reforge", "minion")]);
+        const c = craft(rareRing(), [harvest("reforge", "minion")]);
         const r = check(c, ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("minion");
@@ -60,13 +60,13 @@ describe("harvest reforge", () => {
 
     it("requires a Rare item", () => {
         const magic = item({ base: "Iron Ring", ilvl: 100, rarity: "magic" });
-        const r = check(craft("poe1", magic, [harvest("reforge", "fire")]), ctx);
+        const r = check(craft(magic, [harvest("reforge", "fire")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("Requires a Rare item");
     });
 
     it("rejects an unknown tag", () => {
-        const r = check(craft("poe1", rareRing(), [harvest("reforge", "blaze")]), ctx);
+        const r = check(craft(rareRing(), [harvest("reforge", "blaze")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("harvest modifier type");
     });
@@ -77,7 +77,7 @@ describe("harvest augment (add tagged, remove a random other)", () => {
         // Start with a guaranteed life prefix; augmenting fire removes a random
         // other mod (here the life mod), so life is no longer guaranteed and the
         // total count is unchanged.
-        const c = craft("poe1", rareRing(["T1 Life"]), [harvest("augment", "fire")]);
+        const c = craft(rareRing(["T1 Life"]), [harvest("augment", "fire")]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).not.toContain("IncreasedLife");
@@ -87,13 +87,13 @@ describe("harvest augment (add tagged, remove a random other)", () => {
     });
 
     it("requires a mod to remove", () => {
-        const r = check(craft("poe1", rareRing(), [harvest("augment", "fire")]), ctx);
+        const r = check(craft(rareRing(), [harvest("augment", "fire")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("removable affix");
     });
 
     it("rejects a tag no mod can roll here", () => {
-        const c = craft("poe1", rareRing(["T1 Life"]), [harvest("augment", "minion")]);
+        const c = craft(rareRing(["T1 Life"]), [harvest("augment", "minion")]);
         const r = check(c, ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("minion");

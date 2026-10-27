@@ -46,10 +46,6 @@ export const Domain = (s: string): Domain => s as Domain;
 
 // --- Small closed enums ---------------------------------------------------
 
-/** Which game's ruleset an item lives under, makes a cross-game op
- *  unconstructible. */
-export type Game = "poe1" | "poe2";
-
 /** Item rarity. Drives the base slot caps (Normal 0/0, Magic 1/1, Rare 3/3). */
 export type Rarity = "normal" | "magic" | "rare";
 

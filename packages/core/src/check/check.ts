@@ -18,7 +18,7 @@ import type {
     Stmt,
 } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
-import type { Game, Gen, GroupId, ModId, TypeId } from "../model/ids.js";
+import type { Gen, GroupId, ModId, TypeId } from "../model/ids.js";
 import type { CurrencyKind, Registry } from "../resolve/registry.js";
 import {
     type AItem,
@@ -177,7 +177,7 @@ class Checker {
     run(craft: Craft): CheckResult {
         this.collectDefs(craft.defs);
         this.collectProcs(craft.procs);
-        const initial = this.elaborateItem(craft.game, craft.item);
+        const initial = this.elaborateItem(craft.item);
         if (initial === null) {
             return { ok: false, diagnostics: this.diagnostics, trace: this.trace };
         }
@@ -221,7 +221,7 @@ class Checker {
 
     // --- item block → initial state ---------------------------------------
 
-    private elaborateItem(game: Game, item: ItemBlock): AItem | null {
+    private elaborateItem(item: ItemBlock): AItem | null {
         const baseRes = this.registry.resolveBase(item.base);
         if (!baseRes.ok) {
             this.diag(resolveMessage(baseRes.error), item.span);
@@ -235,7 +235,7 @@ class Checker {
         let fracturedType: TypeId | undefined;
         let fracturedAnonymous = false;
         let crafted = 0;
-        const ctx = { game, base, ilvl: item.ilvl };
+        const ctx = { base, ilvl: item.ilvl };
 
         const checkGen = (name: string, modGen: Gen | undefined, gen: Gen): void => {
             if (modGen !== undefined && modGen !== gen) {
@@ -302,11 +302,7 @@ class Checker {
                 return undefined;
             }
             const type = typeRes.value;
-            checkGen(
-                affix.mod,
-                rollableGen(this.registry.catalog, game, base, item.ilvl, type),
-                gen,
-            );
+            checkGen(affix.mod, rollableGen(this.registry.catalog, base, item.ilvl, type), gen);
             if (affix.tier === undefined) {
                 this.diag(
                     `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t1\`), a starting item's mods must name a specific tier.`,
@@ -315,7 +311,7 @@ class Checker {
                 claim(affix.mod, type); // still count it as present, just untiered
                 return type;
             }
-            const tiers = rollableTiers(this.registry.catalog, game, base, item.ilvl, type);
+            const tiers = rollableTiers(this.registry.catalog, base, item.ilvl, type);
             const mod = tierMod(tiers, affix.tier);
             if (mod === undefined) {
                 this.diag(
@@ -388,7 +384,7 @@ class Checker {
             prefixCount = Math.min(prefixCount, tCap - suffixCount);
         }
 
-        return initialState(this.bdd, game, base, item.ilvl, item.rarity, {
+        return initialState(this.bdd, base, item.ilvl, item.rarity, {
             prefixCount,
             suffixCount,
             present,
@@ -530,7 +526,7 @@ class Checker {
             const modName = this.literalString(stmt.mod, stmt.span);
             if (modName === null) return { kind: "fall", state: a };
             name = modName;
-            const ctx = { game: a.game, base: a.base, ilvl: a.ilvl };
+            const ctx = { base: a.base, ilvl: a.ilvl };
             const typeRes = this.registry.resolveModType(modName, ctx);
             if (!typeRes.ok) {
                 this.diag(resolveMessage(typeRes.error), stmt.span);
@@ -694,7 +690,7 @@ class Checker {
      */
     private tightenCounts(a: AItem): AItem {
         const genOf = (t: TypeId): Gen =>
-            rollableGen(this.registry.catalog, a.game, a.base, a.ilvl, t) ?? "prefix";
+            rollableGen(this.registry.catalog, a.base, a.ilvl, t) ?? "prefix";
         const guaranteed = guaranteedTypes(a);
         const cards = cardinalityGuarantees(a);
         const minFor = (gen: Gen): number => {
@@ -905,7 +901,7 @@ class Checker {
     private resolveFractured(pred: Extract<Pred, { kind: "fractured" }>, a: AItem): RPred | null {
         const modName = this.literalString(pred.mod, pred.span);
         if (modName === null) return null;
-        const ctx = { game: a.game, base: a.base, ilvl: a.ilvl };
+        const ctx = { base: a.base, ilvl: a.ilvl };
         const typeRes = this.registry.resolveModType(modName, ctx);
         if (!typeRes.ok) {
             this.diag(resolveMessage(typeRes.error), pred.span);
@@ -947,14 +943,14 @@ class Checker {
     private resolveHas(pred: Extract<Pred, { kind: "has" }>, a: AItem): RPred | null {
         const modName = this.literalString(pred.mod, pred.span);
         if (modName === null) return null;
-        const ctx = { game: a.game, base: a.base, ilvl: a.ilvl };
+        const ctx = { base: a.base, ilvl: a.ilvl };
         const typeRes = this.registry.resolveModType(modName, ctx);
         if (!typeRes.ok) {
             this.diag(resolveMessage(typeRes.error), pred.span);
             return null;
         }
         const type = typeRes.value;
-        const gen = rollableGen(this.registry.catalog, a.game, a.base, a.ilvl, type) ?? "prefix";
+        const gen = rollableGen(this.registry.catalog, a.base, a.ilvl, type) ?? "prefix";
 
         if (pred.tier === undefined) {
             return { kind: "has", type, gen };
@@ -962,7 +958,7 @@ class Checker {
         const tier = this.literalInt(pred.tier, pred.span);
         if (tier === null) return null;
         // Resolve the requested tier to a specific mod (T1 = best rollable here).
-        const tiers = rollableTiers(this.registry.catalog, a.game, a.base, a.ilvl, type);
+        const tiers = rollableTiers(this.registry.catalog, a.base, a.ilvl, type);
         const mod = tierMod(tiers, tier);
         if (mod === undefined) {
             this.diag(

@@ -36,7 +36,7 @@ import type {
     UntilStmt,
 } from "../ast/index.js";
 import type { Cmp } from "../ast/ast.js";
-import type { Game, Rarity } from "../model/ids.js";
+import type { Rarity } from "../model/ids.js";
 
 const DS: SourceSpan = {
     start: { offset: 0, line: 1, column: 1 },
@@ -59,14 +59,12 @@ interface ItemSpec {
 const affix = (a: AffixSpec): AffixDecl => (typeof a === "string" ? { mod: a } : a);
 
 export const craft = (
-    game: Game,
     item: ItemBlock,
     body: readonly Stmt[],
     defs: readonly Def[] = [],
     procs: readonly ProcDef[] = [],
 ): Craft => ({
     kind: "craft",
-    game,
     item,
     defs,
     procs,

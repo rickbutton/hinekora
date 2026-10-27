@@ -147,7 +147,7 @@ resolveEssence / resolveBench / resolveHarvestTag`
     - `STANDARD_CURRENCIES`: the 10-currency catalog. `name`/`kind` drive the language;
       `displayName`/`description` are curated display metadata (RePoE ships no currency
       descriptions) used only by hover/completion.
-    - `tiers.ts`: `rollableTiers(catalog, game, base, ilvl, type)` (pool ∩ type, sorted
+    - `tiers.ts`: `rollableTiers(catalog, base, ilvl, type)` (pool ∩ type, sorted
       by minLevel desc so T1 = best available), `tierMod`, `rollableTypes` (the
       type-level pool; drives base-aware mod completion). The empty-item pool is
       memoized per (base, ilvl), the single biggest checker/LSP speedup (hover
@@ -242,7 +242,7 @@ The heart. Abstract interpretation over a symbolic item summary.
 
 ### The abstract state `AItem`: a reduced product of sub-domains
 
-`AItem` carries the item's identity, which no operation changes (`game`, `base`, `ilvl`)
+`AItem` carries the item's identity, which no operation changes (`base`, `ilvl`)
 or changes exactly (`rarity`), the shared `bdd` manager, and the sub-domains below. It is
 a **reduced product**: each sub-domain field is a small abstract domain, and the
 merge/fixpoint machinery treats them uniformly. `check/domain.ts` declares the shared

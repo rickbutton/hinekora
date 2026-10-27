@@ -212,7 +212,7 @@ function modLine(a: AItem, type: TypeId, registry: Registry, pinMod?: ModId): st
                   const r = registry.resolveMod(id);
                   return r.ok ? [r.value] : [];
               })
-            : rollableTiers(registry.catalog, a.game, a.base, a.ilvl, type);
+            : rollableTiers(registry.catalog, a.base, a.ilvl, type);
     const texts = mods
         .map((m) => m.text)
         .filter((t): t is string => t !== undefined)
@@ -227,8 +227,7 @@ function modLine(a: AItem, type: TypeId, registry: Registry, pinMod?: ModId): st
  */
 function tooltip(a: AItem, registry: Registry, caption?: string): string {
     const guaranteed = guaranteedTypes(a);
-    const genOf = (t: TypeId): Gen =>
-        rollableGen(registry.catalog, a.game, a.base, a.ilvl, t) ?? "prefix";
+    const genOf = (t: TypeId): Gen => rollableGen(registry.catalog, a.base, a.ilvl, t) ?? "prefix";
 
     const known: Record<Gen, TypeId[]> = { prefix: [], suffix: [] };
     for (const t of guaranteed) known[genOf(t)].push(t);
@@ -407,9 +406,7 @@ function modSignature(
     entry: TraceEntry | undefined,
     registry: Registry,
 ): string {
-    const ctx = entry
-        ? { game: entry.before.game, base: entry.before.base, ilvl: entry.before.ilvl }
-        : undefined;
+    const ctx = entry ? { base: entry.before.base, ilvl: entry.before.ilvl } : undefined;
 
     const t = registry.resolveModType(text, ctx);
     if (!t.ok) {
@@ -427,7 +424,7 @@ function modSignature(
         return `${header}\n\n_tiers depend on the item — hover inside a craft to list them._`;
     }
     const baseName = ctx.base.name ?? ctx.base.id;
-    const tiers = rollableTiers(registry.catalog, ctx.game, ctx.base, ctx.ilvl, type);
+    const tiers = rollableTiers(registry.catalog, ctx.base, ctx.ilvl, type);
     if (tiers.length === 0) {
         return `${header}\n\n_cannot roll on ${baseName} at ilvl ${ctx.ilvl}._`;
     }

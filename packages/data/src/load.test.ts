@@ -157,7 +157,7 @@ describe("catalog-level facts of the item model", () => {
 });
 
 describe("fuzzy mod resolution against real data", () => {
-    const rctx = { game: "poe1" as const, base: base("Iron Ring"), ilvl: 84 };
+    const rctx = { base: base("Iron Ring"), ilvl: 84 };
 
     it("resolves a stat description to a ModType, base-aware", () => {
         expect(registry.resolveModType("maximum life", rctx)).toMatchObject({

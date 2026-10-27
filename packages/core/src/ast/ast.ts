@@ -4,13 +4,12 @@
  * the surface syntax and does no resolution or lowering; names stay raw
  * strings, keeping the parser a pure syntax-to-tree transform.
  */
-import type { Game, Rarity } from "../model/ids.js";
+import type { Rarity } from "../model/ids.js";
 import type { SourceSpan } from "./span.js";
 
-/** A whole craft file: `craft in <game>` header, an item block, then a body. */
+/** A whole craft file: the `craft in poe1` header, an item block, then a body. */
 export interface Craft {
     readonly kind: "craft";
-    readonly game: Game;
     readonly item: ItemBlock;
     /** Local predicate definitions (`def name(p) = <pred>`), usable in any predicate. */
     readonly defs: readonly Def[];

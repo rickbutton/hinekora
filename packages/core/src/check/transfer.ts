@@ -63,7 +63,7 @@ const fail = (failure: PreconditionFailure): TransferResult => ({ ok: false, fai
 
 /** The side `type` occupies on this item's base (`rollableGen`). */
 function genOf(a: AItem, registry: Registry, type: TypeId): Gen {
-    return rollableGen(registry.catalog, a.game, a.base, a.ilvl, type) ?? "prefix";
+    return rollableGen(registry.catalog, a.base, a.ilvl, type) ?? "prefix";
 }
 
 // --- the four base currencies ---------------------------------------------

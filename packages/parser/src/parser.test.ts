@@ -15,7 +15,7 @@ function parseErr(src: string): SyntaxDiagnostic {
     return r.error;
 }
 
-const CANONICAL = `craft in poe2
+const CANONICAL = `craft in poe1
 
 item {
     base: "Cobalt Jewel"
@@ -34,10 +34,6 @@ until not has "+1 Suffix Modifier" {
 
 describe("parser — the canonical craft (surface §8)", () => {
     const craft = parseOk(CANONICAL);
-
-    it("reads the game from the top-level declaration", () => {
-        expect(craft.game).toBe("poe2");
-    });
 
     it("reads the item block with defaults for omitted optionals", () => {
         expect(craft.item).toMatchObject({

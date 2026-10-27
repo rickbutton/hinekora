@@ -41,27 +41,24 @@ describe("veiledPool", () => {
 
 describe("veiled orbs", () => {
     it("veiled chaos leaves a veiled mod ready to unveil", () => {
-        const r = check(craft("poe1", rareRing(), [veiled("chaos"), unveil()]), ctx);
+        const r = check(craft(rareRing(), [veiled("chaos"), unveil()]), ctx);
         expect(r.diagnostics).toEqual([]);
     });
 
     it("unveil without a veiled mod fails", () => {
-        const r = check(craft("poe1", rareRing(), [unveil()]), ctx);
+        const r = check(craft(rareRing(), [unveil()]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("veiled modifier");
     });
 
     it("a veiled orb is refused while a veiled modifier is pending", () => {
-        const r = check(craft("poe1", rareRing(), [veiled("chaos"), veiled("exalt")]), ctx);
+        const r = check(craft(rareRing(), [veiled("chaos"), veiled("exalt")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("veiled or unveiled modifier");
     });
 
     it("a veiled orb is refused once an unveiled modifier may be on the item", () => {
-        const r = check(
-            craft("poe1", rareRing(), [veiled("chaos"), unveil(), veiled("chaos")]),
-            ctx,
-        );
+        const r = check(craft(rareRing(), [veiled("chaos"), unveil(), veiled("chaos")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("veiled or unveiled modifier");
     });
@@ -69,12 +66,12 @@ describe("veiled orbs", () => {
     it("a veiled orb is refused on an item that declares an unveiled modifier", () => {
         // The declared row shares its type with a natural row listed first, so only
         // the rows the type may be, not the first row, reveal it as unveiled.
-        const r = check(craft("poe1", rareRing(["SharedVeilUnveiled1"]), [veiled("exalt")]), ctx);
+        const r = check(craft(rareRing(["SharedVeilUnveiled1"]), [veiled("exalt")]), ctx);
         expect(r.diagnostics[0]!.message).toContain("veiled or unveiled modifier");
     });
 
     it("veiled exalt keeps the affix count (removes one, adds the veiled mod)", () => {
-        const r = check(craft("poe1", rareRing(["random", "random"]), [veiled("exalt")]), ctx);
+        const r = check(craft(rareRing(["random", "random"]), [veiled("exalt")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.counts.total).toEqual([2, 2]);
     });
@@ -82,28 +79,25 @@ describe("veiled orbs", () => {
 
 describe("unveil", () => {
     it("guarantees a target when the pool is 3 or fewer", () => {
-        const r = check(craft("poe1", rareRing(), [veiled("chaos"), unveil("double damage")]), ctx);
+        const r = check(craft(rareRing(), [veiled("chaos"), unveil("double damage")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).toContain("VeiledDoubleDamage");
     });
 
     it("cannot guarantee a target when more than 3 options remain", () => {
-        const r = check(
-            craft("poe1", rareAmulet(), [veiled("chaos"), unveil("double damage")]),
-            ctx,
-        );
+        const r = check(craft(rareAmulet(), [veiled("chaos"), unveil("double damage")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toMatch(/block the pool|3 or fewer/);
     });
 
     it("rejects a target that isn't an available option", () => {
-        const r = check(craft("poe1", rareRing(), [veiled("chaos"), unveil("maximum life")]), ctx);
+        const r = check(craft(rareRing(), [veiled("chaos"), unveil("maximum life")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("not an available unveil option");
     });
 
     it("bare unveil leaves a disjunction a branch can narrow", () => {
-        const c = craft("poe1", rareAmulet(), [
+        const c = craft(rareAmulet(), [
             veiled("chaos"),
             unveil(),
             iff(has("cast speed"), [op("scour")]),

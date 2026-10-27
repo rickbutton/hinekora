@@ -5,7 +5,7 @@
  * highest-requirement tier that can appear is T1.
  */
 import type { Base } from "../model/base.js";
-import type { Game, Gen, TypeId } from "../model/ids.js";
+import type { Gen, TypeId } from "../model/ids.js";
 import { emptyItem } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
 import { type ModCatalog, pool } from "../pool/pool.js";
@@ -18,18 +18,13 @@ import { type ModCatalog, pool } from "../pool/pool.js";
  */
 const emptyPoolCache = new WeakMap<ModCatalog, Map<string, ReturnType<typeof pool>>>();
 
-function emptyPool(
-    catalog: ModCatalog,
-    game: Game,
-    base: Base,
-    ilvl: number,
-): ReturnType<typeof pool> {
+function emptyPool(catalog: ModCatalog, base: Base, ilvl: number): ReturnType<typeof pool> {
     let byKey = emptyPoolCache.get(catalog);
     if (byKey === undefined) {
         byKey = new Map();
         emptyPoolCache.set(catalog, byKey);
     }
-    const key = `${game}:${base.id}:${ilvl}`;
+    const key = `${base.id}:${ilvl}`;
     let cached = byKey.get(key);
     if (cached === undefined) {
         cached = pool(catalog, emptyItem(base, ilvl, "rare"));
@@ -41,26 +36,20 @@ function emptyPool(
 /** The rollable tiers of `type` on `base` at `ilvl`, best (T1) first. */
 export function rollableTiers(
     catalog: ModCatalog,
-    game: Game,
     base: Base,
     ilvl: number,
     type: TypeId,
 ): readonly Mod[] {
-    return emptyPool(catalog, game, base, ilvl)
+    return emptyPool(catalog, base, ilvl)
         .map((c) => c.mod)
         .filter((m) => m.type === type)
         .sort((a, b) => b.minLevel - a.minLevel);
 }
 
 /** Every ModType that can roll on `base` at `ilvl` — the type-level pool. */
-export function rollableTypes(
-    catalog: ModCatalog,
-    game: Game,
-    base: Base,
-    ilvl: number,
-): Set<TypeId> {
+export function rollableTypes(catalog: ModCatalog, base: Base, ilvl: number): Set<TypeId> {
     const out = new Set<TypeId>();
-    for (const c of emptyPool(catalog, game, base, ilvl)) out.add(c.mod.type);
+    for (const c of emptyPool(catalog, base, ilvl)) out.add(c.mod.type);
     return out;
 }
 
@@ -72,12 +61,11 @@ export function rollableTypes(
  */
 export function rollableGen(
     catalog: ModCatalog,
-    game: Game,
     base: Base,
     ilvl: number,
     type: TypeId,
 ): Gen | undefined {
-    const here = rollableTiers(catalog, game, base, ilvl, type)[0];
+    const here = rollableTiers(catalog, base, ilvl, type)[0];
     if (here) return here.gen;
     return catalog.find((m) => m.type === type)?.gen;
 }

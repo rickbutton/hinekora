@@ -45,8 +45,8 @@ outcomes in the checker, stop; that violates the design and won't scale.
   requested"), no progress or milestone notes, and no point-in-time process artifacts (a
   specific test count, "gate green", "all four green"). Describe the change and its why the
   way a human would when revisiting the code a year later.
-- **Vitest**, with extensive tests. **PoE1 only** for now.
-- Surface syntax: C-style braces; a file opens with `craft in <game>`.
+- **Vitest**, with extensive tests. **PoE1 only**, with no provision for PoE2.
+- Surface syntax: C-style braces; a file opens with `craft in poe1`.
 
 ## The gate (run before declaring anything done, and before every commit)
 

@@ -4,7 +4,7 @@
  * docs check read these tables, so a word cannot be accepted, offered or
  * documented without the others knowing.
  */
-import type { Game, Rarity } from "@hinekora/core";
+import type { Rarity } from "@hinekora/core";
 
 /** Words that open a statement or a header: `craft in`, `item`, control flow, defs. */
 export const KEYWORDS = [
@@ -43,7 +43,8 @@ export const ITEM_FIELDS = [
     "quality",
 ] as const;
 export const RARITY_WORDS = ["normal", "magic", "rare"] as const;
-export const GAMES: readonly Game[] = ["poe1", "poe2"];
+/** The one word the header accepts after `craft in`. */
+export const GAME = "poe1";
 
 /** The second word of `harvest <verb>` and `veiled <verb>`. */
 export const HARVEST_VERBS: readonly HarvestVerb[] = ["reforge", "augment"];
@@ -59,7 +60,7 @@ export const VOCABULARY: readonly string[] = [
     ...PROJECTIONS,
     ...ITEM_FIELDS,
     ...RARITY_WORDS,
-    ...GAMES,
+    GAME,
     ...HARVEST_VERBS,
     ...VEILED_VERBS,
 ];

@@ -47,7 +47,6 @@ const KEYWORDS = new Set([
     "magic",
     "rare",
     "poe1",
-    "poe2",
 ]);
 const FIELDS = new Set(["base", "ilvl", "rarity", "prefixes", "suffixes", "augments", "quality"]);
 

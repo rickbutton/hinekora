@@ -8,7 +8,7 @@
  */
 import type { Base } from "../model/base.js";
 import type { Cmp } from "../ast/ast.js";
-import type { Game, Gen, Rarity } from "../model/ids.js";
+import type { Gen, Rarity } from "../model/ids.js";
 import { ModId, TypeId } from "../model/ids.js";
 import { type Bdd, BddManager } from "./bdd.js";
 import { type Domain, type Range, RangeDomain, SetDomain } from "./domain.js";
@@ -25,7 +25,6 @@ export { canBeRare } from "../model/capacity.js";
 export type Tiers = ReadonlyMap<TypeId, ReadonlySet<ModId>>;
 
 export interface AItem {
-    readonly game: Game;
     readonly base: Base;
     readonly ilvl: number;
     readonly rarity: Rarity;
@@ -441,7 +440,6 @@ export interface InitialCounts {
 
 export function initialState(
     bdd: BddManager,
-    game: Game,
     base: Base,
     ilvl: number,
     rarity: Rarity,
@@ -450,7 +448,6 @@ export function initialState(
     const p = counts.prefixCount;
     const s = counts.suffixCount;
     return settled({
-        game,
         base,
         ilvl,
         rarity,
@@ -509,7 +506,6 @@ export const TierDomain = {
  */
 export function join(a: AItem, b: AItem): AItem {
     return {
-        game: a.game,
         base: a.base,
         ilvl: a.ilvl,
         rarity: a.rarity,
@@ -525,7 +521,7 @@ export function join(a: AItem, b: AItem): AItem {
 /**
  * Structural equality, used to detect a loop fixpoint, the product's equality,
  * a conjunction of each sub-domain's. `presence` compares by `===` (the BDD is
- * canonical). `game`/`base`/`ilvl` never change within a loop, so they are not
+ * canonical). `base`/`ilvl` never change within a loop, so they are not
  * compared.
  */
 export function stateEqual(a: AItem, b: AItem): boolean {

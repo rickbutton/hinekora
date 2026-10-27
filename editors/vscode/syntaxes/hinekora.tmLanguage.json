@@ -50,7 +50,7 @@
                     "name": "variable.parameter.hinekora"
                 },
                 {
-                    "match": "\\b(normal|magic|rare|poe1|poe2)\\b",
+                    "match": "\\b(normal|magic|rare|poe1)\\b",
                     "name": "constant.language.hinekora"
                 }
             ]

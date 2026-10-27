@@ -34,7 +34,7 @@ export interface ManifestExtent {
 }
 
 export interface DataManifest {
-    readonly game: "poe1" | "poe2";
+    readonly game: "poe1";
     readonly source: ManifestSource;
     /** The Path of Exile patch this data targets, or "unknown" if not recorded. */
     readonly gameVersion: string;

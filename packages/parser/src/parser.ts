@@ -23,7 +23,6 @@ import {
     type VeiledStmt,
     type Pred,
     type ProcDef,
-    type Game,
     type Rarity,
     type SourceSpan,
     span,
@@ -33,7 +32,7 @@ import {
 import { CraftSyntaxError } from "./errors.js";
 import type { Token, TokenKind } from "./token.js";
 import {
-    GAMES,
+    GAME,
     HARVEST_VERBS,
     type HarvestVerb,
     PROJECTIONS as PROJECTION_WORDS,
@@ -121,7 +120,7 @@ class Parser {
         // file scope (no braces wrap the craft).
         this.expectKeyword("craft");
         this.expectKeyword("in");
-        const game = this.parseGame();
+        this.parseGame();
 
         const item = this.parseItemBlock();
 
@@ -143,7 +142,6 @@ class Parser {
 
         return {
             kind: "craft",
-            game,
             item,
             defs,
             procs,
@@ -189,11 +187,10 @@ class Parser {
         }
     }
 
-    private parseGame(): "poe1" | "poe2" {
-        const t = this.expect("ident", "a game ('poe1' or 'poe2')");
-        const g = t.text.toLowerCase();
-        if (GAMES.includes(g as Game)) return g as Game;
-        throw this.error(`unknown game '${t.text}' (expected 'poe1' or 'poe2')`, t.span);
+    private parseGame(): void {
+        const t = this.expect("ident", `'${GAME}'`);
+        if (t.text.toLowerCase() === GAME) return;
+        throw this.error(`unknown game '${t.text}' (expected '${GAME}')`, t.span);
     }
 
     // --- item block --------------------------------------------------------

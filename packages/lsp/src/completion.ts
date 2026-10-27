@@ -9,7 +9,6 @@ import {
     type Base,
     check,
     excludedTypes,
-    type Game,
     type Registry,
     rollableTypes,
     traceAt,
@@ -113,19 +112,15 @@ function contextAt(source: string, offset: number): Context {
     return "mod";
 }
 
-/** Best-effort base + ilvl + game for the craft, read from the text (tolerant of a broken tail). */
-function itemContext(
-    source: string,
-    registry: Registry,
-): { game: Game; base: Base; ilvl: number } | undefined {
-    const game = (/\bcraft\s+in\s+(\w+)/.exec(source)?.[1] ?? "poe1") as Game;
+/** Best-effort base + ilvl for the craft, read from the text (tolerant of a broken tail). */
+function itemContext(source: string, registry: Registry): { base: Base; ilvl: number } | undefined {
     const ilvl = Number(/\bilvl\s*:\s*(\d+)/.exec(source)?.[1] ?? 100);
     // Take the last `base: "…"` (there is one item block; last wins under edits).
     let name: string | undefined;
     for (const m of source.matchAll(/\bbase\s*:\s*"([^"]*)"/g)) name = m[1];
     if (name === undefined) return undefined;
     const b = registry.resolveBase(name);
-    return b.ok ? { game, base: b.value, ilvl } : undefined;
+    return b.ok ? { base: b.value, ilvl } : undefined;
 }
 
 /**
@@ -188,9 +183,7 @@ export function getCompletions(
             }));
         case "mod": {
             const ctx = itemContext(source, registry);
-            const rollable = ctx
-                ? rollableTypes(registry.catalog, ctx.game, ctx.base, ctx.ilvl)
-                : undefined;
+            const rollable = ctx ? rollableTypes(registry.catalog, ctx.base, ctx.ilvl) : undefined;
             const excluded = excludedAt(source, offset, registry);
             return registry.statSuggestions
                 .filter((s) => (!rollable || rollable.has(s.type)) && !excluded.has(s.type))
