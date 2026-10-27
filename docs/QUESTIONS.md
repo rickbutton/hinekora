@@ -88,8 +88,11 @@ says one fractured prefix and one fractured suffix "results in a magic item".
 a talisman with two beast-fractured modifiers).
 **Steps:** scour it. **Record:** the resulting rarity.
 **Assumed meanwhile:** the lowest rarity whose caps hold the survivors (Magic for one of
-each side), which is what `rarity(lowest)` in `operations.md` and the checker's scour do.
-Only reachable through the multi-fracture routes Hinekora does not model yet.
+each side), which is what `rarity(lowest)` in `operations.md` and `lowestRarity` in
+`check/ops.ts` do. [Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) says
+"with two modifiers, the item will remain rare", so the case is reachable today: a
+protected side plus one fractured modifier (the scour tests in
+`check/metacraft.test.ts`), not only the multi-fracture routes.
 **Answer:**
 
 ### Q12 · game probe · open
@@ -219,3 +222,12 @@ method is an ordered sequence of irreducible operations; a precondition is itsel
 operation (`require`) that may sit anywhere in the sequence, including after the
 effects it checks; and a method is all or nothing, a failed `require` anywhere leaves
 the item as it was. Implementation is `ROADMAP.md` Step 2.
+
+### Q14 · game probe · resolved
+
+**Asked:** 2026-10-27
+**Goal:** how many modifiers an Orb of Transmutation lays down.
+**Answer:** settled by the wiki (2026-10-27), no probe needed:
+[Orb of Transmutation § Spending](https://www.poewiki.net/wiki/Orb_of_Transmutation#Spending)
+says "the resulting item may have a prefix, suffix, or both". Applied as one or two in
+`check/library.ts` (`transmute`).
