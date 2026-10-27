@@ -39,11 +39,19 @@ export interface Caps {
 // the per-side sum — that is what makes a magic Ratcheting Ring "0 prefix / 2
 // suffix" (raw suffix 1+3=4, but the magic total is 2), not 0/4.
 
-/** Jewel classes cap at 2 affixes per side (4 total) instead of 3/6. */
-const JEWEL_CLASSES: ReadonlySet<string> = new Set(["Jewel", "AbyssJewel"]);
+/** The classes whose Rare holds four affixes (2 per side): jewels, abyss jewels
+ *  and Rogue's equipment (Rarity § Rare). */
+const FOUR_AFFIX_CLASSES: ReadonlySet<string> = new Set([
+    "Jewel",
+    "AbyssJewel",
+    "HeistEquipmentWeapon",
+    "HeistEquipmentTool",
+    "HeistEquipmentUtility",
+    "HeistEquipmentReward",
+]);
 
 /** The per-side affix limit inherent to a rarity + base class, before implicit
- *  deltas: normal 0, magic 1, rare 3 (2 for jewels). */
+ *  deltas: normal 0, magic 1, rare 3 (2 for the four-affix classes). */
 function naturalPerSide(rarity: Rarity, base: Base): number {
     switch (rarity) {
         case "normal":
@@ -51,7 +59,7 @@ function naturalPerSide(rarity: Rarity, base: Base): number {
         case "magic":
             return 1;
         case "rare":
-            return JEWEL_CLASSES.has(base.itemClass) ? 2 : 3;
+            return FOUR_AFFIX_CLASSES.has(base.itemClass) ? 2 : 3;
     }
 }
 

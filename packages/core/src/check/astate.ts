@@ -47,16 +47,22 @@ export interface AItem {
 
 // --- rarity feasibility ---------------------------------------------------
 
-/** Flasks and tinctures top out at Magic, there are no Rare flasks (wiki). */
+/** The classes that top out at Magic: flasks, tinctures, relics and charms
+ *  (Rarity § Rare). */
 const NO_RARE_CLASSES: ReadonlySet<string> = new Set([
     "LifeFlask",
     "ManaFlask",
     "HybridFlask",
     "UtilityFlask",
+    "UtilityFlaskCritical",
     "Tincture",
+    "Relic",
+    "SanctumSpecialRelic",
+    "AtlasRelic",
+    "AnimalCharm",
 ]);
 
-/** Can this base be made Rare at all? (Flasks/tinctures cannot.) */
+/** Can this base be made Rare at all? */
 export function canBeRare(base: Base): boolean {
     return !NO_RARE_CLASSES.has(base.itemClass);
 }

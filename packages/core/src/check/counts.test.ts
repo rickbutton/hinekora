@@ -1,11 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { CountDomain, type Caps } from "./counts.js";
+import { caps, CountDomain, type Caps } from "./counts.js";
 import { RangeDomain, SetDomain } from "./domain.js";
+import { BaseId, ClassId, Domain } from "../model/ids.js";
+import type { Base } from "../model/base.js";
+
+const baseOfClass = (itemClass: string): Base => ({
+    id: BaseId(itemClass),
+    itemClass: ClassId(itemClass),
+    domain: Domain("item"),
+    tags: new Set(),
+});
 
 // The count domain is testable in isolation — no AItem, no registry, just the
 // caps it operates under. Rare (3/3/6) and a reduced-cap base (Simplex: 1/2/3).
 const RARE: Caps = { prefix: 3, suffix: 3, total: 6 };
 const SIMPLEX: Caps = { prefix: 1, suffix: 2, total: 3 };
+
+describe("caps", () => {
+    it("a Rare holds four affixes on jewels, abyss jewels and Rogue's equipment", () => {
+        for (const cls of ["Jewel", "AbyssJewel", "HeistEquipmentWeapon", "HeistEquipmentReward"]) {
+            expect(caps("rare", baseOfClass(cls))).toEqual({ prefix: 2, suffix: 2, total: 4 });
+        }
+        expect(caps("rare", baseOfClass("Ring"))).toEqual({ prefix: 3, suffix: 3, total: 6 });
+    });
+});
 
 describe("CountDomain", () => {
     it("derives the suffix range as total − prefix (capped)", () => {

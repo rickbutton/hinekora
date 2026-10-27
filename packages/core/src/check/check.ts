@@ -307,7 +307,7 @@ class Checker {
         // wf: a flask/tincture can never be Rare.
         if (item.rarity === "rare" && !canBeRare(base)) {
             this.diag(
-                `a ${base.name ?? "flask"} cannot be Rare, flasks are Magic at most`,
+                `a ${base.name ?? "flask"} cannot be Rare; its kind of item is Magic at most`,
                 item.span,
             );
         }

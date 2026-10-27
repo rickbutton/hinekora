@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import {
+    canBeRare,
     cardinalityGuarantees,
     disjunctiveGuarantees,
     disjunctiveTier,
@@ -47,6 +48,7 @@ import {
     RING_BASE,
     SIMPLEX_BASE,
 } from "../__fixtures__/mods.js";
+import { ClassId } from "../model/ids.js";
 import type { BenchCraft, EssenceSpec } from "../model/sources.js";
 
 // A fixture bench craft that adds T1 life (a prefix) on a Ring.
@@ -950,6 +952,19 @@ describe("checker — flasks cap at Magic (no Rare flasks)", () => {
     it("regal on a magic flask is rejected", () => {
         const r = check(craft("poe1", flask("normal"), [op("transmute"), op("regal")]), ctx);
         expect(r.diagnostics.some((d) => d.message.includes("cannot be made Rare"))).toBe(true);
+    });
+
+    it("relics, charms, tinctures and critical utility flasks are never Rare either", () => {
+        for (const cls of [
+            "UtilityFlaskCritical",
+            "Tincture",
+            "Relic",
+            "AtlasRelic",
+            "AnimalCharm",
+        ]) {
+            expect(canBeRare({ ...FLASK_BASE, itemClass: ClassId(cls) })).toBe(false);
+        }
+        expect(canBeRare(RING_BASE)).toBe(true);
     });
 
     it("declaring a Rare flask in the item block is flagged", () => {
