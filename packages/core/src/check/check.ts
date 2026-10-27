@@ -246,14 +246,19 @@ class Checker {
         // Two declared modifiers cannot share an item when they are the same
         // modifier or claim the same group (Modifier § Group/family).
         const claimed = new Map<GroupId, string>();
+        const declaredAs = new Map<TypeId, string>();
         const claim = (name: string, type: TypeId): void => {
-            if (present.has(type)) {
+            const earlier = declaredAs.get(type);
+            if (earlier !== undefined) {
                 this.diag(
-                    `"${name}" is declared twice; an item holds each modifier once.`,
+                    earlier === name
+                        ? `"${name}" is declared twice; an item holds it once.`
+                        : `"${name}" and "${earlier}" are tiers of one modifier; an item holds one of them.`,
                     item.span,
                 );
                 return;
             }
+            declaredAs.set(type, name);
             for (const family of this.registry.familiesOfType(type)) {
                 const other = claimed.get(family);
                 if (other !== undefined) {
@@ -277,7 +282,8 @@ class Checker {
                 const mod = byId.value;
                 checkGen(affix.mod, mod.gen, gen);
                 // A naturally rolled row must fit the base's domain and item level;
-                // a row another mechanic placed (bench, essence) is exempt.
+                // a row another mechanic placed (bench, essence, unveiled, fossil) is
+                // exempt (item-model.md §3).
                 if ((mod.source ?? "natural") === "natural") {
                     if (mod.domain !== base.domain) {
                         this.diag(

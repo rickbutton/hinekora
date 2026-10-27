@@ -1,9 +1,7 @@
 /**
  * Currency transfer functions: each operation is `AItem → (AItem | precondition
  * failure)`, folding the op's outcome summary straight into the abstract state;
- * the checker never holds a concrete item or an enumerated union. A `gen`
- * constrains an add or a removal to one generation (a bench row's side), which
- * tightens counts and changes which guarantees survive.
+ * the checker never holds a concrete item or an enumerated union.
  */
 import { craftedCapOf, type Effect } from "../model/effects.js";
 import type { ClassId, Gen, GroupId, ModId, Rarity, TagId, TypeId } from "../model/ids.js";
@@ -40,7 +38,7 @@ export type PreconditionFailure =
     | { readonly kind: "wrongRarity"; readonly needed: Rarity; readonly actual: Rarity }
     | { readonly kind: "noOpenSlot"; readonly gen?: Gen }
     | { readonly kind: "modConflict"; readonly group: string }
-    | { readonly kind: "nothingToRemove"; readonly gen?: Gen }
+    | { readonly kind: "nothingToRemove" }
     | { readonly kind: "essenceRarity"; readonly tier: number; readonly actual: Rarity }
     | { readonly kind: "essenceClass"; readonly essence: string; readonly itemClass: ClassId }
     | { readonly kind: "rarityUnsupported"; readonly rarity: Rarity }
@@ -70,19 +68,19 @@ function genOf(a: AItem, registry: Registry, type: TypeId): Gen {
 
 export function transmute(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "normal") return wrongRarity("normal", a.rarity);
-    return ok(addOne(a, undefined, "magic", registry));
+    return ok(addOne(a, "magic", registry));
 }
 
 export function regal(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "magic") return wrongRarity("magic", a.rarity);
     if (!canBeRare(a.base)) return fail({ kind: "rarityUnsupported", rarity: "rare" });
-    return ok(addOne(a, undefined, "rare", registry));
+    return ok(addOne(a, "rare", registry));
 }
 
 export function exalt(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "rare") return wrongRarity("rare", a.rarity);
     if (!hasOpenSlot(a, undefined)) return fail({ kind: "noOpenSlot" });
-    return ok(addOne(a, undefined, "rare", registry));
+    return ok(addOne(a, "rare", registry));
 }
 
 export function annul(a: AItem, registry: Registry): TransferResult {
@@ -176,7 +174,7 @@ function removalGens(a: AItem, registry: Registry): ReadonlySet<Gen> {
 export function augment(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "magic") return wrongRarity("magic", a.rarity);
     if (!hasOpenSlot(a, undefined)) return fail({ kind: "noOpenSlot" });
-    return ok(addOne(a, undefined, "magic", registry));
+    return ok(addOne(a, "magic", registry));
 }
 
 /** Orb of Alteration: reforge a Magic item (1–2 fresh mods). A fractured mod
@@ -364,7 +362,7 @@ export function essence(a: AItem, spec: EssenceSpec, registry: Registry): Transf
     const pCap = sideCap("prefix", "rare", a.base);
     const sCap = sideCap("suffix", "rare", a.base);
     const fillCap = Math.min(a.ilvl, spec.maxRandomModLevel ?? Infinity);
-    const fill = addableMods({ ...a, presence: a.bdd.TRUE }, undefined, registry).filter(
+    const fill = addableMods({ ...a, presence: a.bdd.TRUE }, registry).filter(
         (m) => m.minLevel <= fillCap,
     );
     const possible = new Set<TypeId>();
@@ -488,7 +486,7 @@ export function harvestReforge(a: AItem, tag: TagId, registry: Registry): Transf
             : reroll(a, "rare", [4, 6], registry);
     // Tagged types the fresh roll could lay down: the pool the rerolled state draws
     // from, which a kept cannot-roll metamod still restricts (the greyed-out craft).
-    const tagged = taggedTypes(addableMods(rerolled, undefined, registry), tag);
+    const tagged = taggedTypes(addableMods(rerolled, registry), tag);
     if (tagged.length === 0) return fail({ kind: "harvestEmptyPool", tag });
     return ok(withTaggedDisjunction(rerolled, tagged));
 }
@@ -511,9 +509,7 @@ export function harvestAugment(a: AItem, tag: TagId, registry: Registry): Transf
     if (!hasRemovable(a, allowed, registry, null)) return fail({ kind: "nothingToRemove" });
     const removed = removeOne(a, allowed, registry, null);
     // The tagged pool is taken AFTER the removal frees a slot.
-    const addable = addableMods(removed, undefined, registry).filter((m) =>
-        m.implicitTags.has(tag),
-    );
+    const addable = addableMods(removed, registry).filter((m) => m.implicitTags.has(tag));
     if (addable.length === 0) return fail({ kind: "harvestEmptyPool", tag });
     return ok(addTagged(removed, addable, tag));
 }
@@ -713,7 +709,7 @@ function reroll(a: AItem, rarity: Rarity, want: Range, registry: Registry): AIte
     const sCap = sideCap("suffix", rarity, a.base);
     const prefix: Range = [Math.max(0, total[0] - sCap), Math.min(pCap, total[1])];
     // An empty item of this base has the widest pool, a sound over-approximation.
-    const fresh = addableMods({ ...a, presence: a.bdd.TRUE }, undefined, registry);
+    const fresh = addableMods({ ...a, presence: a.bdd.TRUE }, registry);
     const possible = new Set<TypeId>();
     const tiers = new Map<TypeId, ReadonlySet<ModId>>();
     for (const m of fresh) {
@@ -782,11 +778,7 @@ function keepProtectedReroll(
 
     // The fresh pool feeds the rerolled side and any open kept-side slots; the kept
     // guarantees shape it (a kept cannot-roll metamod restricts it, kept groups exclude).
-    const fresh = addableMods(
-        { ...a, presence: presenceFacts(a.bdd, kept, []) },
-        undefined,
-        registry,
-    );
+    const fresh = addableMods({ ...a, presence: presenceFacts(a.bdd, kept, []) }, registry);
     const possible = new Set<TypeId>();
     const tiers = new Map<TypeId, ReadonlySet<ModId>>();
     for (const t of a.possible) if (isKept(t)) possible.add(t);
@@ -867,7 +859,7 @@ function hasRemovable(
 
 // --- the add / remove summaries -------------------------------------------
 
-function addOne(a: AItem, gen: Gen | undefined, rarity: Rarity, registry: Registry): AItem {
+function addOne(a: AItem, rarity: Rarity, registry: Registry): AItem {
     // A slot-gated caller (exalt/augment) has already ensured room; transmute
     // has NOT, on a base whose target-rarity total cap is 0 (a magic Simplex),
     // it adds nothing and just changes rarity (a blue base with no modifiers).
@@ -875,18 +867,14 @@ function addOne(a: AItem, gen: Gen | undefined, rarity: Rarity, registry: Regist
     if (a.counts.total[0] >= maxT) return settled({ ...a, rarity });
 
     const total: Range = [a.counts.total[0] + 1, Math.min(a.counts.total[1] + 1, maxT)];
-    const prefix: Range =
-        gen === "prefix"
-            ? [a.counts.prefix[0] + 1, a.counts.prefix[1] + 1]
-            : gen === "suffix"
-              ? a.counts.prefix
-              : [a.counts.prefix[0], a.counts.prefix[1] + 1]; // could land in either generation
+    // The new mod could land in either generation.
+    const prefix: Range = [a.counts.prefix[0], a.counts.prefix[1] + 1];
 
     // Additive: every prior mod survives, so guarantees, disjunctions and tier
     // pins all hold. Each addable type becomes `possible`; and since the new mod
     // could be any of them, only THOSE types' exclusions are relaxed (`admitAdd`)
     //, the rest of the presence knowledge is kept.
-    const added = addableMods(a, gen, registry);
+    const added = addableMods(a, registry);
     const possible = new Set(a.possible);
     const tiers = new Map(a.tiers);
     for (const m of added) {
@@ -915,8 +903,9 @@ function removeOne(
           : [Math.max(0, a.counts.prefix[0] - 1), a.counts.prefix[1]];
 
     // A guarantee survives only if the removed affix could not have been it: a
-    // guarantee in a generation the removal cannot reach (protected) holds. Exclusions always survive (a removal never adds a mod). The
-    // fracture facts are kept too (a locked mod is never removed).
+    // guarantee in a generation the removal cannot reach (protected) holds.
+    // Exclusions always survive (a removal never adds a mod). The fracture facts
+    // are kept too (a locked mod is never removed).
     const presence = a.bdd.and(
         presenceFacts(a.bdd, survivingGuarantees(a, allowed, registry, shield), excludedTypes(a)),
         fractureProjection(a),
@@ -927,9 +916,9 @@ function removeOne(
     return settled(next);
 }
 
-/** Guarantees the removal cannot reach: a guaranteed type whose generation is not
- *  in the removable set (protected), one the shield
- *  covers, or a fractured type (locked), survives. */
+/** Guarantees the removal cannot reach: a guaranteed type whose generation is
+ *  not in the removable set (protected), one the shield covers, or a fractured
+ *  type (locked), survives. */
 function survivingGuarantees(
     a: AItem,
     allowed: ReadonlySet<Gen>,
@@ -953,7 +942,7 @@ function survivingGuarantees(
  * superset of every arm's real pool). Returns mods, not just types, so the
  * tier overlay can record which tiers.
  */
-function addableMods(a: AItem, gen: Gen | undefined, registry: Registry): Mod[] {
+function addableMods(a: AItem, registry: Registry): Mod[] {
     const facts = guaranteedFacts(a, registry);
     // Tags a possibly present mod would add may enable a row (the staff jewel mods
     // on a Strength jewel), so the pool admits what they would: the tags of the
@@ -976,11 +965,7 @@ function addableMods(a: AItem, gen: Gen | undefined, registry: Registry): Mod[] 
         if (maybeTags.size === before) break;
         candidates = pool(registry.catalog, facts, maybeTags);
     }
-    const out: Mod[] = [];
-    for (const c of candidates) {
-        if (gen === undefined || c.mod.gen === gen) out.push(c.mod);
-    }
-    return out;
+    return candidates.map((c) => c.mod);
 }
 
 /** The state's guaranteed mods as the facts the pool reads, at rare caps. */

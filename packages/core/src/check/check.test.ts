@@ -1089,7 +1089,7 @@ describe("checker — the one-crafted-mod limit", () => {
 describe("checker — the item block rejects modifiers that cannot share an item", () => {
     it("the same modifier declared twice", () => {
         const r = check(craft(rareRing(["IncreasedLife1", "IncreasedLife2"]), []), ctx);
-        expect(r.diagnostics[0]?.message).toContain("declared twice");
+        expect(r.diagnostics[0]?.message).toContain("tiers of one modifier");
     });
 
     it("two modifiers of one group", () => {

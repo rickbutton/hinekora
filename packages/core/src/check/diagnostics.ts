@@ -105,9 +105,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
             case "modConflict":
                 return `The item may already carry a "${failure.group}" modifier — an item holds at most one per group, so this can't be benched.`;
             case "nothingToRemove":
-                return failure.gen === undefined
-                    ? "Requires a removable affix — the item may have none."
-                    : `Requires a removable ${failure.gen} — none is guaranteed present here.`;
+                return "Requires a removable affix — the item may have none.";
             case "essenceRarity":
                 return failure.actual === "magic"
                     ? "Essences cannot be used on a Magic item."
