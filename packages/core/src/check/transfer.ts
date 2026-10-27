@@ -445,19 +445,16 @@ function sharesFamilyWithPresent(a: AItem, mod: Mod, registry: Registry): boolea
  */
 export function harvestReforge(a: AItem, tag: TagId, registry: Registry): TransferResult {
     if (a.rarity !== "rare") return wrongRarity("rare", a.rarity);
-    // Tagged types the fresh reforge could lay down, drawn from the empty-item
-    // pool (the widest, matching what `reroll` fills from).
-    const tagged = taggedTypes(
-        addableMods({ ...a, presence: a.bdd.TRUE }, undefined, registry),
-        tag,
-    );
-    if (tagged.length === 0) return fail({ kind: "harvestEmptyPool", tag });
     // A "cannot be changed" metamod or a fractured mod keeps its side; else a full reforge.
     const shielded = protectedGens(a, registry);
     const rerolled =
         shielded.size > 0 || hasFracture(a)
             ? keepProtectedReroll(a, shielded, [4, 6], registry)
             : reroll(a, "rare", [4, 6], registry);
+    // Tagged types the fresh roll could lay down: the pool the rerolled state draws
+    // from, which a kept cannot-roll metamod still restricts (the greyed-out craft).
+    const tagged = taggedTypes(addableMods(rerolled, undefined, registry), tag);
+    if (tagged.length === 0) return fail({ kind: "harvestEmptyPool", tag });
     return ok(withTaggedDisjunction(rerolled, tagged));
 }
 
@@ -740,8 +737,13 @@ function keepProtectedReroll(
     for (const t of guaranteedTypes(a)) if (keep.has(genOf(t))) kept.add(t);
     const presence = a.bdd.and(presenceFacts(a.bdd, kept, new Set()), fractureProjection(a));
 
-    // The fresh pool feeds the rerolled side and any open kept-side slots.
-    const fresh = addableMods({ ...a, presence: a.bdd.TRUE }, undefined, registry);
+    // The fresh pool feeds the rerolled side and any open kept-side slots; the kept
+    // guarantees shape it (a kept cannot-roll metamod restricts it, kept groups exclude).
+    const fresh = addableMods(
+        { ...a, presence: presenceFacts(a.bdd, kept, []) },
+        undefined,
+        registry,
+    );
     const possible = new Set<TypeId>();
     const tiers = new Map<TypeId, ReadonlySet<ModId>>();
     for (const t of a.possible) if (isKept(t)) possible.add(t);

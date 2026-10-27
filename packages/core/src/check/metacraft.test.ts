@@ -220,6 +220,25 @@ describe("cannot roll attack modifiers shields attack mods from removal", () => 
     });
 });
 
+describe("a kept cannot-roll metamod restricts a reforge's fresh pool", () => {
+    // "Suffixes cannot be changed" is a prefix that keeps the suffixes, among them
+    // the cannot-roll carrier, so the rerolled prefixes are drawn under the restriction.
+    const lockedSuffixes = () =>
+        rareRing([PROTECT_SUFFIXES_CARRIER.id], [CANNOT_ROLL_ATTACK_CARRIER.id]);
+
+    it("a harvest reforge for the restricted tag has an empty pool", () => {
+        const r = check(craft("poe1", lockedSuffixes(), [harvest("reforge", "attack")]), ctx);
+        expect(r.diagnostics[0]?.message).toContain("No attack modifier");
+    });
+
+    it("a chaos keeps the restriction out of the rerolled side's pool", () => {
+        const r = check(craft("poe1", lockedSuffixes(), [op("chaos")]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.possible.has(TypeId("AddedAttackDamage"))).toBe(false);
+        expect(r.finalState!.possible.has(TypeId("IncreasedLife"))).toBe(true);
+    });
+});
+
 describe("cannot roll attack modifiers", () => {
     it("excludes attack-tagged types from a later exalt's pool", () => {
         const c = craft("poe1", rareRing(), [bench("cannot roll attack modifiers"), op("exalt")]);
