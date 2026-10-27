@@ -18,33 +18,6 @@ The next session applies it, records the commit, and moves the entry to Resolved
 
 ## Open
 
-### Q4 · decision · open
-
-**Asked:** 2026-10-26
-**Question:** Delete the dead effect kinds (`poolWiden`, `protect` by mods, `slotDelta`,
-`opUnlock`) and the five unreachable `ModSource` values (recommended), or keep them as
-PoE2 design intent?
-**Context:** Nothing constructs them; the design that introduced
-them (PoE2 socket augments, quality unlocks) is out of scope.
-**Applied meanwhile:** deleted; the effect union has three arms and the source enum
-six values. Restoring them is a revert of one commit.
-**Where the assumption lives:** `packages/core/src/model/effects.ts`,
-`packages/core/src/model/sources.ts`, `packages/data/src/adapter.ts`.
-**Answer:**
-
-### Q5 · decision · open
-
-**Asked:** 2026-10-26
-**Question:** Go ahead with the core-operations redesign proposed in
-`operations.md` (every crafting method compiled to a handful of primitive effects on
-the abstract item), or keep one transfer function per currency?
-**Context:** the analysis in that doc; it changes the shape of `check/transfer.ts` but not
-the abstract domain, and it is what makes the remaining crafting surface tractable.
-**Assumed meanwhile:** the bug fixes land first in the current structure (their tests
-carry over); the redesign waits for the answer.
-**Where the assumption lives:** nowhere yet.
-**Answer:**
-
 ### Q6 · decision · open
 
 **Asked:** 2026-10-26
@@ -211,3 +184,36 @@ concrete item gains fields only when the pool needs them.
 uncertainty, so the checker's state is the only item model; the pool reads a projection
 of it (`ItemFacts`). The concrete currency library and validator were deleted in
 `1f62c9d` and the pool's parameter became the projection in the commit after it.
+
+### Q4 · decision · resolved
+
+**Asked:** 2026-10-26
+**Question:** Delete the dead effect kinds (`poolWiden`, `protect` by mods, `slotDelta`,
+`opUnlock`) and the five unreachable `ModSource` values (recommended), or keep them as
+PoE2 design intent?
+**Context:** Nothing constructs them; the design that introduced
+them (PoE2 socket augments, quality unlocks) is out of scope.
+**Applied meanwhile:** deleted; the effect union has three arms and the source enum
+six values. Restoring them is a revert of one commit.
+**Where the assumption lives:** `packages/core/src/model/effects.ts`,
+`packages/core/src/model/sources.ts`, `packages/data/src/adapter.ts`.
+**Answer:** option 1 (2026-10-27), and wider: every PoE2 consideration goes (the
+omen scope, the game header's second value and the `Game` type, the weight provenance,
+the ignored item-block fields). Hinekora is PoE1 only, with no provision for PoE2.
+
+### Q5 · decision · resolved
+
+**Asked:** 2026-10-26
+**Question:** Go ahead with the core-operations redesign proposed in
+`operations.md` (every crafting method compiled to a handful of primitive effects on
+the abstract item), or keep one transfer function per currency?
+**Context:** the analysis in that doc; it changes the shape of `check/transfer.ts` but not
+the abstract domain, and it is what makes the remaining crafting surface tractable.
+**Assumed meanwhile:** the bug fixes land first in the current structure (their tests
+carry over); the redesign waits for the answer.
+**Where the assumption lives:** nowhere yet.
+**Answer:** go (2026-10-27), with three refinements now in `operations.md` §2: a
+method is an ordered sequence of irreducible operations; a precondition is itself an
+operation (`require`) that may sit anywhere in the sequence, including after the
+effects it checks; and a method is all or nothing, a failed `require` anywhere leaves
+the item as it was. Implementation is `ROADMAP.md` Step 2.

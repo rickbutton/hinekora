@@ -59,13 +59,17 @@ influence, a specific type, or any that is not locked.
 | `relax(selector)`        | Forget which tier each selected present modifier is: the row could now be any that rolls here. The sound summary of every method that shifts tiers without changing which modifiers are present.                                                                                                                                                                                                                                                                                                      |
 | `imprint` / `restore`    | Save the abstract item, or replace it with the saved one. Exact.                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `end`                    | The item is destroyed or made unmodifiable on this path: the craft ends here, like `restart` ends an iteration.                                                                                                                                                                                                                                                                                                                                                                                       |
+| `require(check)`         | The state at this point must prove `check` on every path; otherwise the whole method fails. A check is one of: a rarity; a base that can hold a rarity; an open slot (in a generation); a reachable modifier for a selector; a count bound; a mark present or absent; no fracture; a veiled modifier present or absent; class membership; no blocking metamod; a pool non-empty.                                                                                                                      |
 
-Two combinators: **sequence** folds effects in order; **either** joins the results of
-alternative sequences, for a method whose outcome is one of several distinct things. A
-method's **precondition** is a conjunction of checks the state must prove on every path:
-rarity; a base that can hold the target rarity; an open slot (in a generation); a
-reachable modifier for a selector; a count bound; a mark present or absent; no fracture;
-a veiled modifier present; class membership; no blocking metamod.
+A method is an **ordered sequence** of these operations. Its preconditions are
+`require` operations like any other, usually first, but a `require` may sit anywhere in
+the sequence, including last, where it checks the state the earlier operations produced.
+A method is **all or nothing**: when any `require` in it fails, the method fails as a
+whole and the item is as it was before the first operation; the game never applies part
+of a currency. The checker therefore reports a failed `require` against the state before
+the method and continues from that state. The one other combinator is **either**, which
+joins the results of alternative sequences, for a method whose outcome is one of several
+distinct things.
 
 What the checker does today is already these primitives in disguise. Forcing a specific
 mod (essence, bench) is `fill` with a one-row pool; Harvest's "at least one fire modifier"
