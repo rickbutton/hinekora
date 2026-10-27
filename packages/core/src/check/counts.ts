@@ -131,7 +131,11 @@ export const CountDomain: CountOps = {
         const suffix = refineRange(this.suffix(c, caps), op, value);
         if (suffix === null) return null;
         const prefix = rIntersect(c.prefix, [c.total[0] - suffix[1], c.total[1] - suffix[0]]);
-        return prefix === null ? null : { total: c.total, prefix };
+        if (prefix === null) return null;
+        // The learned suffix bound lives only in the total (suffix = total − prefix),
+        // so the total must take it or the next normalize forgets it.
+        const total = rIntersect(c.total, [prefix[0] + suffix[0], prefix[1] + suffix[1]]);
+        return total === null ? null : { total, prefix };
     },
 
     /**

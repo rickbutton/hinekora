@@ -45,6 +45,20 @@ describe("CountDomain", () => {
         expect(CountDomain.normalize(refined!, RARE)).toEqual({ total: [0, 4], prefix: [0, 1] });
     });
 
+    it("refining the suffix count tightens the total, not only the prefix", () => {
+        // 0 prefixes and 1–2 affixes: learning "suffixCount < 2" leaves the prefix
+        // range as it is, so the fact must land in the total or the next normalize
+        // (which only knows the caps) forgets it and a following add looks unsafe.
+        const refined = CountDomain.refine(
+            { total: [1, 2], prefix: [0, 0] },
+            RARE,
+            "suffixCount",
+            "<",
+            2,
+        );
+        expect(refined).toEqual({ total: [1, 1], prefix: [0, 0] });
+    });
+
     it("normalize clamps to a reduced-cap base's hard total and side cap", () => {
         // Simplex holds 3 mods total (cap) and ≤1 prefix (side), so an open state
         // collapses to those bounds.
