@@ -40,9 +40,14 @@ export function refineRange(range: Range, op: Cmp, value: number): Range | null 
     switch (op) {
         case "==":
             return rIntersect(range, [value, value]);
-        case "!=":
-            // A range can only be tightened by `!=` when it is exactly {value}.
-            return range[0] === value && range[1] === value ? null : range;
+        case "!=": {
+            // Counts are integers, so `!=` at an end of the range cuts that end off;
+            // a value strictly inside leaves a hole a range cannot express.
+            if (range[0] === value && range[1] === value) return null;
+            if (range[0] === value) return [value + 1, range[1]];
+            if (range[1] === value) return [range[0], value - 1];
+            return range;
+        }
         case "<":
             return rIntersect(range, [-Infinity, value - 1]);
         case "<=":

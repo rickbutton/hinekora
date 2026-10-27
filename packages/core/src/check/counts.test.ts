@@ -59,6 +59,26 @@ describe("CountDomain", () => {
         expect(refined).toEqual({ total: [1, 1], prefix: [0, 0] });
     });
 
+    it("a not-equal at an end of the range cuts that end off", () => {
+        // "prefixCount != 0" on 0–1 prefixes is 1 prefix: the else arm of
+        // `if prefixCount == 0` knows a prefix is there.
+        const refined = CountDomain.refine(
+            { total: [2, 3], prefix: [0, 1] },
+            RARE,
+            "prefixCount",
+            "!=",
+            0,
+        );
+        expect(refined).toEqual({ total: [2, 3], prefix: [1, 1] });
+        // A value inside the range leaves a hole a range cannot express.
+        expect(
+            CountDomain.refine({ total: [2, 3], prefix: [0, 2] }, RARE, "prefixCount", "!=", 1),
+        ).toEqual({
+            total: [2, 3],
+            prefix: [0, 2],
+        });
+    });
+
     it("normalize clamps to a reduced-cap base's hard total and side cap", () => {
         // Simplex holds 3 mods total (cap) and ≤1 prefix (side), so an open state
         // collapses to those bounds.
