@@ -5,7 +5,7 @@
  * highest-requirement tier that can appear is T1.
  */
 import type { Base } from "../model/base.js";
-import type { Game, TypeId } from "../model/ids.js";
+import type { Game, Gen, TypeId } from "../model/ids.js";
 import type { Item } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
 import { type ModCatalog, pool } from "../pool/pool.js";
@@ -63,6 +63,24 @@ export function rollableTypes(
     const out = new Set<TypeId>();
     for (const c of emptyPool(catalog, game, base, ilvl)) out.add(c.mod.type);
     return out;
+}
+
+/**
+ * The side a ModType occupies on `base`: a ModType is a tier bucket, not a ladder,
+ * and 130 of them have prefix rows on some bases and suffix rows on others, so the
+ * side is only defined against the rows that roll here. Falls back to the catalog's
+ * first row for a type that rolls nowhere on this base (a bench or essence row).
+ */
+export function rollableGen(
+    catalog: ModCatalog,
+    game: Game,
+    base: Base,
+    ilvl: number,
+    type: TypeId,
+): Gen | undefined {
+    const here = rollableTiers(catalog, game, base, ilvl, type)[0];
+    if (here) return here.gen;
+    return catalog.find((m) => m.type === type)?.gen;
 }
 
 /** The mod at tier `n` (1-based, T1 = best), or `undefined` if out of range. */

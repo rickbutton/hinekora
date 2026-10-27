@@ -39,6 +39,8 @@ import {
     CATALOG,
     CLASS_RING,
     COLD_RESIST,
+    DUAL_SIDE_AMULET_SUFFIX,
+    DUAL_SIDE_RING_PREFIX,
     FIRE_RES_TIERED,
     FIRE_RESIST,
     FLASK_BASE,
@@ -873,6 +875,32 @@ describe("checker — per-base affix caps (experimented bases)", () => {
         expect(r.finalState!.counts.total).toEqual([2, 2]);
         expect(r.finalState!.counts.prefix).toEqual([0, 0]);
         expect(suffixRange(r.finalState!)).toEqual([2, 2]);
+    });
+
+    it("a modifier's side is read from the rows that roll on this base", () => {
+        // The type has a prefix row on rings and a suffix row on amulets; the amulet
+        // item lists it under suffixes correctly, the ring one does not.
+        const dual = buildRegistry({
+            bases: [RING_BASE, AMULET_BASE],
+            mods: [...CATALOG, DUAL_SIDE_RING_PREFIX, DUAL_SIDE_AMULET_SUFFIX],
+            baseAliases: { "Iron Ring": "IronRing", "Coral Amulet": "CoralAmulet" },
+        });
+        const onAmulet = item({
+            base: "Coral Amulet",
+            ilvl: 100,
+            rarity: "rare",
+            suffixes: [{ mod: "dual side", tier: 1 }],
+        });
+        expect(check(craft("poe1", onAmulet, []), { registry: dual }).diagnostics).toEqual([]);
+        const onRing = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            suffixes: [{ mod: "dual side", tier: 1 }],
+        });
+        expect(
+            check(craft("poe1", onRing, []), { registry: dual }).diagnostics[0]?.message,
+        ).toContain("is a prefix");
     });
 
     it("the item block rejects a count over the combined cap (three suffixes on a magic Ratcheting)", () => {

@@ -41,7 +41,7 @@ import {
     preconditionMessage,
     resolveMessage,
 } from "./diagnostics.js";
-import { rollableTiers, tierMod } from "../resolve/tiers.js";
+import { rollableGen, rollableTiers, tierMod } from "../resolve/tiers.js";
 import {
     alchemy,
     alteration,
@@ -263,7 +263,11 @@ class Checker {
                 return undefined;
             }
             const type = typeRes.value;
-            checkGen(affix.mod, this.registry.genOfType(type), gen);
+            checkGen(
+                affix.mod,
+                rollableGen(this.registry.catalog, game, base, item.ilvl, type),
+                gen,
+            );
             if (affix.tier === undefined) {
                 this.diag(
                     `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t1\`), a starting item's mods must name a specific tier.`,
@@ -676,7 +680,8 @@ class Checker {
      * tightening: it only ever removes a spurious slot, never adds one.
      */
     private tightenCounts(a: AItem): AItem {
-        const genOf = (t: TypeId): Gen => this.registry.genOfType(t) ?? "prefix";
+        const genOf = (t: TypeId): Gen =>
+            rollableGen(this.registry.catalog, a.game, a.base, a.ilvl, t) ?? "prefix";
         const guaranteed = guaranteedTypes(a);
         const cards = cardinalityGuarantees(a);
         const minFor = (gen: Gen): number => {
@@ -950,7 +955,7 @@ class Checker {
             return null;
         }
         const type = typeRes.value;
-        const gen = this.registry.genOfType(type) ?? "prefix";
+        const gen = rollableGen(this.registry.catalog, a.game, a.base, a.ilvl, type) ?? "prefix";
 
         if (pred.tier === undefined) {
             return { kind: "has", type, gen };

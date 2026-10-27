@@ -485,6 +485,29 @@ export const FIRE_RES_TIERED: Mod = mkMod({
     name: "of the Salamander",
 });
 
+/**
+ * One ModType with a prefix row on rings and a suffix row on amulets: the side a
+ * type occupies is only defined against the base it rolls on. Not in `CATALOG`.
+ */
+export const DUAL_SIDE_RING_PREFIX: Mod = mkMod({
+    id: "DualSideRing1",
+    type: "DualSide",
+    gen: "prefix",
+    minLevel: 1,
+    families: ["DualSide"],
+    spawn: [spawn(TAG_RING, known(500)), spawn(TAG_DEFAULT, known(0))],
+    text: "dual side modifier",
+});
+export const DUAL_SIDE_AMULET_SUFFIX: Mod = mkMod({
+    id: "DualSideAmulet1",
+    type: "DualSide",
+    gen: "suffix",
+    minLevel: 1,
+    families: ["DualSide"],
+    spawn: [spawn(TAG_AMULET, known(500)), spawn(TAG_DEFAULT, known(0))],
+    text: "dual side modifier",
+});
+
 /** Catalog for fuzzy/tier tests: a 3-tier life type + a fire resist, on rings. */
 export const TIERED_CATALOG: readonly Mod[] = [MAXLIFE_T1, MAXLIFE_T2, MAXLIFE_T3, FIRE_RES_TIERED];
 

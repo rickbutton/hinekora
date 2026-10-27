@@ -18,6 +18,7 @@ import {
     type ModId,
     type Range,
     type Registry,
+    rollableGen,
     rollableTiers,
     suffixRange,
     traceAt,
@@ -227,7 +228,8 @@ function modLine(a: AItem, type: TypeId, registry: Registry, pinMod?: ModId): st
  */
 function tooltip(a: AItem, registry: Registry, caption?: string): string {
     const guaranteed = guaranteedTypes(a);
-    const genOf = (t: TypeId): Gen => registry.genOfType(t) ?? "prefix";
+    const genOf = (t: TypeId): Gen =>
+        rollableGen(registry.catalog, a.game, a.base, a.ilvl, t) ?? "prefix";
 
     const known: Record<Gen, TypeId[]> = { prefix: [], suffix: [] };
     for (const t of guaranteed) known[genOf(t)].push(t);

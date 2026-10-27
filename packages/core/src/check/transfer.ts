@@ -14,6 +14,7 @@ import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
 import { pool } from "../pool/pool.js";
 import { veiledPool } from "../pool/veiled.js";
 import type { Registry } from "../resolve/registry.js";
+import { rollableGen } from "../resolve/tiers.js";
 import {
     type AItem,
     type Range,
@@ -59,6 +60,11 @@ export type TransferResult =
 
 const ok = (state: AItem): TransferResult => ({ ok: true, state });
 const fail = (failure: PreconditionFailure): TransferResult => ({ ok: false, failure });
+
+/** The side `type` occupies on this item's base (`rollableGen`). */
+function genOf(a: AItem, registry: Registry, type: TypeId): Gen {
+    return rollableGen(registry.catalog, a.game, a.base, a.ilvl, type) ?? "prefix";
+}
 
 // --- the four base currencies ---------------------------------------------
 
@@ -252,12 +258,12 @@ function minRarityFor(p: number, s: number): Rarity {
 /** Scour that keeps a side (metamod protection) and/or the fractured mod, strips
  *  the rest, and drops to the rarity the survivors fit. */
 function scourKeeping(a: AItem, keep: ReadonlySet<Gen>, registry: Registry): AItem {
-    const genOf = (t: TypeId): Gen => registry.genOfType(t) ?? "prefix";
+    const genOfT = (t: TypeId): Gen => genOf(a, registry, t);
     const fractured = fracturedTypes(a);
-    const isKept = (t: TypeId): boolean => keep.has(genOf(t)) || fractured.has(t);
+    const isKept = (t: TypeId): boolean => keep.has(genOfT(t)) || fractured.has(t);
     const fracIn = (g: Gen): number => {
         let n = 0;
-        for (const t of fractured) if (genOf(t) === g) n++;
+        for (const t of fractured) if (genOfT(t) === g) n++;
         return n;
     };
     // An unproven fracture keeps one mod of unknown generation.
@@ -279,7 +285,7 @@ function scourKeeping(a: AItem, keep: ReadonlySet<Gen>, registry: Registry): AIt
     if (unprovenLock && rarity === "normal") rarity = "magic";
 
     const keptGuarantees = new Set<TypeId>();
-    for (const t of guaranteedTypes(a)) if (keep.has(genOf(t))) keptGuarantees.add(t);
+    for (const t of guaranteedTypes(a)) if (keep.has(genOfT(t))) keptGuarantees.add(t);
     const possible = new Set<TypeId>();
     for (const t of a.possible) if (isKept(t)) possible.add(t);
     const tiers = new Map<TypeId, ReadonlySet<ModId>>();
@@ -417,13 +423,13 @@ function sharesFamilyWithPresent(a: AItem, mod: Mod, registry: Registry): boolea
     // non-guaranteed member of that generation can be present.
     const unidentifiedIn = (gen: Gen): number => {
         let named = 0;
-        for (const t of guaranteed) if ((registry.genOfType(t) ?? "prefix") === gen) named++;
+        for (const t of guaranteed) if (genOf(a, registry, t) === gen) named++;
         const max = gen === "prefix" ? a.counts.prefix[1] : suffixRange(a)[1];
         return max - named;
     };
     for (const type of a.possible) {
         if (guaranteed.has(type) || !shares(type)) continue;
-        if (unidentifiedIn(registry.genOfType(type) ?? "prefix") > 0) return true;
+        if (unidentifiedIn(genOf(a, registry, type)) > 0) return true;
     }
     return false;
 }
@@ -702,15 +708,15 @@ function keepProtectedReroll(
     want: Range,
     registry: Registry,
 ): AItem {
-    const genOf = (t: TypeId): Gen => registry.genOfType(t) ?? "prefix";
+    const genOfT = (t: TypeId): Gen => genOf(a, registry, t);
     const maxT = maxTotal(a.rarity, a.base);
     const pCap = sideCap("prefix", a.rarity, a.base);
     const sCap = sideCap("suffix", a.rarity, a.base);
     const fractured = fracturedTypes(a);
-    const isKept = (t: TypeId): boolean => keep.has(genOf(t)) || fractured.has(t);
+    const isKept = (t: TypeId): boolean => keep.has(genOfT(t)) || fractured.has(t);
     const fracIn = (g: Gen): number => {
         let n = 0;
-        for (const t of fractured) if (genOf(t) === g) n++;
+        for (const t of fractured) if (genOfT(t) === g) n++;
         return n;
     };
     // One extra kept mod of unknown generation when a fracture exists but isn't pinned.
@@ -734,7 +740,7 @@ function keepProtectedReroll(
     // Kept-side guarantees survive; exclusions clear (a reforge or open-slot fill
     // can introduce any mod). The permanent fracture facts are kept too.
     const kept = new Set<TypeId>();
-    for (const t of guaranteedTypes(a)) if (keep.has(genOf(t))) kept.add(t);
+    for (const t of guaranteedTypes(a)) if (keep.has(genOfT(t))) kept.add(t);
     const presence = a.bdd.and(presenceFacts(a.bdd, kept, new Set()), fractureProjection(a));
 
     // The fresh pool feeds the rerolled side and any open kept-side slots; the kept
@@ -795,7 +801,7 @@ function hasRemovable(a: AItem, allowed: ReadonlySet<Gen>, registry: Registry): 
         const locked = fracturedTypes(a);
         for (const t of guaranteedTypes(a)) {
             if (shielded.has(t) || locked.has(t)) continue;
-            if (allowed.has(registry.genOfType(t) ?? "prefix")) return true;
+            if (allowed.has(genOf(a, registry, t))) return true;
         }
         return false;
     }
@@ -805,7 +811,7 @@ function hasRemovable(a: AItem, allowed: ReadonlySet<Gen>, registry: Registry): 
     const unprovenLock = hasFracture(a) && fractured.size === 0 ? 1 : 0;
     const fracIn = (g: Gen): number => {
         let n = 0;
-        for (const t of fractured) if ((registry.genOfType(t) ?? "prefix") === g) n++;
+        for (const t of fractured) if (genOf(a, registry, t) === g) n++;
         return n;
     };
     if (allowed.size === 2) {
@@ -884,7 +890,7 @@ function survivingGuarantees(
 ): ReadonlySet<TypeId> {
     const out = new Set<TypeId>();
     for (const t of guaranteedTypes(a)) {
-        if (!allowed.has(registry.genOfType(t) ?? "prefix")) out.add(t);
+        if (!allowed.has(genOf(a, registry, t))) out.add(t);
     }
     for (const t of shieldedTypes(a, registry)) out.add(t);
     for (const t of fracturedTypes(a)) out.add(t);
