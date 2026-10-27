@@ -12,7 +12,7 @@ import type { Range } from "./astate.js";
 import type { Check, FillCount, Op, PoolSpec, Selector } from "./ops.js";
 
 const require = (check: Check): Op => ({ kind: "require", check });
-const rarity = (rarity: Rarity | "lowest"): Op => ({ kind: "rarity", rarity });
+const rarity = (rarity: Rarity | "survivors"): Op => ({ kind: "rarity", rarity });
 const strip = (): Op => ({ kind: "strip" });
 const fill = (pool: PoolSpec, count: FillCount): Op => ({ kind: "fill", pool, count });
 const remove = (selector: Selector): Op => ({ kind: "remove", selector });
@@ -72,7 +72,7 @@ export function currencyOps(kind: CurrencyKind): readonly Op[] {
             // Normal item already fails the check with the accurate reason.
             return [removable(unshielded), remove(unshielded)];
         case "scour":
-            return [require({ kind: "strippable" }), strip(), rarity("lowest")];
+            return [require({ kind: "strippable" }), strip(), rarity("survivors")];
         case "fracture":
             return [
                 isRare,

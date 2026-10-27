@@ -36,31 +36,6 @@ Rare with one modifier of each side; note whether the result keeps the side.
 change, metamods respected), as `operations.md` §3.2 states; not built until answered.
 **Answer:**
 
-### Q11 · game probe · open
-
-**Asked:** 2026-10-26
-**Goal:** the rarity an Orb of Scouring leaves on an item with two fractured modifiers.
-[Fractured item § Mechanics](https://www.poewiki.net/wiki/Fractured_item#Mechanics) says
-"a Rare item if it had two or three fractured mods";
-[Tainted Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Tainted_Chaos_Orb#Mechanics)
-says one fractured prefix and one fractured suffix "results in a magic item".
-**Procure:** the route the checker models, a kept side holding exactly one modifier plus
-one fractured modifier on the other: a Rare with one prefix and three suffixes, no
-metamod; a Fracturing Orb (it may lock any of the four, and a fractured item cannot be
-fractured again, so a miss means a fresh item); on a suffix hit, Orbs of Annulment until a
-suffix slot opens with the prefix still there (a removal may take the prefix; start over),
-then bench "Prefixes Cannot Be Changed". Or the two-fracture route: a Recombinator or a
-talisman with two beast-fractured modifiers.
-**Steps:** scour it. **Record:** the resulting rarity, with the prefix and suffix counts
-the item kept.
-**Assumed meanwhile:** the lowest rarity whose caps hold the survivors (Magic for one of
-each side), which is what `rarity(lowest)` in `operations.md` and `lowestRarity` in
-`check/ops.ts` do. [Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) says
-"with two modifiers, the item will remain rare", so the case is reachable today: a
-protected side plus one fractured modifier (the scour tests in
-`check/metacraft.test.ts`), not only the multi-fracture routes.
-**Answer:**
-
 ### Q12 · game probe · open
 
 **Asked:** 2026-10-26
@@ -244,3 +219,32 @@ practice needs the multimod metamod too (three crafted modifiers: multimod, the 
 cannot-roll). That is the checker's wiring: the strip keeps the protected side's carriers
 and the fill reads the effects still in force. The more/less-likely reforges are not
 implemented; they are rarely part of a craft worth modelling and are deferred.
+
+### Q11 · game probe · resolved
+
+**Asked:** 2026-10-26
+**Goal:** the rarity an Orb of Scouring leaves on an item with two fractured modifiers.
+[Fractured item § Mechanics](https://www.poewiki.net/wiki/Fractured_item#Mechanics) says
+"a Rare item if it had two or three fractured mods";
+[Tainted Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Tainted_Chaos_Orb#Mechanics)
+says one fractured prefix and one fractured suffix "results in a magic item".
+**Procure:** the route the checker models, a kept side holding exactly one modifier plus
+one fractured modifier on the other: a Rare with one prefix and three suffixes, no
+metamod; a Fracturing Orb (it may lock any of the four, and a fractured item cannot be
+fractured again, so a miss means a fresh item); on a suffix hit, Orbs of Annulment until a
+suffix slot opens with the prefix still there (a removal may take the prefix; start over),
+then bench "Prefixes Cannot Be Changed". Or the two-fracture route: a Recombinator or a
+talisman with two beast-fractured modifiers.
+**Steps:** scour it. **Record:** the resulting rarity, with the prefix and suffix counts
+the item kept.
+**Assumed meanwhile:** the lowest rarity whose caps hold the survivors (Magic for one of
+each side), which is what `rarity(lowest)` in `operations.md` and `lowestRarity` in
+`check/ops.ts` do. [Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) says
+"with two modifiers, the item will remain rare", so the case is reachable today: a
+protected side plus one fractured modifier (the scour tests in
+`check/metacraft.test.ts`), not only the multi-fracture routes.
+**Answer:** Rick tested it (2026-10-27): the item stayed Rare. Start: one natural prefix,
+one fractured suffix, one natural suffix, "Prefixes Cannot Be Changed" (a suffix); after
+the scour: the prefix and the fractured suffix. So the rarity goes by survivor count, as
+[Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) says: none Normal, one
+Magic, two or more Rare. Applied in `check/ops.ts` (`scouredRarity`).

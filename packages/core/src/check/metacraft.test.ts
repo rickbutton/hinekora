@@ -22,6 +22,7 @@ import {
     LIFE_T1,
     MULTIMOD_CARRIER,
     PROTECT_PREFIXES_CARRIER,
+    INCREASED_MANA,
     PROTECT_SUFFIXES_CARRIER,
     RING_BASE,
 } from "../__fixtures__/mods.js";
@@ -238,25 +239,52 @@ describe("cannot roll attack modifiers shields attack mods from removal", () => 
 });
 
 describe("a scour that keeps a side drops to the rarity the survivors fit", () => {
-    it("a kept prefix and an unproven lock leave a Magic item", () => {
-        // The game keeps the protected prefix and the fractured mod, one or two
-        // modifiers: Magic on every path under the lowest-rarity reading of the
-        // survivors (an open wiki question), so a chaos is refused afterwards.
+    it("one prefix kept beside a fractured suffix stays Rare", () => {
+        // Two survivors, one per side: the item remains Rare (Orb of Scouring),
+        // so a chaos is fine afterwards and a regal is refused.
+        const start = () =>
+            item({
+                base: "Iron Ring",
+                ilvl: 100,
+                rarity: "rare",
+                prefixes: ["T1 Life"],
+                suffixes: [
+                    { mod: "FireResist1", fractured: true },
+                    "ColdResist1",
+                    PROTECT_PREFIXES_CARRIER.id,
+                ],
+            });
+        expect(check(craft(start(), [op("scour"), op("chaos")]), ctx).diagnostics).toEqual([]);
+        const r = check(craft(start(), [op("scour"), op("regal")]), ctx);
+        expect(r.diagnostics[0]?.message).toContain("Requires a Magic item");
+    });
+
+    it("a kept prefix and an unproven lock may leave one or two survivors, so the scour is refused", () => {
+        // The lock may sit on the kept prefix (one survivor, Magic) or on a
+        // stripped suffix (two, Rare).
         const c = craft(
             rareRing(["T1 Life"], [PROTECT_PREFIXES_CARRIER.id, "FireResist1", "ColdResist1"]),
-            [op("fracture"), op("scour"), op("chaos")],
+            [op("fracture"), op("scour")],
+        );
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("may be Magic or Rare");
+    });
+
+    it("two kept prefixes and an unproven lock stay Rare, with the floor at the kept count", () => {
+        const c = craft(
+            rareRing(["T1 Life", INCREASED_MANA.id], [PROTECT_PREFIXES_CARRIER.id, "FireResist1"]),
+            [op("fracture"), op("scour"), op("regal")],
         );
         const r = check(c, ctx);
-        expect(r.diagnostics[0]?.message).toContain("Requires a Rare item");
-        const scoured = r.trace.find((e) => e.kind === "op" && e.before.rarity === "magic")!;
-        // The lock may sit on the kept prefix, so the floor is one, not two.
-        expect(scoured.before.counts.total).toEqual([1, 2]);
+        expect(r.diagnostics[0]?.message).toContain("Requires a Magic item");
+        const scoured = r.trace.find((e) => e.kind === "op" && e.after?.counts.total[1] === 3)!;
+        // The lock may sit on a kept prefix, so the floor is two, not three.
+        expect(scoured.after!.counts.total).toEqual([2, 3]);
     });
 
     it("a scour whose kept side's count is uncertain is refused", () => {
         // The exalt may have landed on the protected prefix side or not, so the
-        // scour would leave Normal or Magic; the rarity is one value, so the
-        // craft must narrow the count first.
+        // scour would leave no survivor or one, Normal or Magic; the rarity is
+        // one value, so the craft must narrow the count first.
         const c = craft(rareRing([], [PROTECT_PREFIXES_CARRIER.id, "FireResist1"]), [
             op("exalt"),
             op("scour"),
@@ -271,7 +299,9 @@ describe("a scour that keeps a side drops to the rarity the survivors fit", () =
         expect(check(narrowed, ctx).diagnostics).toEqual([]);
     });
 
-    it("a fractured suffix beside a protected side's carrier leaves a Magic item", () => {
+    it("a fractured suffix beside a protected side's carrier: Rare with a kept prefix, Magic without", () => {
+        // The exalt may have landed a prefix (kept) or a suffix (stripped), so
+        // each arm narrows the count: two survivors stay Rare, one is Magic.
         const c = craft(
             item({
                 base: "Iron Ring",
@@ -279,10 +309,16 @@ describe("a scour that keeps a side drops to the rarity the survivors fit", () =
                 rarity: "rare",
                 suffixes: [{ mod: "FireResist1", fractured: true }, PROTECT_PREFIXES_CARRIER.id],
             }),
-            [op("exalt"), op("scour"), op("chaos")],
+            [
+                op("exalt"),
+                iff(
+                    cmp("prefixCount", "==", 1),
+                    [op("scour"), op("chaos")],
+                    [op("scour"), op("regal")],
+                ),
+            ],
         );
-        const r = check(c, ctx);
-        expect(r.diagnostics[0]?.message).toContain("Requires a Rare item");
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 });
 

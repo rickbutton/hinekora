@@ -99,7 +99,8 @@ export type Op =
     | { readonly kind: "strip" }
     | { readonly kind: "fill"; readonly pool: PoolSpec; readonly count: FillCount }
     | { readonly kind: "remove"; readonly selector: Selector }
-    | { readonly kind: "rarity"; readonly rarity: Rarity | "lowest" }
+    /** `survivors`: the rarity a scour leaves, by how many modifiers remain. */
+    | { readonly kind: "rarity"; readonly rarity: Rarity | "survivors" }
     /** One random present modifier becomes fractured. */
     | { readonly kind: "lock" };
 
@@ -163,7 +164,7 @@ function apply(
         case "rarity":
             return settled({
                 ...a,
-                rarity: op.rarity === "lowest" ? lowestRarity(a0, rules, registry) : op.rarity,
+                rarity: op.rarity === "survivors" ? scouredRarity(a0, rules, registry) : op.rarity,
             });
         case "lock":
             return lock(a);
@@ -281,10 +282,9 @@ function failing(
             // The rarity the scour leaves is one value; when the kept side's count
             // is uncertain it may be either of two, so the scour waits for a
             // narrowing of the count.
-            const kept = keptBounds(a, rules, registry);
-            const unprovenLock = hasFracture(a) && fracturedTypes(a).size === 0;
-            const lower = rarityFor(kept.prefix[0], kept.suffix[0], unprovenLock);
-            const upper = rarityFor(kept.prefix[1], kept.suffix[1], unprovenLock);
+            const [lo, hi] = survivorsOf(a, rules, registry);
+            const lower = rarityForSurvivors(lo);
+            const upper = rarityForSurvivors(hi);
             if (lower !== upper) return { kind: "scourRarityUnknown", lower, upper };
             return null;
         }
@@ -543,22 +543,29 @@ function keptBounds(a0: AItem, rules: Rules, registry: Registry): { prefix: Rang
     };
 }
 
-/** The lowest rarity whose per-side caps hold `p` prefixes and `s` suffixes:
- *  none → Normal, at most one each → Magic, otherwise Rare (Orb of Scouring);
- *  an unproven lock keeps one mod, so never Normal. */
-function rarityFor(p: number, s: number, unprovenLock: boolean): Rarity {
-    if (p + s === 0) return unprovenLock ? "magic" : "normal";
-    if (p <= 1 && s <= 1) return "magic";
+/** How many modifiers a strip leaves, as a range: the kept sides' counts plus
+ *  the fractured mod, which under an unproven lock may be one of the kept ones. */
+function survivorsOf(a0: AItem, rules: Rules, registry: Registry): Range {
+    const kept = keptBounds(a0, rules, registry);
+    const unprovenLock = hasFracture(a0) && fracturedTypes(a0).size === 0 ? 1 : 0;
+    return [
+        Math.max(kept.prefix[0] + kept.suffix[0], unprovenLock),
+        kept.prefix[1] + kept.suffix[1] + unprovenLock,
+    ];
+}
+
+/** The rarity a scour leaves by survivor count (Orb of Scouring): none → Normal,
+ *  one → Magic, two or more → Rare, whichever sides they sit on. */
+function rarityForSurvivors(n: number): Rarity {
+    if (n === 0) return "normal";
+    if (n === 1) return "magic";
     return "rare";
 }
 
-/** The rarity a scour leaves: the lowest that holds what the strip keeps. The
- *  rarity is one value, so the kept bounds must agree (`strippable` refuses the
- *  scour when they do not); this reads the upper bound. */
-function lowestRarity(a0: AItem, rules: Rules, registry: Registry): Rarity {
-    const kept = keptBounds(a0, rules, registry);
-    const unprovenLock = hasFracture(a0) && fracturedTypes(a0).size === 0;
-    return rarityFor(kept.prefix[1], kept.suffix[1], unprovenLock);
+/** The rarity a scour leaves. The rarity is one value, so the survivor bounds
+ *  must agree (`strippable` refuses the scour when they do not). */
+function scouredRarity(a0: AItem, rules: Rules, registry: Registry): Rarity {
+    return rarityForSurvivors(survivorsOf(a0, rules, registry)[1]);
 }
 
 // --- fill ---------------------------------------------------------------------

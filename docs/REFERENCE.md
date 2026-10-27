@@ -357,7 +357,7 @@ body)`, the states that re-enter the loop head after one iteration (fall-off-end
 Every crafting method is a sequence of primitive operations (`operations.md` §2), stated
 in `library.ts` and run by `runMethod(state, ops, registry)` in `ops.ts`, which returns
 `{ok, state}` or `{ok:false, failure}`. The operations are `require(check)`, `strip`,
-`fill(pool, count)`, `remove(selector)`, `rarity(r | lowest)` and `lock`; a method is
+`fill(pool, count)`, `remove(selector)`, `rarity(r | survivors)` and `lock`; a method is
 all or nothing, so a failed `require` anywhere leaves the state as it was. The metamods
 in force (`Rules`: protected sides, the cannot-roll shield, the crafted cap, whether an
 essence is blocked) are read once when the method is applied and govern every operation
@@ -441,11 +441,14 @@ in it. Notes:
   `fractureProjection(a)` (the presence BDD reduced to the fracture atoms, with
   "a locked mod is present" re-asserted; a candidate's own presence is forgotten, since
   the operation may have removed it), so a proven fracture keeps its type and an unproven
-  one keeps the survivor disjunction. **Scour** drops to the lowest rarity that holds the survivors
-  (`lowestRarity`, read per side from what the strip kept): a fractured Rare scours to a
-  1-mod Magic, as the wiki states. The rarity is one value, so a scour whose kept side's
-  count is uncertain is refused (`scourRarityUnknown`) until an `if` on the count narrows
-  it (`ROADMAP.md` lists the rarity set that would accept it).
+  one keeps the survivor disjunction. **Scour** sets the rarity by survivor count
+  (`scouredRarity`, read from what the strip kept: none Normal, one Magic, two or more
+  Rare, whichever sides they sit on; [Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring),
+  confirmed in game for one kept prefix beside a fractured suffix): a fractured Rare
+  scours to a 1-mod Magic. The rarity is one value, so a scour whose survivor count is
+  uncertain (an unproven lock beside a kept side, or a kept side with an uncertain count)
+  is refused (`scourRarityUnknown`) until an `if` on the count narrows it (`ROADMAP.md`
+  lists the rarity set that would accept it).
 - **Veiled** (`VEILED_CHAOS` / `VEILED_EXALT` / `unveilOps`, the
   [Veiled Chaos Orb](https://www.poewiki.net/wiki/Veiled_Chaos_Orb),
   [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb) and the
