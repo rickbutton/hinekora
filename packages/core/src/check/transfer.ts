@@ -259,8 +259,11 @@ export function fracture(a: AItem): TransferResult {
  *  crafted count a reforge cannot clear (a crafted mod can be fractured,
  *  Crafting Bench § Using the crafting bench). */
 function fracturedCrafted(a: AItem, registry: Registry): number {
+    const fractured = fracturedTypes(a);
+    // An unproven lock may sit on any current mod, a crafted one included.
+    if (fractured.size === 0) return hasFracture(a) ? Math.min(1, a.crafted[1]) : 0;
     let n = 0;
-    for (const t of fracturedTypes(a)) {
+    for (const t of fractured) {
         const pinned = a.tiers.get(t);
         const rows = pinned
             ? [...pinned]
@@ -322,7 +325,11 @@ function scourKeeping(a: AItem, keep: ReadonlySet<Gen>, registry: Registry): AIt
     for (const t of guaranteedTypes(a)) {
         if (!isKept(t) && registry.effectsOfType(t).length > 0) strippedCarriers++;
     }
-    const crafted: Range = [0, Math.max(0, a.crafted[1] - strippedCarriers)];
+    // An unproven lock may have kept one of the carriers counted as stripped.
+    const crafted: Range = [
+        0,
+        Math.max(0, a.crafted[1] - Math.max(0, strippedCarriers - unprovenLock)),
+    ];
     // Keep the protected-side guarantees and the permanent fracture facts.
     const presence = a.bdd.and(
         presenceFacts(a.bdd, keptGuarantees, excludedTypes(a)),
@@ -806,7 +813,8 @@ function keepProtectedReroll(
         for (const t of guaranteedTypes(a)) {
             if (!isKept(t) && registry.effectsOfType(t).length > 0) strippedCarriers++;
         }
-        crafted = [0, Math.max(0, a.crafted[1] - strippedCarriers)];
+        // An unproven lock may have kept one of the carriers counted as stripped.
+        crafted = [0, Math.max(0, a.crafted[1] - Math.max(0, strippedCarriers - unprovenLock))];
     }
 
     return settled({ ...a, counts: { total, prefix }, presence, possible, tiers, crafted });

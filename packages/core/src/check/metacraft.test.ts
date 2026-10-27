@@ -275,6 +275,22 @@ describe("a fractured bench row keeps its crafted count through a reforge", () =
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.crafted).toEqual([0, 1]);
     });
+
+    it("an unproven lock may sit on the crafted mod, so a reforge keeps one", () => {
+        // The Fracturing Orb may lock the benched multimod carrier; a chaos or an
+        // essence then cannot be sure the crafted count fell to zero.
+        const fourMods = rareRing(["T1 Life"], ["random", "random"]);
+        for (const reforge of [op("chaos"), essence("greed", 1)]) {
+            const c = craft("poe1", fourMods, [
+                bench("can have up to 3 crafted modifiers"),
+                op("fracture"),
+                reforge,
+            ]);
+            const r = check(c, ctx);
+            expect(r.diagnostics).toEqual([]);
+            expect(r.finalState!.crafted).toEqual([0, 1]);
+        }
+    });
 });
 
 describe("a kept cannot-roll metamod restricts a reforge's fresh pool", () => {

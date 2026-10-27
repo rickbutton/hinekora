@@ -277,7 +277,8 @@ total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = t
 - `crafted`: a RANGE, how many [bench-crafted](https://www.poewiki.net/wiki/Crafting_Bench)
   mods are present. `bench` requires it provably below the crafted cap (one, or three under
   the multimod [metamod](https://www.poewiki.net/wiki/Metamod)); a pure reforge or a plain
-  scour clears it to 0, while a reforge or scour that keeps a protected side
+  scour clears it to 0 except for a fractured bench row, which survives every reforge
+  (`fracturedCrafted`; an unproven lock may be on one), while a reforge or scour that keeps a protected side
   (`keepProtectedReroll`, `scourKeeping`) keeps `[0, max − stripped carriers]`, since a
   crafted mod on the kept side may survive; an unforced `annul` drops its lower bound (the
   crafted mod may have been removed).
