@@ -18,18 +18,6 @@ The next session applies it, records the commit, and moves the entry to Resolved
 
 ## Open
 
-### Q6 · decision · open
-
-**Asked:** 2026-10-26
-**Question:** The typing-rules design doc (crafting-lang-typing-rules-v0.md, now deleted) was retired in
-favour of `operations.md`. Most of it described designs never built (`narrow`, game
-modules, PoE2 operations, augments, `OpUnlock`, `placeMeta`); what was built is covered by
-`ARCHITECTURE.md`, `item-model.md` and `operations.md`. Keep it retired, or restore it as
-an explicitly historical design record?
-**Assumed meanwhile:** retired; git history keeps it.
-**Where the assumption lives:** `docs/`, the code comments that used to cite its sections.
-**Answer:**
-
 ### Q7 · game probe · open
 
 **Asked:** 2026-10-26
@@ -46,34 +34,6 @@ Rare with one modifier of each side; note whether the result keeps the side.
 **Record:** before/after prefix and suffix counts for each try.
 **Assumed meanwhile:** `remove(unlocked, k); fill(natural, k)` (count preserved, side may
 change, metamods respected), as `operations.md` §3.2 states; not built until answered.
-**Answer:**
-
-### Q8 · game probe · open
-
-**Asked:** 2026-10-26
-**Goal:** whether a Chaotic Resonator (fossils) accepts a Normal item.
-[Crafting](https://www.poewiki.net/wiki/Crafting) says fossils are "only usable on rare
-items"; [Resonator](https://www.poewiki.net/wiki/Resonator) likens the Chaotic one to a
-Chaos Orb and the Alchemical one to an Orb of Alchemy.
-**Procure:** a Normal base, a Chaotic Resonator with one fossil.
-**Steps:** try to apply it. **Record:** accepted or refused.
-**Assumed meanwhile:** Chaotic needs Rare, Alchemical needs Normal (the Resonator page).
-**Answer:**
-
-### Q9 · game probe · open
-
-**Asked:** 2026-10-26
-**Goal:** the two Metamod-table cells the wiki itself marks unconfirmed
-([Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions)):
-does a Harvest "reforge including a Fire modifier" respect "Cannot roll Caster Modifiers"
-on its own, or only together with "Suffixes Cannot Be Changed"? Same for "reforge more
-likely".
-**Procure:** a Rare with "Cannot roll Caster Modifiers" benched and no other metamod;
-Harvest reforge lifeforce.
-**Steps:** reforge (fire) ten times; note whether any caster-tagged modifier ever rolls.
-**Record:** the modifiers rolled.
-**Assumed meanwhile:** the cannot-roll metamod is respected whenever its carrier
-survives the reforge (the checker's current wiring).
 **Answer:**
 
 ### Q11 · game probe · open
@@ -237,3 +197,50 @@ the item as it was. Implementation is `ROADMAP.md` Step 2.
 [Orb of Transmutation § Spending](https://www.poewiki.net/wiki/Orb_of_Transmutation#Spending)
 says "the resulting item may have a prefix, suffix, or both". Applied as one or two in
 `check/library.ts` (`transmute`).
+
+### Q6 · decision · resolved
+
+**Asked:** 2026-10-26
+**Question:** The typing-rules design doc (crafting-lang-typing-rules-v0.md, now deleted) was retired in
+favour of `operations.md`. Most of it described designs never built (`narrow`, game
+modules, PoE2 operations, augments, `OpUnlock`, `placeMeta`); what was built is covered by
+`ARCHITECTURE.md`, `item-model.md` and `operations.md`. Keep it retired, or restore it as
+an explicitly historical design record?
+**Assumed meanwhile:** retired; git history keeps it.
+**Where the assumption lives:** `docs/`, the code comments that used to cite its sections.
+**Answer:** Rick ruled retired (2026-10-27). The deletion is `e298aa3`.
+
+### Q8 · game probe · resolved
+
+**Asked:** 2026-10-26
+**Goal:** whether a Chaotic Resonator (fossils) accepts a Normal item.
+[Crafting](https://www.poewiki.net/wiki/Crafting) says fossils are "only usable on rare
+items"; [Resonator](https://www.poewiki.net/wiki/Resonator) likens the Chaotic one to a
+Chaos Orb and the Alchemical one to an Orb of Alchemy.
+**Procure:** a Normal base, a Chaotic Resonator with one fossil.
+**Steps:** try to apply it. **Record:** accepted or refused.
+**Assumed meanwhile:** Chaotic needs Rare, Alchemical needs Normal (the Resonator page).
+**Answer:** Rick ruled (2026-10-27): a Chaotic Resonator works on Rare items only. The
+Alchemical Resonator is Ruthless-only, and nothing that exists only in Ruthless mode is in
+scope.
+
+### Q9 · game probe · resolved
+
+**Asked:** 2026-10-26
+**Goal:** the two Metamod-table cells the wiki itself marks unconfirmed
+([Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions)):
+does a Harvest "reforge including a Fire modifier" respect "Cannot roll Caster Modifiers"
+on its own, or only together with "Suffixes Cannot Be Changed"? Same for "reforge more
+likely".
+**Procure:** a Rare with "Cannot roll Caster Modifiers" benched and no other metamod;
+Harvest reforge lifeforce.
+**Steps:** reforge (fire) ten times; note whether any caster-tagged modifier ever rolls.
+**Record:** the modifiers rolled.
+**Assumed meanwhile:** the cannot-roll metamod is respected whenever its carrier
+survives the reforge (the checker's current wiring).
+**Answer:** Rick knows this (2026-10-27): the cannot-roll metamod is respected only when
+its carrier survives the reforge under a "cannot be changed" lock on its side, which in
+practice needs the multimod metamod too (three crafted modifiers: multimod, the lock, the
+cannot-roll). That is the checker's wiring: the strip keeps the protected side's carriers
+and the fill reads the effects still in force. The more/less-likely reforges are not
+implemented; they are rarely part of a craft worth modelling and are deferred.

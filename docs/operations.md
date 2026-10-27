@@ -90,7 +90,8 @@ Status: **built** (a library entry exists today), **composes** (expressible with
 not yet built), **probe** (expressible once an in-game question in `QUESTIONS.md` is
 settled), **later** (needs a component the abstract item does not have yet, named), **out**
 (not an operation on one item's explicit modifiers: multi-item, unique-only, implicit,
-socket, quality or value-only; or retired from the game). The wiki's
+socket, quality or value-only; retired from the game; or Ruthless-only, like the
+Alchemical Resonator). The wiki's
 [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions)
 table decides the keep-set and the selector of every row that meets a metamod.
 
@@ -160,26 +161,26 @@ Per [Fossil § Mechanics](https://www.poewiki.net/wiki/Fossil#Mechanics) and
 fossils' "no X modifiers" tags and, for some fossils, adds fossil-only rows or forces one;
 blocked by any metamod but multimod.
 
-| Method                                                            | Composition                                                                         | Status                     |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------- |
-| Weight fossils (chaotic / alchemical resonator)                   | `strip(fractured); rarity(rare); fill(natural ∖ blocked tags ∪ fossil rows, [4,6])` | probe (chaotic on Normal?) |
-| [Fractured Fossil](https://www.poewiki.net/wiki/Fractured_Fossil) | as above, then `lock(any, 1)`                                                       | composes                   |
-| Hollow, Glyphic ([Fossil](https://www.poewiki.net/wiki/Fossil))   | as above, then `fill(forced row, 1)` taken from the count                           | composes                   |
-| [Bloodstained Fossil](https://www.poewiki.net/wiki/Fossil)        | as above, then `mark(corrupted)`                                                    | later: corrupted mark      |
-| Sanctified, Gilded                                                | values / implicit only                                                              | out                        |
+| Method                                                            | Composition                                                                         | Status                |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------- |
+| Weight fossils (Chaotic Resonator; Rare only)                     | `strip(fractured); rarity(rare); fill(natural ∖ blocked tags ∪ fossil rows, [4,6])` | composes              |
+| [Fractured Fossil](https://www.poewiki.net/wiki/Fractured_Fossil) | as above, then `lock(any, 1)`                                                       | composes              |
+| Hollow, Glyphic ([Fossil](https://www.poewiki.net/wiki/Fossil))   | as above, then `fill(forced row, 1)` taken from the count                           | composes              |
+| [Bloodstained Fossil](https://www.poewiki.net/wiki/Fossil)        | as above, then `mark(corrupted)`                                                    | later: corrupted mark |
+| Sanctified, Gilded                                                | values / implicit only                                                              | out                   |
 
 ### 3.5 Harvest
 
 Per [Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting) and the harvest
 rows of the Metamod table.
 
-| Method                                                                          | Composition                                                                                                       | Status                 |
-| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| Reforge including a `<tag>` modifier                                            | `strip(protected ∪ fractured); fill(natural, [4,6]); fill(natural[tag], 1)` (the tagged fill is within the count) | built                  |
-| Reforge more / less likely                                                      | as a plain reforge (bias is probability)                                                                          | composes               |
-| Add a `<tag>` modifier, remove another random modifier                          | `remove(unlocked ∖ protected, 1); fill(natural[tag], 1)`, the removal never the added one                         | built                  |
-| Change a resistance / damage modifier to another element                        | `remove(type ∖ protected, 1); fill(siblings(type) at its tier, 1)`                                                | composes               |
-| Reforge an influenced item including an influence modifier; randomise influence | `strip(protected ∪ fractured); fill(natural, [4,6]); fill(influence, 1)`                                          | later: influence marks |
+| Method                                                                          | Composition                                                                                                       | Status                   |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| Reforge including a `<tag>` modifier                                            | `strip(protected ∪ fractured); fill(natural, [4,6]); fill(natural[tag], 1)` (the tagged fill is within the count) | built                    |
+| Reforge more / less likely                                                      | as a plain reforge (bias is probability)                                                                          | deferred (rarely needed) |
+| Add a `<tag>` modifier, remove another random modifier                          | `remove(unlocked ∖ protected, 1); fill(natural[tag], 1)`, the removal never the added one                         | built                    |
+| Change a resistance / damage modifier to another element                        | `remove(type ∖ protected, 1); fill(siblings(type) at its tier, 1)`                                                | composes                 |
+| Reforge an influenced item including an influence modifier; randomise influence | `strip(protected ∪ fractured); fill(natural, [4,6]); fill(influence, 1)`                                          | later: influence marks   |
 
 ### 3.6 Beastcrafting
 
