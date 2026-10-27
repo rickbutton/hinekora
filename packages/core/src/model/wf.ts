@@ -6,7 +6,8 @@
  * return a structured violation list rather than a boolean so the same data
  * powers rendering, errors, and tests.
  */
-import { maxTotal, sideCap } from "./capacity.js";
+import { canBeRare, maxTotal, sideCap } from "./capacity.js";
+import { craftedCapOf, effects } from "./effects.js";
 import type { Gen, GroupId, TypeId } from "./ids.js";
 import type { Item } from "./item.js";
 import { affixes, prefixCount, suffixCount } from "./item.js";
@@ -32,6 +33,8 @@ export type WfViolation =
     | { readonly kind: "prefixOverCap"; readonly count: number; readonly cap: number }
     | { readonly kind: "suffixOverCap"; readonly count: number; readonly cap: number }
     | { readonly kind: "affixesOverCap"; readonly count: number; readonly cap: number }
+    | { readonly kind: "rarityUnsupported" }
+    | { readonly kind: "craftedOverLimit"; readonly count: number; readonly cap: number }
     | { readonly kind: "duplicateType"; readonly type: TypeId }
     | { readonly kind: "familyCollision"; readonly family: GroupId }
     | {
@@ -47,6 +50,9 @@ export type WfViolation =
 export function wfViolations(it: Item): readonly WfViolation[] {
     const violations: WfViolation[] = [];
     const all = affixes(it);
+
+    // Rarity within the class ceiling (Rarity § Rare).
+    if (it.rarity === "rare" && !canBeRare(it.base)) violations.push({ kind: "rarityUnsupported" });
 
     // Slot caps.
     const preCap = maxPre(it);
@@ -80,6 +86,13 @@ export function wfViolations(it: Item): readonly WfViolation[] {
             }
             seenFamilies.add(f);
         }
+    }
+
+    // Crafted mods within the limit: one, or what an active multimod allows.
+    const crafted = all.filter((m) => m.source === "bench").length;
+    const craftedCap = craftedCapOf(effects(it));
+    if (crafted > craftedCap) {
+        violations.push({ kind: "craftedOverLimit", count: crafted, cap: craftedCap });
     }
 
     // Tier gate and domain match, for naturally rolled affixes only: an essence

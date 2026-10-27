@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type Base, type Item, pool } from "@hinekora/core";
+import { type Base, isNonzero, type Item, pool } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "./load.js";
 
 const data = loadDefaultPoe1();
@@ -91,6 +91,49 @@ describe("registry resolution against real data", () => {
         expect(base("Simplex Amulet").capDelta).toEqual({ prefix: -2, suffix: -1 });
         expect(base("Ratcheting Ring").capDelta).toEqual({ prefix: -3, suffix: 3 });
         expect(base("Iron Ring").capDelta).toBeUndefined(); // an ordinary base has none
+    });
+});
+
+describe("catalog-level facts of the item model", () => {
+    const byType = new Map<string, typeof registry.catalog>();
+    for (const m of registry.catalog) {
+        const rows = byType.get(m.type);
+        if (rows) byType.set(m.type, [...rows, m]);
+        else byType.set(m.type, [m]);
+    }
+
+    it("every row of a ModType claims the same groups", () => {
+        for (const rows of byType.values()) {
+            const first = [...rows[0]!.families].sort().join(",");
+            expect(rows.every((r) => [...r.families].sort().join(",") === first)).toBe(true);
+        }
+    });
+
+    it("a ModType is not one side: many have both prefix and suffix rows", () => {
+        let both = 0;
+        for (const rows of byType.values()) {
+            if (rows.some((r) => r.gen === "prefix") && rows.some((r) => r.gen === "suffix"))
+                both++;
+        }
+        expect(both).toBe(130);
+    });
+
+    it("essence-only rows carry no positive weight anywhere", () => {
+        const essenceRows = registry.catalog.filter((m) => m.source === "essence");
+        expect(essenceRows.length).toBeGreaterThan(400);
+        expect(essenceRows.every((m) => m.spawn.every((e) => !isNonzero(e.weight)))).toBe(true);
+    });
+
+    it("the five metamods are the only effect carriers, all bench-placed", () => {
+        const carriers = registry.catalog.filter((m) => (m.effects?.length ?? 0) > 0);
+        expect(carriers.map((m) => m.id).sort()).toEqual([
+            "DexMasterItemGenerationCannotChangeSuffixes",
+            "IntMasterItemGenerationCannotRollAttackAffixes",
+            "StrDexMasterItemGenerationCannotRollCasterAffixes",
+            "StrIntMasterItemGenerationCanHaveMultipleCraftedMods",
+            "StrMasterItemGenerationCannotChangePrefixes",
+        ]);
+        expect(carriers.every((m) => m.source === "bench")).toBe(true);
     });
 });
 

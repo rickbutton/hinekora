@@ -10,7 +10,10 @@ import {
     INCREASED_MANA,
     LIFE_T1,
     LIFE_T2,
+    CANNOT_ROLL_ATTACK_CARRIER,
+    FLASK_BASE,
     LIGHTNING_RESIST,
+    MULTIMOD_CARRIER,
     PROTECT_PREFIXES_CARRIER,
     RATCHETING_BASE,
     SIMPLEX_BASE,
@@ -128,6 +131,27 @@ describe("wf — coexistence rules", () => {
         const famClash = mkItem({ rarity: "rare", suffixes: [FIRE_RESIST, FIRE_CHAOS_RESIST] });
         const vs = wfViolations(famClash);
         expect(kinds(vs)).toEqual(["familyCollision"]);
+    });
+});
+
+describe("wf — rarity ceiling and crafted limit", () => {
+    it("flags a Rare flask", () => {
+        const rareFlask = mkItem({ rarity: "rare", base: FLASK_BASE });
+        expect(kinds(wfViolations(rareFlask))).toContain("rarityUnsupported");
+        expect(kinds(wfViolations(mkItem({ rarity: "magic", base: FLASK_BASE })))).toEqual([]);
+    });
+
+    it("flags two bench-crafted mods without multimod, and allows them under it", () => {
+        const two = mkItem({
+            rarity: "rare",
+            suffixes: [PROTECT_PREFIXES_CARRIER, CANNOT_ROLL_ATTACK_CARRIER],
+        });
+        expect(kinds(wfViolations(two))).toEqual(["craftedOverLimit"]);
+        const underMultimod = mkItem({
+            rarity: "rare",
+            suffixes: [PROTECT_PREFIXES_CARRIER, CANNOT_ROLL_ATTACK_CARRIER, MULTIMOD_CARRIER],
+        });
+        expect(wfViolations(underMultimod)).toEqual([]);
     });
 });
 

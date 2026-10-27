@@ -17,7 +17,7 @@ import { type Caps, type Counts, CountDomain, caps } from "./counts.js";
 // The sub-domains live in their own modules (`domain.ts`, `counts.ts`); re-export
 // the surface existing importers reach through `astate` (the caps + `Range`).
 export type { Range } from "./domain.js";
-export { hardTotalCap, maxTotal, sideCap } from "./counts.js";
+export { canBeRare, hardTotalCap, maxTotal, sideCap } from "./counts.js";
 
 /** The tier overlay as a lattice element: for each present type, the specific
  *  mods (tiers) it could be. Absent from the map ⇒ any tier. */
@@ -43,28 +43,6 @@ export interface AItem {
     /** How many bench-CRAFTED mods are present (a range). `bench` requires it
      *  provably below the crafted cap (one, or three under an active multimod). */
     readonly crafted: Range;
-}
-
-// --- rarity feasibility ---------------------------------------------------
-
-/** The classes that top out at Magic: flasks, tinctures, relics and charms
- *  (Rarity § Rare). */
-const NO_RARE_CLASSES: ReadonlySet<string> = new Set([
-    "LifeFlask",
-    "ManaFlask",
-    "HybridFlask",
-    "UtilityFlask",
-    "UtilityFlaskCritical",
-    "Tincture",
-    "Relic",
-    "SanctumSpecialRelic",
-    "AtlasRelic",
-    "AnimalCharm",
-]);
-
-/** Can this base be made Rare at all? */
-export function canBeRare(base: Base): boolean {
-    return !NO_RARE_CLASSES.has(base.itemClass);
 }
 
 /** The caps this item's counts live under (rarity + base). */

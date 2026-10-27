@@ -20,6 +20,26 @@ export interface Caps {
     readonly total: number;
 }
 
+/** The classes that top out at Magic: flasks, tinctures, relics and charms
+ *  (Rarity § Rare). */
+const NO_RARE_CLASSES: ReadonlySet<string> = new Set([
+    "LifeFlask",
+    "ManaFlask",
+    "HybridFlask",
+    "UtilityFlask",
+    "UtilityFlaskCritical",
+    "Tincture",
+    "Relic",
+    "SanctumSpecialRelic",
+    "AtlasRelic",
+    "AnimalCharm",
+]);
+
+/** Can this base be made Rare at all? */
+export function canBeRare(base: Base): boolean {
+    return !NO_RARE_CLASSES.has(base.itemClass);
+}
+
 /** The classes whose Rare holds four affixes (2 per side): jewels, abyss jewels
  *  and Rogue's equipment (Rarity § Rare). */
 const FOUR_AFFIX_CLASSES: ReadonlySet<string> = new Set([
