@@ -18,6 +18,7 @@ import {
     LIFE_T1,
     LIFE_T2,
     LIGHTNING_RESIST,
+    RATCHETING_BASE,
     mkItem,
     RING_BASE,
     RING_DISABLED,
@@ -157,6 +158,30 @@ describe("pool — slot cardinality (rule 3)", () => {
             suffixes: [FIRE_RESIST, COLD_RESIST, LIGHTNING_RESIST],
         });
         expect(pool(CATALOG, fullRare)).toHaveLength(0);
+    });
+});
+
+describe("pool — slot cardinality on an experimented base", () => {
+    it("a rare Ratcheting Ring with three suffixes still offers suffixes (cap six)", () => {
+        const three = mkItem({
+            rarity: "rare",
+            base: RATCHETING_BASE,
+            suffixes: [FIRE_RESIST, COLD_RESIST, LIGHTNING_RESIST],
+        });
+        const cands = pool(CATALOG, three);
+        expect(cands.some((c) => c.mod.gen === "suffix")).toBe(true);
+        expect(cands.some((c) => c.mod.gen === "prefix")).toBe(false);
+    });
+
+    it("a magic Ratcheting Ring offers no prefix and closes at two suffixes", () => {
+        const empty = mkItem({ rarity: "magic", base: RATCHETING_BASE });
+        expect(pool(CATALOG, empty).some((c) => c.mod.gen === "prefix")).toBe(false);
+        const full = mkItem({
+            rarity: "magic",
+            base: RATCHETING_BASE,
+            suffixes: [FIRE_RESIST, COLD_RESIST],
+        });
+        expect(pool(CATALOG, full)).toHaveLength(0);
     });
 });
 

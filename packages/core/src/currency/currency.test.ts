@@ -19,6 +19,7 @@ import {
     LIGHTNING_RESIST,
     mkItem,
     PROTECT_PREFIXES_CARRIER,
+    SIMPLEX_BASE,
 } from "../__fixtures__/mods.js";
 
 const ctx: OpContext = { catalog: CATALOG };
@@ -87,6 +88,16 @@ describe("exalt — the headline seam: can't exalt a Magic item", () => {
             rarity: "rare",
             prefixes: [LIFE_T1, INCREASED_MANA, INCREASED_ARMOUR],
             suffixes: [FIRE_RESIST, COLD_RESIST, LIGHTNING_RESIST],
+        });
+        expect(expectErr(exalt(ctx, full))).toMatchObject({ kind: "noOpenSlot" });
+    });
+
+    it("rejects a rare Simplex Amulet at its three-affix cap with noOpenSlot", () => {
+        const full = mkItem({
+            rarity: "rare",
+            base: SIMPLEX_BASE,
+            prefixes: [LIFE_T1],
+            suffixes: [FIRE_RESIST, COLD_RESIST],
         });
         expect(expectErr(exalt(ctx, full))).toMatchObject({ kind: "noOpenSlot" });
     });

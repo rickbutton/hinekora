@@ -8,6 +8,7 @@
  * opens the slot caps, leaving the present-set and collisions unchanged. So
  * `AddOne.base` already carries the result rarity.
  */
+import { maxTotal } from "../model/capacity.js";
 import type { Item } from "../model/item.js";
 import { removable } from "../model/effects.js";
 import { wfViolations } from "../model/wf.js";
@@ -52,7 +53,7 @@ export const exalt: Operation = (ctx, it) => {
     }
     // `pool` still enforces the per-generation slot caps; this makes "exalt a
     // full item" its own precondition error.
-    if (it.prefixes.length + it.suffixes.length >= 6) {
+    if (it.prefixes.length + it.suffixes.length >= maxTotal(it.rarity, it.base)) {
         return err({
             kind: "noOpenSlot",
             prefixCount: it.prefixes.length,

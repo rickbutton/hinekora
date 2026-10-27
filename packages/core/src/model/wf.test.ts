@@ -12,6 +12,8 @@ import {
     LIFE_T2,
     LIGHTNING_RESIST,
     PROTECT_PREFIXES_CARRIER,
+    RATCHETING_BASE,
+    SIMPLEX_BASE,
     mkItem,
 } from "../__fixtures__/mods.js";
 import { Domain } from "./ids.js";
@@ -27,6 +29,36 @@ describe("slot caps", () => {
         expect(maxSuf(mkItem({ rarity: "magic" }))).toBe(1);
         expect(maxPre(mkItem({ rarity: "rare" }))).toBe(3);
         expect(maxSuf(mkItem({ rarity: "rare" }))).toBe(3);
+    });
+});
+
+describe("slot caps on an experimented base", () => {
+    it("shift each side by the base's delta and hold the item to the rarity's total", () => {
+        const ratcheting = mkItem({ rarity: "magic", base: RATCHETING_BASE });
+        expect(maxPre(ratcheting)).toBe(0);
+        expect(maxSuf(ratcheting)).toBe(4);
+        const simplex = mkItem({ rarity: "rare", base: SIMPLEX_BASE });
+        expect(maxPre(simplex)).toBe(1);
+        expect(maxSuf(simplex)).toBe(2);
+    });
+
+    it("slotOpen closes a side whose cap is open once the combined cap is reached", () => {
+        const twoSuffixes = mkItem({
+            rarity: "magic",
+            base: RATCHETING_BASE,
+            suffixes: [FIRE_RESIST, COLD_RESIST],
+        });
+        expect(slotOpen(twoSuffixes, "suffix")).toBe(false);
+        expect(slotOpen(twoSuffixes, "prefix")).toBe(false);
+    });
+
+    it("wf flags an item over the combined cap even when each side fits its own", () => {
+        const three = mkItem({
+            rarity: "magic",
+            base: RATCHETING_BASE,
+            suffixes: [FIRE_RESIST, COLD_RESIST, LIGHTNING_RESIST],
+        });
+        expect(kinds(wfViolations(three))).toEqual(["affixesOverCap"]);
     });
 });
 

@@ -6,41 +6,32 @@
  * return a structured violation list rather than a boolean so the same data
  * powers rendering, errors, and tests.
  */
+import { maxTotal, sideCap } from "./capacity.js";
 import type { Gen, GroupId, TypeId } from "./ids.js";
 import type { Item } from "./item.js";
 import { affixes, prefixCount, suffixCount } from "./item.js";
 import type { Mod } from "./mod.js";
 
-/** Base slot caps before any effect adjustment: Normal 0, Magic 1, Rare 3 (per gen). */
-function baseSlotCap(it: Item): number {
-    switch (it.rarity) {
-        case "normal":
-            return 0;
-        case "magic":
-            return 1;
-        case "rare":
-            return 3;
-    }
-}
-
-/** The affix cap for one generation. */
-export function slotCap(it: Item, _gen: Gen): number {
-    return baseSlotCap(it);
+/** The affix cap for one generation of this item (`capacity.ts`). */
+export function slotCap(it: Item, gen: Gen): number {
+    return sideCap(gen, it.rarity, it.base);
 }
 
 export const maxPre = (it: Item): number => slotCap(it, "prefix");
 export const maxSuf = (it: Item): number => slotCap(it, "suffix");
 
-/** Is there room for another affix of generation `gen`? */
+/** Is there room for another affix of generation `gen`? Its side must be under
+ *  its cap and the item under the combined cap. */
 export function slotOpen(it: Item, gen: Gen): boolean {
     const count = gen === "prefix" ? prefixCount(it) : suffixCount(it);
-    return count < slotCap(it, gen);
+    return count < slotCap(it, gen) && affixes(it).length < maxTotal(it.rarity, it.base);
 }
 
 /** A single well-formedness violation, tagged by which clause failed. */
 export type WfViolation =
     | { readonly kind: "prefixOverCap"; readonly count: number; readonly cap: number }
     | { readonly kind: "suffixOverCap"; readonly count: number; readonly cap: number }
+    | { readonly kind: "affixesOverCap"; readonly count: number; readonly cap: number }
     | { readonly kind: "duplicateType"; readonly type: TypeId }
     | { readonly kind: "familyCollision"; readonly family: GroupId }
     | {
@@ -65,6 +56,10 @@ export function wfViolations(it: Item): readonly WfViolation[] {
     const sufCap = maxSuf(it);
     if (suffixCount(it) > sufCap) {
         violations.push({ kind: "suffixOverCap", count: suffixCount(it), cap: sufCap });
+    }
+    const totalCap = maxTotal(it.rarity, it.base);
+    if (all.length > totalCap) {
+        violations.push({ kind: "affixesOverCap", count: all.length, cap: totalCap });
     }
 
     // (1) No duplicate ModType.

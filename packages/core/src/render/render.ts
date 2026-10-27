@@ -128,6 +128,8 @@ export function renderWfViolation(v: WfViolation): string {
             return `too many prefixes: ${v.count} (max ${v.cap})`;
         case "suffixOverCap":
             return `too many suffixes: ${v.count} (max ${v.cap})`;
+        case "affixesOverCap":
+            return `too many modifiers: ${v.count} (max ${v.cap})`;
         case "duplicateType":
             return `duplicate mod type: ${v.type}`;
         case "familyCollision":

@@ -11,88 +11,18 @@
  * with the suffix DERIVED, and `normalize` propagates every bound both ways to a
  * fixpoint.
  */
-import type { Base } from "../model/base.js";
 import type { Cmp } from "../ast/ast.js";
-import type { Gen, Rarity } from "../model/ids.js";
+import type { Caps } from "../model/capacity.js";
+import type { Gen } from "../model/ids.js";
 import { type Domain, type Range, RangeDomain, rIntersect, refineRange } from "./domain.js";
+
+export { type Caps, caps, hardTotalCap, maxTotal, sideCap } from "../model/capacity.js";
 
 /** A count-domain element: the total affix range and the prefix range; the
  *  suffix range is derived (`total − prefix`, clamped to its cap). */
 export interface Counts {
     readonly total: Range;
     readonly prefix: Range;
-}
-
-/** The three numeric bounds counts live under — a per-side cap each and a hard
- *  cap on the two sides together (see `caps`). */
-export interface Caps {
-    readonly prefix: number;
-    readonly suffix: number;
-    readonly total: number;
-}
-
-// --- affix caps (a function of rarity + base only) ------------------------
-//
-// The count an item can hold is bounded three ways: each side by its natural
-// per-rarity limit shifted by the base's implicit `capDelta` (floored at 0), and
-// the two sides together by a hard per-rarity total. The total is INDEPENDENT of
-// the per-side sum — that is what makes a magic Ratcheting Ring "0 prefix / 2
-// suffix" (raw suffix 1+3=4, but the magic total is 2), not 0/4.
-
-/** The classes whose Rare holds four affixes (2 per side): jewels, abyss jewels
- *  and Rogue's equipment (Rarity § Rare). */
-const FOUR_AFFIX_CLASSES: ReadonlySet<string> = new Set([
-    "Jewel",
-    "AbyssJewel",
-    "HeistEquipmentWeapon",
-    "HeistEquipmentTool",
-    "HeistEquipmentUtility",
-    "HeistEquipmentReward",
-]);
-
-/** The per-side affix limit inherent to a rarity + base class, before implicit
- *  deltas: normal 0, magic 1, rare 3 (2 for the four-affix classes). */
-function naturalPerSide(rarity: Rarity, base: Base): number {
-    switch (rarity) {
-        case "normal":
-            return 0;
-        case "magic":
-            return 1;
-        case "rare":
-            return FOUR_AFFIX_CLASSES.has(base.itemClass) ? 2 : 3;
-    }
-}
-
-/** The hard cap on TOTAL affixes for this rarity — `2 × naturalPerSide`, an
- *  independent bound the per-side deltas cannot exceed (magic = 2, rare = 6). */
-export function hardTotalCap(rarity: Rarity, base: Base): number {
-    return 2 * naturalPerSide(rarity, base);
-}
-
-/** The per-side affix cap: natural limit plus the base's implicit delta for that
- *  generation, floored at 0. */
-export function sideCap(gen: Gen, rarity: Rarity, base: Base): number {
-    const delta = base.capDelta ? base.capDelta[gen] : 0;
-    return Math.max(0, naturalPerSide(rarity, base) + delta);
-}
-
-/** The most affixes this item can hold: the hard total, but never more than the
- *  two per-side caps allow together (Simplex: `min(6, 1+2) = 3`). */
-export function maxTotal(rarity: Rarity, base: Base): number {
-    return Math.min(
-        hardTotalCap(rarity, base),
-        sideCap("prefix", rarity, base) + sideCap("suffix", rarity, base),
-    );
-}
-
-/** Bundle the three caps for a rarity + base — the environment every cap-aware
- *  count operation takes. */
-export function caps(rarity: Rarity, base: Base): Caps {
-    return {
-        prefix: sideCap("prefix", rarity, base),
-        suffix: sideCap("suffix", rarity, base),
-        total: maxTotal(rarity, base),
-    };
 }
 
 // --- the count domain -----------------------------------------------------
