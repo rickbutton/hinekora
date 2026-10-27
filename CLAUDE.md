@@ -59,8 +59,10 @@ pnpm -C c:/git/hinekora format        # prettier --write ., when the check fails
 `scripts/check-docs.mjs`. The docs check fails when a doc names a path or symbol the code
 does not have, omits a keyword, currency, harvest tag or abstract-state field the code
 has, or links a wiki section the local cache lacks (skipped without the cache). A `git
-commit` issued through the Bash tool runs the gate first (`.claude/hooks/pre-commit-gate.mjs`)
-and is refused when it fails. **Soundness principle:** tightening the abstract domain only
+commit` issued through the Bash or PowerShell tool runs the gate first
+(`.claude/hooks/pre-commit-gate.mjs`) on the working tree as it stands when the command
+starts, and is refused when it fails; so make the fixes in one command and commit in the
+next. **Soundness principle:** tightening the abstract domain only
 ever removes false positives (never adds false negatives), so existing green tests
 staying green is evidence a tightening is sound.
 
