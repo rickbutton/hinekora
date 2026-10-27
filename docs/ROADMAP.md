@@ -37,6 +37,16 @@ and ten bugs. The bugs, in the order they ship:
    ([Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare)).
 10. Affix capacity is computed three ways; the pool's slot check uses the incomplete one
     (Q1).
+11. `alteration` and `essence` reforge from a blank slate, dropping a fractured
+    modifier's lock and guarantee, so a scoured fractured base that is altered and later
+    fractured again is accepted (a false negative;
+    [Fracturing Orb § Mechanics](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)).
+12. `annul` ignores the cannot-roll metamods, which shield their tagged modifiers from
+    removal ([Orb of Annulment § Mechanics](https://www.poewiki.net/wiki/Orb_of_Annulment#Mechanics)),
+    so "a removable modifier" can hold where the game has none.
+13. The veiled orbs are accepted on an item that already carries a veiled modifier or an
+    unveiled one ([Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb):
+    "or its craftable versions"); bug 4 is the placeholder half of this.
 
 Then the added tags of present modifiers in the pool (Q2), the dead effect kinds and
 sources (Q4), and a test per well-formedness rule of `item-model.md` §8.

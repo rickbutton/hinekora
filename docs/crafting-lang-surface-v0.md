@@ -118,7 +118,7 @@ page groups them:
 | `augment`    | [Orb of Augmentation](https://www.poewiki.net/wiki/Orb_of_Augmentation)                | Magic with an open slot                                         |
 | `exalt`      | [Exalted Orb](https://www.poewiki.net/wiki/Exalted_Orb)                                | Rare with an open slot                                          |
 | `annul`      | [Orb of Annulment](https://www.poewiki.net/wiki/Orb_of_Annulment)                      | a removable modifier (Magic or Rare)                            |
-| `scour`      | [Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring)                        | Magic or Rare                                                   |
+| `scour` | [Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) | Magic or Rare, with a side a metamod does not protect |
 | `fracture`   | [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)                | Rare, at least four modifiers, not already fractured            |
 
 "Open slot" and "removable" are decided by the checker's knowledge of the item: a slot is
@@ -133,9 +133,9 @@ Operations that take a name (and an optional `t<n>`):
 - `essence "<name>" [t<n>]` applies an [essence](https://www.poewiki.net/wiki/Essence#Crafting):
   a full name (`"Deafening Essence of Greed"`) or a type with a tier (`essence "greed" t1`,
   T1 = Deafening). The tier table of that section decides what it accepts: a Normal item at
-  any tier, a Rare item from Screaming up, never a Magic item; the essence must grant a
-  modifier for the item's class, and no protection or cannot-roll metamod may be on the
-  item.
+  any tier, a Rare item from Screaming up, never a Magic item; the base must be one that
+  can be Rare; the essence must grant a modifier for the item's class; and no protection
+  or cannot-roll metamod may be on the item.
 - `bench "<mod>" [t<n>]` adds a [crafting bench](https://www.poewiki.net/wiki/Crafting_Bench)
   modifier, named by the modifier it adds (`bench "maximum life"`). It needs an open slot
   in the modifier's generation, the crafted-modifier limit not reached (one, or three under
@@ -147,16 +147,16 @@ Operations that take a name (and an optional `t<n>`):
   [modifier group](https://www.poewiki.net/wiki/Harvest_crafting#Modifier_groups): "Reforge
   with random modifiers, including a [Type] modifier" and "Add a new [Type] modifier and
   remove another random modifier". Tags: `attack`, `attribute`, `caster`, `chaos`, `cold`,
-  `critical`, `defence`, `elemental`, `fire`, `life`, `lightning`, `mana`, `minion`,
-  `physical`, `speed`. Both need a Rare item and a tag some modifier of the base can carry;
+  `critical`, `defence` (or `defences`), `elemental`, `fire`, `life`, `lightning`, `mana`,
+  `minion`, `physical`, `speed`. Both need a Rare item and a tag some modifier of the base can carry;
   `augment` also needs a removable modifier.
 - `veiled chaos` and `veiled exalt` are the
   [Veiled Chaos Orb](https://www.poewiki.net/wiki/Veiled_Chaos_Orb) and
   [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb); both need a Rare
   item, `veiled exalt` also a removable modifier.
-- `unveil ["<mod>"]` is the three-option unveil of
-  [Veiled modifier § How to obtain](https://www.poewiki.net/wiki/Veiled_modifier#How_to_obtain)
-  and needs a veiled modifier on the item. Bare, the result is one of the valid options
+- `unveil ["<mod>"]` is the three-option unveil of a
+  [veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) and needs a veiled
+  modifier on the item. Bare, the result is one of the valid options
   (narrow it with a following `if has "<mod>"`). With a name, that outcome is guaranteed
   only when the option pool is three or fewer, which you reach by blocking: bench a
   modifier that shares a group with an option. Hovering the line shows the current

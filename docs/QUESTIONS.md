@@ -24,9 +24,9 @@ The next session applies it, records the commit, and moves the entry to Resolved
 **Question:** Affix capacity is computed in three places (`check/counts.ts`, `model/wf.ts`,
 and a literal 6 in `currency/base.ts`). Route the concrete layer and the pool through
 `counts.ts` (recommended), delete the concrete library instead, or merge the two modules?
-**Context:** the plan doc "Item Model Next Steps", Decision 1. `pool.slotOpen` uses the
-incomplete `wf.ts` formula and sits on the checker's path, so on a rare Ratcheting Ring
-the add-pool is wrong in the unsound direction.
+**Context:** `pool.slotOpen` used the incomplete `wf.ts` formula and sits on the
+checker's path, so on a rare Ratcheting Ring the add-pool was wrong in the unsound
+direction (ROADMAP Step 1 bug 10).
 **Assumed meanwhile:** option 1, delegate. `wf.slotCap` calls `counts.sideCap`, `wf`
 gains the combined-cap clause, `pool.slotOpen` tests both caps, exalt's literal becomes
 `maxTotal`.
@@ -40,7 +40,7 @@ gains the combined-cap clause, `pool.slotOpen` tests both caps, exalt's literal 
 **Question:** The item's tag set. Implement the tags a present modifier adds
 (`adds_tags`) in the pool now and defer influence (recommended), implement both, or
 leave the pool matching on base tags only?
-**Context:** plan doc Decision 2. 235 jewel modifiers key on a `specific_weapon` tag that
+**Context:** 235 jewel modifiers key on a `specific_weapon` tag that
 another jewel modifier adds; without it the jewel pool overstates what can roll, which
 makes `until has X` look reachable when it is not.
 **Assumed meanwhile:** added tags only; influence arrives with the influence currencies.
@@ -53,8 +53,7 @@ makes `until has X` look reachable when it is not.
 **Question:** What the concrete `Item` carries. Only what the pool reads (influence, once
 it exists; recommended), a faithful item with fractured/veiled/influence marks, or the
 present subset with the spec stating that marks are checker-only?
-**Context:** plan doc Decision 3; `docs/item-model.md` §10 is the open question in the
-spec.
+**Context:** `docs/item-model.md` §10 is the open question in the spec.
 **Assumed meanwhile:** option 3. Fracture and veiled state stay in the checker; the
 concrete item gains fields only when the pool needs them.
 **Where the assumption lives:** `docs/item-model.md` §7 and §10 once rewritten.
@@ -66,7 +65,7 @@ concrete item gains fields only when the pool needs them.
 **Question:** Delete the dead effect kinds (`poolWiden`, `protect` by mods, `slotDelta`,
 `opUnlock`) and the five unreachable `ModSource` values (recommended), or keep them as
 PoE2 design intent?
-**Context:** plan doc Decision 4. Nothing constructs them; the design that introduced
+**Context:** Nothing constructs them; the design that introduced
 them (PoE2 socket augments, quality unlocks) is out of scope.
 **Assumed meanwhile:** delete.
 **Where the assumption lives:** `packages/core/src/model/effects.ts`,
@@ -142,6 +141,22 @@ Harvest reforge lifeforce.
 **Record:** the modifiers rolled.
 **Assumed meanwhile:** the cannot-roll metamod is respected whenever its carrier
 survives the reforge (the checker's current wiring).
+**Answer:**
+
+### Q11 · game probe · open
+
+**Asked:** 2026-10-26
+**Goal:** the rarity an Orb of Scouring leaves on an item with two fractured modifiers.
+[Fractured item § Mechanics](https://www.poewiki.net/wiki/Fractured_item#Mechanics) says
+"a Rare item if it had two or three fractured mods";
+[Tainted Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Tainted_Chaos_Orb#Mechanics)
+says one fractured prefix and one fractured suffix "results in a magic item".
+**Procure:** an item with one fractured prefix and one fractured suffix (a Recombinator or
+a talisman with two beast-fractured modifiers).
+**Steps:** scour it. **Record:** the resulting rarity.
+**Assumed meanwhile:** the lowest rarity whose caps hold the survivors (Magic for one of
+each side), which is what `rarity(lowest)` in `operations.md` and the checker's scour do.
+Only reachable through the multi-fracture routes Hinekora does not model yet.
 **Answer:**
 
 ### Q10 · clarification · open

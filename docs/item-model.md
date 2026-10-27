@@ -2,8 +2,8 @@
 
 > Purpose: the item and modifier vocabulary Hinekora models, for Path of Exile 1. What an
 > item is made of, what a modifier is, and which combinations of modifiers may sit on an
-> item. This is what the code is audited against; the audit's open decisions and bugs are
-> tracked in the plan doc linked from `ROADMAP.md`.
+> item. This is what the code is audited against; the open decisions are `QUESTIONS.md` Q1–Q4
+> and the bugs are `ROADMAP.md` Step 1.
 >
 > Game rules are not restated here. Each rule links the section of the Path of Exile wiki
 > (poewiki.net) that defines it and the text says only how Hinekora models it; where
@@ -245,4 +245,4 @@ Checked against the ingested PoE1 data (12,643 affix rows, 4,561 bases):
 Fractured and veiled marks, influence, and the item's full tag set are declared on the item
 here because the game treats them as item state. The implementation keeps fracture and
 veiled state only in the checker, and has no influence or added-tag notion at all. Whether
-the concrete item model should carry them is Decision 3 in the plan doc.
+the concrete item model should carry them is `QUESTIONS.md` Q3.
