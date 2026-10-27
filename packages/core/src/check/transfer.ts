@@ -14,7 +14,7 @@ import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
 import { pool } from "../pool/pool.js";
 import { veiledPool } from "../pool/veiled.js";
 import type { Registry } from "../resolve/registry.js";
-import { rollableGen } from "../resolve/tiers.js";
+import { rollableGen, rollableTiers } from "../resolve/tiers.js";
 import {
     type AItem,
     type Range,
@@ -937,7 +937,11 @@ function syntheticItem(a: AItem, registry: Registry): Item {
     const prefixes: Mod[] = [];
     const suffixes: Mod[] = [];
     for (const t of guaranteedTypes(a)) {
-        const rep = representative(registry, t);
+        // A row that rolls on this base, so the side is the base's (a dual-side
+        // type); a type that rolls nowhere here (a bench row) keeps its own row.
+        const rep =
+            rollableTiers(registry.catalog, a.game, a.base, a.ilvl, t)[0] ??
+            representative(registry, t);
         if (!rep) continue;
         (rep.gen === "prefix" ? prefixes : suffixes).push(rep);
     }

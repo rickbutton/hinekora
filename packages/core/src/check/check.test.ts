@@ -903,6 +903,39 @@ describe("checker — per-base affix caps (experimented bases)", () => {
         ).toContain("is a prefix");
     });
 
+    it("the add-pool and a removal place a dual-side modifier on the base's side", () => {
+        const dual = buildRegistry({
+            bases: [RING_BASE, AMULET_BASE],
+            mods: [...CATALOG, DUAL_SIDE_RING_PREFIX, DUAL_SIDE_AMULET_SUFFIX],
+            baseAliases: { "Iron Ring": "IronRing", "Coral Amulet": "CoralAmulet" },
+        });
+        // On an amulet the type is a suffix: with two more suffixes the side is full,
+        // so an exalt can add no suffix (fire resistance stays impossible).
+        const fullSuffixes = item({
+            base: "Coral Amulet",
+            ilvl: 100,
+            rarity: "rare",
+            suffixes: [{ mod: "dual side", tier: 1 }, "ColdResist1", "LightningResist1"],
+        });
+        const added = check(craft("poe1", fullSuffixes, [op("exalt")]), { registry: dual });
+        expect(added.diagnostics).toEqual([]);
+        expect(added.finalState!.possible.has(FIRE_RESIST.type)).toBe(false);
+        // A prefix-forced annul cannot reach the suffix, so its guarantee survives.
+        const withPrefix = item({
+            base: "Coral Amulet",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: ["IncreasedLife1"],
+            suffixes: [{ mod: "dual side", tier: 1 }],
+        });
+        const removed = check(
+            craft("poe1", withPrefix, [withOmen("Sinistral Annulment", [op("annul")])]),
+            { registry: dual },
+        );
+        expect(removed.diagnostics).toEqual([]);
+        expect(guaranteedTypes(removed.finalState!).has(DUAL_SIDE_AMULET_SUFFIX.type)).toBe(true);
+    });
+
     it("the item block rejects a count over the combined cap (three suffixes on a magic Ratcheting)", () => {
         // Each side fits its own cap (suffix cap four) but the magic total is two;
         // the declared item is reported and the state starts within the cap rather
