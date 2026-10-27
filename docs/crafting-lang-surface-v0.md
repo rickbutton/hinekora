@@ -59,7 +59,8 @@ item {
   starting item is a concrete item. `"random"` (or `"?"`) is an anonymous affix: counted,
   not named. A count over the base's limit for the rarity is an error; a named mod listed
   under the wrong side is an error.
-- `fractured "<mod>" t<n>` marks a
+- `fractured "<mod>" t<n>` (or `fractured "random"`, when the locked modifier is not
+  named: the item is known to be fractured, the modifier is not) marks a
   [fractured modifier](https://www.poewiki.net/wiki/Fractured_item#Mechanics). Hinekora
   models at most one per item, the
   [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)'s own limit; the

@@ -119,8 +119,8 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
   (well-formedness) rules. Branded id types in `model/ids.ts`.
 - **pool/**: `pool(catalog, item)`, which mods can roll on an item: the wiki's
   [spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag) rule (the item's
-  tags, `itemTags`: the base's plus those present mods add per
-  [Modifier § Tags](https://www.poewiki.net/wiki/Modifier#Tags), vs the mod's spawn table,
+  tags, `itemTags`: the base's plus the `adds_tags` of present mods, a rule the data
+  carries rather than the wiki (`QUESTIONS.md` Q2), vs the mod's spawn table,
   first match wins, zero disables) plus the
   [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) gate.
 - **outcome/**: the symbolic outcome-union machinery. Intensional: chaining consumes a
@@ -361,7 +361,8 @@ wiki's [Crafting](https://www.poewiki.net/wiki/Crafting) page groups them the sa
 rarity upgrades, reforges, augment/remove). All but `fracture` (a lock; see Fractures
 below) reduce to two primitives: an ADDITIVE add
 (`addOne`, for transmute/augment/regal/exalt) and a REFORGE (`reroll`, for
-alteration/alchemy/chaos: fresh count range, nothing guaranteed, pool becomes `possible`);
+alchemy, and for alteration/chaos with nothing kept: fresh count range, nothing
+guaranteed, pool becomes `possible`);
 plus `removeOne` (annul) and `scour` (strip to Normal, or keep a protected side — see
 metamods). Notes:
 
@@ -407,7 +408,7 @@ metamods). Notes:
   **cannot-roll** is a `poolRestrict` that folds through `pool` for free (the synthetic item
   carries the guaranteed carrier); **multimod** raises the crafted cap; **essence** is
   blocked (`metamodBlocks`) by any protect or cannot-roll metamod ("usage prevented" in the
-  table); **chaos** and **harvest reforge** keep the protected side and reroll the rest
+  table); **alteration**, **chaos** and **harvest reforge** keep the protected side and reroll the rest
   (`keepProtectedReroll` — protected guarantees + tier pins + a count floor survive, open
   protected slots may fill from the fresh pool, which is the table's "respected, but open
   prefixes may be filled"; the metamod on the rerolled side goes). A cannot-roll metamod
@@ -425,7 +426,7 @@ metamods). Notes:
   ≥4 mods, not already fractured) asserts "exactly one of the current mods is fractured" —
   pinnable by a `fractured X` branch (`refine`). Hinekora therefore models at most one
   fracture per item; the wiki's multi-fracture routes (Synthesis, Necropolis, beastcrafting)
-  are not modelled. Removal, `chaos`, `scour`, and harvest reforge keep the fracture by
+  are not modelled. Removal, `alteration`, `chaos`, `scour`, essence and harvest reforge keep the fracture by
   preserving `fractureProjection(a)` (the presence BDD reduced to the fracture atoms + their
   coupled presence) and rerolling the rest, so a proven fracture keeps its type and an
   unproven one keeps the survivor disjunction. **Scour** drops to the minimum rarity that

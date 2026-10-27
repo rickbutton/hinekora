@@ -161,6 +161,21 @@ each side), which is what `rarity(lowest)` in `operations.md` and the checker's 
 Only reachable through the multi-fracture routes Hinekora does not model yet.
 **Answer:**
 
+### Q12 · game probe · open
+
+**Asked:** 2026-10-26
+**Goal:** whether a Veiled Chaos Orb refuses an item that carries an unveiled modifier.
+[Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb) says it cannot be
+used "on an item with a veiled modifier or its craftable versions"; for the Veiled Chaos
+Orb the wiki says only that it "cannot be used to obtain multiple veiled modifiers"
+([Crafting](https://www.poewiki.net/wiki/Crafting)).
+**Procure:** a Rare with an unveiled modifier (veiled chaos, then unveil) and a Veiled
+Chaos Orb.
+**Steps:** try to apply it. **Record:** accepted or refused.
+**Assumed meanwhile:** refused, the stricter reading, in `check/transfer.ts`
+(`veiledChaos`) and the Veiled Chaos Orb row of `operations.md`.
+**Answer:**
+
 ### Q10 · clarification · open
 
 **Asked:** 2026-10-26
