@@ -17,14 +17,10 @@ measured against that ledger.
 
 The audit of the code against `item-model.md` left four decisions (`QUESTIONS.md` Q1–Q4,
 applied under their recommendations and awaiting the user's ruling) and a list of bugs,
-all fixed. What remains:
-
-1. The concrete validator lacks two of `item-model.md` §8's rules: the rarity ceiling of
-   a base's class and the crafted-modifier limit.
-2. A test per well-formedness rule of `item-model.md` §8 over the concrete model, and the
-   catalog-level facts of §9 as data tests.
-3. A re-audit of the code against `item-model.md` §§4–9, rule by rule. The expected
-   remaining divergence is influence (Step 4) and nothing else.
+all fixed; the concrete validator holds every §8 rule the concrete item can express and
+the §9 facts are data tests. What remains is a re-audit of the code against
+`item-model.md` §§4–9, rule by rule, once Step 2 has settled the shape of the transfer
+layer. The expected remaining divergence is influence (Step 4) and nothing else.
 
 ## Step 2. The operations model (Q5)
 
