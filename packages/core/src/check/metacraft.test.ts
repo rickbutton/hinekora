@@ -252,6 +252,31 @@ describe("a declared bench-crafted mod counts toward the crafted limit", () => {
     });
 });
 
+describe("a fractured bench row keeps its crafted count through a reforge", () => {
+    // The fractured multimod carrier is bench-placed and reforge-proof, so the
+    // crafted count can never drop below what it accounts for.
+    const fracturedMultimod = () =>
+        item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: ["T1 Life"],
+            suffixes: [{ mod: MULTIMOD_CARRIER.id, fractured: true }, "random", "random"],
+        });
+
+    it("after an essence", () => {
+        const r = check(craft("poe1", fracturedMultimod(), [essence("greed", 1)]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.crafted).toEqual([0, 1]);
+    });
+
+    it("after a chaos", () => {
+        const r = check(craft("poe1", fracturedMultimod(), [op("chaos")]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.crafted).toEqual([0, 1]);
+    });
+});
+
 describe("a kept cannot-roll metamod restricts a reforge's fresh pool", () => {
     // "Suffixes cannot be changed" is a prefix that keeps the suffixes, among them
     // the cannot-roll carrier, so the rerolled prefixes are drawn under the restriction.

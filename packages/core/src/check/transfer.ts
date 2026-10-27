@@ -255,6 +255,23 @@ export function fracture(a: AItem): TransferResult {
     return ok(settled({ ...a, presence }));
 }
 
+/** How many of the fractured (locked, so reforge-proof) mods are bench rows: the
+ *  crafted count a reforge cannot clear (a crafted mod can be fractured,
+ *  Crafting Bench § Using the crafting bench). */
+function fracturedCrafted(a: AItem, registry: Registry): number {
+    let n = 0;
+    for (const t of fracturedTypes(a)) {
+        const pinned = a.tiers.get(t);
+        const rows = pinned
+            ? [...pinned]
+                  .map((id) => registry.resolveMod(id))
+                  .flatMap((r) => (r.ok ? [r.value] : []))
+            : registry.catalog.filter((m) => m.type === t);
+        if (rows.some((m) => m.source === "bench")) n++;
+    }
+    return Math.min(n, a.crafted[1]);
+}
+
 /** The lowest rarity whose per-side caps can hold `p` prefixes and `s` suffixes:
  *  none → Normal, at most one each → Magic, otherwise Rare. */
 function minRarityFor(p: number, s: number): Rarity {
@@ -366,7 +383,7 @@ export function essence(a: AItem, spec: EssenceSpec, registry: Registry): Transf
         presence: fractureProjection(a),
         possible,
         tiers,
-        crafted: [0, 0], // a reforge discards any crafted mod
+        crafted: [0, fracturedCrafted(a, registry)], // a reforge clears every unlocked crafted mod
     };
     return ok(withGuaranteed(reforged, guaranteedMod));
 }
@@ -769,13 +786,13 @@ function keepProtectedReroll(
         tiers.set(m.type, cur ? new Set([...cur, m.id]) : new Set([m.id]));
     }
 
-    // Crafted mods survive only on a KEPT protected side: a pure reforge (no
-    // protected side) rerolls them all away, and a fractured mod is never itself
-    // crafted. With a protected side, a metamod on the rerolled side is provably
-    // gone; a crafted mod on the kept side may survive.
+    // Crafted mods survive on a KEPT protected side or as the fractured mod: a
+    // pure reforge (no protected side) rerolls every unlocked one away. With a
+    // protected side, a metamod on the rerolled side is provably gone; a crafted
+    // mod on the kept side may survive.
     let crafted: Range;
     if (keep.size === 0) {
-        crafted = [0, 0];
+        crafted = [0, fracturedCrafted(a, registry)];
     } else {
         let strippedCarriers = 0;
         for (const t of guaranteedTypes(a)) {
