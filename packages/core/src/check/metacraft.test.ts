@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { disjunctiveGuarantees, guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { bench, craft, essence, harvest, item, op } from "../__fixtures__/ast.js";
+import { bench, craft, essence, harvest, item, op, withOmen } from "../__fixtures__/ast.js";
 import {
     ATTACK_PREFIX,
     CANNOT_ROLL_ATTACK_CARRIER,
@@ -197,6 +197,26 @@ describe("reforge respects protection (Stage B)", () => {
         expect(guaranteed(r)).toContain("IncreasedLife");
         const clauses = disjunctiveGuarantees(r.finalState!).map((cl) => new Set(cl));
         expect(clauses).toContainEqual(new Set([TypeId("FireResist"), TypeId("FireChaosResist")]));
+    });
+});
+
+describe("cannot roll attack modifiers shields attack mods from removal", () => {
+    const attackRing = () => rareRing(["AddedAttack1"], []);
+
+    it("an annul never removes the attack prefix, so its guarantee survives", () => {
+        const c = craft("poe1", attackRing(), [bench("cannot roll attack modifiers"), op("annul")]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteed(r)).toContain("AddedAttackDamage");
+    });
+
+    it("an annul forced to the prefixes has nothing it may remove", () => {
+        const c = craft("poe1", attackRing(), [
+            bench("cannot roll attack modifiers"),
+            withOmen("Sinistral Annulment", [op("annul")]),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics[0]?.message).toContain("removable prefix");
     });
 });
 

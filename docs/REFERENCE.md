@@ -408,9 +408,11 @@ metamods). Notes:
   table); **chaos** and **harvest reforge** keep the protected side and reroll the rest
   (`keepProtectedReroll` — protected guarantees + tier pins + a count floor survive, open
   protected slots may fill from the fresh pool, which is the table's "respected, but open
-  prefixes may be filled"; the metamod on the rerolled side goes). Not modelled from that
-  table: a cannot-roll metamod also shielding its tagged mods from `annul`, and the
-  Fracturing Orb ignoring metamods. The curated id→effect table is `model/metamods.ts`.
+  prefixes may be filled"; the metamod on the rerolled side goes). A cannot-roll metamod
+  also shields its tagged guaranteed mods from `annul` (`shieldedTypes`); under one, only a
+  guaranteed unshielded mod proves a removal, since an anonymous mod may be tagged. Not
+  modelled from that table: the Fracturing Orb ignoring metamods. The curated id→effect
+  table is `model/metamods.ts`.
 - **Fractures** ([Fractured item § Mechanics](https://www.poewiki.net/wiki/Fractured_item#Mechanics))
   are a per-mod lock, tracked as `frac@type` atoms in the presence BDD (the tier-atom
   pattern; a `FRAC_EXISTS` sentinel marks "some mod is fractured" so a fracture on an

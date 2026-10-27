@@ -131,6 +131,20 @@ function metamodBlocksSourced(a: AItem, registry: Registry): boolean {
     );
 }
 
+/** Guaranteed types an active cannot-roll metamod shields from removal: the
+ *  Orb of Annulment "will not remove attack/caster-tagged mods" while the metamod
+ *  is on the item (Orb of Annulment § Mechanics). */
+function shieldedTypes(a: AItem, registry: Registry): ReadonlySet<TypeId> {
+    const restricts = activeEffects(a, registry).filter((e) => e.kind === "poolRestrict");
+    const out = new Set<TypeId>();
+    if (restricts.length === 0) return out;
+    for (const t of guaranteedTypes(a)) {
+        const rep = representative(registry, t);
+        if (rep && restricts.some((e) => !e.allows(rep))) out.add(t);
+    }
+    return out;
+}
+
 /** The generations a removal may draw from: the omen-forced gen (or both),
  *  minus any protected by a metamod. Empty ⇒ nothing is removable. */
 function removalGens(a: AItem, forcedGen: Gen | undefined, registry: Registry): ReadonlySet<Gen> {
@@ -754,6 +768,17 @@ function hasOpenSlot(a: AItem, forcedGen: Gen | undefined): boolean {
 
 function hasRemovable(a: AItem, allowed: ReadonlySet<Gen>, registry: Registry): boolean {
     if (allowed.size === 0) return false; // every side protected → nothing to remove
+    // Under a cannot-roll metamod an anonymous mod may be a shielded tagged one, so
+    // only a guaranteed, unshielded, unlocked mod on an allowed side proves a removal.
+    const shielded = shieldedTypes(a, registry);
+    if (shielded.size > 0 || activeEffects(a, registry).some((e) => e.kind === "poolRestrict")) {
+        const locked = fracturedTypes(a);
+        for (const t of guaranteedTypes(a)) {
+            if (shielded.has(t) || locked.has(t)) continue;
+            if (allowed.has(registry.genOfType(t) ?? "prefix")) return true;
+        }
+        return false;
+    }
     // A fractured mod is locked, so it doesn't count toward what's removable; an
     // unproven fracture likewise locks one mod (of unknown generation).
     const fractured = fracturedTypes(a);
@@ -830,8 +855,8 @@ function removeOne(a: AItem, allowed: ReadonlySet<Gen>, registry: Registry): AIt
 }
 
 /** Guarantees the removal cannot reach: a guaranteed type whose generation is not
- *  in the removable set (protected, or the omen-spared side), or a fractured type
- *  (locked), survives. */
+ *  in the removable set (protected, or the omen-spared side), one a cannot-roll
+ *  metamod shields, or a fractured type (locked), survives. */
 function survivingGuarantees(
     a: AItem,
     allowed: ReadonlySet<Gen>,
@@ -841,6 +866,7 @@ function survivingGuarantees(
     for (const t of guaranteedTypes(a)) {
         if (!allowed.has(registry.genOfType(t) ?? "prefix")) out.add(t);
     }
+    for (const t of shieldedTypes(a, registry)) out.add(t);
     for (const t of fracturedTypes(a)) out.add(t);
     return out;
 }

@@ -152,11 +152,11 @@ withdraws its effect with no bookkeeping. Which currency honours which effect is
 in [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions).
 Three kinds cover the five real metamods ([Metamod](https://www.poewiki.net/wiki/Metamod)):
 
-| Kind                            | Metamod                               | Effect                                                                                                                  |
-| ------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `PoolRestrict(category)`        | Cannot roll Attack / Caster Modifiers | bars rows carrying the category from being added. Not modelled: the same metamod shielding its tagged rows from removal |
-| `ProtectGeneration(generation)` | Prefixes / Suffixes Cannot Be Changed | whatever occupies that side at the time is shielded from removal and reroll                                             |
-| `CraftedCap(cap)`               | Can have up to 3 Crafted Modifiers    | raises the crafted-mod limit; the highest cap carried wins, never below one                                             |
+| Kind                            | Metamod                               | Effect                                                                                             |
+| ------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `PoolRestrict(category)`        | Cannot roll Attack / Caster Modifiers | bars rows carrying the category from being added and shields present rows carrying it from removal |
+| `ProtectGeneration(generation)` | Prefixes / Suffixes Cannot Be Changed | whatever occupies that side at the time is shielded from removal and reroll                        |
+| `CraftedCap(cap)`               | Can have up to 3 Crafted Modifiers    | raises the crafted-mod limit; the highest cap carried wins, never below one                        |
 
 ---
 
