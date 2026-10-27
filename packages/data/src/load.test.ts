@@ -135,6 +135,15 @@ describe("catalog-level facts of the item model", () => {
         }
     });
 
+    it("a ModType's rows agree on the tags they add", () => {
+        // The add-pool puts one row's added tags on its synthetic item and unions
+        // them per type; both are exact only while the rows of a type agree.
+        for (const rows of byType.values()) {
+            const first = [...rows[0]!.addsTags].sort().join(",");
+            expect(rows.every((r) => [...r.addsTags].sort().join(",") === first)).toBe(true);
+        }
+    });
+
     it("the five metamods are the only effect carriers, all bench-placed", () => {
         const carriers = registry.catalog.filter((m) => (m.effects?.length ?? 0) > 0);
         expect(carriers.map((m) => m.id).sort()).toEqual([
