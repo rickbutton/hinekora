@@ -140,13 +140,14 @@ export function runMethod(a0: AItem, ops: readonly Op[], registry: Registry): Tr
             if (failure) return { ok: false, failure };
             continue;
         }
-        a = apply(a, op, rules, registry);
+        a = apply(a, a0, op, rules, registry);
     }
     return { ok: true, state: a };
 }
 
 function apply(
     a: AItem,
+    a0: AItem,
     op: Exclude<Op, { kind: "require" }>,
     rules: Rules,
     registry: Registry,
@@ -159,7 +160,10 @@ function apply(
         case "remove":
             return removeOne(a, allowedGens(rules), shieldFor(op.selector, rules), registry);
         case "rarity":
-            return settled({ ...a, rarity: op.rarity === "lowest" ? lowestRarity(a) : op.rarity });
+            return settled({
+                ...a,
+                rarity: op.rarity === "lowest" ? lowestRarity(a0, rules, registry) : op.rarity,
+            });
         case "lock":
             return lock(a);
     }
@@ -512,12 +516,24 @@ function fracturedCrafted(a: AItem, registry: Registry): number {
     return Math.min(n, a.crafted[1]);
 }
 
-/** The lowest rarity whose per-side caps hold the modifiers that may be present:
- *  none → Normal, at most one each → Magic, otherwise Rare. */
-function lowestRarity(a: AItem): Rarity {
-    const p = a.counts.prefix[1];
-    const s = suffixRange(a)[1];
-    if (p + s === 0) return "normal";
+/**
+ * The lowest rarity whose per-side caps hold what a strip keeps: the protected
+ * sides' counts and the fractured mod, read per side from the state the method
+ * started on (after the strip the suffix range is derived from the total and
+ * carries the prefix uncertainty, which would overstate it). None → Normal, at
+ * most one each → Magic, otherwise Rare; an unproven lock keeps one mod.
+ */
+function lowestRarity(a0: AItem, rules: Rules, registry: Registry): Rarity {
+    const fractured = fracturedTypes(a0);
+    const fracIn = (g: Gen): number => {
+        let n = 0;
+        for (const t of fractured) if (genOf(a0, registry, t) === g) n++;
+        return n;
+    };
+    const p = rules.protected.has("prefix") ? a0.counts.prefix[1] : fracIn("prefix");
+    const s = rules.protected.has("suffix") ? suffixRange(a0)[1] : fracIn("suffix");
+    const unprovenLock = hasFracture(a0) && fractured.size === 0;
+    if (p + s === 0) return unprovenLock ? "magic" : "normal";
     if (p <= 1 && s <= 1) return "magic";
     return "rare";
 }

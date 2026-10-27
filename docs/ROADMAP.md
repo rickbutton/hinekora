@@ -33,8 +33,11 @@ from the library of `check/library.ts`. What remains:
   must read a pool that is a subset of every path's real pool, while a fill reads a
   superset; today both read the add-pool, so a greyed-out harvest craft whose tagged pool
   a possibly present modifier empties can be accepted.
-- The rarity after a scour is one value; a protected side plus an unproven lock may leave
-  Magic or Rare in the game, and the state says Rare. A set of rarities would say both.
+- The rarity after a scour is one value, read from what the strip kept; a kept side whose
+  count is uncertain (one or two prefixes) says Rare where the game may leave Magic. A set
+  of rarities would say both. In the same strip, an unproven lock is counted as one more
+  kept modifier even when it may sit on a kept one, so the kept total can overstate the
+  floor by one and prove a later removal that the game may refuse.
 
 ## Step 3. The remaining single-item methods
 

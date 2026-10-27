@@ -226,6 +226,34 @@ describe("cannot roll attack modifiers shields attack mods from removal", () => 
     });
 });
 
+describe("a scour that keeps a side drops to the rarity the survivors fit", () => {
+    it("a kept prefix and an unproven lock leave a Magic item", () => {
+        // The game keeps the protected prefix and the fractured mod, one or two
+        // modifiers: Magic on every path, so a chaos is refused afterwards.
+        const c = craft(
+            rareRing(["T1 Life"], [PROTECT_PREFIXES_CARRIER.id, "FireResist1", "ColdResist1"]),
+            [op("fracture"), op("scour"), op("chaos")],
+        );
+        const r = check(c, ctx);
+        expect(r.diagnostics[0]?.message).toContain("Requires a Rare item");
+        expect(r.trace.find((e) => e.kind === "op" && e.before.rarity === "magic")).toBeDefined();
+    });
+
+    it("a fractured suffix beside a protected side's carrier leaves a Magic item", () => {
+        const c = craft(
+            item({
+                base: "Iron Ring",
+                ilvl: 100,
+                rarity: "rare",
+                suffixes: [{ mod: "FireResist1", fractured: true }, PROTECT_PREFIXES_CARRIER.id],
+            }),
+            [op("exalt"), op("scour"), op("chaos")],
+        );
+        const r = check(c, ctx);
+        expect(r.diagnostics[0]?.message).toContain("Requires a Rare item");
+    });
+});
+
 describe("a declared bench-crafted mod counts toward the crafted limit", () => {
     it("a second bench craft is refused without multimod", () => {
         const c = craft(rareRing([], [PROTECT_PREFIXES_CARRIER.id]), [

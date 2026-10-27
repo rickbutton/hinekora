@@ -439,9 +439,9 @@ in it. Notes:
   `fractureProjection(a)` (the presence BDD reduced to the fracture atoms + their coupled
   presence), so a proven fracture keeps its type and an unproven one keeps the survivor
   disjunction. **Scour** drops to the lowest rarity that holds the survivors
-  (`lowestRarity`): a fractured Rare scours to a 1-mod Magic, as the wiki states. The
-  rarity is one value; a protected side plus an unproven lock may leave Magic or Rare in
-  the game, and the state says Rare (`ROADMAP.md`, deferred).
+  (`lowestRarity`, read per side from what the strip kept): a fractured Rare scours to a
+  1-mod Magic, as the wiki states. The rarity is one value; a kept side whose count is
+  uncertain says Rare where the game may leave Magic (`ROADMAP.md`, deferred).
 - **Veiled** (`VEILED_CHAOS` / `VEILED_EXALT` / `unveilOps`, the
   [Veiled Chaos Orb](https://www.poewiki.net/wiki/Veiled_Chaos_Orb),
   [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb) and the
