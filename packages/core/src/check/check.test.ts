@@ -53,6 +53,7 @@ import {
     STAFFY_ADDER,
     STAFFY_ENABLED,
     PROTECT_SUFFIXES_CARRIER,
+    AMULET_ONLY,
 } from "../__fixtures__/mods.js";
 import { ClassId } from "../model/ids.js";
 import type { BenchCraft, EssenceSpec } from "../model/sources.js";
@@ -1129,5 +1130,44 @@ describe("checker — the item block rejects modifiers that cannot share an item
     it("a row of another domain, named by id", () => {
         const r = check(craft(rareRing(["FlaskRecovery1"]), []), ctx);
         expect(r.diagnostics[0]?.message).toContain("cannot roll on");
+    });
+});
+
+describe("checker — exclusions through a strip and a forced row", () => {
+    it("a reforge keeps an exclusion on a type its pool cannot add and lifts one it can", () => {
+        // Inside the branch neither type is present; the chaos may add fire
+        // resistance again but never the amulet-only modifier on a ring.
+        const c = craft(rareRing(["random"]), [
+            iff(andp(notp(has(AMULET_ONLY.id)), notp(has("FireResist1"))), [op("chaos")]),
+        ]);
+        const r = check(c, ctx);
+        const after = r.trace.find((e) => e.kind === "op")!.after!;
+        expect(excludedTypes(after).has(AMULET_ONLY.type)).toBe(true);
+        expect(excludedTypes(after).has(FIRE_RESIST.type)).toBe(false);
+    });
+
+    it("an essence forces its row onto an item that had excluded it", () => {
+        // The grant's type is excluded inside the branch; the essence lifts the
+        // exclusion before guaranteeing the row, so the state stays consistent.
+        const c = craft(rareRing(["random"]), [
+            iff(notp(has("IncreasedLife1")), [essence("Deafening Essence of Greed")]),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        const after = r.trace.find((e) => e.kind === "essence")!.after!;
+        expect(after.presence).not.toBe(after.bdd.FALSE);
+        expect(guaranteedTypes(after).has(LIFE_T1.type)).toBe(true);
+    });
+});
+
+describe("checker — a transmute lays down one or two modifiers", () => {
+    it("leaves one or two affixes, so an augment straight after has no proven slot", () => {
+        const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [
+            op("transmute"),
+            op("augment"),
+        ]);
+        const r = check(c, ctx);
+        expect(r.trace.find((e) => e.kind === "op")!.after!.counts.total).toEqual([1, 2]);
+        expect(r.diagnostics[0]?.message).toContain("open affix slot");
     });
 });
