@@ -115,6 +115,12 @@ describe("declared fractured mod is locked", () => {
         expect(fracturedTypes(r.finalState!)).toEqual(new Set(["IncreasedLife"]));
     });
 
+    it("a scour clears the crafted count when the fractured mod is a natural one", () => {
+        const r = check(craft("poe1", fracturedRing(2), [op("scour")]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.crafted).toEqual([0, 0]);
+    });
+
     it("survives an annul (a filler suffix is removed instead)", () => {
         const r = check(craft("poe1", fracturedRing(2), [op("annul")]), ctx);
         expect(r.diagnostics).toEqual([]);

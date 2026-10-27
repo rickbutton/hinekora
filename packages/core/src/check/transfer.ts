@@ -326,10 +326,10 @@ function scourKeeping(a: AItem, keep: ReadonlySet<Gen>, registry: Registry): AIt
         if (!isKept(t) && registry.effectsOfType(t).length > 0) strippedCarriers++;
     }
     // An unproven lock may have kept one of the carriers counted as stripped.
-    const crafted: Range = [
-        0,
-        Math.max(0, a.crafted[1] - Math.max(0, strippedCarriers - unprovenLock)),
-    ];
+    const crafted: Range =
+        keep.size === 0
+            ? [0, fracturedCrafted(a, registry)] // nothing kept but the fractured mod
+            : [0, Math.max(0, a.crafted[1] - Math.max(0, strippedCarriers - unprovenLock))];
     // Keep the protected-side guarantees and the permanent fracture facts.
     const presence = a.bdd.and(
         presenceFacts(a.bdd, keptGuarantees, excludedTypes(a)),

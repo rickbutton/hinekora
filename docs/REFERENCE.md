@@ -277,8 +277,8 @@ total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = t
 - `crafted`: a RANGE, how many [bench-crafted](https://www.poewiki.net/wiki/Crafting_Bench)
   mods are present. `bench` requires it provably below the crafted cap (one, or three under
   the multimod [metamod](https://www.poewiki.net/wiki/Metamod)); a pure reforge or a plain
-  scour clears it to 0 except for a fractured bench row, which survives every reforge
-  (`fracturedCrafted`; an unproven lock may be on one), while a reforge or scour that keeps a protected side
+  scour with nothing protected clears it to 0 except for a fractured bench row, which
+  survives every reforge (`fracturedCrafted`; an unproven lock may be on one), while a reforge or scour that keeps a protected side
   (`keepProtectedReroll`, `scourKeeping`) keeps `[0, max − stripped carriers]`, since a
   crafted mod on the kept side may survive; an unforced `annul` drops its lower bound (the
   crafted mod may have been removed).
@@ -459,7 +459,9 @@ metamods). Notes:
   the random removal reuses `removeOne` (unforced) over the allowed-gens set — which matches
   [Harvest crafting § Mechanics](https://www.poewiki.net/wiki/Harvest_crafting#Mechanics):
   the removal obeys prefix/suffix locks but ignores cannot-roll metamods. A tag is matched
-  against `Mod.implicitTags`; an empty tagged pool fails (`harvestEmptyPool`).
+  against `Mod.implicitTags`; an empty tagged pool fails (`harvestEmptyPool`), read from the
+  add-pool, which over-approximates: a tagged pool a possibly present mod would empty is
+  not caught (`ROADMAP.md` Step 2).
   Preconditions: Rare; augment also needs a removable mod.
 
 ### `diagnostics.ts`: messages
