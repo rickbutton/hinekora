@@ -11,8 +11,11 @@ import {
     LIFE_T1,
     LIFE_T2,
     LIGHTNING_RESIST,
+    PROTECT_PREFIXES_CARRIER,
     mkItem,
 } from "../__fixtures__/mods.js";
+import { Domain } from "./ids.js";
+import type { Mod } from "./mod.js";
 
 const kinds = (vs: readonly WfViolation[]): string[] => vs.map((v) => v.kind);
 
@@ -107,5 +110,18 @@ describe("wf — tier gate and domain", () => {
         // FLASK_MOD is flask-domain on an item-domain (ring) base.
         const wrongDomain = mkItem({ rarity: "rare", prefixes: [FLASK_MOD] });
         expect(kinds(wfViolations(wrongDomain))).toContain("domainMismatch");
+    });
+
+    it("applies neither rule to a row another mechanic placed (a bench craft)", () => {
+        // A bench row sits in the crafted partition and is placed at any item
+        // level, so neither the level gate nor the domain rule concerns it.
+        const benched: Mod = {
+            ...PROTECT_PREFIXES_CARRIER,
+            source: "bench",
+            domain: Domain("crafted"),
+            minLevel: 200,
+        };
+        const withBench = mkItem({ rarity: "rare", ilvl: 50, suffixes: [benched] });
+        expect(wfViolations(withBench)).toEqual([]);
     });
 });

@@ -88,8 +88,11 @@ export function wfViolations(it: Item): readonly WfViolation[] {
         }
     }
 
-    // Tier gate and domain match, per affix.
+    // Tier gate and domain match, for naturally rolled affixes only: an essence
+    // or bench row is placed by its own mechanic regardless of item level, and
+    // bench, unveiled and fossil rows live in partitions no base has.
     for (const m of all) {
+        if ((m.source ?? "natural") !== "natural") continue;
         if (m.minLevel > it.ilvl) {
             violations.push({ kind: "ilvlGate", mod: m, minLevel: m.minLevel, ilvl: it.ilvl });
         }
