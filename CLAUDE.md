@@ -46,18 +46,21 @@ outcomes in the checker, stop; that violates the design and won't scale.
 - **Vitest**, with extensive tests. **PoE1 only** for now.
 - Surface syntax: C-style braces; a file opens with `craft in <game>`.
 
-## The gate (run before declaring anything done)
+## The gate (run before declaring anything done, and before every commit)
 
 ```
-pnpm -C c:/git/hinekora exec tsc -b   # typecheck + build all packages
-pnpm -C c:/git/hinekora test          # vitest run
-pnpm -C c:/git/hinekora lint          # eslint .
-pnpm -C c:/git/hinekora format        # prettier --write .
+pnpm -C c:/git/hinekora gate          # typecheck, test, lint, prettier --check, docs:check
+pnpm -C c:/git/hinekora format        # prettier --write ., when the check fails
 ```
 
-All four green. **Soundness principle:** tightening the abstract domain only ever removes
-false positives (never adds false negatives), so existing green tests staying green is
-evidence a tightening is sound.
+`pnpm gate` is `tsc -b` + `vitest run` + `eslint .` + `prettier --check .` +
+`scripts/check-docs.mjs`. The docs check fails when a doc names a path or symbol the code
+does not have, omits a keyword, currency, harvest tag or abstract-state field the code
+has, or links a wiki section the local cache lacks (skipped without the cache). A `git
+commit` issued through the Bash tool runs the gate first (`.claude/hooks/pre-commit-gate.mjs`)
+and is refused when it fails. **Soundness principle:** tightening the abstract domain only
+ever removes false positives (never adds false negatives), so existing green tests
+staying green is evidence a tightening is sound.
 
 ## Working style
 

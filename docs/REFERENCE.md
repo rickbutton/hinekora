@@ -14,8 +14,6 @@
 > Exile wiki (poewiki.net) that defines it, and the text covers only how Hinekora models it.
 > The wiki is cached locally (`tools/poewiki`, the `poewiki-render` skill).
 
-Last updated: 2026-10-24.
-
 ---
 
 ## 1. What Hinekora is
@@ -88,6 +86,12 @@ tools/
                                 on-demand page rendering to Markdown. Driven by
                                 the poewiki-render / poewiki-sync skills in
                                 .claude/skills/. Data lives in .cache/ (gitignored).
+scripts/
+  check-docs.mjs             - the docs-vs-code check in the gate (CLAUDE.md).
+  coverage-summary.mjs       - renders coverage for the CI job summary.
+.claude/
+  hooks/pre-commit-gate.mjs  - runs the gate before a commit issued through the Bash tool.
+  skills/                    - poewiki-render, poewiki-sync.
 ```
 
 Build system: **tsc project references** (`tsc -b`), root solution tsconfig, each package

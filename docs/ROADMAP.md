@@ -35,7 +35,7 @@
   currently falls through to the statement list (harmless).
 - **Completion perf:** `getCompletions` runs a full check per request; fine for small
   crafts, memoize if latency shows.
-- **Monaco playground** (`editors/playground`) reusing the transport-free LSP service.
+- **Monaco playground** (a new `editors/` package) reusing the transport-free LSP service.
 - **PoE2 module:** the omen machinery is modelled; PoE2 data ingest is not the target yet.
 - **Tier-atom tightenings:** assert `tierAtom ⇒ family` and tier mutual-exclusion in the
   presence BDD. Both are true facts we currently omit; omitting them only ever under-claims

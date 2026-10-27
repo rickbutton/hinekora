@@ -9,8 +9,6 @@
 > (poewiki.net) that defines it and the text says only how Hinekora models it; where
 > Hinekora narrows a rule the text says so. The wiki is cached locally (`tools/poewiki`).
 
-Last updated: 2026-10-26.
-
 ---
 
 ## 1. Scope

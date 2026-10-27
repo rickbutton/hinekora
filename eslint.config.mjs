@@ -12,6 +12,7 @@ export default tseslint.config(
             "**/*.tsbuildinfo",
             "**/coverage/**",
             "**/scripts/**",
+            ".claude/**",
             // Standalone tooling (vendored detector + its CLI), run directly by
             // node, not part of any package build.
             "tools/**",
