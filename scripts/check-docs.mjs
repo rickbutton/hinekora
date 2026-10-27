@@ -2,13 +2,16 @@
  * Keep the docs honest against the code. Fails (exit 1) when a doc under docs/ or
  * the root CLAUDE.md:
  *
- *   - names a repo path in backticks that does not exist;
+ *   - names a repo path in backticks that does not exist (bare file names and
+ *     paths relative to a package's src resolve by suffix);
  *   - names a code symbol in backticks (camelCase / PascalCase, optionally dotted or
- *     called) that no source file defines or mentions;
- *   - omits a piece of the language's surface vocabulary: every keyword the parser
- *     accepts, every currency name, every harvest tag, and every field of the
- *     checker's abstract state must be named where the docs describe them, and the
- *     keywords must also be coloured by the VSCode grammar;
+ *     called) that no source file defines or mentions outside a comment;
+ *   - names, in the surface doc, a lowercase word in backticks that is not a word of
+ *     the language (the parser's vocabulary, a currency, a harvest tag);
+ *   - omits a word of the language: every word of the parser's vocabulary, every
+ *     currency name, every harvest tag and every omen must be documented in the
+ *     surface doc, the vocabulary must be coloured by the VSCode grammar, and every
+ *     field of the checker's abstract state must be named in REFERENCE.md §4;
  *   - links a poewiki.net page or section that the local wiki cache does not hold
  *     (skipped with a notice when the cache is absent, e.g. in CI).
  *
@@ -20,8 +23,8 @@ import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const problems = [];
-let wikiLinks = 0;
 const notes = [];
+let wikiLinks = 0;
 const fail = (file, line, msg) => problems.push(`${file}:${line}: ${msg}`);
 
 // --- the corpus ------------------------------------------------------------
@@ -29,14 +32,19 @@ const fail = (file, line, msg) => problems.push(`${file}:${line}: ${msg}`);
 const DOCS = ["CLAUDE.md", ...readdirSync(join(root, "docs")).map((f) => `docs/${f}`)].filter((f) =>
     f.endsWith(".md"),
 );
-/** Docs whose backticked identifiers must exist in the code. The design docs and the
- *  item model use their own spec vocabulary on purpose and are exempt. */
+/** Docs whose backticked identifiers must exist in the code. The item model uses its own
+ *  spec vocabulary on purpose and is exempt; the surface doc is held to the language's
+ *  vocabulary instead. */
 const SYMBOL_DOCS = new Set([
     "CLAUDE.md",
     "docs/REFERENCE.md",
     "docs/ARCHITECTURE.md",
     "docs/ROADMAP.md",
 ]);
+const SURFACE = "docs/crafting-lang-surface-v0.md";
+const REFERENCE = "docs/REFERENCE.md";
+const GRAMMAR = "editors/vscode/syntaxes/hinekora.tmLanguage.json";
+const VOCABULARY_FILE = "packages/parser/src/vocabulary.ts";
 
 function walk(dir, pred, out = []) {
     for (const name of readdirSync(dir)) {
@@ -66,7 +74,11 @@ const sourceFiles = [
             !/[\\/]packages[\\/]data[\\/]data[\\/]/.test(p), // the ingested catalog; searched on demand below
     ),
 ];
-const sourceText = sourceFiles.map((p) => readFileSync(p, "utf8")).join("\n");
+/** Source text with comments removed, so a symbol that survives only in a comment
+ *  does not count as existing. */
+const stripComments = (text) =>
+    text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:\\])\/\/[^\n]*/g, "$1");
+const sourceText = sourceFiles.map((p) => stripComments(readFileSync(p, "utf8"))).join("\n");
 let catalogText = null;
 const inCatalog = (word) => {
     catalogText ??= walk(join(root, "packages/data/data"), (p) => p.endsWith(".json"))
@@ -77,11 +89,41 @@ const inCatalog = (word) => {
 
 const read = (rel) => readFileSync(join(root, rel), "utf8");
 const lines = (rel) => read(rel).split(/\r?\n/);
+const block = (text, from, to) => {
+    const start = text.indexOf(from);
+    return text.slice(start, text.indexOf(to, start));
+};
 
-// --- 1. paths and symbols in backticks ---------------------------------------
+// --- the language's vocabulary, from the code ---------------------------------
+
+const literals = (text) => [...text.matchAll(/"([A-Za-z][\w?]*)"/g)].map((m) => m[1]);
+const vocabularySource = read(VOCABULARY_FILE);
+const vocabulary = new Set(literals(vocabularySource));
+const veiledVerbs = new Set(literals(block(vocabularySource, "VEILED_VERBS", ";")));
+const registry = read("packages/core/src/resolve/registry.ts");
+const currencies = new Set(
+    [...block(registry, "STANDARD_CURRENCIES", "];").matchAll(/name: "([a-z]+)"/g)].map(
+        (m) => m[1],
+    ),
+);
+const harvestTags = new Set(
+    [...block(registry, "HARVEST_TAGS", "];").matchAll(/\["([a-z]+)", "[a-z]+"\]/g)].map(
+        (m) => m[1],
+    ),
+);
+const omens = [...block(registry, "STANDARD_OMENS", "];").matchAll(/name: "([A-Za-z ]+)"/g)].map(
+    (m) => m[1],
+);
+const astate = read("packages/core/src/check/astate.ts");
+const aitemFields = [
+    ...block(astate, "export interface AItem {", "\n}").matchAll(/readonly (\w+):/g),
+].map((m) => m[1]);
+const languageWords = new Set([...vocabulary, ...currencies, ...harvestTags]);
+
+// --- 1. backticked tokens: paths, symbols, language words ------------------------
 
 const PATH_RE =
-    /^(?:\.\/)?(?:packages|docs|examples|scripts|tools|editors|\.claude|\.github)\/[\w./-]+$|^[\w-]+\.(?:md|mjs|json|ts|craft|yaml)$/;
+    /^(?:\.\/)?(?:packages|docs|examples|scripts|tools|editors|\.claude|\.github)\/[\w./-]+$|^[\w-]+(?:\/[\w.-]+)*\.(?:md|mjs|json|ts|craft|yaml)$/;
 const IDENT = /^[A-Za-z_$][\w$]*$/;
 const isCodeLike = (s) => IDENT.test(s) && /[A-Z]/.test(s) && s.length >= 3;
 
@@ -90,20 +132,29 @@ function wordExists(word) {
     return re.test(sourceText) || inCatalog(word);
 }
 
-/** Does a backticked path refer to something on disk? Bare file names resolve by
- *  basename anywhere under the source roots. */
+/** Does a backticked path refer to something on disk? A bare name or a path relative
+ *  to a package's src (`check/transfer.ts`) resolves by suffix. */
 function pathExists(p) {
     if (existsSync(join(root, p)) || existsSync(join(root, "docs", p))) return true;
-    const base = p.split("/").pop();
-    return sourceFiles.some((f) => f.endsWith(`${"/"}${base}`) || f.endsWith(`\\${base}`));
+    const rel = p.replace(/^\.\//, "");
+    const suffix = rel.replaceAll("/", "\\");
+    return sourceFiles.some((f) => f.endsWith(`\\${suffix}`) || f.endsWith(`/${rel}`));
 }
 
 for (const doc of DOCS) {
+    let inFence = false;
     lines(doc).forEach((text, i) => {
+        if (text.startsWith("```")) inFence = !inFence;
+        if (inFence) return;
         for (const m of text.matchAll(/`([^`\n]+)`/g)) {
             const tok = m[1].trim();
             if (PATH_RE.test(tok)) {
                 if (!pathExists(tok)) fail(doc, i + 1, `path does not exist: \`${tok}\``);
+                continue;
+            }
+            if (doc === SURFACE) {
+                if (/^[a-z][a-zA-Z]*$/.test(tok) && !languageWords.has(tok))
+                    fail(doc, i + 1, `\`${tok}\` is not a word of the language`);
                 continue;
             }
             if (!SYMBOL_DOCS.has(doc)) continue;
@@ -122,56 +173,33 @@ for (const doc of DOCS) {
     });
 }
 
-// --- 2. the surface vocabulary ----------------------------------------------
+// --- 2. the language is fully documented and highlighted ---------------------------
 
-const parser = read("packages/parser/src/parser.ts");
-const keywords = new Set(
-    [...parser.matchAll(/(?:atKeyword|expectKeyword)\("([a-zA-Z]+)"\)/g)].map((m) => m[1]),
-);
-const registry = read("packages/core/src/resolve/registry.ts");
-const currencyBlock = registry.slice(registry.indexOf("STANDARD_CURRENCIES"));
-const currencies = new Set(
-    [...currencyBlock.slice(0, currencyBlock.indexOf("];")).matchAll(/name: "([a-z]+)"/g)].map(
-        (m) => m[1],
-    ),
-);
-const harvestBlock = registry.slice(registry.indexOf("HARVEST_TAG_LABELS"));
-const harvestTags = new Set(
-    [...harvestBlock.slice(0, harvestBlock.indexOf("];")).matchAll(/"([a-z]+)"/g)].map((m) => m[1]),
-);
-const astate = read("packages/core/src/check/astate.ts");
-const aitemBlock = astate.slice(astate.indexOf("export interface AItem {"));
-const aitemFields = [
-    ...aitemBlock.slice(0, aitemBlock.indexOf("\n}")).matchAll(/readonly (\w+):/g),
-].map((m) => m[1]);
-
-const mentions = (doc, word) =>
-    new RegExp(`(?<![\\w"])${word}(?![\\w"])`).test(read(doc)) ||
-    read(doc).includes(`\`${word}`) ||
-    read(doc).includes(`"${word}"`);
-
-const SURFACE = "docs/crafting-lang-surface-v0.md";
-const REFERENCE = "docs/REFERENCE.md";
-const GRAMMAR = "editors/vscode/syntaxes/hinekora.tmLanguage.json";
-const grammar = read(GRAMMAR);
-for (const k of keywords) {
-    if (!mentions(SURFACE, k)) fail(SURFACE, 1, `parser keyword \`${k}\` is not described`);
-    if (!new RegExp(`[|(]${k}[|)]`).test(grammar))
-        fail(GRAMMAR, 1, `keyword \`${k}\` is not highlighted`);
+const surface = read(SURFACE);
+/** Is `word` written inside backticks (inline code or a fence) somewhere in the surface doc? */
+const documented = (word) => new RegExp(`\`[^\`]*(?<![\w])${word}(?![\w])[^\`]*\``).test(surface);
+for (const w of vocabulary) {
+    if (!documented(w)) fail(SURFACE, 1, `the word \`${w}\` is not documented`);
 }
 for (const c of currencies) {
-    if (!mentions(SURFACE, c) && !mentions(REFERENCE, c))
-        fail(
-            REFERENCE,
-            1,
-            `currency \`${c}\` is not described in the surface doc or the reference`,
-        );
+    if (!documented(c)) fail(SURFACE, 1, `the currency \`${c}\` is not documented`);
 }
 for (const t of harvestTags) {
-    if (!mentions(SURFACE, t)) fail(SURFACE, 1, `harvest tag \`${t}\` is not listed`);
+    if (!documented(t)) fail(SURFACE, 1, `the harvest tag \`${t}\` is not documented`);
 }
+for (const o of omens) {
+    if (!surface.includes(o)) fail(SURFACE, 1, `the omen "${o}" is not documented`);
+}
+const grammar = read(GRAMMAR);
+for (const w of vocabulary) {
+    if (veiledVerbs.has(w)) continue; // currency names are coloured by semantic tokens
+    if (!new RegExp(`[|(]${w}[|)]`).test(grammar))
+        fail(GRAMMAR, 1, `the word \`${w}\` is not highlighted`);
+}
+const checkerSection = block(read(REFERENCE), "\n## 4.", "\n## 5.");
 for (const f of aitemFields) {
-    if (!mentions(REFERENCE, f)) fail(REFERENCE, 1, `AItem field \`${f}\` is not described in §4`);
+    if (!new RegExp(`\`[^\`]*(?<![\w])${f}(?![\w])[^\`]*\``).test(checkerSection))
+        fail(REFERENCE, 1, `AItem field \`${f}\` is not described in §4`);
 }
 
 // --- 3. wiki links resolve in the local cache ----------------------------------
@@ -240,5 +268,5 @@ if (problems.length > 0) {
     process.exit(1);
 }
 console.log(
-    `docs ok: ${DOCS.length} files, ${keywords.size} keywords, ${currencies.size} currencies, ${wikiLinks} wiki links`,
+    `docs ok: ${DOCS.length} files, ${vocabulary.size} words, ${currencies.size} currencies, ${wikiLinks} wiki links`,
 );
