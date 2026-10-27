@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { disjunctiveGuarantees, guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { bench, craft, essence, harvest, item, op, withOmen } from "../__fixtures__/ast.js";
+import { bench, craft, essence, harvest, item, op, veiled, withOmen } from "../__fixtures__/ast.js";
 import {
     ATTACK_PREFIX,
     CANNOT_ROLL_ATTACK_CARRIER,
@@ -208,6 +208,18 @@ describe("cannot roll attack modifiers shields attack mods from removal", () => 
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).toContain("AddedAttackDamage");
+    });
+
+    it("the veiled exalt and the harvest augment removals ignore the shield", () => {
+        // Metamod § Rules and Exceptions: the Veiled Orb's and the harvest augment's
+        // removals ignore cannot-roll, so the attack guarantee may be lost, and the
+        // attack prefix being the only prefix is no obstacle to either.
+        for (const step of [veiled("exalt"), harvest("augment", "life")]) {
+            const c = craft("poe1", attackRing(), [bench("cannot roll attack modifiers"), step]);
+            const r = check(c, ctx);
+            expect(r.diagnostics).toEqual([]);
+            expect(guaranteed(r)).not.toContain("AddedAttackDamage");
+        }
     });
 
     it("an annul forced to the prefixes has nothing it may remove", () => {

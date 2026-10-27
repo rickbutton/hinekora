@@ -411,7 +411,8 @@ metamods). Notes:
   (`keepProtectedReroll` — protected guarantees + tier pins + a count floor survive, open
   protected slots may fill from the fresh pool, which is the table's "respected, but open
   prefixes may be filled"; the metamod on the rerolled side goes). A cannot-roll metamod
-  also shields its tagged guaranteed mods from `annul` (`shieldedTypes`); under one, only a
+  also shields its tagged guaranteed mods from `annul` alone (`cannotRollShield`; the veiled
+  exalt and harvest augment removals ignore it); under one, only a
   guaranteed unshielded mod proves a removal, since an anonymous mod may be tagged. Not
   modelled from that table: the Fracturing Orb ignoring metamods. The curated id→effect
   table is `model/metamods.ts`.

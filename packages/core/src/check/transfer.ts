@@ -92,9 +92,10 @@ export function annul(a: AItem, forcedGen: Gen | undefined, registry: Registry):
     // protection metamod shields its generation, so the removal draws only from
     // the unprotected side.
     const allowed = removalGens(a, forcedGen, registry);
-    if (!hasRemovable(a, allowed, registry))
+    const shield = cannotRollShield(a, registry);
+    if (!hasRemovable(a, allowed, registry, shield))
         return fail({ kind: "nothingToRemove", ...(forcedGen && { gen: forcedGen }) });
-    return ok(removeOne(a, allowed, registry));
+    return ok(removeOne(a, allowed, registry, shield));
 }
 
 const wrongRarity = (needed: Rarity, actual: Rarity): TransferResult =>
@@ -139,18 +140,25 @@ function metamodBlocksSourced(a: AItem, registry: Registry): boolean {
     );
 }
 
-/** Guaranteed types an active cannot-roll metamod shields from removal: the
- *  Orb of Annulment "will not remove attack/caster-tagged mods" while the metamod
- *  is on the item (Orb of Annulment § Mechanics). */
-function shieldedTypes(a: AItem, registry: Registry): ReadonlySet<TypeId> {
+/**
+ * What an active cannot-roll metamod shields from a removal: its tagged types.
+ * Only the Orb of Annulment honours it ("will not remove attack/caster-tagged
+ * mods", Orb of Annulment § Mechanics); the Veiled Exalted Orb's and the harvest
+ * augment's removals ignore it (Metamod § Rules and Exceptions), so they pass no
+ * shield. `null` when no cannot-roll metamod is active.
+ */
+interface Shield {
+    readonly types: ReadonlySet<TypeId>;
+}
+function cannotRollShield(a: AItem, registry: Registry): Shield | null {
     const restricts = activeEffects(a, registry).filter((e) => e.kind === "poolRestrict");
-    const out = new Set<TypeId>();
-    if (restricts.length === 0) return out;
+    if (restricts.length === 0) return null;
+    const types = new Set<TypeId>();
     for (const t of guaranteedTypes(a)) {
         const rep = representative(registry, t);
-        if (rep && restricts.some((e) => !e.allows(rep))) out.add(t);
+        if (rep && restricts.some((e) => !e.allows(rep))) types.add(t);
     }
-    return out;
+    return { types };
 }
 
 /** The generations a removal may draw from: the omen-forced gen (or both),
@@ -479,8 +487,8 @@ export function harvestAugment(a: AItem, tag: TagId, registry: Registry): Transf
     // "prefixes cannot be changed" spares every prefix guarantee here. `annul`
     // and this share one removal notion, so protection folds in for free.
     const allowed = removalGens(a, undefined, registry);
-    if (!hasRemovable(a, allowed, registry)) return fail({ kind: "nothingToRemove" });
-    const removed = removeOne(a, allowed, registry);
+    if (!hasRemovable(a, allowed, registry, null)) return fail({ kind: "nothingToRemove" });
+    const removed = removeOne(a, allowed, registry, null);
     // The tagged pool is taken AFTER the removal frees a slot.
     const addable = addableMods(removed, undefined, registry).filter((m) =>
         m.implicitTags.has(tag),
@@ -600,8 +608,8 @@ export function veiledExalt(a: AItem, registry: Registry): TransferResult {
     if (a.rarity !== "rare") return wrongRarity("rare", a.rarity);
     if (mayHaveVeiled(a, registry)) return fail({ kind: "alreadyVeiled" });
     const allowed = removalGens(a, undefined, registry);
-    if (!hasRemovable(a, allowed, registry)) return fail({ kind: "nothingToRemove" });
-    return ok(addVeiledPlaceholder(removeOne(a, allowed, registry)));
+    if (!hasRemovable(a, allowed, registry, null)) return fail({ kind: "nothingToRemove" });
+    return ok(addVeiledPlaceholder(removeOne(a, allowed, registry, null)));
 }
 
 /**
@@ -792,23 +800,28 @@ function hasOpenSlot(a: AItem, forcedGen: Gen | undefined): boolean {
     return true;
 }
 
-function hasRemovable(a: AItem, allowed: ReadonlySet<Gen>, registry: Registry): boolean {
+function hasRemovable(
+    a: AItem,
+    allowed: ReadonlySet<Gen>,
+    registry: Registry,
+    shield: Shield | null,
+): boolean {
     if (allowed.size === 0) return false; // every side protected → nothing to remove
-    // Under a cannot-roll metamod an anonymous mod may be a shielded tagged one, so
-    // only a guaranteed, unshielded, unlocked mod on an allowed side proves a removal.
-    const shielded = shieldedTypes(a, registry);
-    if (shielded.size > 0 || activeEffects(a, registry).some((e) => e.kind === "poolRestrict")) {
-        const locked = fracturedTypes(a);
-        for (const t of guaranteedTypes(a)) {
-            if (shielded.has(t) || locked.has(t)) continue;
-            if (allowed.has(genOf(a, registry, t))) return true;
-        }
-        return false;
-    }
     // A fractured mod is locked, so it doesn't count toward what's removable; an
     // unproven fracture likewise locks one mod (of unknown generation).
     const fractured = fracturedTypes(a);
     const unprovenLock = hasFracture(a) && fractured.size === 0 ? 1 : 0;
+    // Under a shield an anonymous mod may be a shielded tagged one, so only the
+    // guaranteed, unshielded, unlocked mods on allowed sides prove a removal (one
+    // more than the unproven lock, which may sit on any of them).
+    if (shield !== null) {
+        let provable = 0;
+        for (const t of guaranteedTypes(a)) {
+            if (shield.types.has(t) || fractured.has(t)) continue;
+            if (allowed.has(genOf(a, registry, t))) provable++;
+        }
+        return provable - unprovenLock >= 1;
+    }
     const fracIn = (g: Gen): number => {
         let n = 0;
         for (const t of fractured) if (genOf(a, registry, t) === g) n++;
@@ -856,7 +869,12 @@ function addOne(a: AItem, forcedGen: Gen | undefined, rarity: Rarity, registry: 
     return settled(next);
 }
 
-function removeOne(a: AItem, allowed: ReadonlySet<Gen>, registry: Registry): AItem {
+function removeOne(
+    a: AItem,
+    allowed: ReadonlySet<Gen>,
+    registry: Registry,
+    shield: Shield | null,
+): AItem {
     const total: Range = [Math.max(0, a.counts.total[0] - 1), Math.max(0, a.counts.total[1] - 1)];
     const onlyPrefix = allowed.size === 1 && allowed.has("prefix");
     const onlySuffix = allowed.size === 1 && allowed.has("suffix");
@@ -871,7 +889,7 @@ function removeOne(a: AItem, allowed: ReadonlySet<Gen>, registry: Registry): AIt
     // an omen) holds. Exclusions always survive (a removal never adds a mod). The
     // fracture facts are kept too (a locked mod is never removed).
     const presence = a.bdd.and(
-        presenceFacts(a.bdd, survivingGuarantees(a, allowed, registry), excludedTypes(a)),
+        presenceFacts(a.bdd, survivingGuarantees(a, allowed, registry, shield), excludedTypes(a)),
         fractureProjection(a),
     );
     // The removed affix might have been the crafted mod, so the lower bound drops.
@@ -881,18 +899,19 @@ function removeOne(a: AItem, allowed: ReadonlySet<Gen>, registry: Registry): AIt
 }
 
 /** Guarantees the removal cannot reach: a guaranteed type whose generation is not
- *  in the removable set (protected, or the omen-spared side), one a cannot-roll
- *  metamod shields, or a fractured type (locked), survives. */
+ *  in the removable set (protected, or the omen-spared side), one the shield
+ *  covers, or a fractured type (locked), survives. */
 function survivingGuarantees(
     a: AItem,
     allowed: ReadonlySet<Gen>,
     registry: Registry,
+    shield: Shield | null,
 ): ReadonlySet<TypeId> {
     const out = new Set<TypeId>();
     for (const t of guaranteedTypes(a)) {
         if (!allowed.has(genOf(a, registry, t))) out.add(t);
     }
-    for (const t of shieldedTypes(a, registry)) out.add(t);
+    if (shield) for (const t of shield.types) out.add(t);
     for (const t of fracturedTypes(a)) out.add(t);
     return out;
 }
