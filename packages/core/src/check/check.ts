@@ -235,6 +235,7 @@ class Checker {
         // placeholders (`"random"`) stay anonymous.
         const pinned = new Map<TypeId, ModId>();
         let fracturedType: TypeId | undefined;
+        let fracturedAnonymous = false;
         let crafted = 0;
         const ctx = { game, base, ilvl: item.ilvl };
 
@@ -290,14 +291,15 @@ class Checker {
 
         const countAffixes = (affixes: readonly AffixDecl[], gen: Gen): number => {
             for (const affix of affixes) {
-                if (PLACEHOLDERS.test(affix.mod.trim().toLowerCase())) continue; // anonymous affix
-                const type = pinAffix(affix, gen);
-                if (affix.fractured && type !== undefined) {
-                    if (fracturedType !== undefined) {
-                        this.diag("an item holds at most one fractured modifier.", item.span);
-                    } else {
-                        fracturedType = type;
-                    }
+                const anonymous = PLACEHOLDERS.test(affix.mod.trim().toLowerCase());
+                const type = anonymous ? undefined : pinAffix(affix, gen);
+                if (!affix.fractured || (!anonymous && type === undefined)) continue;
+                if (fracturedType !== undefined || fracturedAnonymous) {
+                    this.diag("an item holds at most one fractured modifier.", item.span);
+                } else if (anonymous) {
+                    fracturedAnonymous = true; // a lock exists; no type is known to carry it
+                } else {
+                    fracturedType = type;
                 }
             }
             return affixes.length;
@@ -350,6 +352,7 @@ class Checker {
             pinned,
             crafted,
             ...(fracturedType !== undefined && { fractured: fracturedType }),
+            ...(fracturedAnonymous ? { fracturedAnonymous: true } : {}),
         });
     }
 

@@ -453,6 +453,9 @@ export interface InitialCounts {
     readonly pinned: ReadonlyMap<TypeId, ModId>;
     /** The declared fractured (locked) mod's type, if the item block marks one. */
     readonly fractured?: TypeId;
+    /** The item block marks an anonymous (`"random"`) affix as fractured: a lock
+     *  exists but no type is known to carry it. */
+    readonly fracturedAnonymous?: boolean;
     /** How many declared mods are bench-crafted rows. */
     readonly crafted: number;
 }
@@ -475,13 +478,15 @@ export function initialState(
         counts: CountDomain.point(p, s),
         bdd,
         presence:
-            counts.fractured === undefined
-                ? presenceFacts(bdd, counts.present, [])
-                : assertDeclaredFracture(
+            counts.fractured !== undefined
+                ? assertDeclaredFracture(
                       bdd,
                       presenceFacts(bdd, counts.present, []),
                       counts.fractured,
-                  ),
+                  )
+                : counts.fracturedAnonymous
+                  ? bdd.and(presenceFacts(bdd, counts.present, []), bdd.variable(FRAC_EXISTS))
+                  : presenceFacts(bdd, counts.present, []),
         possible: new Set(counts.present),
         tiers: new Map([...counts.pinned].map(([type, mod]) => [type, new Set([mod])])),
         crafted: [counts.crafted, counts.crafted],

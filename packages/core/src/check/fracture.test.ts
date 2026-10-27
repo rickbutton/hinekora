@@ -52,6 +52,30 @@ const fracturedRing = (fillers: number) =>
 const guaranteed = (r: ReturnType<typeof check>): Set<string> =>
     new Set([...guaranteedTypes(r.finalState!)]);
 
+describe("a fractured anonymous affix", () => {
+    const anonymousLock = () =>
+        item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: [{ mod: "random", fractured: true }],
+            suffixes: ["random", "random", "random"],
+        });
+
+    it("still marks the item fractured, so a Fracturing Orb is refused", () => {
+        const r = check(craft("poe1", anonymousLock(), [op("fracture")]), ctx);
+        expect(hasFracture(r.trace[0]!.after!)).toBe(true);
+        expect(r.diagnostics[0]?.message).toContain("fractured");
+    });
+
+    it("keeps the lock through a chaos reforge", () => {
+        const r = check(craft("poe1", anonymousLock(), [op("chaos")]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(hasFracture(r.finalState!)).toBe(true);
+        expect(fracturedTypes(r.finalState!).size).toBe(0);
+    });
+});
+
 describe("declared fractured mod is locked", () => {
     it("survives a chaos reforge, which still lays down its full 4–6 mods", () => {
         const r = check(craft("poe1", fracturedRing(2), [op("chaos")]), ctx);
