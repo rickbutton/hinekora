@@ -84,9 +84,13 @@ survives the reforge (the checker's current wiring).
 "a Rare item if it had two or three fractured mods";
 [Tainted Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Tainted_Chaos_Orb#Mechanics)
 says one fractured prefix and one fractured suffix "results in a magic item".
-**Procure:** an item with one fractured prefix and one fractured suffix (a Recombinator or
-a talisman with two beast-fractured modifiers).
-**Steps:** scour it. **Record:** the resulting rarity.
+**Procure:** the cheap route the checker models: a Rare with one prefix, "Prefixes Cannot
+Be Changed" benched, and one fractured suffix (a Fracturing Orb on a four-modifier Rare
+whose only suffixes are the metamod and the one to lock, repeated until it lands there).
+Or the two-fracture route: a Recombinator or a talisman with two beast-fractured
+modifiers.
+**Steps:** scour it. **Record:** the resulting rarity, with the prefix and suffix counts
+the item kept.
 **Assumed meanwhile:** the lowest rarity whose caps hold the survivors (Magic for one of
 each side), which is what `rarity(lowest)` in `operations.md` and `lowestRarity` in
 `check/ops.ts` do. [Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) says
