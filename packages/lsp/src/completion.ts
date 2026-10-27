@@ -15,7 +15,7 @@ import {
     traceAt,
     type TypeId,
 } from "@hinekora/core";
-import { parse } from "@hinekora/parser";
+import { HARVEST_VERBS, parse, VEILED_VERBS } from "@hinekora/parser";
 import { type CompletionItem, CompletionItemKind } from "vscode-languageserver-types";
 
 type Context =
@@ -32,10 +32,6 @@ type Context =
 const CONTROL_KEYWORDS = ["until", "if", "else", "with", "restart"];
 /** Statement-starting keywords for the sourced/tag-directed crafts. */
 const SOURCED_KEYWORDS = ["essence", "bench", "harvest", "veiled", "unveil"];
-/** The two harvest actions, offered after `harvest`. */
-const HARVEST_VERBS = ["reforge", "augment"];
-/** The two veiled currencies, offered after `veiled`. */
-const VEILED_VERBS = ["chaos", "exalt"];
 
 /** The keywords that can START a predicate (after `if` / `until` / `not`). */
 const PREDICATE_KEYWORDS: { label: string; detail: string; kind: CompletionItemKind }[] = [

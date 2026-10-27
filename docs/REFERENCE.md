@@ -157,7 +157,8 @@ resolveOmen / resolveEssence / resolveBench / resolveHarvestTag`
 ### 3b. `@hinekora/parser`
 
 Lexer (`tokenize`) → `Token[]` (trivia-free; no keyword token kind, every word is an
-`ident` and the parser decides by text). `parse(source)` returns `{ ok, craft }` or
+`ident` and the parser decides by text). The words the parser gives meaning to are the
+tables in `vocabulary.ts`, which completion and the docs check read too. `parse(source)` returns `{ ok, craft }` or
 `{ ok: false, error }` with a message + span. Tokens carry spans whose `offset` is a
 UTF-16 code-unit index into the source (the LSP's own offset convention). The lexer
 emits `eq` for `==` and `assign` for a lone `=` (the def binding).
@@ -241,7 +242,9 @@ The heart. Abstract interpretation over a symbolic item summary.
 
 ### The abstract state `AItem`: a reduced product of sub-domains
 
-`AItem` is a **reduced product**: each field is a small abstract domain, and the
+`AItem` carries the item's identity, which no operation changes (`game`, `base`, `ilvl`)
+or changes exactly (`rarity`), the shared `bdd` manager, and the sub-domains below. It is
+a **reduced product**: each sub-domain field is a small abstract domain, and the
 merge/fixpoint machinery treats them uniformly. `check/domain.ts` declares the shared
 contract `Domain<T>`: the two ops every sub-domain must provide, `join` (branch-merge
 LUB) and `equal` (fixpoint detection), plus the reusable `RangeDomain` (integer ranges)
@@ -474,6 +477,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/resolve/fuzzy.ts` / `tiers.ts`                     | fuzzy mod matching / rollable tiers (+ the memoized empty pool)                               |
 | `packages/core/src/pool/pool.ts`                                      | eligibility + weights                                                                         |
 | `packages/parser/src/{lexer,parser,token}.ts`                         | lexer / parser / token types                                                                  |
+| `packages/parser/src/vocabulary.ts`                                   | the surface vocabulary (keywords, predicate words, item fields, verbs)                        |
 | `packages/data/src/{load,adapter}.ts` + `scripts/ingest-poe1.mjs`     | data load + ingest                                                                            |
 | `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts` | LSP features                                                                                  |
 | `packages/core/src/check/check.test.ts`                               | checker tests (currency set, count-coupling regression, loops, omens, defs)                   |

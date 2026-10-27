@@ -23,6 +23,7 @@ import {
     type VeiledStmt,
     type Pred,
     type ProcDef,
+    type Game,
     type Rarity,
     type SourceSpan,
     span,
@@ -32,14 +33,19 @@ import {
 } from "@hinekora/core";
 import { CraftSyntaxError } from "./errors.js";
 import type { Token, TokenKind } from "./token.js";
+import {
+    GAMES,
+    HARVEST_VERBS,
+    type HarvestVerb,
+    PROJECTIONS as PROJECTION_WORDS,
+    RARITY_PREDICATES,
+    RARITY_WORDS as RARITY_WORD_LIST,
+    VEILED_VERBS,
+    type VeiledVerb,
+} from "./vocabulary.js";
 
-const RARITY_WORDS = new Set(["normal", "magic", "rare"]);
-const RARITY_PREDICATES: Record<string, Rarity> = {
-    isNormal: "normal",
-    isMagic: "magic",
-    isRare: "rare",
-};
-const PROJECTIONS = new Set(["prefixCount", "suffixCount"]);
+const RARITY_WORDS: ReadonlySet<string> = new Set(RARITY_WORD_LIST);
+const PROJECTIONS: ReadonlySet<string> = new Set(PROJECTION_WORDS);
 const CMP_KINDS: Partial<Record<TokenKind, Cmp>> = {
     eq: "==",
     neq: "!=",
@@ -187,7 +193,7 @@ class Parser {
     private parseGame(): "poe1" | "poe2" {
         const t = this.expect("ident", "a game ('poe1' or 'poe2')");
         const g = t.text.toLowerCase();
-        if (g === "poe1" || g === "poe2") return g;
+        if (GAMES.includes(g as Game)) return g as Game;
         throw this.error(`unknown game '${t.text}' (expected 'poe1' or 'poe2')`, t.span);
     }
 
@@ -446,8 +452,8 @@ class Parser {
     private parseVeiled(): VeiledStmt {
         const start = this.expectKeyword("veiled").span.start;
         const verbTok = this.expect("ident", "a veiled currency ('chaos' or 'exalt')");
-        const verb = verbTok.text.toLowerCase();
-        if (verb !== "chaos" && verb !== "exalt") {
+        const verb = verbTok.text.toLowerCase() as VeiledVerb;
+        if (!VEILED_VERBS.includes(verb)) {
             throw this.error(
                 `a veiled currency must be 'chaos' or 'exalt', not '${verbTok.text}'`,
                 verbTok.span,
@@ -470,8 +476,8 @@ class Parser {
     private parseHarvest(): HarvestStmt {
         const start = this.expectKeyword("harvest").span.start;
         const verbTok = this.expect("ident", "a harvest action ('reforge' or 'augment')");
-        const verb = verbTok.text.toLowerCase();
-        if (verb !== "reforge" && verb !== "augment") {
+        const verb = verbTok.text.toLowerCase() as HarvestVerb;
+        if (!HARVEST_VERBS.includes(verb)) {
             throw this.error(
                 `a harvest action must be 'reforge' or 'augment', not '${verbTok.text}'`,
                 verbTok.span,

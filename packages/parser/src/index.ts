@@ -12,6 +12,7 @@ export type { ParseResult, SyntaxDiagnostic } from "./errors.js";
 export { CraftSyntaxError } from "./errors.js";
 export { tokenize } from "./lexer.js";
 export { parseTokens } from "./parser.js";
+export * from "./vocabulary.js";
 
 /**
  * Parse a craft source string into a `Craft` AST. Returns a data result rather
