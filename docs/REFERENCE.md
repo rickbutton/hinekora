@@ -385,7 +385,9 @@ in it. Notes:
   generation is not in that set survives (protected), as does one the cannot-roll shield
   covers and a fractured one; an empty set means nothing is removable.
 - `strip` keeps the protected sides and the fractured mod and drops the rest: counts fall
-  to what is kept, guarantees, tier pins and `possible` survive for kept types only,
+  to what is kept, guarantees survive for kept types only, tier pins and `possible` for
+  kept types and, under an unproven lock, for every current type (the survivor may be any
+  of them),
   exclusions stay, the fracture facts are permanent, and the crafted range keeps what the
   kept side could hold (`fracturedCrafted` for a fractured bench row).
 - The add-pool is over-approximated by running the real `pool` on the facts of the
