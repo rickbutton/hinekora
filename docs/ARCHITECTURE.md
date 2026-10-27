@@ -9,7 +9,12 @@
 > - **The surface language** (syntax, predicates, error style) →
 >   [crafting-lang-surface-v0.md](crafting-lang-surface-v0.md).
 > - **The formal item/currency model** → [crafting-lang-typing-rules-v0.md](crafting-lang-typing-rules-v0.md).
+> - **The item model** (what Hinekora models of items and modifiers, each rule linked to its
+>   wiki section) → [item-model.md](item-model.md).
 > - **Conventions, the build gate, working style** → [../CLAUDE.md](../CLAUDE.md).
+> - **The game's rules** → the Path of Exile wiki, linked by section wherever a doc rests on
+>   one; the docs say how Hinekora models a rule, never restate it. Cached locally via
+>   `tools/poewiki` (the `poewiki-render` skill).
 >
 > Each detail lives in exactly one place. Where this doc names a symbol, it is to locate a
 > concept; the symbol-level reference is REFERENCE §3–§5.
@@ -75,11 +80,16 @@ What resolution provides to the checker:
 
 - **fuzzy, base-aware name → ModType**: a query token matches exactly or as a ≥3-char
   prefix, narrowed to the types that can actually roll on this base/ilvl.
-- **the pool**: which mods can roll on a given item (eligibility by tags, first-match
-  weights). This is what a currency add draws from.
-- **tiers**: the tier ladder per base/ilvl (T1 = the best mod that can roll here).
-- **caps**: the per-base affix limits (including the "experimented base" implicit deltas),
-  consumed by the checker's count domain.
+- **the pool**: which mods can roll on a given item, by the wiki's
+  [spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag) and
+  [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) rules. This is what a currency
+  add draws from.
+- **tiers**: the tier ladder per base/ilvl (T1 = the best mod that can roll here), derived
+  by sorting a type's rollable rows by mod level, since the game stores no tier numbers.
+- **caps**: the per-base affix limits (the [rarity](https://www.poewiki.net/wiki/Rarity#Rarities)
+  limits shifted by an experimented base's stats, e.g.
+  [Simplex Amulet](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)), consumed by the
+  checker's count domain.
 
 This layer is pure data → structures. It never analyses; it answers questions.
 

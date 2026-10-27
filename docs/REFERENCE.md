@@ -7,9 +7,14 @@
 > `ARCHITECTURE.md`; forward-looking work is `ROADMAP.md`; conventions, the build gate,
 > and working style live in `../CLAUDE.md`; design intent lives in
 > `crafting-lang-surface-v0.md` (surface language) and `crafting-lang-typing-rules-v0.md`
-> (formal model). Recent history lives in `git log`.
+> (formal model); the item and modifier model the code is audited against is
+> `item-model.md`. Recent history lives in `git log`.
+>
+> Game mechanics are not re-explained here. Each rule links to the section of the Path of
+> Exile wiki (poewiki.net) that defines it, and the text covers only how Hinekora models it.
+> The wiki is cached locally (`tools/poewiki`, the `poewiki-render` skill).
 
-Last updated: 2026-07-20.
+Last updated: 2026-10-24.
 
 ---
 
@@ -75,8 +80,14 @@ examples/
   example.craft              - the demo craft (open in the Extension Dev Host).
   essence-life-boots.craft   - essence + def + or example.
 docs/
-  REFERENCE.md, ARCHITECTURE.md, ROADMAP.md + the two design docs
+  REFERENCE.md, ARCHITECTURE.md, ROADMAP.md, item-model.md + the two design docs
   (CLAUDE.md stays at the repo root).
+tools/
+  poewiki/                   - local cache of poewiki.net for mechanics research:
+                                full export, incremental sync via recentchanges,
+                                on-demand page rendering to Markdown. Driven by
+                                the poewiki-render / poewiki-sync skills in
+                                .claude/skills/. Data lives in .cache/ (gitignored).
 ```
 
 Build system: **tsc project references** (`tsc -b`), root solution tsconfig, each package
@@ -92,13 +103,17 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
 
 ### 3a. `@hinekora/core`
 
-- **model/**: `Item`, `Mod` (one row per _tier_; `type` is the ModType bucket;
-  `implicitTags` are its category tags for tag-directed crafting — harvest, fossils), `Base`
-  (id = metadata path, since display names collide across hundreds of bases), `Weight`
-  (provenance-tagged), `Effect` seam, `ModSource`, and the `wf` (well-formedness) rules.
-  Branded id types in `model/ids.ts`.
-- **pool/**: `pool(catalog, item)`, which mods can roll on an item (eligibility by
-  base tags vs mod spawn tables, first-match weight lookup, zero-weight disables).
+- **model/**: `Item`, `Mod` (one row per _tier_, i.e. one row of the game's `Mods` table;
+  `type` is the ModType bucket, `families` the
+  [mod groups](https://www.poewiki.net/wiki/Modifier#Group/family), `implicitTags` the
+  [mod tags](https://www.poewiki.net/wiki/Modifier#Mod_tag) that tag-directed crafting selects
+  on — harvest, fossils), `Base` (id = metadata path, since display names collide across
+  hundreds of bases), `Weight` (provenance-tagged), `Effect` seam, `ModSource`, and the `wf`
+  (well-formedness) rules. Branded id types in `model/ids.ts`.
+- **pool/**: `pool(catalog, item)`, which mods can roll on an item: the wiki's
+  [spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag) rule (base tags
+  vs the mod's spawn table, first match wins, zero disables) plus the
+  [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) gate.
 - **outcome/**: the symbolic outcome-union machinery. Intensional, never enumerated.
 - **currency/**: the concrete base currency library (transmute/regal/exalt/annul) that
   produces symbolic `Outcome`s from a concrete item. Shares op names with the checker's
@@ -148,9 +163,10 @@ filter on). For a base it also folds the affix-count implicit stats
 (domain + generation_type + is_essence_only). `load.ts`: `loadDefaultPoe1()` →
 `LoadedData`, `registryOf(data)` → `Registry`.
 
-Essence data note: `maxRandomModLevel` caps only the random FILL mods. Essences have no
-item-level gate: the guaranteed mod is forced at its fixed tier regardless of ilvl
-(confirmed by in-game testing).
+Essence data note: `maxRandomModLevel` is the "maximum level for random mods" column of the
+tier table in [Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting) and caps only
+the random FILL mods. Essences have no item-level gate: the guaranteed mod is forced at its
+fixed tier regardless of ilvl (not stated on the wiki; confirmed by in-game testing).
 
 ### 3d. `@hinekora/lsp`
 
@@ -170,7 +186,8 @@ Transport-free service functions + a stdio server:
     - A mod string's hover shows the resolved canonical wording, generation, and a
       table of every tier rollable on this base/ilvl; a trailing `t1` spotlights that
       tier. (Tier ids rarely match T-numbers: `IncreasedLife11` can be T1; ids count up
-      with level, T-numbers down from best.)
+      with [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level), T-numbers down from
+      best.)
     - `essence`/`bench "<name>" [t1]` and a def's declaration/calls/params each hover as
       one shared signature (`namedAt` / `defAt`).
 - `completion.ts`: `getCompletions`. A backward text-scan (`contextAt`) picks the
@@ -238,9 +255,10 @@ total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = t
   is joined per-type and a tier known in only one branch drops to unconstrained. Its
   refinement is coupled to `presence` (tier atoms), so that part lives in `refine`, not the
   domain.
-- `crafted`: a RANGE, how many bench-crafted mods are present. `bench` requires it
-  provably `< 1` (one crafted mod per item); reforges/scour clear it to 0, an unforced
-  `annul` drops its lower bound (the crafted mod may have been removed).
+- `crafted`: a RANGE, how many [bench-crafted](https://www.poewiki.net/wiki/Crafting_Bench)
+  mods are present. `bench` requires it provably below the crafted cap (one, or three under
+  the multimod [metamod](https://www.poewiki.net/wiki/Metamod)); reforges/scour clear it to
+  0, an unforced `annul` drops its lower bound (the crafted mod may have been removed).
 - **Tier presence atoms.** A tier-qualified predicate (`has X t1`) also asserts a SECOND
   BDD variable (`type` + NUL + `modId`), so a disjunction of tier-qualified clauses
   (`fire@t1 ∨ cold@t1 ∨ light@t1`) survives a `join` where the flat overlay would drop
@@ -256,13 +274,18 @@ total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = t
   "possibly full". Returns `null` on an uninhabited (contradictory) state.
 - **Affix caps are per-side and base-aware** (`sideCap`, `hardTotalCap`, `maxTotal`).
   `sideCap(gen) = max(0, naturalPerSide(rarity, class) + base.capDelta[gen])`: the
-  natural limit (normal 0 / magic 1 / rare 3, jewels 2) shifted by an "experimented
-  base" implicit (Simplex Amulet −2/−1, Ratcheting Ring −3/+3), floored at 0. `hardTotalCap`
-  (`2×naturalPerSide`) is an INDEPENDENT bound on the two sides together, which is what
-  holds a magic Ratcheting to 0p/2s (raw suffix 1+3=4, hard total 2), not 0/4. The three
-  feed `normalize` as `pCap`/`sCap`/`tCap`. `capDelta` is ingested from the base's implicit
-  stats (`local_maximum_{prefixes,suffixes}_allowed_+`); see `transfer.ts` for how reforge/
-  add ops clamp their counts to `maxTotal` (transmute on a 0-cap magic base adds nothing).
+  natural limit per [rarity](https://www.poewiki.net/wiki/Rarity#Rarities) (normal 0 / magic
+  1 / rare 3; [jewels](https://www.poewiki.net/wiki/Jewel#Affixes) 2) shifted by an
+  "experimented base" stat ([Simplex Amulet](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)
+  −2/−1, [Ratcheting Ring](https://www.poewiki.net/wiki/Ratcheting_Ring#Mechanics) −3/+3),
+  floored at 0. `hardTotalCap` (`2×naturalPerSide`) is an INDEPENDENT bound on the two sides
+  together, which is what holds a magic Ratcheting to 0p/2s (raw suffix 1+3=4, hard total 2),
+  not 0/4 — the wiki's "magic Ratcheting Rings will never roll prefixes but can roll two
+  suffixes", and likewise its "magic Simplex Amulets are unable to have any modifiers". The
+  three feed `normalize` as `pCap`/`sCap`/`tCap`. `capDelta` is ingested from the base's
+  implicit stats (`local_maximum_{prefixes,suffixes}_allowed_+`); see `transfer.ts` for how
+  reforge/add ops clamp their counts to `maxTotal` (transmute on a 0-cap magic base adds
+  nothing, per [Simplex Amulet § Special Crafting Considerations](https://www.poewiki.net/wiki/Simplex_Amulet#Special_Crafting_Considerations)).
 - `refine(a, pred, positive)` narrows by a resolved predicate (De Morgan for and/or:
   conjunction = sequential narrow, disjunction = `join`); `null` means the sub-state is
   impossible, the dead-branch signal. `join` is the branch-merge LUB; `stateEqual`
@@ -310,14 +333,20 @@ body)`, the states that re-enter the loop head after one iteration (fall-off-end
 ### `transfer.ts`: abstract currency ops
 
 Nine orbs, each `AItem → TransferResult` (`{ok, state}` or `{ok:false, failure}`):
-transmute, augment, alteration, regal, alchemy, chaos, exalt, annul, scour. They reduce
-to two primitives: an ADDITIVE add (`addOne`, for transmute/augment/regal/exalt) and a
-REFORGE (`reroll`, for alteration/alchemy/chaos: fresh count range, nothing guaranteed,
-pool becomes `possible`); plus `removeOne` (annul) and `scour` (strip to Normal, or keep a
-protected side — see metamods). Notes:
+transmute, augment, alteration, regal, alchemy, chaos, exalt, annul, scour (the wiki's
+[Crafting](https://www.poewiki.net/wiki/Crafting) page groups them the same way: rarity
+upgrades, reforges, augment/remove). They reduce to two primitives: an ADDITIVE add
+(`addOne`, for transmute/augment/regal/exalt) and a REFORGE (`reroll`, for
+alteration/alchemy/chaos: fresh count range, nothing guaranteed, pool becomes `possible`);
+plus `removeOne` (annul) and `scour` (strip to Normal, or keep a protected side — see
+metamods). Notes:
 
 - `annul` works on **Magic OR Rare**: the precondition is "has a removable mod", not a
-  rarity gate. `scour` on a no-mod item fails as wasted currency.
+  rarity gate ([Orb of Annulment § Mechanics](https://www.poewiki.net/wiki/Orb_of_Annulment#Mechanics):
+  it never downgrades rarity). `scour` on a no-mod item fails as wasted currency.
+- A reforge's count range is the Chaos Orb's 4–6 affixes
+  ([Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Chaos_Orb#Mechanics)); the 8:3:1 odds
+  are not modelled, only the range.
 - Removal draws from an **allowed-gens** set = `(omen forcedGen ?? both) − protectedGens`;
   `removeOne`/`hasRemovable`/`annul`/`harvestAugment` all share it. A guarantee whose
   generation is not in that set survives (protected, or the omen-spared side); an empty set
@@ -325,55 +354,75 @@ protected side — see metamods). Notes:
 - The add-pool is over-approximated by running the real `pool` on a synthetic item
   carrying only the guaranteed mods at rare caps.
 - `withGuaranteed(state, mod)` forces a specific mod present (presence + tier pin +
-  possible + count floors). `essence()` = reforge to Rare `[4,6]` + `withGuaranteed`
-  (precondition: Normal always, Rare only at ladder tier ≥ 5, never Magic, class must
-  be in `grants`; fill capped at `min(ilvl, maxRandomModLevel)`). `bench()` = additive
-  add + `withGuaranteed` (preconditions: open slot in the mod's generation; **the
-  crafted-mod limit** `craftedCapOfState(a)` (one, or three under an active multimod), where
-  `AItem.crafted` is the count of bench-crafted mods present, a range that `bench` requires
-  provably below the cap and reforges/scour clear to 0; and **group exclusivity**, where the
-  mod's family must not be possibly-present, via `familiesOfType`). Not modelled: a conflict
-  hidden behind an anonymous "random" affix.
-- **Metamods** (bench meta-crafting mods) are effect-carriers: an effect is active iff its
-  carrier type is GUARANTEED present, the abstract analogue of §9's derived `effects(it)`.
-  `activeEffects(a, registry)` folds `registry.effectsOfType` over the guaranteed types;
+  possible + count floors). `essence()` = reforge to Rare `[4,6]` + `withGuaranteed`, the
+  rules of [Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting) (tiers 1–4
+  are an alchemy with one guaranteed affix, tier 5+ also reforge a Rare; the fill is capped
+  by the tier's maximum random mod level): precondition Normal always, Rare only at ladder
+  tier ≥ 5, never Magic, class must be in `grants`; fill capped at
+  `min(ilvl, maxRandomModLevel)`. `bench()` = additive add + `withGuaranteed`
+  ([Crafting Bench](https://www.poewiki.net/wiki/Crafting_Bench); preconditions: open slot in
+  the mod's generation; **the crafted-mod limit** `craftedCapOfState(a)` (one, or three under
+  an active multimod), where `AItem.crafted` is the count of bench-crafted mods present, a
+  range that `bench` requires provably below the cap and reforges/scour clear to 0; and
+  **group exclusivity** — the [mod group](https://www.poewiki.net/wiki/Modifier#Group/family)
+  rule — where the mod's family must not be possibly-present, via `familiesOfType`). Not
+  modelled: a conflict hidden behind an anonymous "random" affix.
+- **Metamods** ([Metamod](https://www.poewiki.net/wiki/Metamod), the
+  [metacrafting bench options](https://www.poewiki.net/wiki/Crafting_Bench#Metacrafting_modifiers))
+  are effect-carriers: an effect is active iff its carrier type is GUARANTEED present, the
+  abstract analogue of §9's derived `effects(it)`. `activeEffects(a, registry)` folds
+  `registry.effectsOfType` over the guaranteed types;
   `protectedGens`/`craftedCapOfState`/`metamodBlocksSourced` are views of it. Placement is
-  just `bench "prefixes cannot be changed"`. Wiring: **protect** shrinks the allowed-gens
-  removal set (annul/harvest augment respect it); **scour** keeps the protected side and
-  stays Rare (`scourKeeping`); **cannot-roll** is a `poolRestrict` that folds through `pool`
-  for free (the synthetic item carries the guaranteed carrier); **multimod** raises the
-  crafted cap; **essence** is blocked (`metamodBlocks`) by a protect or cannot-roll metamod;
-  **chaos** and **harvest reforge** keep the protected side and reroll the rest
+  just `bench "prefixes cannot be changed"`. Which currency respects which metamod is the
+  table in [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions);
+  the wiring follows it: **protect** shrinks the allowed-gens removal set (annul/harvest
+  augment respect it); **scour** keeps the protected side and stays Rare (`scourKeeping`);
+  **cannot-roll** is a `poolRestrict` that folds through `pool` for free (the synthetic item
+  carries the guaranteed carrier); **multimod** raises the crafted cap; **essence** is
+  blocked (`metamodBlocks`) by any protect or cannot-roll metamod ("usage prevented" in the
+  table); **chaos** and **harvest reforge** keep the protected side and reroll the rest
   (`keepProtectedReroll` — protected guarantees + tier pins + a count floor survive, open
-  protected slots may fill from the fresh pool, the metamod on the rerolled side goes). The
-  curated id→effect table is `model/metamods.ts`.
-- **Fractures** are a per-mod lock, tracked as `frac@type` atoms in the presence BDD (the
-  tier-atom pattern; a `FRAC_EXISTS` sentinel marks "some mod is fractured" so a fracture on an
+  protected slots may fill from the fresh pool, which is the table's "respected, but open
+  prefixes may be filled"; the metamod on the rerolled side goes). Not modelled from that
+  table: a cannot-roll metamod also shielding its tagged mods from `annul`, and the
+  Fracturing Orb ignoring metamods. The curated id→effect table is `model/metamods.ts`.
+- **Fractures** ([Fractured item § Mechanics](https://www.poewiki.net/wiki/Fractured_item#Mechanics))
+  are a per-mod lock, tracked as `frac@type` atoms in the presence BDD (the tier-atom
+  pattern; a `FRAC_EXISTS` sentinel marks "some mod is fractured" so a fracture on an
   anonymous mod still counts). A declared `fractured "…"` affix asserts a definite fracture;
-  the **Fracturing Orb** (`fracture`, needs Rare + ≥4 mods, one per item) asserts "exactly one
-  of the current mods is fractured" — pinnable by a `fractured X` branch (`refine`). Removal,
-  `chaos`, `scour`, and harvest reforge keep the fracture by preserving `fractureProjection(a)`
-  (the presence BDD reduced to the fracture atoms + their coupled presence) and rerolling the
-  rest, so a proven fracture keeps its type and an unproven one keeps the survivor disjunction.
-  **Scour** drops to the minimum rarity that holds the survivors (`minRarityFor`): a fractured
-  Rare scours to a 1-mod Magic.
-- **Veiled** (`veiledChaos` / `veiledExalt` / `unveil`): the orbs add a veiled placeholder (the
-  `VeiledPrefix ∨ VeiledSuffix` disjunction, generation fixed-random so unknown) on the reforge
-  / add-remove seams. `unveil` reads `veiledPool` (`pool/veiled.ts` — the unveiled result mods
-  valid on the base, minus families already present, which is "blocking") and either asserts the
-  pool disjunction (narrow with `if has`) or, with a target, guarantees it once the pool is ≤ 3.
-  The veiled `domain` keeps result mods out of the normal `pool`. Model helpers in
-  `model/veiled.ts`.
-- **Harvest** (tag-directed): `harvestReforge(a, tag)` = `reroll` plus a DISJUNCTIVE
-  guarantee — "at least one mod carrying `tag`" — ANDed into the presence BDD as one OR
-  clause over the tagged types (never an enumerated union; a wide clause is sound, just
-  skipped by `disjunctiveGuarantees`' variable guard). `harvestAugment(a, tag)` (Craft of
-  Exile's "Add/Remove") removes a random other mod then adds a tagged one: net count
-  unchanged, and the random removal reuses `removeOne` (unforced), so in v1 every present
-  mod is removable and all prior guarantees drop — the seam a future protect-effect
-  metacraft narrows so protected guarantees survive. A tag is matched against
-  `Mod.implicitTags`; an empty tagged pool fails (`harvestEmptyPool`). Preconditions: Rare;
-  augment also needs a removable mod.
+  the **Fracturing Orb** (`fracture`; its preconditions are
+  [Fracturing Orb § Mechanics](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics): Rare,
+  ≥4 mods, not already fractured) asserts "exactly one of the current mods is fractured" —
+  pinnable by a `fractured X` branch (`refine`). Hinekora therefore models at most one
+  fracture per item; the wiki's multi-fracture routes (Synthesis, Necropolis, beastcrafting)
+  are not modelled. Removal, `chaos`, `scour`, and harvest reforge keep the fracture by
+  preserving `fractureProjection(a)` (the presence BDD reduced to the fracture atoms + their
+  coupled presence) and rerolling the rest, so a proven fracture keeps its type and an
+  unproven one keeps the survivor disjunction. **Scour** drops to the minimum rarity that
+  holds the survivors (`minRarityFor`): a fractured Rare scours to a 1-mod Magic, as the wiki
+  states.
+- **Veiled** (`veiledChaos` / `veiledExalt` / `unveil`, the
+  [Veiled Chaos Orb](https://www.poewiki.net/wiki/Veiled_Chaos_Orb),
+  [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb) and the
+  three-option unveil of [Veiled modifier § How to obtain](https://www.poewiki.net/wiki/Veiled_modifier#How_to_obtain)):
+  the orbs add a veiled placeholder (the `VeiledPrefix ∨ VeiledSuffix` disjunction,
+  generation fixed-random so unknown) on the reforge / add-remove seams. `unveil` reads
+  `veiledPool` (`pool/veiled.ts` — the unveiled result mods valid on the base, minus families
+  already present, which is "blocking") and either asserts the pool disjunction (narrow with
+  `if has`) or, with a target, guarantees it once the pool is ≤ 3. The veiled `domain` keeps
+  result mods out of the normal `pool`. Model helpers in `model/veiled.ts`.
+- **Harvest** ([Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting); the tags
+  are its [modifier groups](https://www.poewiki.net/wiki/Harvest_crafting#Modifier_groups)):
+  `harvestReforge(a, tag)` = `reroll` plus a DISJUNCTIVE guarantee — "at least one mod
+  carrying `tag`" — ANDed into the presence BDD as one OR clause over the tagged types (never
+  an enumerated union; a wide clause is sound, just skipped by `disjunctiveGuarantees`'
+  variable guard). `harvestAugment(a, tag)` (the wiki's "Augment" crafts; Craft of Exile's
+  "Add/Remove") removes a random other mod then adds a tagged one: net count unchanged, and
+  the random removal reuses `removeOne` (unforced) over the allowed-gens set — which matches
+  [Harvest crafting § Mechanics](https://www.poewiki.net/wiki/Harvest_crafting#Mechanics):
+  the removal obeys prefix/suffix locks but ignores cannot-roll metamods. A tag is matched
+  against `Mod.implicitTags`; an empty tagged pool fails (`harvestEmptyPool`).
+  Preconditions: Rare; augment also needs a removable mod.
 
 ### `diagnostics.ts`: messages
 

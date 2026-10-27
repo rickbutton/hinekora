@@ -11,6 +11,8 @@ interpretation) before real currency is spent.
 - `docs/ARCHITECTURE.md`: the shape of the implementation. The layers, how they compose,
   and the theory behind the checker (abstract interpretation). The mental model.
 - `docs/ROADMAP.md`: forward-looking work (pending, deferred, future). Not history.
+- `docs/item-model.md`: the item and modifier model the code is audited against, each rule
+  linked to its wiki section.
 - `docs/crafting-lang-surface-v0.md`: the surface language design (syntax, predicates,
   errors).
 - `docs/crafting-lang-typing-rules-v0.md`: the formal item/currency model.

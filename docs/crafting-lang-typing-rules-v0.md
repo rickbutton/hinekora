@@ -7,7 +7,9 @@ outcomes, and `M before after result` for indexed-monad steps.
 
 This is a design artifact, meant to be edited as the model evolves. Every
 rule is annotated with which type-system concept it exercises and which real
-schema field it rests on.
+schema field it rests on. Game rules are linked to the wiki section that defines
+them (poewiki.net for PoE1, poe2wiki.net for PoE2) and never restated; a rule
+here says how it models the linked mechanic.
 
 ---
 
@@ -22,8 +24,13 @@ schema field it rests on.
   into nested single-exit loops. Only the primitive gets typing rules.
 - **Eligibility is binary** (closed-world for now; dataset owns completeness).
 - **Weight is provenance-tagged** (Known / Approx / Unknown), probability-only.
-- **Coexistence invariant**: ModType-distinct + Family-disjoint + slot
-  cardinality + tier-gate + domain-match. Tags are NOT a coexistence rule.
+- **Coexistence invariant**: ModType-distinct + Family-disjoint (the wiki's
+  [group/family](https://www.poewiki.net/wiki/Modifier#Group/family) rule) + slot
+  cardinality + tier-gate ([mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level))
+  + domain-match ([domain](https://www.poewiki.net/wiki/Modifier#Domain)). Tags are NOT a
+  coexistence rule: they decide eligibility
+  ([spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag)), not
+  what may sit together.
 - **Currencies are a standard library, not language features.** The core is
   the type machinery; each currency is a typed library value. Crafter
   techniques are higher-order functions composed from currency primitives.
@@ -45,8 +52,8 @@ Game         = PoE1 | PoE2             -- which game's ruleset this item lives u
 GroupId      = ModFamily.Id            -- mutual-exclusion group
 TypeId       = ModType.Name            -- tier bucket (all tiers share this)
 TagId        = Tags.Id
-Domain       = ModDomains   (ITEM | FLASK | MAP | ...)   -- @indexing(first:1)
-Gen          = ModGenerationType (PREFIX | SUFFIX | ESSENCE | ...)
+Domain       = ModDomains   (ITEM | FLASK | AREA | CRAFTED | ...)   -- @indexing(first:1)
+Gen          = ModGenerationType (PREFIX | SUFFIX | INTRINSIC | ...)
 
 Weight =
   | Known   Nat        -- PoE1 shipped ground truth
@@ -71,6 +78,16 @@ Base = {                                -- BaseItemTypes row
   tags      : Set TagId,                -- BaseItemTypes.TagsKeys (matched vs spawn)
 }
 ```
+
+Each field's game rule, on the wiki's Modifier page: `domain` →
+[Domain](https://www.poewiki.net/wiki/Modifier#Domain), `gen` →
+[Generation type](https://www.poewiki.net/wiki/Modifier#Generation_type), `minLevel`
+→ [Mod Level](https://www.poewiki.net/wiki/Modifier#Mod_Level), `families` →
+[Group/family](https://www.poewiki.net/wiki/Modifier#Group/family), `spawn` and
+`Base.tags` → [Spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag),
+`addsTags` → [Tags](https://www.poewiki.net/wiki/Modifier#Tags). The domain and
+generation-type names are the wiki's convenience names; the game ships only the
+integers.
 
 ---
 
@@ -141,7 +158,11 @@ wf(it) :=
 Tags appear NOWHERE here. Coexistence = ModType-distinct + Family-disjoint
 + slot counts. This is the correction from the dat-schema analysis. Slot caps
 take `effects` because slot-cardinality effects (§9) can raise them; with empty
-effects, `maxPre/maxSuf` are the plain 0/1/3 constants.
+effects, `maxPre/maxSuf` are the per-[rarity](https://www.poewiki.net/wiki/Rarity#Rarities)
+constants 0/1/3 — 2 for [jewels](https://www.poewiki.net/wiki/Jewel#Affixes), and
+shifted on the experimented bases ([Simplex Amulet](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics),
+[Ratcheting Ring](https://www.poewiki.net/wiki/Ratcheting_Ring#Mechanics)), whose stats
+the implementation folds in as `capDelta` (REFERENCE §4).
 
 ---
 
@@ -172,9 +193,11 @@ Pool effects act on two sides: **restrict** shrinks the candidate set
 (`satisfiesAll restrict`), **widen** grows it (`Mod ∪ widen`). Both are read
 from `effects(it)` (derived, §2); §9 defines the effect kinds.
 
-Two roles of tags, kept separate:
-- `lookupWeight m it.base.tags` — BASE item's tags vs mod's spawn array. Eligibility.
-- `satisfiesAll filters m` — tags named by an active metamod. Conditional filter.
+Two roles of tags, kept separate (the wiki's two kinds):
+- `lookupWeight m it.base.tags` — BASE item's tags vs mod's spawn array:
+  [spawn weight tags](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag). Eligibility.
+- `satisfiesAll filters m` — the mod's own category tags, named by an active
+  metamod: [mod tags](https://www.poewiki.net/wiki/Modifier#Mod_tag). Conditional filter.
 
 `nonzero w` is true for `Known n>0`, `Approx n>0`, and `Unknown` (sentinel).
 Only a provably-zero weight (PoE1 closed-world) is ineligible.
@@ -218,6 +241,8 @@ what makes perfect-essence deterministic on a full-suffix item (§4.7).
 
 ### 4.1 Transmute  [BOTH games]  (Normal -> Magic, adds 1)
 
+[Orb of Transmutation](https://www.poewiki.net/wiki/Orb_of_Transmutation).
+
 ```
     wf(it)   it.rarity = Normal
   ------------------------------------------------------------  (TRANSMUTE)
@@ -231,6 +256,8 @@ Additive: `present` gains `m.type`. Game-agnostic (`g` free), so it lives in
 a shared base module both games re-export.
 
 ### 4.2 Regal  [BOTH games]  (Magic -> Rare, adds 1)
+
+[Regal Orb](https://www.poewiki.net/wiki/Regal_Orb).
 
 ```
     wf(it)   it.rarity = Magic
@@ -246,9 +273,11 @@ a shared base module both games re-export.
     exalt : M  Item[g,Rare,p,s,lvl,P]  (addResult it P)  Unit
 ```
 
+[Exalted Orb § Mechanics](https://www.poewiki.net/wiki/Exalted_Orb#Mechanics).
 Precondition `p + s < 6` is the refinement that makes "exalt a full item" a
-type error. **Additive**: every mod in `P` is preserved — why a guaranteed
-mod survives an Exalt.
+type error (6 is the ordinary Rare limit; on jewels and experimented bases the
+caps of §2.1 apply). **Additive**: every mod in `P` is preserved — why a
+guaranteed mod survives an Exalt.
 
 ### 4.4 Annul  [BOTH games]  (Rare, removes 1 at random)  — branching
 
@@ -263,6 +292,7 @@ mod survives an Exalt.
 removable it = affixes it \ protected(effects it, it)   -- protection effects exclude mods (§9)
 ```
 
+[Orb of Annulment § Mechanics](https://www.poewiki.net/wiki/Orb_of_Annulment#Mechanics).
 The sum ranges over **removable** affixes = present affixes minus those
 protected by an active protection effect (§9). This is the corrected
 "cannot be changed" semantics: protection targets **active mods**, not slots.
@@ -284,7 +314,8 @@ of protection metamods). Uniform over the inhabited (removable) arms.
 `chaos` is the canonical example of game-divergence. Two distinct definitions,
 same name, different modules.
 
-**PoE1 — reroll ALL modifiers** (rare stays rare, entire affix set redrawn):
+**PoE1 — reroll ALL modifiers** ([Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Chaos_Orb#Mechanics):
+rare stays rare, entire affix set and its count redrawn):
 
 ```
     wf(it)   it.rarity = Rare
@@ -298,8 +329,9 @@ same name, different modules.
 The after-`present` bears **no relation** to the prior `P` — everything is
 rerolled. A guaranteed mod does NOT survive PoE1 chaos (unlike Exalt).
 
-**PoE2 — remove one random, add one random** (this is the "chaos" my earlier
-draft mistakenly wrote as universal; it is the PoE2 rule):
+**PoE2 — remove one random, add one random**
+([poe2wiki: Chaos Orb](https://www.poe2wiki.net/wiki/Chaos_Orb); this is the "chaos" my
+earlier draft mistakenly wrote as universal; it is the PoE2 rule):
 
 ```
     wf(it)   it.rarity = Rare   p + s > 0
@@ -312,9 +344,10 @@ draft mistakenly wrote as universal; it is the PoE2 rule):
 
 ### 4.6 Essence  — DIFFERENT operation per game
 
-**PoE1 — rarity-set + random fill** (turns Normal, or per-tier a Magic/Normal,
-into a Rare with random mods; the essence guarantees one specific mod). Tiers
-differ in which input rarity they accept; defer full tier catalog. Shape:
+**PoE1 — rarity-set + random fill**, the rules of
+[Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting): every tier takes a
+Normal item to Rare with one guaranteed mod and random fill, tier 5+ also reforges a
+Rare, and no tier accepts Magic. Shape:
 
 ```
     wf(it)   essenceApplicable@poe1 e it   mX = guaranteedMod e it
@@ -328,8 +361,8 @@ differ in which input rarity they accept; defer full tier catalog. Shape:
 Guarantees `mX` present; the *rest* of the affixes are random (hence a `Sum`),
 but every arm contains `mX.type`.
 
-**PoE2 — Regal-with-guarantee** (Magic -> Rare, the added mod is the specific
-`mX`; deterministic, one arm):
+**PoE2 — Regal-with-guarantee** ([poe2wiki: Essence](https://www.poe2wiki.net/wiki/Essence);
+Magic -> Rare, the added mod is the specific `mX`; deterministic, one arm):
 
 ```
     wf(it)   it.rarity = Magic   mX = guaranteedMod e it
@@ -512,8 +545,9 @@ not type-check.
   (§4.7). Need to specify the exact VC form and confirm it stays within the
   SMT-decidable fragment (`wf` is linear arithmetic over counts + set
   membership, so it should).
-- **PoE1 essence tier catalog**: which tiers accept Normal vs Magic input,
-  and the guaranteed-mod table. Deferred; shape given in §4.6.
+- **PoE1 essence tier catalog**: resolved. The input-rarity rule is the tier
+  table in [Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting)
+  and the guaranteed-mod table is RePoE's `essences.json` (REFERENCE §3c).
 - **Game module structure**: base module (transmute/regal/exalt/annul, `g`
   free) re-exported by both; `poe1`/`poe2` modules add game-specific ops
   (chaos, essence, perfect-essence). Import rule: a craft fixes one game via
@@ -532,8 +566,10 @@ not type-check.
 There is no single "metamod" construct. Instead, certain **carriers** (affix
 mods, or augment implicits) contribute **effects** — typed modifications to
 the operation rules that are active *while the carrier is present*. This one
-abstraction subsumes PoE1 bench metamods, PoE2 effect-essences, delirium
-slot-mods, and socket augments. (PoE1 has a bench; PoE2 does not, so its
+abstraction subsumes PoE1 bench [metamods](https://www.poewiki.net/wiki/Metamod),
+PoE2 effect-essences, delirium slot-mods, and socket augments. For PoE1 the
+per-currency behaviour an effect must reproduce is the table in
+[Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions). (PoE1 has a bench; PoE2 does not, so its
 effects arrive via currency-placed mods and augments instead — but the
 *effect* vocabulary is shared.)
 
@@ -687,9 +723,10 @@ So the only lifecycle logic in the whole layer is §9.4's wf check.
 
 ## 10. Omens (PoE2 operation-directing metamods)
 
-Omens are a distinct vehicle from §9 effects. They are separate consumable
-items that, while **active**, direct the behavior of a specific operation
-type — but (unlike §9 carriers) they are NOT mods/augments on the item and do
+[Omens](https://www.poe2wiki.net/wiki/Omen) (PoE2, e.g.
+[Omen of Dextral Exaltation](https://www.poe2wiki.net/wiki/Omen_of_Dextral_Exaltation))
+are a distinct vehicle from §9 effects. They are separate consumable items
+that, while **active**, direct the behavior of a specific operation type — but (unlike §9 carriers) they are NOT mods/augments on the item and do
 NOT appear in `effects(it)`. They live in a parallel **omen context** Ω.
 
 ### 10.1 Modeling decision: enable/disable context, not consumable inventory

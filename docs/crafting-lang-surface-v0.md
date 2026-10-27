@@ -6,6 +6,10 @@ goal: a craft reads like a written guide, with **no type annotations** and
 **no type-theory jargon**. Types are inferred from the operation sequence and
 only ever surface as a plain rendering of the item's current state.
 
+Where a construct rests on a game rule, the rule is linked to its section of the Path of
+Exile wiki (poewiki.net) rather than restated; the text here says only how the construct
+relates to it.
+
 ---
 
 ## 0. Design principles
@@ -75,8 +79,11 @@ item {
 - Fields are **givens**: the checker takes them as the initial index rather
   than inferring them.
 - An affix may be marked `fractured` (the keyword before the mod, e.g.
-  `prefixes: [ fractured "+1 to Level of Socketed Gems" t1 ]`) — a locked mod that
-  no currency can remove or reroll. An item holds at most one.
+  `prefixes: [ fractured "+1 to Level of Socketed Gems" t1 ]`): a
+  [fractured modifier](https://www.poewiki.net/wiki/Fractured_item#Mechanics). Hinekora
+  models at most one per item, the
+  [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)'s own limit; the
+  wiki's multi-fracture items are out of scope.
 - Omitted optional fields default (no augments, quality 0, etc.).
 - This block is also the boundary where human mod text is resolved to internal
   entities (§2), so ambiguity/unknown-mod errors surface here, before the type
@@ -91,9 +98,12 @@ Human vocabulary in, internal entities out. Resolution priority:
 1. **Exact real ID** always works (`IncreasedLife5`) — escape hatch for
    precision or when fuzzy is ambiguous.
 2. **Registered aliases** — curated shorthands:
-   - currencies: `exalt` → Exalted Orb, `chaos` → Chaos Orb,
-     `annul` → Orb of Annulment, `regal` → Regal Orb, `transmute` →
-     Orb of Transmutation, ... (shared alias table).
+   - currencies: `exalt` → [Exalted Orb](https://www.poewiki.net/wiki/Exalted_Orb),
+     `chaos` → [Chaos Orb](https://www.poewiki.net/wiki/Chaos_Orb), `annul` →
+     [Orb of Annulment](https://www.poewiki.net/wiki/Orb_of_Annulment), `regal` →
+     [Regal Orb](https://www.poewiki.net/wiki/Regal_Orb), `transmute` →
+     [Orb of Transmutation](https://www.poewiki.net/wiki/Orb_of_Transmutation), ...
+     (shared alias table).
    - mods: short community forms may be aliased (`"phys%"`, `"T1 life"`).
 3. **Fuzzy match** on display/name text — MUST report ambiguity or unknown
    rather than silently guessing.
@@ -133,39 +143,44 @@ checked against the inferred current state; a failure renders the state (§6).
 
 Two operations take a name (and an optional `t<n>` tier, T1 = best):
 
-- `essence "<name>" [t1]` — apply an essence: a full name
+- `essence "<name>" [t1]` — apply an
+  [essence](https://www.poewiki.net/wiki/Essence#Crafting): a full name
   (`"Deafening Essence of Greed"`) or a type + tier (`essence "greed" t1`).
-- `bench "<mod>" [t1]` — add a specific crafting-bench mod, named by the mod it
-  adds (`bench "maximum life"`).
+- `bench "<mod>" [t1]` — add a [crafting bench](https://www.poewiki.net/wiki/Crafting_Bench)
+  mod, named by the mod it adds (`bench "maximum life"`).
 
-A **harvest** craft targets mods by category tag, written `harvest <verb> "<tag>"`:
+A **harvest** craft ([Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting))
+targets mods by tag, written `harvest <verb> "<tag>"`:
 
-- `harvest reforge "<tag>"` — reroll the item, guaranteeing at least one modifier
-  of the tag (`harvest reforge "fire"`).
-- `harvest augment "<tag>"` — add a modifier of the tag and remove a random other
-  modifier (Craft of Exile's "Add/Remove"): the affix count is unchanged, and no
+- `harvest reforge "<tag>"` — the wiki's "Reforge a Rare item with random modifiers,
+  including a [Type] modifier" (`harvest reforge "fire"`).
+- `harvest augment "<tag>"` — the wiki's "Add a new [Type] modifier and remove another
+  random modifier" (Craft of Exile's "Add/Remove"): the affix count is unchanged, and no
   open slot is needed.
 
-The tag is one of the modifier categories: `attack`, `attribute`, `caster`,
-`chaos`, `cold`, `critical`, `defence`, `elemental`, `fire`, `life`, `lightning`,
-`mana`, `minion`, `physical`, `speed`. A tag that no modifier of the base can
+The tag is one of the wiki's
+[modifier groups](https://www.poewiki.net/wiki/Harvest_crafting#Modifier_groups): `attack`,
+`attribute`, `caster`, `chaos`, `cold`, `critical`, `defence`, `elemental`, `fire`, `life`,
+`lightning`, `mana`, `minion`, `physical`, `speed`. A tag that no modifier of the base can
 carry is rejected (the grayed-out case in crafting simulators).
 
-The **Fracturing Orb** (`fracture`) locks one random modifier on a Rare item with
-at least four modifiers (one fracture per item). The target is random, so no
-specific mod is proven locked until a `fractured "<mod>"` branch (§5) narrows it;
-until then a reforge keeps "one of these mods survives, still locked".
+`fracture` applies a [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics).
+The target is random, so no specific mod is proven locked until a `fractured "<mod>"`
+branch (§5) narrows it; until then a reforge keeps "one of these mods survives, still
+locked".
 
-The **veiled currencies** add a veiled modifier you reveal later:
+The **veiled currencies** add a
+[veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) you reveal later:
 
-- `veiled chaos` — reforge a Rare so one new modifier is veiled.
-- `veiled exalt` — remove a random modifier and add a veiled one.
-- `unveil ["<mod>"]` — reveal the pending veiled modifier. Bare, it resolves to
-  one of the valid options (narrow it with a following `if has "<mod>"`). With a
-  mod name, it targets that outcome — provable only once you've *blocked* the
-  option pool down to three or fewer (bench a modifier that shares a group with an
-  option to remove it). Hovering the line shows the current options, split by
-  prefix and suffix.
+- `veiled chaos` — a [Veiled Chaos Orb](https://www.poewiki.net/wiki/Veiled_Chaos_Orb).
+- `veiled exalt` — a [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb).
+- `unveil ["<mod>"]` — the three-option unveil of
+  [Veiled modifier § How to obtain](https://www.poewiki.net/wiki/Veiled_modifier#How_to_obtain).
+  Bare, it resolves to one of the valid options (narrow it with a following
+  `if has "<mod>"`). With a mod name, it targets that outcome — provable only once you've
+  *blocked* the option pool down to three or fewer (bench a modifier that shares a
+  [group](https://www.poewiki.net/wiki/Modifier#Group/family) with an option to remove it).
+  Hovering the line shows the current options, split by prefix and suffix.
 
 A statement can also be a **call to an operation function** — `<name>(<arg>, …)`
 — which inlines that function's body here (§4.5).
@@ -219,8 +234,8 @@ if not has "T1 Life" {
 
 ### 4.3 `with omen "<o>" { … }` — omen-directed scope  (→ omen context Ω)
 
-Enable an omen for the duration of the block; operations inside read it and are
-directed accordingly (their outcome union is shrunk; impossible-under-omen
+Enable a PoE2 [omen](https://www.poe2wiki.net/wiki/Omen) for the duration of the block;
+operations inside read it and are directed accordingly (their outcome union is shrunk; impossible-under-omen
 becomes a state-error). Omens are a boolean context (enabled/disabled), not a
 consumed resource — cost/attempts accounting is a separate future layer.
 
@@ -303,9 +318,11 @@ tier of a mod shares the same wording and differs only in the numbers, the match
 lands on the *type* (the family). `has "maximum life"` means "any tier of
 maximum life is present". An optional `t<n>` qualifier (T1 = the best tier
 that can roll on this base at this ilvl) narrows to a specific tier:
-`has "maximum life" t1`. Tiers are derived per-base from the actual roll
-pool, so `t1` on a ring differs from `t1` on body armour, and asking for
-a tier that can't roll here is an error. The checker tracks tiers through
+`has "maximum life" t1`. The game stores no tier numbers, only each row's
+[mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level); tiers are derived per-base
+from the actual roll pool, so `t1` on a ring differs from `t1` on body armour (and from
+the in-game display, which numbers tiers across all base types), and asking for a tier
+that can't roll here is an error. The checker tracks tiers through
 operations, so a mod narrowed to T1 is provably not T2.
 
 - Named things (`isRare`, `has`, `prefixCount`, `suffixCount`) are single
