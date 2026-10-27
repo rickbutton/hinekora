@@ -16,6 +16,7 @@ interpretation) before real currency is spent.
 - `docs/crafting-lang-surface-v0.md`: the surface language design (syntax, predicates,
   errors).
 - `docs/crafting-lang-typing-rules-v0.md`: the formal item/currency model.
+- `docs/QUESTIONS.md`: open questions for the user and the assumptions made meanwhile.
 
 ## The core invariant
 
@@ -61,6 +62,31 @@ commit` issued through the Bash tool runs the gate first (`.claude/hooks/pre-com
 and is refused when it fails. **Soundness principle:** tightening the abstract domain only
 ever removes false positives (never adds false negatives), so existing green tests
 staying green is evidence a tightening is sound.
+
+## Working protocol
+
+The user is not always present. Work runs autonomously and the repo carries the state.
+
+- **Game rules come from the wiki cache** (`.cache/poewiki`, the `poewiki-render` skill),
+  never from memory. Cite the page and section in the commit message or doc. A rule the
+  wiki does not settle becomes a game probe in `docs/QUESTIONS.md`.
+- **Asking without blocking.** A decision, probe or clarification that only the user can
+  settle goes into `docs/QUESTIONS.md`: the question, the options with a recommendation,
+  the assumption the code proceeds under, and the files that encode it. Then continue
+  under that assumption. On resuming, read that file first and apply every `answered`
+  entry before new work. Never leave work undone because a question is open unless no
+  assumption is reversible.
+- **Docs change in the same commit as the behaviour.** `REFERENCE.md` names what exists,
+  `ARCHITECTURE.md` the shape, the surface doc the syntax, `item-model.md` the model,
+  `ROADMAP.md` only what is not built. Nothing in the docs may describe code that does
+  not exist; nothing user-visible may exist undocumented.
+- **Commits.** One logical change per commit; a refactor and a behaviour change are
+  separate commits; each commit passes the gate on its own; the message stands alone (the
+  convention above). Commit as you go; do not push.
+- **Review.** After each batch of commits, run `/review <range>` (the `reviewer` agent, a
+  fresh context, `.claude/agents/reviewer.md`). Fix `blocking` and `should-fix` findings
+  in follow-up commits before reporting the batch done; a finding you disagree with goes
+  to `docs/QUESTIONS.md` with both positions.
 
 ## Working style
 

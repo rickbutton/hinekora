@@ -78,7 +78,7 @@ examples/
   example.craft              - the demo craft (open in the Extension Dev Host).
   essence-life-boots.craft   - essence + def + or example.
 docs/
-  REFERENCE.md, ARCHITECTURE.md, ROADMAP.md, item-model.md + the two design docs
+  REFERENCE.md, ARCHITECTURE.md, ROADMAP.md, item-model.md, QUESTIONS.md + the two design docs
   (CLAUDE.md stays at the repo root).
 tools/
   poewiki/                   - local cache of poewiki.net for mechanics research:
@@ -90,8 +90,9 @@ scripts/
   check-docs.mjs             - the docs-vs-code check in the gate (CLAUDE.md).
   coverage-summary.mjs       - renders coverage for the CI job summary.
 .claude/
+  agents/reviewer.md         - the fresh-context reviewer (/review).
   hooks/pre-commit-gate.mjs  - runs the gate before a commit issued through the Bash tool.
-  skills/                    - poewiki-render, poewiki-sync.
+  skills/                    - poewiki-render, poewiki-sync, review.
 ```
 
 Build system: **tsc project references** (`tsc -b`), root solution tsconfig, each package
