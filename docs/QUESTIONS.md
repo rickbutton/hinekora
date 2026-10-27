@@ -124,22 +124,6 @@ every row an admitted row's tag would enable, to a fixpoint (`check/ops.ts`
 `addableMods`, `pool/pool.ts` `lookupWeight`).
 **Answer:**
 
-### Q14 · game probe · open
-
-**Asked:** 2026-10-27
-**Goal:** how many modifiers an Orb of Transmutation lays down. The wiki says a magic
-item holds up to two ([Rarity § Magic](https://www.poewiki.net/wiki/Rarity#Magic)) and
-that the orb upgrades a Normal item to Magic
-([Orb of Transmutation](https://www.poewiki.net/wiki/Orb_of_Transmutation)), not whether
-one use can produce both a prefix and a suffix. The answer decides whether `transmute`
-then `augment` is a safe craft: with two possible, the augment needs a proven open side
-first.
-**Procure:** a few Normal bases and Orbs of Transmutation.
-**Steps:** transmute each; note whether any result shows two modifiers.
-**Record:** the modifier counts seen.
-**Assumed meanwhile:** one or two, the safe reading, in `check/library.ts` (`transmute`).
-**Answer:**
-
 ### Q10 · clarification · open
 
 **Asked:** 2026-10-26

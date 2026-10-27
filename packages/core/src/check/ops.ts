@@ -311,7 +311,7 @@ function failing(
                 : null;
         case "poolNonEmpty":
             // Read from the add-pool, which over-approximates: a tagged pool a
-            // possibly present mod would empty is not caught (ROADMAP Step 2).
+            // possibly present mod would empty is not caught; a subset pool would.
             return resolvePool(a, check.pool, registry).types.length > 0
                 ? null
                 : { kind: "harvestEmptyPool", tag: check.tag };
