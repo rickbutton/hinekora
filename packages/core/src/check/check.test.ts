@@ -146,10 +146,12 @@ describe("checker — the wider currency set", () => {
         expect(check(c, ctx).diagnostics[0]?.message).toContain("removable affix");
     });
 
-    it("augment fills the open slot on a 1-mod Magic item, then rejects a second", () => {
+    it("augment fills the open slot of a Magic item once a prefix is proven absent, then rejects a second", () => {
+        // A transmute lays down one or two modifiers, so an augment is only safe
+        // once a side is proven open; afterwards the item is full on every path.
         const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [
-            op("transmute"), // → Magic, 1 affix
-            op("augment"), // → fills to 2 (full)
+            op("transmute"), // → Magic, 1–2 affixes
+            iff(cmp("prefixCount", "==", 0), [op("augment")], []), // → 2 (full)
             op("augment"), // → no open slot
         ]);
         const r = check(c, ctx);
@@ -788,10 +790,14 @@ describe("checker — per-base affix caps (experimented bases)", () => {
     });
 
     it("a magic +suffix base is held to the hard total of 2 (Ratcheting: 0p / 2s max)", () => {
-        // The +3 suffix would raw-cap at 4, but the magic hard total is 2. Two
-        // augments fill both suffixes; a third has no slot, and prefixes never appear.
+        // The +3 suffix would raw-cap at 4, but the magic hard total is 2. A
+        // transmute lays down one or two suffixes and an augment fills the second
+        // when one is proven open; prefixes never appear.
         const r = check(
-            craft(normal("Ratcheting Ring"), [op("transmute"), op("augment"), op("augment")]),
+            craft(normal("Ratcheting Ring"), [
+                op("transmute"),
+                iff(cmp("suffixCount", "<", 2), [op("augment")], []),
+            ]),
             ctx,
         );
         expect(r.finalState!.counts.total).toEqual([2, 2]);
@@ -1009,7 +1015,7 @@ describe("checker — flasks cap at Magic (no Rare flasks)", () => {
 });
 
 describe("checker — count refinement through disjunctions", () => {
-    // Mirrors example.craft: a 2-mod item proven to hold ≥2 resistances (all
+    // Mirrors example.craft: a 2-mod Rare proven to hold ≥2 resistances (all
     // suffixes) must have 0 prefixes — so benching a life PREFIX is safe.
     const twoEleRes = orp(
         orp(
@@ -1020,9 +1026,7 @@ describe("checker — count refinement through disjunctions", () => {
     );
 
     it("pushes a `≥2 of {suffixes}` disjunction into the suffix count (⇒ 0 prefixes)", () => {
-        const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [
-            op("transmute"),
-            op("regal"),
+        const c = craft(rareRing(["random"], ["random"]), [
             until(twoEleRes, [op("annul"), op("exalt")]),
         ]);
         const st = check(c, ctx).finalState!;
@@ -1032,9 +1036,7 @@ describe("checker — count refinement through disjunctions", () => {
     });
 
     it("allows benching a life prefix afterwards — the group is provably absent", () => {
-        const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [
-            op("transmute"),
-            op("regal"),
+        const c = craft(rareRing(["random"], ["random"]), [
             until(twoEleRes, [op("annul"), op("exalt")]),
             bench("maximum life"),
         ]);
@@ -1064,9 +1066,7 @@ describe("checker — count refinement through disjunctions", () => {
     it("keeps a disjunctive guarantee through an additive op (exalt)", () => {
         // `A or B` is proven on loop exit; an exalt only ADDS a mod, so it must
         // survive — a following `not A and not B` is then provably dead.
-        const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [
-            op("transmute"),
-            op("regal"),
+        const c = craft(rareRing(["random"], ["random"]), [
             until(orp(has("IncreasedLife1"), has("FireResist1")), [op("annul"), op("exalt")]),
             op("exalt"), // additive; must not forget "A or B"
             iff(andp(notp(has("IncreasedLife1")), notp(has("FireResist1"))), [op("annul")]),

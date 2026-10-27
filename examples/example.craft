@@ -24,4 +24,8 @@ until hasTwoEleRes() {
     exalt
 }
 
-bench "maximum life"
+# A transmute lays down one or two modifiers, so the item may still hold a
+# third, unknown one; the bench is safe only once the prefix side is proven open.
+if prefixCount == 0 {
+    bench "maximum life"
+}

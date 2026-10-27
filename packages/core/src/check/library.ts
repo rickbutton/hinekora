@@ -47,7 +47,8 @@ const MAGIC_REFORGE: Range = [1, 2];
 export function currencyOps(kind: CurrencyKind): readonly Op[] {
     switch (kind) {
         case "transmute":
-            return [isNormal, rarity("magic"), fill(natural, add([1, 1]))];
+            // A transmuted item carries one or two modifiers (QUESTIONS.md Q14).
+            return [isNormal, rarity("magic"), fill(natural, add(MAGIC_REFORGE))];
         case "augment":
             return [isMagic, openSlot(), fill(natural, add([1, 1]))];
         case "alteration":

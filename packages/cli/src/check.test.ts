@@ -60,8 +60,9 @@ exalt`);
         );
         const r = run(src);
         expect(r.ok).toBe(true);
-        // 1 prefix (the benched life) + 2 suffixes (the proven resistances).
-        expect(r.output).toContain("1 prefix · 2 suffixes");
+        // 1 prefix (the benched life, or the one a two-modifier transmute may have
+        // left) + 2 suffixes (the proven resistances), maybe a third.
+        expect(r.output).toContain("1 prefix · 2–3 suffixes");
     });
 
     it("checks phys-dot-weapon.craft clean (fractured reforge keeps its count and clears crafted)", () => {

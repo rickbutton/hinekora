@@ -99,13 +99,10 @@ until has "fire resistance" t1 or has "cold resistance" t1 or has "lightning res
     });
 
     it("tightens a disjunction to 'exactly one of' when only one slot remains", () => {
-        // annul leaves a single mod; the loop proves it's fire-or-cold, so exactly
-        // one is present (never both — there is no room).
+        // A single mod; the loop proves it's fire-or-cold, so exactly one is
+        // present (never both — there is no room).
         const src = `craft in poe1
-item { base: "Vaal Regalia" ilvl: 84 rarity: normal }
-transmute
-regal
-annul
+item { base: "Vaal Regalia" ilvl: 84 rarity: rare prefixes: [ "random" ] }
 until has "fire res" t1 or has "cold res" t1 { annul exalt }`;
         const md = getHover(src, src.indexOf("until") + 1, registry);
         expect(md!).toContain("exactly one of:");
@@ -115,9 +112,7 @@ until has "fire res" t1 or has "cold res" t1 { annul exalt }`;
     it("collapses `≥2 of 3` pairwise clauses into one 'exactly two of' block", () => {
         const twoOf3 = `(has "fire resistance" t1 or has "cold resistance" t1) and (has "fire resistance" t1 or has "lightning resistance" t1) and (has "cold resistance" t1 or has "lightning resistance" t1)`;
         const src = `craft in poe1
-item { base: "Vaal Regalia" ilvl: 84 rarity: normal }
-transmute
-regal
+item { base: "Vaal Regalia" ilvl: 84 rarity: rare prefixes: [ "random" ] suffixes: [ "random" ] }
 until ${twoOf3} { annul annul exalt exalt }`;
         const md = getHover(src, src.indexOf("until") + 1, registry);
         expect(md!).toContain("exactly two of:"); // total 2, all suffixes ⇒ exactly two
@@ -127,9 +122,7 @@ until ${twoOf3} { annul annul exalt exalt }`;
     it("pins the tier in a disjunctive block: shows the t1 roll, not the full span", () => {
         const twoOf3 = `(has "fire resistance" t1 or has "cold resistance" t1) and (has "fire resistance" t1 or has "lightning resistance" t1) and (has "cold resistance" t1 or has "lightning resistance" t1)`;
         const src = `craft in poe1
-item { base: "Vaal Regalia" ilvl: 84 rarity: normal }
-transmute
-regal
+item { base: "Vaal Regalia" ilvl: 84 rarity: rare prefixes: [ "random" ] suffixes: [ "random" ] }
 until ${twoOf3} { annul annul exalt exalt }`;
         const md = getHover(src, src.indexOf("until") + 1, registry)!;
 
@@ -155,9 +148,7 @@ until ${twoOf3} { annul annul exalt exalt }`;
         // After annul the item has exactly one mod — a prefix OR a suffix, not the
         // misleading independent "0–1 prefix" and "0–1 suffix".
         const src = `craft in poe1
-item { base: "Vaal Regalia" ilvl: 84 rarity: normal }
-transmute
-regal
+item { base: "Vaal Regalia" ilvl: 84 rarity: rare prefixes: [ "random" ] suffixes: [ "random" ] }
 annul`;
         const md = getHover(src, src.lastIndexOf("annul") + 1, registry);
         expect(md!).toContain("1 undetermined — a prefix or a suffix");

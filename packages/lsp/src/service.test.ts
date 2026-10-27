@@ -112,7 +112,7 @@ alchemy`,
             `craft in poe1
 item { base: "Quicksilver Flask" ilvl: 84 rarity: normal }
 transmute
-augment`,
+alteration`,
             registry,
         );
         expect(magic).toEqual([]);
