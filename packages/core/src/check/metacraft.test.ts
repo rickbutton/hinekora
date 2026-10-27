@@ -220,6 +220,26 @@ describe("cannot roll attack modifiers shields attack mods from removal", () => 
     });
 });
 
+describe("a declared bench-crafted mod counts toward the crafted limit", () => {
+    it("a second bench craft is refused without multimod", () => {
+        const c = craft("poe1", rareRing([], [PROTECT_PREFIXES_CARRIER.id]), [
+            bench("cannot roll attack modifiers"),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics[0]?.message).toContain("crafted modifier");
+    });
+
+    it("the declared metamod's effect is active from the start", () => {
+        const c = craft("poe1", rareRing(["T1 Life"], [PROTECT_PREFIXES_CARRIER.id]), [
+            op("annul"),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteed(r)).toContain("IncreasedLife");
+        expect(r.finalState!.crafted).toEqual([0, 1]);
+    });
+});
+
 describe("a kept cannot-roll metamod restricts a reforge's fresh pool", () => {
     // "Suffixes cannot be changed" is a prefix that keeps the suffixes, among them
     // the cannot-roll carrier, so the rerolled prefixes are drawn under the restriction.

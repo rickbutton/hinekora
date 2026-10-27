@@ -292,6 +292,7 @@ export const UNKNOWN_WEIGHT_MOD: Mod = mkMod({
 export const PROTECT_PREFIXES_CARRIER: Mod = mkMod({
     id: "MetaPrefixesCannotChange",
     type: "MetaPrefixesCannotChange",
+    source: "bench",
     gen: "suffix",
     minLevel: 1,
     spawn: [spawn(TAG_DEFAULT, known(0))],
@@ -303,6 +304,7 @@ export const PROTECT_PREFIXES_CARRIER: Mod = mkMod({
 export const PROTECT_SUFFIXES_CARRIER: Mod = mkMod({
     id: "MetaSuffixesCannotChange",
     type: "MetaSuffixesCannotChange",
+    source: "bench",
     gen: "prefix",
     minLevel: 1,
     spawn: [spawn(TAG_DEFAULT, known(0))],
@@ -315,6 +317,7 @@ export const PROTECT_SUFFIXES_CARRIER: Mod = mkMod({
 export const CANNOT_ROLL_ATTACK_CARRIER: Mod = mkMod({
     id: "MetaCannotRollAttack",
     type: "MetaCannotRollAttack",
+    source: "bench",
     gen: "suffix",
     minLevel: 1,
     spawn: [spawn(TAG_DEFAULT, known(0))],
@@ -326,6 +329,7 @@ export const CANNOT_ROLL_ATTACK_CARRIER: Mod = mkMod({
 export const MULTIMOD_CARRIER: Mod = mkMod({
     id: "MetaMultimod",
     type: "MetaMultimod",
+    source: "bench",
     gen: "suffix",
     minLevel: 1,
     spawn: [spawn(TAG_DEFAULT, known(0))],

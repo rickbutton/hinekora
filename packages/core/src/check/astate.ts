@@ -453,6 +453,8 @@ export interface InitialCounts {
     readonly pinned: ReadonlyMap<TypeId, ModId>;
     /** The declared fractured (locked) mod's type, if the item block marks one. */
     readonly fractured?: TypeId;
+    /** How many declared mods are bench-crafted rows. */
+    readonly crafted: number;
 }
 
 export function initialState(
@@ -482,7 +484,7 @@ export function initialState(
                   ),
         possible: new Set(counts.present),
         tiers: new Map([...counts.pinned].map(([type, mod]) => [type, new Set([mod])])),
-        crafted: [0, 0], // a declared item block has no bench-crafted mods
+        crafted: [counts.crafted, counts.crafted],
     });
 }
 

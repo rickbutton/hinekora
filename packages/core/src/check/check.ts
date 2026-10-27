@@ -235,6 +235,7 @@ class Checker {
         // placeholders (`"random"`) stay anonymous.
         const pinned = new Map<TypeId, ModId>();
         let fracturedType: TypeId | undefined;
+        let crafted = 0;
         const ctx = { game, base, ilvl: item.ilvl };
 
         const checkGen = (name: string, modGen: Gen | undefined, gen: Gen): void => {
@@ -252,6 +253,7 @@ class Checker {
                 checkGen(affix.mod, byId.value.gen, gen);
                 present.add(byId.value.type);
                 pinned.set(byId.value.type, byId.value.id);
+                if (byId.value.source === "bench") crafted++;
                 return byId.value.type;
             }
             const typeRes = this.registry.resolveModType(affix.mod, ctx);
@@ -346,6 +348,7 @@ class Checker {
             suffixCount,
             present,
             pinned,
+            crafted,
             ...(fracturedType !== undefined && { fractured: fracturedType }),
         });
     }
