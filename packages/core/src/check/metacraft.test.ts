@@ -62,7 +62,7 @@ const guaranteed = (r: ReturnType<typeof check>): Set<string> =>
 describe("metamod effects are carried on the catalog", () => {
     it("attaches the fixture carriers' effects to their types", () => {
         expect(registry.effectsOfType(TypeId("MetaPrefixesCannotChange"))).toEqual([
-            { kind: "protect", target: { by: "gen", gen: "prefix" } },
+            { kind: "protect", gen: "prefix" },
         ]);
         expect(registry.effectsOfType(TypeId("MetaMultimod"))).toEqual([
             { kind: "craftedCap", cap: 3 },

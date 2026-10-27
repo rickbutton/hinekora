@@ -113,7 +113,7 @@ function activeEffects(a: AItem, registry: Registry): readonly Effect[] {
 function protectedGens(a: AItem, registry: Registry): ReadonlySet<Gen> {
     const out = new Set<Gen>();
     for (const e of activeEffects(a, registry)) {
-        if (e.kind === "protect" && e.target.by === "gen") out.add(e.target.gen);
+        if (e.kind === "protect") out.add(e.gen);
     }
     return out;
 }

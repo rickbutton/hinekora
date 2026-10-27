@@ -1,8 +1,7 @@
 /**
  * Mod acquisition sources (stamped at ingest) and the catalogs for
  * source-specific crafting. Only `natural` mods roll via chaos/exalt;
- * essence/bench/veiled/… mods come from their own currency items.
- * Implicit-slot sources are defined for completeness but not yet modelled.
+ * essence/bench/veiled/fossil mods come from their own mechanic.
  */
 import type { ClassId, ModId } from "./ids.js";
 
@@ -10,14 +9,9 @@ export type ModSource =
     | "natural" // rolls via chaos/exalt (nonzero spawn weight on an item base)
     | "essence" // guaranteed by an Essence
     | "bench" // crafting-bench option
-    | "veiled" // unveiled (Jun / betrayal)
+    | "veiled" // a veiled placeholder or an unveiled result
     | "fossil" // delve / fossils
-    | "synthesis" // synthesis implicits
-    | "corrupted" // Vaal-orb corruption implicit
-    | "enchant" // lab / etc enchantment
-    | "eldritch" // eater-of-worlds / searing-exarch implicit
-    | "unique" // unique-item mod (not craftable)
-    | "other"; // anything else (monster/area mods, non-spawnable specials)
+    | "other"; // a row nothing places (no partition of its own, no weight anywhere)
 
 /**
  * An Essence: rerolls the item but guarantees one specific mod, chosen by the

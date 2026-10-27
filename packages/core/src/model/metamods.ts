@@ -19,14 +19,8 @@ export const METAMOD_EFFECTS: ReadonlyMap<ModId, readonly Effect[]> = new Map<
     ModId,
     readonly Effect[]
 >([
-    [
-        ModId("StrMasterItemGenerationCannotChangePrefixes"),
-        [{ kind: "protect", target: { by: "gen", gen: "prefix" } }],
-    ],
-    [
-        ModId("DexMasterItemGenerationCannotChangeSuffixes"),
-        [{ kind: "protect", target: { by: "gen", gen: "suffix" } }],
-    ],
+    [ModId("StrMasterItemGenerationCannotChangePrefixes"), [{ kind: "protect", gen: "prefix" }]],
+    [ModId("DexMasterItemGenerationCannotChangeSuffixes"), [{ kind: "protect", gen: "suffix" }]],
     [
         ModId("IntMasterItemGenerationCannotRollAttackAffixes"),
         [{ kind: "poolRestrict", allows: (m) => !m.implicitTags.has(ATTACK) }],

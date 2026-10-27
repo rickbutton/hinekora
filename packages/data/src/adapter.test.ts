@@ -71,8 +71,8 @@ describe("classifySource", () => {
         expect(classifySource({ ...LIFE, domain: "crafted" })).toBe("bench");
         expect(classifySource({ ...LIFE, domain: "unveiled" })).toBe("veiled");
         expect(classifySource({ ...LIFE, domain: "delve" })).toBe("fossil");
-        expect(classifySource({ ...LIFE, generation_type: "unique" })).toBe("unique");
-        expect(classifySource({ ...LIFE, generation_type: "corrupted" })).toBe("corrupted");
+        expect(classifySource({ ...LIFE, generation_type: "unique" })).toBe("other");
+        expect(classifySource({ ...LIFE, generation_type: "corrupted" })).toBe("other");
         // item-domain but non-spawnable and not essence → other.
         expect(classifySource({ ...LIFE, spawn_weights: [{ tag: "default", weight: 0 }] })).toBe(
             "other",

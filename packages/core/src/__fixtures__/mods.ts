@@ -295,7 +295,7 @@ export const PROTECT_PREFIXES_CARRIER: Mod = mkMod({
     gen: "suffix",
     minLevel: 1,
     spawn: [spawn(TAG_DEFAULT, known(0))],
-    effects: [{ kind: "protect", target: { by: "gen", gen: "prefix" } }],
+    effects: [{ kind: "protect", gen: "prefix" }],
     text: "prefixes cannot be changed",
 });
 
@@ -306,7 +306,7 @@ export const PROTECT_SUFFIXES_CARRIER: Mod = mkMod({
     gen: "prefix",
     minLevel: 1,
     spawn: [spawn(TAG_DEFAULT, known(0))],
-    effects: [{ kind: "protect", target: { by: "gen", gen: "suffix" } }],
+    effects: [{ kind: "protect", gen: "suffix" }],
     text: "suffixes cannot be changed",
 });
 
@@ -349,11 +349,14 @@ export const ATTACK_PREFIX: Mod = mkMod({
 // Two placeholders (added by veiled orbs) and four unveiled result mods
 // rollable on a ring, one sharing the Life family so a benched life mod blocks it.
 
+const DOMAIN_VEILED = Domain("veiled"); // the placeholders' partition
+const DOMAIN_UNVEILED = Domain("unveiled"); // the unveil results' partition
 export const VEILED_PREFIX_MOD: Mod = mkMod({
     id: "VeiledPrefix",
     type: "VeiledPrefix",
     gen: "prefix",
     minLevel: 1,
+    domain: DOMAIN_VEILED,
     spawn: [],
     source: "veiled",
 });
@@ -362,10 +365,10 @@ export const VEILED_SUFFIX_MOD: Mod = mkMod({
     type: "VeiledSuffix",
     gen: "suffix",
     minLevel: 1,
+    domain: DOMAIN_VEILED,
     spawn: [],
     source: "veiled",
 });
-const DOMAIN_VEILED = Domain("veiled");
 const mkVeiled = (
     id: string,
     gen: Gen,
@@ -378,7 +381,7 @@ const mkVeiled = (
         type: id,
         gen,
         minLevel: 1,
-        domain: DOMAIN_VEILED, // the veiled domain keeps these out of the normal pool
+        domain: DOMAIN_UNVEILED, // no base shares it, so the normal pool never rolls these
         families,
         spawn: [spawn(tag, known(100))],
         source: "veiled",

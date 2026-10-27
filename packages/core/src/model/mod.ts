@@ -54,10 +54,9 @@ export interface Mod {
     readonly classRestriction?: ReadonlySet<ClassId>;
 
     /**
-     * Effects this mod carries while present (item-model.md §6). Absent for the
-     * vast majority of mods, only carriers (bench metamods, effect-essences,
-     * delirium slot mods, …) have any. Read via `effectsOf`; folded into `pool`
-     * and `wf` through the derived `effects(it)` projection.
+     * Effects this mod carries while present (item-model.md §6). Absent for
+     * every row but the five bench metamods. Read via `effectsOf`; folded into
+     * `pool` and the removal rules through the derived `effects(it)` projection.
      */
     readonly effects?: readonly Effect[];
 

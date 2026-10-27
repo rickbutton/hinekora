@@ -1,13 +1,12 @@
 /**
  * Well-formedness (item-model.md §8) — the invariant every item must satisfy:
- * slot caps (effect-adjusted), distinct affix ModTypes, pairwise-disjoint
+ * slot caps, distinct affix ModTypes, pairwise-disjoint
  * families, the tier gate, and domain match. Tags appear NOWHERE here — they
  * are an eligibility concern (spawn weights), not a coexistence rule. We
  * return a structured violation list rather than a boolean so the same data
  * powers rendering, errors, and tests.
  */
 import type { Gen, GroupId, TypeId } from "./ids.js";
-import { slotDelta } from "./effects.js";
 import type { Item } from "./item.js";
 import { affixes, prefixCount, suffixCount } from "./item.js";
 import type { Mod } from "./mod.js";
@@ -24,9 +23,9 @@ function baseSlotCap(it: Item): number {
     }
 }
 
-/** Effect-adjusted cap for one generation; `SlotDelta` effects shift it. */
-export function slotCap(it: Item, gen: Gen): number {
-    return baseSlotCap(it) + slotDelta(it, gen);
+/** The affix cap for one generation. */
+export function slotCap(it: Item, _gen: Gen): number {
+    return baseSlotCap(it);
 }
 
 export const maxPre = (it: Item): number => slotCap(it, "prefix");

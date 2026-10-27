@@ -28,23 +28,10 @@ function toGen(generationType: string): Gen | null {
     return generationType === "prefix" || generationType === "suffix" ? generationType : null;
 }
 
-/** Classify a mod's acquisition source (`ModSource`) from the raw fields. */
+/** Classify a mod's acquisition source (`ModSource`) from the raw fields, the
+ *  reading of a row item-model.md §5 states. Only affix rows reach here. */
 export function classifySource(m: RepoeMod): ModSource {
-    if (m.generation_type !== "prefix" && m.generation_type !== "suffix") {
-        switch (m.generation_type) {
-            case "unique":
-                return "unique";
-            case "corrupted":
-                return "corrupted";
-            case "enchantment":
-                return "enchant";
-            case "eater_of_worlds_implicit":
-            case "searing_exarch_implicit":
-                return "eldritch";
-            default:
-                return "other";
-        }
-    }
+    if (m.generation_type !== "prefix" && m.generation_type !== "suffix") return "other";
     if (m.is_essence_only) return "essence";
     switch (m.domain) {
         case "crafted":
@@ -53,14 +40,8 @@ export function classifySource(m: RepoeMod): ModSource {
         case "veiled":
             return "veiled";
         case "delve":
-        case "delve_area":
             return "fossil";
-        case "synthesis_a":
-        case "synthesis_globals":
-        case "synthesis_bonus":
-            return "synthesis";
         default:
-            // item / flask / jewel domains: natural if it can spawn, else other.
             return m.spawn_weights.some((w) => w.weight > 0) ? "natural" : "other";
     }
 }

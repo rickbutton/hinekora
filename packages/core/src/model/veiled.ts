@@ -1,8 +1,9 @@
 /**
  * Veiled crafting: the two placeholder mods a veiled orb adds (before you
- * unveil) and the unveiled RESULT mods you reveal. The result mods live in the
- * `veiled` domain, so the normal `pool` (domain gate) never rolls them; they are
- * drawn only by `veiledPool` at an `unveil`.
+ * unveil) and the unveiled RESULT mods you reveal. Placeholders live in the
+ * `veiled` partition and results in `unveiled`; no base shares either, so the
+ * normal `pool` never rolls them and results are drawn only by `veiledPool` at
+ * an `unveil`.
  */
 import { TypeId } from "./ids.js";
 import type { Mod } from "./mod.js";

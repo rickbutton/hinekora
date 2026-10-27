@@ -7,7 +7,7 @@
  * core is pure and takes loaded data as input.
  */
 import type { ClassId, TagId } from "../model/ids.js";
-import { poolRestrictPredicate, poolWidenMods } from "../model/effects.js";
+import { poolRestrictPredicate } from "../model/effects.js";
 import type { Item } from "../model/item.js";
 import { presentFamilies, presentTypes } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
@@ -46,17 +46,12 @@ function classPermitted(m: Mod, itemClass: ClassId): boolean {
  */
 export function pool(catalog: ModCatalog, it: Item): readonly PoolCandidate[] {
     const restrict = poolRestrictPredicate(it); // pool-restrict effects shrink the set
-    const widen = poolWidenMods(it); // pool-widen effects grow it
-
-    // Range over (Mod ∪ widen), de-duplicated by id so a widen mod already in
-    // the catalog isn't offered twice.
-    const universe = dedupeById([...catalog, ...widen]);
 
     const presentT = presentTypes(it);
     const presentF = presentFamilies(it);
 
     const candidates: PoolCandidate[] = [];
-    for (const m of universe) {
+    for (const m of catalog) {
         // domain partition
         if (m.domain !== it.base.domain) continue;
         // tier gate
@@ -87,15 +82,4 @@ function disjoint<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): boolean {
         if (b.has(x)) return false;
     }
     return true;
-}
-
-function dedupeById(mods: readonly Mod[]): readonly Mod[] {
-    const seen = new Set<string>();
-    const out: Mod[] = [];
-    for (const m of mods) {
-        if (seen.has(m.id)) continue;
-        seen.add(m.id);
-        out.push(m);
-    }
-    return out;
 }
