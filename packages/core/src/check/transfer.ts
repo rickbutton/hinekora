@@ -601,7 +601,15 @@ function mayHaveVeiled(a: AItem, registry: Registry): boolean {
     for (const t of a.possible) {
         if (isExcluded(a, t)) continue;
         if (t === VEILED_PREFIX || t === VEILED_SUFFIX) return true;
-        if (representative(registry, t)?.source === "veiled") return true;
+        // Many unveiled rows share their type with natural rows, so the rows the
+        // type may be (its tier overlay, else every row) decide, not the first row.
+        const pinned = a.tiers.get(t);
+        const rows = pinned
+            ? [...pinned]
+                  .map((id) => registry.resolveMod(id))
+                  .flatMap((r) => (r.ok ? [r.value] : []))
+            : registry.catalog.filter((m) => m.type === t);
+        if (rows.some((m) => m.source === "veiled")) return true;
     }
     return false;
 }
