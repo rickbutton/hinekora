@@ -522,7 +522,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 
 ## 7. Design note: relational precision (why a BDD, and why not Z3)
 
-The design framed `wf`, dead-branch checks, and refinement as verification
+The design framed well-formedness, dead-branch checks, and refinement as verification
 conditions in an SMT-decidable fragment (linear arithmetic over counts + set
 membership), with the guidance "start hand-rolled; reach for Z3 only if something
 needs it". `AItem` IS that hand-rolled decision procedure.

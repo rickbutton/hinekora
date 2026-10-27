@@ -1,7 +1,7 @@
 /**
  * Affix capacity (item-model.md §7): how many prefixes, suffixes and affixes in
- * all a base can hold at a rarity. One formula for the concrete item (`wf`,
- * `pool`) and the checker's count domain, so the two can never disagree.
+ * all a base can hold at a rarity. One formula for the pool and the checker's
+ * count domain, so the two can never disagree.
  *
  * The count is bounded three ways: each side by its natural per-rarity limit
  * shifted by the base's `capDelta` (floored at 0), and the two sides together by

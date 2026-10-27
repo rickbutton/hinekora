@@ -152,7 +152,7 @@ validator, the pool, the concrete exalt and the count domain read it, and the va
 gained the combined-cap clause.
 **Where the assumption lives:** `packages/core/src/model/capacity.ts`,
 `packages/core/src/pool/pool.ts`, `packages/core/src/check/counts.ts`, their tests.
-**Answer:** option 1 (2026-10-27). Applied in `67003d1`. The concrete validator and
+**Answer:** Rick ruled option 1 (2026-10-27). Applied in `67003d1`. The concrete validator and
 currency library were deleted afterwards under Q3; the pool and the checker remain the
 formula's two readers.
 
@@ -165,10 +165,10 @@ leave the pool matching on base tags only?
 **Context:** 235 jewel modifiers key on a `specific_weapon` tag that
 another jewel modifier adds; without it the jewel pool overstates what can roll, which
 makes `until has X` look reachable when it is not.
-**Applied meanwhile:** added tags only (`pool.itemTags`); influence arrives with the
+**Applied meanwhile:** added tags only (then `pool.itemTags`, now `ItemFacts.tags`); influence arrives with the
 influence currencies (ROADMAP Step 4).
 **Where the assumption lives:** `packages/core/src/pool/pool.ts`, `pool.test.ts`.
-**Answer:** option 1 (2026-10-27). Applied in `1a3c83e` and `138cb13`.
+**Answer:** Rick ruled option 1 (2026-10-27). Applied in `1a3c83e` and `138cb13`.
 
 ### Q3 · decision · resolved
 
@@ -180,10 +180,10 @@ present subset with the spec stating that marks are checker-only?
 **Assumed meanwhile:** option 3. Fracture and veiled state stay in the checker; the
 concrete item gains fields only when the pool needs them.
 **Where the assumption lived:** `docs/item-model.md` §7 and §10.
-**Answer:** none of the three (2026-10-27). A concrete item is an abstract state with no
+**Answer:** Rick ruled none of the three (2026-10-27). A concrete item is an abstract state with no
 uncertainty, so the checker's state is the only item model; the pool reads a projection
 of it (`ItemFacts`). The concrete currency library and validator were deleted in
-`1f62c9d` and the pool's parameter became the projection in the commit after it.
+`1f62c9d` and the pool's parameter became the projection in `294d7c1`.
 
 ### Q4 · decision · resolved
 
@@ -197,7 +197,7 @@ them (PoE2 socket augments, quality unlocks) is out of scope.
 six values. Restoring them is a revert of one commit.
 **Where the assumption lives:** `packages/core/src/model/effects.ts`,
 `packages/core/src/model/sources.ts`, `packages/data/src/adapter.ts`.
-**Answer:** option 1 (2026-10-27), and wider: every PoE2 consideration goes (the
+**Answer:** Rick ruled option 1 (2026-10-27), and wider: every PoE2 consideration goes (the
 omen scope, the game header's second value and the `Game` type, the weight provenance,
 the ignored item-block fields). Hinekora is PoE1 only, with no provision for PoE2.
 
@@ -212,7 +212,7 @@ the abstract domain, and it is what makes the remaining crafting surface tractab
 **Assumed meanwhile:** the bug fixes land first in the current structure (their tests
 carry over); the redesign waits for the answer.
 **Where the assumption lives:** nowhere yet.
-**Answer:** go (2026-10-27), with three refinements now in `operations.md` §2: a
+**Answer:** Rick ruled go (2026-10-27), with three refinements now in `operations.md` §2: a
 method is an ordered sequence of irreducible operations; a precondition is itself an
 operation (`require`) that may sit anywhere in the sequence, including after the
 effects it checks; and a method is all or nothing, a failed `require` anywhere leaves

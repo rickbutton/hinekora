@@ -1,6 +1,6 @@
 /**
  * Hardcoded mini mod/base set for tests, NOT real game data. A small,
- * deliberately-shaped catalog where each fixture isolates one `pool`/`wf` rule
+ * deliberately-shaped catalog where each fixture isolates one `pool` rule
  * so tests can attribute a pass/reject to a single cause.
  *
  * Shape summary:

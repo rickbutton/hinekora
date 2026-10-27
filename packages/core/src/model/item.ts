@@ -20,9 +20,10 @@ export interface ItemFacts {
     readonly types: ReadonlySet<TypeId>;
     /** The exclusion groups the present mods claim. */
     readonly families: ReadonlySet<GroupId>;
-    /** The base's tags plus those every present mod adds (Modifier § Tags),
-     *  which is how a weapon-specific jewel modifier zeroes every other one's
-     *  weight once it is on the item. */
+    /** The base's tags plus those every present mod adds (the data's
+     *  `adds_tags`, a rule the wiki does not state), which is how a
+     *  weapon-specific jewel modifier zeroes every other one's weight once it
+     *  is on the item. */
     readonly tags: ReadonlySet<TagId>;
     /** The effects the present carriers contribute. */
     readonly effects: readonly Effect[];
