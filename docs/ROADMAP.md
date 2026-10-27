@@ -15,41 +15,16 @@ measured against that ledger.
 
 ## Step 1. The item model agrees with the code
 
-The audit of the code against `item-model.md` left four decisions (`QUESTIONS.md` Q1–Q4)
-and ten bugs. The bugs, in the order they ship:
+The audit of the code against `item-model.md` left four decisions (`QUESTIONS.md` Q1–Q4,
+applied under their recommendations and awaiting the user's ruling) and a list of bugs,
+all fixed. What remains:
 
-1. The item block accepts counts over the combined cap (`maxTotal`) and the initial
-   state is not normalized.
-2. `bench` and an omen-forced `exalt` accept a full item: the open-slot check with a
-   named side ignores the combined cap (a false negative).
-3. `harvest reforge` passes its empty-pool check from the unrestricted pool, so an
-   active cannot-roll metamod that excludes every tagged modifier is missed (a false
-   negative); reforges likewise take their pool from an unrestricted state (precision).
-4. A second `veiled exalt` on an item with a pending veiled modifier is accepted.
-5. A modifier's side is looked up globally, so the item block can reject a correctly
-   placed affix of a type that has rows on both sides.
-6. `fractured` on a `"random"` placeholder is dropped instead of asserting the
-   "some modifier is fractured" fact.
-7. A bench-crafted modifier declared by exact id does not count toward the crafted limit.
-8. The concrete validator applies the item-level and domain rules to every affix, so a
-   concrete item holding a bench or essence row is ill-formed.
-9. The never-Rare and four-affix class sets are incomplete
-   ([Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare)).
-10. Affix capacity is computed three ways; the pool's slot check uses the incomplete one
-    (Q1).
-11. `alteration` and `essence` reforge from a blank slate, dropping a fractured
-    modifier's lock and guarantee, so a scoured fractured base that is altered and later
-    fractured again is accepted (a false negative;
-    [Fracturing Orb § Mechanics](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)).
-12. `annul` ignores the cannot-roll metamods, which shield their tagged modifiers from
-    removal ([Orb of Annulment § Mechanics](https://www.poewiki.net/wiki/Orb_of_Annulment#Mechanics)),
-    so "a removable modifier" can hold where the game has none.
-13. The veiled orbs are accepted on an item that already carries a veiled modifier or an
-    unveiled one ([Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb):
-    "or its craftable versions"); bug 4 is the placeholder half of this.
-
-Then the added tags of present modifiers in the pool (Q2), the dead effect kinds and
-sources (Q4), and a test per well-formedness rule of `item-model.md` §8.
+1. The concrete validator lacks two of `item-model.md` §8's rules: the rarity ceiling of
+   a base's class and the crafted-modifier limit.
+2. A test per well-formedness rule of `item-model.md` §8 over the concrete model, and the
+   catalog-level facts of §9 as data tests.
+3. A re-audit of the code against `item-model.md` §§4–9, rule by rule. The expected
+   remaining divergence is influence (Step 4) and nothing else.
 
 ## Step 2. The operations model (Q5)
 

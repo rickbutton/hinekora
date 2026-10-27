@@ -27,9 +27,9 @@ and a literal 6 in `currency/base.ts`). Route the concrete layer and the pool th
 **Context:** `pool.slotOpen` used the incomplete `wf.ts` formula and sits on the
 checker's path, so on a rare Ratcheting Ring the add-pool was wrong in the unsound
 direction (ROADMAP Step 1 bug 10).
-**Assumed meanwhile:** option 1, delegate. `wf.slotCap` calls `counts.sideCap`, `wf`
-gains the combined-cap clause, `pool.slotOpen` tests both caps, exalt's literal becomes
-`maxTotal`.
+**Applied meanwhile:** option 1. The formula lives once in `model/capacity.ts`; `wf`,
+the pool, the concrete exalt and the count domain read it, and `wf` gained the
+combined-cap clause. Ruling otherwise means moving or duplicating that module.
 **Where the assumption lives:** `packages/core/src/model/wf.ts`,
 `packages/core/src/pool/pool.ts`, `packages/core/src/currency/base.ts`, their tests.
 **Answer:**
@@ -43,7 +43,8 @@ leave the pool matching on base tags only?
 **Context:** 235 jewel modifiers key on a `specific_weapon` tag that
 another jewel modifier adds; without it the jewel pool overstates what can roll, which
 makes `until has X` look reachable when it is not.
-**Assumed meanwhile:** added tags only; influence arrives with the influence currencies.
+**Applied meanwhile:** added tags only (`pool.itemTags`); influence arrives with the
+influence currencies (ROADMAP Step 4).
 **Where the assumption lives:** `packages/core/src/pool/pool.ts`, `pool.test.ts`.
 **Answer:**
 
@@ -67,7 +68,8 @@ concrete item gains fields only when the pool needs them.
 PoE2 design intent?
 **Context:** Nothing constructs them; the design that introduced
 them (PoE2 socket augments, quality unlocks) is out of scope.
-**Assumed meanwhile:** delete.
+**Applied meanwhile:** deleted; the effect union has three arms and the source enum
+six values. Restoring them is a revert of one commit.
 **Where the assumption lives:** `packages/core/src/model/effects.ts`,
 `packages/core/src/model/sources.ts`, `packages/data/src/adapter.ts`.
 **Answer:**
