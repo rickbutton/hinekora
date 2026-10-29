@@ -243,8 +243,8 @@ every row an admitted row's tag would enable, to a fixpoint (`check/ops.ts`
 `addableMods`, `pool/pool.ts` `lookupWeight`).
 **Answer:** Rick knows this (2026-10-28): one Chaos Orb can roll both the adder and the
 enabled row, so a reforge's later rolls see the tags its earlier rolls added. The
-assumption stands as the rule; the fixpoint in `check/ops.ts` `addableMods` is exact
-rather than an over-approximation.
+assumption stands: the fixpoint in `check/ops.ts` `addableMods` is the rule itself, not a
+safe over-approximation of it.
 
 ### Q10 · clarification · resolved
 

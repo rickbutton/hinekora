@@ -111,7 +111,7 @@ describe("protection (prefixes cannot be changed)", () => {
 });
 
 describe("scour respects protection", () => {
-    it("keeps the protected side, dropping to the min rarity for what survives", () => {
+    it("keeps the protected side; the rarity goes by how many survive", () => {
         const c = craft(rareRing(["T1 Life"]), [bench("prefixes cannot be changed"), op("scour")]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
@@ -238,7 +238,7 @@ describe("cannot roll attack modifiers shields attack mods from removal", () => 
     });
 });
 
-describe("a scour that keeps a side drops to the rarity the survivors fit", () => {
+describe("a scour that keeps a side sets the rarity by survivor count", () => {
     it("one prefix kept beside a fractured suffix stays Rare", () => {
         // Two survivors, one per side: the item remains Rare (Orb of Scouring),
         // so a chaos is fine afterwards and a regal is refused.
