@@ -8,17 +8,18 @@ import {
     CATALOG,
     COLD_RESIST,
     FIRE_RESIST,
-    MAXMANA_TIERS,
+    COLD_RES_TIERS,
+    FIRE_RES_TIERS,
     PROTECT_SUFFIXES_CARRIER,
     RING_BASE,
-    TIERED_CATALOG,
 } from "../__fixtures__/mods.js";
 import { TypeId } from "../model/ids.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE, AMULET_BASE],
-    mods: [...CATALOG, ...TIERED_CATALOG, ...MAXMANA_TIERS, PROTECT_SUFFIXES_CARRIER],
-    baseAliases: { "Iron Ring": "IronRing" },
+    mods: [...CATALOG, ...FIRE_RES_TIERS, ...COLD_RES_TIERS, PROTECT_SUFFIXES_CARRIER],
+    modAliases: { "T1 Life": "IncreasedLife1" },
+    baseAliases: { "Iron Ring": "IronRing", "Coral Amulet": "CoralAmulet" },
 });
 const ctx: CheckContext = { registry };
 
@@ -41,14 +42,16 @@ describe("harvest change", () => {
 
     it("lands at the source's tier when that tier is known", () => {
         const pinned = check(
-            craft(rareRing(["MaxLifeMid"]), [harvestChange("MaxLifeMid", "MaxManaLow")]),
+            craft(rareRing([], ["FireTiersMid"]), [harvestChange("FireTiersMid", "ColdTiersLow")]),
             ctx,
         );
         expect(pinned.diagnostics).toEqual([]);
-        expect(pinned.finalState!.tiers.get(TypeId("MaxMana"))).toEqual(new Set(["MaxManaMid"]));
+        expect(pinned.finalState!.tiers.get(TypeId("ColdTiers"))).toEqual(
+            new Set(["ColdTiersMid"]),
+        );
         // After a reforge the life's tier is unknown, so the mana may be any tier.
         const loose = check(
-            craft(rareRing(), [op("chaos"), harvestChange("MaxLifeMid", "MaxManaLow")]),
+            craft(rareRing(), [op("chaos"), harvestChange("FireTiersMid", "ColdTiersLow")]),
             ctx,
         );
         expect(loose.diagnostics[0]!.message).toContain("isn't guaranteed");
@@ -76,6 +79,19 @@ describe("harvest change", () => {
         expect(shielded.diagnostics[0]!.message).toContain("metamod protects");
     });
 
+    it("offers only the elemental resistances among themselves and the elemental damages likewise", () => {
+        const life = check(
+            craft(rareRing(["T1 Life"]), [harvestChange("T1 Life", COLD_RESIST.id)]),
+            ctx,
+        );
+        expect(life.diagnostics[0]!.message).toContain("fire, cold or lightning resistance");
+        const same = check(
+            craft(rareRing([], [FIRE_RESIST.id]), [harvestChange(FIRE_RESIST.id, "FireTiersLow")]),
+            ctx,
+        );
+        expect(same.diagnostics[0]!.message).toContain("fire, cold or lightning resistance");
+    });
+
     it("refuses a target already on the item or one that cannot roll here", () => {
         const dup = check(
             craft(rareRing([], [FIRE_RESIST.id, COLD_RESIST.id]), [
@@ -85,7 +101,15 @@ describe("harvest change", () => {
         );
         expect(dup.diagnostics[0]!.message).toContain("at most one per group");
         const nowhere = check(
-            craft(rareRing([], [FIRE_RESIST.id]), [harvestChange(FIRE_RESIST.id, "AmuletOnly1")]),
+            craft(
+                item({
+                    base: "Coral Amulet",
+                    ilvl: 100,
+                    rarity: "rare",
+                    suffixes: [FIRE_RESIST.id],
+                }),
+                [harvestChange(FIRE_RESIST.id, "ColdTiersLow")],
+            ),
             ctx,
         );
         expect(nowhere.diagnostics[0]!.message).toContain("cannot roll on this item");

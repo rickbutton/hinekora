@@ -156,12 +156,13 @@ Operations that take a name (and an optional `t<n>`):
   `critical`, `defence` (or `defences`), `elemental`, `fire`, `life`, `lightning`, `mana`,
   `minion`, `physical`, `speed`. Both need a Rare item and a tag some modifier of the base can carry;
   `augment` also needs a removable modifier.
-- `harvest change "<mod>" "<mod>"` is the craft that changes a modifier "into a similar
-  tier modifier" of another element (the resistances, the damage types): the first
-  modifier must be guaranteed on the item, not fractured, on a side no metamod protects;
-  it becomes the second's row at the same tier (or any of its tiers while the first's is
-  unknown), which must roll on the base and not clash with a present group. The checker
-  does not know which pairs the Sacred Grove offers (`QUESTIONS.md` Q18).
+- `harvest change "<mod>" "<mod>"` is the craft that changes a modifier "into a
+  similar-tier modifier" of another element: a fire, cold or lightning resistance into
+  another of the three, or a fire, cold or lightning damage modifier likewise, the
+  grove's twelve options. The first modifier must be guaranteed on the item, not
+  fractured, on a side no metamod protects; it becomes the second's row at the same tier
+  (or any of its tiers while the first's is unknown), which must roll on the base and
+  not clash with a present group (`QUESTIONS.md` Q18, Q22).
 - `veiled chaos` and `veiled exalt` are the
   [Veiled Chaos Orb](https://www.poewiki.net/wiki/Veiled_Chaos_Orb) and
   [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb); both need a Rare

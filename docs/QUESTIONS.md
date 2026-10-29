@@ -92,18 +92,34 @@ what the add-pool holds (`check/ops.ts` `foulbornTiers`); the cull keeps every r
 count between the sure and the tag-enabled total would keep.
 **Answer:**
 
-### Q18 · clarification · open
+### Q18 · game probe · open
 
 **Asked:** 2026-10-28
-**Question:** which pairs the Harvest "change a modifier into a similar tier modifier"
-crafts offer. The wiki cache has the craft's description
-([Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting): fire resistance to
-lightning resistance as the example; a damage variant that excludes critical strike
-multiplier) but not the option table. `harvest change "<mod>" "<mod>"` accepts any pair
-whose target rolls on the base.
-**Assumed meanwhile:** the resistances (fire, cold, lightning, each to each other) and
-the damage types; the checker does not validate the pair (`check/check.ts`
-`checkHarvestChange`).
+**Goal:** which modifier types the Harvest "change a modifier that grants Fire Damage"
+crafts accept. The grove's option table (the cached cargo rows) names the twelve
+crafts: the three elemental resistances among themselves and the three elemental damages
+among themselves; it does not say whether "grants Fire Damage" covers flat added damage
+only, or also increased damage, penetration and the hybrids.
+**Procure:** a Rare with a flat added fire damage modifier, one with increased fire
+damage, one with fire penetration; the grove's "Fire Damage into Cold Damage" craft.
+**Steps:** try the craft on each; note which it offers.
+**Record:** the modifiers it changed.
+**Assumed meanwhile:** any type whose rows carry the element's tag and the damage tag
+(`check/check.ts` `elementalKind`), and for resistances the element's tag and the
+resistance tag, which admits the fire-and-chaos hybrid.
+**Answer:**
+
+### Q22 · game probe · open
+
+**Asked:** 2026-10-28
+**Goal:** what "similar-tier" means for the Harvest change, and whether it works on a
+Magic item. The option text says "similar-tier"; the checker takes the target's row of
+the same rank among its tiers when the source's tier is known (`check/check.ts`
+`checkHarvestChange`) and sets no rarity gate.
+**Procure:** a Rare and a Magic item each with a T3 fire resistance; the change to cold.
+**Steps:** apply it; note the cold resistance's tier and whether the Magic item took it.
+**Record:** the resulting tier on each.
+**Assumed meanwhile:** the same rank; any rarity with the modifier present.
 **Answer:**
 
 ### Q19 · game probe · open

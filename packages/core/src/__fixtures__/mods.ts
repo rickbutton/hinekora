@@ -758,6 +758,29 @@ export const ATTACK_SPEED: Mod = mkMod({
 });
 
 /** Catalog for fuzzy/tier tests: a 3-tier life type + a fire resist, on rings. */
+/** Three-tier elemental resistances at matching levels, rolling on rings only, for tier-to-tier changes. */
+const resistTiers = (element: string, family: string): readonly Mod[] =>
+    (
+        [
+            ["Low", 1],
+            ["Mid", 30],
+            ["High", 60],
+        ] as const
+    ).map(([rank, minLevel]) =>
+        mkMod({
+            id: `${family}Tiers${rank}`,
+            type: `${family}Tiers`,
+            gen: "suffix",
+            minLevel,
+            families: [`Resist${family}T`],
+            spawn: [spawn(TAG_RING, 1000), spawn(TAG_DEFAULT, 0)], // rings only
+            implicitTags: [element, "elemental", "resistance"],
+            text: `+#% to ${family} Resistance (tiered)`,
+        }),
+    );
+export const FIRE_RES_TIERS = resistTiers("fire", "Fire");
+export const COLD_RES_TIERS = resistTiers("cold", "Cold");
+
 /** A second three-tier type at MaxLife's levels, for tier-to-tier changes. */
 export const MAXMANA_TIERS: readonly Mod[] = [
     ["MaxManaLow", 1],

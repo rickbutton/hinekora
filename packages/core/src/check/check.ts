@@ -134,6 +134,21 @@ const MAX_LOOP_ITERS = 32;
 
 type Flow = { readonly kind: "fall"; readonly state: AItem } | { readonly kind: "restart" };
 
+const ELEMENTS = ["fire", "cold", "lightning"] as const;
+
+/** Which elemental resistance or damage a modifier type grants, by its rows' tags. */
+function elementalKind(
+    catalog: readonly Mod[],
+    type: TypeId,
+): { element: string; kind: "resistance" | "damage" } | null {
+    const tags = new Set<string>();
+    for (const m of catalog) if (m.type === type) for (const t of m.implicitTags) tags.add(t);
+    const elements = ELEMENTS.filter((e) => tags.has(e));
+    if (elements.length !== 1) return null;
+    const kind = tags.has("resistance") ? "resistance" : tags.has("damage") ? "damage" : null;
+    return kind === null ? null : { element: elements[0]!, kind };
+}
+
 /** Join a list of branch states into their LUB; `null` when the list is empty. */
 function foldJoin(states: readonly AItem[]): AItem | null {
     return states.length === 0 ? null : states.reduce(join);
@@ -590,6 +605,23 @@ class Checker {
         }
         if (!from.ok || !to.ok) return { kind: "fall", state: a };
         const catalog = this.registry.catalog;
+        // The grove offers the craft for the three elemental resistances among
+        // themselves and the three elemental damages among themselves (the
+        // Sacred Grove's twelve "Change a modifier that grants …" options).
+        const source = elementalKind(catalog, from.value);
+        const target = elementalKind(catalog, to.value);
+        if (
+            source === null ||
+            target === null ||
+            source.kind !== target.kind ||
+            source.element === target.element
+        ) {
+            this.diag(
+                `The grove changes a fire, cold or lightning resistance into another of the three, or a fire, cold or lightning damage modifier likewise — not "${fromName}" into "${toName}".`,
+                stmt.span,
+            );
+            return { kind: "fall", state: a };
+        }
         const targets = rollableTiers(catalog, a.base, a.ilvl, to.value);
         if (targets.length === 0) {
             this.diag(`"${toName}" cannot roll on this item.`, stmt.span);
