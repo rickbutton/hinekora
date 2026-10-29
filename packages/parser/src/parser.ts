@@ -248,7 +248,10 @@ class Parser {
             const keyTok = this.expect("ident", "an item field name or '}'");
             const key = keyTok.text;
             // The one bare flag: `corrupted`, with no value.
-            if (key === "corrupted" && !this.at("colon")) {
+            if (key === "corrupted") {
+                if (this.at("colon")) {
+                    throw this.error("'corrupted' is a bare flag and takes no value", keyTok.span);
+                }
                 if (corrupted) throw this.error(`duplicate item field '${key}'`, keyTok.span);
                 corrupted = true;
                 if (this.at("comma")) this.advance();
@@ -305,10 +308,14 @@ class Parser {
         };
     }
 
-    /** `influences: hunter` or `influences: shaper elder`: one or two of the six. */
+    /** `influences: hunter` or `influences: shaper elder` (a comma between them
+     *  is allowed): one or two of the six. */
     private parseInfluences(): readonly Influence[] {
         const out: Influence[] = [];
-        while (this.at("ident") && isInfluence(this.peek().text)) {
+        for (;;) {
+            const next = this.peek(1);
+            if (this.at("comma") && next.kind === "ident" && isInfluence(next.text)) this.advance();
+            if (!(this.at("ident") && isInfluence(this.peek().text))) break;
             const tok = this.advance();
             const influence = tok.text as Influence;
             if (out.includes(influence)) {

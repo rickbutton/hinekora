@@ -66,9 +66,10 @@ item {
   wiki's multi-fracture items are out of scope.
 - `influences: hunter` (or two of them, `influences: shaper elder`) marks an
   [influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics); the six are
-  `shaper`, `elder`, `crusader`, `hunter`, `redeemer` and `warlord`. An influence widens
-  every reforge's pool with its modifiers and never changes except at the grove. An
-  influenced item cannot be fractured, so declaring both is an error.
+  `shaper`, `elder`, `crusader`, `hunter`, `redeemer` and `warlord`. Every method in §3
+  leaves the mark as it is; the influence rows roll in every pool and resolve and tier
+  like the base's own. An influenced item cannot be fractured, so declaring both is an
+  error. The Astrolabe Amulet, which counts as having every influence, is out of scope.
 - `corrupted`, a bare flag, marks a
   [corrupted item](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items), which
   takes no craft but the Tainted currency.

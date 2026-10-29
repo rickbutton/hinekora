@@ -168,7 +168,7 @@ Three kinds cover the five real metamods ([Metamod](https://www.poewiki.net/wiki
 | `influences`           | one normally, two via Awakener's Orb ([Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics)); an influence adds its `<class>_<influence>` tag, which is how influence-exclusive rows join the natural pool |
 | `prefixes`, `suffixes` | the affixes; order within a side carries no meaning                                                                                                                                                                            |
 | `fractured`            | affixes locked against removal and reroll ([Fractured item](https://www.poewiki.net/wiki/Fractured_item#Mechanics)); never beside an influence ([Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics))     |
-| `corrupted`            | set by a Vaal Orb and never cleared; only the Tainted currency and the bench's sockets apply afterwards ([Corrupted](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items))                                        |
+| `corrupted`            | set by a Vaal Orb and never cleared; what still applies afterwards is listed at ([Corrupted](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items))                                                                |
 
 Derived:
 
