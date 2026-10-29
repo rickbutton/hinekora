@@ -165,6 +165,15 @@ Operations that take a name (and an optional `t<n>`):
   Orb and Exalted Orb: the plain orb with the same needs, but of each modifier's eligible
   tiers only the top half can roll
   ([Foulborn currency § Mechanics](https://www.poewiki.net/wiki/Foulborn_currency#Mechanics)).
+- `fossil "<name>" ["<name>" …]` sockets one to four [fossils](https://www.poewiki.net/wiki/Fossil)
+  in a [resonator](https://www.poewiki.net/wiki/Resonator) and reforges a Rare item like a
+  Chaos Orb ([Fossil § Mechanics](https://www.poewiki.net/wiki/Fossil#Mechanics)): the
+  fossils' "no X modifiers" tags leave the pool, their own modifiers join it, a forced
+  modifier (Hollow) or a corrupted-essence modifier (Glyphic) is guaranteed, and the
+  Fractured Fossil fractures one of the rolled modifiers, so it needs an item without
+  one. A name is the fossil's first word or its full name. Needs a Rare item with no
+  protection or cannot-roll metamod, on a base every socketed fossil allows. Weight
+  changes are not modelled: a Serrated Fossil reads as a plain reforge.
 - `unveil ["<mod>"]` is the three-option unveil of a
   [veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) and needs a veiled
   modifier on the item. Bare, the result is one of the valid options

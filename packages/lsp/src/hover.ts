@@ -314,6 +314,8 @@ function signature(
 
     // `essence`/`bench "<name>" [t1]`, the keyword, name, and tier tokens all
     // hover as one signature.
+    const fossils = fossilAt(tokens, i);
+    if (fossils) return fossilSignature(fossils, registry);
     const ess = namedAt(tokens, i, "essence");
     if (ess) return essenceSignature(ess.name, ess.tier, entry, registry);
     const bch = namedAt(tokens, i, "bench");
@@ -469,6 +471,49 @@ function modSignature(
  * The signature for an essence name: its tier, reforge behaviour, and, using the
  * item at the cursor, the SPECIFIC mod it guarantees on this base's item class.
  */
+/** The names of a `fossil "<name>" …` line when `i` is its keyword or one of its names. */
+function fossilAt(tokens: readonly Token[], i: number): string[] | undefined {
+    let k = i;
+    while (k > 0 && tokens[k]?.kind === "string") k--;
+    const kw = tokens[k];
+    if (kw?.kind !== "ident" || kw.text !== "fossil") return undefined;
+    const names: string[] = [];
+    for (let j = k + 1; tokens[j]?.kind === "string"; j++) names.push(tokens[j]!.text);
+    return names.length > 0 ? names : undefined;
+}
+
+/** What each fossil of a resonator does to the reforge. */
+function fossilSignature(names: readonly string[], registry: Registry): string {
+    const lines = names.map((text) => {
+        const res = registry.resolveFossil(text);
+        if (!res.ok) {
+            return res.error.kind === "ambiguous"
+                ? `**"${text}"** — ambiguous fossil (${res.error.candidates.join(", ")}).`
+                : `**"${text}"** — unresolved fossil.`;
+        }
+        const f = res.value;
+        const effects: string[] = [];
+        if (f.blockedTags.size > 0) effects.push(`no ${[...f.blockedTags].join(", ")} modifiers`);
+        if (f.addedMods.length > 0) effects.push("adds its own modifiers to the pool");
+        if (f.forcedMods.length > 0) effects.push("guarantees its modifier");
+        if (f.corruptedEssenceChance === 100)
+            effects.push("guarantees a corrupted-essence modifier");
+        else if (f.corruptedEssenceChance > 0)
+            effects.push(`${f.corruptedEssenceChance}% chance of a corrupted-essence modifier`);
+        if (f.fractures) effects.push("fractures one of the rolled modifiers");
+        if (f.allowedTags) effects.push(`only on ${[...f.allowedTags].join(", ")}`);
+        const effect =
+            effects.length > 0
+                ? effects.join("; ")
+                : "a plain reforge (its weights are not modelled)";
+        return `**${f.name}** — ${effect}`;
+    });
+    return [
+        "**fossil** — a resonator reforges a Rare item, its fossils shaping the pool",
+        ...lines,
+    ].join("\n\n");
+}
+
 function essenceSignature(
     text: string,
     tier: number | undefined,

@@ -177,6 +177,15 @@ describe("parser — veiled orbs and unveil", () => {
         expect(() => bodyOf("veiled scour")).toThrow(/chaos.*exalt/);
     });
 
+    it("parses a fossil list of one or more names", () => {
+        expect(bodyOf('fossil "pristine"')).toMatchObject({ kind: "fossil", names: ["pristine"] });
+        expect(bodyOf('fossil "pristine" "dense"')).toMatchObject({
+            kind: "fossil",
+            names: ["pristine", "dense"],
+        });
+        expect(() => bodyOf("fossil")).toThrow(/fossil name/);
+    });
+
     it("parses foulborn augment / regal / exalt and rejects any other orb", () => {
         expect(bodyOf("foulborn augment")).toMatchObject({ kind: "foulborn", verb: "augment" });
         expect(bodyOf("foulborn regal")).toMatchObject({ kind: "foulborn", verb: "regal" });

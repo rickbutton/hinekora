@@ -95,6 +95,7 @@ export type Stmt =
     | HarvestStmt
     | VeiledStmt
     | FoulbornStmt
+    | FossilStmt
     | BenchRemoveStmt
     | UnveilStmt
     | RestartStmt
@@ -157,6 +158,14 @@ export interface HarvestStmt {
 export interface VeiledStmt {
     readonly kind: "veiled";
     readonly verb: "chaos" | "exalt";
+    readonly span: SourceSpan;
+}
+
+/** `fossil "<name>" …`: a resonator socketed with these fossils, one to four,
+ *  reforging the item. Inside a proc body a name may be a `ParamRef`. */
+export interface FossilStmt {
+    readonly kind: "fossil";
+    readonly names: readonly (string | ParamRef)[];
     readonly span: SourceSpan;
 }
 

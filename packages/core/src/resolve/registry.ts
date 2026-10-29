@@ -190,6 +190,8 @@ export interface Registry {
     readonly essenceNames: readonly string[];
     /** Full fossil names. */
     readonly fossilNames: readonly string[];
+    /** The essence catalog. */
+    readonly essences: readonly EssenceSpec[];
     /** Distinct bench-mod descriptions, for `bench "…"` completion. */
     readonly benchNames: readonly string[];
     /** Harvest category labels, for `harvest <verb> "…"` completion. */
@@ -379,6 +381,7 @@ export function buildRegistry(data: RegistryData): Registry {
         statSuggestions,
         essenceNames: essences.map((e) => e.name),
         fossilNames: fossils.map((f) => f.name),
+        essences,
         benchNames: [
             ...new Set(
                 benchCrafts

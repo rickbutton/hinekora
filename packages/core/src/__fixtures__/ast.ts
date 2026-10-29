@@ -22,6 +22,7 @@ import type {
     BenchRemoveStmt,
     BenchStmt,
     EssenceStmt,
+    FossilStmt,
     FoulbornStmt,
     FracturedPred,
     HarvestStmt,
@@ -102,6 +103,11 @@ export const harvest = (verb: "reforge" | "augment", tag: string | ParamRef): Ha
     span: DS,
 });
 export const benchRemove = (): BenchRemoveStmt => ({ kind: "benchRemove", span: DS });
+export const fossil = (...names: (string | ParamRef)[]): FossilStmt => ({
+    kind: "fossil",
+    names,
+    span: DS,
+});
 export const veiled = (verb: "chaos" | "exalt"): VeiledStmt => ({ kind: "veiled", verb, span: DS });
 export const foulborn = (verb: FoulbornStmt["verb"]): FoulbornStmt => ({
     kind: "foulborn",

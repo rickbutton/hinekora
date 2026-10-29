@@ -126,6 +126,8 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return "The item may carry 'can have up to 3 crafted modifiers' — the bench would add beside the crafted modifier on that path and replace it otherwise, so narrow it with an if first.";
             case "harvestEmptyPool":
                 return `No ${failure.tag} modifier can appear on a ${state.base.name ?? "item"} at this item level.`;
+            case "fossilBaseRestricted":
+                return `A ${failure.fossil} cannot be used on a ${state.base.name ?? "base"} like this one.`;
             case "metamodBlocks":
                 return "This currency can't be used while a metacraft modifier is on the item — remove it first.";
             case "tooFewMods":

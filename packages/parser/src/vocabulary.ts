@@ -22,6 +22,7 @@ export const KEYWORDS = [
     "veiled",
     "unveil",
     "foulborn",
+    "fossil",
 ] as const;
 
 /** Predicate connectives and the predicate symbols. */

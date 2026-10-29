@@ -163,9 +163,9 @@ blocked by any metamod but multimod.
 
 | Method                                                            | Composition                                                                         | Status                |
 | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------- |
-| Weight fossils (Chaotic Resonator; Rare only)                     | `strip(fractured); rarity(rare); fill(natural ∖ blocked tags ∪ fossil rows, [4,6])` | composes              |
-| [Fractured Fossil](https://www.poewiki.net/wiki/Fractured_Fossil) | as above, then `lock(any, 1)`                                                       | composes              |
-| Hollow, Glyphic ([Fossil](https://www.poewiki.net/wiki/Fossil))   | as above, then `fill(forced row, 1)` taken from the count                           | composes              |
+| Weight fossils (Chaotic Resonator; Rare only)                     | `strip(fractured); rarity(rare); fill(natural ∖ blocked tags ∪ fossil rows, [4,6])` | built                 |
+| [Fractured Fossil](https://www.poewiki.net/wiki/Fractured_Fossil) | as above, then `lock(any, 1)`                                                       | built                 |
+| Hollow, Glyphic ([Fossil](https://www.poewiki.net/wiki/Fossil))   | as above, then `fill(forced row, 1)` taken from the count                           | built                 |
 | [Bloodstained Fossil](https://www.poewiki.net/wiki/Fossil)        | as above, then `mark(corrupted)`                                                    | later: corrupted mark |
 | Sanctified, Gilded                                                | values / implicit only                                                              | out                   |
 

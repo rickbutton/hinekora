@@ -29,11 +29,13 @@ import {
     TypeId,
 } from "../model/index.js";
 import { effectsOf } from "../model/effects.js";
+import type { FossilSpec } from "../model/sources.js";
 
 // --- Domains --------------------------------------------------------------
 
 export const DOMAIN_ITEM = Domain("item");
 export const DOMAIN_FLASK = Domain("flask");
+export const DOMAIN_DELVE = Domain("delve");
 
 // --- Item classes ---------------------------------------------------------
 
@@ -623,6 +625,92 @@ export const SEVEN_TIER_ROWS: readonly Mod[] = [1, 2, 3, 4, 5, 6, 7].map((n) =>
         text: "seven tier",
     }),
 );
+
+/** A fossil-only row a fossil adds to the pool; it rolls on rings. Not in `CATALOG`. */
+export const DELVE_RING_ROW: Mod = mkMod({
+    id: "DelveRingRow1",
+    type: "DelveRingRow",
+    gen: "suffix",
+    domain: DOMAIN_DELVE,
+    minLevel: 1,
+    families: ["DelveRingRow"],
+    spawn: [spawn(TAG_RING, 1000), spawn(TAG_DEFAULT, 0)],
+    source: "fossil",
+    text: "fossil-only ring row",
+});
+
+/** The row the Hollow Fossil forces. Not in `CATALOG`. */
+export const DELVE_SOCKET_ROW: Mod = mkMod({
+    id: "DelveSocket1",
+    type: "DelveSocket",
+    gen: "suffix",
+    domain: DOMAIN_DELVE,
+    minLevel: 1,
+    families: ["DelveSocket"],
+    spawn: [spawn(TAG_DEFAULT, 2000)],
+    source: "fossil",
+    text: "Has 1 Abyssal Socket",
+});
+
+/** A corrupted essence's modifier for rings, chaos-tagged. Not in `CATALOG`. */
+export const CORRUPTED_ESSENCE_ROW: Mod = mkMod({
+    id: "CorruptedEssenceRing1",
+    type: "CorruptedEssenceRing",
+    gen: "prefix",
+    minLevel: 1,
+    families: ["CorruptedEssenceRing"],
+    spawn: [spawn(TAG_DEFAULT, 0)],
+    source: "essence",
+    implicitTags: ["chaos"],
+    text: "corrupted essence modifier",
+});
+
+const fossilSpec = (id: string, name: string, over: Partial<FossilSpec>): FossilSpec => ({
+    id,
+    name,
+    blockedTags: new Set(),
+    addedMods: [],
+    forcedMods: [],
+    corruptedEssenceChance: 0,
+    fractures: false,
+    ...over,
+});
+export const FOSSIL_NO_LIFE = fossilSpec("FossilDense", "Dense Fossil", {
+    blockedTags: new Set([TagId("life")]),
+});
+export const FOSSIL_NO_CHAOS = fossilSpec("FossilAberrant", "Aberrant Fossil", {
+    blockedTags: new Set([TagId("chaos")]),
+});
+export const FOSSIL_FACETED = fossilSpec("FossilFaceted", "Faceted Fossil", {
+    addedMods: [DELVE_RING_ROW.id],
+});
+export const FOSSIL_HOLLOW = fossilSpec("FossilHollow", "Hollow Fossil", {
+    forcedMods: [DELVE_SOCKET_ROW.id],
+    allowedTags: new Set([TAG_RING, TAG_AMULET]),
+});
+export const FOSSIL_GLYPHIC = fossilSpec("FossilGlyphic", "Glyphic Fossil", {
+    corruptedEssenceChance: 100,
+});
+export const FOSSIL_TANGLED = fossilSpec("FossilTangled", "Tangled Fossil", {
+    corruptedEssenceChance: 10,
+});
+export const FOSSIL_FRACTURED = fossilSpec("FossilFractured", "Fractured Fossil", {
+    fractures: true,
+});
+/** A fossil whose resonator only an amulet accepts. */
+export const FOSSIL_AMULET_ONLY = fossilSpec("FossilPendant", "Pendant Fossil", {
+    allowedTags: new Set([TAG_AMULET]),
+});
+export const FOSSILS: readonly FossilSpec[] = [
+    FOSSIL_NO_LIFE,
+    FOSSIL_NO_CHAOS,
+    FOSSIL_FACETED,
+    FOSSIL_HOLLOW,
+    FOSSIL_GLYPHIC,
+    FOSSIL_TANGLED,
+    FOSSIL_FRACTURED,
+    FOSSIL_AMULET_ONLY,
+];
 
 export const ATTACK_SPEED: Mod = mkMod({
     id: "AttackSpeed1",

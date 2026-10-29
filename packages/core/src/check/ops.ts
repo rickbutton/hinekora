@@ -11,9 +11,9 @@ import { craftedCapOf, type Effect } from "../model/effects.js";
 import type { ClassId, Gen, GroupId, ModId, Rarity, TagId, TypeId } from "../model/ids.js";
 import type { ItemFacts } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
-import type { EssenceSpec } from "../model/sources.js";
+import type { EssenceSpec, FossilSpec } from "../model/sources.js";
 import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
-import { pool } from "../pool/pool.js";
+import { lookupWeight, pool } from "../pool/pool.js";
 import { veiledPool } from "../pool/veiled.js";
 import type { Registry } from "../resolve/registry.js";
 import { rollableGen } from "../resolve/tiers.js";
@@ -54,7 +54,19 @@ export type PoolSpec =
     | { readonly kind: "veiledPlaceholder" }
     /** The unveil results the item's placeholder may become; the fill replaces
      *  the placeholder. A target names the one the player picks. */
-    | { readonly kind: "unveil"; readonly target?: TypeId };
+    | { readonly kind: "unveil"; readonly target?: TypeId }
+    /** The natural pool under a resonator: rows carrying a blocked category tag
+     *  are out, the fossils' own rows join, and a corrupted essence's modifier
+     *  may land when a fossil gives it a chance. */
+    | {
+          readonly kind: "fossil";
+          readonly blocked: ReadonlySet<TagId>;
+          readonly added: readonly Mod[];
+          readonly essence: readonly Mod[];
+      }
+    /** One of these rows, guaranteed: a fossil's forced row, the Glyphic Fossil's
+     *  corrupted-essence modifier. */
+    | { readonly kind: "rows"; readonly mods: readonly Mod[] };
 
 /** How many modifiers a `fill` lays down. */
 export type FillCount =
@@ -96,6 +108,8 @@ export type Check =
      *  reforges the rest away). */
     | { readonly kind: "noVeiledKept" }
     | { readonly kind: "noBlockingMetamod" }
+    /** The fossil's base restriction admits this item. */
+    | { readonly kind: "fossilAllowed"; readonly fossil: FossilSpec }
     | { readonly kind: "essenceRarity"; readonly tier: number }
     | { readonly kind: "essenceGrant"; readonly spec: EssenceSpec }
     | { readonly kind: "craftedBelowCap" }
@@ -134,6 +148,7 @@ export type PreconditionFailure =
     | { readonly kind: "craftedCapUnknown" }
     | { readonly kind: "harvestEmptyPool"; readonly tag: TagId }
     | { readonly kind: "metamodBlocks" }
+    | { readonly kind: "fossilBaseRestricted"; readonly fossil: string }
     | { readonly kind: "tooFewMods"; readonly needed: number }
     | { readonly kind: "alreadyFractured" }
     | { readonly kind: "noVeiledMod" }
@@ -337,6 +352,12 @@ function failing(
             const kept = (t: TypeId): boolean =>
                 unprovenLock || fractured.has(t) || rules.protected.has(sideOf(a, registry, t));
             return mayHaveVeiled(a, registry, kept) ? { kind: "veiledWouldSurvive" } : null;
+        }
+        case "fossilAllowed": {
+            const allowed = check.fossil.allowedTags;
+            if (allowed === undefined) return null;
+            for (const t of a.base.tags) if (allowed.has(t)) return null;
+            return { kind: "fossilBaseRestricted", fossil: check.fossil.name };
         }
         case "noBlockingMetamod":
             return rules.blocksSourced ? { kind: "metamodBlocks" } : null;
@@ -661,6 +682,27 @@ function resolvePool(a: AItem, spec: PoolSpec, registry: Registry): ResolvedPool
                 assert: [VEILED_PREFIX, VEILED_SUFFIX],
                 gen: undefined,
             };
+        case "fossil": {
+            const natural = addableMods(a, registry).filter((m) => !carriesAny(m, spec.blocked));
+            // A fossil's own rows are outside the natural pool's domain, so they
+            // are admitted by their own weight on the base; an essence's row by
+            // the essence's class table, already applied.
+            const tags = a.base.tags;
+            const added = spec.added.filter(
+                (m) => m.minLevel <= a.ilvl && (lookupWeight(m, tags) ?? 0) > 0,
+            );
+            const mods = [...natural, ...added, ...spec.essence];
+            return { mods, types: typesOf(mods), assert: [], gen: undefined };
+        }
+        case "rows": {
+            const gens = new Set(spec.mods.map((m) => m.gen));
+            return {
+                mods: spec.mods,
+                types: typesOf(spec.mods),
+                assert: typesOf(spec.mods),
+                gen: gens.size === 1 ? spec.mods[0]!.gen : undefined,
+            };
+        }
         case "unveil": {
             // Blocking is folded in: an unveiled mod whose family a guaranteed
             // present one claims is not offered.
@@ -714,6 +756,11 @@ function foulbornTiers(mods: readonly Mod[], a: AItem, registry: Registry): Mod[
         }
     }
     return out;
+}
+
+function carriesAny(m: Mod, tags: ReadonlySet<TagId>): boolean {
+    for (const t of m.implicitTags) if (tags.has(t)) return true;
+    return false;
 }
 
 function typesOf(mods: readonly Mod[]): TypeId[] {

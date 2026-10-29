@@ -208,10 +208,11 @@ Transport-free service functions + a stdio server:
       one shared signature (`namedAt` / `defAt`).
 - `completion.ts`: `getCompletions`. A backward text-scan (`contextAt`) picks the
   context: statement (currencies + control keywords + the sourced keywords `essence`,
-  `bench`, `harvest`, `veiled`, `unveil`, `foulborn`), predicate (after
+  `bench`, `harvest`, `veiled`, `unveil`, `foulborn`, `fossil`), predicate (after
   `if`/`until`/`not`/`and`/`or`; includes local def names scraped by regex), base,
   essence, bench, harvest verb (after `harvest`), harvest tag (after `reforge`/`augment`),
-  veiled verb (after `veiled`), foulborn verb (after `foulborn`), or mod. Mod candidates are **filtered to what's possible
+  veiled verb (after `veiled`), foulborn verb (after `foulborn`), fossil name (inside a
+  `fossil` line's strings), or mod. Mod candidates are **filtered to what's possible
   at the cursor**: rollable on the item's base+ilvl (`rollableTypes`, base read from the text)
   AND not proven-absent by the checker's state at that point (`excludedAt` parses the
   craft, retrying with the open string closed). Both filters degrade gracefully to "all
@@ -389,7 +390,15 @@ in it. Notes:
   (`foulbornTiers`): of each type's eligible tiers only the top half rolls
   ([Foulborn currency § Mechanics](https://www.poewiki.net/wiki/Foulborn_currency#Mechanics));
   rows a possibly present modifier's tag enables make the eligible count uncertain, so
-  the cull keeps every row some count in that range would keep.
+  the cull keeps every row some count in that range would keep. A **fossil** pool is the
+  natural pool without the rows carrying a blocked category tag, plus the fossils' own
+  rows (admitted by their weight on the base, since their domain keeps them out of
+  `pool`) and, when a fossil gives it a chance, the corrupted essences' modifiers for the
+  item's class; a **rows** pool is one of a few given rows, asserted as a disjunction (a
+  forced row, the Glyphic Fossil's guarantee). `resonatorOps` composes a resonator from
+  them ([Resonator § Mechanics](https://www.poewiki.net/wiki/Resonator#Mechanics):
+  refused like an essence under a protect or cannot-roll metamod, and on a base a fossil
+  does not allow, `fossilAllowed`), the Fractured Fossil adding a `lock`.
 - A `remove` with the random selector draws from an **allowed-gens** set = `both − protected`. A guarantee whose
   generation is not in that set survives (protected), as does one the cannot-roll shield
   covers and a fractured one; an empty set means nothing is removable.
@@ -535,6 +544,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/check/fracture.test.ts`                            | fractured items and the Fracturing Orb through the checker                                         |
 | `packages/core/src/check/harvest.test.ts`                             | harvest reforge / augment through the checker                                                      |
 | `packages/core/src/check/metacraft.test.ts`                           | metamods: protection, cannot-roll, multimod, essence blocking                                      |
+| `packages/core/src/check/fossil.test.ts`                              | resonators: blocked tags, added and forced rows, the corrupted-essence guarantee, the fracture     |
 | `packages/core/src/check/veiled.test.ts`                              | veiled orbs and `unveil` through the checker                                                       |
 | `packages/lsp/src/features.test.ts`                                   | hover / completion / semantic-token tests                                                          |
 | `packages/lsp/src/service.test.ts`                                    | `getDiagnostics` over the real data pipeline                                                       |

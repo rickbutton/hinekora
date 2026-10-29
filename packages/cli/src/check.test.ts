@@ -62,6 +62,15 @@ if not has "cold damage per frenzy charge" { exalt }`);
         expect(r.output).toContain("can never run");
     });
 
+    it("a resonator's blocked tag keeps its modifiers out of the reforge", () => {
+        const r = run(`craft in poe1
+item { base: "Iron Ring" ilvl: 84 rarity: rare }
+fossil "pristine" "dense"
+if has "maximum life" { exalt }`);
+        expect(r.ok).toBe(false);
+        expect(r.output).toContain("can never run");
+    });
+
     it("checks the bundled example.craft clean (bench after a proven-suffix reforge)", () => {
         const src = readFileSync(
             fileURLToPath(new URL("../../../examples/example.craft", import.meta.url)),

@@ -6,7 +6,7 @@
  */
 import type { Gen, Rarity, TagId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
-import type { EssenceSpec } from "../model/sources.js";
+import type { EssenceSpec, FossilSpec } from "../model/sources.js";
 import type { FoulbornStmt } from "../ast/ast.js";
 import type { CurrencyKind } from "../resolve/registry.js";
 import type { Range } from "./astate.js";
@@ -157,6 +157,45 @@ export function foulbornOps(verb: FoulbornStmt["verb"]): readonly Op[] {
             ? { ...op, pool: { ...op.pool, topTiers: true } }
             : op,
     );
+}
+
+/** A socketed resonator, its fossils' rows resolved against the catalog. */
+export interface Resonator {
+    readonly fossils: readonly FossilSpec[];
+    /** The fossil-only rows the fossils add to the pool. */
+    readonly added: readonly Mod[];
+    /** The rows the fossils force, each guaranteed. */
+    readonly forced: readonly Mod[];
+    /** The corrupted essences' modifiers for the item's class. */
+    readonly corrupted: readonly Mod[];
+}
+
+/** A resonator: a rare reforge shaped by its fossils (Fossil § Mechanics,
+ *  Resonator § Mechanics): blocked category tags leave the pool, the fossils'
+ *  rows join it, a forced row or a corrupted-essence modifier is guaranteed,
+ *  and the Fractured Fossil fractures one of the rolled modifiers. */
+export function resonatorOps(r: Resonator): readonly Op[] {
+    const blocked = new Set<TagId>();
+    for (const f of r.fossils) for (const t of f.blockedTags) blocked.add(t);
+    const unblocked = (m: Mod): boolean => ![...m.implicitTags].some((t) => blocked.has(t));
+    const essenceChance = Math.max(0, ...r.fossils.map((f) => f.corruptedEssenceChance));
+    const essence = essenceChance > 0 ? r.corrupted.filter(unblocked) : [];
+    const fractures = r.fossils.some((f) => f.fractures);
+    return [
+        isRare,
+        require({ kind: "noBlockingMetamod" }),
+        ...r.fossils.map((fossil) => require({ kind: "fossilAllowed", fossil })),
+        ...(fractures ? [require({ kind: "noFracture" })] : []),
+        strip(),
+        rarity("rare"),
+        fill(
+            { kind: "fossil", blocked, added: r.added.filter(unblocked), essence },
+            reforge(RARE_REFORGE),
+        ),
+        ...r.forced.filter(unblocked).map((mod) => fill({ kind: "rows", mods: [mod] }, within)),
+        ...(essenceChance === 100 ? [fill({ kind: "rows", mods: essence }, within)] : []),
+        ...(fractures ? [lock()] : []),
+    ];
 }
 
 /** Veiled Chaos Orb: a rare reforge, one of whose modifiers is veiled. It is

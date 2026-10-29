@@ -15,6 +15,7 @@ import {
     type Craft,
     type Def,
     type EssenceStmt,
+    type FossilStmt,
     type FoulbornStmt,
     type HarvestStmt,
     type IfStmt,
@@ -340,6 +341,7 @@ class Parser {
         if (this.atKeyword("harvest")) return this.parseHarvest();
         if (this.atKeyword("veiled")) return this.parseVeiled();
         if (this.atKeyword("foulborn")) return this.parseFoulborn();
+        if (this.atKeyword("fossil")) return this.parseFossil();
         if (this.atKeyword("unveil")) return this.parseUnveil();
         if (this.atKeyword("restart")) {
             const t = this.advance();
@@ -444,6 +446,21 @@ class Parser {
             );
         }
         return { kind: "foulborn", verb, span: span(start, this.prev.span.end) };
+    }
+
+    private parseFossil(): FossilStmt {
+        const start = this.expectKeyword("fossil").span.start;
+        const names = [this.parseStringOrParam("a quoted fossil name after 'fossil'")];
+        for (;;) {
+            if (this.at("string")) {
+                names.push(this.advance().text);
+                continue;
+            }
+            const p = this.paramRef();
+            if (p === undefined) break;
+            names.push(p);
+        }
+        return { kind: "fossil", names, span: span(start, this.prev.span.end) };
     }
 
     private parseUnveil(): UnveilStmt {

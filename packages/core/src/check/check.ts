@@ -19,6 +19,8 @@ import type {
 } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import type { Gen, GroupId, ModId, TypeId } from "../model/ids.js";
+import type { Mod } from "../model/mod.js";
+import { CORRUPTED_ESSENCE_TIER, type FossilSpec } from "../model/sources.js";
 import type { Registry } from "../resolve/registry.js";
 import {
     type AItem,
@@ -50,6 +52,7 @@ import {
     foulbornOps,
     harvestAugmentOps,
     harvestReforgeOps,
+    resonatorOps,
     unveilOps,
     VEILED_CHAOS,
     VEILED_EXALT,
@@ -433,6 +436,8 @@ class Checker {
                 return this.checkVeiled(a, stmt);
             case "foulborn":
                 return this.checkFoulborn(a, stmt);
+            case "fossil":
+                return this.checkFossil(a, stmt);
             case "unveil":
                 return this.checkUnveil(a, stmt);
             case "restart": {
@@ -526,6 +531,49 @@ class Checker {
 
     private checkFoulborn(a: AItem, stmt: Extract<Stmt, { kind: "foulborn" }>): Flow {
         return this.checkMethod(a, foulbornOps(stmt.verb), stmt.span);
+    }
+
+    private checkFossil(a: AItem, stmt: Extract<Stmt, { kind: "fossil" }>): Flow {
+        const fossils: FossilSpec[] = [];
+        for (const n of stmt.names) {
+            const name = this.literalString(n, stmt.span);
+            if (name === null) return { kind: "fall", state: a };
+            const fossil = this.registry.resolveFossil(name);
+            if (!fossil.ok) {
+                this.diag(resolveMessage(fossil.error), stmt.span);
+                return { kind: "fall", state: a };
+            }
+            fossils.push(fossil.value);
+        }
+        if (new Set(fossils.map((f) => f.id)).size < fossils.length) {
+            this.diag("A resonator cannot hold the same fossil twice.", stmt.span);
+            return { kind: "fall", state: a };
+        }
+        if (fossils.length > 4) {
+            this.diag("A resonator holds at most four fossils.", stmt.span);
+            return { kind: "fall", state: a };
+        }
+        const rows = (ids: readonly ModId[]): Mod[] =>
+            ids.flatMap((id) => {
+                const r = this.registry.resolveMod(id);
+                return r.ok ? [r.value] : [];
+            });
+        const corrupted = this.registry.essences
+            .filter((e) => e.tier === CORRUPTED_ESSENCE_TIER)
+            .flatMap((e) => {
+                const id = e.grants.get(a.base.itemClass);
+                return id === undefined ? [] : rows([id]);
+            });
+        return this.checkMethod(
+            a,
+            resonatorOps({
+                fossils,
+                added: rows(fossils.flatMap((f) => f.addedMods)),
+                forced: rows(fossils.flatMap((f) => f.forcedMods)),
+                corrupted,
+            }),
+            stmt.span,
+        );
     }
 
     /** Run a method with no name to resolve; a refused one leaves the state as is. */
@@ -1094,6 +1142,9 @@ function noteStmtUses(u: ParamUses, s: Stmt): void {
         case "foulborn":
         case "benchRemove":
             return;
+        case "fossil":
+            for (const n of s.names) if (typeof n === "object") noteSort(u, n, "mod");
+            return;
         case "unveil":
             if (s.mod !== undefined && typeof s.mod === "object") noteSort(u, s.mod, "mod");
             return;
@@ -1210,6 +1261,8 @@ function substituteStmt(stmt: Stmt, env: Map<string, Arg>): Stmt {
         case "foulborn":
         case "benchRemove":
             return stmt;
+        case "fossil":
+            return { ...stmt, names: stmt.names.map((n) => subValue(n, env)) };
         case "unveil":
             return stmt.mod === undefined ? stmt : { ...stmt, mod: subValue(stmt.mod, env) };
         case "until":

@@ -27,11 +27,12 @@ type Context =
     | "harvestVerb"
     | "harvestTag"
     | "veiledVerb"
-    | "foulbornVerb";
+    | "foulbornVerb"
+    | "fossil";
 
 const CONTROL_KEYWORDS = ["until", "if", "else", "with", "restart"];
 /** Statement-starting keywords for the sourced/tag-directed crafts. */
-const SOURCED_KEYWORDS = ["essence", "bench", "harvest", "veiled", "unveil", "foulborn"];
+const SOURCED_KEYWORDS = ["essence", "bench", "harvest", "veiled", "unveil", "foulborn", "fossil"];
 
 /** The keywords that can START a predicate (after `if` / `until` / `not`). */
 const PREDICATE_KEYWORDS: { label: string; detail: string; kind: CompletionItemKind }[] = [
@@ -95,6 +96,11 @@ function contextAt(source: string, offset: number): Context {
     // Inside a string: what precedes the opening quote?
     let j = open - 1;
     while (j >= 0 && isSpace(source[j])) j--;
+    // Earlier strings on the line belong to a `fossil` list; look past them.
+    while (source[j] === '"') {
+        j = source.lastIndexOf('"', j - 1) - 1;
+        while (j >= 0 && isSpace(source[j])) j--;
+    }
     if (source[j] === ":") {
         let k = j - 1;
         while (k >= 0 && isSpace(source[k])) k--;
@@ -109,6 +115,7 @@ function contextAt(source: string, offset: number): Context {
     while (k >= 0 && isWord(source[k])) k--;
     const word = source.slice(k + 1, end);
     if (word === "essence") return "essence";
+    if (word === "fossil") return "fossil";
     if (word === "bench") return "bench";
     if (word === "reforge" || word === "augment") return "harvestTag";
     return "mod";
@@ -192,6 +199,8 @@ export function getCompletions(
                 detail: `foulborn ${label}`,
                 kind: CompletionItemKind.Keyword,
             }));
+        case "fossil":
+            return registry.fossilNames.map((label) => ({ label, kind: CompletionItemKind.Value }));
         case "mod": {
             const ctx = itemContext(source, registry);
             const rollable = ctx ? rollableTypes(registry.catalog, ctx.base, ctx.ilvl) : undefined;
