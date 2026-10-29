@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes, hasFracture } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { beast, craft, item } from "../__fixtures__/ast.js";
+import { beast, bench, craft, has, iff, item, op } from "../__fixtures__/ast.js";
 import {
     ASPECT_AVIAN,
     ASPECT_CAT,
     CANNOT_ROLL_ATTACK_CARRIER,
+    CLASS_RING,
     CATALOG,
     COLD_RESIST,
     FIRE_RESIST,
@@ -31,6 +32,9 @@ const registry = buildRegistry({
         ASPECT_AVIAN,
     ],
     aspects: { cat: ASPECT_CAT.id, avian: ASPECT_AVIAN.id },
+    benchCrafts: [
+        { mod: PROTECT_SUFFIXES_CARRIER.id, tier: 1, itemClasses: new Set([CLASS_RING]) },
+    ],
     modAliases: { "T1 Life": "IncreasedLife1" },
     baseAliases: { "Iron Ring": "IronRing", Talisman: "BlackMawTalisman" },
 });
@@ -154,6 +158,35 @@ describe("beast metamod", () => {
         expect(r.finalState!.possible.has(MULTIMOD_CARRIER.type)).toBe(true);
         expect(r.finalState!.crafted).toEqual([1, 1]);
         expect(r.finalState!.counts.total).toEqual([2, 2]);
+    });
+
+    it("keeps every metamod a path may fit: an uncertain side, a possibly present carrier", () => {
+        // The exalt may have landed a prefix, leaving a suffix slot on that path,
+        // so no suffix metamod is ruled out and the prefix one is not guaranteed.
+        const uncertain = check(
+            craft(rareRing(["T1 Life"], [FIRE_RESIST.id, COLD_RESIST.id]), [
+                op("exalt"),
+                beast({ kind: "metamod" }),
+            ]),
+            ctx,
+        );
+        expect(uncertain.diagnostics).toEqual([]);
+        expect(guaranteedTypes(uncertain.finalState!).has(PROTECT_SUFFIXES_CARRIER.type)).toBe(
+            false,
+        );
+        expect(uncertain.finalState!.possible.has(PROTECT_PREFIXES_CARRIER.type)).toBe(true);
+        // A carrier the item may already hold is still in the pool: on the path
+        // where it is absent the game may craft it.
+        const maybe = check(
+            craft(rareRing([], [MULTIMOD_CARRIER.id, FIRE_RESIST.id]), [
+                iff(has(FIRE_RESIST.id), [bench("suffixes cannot be changed")]),
+                beast({ kind: "metamod" }),
+            ]),
+            ctx,
+        );
+        expect(maybe.diagnostics).toEqual([]);
+        expect(guaranteedTypes(maybe.finalState!).has(PROTECT_PREFIXES_CARRIER.type)).toBe(false);
+        expect(maybe.finalState!.possible.has(PROTECT_SUFFIXES_CARRIER.type)).toBe(true);
     });
 
     it("stays within the crafted limit and needs a metamod that fits", () => {

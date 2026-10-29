@@ -141,7 +141,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
             case "notImprintable":
                 return "The Bestiary imprints a Magic item or a Rare talisman, nothing else.";
             case "noMetamodFits":
-                return "No metamod fits: its side is full on some path, or every metamod may already be on the item.";
+                return "No metamod fits: the item may have no open slot, or every metamod is already on it.";
             case "wrongBase":
                 return `Needs a ${failure.needed}.`;
             case "fossilCorrupts":

@@ -82,8 +82,8 @@ export type PoolSpec =
     /** One of these rows, guaranteed: a fossil's forced row, the Glyphic Fossil's
      *  corrupted-essence modifier. */
     | { readonly kind: "rows"; readonly mods: readonly Mod[] }
-    /** One of the metamods that fits: a side with a provably open slot and not
-     *  possibly on the item already (the Bestiary's random metamod); crafted. */
+    /** One of the metamods not yet on the item whose side may have a slot (the
+     *  Bestiary's random metamod); crafted. */
     | { readonly kind: "metamods" };
 
 /** How many modifiers a `fill` lays down. */
@@ -332,7 +332,6 @@ function cannotRollShield(a: AItem, effects: readonly Effect[], registry: Regist
     return { types };
 }
 
-/** The generations a removal may draw from: both, minus the protected ones. */
 /** The sides a random removal may reach: its own side, if any, minus the protected. */
 function allowedFor(selector: Selector, rules: Rules): ReadonlySet<Gen> {
     const sides =
@@ -449,7 +448,9 @@ function failing(
                 ? null
                 : { kind: "notImprintable" };
         case "metamodFits":
-            return metamodRows(a, registry).length > 0 ? null : { kind: "noMetamodFits" };
+            return hasOpenSlot(a, undefined) && metamodRows(a, registry).length > 0
+                ? null
+                : { kind: "noMetamodFits" };
         case "baseHasTag":
             return a.base.tags.has(check.tag) ? null : { kind: "wrongBase", needed: check.what };
         case "fossilAllowed": {
@@ -868,17 +869,26 @@ function oneOf(mods: readonly Mod[]): ResolvedPool {
     };
 }
 
-/** The metamods the Bestiary recipe may craft: the bench's effect carriers on a
- *  side with a provably open slot, not possibly on the item already
- *  (Beastcrafting, "Add a crafted Meta-modifier"). */
+/** The metamods the Bestiary recipe may craft: the bench's effect carriers not
+ *  guaranteed on the item whose side may have a slot on some path (Beastcrafting,
+ *  "Add a crafted Meta-modifier"). Wider than what the game draws from on any
+ *  one path, so the disjunction the fill asserts holds on each. */
 function metamodRows(a: AItem, registry: Registry): Mod[] {
+    const guaranteed = guaranteedTypes(a);
     return registry.catalog.filter(
         (m) =>
             m.source === "bench" &&
             registry.effectsOfType(m.type).length > 0 &&
-            hasOpenSlot(a, m.gen) &&
-            !(a.possible.has(m.type) && !isExcluded(a, m.type)),
+            !guaranteed.has(m.type) &&
+            mayHaveSlot(a, m.gen),
     );
+}
+
+/** Might this side have an open slot on some path? */
+function mayHaveSlot(a: AItem, gen: Gen): boolean {
+    if (a.counts.total[0] >= maxTotal(a.rarity, a.base)) return false;
+    const lower = gen === "prefix" ? a.counts.prefix[0] : suffixRange(a)[0];
+    return lower < sideCap(gen, a.rarity, a.base);
 }
 
 function carriesAny(m: Mod, tags: ReadonlySet<TagId>): boolean {
