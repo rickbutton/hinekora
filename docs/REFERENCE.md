@@ -413,7 +413,8 @@ in it. Notes:
   at the source's tier rank, or all its rows while that rank is unknown. A **metamods**
   pool (`metamodRows`) is the bench's effect carriers not guaranteed on the item whose
   side may have a slot on some path, a crafted disjunction wide enough for every path
-  (`BEAST_METAMOD`, after an open slot on every path); an Aspect (`beastAspectOps`) is a one-row pool of the row the
+  (`BEAST_METAMOD`, after `metamodFits`: some one carrier fits on every path, its side
+  provably open and itself not possibly present); an Aspect (`beastAspectOps`) is a one-row pool of the row the
   registry's `resolveAspect` names (`ASPECTS`, the four animals). `imprint` and
   `restore` are the two exact primitives (`BEAST_IMPRINT` after `imprintable`, a Magic
   item or a Rare talisman, and `noFracture`; `RESTORE` after `hasImprint` and

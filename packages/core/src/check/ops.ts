@@ -448,7 +448,12 @@ function failing(
                 ? null
                 : { kind: "notImprintable" };
         case "metamodFits":
-            return hasOpenSlot(a, undefined) && metamodRows(a, registry).length > 0
+            // Some one carrier must fit on every path: its side provably open and
+            // itself not possibly on the item. The fill then draws from the wider
+            // set of carriers that fit on some path.
+            return metamodRows(a, registry).some(
+                (m) => hasOpenSlot(a, m.gen) && !(a.possible.has(m.type) && !isExcluded(a, m.type)),
+            )
                 ? null
                 : { kind: "noMetamodFits" };
         case "baseHasTag":

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
-import { guaranteedTypes, hasFracture } from "./astate.js";
+import { disjunctiveGuarantees, guaranteedTypes, hasFracture } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { beast, bench, craft, has, iff, item, op } from "../__fixtures__/ast.js";
+import { beast, craft, item, op } from "../__fixtures__/ast.js";
 import {
     ASPECT_AVIAN,
     ASPECT_CAT,
@@ -182,18 +182,40 @@ describe("beast metamod", () => {
             false,
         );
         expect(uncertain.finalState!.possible.has(PROTECT_PREFIXES_CARRIER.type)).toBe(true);
-        // A carrier the item may already hold is still in the pool: on the path
-        // where it is absent the game may craft it.
+        // A carrier the annul may have removed is still in the pool: on the path
+        // where it is gone the game may craft it, so the fill's "one of these"
+        // names it beside the suffix metamods that fit on every path.
         const maybe = check(
-            craft(rareRing([], [MULTIMOD_CARRIER.id, FIRE_RESIST.id]), [
-                iff(has(FIRE_RESIST.id), [bench("suffixes cannot be changed")]),
-                beast({ kind: "metamod" }),
-            ]),
+            craft(
+                item({
+                    base: "Iron Ring",
+                    ilvl: 100,
+                    rarity: "rare",
+                    prefixes: [PROTECT_SUFFIXES_CARRIER.id, "random"],
+                    suffixes: [{ mod: MULTIMOD_CARRIER.id, fractured: true }],
+                }),
+                [op("annul"), beast({ kind: "metamod" })],
+            ),
             ctx,
         );
         expect(maybe.diagnostics).toEqual([]);
-        expect(guaranteedTypes(maybe.finalState!).has(PROTECT_PREFIXES_CARRIER.type)).toBe(false);
-        expect(maybe.finalState!.possible.has(PROTECT_SUFFIXES_CARRIER.type)).toBe(true);
+        expect(disjunctiveGuarantees(maybe.finalState!).map((c) => new Set(c))).toContainEqual(
+            new Set([
+                PROTECT_SUFFIXES_CARRIER.type,
+                PROTECT_PREFIXES_CARRIER.type,
+                CANNOT_ROLL_ATTACK_CARRIER.type,
+            ]),
+        );
+    });
+
+    it("needs a metamod that fits on every path, not only on some", () => {
+        // The exalt may have filled the suffixes; on that path the only prefix
+        // metamod is already on the item, so nothing can be crafted there.
+        const c = craft(
+            rareRing([PROTECT_SUFFIXES_CARRIER.id], [MULTIMOD_CARRIER.id, FIRE_RESIST.id]),
+            [op("exalt"), beast({ kind: "metamod" })],
+        );
+        expect(check(c, ctx).diagnostics[0]!.message).toContain("No metamod fits");
     });
 
     it("stays within the crafted limit and needs a metamod that fits", () => {

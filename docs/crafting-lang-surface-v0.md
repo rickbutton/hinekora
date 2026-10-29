@@ -198,8 +198,8 @@ Operations that take a name (and an optional `t<n>`):
   not offered: the checker tracks one fracture.
 - `beast metamod` is the recipe "Add a crafted Meta-modifier": one of the five
   [metamods](https://www.poewiki.net/wiki/Metamod), random among those that fit (not
-  already on the item, a slot on its side), within the crafted limit; the item needs an
-  open slot on every path. The result is a disjunction over every metamod that may fit,
+  already on the item, a slot on its side), within the crafted limit; some one metamod
+  must fit on every path. The result is a disjunction over every metamod that may fit,
   which a following `if has "…"` can narrow.
 - `beast aspect "<animal>"` is "Craft an Aspect Skill onto an Item": the level-30
   [Aspect](https://www.poewiki.net/wiki/Aspect_of_the_Cat) of the cat, avian, spider or
