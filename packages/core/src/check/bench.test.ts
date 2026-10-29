@@ -100,6 +100,32 @@ describe("a bench craft on an item with a crafted modifier", () => {
         expect(check(c, ctx).diagnostics[0]!.message).toContain("may be fractured");
     });
 
+    it("is refused while the multimod may be on the item, since it would then add instead", () => {
+        // The annul may have taken the rolled prefix or the multimod; on one path
+        // the craft replaces the crafted life, on the other it adds beside it.
+        const c = craft(rareRing(["random"]), [
+            bench("can have up to 3 crafted modifiers"),
+            op("annul"),
+            bench("maximum life"),
+        ]);
+        expect(check(c, ctx).diagnostics[0]!.message).toContain("can have up to 3");
+    });
+
+    it("cannot replace when more than one crafted modifier may be present", () => {
+        const declared = rareRing([BENCH_LIFE_ROW.id], [PROTECT_PREFIXES_CARRIER.id]);
+        const r = check(craft(declared, [bench("maximum life")]), ctx);
+        expect(r.diagnostics[0]!.message).toContain("more than one crafted");
+        // Two benched under the multimod, then an annul that may have taken the
+        // multimod itself: one or two crafted remain beside the carrier.
+        const c = craft(rareRing(["random"]), [
+            bench("can have up to 3 crafted modifiers"),
+            bench("maximum life"),
+            op("annul"),
+            bench("prefixes cannot be changed"),
+        ]);
+        expect(check(c, ctx).diagnostics[0]!.message).toContain("more than one crafted");
+    });
+
     it("adds beside the crafted modifiers under the multimod", () => {
         const c = craft(rareRing([BENCH_LIFE_ROW.id], [MULTIMOD_CARRIER.id]), [
             bench("prefixes cannot be changed"),

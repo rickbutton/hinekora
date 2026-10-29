@@ -115,11 +115,15 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
             case "rarityUnsupported":
                 return `A ${state.base.name ?? "flask"} cannot be made ${RARITY_LABEL[failure.rarity]} — it can only be Normal or Magic.`;
             case "craftedLimit":
-                return `The item may already have ${failure.cap} crafted modifiers — that is the limit here, so this can't be benched.`;
+                return `The item may already have ${failure.cap} crafted modifier${failure.cap === 1 ? "" : "s"} — that is the limit here, so this can't be benched.`;
             case "noCraftedToRemove":
                 return "No crafted modifier is guaranteed on the item for the bench to remove.";
             case "craftedFractured":
                 return "The item's crafted modifier may be fractured — the bench can't replace it.";
+            case "craftedMultiple":
+                return "The item may have more than one crafted modifier — the bench can't replace them.";
+            case "craftedCapUnknown":
+                return "The item may carry 'can have up to 3 crafted modifiers' — the bench would add beside the crafted modifier on that path and replace it otherwise, so narrow it with an if first.";
             case "harvestEmptyPool":
                 return `No ${failure.tag} modifier can appear on a ${state.base.name ?? "item"} at this item level.`;
             case "metamodBlocks":

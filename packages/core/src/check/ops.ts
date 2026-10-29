@@ -68,7 +68,6 @@ export type FillCount =
      *  reforge's tagged modifier, a veiled chaos's placeholder, an unveil. */
     | { readonly kind: "within" };
 
-/** Which present modifiers a `remove` may reach. */
 /** Which present modifiers a removal may reach. */
 export type Selector =
     /** One random modifier; only the Orb of Annulment honours a cannot-roll
@@ -131,6 +130,8 @@ export type PreconditionFailure =
     | { readonly kind: "craftedLimit"; readonly cap: number }
     | { readonly kind: "noCraftedToRemove" }
     | { readonly kind: "craftedFractured" }
+    | { readonly kind: "craftedMultiple" }
+    | { readonly kind: "craftedCapUnknown" }
     | { readonly kind: "harvestEmptyPool"; readonly tag: TagId }
     | { readonly kind: "metamodBlocks" }
     | { readonly kind: "tooFewMods"; readonly needed: number }
@@ -295,10 +296,14 @@ function failing(
             return a.crafted[0] - fracturedCrafted(a, registry) >= 1
                 ? null
                 : { kind: "noCraftedToRemove" };
-        case "craftedReplaceable":
-            return rules.craftedCap === 1 && a.crafted[1] >= 1 && fracturedCrafted(a, registry) >= 1
-                ? { kind: "craftedFractured" }
-                : null;
+        case "craftedReplaceable": {
+            if (rules.craftedCap > 1 || a.crafted[1] === 0) return null;
+            if (a.crafted[1] >= 2) return { kind: "craftedMultiple" };
+            if (fracturedCrafted(a, registry) >= 1) return { kind: "craftedFractured" };
+            // A multimod that may be on the item would make the craft add on its
+            // path and replace on the other, so which happens is not settled.
+            return mayCarryCraftedCap(a, registry) ? { kind: "craftedCapUnknown" } : null;
+        }
         case "strippable": {
             // A Magic base with zero affixes (a magic Simplex) still drops to Normal,
             // so rarity, not mod count, is the gate; both sides protected and no
@@ -834,6 +839,16 @@ function removeOne(
     // The removed affix might have been the crafted mod, so the lower bound drops.
     const crafted: Range = [Math.max(0, a.crafted[0] - 1), a.crafted[1]];
     return settled({ ...a, counts: { total, prefix }, presence, crafted });
+}
+
+/** Might a crafted-limit carrier be on the item without being guaranteed? */
+function mayCarryCraftedCap(a: AItem, registry: Registry): boolean {
+    const guaranteed = guaranteedTypes(a);
+    for (const t of a.possible) {
+        if (guaranteed.has(t) || isExcluded(a, t)) continue;
+        if (registry.effectsOfType(t).some((e) => e.kind === "craftedCap")) return true;
+    }
+    return false;
 }
 
 /**

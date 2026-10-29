@@ -282,8 +282,9 @@ total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = t
   scour with nothing protected clears it to 0 except for a fractured bench row, which
   survives every reforge (`fracturedCrafted`; an unproven lock may be on one), while a
   `strip` that keeps a protected side keeps `[0, max − stripped carriers]`, since a
-  crafted mod on the kept side may survive; a `remove` drops its lower bound (the crafted
-  mod may have been removed).
+  crafted mod on the kept side may survive; a `remove` with the random selector drops its
+  lower bound (the crafted mod may have been removed), one with the crafted selector
+  (`removeCrafted`) leaves only what is fractured.
 - **Tier presence atoms.** A tier-qualified predicate (`has X t1`) also asserts a SECOND
   BDD variable (`type` + NUL + `modId`), so a disjunction of tier-qualified clauses
   (`fire@t1 ∨ cold@t1 ∨ light@t1`) survives a `join` where the flat overlay would drop
@@ -421,7 +422,9 @@ in it. Notes:
   a `remove` with the **crafted selector** in replacing mode (`removeCrafted`): under a
   limit of one it clears the crafted modifier a craft replaces
   ([Crafting Bench § Using the crafting bench](https://www.poewiki.net/wiki/Crafting_Bench#Using_the_crafting_bench)),
-  refused when that modifier may be fractured (`craftedReplaceable`); under the multimod
+  refused when that modifier may be fractured, when more than one may be present, or when
+  a multimod may be on the item without being guaranteed, since the craft would add on
+  that path and replace on the other (`craftedReplaceable`); under a guaranteed multimod
   it is a no-op. `bench remove` (`BENCH_REMOVE`) runs the same removal for every crafted
   modifier and needs one guaranteed removable (`craftedRemovable`). A type is a crafted
   modifier when its rows are bench rows (a benched or declared one pins to its row); a
