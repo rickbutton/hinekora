@@ -36,22 +36,6 @@ Rare with one modifier of each side; note whether the result keeps the side.
 change, metamods respected), as `operations.md` §3.2 states; not built until answered.
 **Answer:**
 
-### Q15 · decision · open
-
-**Asked:** 2026-10-28
-**Question:** the [Orb of Chance](https://www.poewiki.net/wiki/Orb_of_Chance) has three
-outcomes: Magic (as a transmute), Rare (as an alchemy), or Unique, where the craft ends.
-The state holds a set of rarities (`check/astate.ts` `rarities`), so the Magic-or-Rare
-half is expressible; what is missing is the Unique outcome, where the item leaves the
-crafting domain and nothing later can be done to it. The usual guide is "scour-chance
-until unique", about which only cost modelling has anything to say. Options: (1) a
-`unique` rarity no later operation accepts, so a guide that goes on after a chance is
-refused unless it narrows the rarity first; (2) leave the orb out of scope, like Rog.
-Recommendation: (2) until a guide needs it.
-**Assumed meanwhile:** not built; the ledger rows for the Orb of Chance and the bench's
-"Reroll the rarity" are marked **later** in `operations.md` §3.
-**Answer:**
-
 ### Q16 · game probe · open
 
 **Asked:** 2026-10-28
@@ -224,6 +208,22 @@ pair of side counts (`sidePairs`),
 ---
 
 ## Resolved
+
+### Q15 · decision · resolved
+
+**Asked:** 2026-10-28
+**Question:** the [Orb of Chance](https://www.poewiki.net/wiki/Orb_of_Chance) has three
+outcomes: Magic (as a transmute), Rare (as an alchemy), or Unique, where the craft ends.
+The state holds a set of rarities (`check/astate.ts` `rarities`), so the Magic-or-Rare
+half is expressible; what is missing is the Unique outcome, where the item leaves the
+crafting domain and nothing later can be done to it. The usual guide is "scour-chance
+until unique", about which only cost modelling has anything to say. Options: (1) a
+`unique` rarity no later operation accepts, so a guide that goes on after a chance is
+refused unless it narrows the rarity first; (2) leave the orb out of scope, like Rog.
+Recommendation: (2) until a guide needs it.
+**Answer:** Rick ruled (2026-10-29): do not model the Orb of Chance at all; it is not
+worth being able to model. The ledger rows for the orb and the bench's "Reroll the
+rarity" are **out** in `operations.md` §3.
 
 ### Q1 · decision · resolved
 
