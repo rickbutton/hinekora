@@ -87,6 +87,20 @@ what the add-pool holds (`check/ops.ts` `foulbornTiers`); the cull keeps every r
 count between the sure and the tag-enabled total would keep.
 **Answer:**
 
+### Q18 · clarification · open
+
+**Asked:** 2026-10-28
+**Question:** which pairs the Harvest "change a modifier into a similar tier modifier"
+crafts offer. The wiki cache has the craft's description
+([Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting): fire resistance to
+lightning resistance as the example; a damage variant that excludes critical strike
+multiplier) but not the option table. `harvest change "<mod>" "<mod>"` accepts any pair
+whose target rolls on the base.
+**Assumed meanwhile:** the resistances (fire, cold, lightning, each to each other) and
+the damage types; the checker does not validate the pair (`check/check.ts`
+`checkHarvestChange`).
+**Answer:**
+
 ---
 
 ## Resolved

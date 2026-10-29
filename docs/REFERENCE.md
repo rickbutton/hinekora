@@ -398,7 +398,11 @@ in it. Notes:
   forced row, the Glyphic Fossil's guarantee). `resonatorOps` composes a resonator from
   them ([Resonator § Mechanics](https://www.poewiki.net/wiki/Resonator#Mechanics):
   refused like an essence under a protect or cannot-roll metamod, and on a base a fossil
-  does not allow, `fossilAllowed`), the Fractured Fossil adding a `lock`.
+  does not allow, `fossilAllowed`), the Fractured Fossil adding a `lock`. The harvest
+  change (`harvestChangeOps`) is a `remove` with the **type selector** (`removeType`: the
+  named modifier goes, excluded afterwards, everything else stays) after `typeRemovable`
+  (guaranteed, not fractured, unprotected side), then a `rows` fill of the target's row
+  at the source's tier rank, or all its rows while that rank is unknown.
 - A `remove` with the random selector draws from an **allowed-gens** set = `both − protected`. A guarantee whose
   generation is not in that set survives (protected), as does one the cannot-roll shield
   covers and a fractured one; an empty set means nothing is removable.

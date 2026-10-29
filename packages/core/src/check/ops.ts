@@ -89,7 +89,9 @@ export type Selector =
      *  `replacing`, only under a limit of one: a craft replaces the single crafted
      *  modifier, while under the multimod it adds beside them (Crafting Bench §
      *  Using the crafting bench). */
-    | { readonly kind: "crafted"; readonly replacing: boolean };
+    | { readonly kind: "crafted"; readonly replacing: boolean }
+    /** Exactly this modifier (a harvest change). */
+    | { readonly kind: "type"; readonly type: TypeId };
 
 /** A check a `require` must prove on every path. */
 export type Check =
@@ -108,6 +110,8 @@ export type Check =
      *  reforges the rest away). */
     | { readonly kind: "noVeiledKept" }
     | { readonly kind: "noBlockingMetamod" }
+    /** The modifier is guaranteed present, not fractured, and on an unprotected side. */
+    | { readonly kind: "typeRemovable"; readonly type: TypeId; readonly label: string }
     /** The fossil's base restriction admits this item. */
     | { readonly kind: "fossilAllowed"; readonly fossil: FossilSpec }
     | { readonly kind: "essenceRarity"; readonly tier: number }
@@ -149,6 +153,11 @@ export type PreconditionFailure =
     | { readonly kind: "harvestEmptyPool"; readonly tag: TagId }
     | { readonly kind: "metamodBlocks" }
     | { readonly kind: "fossilBaseRestricted"; readonly fossil: string }
+    | {
+          readonly kind: "typeNotRemovable";
+          readonly mod: string;
+          readonly why: "absent" | "fractured" | "protected";
+      }
     | { readonly kind: "tooFewMods"; readonly needed: number }
     | { readonly kind: "alreadyFractured" }
     | { readonly kind: "noVeiledMod" }
@@ -194,9 +203,20 @@ function apply(
         case "fill":
             return fill(a, op.pool, op.count, rules, registry);
         case "remove":
-            return op.selector.kind === "crafted"
-                ? removeCrafted(a, rules, registry, op.selector.replacing)
-                : removeOne(a, allowedGens(rules), shieldFor(op.selector, rules), registry);
+            switch (op.selector.kind) {
+                case "crafted":
+                    return removeCrafted(a, rules, registry, op.selector.replacing);
+                case "type":
+                    return removeType(a, op.selector.type, registry);
+                case "random":
+                    return removeOne(
+                        a,
+                        allowedGens(rules),
+                        shieldFor(op.selector, rules),
+                        registry,
+                    );
+            }
+            break;
         case "rarity":
             return settled({
                 ...a,
@@ -352,6 +372,19 @@ function failing(
             const kept = (t: TypeId): boolean =>
                 unprovenLock || fractured.has(t) || rules.protected.has(sideOf(a, registry, t));
             return mayHaveVeiled(a, registry, kept) ? { kind: "veiledWouldSurvive" } : null;
+        }
+        case "typeRemovable": {
+            const { type, label } = check;
+            if (!guaranteedTypes(a).has(type))
+                return { kind: "typeNotRemovable", mod: label, why: "absent" };
+            const fractured = fracturedTypes(a);
+            if (fractured.has(type) || (hasFracture(a) && fractured.size === 0)) {
+                return { kind: "typeNotRemovable", mod: label, why: "fractured" };
+            }
+            if (rules.protected.has(genOf(a, registry, type))) {
+                return { kind: "typeNotRemovable", mod: label, why: "protected" };
+            }
+            return null;
         }
         case "fossilAllowed": {
             const allowed = check.fossil.allowedTags;
@@ -887,6 +920,28 @@ function removeOne(
     // The removed affix might have been the crafted mod, so the lower bound drops.
     const crafted: Range = [Math.max(0, a.crafted[0] - 1), a.crafted[1]];
     return settled({ ...a, counts: { total, prefix }, presence, crafted });
+}
+
+/** Remove one named, guaranteed modifier: it is gone, everything else stays. */
+function removeType(a: AItem, type: TypeId, registry: Registry): AItem {
+    const gen = genOf(a, registry, type);
+    const total: Range = [Math.max(0, a.counts.total[0] - 1), Math.max(0, a.counts.total[1] - 1)];
+    const prefix: Range =
+        gen === "prefix"
+            ? [Math.max(0, a.counts.prefix[0] - 1), Math.max(0, a.counts.prefix[1] - 1)]
+            : a.counts.prefix;
+    const surviving = guaranteedTypes(a);
+    surviving.delete(type);
+    const gone = excludedTypes(a);
+    gone.add(type);
+    const presence = a.bdd.and(presenceFacts(a.bdd, surviving, gone), fractureProjection(a));
+    const tiers = new Map(a.tiers);
+    tiers.delete(type);
+    // The named modifier may have been the crafted one.
+    const crafted: Range = rowsOf(a, type, registry).some((m) => m.source === "bench")
+        ? [Math.max(0, a.crafted[0] - 1), a.crafted[1]]
+        : a.crafted;
+    return settled({ ...a, counts: { total, prefix }, presence, tiers, crafted });
 }
 
 /** Might a crafted-limit carrier be on the item without being guaranteed? */

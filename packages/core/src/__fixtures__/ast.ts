@@ -25,6 +25,7 @@ import type {
     FossilStmt,
     FoulbornStmt,
     FracturedPred,
+    HarvestChangeStmt,
     HarvestStmt,
     OpStmt,
     UnveilStmt,
@@ -108,6 +109,10 @@ export const fossil = (...names: (string | ParamRef)[]): FossilStmt => ({
     names,
     span: DS,
 });
+export const harvestChange = (
+    from: string | ParamRef,
+    to: string | ParamRef,
+): HarvestChangeStmt => ({ kind: "harvestChange", from, to, span: DS });
 export const veiled = (verb: "chaos" | "exalt"): VeiledStmt => ({ kind: "veiled", verb, span: DS });
 export const foulborn = (verb: FoulbornStmt["verb"]): FoulbornStmt => ({
     kind: "foulborn",

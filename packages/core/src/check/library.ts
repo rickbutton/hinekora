@@ -159,6 +159,19 @@ export function foulbornOps(verb: FoulbornStmt["verb"]): readonly Op[] {
     );
 }
 
+/** Harvest "change a modifier into a similar tier modifier of another element"
+ *  (Harvest crafting): the named modifier goes and one of the target's rows at
+ *  its tier takes the slot; both protections are respected (Metamod § Rules and
+ *  Exceptions, "Change Element of Resistance"). */
+export function harvestChangeOps(from: TypeId, label: string, to: readonly Mod[]): readonly Op[] {
+    return [
+        require({ kind: "typeRemovable", type: from, label }),
+        ...to.slice(0, 1).map((mod) => require({ kind: "noGroupConflict", mod })),
+        remove({ kind: "type", type: from }),
+        fill({ kind: "rows", mods: to }, add([1, 1])),
+    ];
+}
+
 /** A socketed resonator, its fossils' rows resolved against the catalog. */
 export interface Resonator {
     readonly fossils: readonly FossilSpec[];

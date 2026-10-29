@@ -51,6 +51,7 @@ import {
     essenceOps,
     foulbornOps,
     harvestAugmentOps,
+    harvestChangeOps,
     harvestReforgeOps,
     resonatorOps,
     unveilOps,
@@ -432,6 +433,8 @@ class Checker {
                 return this.checkMethod(a, BENCH_REMOVE, stmt.span);
             case "harvest":
                 return this.checkHarvest(a, stmt);
+            case "harvestChange":
+                return this.checkHarvestChange(a, stmt);
             case "veiled":
                 return this.checkVeiled(a, stmt);
             case "foulborn":
@@ -531,6 +534,39 @@ class Checker {
 
     private checkFoulborn(a: AItem, stmt: Extract<Stmt, { kind: "foulborn" }>): Flow {
         return this.checkMethod(a, foulbornOps(stmt.verb), stmt.span);
+    }
+
+    private checkHarvestChange(a: AItem, stmt: Extract<Stmt, { kind: "harvestChange" }>): Flow {
+        const fromName = this.literalString(stmt.from, stmt.span);
+        const toName = this.literalString(stmt.to, stmt.span);
+        if (fromName === null || toName === null) return { kind: "fall", state: a };
+        const ctx = { base: a.base, ilvl: a.ilvl };
+        const from = this.registry.resolveModType(fromName, ctx);
+        const to = this.registry.resolveModType(toName, ctx);
+        for (const r of [from, to]) {
+            if (!r.ok) {
+                this.diag(resolveMessage(r.error), stmt.span);
+                return { kind: "fall", state: a };
+            }
+        }
+        if (!from.ok || !to.ok) return { kind: "fall", state: a };
+        const catalog = this.registry.catalog;
+        const targets = rollableTiers(catalog, a.base, a.ilvl, to.value);
+        if (targets.length === 0) {
+            this.diag(`"${toName}" cannot roll on this item.`, stmt.span);
+            return { kind: "fall", state: a };
+        }
+        // A similar tier: the target's row at the source's rank when the source
+        // is pinned to one row, else any of the target's rows.
+        const pinned = a.tiers.get(from.value);
+        const sources = rollableTiers(catalog, a.base, a.ilvl, from.value);
+        const rank = pinned?.size === 1 ? sources.findIndex((m) => pinned.has(m.id)) : -1;
+        const rows = rank >= 0 && rank < targets.length ? [targets[rank]!] : targets;
+        return this.checkMethod(
+            a,
+            harvestChangeOps(from.value, this.registry.typeLabel(from.value), rows),
+            stmt.span,
+        );
     }
 
     private checkFossil(a: AItem, stmt: Extract<Stmt, { kind: "fossil" }>): Flow {
@@ -1145,6 +1181,10 @@ function noteStmtUses(u: ParamUses, s: Stmt): void {
         case "fossil":
             for (const n of s.names) if (typeof n === "object") noteSort(u, n, "mod");
             return;
+        case "harvestChange":
+            if (typeof s.from === "object") noteSort(u, s.from, "mod");
+            if (typeof s.to === "object") noteSort(u, s.to, "mod");
+            return;
         case "unveil":
             if (s.mod !== undefined && typeof s.mod === "object") noteSort(u, s.mod, "mod");
             return;
@@ -1263,6 +1303,8 @@ function substituteStmt(stmt: Stmt, env: Map<string, Arg>): Stmt {
             return stmt;
         case "fossil":
             return { ...stmt, names: stmt.names.map((n) => subValue(n, env)) };
+        case "harvestChange":
+            return { ...stmt, from: subValue(stmt.from, env), to: subValue(stmt.to, env) };
         case "unveil":
             return stmt.mod === undefined ? stmt : { ...stmt, mod: subValue(stmt.mod, env) };
         case "until":

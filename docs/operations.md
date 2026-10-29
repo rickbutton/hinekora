@@ -179,7 +179,7 @@ rows of the Metamod table.
 | Reforge including a `<tag>` modifier                                            | `strip(protected ∪ fractured); fill(natural, [4,6]); fill(natural[tag], 1)` (the tagged fill is within the count) | built                    |
 | Reforge more / less likely                                                      | as a plain reforge (bias is probability)                                                                          | deferred (rarely needed) |
 | Add a `<tag>` modifier, remove another random modifier                          | `remove(unlocked ∖ protected, 1); fill(natural[tag], 1)`, the removal never the added one                         | built                    |
-| Change a resistance / damage modifier to another element                        | `remove(type ∖ protected, 1); fill(siblings(type) at its tier, 1)`                                                | composes                 |
+| Change a resistance / damage modifier to another element                        | `remove(type ∖ protected, 1); fill(siblings(type) at its tier, 1)`                                                | built                    |
 | Reforge an influenced item including an influence modifier; randomise influence | `strip(protected ∪ fractured); fill(natural, [4,6]); fill(influence, 1)`                                          | later: influence marks   |
 
 ### 3.6 Beastcrafting

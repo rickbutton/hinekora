@@ -93,6 +93,7 @@ export type Stmt =
     | EssenceStmt
     | BenchStmt
     | HarvestStmt
+    | HarvestChangeStmt
     | VeiledStmt
     | FoulbornStmt
     | FossilStmt
@@ -172,6 +173,15 @@ export interface FossilStmt {
 /** `bench remove`: clear the item's crafted modifiers at the bench. */
 export interface BenchRemoveStmt {
     readonly kind: "benchRemove";
+    readonly span: SourceSpan;
+}
+
+/** `harvest change "<mod>" "<mod>"`: the first modifier becomes a similar-tier
+ *  modifier of the second's kind. Inside a proc body a name may be a `ParamRef`. */
+export interface HarvestChangeStmt {
+    readonly kind: "harvestChange";
+    readonly from: string | ParamRef;
+    readonly to: string | ParamRef;
     readonly span: SourceSpan;
 }
 

@@ -722,6 +722,23 @@ export const ATTACK_SPEED: Mod = mkMod({
 });
 
 /** Catalog for fuzzy/tier tests: a 3-tier life type + a fire resist, on rings. */
+/** A second three-tier type at MaxLife's levels, for tier-to-tier changes. */
+export const MAXMANA_TIERS: readonly Mod[] = [
+    ["MaxManaLow", 1],
+    ["MaxManaMid", 30],
+    ["MaxManaHigh", 60],
+].map(([id, minLevel]) =>
+    mkMod({
+        id: id as string,
+        type: "MaxMana",
+        gen: "prefix",
+        minLevel: minLevel as number,
+        families: ["MaxMana"],
+        spawn: [spawn(TAG_DEFAULT, 1000)],
+        text: "+# to maximum Mana (tiered)",
+    }),
+);
+
 export const TIERED_CATALOG: readonly Mod[] = [MAXLIFE_T1, MAXLIFE_T2, MAXLIFE_T3, FIRE_RES_TIERED];
 
 /** The full mini catalog. */

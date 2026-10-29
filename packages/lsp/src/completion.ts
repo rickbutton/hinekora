@@ -182,7 +182,10 @@ export function getCompletions(
         case "harvestVerb":
             return HARVEST_VERBS.map((label) => ({
                 label,
-                detail: `harvest ${label} "<tag>"`,
+                detail:
+                    label === "change"
+                        ? 'harvest change "<mod>" "<mod>"'
+                        : `harvest ${label} "<tag>"`,
                 kind: CompletionItemKind.Keyword,
             }));
         case "harvestTag":

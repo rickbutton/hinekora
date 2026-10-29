@@ -17,6 +17,7 @@ import {
     type EssenceStmt,
     type FossilStmt,
     type FoulbornStmt,
+    type HarvestChangeStmt,
     type HarvestStmt,
     type IfStmt,
     type ItemBlock,
@@ -474,15 +475,20 @@ class Parser {
         };
     }
 
-    private parseHarvest(): HarvestStmt {
+    private parseHarvest(): HarvestStmt | HarvestChangeStmt {
         const start = this.expectKeyword("harvest").span.start;
-        const verbTok = this.expect("ident", "a harvest action ('reforge' or 'augment')");
+        const verbTok = this.expect("ident", "a harvest action ('reforge', 'augment' or 'change')");
         const verb = verbTok.text.toLowerCase() as HarvestVerb;
         if (!HARVEST_VERBS.includes(verb)) {
             throw this.error(
-                `a harvest action must be 'reforge' or 'augment', not '${verbTok.text}'`,
+                `a harvest action must be 'reforge', 'augment' or 'change', not '${verbTok.text}'`,
                 verbTok.span,
             );
+        }
+        if (verb === "change") {
+            const from = this.parseStringOrParam("a quoted modifier to change after 'change'");
+            const to = this.parseStringOrParam("a quoted modifier to change it into");
+            return { kind: "harvestChange", from, to, span: span(start, this.prev.span.end) };
         }
         const tag = this.parseStringOrParam("a quoted modifier type after the harvest action");
         return { kind: "harvest", verb, tag, span: span(start, this.prev.span.end) };

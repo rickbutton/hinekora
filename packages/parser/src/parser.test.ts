@@ -177,6 +177,15 @@ describe("parser — veiled orbs and unveil", () => {
         expect(() => bodyOf("veiled scour")).toThrow(/chaos.*exalt/);
     });
 
+    it("parses harvest change with two modifier names", () => {
+        expect(bodyOf('harvest change "fire res" "cold res"')).toMatchObject({
+            kind: "harvestChange",
+            from: "fire res",
+            to: "cold res",
+        });
+        expect(() => bodyOf('harvest change "fire res"')).toThrow(/change it into/);
+    });
+
     it("parses a fossil list of one or more names", () => {
         expect(bodyOf('fossil "pristine"')).toMatchObject({ kind: "fossil", names: ["pristine"] });
         expect(bodyOf('fossil "pristine" "dense"')).toMatchObject({

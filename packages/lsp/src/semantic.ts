@@ -30,6 +30,7 @@ const KEYWORDS = new Set([
     "harvest",
     "reforge",
     "augment",
+    "change",
     "veiled",
     "unveil",
     "foulborn",
