@@ -20,7 +20,7 @@ import type {
 import type { SourceSpan } from "../ast/span.js";
 import type { Gen, GroupId, ModId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
-import { CORRUPTED_ESSENCE_TIER, type FossilSpec } from "../model/sources.js";
+import { type FossilSpec, isCorruptedEssence } from "../model/sources.js";
 import type { Registry } from "../resolve/registry.js";
 import {
     type AItem,
@@ -612,12 +612,10 @@ class Checker {
                 const r = this.registry.resolveMod(id);
                 return r.ok ? [r.value] : [];
             });
-        const corrupted = this.registry.essences
-            .filter((e) => e.tier === CORRUPTED_ESSENCE_TIER)
-            .flatMap((e) => {
-                const id = e.grants.get(a.base.itemClass);
-                return id === undefined ? [] : rows([id]);
-            });
+        const corrupted = this.registry.essences.filter(isCorruptedEssence).flatMap((e) => {
+            const id = e.grants.get(a.base.itemClass);
+            return id === undefined ? [] : rows([id]);
+        });
         return this.checkMethod(
             a,
             resonatorOps({

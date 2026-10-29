@@ -13,8 +13,23 @@ export type ModSource =
     | "fossil" // delve / fossils
     | "other"; // a row nothing places (no partition of its own, no weight anywhere)
 
-/** The ladder tier of the four corrupted essences, above Deafening. */
+/** The ladder tier above Deafening: the corrupted essences and the retired
+ *  Essence of Desolation. */
 export const CORRUPTED_ESSENCE_TIER = 8;
+
+/** The four corrupted essences (Essence § Corrupted essences), the ones a
+ *  Glyphic Fossil draws from; the Essence of Desolation shares their tier but
+ *  is a mirage essence. */
+export const CORRUPTED_ESSENCES: ReadonlySet<string> = new Set([
+    "Essence of Delirium",
+    "Essence of Horror",
+    "Essence of Hysteria",
+    "Essence of Insanity",
+]);
+
+export function isCorruptedEssence(e: EssenceSpec): boolean {
+    return e.tier === CORRUPTED_ESSENCE_TIER && CORRUPTED_ESSENCES.has(e.name);
+}
 
 /**
  * An Essence: rerolls the item but guarantees one specific mod, chosen by the

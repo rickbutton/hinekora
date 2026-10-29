@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { type Base, emptyItem, type ItemFacts, pool, TagId } from "@hinekora/core";
+import {
+    type Base,
+    emptyItem,
+    isCorruptedEssence,
+    type ItemFacts,
+    pool,
+    TagId,
+} from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "./load.js";
 
 const data = loadDefaultPoe1();
@@ -52,6 +59,17 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         expect(registry.resolveFossil("bloodstained")).toMatchObject({ value: { corrupts: true } });
         expect(registry.resolveFossil("fossil").ok).toBe(false); // every fossil matches
         expect(registry.resolveFossil("amber").ok).toBe(false);
+    });
+
+    it("knows the four corrupted essences apart from the other top-tier essence", () => {
+        const corrupted = registry.essences.filter(isCorruptedEssence).map((e) => e.name);
+        expect(corrupted.sort()).toEqual([
+            "Essence of Delirium",
+            "Essence of Horror",
+            "Essence of Hysteria",
+            "Essence of Insanity",
+        ]);
+        expect(registry.essences.some((e) => e.tier === 8 && !isCorruptedEssence(e))).toBe(true);
     });
 
     it("resolves essences by full name, by type + tier, and flags conflicts", () => {

@@ -20,7 +20,7 @@ import { TypeId } from "../model/ids.js";
 
 const ESS_CORRUPTED: EssenceSpec = {
     id: "TestCorrupted",
-    name: "Essence of Testing",
+    name: "Essence of Horror",
     tier: CORRUPTED_ESSENCE_TIER,
     grants: new Map([[CLASS_RING, CORRUPTED_ESSENCE_ROW.id]]),
 };
