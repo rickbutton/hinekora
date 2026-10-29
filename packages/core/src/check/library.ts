@@ -4,7 +4,7 @@
  * placed where the check belongs: usually first, after a removal or a reforge
  * when the check reads the state those produce.
  */
-import type { Gen, Rarity, TagId, TypeId } from "../model/ids.js";
+import { type Gen, type Rarity, TagId, type TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import type { EssenceSpec, FossilSpec } from "../model/sources.js";
 import type { FoulbornStmt } from "../ast/ast.js";
@@ -174,6 +174,16 @@ export function beastAddOps(gen: Gen, level: number): readonly Op[] {
         fill({ kind: "natural", gen, level }, add([1, 1])),
     ];
 }
+
+/** Beastcraft "fracture a modifier on a Rare Talisman with at least 4 modifiers"
+ *  (Beastcrafting): the Fracturing Orb's rule on a talisman. */
+export const BEAST_FRACTURE: readonly Op[] = [
+    isRare,
+    require({ kind: "baseHasTag", tag: TagId("talisman"), what: "talisman" }),
+    require({ kind: "noFracture" }),
+    require({ kind: "atLeast", count: 4 }),
+    lock(),
+];
 
 /** Harvest "change a modifier into a similar tier modifier of another element"
  *  (Harvest crafting): the named modifier goes and one of the target's rows at

@@ -187,6 +187,10 @@ Operations that take a name (and an optional `t<n>`):
   item with an open slot on the added side and a modifier to remove, unless the other
   side is protected, when the recipe adds without removing
   ([Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions)).
+- `beast fracture` is the recipe that fractures a modifier on a Rare
+  [talisman](https://www.poewiki.net/wiki/Talisman) with at least four modifiers; like
+  the Fracturing Orb it needs an item with no fracture yet. The two-modifier recipe is
+  not offered: the checker tracks one fracture.
 - `unveil ["<mod>"]` is the three-option unveil of a
   [veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) and needs a veiled
   modifier on the item. Bare, the result is one of the valid options

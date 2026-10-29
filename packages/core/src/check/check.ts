@@ -45,6 +45,7 @@ import {
 } from "./diagnostics.js";
 import { rollableGen, rollableTiers, tierMod } from "../resolve/tiers.js";
 import {
+    BEAST_FRACTURE,
     beastAddOps,
     BENCH_REMOVE,
     benchOps,
@@ -548,6 +549,8 @@ class Checker {
                     beastAddOps(action.side, action.level ?? a.ilvl),
                     stmt.span,
                 );
+            case "fracture":
+                return this.checkMethod(a, BEAST_FRACTURE, stmt.span);
         }
     }
 

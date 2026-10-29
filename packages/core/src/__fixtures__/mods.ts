@@ -50,6 +50,7 @@ export const TAG_RING = TagId("ring");
 export const TAG_AMULET = TagId("amulet");
 export const TAG_FLASK = TagId("flask");
 export const TAG_JEWEL = TagId("jewel"); // no fixture base carries this
+export const TAG_TALISMAN = TagId("talisman");
 
 // Families are referenced by name in each mod's `families` list below (e.g.
 // "Life", "ResistFire"); `mkMod` brands the strings into GroupIds.
@@ -68,6 +69,14 @@ export const AMULET_BASE: Base = {
     itemClass: CLASS_AMULET,
     domain: DOMAIN_ITEM,
     tags: new Set([TAG_DEFAULT, TAG_AMULET]),
+};
+
+/** A talisman: an amulet the Bestiary fractures. */
+export const TALISMAN_BASE: Base = {
+    id: BaseId("BlackMawTalisman"),
+    itemClass: CLASS_AMULET,
+    domain: DOMAIN_ITEM,
+    tags: new Set([TAG_DEFAULT, TAG_AMULET, TAG_TALISMAN]),
 };
 
 export const FLASK_BASE: Base = {

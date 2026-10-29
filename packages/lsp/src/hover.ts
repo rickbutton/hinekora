@@ -52,7 +52,7 @@ const KEYWORD_DOC: Record<string, string> = {
     restart: "`restart` — abandon this attempt and re-run the enclosing loop from the top.",
     bench: '`bench "<mod>" [t1]` — add a crafted modifier, replacing the item\'s single crafted one; `bench remove` clears them.',
     remove: "`bench remove` — clear the item's crafted modifiers at the bench (a fractured one stays).",
-    beast: "`beast add prefix|suffix [<level>]` — the Bestiary recipe that adds a modifier of that side, drawn at the beast's level, and removes a random one of the other side.",
+    beast: "`beast add prefix|suffix [<level>]` adds a modifier of that side, drawn at the beast's level, and removes a random one of the other; `beast fracture` fractures one modifier of a Rare talisman.",
     foulborn:
         "`foulborn augment | regal | exalt` — the plain orb, but only the top half of each modifier's tiers can roll.",
     has: '`has "<mod>" [t1]` — true when the item is guaranteed to carry that mod (optionally at that tier; `t1` = best).',

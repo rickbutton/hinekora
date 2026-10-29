@@ -227,7 +227,7 @@ export function getCompletions(
         case "beastVerb":
             return BEAST_VERBS.map((label) => ({
                 label,
-                detail: `beast ${label} prefix|suffix [<level>]`,
+                detail: label === "add" ? "beast add prefix|suffix [<level>]" : `beast ${label}`,
                 kind: CompletionItemKind.Keyword,
             }));
         case "beastSide":

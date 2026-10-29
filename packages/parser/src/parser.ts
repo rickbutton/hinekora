@@ -468,9 +468,20 @@ class Parser {
 
     private parseBeast(): BeastStmt {
         const start = this.expectKeyword("beast").span.start;
-        const verbTok = this.expect("ident", "a beast recipe ('add')");
-        if (verbTok.text.toLowerCase() !== "add") {
-            throw this.error(`a beast recipe must be 'add', not '${verbTok.text}'`, verbTok.span);
+        const verbTok = this.expect("ident", "a beast recipe ('add' or 'fracture')");
+        const verb = verbTok.text.toLowerCase();
+        if (verb === "fracture") {
+            return {
+                kind: "beast",
+                action: { kind: "fracture" },
+                span: span(start, verbTok.span.end),
+            };
+        }
+        if (verb !== "add") {
+            throw this.error(
+                `a beast recipe must be 'add' or 'fracture', not '${verbTok.text}'`,
+                verbTok.span,
+            );
         }
         const sideTok = this.expect("ident", "'prefix' or 'suffix' after 'beast add'");
         const side = sideTok.text.toLowerCase();

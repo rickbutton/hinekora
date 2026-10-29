@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
-import { guaranteedTypes } from "./astate.js";
+import { guaranteedTypes, hasFracture } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { beast, craft, item } from "../__fixtures__/ast.js";
 import {
@@ -10,14 +10,15 @@ import {
     LIFE_T1,
     PROTECT_SUFFIXES_CARRIER,
     RING_BASE,
+    TALISMAN_BASE,
 } from "../__fixtures__/mods.js";
 import { TypeId } from "../model/ids.js";
 
 const registry = buildRegistry({
-    bases: [RING_BASE],
+    bases: [RING_BASE, TALISMAN_BASE],
     mods: [...CATALOG, PROTECT_SUFFIXES_CARRIER],
     modAliases: { "T1 Life": "IncreasedLife1" },
-    baseAliases: { "Iron Ring": "IronRing" },
+    baseAliases: { "Iron Ring": "IronRing", Talisman: "BlackMawTalisman" },
 });
 const ctx: CheckContext = { registry };
 
@@ -83,5 +84,39 @@ describe("beast add", () => {
             ctx,
         );
         expect(empty.diagnostics[0]!.message).toContain("removable affix");
+    });
+});
+
+describe("beast fracture", () => {
+    const talisman = (mods: number) =>
+        item({
+            base: "Talisman",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: Array.from({ length: Math.min(3, mods) }, () => "random"),
+            suffixes: Array.from({ length: Math.max(0, mods - 3) }, () => "random"),
+        });
+
+    it("fractures one modifier of a Rare talisman with four", () => {
+        const r = check(craft(talisman(4), [beast({ kind: "fracture" })]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(hasFracture(r.finalState!)).toBe(true);
+    });
+
+    it("needs a talisman, four modifiers and no fracture yet", () => {
+        const ring = check(
+            craft(rareRing(["random", "random"], ["random", "random"]), [
+                beast({ kind: "fracture" }),
+            ]),
+            ctx,
+        );
+        expect(ring.diagnostics[0]!.message).toContain("Needs a talisman");
+        const few = check(craft(talisman(3), [beast({ kind: "fracture" })]), ctx);
+        expect(few.diagnostics[0]!.message).toContain("at least 4");
+        const twice = check(
+            craft(talisman(4), [beast({ kind: "fracture" }), beast({ kind: "fracture" })]),
+            ctx,
+        );
+        expect(twice.diagnostics[0]!.message).toContain("already has a fractured");
     });
 });

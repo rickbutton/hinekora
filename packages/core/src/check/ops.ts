@@ -121,6 +121,8 @@ export type Check =
     | { readonly kind: "noBlockingMetamod" }
     /** The modifier is guaranteed present, not fractured, and on an unprotected side. */
     | { readonly kind: "typeRemovable"; readonly type: TypeId; readonly label: string }
+    /** The base carries the tag (a talisman for the Bestiary fractures). */
+    | { readonly kind: "baseHasTag"; readonly tag: TagId; readonly what: string }
     /** The fossil's base restriction admits this item. */
     | { readonly kind: "fossilAllowed"; readonly fossil: FossilSpec }
     | { readonly kind: "essenceRarity"; readonly tier: number }
@@ -162,6 +164,7 @@ export type PreconditionFailure =
     | { readonly kind: "harvestEmptyPool"; readonly tag: TagId }
     | { readonly kind: "metamodBlocks" }
     | { readonly kind: "fossilBaseRestricted"; readonly fossil: string }
+    | { readonly kind: "wrongBase"; readonly needed: string }
     | {
           readonly kind: "typeNotRemovable";
           readonly mod: string;
@@ -405,6 +408,8 @@ function failing(
             }
             return null;
         }
+        case "baseHasTag":
+            return a.base.tags.has(check.tag) ? null : { kind: "wrongBase", needed: check.what };
         case "fossilAllowed": {
             const allowed = check.fossil.allowedTags;
             if (allowed === undefined) return null;

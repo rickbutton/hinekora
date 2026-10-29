@@ -136,6 +136,8 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                         return `"${failure.mod}" sits on a side a metamod protects, so it can't be changed.`;
                 }
                 break;
+            case "wrongBase":
+                return `Needs a ${failure.needed}.`;
             case "fossilBaseRestricted":
                 return `A ${failure.fossil} cannot be used on a ${state.base.name ?? "base"} like this one.`;
             case "metamodBlocks":

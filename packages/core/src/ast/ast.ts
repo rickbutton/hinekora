@@ -187,7 +187,9 @@ export interface BeastStmt {
 export type BeastAction =
     /** `beast add prefix|suffix [<level>]`: add a modifier of that side, drawn at
      *  the beast's level (the item's when absent), removing one of the other. */
-    { readonly kind: "add"; readonly side: "prefix" | "suffix"; readonly level?: number };
+    | { readonly kind: "add"; readonly side: "prefix" | "suffix"; readonly level?: number }
+    /** `beast fracture`: fracture one modifier of a Rare talisman. */
+    | { readonly kind: "fracture" };
 
 /** `harvest change "<mod>" "<mod>"`: the first modifier becomes a similar-tier
  *  modifier of the second's kind. Inside a proc body a name may be a `ParamRef`. */
