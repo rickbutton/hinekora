@@ -69,10 +69,16 @@ export type FillCount =
     | { readonly kind: "within" };
 
 /** Which present modifiers a `remove` may reach. */
-export interface Selector {
-    /** Only the Orb of Annulment honours a cannot-roll metamod's shield. */
-    readonly honourCannotRoll: boolean;
-}
+/** Which present modifiers a removal may reach. */
+export type Selector =
+    /** One random modifier; only the Orb of Annulment honours a cannot-roll
+     *  metamod's shield. */
+    | { readonly kind: "random"; readonly honourCannotRoll: boolean }
+    /** The crafted modifiers the bench can clear; a fractured one stays. When
+     *  `replacing`, only under a limit of one: a craft replaces the single crafted
+     *  modifier, while under the multimod it adds beside them (Crafting Bench §
+     *  Using the crafting bench). */
+    | { readonly kind: "crafted"; readonly replacing: boolean };
 
 /** A check a `require` must prove on every path. */
 export type Check =
@@ -94,6 +100,10 @@ export type Check =
     | { readonly kind: "essenceRarity"; readonly tier: number }
     | { readonly kind: "essenceGrant"; readonly spec: EssenceSpec }
     | { readonly kind: "craftedBelowCap" }
+    /** A crafted modifier the bench can remove is present on every path. */
+    | { readonly kind: "craftedRemovable" }
+    /** A craft that would replace the crafted modifier can: it is not fractured. */
+    | { readonly kind: "craftedReplaceable" }
     | { readonly kind: "noGroupConflict"; readonly mod: Mod }
     | { readonly kind: "poolNonEmpty"; readonly pool: PoolSpec; readonly tag: TagId }
     | { readonly kind: "unveilTarget"; readonly type: TypeId; readonly name: string };
@@ -119,6 +129,8 @@ export type PreconditionFailure =
     | { readonly kind: "essenceClass"; readonly essence: string; readonly itemClass: ClassId }
     | { readonly kind: "rarityUnsupported"; readonly rarity: Rarity }
     | { readonly kind: "craftedLimit"; readonly cap: number }
+    | { readonly kind: "noCraftedToRemove" }
+    | { readonly kind: "craftedFractured" }
     | { readonly kind: "harvestEmptyPool"; readonly tag: TagId }
     | { readonly kind: "metamodBlocks" }
     | { readonly kind: "tooFewMods"; readonly needed: number }
@@ -166,7 +178,9 @@ function apply(
         case "fill":
             return fill(a, op.pool, op.count, rules, registry);
         case "remove":
-            return removeOne(a, allowedGens(rules), shieldFor(op.selector, rules), registry);
+            return op.selector.kind === "crafted"
+                ? removeCrafted(a, rules, registry, op.selector.replacing)
+                : removeOne(a, allowedGens(rules), shieldFor(op.selector, rules), registry);
         case "rarity":
             return settled({
                 ...a,
@@ -244,7 +258,7 @@ function allowedGens(rules: Rules): ReadonlySet<Gen> {
 }
 
 function shieldFor(selector: Selector, rules: Rules): Shield | null {
-    return selector.honourCannotRoll ? rules.cannotRoll : null;
+    return selector.kind === "random" && selector.honourCannotRoll ? rules.cannotRoll : null;
 }
 
 /** The side `type` occupies on this item's base (`rollableGen`). */
@@ -277,6 +291,14 @@ function failing(
             return hasRemovable(a, allowedGens(rules), shieldFor(check.selector, rules), registry)
                 ? null
                 : { kind: "nothingToRemove" };
+        case "craftedRemovable":
+            return a.crafted[0] - fracturedCrafted(a, registry) >= 1
+                ? null
+                : { kind: "noCraftedToRemove" };
+        case "craftedReplaceable":
+            return rules.craftedCap === 1 && a.crafted[1] >= 1 && fracturedCrafted(a, registry) >= 1
+                ? { kind: "craftedFractured" }
+                : null;
         case "strippable": {
             // A Magic base with zero affixes (a magic Simplex) still drops to Normal,
             // so rarity, not mod count, is the gate; both sides protected and no
@@ -812,6 +834,61 @@ function removeOne(
     // The removed affix might have been the crafted mod, so the lower bound drops.
     const crafted: Range = [Math.max(0, a.crafted[0] - 1), a.crafted[1]];
     return settled({ ...a, counts: { total, prefix }, presence, crafted });
+}
+
+/**
+ * Clear the crafted modifiers the bench can reach. A type is a crafted modifier
+ * when its rows are bench rows (a benched or declared one pins to its row); a
+ * type with a bench row among others may be one, so it keeps its presence but
+ * not its guarantee. A fractured crafted modifier stays, and under an unproven
+ * lock any of them may be the fractured one.
+ */
+function removeCrafted(a: AItem, rules: Rules, registry: Registry, replacing: boolean): AItem {
+    if (replacing && rules.craftedCap > 1) return a;
+    if (a.crafted[1] === 0) return a;
+    const fractured = fracturedTypes(a);
+    const unprovenLock = hasFracture(a) && fractured.size === 0;
+    const isBench = (m: Mod): boolean => m.source === "bench";
+    let fracturedLower = 0;
+    for (const t of fractured) if (rowsOf(a, t, registry).every(isBench)) fracturedLower++;
+    const fracturedUpper = fracturedCrafted(a, registry);
+    const removedLower = Math.max(0, a.crafted[0] - fracturedUpper);
+    const removedUpper = Math.max(0, a.crafted[1] - fracturedLower);
+
+    const guaranteed = guaranteedTypes(a);
+    const excluded = excludedTypes(a);
+    const surviving = new Set<TypeId>();
+    const gone = new Set(excluded);
+    const tiers = new Map(a.tiers);
+    const sure = { prefix: 0, suffix: 0 };
+    for (const t of a.possible) {
+        if (excluded.has(t)) continue;
+        const rows = rowsOf(a, t, registry);
+        if (!rows.some(isBench) || fractured.has(t)) {
+            if (guaranteed.has(t)) surviving.add(t);
+            continue;
+        }
+        tiers.delete(t);
+        if (rows.every(isBench) && !unprovenLock) {
+            if (guaranteed.has(t)) sure[genOf(a, registry, t)]++;
+            gone.add(t);
+        }
+    }
+    const sureRemoved = Math.max(removedLower, sure.prefix + sure.suffix);
+    const total: Range = [
+        Math.max(0, a.counts.total[0] - removedUpper),
+        Math.max(0, a.counts.total[1] - sureRemoved),
+    ];
+    const prefix: Range = [
+        Math.max(0, a.counts.prefix[0] - removedUpper),
+        Math.max(0, a.counts.prefix[1] - sure.prefix),
+    ];
+    const presence = a.bdd.and(presenceFacts(a.bdd, surviving, gone), fractureProjection(a));
+    const crafted: Range = [
+        Math.min(a.crafted[0], fracturedLower),
+        Math.min(a.crafted[1], fracturedUpper),
+    ];
+    return settled({ ...a, counts: { total, prefix }, presence, tiers, crafted });
 }
 
 // --- lock -----------------------------------------------------------------------

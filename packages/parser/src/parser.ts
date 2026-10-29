@@ -7,6 +7,7 @@
 import {
     type AffixDecl,
     type Arg,
+    type BenchRemoveStmt,
     type BenchStmt,
     type CallPred,
     type CallStmt,
@@ -403,9 +404,13 @@ class Parser {
         };
     }
 
-    private parseBench(): BenchStmt {
+    private parseBench(): BenchStmt | BenchRemoveStmt {
         const start = this.expectKeyword("bench").span.start;
-        const name = this.parseStringOrParam("a quoted mod name after 'bench'");
+        if (this.atKeyword("remove")) {
+            const t = this.advance();
+            return { kind: "benchRemove", span: span(start, t.span.end) };
+        }
+        const name = this.parseStringOrParam("a quoted mod name (or 'remove') after 'bench'");
         const tier = this.parseTierOrParam();
         return {
             kind: "bench",

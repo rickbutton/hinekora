@@ -151,6 +151,10 @@ describe("parser — essence statement", () => {
         });
     });
 
+    it("parses bench remove", () => {
+        expect(bodyOf("bench remove")).toMatchObject({ kind: "benchRemove" });
+    });
+
     it("parses a bench craft, with and without a tier", () => {
         expect(bodyOf('bench "increased life"')).toMatchObject({
             kind: "bench",

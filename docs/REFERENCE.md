@@ -385,7 +385,7 @@ in it. Notes:
   ([Foulborn currency § Mechanics](https://www.poewiki.net/wiki/Foulborn_currency#Mechanics));
   rows a possibly present modifier's tag enables make the eligible count uncertain, so
   the cull keeps every row some count in that range would keep.
-- A `remove` draws from an **allowed-gens** set = `both − protected`. A guarantee whose
+- A `remove` with the random selector draws from an **allowed-gens** set = `both − protected`. A guarantee whose
   generation is not in that set survives (protected), as does one the cannot-roll shield
   covers and a fractured one; an empty set means nothing is removable.
 - `strip` keeps the protected sides and the fractured mod and drops the rest: counts fall
@@ -413,7 +413,15 @@ in it. Notes:
   provably below the cap (what each op does to it is under `crafted` in §4); and
   **group exclusivity** — the [mod group](https://www.poewiki.net/wiki/Modifier#Group/family)
   rule — where the mod's family must not be possibly-present, via `familiesOfType`. Not
-  modelled: a conflict hidden behind an anonymous "random" affix.
+  modelled: a conflict hidden behind an anonymous "random" affix. The fill is preceded by
+  a `remove` with the **crafted selector** in replacing mode (`removeCrafted`): under a
+  limit of one it clears the crafted modifier a craft replaces
+  ([Crafting Bench § Using the crafting bench](https://www.poewiki.net/wiki/Crafting_Bench#Using_the_crafting_bench)),
+  refused when that modifier may be fractured (`craftedReplaceable`); under the multimod
+  it is a no-op. `bench remove` (`BENCH_REMOVE`) runs the same removal for every crafted
+  modifier and needs one guaranteed removable (`craftedRemovable`). A type is a crafted
+  modifier when its rows are bench rows (a benched or declared one pins to its row); a
+  type with a bench row among others keeps its presence but loses its guarantee.
 - **Metamods** ([Metamod](https://www.poewiki.net/wiki/Metamod), the
   [metacrafting bench options](https://www.poewiki.net/wiki/Crafting_Bench#Metacrafting_modifiers))
   are effect-carriers: an effect is active iff its carrier type is GUARANTEED present.

@@ -168,7 +168,10 @@ export function getCompletions(
                 kind: CompletionItemKind.Value,
             }));
         case "bench":
-            return registry.benchNames.map((label) => ({ label, kind: CompletionItemKind.Value }));
+            return [
+                { label: "remove", detail: "bench remove", kind: CompletionItemKind.Keyword },
+                ...registry.benchNames.map((label) => ({ label, kind: CompletionItemKind.Value })),
+            ];
         case "harvestVerb":
             return HARVEST_VERBS.map((label) => ({
                 label,

@@ -43,6 +43,7 @@ import {
 } from "./diagnostics.js";
 import { rollableGen, rollableTiers, tierMod } from "../resolve/tiers.js";
 import {
+    BENCH_REMOVE,
     benchOps,
     currencyOps,
     essenceOps,
@@ -424,6 +425,8 @@ class Checker {
                 return this.checkEssence(a, stmt);
             case "bench":
                 return this.checkBench(a, stmt);
+            case "benchRemove":
+                return this.checkMethod(a, BENCH_REMOVE, stmt.span);
             case "harvest":
                 return this.checkHarvest(a, stmt);
             case "veiled":
@@ -1089,6 +1092,7 @@ function noteStmtUses(u: ParamUses, s: Stmt): void {
             return;
         case "veiled":
         case "foulborn":
+        case "benchRemove":
             return;
         case "unveil":
             if (s.mod !== undefined && typeof s.mod === "object") noteSort(u, s.mod, "mod");
@@ -1204,6 +1208,7 @@ function substituteStmt(stmt: Stmt, env: Map<string, Arg>): Stmt {
             return { ...stmt, tag: subValue(stmt.tag, env) };
         case "veiled":
         case "foulborn":
+        case "benchRemove":
             return stmt;
         case "unveil":
             return stmt.mod === undefined ? stmt : { ...stmt, mod: subValue(stmt.mod, env) };

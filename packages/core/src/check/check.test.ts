@@ -1104,9 +1104,12 @@ describe("checker — count refinement through disjunctions", () => {
 });
 
 describe("checker — the one-crafted-mod limit", () => {
-    it("rejects a second bench craft — an item holds only one crafted mod", () => {
+    it("a second bench craft replaces the crafted mod, so one stays", () => {
         const c = craft(rareRing(), [bench("maximum life"), bench("maximum life")]);
-        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("only one"))).toBe(true);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.crafted).toEqual([1, 1]);
+        expect(r.finalState!.counts.total).toEqual([1, 1]);
     });
 
     it("tracks the crafted-mod count; a reforge clears it", () => {
@@ -1119,14 +1122,15 @@ describe("checker — the one-crafted-mod limit", () => {
         expect(reforged.crafted).toEqual([0, 0]); // chaos discards the crafted mod
     });
 
-    it("an annul may or may not remove the crafted mod, so a re-bench stays blocked", () => {
+    it("an annul may or may not remove the crafted mod; a re-bench adds or replaces", () => {
         const c = craft(rareRing(["random"]), [
             bench("maximum life"),
             op("annul"),
             bench("maximum life"),
         ]);
         const r = check(c, ctx);
-        expect(r.diagnostics.some((d) => d.message.includes("only one"))).toBe(true);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.crafted).toEqual([1, 1]);
     });
 });
 

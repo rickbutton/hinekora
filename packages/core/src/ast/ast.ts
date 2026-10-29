@@ -95,6 +95,7 @@ export type Stmt =
     | HarvestStmt
     | VeiledStmt
     | FoulbornStmt
+    | BenchRemoveStmt
     | UnveilStmt
     | RestartStmt
     | UntilStmt
@@ -156,6 +157,12 @@ export interface HarvestStmt {
 export interface VeiledStmt {
     readonly kind: "veiled";
     readonly verb: "chaos" | "exalt";
+    readonly span: SourceSpan;
+}
+
+/** `bench remove`: clear the item's crafted modifiers at the bench. */
+export interface BenchRemoveStmt {
+    readonly kind: "benchRemove";
     readonly span: SourceSpan;
 }
 

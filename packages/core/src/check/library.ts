@@ -35,9 +35,9 @@ const openSlot = (gen?: Gen): Op =>
 const removable = (selector: Selector): Op => require({ kind: "removable", selector });
 
 /** A random removal that ignores a cannot-roll metamod (every one but the Orb of Annulment). */
-const anyMod: Selector = { honourCannotRoll: false };
+const anyMod: Selector = { kind: "random", honourCannotRoll: false };
 /** The Orb of Annulment's removal, which spares a cannot-roll metamod's tagged mods. */
-const unshielded: Selector = { honourCannotRoll: true };
+const unshielded: Selector = { kind: "random", honourCannotRoll: true };
 
 /** A rare reforge lays down four to six modifiers (Chaos Orb § Mechanics). */
 const RARE_REFORGE: Range = [4, 6];
@@ -110,12 +110,20 @@ export function essenceOps(spec: EssenceSpec, ilvl: number): readonly Op[] {
  *  and with no modifier of its group already present (Crafting Bench). */
 export function benchOps(mod: Mod): readonly Op[] {
     return [
+        require({ kind: "craftedReplaceable" }),
+        remove({ kind: "crafted", replacing: true }),
         openSlot(mod.gen),
         require({ kind: "craftedBelowCap" }),
         require({ kind: "noGroupConflict", mod }),
         fill({ kind: "bench", mod }, add([1, 1])),
     ];
 }
+
+/** The bench's "remove crafted modifiers" (Crafting Bench § Using the crafting bench). */
+export const BENCH_REMOVE: readonly Op[] = [
+    require({ kind: "craftedRemovable" }),
+    remove({ kind: "crafted", replacing: false }),
+];
 
 /** Harvest "reforge including a <tag> modifier": a rare reforge, one of whose
  *  modifiers carries the tag; greyed out when none can roll here. */

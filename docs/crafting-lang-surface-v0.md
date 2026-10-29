@@ -141,7 +141,11 @@ Operations that take a name (and an optional `t<n>`):
   in the modifier's generation, the crafted-modifier limit not reached (one, or three under
   the multimod metamod), and no modifier of the same
   [group](https://www.poewiki.net/wiki/Modifier#Group/family) possibly present. The
-  metamods are benched the same way: `bench "prefixes cannot be changed"`.
+  metamods are benched the same way: `bench "prefixes cannot be changed"`. On an item
+  with one crafted modifier and no multimod, `bench "<mod>"` replaces it, which a
+  fractured crafted modifier forbids; `bench remove` clears every crafted modifier the
+  bench can reach and needs one on the item
+  ([Crafting Bench § Using the crafting bench](https://www.poewiki.net/wiki/Crafting_Bench#Using_the_crafting_bench)).
 - `harvest reforge "<tag>"` and `harvest augment "<tag>"` are the two
   [Harvest crafts](https://www.poewiki.net/wiki/Harvest_crafting) that target a
   [modifier group](https://www.poewiki.net/wiki/Harvest_crafting#Modifier_groups): "Reforge

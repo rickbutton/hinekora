@@ -19,6 +19,7 @@ import type {
     IfStmt,
     ItemBlock,
     NotPred,
+    BenchRemoveStmt,
     BenchStmt,
     EssenceStmt,
     FoulbornStmt,
@@ -100,6 +101,7 @@ export const harvest = (verb: "reforge" | "augment", tag: string | ParamRef): Ha
     tag,
     span: DS,
 });
+export const benchRemove = (): BenchRemoveStmt => ({ kind: "benchRemove", span: DS });
 export const veiled = (verb: "chaos" | "exalt"): VeiledStmt => ({ kind: "veiled", verb, span: DS });
 export const foulborn = (verb: FoulbornStmt["verb"]): FoulbornStmt => ({
     kind: "foulborn",

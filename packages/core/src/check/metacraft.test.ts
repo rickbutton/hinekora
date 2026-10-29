@@ -152,14 +152,16 @@ describe("essence is blocked by a metamod", () => {
 });
 
 describe("multimod raises the crafted-mod limit", () => {
-    it("blocks a second bench craft at the default limit of one", () => {
+    it("a second bench craft at the default limit of one replaces the first", () => {
         const c = craft(rareRing(), [
             bench("prefixes cannot be changed"),
             bench("suffixes cannot be changed"),
         ]);
         const r = check(c, ctx);
-        expect(r.diagnostics).toHaveLength(1);
-        expect(r.diagnostics[0]!.message).toContain("crafted modifier");
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.crafted).toEqual([1, 1]);
+        expect(guaranteed(r)).toContain(PROTECT_SUFFIXES_CARRIER.type);
+        expect(guaranteed(r)).not.toContain(PROTECT_PREFIXES_CARRIER.type);
     });
 
     it("allows three crafted mods once multimod is placed", () => {
@@ -340,12 +342,14 @@ describe("an unproven fracture through a scour", () => {
 });
 
 describe("a declared bench-crafted mod counts toward the crafted limit", () => {
-    it("a second bench craft is refused without multimod", () => {
+    it("a second bench craft replaces it without multimod", () => {
         const c = craft(rareRing([], [PROTECT_PREFIXES_CARRIER.id]), [
             bench("cannot roll attack modifiers"),
         ]);
         const r = check(c, ctx);
-        expect(r.diagnostics[0]?.message).toContain("crafted modifier");
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.crafted).toEqual([1, 1]);
+        expect(guaranteed(r)).not.toContain(PROTECT_PREFIXES_CARRIER.type);
     });
 
     it("the declared metamod's effect is active from the start", () => {

@@ -50,6 +50,7 @@ const KEYWORD_DOC: Record<string, string> = {
     if: "`if <pred> { … } else { … }` — branch on the item's state at this point. A branch that can never run is flagged.",
     else: "The alternative branch of an `if`.",
     restart: "`restart` — abandon this attempt and re-run the enclosing loop from the top.",
+    remove: "`bench remove` — clear the item's crafted modifiers at the bench (a fractured one stays).",
     foulborn:
         "`foulborn augment | regal | exalt` — the plain orb, but only the top half of each modifier's tiers can roll.",
     has: '`has "<mod>" [t1]` — true when the item is guaranteed to carry that mod (optionally at that tier; `t1` = best).',

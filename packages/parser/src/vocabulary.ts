@@ -42,6 +42,8 @@ export const GAME = "poe1";
 /** The second word of `harvest <verb>` and `veiled <verb>`. */
 export const HARVEST_VERBS: readonly HarvestVerb[] = ["reforge", "augment"];
 export const VEILED_VERBS: readonly VeiledVerb[] = ["chaos", "exalt"];
+/** The second word of `bench remove`. */
+export const BENCH_VERBS = ["remove"] as const;
 /** The second word of `foulborn <verb>`: the plain orb it mirrors. */
 export const FOULBORN_VERBS: readonly FoulbornVerb[] = ["augment", "regal", "exalt"];
 export type HarvestVerb = "reforge" | "augment";
@@ -60,4 +62,5 @@ export const VOCABULARY: readonly string[] = [
     ...HARVEST_VERBS,
     ...VEILED_VERBS,
     ...FOULBORN_VERBS,
+    ...BENCH_VERBS,
 ];
