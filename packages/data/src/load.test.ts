@@ -1,10 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
     type Base,
+    ClassId,
     emptyItem,
+    type Influence,
+    INFLUENCE_STEMS,
+    INFLUENCES,
+    influenceOfTag,
+    influenceTags,
     isCorruptedEssence,
     type ItemFacts,
     pool,
+    rollableTiers,
     TagId,
 } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "./load.js";
@@ -138,6 +145,57 @@ describe("registry resolution against real data", () => {
         expect(base("Iron Ring").capDelta).toBeUndefined(); // an ordinary base has none
     });
 });
+
+describe("influence tags against real data", () => {
+    const spawnTags = new Set<string>();
+    for (const m of registry.catalog) for (const e of m.spawn) spawnTags.add(e.tag);
+    const stems = new Set<string>();
+    for (const t of spawnTags) {
+        const hit = influenceOfTag(TagId(t));
+        if (hit) stems.add(hit.stem);
+    }
+
+    it("maps every class the spawn tables know, and no class to a stem they do not", () => {
+        expect(new Set(Object.values(INFLUENCE_STEMS))).toEqual(stems);
+        for (const stem of Object.values(INFLUENCE_STEMS)) {
+            for (const i of INFLUENCES) {
+                const tags = influenceTags(
+                    { ...base("Iron Ring"), itemClass: ClassId(classOf(stem)) },
+                    i,
+                    new Set([...spawnTags].map(TagId)),
+                );
+                expect(tags.size, `${stem} ${i}`).toBe(1);
+            }
+        }
+    });
+
+    it("keys the tag by the item class, not by the base's own tags", () => {
+        const tag = (name: string, i: Influence): string[] =>
+            [...registry.influenceTags(base(name), i)].sort();
+        expect(tag("Corroded Blade", "shaper")).toEqual(["2h_sword_shaper"]);
+        expect(tag("Rusted Spike", "shaper")).toEqual(["sword_shaper"]);
+        expect(tag("Carving Knife", "hunter")).toEqual(["rune_dagger_basilisk"]);
+        expect(tag("Iron Staff", "warlord")).toEqual(["warstaff_adjudicator"]);
+        expect(tag("Cobalt Jewel", "elder")).toEqual([]);
+    });
+
+    it("lets a Shaper two-handed sword roll a row that spawns only on its class tag", () => {
+        const blade = base("Corroded Blade");
+        const row = registry.catalog.find((m) =>
+            m.spawn.some((e) => e.tag === "2h_sword_shaper" && e.weight > 0),
+        )!;
+        const tags = registry.influenceTags(blade, "shaper");
+        expect(rollableTiers(registry.catalog, blade, 100, row.type, tags).length).toBeGreaterThan(
+            0,
+        );
+        expect(rollableTiers(registry.catalog, blade, 100, row.type).length).toBe(0);
+    });
+});
+
+/** The first class mapped to a stem, for building a base of that class. */
+function classOf(stem: string): string {
+    return Object.entries(INFLUENCE_STEMS).find(([, s]) => s === stem)![0];
+}
 
 describe("catalog-level facts of the item model", () => {
     const byType = new Map<string, typeof registry.catalog>();

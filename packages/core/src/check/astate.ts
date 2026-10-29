@@ -10,7 +10,13 @@ import type { Base } from "../model/base.js";
 import type { Cmp } from "../ast/ast.js";
 import type { Gen, Rarity } from "../model/ids.js";
 import { ModId, TypeId } from "../model/ids.js";
-import { type Influence, type InfluenceKey, influenceKey, influencesOf } from "../model/marks.js";
+import {
+    type Influence,
+    type InfluenceKey,
+    influenceKey,
+    influencesOf,
+    NO_INFLUENCE,
+} from "../model/marks.js";
 import { type Bdd, BddManager } from "./bdd.js";
 import { type Domain, type Range, RangeDomain, SetDomain } from "./domain.js";
 import { type Caps, type Counts, CountDomain, caps } from "./counts.js";
@@ -642,7 +648,7 @@ export function refine(a: AItem, pred: RPred, positive = true): AItem | null {
         case "influenced": {
             const wanted = pred.influence;
             const holds = (key: InfluenceKey): boolean =>
-                wanted === undefined ? key !== "" : influencesOf(key).includes(wanted);
+                wanted === undefined ? key !== NO_INFLUENCE : influencesOf(key).includes(wanted);
             const influences = new Set([...a.influences].filter((k) => holds(k) === positive));
             return influences.size === 0 ? null : { ...a, influences };
         }

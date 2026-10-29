@@ -188,6 +188,26 @@ pair of side counts (`sidePairs`),
 `subsetMods`).
 **Answer:**
 
+### Q26 · game probe · open
+
+**Asked:** 2026-10-29
+**Goal:** which influence tag each item class carries. The data keys an influence's rows
+by class (`2h_sword_shaper`, `rune_dagger_shaper`, `warstaff_shaper`), not by the tags a
+base has (a two-handed sword carries `sword`, not `2h_sword`), and the wiki states no
+class table; the stems are read off the spawn tables
+([Modifier § Spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag)
+gives only the matching rule). Two classes are in doubt: a warstaff (the data has six
+`staff_*`-only rows beside its own `warstaff_*` rows) and a thrusting sword (mapped to
+`sword` with the one-handed swords).
+**Procure:** a Warlord warstaff and a Shaper rapier; a Chaos Orb each.
+**Steps:** reforge each several times; note any modifier the influence's table lists
+for staves but not warstaves, and any one-handed-sword-only modifier on the rapier.
+**Record:** the modifiers seen.
+**Assumed meanwhile:** one stem per class, the table in `packages/core/src/model/marks.ts`
+`INFLUENCE_STEMS`, checked against the spawn tags by the data tests; a warstaff sees
+only its `warstaff_*` rows and a thrusting sword the `sword_*` rows.
+**Answer:**
+
 ---
 
 ## Resolved

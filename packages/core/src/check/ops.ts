@@ -18,7 +18,7 @@ import {
     type TypeId,
 } from "../model/ids.js";
 import type { ItemFacts } from "../model/item.js";
-import { influencesOf } from "../model/marks.js";
+import { influencesOf, NO_INFLUENCE } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import type { EssenceSpec, FossilSpec } from "../model/sources.js";
 import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
@@ -435,9 +435,9 @@ function failing(
                 ? { kind: "corrupted", sure: !a.corrupted.has(false) }
                 : null;
         case "noInfluence":
-            return a.influences.has("") && a.influences.size === 1
+            return a.influences.has(NO_INFLUENCE) && a.influences.size === 1
                 ? null
-                : { kind: "influenced", what: check.what, sure: !a.influences.has("") };
+                : { kind: "influenced", what: check.what, sure: !a.influences.has(NO_INFLUENCE) };
         case "veiledPresent":
             return hasVeiledPlaceholder(a) ? null : { kind: "noVeiledMod" };
         case "noVeiled":
@@ -1268,7 +1268,10 @@ function sidePairs(a: AItem): [number, number][] {
  * optimistically where the pool over-approximates and pessimistically where it
  * under-approximates, like a possibly present modifier's tags.
  */
-function influenceTagsOf(a: AItem, registry: Registry): { sure: Set<TagId>; maybe: Set<TagId> } {
+export function influenceTagsOf(
+    a: AItem,
+    registry: Registry,
+): { sure: Set<TagId>; maybe: Set<TagId> } {
     const sets = [...a.influences].map(influencesOf);
     const sure = new Set<TagId>();
     const maybe = new Set<TagId>();

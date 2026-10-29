@@ -6,7 +6,7 @@
 import type { Pred } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import type { Rarity } from "../model/ids.js";
-import { influenceLabel } from "../model/marks.js";
+import { influenceLabel, NO_INFLUENCE } from "../model/marks.js";
 import type { ResolveError } from "../resolve/registry.js";
 import { baseLabel } from "../render/render.js";
 import { type AItem, type Range, suffixRange } from "./astate.js";
@@ -62,7 +62,9 @@ export function renderState(a: AItem): string {
 /** The marks worth a word: an influence the item may have, a possible corruption. */
 export function marksLabel(a: AItem): string[] {
     const out: string[] = [];
-    if (!(a.influences.size === 1 && a.influences.has(""))) out.push(influenceLabel(a.influences));
+    if (!(a.influences.size === 1 && a.influences.has(NO_INFLUENCE))) {
+        out.push(influenceLabel(a.influences));
+    }
     if (a.corrupted.has(true)) out.push(a.corrupted.has(false) ? "maybe corrupted" : "corrupted");
     return out;
 }
@@ -155,7 +157,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
             case "harvestNoRoom":
                 return `A ${failure.tag} modifier has no slot on some path — the side it would take may be full.`;
             case "harvestBlocked":
-                return `Every ${failure.tag} modifier may be blocked on some path — one of them, or one of its group, may already be on the item.`;
+                return `Every ${failure.tag} modifier may be blocked on some path — one of them, or one of its group, may already be on the item, or it needs an influence the item may not have.`;
             case "typeNotRemovable":
                 switch (failure.why) {
                     case "absent":
