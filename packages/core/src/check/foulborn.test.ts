@@ -5,6 +5,7 @@ import { craft, foulborn, item, op } from "../__fixtures__/ast.js";
 import {
     CATALOG,
     RING_BASE,
+    SEVEN_TIER_ROWS,
     STAFFY_ADDER,
     STAFFY_TIER_HIGH,
     STAFFY_TIER_SURE,
@@ -14,7 +15,14 @@ import { TypeId } from "../model/ids.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE],
-    mods: [...CATALOG, ...TIERED_CATALOG, STAFFY_ADDER, STAFFY_TIER_SURE, STAFFY_TIER_HIGH],
+    mods: [
+        ...CATALOG,
+        ...TIERED_CATALOG,
+        ...SEVEN_TIER_ROWS,
+        STAFFY_ADDER,
+        STAFFY_TIER_SURE,
+        STAFFY_TIER_HIGH,
+    ],
     baseAliases: { "Iron Ring": "IronRing" },
 });
 const ctx: CheckContext = { registry };
@@ -35,6 +43,19 @@ describe("foulborn orbs", () => {
         const plain = check(craft(ring("rare"), [op("exalt")]), ctx);
         expect(rowsOf(plain, "MaxLife")).toEqual(
             new Set(["MaxLifeHigh", "MaxLifeMid", "MaxLifeLow"]),
+        );
+    });
+
+    it("keeps one more than half above six tiers", () => {
+        // Seven eligible tiers keep four, eight would keep five (Foulborn
+        // currency § Mechanics); at ilvl 55 only five are eligible, keeping three.
+        const r = check(craft(ring("rare"), [foulborn("exalt")]), ctx);
+        expect(rowsOf(r, "SevenTier")).toEqual(
+            new Set(["SevenTier7", "SevenTier6", "SevenTier5", "SevenTier4"]),
+        );
+        const low = check(craft(ring("rare", 55), [foulborn("exalt")]), ctx);
+        expect(rowsOf(low, "SevenTier")).toEqual(
+            new Set(["SevenTier5", "SevenTier4", "SevenTier3"]),
         );
     });
 

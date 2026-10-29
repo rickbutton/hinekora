@@ -610,6 +610,20 @@ export const STAFFY_TIER_HIGH: Mod = mkMod({
     text: "staffy tier",
 });
 
+/** A type with seven tiers, levels 10 to 70, for the upper arm of the Foulborn
+ *  cull. Not in `CATALOG`. */
+export const SEVEN_TIER_ROWS: readonly Mod[] = [1, 2, 3, 4, 5, 6, 7].map((n) =>
+    mkMod({
+        id: `SevenTier${n}`,
+        type: "SevenTier",
+        gen: "prefix",
+        minLevel: n * 10,
+        families: ["SevenTier"],
+        spawn: [spawn(TAG_DEFAULT, 100)],
+        text: "seven tier",
+    }),
+);
+
 export const ATTACK_SPEED: Mod = mkMod({
     id: "AttackSpeed1",
     type: "AttackSpeed",

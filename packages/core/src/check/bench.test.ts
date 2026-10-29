@@ -71,6 +71,30 @@ describe("bench remove", () => {
     });
 });
 
+describe("bench remove under an unproven fracture", () => {
+    it("is refused when the only crafted modifier may be the fractured one", () => {
+        const c = craft(
+            rareRing([BENCH_LIFE_ROW.id, INCREASED_MANA.id], ["FireResist1", "random"]),
+            [op("fracture"), benchRemove()],
+        );
+        expect(check(c, ctx).diagnostics[0]!.message).toContain("No crafted modifier");
+    });
+
+    it("removes one or both of two crafted modifiers, whichever the fracture spared", () => {
+        // Four modifiers, two of them crafted: the lock may sit on a rolled one
+        // (both crafted go) or on a crafted one (the other goes).
+        const c = craft(
+            rareRing([BENCH_LIFE_ROW.id, INCREASED_MANA.id], [MULTIMOD_CARRIER.id, "random"]),
+            [op("fracture"), benchRemove()],
+        );
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.crafted).toEqual([0, 1]);
+        expect(r.finalState!.counts.total).toEqual([2, 3]);
+        expect(guaranteedTypes(r.finalState!).has(LIFE)).toBe(false);
+    });
+});
+
 describe("a bench craft on an item with a crafted modifier", () => {
     it("replaces it, freeing the slot it held", () => {
         const full = rareRing([BENCH_LIFE_ROW.id, INCREASED_MANA.id, INCREASED_ARMOUR.id]);
