@@ -140,6 +140,8 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return `No ${failure.tag} modifier can appear on ${withArticle(state.base.name ?? "item")} at this item level.`;
             case "harvestNoRoom":
                 return `A ${failure.tag} modifier has no slot on some path — the side it would take may be full.`;
+            case "harvestBlocked":
+                return `Every ${failure.tag} modifier may be blocked on some path — one of them, or one of its group, may already be on the item.`;
             case "typeNotRemovable":
                 switch (failure.why) {
                     case "absent":

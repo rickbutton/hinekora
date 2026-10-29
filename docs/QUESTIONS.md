@@ -216,7 +216,8 @@ offered and, when used, what happens.
 **Record:** greyed out or not, and the outcome.
 **Assumed meanwhile:** the craft is refused unless a tagged row can roll on every path
 after the lock-respecting strip or the removal (`check/library.ts`
-`harvestReforgeOps` and `harvestAugmentOps`, `check/ops.ts` `poolNonEmpty` reading
+`harvestReforgeOps` and `harvestAugmentOps`, `check/ops.ts` `poolNonEmpty` reading, per
+pair of side counts (`sidePairs`),
 `subsetMods`).
 **Answer:**
 

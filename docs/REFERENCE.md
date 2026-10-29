@@ -531,8 +531,9 @@ in it. Notes:
   it obeys prefix/suffix locks but ignores cannot-roll metamods. A tag is matched against
   `Mod.implicitTags`; the `require` that the tagged pool is non-empty sits after the
   strip or the removal, reading the state they produce, and fails as
-  `harvestEmptyPool` when no tagged row rolls on the base at all, or `harvestNoRoom` when
-  one does but some path leaves it no slot. It reads a **subset pool** (`subsetMods`): the
+  `harvestEmptyPool` when no tagged row rolls on the base at all, `harvestBlocked` when
+  one does but a modifier the item may carry blocks every one (its type, its group), or
+  `harvestNoRoom` when some path leaves it no slot. It reads a **subset pool** (`subsetMods`): the
   pool as if every possibly present modifier were present, with the tags it may add read
   pessimistically (`lookupWeight`'s pessimistic mode), a subset of every path's real pool
   where a fill reads a superset (`addableMods`); so a tagged pool that a possibly kept

@@ -64,7 +64,9 @@ describe("harvest reforge", () => {
             op("exalt"),
             harvest("reforge", "defence"),
         ]);
-        expect(check(kept, ctx).diagnostics[0]!.message).toContain("No defences modifier");
+        expect(check(kept, ctx).diagnostics[0]!.message).toContain(
+            "Every defences modifier may be blocked",
+        );
         // Nothing kept: the reforge clears the armour, so the pool is whole.
         const cleared = craft(rareRing(), [op("chaos"), harvest("reforge", "defence")]);
         expect(check(cleared, ctx).diagnostics).toEqual([]);
@@ -91,7 +93,9 @@ describe("harvest reforge", () => {
         expect(check(full, ctx).diagnostics[0]!.message).toContain(
             "defences modifier has no slot on some path",
         );
-        // A tag with rows on both sides fits whichever side the removal opened.
+    });
+
+    it("a tag with rows on both sides fits whichever side the removal opened", () => {
         const either = craft(
             rareRing(
                 ["T1 Life", INCREASED_MANA.id, INCREASED_ARMOUR.id],
@@ -139,7 +143,9 @@ describe("harvest augment (add tagged, remove a random other)", () => {
 
     it("rejects a tag whose only modifier may already be on the item", () => {
         const c = craft(rareRing(), [op("chaos"), harvest("augment", "defence")]);
-        expect(check(c, ctx).diagnostics[0]!.message).toContain("No defences modifier");
+        expect(check(c, ctx).diagnostics[0]!.message).toContain(
+            "Every defences modifier may be blocked",
+        );
     });
 
     it("requires a mod to remove", () => {

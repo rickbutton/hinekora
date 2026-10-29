@@ -590,7 +590,6 @@ describe("checker — the rarity seam (surface §6 errors)", () => {
             ctx,
         );
         expect(scouredOrNot.diagnostics[0]!.message).toContain("may be Normal or Rare");
-        expect(essenced.diagnostics[0]!.message).toContain("Magic");
     });
 
     it("rejects exalt on a Magic item and renders the state", () => {

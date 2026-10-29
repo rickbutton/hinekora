@@ -192,6 +192,7 @@ export type PreconditionFailure =
     | { readonly kind: "craftedCapUnknown" }
     | { readonly kind: "harvestEmptyPool"; readonly tag: TagId }
     | { readonly kind: "harvestNoRoom"; readonly tag: TagId }
+    | { readonly kind: "harvestBlocked"; readonly tag: TagId }
     | { readonly kind: "metamodBlocks" }
     | { readonly kind: "fossilBaseRestricted"; readonly fossil: string }
     | { readonly kind: "fossilCorrupts"; readonly fossil: string }
@@ -502,9 +503,16 @@ function failing(
                     : { kind: "harvestEmptyPool", tag: check.tag };
             }
             const tag = check.tag;
+            const hasTag = (m: Mod): boolean => m.implicitTags.has(tag);
             const tagged = (p: number, s: number): boolean =>
-                subsetMods(a, registry, p, s).some((m) => m.implicitTags.has(tag));
-            if (!tagged(0, 0)) return { kind: "harvestEmptyPool", tag };
+                subsetMods(a, registry, p, s).some(hasTag);
+            if (!tagged(0, 0)) {
+                // Either no tagged row rolls here at all, or one does but a
+                // modifier the item may carry blocks it (its type, its group).
+                return resolvePool(a, check.pool, registry).mods.some(hasTag)
+                    ? { kind: "harvestBlocked", tag }
+                    : { kind: "harvestEmptyPool", tag };
+            }
             // Every realisable pair of side counts must leave a tagged row room:
             // the sides are coupled through the total, so each path's pair is
             // judged on its own rather than both sides at their fullest at once.
