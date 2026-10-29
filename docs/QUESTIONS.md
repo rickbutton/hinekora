@@ -53,6 +53,40 @@ Recommendation: (2) until a guide needs it.
 "Reroll the rarity" are marked **later** in `operations.md` §3.
 **Answer:**
 
+### Q16 · game probe · open
+
+**Asked:** 2026-10-28
+**Goal:** whether the bench's "remove crafted modifiers" respects "Prefixes / Suffixes
+Cannot Be Changed". Neither
+[Crafting Bench § Using the crafting bench](https://www.poewiki.net/wiki/Crafting_Bench#Using_the_crafting_bench)
+nor [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions)
+lists the option.
+**Procure:** a Rare with "Can have up to 3 Crafted Modifiers", "Prefixes Cannot Be
+Changed" and a crafted prefix (a bench life).
+**Steps:** use "Remove Crafted Mods" on it.
+**Record:** which of the three crafted modifiers remain.
+**Assumed meanwhile:** protection does not apply; every crafted modifier that is not
+fractured goes, the protecting metamod itself included (`check/ops.ts` `removeCrafted`).
+If protection did apply, the removal would wrongly exclude a surviving modifier.
+**Answer:**
+
+### Q17 · game probe · open
+
+**Asked:** 2026-10-28
+**Goal:** what a Foulborn orb counts as a modifier's "eligible tiers".
+[Foulborn currency § Mechanics](https://www.poewiki.net/wiki/Foulborn_currency#Mechanics)
+hedges ("testing suggests") and says "at the current item level"; whether a tier that
+only another modifier's tag makes rollable counts when that modifier is on the item is
+not stated.
+**Procure:** a Strength jewel with one staff modifier on it, Foulborn Exalted Orbs.
+**Steps:** exalt several jewels with and without the staff modifier; note which tiers of a
+type with tag-gated rows appear.
+**Record:** the lowest tier seen in each case.
+**Assumed meanwhile:** the count is what can roll on the item now, tags included, which is
+what the add-pool holds (`check/ops.ts` `foulbornTiers`); the cull keeps every row some
+count between the sure and the tag-enabled total would keep.
+**Answer:**
+
 ---
 
 ## Resolved

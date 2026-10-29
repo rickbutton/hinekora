@@ -692,7 +692,8 @@ function foulbornKept(n: number): number {
  * lie between the count without those rows and with them; a row stays when
  * some count in that range would keep it, which is when its rank by level
  * among all the rows is within the sure count's allowance plus the number of
- * uncertain rows (each of which may rank above it).
+ * uncertain rows (each of which may rank above it). This rests on a tag only
+ * ever adding rows (`lookupWeight`): a sure row never becomes ineligible.
  */
 function foulbornTiers(mods: readonly Mod[], a: AItem, registry: Registry): Mod[] {
     const sure = new Set<ModId>();
