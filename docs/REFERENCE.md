@@ -313,12 +313,15 @@ total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = t
   replaces the state with it.
 - **Marks** (`model/marks.ts`). `influences` is the set of influence sets the item may
   have, each an `InfluenceKey` (the names in the game's order joined with `+`, empty for
-  none): one on a straight line, more where paths meet, since no method in the library
-  changes it yet. The pool reads it as tags (`influenceTagsOf` in `ops.ts`): an
+  none): one after the item block and the orbs that set or add an influence, six or
+  fifteen after the grove's randomise (every set of the size the item had), and the
+  union where paths meet. The pool reads it as tags (`influenceTagsOf` in `ops.ts`): an
   influence's `<class>_<influence>` tags (`registry.influenceTags`) join the facts when
   every possible set has it and the maybe-tags otherwise, so a fill admits its rows
-  optimistically and the subset pool pessimistically. `influenced [x]` refines it;
-  `noInfluence` requires it to be exactly `{""}`. `corrupted` is `{false}`, `{true}` or
+  optimistically and the subset pool pessimistically; a name or tier a predicate writes
+  resolves against the tags of any path (`influenceTagsAny`), since it names what the
+  item may have. `influenced [x]` refines it; `noInfluence` requires it to be exactly
+  `{""}`. `corrupted` is `{false}`, `{true}` or
   both; every method's sequence opens with `require(notCorrupted)` (a corruption
   possible on any path refuses the craft), and `corrupted` refines it.
 - **Tier presence atoms.** A tier-qualified predicate (`has X t1`) also asserts a SECOND
@@ -416,11 +419,11 @@ file knows a method by name.
 
 Every crafting method is a sequence of primitive operations (`operations.md` §2), stated
 in `library.ts` and run by `runMethod(state, ops, registry)` in `ops.ts`, which returns
-`{ok, state}` or `{ok:false, failure}`. The operations are `require(check)`, `strip`
-(with `ignoreProtection` for the Awakener's Orb), `fill(pool, count)`,
-`remove(selector)`, `rarity(r | survivors)`, `lock`, `imprint`/`restore` and
-`influence(change)` (set the mark, add an influence to every possible set, or
-randomise to every set of the same size); a method is
+`{ok, state}` or `{ok:false, failure}`. The operations are `require(check)`, `strip`,
+`fill(pool, count)`, `remove(selector)`, `rarity(r | survivors)`, `lock`,
+`imprint`/`restore`, `influence(change)` (set the mark, add an influence to every
+possible set, or randomise to every set of the same size) and `unprotect` (the metamods
+no longer govern the rest of the method, the Awakener's Orb); a method is
 all or nothing, so a failed `require` anywhere leaves the state as it was. The metamods
 in force (`Rules`: protected sides, the cannot-roll shield, the crafted cap, whether an
 essence is blocked) are read once when the method is applied and govern every operation

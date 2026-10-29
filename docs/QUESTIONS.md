@@ -240,12 +240,66 @@ an Awakener's Orb.
 influenced modifiers the result carries.
 **Record:** accepted or not; the influenced modifiers kept from each item.
 **Assumed meanwhile:** any rarity is accepted, and no modifier is guaranteed kept
-(`check/library.ts` `awakenerOps`).
+(`check/library.ts` `awakenerOps`); the section also says a transferred modifier keeps
+its tier, so note whether a kept donor modifier obeys the target's item level.
+**Answer:**
+
+### Q29 · game probe · open
+
+**Asked:** 2026-10-29
+**Goal:** how the grove's two influence crafts behave under the metamods.
+[Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions)
+gives the randomise craft's row as "Respected, but usage is prevented if any prefix is
+influenced" (and suffix) under the two protections, and "Unknown" under the two
+cannot-roll metamods; it has no row for "Reforge an Influenced Rare item … including an
+Influence modifier".
+**Procure:** an influenced Rare with "Prefixes Cannot Be Changed" and an influenced
+prefix; one with "Cannot roll Attack Modifiers"; lifeforce for both crafts.
+**Steps:** open the grove's randomise and influence reforge on each; note which are
+offered and what survives.
+**Record:** offered or greyed out; the modifiers kept.
+**Assumed meanwhile:** the randomise is refused when a modifier that may sit on a
+protected side may be an influence modifier (`check/ops.ts` `noInfluencedOnProtected`)
+and the cannot-roll metamods have no effect on it; the influence reforge behaves as the
+tagged reforges, keeping a protected side and needing room for its influence modifier
+(`check/library.ts` `HARVEST_INFLUENCE_REFORGE`).
+**Answer:**
+
+### Q30 · game probe · open
+
+**Asked:** 2026-10-29
+**Goal:** what the Bestiary's "Add a Mod to a Hunter Item" and its five siblings need and
+draw from. The recipe rows ([Beastcrafting](https://www.poewiki.net/wiki/Beastcrafting))
+carry no note on rarity, and do not say whether the added modifier comes from the whole
+pool or the influence's rows only.
+**Procure:** a Magic Hunter item and a Rare one with an open slot; the recipe's beasts.
+**Steps:** try the recipe on each; note whether the Magic item is accepted and whether a
+natural modifier is ever added.
+**Record:** accepted or not; the modifiers added over several tries.
+**Assumed meanwhile:** a Rare item with an open slot, the modifier drawn from the whole
+pool at the beast's level (`check/library.ts` `beastAddInfluenceOps`).
 **Answer:**
 
 ---
 
 ## Resolved
+
+### Q31 · decision · resolved
+
+**Asked:** 2026-10-29
+**Question:** whether an influence orb can be used on an item that already has that
+same influence. The wiki disagrees with itself:
+[Hunter's Exalted Orb § Mechanics](https://www.poewiki.net/wiki/Hunter%27s_Exalted_Orb#Mechanics)
+says "Cannot be used on influenced items, synthesised items, fractured items, or items
+with eldritch implicit modifiers" and its help text "a high-level rare item with no
+influence", while
+[Influenced item § Mechanics](https://www.poewiki.net/wiki/Influenced_item#Mechanics)
+says "This cannot be done if the item already has an influence different than the orb
+being applied", which reads as if the same influence were accepted.
+**Answer:** Rick ruled (2026-10-29): the same influence counts; a Shaper's Exalted Orb
+cannot be used on a Shaper item. The orb's own page is followed
+(`check/library.ts` `influenceExaltOps`, `noInfluence`). Do not relax this from the
+Influenced item page.
 
 ### Q24 · decision · resolved
 

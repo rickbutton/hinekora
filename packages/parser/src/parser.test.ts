@@ -142,6 +142,16 @@ describe("parser — item block", () => {
         });
     });
 
+    it("accepts a comma between influences and refuses a value on the corrupted flag", () => {
+        expect(
+            parseOk('item { base: "R" ilvl: 1 rarity: rare influences: hunter, shaper } exalt').item
+                .influences,
+        ).toEqual(["hunter", "shaper"]);
+        expect(
+            parseErr('item { base: "R" ilvl: 1 rarity: rare corrupted: true } exalt').message,
+        ).toMatch(/'corrupted' is a bare flag and takes no value/);
+    });
+
     it("rejects an unknown, repeated or third influence", () => {
         expect(
             parseErr('item { base: "R" ilvl: 1 rarity: rare influences: hunters } exalt').message,
