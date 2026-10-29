@@ -2,7 +2,18 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { beast, craft, has, iff, item, notp, op, restore, until } from "../__fixtures__/ast.js";
+import {
+    beast,
+    bench,
+    craft,
+    has,
+    iff,
+    item,
+    notp,
+    op,
+    restore,
+    until,
+} from "../__fixtures__/ast.js";
 import { CATALOG, FIRE_RESIST, LIFE_T1, RING_BASE, TALISMAN_BASE } from "../__fixtures__/mods.js";
 
 const registry = buildRegistry({
@@ -93,6 +104,24 @@ describe("imprint and restore", () => {
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
+    });
+
+    it("drops imprints of different rarities, so a restore after them is refused", () => {
+        const c = craft(magicRing(["T1 Life"]), [
+            op("augment"),
+            iff(
+                has(FIRE_RESIST.id),
+                [beast({ kind: "imprint" })],
+                [op("regal"), bench("prefixes cannot be changed"), op("scour"), op("regal")],
+            ),
+            restore(),
+        ]);
+        const r = check(c, ctx);
+        expect(
+            r.diagnostics.some(
+                (d) => d.message.includes("different") || d.message.includes("No imprint"),
+            ),
+        ).toBe(true);
     });
 
     it("joins the imprints of two branches that both hold one, and drops it when one lacks it", () => {

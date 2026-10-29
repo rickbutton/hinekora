@@ -16,7 +16,11 @@ export interface CheckDiagnostic {
     readonly span: SourceSpan;
 }
 
-const RARITY_LABEL: Record<Rarity, string> = { normal: "Normal", magic: "Magic", rare: "Rare" };
+export const RARITY_LABEL: Record<Rarity, string> = {
+    normal: "Normal",
+    magic: "Magic",
+    rare: "Rare",
+};
 
 function plural(noun: string, n: number): string {
     if (n === 1) return noun;

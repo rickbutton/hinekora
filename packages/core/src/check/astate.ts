@@ -419,7 +419,11 @@ export function settled(a: AItem): AItem {
  * so they are left exact.
  */
 export function widenPresence(a: AItem): AItem {
-    return { ...a, presence: presenceFacts(a.bdd, guaranteedTypes(a), excludedTypes(a)) };
+    return {
+        ...a,
+        presence: presenceFacts(a.bdd, guaranteedTypes(a), excludedTypes(a)),
+        ...(a.imprint && { imprint: widenPresence(a.imprint) }),
+    };
 }
 
 // --- construction ---------------------------------------------------------
@@ -517,7 +521,11 @@ export function join(a: AItem, b: AItem): AItem {
         possible: SetDomain.join(a.possible, b.possible),
         tiers: TierDomain.join(a.tiers, b.tiers),
         crafted: RangeDomain.join(a.crafted, b.crafted),
-        ...(a.imprint && b.imprint && { imprint: join(a.imprint, b.imprint) }),
+        // The state holds one rarity, so imprints of different rarities cannot
+        // be joined; the imprint is then dropped and a restore refused.
+        ...(a.imprint &&
+            b.imprint &&
+            a.imprint.rarity === b.imprint.rarity && { imprint: join(a.imprint, b.imprint) }),
     };
 }
 

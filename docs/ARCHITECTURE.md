@@ -150,6 +150,8 @@ bound, to merge branches) and `equal` (to detect a fixpoint). The pieces:
   non-relational.
 - **Possible** (`SetDomain`): the pool whitelist: types that _could_ still roll.
 - **Crafted**: how many bench-crafted mods are present (a range).
+- **Imprint**: the item an imprint would restore, a nested abstract item; present only when
+  every path holds one of the same rarity.
 
 Why "reduced product": the domains are independent, but a few facts couple them, e.g.
 crafted mods are a subset of all affixes, so `crafted ≤ total`. Such a cross-domain fact is
