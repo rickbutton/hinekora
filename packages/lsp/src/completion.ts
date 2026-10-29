@@ -31,6 +31,7 @@ type Context =
     | "predicate"
     | "essence"
     | "bench"
+    | "benchVerb"
     | "harvestVerb"
     | "harvestTag"
     | "veiledVerb"
@@ -108,6 +109,7 @@ function contextAt(source: string, offset: number): Context {
             if (word === "veiled") return "veiledVerb";
             if (word === "foulborn") return "foulbornVerb";
             if (word === "beast") return "beastVerb";
+            if (word === "bench") return "benchVerb";
             if (word === "add") return "beastSide";
         }
         return "statement";
@@ -195,10 +197,9 @@ export function getCompletions(
                 kind: CompletionItemKind.Value,
             }));
         case "bench":
-            return [
-                { label: "remove", detail: "bench remove", kind: CompletionItemKind.Keyword },
-                ...registry.benchNames.map((label) => ({ label, kind: CompletionItemKind.Value })),
-            ];
+            return registry.benchNames.map((label) => ({ label, kind: CompletionItemKind.Value }));
+        case "benchVerb":
+            return [{ label: "remove", detail: "bench remove", kind: CompletionItemKind.Keyword }];
         case "harvestVerb":
             return HARVEST_VERBS.map((label) => ({
                 label,

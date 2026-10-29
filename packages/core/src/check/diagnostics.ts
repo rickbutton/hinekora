@@ -141,7 +141,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
             case "fossilCorrupts":
                 return `A ${failure.fossil} corrupts the item, and a corrupted item takes no further craft — it is not supported yet.`;
             case "fossilBaseRestricted":
-                return `A ${failure.fossil} cannot be used on a ${state.base.name ?? "base"} like this one.`;
+                return `A ${failure.fossil} cannot be used on ${withArticle(state.base.name ?? "base like this")}.`;
             case "metamodBlocks":
                 return "This currency can't be used while a metacraft modifier is on the item — remove it first.";
             case "tooFewMods":
@@ -184,4 +184,8 @@ export function resolveMessage(error: ResolveError): string {
         case "ambiguous":
             return `Ambiguous name "${error.name}" — candidates: ${error.candidates.join(", ")}.`;
     }
+}
+
+function withArticle(noun: string): string {
+    return `${/^[aeiou]/i.test(noun) ? "an" : "a"} ${noun}`;
 }

@@ -610,6 +610,8 @@ class Checker {
         const rows = (ids: readonly ModId[]): Mod[] =>
             ids.flatMap((id) => {
                 const r = this.registry.resolveMod(id);
+                if (!r.ok)
+                    this.diag(`The catalog has no modifier "${id}" for this fossil.`, stmt.span);
                 return r.ok ? [r.value] : [];
             });
         const corrupted = this.registry.essences.filter(isCorruptedEssence).flatMap((e) => {

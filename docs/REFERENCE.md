@@ -212,7 +212,8 @@ Transport-free service functions + a stdio server:
   `if`/`until`/`not`/`and`/`or`; includes local def names scraped by regex), base,
   essence, bench, harvest verb (after `harvest`), harvest tag (after `reforge`/`augment`),
   veiled verb (after `veiled`), foulborn verb (after `foulborn`), fossil name (inside a
-  `fossil` line's strings), beast verb and side (after `beast`, after `add`), or mod. Mod candidates are **filtered to what's possible
+  `fossil` line's strings), beast verb and side (after `beast`, after `add`), `remove`
+  (after `bench`), or mod. Mod candidates are **filtered to what's possible
   at the cursor**: rollable on the item's base+ilvl (`rollableTypes`, base read from the text)
   AND not proven-absent by the checker's state at that point (`excludedAt` parses the
   craft, retrying with the open string closed). Both filters degrade gracefully to "all

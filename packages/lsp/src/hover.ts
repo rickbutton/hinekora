@@ -495,16 +495,18 @@ function fossilSignature(names: readonly string[], registry: Registry): string {
         }
         const f = res.value;
         const effects: string[] = [];
-        if (f.blockedTags.size > 0) effects.push(`no ${[...f.blockedTags].join(", ")} modifiers`);
-        if (f.addedMods.length > 0) effects.push("adds its own modifiers to the pool");
+        const words = (tags: Iterable<string>): string =>
+            [...tags].map((t) => t.replace(/_/g, " ")).join(", ");
+        if (f.blockedTags.size > 0) effects.push(`no ${words(f.blockedTags)} modifiers`);
+        if (f.addedMods.length > 0) effects.push("may roll its own fossil-only modifiers");
         if (f.forcedMods.length > 0) effects.push("guarantees its modifier");
         if (f.corruptedEssenceChance === 100)
             effects.push("guarantees a corrupted-essence modifier");
         else if (f.corruptedEssenceChance > 0)
-            effects.push(`${f.corruptedEssenceChance}% chance of a corrupted-essence modifier`);
+            effects.push("may roll a corrupted-essence modifier");
         if (f.fractures) effects.push("fractures one of the rolled modifiers");
         if (f.corrupts) effects.push("corrupts the item (not supported)");
-        if (f.allowedTags) effects.push(`only on ${[...f.allowedTags].join(", ")}`);
+        if (f.allowedTags) effects.push(`only on: ${words(f.allowedTags)}`);
         const effect =
             effects.length > 0
                 ? effects.join("; ")
