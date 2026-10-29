@@ -36,15 +36,6 @@ Rare with one modifier of each side; note whether the result keeps the side.
 change, metamods respected), as `operations.md` §3.2 states; not built until answered.
 **Answer:**
 
-### Q10 · clarification · open
-
-**Asked:** 2026-10-26
-**Question:** [Rog](https://www.poewiki.net/wiki/Rog)'s crafting options are not listed on
-the wiki. Is Rog in scope for the crafting surface, and if so what source should define
-his options (poedb, in-game notes)?
-**Assumed meanwhile:** out of scope until a source exists.
-**Answer:**
-
 ---
 
 ## Resolved
@@ -254,3 +245,13 @@ every row an admitted row's tag would enable, to a fixpoint (`check/ops.ts`
 enabled row, so a reforge's later rolls see the tags its earlier rolls added. The
 assumption stands as the rule; the fixpoint in `check/ops.ts` `addableMods` is exact
 rather than an over-approximation.
+
+### Q10 · clarification · resolved
+
+**Asked:** 2026-10-26
+**Question:** [Rog](https://www.poewiki.net/wiki/Rog)'s crafting options are not listed on
+the wiki. Is Rog in scope for the crafting surface, and if so what source should define
+his options (poedb, in-game notes)?
+**Assumed meanwhile:** out of scope until a source exists.
+**Answer:** Rick ruled (2026-10-28): Rog is out of scope; do not implement his crafts.
+Recorded in `docs/operations.md` § 3.7.

@@ -204,8 +204,8 @@ four times and the player keeps one result: a choice over an operation's outcome
 same shape as Hinekora's Lock (later). Its ducats that touch explicit modifiers compose
 (Cyaxan's: a reforge with a forced exclusive row; Brinehook's, Rotmother's: a `fill` from a
 dedicated pool; The Genteel's: a sibling swap); their core status is unknown at the
-snapshot. [Rog](https://www.poewiki.net/wiki/Rog)'s options are not listed on the wiki
-(probe). The methods the wiki lists under
+snapshot. [Rog](https://www.poewiki.net/wiki/Rog)'s crafting is out of scope: his steps
+are chosen interactively from what he offers, and the wiki lists none of them. The methods the wiki lists under
 [Crafting § Historical crafting methods](https://www.poewiki.net/wiki/Crafting#Historical_crafting_methods)
 are out.
 
