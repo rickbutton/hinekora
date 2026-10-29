@@ -33,9 +33,9 @@ from the library of `check/library.ts`. What remains:
 ## Step 3. The remaining single-item methods
 
 Every **composes** row of the ledger is built. What waits: the bench reroll recipes on
-Q7; the Orb of Chance and the bench's reroll-the-rarity on Q15 (a set of rarities in
-the state); the Bestiary's two-modifier fracture on a fracture count in the abstract
-item.
+Q7; the Orb of Chance and the bench's reroll-the-rarity on Q15 (the Unique outcome, the
+item leaving the crafting domain); the Bestiary's two-modifier fracture on a fracture
+count in the abstract item.
 
 ## Step 4. Marks
 
