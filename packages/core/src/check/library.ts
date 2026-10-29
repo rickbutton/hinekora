@@ -159,6 +159,22 @@ export function foulbornOps(verb: FoulbornStmt["verb"]): readonly Op[] {
     );
 }
 
+/** Beastcraft "add a prefix, remove a random suffix" and its mirror
+ *  (Beastcrafting): the added modifier is drawn at the beast's level rather than
+ *  the item's; under the other side's protection it adds without removing
+ *  (Metamod § Rules and Exceptions). */
+export function beastAddOps(gen: Gen, level: number): readonly Op[] {
+    const other: Gen = gen === "prefix" ? "suffix" : "prefix";
+    const victim: Selector = { kind: "random", honourCannotRoll: false, gen: other };
+    return [
+        isRare,
+        openSlot(gen),
+        removable(victim),
+        remove(victim),
+        fill({ kind: "natural", gen, level }, add([1, 1])),
+    ];
+}
+
 /** Harvest "change a modifier into a similar tier modifier of another element"
  *  (Harvest crafting): the named modifier goes and one of the target's rows at
  *  its tier takes the slot; both protections are respected (Metamod § Rules and

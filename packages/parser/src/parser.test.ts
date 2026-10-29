@@ -177,6 +177,17 @@ describe("parser — veiled orbs and unveil", () => {
         expect(() => bodyOf("veiled scour")).toThrow(/chaos.*exalt/);
     });
 
+    it("parses beast add with a side and an optional level", () => {
+        expect(bodyOf("beast add prefix")).toMatchObject({
+            kind: "beast",
+            action: { kind: "add", side: "prefix" },
+        });
+        expect(bodyOf("beast add suffix 83")).toMatchObject({
+            action: { kind: "add", side: "suffix", level: 83 },
+        });
+        expect(() => bodyOf("beast add tail")).toThrow(/prefix.*suffix/);
+    });
+
     it("parses harvest change with two modifier names", () => {
         expect(bodyOf('harvest change "fire res" "cold res"')).toMatchObject({
             kind: "harvestChange",

@@ -23,6 +23,7 @@ export const KEYWORDS = [
     "unveil",
     "foulborn",
     "fossil",
+    "beast",
 ] as const;
 
 /** Predicate connectives and the predicate symbols. */
@@ -43,6 +44,10 @@ export const GAME = "poe1";
 /** The second word of `harvest <verb>` and `veiled <verb>`. */
 export const HARVEST_VERBS: readonly HarvestVerb[] = ["reforge", "augment", "change"];
 export const VEILED_VERBS: readonly VeiledVerb[] = ["chaos", "exalt"];
+/** The second word of `beast <verb>`. */
+export const BEAST_VERBS = ["add"] as const;
+/** The side `beast add` names. */
+export const SIDE_WORDS = ["prefix", "suffix"] as const;
 /** The second word of `bench remove`. */
 export const BENCH_VERBS = ["remove"] as const;
 /** The second word of `foulborn <verb>`: the plain orb it mirrors. */
@@ -64,4 +69,6 @@ export const VOCABULARY: readonly string[] = [
     ...VEILED_VERBS,
     ...FOULBORN_VERBS,
     ...BENCH_VERBS,
+    ...BEAST_VERBS,
+    ...SIDE_WORDS,
 ];

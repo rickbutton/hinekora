@@ -37,7 +37,7 @@
                 },
                 { "match": "\\b(def)\\b", "name": "storage.type.hinekora" },
                 {
-                    "match": "\\b(essence|bench|harvest|reforge|augment|change|veiled|unveil|foulborn|remove|fossil)\\b",
+                    "match": "\\b(essence|bench|harvest|reforge|augment|change|veiled|unveil|foulborn|remove|fossil|beast|add|prefix|suffix)\\b",
                     "name": "keyword.other.operation.hinekora"
                 },
                 { "match": "\\b(has|fractured|not|and|or)\\b", "name": "keyword.other.hinekora" },

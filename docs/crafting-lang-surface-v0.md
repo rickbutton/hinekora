@@ -180,6 +180,13 @@ Operations that take a name (and an optional `t<n>`):
   one. A name is the fossil's first word or its full name. Needs a Rare item with no
   protection or cannot-roll metamod, on a base every socketed fossil allows. Weight
   changes are not modelled: a Serrated Fossil reads as a plain reforge.
+- `beast add prefix [<level>]` and `beast add suffix [<level>]` are the
+  [Bestiary](https://www.poewiki.net/wiki/Beastcrafting) recipes "Add a Prefix, Remove a
+  Random Suffix" and its mirror: the added modifier is drawn at the beast's level, the
+  item's when none is given; the removed one is random on the other side. Needs a Rare
+  item with an open slot on the added side and a modifier to remove, unless the other
+  side is protected, when the recipe adds without removing
+  ([Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions)).
 - `unveil ["<mod>"]` is the three-option unveil of a
   [veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) and needs a veiled
   modifier on the item. Bare, the result is one of the valid options

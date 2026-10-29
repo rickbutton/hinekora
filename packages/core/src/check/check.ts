@@ -45,6 +45,7 @@ import {
 } from "./diagnostics.js";
 import { rollableGen, rollableTiers, tierMod } from "../resolve/tiers.js";
 import {
+    beastAddOps,
     BENCH_REMOVE,
     benchOps,
     currencyOps,
@@ -435,6 +436,8 @@ class Checker {
                 return this.checkHarvest(a, stmt);
             case "harvestChange":
                 return this.checkHarvestChange(a, stmt);
+            case "beast":
+                return this.checkBeast(a, stmt);
             case "veiled":
                 return this.checkVeiled(a, stmt);
             case "foulborn":
@@ -534,6 +537,18 @@ class Checker {
 
     private checkFoulborn(a: AItem, stmt: Extract<Stmt, { kind: "foulborn" }>): Flow {
         return this.checkMethod(a, foulbornOps(stmt.verb), stmt.span);
+    }
+
+    private checkBeast(a: AItem, stmt: Extract<Stmt, { kind: "beast" }>): Flow {
+        const action = stmt.action;
+        switch (action.kind) {
+            case "add":
+                return this.checkMethod(
+                    a,
+                    beastAddOps(action.side, action.level ?? a.ilvl),
+                    stmt.span,
+                );
+        }
     }
 
     private checkHarvestChange(a: AItem, stmt: Extract<Stmt, { kind: "harvestChange" }>): Flow {
@@ -1177,6 +1192,7 @@ function noteStmtUses(u: ParamUses, s: Stmt): void {
         case "veiled":
         case "foulborn":
         case "benchRemove":
+        case "beast":
             return;
         case "fossil":
             for (const n of s.names) if (typeof n === "object") noteSort(u, n, "mod");
@@ -1300,6 +1316,7 @@ function substituteStmt(stmt: Stmt, env: Map<string, Arg>): Stmt {
         case "veiled":
         case "foulborn":
         case "benchRemove":
+        case "beast":
             return stmt;
         case "fossil":
             return { ...stmt, names: stmt.names.map((n) => subValue(n, env)) };

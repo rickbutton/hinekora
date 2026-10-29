@@ -19,6 +19,8 @@ import type {
     IfStmt,
     ItemBlock,
     NotPred,
+    BeastAction,
+    BeastStmt,
     BenchRemoveStmt,
     BenchStmt,
     EssenceStmt,
@@ -104,6 +106,7 @@ export const harvest = (verb: "reforge" | "augment", tag: string | ParamRef): Ha
     span: DS,
 });
 export const benchRemove = (): BenchRemoveStmt => ({ kind: "benchRemove", span: DS });
+export const beast = (action: BeastAction): BeastStmt => ({ kind: "beast", action, span: DS });
 export const fossil = (...names: (string | ParamRef)[]): FossilStmt => ({
     kind: "fossil",
     names,

@@ -41,9 +41,16 @@ import { CountDomain } from "./counts.js";
 
 /** A pool: which rows a `fill` draws from, resolved against the state it runs on. */
 export type PoolSpec =
-    /** The natural pool of the base at the item's level, optionally capped lower;
-     *  `topTiers` keeps only the top half of each type's eligible tiers (Foulborn). */
-    | { readonly kind: "natural"; readonly maxLevel?: number; readonly topTiers?: true }
+    /** The natural pool of the base at the item's level, or at `level` (a beast's);
+     *  optionally capped lower, limited to one side, or culled to the top half
+     *  of each type's eligible tiers (`topTiers`, Foulborn). */
+    | {
+          readonly kind: "natural";
+          readonly maxLevel?: number;
+          readonly topTiers?: true;
+          readonly gen?: Gen;
+          readonly level?: number;
+      }
     /** The natural pool's rows carrying a category tag (harvest). */
     | { readonly kind: "tagged"; readonly tag: TagId }
     /** The row a bench craft places; it counts as a crafted modifier. */
@@ -82,9 +89,11 @@ export type FillCount =
 
 /** Which present modifiers a removal may reach. */
 export type Selector =
-    /** One random modifier; only the Orb of Annulment honours a cannot-roll
-     *  metamod's shield. */
-    | { readonly kind: "random"; readonly honourCannotRoll: boolean }
+    /** One random modifier, of one side when `gen` is given; only the Orb of
+     *  Annulment honours a cannot-roll metamod's shield. A side-limited removal
+     *  whose side is protected is skipped rather than refused (Metamod § Rules
+     *  and Exceptions: "will add without removing"). */
+    | { readonly kind: "random"; readonly honourCannotRoll: boolean; readonly gen?: Gen }
     /** The crafted modifiers the bench can clear; a fractured one stays. When
      *  `replacing`, only under a limit of one: a craft replaces the single crafted
      *  modifier, while under the multimod it adds beside them (Crafting Bench §
@@ -208,13 +217,11 @@ function apply(
                     return removeCrafted(a, rules, registry, op.selector.replacing);
                 case "type":
                     return removeType(a, op.selector.type, registry);
-                case "random":
-                    return removeOne(
-                        a,
-                        allowedGens(rules),
-                        shieldFor(op.selector, rules),
-                        registry,
-                    );
+                case "random": {
+                    const allowed = allowedFor(op.selector, rules);
+                    if (allowed.size === 0 && op.selector.gen !== undefined) return a;
+                    return removeOne(a, allowed, shieldFor(op.selector, rules), registry);
+                }
             }
             break;
         case "rarity":
@@ -289,8 +296,11 @@ function cannotRollShield(a: AItem, effects: readonly Effect[], registry: Regist
 }
 
 /** The generations a removal may draw from: both, minus the protected ones. */
-function allowedGens(rules: Rules): ReadonlySet<Gen> {
-    return new Set(ALL_GENS.filter((g) => !rules.protected.has(g)));
+/** The sides a random removal may reach: its own side, if any, minus the protected. */
+function allowedFor(selector: Selector, rules: Rules): ReadonlySet<Gen> {
+    const sides =
+        selector.kind === "random" && selector.gen !== undefined ? [selector.gen] : ALL_GENS;
+    return new Set(sides.filter((g) => !rules.protected.has(g)));
 }
 
 function shieldFor(selector: Selector, rules: Rules): Shield | null {
@@ -323,10 +333,19 @@ function failing(
                 : check.gen === undefined
                   ? { kind: "noOpenSlot" }
                   : { kind: "noOpenSlot", gen: check.gen };
-        case "removable":
-            return hasRemovable(a, allowedGens(rules), shieldFor(check.selector, rules), registry)
+        case "removable": {
+            const allowed = allowedFor(check.selector, rules);
+            if (
+                check.selector.kind === "random" &&
+                check.selector.gen !== undefined &&
+                allowed.size === 0
+            ) {
+                return null; // the side is protected: the method adds without removing
+            }
+            return hasRemovable(a, allowed, shieldFor(check.selector, rules), registry)
                 ? null
                 : { kind: "nothingToRemove" };
+        }
         case "craftedRemovable":
             return a.crafted[0] - fracturedCrafted(a, registry) >= 1
                 ? null
@@ -687,9 +706,11 @@ function resolvePool(a: AItem, spec: PoolSpec, registry: Registry): ResolvedPool
     switch (spec.kind) {
         case "natural": {
             const cap = spec.maxLevel ?? Infinity;
-            const eligible = addableMods(a, registry).filter((m) => m.minLevel <= cap);
+            const eligible = addableMods(a, registry, spec.level).filter(
+                (m) => m.minLevel <= cap && (spec.gen === undefined || m.gen === spec.gen),
+            );
             const mods = spec.topTiers ? foulbornTiers(eligible, a, registry) : eligible;
-            return { mods, types: typesOf(mods), assert: [], gen: undefined };
+            return { mods, types: typesOf(mods), assert: [], gen: spec.gen };
         }
         case "tagged": {
             const mods = addableMods(a, registry).filter((m) => m.implicitTags.has(spec.tag));
@@ -1032,8 +1053,8 @@ function lock(a: AItem): AItem {
  * superset of every arm's real pool). Returns mods, not just types, so the tier
  * overlay can record which tiers.
  */
-function addableMods(a: AItem, registry: Registry): Mod[] {
-    const facts = guaranteedFacts(a, registry);
+function addableMods(a: AItem, registry: Registry, level = a.ilvl): Mod[] {
+    const facts = guaranteedFacts(a, registry, level);
     // Tags a possibly present mod would add may enable a row (the staff jewel mods
     // on a Strength jewel), so the pool admits what they would: the tags of the
     // state's possible mods, then, to a fixpoint, the tags of every row the pool
@@ -1059,7 +1080,7 @@ function addableMods(a: AItem, registry: Registry): Mod[] {
 }
 
 /** The state's guaranteed mods as the facts the pool reads, at rare caps. */
-function guaranteedFacts(a: AItem, registry: Registry): ItemFacts {
+function guaranteedFacts(a: AItem, registry: Registry, level = a.ilvl): ItemFacts {
     const types = guaranteedTypes(a);
     const families = new Set<GroupId>();
     const tags = new Set(a.base.tags);
@@ -1073,7 +1094,7 @@ function guaranteedFacts(a: AItem, registry: Registry): ItemFacts {
     }
     return {
         base: a.base,
-        ilvl: a.ilvl,
+        ilvl: level,
         rarity: "rare",
         prefixCount,
         suffixCount,

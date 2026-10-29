@@ -14,7 +14,14 @@ import {
     traceAt,
     type TypeId,
 } from "@hinekora/core";
-import { FOULBORN_VERBS, HARVEST_VERBS, parse, VEILED_VERBS } from "@hinekora/parser";
+import {
+    BEAST_VERBS,
+    FOULBORN_VERBS,
+    HARVEST_VERBS,
+    parse,
+    SIDE_WORDS,
+    VEILED_VERBS,
+} from "@hinekora/parser";
 import { type CompletionItem, CompletionItemKind } from "vscode-languageserver-types";
 
 type Context =
@@ -28,11 +35,22 @@ type Context =
     | "harvestTag"
     | "veiledVerb"
     | "foulbornVerb"
+    | "beastVerb"
+    | "beastSide"
     | "fossil";
 
 const CONTROL_KEYWORDS = ["until", "if", "else", "with", "restart"];
 /** Statement-starting keywords for the sourced/tag-directed crafts. */
-const SOURCED_KEYWORDS = ["essence", "bench", "harvest", "veiled", "unveil", "foulborn", "fossil"];
+const SOURCED_KEYWORDS = [
+    "essence",
+    "bench",
+    "harvest",
+    "veiled",
+    "unveil",
+    "foulborn",
+    "fossil",
+    "beast",
+];
 
 /** The keywords that can START a predicate (after `if` / `until` / `not`). */
 const PREDICATE_KEYWORDS: { label: string; detail: string; kind: CompletionItemKind }[] = [
@@ -89,6 +107,8 @@ function contextAt(source: string, offset: number): Context {
             if (word === "harvest") return "harvestVerb";
             if (word === "veiled") return "veiledVerb";
             if (word === "foulborn") return "foulbornVerb";
+            if (word === "beast") return "beastVerb";
+            if (word === "add") return "beastSide";
         }
         return "statement";
     }
@@ -204,6 +224,14 @@ export function getCompletions(
             }));
         case "fossil":
             return registry.fossilNames.map((label) => ({ label, kind: CompletionItemKind.Value }));
+        case "beastVerb":
+            return BEAST_VERBS.map((label) => ({
+                label,
+                detail: `beast ${label} prefix|suffix [<level>]`,
+                kind: CompletionItemKind.Keyword,
+            }));
+        case "beastSide":
+            return SIDE_WORDS.map((label) => ({ label, kind: CompletionItemKind.Keyword }));
         case "mod": {
             const ctx = itemContext(source, registry);
             const rollable = ctx ? rollableTypes(registry.catalog, ctx.base, ctx.ilvl) : undefined;

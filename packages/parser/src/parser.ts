@@ -7,6 +7,7 @@
 import {
     type AffixDecl,
     type Arg,
+    type BeastStmt,
     type BenchRemoveStmt,
     type BenchStmt,
     type CallPred,
@@ -343,6 +344,7 @@ class Parser {
         if (this.atKeyword("veiled")) return this.parseVeiled();
         if (this.atKeyword("foulborn")) return this.parseFoulborn();
         if (this.atKeyword("fossil")) return this.parseFossil();
+        if (this.atKeyword("beast")) return this.parseBeast();
         if (this.atKeyword("unveil")) return this.parseUnveil();
         if (this.atKeyword("restart")) {
             const t = this.advance();
@@ -462,6 +464,25 @@ class Parser {
             names.push(p);
         }
         return { kind: "fossil", names, span: span(start, this.prev.span.end) };
+    }
+
+    private parseBeast(): BeastStmt {
+        const start = this.expectKeyword("beast").span.start;
+        const verbTok = this.expect("ident", "a beast recipe ('add')");
+        if (verbTok.text.toLowerCase() !== "add") {
+            throw this.error(`a beast recipe must be 'add', not '${verbTok.text}'`, verbTok.span);
+        }
+        const sideTok = this.expect("ident", "'prefix' or 'suffix' after 'beast add'");
+        const side = sideTok.text.toLowerCase();
+        if (side !== "prefix" && side !== "suffix") {
+            throw this.error(`expected 'prefix' or 'suffix', not '${sideTok.text}'`, sideTok.span);
+        }
+        const level = this.at("int") ? Number(this.advance().text) : undefined;
+        return {
+            kind: "beast",
+            action: { kind: "add", side, ...(level !== undefined && { level }) },
+            span: span(start, this.prev.span.end),
+        };
     }
 
     private parseUnveil(): UnveilStmt {

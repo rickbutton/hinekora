@@ -94,6 +94,7 @@ export type Stmt =
     | BenchStmt
     | HarvestStmt
     | HarvestChangeStmt
+    | BeastStmt
     | VeiledStmt
     | FoulbornStmt
     | FossilStmt
@@ -175,6 +176,18 @@ export interface BenchRemoveStmt {
     readonly kind: "benchRemove";
     readonly span: SourceSpan;
 }
+
+/** `beast <action>`: a Bestiary recipe applied to the item. */
+export interface BeastStmt {
+    readonly kind: "beast";
+    readonly action: BeastAction;
+    readonly span: SourceSpan;
+}
+
+export type BeastAction =
+    /** `beast add prefix|suffix [<level>]`: add a modifier of that side, drawn at
+     *  the beast's level (the item's when absent), removing one of the other. */
+    { readonly kind: "add"; readonly side: "prefix" | "suffix"; readonly level?: number };
 
 /** `harvest change "<mod>" "<mod>"`: the first modifier becomes a similar-tier
  *  modifier of the second's kind. Inside a proc body a name may be a `ParamRef`. */

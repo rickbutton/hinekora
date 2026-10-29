@@ -188,7 +188,7 @@ Per [Beastcrafting](https://www.poewiki.net/wiki/Beastcrafting).
 
 | Method                                                | Composition                                                                               | Status                                           |
 | ----------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| Add a prefix, remove a random suffix (and the mirror) | `remove(suffix ∖ protected, 1); fill(natural[prefix], 1)` (the pool at the beast's level) | composes                                         |
+| Add a prefix, remove a random suffix (and the mirror) | `remove(suffix ∖ protected, 1); fill(natural[prefix], 1)` (the pool at the beast's level) | built                                            |
 | Add a modifier to an influenced item                  | `fill(natural ∪ influence, 1)`                                                            | later: influence marks                           |
 | Fracture one / two modifiers on a talisman            | `lock(any, 1)` / `lock(any, 2)`                                                           | composes (two locks relax the one-fracture rule) |
 | Add a random metamod                                  | `fill(metamods, 1)`                                                                       | composes                                         |

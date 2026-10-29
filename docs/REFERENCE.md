@@ -208,11 +208,11 @@ Transport-free service functions + a stdio server:
       one shared signature (`namedAt` / `defAt`).
 - `completion.ts`: `getCompletions`. A backward text-scan (`contextAt`) picks the
   context: statement (currencies + control keywords + the sourced keywords `essence`,
-  `bench`, `harvest`, `veiled`, `unveil`, `foulborn`, `fossil`), predicate (after
+  `bench`, `harvest`, `veiled`, `unveil`, `foulborn`, `fossil`, `beast`), predicate (after
   `if`/`until`/`not`/`and`/`or`; includes local def names scraped by regex), base,
   essence, bench, harvest verb (after `harvest`), harvest tag (after `reforge`/`augment`),
   veiled verb (after `veiled`), foulborn verb (after `foulborn`), fossil name (inside a
-  `fossil` line's strings), or mod. Mod candidates are **filtered to what's possible
+  `fossil` line's strings), beast verb and side (after `beast`, after `add`), or mod. Mod candidates are **filtered to what's possible
   at the cursor**: rollable on the item's base+ilvl (`rollableTypes`, base read from the text)
   AND not proven-absent by the checker's state at that point (`excludedAt` parses the
   craft, retrying with the open string closed). Both filters degrade gracefully to "all
@@ -403,7 +403,11 @@ in it. Notes:
   named modifier goes, excluded afterwards, everything else stays) after `typeRemovable`
   (guaranteed, not fractured, unprotected side), then a `rows` fill of the target's row
   at the source's tier rank, or all its rows while that rank is unknown.
-- A `remove` with the random selector draws from an **allowed-gens** set = `both − protected`. A guarantee whose
+- A `remove` with the random selector draws from an **allowed-gens** set = `both − protected`,
+  or one side minus the protected when the selector names a side (`allowedFor`); a
+  side-limited removal whose side is protected is skipped, not refused, the table's "will
+  add without removing" for the beast recipes (`beastAddOps`, whose fill reads the
+  natural pool at the beast's level, `addableMods` at a level other than the item's). A guarantee whose
   generation is not in that set survives (protected), as does one the cannot-roll shield
   covers and a fractured one; an empty set means nothing is removable.
 - `strip` keeps the protected sides and the fractured mod and drops the rest: counts fall
