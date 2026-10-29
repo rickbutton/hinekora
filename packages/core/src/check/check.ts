@@ -53,7 +53,7 @@ import {
     VEILED_CHAOS,
     VEILED_EXALT,
 } from "./library.js";
-import { runMethod } from "./ops.js";
+import { type Op, runMethod } from "./ops.js";
 
 export interface CheckContext {
     readonly registry: Registry;
@@ -522,9 +522,14 @@ class Checker {
     }
 
     private checkFoulborn(a: AItem, stmt: Extract<Stmt, { kind: "foulborn" }>): Flow {
-        const result = runMethod(a, foulbornOps(stmt.verb), this.registry);
+        return this.checkMethod(a, foulbornOps(stmt.verb), stmt.span);
+    }
+
+    /** Run a method with no name to resolve; a refused one leaves the state as is. */
+    private checkMethod(a: AItem, ops: readonly Op[], span: SourceSpan): Flow {
+        const result = runMethod(a, ops, this.registry);
         if (!result.ok) {
-            this.diag(preconditionMessage(a, result.failure), stmt.span);
+            this.diag(preconditionMessage(a, result.failure), span);
             return { kind: "fall", state: a };
         }
         return { kind: "fall", state: result.state };
