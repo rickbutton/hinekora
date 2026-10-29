@@ -170,6 +170,22 @@ every fossil-only row under it and a one-in-ten corrupted-essence chance.
 chance.
 **Answer:**
 
+### Q23 · game probe · open
+
+**Asked:** 2026-10-28
+**Goal:** whether a beastcrafted Aspect counts as a crafted modifier: toward the bench's
+limit, and for "remove crafted modifiers". [Aspect of the Cat](https://www.poewiki.net/wiki/Aspect_of_the_Cat)
+says only that it is beastcrafted onto gear as a suffix; the data's level-30 rows are
+ordinary item-domain rows with no weight, the level-20 bench rows separate.
+**Procure:** a Rare with a beastcrafted Aspect and a bench.
+**Steps:** bench a modifier (does the Aspect count as the one crafted modifier?); use
+"remove crafted modifiers" (does the Aspect go?).
+**Record:** both outcomes.
+**Assumed meanwhile:** not crafted: `beast aspect` leaves the crafted count alone
+(`check/library.ts` `beastAspectOps`) and the removal ignores the row. The level-20 bench
+Aspects have no surface form.
+**Answer:**
+
 ---
 
 ## Resolved

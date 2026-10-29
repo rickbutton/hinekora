@@ -204,7 +204,8 @@ Operations that take a name (and an optional `t<n>`):
 - `beast aspect "<animal>"` is "Craft an Aspect Skill onto an Item": the level-30
   [Aspect](https://www.poewiki.net/wiki/Aspect_of_the_Cat) of the cat, avian, spider or
   crab (`beast aspect "cat"`), a suffix that needs an open suffix slot and no other
-  skill-granting modifier possibly present.
+  skill-granting modifier possibly present. The level-20 Aspects of the bench are not
+  offered; an Aspect is not counted as a crafted modifier (`QUESTIONS.md` Q23).
 - `beast imprint` creates an [imprint](https://www.poewiki.net/wiki/Imprint) of a Magic
   item or a Rare talisman (the two Bestiary recipes), and `restore` applies it: the item
   becomes what it was at the imprint, on every path. Neither works on a fractured item
