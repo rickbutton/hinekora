@@ -13,18 +13,26 @@ import {
     type BenchCraft,
     buildRegistry,
     type EssenceSpec,
+    type FossilSpec,
     type Mod,
     type Registry,
 } from "@hinekora/core";
-import { adaptBase, adaptBench, adaptEssence, adaptMod } from "./adapter.js";
+import { adaptBase, adaptBench, adaptEssence, adaptFossil, adaptMod } from "./adapter.js";
 import type { DataManifest } from "./manifest.js";
-import type { RepoeBases, RepoeBenches, RepoeEssences, RepoeMods } from "./repoe/schema.js";
+import type {
+    RepoeBases,
+    RepoeBenches,
+    RepoeEssences,
+    RepoeFossils,
+    RepoeMods,
+} from "./repoe/schema.js";
 
 export interface LoadedData {
     readonly mods: readonly Mod[];
     readonly bases: readonly Base[];
     readonly essences: readonly EssenceSpec[];
     readonly benchCrafts: readonly BenchCraft[];
+    readonly fossils: readonly FossilSpec[];
     readonly manifest: DataManifest;
 }
 
@@ -40,6 +48,7 @@ export function loadPoe1(dir: string): LoadedData {
 
     const rawEssences = readJson<RepoeEssences>(`${dir}/essences.json`);
     const rawBench = readJson<RepoeBenches>(`${dir}/bench.json`);
+    const rawFossils = readJson<RepoeFossils>(`${dir}/fossils.json`);
 
     const mods = Object.entries(rawMods)
         .map(([id, m]) => adaptMod(id, m))
@@ -47,8 +56,9 @@ export function loadPoe1(dir: string): LoadedData {
     const bases = Object.entries(rawBases).map(([key, b]) => adaptBase(key, b));
     const essences = Object.entries(rawEssences).map(([id, e]) => adaptEssence(id, e));
     const benchCrafts = rawBench.map(adaptBench);
+    const fossils = Object.entries(rawFossils).map(([id, f]) => adaptFossil(id, f));
 
-    return { mods, bases, essences, benchCrafts, manifest };
+    return { mods, bases, essences, benchCrafts, fossils, manifest };
 }
 
 /** Absolute path to the bundled PoE1 catalog committed in this package. */
@@ -68,5 +78,6 @@ export function registryOf(data: LoadedData): Registry {
         mods: data.mods,
         essences: data.essences,
         benchCrafts: data.benchCrafts,
+        fossils: data.fossils,
     });
 }

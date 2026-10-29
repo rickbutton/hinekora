@@ -23,6 +23,12 @@ export interface ManifestSource {
 export interface ManifestFile {
     readonly sha256: string;
     readonly count: number;
+    /** Set when the file was taken from a later dump than the manifest's source. */
+    readonly provenance?: {
+        readonly commit: string;
+        readonly commitDate: string;
+        readonly publishedAt: string;
+    };
 }
 
 export interface ManifestExtent {
@@ -31,6 +37,7 @@ export interface ManifestExtent {
     readonly mods: number;
     readonly essences?: number;
     readonly benchCrafts?: number;
+    readonly fossils?: number;
 }
 
 export interface DataManifest {

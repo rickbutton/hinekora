@@ -15,7 +15,7 @@
  */
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const OUT_DIR = fileURLToPath(new URL("../data/poe1", import.meta.url));
 const MODS_URL = process.env.REPOE_MODS_URL ?? "https://repoe-fork.github.io/mods.min.json";
@@ -24,6 +24,8 @@ const ESSENCES_URL =
     process.env.REPOE_ESSENCES_URL ?? "https://repoe-fork.github.io/essences.min.json";
 const BENCH_URL =
     process.env.REPOE_BENCH_URL ?? "https://repoe-fork.github.io/crafting_bench_options.min.json";
+const FOSSILS_URL =
+    process.env.REPOE_FOSSILS_URL ?? "https://repoe-fork.github.io/fossils.min.json";
 
 const AFFIX_GENS = new Set(["prefix", "suffix"]);
 
@@ -146,6 +148,35 @@ function projectBench(raw) {
     return out;
 }
 
+/**
+ * Fossils: what each does to which modifiers a resonator can roll (Fossil §
+ * Mechanics). Kept: the category tags it blocks ("No X modifiers", a zero
+ * weight), the fossil-only rows it adds or forces, the base tags it is limited
+ * to, its chance of a corrupted-essence modifier, and whether it fractures a
+ * rolled modifier. Weight multipliers, lucky rolls, quality, sockets, sell
+ * price and the corrupted implicit do not change which modifiers can appear.
+ */
+export function projectFossils(raw) {
+    const out = {};
+    for (const [id, f] of Object.entries(raw)) {
+        if (!f.name?.endsWith(" Fossil")) continue;
+        out[id] = {
+            name: f.name,
+            blocked_tags: (f.negative_mod_weights ?? [])
+                .filter((w) => w.weight === 0)
+                .map((w) => w.tag),
+            added_mods: f.added_mods ?? [],
+            forced_mods: f.forced_mods ?? [],
+            ...(f.allowed_tags?.length ? { allowed_tags: f.allowed_tags } : {}),
+            corrupted_essence_chance: f.corrupted_essence_chance ?? 0,
+            // The export has no field for it: the Fractured Fossil fractures one
+            // of the modifiers it rolls (Fractured Fossil § Mechanics).
+            fractures: f.name === "Fractured Fossil",
+        };
+    }
+    return out;
+}
+
 function writeJson(name, value) {
     const text = JSON.stringify(value);
     writeFileSync(`${OUT_DIR}/${name}`, text);
@@ -163,11 +194,13 @@ async function main() {
     const bases = await getSource(BASES_URL, "REPOE_BASES_FILE");
     const essences = await getSource(ESSENCES_URL, "REPOE_ESSENCES_FILE");
     const bench = await getSource(BENCH_URL, "REPOE_BENCH_FILE");
+    const fossils = await getSource(FOSSILS_URL, "REPOE_FOSSILS_FILE");
 
     const modsFile = writeJson("mods.json", projectMods(mods.json));
     const basesFile = writeJson("base_items.json", projectBases(bases.json, mods.json));
     const essencesFile = writeJson("essences.json", projectEssences(essences.json));
     const benchFile = writeJson("bench.json", projectBench(bench.json));
+    const fossilsFile = writeJson("fossils.json", projectFossils(fossils.json));
 
     const manifest = {
         game: "poe1",
@@ -189,25 +222,28 @@ async function main() {
         retrievedAt: new Date().toISOString().slice(0, 10),
         extent: {
             description:
-                "Full PoE1 catalog projected to the fields the core model uses: all prefix/suffix mods, all released named bases, plus the essence and bench (mod-adding) catalogs.",
+                "Full PoE1 catalog projected to the fields the core model uses: all prefix/suffix mods, all released named bases, plus the essence, bench (mod-adding) and fossil catalogs.",
             bases: basesFile.count,
             mods: modsFile.count,
             essences: essencesFile.count,
             benchCrafts: benchFile.count,
+            fossils: fossilsFile.count,
         },
         files: {
             "mods.json": modsFile,
             "base_items.json": basesFile,
             "essences.json": essencesFile,
             "bench.json": benchFile,
+            "fossils.json": fossilsFile,
         },
     };
     writeFileSync(`${OUT_DIR}/manifest.json`, JSON.stringify(manifest, null, 4) + "\n");
 
     console.log(
-        `wrote ${modsFile.count} mods, ${basesFile.count} bases, ${essencesFile.count} essences, ${benchFile.count} bench crafts to ${OUT_DIR}`,
+        `wrote ${modsFile.count} mods, ${basesFile.count} bases, ${essencesFile.count} essences, ${benchFile.count} bench crafts, ${fossilsFile.count} fossils to ${OUT_DIR}`,
     );
     console.log(`source commit ${commit.sha}, published ${manifest.source.publishedAt}`);
 }
 
-await main();
+// Importable for its projections; runs only as a script.
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) await main();

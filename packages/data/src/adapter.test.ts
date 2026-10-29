@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { adaptBase, adaptBench, adaptEssence, adaptMod, classifySource } from "./adapter.js";
+import {
+    adaptBase,
+    adaptBench,
+    adaptEssence,
+    adaptFossil,
+    adaptMod,
+    classifySource,
+} from "./adapter.js";
 import type { RepoeBase, RepoeBench, RepoeEssence, RepoeMod } from "./repoe/schema.js";
 
 const LIFE: RepoeMod = {
@@ -125,5 +132,21 @@ describe("adaptBase", () => {
             domain: "misc",
         });
         expect(b.tags.size).toBe(5);
+    });
+});
+
+describe("adaptFossil", () => {
+    it("maps the projected fields, leaving the base restriction absent when none", () => {
+        const f = adaptFossil("Metadata/Fossil", {
+            name: "Pristine Fossil",
+            blocked_tags: ["defences"],
+            added_mods: [],
+            forced_mods: ["DelveAbyssJewelSocket1"],
+            corrupted_essence_chance: 0,
+            fractures: false,
+        });
+        expect([...f.blockedTags]).toEqual(["defences"]);
+        expect(f.forcedMods).toEqual(["DelveAbyssJewelSocket1"]);
+        expect("allowedTags" in f).toBe(false);
     });
 });

@@ -10,7 +10,7 @@ import type { ClassId, Gen, GroupId, TypeId } from "../model/ids.js";
 import { TagId } from "../model/ids.js";
 import { withMetamodEffects } from "../model/metamods.js";
 import type { Mod } from "../model/mod.js";
-import type { BenchCraft, EssenceSpec } from "../model/sources.js";
+import type { BenchCraft, EssenceSpec, FossilSpec } from "../model/sources.js";
 import { buildTypeIndex, matchTypes, normalizeText } from "./fuzzy.js";
 import { rollableTiers } from "./tiers.js";
 
@@ -69,6 +69,7 @@ export type ResolveError =
     | { readonly kind: "unknownMod"; readonly name: string }
     | { readonly kind: "unknownCurrency"; readonly name: string }
     | { readonly kind: "unknownEssence"; readonly name: string }
+    | { readonly kind: "unknownFossil"; readonly name: string }
     | { readonly kind: "unknownBench"; readonly name: string }
     | { readonly kind: "unknownHarvestTag"; readonly name: string }
     | { readonly kind: "ambiguous"; readonly name: string; readonly candidates: readonly string[] };
@@ -160,6 +161,8 @@ export interface Registry {
      * ambiguity is only across distinct mod families.
      */
     resolveBench(name: string, itemClass?: ClassId, tier?: number): Resolved<BenchCraft>;
+    /** Resolve a fossil by name, in full ("Pristine Fossil") or by its first word. */
+    resolveFossil(name: string): Resolved<FossilSpec>;
     /** The generation (prefix/suffix) a ModType always occupies, if known. */
     genOfType(type: TypeId): Gen | undefined;
     /** The mod groups (families) a ModType belongs to, across its tiers;
@@ -185,6 +188,8 @@ export interface Registry {
     readonly statSuggestions: readonly StatSuggestion[];
     /** Full essence names, for `essence "…"` completion. */
     readonly essenceNames: readonly string[];
+    /** Full fossil names. */
+    readonly fossilNames: readonly string[];
     /** Distinct bench-mod descriptions, for `bench "…"` completion. */
     readonly benchNames: readonly string[];
     /** Harvest category labels, for `harvest <verb> "…"` completion. */
@@ -274,6 +279,7 @@ export interface RegistryData {
     readonly currencies?: readonly CurrencySpec[];
     readonly essences?: readonly EssenceSpec[];
     readonly benchCrafts?: readonly BenchCraft[];
+    readonly fossils?: readonly FossilSpec[];
 }
 
 /**
@@ -315,6 +321,7 @@ export function buildRegistry(data: RegistryData): Registry {
     );
     const essences = data.essences ?? [];
     const benchCrafts = data.benchCrafts ?? [];
+    const fossils = data.fossils ?? [];
 
     const typeGen = new Map<TypeId, Gen>();
     for (const m of catalog) if (!typeGen.has(m.type)) typeGen.set(m.type, m.gen);
@@ -371,6 +378,7 @@ export function buildRegistry(data: RegistryData): Registry {
         baseNames,
         statSuggestions,
         essenceNames: essences.map((e) => e.name),
+        fossilNames: fossils.map((f) => f.name),
         benchNames: [
             ...new Set(
                 benchCrafts
@@ -455,6 +463,18 @@ export function buildRegistry(data: RegistryData): Registry {
             if (matches.length === 1) return found(matches[0]!);
             if (matches.length === 0) return fail({ kind: "unknownEssence", name });
             return fail({ kind: "ambiguous", name, candidates: matches.map((e) => e.name) });
+        },
+
+        resolveFossil(name) {
+            const q = normalizeText(name);
+            if (q.length === 0) return fail({ kind: "unknownFossil", name });
+            const matches = fossils.filter((f) => {
+                const tokens = new Set(normalizeText(f.name));
+                return q.every((w) => tokens.has(w));
+            });
+            if (matches.length === 1) return found(matches[0]!);
+            if (matches.length === 0) return fail({ kind: "unknownFossil", name });
+            return fail({ kind: "ambiguous", name, candidates: matches.map((f) => f.name) });
         },
 
         resolveBench(name, itemClass, tier) {

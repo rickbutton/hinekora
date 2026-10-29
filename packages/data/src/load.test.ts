@@ -35,6 +35,24 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         expect(data.essences.every((e) => e.grants.size > 0)).toBe(true);
     });
 
+    it("loads the fossil catalog and resolves a fossil by its first word", () => {
+        expect(data.fossils.length).toBe(data.manifest.extent.fossils);
+        const pristine = registry.resolveFossil("pristine");
+        expect(pristine.ok && [...pristine.value.blockedTags]).toEqual(["defences"]);
+        const hollow = registry.resolveFossil("Hollow Fossil");
+        expect(hollow.ok && hollow.value.forcedMods).toEqual(["DelveAbyssJewelSocket1"]);
+        expect(hollow.ok && hollow.value.allowedTags?.has(TagId("helmet"))).toBe(true);
+        expect(registry.resolveFossil("glyphic")).toMatchObject({
+            value: { corruptedEssenceChance: 100 },
+        });
+        expect(registry.resolveFossil("tangled")).toMatchObject({
+            value: { corruptedEssenceChance: 10 },
+        });
+        expect(registry.resolveFossil("fractured")).toMatchObject({ value: { fractures: true } });
+        expect(registry.resolveFossil("fossil").ok).toBe(false); // every fossil matches
+        expect(registry.resolveFossil("amber").ok).toBe(false);
+    });
+
     it("resolves essences by full name, by type + tier, and flags conflicts", () => {
         const name = (r: ReturnType<typeof registry.resolveEssence>) =>
             r.ok ? r.value.name : null;

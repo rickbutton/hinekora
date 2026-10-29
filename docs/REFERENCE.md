@@ -166,9 +166,13 @@ emits `eq` for `==` and `assign` for a lone `=` (the def binding).
 ### 3c. `@hinekora/data`
 
 Ingest scripts (`scripts/ingest-poe1.mjs`) project the RePoE-fork JSON dump down to just
-the fields needed (mods, bases, essences, bench options), minified, with a **provenance
-manifest** (repoe commit SHA + sha256 hashes; gameVersion "unknown" because repoe doesn't
-stamp it). A mod's projection keeps `implicit_tags` (the category tags harvest and fossils
+the fields needed (mods, bases, essences, bench options, fossils), minified, with a
+**provenance manifest** (repoe commit SHA + sha256 hashes; gameVersion "unknown" because
+repoe doesn't stamp it; a file taken from a later dump than the rest carries its own
+`provenance` entry). A fossil's projection keeps what decides which modifiers a
+resonator can roll (`projectFossils`: blocked category tags, added and forced rows, the
+base tags it allows, its chance of a corrupted-essence modifier, a fracture), never the
+weight multipliers. A mod's projection keeps `implicit_tags` (the category tags harvest and fossils
 filter on). For a base it also folds the affix-count implicit stats
 (`local_maximum_{prefixes,suffixes}_allowed_+`) into a `capDelta` (absent when zero).
 `adapter.ts` adapts rows into model types and stamps `ModSource` via `classifySource`

@@ -10,6 +10,7 @@ import {
     ClassId,
     Domain,
     type EssenceSpec,
+    type FossilSpec,
     type Gen,
     GroupId,
     type Mod,
@@ -18,7 +19,7 @@ import {
     TagId,
     TypeId,
 } from "@hinekora/core";
-import type { RepoeBase, RepoeBench, RepoeEssence, RepoeMod } from "./repoe/schema.js";
+import type { RepoeBase, RepoeBench, RepoeEssence, RepoeFossil, RepoeMod } from "./repoe/schema.js";
 
 /** Only prefix/suffix mods are modelled; other generation types (essence,
  * corrupted, …) are skipped by returning `null`. */
@@ -74,6 +75,19 @@ export function adaptEssence(id: string, e: RepoeEssence): EssenceSpec {
         tier: e.tier,
         ...(e.maxRandomModLevel != null && { maxRandomModLevel: e.maxRandomModLevel }),
         grants,
+    };
+}
+
+export function adaptFossil(id: string, f: RepoeFossil): FossilSpec {
+    return {
+        id,
+        name: f.name,
+        blockedTags: new Set(f.blocked_tags.map((t) => TagId(t))),
+        addedMods: f.added_mods.map((m) => ModId(m)),
+        forcedMods: f.forced_mods.map((m) => ModId(m)),
+        ...(f.allowed_tags && { allowedTags: new Set(f.allowed_tags.map((t) => TagId(t))) }),
+        corruptedEssenceChance: f.corrupted_essence_chance,
+        fractures: f.fractures,
     };
 }
 

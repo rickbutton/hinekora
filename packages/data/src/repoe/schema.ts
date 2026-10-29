@@ -65,6 +65,25 @@ export interface RepoeEssence {
 }
 export type RepoeEssences = Readonly<Record<string, RepoeEssence>>;
 
+/** `fossils.json` entry (projected): a fossil's effects on which modifiers a
+ *  resonator can roll. */
+export interface RepoeFossil {
+    readonly name: string;
+    /** Category tags whose modifiers cannot roll ("No X modifiers"). */
+    readonly blocked_tags: readonly string[];
+    /** Fossil-only rows that join the pool. */
+    readonly added_mods: readonly string[];
+    /** Rows one of which is guaranteed. */
+    readonly forced_mods: readonly string[];
+    /** Base tags one of which the item must carry, when the fossil limits its targets. */
+    readonly allowed_tags?: readonly string[];
+    /** Percent chance that one rolled modifier is a corrupted essence's. */
+    readonly corrupted_essence_chance: number;
+    /** Fractures one of the modifiers it rolls. */
+    readonly fractures: boolean;
+}
+export type RepoeFossils = Readonly<Record<string, RepoeFossil>>;
+
 /** `bench.json` entry (projected): a mod-adding crafting-bench option. */
 export interface RepoeBench {
     readonly mod: string;

@@ -157,6 +157,8 @@ export function resolveMessage(error: ResolveError): string {
             return `Unknown essence "${error.name}".`;
         case "unknownBench":
             return `No bench craft adds "${error.name}" to this item.`;
+        case "unknownFossil":
+            return `Unknown fossil "${error.name}".`;
         case "unknownHarvestTag":
             return `"${error.name}" is not a harvest modifier type.`;
         case "ambiguous":
