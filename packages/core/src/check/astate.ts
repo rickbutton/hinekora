@@ -27,7 +27,9 @@ export type Tiers = ReadonlyMap<TypeId, ReadonlySet<ModId>>;
 export interface AItem {
     readonly base: Base;
     readonly ilvl: number;
-    readonly rarity: Rarity;
+    /** The rarities the item may have: one on a straight line, more where paths
+     *  that changed it meet or a scour's survivor count is uncertain. */
+    readonly rarities: ReadonlySet<Rarity>;
     /** Affix counts (total + prefix; suffix derived), the count sub-domain. */
     readonly counts: Counts;
     /** Shared per-check BDD manager, ids only mean something within one manager. */
@@ -47,9 +49,27 @@ export interface AItem {
     readonly imprint?: AItem;
 }
 
-/** The caps this item's counts live under (rarity + base). */
+/** The loosest caps over the item's rarities: what its counts may reach on some
+ *  path, the bound the ranges are kept under. */
 function capsOf(a: AItem): Caps {
-    return caps(a.rarity, a.base);
+    return capsOver(a, Math.max);
+}
+
+/** The caps over the item's rarities, each field picked by `pick`: `Math.max`
+ *  for the loosest (what some path allows), `Math.min` for the tightest (what
+ *  every path allows). */
+export function capsOver(a: AItem, pick: (...n: number[]) => number): Caps {
+    const all = [...a.rarities].map((r) => caps(r, a.base));
+    return {
+        prefix: pick(...all.map((c) => c.prefix)),
+        suffix: pick(...all.map((c) => c.suffix)),
+        total: pick(...all.map((c) => c.total)),
+    };
+}
+
+/** The one rarity the item has on every path, or `undefined` while it may differ. */
+export function rarityOf(a: AItem): Rarity | undefined {
+    return a.rarities.size === 1 ? [...a.rarities][0] : undefined;
 }
 
 /** The derived suffix range: `total − prefix`, clamped to the suffix cap. */
@@ -456,7 +476,7 @@ export function initialState(
     return settled({
         base,
         ilvl,
-        rarity,
+        rarities: new Set([rarity]),
         counts: CountDomain.point(p, s),
         bdd,
         presence:
@@ -514,18 +534,14 @@ export function join(a: AItem, b: AItem): AItem {
     return {
         base: a.base,
         ilvl: a.ilvl,
-        rarity: a.rarity,
+        rarities: SetDomain.join(a.rarities, b.rarities),
         bdd: a.bdd,
         counts: CountDomain.join(a.counts, b.counts),
         presence: a.bdd.or(a.presence, b.presence),
         possible: SetDomain.join(a.possible, b.possible),
         tiers: TierDomain.join(a.tiers, b.tiers),
         crafted: RangeDomain.join(a.crafted, b.crafted),
-        // The state holds one rarity, so imprints of different rarities cannot
-        // be joined; the imprint is then dropped and a restore refused.
-        ...(a.imprint &&
-            b.imprint &&
-            a.imprint.rarity === b.imprint.rarity && { imprint: join(a.imprint, b.imprint) }),
+        ...(a.imprint && b.imprint && { imprint: join(a.imprint, b.imprint) }),
     };
 }
 
@@ -537,7 +553,7 @@ export function join(a: AItem, b: AItem): AItem {
  */
 export function stateEqual(a: AItem, b: AItem): boolean {
     return (
-        a.rarity === b.rarity &&
+        SetDomain.equal(a.rarities, b.rarities) &&
         CountDomain.equal(a.counts, b.counts) &&
         a.presence === b.presence &&
         SetDomain.equal(a.possible, b.possible) &&
@@ -586,10 +602,10 @@ export function refine(a: AItem, pred: RPred, positive = true): AItem | null {
             return refine(a, pred.inner, !positive);
 
         case "isRarity": {
-            const holds = a.rarity === pred.rarity;
-            // Rarity is exact, so the predicate's truth is decided: keep the
-            // state when it matches the requested polarity, else uninhabited.
-            return holds === positive ? a : null;
+            const rarities = new Set(
+                [...a.rarities].filter((r) => (r === pred.rarity) === positive),
+            );
+            return rarities.size === 0 ? null : settled({ ...a, rarities });
         }
 
         case "has":

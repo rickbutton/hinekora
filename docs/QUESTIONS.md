@@ -48,12 +48,9 @@ form that fixes the outcome by looping (`until isRare { chance; scour }`), which
 needs the set inside the loop. The usual guide is "scour-chance until unique", about
 which only cost modelling has anything to say. Options: (1) build the rarity set and a
 `unique` rarity no later operation accepts; (2) leave the orb out of scope, like Rog.
-Recommendation: (2) until a guide needs it. The single rarity also bites where paths
-meet: an `if` whose arms leave the item at different rarities, or a loop whose body
-changes it, is joined to the first path's rarity (`check/astate.ts` `join`), a known gap
-that a set of rarities would close; guides that branch on the rarity afterwards are not
-caught. An imprint whose two sides differ in rarity is dropped by the same join, so a
-`restore` after it is refused.
+Recommendation: (2) until a guide needs it. The state now holds a set of rarities
+(`check/astate.ts` `rarities`), so the Magic-or-Rare half of the orb is expressible; what
+is still missing is the Unique outcome, where the item leaves the crafting domain.
 **Assumed meanwhile:** not built; the ledger rows for the Orb of Chance and the bench's
 "Reroll the rarity" are marked **later** in `operations.md` §3.
 **Answer:**

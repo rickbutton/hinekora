@@ -26,22 +26,22 @@ import { veiledPool } from "../pool/veiled.js";
 import type { Registry } from "../resolve/registry.js";
 import { rollableGen } from "../resolve/tiers.js";
 import {
-    type AItem,
-    type Range,
     admitAdd,
     assertFractureDisjunction,
     canBeRare,
+    capsOver,
     excludedTypes,
-    fractureProjection,
     fracturedTypes,
+    fractureProjection,
     guaranteedTypes,
     hasFracture,
     isExcluded,
-    maxTotal,
     presenceFacts,
+    rarityOf,
     settled,
-    sideCap,
     suffixRange,
+    type AItem,
+    type Range,
 } from "./astate.js";
 import { CountDomain } from "./counts.js";
 
@@ -170,11 +170,19 @@ export type Op =
 
 /** Why an operation's precondition fails on the current state. */
 export type PreconditionFailure =
-    | { readonly kind: "wrongRarity"; readonly needed: Rarity; readonly actual: Rarity }
+    | {
+          readonly kind: "wrongRarity";
+          readonly needed: Rarity;
+          readonly actual: ReadonlySet<Rarity>;
+      }
     | { readonly kind: "noOpenSlot"; readonly gen?: Gen }
     | { readonly kind: "modConflict"; readonly group: string }
     | { readonly kind: "nothingToRemove" }
-    | { readonly kind: "essenceRarity"; readonly tier: number; readonly actual: Rarity }
+    | {
+          readonly kind: "essenceRarity";
+          readonly tier: number;
+          readonly actual: ReadonlySet<Rarity>;
+      }
     | { readonly kind: "essenceClass"; readonly essence: string; readonly itemClass: ClassId }
     | { readonly kind: "rarityUnsupported"; readonly rarity: Rarity }
     | { readonly kind: "craftedLimit"; readonly cap: number }
@@ -201,8 +209,7 @@ export type PreconditionFailure =
     | { readonly kind: "alreadyVeiled" }
     | { readonly kind: "veiledWouldSurvive" }
     | { readonly kind: "unveilNotAvailable"; readonly mod: string }
-    | { readonly kind: "unveilNotGuaranteed"; readonly mod: string; readonly options: number }
-    | { readonly kind: "scourRarityUnknown"; readonly lower: Rarity; readonly upper: Rarity };
+    | { readonly kind: "unveilNotGuaranteed"; readonly mod: string; readonly options: number };
 
 export type TransferResult =
     | { readonly ok: true; readonly state: AItem }
@@ -255,7 +262,10 @@ function apply(
         case "rarity":
             return settled({
                 ...a,
-                rarity: op.rarity === "survivors" ? scouredRarity(a0, rules, registry) : op.rarity,
+                rarities:
+                    op.rarity === "survivors"
+                        ? scouredRarities(a0, rules, registry)
+                        : new Set([op.rarity]),
             });
         case "lock":
             return lock(a);
@@ -358,9 +368,9 @@ function failing(
 ): PreconditionFailure | null {
     switch (check.kind) {
         case "rarity":
-            return a.rarity === check.rarity
+            return rarityOf(a) === check.rarity
                 ? null
-                : { kind: "wrongRarity", needed: check.rarity, actual: a.rarity };
+                : { kind: "wrongRarity", needed: check.rarity, actual: a.rarities };
         case "canBeRare":
             return canBeRare(a.base) ? null : { kind: "rarityUnsupported", rarity: "rare" };
         case "openSlot":
@@ -398,17 +408,13 @@ function failing(
             // A Magic base with zero affixes (a magic Simplex) still drops to Normal,
             // so rarity, not mod count, is the gate; both sides protected and no
             // fractured mod means nothing would go.
-            if (a.rarity === "normal") return { kind: "nothingToRemove" };
+            if (a.rarities.has("normal")) return { kind: "nothingToRemove" };
             if (rules.protected.size === ALL_GENS.length && !hasFracture(a)) {
                 return { kind: "nothingToRemove" };
             }
             // The rarity the scour leaves is one value; when the kept side's count
             // is uncertain it may be either of two, so the scour waits for a
             // narrowing of the count.
-            const [lo, hi] = survivorsOf(a, rules, registry);
-            const lower = rarityForSurvivors(lo);
-            const upper = rarityForSurvivors(hi);
-            if (lower !== upper) return { kind: "scourRarityUnknown", lower, upper };
             return null;
         }
         case "atLeast":
@@ -444,7 +450,9 @@ function failing(
         case "hasImprint":
             return a.imprint === undefined ? { kind: "noImprint" } : null;
         case "imprintable":
-            return a.rarity === "magic" || (a.rarity === "rare" && a.base.tags.has(TALISMAN))
+            return [...a.rarities].every(
+                (r) => r === "magic" || (r === "rare" && a.base.tags.has(TALISMAN)),
+            )
                 ? null
                 : { kind: "notImprintable" };
         case "metamodFits":
@@ -471,8 +479,8 @@ function failing(
             return rules.blocksSourced ? { kind: "metamodBlocks" } : null;
         case "essenceRarity":
             // Normal always, Rare only for ladder tier ≥ 5, never Magic.
-            return a.rarity === "magic" || (a.rarity === "rare" && check.tier < 5)
-                ? { kind: "essenceRarity", tier: check.tier, actual: a.rarity }
+            return [...a.rarities].some((r) => r === "magic" || (r === "rare" && check.tier < 5))
+                ? { kind: "essenceRarity", tier: check.tier, actual: a.rarities }
                 : null;
         case "essenceGrant":
             return essenceGrant(a, check.spec, registry)
@@ -515,9 +523,11 @@ function failing(
  *  magic Ratcheting Ring may take four suffixes by its side cap but two by its
  *  total), so a named side must also leave the total under its cap. */
 function hasOpenSlot(a: AItem, gen: Gen | undefined): boolean {
-    if (a.counts.total[1] >= maxTotal(a.rarity, a.base)) return false; // full in some arm
-    if (gen === "prefix") return a.counts.prefix[1] < sideCap("prefix", a.rarity, a.base);
-    if (gen === "suffix") return suffixRange(a)[1] < sideCap("suffix", a.rarity, a.base);
+    // Open on every path: the counts' upper bounds against the tightest caps.
+    const tight = capsOver(a, Math.min);
+    if (a.counts.total[1] >= tight.total) return false; // full in some arm
+    if (gen === "prefix") return a.counts.prefix[1] < tight.prefix;
+    if (gen === "suffix") return suffixRange(a)[1] < tight.suffix;
     return true;
 }
 
@@ -742,10 +752,12 @@ function rarityForSurvivors(n: number): Rarity {
     return "rare";
 }
 
-/** The rarity a scour leaves. The rarity is one value, so the survivor bounds
- *  must agree (`strippable` refuses the scour when they do not). */
-function scouredRarity(a0: AItem, rules: Rules, registry: Registry): Rarity {
-    return rarityForSurvivors(survivorsOf(a0, rules, registry)[1]);
+/** The rarities a scour may leave: one per survivor count the strip allows. */
+function scouredRarities(a0: AItem, rules: Rules, registry: Registry): ReadonlySet<Rarity> {
+    const [lo, hi] = survivorsOf(a0, rules, registry);
+    const out = new Set<Rarity>();
+    for (let n = lo; n <= hi; n++) out.add(rarityForSurvivors(n));
+    return out;
 }
 
 // --- fill ---------------------------------------------------------------------
@@ -894,9 +906,10 @@ function metamodRows(a: AItem, registry: Registry): Mod[] {
 
 /** Might this side have an open slot on some path? */
 function mayHaveSlot(a: AItem, gen: Gen): boolean {
-    if (a.counts.total[0] >= maxTotal(a.rarity, a.base)) return false;
+    const loose = capsOver(a, Math.max);
+    if (a.counts.total[0] >= loose.total) return false;
     const lower = gen === "prefix" ? a.counts.prefix[0] : suffixRange(a)[0];
-    return lower < sideCap(gen, a.rarity, a.base);
+    return lower < loose[gen];
 }
 
 function carriesAny(m: Mod, tags: ReadonlySet<TagId>): boolean {
@@ -916,9 +929,7 @@ function typesOf(mods: readonly Mod[]): TypeId[] {
  * one of its types is present". A bench craft raises the crafted count.
  */
 function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry: Registry): AItem {
-    const maxT = maxTotal(a.rarity, a.base);
-    const pCap = sideCap("prefix", a.rarity, a.base);
-    const sCap = sideCap("suffix", a.rarity, a.base);
+    const { total: maxT, prefix: pCap, suffix: sCap } = capsOver(a, Math.max);
     // Nothing fits on any path (a magic Simplex): the fill lays down nothing.
     if (count.kind === "add" && a.counts.total[0] >= maxT) return settled(a);
 

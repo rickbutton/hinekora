@@ -110,7 +110,7 @@ describe("checker — a valid craft type-checks", () => {
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.ok).toBe(true);
-        expect(r.finalState?.rarity).toBe("rare");
+        expect(r.finalState?.rarities).toEqual(new Set(["rare"]));
     });
 });
 
@@ -119,7 +119,7 @@ describe("checker — the wider currency set", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [op("alchemy")]);
         const r = check(c, ctx);
         expect(r.ok).toBe(true);
-        expect(r.finalState?.rarity).toBe("rare");
+        expect(r.finalState?.rarities).toEqual(new Set(["rare"]));
         expect(r.finalState?.counts.total).toEqual([4, 6]);
     });
 
@@ -127,7 +127,7 @@ describe("checker — the wider currency set", () => {
         const c = craft(rareRing(["IncreasedLife1"]), [op("chaos")]);
         const r = check(c, ctx);
         expect(r.ok).toBe(true);
-        expect(r.finalState?.rarity).toBe("rare");
+        expect(r.finalState?.rarities).toEqual(new Set(["rare"]));
         expect(guaranteedTypes(r.finalState!).size).toBe(0);
     });
 
@@ -143,7 +143,7 @@ describe("checker — the wider currency set", () => {
         const c = craft(rareRing(["IncreasedLife1"], ["FireResist1"]), [op("scour")]);
         const r = check(c, ctx);
         expect(r.ok).toBe(true);
-        expect(r.finalState?.rarity).toBe("normal");
+        expect(r.finalState?.rarities).toEqual(new Set(["normal"]));
         expect(r.finalState?.counts.total).toEqual([0, 0]);
     });
 
@@ -172,14 +172,14 @@ describe("checker — the wider currency set", () => {
         );
         const r = check(c, ctx);
         expect(r.ok).toBe(true);
-        expect(r.finalState?.rarity).toBe("magic");
+        expect(r.finalState?.rarities).toEqual(new Set(["magic"]));
     });
 
     it("binding is an alchemy: a Normal item to a Rare with 4–6 mods, refused on Magic", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [op("binding")]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState?.rarity).toBe("rare");
+        expect(r.finalState?.rarities).toEqual(new Set(["rare"]));
         expect(r.finalState?.counts.total).toEqual([4, 6]);
         const m = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "magic" }), [op("binding")]);
         expect(check(m, ctx).diagnostics[0]?.message).toContain("Requires a Normal item");
@@ -197,7 +197,7 @@ describe("checker — essences", () => {
     it("guarantees its mod, reforging a Normal item to Rare", () => {
         const r = check(craft(normalRing(), [essence("Deafening Essence of Greed")]), ctx);
         expect(r.ok).toBe(true);
-        expect(r.finalState?.rarity).toBe("rare");
+        expect(r.finalState?.rarities).toEqual(new Set(["rare"]));
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
 
@@ -443,7 +443,7 @@ describe("checker — operation functions", () => {
         const c = craft(normalRing(), [callStmt("prep")], [], [p]);
         const r = check(c, ctx);
         expect(r.ok).toBe(true);
-        expect(r.finalState!.rarity).toBe("rare");
+        expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
     });
 
     it("expands a mod-name param used in a loop guard, proving the exit clean", () => {
@@ -551,6 +551,16 @@ describe("checker — operation functions", () => {
 });
 
 describe("checker — the rarity seam (surface §6 errors)", () => {
+    it("keeps both rarities where paths meet, refusing what needs one of them", () => {
+        const c = craft(
+            item({ base: "Iron Ring", ilvl: 100, rarity: "magic", prefixes: ["T1 Life"] }),
+            [op("augment"), iff(has("FireResist1"), [op("regal")]), op("regal")],
+        );
+        const r = check(c, ctx);
+        expect(r.diagnostics[0]!.message).toContain("may be Magic or Rare");
+        expect(r.finalState!.rarities).toEqual(new Set(["magic", "rare"]));
+    });
+
     it("rejects exalt on a Magic item and renders the state", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "magic" }), [op("exalt")]);
         const r = check(c, ctx);
@@ -802,7 +812,7 @@ describe("checker — per-base affix caps (experimented bases)", () => {
         // alchemy wants 4–6 mods but the Simplex holds only 3 (1 prefix + 2
         // suffixes), so the count clamps and the split is forced.
         const st = check(craft(normal("Simplex Amulet"), [op("alchemy")]), ctx).finalState!;
-        expect(st.rarity).toBe("rare");
+        expect(st.rarities).toEqual(new Set(["rare"]));
         expect(st.counts.total).toEqual([3, 3]);
         expect(st.counts.prefix).toEqual([1, 1]);
         expect(suffixRange(st)).toEqual([2, 2]);
@@ -810,7 +820,7 @@ describe("checker — per-base affix caps (experimented bases)", () => {
 
     it("transmute on a 0-cap magic base adds no modifiers; augment then has no slot", () => {
         const r = check(craft(normal("Simplex Amulet"), [op("transmute"), op("augment")]), ctx);
-        expect(r.finalState!.rarity).toBe("magic");
+        expect(r.finalState!.rarities).toEqual(new Set(["magic"]));
         expect(r.finalState!.counts.total).toEqual([0, 0]); // blue base, no explicit mods
         expect(r.diagnostics.some((d) => d.message.toLowerCase().includes("open"))).toBe(true);
     });
@@ -997,7 +1007,7 @@ describe("checker — per-base affix caps (experimented bases)", () => {
     it("scour on a 0-cap magic base is not wasted currency (blue → white)", () => {
         const r = check(craft(normal("Simplex Amulet"), [op("transmute"), op("scour")]), ctx);
         expect(r.diagnostics).toEqual([]); // scour still drops the rarity
-        expect(r.finalState!.rarity).toBe("normal");
+        expect(r.finalState!.rarities).toEqual(new Set(["normal"]));
     });
 });
 
@@ -1008,7 +1018,7 @@ describe("checker — flasks cap at Magic (no Rare flasks)", () => {
     it("transmute → augment on a flask is fine (Magic is allowed)", () => {
         const r = check(craft(flask("normal"), [op("transmute")]), ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.rarity).toBe("magic");
+        expect(r.finalState!.rarities).toEqual(new Set(["magic"]));
     });
 
     it("alchemy on a flask is rejected — it cannot be made Rare", () => {

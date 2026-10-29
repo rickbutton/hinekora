@@ -26,6 +26,7 @@ import {
     type TypeId,
     veiledPool,
     isCorruptedEssence,
+    rarityLabel,
 } from "@hinekora/core";
 import { parse, type Token, tokenize } from "@hinekora/parser";
 
@@ -181,7 +182,6 @@ function fmtRange(r: Range): string {
     return r[0] === r[1] ? String(r[0]) : `${r[0]}–${r[1]}`;
 }
 
-const RARITY_NAME: Record<string, string> = { normal: "Normal", magic: "Magic", rare: "Rare" };
 const GEN_TAG: Record<Gen, string> = { prefix: "(P)", suffix: "(S)" };
 const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six"];
 const numberWord = (n: number): string => NUMBER_WORDS[n] ?? String(n);
@@ -294,7 +294,7 @@ function tooltip(a: AItem, registry: Registry, caption?: string): string {
         }
     }
 
-    const head = `**${a.base.name ?? a.base.id}** · ${RARITY_NAME[a.rarity] ?? a.rarity} · ilvl ${a.ilvl}`;
+    const head = `**${a.base.name ?? a.base.id}** · ${rarityLabel(a.rarities)} · ilvl ${a.ilvl}`;
     const body = lines.length > 0 ? lines.join("  \n") : "_no modifiers_";
     return [caption ? `_${caption}_` : undefined, head, body]
         .filter((x): x is string => x !== undefined)

@@ -80,7 +80,7 @@ describe("declared fractured mod is locked", () => {
     it("survives a chaos reforge, which still lays down its full 4–6 mods", () => {
         const r = check(craft(fracturedRing(2), [op("chaos")]), ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.rarity).toBe("rare");
+        expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
         expect(guaranteed(r)).toContain("IncreasedLife");
         // The fractured mod is one of the reforged 4–6, not a lone survivor.
         expect(r.finalState!.counts.total).toEqual([4, 6]);
@@ -102,7 +102,9 @@ describe("declared fractured mod is locked", () => {
             ctx,
         );
         expect(r.diagnostics.map((d) => d.message).join("\n")).toContain("fractured");
-        const afterAlteration = r.trace.find((t) => t.kind === "op" && t.after?.rarity === "magic");
+        const afterAlteration = r.trace.find(
+            (t) => t.kind === "op" && t.after?.rarities.has("magic"),
+        );
         expect(afterAlteration?.after && hasFracture(afterAlteration.after)).toBe(true);
     });
 
@@ -130,7 +132,7 @@ describe("declared fractured mod is locked", () => {
     it("scours to a 1-mod Magic item, keeping the fracture", () => {
         const r = check(craft(fracturedRing(2), [op("scour")]), ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.rarity).toBe("magic");
+        expect(r.finalState!.rarities).toEqual(new Set(["magic"]));
         expect(r.finalState!.counts.total).toEqual([1, 1]);
         expect(guaranteed(r)).toContain("IncreasedLife");
     });
@@ -184,7 +186,7 @@ describe("the Fracturing Orb", () => {
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         // Even with no proof of which mod, one survives, so scour can't reach Normal.
-        expect(r.finalState!.rarity).toBe("magic");
+        expect(r.finalState!.rarities).toEqual(new Set(["magic"]));
         expect(hasFracture(r.finalState!)).toBe(true);
     });
 

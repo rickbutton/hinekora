@@ -76,7 +76,7 @@ describe("foulborn orbs", () => {
     it("has the plain orb's needs and counts", () => {
         const r = check(craft(ring("magic"), [foulborn("regal")]), ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.rarity).toBe("rare");
+        expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
         expect(r.finalState!.counts.total).toEqual([1, 1]);
         const refused = check(craft(ring("rare"), [foulborn("augment")]), ctx);
         expect(refused.diagnostics[0]!.message).toContain("Requires a Magic item");

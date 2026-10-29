@@ -116,7 +116,7 @@ describe("scour respects protection", () => {
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         // One prefix survives (suffixes + the metamod are gone) → a 1-mod Magic.
-        expect(r.finalState!.rarity).toBe("magic");
+        expect(r.finalState!.rarities).toEqual(new Set(["magic"]));
         expect(guaranteed(r)).toContain("IncreasedLife");
         expect(r.finalState!.counts.prefix).toEqual([1, 1]);
         expect(r.finalState!.crafted).toEqual([0, 0]);
@@ -125,7 +125,7 @@ describe("scour respects protection", () => {
     it("without a metamod, scour strips to Normal", () => {
         const c = craft(rareRing(["T1 Life"]), [op("scour")]);
         const r = check(c, ctx);
-        expect(r.finalState!.rarity).toBe("normal");
+        expect(r.finalState!.rarities).toEqual(new Set(["normal"]));
         expect(r.finalState!.counts.total).toEqual([0, 0]);
     });
 });
@@ -181,7 +181,7 @@ describe("reforge respects protection (Stage B)", () => {
         const c = craft(rareRing(["T1 Life"]), [bench("prefixes cannot be changed"), op("chaos")]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.rarity).toBe("rare");
+        expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
         expect(guaranteed(r)).toContain("IncreasedLife"); // the protected prefix survives
         expect(r.finalState!.crafted).toEqual([0, 0]); // the metamod was rerolled away
     });
@@ -261,14 +261,18 @@ describe("a scour that keeps a side sets the rarity by survivor count", () => {
         expect(r.diagnostics[0]?.message).toContain("Requires a Magic item");
     });
 
-    it("a kept prefix and an unproven lock may leave one or two survivors, so the scour is refused", () => {
+    it("a kept prefix and an unproven lock may leave one or two survivors: Magic or Rare", () => {
         // The lock may sit on the kept prefix (one survivor, Magic) or on a
-        // stripped suffix (two, Rare).
+        // stripped suffix (two, Rare); a regal afterwards is refused since the
+        // item is not Magic on every path.
         const c = craft(
             rareRing(["T1 Life"], [PROTECT_PREFIXES_CARRIER.id, "FireResist1", "ColdResist1"]),
-            [op("fracture"), op("scour")],
+            [op("fracture"), op("scour"), op("regal")],
         );
-        expect(check(c, ctx).diagnostics[0]?.message).toContain("may be Magic or Rare");
+        const r = check(c, ctx);
+        expect(r.diagnostics[0]?.message).toContain("may be Magic or Rare");
+        const scoured = r.trace.find((e) => e.kind === "op" && e.after?.rarities.size === 2)!;
+        expect(scoured.after!.rarities).toEqual(new Set(["magic", "rare"]));
     });
 
     it("two kept prefixes and an unproven lock stay Rare, with the floor at the kept count", () => {
@@ -283,10 +287,10 @@ describe("a scour that keeps a side sets the rarity by survivor count", () => {
         expect(scoured.after!.counts.total).toEqual([2, 3]);
     });
 
-    it("a scour whose kept side's count is uncertain is refused", () => {
+    it("a scour whose kept side's count is uncertain leaves Normal or Magic", () => {
         // The exalt may have landed on the protected prefix side or not, so the
-        // scour would leave no survivor or one, Normal or Magic; the rarity is
-        // one value, so the craft must narrow the count first.
+        // scour leaves no survivor or one; an augment then needs the Magic path
+        // alone, which an if on the count gives it.
         const c = craft(rareRing([], [PROTECT_PREFIXES_CARRIER.id, "FireResist1"]), [
             op("exalt"),
             op("scour"),
@@ -336,7 +340,7 @@ describe("an unproven fracture through a scour", () => {
         ]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        const scoured = r.trace.find((e) => e.kind === "op" && e.after?.rarity === "magic")!;
+        const scoured = r.trace.find((e) => e.kind === "op" && e.after?.rarities.has("magic"))!;
         expect(guaranteedTypes(scoured.after!).size).toBe(0);
     });
 });

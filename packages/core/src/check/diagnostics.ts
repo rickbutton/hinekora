@@ -16,11 +16,19 @@ export interface CheckDiagnostic {
     readonly span: SourceSpan;
 }
 
-export const RARITY_LABEL: Record<Rarity, string> = {
+const RARITY_LABEL: Record<Rarity, string> = {
     normal: "Normal",
     magic: "Magic",
     rare: "Rare",
 };
+
+/** "Magic or Rare": the rarities the item may have, in the game's order. */
+export function rarityLabel(rarities: ReadonlySet<Rarity>): string {
+    return (["normal", "magic", "rare"] as const)
+        .filter((r) => rarities.has(r))
+        .map((r) => RARITY_LABEL[r])
+        .join(" or ");
+}
 
 function plural(noun: string, n: number): string {
     if (n === 1) return noun;
@@ -41,7 +49,7 @@ function renderRange(range: Range, noun: string): string {
 export function renderState(a: AItem): string {
     return [
         baseLabel(a.base),
-        RARITY_LABEL[a.rarity],
+        rarityLabel(a.rarities),
         renderRange(a.counts.total, "affix"),
         renderRange(a.counts.prefix, "prefix"),
         renderRange(suffixRange(a), "suffix"),
@@ -101,7 +109,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
     const need = ((): string => {
         switch (failure.kind) {
             case "wrongRarity":
-                return `Requires a ${RARITY_LABEL[failure.needed]} item — this item is ${RARITY_LABEL[failure.actual]}.`;
+                return `Requires a ${RARITY_LABEL[failure.needed]} item — this item ${failure.actual.size === 1 ? "is" : "may be"} ${rarityLabel(failure.actual)}.`;
             case "noOpenSlot":
                 return failure.gen === undefined
                     ? "Requires an open affix slot — the item may be full."
@@ -111,7 +119,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
             case "nothingToRemove":
                 return "Requires a removable affix — the item may have none.";
             case "essenceRarity":
-                return failure.actual === "magic"
+                return failure.actual.has("magic")
                     ? "Essences cannot be used on a Magic item."
                     : "Requires a Normal item — only Screaming-tier and higher essences reforge a Rare.";
             case "essenceClass":
@@ -168,8 +176,6 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return `"${failure.mod}" is not an available unveil option on this item.`;
             case "unveilNotGuaranteed":
                 return `"${failure.mod}" isn't guaranteed — ${failure.options} options can be offered, so block the pool to 3 or fewer first.`;
-            case "scourRarityUnknown":
-                return `After the scour the item may be ${RARITY_LABEL[failure.lower]} or ${RARITY_LABEL[failure.upper]} — narrow the modifier count first.`;
         }
     })();
     return `at this point the item is: ${renderState(state)}\n${need}`;

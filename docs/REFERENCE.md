@@ -250,8 +250,12 @@ The heart. Abstract interpretation over a symbolic item summary.
 
 ### The abstract state `AItem`: a reduced product of sub-domains
 
-`AItem` carries the item's identity, which no operation changes (`base`, `ilvl`)
-or changes exactly (`rarity`), the shared `bdd` manager, and the sub-domains below. It is
+`AItem` carries the item's identity, which no operation changes (`base`, `ilvl`), the
+set of rarities it may have (`rarities`: one on a straight line, more where paths that
+changed it meet or a scour's survivor count is uncertain; a `require` on the rarity
+holds only when the set is that one value, `isRare` and its kin refine it, and the
+counts live under the loosest caps over the set while an open slot is judged by the
+tightest, `capsOver`), the shared `bdd` manager, and the sub-domains below. It is
 a **reduced product**: each sub-domain field is a small abstract domain, and the
 merge/fixpoint machinery treats them uniformly. `check/domain.ts` declares the shared
 contract `Domain<T>`: the two ops every sub-domain must provide, `join` (branch-merge
@@ -495,13 +499,12 @@ in it. Notes:
   "a locked mod is present" re-asserted; a candidate's own presence is forgotten, since
   the operation may have removed it), so a proven fracture keeps its type and an unproven
   one keeps the survivor disjunction. **Scour** sets the rarity by survivor count
-  (`scouredRarity`, read from what the strip kept: none Normal, one Magic, two or more
+  (`scouredRarities`, read from what the strip kept: none Normal, one Magic, two or more
   Rare, whichever sides they sit on; [Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring),
   confirmed in game for one kept prefix beside a fractured suffix): a fractured Rare
-  scours to a 1-mod Magic. The rarity is one value, so a scour whose survivor count is
-  uncertain (an unproven lock beside a kept side, or a kept side with an uncertain count)
-  is refused (`scourRarityUnknown`) until an `if` on the count narrows it (`ROADMAP.md`
-  lists the rarity set that would accept it).
+  scours to a 1-mod Magic. A scour whose survivor count is uncertain (an unproven lock
+  beside a kept side, or a kept side with an uncertain count) leaves every rarity the
+  range allows, which an `if` on the count or on `isMagic` narrows.
 - **Veiled** (`VEILED_CHAOS` / `VEILED_EXALT` / `unveilOps`, the
   [Veiled Chaos Orb](https://www.poewiki.net/wiki/Veiled_Chaos_Orb),
   [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb) and the
@@ -595,9 +598,9 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
   Counts/`possible`/tiers converge on their own, so they are left exact; an earlier
   attempt that also interval-widened the counts corrupted the after-state total. Widen
   presence, leave the rest.
-- **One rarity at a time.** The state holds a single rarity, so paths that meet at
-  different rarities are joined to the first path's (a known gap, `QUESTIONS.md` Q15),
-  and an imprint whose two sides differ in rarity is dropped by `join`.
+- **Rarities are a set.** Paths that meet at different rarities keep both; an operation
+  that needs one rarity is refused until an `if` on `isRare`, `isMagic` or `isNormal`
+  narrows the set, and the counts' caps are the loosest over it.
 
 ---
 

@@ -29,9 +29,6 @@ from the library of `check/library.ts`. What remains:
 
 - One generic operation statement in the AST whose arguments the library's signature
   drives, so the parser, completion and hover stop knowing each method.
-- The rarity after a scour is one value, read from what the strip kept; when a kept side's
-  count is uncertain the scour is refused until the count is narrowed. A set of rarities
-  would accept it and say both.
 
 ## Step 3. The remaining single-item methods
 
