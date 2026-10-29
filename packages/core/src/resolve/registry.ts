@@ -70,6 +70,7 @@ export type ResolveError =
     | { readonly kind: "unknownCurrency"; readonly name: string }
     | { readonly kind: "unknownEssence"; readonly name: string }
     | { readonly kind: "unknownFossil"; readonly name: string }
+    | { readonly kind: "unknownAspect"; readonly name: string }
     | { readonly kind: "unknownBench"; readonly name: string }
     | { readonly kind: "unknownHarvestTag"; readonly name: string }
     | { readonly kind: "ambiguous"; readonly name: string; readonly candidates: readonly string[] };
@@ -80,6 +81,17 @@ export type ResolveError =
  * game groups harvest crafts by these categories, and a couple of surface
  * spellings ("defence") normalize to the data's tag ("defences").
  */
+/**
+ * The Aspect skills the Bestiary crafts (Beastcrafting, "Craft an Aspect Skill
+ * onto an Item"), by the beast's animal, each the level-30 row the recipe places.
+ */
+export const ASPECTS: Readonly<Record<string, string>> = {
+    cat: "GrantsCatAspectCrafted30",
+    avian: "GrantsBirdAspectCrafted30",
+    spider: "GrantsSpiderAspectCrafted30",
+    crab: "GrantsCrabAspectCrafted30",
+};
+
 export const HARVEST_TAGS: ReadonlyMap<string, TagId> = new Map(
     (
         [
@@ -163,6 +175,8 @@ export interface Registry {
     resolveBench(name: string, itemClass?: ClassId, tier?: number): Resolved<BenchCraft>;
     /** Resolve a fossil by name, in full ("Pristine Fossil") or by its first word. */
     resolveFossil(name: string): Resolved<FossilSpec>;
+    /** Resolve an Aspect by its animal ("cat") to the row the Bestiary crafts. */
+    resolveAspect(name: string): Resolved<Mod>;
     /** The generation (prefix/suffix) a ModType always occupies, if known. */
     genOfType(type: TypeId): Gen | undefined;
     /** The mod groups (families) a ModType belongs to, across its tiers;
@@ -190,6 +204,8 @@ export interface Registry {
     readonly essenceNames: readonly string[];
     /** Full fossil names. */
     readonly fossilNames: readonly string[];
+    /** The Aspect names the Bestiary crafts. */
+    readonly aspectNames: readonly string[];
     /** The essence catalog. */
     readonly essences: readonly EssenceSpec[];
     /** Distinct bench-mod descriptions, for `bench "…"` completion. */
@@ -282,6 +298,8 @@ export interface RegistryData {
     readonly essences?: readonly EssenceSpec[];
     readonly benchCrafts?: readonly BenchCraft[];
     readonly fossils?: readonly FossilSpec[];
+    /** Aspect name → the row the Bestiary crafts; the game's four by default. */
+    readonly aspects?: Readonly<Record<string, string>>;
 }
 
 /**
@@ -324,6 +342,11 @@ export function buildRegistry(data: RegistryData): Registry {
     const essences = data.essences ?? [];
     const benchCrafts = data.benchCrafts ?? [];
     const fossils = data.fossils ?? [];
+    const aspects = new Map(
+        Object.entries(data.aspects ?? ASPECTS).map(
+            ([name, id]) => [norm(name), norm(id)] as const,
+        ),
+    );
 
     const typeGen = new Map<TypeId, Gen>();
     for (const m of catalog) if (!typeGen.has(m.type)) typeGen.set(m.type, m.gen);
@@ -381,6 +404,7 @@ export function buildRegistry(data: RegistryData): Registry {
         statSuggestions,
         essenceNames: essences.map((e) => e.name),
         fossilNames: fossils.map((f) => f.name),
+        aspectNames: [...aspects.keys()],
         essences,
         benchNames: [
             ...new Set(
@@ -466,6 +490,12 @@ export function buildRegistry(data: RegistryData): Registry {
             if (matches.length === 1) return found(matches[0]!);
             if (matches.length === 0) return fail({ kind: "unknownEssence", name });
             return fail({ kind: "ambiguous", name, candidates: matches.map((e) => e.name) });
+        },
+
+        resolveAspect(name) {
+            const id = aspects.get(norm(name));
+            const mod = id === undefined ? undefined : modById.get(id);
+            return mod ? found(mod) : fail({ kind: "unknownAspect", name });
         },
 
         resolveFossil(name) {

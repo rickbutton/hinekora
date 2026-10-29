@@ -61,6 +61,15 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         expect(registry.resolveFossil("amber").ok).toBe(false);
     });
 
+    it("resolves the four Aspects the Bestiary crafts to level-30 suffix rows", () => {
+        for (const name of ["cat", "avian", "spider", "crab"]) {
+            const r = registry.resolveAspect(name);
+            expect(r.ok && r.value.gen).toBe("suffix");
+            expect(r.ok && r.value.text).toContain("Level 30 Aspect");
+        }
+        expect(registry.resolveAspect("wolf").ok).toBe(false);
+    });
+
     it("knows the four corrupted essences apart from the other top-tier essence", () => {
         const corrupted = registry.essences.filter(isCorruptedEssence).map((e) => e.name);
         expect(corrupted.sort()).toEqual([

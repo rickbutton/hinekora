@@ -468,8 +468,19 @@ class Parser {
 
     private parseBeast(): BeastStmt {
         const start = this.expectKeyword("beast").span.start;
-        const verbTok = this.expect("ident", "a beast recipe ('add', 'fracture' or 'metamod')");
+        const verbTok = this.expect(
+            "ident",
+            "a beast recipe ('add', 'fracture', 'metamod' or 'aspect')",
+        );
         const verb = verbTok.text.toLowerCase();
+        if (verb === "aspect") {
+            const name = this.parseStringOrParam("a quoted Aspect name after 'beast aspect'");
+            return {
+                kind: "beast",
+                action: { kind: "aspect", name },
+                span: span(start, this.prev.span.end),
+            };
+        }
         if (verb === "fracture" || verb === "metamod") {
             return {
                 kind: "beast",
@@ -479,7 +490,7 @@ class Parser {
         }
         if (verb !== "add") {
             throw this.error(
-                `a beast recipe must be 'add', 'fracture' or 'metamod', not '${verbTok.text}'`,
+                `a beast recipe must be 'add', 'fracture', 'metamod' or 'aspect', not '${verbTok.text}'`,
                 verbTok.span,
             );
         }

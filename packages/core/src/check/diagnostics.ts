@@ -181,6 +181,8 @@ export function resolveMessage(error: ResolveError): string {
             return `No bench craft adds "${error.name}" to this item.`;
         case "unknownFossil":
             return `Unknown fossil "${error.name}".`;
+        case "unknownAspect":
+            return `Unknown Aspect "${error.name}" — the Bestiary crafts cat, avian, spider or crab.`;
         case "unknownHarvestTag":
             return `"${error.name}" is not a harvest modifier type.`;
         case "ambiguous":

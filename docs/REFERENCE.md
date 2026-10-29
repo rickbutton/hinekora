@@ -407,7 +407,8 @@ in it. Notes:
   (guaranteed, not fractured, unprotected side), then a `rows` fill of the target's row
   at the source's tier rank, or all its rows while that rank is unknown. A **metamods**
   pool (`metamodRows`) is the bench's effect carriers that fit, a crafted disjunction
-  (`BEAST_METAMOD`).
+  (`BEAST_METAMOD`); an Aspect (`beastAspectOps`) is a one-row pool of the row the
+  registry's `resolveAspect` names (`ASPECTS`, the four animals).
 - A `remove` with the random selector draws from an **allowed-gens** set = `both − protected`,
   or one side minus the protected when the selector names a side (`allowedFor`); a
   side-limited removal whose side is protected is skipped, not refused, the table's "will

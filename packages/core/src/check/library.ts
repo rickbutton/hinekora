@@ -175,6 +175,17 @@ export function beastAddOps(gen: Gen, level: number): readonly Op[] {
     ];
 }
 
+/** Beastcraft "craft an Aspect skill onto an item": the Aspect's row in an open
+ *  slot of its side, no other skill-granting modifier possibly present
+ *  (Beastcrafting). */
+export function beastAspectOps(row: Mod): readonly Op[] {
+    return [
+        openSlot(row.gen),
+        require({ kind: "noGroupConflict", mod: row }),
+        fill({ kind: "rows", mods: [row] }, add([1, 1])),
+    ];
+}
+
 /** Beastcraft "add a crafted meta-modifier": one of the five metamods, random
  *  among those that fit, within the crafted limit (Beastcrafting). */
 export const BEAST_METAMOD: readonly Op[] = [

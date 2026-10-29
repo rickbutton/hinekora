@@ -198,6 +198,10 @@ Operations that take a name (and an optional `t<n>`):
   [metamods](https://www.poewiki.net/wiki/Metamod), random among those that fit (an open
   slot on its side on every path, and not possibly on the item already), within the
   crafted limit. The result is a disjunction a following `if has "…"` can narrow.
+- `beast aspect "<animal>"` is "Craft an Aspect Skill onto an Item": the level-30
+  [Aspect](https://www.poewiki.net/wiki/Aspect_of_the_Cat) of the cat, avian, spider or
+  crab (`beast aspect "cat"`), a suffix that needs an open suffix slot and no other
+  skill-granting modifier possibly present.
 - `unveil ["<mod>"]` is the three-option unveil of a
   [veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) and needs a veiled
   modifier on the item. Bare, the result is one of the valid options

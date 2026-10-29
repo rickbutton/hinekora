@@ -48,6 +48,7 @@ import {
     BEAST_FRACTURE,
     BEAST_METAMOD,
     beastAddOps,
+    beastAspectOps,
     BENCH_REMOVE,
     benchOps,
     currencyOps,
@@ -554,6 +555,16 @@ class Checker {
                 return this.checkMethod(a, BEAST_FRACTURE, stmt.span);
             case "metamod":
                 return this.checkMethod(a, BEAST_METAMOD, stmt.span);
+            case "aspect": {
+                const name = this.literalString(action.name, stmt.span);
+                if (name === null) return { kind: "fall", state: a };
+                const row = this.registry.resolveAspect(name);
+                if (!row.ok) {
+                    this.diag(resolveMessage(row.error), stmt.span);
+                    return { kind: "fall", state: a };
+                }
+                return this.checkMethod(a, beastAspectOps(row.value), stmt.span);
+            }
         }
     }
 
@@ -1198,7 +1209,11 @@ function noteStmtUses(u: ParamUses, s: Stmt): void {
         case "veiled":
         case "foulborn":
         case "benchRemove":
+            return;
         case "beast":
+            if (s.action.kind === "aspect" && typeof s.action.name === "object") {
+                noteSort(u, s.action.name, "mod");
+            }
             return;
         case "fossil":
             for (const n of s.names) if (typeof n === "object") noteSort(u, n, "mod");
@@ -1322,8 +1337,11 @@ function substituteStmt(stmt: Stmt, env: Map<string, Arg>): Stmt {
         case "veiled":
         case "foulborn":
         case "benchRemove":
-        case "beast":
             return stmt;
+        case "beast":
+            return stmt.action.kind === "aspect"
+                ? { ...stmt, action: { kind: "aspect", name: subValue(stmt.action.name, env) } }
+                : stmt;
         case "fossil":
             return { ...stmt, names: stmt.names.map((n) => subValue(n, env)) };
         case "harvestChange":

@@ -192,7 +192,7 @@ Per [Beastcrafting](https://www.poewiki.net/wiki/Beastcrafting).
 | Add a modifier to an influenced item                  | `fill(natural ∪ influence, 1)`                                                            | later: influence marks                     |
 | Fracture one / two modifiers on a talisman            | `lock(any, 1)` / `lock(any, 2)`                                                           | built (one); later: two (a fracture count) |
 | Add a random metamod                                  | `fill(metamods, 1)`                                                                       | built                                      |
-| Craft an Aspect                                       | `fill(aspect row, 1)`                                                                     | composes                                   |
+| Craft an Aspect                                       | `fill(aspect row, 1)`                                                                     | built                                      |
 | Imprint a Magic item / a Rare talisman                | `imprint`                                                                                 | composes                                   |
 | Reroll a talisman base                                | base change keeping modifiers                                                             | later: base change                         |
 | Corrupt, split, unique and flask recipes              |                                                                                           | out                                        |

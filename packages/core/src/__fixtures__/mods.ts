@@ -726,6 +726,28 @@ export const FOSSILS: readonly FossilSpec[] = [
     FOSSIL_BLOODSTAINED,
 ];
 
+/** The Bestiary's Aspect rows: suffixes of one group, so an item holds one. Not in `CATALOG`. */
+export const ASPECT_CAT: Mod = mkMod({
+    id: "GrantsCatAspectCrafted30",
+    type: "GrantsCatAspect",
+    gen: "suffix",
+    minLevel: 20,
+    families: ["GrantedSkill"],
+    spawn: [spawn(TAG_DEFAULT, 0)],
+    implicitTags: ["skill"],
+    text: "Grants Level 30 Aspect of the Cat Skill",
+});
+export const ASPECT_AVIAN: Mod = mkMod({
+    id: "GrantsBirdAspectCrafted30",
+    type: "GrantsBirdAspect",
+    gen: "suffix",
+    minLevel: 20,
+    families: ["GrantedSkill"],
+    spawn: [spawn(TAG_DEFAULT, 0)],
+    implicitTags: ["skill"],
+    text: "Grants Level 30 Aspect of the Avian Skill",
+});
+
 export const ATTACK_SPEED: Mod = mkMod({
     id: "AttackSpeed1",
     type: "AttackSpeed",

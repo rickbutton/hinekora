@@ -4,6 +4,8 @@ import { guaranteedTypes, hasFracture } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { beast, craft, item } from "../__fixtures__/ast.js";
 import {
+    ASPECT_AVIAN,
+    ASPECT_CAT,
     CANNOT_ROLL_ATTACK_CARRIER,
     CATALOG,
     COLD_RESIST,
@@ -25,7 +27,10 @@ const registry = buildRegistry({
         PROTECT_SUFFIXES_CARRIER,
         CANNOT_ROLL_ATTACK_CARRIER,
         MULTIMOD_CARRIER,
+        ASPECT_CAT,
+        ASPECT_AVIAN,
     ],
+    aspects: { cat: ASPECT_CAT.id, avian: ASPECT_AVIAN.id },
     modAliases: { "T1 Life": "IncreasedLife1" },
     baseAliases: { "Iron Ring": "IronRing", Talisman: "BlackMawTalisman" },
 });
@@ -164,5 +169,37 @@ describe("beast metamod", () => {
             ctx,
         );
         expect(full.diagnostics[0]!.message).toContain("No metamod fits");
+    });
+});
+
+describe("beast aspect", () => {
+    it("crafts the Aspect's suffix into an open slot", () => {
+        const r = check(
+            craft(rareRing(["T1 Life"]), [beast({ kind: "aspect", name: "cat" })]),
+            ctx,
+        );
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteedTypes(r.finalState!).has(ASPECT_CAT.type)).toBe(true);
+        expect(r.finalState!.crafted).toEqual([0, 0]);
+    });
+
+    it("allows one skill-granting modifier, needs an open suffix, and knows four animals", () => {
+        const two = check(
+            craft(rareRing(), [
+                beast({ kind: "aspect", name: "cat" }),
+                beast({ kind: "aspect", name: "avian" }),
+            ]),
+            ctx,
+        );
+        expect(two.diagnostics[0]!.message).toContain("at most one per group");
+        const full = check(
+            craft(rareRing([], ["random", "random", "random"]), [
+                beast({ kind: "aspect", name: "cat" }),
+            ]),
+            ctx,
+        );
+        expect(full.diagnostics[0]!.message).toContain("open suffix slot");
+        const wolf = check(craft(rareRing(), [beast({ kind: "aspect", name: "wolf" })]), ctx);
+        expect(wolf.diagnostics[0]!.message).toContain("Unknown Aspect");
     });
 });

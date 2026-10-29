@@ -38,6 +38,7 @@ type Context =
     | "foulbornVerb"
     | "beastVerb"
     | "beastSide"
+    | "aspect"
     | "fossil";
 
 const CONTROL_KEYWORDS = ["until", "if", "else", "with", "restart"];
@@ -138,6 +139,7 @@ function contextAt(source: string, offset: number): Context {
     const word = source.slice(k + 1, end);
     if (word === "essence") return "essence";
     if (word === "fossil") return "fossil";
+    if (word === "aspect") return "aspect";
     if (word === "bench") return "bench";
     if (word === "reforge" || word === "augment") return "harvestTag";
     return "mod";
@@ -228,11 +230,18 @@ export function getCompletions(
         case "beastVerb":
             return BEAST_VERBS.map((label) => ({
                 label,
-                detail: label === "add" ? "beast add prefix|suffix [<level>]" : `beast ${label}`,
+                detail:
+                    label === "add"
+                        ? "beast add prefix|suffix [<level>]"
+                        : label === "aspect"
+                          ? 'beast aspect "<animal>"'
+                          : `beast ${label}`,
                 kind: CompletionItemKind.Keyword,
             }));
         case "beastSide":
             return SIDE_WORDS.map((label) => ({ label, kind: CompletionItemKind.Keyword }));
+        case "aspect":
+            return registry.aspectNames.map((label) => ({ label, kind: CompletionItemKind.Value }));
         case "mod": {
             const ctx = itemContext(source, registry);
             const rollable = ctx ? rollableTypes(registry.catalog, ctx.base, ctx.ilvl) : undefined;

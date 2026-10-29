@@ -191,7 +191,9 @@ export type BeastAction =
     /** `beast fracture`: fracture one modifier of a Rare talisman. */
     | { readonly kind: "fracture" }
     /** `beast metamod`: craft a random metamod among those that fit. */
-    | { readonly kind: "metamod" };
+    | { readonly kind: "metamod" }
+    /** `beast aspect "<animal>"`: craft that Aspect skill's modifier. */
+    | { readonly kind: "aspect"; readonly name: string | ParamRef };
 
 /** `harvest change "<mod>" "<mod>"`: the first modifier becomes a similar-tier
  *  modifier of the second's kind. Inside a proc body a name may be a `ParamRef`. */
