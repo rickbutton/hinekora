@@ -405,7 +405,9 @@ in it. Notes:
   change (`harvestChangeOps`) is a `remove` with the **type selector** (`removeType`: the
   named modifier goes, excluded afterwards, everything else stays) after `typeRemovable`
   (guaranteed, not fractured, unprotected side), then a `rows` fill of the target's row
-  at the source's tier rank, or all its rows while that rank is unknown.
+  at the source's tier rank, or all its rows while that rank is unknown. A **metamods**
+  pool (`metamodRows`) is the bench's effect carriers that fit, a crafted disjunction
+  (`BEAST_METAMOD`).
 - A `remove` with the random selector draws from an **allowed-gens** set = `both − protected`,
   or one side minus the protected when the selector names a side (`allowedFor`); a
   side-limited removal whose side is protected is skipped, not refused, the table's "will

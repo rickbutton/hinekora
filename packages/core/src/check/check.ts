@@ -46,6 +46,7 @@ import {
 import { rollableGen, rollableTiers, tierMod } from "../resolve/tiers.js";
 import {
     BEAST_FRACTURE,
+    BEAST_METAMOD,
     beastAddOps,
     BENCH_REMOVE,
     benchOps,
@@ -551,6 +552,8 @@ class Checker {
                 );
             case "fracture":
                 return this.checkMethod(a, BEAST_FRACTURE, stmt.span);
+            case "metamod":
+                return this.checkMethod(a, BEAST_METAMOD, stmt.span);
         }
     }
 

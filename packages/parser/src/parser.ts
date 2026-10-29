@@ -468,18 +468,18 @@ class Parser {
 
     private parseBeast(): BeastStmt {
         const start = this.expectKeyword("beast").span.start;
-        const verbTok = this.expect("ident", "a beast recipe ('add' or 'fracture')");
+        const verbTok = this.expect("ident", "a beast recipe ('add', 'fracture' or 'metamod')");
         const verb = verbTok.text.toLowerCase();
-        if (verb === "fracture") {
+        if (verb === "fracture" || verb === "metamod") {
             return {
                 kind: "beast",
-                action: { kind: "fracture" },
+                action: { kind: verb },
                 span: span(start, verbTok.span.end),
             };
         }
         if (verb !== "add") {
             throw this.error(
-                `a beast recipe must be 'add' or 'fracture', not '${verbTok.text}'`,
+                `a beast recipe must be 'add', 'fracture' or 'metamod', not '${verbTok.text}'`,
                 verbTok.span,
             );
         }

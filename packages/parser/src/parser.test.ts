@@ -187,6 +187,7 @@ describe("parser — veiled orbs and unveil", () => {
         });
         expect(() => bodyOf("beast add tail")).toThrow(/prefix.*suffix/);
         expect(bodyOf("beast fracture")).toMatchObject({ action: { kind: "fracture" } });
+        expect(bodyOf("beast metamod")).toMatchObject({ action: { kind: "metamod" } });
     });
 
     it("parses harvest change with two modifier names", () => {

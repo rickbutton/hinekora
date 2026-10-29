@@ -189,7 +189,9 @@ export type BeastAction =
      *  the beast's level (the item's when absent), removing one of the other. */
     | { readonly kind: "add"; readonly side: "prefix" | "suffix"; readonly level?: number }
     /** `beast fracture`: fracture one modifier of a Rare talisman. */
-    | { readonly kind: "fracture" };
+    | { readonly kind: "fracture" }
+    /** `beast metamod`: craft a random metamod among those that fit. */
+    | { readonly kind: "metamod" };
 
 /** `harvest change "<mod>" "<mod>"`: the first modifier becomes a similar-tier
  *  modifier of the second's kind. Inside a proc body a name may be a `ParamRef`. */

@@ -136,6 +136,8 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                         return `"${failure.mod}" sits on a side a metamod protects, so it can't be changed.`;
                 }
                 break;
+            case "noMetamodFits":
+                return "No metamod fits: its side is full on some path, or every metamod may already be on the item.";
             case "wrongBase":
                 return `Needs a ${failure.needed}.`;
             case "fossilCorrupts":

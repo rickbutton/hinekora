@@ -191,7 +191,7 @@ Per [Beastcrafting](https://www.poewiki.net/wiki/Beastcrafting).
 | Add a prefix, remove a random suffix (and the mirror) | `remove(suffix ∖ protected, 1); fill(natural[prefix], 1)` (the pool at the beast's level) | built                                      |
 | Add a modifier to an influenced item                  | `fill(natural ∪ influence, 1)`                                                            | later: influence marks                     |
 | Fracture one / two modifiers on a talisman            | `lock(any, 1)` / `lock(any, 2)`                                                           | built (one); later: two (a fracture count) |
-| Add a random metamod                                  | `fill(metamods, 1)`                                                                       | composes                                   |
+| Add a random metamod                                  | `fill(metamods, 1)`                                                                       | built                                      |
 | Craft an Aspect                                       | `fill(aspect row, 1)`                                                                     | composes                                   |
 | Imprint a Magic item / a Rare talisman                | `imprint`                                                                                 | composes                                   |
 | Reroll a talisman base                                | base change keeping modifiers                                                             | later: base change                         |

@@ -4,10 +4,13 @@ import { guaranteedTypes, hasFracture } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { beast, craft, item } from "../__fixtures__/ast.js";
 import {
+    CANNOT_ROLL_ATTACK_CARRIER,
     CATALOG,
     COLD_RESIST,
     FIRE_RESIST,
     LIFE_T1,
+    MULTIMOD_CARRIER,
+    PROTECT_PREFIXES_CARRIER,
     PROTECT_SUFFIXES_CARRIER,
     RING_BASE,
     TALISMAN_BASE,
@@ -16,7 +19,13 @@ import { TypeId } from "../model/ids.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE, TALISMAN_BASE],
-    mods: [...CATALOG, PROTECT_SUFFIXES_CARRIER],
+    mods: [
+        ...CATALOG,
+        PROTECT_PREFIXES_CARRIER,
+        PROTECT_SUFFIXES_CARRIER,
+        CANNOT_ROLL_ATTACK_CARRIER,
+        MULTIMOD_CARRIER,
+    ],
     modAliases: { "T1 Life": "IncreasedLife1" },
     baseAliases: { "Iron Ring": "IronRing", Talisman: "BlackMawTalisman" },
 });
@@ -118,5 +127,42 @@ describe("beast fracture", () => {
             ctx,
         );
         expect(twice.diagnostics[0]!.message).toContain("already has a fractured");
+    });
+});
+
+describe("beast metamod", () => {
+    it("crafts the one metamod that fits when the suffixes are full", () => {
+        const c = craft(rareRing([], [FIRE_RESIST.id, COLD_RESIST.id, "random"]), [
+            beast({ kind: "metamod" }),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteedTypes(r.finalState!).has(PROTECT_SUFFIXES_CARRIER.type)).toBe(true);
+        expect(r.finalState!.crafted).toEqual([1, 1]);
+        expect(r.finalState!.counts.prefix).toEqual([1, 1]);
+    });
+
+    it("leaves a disjunction over every fitting metamod on an open item", () => {
+        const r = check(craft(rareRing(["T1 Life"]), [beast({ kind: "metamod" })]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteedTypes(r.finalState!).has(PROTECT_SUFFIXES_CARRIER.type)).toBe(false);
+        expect(r.finalState!.possible.has(MULTIMOD_CARRIER.type)).toBe(true);
+        expect(r.finalState!.crafted).toEqual([1, 1]);
+        expect(r.finalState!.counts.total).toEqual([2, 2]);
+    });
+
+    it("stays within the crafted limit and needs a metamod that fits", () => {
+        const capped = check(
+            craft(rareRing([], [PROTECT_PREFIXES_CARRIER.id]), [beast({ kind: "metamod" })]),
+            ctx,
+        );
+        expect(capped.diagnostics[0]!.message).toContain("limit");
+        const full = check(
+            craft(rareRing(["random", "random", "random"], ["random", "random", "random"]), [
+                beast({ kind: "metamod" }),
+            ]),
+            ctx,
+        );
+        expect(full.diagnostics[0]!.message).toContain("No metamod fits");
     });
 });

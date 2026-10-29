@@ -175,6 +175,14 @@ export function beastAddOps(gen: Gen, level: number): readonly Op[] {
     ];
 }
 
+/** Beastcraft "add a crafted meta-modifier": one of the five metamods, random
+ *  among those that fit, within the crafted limit (Beastcrafting). */
+export const BEAST_METAMOD: readonly Op[] = [
+    require({ kind: "craftedBelowCap" }),
+    require({ kind: "metamodFits" }),
+    fill({ kind: "metamods" }, add([1, 1])),
+];
+
 /** Beastcraft "fracture a modifier on a Rare Talisman with at least 4 modifiers"
  *  (Beastcrafting): the Fracturing Orb's rule on a talisman. */
 export const BEAST_FRACTURE: readonly Op[] = [

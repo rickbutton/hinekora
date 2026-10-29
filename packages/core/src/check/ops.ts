@@ -73,7 +73,10 @@ export type PoolSpec =
       }
     /** One of these rows, guaranteed: a fossil's forced row, the Glyphic Fossil's
      *  corrupted-essence modifier. */
-    | { readonly kind: "rows"; readonly mods: readonly Mod[] };
+    | { readonly kind: "rows"; readonly mods: readonly Mod[] }
+    /** One of the metamods that fits: a side with a provably open slot and not
+     *  possibly on the item already (the Bestiary's random metamod); crafted. */
+    | { readonly kind: "metamods" };
 
 /** How many modifiers a `fill` lays down. */
 export type FillCount =
@@ -121,6 +124,8 @@ export type Check =
     | { readonly kind: "noBlockingMetamod" }
     /** The modifier is guaranteed present, not fractured, and on an unprotected side. */
     | { readonly kind: "typeRemovable"; readonly type: TypeId; readonly label: string }
+    /** Some metamod fits the item (the Bestiary's random metamod). */
+    | { readonly kind: "metamodFits" }
     /** The base carries the tag (a talisman for the Bestiary fractures). */
     | { readonly kind: "baseHasTag"; readonly tag: TagId; readonly what: string }
     /** The fossil's base restriction admits this item. */
@@ -166,6 +171,7 @@ export type PreconditionFailure =
     | { readonly kind: "fossilBaseRestricted"; readonly fossil: string }
     | { readonly kind: "fossilCorrupts"; readonly fossil: string }
     | { readonly kind: "wrongBase"; readonly needed: string }
+    | { readonly kind: "noMetamodFits" }
     | {
           readonly kind: "typeNotRemovable";
           readonly mod: string;
@@ -409,6 +415,8 @@ function failing(
             }
             return null;
         }
+        case "metamodFits":
+            return metamodRows(a, registry).length > 0 ? null : { kind: "noMetamodFits" };
         case "baseHasTag":
             return a.base.tags.has(check.tag) ? null : { kind: "wrongBase", needed: check.what };
         case "fossilAllowed": {
@@ -757,15 +765,10 @@ function resolvePool(a: AItem, spec: PoolSpec, registry: Registry): ResolvedPool
             const mods = [...natural, ...added, ...spec.essence];
             return { mods, types: typesOf(mods), assert: [], gen: undefined };
         }
-        case "rows": {
-            const gens = new Set(spec.mods.map((m) => m.gen));
-            return {
-                mods: spec.mods,
-                types: typesOf(spec.mods),
-                assert: typesOf(spec.mods),
-                gen: gens.size === 1 ? spec.mods[0]!.gen : undefined,
-            };
-        }
+        case "rows":
+            return oneOf(spec.mods);
+        case "metamods":
+            return oneOf(metamodRows(a, registry));
         case "unveil": {
             // Blocking is folded in: an unveiled mod whose family a guaranteed
             // present one claims is not offered.
@@ -819,6 +822,30 @@ function foulbornTiers(mods: readonly Mod[], a: AItem, registry: Registry): Mod[
         }
     }
     return out;
+}
+
+/** A pool of given rows, one of which lands: asserted as a disjunction. */
+function oneOf(mods: readonly Mod[]): ResolvedPool {
+    const gens = new Set(mods.map((m) => m.gen));
+    return {
+        mods,
+        types: typesOf(mods),
+        assert: typesOf(mods),
+        gen: gens.size === 1 ? mods[0]!.gen : undefined,
+    };
+}
+
+/** The metamods the Bestiary recipe may craft: the bench's effect carriers on a
+ *  side with a provably open slot, not possibly on the item already
+ *  (Beastcrafting, "Add a crafted Meta-modifier"). */
+function metamodRows(a: AItem, registry: Registry): Mod[] {
+    return registry.catalog.filter(
+        (m) =>
+            m.source === "bench" &&
+            registry.effectsOfType(m.type).length > 0 &&
+            hasOpenSlot(a, m.gen) &&
+            !(a.possible.has(m.type) && !isExcluded(a, m.type)),
+    );
 }
 
 function carriesAny(m: Mod, tags: ReadonlySet<TagId>): boolean {
@@ -910,7 +937,7 @@ function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry
     }
 
     let crafted = a.crafted;
-    if (count.kind === "add" && spec.kind === "bench") {
+    if (count.kind === "add" && (spec.kind === "bench" || spec.kind === "metamods")) {
         crafted = [a.crafted[0] + count.n[0], a.crafted[1] + count.n[1]];
     }
     return settled({ ...a, counts, presence, possible, tiers, crafted });

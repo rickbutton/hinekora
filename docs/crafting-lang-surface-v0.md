@@ -194,6 +194,10 @@ Operations that take a name (and an optional `t<n>`):
   [talisman](https://www.poewiki.net/wiki/Talisman) with at least four modifiers; like
   the Fracturing Orb it needs an item with no fracture yet. The two-modifier recipe is
   not offered: the checker tracks one fracture.
+- `beast metamod` is the recipe "Add a crafted Meta-modifier": one of the five
+  [metamods](https://www.poewiki.net/wiki/Metamod), random among those that fit (an open
+  slot on its side on every path, and not possibly on the item already), within the
+  crafted limit. The result is a disjunction a following `if has "…"` can narrow.
 - `unveil ["<mod>"]` is the three-option unveil of a
   [veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) and needs a veiled
   modifier on the item. Bare, the result is one of the valid options
