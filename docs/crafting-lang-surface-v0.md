@@ -74,8 +74,8 @@ block before any operation is checked.
 ## 2. Names
 
 **Currencies** are written by their short name: `transmute`, `augment`, `alteration`,
-`regal`, `alchemy`, `chaos`, `exalt`, `annul`, `scour`, `fracture` (§3). There are no
-other aliases.
+`regal`, `alchemy`, `chaos`, `exalt`, `annul`, `scour`, `fracture`, `binding` (§3). There
+are no other aliases.
 
 **Mods** are written as a stat description, matched to a modifier _type_ (every tier of a
 modifier shares the wording and differs only in numbers). Matching is by word: a query
@@ -104,7 +104,7 @@ Each statement applies one operation to the current item. The checker proves the
 operation's precondition from the state it has inferred; a failure is reported as in §6
 and the operation is skipped so checking continues.
 
-The ten **currencies**, grouped as the wiki's [Crafting](https://www.poewiki.net/wiki/Crafting)
+The eleven **currencies**, grouped as the wiki's [Crafting](https://www.poewiki.net/wiki/Crafting)
 page groups them:
 
 | Written      | Currency                                                                               | Needs                                                           |
@@ -119,6 +119,7 @@ page groups them:
 | `annul`      | [Orb of Annulment](https://www.poewiki.net/wiki/Orb_of_Annulment)                      | a removable modifier (Magic or Rare)                            |
 | `scour` | [Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) | Magic or Rare, with a side a metamod does not protect |
 | `fracture`   | [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)                | Rare, at least four modifiers, not already fractured            |
+| `binding`    | [Orb of Binding](https://www.poewiki.net/wiki/Orb_of_Binding)                          | Normal, a base that can be Rare (an alchemy; sockets are not modelled) |
 
 "Open slot" and "removable" are decided by the checker's knowledge of the item: a slot is
 open only if it is open on every path, a modifier is removable only if one is present on

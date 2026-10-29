@@ -56,6 +56,9 @@ export function currencyOps(kind: CurrencyKind): readonly Op[] {
         case "regal":
             return [isMagic, canBeRare, rarity("rare"), fill(natural, add([1, 1]))];
         case "alchemy":
+        case "binding":
+            // The Orb of Binding is an alchemy that also sets sockets, which the
+            // item does not model (Orb of Binding § Mechanics).
             return [
                 isNormal,
                 canBeRare,
