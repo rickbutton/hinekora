@@ -12,11 +12,13 @@ import type {
     CallPred,
     CallStmt,
     ComparePred,
+    CorruptedPred,
     Craft,
     BinaryPred,
     Def,
     HasPred,
     IfStmt,
+    InfluencedPred,
     ItemBlock,
     NotPred,
     FracturedPred,
@@ -33,6 +35,7 @@ import type {
 } from "../ast/index.js";
 import type { Cmp } from "../ast/ast.js";
 import type { Rarity } from "../model/ids.js";
+import type { Influence } from "../model/marks.js";
 
 const DS: SourceSpan = {
     start: { offset: 0, line: 1, column: 1 },
@@ -48,6 +51,8 @@ interface ItemSpec {
     readonly rarity: Rarity;
     readonly prefixes?: readonly AffixSpec[];
     readonly suffixes?: readonly AffixSpec[];
+    readonly influences?: readonly Influence[];
+    readonly corrupted?: boolean;
 }
 
 const affix = (a: AffixSpec): AffixDecl => (typeof a === "string" ? { mod: a } : a);
@@ -73,6 +78,8 @@ export const item = (spec: ItemSpec): ItemBlock => ({
     rarity: spec.rarity,
     prefixes: (spec.prefixes ?? []).map(affix),
     suffixes: (spec.suffixes ?? []).map(affix),
+    influences: spec.influences ?? [],
+    corrupted: spec.corrupted ?? false,
     span: DS,
 });
 
@@ -176,6 +183,11 @@ export const cmp = (
     value: number,
 ): ComparePred => ({ kind: "compare", projection, op, value, span: DS });
 export const notp = (inner: Pred): NotPred => ({ kind: "not", inner, span: DS });
+export const influencedP = (influence?: Influence): InfluencedPred =>
+    influence === undefined
+        ? { kind: "influenced", span: DS }
+        : { kind: "influenced", influence, span: DS };
+export const corruptedP = (): CorruptedPred => ({ kind: "corrupted", span: DS });
 export const andp = (left: Pred, right: Pred): BinaryPred => ({
     kind: "and",
     left,

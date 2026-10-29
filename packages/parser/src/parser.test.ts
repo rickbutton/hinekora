@@ -131,6 +131,58 @@ describe("parser — item block", () => {
                 .message,
         ).toMatch(/duplicate item field 'base'/);
     });
+
+    it("reads the marks: one or two influences, and the bare corrupted flag", () => {
+        const one = parseOk(
+            'craft in poe1 item { base: "R" ilvl: 1 rarity: rare influences: hunter } exalt',
+        ).item;
+        expect(one.influences).toEqual(["hunter"]);
+        expect(one.corrupted).toBe(false);
+        const two = parseOk(
+            'craft in poe1 item { base: "R" ilvl: 1 rarity: rare influences: shaper elder corrupted } exalt',
+        ).item;
+        expect(two.influences).toEqual(["shaper", "elder"]);
+        expect(two.corrupted).toBe(true);
+        expect(
+            parseOk('craft in poe1 item { base: "R" ilvl: 1 rarity: rare } exalt').item,
+        ).toMatchObject({
+            influences: [],
+            corrupted: false,
+        });
+    });
+
+    it("rejects an unknown, repeated or third influence", () => {
+        expect(
+            parseErr(
+                'craft in poe1 item { base: "R" ilvl: 1 rarity: rare influences: hunters } exalt',
+            ).message,
+        ).toMatch(/expected an influence after 'influences' \(shaper, elder/);
+        expect(
+            parseErr(
+                'craft in poe1 item { base: "R" ilvl: 1 rarity: rare influences: hunter hunter } exalt',
+            ).message,
+        ).toMatch(/'hunter' is listed twice/);
+        expect(
+            parseErr(
+                'craft in poe1 item { base: "R" ilvl: 1 rarity: rare influences: hunter shaper elder } exalt',
+            ).message,
+        ).toMatch(/at most two influences/);
+    });
+
+    it("parses the influenced and corrupted predicates", () => {
+        const c = parseOk(
+            'craft in poe1 item { base: "R" ilvl: 1 rarity: rare } if influenced hunter { exalt } if influenced and not corrupted { exalt }',
+        );
+        expect(c.body[0]).toMatchObject({ pred: { kind: "influenced", influence: "hunter" } });
+        expect(c.body[1]).toMatchObject({
+            pred: {
+                kind: "and",
+                left: { kind: "influenced" },
+                right: { kind: "not", inner: { kind: "corrupted" } },
+            },
+        });
+        expect((c.body[1] as IfStmt).pred).not.toHaveProperty("left.influence");
+    });
 });
 
 /** An operation statement as `{ words, args }`, a tier written `t<n>`, a param `$<p>`. */

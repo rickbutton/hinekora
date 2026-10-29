@@ -40,17 +40,20 @@
                     "match": "\\b(essence|bench|harvest|reforge|augment|change|veiled|unveil|foulborn|remove|fossil|beast|add|fracture|metamod|aspect|imprint|prefix|suffix)\\b",
                     "name": "keyword.other.operation.hinekora"
                 },
-                { "match": "\\b(has|fractured|not|and|or)\\b", "name": "keyword.other.hinekora" },
+                {
+                    "match": "\\b(has|fractured|influenced|not|and|or)\\b",
+                    "name": "keyword.other.hinekora"
+                },
                 {
                     "match": "\\b(isRare|isMagic|isNormal|prefixCount|suffixCount)\\b",
                     "name": "support.function.hinekora"
                 },
                 {
-                    "match": "\\b(base|ilvl|rarity|prefixes|suffixes)\\b",
+                    "match": "\\b(base|ilvl|rarity|prefixes|suffixes|influences|corrupted)\\b",
                     "name": "variable.parameter.hinekora"
                 },
                 {
-                    "match": "\\b(normal|magic|rare|poe1)\\b",
+                    "match": "\\b(normal|magic|rare|poe1|shaper|elder|crusader|hunter|redeemer|warlord)\\b",
                     "name": "constant.language.hinekora"
                 }
             ]

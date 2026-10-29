@@ -381,15 +381,26 @@ class Checker {
             prefixCount = Math.min(prefixCount, tCap - suffixCount);
         }
 
-        return initialState(this.bdd, base, item.ilvl, item.rarity, {
-            prefixCount,
-            suffixCount,
-            present,
-            pinned,
-            crafted,
-            ...(fracturedType !== undefined && { fractured: fracturedType }),
-            ...(fracturedAnonymous ? { fracturedAnonymous: true } : {}),
-        });
+        // An influenced item cannot be fractured (Influenced item § Mechanics).
+        if (item.influences.length > 0 && (fracturedType !== undefined || fracturedAnonymous)) {
+            this.diag("An influenced item cannot have a fractured modifier.", item.span);
+        }
+        return initialState(
+            this.bdd,
+            base,
+            item.ilvl,
+            item.rarity,
+            {
+                prefixCount,
+                suffixCount,
+                present,
+                pinned,
+                crafted,
+                ...(fracturedType !== undefined && { fractured: fracturedType }),
+                ...(fracturedAnonymous ? { fracturedAnonymous: true } : {}),
+            },
+            { influences: item.influences, corrupted: item.corrupted },
+        );
     }
 
     // --- statement sequencing ---------------------------------------------
@@ -764,6 +775,12 @@ class Checker {
         switch (pred.kind) {
             case "isRarity":
                 return { kind: "isRarity", rarity: pred.rarity };
+            case "influenced":
+                return pred.influence === undefined
+                    ? { kind: "influenced" }
+                    : { kind: "influenced", influence: pred.influence };
+            case "corrupted":
+                return { kind: "corrupted" };
             case "compare": {
                 const value = this.literalInt(pred.value, pred.span);
                 return value === null
@@ -954,6 +971,8 @@ function notePredUses(u: ParamUses, p: Pred): void {
             for (const arg of p.args) if (arg.kind === "param") markUsed(u, arg.param);
             return;
         case "isRarity":
+        case "influenced":
+        case "corrupted":
             return;
     }
 }
@@ -1053,6 +1072,8 @@ function subArgs(args: readonly Arg[], env: Map<string, Arg>): Arg[] {
 function substitute(pred: Pred, env: Map<string, Arg>): Pred {
     switch (pred.kind) {
         case "isRarity":
+        case "influenced":
+        case "corrupted":
             return pred;
         case "call":
             return { ...pred, args: subArgs(pred.args, env) };

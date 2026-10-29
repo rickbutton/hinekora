@@ -313,6 +313,16 @@ total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = t
   its own), present only when one is held on every path: a join keeps it when both
   sides hold one, joining the two, and drops it otherwise; `restore` needs it and
   replaces the state with it.
+- **Marks** (`model/marks.ts`). `influences` is the set of influence sets the item may
+  have, each an `InfluenceKey` (the names in the game's order joined with `+`, empty for
+  none): one on a straight line, more where paths meet, since no method in the library
+  changes it yet. The pool reads it as tags (`influenceTagsOf` in `ops.ts`): an
+  influence's `<class>_<influence>` tags (`registry.influenceTags`) join the facts when
+  every possible set has it and the maybe-tags otherwise, so a fill admits its rows
+  optimistically and the subset pool pessimistically. `influenced [x]` refines it;
+  `noInfluence` requires it to be exactly `{""}`. `corrupted` is `{false}`, `{true}` or
+  both; every method's sequence opens with `require(notCorrupted)` (a corruption
+  possible on any path refuses the craft), and `corrupted` refines it.
 - **Tier presence atoms.** A tier-qualified predicate (`has X t1`) also asserts a SECOND
   BDD variable (`type` + NUL + `modId`), so a disjunction of tier-qualified clauses
   (`fire@t1 ∨ cold@t1 ∨ light@t1`) survives a `join` where the flat overlay would drop
@@ -598,6 +608,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/check/check.ts`                                    | driver, `Flow`, loops/branches, defs, `TraceEntry`, `traceAt`                                      |
 | `packages/core/src/check/ops.ts` / `library.ts`                       | the primitive operations and their interpreter / every method as a sequence of them                |
 | `packages/core/src/check/methods.ts`                                  | the method table: each method's words, argument slots, help and `build`                            |
+| `packages/core/src/model/marks.ts`                                    | the influences and their data tags, `InfluenceKey`, the mark labels                                |
 | `packages/core/src/check/diagnostics.ts`                              | `renderState`, message builders                                                                    |
 | `packages/core/src/model/metamods.ts`                                 | the curated metamod id → effect table, attached to the catalog at registry build                   |
 | `packages/core/src/model/veiled.ts`                                   | veiled placeholder types and the unveiled-result predicate                                         |

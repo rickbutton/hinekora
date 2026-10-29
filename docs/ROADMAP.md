@@ -31,12 +31,14 @@ Orb of Chance is out of scope (Q15).
 
 ## Step 3. Marks
 
-Add the mark set to the abstract item and the item block (`influences:`, `corrupted`),
-then the rows marked **later** for them: the conqueror Exalted Orbs, Orb of Dominance,
-the Harvest influence reforges, the beast add-to-influenced recipe; the Vaal Orb, the
-Locus, the Tainted currency, the Bloodstained Fossil; the eldritch currency once the
-dominant implicit is a declarable mark. Influence also widens the natural pool with the
-influence's rows ([Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics)).
+The abstract item and the item block carry the influences and corruption, and influence
+widens the natural pool with the influence's rows
+([Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics)). What remains
+are the rows marked **later** for them: the conqueror Exalted Orbs, the Harvest influence
+reforges and randomise (the mark becomes a set of possible influence sets, which
+`influenced` narrows), the beast add-to-influenced recipe, Orb of Dominance; the Vaal Orb
+(an `either` over its outcomes), the Locus, the Tainted currency, the Bloodstained
+Fossil; the eldritch currency once the dominant implicit is a declarable mark.
 
 ## Step 4. Language and editor follow-ons
 

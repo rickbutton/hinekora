@@ -101,7 +101,11 @@ const block = (text, from, to) => {
 
 const literals = (text) => [...text.matchAll(/"([A-Za-z][\w?]*)"/g)].map((m) => m[1]);
 const vocabularySource = read(VOCABULARY_FILE);
-const vocabulary = new Set(literals(vocabularySource));
+const vocabulary = new Set([
+    ...literals(vocabularySource),
+    // The influence names, which the vocabulary takes from the model.
+    ...literals(block(read("packages/core/src/model/marks.ts"), "export const INFLUENCES", "]")),
+]);
 /** The method table's words: each entry's `words: [...]` and each word slot's `oneOf`. */
 const methodWords = new Set(
     [...read(METHODS_FILE).matchAll(/\b(?:words|oneOf): \[([^\]]*)\]/g)].flatMap((m) =>

@@ -18,6 +18,7 @@ import {
     type TypeId,
 } from "../model/ids.js";
 import type { ItemFacts } from "../model/item.js";
+import { influencesOf } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import type { EssenceSpec, FossilSpec } from "../model/sources.js";
 import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
@@ -123,6 +124,11 @@ export type Check =
     | { readonly kind: "strippable" }
     | { readonly kind: "atLeast"; readonly count: number }
     | { readonly kind: "noFracture" }
+    /** The item is not corrupted on any path; every method but the Tainted
+     *  currency requires it (Corrupted § Modifying corrupted items). */
+    | { readonly kind: "notCorrupted" }
+    /** The item has no influence on any path (a fracture, an influence orb). */
+    | { readonly kind: "noInfluence"; readonly what: string }
     | { readonly kind: "veiledPresent" }
     /** No veiled or unveiled modifier at all (the Veiled Exalted Orb). */
     | { readonly kind: "noVeiled" }
@@ -207,6 +213,8 @@ export type PreconditionFailure =
       }
     | { readonly kind: "tooFewMods"; readonly needed: number }
     | { readonly kind: "alreadyFractured" }
+    | { readonly kind: "corrupted"; readonly sure: boolean }
+    | { readonly kind: "influenced"; readonly what: string; readonly sure: boolean }
     | { readonly kind: "noVeiledMod" }
     | { readonly kind: "alreadyVeiled" }
     | { readonly kind: "veiledWouldSurvive" }
@@ -422,6 +430,14 @@ function failing(
                 : { kind: "tooFewMods", needed: check.count };
         case "noFracture":
             return hasFracture(a) ? { kind: "alreadyFractured" } : null;
+        case "notCorrupted":
+            return a.corrupted.has(true)
+                ? { kind: "corrupted", sure: !a.corrupted.has(false) }
+                : null;
+        case "noInfluence":
+            return a.influences.has("") && a.influences.size === 1
+                ? null
+                : { kind: "influenced", what: check.what, sure: !a.influences.has("") };
         case "veiledPresent":
             return hasVeiledPlaceholder(a) ? null : { kind: "noVeiledMod" };
         case "noVeiled":
@@ -1183,7 +1199,8 @@ function addableMods(a: AItem, registry: Registry, level = a.ilvl): Mod[] {
     // later roll sees the tags of an earlier one. A maybe tag only ever admits,
     // so the closure is monotone. (The set views scan the allocated variables;
     // asking per type would allocate one per possible type and flood the BDD.)
-    const maybeTags = new Set<TagId>();
+    // An influence the item has on some path only is a maybe tag too.
+    const maybeTags = influenceTagsOf(a, registry).maybe;
     const guaranteed = guaranteedTypes(a);
     const excluded = excludedTypes(a);
     for (const t of a.possible) {
@@ -1212,7 +1229,7 @@ function subsetMods(a: AItem, registry: Registry, prefixCount: number, suffixCou
     const types = new Set(facts.types);
     const families = new Set(facts.families);
     const effects = [...facts.effects];
-    const maybeTags = new Set<TagId>();
+    const maybeTags = influenceTagsOf(a, registry).maybe;
     for (const t of a.possible) {
         if (isExcluded(a, t) || types.has(t)) continue;
         types.add(t);
@@ -1244,11 +1261,31 @@ function sidePairs(a: AItem): [number, number][] {
     return pairs;
 }
 
+/**
+ * The influence tags the item carries: `sure` on every path (the influences
+ * every possible set shares), `maybe` on some path only. A row an influence
+ * admits is in the pool on the paths that have it, so `maybe` reads
+ * optimistically where the pool over-approximates and pessimistically where it
+ * under-approximates, like a possibly present modifier's tags.
+ */
+function influenceTagsOf(a: AItem, registry: Registry): { sure: Set<TagId>; maybe: Set<TagId> } {
+    const sets = [...a.influences].map(influencesOf);
+    const sure = new Set<TagId>();
+    const maybe = new Set<TagId>();
+    for (const influence of new Set(sets.flat())) {
+        const onEveryPath = sets.every((s) => s.includes(influence));
+        for (const tag of registry.influenceTags(a.base, influence)) {
+            (onEveryPath ? sure : maybe).add(tag);
+        }
+    }
+    return { sure, maybe };
+}
+
 /** The state's guaranteed mods as the facts the pool reads, at rare caps. */
 function guaranteedFacts(a: AItem, registry: Registry, level = a.ilvl): ItemFacts {
     const types = guaranteedTypes(a);
     const families = new Set<GroupId>();
-    const tags = new Set(a.base.tags);
+    const tags = new Set([...a.base.tags, ...influenceTagsOf(a, registry).sure]);
     let prefixCount = 0;
     let suffixCount = 0;
     for (const t of types) {

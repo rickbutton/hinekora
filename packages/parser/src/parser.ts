@@ -14,6 +14,9 @@ import {
     type Def,
     findMethod,
     type IfStmt,
+    type Influence,
+    INFLUENCES,
+    isInfluence,
     type ItemBlock,
     type Method,
     methodsAfter,
@@ -234,6 +237,8 @@ class Parser {
         let rarity: Rarity | undefined;
         let prefixes: readonly AffixDecl[] | undefined;
         let suffixes: readonly AffixDecl[] | undefined;
+        let influences: readonly Influence[] | undefined;
+        let corrupted = false;
 
         const setOnce = <T>(
             current: T | undefined,
@@ -248,6 +253,13 @@ class Parser {
         while (!this.at("rbrace")) {
             const keyTok = this.expect("ident", "an item field name or '}'");
             const key = keyTok.text;
+            // The one bare flag: `corrupted`, with no value.
+            if (key === "corrupted" && !this.at("colon")) {
+                if (corrupted) throw this.error(`duplicate item field '${key}'`, keyTok.span);
+                corrupted = true;
+                if (this.at("comma")) this.advance();
+                continue;
+            }
             this.expect("colon", `':' after '${key}'`);
 
             switch (key) {
@@ -271,6 +283,9 @@ class Parser {
                 case "suffixes":
                     suffixes = setOnce(suffixes, key, this.parseAffixList(), keyTok.span);
                     break;
+                case "influences":
+                    influences = setOnce(influences, key, this.parseInfluences(), keyTok.span);
+                    break;
                 default:
                     throw this.error(`unknown item field '${key}'`, keyTok.span);
             }
@@ -290,8 +305,30 @@ class Parser {
             rarity,
             prefixes: prefixes ?? [],
             suffixes: suffixes ?? [],
+            influences: influences ?? [],
+            corrupted,
             span: span(start, close.span.end),
         };
+    }
+
+    /** `influences: hunter` or `influences: shaper elder`: one or two of the six. */
+    private parseInfluences(): readonly Influence[] {
+        const out: Influence[] = [];
+        while (this.at("ident") && isInfluence(this.peek().text)) {
+            const tok = this.advance();
+            const influence = tok.text as Influence;
+            if (out.includes(influence)) {
+                throw this.error(`'${influence}' is listed twice`, tok.span);
+            }
+            out.push(influence);
+        }
+        if (out.length === 0) {
+            throw this.error(`expected an influence after 'influences' (${INFLUENCES.join(", ")})`);
+        }
+        if (out.length > 2) {
+            throw this.error("an item has at most two influences", this.prev.span);
+        }
+        return out;
     }
 
     private parseInt(field: string): number {
@@ -603,6 +640,25 @@ class Parser {
             this.advance();
             const mod = this.parseModOrParam();
             return { kind: "fractured", mod, span: span(t.span.start, this.prev.span.end) };
+        }
+
+        if (t.text === "influenced") {
+            this.advance();
+            const next = this.peek();
+            if (next.kind === "ident" && isInfluence(next.text)) {
+                this.advance();
+                return {
+                    kind: "influenced",
+                    influence: next.text,
+                    span: span(t.span.start, next.span.end),
+                };
+            }
+            return { kind: "influenced", span: t.span };
+        }
+
+        if (t.text === "corrupted") {
+            this.advance();
+            return { kind: "corrupted", span: t.span };
         }
 
         if (PROJECTIONS.has(t.text)) {

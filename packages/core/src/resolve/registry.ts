@@ -8,6 +8,7 @@ import type { Base } from "../model/base.js";
 import type { Effect } from "../model/effects.js";
 import type { ClassId, Gen, GroupId, TypeId } from "../model/ids.js";
 import { TagId } from "../model/ids.js";
+import { type Influence, influenceTags } from "../model/marks.js";
 import { withMetamodEffects } from "../model/metamods.js";
 import type { Mod } from "../model/mod.js";
 import type { BenchCraft, EssenceSpec, FossilSpec } from "../model/sources.js";
@@ -184,6 +185,8 @@ export interface Registry {
     familiesOfType(type: TypeId): ReadonlySet<GroupId>;
     /** The tags any row of a ModType adds to the item while present. */
     addsTagsOfType(type: TypeId): ReadonlySet<TagId>;
+    /** The tags an influence adds to a base, the ones its rows' spawn tables name. */
+    influenceTags(base: Base, influence: Influence): ReadonlySet<TagId>;
     /** The effects a ModType carries (non-empty only for metamod carriers);
      *  drives the abstract metamod folds (protection, cannot-roll, multimod). */
     effectsOfType(type: TypeId): readonly Effect[];
@@ -380,6 +383,11 @@ export function buildRegistry(data: RegistryData): Registry {
 
     const typeIndex = buildTypeIndex(catalog);
 
+    // Every tag a spawn table names, which is what tells an influence tag that
+    // exists (`ring_shaper`) from one no row would ever match.
+    const spawnTags = new Set<TagId>();
+    for (const m of catalog) for (const e of m.spawn) spawnTags.add(e.tag);
+
     // --- precompute completion lists ---
     const currencies = [...new Set(currencyByName.values())];
     const currencyNames = currencies.map((c) => c.name);
@@ -553,6 +561,9 @@ export function buildRegistry(data: RegistryData): Registry {
 
         addsTagsOfType(type) {
             return typeAddsTags.get(type) ?? EMPTY_TAGS;
+        },
+        influenceTags(base, influence) {
+            return influenceTags(base, influence, spawnTags);
         },
 
         effectsOfType(type) {

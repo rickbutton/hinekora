@@ -10,6 +10,7 @@ import type { Base } from "../model/base.js";
 import type { Cmp } from "../ast/ast.js";
 import type { Gen, Rarity } from "../model/ids.js";
 import { ModId, TypeId } from "../model/ids.js";
+import { type Influence, type InfluenceKey, influenceKey, influencesOf } from "../model/marks.js";
 import { type Bdd, BddManager } from "./bdd.js";
 import { type Domain, type Range, RangeDomain, SetDomain } from "./domain.js";
 import { type Caps, type Counts, CountDomain, caps } from "./counts.js";
@@ -45,6 +46,12 @@ export interface AItem {
     /** How many bench-CRAFTED mods are present (a range). `bench` requires it
      *  provably below the crafted cap (one, or three under an active multimod). */
     readonly crafted: Range;
+    /** The influence sets the item may have (`influenceKey`): one on a straight
+     *  line, more after a Harvest randomise or where paths meet. */
+    readonly influences: ReadonlySet<InfluenceKey>;
+    /** Whether the item may be corrupted: `{false}`, `{true}`, or both where a
+     *  path that corrupted it meets one that did not. */
+    readonly corrupted: ReadonlySet<boolean>;
     /** The item an imprint would restore, when one is held on every path. */
     readonly imprint?: AItem;
 }
@@ -464,12 +471,19 @@ export interface InitialCounts {
     readonly crafted: number;
 }
 
+/** The marks the item block declares. */
+export interface InitialMarks {
+    readonly influences: readonly Influence[];
+    readonly corrupted: boolean;
+}
+
 export function initialState(
     bdd: BddManager,
     base: Base,
     ilvl: number,
     rarity: Rarity,
     counts: InitialCounts,
+    marks: InitialMarks = { influences: [], corrupted: false },
 ): AItem {
     const p = counts.prefixCount;
     const s = counts.suffixCount;
@@ -477,6 +491,8 @@ export function initialState(
         base,
         ilvl,
         rarities: new Set([rarity]),
+        influences: new Set([influenceKey(marks.influences)]),
+        corrupted: new Set([marks.corrupted]),
         counts: CountDomain.point(p, s),
         bdd,
         presence:
@@ -535,6 +551,8 @@ export function join(a: AItem, b: AItem): AItem {
         base: a.base,
         ilvl: a.ilvl,
         rarities: SetDomain.join(a.rarities, b.rarities),
+        influences: SetDomain.join(a.influences, b.influences),
+        corrupted: SetDomain.join(a.corrupted, b.corrupted),
         bdd: a.bdd,
         counts: CountDomain.join(a.counts, b.counts),
         presence: a.bdd.or(a.presence, b.presence),
@@ -554,6 +572,8 @@ export function join(a: AItem, b: AItem): AItem {
 export function stateEqual(a: AItem, b: AItem): boolean {
     return (
         SetDomain.equal(a.rarities, b.rarities) &&
+        SetDomain.equal(a.influences, b.influences) &&
+        SetDomain.equal(a.corrupted, b.corrupted) &&
         CountDomain.equal(a.counts, b.counts) &&
         a.presence === b.presence &&
         SetDomain.equal(a.possible, b.possible) &&
@@ -588,6 +608,9 @@ export type RPred =
           readonly value: number;
       }
     | { readonly kind: "fractured"; readonly type: TypeId }
+    /** The item has that influence, or any influence when none is named. */
+    | { readonly kind: "influenced"; readonly influence?: Influence }
+    | { readonly kind: "corrupted" }
     | { readonly kind: "not"; readonly inner: RPred }
     | { readonly kind: "and" | "or"; readonly left: RPred; readonly right: RPred };
 
@@ -615,6 +638,19 @@ export function refine(a: AItem, pred: RPred, positive = true): AItem | null {
 
         case "fractured":
             return positive ? refineFractured(a, pred.type) : refineNotFractured(a, pred.type);
+
+        case "influenced": {
+            const wanted = pred.influence;
+            const holds = (key: InfluenceKey): boolean =>
+                wanted === undefined ? key !== "" : influencesOf(key).includes(wanted);
+            const influences = new Set([...a.influences].filter((k) => holds(k) === positive));
+            return influences.size === 0 ? null : { ...a, influences };
+        }
+
+        case "corrupted": {
+            const corrupted = new Set([...a.corrupted].filter((c) => c === positive));
+            return corrupted.size === 0 ? null : { ...a, corrupted };
+        }
 
         case "compare":
             return refineCompare(

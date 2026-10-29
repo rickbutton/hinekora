@@ -5,13 +5,13 @@
  * parser, completion, hover and the docs check read, so a word cannot be
  * accepted, offered or documented without the others knowing.
  */
-import type { Rarity } from "@hinekora/core";
+import { INFLUENCES, type Rarity } from "@hinekora/core";
 
 /** Words that open a statement or a header: `craft in`, `item`, control flow, defs. */
 export const KEYWORDS = ["craft", "in", "item", "def", "until", "if", "else", "restart"] as const;
 
 /** Predicate connectives and the predicate symbols. */
-export const PREDICATE_WORDS = ["has", "fractured", "not", "and", "or"] as const;
+export const PREDICATE_WORDS = ["has", "fractured", "influenced", "not", "and", "or"] as const;
 export const RARITY_PREDICATES: Readonly<Record<string, Rarity>> = {
     isNormal: "normal",
     isMagic: "magic",
@@ -19,9 +19,19 @@ export const RARITY_PREDICATES: Readonly<Record<string, Rarity>> = {
 };
 export const PROJECTIONS = ["prefixCount", "suffixCount"] as const;
 
-/** The item block's fields. */
-export const ITEM_FIELDS = ["base", "ilvl", "rarity", "prefixes", "suffixes"] as const;
+/** The item block's fields; `corrupted` is also the predicate of that name. */
+export const ITEM_FIELDS = [
+    "base",
+    "ilvl",
+    "rarity",
+    "prefixes",
+    "suffixes",
+    "influences",
+    "corrupted",
+] as const;
 export const RARITY_WORDS = ["normal", "magic", "rare"] as const;
+/** The six influences, as `influences:` lists them and `influenced` names one. */
+export const INFLUENCE_WORDS = INFLUENCES;
 /** The one word the header accepts after `craft in`. */
 export const GAME = "poe1";
 
@@ -33,5 +43,6 @@ export const VOCABULARY: readonly string[] = [
     ...PROJECTIONS,
     ...ITEM_FIELDS,
     ...RARITY_WORDS,
+    ...INFLUENCE_WORDS,
     GAME,
 ];

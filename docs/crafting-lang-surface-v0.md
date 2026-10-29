@@ -65,6 +65,14 @@ item {
   models at most one per item, the
   [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)'s own limit; the
   wiki's multi-fracture items are out of scope.
+- `influences: hunter` (or two of them, `influences: shaper elder`) marks an
+  [influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics); the six are
+  `shaper`, `elder`, `crusader`, `hunter`, `redeemer` and `warlord`. An influence widens
+  every reforge's pool with its modifiers and never changes except at the grove. An
+  influenced item cannot be fractured, so declaring both is an error.
+- `corrupted`, a bare flag, marks a
+  [corrupted item](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items), which
+  takes no craft but the Tainted currency.
 
 Name resolution happens here, so an unknown or ambiguous name is reported on the item
 block before any operation is checked.
@@ -282,6 +290,8 @@ until anyEleRes(t1) { chaos }
 pred := isRare | isMagic | isNormal
       | has "<mod>" [t<n>]                  # that modifier type is present (at that tier)
       | fractured "<mod>"                   # that modifier is the fractured one
+      | influenced [<influence>]            # the item has that influence (any, when none is named)
+      | corrupted                           # the item is corrupted
       | prefixCount <cmp> <int>
       | suffixCount <cmp> <int>
       | not <pred>
@@ -296,6 +306,8 @@ Precedence, loosest first: `or`, `and`, `not`, atom; binary operators are
 left-associative. A predicate asks about the item's current state only; there are no
 history predicates. `has "X"` means any tier of X; `has "X" t1` the specific tier, which the
 checker tracks through operations (a modifier narrowed to T1 is provably not T2).
+`influenced` and `corrupted` ask about the item's marks (§1): where paths with different
+marks meet, a branch on them narrows to one.
 
 ---
 

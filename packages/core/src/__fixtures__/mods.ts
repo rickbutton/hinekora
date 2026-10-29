@@ -280,6 +280,19 @@ export const RING_DISABLED: Mod = mkMod({
     spawn: [spawn(TAG_RING, 0), spawn(TAG_DEFAULT, 100)],
 });
 
+/** A Hunter-influence suffix for rings: its only positive weight is on the
+ *  `ring_basilisk` tag an influenced ring carries, so it rolls there and nowhere else. */
+export const HUNTER_RING_SUFFIX: Mod = mkMod({
+    id: "HunterRing1",
+    type: "HunterRingSuffix",
+    gen: "suffix",
+    minLevel: 1,
+    families: ["HunterRing"],
+    spawn: [spawn(TagId("ring_basilisk"), 500), spawn(TAG_DEFAULT, 0)],
+    implicitTags: ["chaos"],
+    text: "Hunter ring suffix",
+});
+
 /** Flask-domain prefix whose weight WOULD match any base (default tag), so the
  * domain gate is the sole reason it is excluded from item-domain bases. */
 export const FLASK_MOD: Mod = mkMod({
@@ -836,6 +849,7 @@ export const CATALOG: readonly Mod[] = [
     LIGHTNING_RESIST,
     AMULET_ONLY,
     RING_DISABLED,
+    HUNTER_RING_SUFFIX,
     FLASK_MOD,
     JEWEL_ONLY_SPAWN,
 ];

@@ -28,6 +28,7 @@ import {
     type TypeId,
     veiledPool,
     isCorruptedEssence,
+    marksLabel,
     rarityLabel,
 } from "@hinekora/core";
 import { parse, type Token, tokenize } from "@hinekora/parser";
@@ -347,7 +348,12 @@ function tooltip(a: AItem, registry: Registry, caption?: string): string {
         }
     }
 
-    const head = `**${a.base.name ?? a.base.id}** · ${rarityLabel(a.rarities)} · ilvl ${a.ilvl}`;
+    const head = [
+        `**${a.base.name ?? a.base.id}**`,
+        rarityLabel(a.rarities),
+        `ilvl ${a.ilvl}`,
+        ...marksLabel(a),
+    ].join(" · ");
     const body = lines.length > 0 ? lines.join("  \n") : "_no modifiers_";
     return [caption ? `_${caption}_` : undefined, head, body]
         .filter((x): x is string => x !== undefined)

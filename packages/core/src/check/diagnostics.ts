@@ -6,6 +6,7 @@
 import type { Pred } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import type { Rarity } from "../model/ids.js";
+import { influenceLabel } from "../model/marks.js";
 import type { ResolveError } from "../resolve/registry.js";
 import { baseLabel } from "../render/render.js";
 import { type AItem, type Range, suffixRange } from "./astate.js";
@@ -54,7 +55,16 @@ export function renderState(a: AItem): string {
         renderRange(a.counts.prefix, "prefix"),
         renderRange(suffixRange(a), "suffix"),
         `ilvl ${a.ilvl}`,
+        ...marksLabel(a),
     ].join(" · ");
+}
+
+/** The marks worth a word: an influence the item may have, a possible corruption. */
+export function marksLabel(a: AItem): string[] {
+    const out: string[] = [];
+    if (!(a.influences.size === 1 && a.influences.has(""))) out.push(influenceLabel(a.influences));
+    if (a.corrupted.has(true)) out.push(a.corrupted.has(false) ? "maybe corrupted" : "corrupted");
+    return out;
 }
 
 /** Human description of a surface predicate, for diagnostics and hover. */
@@ -76,6 +86,10 @@ export function describePred(pred: Pred): string {
         }
         case "fractured":
             return `fractured "${val(pred.mod)}"`;
+        case "influenced":
+            return pred.influence === undefined ? "influenced" : `influenced ${pred.influence}`;
+        case "corrupted":
+            return "corrupted";
         case "compare":
             return `${pred.projection} ${pred.op} ${val(pred.value)}`;
         case "not":
@@ -170,6 +184,10 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return `A Fracturing Orb needs at least ${failure.needed} modifiers on the item.`;
             case "alreadyFractured":
                 return "The item already has a fractured modifier — it can hold only one.";
+            case "corrupted":
+                return `The item ${failure.sure ? "is" : "may be"} corrupted — a corrupted item takes no further craft, only the Tainted currency.`;
+            case "influenced":
+                return `A ${failure.what} cannot be used on an influenced item — this item ${failure.sure ? "has" : "may have"} ${influenceLabel(state.influences)}.`;
             case "noVeiledMod":
                 return "There is no veiled modifier on the item to unveil.";
             case "alreadyVeiled":

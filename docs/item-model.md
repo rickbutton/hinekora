@@ -167,7 +167,8 @@ Three kinds cover the five real metamods ([Metamod](https://www.poewiki.net/wiki
 | `rarity`               | operations move it; this doc states the limits                                                                                                                                                                                 |
 | `influences`           | one normally, two via Awakener's Orb ([Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics)); an influence adds its `<class>_<influence>` tag, which is how influence-exclusive rows join the natural pool |
 | `prefixes`, `suffixes` | the affixes; order within a side carries no meaning                                                                                                                                                                            |
-| `fractured`            | affixes locked against removal and reroll ([Fractured item](https://www.poewiki.net/wiki/Fractured_item#Mechanics))                                                                                                            |
+| `fractured`            | affixes locked against removal and reroll ([Fractured item](https://www.poewiki.net/wiki/Fractured_item#Mechanics)); never beside an influence ([Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics))     |
+| `corrupted`            | set by a Vaal Orb and never cleared; only the Tainted currency and the bench's sockets apply afterwards ([Corrupted](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items))                                        |
 
 Derived:
 
@@ -241,7 +242,8 @@ Checked against the ingested PoE1 data (12,643 affix rows, 4,561 bases):
 
 The checker's abstract state is the implementation's only item: a declared item is a
 state with no uncertainty beyond its `"random"` affixes, and the marks of §7 live there
-(fracture and veiled state today; influence with its currencies, `ROADMAP.md` Step 3).
+(fracture, veiled state, the influences and corruption; the currencies that set the
+marks are `ROADMAP.md` Step 3).
 The pool reads a projection of it, the facts of §7 a roll depends on: base, level, rarity,
 counts, present types and families, tags, active effects (`ItemFacts` in
 `packages/core/src/model/item.ts`). There is no concrete item type (`QUESTIONS.md` Q3).

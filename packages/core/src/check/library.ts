@@ -25,6 +25,11 @@ const natural: PoolSpec = { kind: "natural" };
 const tagged = (tag: TagId): PoolSpec => ({ kind: "tagged", tag });
 const veiledPlaceholder: PoolSpec = { kind: "veiledPlaceholder" };
 
+/** A corrupted item takes no craft but the Tainted currency (Corrupted §
+ *  Modifying corrupted items), so every other method opens with this. */
+const notCorrupted = require({ kind: "notCorrupted" });
+/** An influenced item cannot be fractured (Influenced item § Mechanics). */
+const noInfluence = (what: string): Op => require({ kind: "noInfluence", what });
 const isRare = require({ kind: "rarity", rarity: "rare" });
 const isMagic = require({ kind: "rarity", rarity: "magic" });
 const isNormal = require({ kind: "rarity", rarity: "normal" });
@@ -48,18 +53,19 @@ export function currencyOps(kind: CurrencyKind): readonly Op[] {
     switch (kind) {
         case "transmute":
             // A prefix, a suffix or both (Orb of Transmutation § Spending).
-            return [isNormal, rarity("magic"), fill(natural, add(MAGIC_REFORGE))];
+            return [notCorrupted, isNormal, rarity("magic"), fill(natural, add(MAGIC_REFORGE))];
         case "augment":
-            return [isMagic, openSlot(), fill(natural, add([1, 1]))];
+            return [notCorrupted, isMagic, openSlot(), fill(natural, add([1, 1]))];
         case "alteration":
-            return [isMagic, strip(), fill(natural, reforge(MAGIC_REFORGE))];
+            return [notCorrupted, isMagic, strip(), fill(natural, reforge(MAGIC_REFORGE))];
         case "regal":
-            return [isMagic, canBeRare, rarity("rare"), fill(natural, add([1, 1]))];
+            return [notCorrupted, isMagic, canBeRare, rarity("rare"), fill(natural, add([1, 1]))];
         case "alchemy":
         case "binding":
             // The Orb of Binding is an alchemy that also sets sockets, which the
             // item does not model (Orb of Binding § Mechanics).
             return [
+                notCorrupted,
                 isNormal,
                 canBeRare,
                 strip(),
@@ -67,18 +73,20 @@ export function currencyOps(kind: CurrencyKind): readonly Op[] {
                 fill(natural, reforge(RARE_REFORGE)),
             ];
         case "chaos":
-            return [isRare, strip(), fill(natural, reforge(RARE_REFORGE))];
+            return [notCorrupted, isRare, strip(), fill(natural, reforge(RARE_REFORGE))];
         case "exalt":
-            return [isRare, openSlot(), fill(natural, add([1, 1]))];
+            return [notCorrupted, isRare, openSlot(), fill(natural, add([1, 1]))];
         case "annul":
             // No rarity gate: it works on anything with a removable mod, and a
             // Normal item already fails the check with the accurate reason.
-            return [removable(unshielded), remove(unshielded)];
+            return [notCorrupted, removable(unshielded), remove(unshielded)];
         case "scour":
-            return [require({ kind: "strippable" }), strip(), rarity("survivors")];
+            return [notCorrupted, require({ kind: "strippable" }), strip(), rarity("survivors")];
         case "fracture":
             return [
+                notCorrupted,
                 isRare,
+                noInfluence("Fracturing Orb"),
                 require({ kind: "noFracture" }),
                 require({ kind: "atLeast", count: 4 }),
                 lock(),
@@ -94,6 +102,7 @@ export function currencyOps(kind: CurrencyKind): readonly Op[] {
 export function essenceOps(spec: EssenceSpec, ilvl: number): readonly Op[] {
     const maxLevel = Math.min(ilvl, spec.maxRandomModLevel ?? Infinity);
     return [
+        notCorrupted,
         require({ kind: "noBlockingMetamod" }),
         require({ kind: "essenceRarity", tier: spec.tier }),
         canBeRare,
@@ -109,6 +118,7 @@ export function essenceOps(spec: EssenceSpec, ilvl: number): readonly Op[] {
  *  and with no modifier of its group already present (Crafting Bench). */
 export function benchOps(mod: Mod): readonly Op[] {
     return [
+        notCorrupted,
         require({ kind: "craftedReplaceable" }),
         remove({ kind: "crafted", replacing: true }),
         openSlot(mod.gen),
@@ -120,6 +130,7 @@ export function benchOps(mod: Mod): readonly Op[] {
 
 /** The bench's "remove crafted modifiers" (Crafting Bench § Using the crafting bench). */
 export const BENCH_REMOVE: readonly Op[] = [
+    notCorrupted,
     require({ kind: "craftedRemovable" }),
     remove({ kind: "crafted", replacing: false }),
 ];
@@ -128,6 +139,7 @@ export const BENCH_REMOVE: readonly Op[] = [
  *  modifiers carries the tag; greyed out when none can roll here. */
 export function harvestReforgeOps(tag: TagId): readonly Op[] {
     return [
+        notCorrupted,
         isRare,
         strip(),
         require({ kind: "poolNonEmpty", pool: tagged(tag), tag }),
@@ -140,6 +152,7 @@ export function harvestReforgeOps(tag: TagId): readonly Op[] {
  *  first, then a tagged modifier into the freed slot. */
 export function harvestAugmentOps(tag: TagId): readonly Op[] {
     return [
+        notCorrupted,
         isRare,
         removable(anyMod),
         remove(anyMod),
@@ -170,6 +183,7 @@ export function beastAddOps(gen: Gen, level: number): readonly Op[] {
     const other: Gen = gen === "prefix" ? "suffix" : "prefix";
     const victim: Selector = { kind: "random", honourCannotRoll: false, gen: other };
     return [
+        notCorrupted,
         isRare,
         openSlot(gen),
         removable(victim),
@@ -183,6 +197,7 @@ export function beastAddOps(gen: Gen, level: number): readonly Op[] {
  *  (Beastcrafting). */
 export function beastAspectOps(row: Mod): readonly Op[] {
     return [
+        notCorrupted,
         openSlot(row.gen),
         require({ kind: "noGroupConflict", mod: row }),
         fill({ kind: "rows", mods: [row] }, add([1, 1])),
@@ -193,6 +208,7 @@ export function beastAspectOps(row: Mod): readonly Op[] {
  *  (Beastcrafting, Imprint): the item as it stands is held, so long as it is
  *  not fractured. */
 export const BEAST_IMPRINT: readonly Op[] = [
+    notCorrupted,
     require({ kind: "imprintable" }),
     require({ kind: "noFracture" }),
     { kind: "imprint" },
@@ -201,6 +217,7 @@ export const BEAST_IMPRINT: readonly Op[] = [
 /** Apply the held imprint (Imprint § Mechanics): the item becomes what it was
  *  when imprinted; an item fractured since cannot take it. */
 export const RESTORE: readonly Op[] = [
+    notCorrupted,
     require({ kind: "hasImprint" }),
     require({ kind: "noFracture" }),
     { kind: "restore" },
@@ -209,6 +226,7 @@ export const RESTORE: readonly Op[] = [
 /** Beastcraft "add a crafted meta-modifier": one of the five metamods, random
  *  among those that fit, within the crafted limit (Beastcrafting). */
 export const BEAST_METAMOD: readonly Op[] = [
+    notCorrupted,
     require({ kind: "craftedBelowCap" }),
     require({ kind: "metamodFits" }),
     fill({ kind: "metamods" }, add([1, 1])),
@@ -217,8 +235,10 @@ export const BEAST_METAMOD: readonly Op[] = [
 /** Beastcraft "fracture a modifier on a Rare Talisman with at least 4 modifiers"
  *  (Beastcrafting): the Fracturing Orb's rule on a talisman. */
 export const BEAST_FRACTURE: readonly Op[] = [
+    notCorrupted,
     isRare,
     require({ kind: "baseHasTag", tag: TagId("talisman"), what: "talisman" }),
+    noInfluence("Bestiary fracture"),
     require({ kind: "noFracture" }),
     require({ kind: "atLeast", count: 4 }),
     lock(),
@@ -230,6 +250,7 @@ export const BEAST_FRACTURE: readonly Op[] = [
  *  Exceptions, "Change Element of Resistance"). */
 export function harvestChangeOps(from: TypeId, label: string, to: readonly Mod[]): readonly Op[] {
     return [
+        notCorrupted,
         require({ kind: "typeRemovable", type: from, label }),
         ...to.slice(0, 1).map((mod) => require({ kind: "noGroupConflict", mod })),
         remove({ kind: "type", type: from }),
@@ -260,6 +281,7 @@ export function resonatorOps(r: Resonator): readonly Op[] {
     const essence = essenceChance > 0 ? r.corrupted.filter(unblocked) : [];
     const fractures = r.fossils.some((f) => f.fractures);
     return [
+        notCorrupted,
         isRare,
         require({ kind: "noBlockingMetamod" }),
         ...r.fossils.map((fossil) => require({ kind: "fossilAllowed", fossil })),
@@ -279,6 +301,7 @@ export function resonatorOps(r: Resonator): readonly Op[] {
 /** Veiled Chaos Orb: a rare reforge, one of whose modifiers is veiled. It is
  *  refused only when a veiled or unveiled modifier would survive the reforge. */
 export const VEILED_CHAOS: readonly Op[] = [
+    notCorrupted,
     isRare,
     require({ kind: "noVeiledKept" }),
     strip(),
@@ -288,6 +311,7 @@ export const VEILED_CHAOS: readonly Op[] = [
 
 /** Veiled Exalted Orb: remove a random modifier and add a veiled one. */
 export const VEILED_EXALT: readonly Op[] = [
+    notCorrupted,
     isRare,
     require({ kind: "noVeiled" }),
     removable(anyMod),
@@ -300,7 +324,7 @@ export const VEILED_EXALT: readonly Op[] = [
 export function unveilOps(
     target: { readonly type: TypeId; readonly name: string } | undefined,
 ): readonly Op[] {
-    const ops: Op[] = [require({ kind: "veiledPresent" })];
+    const ops: Op[] = [notCorrupted, require({ kind: "veiledPresent" })];
     if (target) ops.push(require({ kind: "unveilTarget", type: target.type, name: target.name }));
     ops.push(fill(target ? { kind: "unveil", target: target.type } : { kind: "unveil" }, within));
     return ops;

@@ -5,6 +5,7 @@
  * strings, keeping the parser a pure syntax-to-tree transform.
  */
 import type { Rarity } from "../model/ids.js";
+import type { Influence } from "../model/marks.js";
 import type { SourceSpan } from "./span.js";
 
 /** A whole craft file: the `craft in poe1` header, an item block, then a body. */
@@ -83,6 +84,10 @@ export interface ItemBlock {
     readonly rarity: Rarity;
     readonly prefixes: readonly AffixDecl[];
     readonly suffixes: readonly AffixDecl[];
+    /** `influences: hunter` or `influences: shaper elder`; none when absent. */
+    readonly influences: readonly Influence[];
+    /** The bare `corrupted` flag. */
+    readonly corrupted: boolean;
     readonly span: SourceSpan;
 }
 
@@ -145,7 +150,28 @@ export interface IfStmt {
 // --- Predicates (surface §5) ----------------------------------------------
 
 export type Pred =
-    RarityPred | HasPred | FracturedPred | ComparePred | NotPred | BinaryPred | CallPred;
+    | RarityPred
+    | HasPred
+    | FracturedPred
+    | InfluencedPred
+    | CorruptedPred
+    | ComparePred
+    | NotPred
+    | BinaryPred
+    | CallPred;
+
+/** `influenced` (any influence) or `influenced hunter` (that one). */
+export interface InfluencedPred {
+    readonly kind: "influenced";
+    readonly influence?: Influence;
+    readonly span: SourceSpan;
+}
+
+/** `corrupted`, whether the item is corrupted. */
+export interface CorruptedPred {
+    readonly kind: "corrupted";
+    readonly span: SourceSpan;
+}
 
 /** Comparison operators for count projections. */
 export type Cmp = "==" | "!=" | "<" | "<=" | ">" | ">=";
