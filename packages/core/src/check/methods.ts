@@ -46,7 +46,7 @@ import {
     VEILED_CHAOS,
     VEILED_EXALT,
 } from "./library.js";
-import { influenceTagsOf, type Op } from "./ops.js";
+import { influenceTagsAny, type Op } from "./ops.js";
 
 /** What a quoted name in an argument slot names in the catalog. */
 export type NameKind = "mod" | "essence" | "bench" | "fossil" | "aspect" | "tag";
@@ -122,7 +122,7 @@ function harvestChange(
     a: AItem,
     registry: Registry,
 ): readonly Op[] | Refusal {
-    const tags = influenceTagsOf(a, registry).sure;
+    const tags = influenceTagsAny(a, registry);
     const ctx = { base: a.base, ilvl: a.ilvl, tags };
     const from = registry.resolveModType(fromName, ctx);
     if (!from.ok) return refuse(resolveMessage(from.error));
@@ -290,7 +290,7 @@ export const METHODS: readonly Method[] = [
             const type = registry.resolveModType(text(n), {
                 base: a.base,
                 ilvl: a.ilvl,
-                tags: influenceTagsOf(a, registry).sure,
+                tags: influenceTagsAny(a, registry),
             });
             if (!type.ok) return refuse(resolveMessage(type.error));
             return unveilOps({ type: type.value, name: text(n) });

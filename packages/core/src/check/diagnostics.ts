@@ -155,7 +155,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
             case "harvestEmptyPool":
                 return `No ${failure.tag} modifier can appear on ${withArticle(state.base.name ?? "item")} at this item level.`;
             case "harvestNoRoom":
-                return `A ${failure.tag} modifier has no slot on some path — the side it would take may be full.`;
+                return `${capitalise(withArticle(`${failure.tag} modifier`))} has no slot on some path — the side it would take may be full.`;
             case "harvestBlocked":
                 return `Every ${failure.tag} modifier may be blocked on some path — one of them, or one of its group, may already be on the item, or it needs an influence the item may not have.`;
             case "typeNotRemovable":
@@ -192,6 +192,10 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return `A ${failure.what} cannot be used on an influenced item — this item ${failure.sure ? "has" : "may have"} ${influenceLabel(state.influences)}.`;
             case "notInfluenced":
                 return `${failure.what} needs ${failure.influence === undefined ? "an influenced" : `a ${influenceSetLabel(influenceKey([failure.influence]))}`} item — this item ${failure.sure ? "has" : "may have"} ${influenceLabel(state.influences)}.`;
+            case "notInfluenceable":
+                return `A ${failure.what} cannot be used on ${withArticle(state.base.name ?? "base like this")} — its class cannot be influenced.`;
+            case "influencedOnProtected":
+                return `${failure.what} is not offered while the ${failure.gen}es cannot be changed and one of them may be an influence modifier.`;
             case "awakenerTarget":
                 return `An Awakener's Orb needs an item with exactly one influence other than the donor's ${influenceSetLabel(influenceKey([failure.donor]))} — this item ${failure.sure ? "has" : "may have"} ${influenceLabel(state.influences)}.`;
             case "noVeiledMod":
@@ -234,4 +238,8 @@ export function resolveMessage(error: ResolveError): string {
 
 function withArticle(noun: string): string {
     return `${/^[aeiou]/i.test(noun) ? "an" : "a"} ${noun}`;
+}
+
+function capitalise(s: string): string {
+    return s.charAt(0).toUpperCase() + s.slice(1);
 }

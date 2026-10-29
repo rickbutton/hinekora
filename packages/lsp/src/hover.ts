@@ -28,7 +28,7 @@ import {
     type TypeId,
     veiledPool,
     isCorruptedEssence,
-    influenceTagsOf,
+    influenceTagsAny,
     marksLabel,
     rarityLabel,
 } from "@hinekora/core";
@@ -272,13 +272,7 @@ function modLine(a: AItem, type: TypeId, registry: Registry, pinMod?: ModId): st
                   const r = registry.resolveMod(id);
                   return r.ok ? [r.value] : [];
               })
-            : rollableTiers(
-                  registry.catalog,
-                  a.base,
-                  a.ilvl,
-                  type,
-                  influenceTagsOf(a, registry).sure,
-              );
+            : rollableTiers(registry.catalog, a.base, a.ilvl, type, influenceTagsAny(a, registry));
     const texts = mods
         .map((m) => m.text)
         .filter((t): t is string => t !== undefined)
@@ -293,7 +287,7 @@ function modLine(a: AItem, type: TypeId, registry: Registry, pinMod?: ModId): st
  */
 function tooltip(a: AItem, registry: Registry, caption?: string): string {
     const guaranteed = guaranteedTypes(a);
-    const tags = influenceTagsOf(a, registry).sure;
+    const tags = influenceTagsAny(a, registry);
     const genOf = (t: TypeId): Gen =>
         rollableGen(registry.catalog, a.base, a.ilvl, t, tags) ?? "prefix";
 
@@ -460,7 +454,7 @@ function modSignature(
         ? {
               base: entry.before.base,
               ilvl: entry.before.ilvl,
-              tags: influenceTagsOf(entry.before, registry).sure,
+              tags: influenceTagsAny(entry.before, registry),
           }
         : undefined;
 

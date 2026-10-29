@@ -171,6 +171,7 @@ export const HARVEST_INFLUENCE_REFORGE: readonly Op[] = [
     isRare,
     require({ kind: "influenced", what: "The grove's influence reforge" }),
     strip(),
+    require({ kind: "poolNonEmpty", pool: influencePool, tag: TagId("influence") }),
     fill(natural, reforge(RARE_REFORGE)),
     fill(influencePool, within),
 ];
@@ -182,6 +183,9 @@ export const HARVEST_INFLUENCE_REFORGE: readonly Op[] = [
 export const HARVEST_RANDOMISE: readonly Op[] = [
     notCorrupted,
     require({ kind: "influenced", what: "The grove's randomise craft" }),
+    // "usage is prevented if any prefix is influenced" under a prefix protection,
+    // and likewise for suffixes (Metamod § Rules and Exceptions).
+    require({ kind: "noInfluencedOnProtected", what: "The grove's randomise craft" }),
     strip(),
     influence({ kind: "randomise" }),
     fill(natural, reforge("byRarity")),
@@ -194,6 +198,7 @@ export function influenceExaltOps(target: Influence): readonly Op[] {
     return [
         notCorrupted,
         isRare,
+        require({ kind: "influenceable", influence: target, what: INFLUENCE_ORB[target] }),
         noInfluence(INFLUENCE_ORB[target]),
         require({ kind: "noFracture" }),
         openSlot(),
@@ -211,7 +216,8 @@ export function awakenerOps(donor: Influence): readonly Op[] {
         notCorrupted,
         require({ kind: "awakenerTarget", donor }),
         canBeRare,
-        { kind: "strip", ignoreProtection: true },
+        { kind: "unprotect" },
+        strip(),
         rarity("rare"),
         influence({ kind: "add", influence: donor }),
         fill(natural, reforge(RARE_REFORGE)),

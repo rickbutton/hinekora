@@ -44,7 +44,7 @@ import {
 } from "./diagnostics.js";
 import { rollableGen, rollableTiers, tierMod } from "../resolve/tiers.js";
 import { findMethod, type Literal, type Method, slotAt } from "./methods.js";
-import { influenceTagsOf, runMethod } from "./ops.js";
+import { influenceTagsAny, runMethod } from "./ops.js";
 
 export interface CheckContext {
     readonly registry: Registry;
@@ -828,9 +828,10 @@ class Checker {
         return { kind: "fractured", type: typeRes.value };
     }
 
-    /** The influence tags the item carries on every path: its influence rows roll. */
+    /** The influence tags the item carries on any path: a predicate names what
+     *  the item may have, so its influence rows resolve and tier here. */
     private tagsOf(a: AItem): ReadonlySet<TagId> {
-        return influenceTagsOf(a, this.registry).sure;
+        return influenceTagsAny(a, this.registry);
     }
 
     private modContext(a: AItem): ModTypeContext {

@@ -174,13 +174,14 @@ blocked by any metamod but multimod.
 Per [Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting) and the harvest
 rows of the Metamod table.
 
-| Method                                                                          | Composition                                                                                                       | Status                                                     |
-| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Reforge including a `<tag>` modifier                                            | `strip(protected ∪ fractured); fill(natural, [4,6]); fill(natural[tag], 1)` (the tagged fill is within the count) | built                                                      |
-| Reforge more / less likely                                                      | as a plain reforge (bias is probability)                                                                          | deferred (rarely needed)                                   |
-| Add a `<tag>` modifier, remove another random modifier                          | `remove(unlocked ∖ protected, 1); fill(natural[tag], 1)`, the removal never the added one                         | built                                                      |
-| Change a resistance / damage modifier to another element                        | `remove(type ∖ protected, 1); fill(siblings(type) at its tier, 1)`                                                | built                                                      |
-| Reforge an influenced item including an influence modifier; randomise influence | `strip(protected ∪ fractured); fill(natural, [4,6]); fill(influence, 1)`                                          | built (`harvest reforge "influence"`, `harvest randomise`) |
+| Method                                                     | Composition                                                                                                       | Status                                |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Reforge including a `<tag>` modifier                       | `strip(protected ∪ fractured); fill(natural, [4,6]); fill(natural[tag], 1)` (the tagged fill is within the count) | built                                 |
+| Reforge more / less likely                                 | as a plain reforge (bias is probability)                                                                          | deferred (rarely needed)              |
+| Add a `<tag>` modifier, remove another random modifier     | `remove(unlocked ∖ protected, 1); fill(natural[tag], 1)`, the removal never the added one                         | built                                 |
+| Change a resistance / damage modifier to another element   | `remove(type ∖ protected, 1); fill(siblings(type) at its tier, 1)`                                                | built                                 |
+| Reforge an influenced item including an influence modifier | `strip(protected ∪ fractured); fill(natural, [4,6]); fill(influence, 1)`                                          | built (`harvest reforge "influence"`) |
+| Randomise the influences, reforging the item at its rarity | `strip(protected ∪ fractured); mark(any influence set of the same size); fill(natural, by rarity)`                | built (`harvest randomise`)           |
 
 ### 3.6 Beastcrafting
 

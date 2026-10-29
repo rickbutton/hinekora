@@ -146,6 +146,12 @@ export type Check =
     /** The item has exactly one influence, other than the donor's, on every path
      *  (Awakener's Orb § Mechanics). */
     | { readonly kind: "awakenerTarget"; readonly donor: Influence }
+    /** The item's class can carry that influence (a jewel or a flask cannot). */
+    | { readonly kind: "influenceable"; readonly influence: Influence; readonly what: string }
+    /** No modifier that may sit on a protected side is an influence modifier
+     *  (the grove's randomise under "cannot be changed", Metamod § Rules and
+     *  Exceptions). */
+    | { readonly kind: "noInfluencedOnProtected"; readonly what: string }
     | { readonly kind: "veiledPresent" }
     /** No veiled or unveiled modifier at all (the Veiled Exalted Orb). */
     | { readonly kind: "noVeiled" }
@@ -178,9 +184,11 @@ export type Check =
 
 export type Op =
     | { readonly kind: "require"; readonly check: Check }
-    /** Every modifier goes but the protected sides' and the fractured one; with
-     *  `ignoreProtection`, the protected sides' too (the Awakener's Orb). */
-    | { readonly kind: "strip"; readonly ignoreProtection?: true }
+    /** Every modifier goes but the protected sides' and the fractured one. */
+    | { readonly kind: "strip" }
+    /** The metamods no longer govern the rest of the method (an Awakener's Orb
+     *  ignores them, Metamod § Rules and Exceptions). */
+    | { readonly kind: "unprotect" }
     /** Change the influence mark: to one set, by adding an influence to every
      *  possible set, or to every set of the same size (the grove's randomise). */
     | { readonly kind: "influence"; readonly change: InfluenceChange }
@@ -248,6 +256,8 @@ export type PreconditionFailure =
           readonly sure: boolean;
       }
     | { readonly kind: "awakenerTarget"; readonly donor: Influence; readonly sure: boolean }
+    | { readonly kind: "notInfluenceable"; readonly influence: Influence; readonly what: string }
+    | { readonly kind: "influencedOnProtected"; readonly what: string; readonly gen: Gen }
     | { readonly kind: "noVeiledMod" }
     | { readonly kind: "alreadyVeiled" }
     | { readonly kind: "veiledWouldSurvive" }
@@ -264,12 +274,16 @@ export type TransferResult =
  * state before it, as the game never applies part of a currency.
  */
 export function runMethod(a0: AItem, ops: readonly Op[], registry: Registry): TransferResult {
-    const rules = rulesInForce(a0, registry);
+    let rules = rulesInForce(a0, registry);
     let a = a0;
     for (const op of ops) {
         if (op.kind === "require") {
             const failure = failing(a, op.check, rules, registry);
             if (failure) return { ok: false, failure };
+            continue;
+        }
+        if (op.kind === "unprotect") {
+            rules = { ...rules, protected: new Set(), cannotRoll: null };
             continue;
         }
         a = apply(a, a0, op, rules, registry);
@@ -280,17 +294,13 @@ export function runMethod(a0: AItem, ops: readonly Op[], registry: Registry): Tr
 function apply(
     a: AItem,
     a0: AItem,
-    op: Exclude<Op, { kind: "require" }>,
+    op: Exclude<Op, { kind: "require" | "unprotect" }>,
     rules: Rules,
     registry: Registry,
 ): AItem {
     switch (op.kind) {
         case "strip":
-            return strip(
-                a,
-                op.ignoreProtection ? { ...rules, protected: new Set() } : rules,
-                registry,
-            );
+            return strip(a, rules, registry);
         case "influence": {
             const change = op.change;
             const influences = new Set<InfluenceKey>();
@@ -517,6 +527,23 @@ function failing(
             if (keys.every(fits)) return null;
             return { kind: "awakenerTarget", donor: check.donor, sure: !keys.some(fits) };
         }
+        case "influenceable":
+            return registry.influenceTags(a.base, check.influence).size > 0
+                ? null
+                : { kind: "notInfluenceable", influence: check.influence, what: check.what };
+        case "noInfluencedOnProtected": {
+            // Pessimistic: every modifier that may sit on a protected side must
+            // be a known type that is no influence modifier, so a side holding
+            // more than its guaranteed types may hold one and refuses.
+            for (const gen of rules.protected) {
+                const known = [...guaranteedTypes(a)].filter((t) => genOf(a, registry, t) === gen);
+                const most = gen === "prefix" ? a.counts.prefix[1] : suffixRange(a)[1];
+                if (most > known.length || known.some((t) => isInfluenceType(a, t, registry))) {
+                    return { kind: "influencedOnProtected", what: check.what, gen };
+                }
+            }
+            return null;
+        }
         case "veiledPresent":
             return hasVeiledPlaceholder(a) ? null : { kind: "noVeiledMod" };
         case "noVeiled":
@@ -592,13 +619,16 @@ function failing(
         case "poolNonEmpty": {
             // A fill reads a superset of every path's pool; this must read a
             // subset, so a path on which the tagged pool is empty is caught.
-            if (check.pool.kind !== "tagged") {
+            if (check.pool.kind !== "tagged" && check.pool.kind !== "influence") {
                 return resolvePool(a, check.pool, registry).mods.length > 0
                     ? null
                     : { kind: "harvestEmptyPool", tag: check.tag };
             }
             const tag = check.tag;
-            const hasTag = (m: Mod): boolean => m.implicitTags.has(tag);
+            const hasTag =
+                check.pool.kind === "tagged"
+                    ? (m: Mod): boolean => m.implicitTags.has(tag)
+                    : influenceRowTest(a, registry);
             const tagged = (p: number, s: number): boolean =>
                 subsetMods(a, registry, p, s).some(hasTag);
             if (!tagged(0, 0)) {
@@ -936,11 +966,7 @@ function resolvePool(a: AItem, spec: PoolSpec, registry: Registry): ResolvedPool
         case "metamods":
             return oneOf(metamodRows(a, registry));
         case "influence": {
-            // A row no tag of the item's own admits: only an influence tag does.
-            const facts = guaranteedFacts(a, registry);
-            const sure = influenceTagsOf(a, registry).sure;
-            const own = new Set([...facts.tags].filter((t) => !sure.has(t)));
-            const mods = addableMods(a, registry).filter((m) => (lookupWeight(m, own) ?? 0) <= 0);
+            const mods = addableMods(a, registry).filter(influenceRowTest(a, registry));
             const types = typesOf(mods);
             return { mods, types, assert: types, gen: undefined };
         }
@@ -1131,6 +1157,30 @@ function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry
         crafted = [a.crafted[0] + count.n[0], a.crafted[1] + count.n[1]];
     }
     return settled({ ...a, counts, presence, possible, tiers, crafted });
+}
+
+/** Is a row an influence modifier here: one no tag of the item's own admits,
+ *  so only an influence tag does. */
+function influenceRowTest(a: AItem, registry: Registry): (m: Mod) => boolean {
+    const facts = guaranteedFacts(a, registry);
+    const sure = influenceTagsOf(a, registry).sure;
+    const own = new Set([...facts.tags].filter((t) => !sure.has(t)));
+    return (m) => (lookupWeight(m, own) ?? 0) <= 0;
+}
+
+/** Is a modifier type an influence modifier on this item: some row of it is
+ *  one, under any influence the item may have. */
+function isInfluenceType(a: AItem, type: TypeId, registry: Registry): boolean {
+    const isRow = influenceRowTest(a, registry);
+    const { sure, maybe } = influenceTagsOf(a, registry);
+    const tags = new Set([...a.base.tags, ...sure, ...maybe]);
+    return registry.catalog.some(
+        (m) =>
+            m.type === type &&
+            m.domain === a.base.domain &&
+            isRow(m) &&
+            (lookupWeight(m, tags) ?? 0) > 0,
+    );
 }
 
 /** How many modifiers a reforge at the item's own rarity lays down, the loosest
@@ -1380,6 +1430,13 @@ export function influenceTagsOf(
         }
     }
     return { sure, maybe };
+}
+
+/** The influence tags the item carries on any path: what a name or a tier
+ *  written against the item may mean. */
+export function influenceTagsAny(a: AItem, registry: Registry): ReadonlySet<TagId> {
+    const { sure, maybe } = influenceTagsOf(a, registry);
+    return new Set([...sure, ...maybe]);
 }
 
 /** The state's guaranteed mods as the facts the pool reads, at rare caps. */

@@ -2,14 +2,26 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, harvest, iff, influencedP, item } from "../__fixtures__/ast.js";
+import { craft, harvest, has as hasT, iff, influencedP, item } from "../__fixtures__/ast.js";
 import type { OperationStmt } from "../ast/ast.js";
-import { CATALOG, HUNTER_RING_SUFFIX, RING_BASE } from "../__fixtures__/mods.js";
+import {
+    CATALOG,
+    CLASS_RING,
+    HUNTER_RING_SUFFIX,
+    JEWEL_BASE,
+    PROTECT_SUFFIXES_CARRIER,
+    RING_BASE,
+} from "../__fixtures__/mods.js";
 import { influenceKey, INFLUENCES } from "../model/marks.js";
+import { BddManager } from "./bdd.js";
+import { initialState, join, refine } from "./astate.js";
+import { runMethod } from "./ops.js";
+import { HARVEST_INFLUENCE_REFORGE } from "./library.js";
+import { preconditionMessage } from "./diagnostics.js";
 
 const registry = buildRegistry({
-    bases: [RING_BASE],
-    mods: CATALOG,
+    bases: [RING_BASE, JEWEL_BASE],
+    mods: [...CATALOG, PROTECT_SUFFIXES_CARRIER],
     modAliases: {
         life: "IncreasedLife1",
         mana: "IncreasedMana1",
@@ -17,6 +29,9 @@ const registry = buildRegistry({
         cold: "ColdResist1",
     },
     baseAliases: { "Iron Ring": "IronRing" },
+    benchCrafts: [
+        { mod: PROTECT_SUFFIXES_CARRIER.id, tier: 1, itemClasses: new Set([CLASS_RING]) },
+    ],
 });
 const ctx: CheckContext = { registry };
 
@@ -64,9 +79,84 @@ describe("the influence exalts", () => {
             rarity: "rare",
             suffixes: [{ mod: "cold", fractured: true }],
         });
-        expect(messages(craft(fractured, [words("exalt", "elder")]))).toContain(
+        expect(messages(craft(fractured, [words("exalt", "hunter")]))).toContain(
             "already has a fractured modifier",
         );
+    });
+
+    it("refuse a base whose class cannot be influenced", () => {
+        const jewel = item({ base: "Cobalt Jewel", ilvl: 100, rarity: "rare" });
+        expect(messages(craft(jewel, [words("exalt", "hunter")]))).toContain(
+            "A Hunter's Exalted Orb cannot be used on a Cobalt Jewel — its class cannot be influenced",
+        );
+    });
+});
+
+describe("an influence the item may have", () => {
+    const bdd = new BddManager();
+    const counts = {
+        prefixCount: 0,
+        suffixCount: 0,
+        present: new Set<never>(),
+        pinned: new Map<never, never>(),
+        crafted: 0,
+    };
+    const hunter = initialState(bdd, RING_BASE, 100, "rare", counts, {
+        influences: ["hunter"],
+        corrupted: false,
+    });
+    const plain = initialState(bdd, RING_BASE, 100, "rare", counts, {
+        influences: [],
+        corrupted: false,
+    });
+    const met = join(hunter, plain);
+
+    it("is not enough for a craft that needs one", () => {
+        const r = runMethod(met, HARVEST_INFLUENCE_REFORGE, registry);
+        expect(r.ok).toBe(false);
+        if (!r.ok) {
+            expect(preconditionMessage(met, r.failure)).toContain(
+                "needs an influenced item — this item may have Hunter or no influence",
+            );
+        }
+        expect(
+            runMethod(refine(met, { kind: "influenced" })!, HARVEST_INFLUENCE_REFORGE, registry).ok,
+        ).toBe(true);
+    });
+
+    it("lets a predicate name its modifier and tier after a randomise", () => {
+        const r = run(
+            craft(ring(["shaper"]), [
+                words("harvest", "randomise"),
+                iff(hasT("Hunter ring suffix", 1), [words("harvest", "randomise")]),
+            ]),
+        );
+        expect(r.diagnostics).toEqual([]);
+    });
+});
+
+describe("the grove's randomise under a protection metamod", () => {
+    const protectedRing = (suffixes: string[]) =>
+        item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: [PROTECT_SUFFIXES_CARRIER.id],
+            suffixes,
+            influences: ["hunter"],
+        });
+
+    it("is refused while a protected side may carry an influence modifier", () => {
+        expect(
+            messages(craft(protectedRing(["random"]), [words("harvest", "randomise")])),
+        ).toContain(
+            "not offered while the suffixes cannot be changed and one of them may be an influence modifier",
+        );
+    });
+
+    it("is offered when the protected side holds natural modifiers only", () => {
+        const r = run(craft(protectedRing(["cold"]), [words("harvest", "randomise")]));
+        expect(r.diagnostics).toEqual([]);
     });
 });
 
@@ -92,7 +182,7 @@ describe("the grove's influence crafts", () => {
         const narrowed = run(
             craft(ring(["hunter"]), [
                 words("harvest", "randomise"),
-                iff(influencedP("shaper"), [words("exalt", "hunter")], [words("exalt", "elder")]),
+                iff(influencedP("shaper"), [words("exalt", "hunter")], [words("exalt", "hunter")]),
             ]),
         );
         // Both arms are reachable, and each refuses the orb: the item is influenced either way.
@@ -125,6 +215,22 @@ describe("the Awakener's Orb", () => {
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.influences).toEqual(new Set([influenceKey(["shaper", "hunter"])]));
         expect(r.finalState!.counts.total).toEqual([4, 6]);
+    });
+
+    it("ignores the metamods: a protected side is reforged with the rest", () => {
+        const guarded = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: [PROTECT_SUFFIXES_CARRIER.id],
+            suffixes: ["cold"],
+            influences: ["hunter"],
+        });
+        const r = run(craft(guarded, [wordArg(["awakener"], "shaper")]));
+        expect(r.diagnostics).toEqual([]);
+        const s = r.finalState!;
+        expect(s.counts.total).toEqual([4, 6]);
+        expect(guaranteedTypes(s).has(PROTECT_SUFFIXES_CARRIER.type)).toBe(false);
     });
 
     it("refuses an item with no, two, or the donor's influence", () => {

@@ -107,6 +107,15 @@ export const RATCHETING_BASE: Base = {
     capDelta: { prefix: -3, suffix: 3 },
 };
 
+/** A jewel: a class no influence can mark (its spawn tables name no influence stem). */
+export const JEWEL_BASE: Base = {
+    id: BaseId("CobaltJewel"),
+    name: "Cobalt Jewel",
+    itemClass: ClassId("Jewel"),
+    domain: DOMAIN_ITEM,
+    tags: new Set([TAG_DEFAULT, TAG_JEWEL]),
+};
+
 // --- Mod builder ----------------------------------------------------------
 
 interface ModSpec {
