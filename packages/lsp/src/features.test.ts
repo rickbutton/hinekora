@@ -68,6 +68,13 @@ describe("hover", () => {
         expect(onTag).toContain('**"fire"**');
     });
 
+    it("hovers a method inside a one-line body and one that follows another", () => {
+        const src = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nif isRare { exalt } else { annul }\ntransmute regal`;
+        expect(getHover(src, src.indexOf("annul"), registry)).toContain("Orb of Annulment");
+        expect(getHover(src, src.lastIndexOf("regal"), registry)).toContain("Regal Orb");
+        expect(getHover(src, src.indexOf("isRare"), registry)).not.toContain("Orb");
+    });
+
     it("hovers a local def (declaration, call, and param share one signature)", () => {
         const src = `craft in poe1
 item { base: "Iron Ring" ilvl: 84 rarity: rare }
@@ -251,14 +258,31 @@ describe("completion", () => {
         expect(tags).not.toContain("maximum life"); // tags, not mods
     });
 
-    it("offers a word slot's choices and nothing once a method's slots are spent", () => {
+    it("offers a word slot's choices, and a statement once a method's slots are spent", () => {
         const side = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nbeast add `;
         expect(getCompletions(side, side.length, registry).map((c) => c.label)).toEqual([
             "prefix",
             "suffix",
         ]);
         const spent = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nexalt `;
-        expect(getCompletions(spent, spent.length, registry)).toEqual([]);
+        const labels = getCompletions(spent, spent.length, registry).map((c) => c.label);
+        expect(labels).toContain("regal");
+        expect(labels).toContain("until");
+    });
+
+    it("finds the method inside a one-line body and after another statement", () => {
+        const body = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nif isRare { essence "`;
+        const names = getCompletions(body, body.length, registry).map((c) => c.label);
+        expect(names).toContain("Deafening Essence of Greed");
+        expect(names).not.toContain("maximum life");
+
+        const after = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nexalt beast aspect "`;
+        expect(getCompletions(after, after.length, registry).map((c) => c.label)).toContain("cat");
+
+        const pred = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nexalt if has "`;
+        expect(getCompletions(pred, pred.length, registry).map((c) => c.label)).toContain(
+            "maximum life",
+        );
     });
 
     it('offers Aspect names inside a `beast aspect "` string', () => {

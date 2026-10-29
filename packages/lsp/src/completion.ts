@@ -10,8 +10,6 @@ import {
     type Base,
     check,
     excludedTypes,
-    findMethod,
-    type Method,
     METHODS,
     methodsAfter,
     type NameKind,
@@ -23,6 +21,7 @@ import {
 } from "@hinekora/core";
 import { parse } from "@hinekora/parser";
 import { type CompletionItem, CompletionItemKind } from "vscode-languageserver-types";
+import { type Atom, methodAt } from "./method-at.js";
 
 const CONTROL_KEYWORDS = ["until", "if", "else", "restart"];
 
@@ -51,33 +50,26 @@ function localDefs(source: string): { name: string; params: string }[] {
 }
 
 /** A piece of the line before the cursor: a word, a number, a closed string,
- *  or the string the cursor is inside (`open`). */
+ *  the string the cursor is inside (`open`), or punctuation. */
 interface Piece {
-    readonly kind: "word" | "int" | "string" | "open";
+    readonly kind: "word" | "int" | "string" | "open" | "punct";
     readonly text: string;
 }
 
 function piecesOf(line: string): Piece[] {
     const out: Piece[] = [];
-    for (const m of line.matchAll(/"([^"]*)"|"([^"]*)$|([A-Za-z_]\w*)|(\d+)/g)) {
+    for (const m of line.matchAll(/"([^"]*)"|"([^"]*)$|([A-Za-z_]\w*)|(\d+)|([{}()[\]:,=])/g)) {
         if (m[1] !== undefined) out.push({ kind: "string", text: m[1] });
         else if (m[2] !== undefined) out.push({ kind: "open", text: m[2] });
         else if (m[3] !== undefined) out.push({ kind: "word", text: m[3] });
-        else out.push({ kind: "int", text: m[4]! });
+        else if (m[4] !== undefined) out.push({ kind: "int", text: m[4] });
+        else out.push({ kind: "punct", text: m[5]! });
     }
     return out;
 }
 
-/** The method the line's opening words name, and how many words it took. */
-function methodOf(pieces: readonly Piece[]): { method: Method; words: number } | undefined {
-    const words = pieces.filter((p, i) => p.kind === "word" && i < 2).map((p) => p.text);
-    if (words.length === 2 && pieces[1]?.kind === "word") {
-        const two = findMethod(words);
-        if (two) return { method: two, words: 2 };
-    }
-    const one = words.length > 0 ? findMethod([words[0]!]) : undefined;
-    return one ? { method: one, words: 1 } : undefined;
-}
+const atomOf = (p: Piece): Atom =>
+    p.kind === "word" ? { word: p.text } : p.kind === "punct" ? { stop: true } : {};
 
 type Context =
     | { readonly kind: "statement" }
@@ -104,9 +96,9 @@ function contextAt(source: string, offset: number): Context {
                 : { kind: "mod" };
         }
         const closed = pieces.slice(0, -1);
-        const found = methodOf(closed);
+        const found = methodAt(closed.map(atomOf), closed.length);
         if (found) {
-            const slot = slotAt(found.method, closed.length - found.words);
+            const slot = slotAt(found.method, closed.length - found.start - found.words);
             if (slot?.kind === "name" || slot?.kind === "names")
                 return { kind: "name", of: slot.of };
         }
@@ -120,14 +112,15 @@ function contextAt(source: string, offset: number): Context {
     if (done.length === 0) return { kind: "statement" };
     const last = done[done.length - 1]!;
     if (last.kind === "word" && PREDICATE_INTRODUCERS.has(last.text)) return { kind: "predicate" };
-    const words = done.filter((p) => p.kind === "word").map((p) => p.text);
-    if (done.length === 1 && last.kind === "word" && methodsAfter(words).length > 0) {
+    if (last.kind === "word" && methodsAfter([last.text]).length > 0) {
         return { kind: "secondWord", first: last.text };
     }
-    const found = methodOf(done);
+    const found = methodAt(done.map(atomOf), done.length);
     if (found) {
-        const slot = slotAt(found.method, done.length - found.words);
-        return slot?.kind === "word" ? { kind: "word", oneOf: slot.oneOf } : { kind: "nothing" };
+        const slot = slotAt(found.method, done.length - found.start - found.words);
+        if (slot === undefined || ("optional" in slot && slot.optional))
+            return { kind: "statement" };
+        return slot.kind === "word" ? { kind: "word", oneOf: slot.oneOf } : { kind: "nothing" };
     }
     return { kind: "statement" };
 }

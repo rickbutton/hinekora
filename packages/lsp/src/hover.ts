@@ -11,7 +11,6 @@ import {
     type Def,
     describePred,
     disjunctiveTier,
-    findMethod,
     type Gen,
     type GroupId,
     guaranteedTypes,
@@ -32,6 +31,7 @@ import {
     rarityLabel,
 } from "@hinekora/core";
 import { parse, type Token, tokenize } from "@hinekora/parser";
+import { type Atom, type MethodAt, methodAt } from "./method-at.js";
 
 // --- doc tables ------------------------------------------------------------
 
@@ -85,27 +85,17 @@ function stringIsBase(tokens: readonly Token[], i: number): boolean {
     return prev?.kind === "colon" && prev2?.kind === "ident" && prev2.text === "base";
 }
 
-/** The tokens on the line of token `i`, and `i`'s index among them. */
-function lineOf(tokens: readonly Token[], i: number): { line: Token[]; at: number } {
-    const row = tokens[i]!.span.start.line;
-    let start = i;
-    while (start > 0 && tokens[start - 1]!.span.start.line === row) start--;
-    let end = i;
-    while (end + 1 < tokens.length && tokens[end + 1]!.span.start.line === row) end++;
-    return { line: tokens.slice(start, end + 1), at: i - start };
-}
-
-/** The method a line's opening words name, and how many words it took. */
-function methodOfLine(line: readonly Token[]): { method: Method; words: number } | undefined {
-    const w0 = line[0];
-    const w1 = line[1];
-    if (w0?.kind !== "ident") return undefined;
-    if (w1?.kind === "ident") {
-        const two = findMethod([w0.text, w1.text]);
-        if (two) return { method: two, words: 2 };
+/** A token as the method lookup sees it: a word, an argument, or a stop. */
+function atomOf(tok: Token): Atom {
+    switch (tok.kind) {
+        case "ident":
+            return { word: tok.text };
+        case "string":
+        case "int":
+            return {};
+        default:
+            return { stop: true };
     }
-    const one = findMethod([w0.text]);
-    return one ? { method: one, words: 1 } : undefined;
 }
 
 /**
@@ -113,37 +103,35 @@ function methodOfLine(line: readonly Token[]): { method: Method; words: number }
  * words, and on an argument the signature of what the slot names.
  */
 function operationSignature(
-    line: readonly Token[],
-    at: number,
-    found: { method: Method; words: number },
+    tokens: readonly Token[],
+    i: number,
+    found: MethodAt,
     entry: TraceEntry | undefined,
     registry: Registry,
 ): string | null {
-    const { method, words } = found;
-    const tok = line[at]!;
-    if (at < words) return methodHover(method, entry, registry);
+    const { method, start, words } = found;
+    const tok = tokens[i]!;
+    const firstArg = start + words;
+    if (i < firstArg) return methodHover(method, entry, registry);
     // Arguments follow the words one token each; a `t1` after a name belongs
     // to that name.
-    let argIndex = at - words;
-    let argTok = tok;
-    if (tok.kind === "ident" && tierToken(tok.text) && line[at - 1]?.kind === "string") {
-        argIndex -= 1;
-        argTok = line[at - 1]!;
-    }
-    const slot = slotAt(method, argIndex);
+    let at = i;
+    if (tok.kind === "ident" && tierToken(tok.text) && tokens[i - 1]?.kind === "string") at -= 1;
+    const argTok = tokens[at]!;
+    const slot = slotAt(method, at - firstArg);
     if (argTok.kind !== "string" || slot === undefined) return methodHover(method, entry, registry);
-    const tier = tierAfter(line, line.indexOf(argTok));
+    const tier = tierAfter(tokens, at);
     const of = slot.kind === "name" || slot.kind === "names" ? slot.of : undefined;
     switch (of) {
         case "essence":
             return essenceSignature(argTok.text, tier, entry, registry);
         case "bench":
             return benchSignature(argTok.text, tier, entry, registry);
-        case "fossil":
-            return fossilSignature(
-                line.filter((t) => t.kind === "string").map((t) => t.text),
-                registry,
-            );
+        case "fossil": {
+            const names: string[] = [];
+            for (let k = firstArg; tokens[k]?.kind === "string"; k++) names.push(tokens[k]!.text);
+            return fossilSignature(names, registry);
+        }
         case "tag":
             return `**"${argTok.text}"** — a modifier type the harvest crafts target.`;
         case "aspect": {
@@ -381,9 +369,8 @@ function signature(
     if (d) return defSignature(d);
 
     // A method statement: its words and arguments hover by the method table.
-    const { line, at } = lineOf(tokens, i);
-    const found = methodOfLine(line);
-    if (found) return operationSignature(line, at, found, entry, registry);
+    const found = methodAt(tokens.map(atomOf), i);
+    if (found) return operationSignature(tokens, i, found, entry, registry);
 
     if (tok.kind === "ident") {
         // A `t1` tier shorthand hovers exactly like the mod string it qualifies.

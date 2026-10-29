@@ -213,7 +213,11 @@ Transport-free service functions + a stdio server:
       tier. (Tier ids rarely match T-numbers: `IncreasedLife11` can be T1; ids count up
       with [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level), T-numbers down from
       best.)
-    - An operation statement hovers by the method table (`operationSignature`): its
+    - An operation statement hovers by the method table (`operationSignature`). Which
+      statement a token belongs to is `methodAt` (`method-at.ts`): statements have no
+      separator and sit inside one-line `if`/`until` bodies, so it walks back from the
+      token to the nearest words the table knows, stopping at punctuation and control or
+      predicate words, and accepts them only when their slots reach the token. Its
       words show the method's `doc` (a currency's description and what it requires; the
       veiled orbs and `unveil` append the unveil options), and a string argument shows
       the signature of what its slot names (essence, bench craft, fossil set, harvest
@@ -221,11 +225,12 @@ Transport-free service functions + a stdio server:
       as one shared signature (`defAt`).
 - `completion.ts`: `getCompletions`. The pieces of the current line before the cursor
   (`piecesOf`: words, numbers, closed strings, the open string) pick the context
-  (`contextAt`): statement (each method's first word + control keywords), predicate
-  (after `if`/`until`/`not`/`and`/`or`; includes local def names scraped by regex),
-  base, the second word of a method family (`methodsAfter`), a `word` slot's choices,
-  a `name` slot's catalog names (essences, bench crafts, fossils, Aspects, harvest
-  tags), or mod. Mod candidates are **filtered to what's possible at the cursor**:
+  (`contextAt`): statement (each method's first word + control keywords; also once
+  the method before the cursor has no slot left), predicate (after
+  `if`/`until`/`not`/`and`/`or`; includes local def names scraped by regex), base, the
+  second word of a method family (`methodsAfter`), a `word` slot's choices, a `name`
+  slot's catalog names (essences, bench crafts, fossils, Aspects, harvest tags), or
+  mod; the slot comes from the same `methodAt` hover uses. Mod candidates are **filtered to what's possible at the cursor**:
   rollable on the item's base+ilvl (`rollableTypes`, base read from the text) AND not
   proven-absent by the checker's state at that point (`excludedAt` parses the craft,
   retrying with the open string closed). Both filters degrade gracefully to "all mods"
@@ -604,6 +609,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/parser/src/vocabulary.ts`                                   | the surface vocabulary outside the method table (keywords, predicate words, item fields)           |
 | `packages/data/src/{load,adapter}.ts` + `scripts/ingest-poe1.mjs`     | data load + ingest                                                                                 |
 | `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts` | LSP features                                                                                       |
+| `packages/lsp/src/method-at.ts`                                       | `methodAt`: the method statement a token or cursor position belongs to                             |
 | `packages/core/src/check/check.test.ts`                               | checker tests (currency set, count-coupling regression, loops, defs)                               |
 | `packages/core/src/check/check-tiers.test.ts`                         | tier-pinned predicates and the tier overlay through the checker                                    |
 | `packages/core/src/check/counts.test.ts`                              | `CountDomain` in isolation (caps, coupling, refine)                                                |
