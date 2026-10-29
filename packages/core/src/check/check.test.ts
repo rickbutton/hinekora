@@ -240,6 +240,16 @@ describe("checker — bench crafts", () => {
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
 
+    it("is not blocked by a modifier of its group that is proven absent", () => {
+        // The annul may have removed the life, so it is only possible; a branch
+        // that proves it gone may bench it beside the remaining prefix.
+        const c = craft(rareRing(["T1 Life", "random"]), [
+            op("annul"),
+            iff(notp(has("maximum life")), [bench("maximum life")]),
+        ]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
+    });
+
     it("rejects a bench craft when its generation is full", () => {
         // Life is a prefix; a 3-prefix Rare has no open prefix.
         const c = craft(rareRing(["random", "random", "random"]), [bench("maximum life")]);

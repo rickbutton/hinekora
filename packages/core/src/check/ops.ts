@@ -419,7 +419,7 @@ function sharesFamilyWithPresent(a: AItem, mod: Mod, registry: Registry): boolea
         return max - named;
     };
     for (const type of a.possible) {
-        if (guaranteed.has(type) || !shares(type)) continue;
+        if (guaranteed.has(type) || isExcluded(a, type) || !shares(type)) continue;
         if (unidentifiedIn(genOf(a, registry, type)) > 0) return true;
     }
     return false;
