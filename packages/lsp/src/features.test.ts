@@ -258,14 +258,18 @@ describe("completion", () => {
 
     it("offers a word slot's choices, and a statement once a method's slots are spent", () => {
         const side = `item { base: "Iron Ring" ilvl: 84 rarity: rare }\nbeast add `;
-        expect(getCompletions(side, side.length, registry).map((c) => c.label)).toEqual([
-            "prefix",
-            "suffix",
-        ]);
-        const spent = `item { base: "Iron Ring" ilvl: 84 rarity: rare }\nexalt `;
-        const labels = getCompletions(spent, spent.length, registry).map((c) => c.label);
-        expect(labels).toContain("regal");
-        expect(labels).toContain("until");
+        expect(getCompletions(side, side.length, registry).map((c) => c.label)).toEqual(
+            expect.arrayContaining(["prefix", "suffix", "hunter"]),
+        );
+        // `exalt` is a method on its own and the first word of the influence
+        // orbs, so both its second words and the next statement are offered.
+        const family = `item { base: "Iron Ring" ilvl: 84 rarity: rare }\nexalt `;
+        const labels = getCompletions(family, family.length, registry).map((c) => c.label);
+        expect(labels).toEqual(expect.arrayContaining(["hunter", "regal", "until"]));
+        const spent = `item { base: "Iron Ring" ilvl: 84 rarity: rare }\nchaos `;
+        const after = getCompletions(spent, spent.length, registry).map((c) => c.label);
+        expect(after).toContain("regal");
+        expect(after).toContain("until");
     });
 
     it("finds the method inside a one-line body and after another statement", () => {

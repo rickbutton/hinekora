@@ -8,8 +8,9 @@ import { type Gen, type Rarity, TagId, type TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import type { EssenceSpec, FossilSpec } from "../model/sources.js";
 import type { CurrencyKind } from "../resolve/registry.js";
+import { type Influence, INFLUENCE_ORB, influenceKey } from "../model/marks.js";
 import type { Range } from "./astate.js";
-import type { Check, FillCount, Op, PoolSpec, Selector } from "./ops.js";
+import type { Check, FillCount, InfluenceChange, Op, PoolSpec, Selector } from "./ops.js";
 
 const require = (check: Check): Op => ({ kind: "require", check });
 const rarity = (rarity: Rarity | "survivors"): Op => ({ kind: "rarity", rarity });
@@ -19,11 +20,13 @@ const remove = (selector: Selector): Op => ({ kind: "remove", selector });
 const lock = (): Op => ({ kind: "lock" });
 
 const add = (n: Range): FillCount => ({ kind: "add", n });
-const reforge = (n: Range): FillCount => ({ kind: "reforge", n });
+const reforge = (n: Range | "byRarity"): FillCount => ({ kind: "reforge", n });
 const within: FillCount = { kind: "within" };
 const natural: PoolSpec = { kind: "natural" };
 const tagged = (tag: TagId): PoolSpec => ({ kind: "tagged", tag });
 const veiledPlaceholder: PoolSpec = { kind: "veiledPlaceholder" };
+const influencePool: PoolSpec = { kind: "influence" };
+const influence = (change: InfluenceChange): Op => ({ kind: "influence", change });
 
 /** A corrupted item takes no craft but the Tainted currency (Corrupted §
  *  Modifying corrupted items), so every other method opens with this. */
@@ -151,10 +154,84 @@ export function harvestAugmentOps(tag: TagId): readonly Op[] {
     return [
         notCorrupted,
         isRare,
+        // The grove offers each of these "from a non-Influenced item" only.
+        noInfluence("harvest augment craft"),
         removable(anyMod),
         remove(anyMod),
         require({ kind: "poolNonEmpty", pool: tagged(tag), tag }),
         fill(tagged(tag), add([1, 1])),
+    ];
+}
+
+/** Harvest "reforge an Influenced Rare item with random modifiers, including an
+ *  Influence modifier" (Harvest crafting): a rare reforge with one of the
+ *  influence's rows guaranteed. */
+export const HARVEST_INFLUENCE_REFORGE: readonly Op[] = [
+    notCorrupted,
+    isRare,
+    require({ kind: "influenced", what: "The grove's influence reforge" }),
+    strip(),
+    fill(natural, reforge(RARE_REFORGE)),
+    fill(influencePool, within),
+];
+
+/** Harvest "randomise the Influence types on an Influenced Normal, Magic or
+ *  Rare item, as well as reforging the item with new random modifiers": the
+ *  item keeps as many influences as it had, any of them, and is reforged at its
+ *  rarity (`QUESTIONS.md` Q27). */
+export const HARVEST_RANDOMISE: readonly Op[] = [
+    notCorrupted,
+    require({ kind: "influenced", what: "The grove's randomise craft" }),
+    strip(),
+    influence({ kind: "randomise" }),
+    fill(natural, reforge("byRarity")),
+];
+
+/** A conqueror's, Shaper's or Elder's Exalted Orb: an influence and one of its
+ *  modifiers onto a Rare item that has no influence or fracture (Hunter's
+ *  Exalted Orb § Mechanics, Influenced item § Mechanics). */
+export function influenceExaltOps(target: Influence): readonly Op[] {
+    return [
+        notCorrupted,
+        isRare,
+        noInfluence(INFLUENCE_ORB[target]),
+        require({ kind: "noFracture" }),
+        openSlot(),
+        influence({ kind: "set", key: influenceKey([target]) }),
+        fill(influencePool, add([1, 1])),
+    ];
+}
+
+/** An Awakener's Orb, the donor's influence given: the item, which has one
+ *  other influence, is reforged Rare with both, the metamods ignored
+ *  (Awakener's Orb § Mechanics). The influenced modifier the orb tries to keep
+ *  from each item is not guaranteed. */
+export function awakenerOps(donor: Influence): readonly Op[] {
+    return [
+        notCorrupted,
+        require({ kind: "awakenerTarget", donor }),
+        canBeRare,
+        { kind: "strip", ignoreProtection: true },
+        rarity("rare"),
+        influence({ kind: "add", influence: donor }),
+        fill(natural, reforge(RARE_REFORGE)),
+    ];
+}
+
+/** Beastcraft "add a mod to a <influence> item" (Beastcrafting): a modifier
+ *  into an open slot of a Rare item with that influence, drawn at the beast's
+ *  level, the influence's rows among them. */
+export function beastAddInfluenceOps(target: Influence, level: number): readonly Op[] {
+    return [
+        notCorrupted,
+        isRare,
+        require({
+            kind: "influenced",
+            what: "The Bestiary's add-a-modifier recipe",
+            influence: target,
+        }),
+        openSlot(),
+        fill({ kind: "natural", level }, add([1, 1])),
     ];
 }
 

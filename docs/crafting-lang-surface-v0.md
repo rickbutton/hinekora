@@ -126,7 +126,9 @@ page groups them:
 | `exalt`      | [Exalted Orb](https://www.poewiki.net/wiki/Exalted_Orb)                                | Rare with an open slot                                          |
 | `annul`      | [Orb of Annulment](https://www.poewiki.net/wiki/Orb_of_Annulment)                      | a removable modifier (Magic or Rare)                            |
 | `scour` | [Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) | Magic or Rare, with a side a metamod does not protect |
-| `fracture`   | [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)                | Rare, at least four modifiers, not already fractured            |
+| `fracture`   | [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)                | Rare, at least four modifiers, not already fractured, no influence |
+| `exalt <influence>` | the influence's [Exalted Orb](https://www.poewiki.net/wiki/Hunter%27s_Exalted_Orb#Mechanics) (`exalt hunter`) | Rare with an open slot, no influence, no fracture; the item gains the influence and one of its modifiers |
+| `awakener <influence>` | [Awakener's Orb](https://www.poewiki.net/wiki/Awakener%27s_Orb#Mechanics), the donor item's influence named | exactly one influence, not the donor's; the item is reforged Rare with both, metamods ignored |
 
 "Open slot" and "removable" are decided by the checker's knowledge of the item: a slot is
 open only if it is open on every path, a modifier is removable only if one is present on
@@ -162,7 +164,13 @@ Operations that take a name (and an optional `t<n>`):
   remove another random modifier". Tags: `attack`, `attribute`, `caster`, `chaos`, `cold`,
   `critical`, `defence` (or `defences`), `elemental`, `fire`, `life`, `lightning`, `mana`,
   `minion`, `physical`, `speed`. Both need a Rare item and a tag some modifier of the base can carry;
-  `augment` also needs a removable modifier.
+  `augment` also needs a removable modifier and an item with no influence, as the grove
+  offers it. `harvest reforge "influence"` is the grove's "Reforge an Influenced Rare
+  item with random modifiers, including an Influence modifier".
+- `harvest randomise` is the grove's "Randomise the Influence types on an Influenced
+  Normal, Magic or Rare Item, as well as reforging the item": the item keeps as many
+  influences as it had, any of the six, and is reforged at its rarity; `influenced
+  <name>` (§5) then narrows which it got (`QUESTIONS.md` Q27).
 - `harvest change "<mod>" "<mod>"` is the
   [Harvest craft](https://www.poewiki.net/wiki/Harvest_crafting) that changes a modifier
   "into a similar-tier modifier" of another element: a fire, cold or lightning
@@ -200,6 +208,9 @@ Operations that take a name (and an optional `t<n>`):
   item with an open slot on the added side and a modifier to remove, unless the other
   side is protected, when the recipe adds without removing
   ([Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions)).
+- `beast add <influence> [<level>]` (`beast add hunter`) is the recipe "Add a Mod to a
+  Hunter Item" and its five siblings: a modifier into an open slot of a Rare item with
+  that influence, drawn at the beast's level.
 - `beast fracture` is the recipe that fractures a modifier on a Rare
   [talisman](https://www.poewiki.net/wiki/Talisman) with at least four modifiers; like
   the Fracturing Orb it needs an item with no fracture yet. The two-modifier recipe is

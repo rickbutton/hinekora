@@ -213,13 +213,18 @@ describe("parser — operation statements, shaped by the method table", () => {
     it("rejects a second word no method of the family has", () => {
         expect(() => bodyOf("veiled scour")).toThrow(/'chaos', 'exalt'/);
         expect(() => bodyOf("foulborn chaos")).toThrow(/'augment', 'regal', 'exalt'/);
-        expect(() => bodyOf('harvest remove "cold"')).toThrow(/'reforge', 'augment', 'change'/);
+        expect(() => bodyOf('harvest remove "cold"')).toThrow(
+            /'reforge', 'randomise', 'augment', 'change'/,
+        );
     });
 
     it("parses a word slot and an optional number", () => {
         expect(opOf("beast add prefix")).toEqual({ words: "beast add", args: ["prefix"] });
         expect(opOf("beast add suffix 83")).toEqual({ words: "beast add", args: ["suffix", 83] });
-        expect(() => bodyOf("beast add tail")).toThrow(/'prefix' or 'suffix'/);
+        expect(opOf("beast add hunter")).toEqual({ words: "beast add", args: ["hunter"] });
+        expect(() => bodyOf("beast add tail")).toThrow(
+            /'prefix', 'suffix', 'shaper'.*or 'warlord'/,
+        );
     });
 
     it("parses two name slots, a list of names, and an optional name", () => {
@@ -241,10 +246,11 @@ describe("parser — operation statements, shaped by the method table", () => {
     it("names a missing argument in the guide's words, without a token at the end", () => {
         expect(() => bodyOf("bench")).toThrow(/a quoted bench craft after 'bench'$/);
         expect(() => bodyOf("harvest reforge 3")).toThrow(/a quoted modifier type/);
-        expect(() => bodyOf("beast add")).toThrow(/'prefix' or 'suffix' after 'beast add'$/);
-        expect(() => bodyOf("beast add 3")).toThrow(
-            /'prefix' or 'suffix' after 'beast add', not '3'/,
-        );
+        expect(() => bodyOf("beast add")).toThrow(/or 'warlord' after 'beast add'$/);
+        expect(() => bodyOf("beast add 3")).toThrow(/or 'warlord' after 'beast add', not '3'/);
+        expect(opOf("exalt hunter")).toEqual({ words: "exalt hunter", args: [] });
+        expect(opOf("exalt regal")).toEqual({ words: "exalt", args: [] });
+        expect(opOf("awakener elder")).toEqual({ words: "awakener", args: ["elder"] });
         expect(() => bodyOf("beast")).toThrow(/after 'beast' expected one of 'add'.*'imprint'$/);
         expect(opOf("unveil")).toEqual({ words: "unveil", args: [] });
         expect(opOf('unveil "double damage"')).toEqual({

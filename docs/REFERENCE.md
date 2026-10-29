@@ -416,8 +416,11 @@ file knows a method by name.
 
 Every crafting method is a sequence of primitive operations (`operations.md` §2), stated
 in `library.ts` and run by `runMethod(state, ops, registry)` in `ops.ts`, which returns
-`{ok, state}` or `{ok:false, failure}`. The operations are `require(check)`, `strip`,
-`fill(pool, count)`, `remove(selector)`, `rarity(r | survivors)` and `lock`; a method is
+`{ok, state}` or `{ok:false, failure}`. The operations are `require(check)`, `strip`
+(with `ignoreProtection` for the Awakener's Orb), `fill(pool, count)`,
+`remove(selector)`, `rarity(r | survivors)`, `lock`, `imprint`/`restore` and
+`influence(change)` (set the mark, add an influence to every possible set, or
+randomise to every set of the same size); a method is
 all or nothing, so a failed `require` anywhere leaves the state as it was. The metamods
 in force (`Rules`: protected sides, the cannot-roll shield, the crafted cap, whether an
 essence is blocked) are read once when the method is applied and govern every operation

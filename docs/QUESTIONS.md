@@ -208,6 +208,41 @@ for staves but not warstaves, and any one-handed-sword-only modifier on the rapi
 only its `warstaff_*` rows and a thrusting sword the `sword_*` rows.
 **Answer:**
 
+### Q27 · game probe · open
+
+**Asked:** 2026-10-29
+**Goal:** what the grove's "Randomise the Influence types on an Influenced Normal, Magic or
+Rare Item" can leave. The option text says only that the types are randomised; whether
+the item keeps as many influences as it had, whether the same influence can come back,
+and whether a two-influence item is rerolled to any pair are not stated
+([Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting)).
+**Procure:** a one-influence Rare and (via an Awakener's Orb) a two-influence Rare;
+primal lifeforce for several randomises each.
+**Steps:** randomise each several times; note the influences after each.
+**Record:** the influence sets seen, and whether the same set ever returned.
+**Assumed meanwhile:** the count is kept and any set of that size can result, the same
+one included (`check/library.ts` `HARVEST_RANDOMISE`, `check/ops.ts` the `randomise`
+change).
+**Answer:**
+
+### Q28 · game probe · open
+
+**Asked:** 2026-10-29
+**Goal:** what an Awakener's Orb needs of the target item and what it keeps.
+[Awakener's Orb § Mechanics](https://www.poewiki.net/wiki/Awakener%27s_Orb#Mechanics)
+says each item must have exactly one influence, that the target is reforged as a Rare
+ignoring metamods, and that the result "will attempt to retain one influenced modifier
+from each item if possible"; it does not say whether a Normal or Magic target is
+accepted, nor when the retention succeeds.
+**Procure:** a Magic one-influence item and a Rare one-influence donor of the same class;
+an Awakener's Orb.
+**Steps:** apply the orb to the Magic target; note whether it is accepted and which
+influenced modifiers the result carries.
+**Record:** accepted or not; the influenced modifiers kept from each item.
+**Assumed meanwhile:** any rarity is accepted, and no modifier is guaranteed kept
+(`check/library.ts` `awakenerOps`).
+**Answer:**
+
 ---
 
 ## Resolved

@@ -31,12 +31,9 @@ Orb of Chance is out of scope (Q15).
 
 ## Step 3. Marks
 
-The abstract item and the item block carry the influences and corruption, and influence
-widens the natural pool with the influence's rows
-([Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics)). What remains
-are the rows marked **later** for them: the conqueror Exalted Orbs, the Harvest influence
-reforges and randomise (the mark becomes a set of possible influence sets, which
-`influenced` narrows), the beast add-to-influenced recipe, Orb of Dominance; the Vaal Orb
+The abstract item and the item block carry the influences and corruption; the influence
+currencies and crafts are built. What remains are the rows marked **later** for the
+marks: the Orb of Dominance once the elevated modifiers are in the data; the Vaal Orb
 (an `either` over its outcomes), the Locus, the Tainted currency, the Bloodstained
 Fossil; the eldritch currency once the dominant implicit is a declarable mark.
 

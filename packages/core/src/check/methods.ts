@@ -6,6 +6,14 @@
  * an entry here on top of its sequence in `library.ts`.
  */
 import type { Gen, ModId, TypeId } from "../model/ids.js";
+import {
+    type Influence,
+    INFLUENCE_ORB,
+    influenceKey,
+    INFLUENCES,
+    influenceSetLabel,
+    isInfluence,
+} from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import { type FossilSpec, isCorruptedEssence } from "../model/sources.js";
 import { type Registry, STANDARD_CURRENCIES } from "../resolve/registry.js";
@@ -14,19 +22,24 @@ import type { AItem } from "./astate.js";
 import { resolveMessage } from "./diagnostics.js";
 import {
     ANY_BEAST_LEVEL,
+    awakenerOps,
     BEAST_FRACTURE,
     BEAST_IMPRINT,
     BEAST_METAMOD,
     BENCH_REMOVE,
+    beastAddInfluenceOps,
     beastAddOps,
     beastAspectOps,
     benchOps,
     currencyOps,
     essenceOps,
     foulbornOps,
+    HARVEST_INFLUENCE_REFORGE,
+    HARVEST_RANDOMISE,
     harvestAugmentOps,
     harvestChangeOps,
     harvestReforgeOps,
+    influenceExaltOps,
     resonatorOps,
     RESTORE,
     unveilOps,
@@ -187,6 +200,18 @@ const CURRENCIES: readonly Method[] = STANDARD_CURRENCIES.map((c) => ({
 
 export const METHODS: readonly Method[] = [
     ...CURRENCIES,
+    ...INFLUENCES.map((target): Method => ({
+        words: ["exalt", target],
+        args: [],
+        doc: `exalt ${target} — ${INFLUENCE_ORB[target]}: add ${influenceSetLabel(influenceKey([target]))} influence and one of its modifiers to a Rare item with no influence.`,
+        build: () => influenceExaltOps(target),
+    })),
+    {
+        words: ["awakener"],
+        args: [word(...INFLUENCES)],
+        doc: "awakener <influence> — Awakener's Orb, the donor item's influence given: reforge the item Rare with both influences.",
+        build: ([donor]) => awakenerOps(text(donor) as Influence),
+    },
     {
         words: ["essence"],
         args: [name("essence"), { kind: "tier", optional: true }],
@@ -216,11 +241,18 @@ export const METHODS: readonly Method[] = [
     {
         words: ["harvest", "reforge"],
         args: [name("tag")],
-        doc: 'harvest reforge "<tag>" — reforge a Rare item with a modifier of that type guaranteed.',
+        doc: 'harvest reforge "<tag>" — reforge a Rare item with a modifier of that type guaranteed; "influence" guarantees one of the item\'s influence modifiers.',
         build: ([t], _a, registry) => {
+            if (text(t).trim().toLowerCase() === "influence") return HARVEST_INFLUENCE_REFORGE;
             const tag = registry.resolveHarvestTag(text(t));
             return tag.ok ? harvestReforgeOps(tag.value) : refuse(resolveMessage(tag.error));
         },
+    },
+    {
+        words: ["harvest", "randomise"],
+        args: [],
+        doc: "harvest randomise — reroll which influences an influenced item has, keeping how many, and reforge it at its rarity.",
+        build: () => HARVEST_RANDOMISE,
     },
     {
         words: ["harvest", "augment"],
@@ -283,9 +315,15 @@ export const METHODS: readonly Method[] = [
     },
     {
         words: ["beast", "add"],
-        args: [word("prefix", "suffix"), { kind: "int", optional: true }],
-        doc: "beast add prefix|suffix [<level>] — add a modifier of that side, drawn at the beast's level, and remove a random one of the other.",
-        build: ([side, level]) => beastAddOps(text(side) as Gen, num(level) ?? ANY_BEAST_LEVEL),
+        args: [word("prefix", "suffix", ...INFLUENCES), { kind: "int", optional: true }],
+        doc: "beast add prefix|suffix [<level>] — add a modifier of that side, drawn at the beast's level, and remove a random one of the other; beast add <influence> [<level>] — add a modifier to a Rare item with that influence.",
+        build: ([side, level]) => {
+            const what = text(side);
+            const beastLevel = num(level) ?? ANY_BEAST_LEVEL;
+            return isInfluence(what)
+                ? beastAddInfluenceOps(what, beastLevel)
+                : beastAddOps(what as Gen, beastLevel);
+        },
     },
     {
         words: ["beast", "fracture"],

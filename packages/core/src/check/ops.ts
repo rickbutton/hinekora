@@ -18,7 +18,14 @@ import {
     type TypeId,
 } from "../model/ids.js";
 import type { ItemFacts } from "../model/item.js";
-import { influencesOf, NO_INFLUENCE } from "../model/marks.js";
+import {
+    type Influence,
+    type InfluenceKey,
+    influenceKey,
+    influenceSetsOfSize,
+    influencesOf,
+    NO_INFLUENCE,
+} from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import type { EssenceSpec, FossilSpec } from "../model/sources.js";
 import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
@@ -85,7 +92,10 @@ export type PoolSpec =
     | { readonly kind: "rows"; readonly mods: readonly Mod[] }
     /** One of the metamods not yet on the item whose side may have a slot (the
      *  Bestiary's random metamod); crafted. */
-    | { readonly kind: "metamods" };
+    | { readonly kind: "metamods" }
+    /** The rows the item's influences admit and nothing else would: what an
+     *  influence orb or the grove's influence reforge guarantees one of. */
+    | { readonly kind: "influence" };
 
 /** How many modifiers a `fill` lays down. */
 export type FillCount =
@@ -93,8 +103,10 @@ export type FillCount =
     | { readonly kind: "add"; readonly n: Range }
     /** A reforge: the total lands in `n` when no side was kept; with a kept side
      *  the rerolled side takes any number up to its cap and open kept-side slots
-     *  may fill (Metamod § Rules and Exceptions: "0 to 3 suffixes"). */
-    | { readonly kind: "reforge"; readonly n: Range }
+     *  may fill (Metamod § Rules and Exceptions: "0 to 3 suffixes"). `n` may be
+     *  left to the item's rarity: none on Normal, one or two on Magic, four to
+     *  six on Rare, the loosest over the rarities the item may have. */
+    | { readonly kind: "reforge"; readonly n: Range | "byRarity" }
     /** One of the modifiers already counted: an essence's grant, a harvest
      *  reforge's tagged modifier, a veiled chaos's placeholder, an unveil. */
     | { readonly kind: "within" };
@@ -129,6 +141,11 @@ export type Check =
     | { readonly kind: "notCorrupted" }
     /** The item has no influence on any path (a fracture, an influence orb). */
     | { readonly kind: "noInfluence"; readonly what: string }
+    /** The item is influenced on every path, with that influence when one is named. */
+    | { readonly kind: "influenced"; readonly what: string; readonly influence?: Influence }
+    /** The item has exactly one influence, other than the donor's, on every path
+     *  (Awakener's Orb § Mechanics). */
+    | { readonly kind: "awakenerTarget"; readonly donor: Influence }
     | { readonly kind: "veiledPresent" }
     /** No veiled or unveiled modifier at all (the Veiled Exalted Orb). */
     | { readonly kind: "noVeiled" }
@@ -161,8 +178,12 @@ export type Check =
 
 export type Op =
     | { readonly kind: "require"; readonly check: Check }
-    /** Every modifier goes but the protected sides' and the fractured one. */
-    | { readonly kind: "strip" }
+    /** Every modifier goes but the protected sides' and the fractured one; with
+     *  `ignoreProtection`, the protected sides' too (the Awakener's Orb). */
+    | { readonly kind: "strip"; readonly ignoreProtection?: true }
+    /** Change the influence mark: to one set, by adding an influence to every
+     *  possible set, or to every set of the same size (the grove's randomise). */
+    | { readonly kind: "influence"; readonly change: InfluenceChange }
     | { readonly kind: "fill"; readonly pool: PoolSpec; readonly count: FillCount }
     | { readonly kind: "remove"; readonly selector: Selector }
     /** `survivors`: the rarity a scour leaves, by how many modifiers remain. */
@@ -173,6 +194,11 @@ export type Op =
     | { readonly kind: "imprint" }
     /** Replace the item with the held imprint, consuming it. */
     | { readonly kind: "restore" };
+
+export type InfluenceChange =
+    | { readonly kind: "set"; readonly key: InfluenceKey }
+    | { readonly kind: "add"; readonly influence: Influence }
+    | { readonly kind: "randomise" };
 
 /** Why an operation's precondition fails on the current state. */
 export type PreconditionFailure =
@@ -215,6 +241,13 @@ export type PreconditionFailure =
     | { readonly kind: "alreadyFractured" }
     | { readonly kind: "corrupted"; readonly sure: boolean }
     | { readonly kind: "influenced"; readonly what: string; readonly sure: boolean }
+    | {
+          readonly kind: "notInfluenced";
+          readonly what: string;
+          readonly influence?: Influence;
+          readonly sure: boolean;
+      }
+    | { readonly kind: "awakenerTarget"; readonly donor: Influence; readonly sure: boolean }
     | { readonly kind: "noVeiledMod" }
     | { readonly kind: "alreadyVeiled" }
     | { readonly kind: "veiledWouldSurvive" }
@@ -253,7 +286,31 @@ function apply(
 ): AItem {
     switch (op.kind) {
         case "strip":
-            return strip(a, rules, registry);
+            return strip(
+                a,
+                op.ignoreProtection ? { ...rules, protected: new Set() } : rules,
+                registry,
+            );
+        case "influence": {
+            const change = op.change;
+            const influences = new Set<InfluenceKey>();
+            for (const key of a.influences) {
+                switch (change.kind) {
+                    case "set":
+                        influences.add(change.key);
+                        break;
+                    case "add":
+                        influences.add(influenceKey([...influencesOf(key), change.influence]));
+                        break;
+                    case "randomise":
+                        for (const k of influenceSetsOfSize(influencesOf(key).length)) {
+                            influences.add(k);
+                        }
+                        break;
+                }
+            }
+            return { ...a, influences };
+        }
         case "fill":
             return fill(a, op.pool, op.count, rules, registry);
         case "remove":
@@ -438,6 +495,28 @@ function failing(
             return a.influences.has(NO_INFLUENCE) && a.influences.size === 1
                 ? null
                 : { kind: "influenced", what: check.what, sure: !a.influences.has(NO_INFLUENCE) };
+        case "influenced": {
+            const wanted = check.influence;
+            const holds = (key: InfluenceKey): boolean =>
+                wanted === undefined ? key !== NO_INFLUENCE : influencesOf(key).includes(wanted);
+            const keys = [...a.influences];
+            if (keys.every(holds)) return null;
+            return {
+                kind: "notInfluenced",
+                what: check.what,
+                ...(wanted !== undefined && { influence: wanted }),
+                sure: !keys.some(holds),
+            };
+        }
+        case "awakenerTarget": {
+            const fits = (key: InfluenceKey): boolean => {
+                const set = influencesOf(key);
+                return set.length === 1 && set[0] !== check.donor;
+            };
+            const keys = [...a.influences];
+            if (keys.every(fits)) return null;
+            return { kind: "awakenerTarget", donor: check.donor, sure: !keys.some(fits) };
+        }
         case "veiledPresent":
             return hasVeiledPlaceholder(a) ? null : { kind: "noVeiledMod" };
         case "noVeiled":
@@ -856,6 +935,15 @@ function resolvePool(a: AItem, spec: PoolSpec, registry: Registry): ResolvedPool
             return oneOf(spec.mods);
         case "metamods":
             return oneOf(metamodRows(a, registry));
+        case "influence": {
+            // A row no tag of the item's own admits: only an influence tag does.
+            const facts = guaranteedFacts(a, registry);
+            const sure = influenceTagsOf(a, registry).sure;
+            const own = new Set([...facts.tags].filter((t) => !sure.has(t)));
+            const mods = addableMods(a, registry).filter((m) => (lookupWeight(m, own) ?? 0) <= 0);
+            const types = typesOf(mods);
+            return { mods, types, assert: types, gen: undefined };
+        }
         case "unveil": {
             // Blocking is folded in: an unveiled mod whose family a guaranteed
             // present one claims is not offered.
@@ -993,8 +1081,9 @@ function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry
             break;
         }
         case "reforge": {
+            const n = count.n === "byRarity" ? reforgeCountByRarity(a) : count.n;
             if (rules.protected.size === 0) {
-                const total: Range = [Math.min(count.n[0], maxT), Math.min(count.n[1], maxT)];
+                const total: Range = [Math.min(n[0], maxT), Math.min(n[1], maxT)];
                 counts = {
                     total,
                     prefix: [Math.max(0, total[0] - sCap), Math.min(pCap, total[1])],
@@ -1042,6 +1131,15 @@ function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry
         crafted = [a.crafted[0] + count.n[0], a.crafted[1] + count.n[1]];
     }
     return settled({ ...a, counts, presence, possible, tiers, crafted });
+}
+
+/** How many modifiers a reforge at the item's own rarity lays down, the loosest
+ *  range over the rarities it may have (Orb of Transmutation § Spending, Chaos
+ *  Orb § Mechanics). */
+function reforgeCountByRarity(a: AItem): Range {
+    const byRarity: Record<Rarity, Range> = { normal: [0, 0], magic: [1, 2], rare: [4, 6] };
+    const ranges = [...a.rarities].map((r) => byRarity[r]);
+    return [Math.min(...ranges.map((r) => r[0])), Math.max(...ranges.map((r) => r[1]))];
 }
 
 // --- remove ---------------------------------------------------------------------

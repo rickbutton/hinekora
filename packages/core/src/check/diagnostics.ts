@@ -6,7 +6,7 @@
 import type { Pred } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import type { Rarity } from "../model/ids.js";
-import { influenceLabel, NO_INFLUENCE } from "../model/marks.js";
+import { influenceKey, influenceLabel, influenceSetLabel, NO_INFLUENCE } from "../model/marks.js";
 import type { ResolveError } from "../resolve/registry.js";
 import { baseLabel } from "../render/render.js";
 import { type AItem, type Range, suffixRange } from "./astate.js";
@@ -190,6 +190,10 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return `The item ${failure.sure ? "is" : "may be"} corrupted — a corrupted item takes no further craft, only the Tainted currency.`;
             case "influenced":
                 return `A ${failure.what} cannot be used on an influenced item — this item ${failure.sure ? "has" : "may have"} ${influenceLabel(state.influences)}.`;
+            case "notInfluenced":
+                return `${failure.what} needs ${failure.influence === undefined ? "an influenced" : `a ${influenceSetLabel(influenceKey([failure.influence]))}`} item — this item ${failure.sure ? "has" : "may have"} ${influenceLabel(state.influences)}.`;
+            case "awakenerTarget":
+                return `An Awakener's Orb needs an item with exactly one influence other than the donor's ${influenceSetLabel(influenceKey([failure.donor]))} — this item ${failure.sure ? "has" : "may have"} ${influenceLabel(state.influences)}.`;
             case "noVeiledMod":
                 return "There is no veiled modifier on the item to unveil.";
             case "alreadyVeiled":

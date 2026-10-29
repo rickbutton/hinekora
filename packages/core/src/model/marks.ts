@@ -59,6 +59,16 @@ export function isInfluence(word: string): word is Influence {
     return (INFLUENCES as readonly string[]).includes(word);
 }
 
+/** The orb that adds each influence (List of influence adding items). */
+export const INFLUENCE_ORB: Readonly<Record<Influence, string>> = {
+    shaper: "Shaper's Exalted Orb",
+    elder: "Elder's Exalted Orb",
+    crusader: "Crusader's Exalted Orb",
+    hunter: "Hunter's Exalted Orb",
+    redeemer: "Redeemer's Exalted Orb",
+    warlord: "Warlord's Exalted Orb",
+};
+
 declare const keyBrand: unique symbol;
 /**
  * One set of influences as a canonical key: the names in the game's order
@@ -78,6 +88,20 @@ export const NO_INFLUENCE: InfluenceKey = influenceKey([]);
 
 export function influencesOf(key: InfluenceKey): Influence[] {
     return key === NO_INFLUENCE ? [] : (key.split("+") as Influence[]);
+}
+
+/** Every influence set of `n` influences: what a randomise can leave an item
+ *  that had `n` (six singletons, fifteen pairs). */
+export function influenceSetsOfSize(n: number): InfluenceKey[] {
+    if (n === 0) return [NO_INFLUENCE];
+    if (n === 1) return INFLUENCES.map((i) => influenceKey([i]));
+    const out: InfluenceKey[] = [];
+    for (let i = 0; i < INFLUENCES.length; i++) {
+        for (let j = i + 1; j < INFLUENCES.length; j++) {
+            out.push(influenceKey([INFLUENCES[i]!, INFLUENCES[j]!]));
+        }
+    }
+    return out;
 }
 
 /** The influence tag an influence adds to a base: its class's stem with the

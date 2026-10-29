@@ -10,6 +10,7 @@ import {
     type Base,
     check,
     excludedTypes,
+    findMethod,
     isInfluence,
     METHODS,
     methodsAfter,
@@ -79,7 +80,9 @@ type Context =
     | { readonly kind: "base" }
     | { readonly kind: "mod" }
     | { readonly kind: "nothing" }
-    | { readonly kind: "secondWord"; readonly first: string }
+    /** After a family's first word: its second words, and the next statement
+     *  too when the first word is a method on its own (`exalt`, `bench`). */
+    | { readonly kind: "secondWord"; readonly first: string; readonly alone: boolean }
     | { readonly kind: "name"; readonly of: NameKind }
     | { readonly kind: "word"; readonly oneOf: readonly string[] };
 
@@ -115,7 +118,11 @@ function contextAt(source: string, offset: number): Context {
     const last = done[done.length - 1]!;
     if (last.kind === "word" && PREDICATE_INTRODUCERS.has(last.text)) return { kind: "predicate" };
     if (last.kind === "word" && methodsAfter([last.text]).length > 0) {
-        return { kind: "secondWord", first: last.text };
+        return {
+            kind: "secondWord",
+            first: last.text,
+            alone: findMethod([last.text]) !== undefined,
+        };
     }
     const found = methodAt(done.map(atomOf), done.length);
     if (found) {
@@ -229,7 +236,10 @@ export function getCompletions(
         case "base":
             return registry.baseNames.map(value);
         case "secondWord":
-            return methodsAfter([ctx.first]).map((m) => keyword(m.words[1]!, m.doc));
+            return [
+                ...methodsAfter([ctx.first]).map((m) => keyword(m.words[1]!, m.doc)),
+                ...(ctx.alone ? statementItems() : []),
+            ];
         case "word":
             return ctx.oneOf.map((w) => keyword(w));
         case "name":
