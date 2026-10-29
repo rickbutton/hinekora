@@ -127,6 +127,11 @@ describe("a resonator", () => {
         expect(r.finalState!.possible.has(LIFE)).toBe(false);
     });
 
+    it("reports a fossil row the catalog lacks instead of dropping it", () => {
+        const r = check(craft(rareRing(), [fossil("stale")]), ctx);
+        expect(r.diagnostics[0]!.message).toContain('no modifier "NoSuchRow1"');
+    });
+
     it("refuses a fossil that corrupts the item", () => {
         const r = check(craft(rareRing(), [fossil("bloodstained")]), ctx);
         expect(r.diagnostics[0]!.message).toContain("corrupts the item");

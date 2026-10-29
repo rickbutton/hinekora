@@ -688,6 +688,10 @@ const fossilSpec = (id: string, name: string, over: Partial<FossilSpec>): Fossil
 export const FOSSIL_BLOODSTAINED = fossilSpec("FossilBloodstained", "Bloodstained Fossil", {
     corrupts: true,
 });
+/** A fossil whose forced row the catalog lacks, as a stale data file would. */
+export const FOSSIL_STALE = fossilSpec("FossilStale", "Stale Fossil", {
+    forcedMods: [ModId("NoSuchRow1")],
+});
 export const FOSSIL_NO_LIFE = fossilSpec("FossilDense", "Dense Fossil", {
     blockedTags: new Set([TagId("life")]),
 });
@@ -724,6 +728,7 @@ export const FOSSILS: readonly FossilSpec[] = [
     FOSSIL_FRACTURED,
     FOSSIL_AMULET_ONLY,
     FOSSIL_BLOODSTAINED,
+    FOSSIL_STALE,
 ];
 
 /** The Bestiary's Aspect rows: suffixes of one group, so an item holds one. Not in `CATALOG`. */
