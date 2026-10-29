@@ -36,23 +36,6 @@ Rare with one modifier of each side; note whether the result keeps the side.
 change, metamods respected), as `operations.md` §3.2 states; not built until answered.
 **Answer:**
 
-### Q13 · game probe · open
-
-**Asked:** 2026-10-26
-**Goal:** whether a reforge's later rolls see the tags its earlier rolls added. The data
-has rows that only roll once another row's added tag is on the item (the staff jewel
-modifiers on a Strength jewel carry `staff: 500` ahead of `not_int: 0`), and rows a tag
-disables (`specific_weapon`); whether one Chaos Orb can produce both the adder and the
-enabled row is not stated on the wiki.
-**Procure:** a Strength (Crimson) Jewel, Chaos Orbs or Orbs of Alteration.
-**Steps:** reforge repeatedly; note whether a jewel ever shows two staff modifiers, or a
-staff modifier together with a modifier the `not_int` tag would otherwise block.
-**Record:** any such pair, or none after many tries.
-**Assumed meanwhile:** yes, the stricter reading for the checker: the add-pool admits
-every row an admitted row's tag would enable, to a fixpoint (`check/ops.ts`
-`addableMods`, `pool/pool.ts` `lookupWeight`).
-**Answer:**
-
 ### Q10 · clarification · open
 
 **Asked:** 2026-10-26
@@ -251,3 +234,23 @@ Chaos Orb.
 veiled or unveiled modifier would survive the reforge, that is, under a "cannot be
 changed" lock on its side (veiled or unveiled alike). Applied as the `noVeiledKept` check
 in `check/ops.ts`; the Veiled Exalted Orb keeps the stricter check.
+
+### Q13 · game probe · resolved
+
+**Asked:** 2026-10-26
+**Goal:** whether a reforge's later rolls see the tags its earlier rolls added. The data
+has rows that only roll once another row's added tag is on the item (the staff jewel
+modifiers on a Strength jewel carry `staff: 500` ahead of `not_int: 0`), and rows a tag
+disables (`specific_weapon`); whether one Chaos Orb can produce both the adder and the
+enabled row is not stated on the wiki.
+**Procure:** a Strength (Crimson) Jewel, Chaos Orbs or Orbs of Alteration.
+**Steps:** reforge repeatedly; note whether a jewel ever shows two staff modifiers, or a
+staff modifier together with a modifier the `not_int` tag would otherwise block.
+**Record:** any such pair, or none after many tries.
+**Assumed meanwhile:** yes, the stricter reading for the checker: the add-pool admits
+every row an admitted row's tag would enable, to a fixpoint (`check/ops.ts`
+`addableMods`, `pool/pool.ts` `lookupWeight`).
+**Answer:** Rick knows this (2026-10-28): one Chaos Orb can roll both the adder and the
+enabled row, so a reforge's later rolls see the tags its earlier rolls added. The
+assumption stands as the rule; the fixpoint in `check/ops.ts` `addableMods` is exact
+rather than an over-approximation.
