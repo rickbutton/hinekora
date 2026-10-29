@@ -154,6 +154,11 @@ Operations that take a name (and an optional `t<n>`):
   [Veiled Chaos Orb](https://www.poewiki.net/wiki/Veiled_Chaos_Orb) and
   [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb); both need a Rare
   item, `veiled exalt` also a removable modifier.
+- `foulborn augment`, `foulborn regal` and `foulborn exalt` are the
+  [Foulborn](https://www.poewiki.net/wiki/Foulborn_currency) Orb of Augmentation, Regal
+  Orb and Exalted Orb: the plain orb with the same needs, but of each modifier's eligible
+  tiers only the top half can roll
+  ([Foulborn currency § Mechanics](https://www.poewiki.net/wiki/Foulborn_currency#Mechanics)).
 - `unveil ["<mod>"]` is the three-option unveil of a
   [veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) and needs a veiled
   modifier on the item. Bare, the result is one of the valid options

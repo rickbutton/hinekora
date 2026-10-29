@@ -173,6 +173,13 @@ describe("parser — veiled orbs and unveil", () => {
         expect(() => bodyOf("veiled scour")).toThrow(/chaos.*exalt/);
     });
 
+    it("parses foulborn augment / regal / exalt and rejects any other orb", () => {
+        expect(bodyOf("foulborn augment")).toMatchObject({ kind: "foulborn", verb: "augment" });
+        expect(bodyOf("foulborn regal")).toMatchObject({ kind: "foulborn", verb: "regal" });
+        expect(bodyOf("foulborn exalt")).toMatchObject({ kind: "foulborn", verb: "exalt" });
+        expect(() => bodyOf("foulborn chaos")).toThrow(/augment.*regal.*exalt/);
+    });
+
     it("parses unveil, bare and targeted", () => {
         expect(bodyOf("unveil")).toMatchObject({ kind: "unveil" });
         expect("mod" in bodyOf("unveil")).toBe(false);

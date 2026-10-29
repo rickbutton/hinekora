@@ -204,10 +204,10 @@ Transport-free service functions + a stdio server:
       one shared signature (`namedAt` / `defAt`).
 - `completion.ts`: `getCompletions`. A backward text-scan (`contextAt`) picks the
   context: statement (currencies + control keywords + the sourced keywords `essence`,
-  `bench`, `harvest`, `veiled`, `unveil`), predicate (after
+  `bench`, `harvest`, `veiled`, `unveil`, `foulborn`), predicate (after
   `if`/`until`/`not`/`and`/`or`; includes local def names scraped by regex), base,
   essence, bench, harvest verb (after `harvest`), harvest tag (after `reforge`/`augment`),
-  veiled verb (after `veiled`), or mod. Mod candidates are **filtered to what's possible
+  veiled verb (after `veiled`), foulborn verb (after `foulborn`), or mod. Mod candidates are **filtered to what's possible
   at the cursor**: rollable on the item's base+ilvl (`rollableTypes`, base read from the text)
   AND not proven-absent by the checker's state at that point (`excludedAt` parses the
   craft, retrying with the open string closed). Both filters degrade gracefully to "all
@@ -380,7 +380,11 @@ in it. Notes:
   the tier overlay (a one-row pool pins the tier); exclusions on its types are relaxed
   (`admitAdd`); a pool narrow enough to name asserts "at least one of its types is
   present" as one OR clause in the presence BDD (never an enumerated union), the natural
-  pool asserts nothing.
+  pool asserts nothing. A natural pool with `topTiers` is the Foulborn cull
+  (`foulbornTiers`): of each type's eligible tiers only the top half rolls
+  ([Foulborn currency § Mechanics](https://www.poewiki.net/wiki/Foulborn_currency#Mechanics));
+  rows a possibly present modifier's tag enables make the eligible count uncertain, so
+  the cull keeps every row some count in that range would keep.
 - A `remove` draws from an **allowed-gens** set = `both − protected`. A guarantee whose
   generation is not in that set survives (protected), as does one the cannot-roll shield
   covers and a fractured one; an empty set means nothing is removable.

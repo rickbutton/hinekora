@@ -21,6 +21,7 @@ export const KEYWORDS = [
     "harvest",
     "veiled",
     "unveil",
+    "foulborn",
 ] as const;
 
 /** Predicate connectives and the predicate symbols. */
@@ -41,8 +42,11 @@ export const GAME = "poe1";
 /** The second word of `harvest <verb>` and `veiled <verb>`. */
 export const HARVEST_VERBS: readonly HarvestVerb[] = ["reforge", "augment"];
 export const VEILED_VERBS: readonly VeiledVerb[] = ["chaos", "exalt"];
+/** The second word of `foulborn <verb>`: the plain orb it mirrors. */
+export const FOULBORN_VERBS: readonly FoulbornVerb[] = ["augment", "regal", "exalt"];
 export type HarvestVerb = "reforge" | "augment";
 export type VeiledVerb = "chaos" | "exalt";
+export type FoulbornVerb = "augment" | "regal" | "exalt";
 
 /** Every word above, for the docs check and the grammar. */
 export const VOCABULARY: readonly string[] = [
@@ -55,4 +59,5 @@ export const VOCABULARY: readonly string[] = [
     GAME,
     ...HARVEST_VERBS,
     ...VEILED_VERBS,
+    ...FOULBORN_VERBS,
 ];

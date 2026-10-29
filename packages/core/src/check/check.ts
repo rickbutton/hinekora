@@ -46,6 +46,7 @@ import {
     benchOps,
     currencyOps,
     essenceOps,
+    foulbornOps,
     harvestAugmentOps,
     harvestReforgeOps,
     unveilOps,
@@ -427,6 +428,8 @@ class Checker {
                 return this.checkHarvest(a, stmt);
             case "veiled":
                 return this.checkVeiled(a, stmt);
+            case "foulborn":
+                return this.checkFoulborn(a, stmt);
             case "unveil":
                 return this.checkUnveil(a, stmt);
             case "restart": {
@@ -511,6 +514,15 @@ class Checker {
             stmt.verb === "chaos" ? VEILED_CHAOS : VEILED_EXALT,
             this.registry,
         );
+        if (!result.ok) {
+            this.diag(preconditionMessage(a, result.failure), stmt.span);
+            return { kind: "fall", state: a };
+        }
+        return { kind: "fall", state: result.state };
+    }
+
+    private checkFoulborn(a: AItem, stmt: Extract<Stmt, { kind: "foulborn" }>): Flow {
+        const result = runMethod(a, foulbornOps(stmt.verb), this.registry);
         if (!result.ok) {
             this.diag(preconditionMessage(a, result.failure), stmt.span);
             return { kind: "fall", state: a };
@@ -1071,6 +1083,7 @@ function noteStmtUses(u: ParamUses, s: Stmt): void {
             if (typeof s.tag === "object") noteSort(u, s.tag, "mod");
             return;
         case "veiled":
+        case "foulborn":
             return;
         case "unveil":
             if (s.mod !== undefined && typeof s.mod === "object") noteSort(u, s.mod, "mod");
@@ -1185,6 +1198,7 @@ function substituteStmt(stmt: Stmt, env: Map<string, Arg>): Stmt {
         case "harvest":
             return { ...stmt, tag: subValue(stmt.tag, env) };
         case "veiled":
+        case "foulborn":
             return stmt;
         case "unveil":
             return stmt.mod === undefined ? stmt : { ...stmt, mod: subValue(stmt.mod, env) };

@@ -50,6 +50,8 @@ const KEYWORD_DOC: Record<string, string> = {
     if: "`if <pred> { … } else { … }` — branch on the item's state at this point. A branch that can never run is flagged.",
     else: "The alternative branch of an `if`.",
     restart: "`restart` — abandon this attempt and re-run the enclosing loop from the top.",
+    foulborn:
+        "`foulborn augment | regal | exalt` — the plain orb, but only the top half of each modifier's tiers can roll.",
     has: '`has "<mod>" [t1]` — true when the item is guaranteed to carry that mod (optionally at that tier; `t1` = best).',
     not: "`not <pred>` — logical negation of a predicate.",
     craft: "`craft in <game>` — the file header declaring which game's data this craft targets.",

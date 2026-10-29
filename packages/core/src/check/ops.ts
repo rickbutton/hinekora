@@ -41,8 +41,9 @@ import { CountDomain } from "./counts.js";
 
 /** A pool: which rows a `fill` draws from, resolved against the state it runs on. */
 export type PoolSpec =
-    /** The natural pool of the base at the item's level, optionally capped lower. */
-    | { readonly kind: "natural"; readonly maxLevel?: number }
+    /** The natural pool of the base at the item's level, optionally capped lower;
+     *  `topTiers` keeps only the top half of each type's eligible tiers (Foulborn). */
+    | { readonly kind: "natural"; readonly maxLevel?: number; readonly topTiers?: true }
     /** The natural pool's rows carrying a category tag (harvest). */
     | { readonly kind: "tagged"; readonly tag: TagId }
     /** The row a bench craft places; it counts as a crafted modifier. */
@@ -605,7 +606,8 @@ function resolvePool(a: AItem, spec: PoolSpec, registry: Registry): ResolvedPool
     switch (spec.kind) {
         case "natural": {
             const cap = spec.maxLevel ?? Infinity;
-            const mods = addableMods(a, registry).filter((m) => m.minLevel <= cap);
+            const eligible = addableMods(a, registry).filter((m) => m.minLevel <= cap);
+            const mods = spec.topTiers ? foulbornTiers(eligible, a, registry) : eligible;
             return { mods, types: typesOf(mods), assert: [], gen: undefined };
         }
         case "tagged": {
@@ -649,6 +651,41 @@ function resolvePool(a: AItem, spec: PoolSpec, registry: Registry): ResolvedPool
             };
         }
     }
+}
+
+/** How many of a type's `n` eligible tiers a Foulborn orb lets roll, the top ones
+ *  (Foulborn currency § Mechanics). */
+function foulbornKept(n: number): number {
+    return n <= 6 ? Math.ceil(n / 2) : Math.floor(n / 2) + 1;
+}
+
+/**
+ * The Foulborn cull of an add-pool. The pool may hold rows that only a possibly
+ * present modifier's tag enables, so a type's eligible count is known only to
+ * lie between the count without those rows and with them; a row stays when
+ * some count in that range would keep it, which is when its rank by level
+ * among all the rows is within the sure count's allowance plus the number of
+ * uncertain rows (each of which may rank above it).
+ */
+function foulbornTiers(mods: readonly Mod[], a: AItem, registry: Registry): Mod[] {
+    const sure = new Set<ModId>();
+    for (const c of pool(registry.catalog, guaranteedFacts(a, registry))) sure.add(c.mod.id);
+    const byType = new Map<TypeId, Mod[]>();
+    for (const m of mods) {
+        const rows = byType.get(m.type);
+        if (rows) rows.push(m);
+        else byType.set(m.type, [m]);
+    }
+    const out: Mod[] = [];
+    for (const rows of byType.values()) {
+        const sureCount = rows.filter((m) => sure.has(m.id)).length;
+        const allowance = foulbornKept(sureCount) + (rows.length - sureCount);
+        for (const m of rows) {
+            const rank = 1 + rows.filter((r) => r.minLevel > m.minLevel).length;
+            if (rank <= allowance) out.push(m);
+        }
+    }
+    return out;
 }
 
 function typesOf(mods: readonly Mod[]): TypeId[] {

@@ -571,6 +571,30 @@ export const STAFFY_ENABLED: Mod = mkMod({
 
 /** A fourth plain ring suffix, outside `CATALOG`, for tests that need a
  *  suffix left to roll once the three resistances are on. */
+/**
+ * A type with a row that always rolls and a higher row only `TAG_STAFFY` enables,
+ * for the Foulborn cull: whether the adder is on the item decides how many tiers
+ * the type has. Not in `CATALOG`.
+ */
+export const STAFFY_TIER_SURE: Mod = mkMod({
+    id: "StaffyTierSure1",
+    type: "StaffyTier",
+    gen: "suffix",
+    minLevel: 1,
+    families: ["StaffyTier"],
+    spawn: [spawn(TAG_DEFAULT, 500)],
+    text: "staffy tier",
+});
+export const STAFFY_TIER_HIGH: Mod = mkMod({
+    id: "StaffyTierHigh1",
+    type: "StaffyTier",
+    gen: "suffix",
+    minLevel: 50,
+    families: ["StaffyTier"],
+    spawn: [spawn(TAG_STAFFY, 500), spawn(TAG_DEFAULT, 0)],
+    text: "staffy tier",
+});
+
 export const ATTACK_SPEED: Mod = mkMod({
     id: "AttackSpeed1",
     type: "AttackSpeed",

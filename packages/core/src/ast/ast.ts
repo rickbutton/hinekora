@@ -94,6 +94,7 @@ export type Stmt =
     | BenchStmt
     | HarvestStmt
     | VeiledStmt
+    | FoulbornStmt
     | UnveilStmt
     | RestartStmt
     | UntilStmt
@@ -155,6 +156,14 @@ export interface HarvestStmt {
 export interface VeiledStmt {
     readonly kind: "veiled";
     readonly verb: "chaos" | "exalt";
+    readonly span: SourceSpan;
+}
+
+/** `foulborn augment` / `foulborn regal` / `foulborn exalt`: the plain orb, with
+ *  only the top half of each modifier's eligible tiers able to roll. */
+export interface FoulbornStmt {
+    readonly kind: "foulborn";
+    readonly verb: "augment" | "regal" | "exalt";
     readonly span: SourceSpan;
 }
 

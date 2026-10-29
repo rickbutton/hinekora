@@ -99,7 +99,10 @@ const block = (text, from, to) => {
 const literals = (text) => [...text.matchAll(/"([A-Za-z][\w?]*)"/g)].map((m) => m[1]);
 const vocabularySource = read(VOCABULARY_FILE);
 const vocabulary = new Set(literals(vocabularySource));
-const veiledVerbs = new Set(literals(block(vocabularySource, "VEILED_VERBS", ";")));
+const currencyVerbs = new Set([
+    ...literals(block(vocabularySource, "VEILED_VERBS", ";")),
+    ...literals(block(vocabularySource, "FOULBORN_VERBS", ";")),
+]);
 const registry = read("packages/core/src/resolve/registry.ts");
 const currencies = new Set(
     [...block(registry, "STANDARD_CURRENCIES", "];").matchAll(/name: "([a-z]+)"/g)].map(
@@ -186,7 +189,7 @@ for (const t of harvestTags) {
 }
 const grammar = read(GRAMMAR);
 for (const w of vocabulary) {
-    if (veiledVerbs.has(w)) continue; // currency names are coloured by semantic tokens
+    if (currencyVerbs.has(w)) continue; // currency names are coloured by semantic tokens
     if (!new RegExp(`[|(]${w}[|)]`).test(grammar))
         fail(GRAMMAR, 1, `the word \`${w}\` is not highlighted`);
 }

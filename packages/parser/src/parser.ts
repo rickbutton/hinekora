@@ -14,6 +14,7 @@ import {
     type Craft,
     type Def,
     type EssenceStmt,
+    type FoulbornStmt,
     type HarvestStmt,
     type IfStmt,
     type ItemBlock,
@@ -32,6 +33,8 @@ import {
 import { CraftSyntaxError } from "./errors.js";
 import type { Token, TokenKind } from "./token.js";
 import {
+    FOULBORN_VERBS,
+    type FoulbornVerb,
     GAME,
     HARVEST_VERBS,
     type HarvestVerb,
@@ -335,6 +338,7 @@ class Parser {
         if (this.atKeyword("bench")) return this.parseBench();
         if (this.atKeyword("harvest")) return this.parseHarvest();
         if (this.atKeyword("veiled")) return this.parseVeiled();
+        if (this.atKeyword("foulborn")) return this.parseFoulborn();
         if (this.atKeyword("unveil")) return this.parseUnveil();
         if (this.atKeyword("restart")) {
             const t = this.advance();
@@ -422,6 +426,19 @@ class Parser {
             );
         }
         return { kind: "veiled", verb, span: span(start, this.prev.span.end) };
+    }
+
+    private parseFoulborn(): FoulbornStmt {
+        const start = this.expectKeyword("foulborn").span.start;
+        const verbTok = this.expect("ident", "a foulborn currency ('augment', 'regal' or 'exalt')");
+        const verb = verbTok.text.toLowerCase() as FoulbornVerb;
+        if (!FOULBORN_VERBS.includes(verb)) {
+            throw this.error(
+                `a foulborn currency must be 'augment', 'regal' or 'exalt', not '${verbTok.text}'`,
+                verbTok.span,
+            );
+        }
+        return { kind: "foulborn", verb, span: span(start, this.prev.span.end) };
     }
 
     private parseUnveil(): UnveilStmt {

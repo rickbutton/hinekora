@@ -32,6 +32,7 @@ const KEYWORDS = new Set([
     "augment",
     "veiled",
     "unveil",
+    "foulborn",
     "def",
     "has",
     "fractured",

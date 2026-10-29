@@ -21,6 +21,7 @@ import type {
     NotPred,
     BenchStmt,
     EssenceStmt,
+    FoulbornStmt,
     FracturedPred,
     HarvestStmt,
     OpStmt,
@@ -100,6 +101,11 @@ export const harvest = (verb: "reforge" | "augment", tag: string | ParamRef): Ha
     span: DS,
 });
 export const veiled = (verb: "chaos" | "exalt"): VeiledStmt => ({ kind: "veiled", verb, span: DS });
+export const foulborn = (verb: FoulbornStmt["verb"]): FoulbornStmt => ({
+    kind: "foulborn",
+    verb,
+    span: DS,
+});
 export const unveil = (mod?: string | ParamRef): UnveilStmt => ({
     kind: "unveil",
     ...(mod !== undefined && { mod }),
