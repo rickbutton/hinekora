@@ -49,6 +49,7 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
             value: { corruptedEssenceChance: 10 },
         });
         expect(registry.resolveFossil("fractured")).toMatchObject({ value: { fractures: true } });
+        expect(registry.resolveFossil("bloodstained")).toMatchObject({ value: { corrupts: true } });
         expect(registry.resolveFossil("fossil").ok).toBe(false); // every fossil matches
         expect(registry.resolveFossil("amber").ok).toBe(false);
     });

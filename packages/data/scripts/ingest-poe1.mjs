@@ -169,9 +169,11 @@ export function projectFossils(raw) {
             forced_mods: f.forced_mods ?? [],
             ...(f.allowed_tags?.length ? { allowed_tags: f.allowed_tags } : {}),
             corrupted_essence_chance: f.corrupted_essence_chance ?? 0,
-            // The export has no field for it: the Fractured Fossil fractures one
-            // of the modifiers it rolls (Fractured Fossil § Mechanics).
+            // The export has no field for either: the Fractured Fossil fractures
+            // one of the modifiers it rolls (Fractured Fossil § Mechanics) and the
+            // Bloodstained Fossil corrupts the item (Bloodstained Fossil § Mechanics).
             fractures: f.name === "Fractured Fossil",
+            corrupts: f.name === "Bloodstained Fossil",
         };
     }
     return out;

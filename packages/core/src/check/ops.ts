@@ -164,6 +164,7 @@ export type PreconditionFailure =
     | { readonly kind: "harvestEmptyPool"; readonly tag: TagId }
     | { readonly kind: "metamodBlocks" }
     | { readonly kind: "fossilBaseRestricted"; readonly fossil: string }
+    | { readonly kind: "fossilCorrupts"; readonly fossil: string }
     | { readonly kind: "wrongBase"; readonly needed: string }
     | {
           readonly kind: "typeNotRemovable";
@@ -411,6 +412,9 @@ function failing(
         case "baseHasTag":
             return a.base.tags.has(check.tag) ? null : { kind: "wrongBase", needed: check.what };
         case "fossilAllowed": {
+            // A corrupted item takes no further craft, and the state has no
+            // corruption yet, so the resonator is refused rather than followed.
+            if (check.fossil.corrupts) return { kind: "fossilCorrupts", fossil: check.fossil.name };
             const allowed = check.fossil.allowedTags;
             if (allowed === undefined) return null;
             for (const t of a.base.tags) if (allowed.has(t)) return null;

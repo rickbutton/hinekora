@@ -179,7 +179,9 @@ Operations that take a name (and an optional `t<n>`):
   Fractured Fossil fractures one of the rolled modifiers, so it needs an item without
   one. A name is the fossil's first word or its full name. Needs a Rare item with no
   protection or cannot-roll metamod, on a base every socketed fossil allows. Weight
-  changes are not modelled: a Serrated Fossil reads as a plain reforge.
+  changes are not modelled: a Serrated Fossil reads as a plain reforge. A Bloodstained
+  Fossil corrupts the item, which nothing can craft afterwards, so it is refused until
+  corruption is modelled.
 - `beast add prefix [<level>]` and `beast add suffix [<level>]` are the
   [Bestiary](https://www.poewiki.net/wiki/Beastcrafting) recipes "Add a Prefix, Remove a
   Random Suffix" and its mirror: the added modifier is drawn at the beast's level, the

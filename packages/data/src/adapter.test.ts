@@ -144,6 +144,7 @@ describe("adaptFossil", () => {
             forced_mods: ["DelveAbyssJewelSocket1"],
             corrupted_essence_chance: 0,
             fractures: false,
+            corrupts: false,
         });
         expect([...f.blockedTags]).toEqual(["defences"]);
         expect(f.forcedMods).toEqual(["DelveAbyssJewelSocket1"]);

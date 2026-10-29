@@ -56,6 +56,8 @@ export interface FossilSpec {
     readonly corruptedEssenceChance: number;
     /** Fractures one of the modifiers it rolls (the Fractured Fossil). */
     readonly fractures: boolean;
+    /** Corrupts the item (the Bloodstained Fossil). */
+    readonly corrupts: boolean;
 }
 
 /** A crafting-bench option that adds one specific mod to matching item classes. */

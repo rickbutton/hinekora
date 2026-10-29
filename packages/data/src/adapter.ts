@@ -88,6 +88,7 @@ export function adaptFossil(id: string, f: RepoeFossil): FossilSpec {
         ...(f.allowed_tags && { allowedTags: new Set(f.allowed_tags.map((t) => TagId(t))) }),
         corruptedEssenceChance: f.corrupted_essence_chance,
         fractures: f.fractures,
+        corrupts: f.corrupts,
     };
 }
 

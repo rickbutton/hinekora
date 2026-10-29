@@ -112,6 +112,11 @@ describe("a resonator", () => {
         expect(check(craft(amulet, [fossil("pendant")]), ctx).diagnostics).toEqual([]);
     });
 
+    it("refuses a fossil that corrupts the item", () => {
+        const r = check(craft(rareRing(), [fossil("bloodstained")]), ctx);
+        expect(r.diagnostics[0]!.message).toContain("corrupts the item");
+    });
+
     it("holds distinct fossils, at most four", () => {
         const twice = check(craft(rareRing(), [fossil("dense", "dense")]), ctx);
         expect(twice.diagnostics[0]!.message).toContain("same fossil twice");

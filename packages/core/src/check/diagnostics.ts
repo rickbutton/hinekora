@@ -138,6 +138,8 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 break;
             case "wrongBase":
                 return `Needs a ${failure.needed}.`;
+            case "fossilCorrupts":
+                return `A ${failure.fossil} corrupts the item, and a corrupted item takes no further craft — it is not supported yet.`;
             case "fossilBaseRestricted":
                 return `A ${failure.fossil} cannot be used on a ${state.base.name ?? "base"} like this one.`;
             case "metamodBlocks":

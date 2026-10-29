@@ -682,7 +682,11 @@ const fossilSpec = (id: string, name: string, over: Partial<FossilSpec>): Fossil
     forcedMods: [],
     corruptedEssenceChance: 0,
     fractures: false,
+    corrupts: false,
     ...over,
+});
+export const FOSSIL_BLOODSTAINED = fossilSpec("FossilBloodstained", "Bloodstained Fossil", {
+    corrupts: true,
 });
 export const FOSSIL_NO_LIFE = fossilSpec("FossilDense", "Dense Fossil", {
     blockedTags: new Set([TagId("life")]),
@@ -719,6 +723,7 @@ export const FOSSILS: readonly FossilSpec[] = [
     FOSSIL_TANGLED,
     FOSSIL_FRACTURED,
     FOSSIL_AMULET_ONLY,
+    FOSSIL_BLOODSTAINED,
 ];
 
 export const ATTACK_SPEED: Mod = mkMod({

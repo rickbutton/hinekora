@@ -397,8 +397,9 @@ in it. Notes:
   item's class; a **rows** pool is one of a few given rows, asserted as a disjunction (a
   forced row, the Glyphic Fossil's guarantee). `resonatorOps` composes a resonator from
   them ([Resonator § Mechanics](https://www.poewiki.net/wiki/Resonator#Mechanics):
-  refused like an essence under a protect or cannot-roll metamod, and on a base a fossil
-  does not allow, `fossilAllowed`), the Fractured Fossil adding a `lock`. The harvest
+  refused like an essence under a protect or cannot-roll metamod, on a base a fossil
+  does not allow, and for a fossil that corrupts the item, `fossilAllowed`), the
+  Fractured Fossil adding a `lock`. The harvest
   change (`harvestChangeOps`) is a `remove` with the **type selector** (`removeType`: the
   named modifier goes, excluded afterwards, everything else stays) after `typeRemovable`
   (guaranteed, not fractured, unprotected side), then a `rows` fill of the target's row

@@ -502,6 +502,7 @@ function fossilSignature(names: readonly string[], registry: Registry): string {
         else if (f.corruptedEssenceChance > 0)
             effects.push(`${f.corruptedEssenceChance}% chance of a corrupted-essence modifier`);
         if (f.fractures) effects.push("fractures one of the rolled modifiers");
+        if (f.corrupts) effects.push("corrupts the item (not supported)");
         if (f.allowedTags) effects.push(`only on ${[...f.allowedTags].join(", ")}`);
         const effect =
             effects.length > 0

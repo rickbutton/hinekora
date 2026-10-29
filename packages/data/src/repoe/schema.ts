@@ -81,6 +81,8 @@ export interface RepoeFossil {
     readonly corrupted_essence_chance: number;
     /** Fractures one of the modifiers it rolls. */
     readonly fractures: boolean;
+    /** Corrupts the item. */
+    readonly corrupts: boolean;
 }
 export type RepoeFossils = Readonly<Record<string, RepoeFossil>>;
 
