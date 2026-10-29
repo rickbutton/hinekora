@@ -66,6 +66,25 @@ describe("harvest reforge", () => {
         expect(check(cleared, ctx).diagnostics).toEqual([]);
     });
 
+    it("rejects a side-only tag when that side may be full after the strip", () => {
+        // Three anonymous prefixes kept by the metamod: no life modifier, a
+        // prefix, can land, however the anonymous ones resolve.
+        const locked = craft(
+            rareRing(["random", "random", "random"], [PROTECT_PREFIXES_CARRIER.id]),
+            [harvest("reforge", "life")],
+        );
+        expect(check(locked, ctx).diagnostics[0]!.message).toContain("No life modifier");
+        // The augment: the removal may take a suffix and leave the prefixes full.
+        const full = craft(
+            rareRing(
+                ["T1 Life", "random", "random"],
+                ["FireResist1", "ColdResist1", "LightningResist1"],
+            ),
+            [harvest("augment", "defence")],
+        );
+        expect(check(full, ctx).diagnostics[0]!.message).toContain("No defences modifier");
+    });
+
     it("rejects a tag no mod can roll here (the grayed-out case)", () => {
         const c = craft(rareRing(), [harvest("reforge", "minion")]);
         const r = check(c, ctx);

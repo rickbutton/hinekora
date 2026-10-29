@@ -203,6 +203,23 @@ describe("pool — tags the item may carry", () => {
             true,
         );
     });
+
+    it("read pessimistically, a possible tag only ever hurts", () => {
+        const catalog = [...CATALOG, STAFFY_ADDER, STAFFY_ENABLED, SPECIFIC_WEAPON_B];
+        const ring = mkItem({ rarity: "rare" });
+        // A positive entry on a possible tag is skipped, so the row's definite
+        // zero on the ring tag wins.
+        expect(idsOf(pool(catalog, ring, new Set([TAG_STAFFY]), true)).has(STAFFY_ENABLED.id)).toBe(
+            false,
+        );
+        // A zero entry on a possible tag stops the row, as if the tag were there.
+        expect(
+            idsOf(pool(catalog, ring, new Set([TAG_SPECIFIC_WEAPON]), true)).has(
+                SPECIFIC_WEAPON_B.id,
+            ),
+        ).toBe(false);
+        expect(idsOf(pool(catalog, ring, undefined, true)).has(SPECIFIC_WEAPON_B.id)).toBe(true);
+    });
 });
 
 describe("pool — class restriction and spawn ordering", () => {

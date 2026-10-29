@@ -561,6 +561,25 @@ describe("checker — the rarity seam (surface §6 errors)", () => {
         expect(r.finalState!.rarities).toEqual(new Set(["magic", "rare"]));
     });
 
+    it("judges a scour and an essence over every rarity the item may have", () => {
+        // A scour in one arm leaves the ring Normal or Magic where the arms meet:
+        // a second scour may be wasted, a low essence may land on a Magic.
+        const magicRing = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "magic",
+            prefixes: ["T1 Life"],
+        });
+        const meet = [op("augment"), iff(has("FireResist1"), [op("scour")])];
+        const scoured = check(craft(magicRing, [...meet, op("scour")]), ctx);
+        expect(scoured.diagnostics[0]!.message).toContain("removable affix");
+        const essenced = check(
+            craft(magicRing, [...meet, essence("Muttering Essence of Greed")]),
+            ctx,
+        );
+        expect(essenced.diagnostics[0]!.message).toContain("Magic");
+    });
+
     it("rejects exalt on a Magic item and renders the state", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "magic" }), [op("exalt")]);
         const r = check(c, ctx);

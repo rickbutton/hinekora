@@ -412,9 +412,6 @@ function failing(
             if (rules.protected.size === ALL_GENS.length && !hasFracture(a)) {
                 return { kind: "nothingToRemove" };
             }
-            // The rarity the scour leaves is one value; when the kept side's count
-            // is uncertain it may be either of two, so the scour waits for a
-            // narrowing of the count.
             return null;
         }
         case "atLeast":
@@ -929,7 +926,10 @@ function typesOf(mods: readonly Mod[]): TypeId[] {
  * one of its types is present". A bench craft raises the crafted count.
  */
 function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry: Registry): AItem {
+    // Upper bounds may reach the loosest caps over the rarities, lower bounds
+    // only the tightest: a lower bound holds on the tightest path too.
     const { total: maxT, prefix: pCap, suffix: sCap } = capsOver(a, Math.max);
+    const tight = capsOver(a, Math.min);
     // Nothing fits on any path (a magic Simplex): the fill lays down nothing.
     if (count.kind === "add" && a.counts.total[0] >= maxT) return settled(a);
 
@@ -941,12 +941,15 @@ function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry
         case "add": {
             const [lo, hi] = count.n;
             const total: Range = [
-                Math.min(a.counts.total[0] + lo, maxT),
+                Math.min(a.counts.total[0] + lo, tight.total),
                 Math.min(a.counts.total[1] + hi, maxT),
             ];
             const prefix: Range =
                 drawn.gen === "prefix"
-                    ? [a.counts.prefix[0] + lo, Math.min(a.counts.prefix[1] + hi, pCap)]
+                    ? [
+                          Math.min(a.counts.prefix[0] + lo, tight.prefix),
+                          Math.min(a.counts.prefix[1] + hi, pCap),
+                      ]
                     : drawn.gen === "suffix"
                       ? a.counts.prefix
                       : [a.counts.prefix[0], Math.min(a.counts.prefix[1] + hi, pCap)];
@@ -1196,9 +1199,18 @@ function subsetMods(a: AItem, registry: Registry): Mod[] {
         for (const tag of registry.addsTagsOfType(t)) maybeTags.add(tag);
         effects.push(...registry.effectsOfType(t));
     }
-    return pool(registry.catalog, { ...facts, types, families, effects }, maybeTags, true).map(
-        (c) => c.mod,
-    );
+    // The sides as full as any path has them, so a side that may be full offers
+    // no row.
+    const fullest = {
+        prefixCount: a.counts.prefix[1],
+        suffixCount: suffixRange(a)[1],
+    };
+    return pool(
+        registry.catalog,
+        { ...facts, ...fullest, types, families, effects },
+        maybeTags,
+        true,
+    ).map((c) => c.mod);
 }
 
 /** The state's guaranteed mods as the facts the pool reads, at rare caps. */

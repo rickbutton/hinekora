@@ -121,7 +121,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
             case "essenceRarity":
                 return failure.actual.has("magic")
                     ? "Essences cannot be used on a Magic item."
-                    : "Requires a Normal item — only Screaming-tier and higher essences reforge a Rare.";
+                    : `Requires a Normal item — this item ${failure.actual.size === 1 ? "is" : "may be"} ${rarityLabel(failure.actual)}, and only Screaming-tier and higher essences reforge a Rare.`;
             case "essenceClass":
                 return `This essence grants no mod for a ${failure.itemClass}, so it cannot be used on this item.`;
             case "rarityUnsupported":

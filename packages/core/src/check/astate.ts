@@ -528,7 +528,7 @@ export const TierDomain = {
  * `presence` is the one relational domain: its join is BDD-OR (`a.bdd.or`),
  * which is what keeps a disjunctive fact alive where a per-type set would
  * destroy it, and it needs the shared manager, so it stays explicit here.
- * Rarity/base/ilvl are invariant across branches from a shared start.
+ * Base/ilvl are invariant across branches from a shared start.
  */
 export function join(a: AItem, b: AItem): AItem {
     return {
