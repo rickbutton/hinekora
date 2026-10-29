@@ -103,7 +103,7 @@ describe("declared fractured mod is locked", () => {
         );
         expect(r.diagnostics.map((d) => d.message).join("\n")).toContain("fractured");
         const afterAlteration = r.trace.find(
-            (t) => t.kind === "op" && t.after?.rarities.has("magic"),
+            (t) => t.kind === "operation" && t.after?.rarities.has("magic"),
         );
         expect(afterAlteration?.after && hasFracture(afterAlteration.after)).toBe(true);
     });

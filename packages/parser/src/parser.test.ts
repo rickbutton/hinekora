@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Craft, IfStmt, UntilStmt } from "@hinekora/core";
+import type { Craft, IfStmt, Stmt, UntilStmt } from "@hinekora/core";
 import { parse } from "./index.js";
 import type { SyntaxDiagnostic } from "./errors.js";
 
@@ -54,7 +54,7 @@ describe("parser — the canonical craft (surface §8)", () => {
 
     it("parses the body: an op, then an until-loop", () => {
         expect(craft.body).toHaveLength(2);
-        expect(craft.body[0]).toMatchObject({ kind: "op", name: "exalt" });
+        expect(craft.body[0]).toMatchObject({ kind: "operation", words: ["exalt"] });
 
         const until = craft.body[1] as UntilStmt;
         expect(until.kind).toBe("until");
@@ -62,7 +62,9 @@ describe("parser — the canonical craft (surface §8)", () => {
             kind: "not",
             inner: { kind: "has", mod: "+1 Suffix Modifier" },
         });
-        expect(until.body).toEqual([expect.objectContaining({ kind: "op", name: "annul" })]);
+        expect(until.body).toEqual([
+            expect.objectContaining({ kind: "operation", words: ["annul"] }),
+        ]);
     });
 });
 
@@ -81,11 +83,9 @@ describe("parser — the craft declaration comes first", () => {
         const craft = parseOk(
             'craft in poe1 item { base: "R" ilvl: 1 rarity: rare } exalt regal exalt',
         );
-        expect(craft.body.map((s) => (s.kind === "op" ? s.name : s.kind))).toEqual([
-            "exalt",
-            "regal",
-            "exalt",
-        ]);
+        expect(
+            craft.body.map((s) => (s.kind === "operation" ? s.words.join(" ") : s.kind)),
+        ).toEqual(["exalt", "regal", "exalt"]);
     });
 
     it("rejects a stray closing brace at the top level", () => {
@@ -133,134 +133,89 @@ describe("parser — item block", () => {
     });
 });
 
-describe("parser — essence statement", () => {
-    const bodyOf = (pred: string) =>
-        parseOk(`craft in poe1 item { base: "R" ilvl: 1 rarity: normal } ${pred}`).body[0]!;
+/** An operation statement as `{ words, args }`, a tier written `t<n>`, a param `$<p>`. */
+const shape = (s: Stmt): { words: string; args: (string | number)[] } => {
+    if (s.kind !== "operation") throw new Error(`expected an operation, got ${s.kind}`);
+    return {
+        words: s.words.join(" "),
+        args: s.args.map((a) =>
+            a.kind === "tier" ? `t${a.value}` : a.kind === "param" ? `$${a.param}` : a.value,
+        ),
+    };
+};
 
-    it("parses a full essence name", () => {
-        const s = bodyOf('essence "Deafening Essence of Greed"');
-        expect(s).toMatchObject({ kind: "essence", name: "Deafening Essence of Greed" });
-        expect("tier" in s).toBe(false);
-    });
-
-    it("parses the `type t1` shorthand", () => {
-        expect(bodyOf('essence "greed" t1')).toMatchObject({
-            kind: "essence",
-            name: "greed",
-            tier: 1,
-        });
-    });
-
-    it("parses bench remove", () => {
-        expect(bodyOf("bench remove")).toMatchObject({ kind: "benchRemove" });
-    });
-
-    it("parses a bench craft, with and without a tier", () => {
-        expect(bodyOf('bench "increased life"')).toMatchObject({
-            kind: "bench",
-            name: "increased life",
-        });
-        expect(bodyOf('bench "life" t2')).toMatchObject({ kind: "bench", name: "life", tier: 2 });
-    });
-});
-
-describe("parser — veiled orbs and unveil", () => {
+describe("parser — operation statements, shaped by the method table", () => {
     const bodyOf = (src: string) =>
         parseOk(`craft in poe1 item { base: "R" ilvl: 1 rarity: rare } ${src}`).body[0]!;
+    const opOf = (src: string) => shape(bodyOf(src));
 
-    it("parses veiled chaos / veiled exalt", () => {
-        expect(bodyOf("veiled chaos")).toMatchObject({ kind: "veiled", verb: "chaos" });
-        expect(bodyOf("veiled exalt")).toMatchObject({ kind: "veiled", verb: "exalt" });
+    it("parses a name slot with and without its optional tier", () => {
+        expect(opOf('essence "Deafening Essence of Greed"')).toEqual({
+            words: "essence",
+            args: ["Deafening Essence of Greed"],
+        });
+        expect(opOf('essence "greed" t1')).toEqual({ words: "essence", args: ["greed", "t1"] });
+        expect(opOf('bench "increased life"')).toEqual({
+            words: "bench",
+            args: ["increased life"],
+        });
+        expect(opOf('bench "life" t2')).toEqual({ words: "bench", args: ["life", "t2"] });
     });
 
-    it("rejects a veiled currency other than chaos/exalt", () => {
-        expect(() => bodyOf("veiled scour")).toThrow(/chaos.*exalt/);
+    it("takes the longest run of words that names a method", () => {
+        expect(opOf("bench remove")).toEqual({ words: "bench remove", args: [] });
+        expect(opOf("veiled chaos")).toEqual({ words: "veiled chaos", args: [] });
+        expect(opOf("foulborn regal")).toEqual({ words: "foulborn regal", args: [] });
+        expect(opOf("beast fracture")).toEqual({ words: "beast fracture", args: [] });
+        expect(opOf("restore")).toEqual({ words: "restore", args: [] });
     });
 
-    it("parses beast add with a side and an optional level", () => {
-        expect(bodyOf("beast add prefix")).toMatchObject({
-            kind: "beast",
-            action: { kind: "add", side: "prefix" },
-        });
-        expect(bodyOf("beast add suffix 83")).toMatchObject({
-            action: { kind: "add", side: "suffix", level: 83 },
-        });
-        expect(() => bodyOf("beast add tail")).toThrow(/prefix.*suffix/);
-        expect(bodyOf("beast fracture")).toMatchObject({ action: { kind: "fracture" } });
-        expect(bodyOf("beast metamod")).toMatchObject({ action: { kind: "metamod" } });
-        expect(bodyOf('beast aspect "cat"')).toMatchObject({
-            action: { kind: "aspect", name: "cat" },
-        });
-        expect(bodyOf("beast imprint")).toMatchObject({ action: { kind: "imprint" } });
-        expect(bodyOf("restore")).toMatchObject({ kind: "restore" });
+    it("rejects a second word no method of the family has", () => {
+        expect(() => bodyOf("veiled scour")).toThrow(/'chaos', 'exalt'/);
+        expect(() => bodyOf("foulborn chaos")).toThrow(/'augment', 'regal', 'exalt'/);
+        expect(() => bodyOf('harvest remove "cold"')).toThrow(/'reforge', 'augment', 'change'/);
     });
 
-    it("parses harvest change with two modifier names", () => {
-        expect(bodyOf('harvest change "fire res" "cold res"')).toMatchObject({
-            kind: "harvestChange",
-            from: "fire res",
-            to: "cold res",
-        });
-        expect(() => bodyOf('harvest change "fire res"')).toThrow(/change it into/);
+    it("parses a word slot and an optional number", () => {
+        expect(opOf("beast add prefix")).toEqual({ words: "beast add", args: ["prefix"] });
+        expect(opOf("beast add suffix 83")).toEqual({ words: "beast add", args: ["suffix", 83] });
+        expect(() => bodyOf("beast add tail")).toThrow(/'prefix' or 'suffix'/);
     });
 
-    it("parses a fossil list of one or more names", () => {
-        expect(bodyOf('fossil "pristine"')).toMatchObject({ kind: "fossil", names: ["pristine"] });
-        expect(bodyOf('fossil "pristine" "dense"')).toMatchObject({
-            kind: "fossil",
-            names: ["pristine", "dense"],
+    it("parses two name slots, a list of names, and an optional name", () => {
+        expect(opOf('harvest change "fire res" "cold res"')).toEqual({
+            words: "harvest change",
+            args: ["fire res", "cold res"],
+        });
+        expect(() => bodyOf('harvest change "fire res"')).toThrow(/quoted mod name/);
+        expect(opOf('fossil "pristine"')).toEqual({ words: "fossil", args: ["pristine"] });
+        expect(opOf('fossil "pristine" "dense"')).toEqual({
+            words: "fossil",
+            args: ["pristine", "dense"],
         });
         expect(() => bodyOf("fossil")).toThrow(/fossil name/);
-    });
-
-    it("parses foulborn augment / regal / exalt and rejects any other orb", () => {
-        expect(bodyOf("foulborn augment")).toMatchObject({ kind: "foulborn", verb: "augment" });
-        expect(bodyOf("foulborn regal")).toMatchObject({ kind: "foulborn", verb: "regal" });
-        expect(bodyOf("foulborn exalt")).toMatchObject({ kind: "foulborn", verb: "exalt" });
-        expect(() => bodyOf("foulborn chaos")).toThrow(/augment.*regal.*exalt/);
-    });
-
-    it("parses unveil, bare and targeted", () => {
-        expect(bodyOf("unveil")).toMatchObject({ kind: "unveil" });
-        expect("mod" in bodyOf("unveil")).toBe(false);
-        expect(bodyOf('unveil "double damage"')).toMatchObject({
-            kind: "unveil",
-            mod: "double damage",
+        expect(opOf("unveil")).toEqual({ words: "unveil", args: [] });
+        expect(opOf('unveil "double damage"')).toEqual({
+            words: "unveil",
+            args: ["double damage"],
         });
-    });
-});
-
-describe("parser — harvest statement", () => {
-    const bodyOf = (src: string) =>
-        parseOk(`craft in poe1 item { base: "R" ilvl: 1 rarity: rare } ${src}`).body[0]!;
-
-    it("parses reforge and augment with a quoted tag", () => {
-        expect(bodyOf('harvest reforge "fire"')).toMatchObject({
-            kind: "harvest",
-            verb: "reforge",
-            tag: "fire",
-        });
-        expect(bodyOf('harvest augment "caster"')).toMatchObject({
-            kind: "harvest",
-            verb: "augment",
-            tag: "caster",
+        expect(opOf('beast aspect "cat"')).toEqual({ words: "beast aspect", args: ["cat"] });
+        expect(opOf('harvest reforge "fire"')).toEqual({
+            words: "harvest reforge",
+            args: ["fire"],
         });
     });
 
-    it("rejects a verb other than reforge/augment", () => {
-        expect(() => bodyOf('harvest remove "cold"')).toThrow(/reforge.*augment/);
+    it("keeps a lone word no method knows, for the checker to name", () => {
+        expect(opOf("bogus")).toEqual({ words: "bogus", args: [] });
     });
 
-    it("parses a param in the tag slot inside a proc", () => {
+    it("parses a param in a name slot inside a proc", () => {
         const c = parseOk(
             `craft in poe1 item { base: "R" ilvl: 1 rarity: rare } def h(t) { harvest reforge t }
 h("fire")`,
         );
-        expect(c.procs[0]!.body[0]).toMatchObject({
-            kind: "harvest",
-            verb: "reforge",
-            tag: { param: "t" },
-        });
+        expect(shape(c.procs[0]!.body[0]!)).toEqual({ words: "harvest reforge", args: ["$t"] });
     });
 });
 
@@ -336,8 +291,8 @@ spam("life")`);
             kind: "until",
             pred: { kind: "has", mod: { param: "m" } },
             body: [
-                { kind: "op", name: "scour" },
-                { kind: "op", name: "alchemy" },
+                { kind: "operation", words: ["scour"] },
+                { kind: "operation", words: ["alchemy"] },
             ],
         });
         // The call site parses as a statement-position call.
@@ -359,22 +314,18 @@ def q() { exalt }`);
     it("parses a param in a bench mod-name slot", () => {
         const c = parseDef(`def add(m) { bench m }
 add("life")`);
-        expect(c.procs[0]!.body[0]).toMatchObject({ kind: "bench", name: { param: "m" } });
+        expect(shape(c.procs[0]!.body[0]!)).toEqual({ words: "bench", args: ["$m"] });
     });
 
     it("parses a param in an essence tier slot", () => {
         const c = parseDef(`def e(k) { essence "greed" k }
 e(t1)`);
-        expect(c.procs[0]!.body[0]).toMatchObject({
-            kind: "essence",
-            name: "greed",
-            tier: { param: "k" },
-        });
+        expect(shape(c.procs[0]!.body[0]!)).toEqual({ words: "essence", args: ["greed", "$k"] });
     });
 
-    it("still parses a bare currency name as an op, not a call", () => {
+    it("still parses a bare currency name as an operation, not a call", () => {
         const c = parseDef(`exalt`);
-        expect(c.body[0]).toMatchObject({ kind: "op", name: "exalt" });
+        expect(c.body[0]).toMatchObject({ kind: "operation", words: ["exalt"] });
     });
 });
 
@@ -467,8 +418,8 @@ describe("parser — if / else", () => {
     if isRare { exalt } else { annul }`);
         const branch = craft.body[0] as IfStmt;
         expect(branch.kind).toBe("if");
-        expect(branch.body).toEqual([expect.objectContaining({ name: "exalt" })]);
-        expect(branch.elseBody).toEqual([expect.objectContaining({ name: "annul" })]);
+        expect(branch.body).toEqual([expect.objectContaining({ words: ["exalt"] })]);
+        expect(branch.elseBody).toEqual([expect.objectContaining({ words: ["annul"] })]);
     });
 
     it("allows an if with no else, followed by a sibling statement", () => {
@@ -479,7 +430,7 @@ describe("parser — if / else", () => {
         expect(craft.body).toHaveLength(2);
         const branch = craft.body[0] as IfStmt;
         expect(branch.elseBody).toBeUndefined();
-        expect(craft.body[1]).toMatchObject({ kind: "op", name: "annul" });
+        expect(craft.body[1]).toMatchObject({ kind: "operation", words: ["annul"] });
     });
 
     it("rejects an else with no matching if", () => {
@@ -510,7 +461,9 @@ craft in poe1
 
     exalt   # slam it
 `);
-        expect(craft.body).toEqual([expect.objectContaining({ kind: "op", name: "exalt" })]);
+        expect(craft.body).toEqual([
+            expect.objectContaining({ kind: "operation", words: ["exalt"] }),
+        ]);
     });
 
     it("reports a useful span on error", () => {

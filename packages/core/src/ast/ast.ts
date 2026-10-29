@@ -88,156 +88,34 @@ export interface ItemBlock {
 
 // --- Statements (surface §3–§4) -------------------------------------------
 
-export type Stmt =
-    | OpStmt
-    | EssenceStmt
-    | BenchStmt
-    | HarvestStmt
-    | HarvestChangeStmt
-    | BeastStmt
-    | VeiledStmt
-    | FoulbornStmt
-    | FossilStmt
-    | BenchRemoveStmt
-    | UnveilStmt
-    | RestartStmt
-    | RestoreStmt
-    | UntilStmt
-    | IfStmt
-    | CallStmt;
-
-/** A currency/operation line, a single (still-unresolved) currency name. */
-export interface OpStmt {
-    readonly kind: "op";
-    readonly name: string;
-    readonly span: SourceSpan;
-}
+export type Stmt = OperationStmt | RestartStmt | UntilStmt | IfStmt | CallStmt;
 
 /**
- * `essence "<name>" [t1]`, apply an essence. `name` is a full name
- * ("Deafening Essence of Greed") or, with a `tier`, an essence type ("greed",
- * `t1` = best). Inside a proc body the name and/or tier may be a `ParamRef`.
- * Resolution and semantics are the checker's job.
+ * A crafting method applied to the item: the words that name it (`chaos`,
+ * `beast add`, `harvest change`) and its arguments as parsed, the shape the
+ * method's slots give them (`check/methods.ts`). Inside a proc body an argument
+ * may be a parameter. Resolution and semantics are the checker's job.
  */
-export interface EssenceStmt {
-    readonly kind: "essence";
-    readonly name: string | ParamRef;
-    readonly tier?: number | ParamRef;
+export interface OperationStmt {
+    readonly kind: "operation";
+    readonly words: readonly string[];
+    readonly args: readonly OperationArg[];
     readonly span: SourceSpan;
 }
 
-/**
- * `bench "<mod>" [t1]`, add a specific crafting-bench mod. `name` is a mod
- * description ("increased life"); an optional `tier` picks the bench tier
- * (`t1` = best). Inside a proc body the name and/or tier may be a `ParamRef`.
- * Resolution (to a `BenchCraft`) and semantics are the checker's.
- */
-export interface BenchStmt {
-    readonly kind: "bench";
-    readonly name: string | ParamRef;
-    readonly tier?: number | ParamRef;
-    readonly span: SourceSpan;
-}
-
-/**
- * `harvest <verb> "<tag>"`, a tag-directed harvest craft. `reforge` rerolls the
- * item guaranteeing a mod of the tag; `augment` adds a mod of the tag and removes
- * a random other mod (Craft of Exile's "Add/Remove" method). `tag` is a modifier
- * category ("fire", "caster"); inside a proc body it may be a `ParamRef`.
- * Resolution and semantics are the checker's job.
- */
-export interface HarvestStmt {
-    readonly kind: "harvest";
-    readonly verb: "reforge" | "augment";
-    readonly tag: string | ParamRef;
-    readonly span: SourceSpan;
-}
-
-/**
- * `veiled chaos` / `veiled exalt`, the two veiled currencies. Both add a veiled
- * placeholder modifier (resolved later by `unveil`): chaos reforges the item,
- * exalt removes a random mod first.
- */
-export interface VeiledStmt {
-    readonly kind: "veiled";
-    readonly verb: "chaos" | "exalt";
-    readonly span: SourceSpan;
-}
-
-/** `fossil "<name>" …`: a resonator socketed with these fossils, one to four,
- *  reforging the item. Inside a proc body a name may be a `ParamRef`. */
-export interface FossilStmt {
-    readonly kind: "fossil";
-    readonly names: readonly (string | ParamRef)[];
-    readonly span: SourceSpan;
-}
-
-/** `bench remove`: clear the item's crafted modifiers at the bench. */
-export interface BenchRemoveStmt {
-    readonly kind: "benchRemove";
-    readonly span: SourceSpan;
-}
-
-/** `beast <action>`: a Bestiary recipe applied to the item. */
-export interface BeastStmt {
-    readonly kind: "beast";
-    readonly action: BeastAction;
-    readonly span: SourceSpan;
-}
-
-export type BeastAction =
-    /** `beast add prefix|suffix [<level>]`: add a modifier of that side, drawn at
-     *  the beast's level (any level when absent), removing one of the other. */
-    | { readonly kind: "add"; readonly side: "prefix" | "suffix"; readonly level?: number }
-    /** `beast fracture`: fracture one modifier of a Rare talisman. */
-    | { readonly kind: "fracture" }
-    /** `beast metamod`: craft a random metamod among those that fit. */
-    | { readonly kind: "metamod" }
-    /** `beast aspect "<animal>"`: craft that Aspect skill's modifier. */
-    | { readonly kind: "aspect"; readonly name: string | ParamRef }
-    /** `beast imprint`: hold an imprint of a Magic item or a Rare talisman. */
-    | { readonly kind: "imprint" };
-
-/** `harvest change "<mod>" "<mod>"`: the first modifier becomes a similar-tier
- *  modifier of the second's kind. Inside a proc body a name may be a `ParamRef`. */
-export interface HarvestChangeStmt {
-    readonly kind: "harvestChange";
-    readonly from: string | ParamRef;
-    readonly to: string | ParamRef;
-    readonly span: SourceSpan;
-}
-
-/** `foulborn augment` / `foulborn regal` / `foulborn exalt`: the plain orb, with
- *  only the top half of each modifier's eligible tiers able to roll. */
-export interface FoulbornStmt {
-    readonly kind: "foulborn";
-    readonly verb: "augment" | "regal" | "exalt";
-    readonly span: SourceSpan;
-}
-
-/**
- * `unveil ["<mod>"]`, reveal the pending veiled modifier. Bare, it resolves to
- * one of the valid unveil options; with a mod name, it targets that outcome
- * (provable only once the option pool is small enough). Inside a proc body the
- * name may be a `ParamRef`.
- */
-export interface UnveilStmt {
-    readonly kind: "unveil";
-    readonly mod?: string | ParamRef;
-    readonly span: SourceSpan;
-}
+/** An operation's argument: a literal of the slot's kind, or a proc parameter. */
+export type OperationArg =
+    | { readonly kind: "tier"; readonly value: number; readonly span: SourceSpan }
+    | { readonly kind: "int"; readonly value: number; readonly span: SourceSpan }
+    | { readonly kind: "string"; readonly value: string; readonly span: SourceSpan }
+    | { readonly kind: "word"; readonly value: string; readonly span: SourceSpan }
+    | { readonly kind: "param"; readonly param: string; readonly span: SourceSpan };
 
 /** `name(arg, …)`, a call to a local op function, in statement position. */
 export interface CallStmt {
     readonly kind: "call";
     readonly name: string;
     readonly args: readonly Arg[];
-    readonly span: SourceSpan;
-}
-
-/** `restore`, apply the held imprint: the item becomes what it was when imprinted. */
-export interface RestoreStmt {
-    readonly kind: "restore";
     readonly span: SourceSpan;
 }
 

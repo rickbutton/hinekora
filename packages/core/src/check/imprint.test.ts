@@ -129,7 +129,9 @@ describe("imprint and restore", () => {
         ]);
         const r = check(c, ctx);
         expect(r.diagnostics[0]!.message).toContain("may be Magic or Rare");
-        const restored = r.trace.find((e) => e.kind === "restore")!;
+        const restored = r.trace.find(
+            (e) => e.kind === "operation" && e.after?.rarities.size === 2,
+        )!;
         expect(restored.after!.rarities).toEqual(new Set(["magic", "rare"]));
     });
 

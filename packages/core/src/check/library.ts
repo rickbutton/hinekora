@@ -7,7 +7,6 @@
 import { type Gen, type Rarity, TagId, type TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import type { EssenceSpec, FossilSpec } from "../model/sources.js";
-import type { FoulbornStmt } from "../ast/ast.js";
 import type { CurrencyKind } from "../resolve/registry.js";
 import type { Range } from "./astate.js";
 import type { Check, FillCount, Op, PoolSpec, Selector } from "./ops.js";
@@ -151,7 +150,7 @@ export function harvestAugmentOps(tag: TagId): readonly Op[] {
 
 /** A Foulborn orb is its plain counterpart drawing from the top half of each
  *  type's tiers (Foulborn currency § Mechanics). */
-export function foulbornOps(verb: FoulbornStmt["verb"]): readonly Op[] {
+export function foulbornOps(verb: "augment" | "regal" | "exalt"): readonly Op[] {
     return currencyOps(verb).map((op) =>
         op.kind === "fill" && op.pool.kind === "natural"
             ? { ...op, pool: { ...op.pool, topTiers: true } }

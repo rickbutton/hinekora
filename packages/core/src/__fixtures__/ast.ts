@@ -19,20 +19,9 @@ import type {
     IfStmt,
     ItemBlock,
     NotPred,
-    BeastAction,
-    BeastStmt,
-    BenchRemoveStmt,
-    BenchStmt,
-    EssenceStmt,
-    FossilStmt,
-    FoulbornStmt,
     FracturedPred,
-    HarvestChangeStmt,
-    HarvestStmt,
-    OpStmt,
-    RestoreStmt,
-    UnveilStmt,
-    VeiledStmt,
+    OperationArg,
+    OperationStmt,
     ParamRef,
     Pred,
     ProcDef,
@@ -87,48 +76,72 @@ export const item = (spec: ItemSpec): ItemBlock => ({
     span: DS,
 });
 
-export const op = (name: string): OpStmt => ({ kind: "op", name, span: DS });
-export const essence = (name: string | ParamRef, tier?: number | ParamRef): EssenceStmt => ({
-    kind: "essence",
-    name,
-    ...(tier !== undefined && { tier }),
+// --- operation statements: a method's words and its arguments -------------
+
+/** A quoted-name slot's argument: the name, or a proc param standing in for it. */
+const named = (v: string | ParamRef): OperationArg =>
+    typeof v === "string"
+        ? { kind: "string", value: v, span: DS }
+        : { kind: "param", param: v.param, span: DS };
+/** A tier slot's argument: the tier, or a proc param standing in for it. */
+const tiered = (v: number | ParamRef): OperationArg =>
+    typeof v === "number"
+        ? { kind: "tier", value: v, span: DS }
+        : { kind: "param", param: v.param, span: DS };
+const operation = (
+    words: readonly string[],
+    args: readonly OperationArg[] = [],
+): OperationStmt => ({
+    kind: "operation",
+    words,
+    args,
     span: DS,
 });
-export const bench = (name: string | ParamRef, tier?: number | ParamRef): BenchStmt => ({
-    kind: "bench",
-    name,
-    ...(tier !== undefined && { tier }),
-    span: DS,
-});
-export const harvest = (verb: "reforge" | "augment", tag: string | ParamRef): HarvestStmt => ({
-    kind: "harvest",
-    verb,
-    tag,
-    span: DS,
-});
-export const benchRemove = (): BenchRemoveStmt => ({ kind: "benchRemove", span: DS });
-export const beast = (action: BeastAction): BeastStmt => ({ kind: "beast", action, span: DS });
-export const restore = (): RestoreStmt => ({ kind: "restore", span: DS });
-export const fossil = (...names: (string | ParamRef)[]): FossilStmt => ({
-    kind: "fossil",
-    names,
-    span: DS,
-});
-export const harvestChange = (
-    from: string | ParamRef,
-    to: string | ParamRef,
-): HarvestChangeStmt => ({ kind: "harvestChange", from, to, span: DS });
-export const veiled = (verb: "chaos" | "exalt"): VeiledStmt => ({ kind: "veiled", verb, span: DS });
-export const foulborn = (verb: FoulbornStmt["verb"]): FoulbornStmt => ({
-    kind: "foulborn",
-    verb,
-    span: DS,
-});
-export const unveil = (mod?: string | ParamRef): UnveilStmt => ({
-    kind: "unveil",
-    ...(mod !== undefined && { mod }),
-    span: DS,
-});
+
+/** A bare currency: `chaos`, `exalt`, … */
+export const op = (name: string): OperationStmt => operation([name]);
+export const essence = (name: string | ParamRef, tier?: number | ParamRef): OperationStmt =>
+    operation(["essence"], tier === undefined ? [named(name)] : [named(name), tiered(tier)]);
+export const bench = (name: string | ParamRef, tier?: number | ParamRef): OperationStmt =>
+    operation(["bench"], tier === undefined ? [named(name)] : [named(name), tiered(tier)]);
+export const harvest = (verb: "reforge" | "augment", tag: string | ParamRef): OperationStmt =>
+    operation(["harvest", verb], [named(tag)]);
+export const benchRemove = (): OperationStmt => operation(["bench", "remove"]);
+export const restore = (): OperationStmt => operation(["restore"]);
+export const fossil = (...names: (string | ParamRef)[]): OperationStmt =>
+    operation(["fossil"], names.map(named));
+export const harvestChange = (from: string | ParamRef, to: string | ParamRef): OperationStmt =>
+    operation(["harvest", "change"], [named(from), named(to)]);
+export const veiled = (verb: "chaos" | "exalt"): OperationStmt => operation(["veiled", verb]);
+export const foulborn = (verb: "augment" | "regal" | "exalt"): OperationStmt =>
+    operation(["foulborn", verb]);
+export const unveil = (mod?: string | ParamRef): OperationStmt =>
+    operation(["unveil"], mod === undefined ? [] : [named(mod)]);
+
+/** A Bestiary recipe: `beast add prefix 84`, `beast fracture`, `beast aspect "cat"`, … */
+type BeastAction =
+    | { readonly kind: "add"; readonly side: "prefix" | "suffix"; readonly level?: number }
+    | { readonly kind: "fracture" }
+    | { readonly kind: "metamod" }
+    | { readonly kind: "aspect"; readonly name: string | ParamRef }
+    | { readonly kind: "imprint" };
+export const beast = (action: BeastAction): OperationStmt => {
+    switch (action.kind) {
+        case "add": {
+            const side: OperationArg = { kind: "word", value: action.side, span: DS };
+            return operation(
+                ["beast", "add"],
+                action.level === undefined
+                    ? [side]
+                    : [side, { kind: "int", value: action.level, span: DS }],
+            );
+        }
+        case "aspect":
+            return operation(["beast", "aspect"], [named(action.name)]);
+        default:
+            return operation(["beast", action.kind]);
+    }
+};
 export const restart = (): RestartStmt => ({ kind: "restart", span: DS });
 export const until = (pred: Pred, body: readonly Stmt[]): UntilStmt => ({
     kind: "until",

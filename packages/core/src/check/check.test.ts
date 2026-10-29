@@ -546,7 +546,7 @@ describe("checker — operation functions", () => {
         const calls = trace.filter((e) => e.kind === "call");
         expect(calls).toHaveLength(1);
         // The inlined transmute/regal are a black box — no op entries leak into the trace.
-        expect(trace.some((e) => e.kind === "op")).toBe(false);
+        expect(trace.some((e) => e.kind === "operation")).toBe(false);
     });
 });
 
@@ -1123,7 +1123,7 @@ describe("checker — count refinement through disjunctions", () => {
         const r = check(c, ctx);
         const inside = r.trace.find(
             (e) =>
-                e.kind === "op" &&
+                e.kind === "operation" &&
                 e.before.counts.prefix[0] === 3 &&
                 e.before.counts.prefix[1] === 3,
         );
@@ -1211,7 +1211,7 @@ describe("checker — exclusions through a strip and a forced row", () => {
             iff(andp(notp(has(AMULET_ONLY.id)), notp(has("FireResist1"))), [op("chaos")]),
         ]);
         const r = check(c, ctx);
-        const after = r.trace.find((e) => e.kind === "op")!.after!;
+        const after = r.trace.find((e) => e.kind === "operation")!.after!;
         expect(excludedTypes(after).has(AMULET_ONLY.type)).toBe(true);
         expect(excludedTypes(after).has(FIRE_RESIST.type)).toBe(false);
     });
@@ -1224,7 +1224,7 @@ describe("checker — exclusions through a strip and a forced row", () => {
         ]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        const after = r.trace.find((e) => e.kind === "essence")!.after!;
+        const after = r.trace.find((e) => e.kind === "operation")!.after!;
         expect(after.presence).not.toBe(after.bdd.FALSE);
         expect(guaranteedTypes(after).has(LIFE_T1.type)).toBe(true);
     });
@@ -1237,7 +1237,7 @@ describe("checker — a transmute lays down one or two modifiers", () => {
             op("augment"),
         ]);
         const r = check(c, ctx);
-        expect(r.trace.find((e) => e.kind === "op")!.after!.counts.total).toEqual([1, 2]);
+        expect(r.trace.find((e) => e.kind === "operation")!.after!.counts.total).toEqual([1, 2]);
         expect(r.diagnostics[0]?.message).toContain("open affix slot");
     });
 });

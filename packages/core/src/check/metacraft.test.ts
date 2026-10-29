@@ -271,7 +271,9 @@ describe("a scour that keeps a side sets the rarity by survivor count", () => {
         );
         const r = check(c, ctx);
         expect(r.diagnostics[0]?.message).toContain("may be Magic or Rare");
-        const scoured = r.trace.find((e) => e.kind === "op" && e.after?.rarities.size === 2)!;
+        const scoured = r.trace.find(
+            (e) => e.kind === "operation" && e.after?.rarities.size === 2,
+        )!;
         expect(scoured.after!.rarities).toEqual(new Set(["magic", "rare"]));
     });
 
@@ -282,7 +284,9 @@ describe("a scour that keeps a side sets the rarity by survivor count", () => {
         );
         const r = check(c, ctx);
         expect(r.diagnostics[0]?.message).toContain("Requires a Magic item");
-        const scoured = r.trace.find((e) => e.kind === "op" && e.after?.counts.total[1] === 3)!;
+        const scoured = r.trace.find(
+            (e) => e.kind === "operation" && e.after?.counts.total[1] === 3,
+        )!;
         // The lock may sit on a kept prefix, so the floor is two, not three.
         expect(scoured.after!.counts.total).toEqual([2, 3]);
     });
@@ -340,7 +344,9 @@ describe("an unproven fracture through a scour", () => {
         ]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        const scoured = r.trace.find((e) => e.kind === "op" && e.after?.rarities.has("magic"))!;
+        const scoured = r.trace.find(
+            (e) => e.kind === "operation" && e.after?.rarities.has("magic"),
+        )!;
         expect(guaranteedTypes(scoured.after!).size).toBe(0);
     });
 });

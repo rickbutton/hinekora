@@ -7,28 +7,24 @@
 import {
     type AffixDecl,
     type Arg,
-    type BeastStmt,
-    type BenchRemoveStmt,
-    type BenchStmt,
     type CallPred,
     type CallStmt,
     type Cmp,
     type Craft,
     type Def,
-    type EssenceStmt,
-    type FossilStmt,
-    type FoulbornStmt,
-    type HarvestChangeStmt,
-    type HarvestStmt,
+    findMethod,
     type IfStmt,
     type ItemBlock,
+    type Method,
+    methodsAfter,
+    type OperationArg,
+    type OperationStmt,
     type ParamRef,
     type Pos,
-    type UnveilStmt,
-    type VeiledStmt,
     type Pred,
     type ProcDef,
     type Rarity,
+    type Slot,
     type SourceSpan,
     span,
     type Stmt,
@@ -37,16 +33,10 @@ import {
 import { CraftSyntaxError } from "./errors.js";
 import type { Token, TokenKind } from "./token.js";
 import {
-    FOULBORN_VERBS,
-    type FoulbornVerb,
     GAME,
-    HARVEST_VERBS,
-    type HarvestVerb,
     PROJECTIONS as PROJECTION_WORDS,
     RARITY_PREDICATES,
     RARITY_WORDS as RARITY_WORD_LIST,
-    VEILED_VERBS,
-    type VeiledVerb,
 } from "./vocabulary.js";
 
 const RARITY_WORDS: ReadonlySet<string> = new Set(RARITY_WORD_LIST);
@@ -338,33 +328,120 @@ class Parser {
     private parseStatement(): Stmt {
         if (this.atKeyword("until")) return this.parseUntil();
         if (this.atKeyword("if")) return this.parseIf();
-        if (this.atKeyword("essence")) return this.parseEssence();
-        if (this.atKeyword("bench")) return this.parseBench();
-        if (this.atKeyword("harvest")) return this.parseHarvest();
-        if (this.atKeyword("veiled")) return this.parseVeiled();
-        if (this.atKeyword("foulborn")) return this.parseFoulborn();
-        if (this.atKeyword("fossil")) return this.parseFossil();
-        if (this.atKeyword("beast")) return this.parseBeast();
-        if (this.atKeyword("unveil")) return this.parseUnveil();
         if (this.atKeyword("restart")) {
             const t = this.advance();
             return { kind: "restart", span: t.span };
-        }
-        if (this.atKeyword("restore")) {
-            const t = this.advance();
-            return { kind: "restore", span: t.span };
         }
         if (this.atKeyword("else")) {
             throw this.error("'else' without a matching 'if'");
         }
         // A call to an operation function — an ident immediately followed by
-        // `(`. Checked before the bare-ident currency case.
+        // `(`. Checked before the method case.
         if (this.at("ident") && this.peek(1).kind === "lparen") return this.parseCallStmt();
-        if (this.at("ident")) {
-            const t = this.advance();
-            return { kind: "op", name: t.text, span: t.span };
-        }
+        if (this.at("ident")) return this.parseOperation();
         throw this.error("expected an operation or control statement");
+    }
+
+    /**
+     * A method statement, shaped by the method table: the longest run of
+     * words that names a method, then one argument per slot. A lone word no
+     * method knows still parses, so the checker can name the unknown currency.
+     */
+    private parseOperation(): OperationStmt {
+        const first = this.advance();
+        const words: string[] = [first.text];
+        // A second word narrows a family (`beast add`, `harvest change`).
+        const continuations = methodsAfter(words);
+        if (continuations.length > 0) {
+            const next = this.peek();
+            const second = continuations.find(
+                (m) => m.words[1] === next.text && next.kind === "ident",
+            );
+            if (second !== undefined) {
+                this.advance();
+                words.push(next.text);
+            } else if (findMethod(words) === undefined) {
+                const options = continuations.map((m) => `'${m.words[1]}'`);
+                throw this.error(
+                    `after '${first.text}' expected one of ${options.join(", ")}, not '${next.text}'`,
+                    next.span,
+                );
+            }
+        }
+        const method = findMethod(words);
+        const args: OperationArg[] = [];
+        if (method !== undefined) {
+            for (const slot of method.args) this.parseSlot(method, slot, args);
+        }
+        return { kind: "operation", words, args, span: span(first.span.start, this.prev.span.end) };
+    }
+
+    /** Parse the argument(s) one slot asks for, appending to `args`. */
+    private parseSlot(method: Method, slot: Slot, args: OperationArg[]): void {
+        const where = `after '${method.words.join(" ")}'`;
+        switch (slot.kind) {
+            case "name": {
+                const arg = this.quotedOrParam();
+                if (arg !== undefined) args.push(arg);
+                else if (!slot.optional)
+                    throw this.error(`expected a quoted ${slot.of} name ${where}`);
+                return;
+            }
+            case "names": {
+                const firstArg = this.quotedOrParam();
+                if (firstArg === undefined)
+                    throw this.error(`expected a quoted ${slot.of} name ${where}`);
+                args.push(firstArg);
+                for (let n = 1; n < slot.max; n++) {
+                    const more = this.quotedOrParam();
+                    if (more === undefined) break;
+                    args.push(more);
+                }
+                return;
+            }
+            case "word": {
+                const tok = this.peek();
+                const options = slot.oneOf.map((w) => `'${w}'`);
+                const expected = `${options.slice(0, -1).join(", ")} or ${options[options.length - 1]}`;
+                if (tok.kind !== "ident" || !slot.oneOf.includes(tok.text.toLowerCase())) {
+                    throw this.error(`expected ${expected}, not '${tok.text}'`, tok.span);
+                }
+                this.advance();
+                args.push({ kind: "word", value: tok.text.toLowerCase(), span: tok.span });
+                return;
+            }
+            case "int": {
+                if (this.at("int")) {
+                    const tok = this.advance();
+                    args.push({ kind: "int", value: Number(tok.text), span: tok.span });
+                } else if (!slot.optional) {
+                    throw this.error(`expected a number ${where}`);
+                }
+                return;
+            }
+            case "tier": {
+                const tok = this.peek();
+                const lit = this.tierShorthand();
+                if (lit !== undefined) {
+                    args.push({ kind: "tier", value: lit, span: tok.span });
+                    return;
+                }
+                const p = this.paramRef();
+                if (p !== undefined) args.push({ kind: "param", param: p.param, span: p.span });
+                else if (!slot.optional) throw this.error(`expected a tier ${where}`);
+                return;
+            }
+        }
+    }
+
+    /** A quoted name, or (in a proc body) a param standing in for one; nothing otherwise. */
+    private quotedOrParam(): OperationArg | undefined {
+        if (this.at("string")) {
+            const tok = this.advance();
+            return { kind: "string", value: tok.text, span: tok.span };
+        }
+        const p = this.paramRef();
+        return p === undefined ? undefined : { kind: "param", param: p.param, span: p.span };
     }
 
     private parseCallStmt(): CallStmt {
@@ -399,154 +476,6 @@ class Parser {
         if (!m) return undefined;
         this.advance();
         return Number(m[1]);
-    }
-
-    private parseEssence(): EssenceStmt {
-        const start = this.expectKeyword("essence").span.start;
-        const name = this.parseStringOrParam("a quoted essence name after 'essence'");
-        const tier = this.parseTierOrParam();
-        return {
-            kind: "essence",
-            name,
-            ...(tier !== undefined && { tier }),
-            span: span(start, this.prev.span.end),
-        };
-    }
-
-    private parseBench(): BenchStmt | BenchRemoveStmt {
-        const start = this.expectKeyword("bench").span.start;
-        if (this.atKeyword("remove")) {
-            const t = this.advance();
-            return { kind: "benchRemove", span: span(start, t.span.end) };
-        }
-        const name = this.parseStringOrParam("a quoted mod name (or 'remove') after 'bench'");
-        const tier = this.parseTierOrParam();
-        return {
-            kind: "bench",
-            name,
-            ...(tier !== undefined && { tier }),
-            span: span(start, this.prev.span.end),
-        };
-    }
-
-    private parseVeiled(): VeiledStmt {
-        const start = this.expectKeyword("veiled").span.start;
-        const verbTok = this.expect("ident", "a veiled currency ('chaos' or 'exalt')");
-        const verb = verbTok.text.toLowerCase() as VeiledVerb;
-        if (!VEILED_VERBS.includes(verb)) {
-            throw this.error(
-                `a veiled currency must be 'chaos' or 'exalt', not '${verbTok.text}'`,
-                verbTok.span,
-            );
-        }
-        return { kind: "veiled", verb, span: span(start, this.prev.span.end) };
-    }
-
-    private parseFoulborn(): FoulbornStmt {
-        const start = this.expectKeyword("foulborn").span.start;
-        const verbTok = this.expect("ident", "a foulborn currency ('augment', 'regal' or 'exalt')");
-        const verb = verbTok.text.toLowerCase() as FoulbornVerb;
-        if (!FOULBORN_VERBS.includes(verb)) {
-            throw this.error(
-                `a foulborn currency must be 'augment', 'regal' or 'exalt', not '${verbTok.text}'`,
-                verbTok.span,
-            );
-        }
-        return { kind: "foulborn", verb, span: span(start, this.prev.span.end) };
-    }
-
-    private parseFossil(): FossilStmt {
-        const start = this.expectKeyword("fossil").span.start;
-        const names = [this.parseStringOrParam("a quoted fossil name after 'fossil'")];
-        for (;;) {
-            if (this.at("string")) {
-                names.push(this.advance().text);
-                continue;
-            }
-            const p = this.paramRef();
-            if (p === undefined) break;
-            names.push(p);
-        }
-        return { kind: "fossil", names, span: span(start, this.prev.span.end) };
-    }
-
-    private parseBeast(): BeastStmt {
-        const start = this.expectKeyword("beast").span.start;
-        const verbTok = this.expect(
-            "ident",
-            "a beast recipe ('add', 'fracture', 'metamod', 'aspect' or 'imprint')",
-        );
-        const verb = verbTok.text.toLowerCase();
-        if (verb === "aspect") {
-            const name = this.parseStringOrParam("a quoted Aspect name after 'beast aspect'");
-            return {
-                kind: "beast",
-                action: { kind: "aspect", name },
-                span: span(start, this.prev.span.end),
-            };
-        }
-        if (verb === "fracture" || verb === "metamod" || verb === "imprint") {
-            return {
-                kind: "beast",
-                action: { kind: verb },
-                span: span(start, verbTok.span.end),
-            };
-        }
-        if (verb !== "add") {
-            throw this.error(
-                `a beast recipe must be 'add', 'fracture', 'metamod', 'aspect' or 'imprint', not '${verbTok.text}'`,
-                verbTok.span,
-            );
-        }
-        const sideTok = this.expect("ident", "'prefix' or 'suffix' after 'beast add'");
-        const side = sideTok.text.toLowerCase();
-        if (side !== "prefix" && side !== "suffix") {
-            throw this.error(`expected 'prefix' or 'suffix', not '${sideTok.text}'`, sideTok.span);
-        }
-        const level = this.at("int") ? Number(this.advance().text) : undefined;
-        return {
-            kind: "beast",
-            action: { kind: "add", side, ...(level !== undefined && { level }) },
-            span: span(start, this.prev.span.end),
-        };
-    }
-
-    private parseUnveil(): UnveilStmt {
-        const start = this.expectKeyword("unveil").span.start;
-        // An optional target: a quoted mod name (or a proc param).
-        const mod = this.at("string") ? this.advance().text : this.paramRef();
-        return {
-            kind: "unveil",
-            ...(mod !== undefined && { mod }),
-            span: span(start, this.prev.span.end),
-        };
-    }
-
-    private parseHarvest(): HarvestStmt | HarvestChangeStmt {
-        const start = this.expectKeyword("harvest").span.start;
-        const verbTok = this.expect("ident", "a harvest action ('reforge', 'augment' or 'change')");
-        const verb = verbTok.text.toLowerCase() as HarvestVerb;
-        if (!HARVEST_VERBS.includes(verb)) {
-            throw this.error(
-                `a harvest action must be 'reforge', 'augment' or 'change', not '${verbTok.text}'`,
-                verbTok.span,
-            );
-        }
-        if (verb === "change") {
-            const from = this.parseStringOrParam("a quoted modifier to change after 'change'");
-            const to = this.parseStringOrParam("a quoted modifier to change it into");
-            return { kind: "harvestChange", from, to, span: span(start, this.prev.span.end) };
-        }
-        const tag = this.parseStringOrParam("a quoted modifier type after the harvest action");
-        return { kind: "harvest", verb, tag, span: span(start, this.prev.span.end) };
-    }
-
-    /** A quoted string, or (in a proc body) a param standing in for one. */
-    private parseStringOrParam(expected: string): string | ParamRef {
-        if (this.at("string")) return this.advance().text;
-        const p = this.paramRef();
-        if (p) return p;
-        throw this.error(expected);
     }
 
     private parseIf(): IfStmt {

@@ -12,6 +12,7 @@ import type {
     Craft,
     Def,
     ItemBlock,
+    OperationArg,
     ParamRef,
     Pred,
     ProcDef,
@@ -19,8 +20,6 @@ import type {
 } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import type { Gen, GroupId, ModId, TypeId } from "../model/ids.js";
-import type { Mod } from "../model/mod.js";
-import { type FossilSpec, isCorruptedEssence } from "../model/sources.js";
 import type { Registry } from "../resolve/registry.js";
 import {
     type AItem,
@@ -44,28 +43,8 @@ import {
     resolveMessage,
 } from "./diagnostics.js";
 import { rollableGen, rollableTiers, tierMod } from "../resolve/tiers.js";
-import {
-    BEAST_FRACTURE,
-    BEAST_IMPRINT,
-    BEAST_METAMOD,
-    ANY_BEAST_LEVEL,
-    beastAddOps,
-    beastAspectOps,
-    BENCH_REMOVE,
-    benchOps,
-    currencyOps,
-    essenceOps,
-    foulbornOps,
-    harvestAugmentOps,
-    harvestChangeOps,
-    harvestReforgeOps,
-    resonatorOps,
-    RESTORE,
-    unveilOps,
-    VEILED_CHAOS,
-    VEILED_EXALT,
-} from "./library.js";
-import { type Op, runMethod } from "./ops.js";
+import { findMethod, type Literal, type Method, slotAt } from "./methods.js";
+import { runMethod } from "./ops.js";
 
 export interface CheckContext {
     readonly registry: Registry;
@@ -134,19 +113,12 @@ const MAX_LOOP_ITERS = 32;
 
 type Flow = { readonly kind: "fall"; readonly state: AItem } | { readonly kind: "restart" };
 
-const ELEMENTS = ["fire", "cold", "lightning"] as const;
-
-/** Which elemental resistance or damage a modifier type grants, by its rows' tags. */
-function elementalKind(
-    catalog: readonly Mod[],
-    type: TypeId,
-): { element: string; kind: "resistance" | "damage" } | null {
-    const tags = new Set<string>();
-    for (const m of catalog) if (m.type === type) for (const t of m.implicitTags) tags.add(t);
-    const elements = ELEMENTS.filter((e) => tags.has(e));
-    if (elements.length !== 1) return null;
-    const kind = tags.has("resistance") ? "resistance" : tags.has("damage") ? "damage" : null;
-    return kind === null ? null : { element: elements[0]!, kind };
+/** A statement whose words name no method: a currency's name is the common
+ *  case, so that is what the message calls it. */
+function unknownOperation(words: readonly string[]): string {
+    return words.length === 1
+        ? `Unknown currency "${words[0]}".`
+        : `Unknown operation "${words.join(" ")}".`;
 }
 
 /** Join a list of branch states into their LUB; `null` when the list is empty. */
@@ -445,30 +417,8 @@ class Checker {
 
     private checkStmt(a: AItem, stmt: Stmt): Flow {
         switch (stmt.kind) {
-            case "op":
-                return this.checkOp(a, stmt);
-            case "essence":
-                return this.checkEssence(a, stmt);
-            case "bench":
-                return this.checkBench(a, stmt);
-            case "benchRemove":
-                return this.checkMethod(a, BENCH_REMOVE, stmt.span);
-            case "harvest":
-                return this.checkHarvest(a, stmt);
-            case "harvestChange":
-                return this.checkHarvestChange(a, stmt);
-            case "beast":
-                return this.checkBeast(a, stmt);
-            case "restore":
-                return this.checkMethod(a, RESTORE, stmt.span);
-            case "veiled":
-                return this.checkVeiled(a, stmt);
-            case "foulborn":
-                return this.checkFoulborn(a, stmt);
-            case "fossil":
-                return this.checkFossil(a, stmt);
-            case "unveil":
-                return this.checkUnveil(a, stmt);
+            case "operation":
+                return this.checkOperation(a, stmt);
             case "restart": {
                 // Record the state re-entering the innermost loop, if any, so the
                 // loop invariant can fold in this back-edge (a `restart` after an
@@ -488,247 +438,34 @@ class Checker {
         }
     }
 
-    private checkEssence(a: AItem, stmt: Extract<Stmt, { kind: "essence" }>): Flow {
-        const name = this.literalString(stmt.name, stmt.span);
-        const tier = this.literalTier(stmt.tier, stmt.span);
-        if (name === null || tier === null) return { kind: "fall", state: a };
-        const spec = this.registry.resolveEssence(name, tier);
-        if (!spec.ok) {
-            this.diag(resolveMessage(spec.error), stmt.span);
-            return { kind: "fall", state: a };
-        }
-        const result = runMethod(a, essenceOps(spec.value, a.ilvl), this.registry);
-        if (!result.ok) {
-            this.diag(preconditionMessage(a, result.failure), stmt.span);
-            return { kind: "fall", state: a };
-        }
-        return { kind: "fall", state: result.state };
-    }
-
-    private checkBench(a: AItem, stmt: Extract<Stmt, { kind: "bench" }>): Flow {
-        const name = this.literalString(stmt.name, stmt.span);
-        const tier = this.literalTier(stmt.tier, stmt.span);
-        if (name === null || tier === null) return { kind: "fall", state: a };
-        const craft = this.registry.resolveBench(name, a.base.itemClass, tier);
-        if (!craft.ok) {
-            this.diag(resolveMessage(craft.error), stmt.span);
-            return { kind: "fall", state: a };
-        }
-        const mod = this.registry.resolveMod(craft.value.mod);
-        if (!mod.ok) {
-            this.diag(resolveMessage(mod.error), stmt.span); // data-integrity; never expected
-            return { kind: "fall", state: a };
-        }
-        const result = runMethod(a, benchOps(mod.value), this.registry);
-        if (!result.ok) {
-            this.diag(preconditionMessage(a, result.failure), stmt.span);
-            return { kind: "fall", state: a };
-        }
-        return { kind: "fall", state: result.state };
-    }
-
-    private checkHarvest(a: AItem, stmt: Extract<Stmt, { kind: "harvest" }>): Flow {
-        const name = this.literalString(stmt.tag, stmt.span);
-        if (name === null) return { kind: "fall", state: a };
-        const tag = this.registry.resolveHarvestTag(name);
-        if (!tag.ok) {
-            this.diag(resolveMessage(tag.error), stmt.span);
-            return { kind: "fall", state: a };
-        }
-        const ops =
-            stmt.verb === "reforge" ? harvestReforgeOps(tag.value) : harvestAugmentOps(tag.value);
-        const result = runMethod(a, ops, this.registry);
-        if (!result.ok) {
-            this.diag(preconditionMessage(a, result.failure), stmt.span);
-            return { kind: "fall", state: a };
-        }
-        return { kind: "fall", state: result.state };
-    }
-
-    private checkVeiled(a: AItem, stmt: Extract<Stmt, { kind: "veiled" }>): Flow {
-        const result = runMethod(
-            a,
-            stmt.verb === "chaos" ? VEILED_CHAOS : VEILED_EXALT,
-            this.registry,
-        );
-        if (!result.ok) {
-            this.diag(preconditionMessage(a, result.failure), stmt.span);
-            return { kind: "fall", state: a };
-        }
-        return { kind: "fall", state: result.state };
-    }
-
-    private checkFoulborn(a: AItem, stmt: Extract<Stmt, { kind: "foulborn" }>): Flow {
-        return this.checkMethod(a, foulbornOps(stmt.verb), stmt.span);
-    }
-
-    private checkBeast(a: AItem, stmt: Extract<Stmt, { kind: "beast" }>): Flow {
-        const action = stmt.action;
-        switch (action.kind) {
-            case "add":
-                return this.checkMethod(
-                    a,
-                    beastAddOps(action.side, action.level ?? ANY_BEAST_LEVEL),
-                    stmt.span,
-                );
-            case "fracture":
-                return this.checkMethod(a, BEAST_FRACTURE, stmt.span);
-            case "metamod":
-                return this.checkMethod(a, BEAST_METAMOD, stmt.span);
-            case "imprint":
-                return this.checkMethod(a, BEAST_IMPRINT, stmt.span);
-            case "aspect": {
-                const name = this.literalString(action.name, stmt.span);
-                if (name === null) return { kind: "fall", state: a };
-                const row = this.registry.resolveAspect(name);
-                if (!row.ok) {
-                    this.diag(resolveMessage(row.error), stmt.span);
-                    return { kind: "fall", state: a };
-                }
-                return this.checkMethod(a, beastAspectOps(row.value), stmt.span);
-            }
-        }
-    }
-
-    private checkHarvestChange(a: AItem, stmt: Extract<Stmt, { kind: "harvestChange" }>): Flow {
-        const fromName = this.literalString(stmt.from, stmt.span);
-        const toName = this.literalString(stmt.to, stmt.span);
-        if (fromName === null || toName === null) return { kind: "fall", state: a };
-        const ctx = { base: a.base, ilvl: a.ilvl };
-        const from = this.registry.resolveModType(fromName, ctx);
-        const to = this.registry.resolveModType(toName, ctx);
-        for (const r of [from, to]) {
-            if (!r.ok) {
-                this.diag(resolveMessage(r.error), stmt.span);
-                return { kind: "fall", state: a };
-            }
-        }
-        if (!from.ok || !to.ok) return { kind: "fall", state: a };
-        const catalog = this.registry.catalog;
-        // The grove offers the craft for the three elemental resistances among
-        // themselves and the three elemental damages among themselves (the
-        // Sacred Grove's twelve "Change a modifier that grants …" options).
-        const source = elementalKind(catalog, from.value);
-        const target = elementalKind(catalog, to.value);
-        if (
-            source === null ||
-            target === null ||
-            source.kind !== target.kind ||
-            source.element === target.element
-        ) {
-            this.diag(
-                `The grove changes a fire, cold or lightning resistance into another of the three, or a fire, cold or lightning damage modifier likewise — not "${fromName}" into "${toName}".`,
-                stmt.span,
-            );
-            return { kind: "fall", state: a };
-        }
-        const targets = rollableTiers(catalog, a.base, a.ilvl, to.value);
-        if (targets.length === 0) {
-            this.diag(`"${toName}" cannot roll on this item.`, stmt.span);
-            return { kind: "fall", state: a };
-        }
-        // A similar tier: the target's row at the source's rank when the source
-        // is pinned to one row, else any of the target's rows.
-        const pinned = a.tiers.get(from.value);
-        const sources = rollableTiers(catalog, a.base, a.ilvl, from.value);
-        const rank = pinned?.size === 1 ? sources.findIndex((m) => pinned.has(m.id)) : -1;
-        const rows = rank >= 0 && rank < targets.length ? [targets[rank]!] : targets;
-        return this.checkMethod(
-            a,
-            harvestChangeOps(from.value, this.registry.typeLabel(from.value), rows),
-            stmt.span,
-        );
-    }
-
-    private checkFossil(a: AItem, stmt: Extract<Stmt, { kind: "fossil" }>): Flow {
-        const fossils: FossilSpec[] = [];
-        for (const n of stmt.names) {
-            const name = this.literalString(n, stmt.span);
-            if (name === null) return { kind: "fall", state: a };
-            const fossil = this.registry.resolveFossil(name);
-            if (!fossil.ok) {
-                this.diag(resolveMessage(fossil.error), stmt.span);
-                return { kind: "fall", state: a };
-            }
-            fossils.push(fossil.value);
-        }
-        if (new Set(fossils.map((f) => f.id)).size < fossils.length) {
-            this.diag("A resonator cannot hold the same fossil twice.", stmt.span);
-            return { kind: "fall", state: a };
-        }
-        if (fossils.length > 4) {
-            this.diag("A resonator holds at most four fossils.", stmt.span);
-            return { kind: "fall", state: a };
-        }
-        const rows = (ids: readonly ModId[]): Mod[] =>
-            ids.flatMap((id) => {
-                const r = this.registry.resolveMod(id);
-                if (!r.ok)
-                    this.diag(`The catalog has no modifier "${id}" for this fossil.`, stmt.span);
-                return r.ok ? [r.value] : [];
-            });
-        const corrupted = this.registry.essences.filter(isCorruptedEssence).flatMap((e) => {
-            const id = e.grants.get(a.base.itemClass);
-            return id === undefined ? [] : rows([id]);
-        });
-        return this.checkMethod(
-            a,
-            resonatorOps({
-                fossils,
-                added: rows(fossils.flatMap((f) => f.addedMods)),
-                forced: rows(fossils.flatMap((f) => f.forcedMods)),
-                corrupted,
-            }),
-            stmt.span,
-        );
-    }
-
-    /** Run a method with no name to resolve; a refused one leaves the state as is. */
-    private checkMethod(a: AItem, ops: readonly Op[], span: SourceSpan): Flow {
-        const result = runMethod(a, ops, this.registry);
-        if (!result.ok) {
-            this.diag(preconditionMessage(a, result.failure), span);
-            return { kind: "fall", state: a };
-        }
-        return { kind: "fall", state: result.state };
-    }
-
-    private checkUnveil(a: AItem, stmt: Extract<Stmt, { kind: "unveil" }>): Flow {
-        let type: TypeId | undefined;
-        let name: string | undefined;
-        if (stmt.mod !== undefined) {
-            const modName = this.literalString(stmt.mod, stmt.span);
-            if (modName === null) return { kind: "fall", state: a };
-            name = modName;
-            const ctx = { base: a.base, ilvl: a.ilvl };
-            const typeRes = this.registry.resolveModType(modName, ctx);
-            if (!typeRes.ok) {
-                this.diag(resolveMessage(typeRes.error), stmt.span);
-                return { kind: "fall", state: a };
-            }
-            type = typeRes.value;
-        }
-        const target = type !== undefined && name !== undefined ? { type, name } : undefined;
-        const result = runMethod(a, unveilOps(target), this.registry);
-        if (!result.ok) {
-            this.diag(preconditionMessage(a, result.failure), stmt.span);
-            return { kind: "fall", state: a };
-        }
-        return { kind: "fall", state: result.state };
-    }
-
     // --- operations --------------------------------------------------------
 
-    private checkOp(a: AItem, stmt: Extract<Stmt, { kind: "op" }>): Flow {
-        const currency = this.registry.resolveCurrency(stmt.name);
-        if (!currency.ok) {
-            this.diag(resolveMessage(currency.error), stmt.span);
+    /** Look the method up, bind its arguments, build its operations and run them.
+     *  A refused or unknown method leaves the state as it was, so checking
+     *  continues downstream. */
+    private checkOperation(a: AItem, stmt: Extract<Stmt, { kind: "operation" }>): Flow {
+        const method = findMethod(stmt.words);
+        if (method === undefined) {
+            this.diag(unknownOperation(stmt.words), stmt.span);
             return { kind: "fall", state: a };
         }
-        const result = runMethod(a, currencyOps(currency.value.kind), this.registry);
+        const literals: Literal[] = [];
+        for (const arg of stmt.args) {
+            if (arg.kind === "param") {
+                this.diag(`parameter "${arg.param}" was never given a value`, stmt.span);
+                return { kind: "fall", state: a };
+            }
+            literals.push(arg);
+        }
+        const built = method.build(literals, a, this.registry);
+        if ("refused" in built) {
+            this.diag(built.refused, stmt.span);
+            return { kind: "fall", state: a };
+        }
+        const result = runMethod(a, built, this.registry);
         if (!result.ok) {
             this.diag(preconditionMessage(a, result.failure), stmt.span);
-            return { kind: "fall", state: a }; // op skipped; keep checking downstream
+            return { kind: "fall", state: a };
         }
         return { kind: "fall", state: result.state };
     }
@@ -1141,16 +878,6 @@ class Checker {
         this.diag(`parameter "${v.param}" was never given a value`, span);
         return null;
     }
-
-    /** An optional tier slot (essence/bench): absent stays `undefined`; a leftover
-     *  ParamRef is an unbound-param error (`null`). */
-    private literalTier(
-        v: number | ParamRef | undefined,
-        span: SourceSpan,
-    ): number | undefined | null {
-        if (v === undefined) return undefined;
-        return this.literalInt(v, span);
-    }
 }
 
 // --- def parameter types + substitution (module-level, pure) --------------
@@ -1231,40 +958,36 @@ function notePredUses(u: ParamUses, p: Pred): void {
     }
 }
 
+/** The sort a parameter takes from the slot it fills: every quoted name is a
+ *  mod-name sort, a tier a tier, an integer a count. */
+function slotSort(method: Method | undefined, i: number): ParamType | undefined {
+    const slot = method === undefined ? undefined : slotAt(method, i);
+    switch (slot?.kind) {
+        case "name":
+        case "names":
+            return "mod";
+        case "tier":
+            return "tier";
+        case "int":
+            return "count";
+        default:
+            return undefined;
+    }
+}
+
 function noteStmtUses(u: ParamUses, s: Stmt): void {
     switch (s.kind) {
-        case "op":
         case "restart":
-        case "restore":
             return;
-        case "essence":
-        case "bench":
-            if (typeof s.name === "object") noteSort(u, s.name, "mod");
-            if (s.tier !== undefined && typeof s.tier === "object") noteSort(u, s.tier, "tier");
+        case "operation": {
+            const method = findMethod(s.words);
+            s.args.forEach((arg, i) => {
+                if (arg.kind !== "param") return;
+                const sort = slotSort(method, i);
+                if (sort !== undefined) noteSort(u, arg, sort);
+            });
             return;
-        case "harvest":
-            // The tag is a quoted string, same slot sort as a mod name.
-            if (typeof s.tag === "object") noteSort(u, s.tag, "mod");
-            return;
-        case "veiled":
-        case "foulborn":
-        case "benchRemove":
-            return;
-        case "beast":
-            if (s.action.kind === "aspect" && typeof s.action.name === "object") {
-                noteSort(u, s.action.name, "mod");
-            }
-            return;
-        case "fossil":
-            for (const n of s.names) if (typeof n === "object") noteSort(u, n, "mod");
-            return;
-        case "harvestChange":
-            if (typeof s.from === "object") noteSort(u, s.from, "mod");
-            if (typeof s.to === "object") noteSort(u, s.to, "mod");
-            return;
-        case "unveil":
-            if (s.mod !== undefined && typeof s.mod === "object") noteSort(u, s.mod, "mod");
-            return;
+        }
         case "until":
             notePredUses(u, s.pred);
             for (const b of s.body) noteStmtUses(u, b);
@@ -1360,35 +1083,20 @@ function substituteStmts(stmts: readonly Stmt[], env: Map<string, Arg>): Stmt[] 
     return stmts.map((s) => substituteStmt(s, env));
 }
 
+/** A bound parameter in an operation's argument becomes the bound literal; an
+ *  unbound one stays a reference, caught downstream. */
+function subOperationArg(arg: OperationArg, env: Map<string, Arg>): OperationArg {
+    if (arg.kind !== "param") return arg;
+    const bound = env.get(arg.param);
+    return bound === undefined ? arg : bound;
+}
+
 function substituteStmt(stmt: Stmt, env: Map<string, Arg>): Stmt {
     switch (stmt.kind) {
-        case "op":
         case "restart":
-        case "restore":
             return stmt;
-        case "essence":
-        case "bench": {
-            const name = subValue(stmt.name, env);
-            return stmt.tier === undefined
-                ? { ...stmt, name }
-                : { ...stmt, name, tier: subValue(stmt.tier, env) };
-        }
-        case "harvest":
-            return { ...stmt, tag: subValue(stmt.tag, env) };
-        case "veiled":
-        case "foulborn":
-        case "benchRemove":
-            return stmt;
-        case "beast":
-            return stmt.action.kind === "aspect"
-                ? { ...stmt, action: { kind: "aspect", name: subValue(stmt.action.name, env) } }
-                : stmt;
-        case "fossil":
-            return { ...stmt, names: stmt.names.map((n) => subValue(n, env)) };
-        case "harvestChange":
-            return { ...stmt, from: subValue(stmt.from, env), to: subValue(stmt.to, env) };
-        case "unveil":
-            return stmt.mod === undefined ? stmt : { ...stmt, mod: subValue(stmt.mod, env) };
+        case "operation":
+            return { ...stmt, args: stmt.args.map((arg) => subOperationArg(arg, env)) };
         case "until":
             return {
                 ...stmt,
