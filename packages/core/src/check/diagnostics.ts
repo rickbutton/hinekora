@@ -130,6 +130,8 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return "There is no veiled modifier on the item to unveil.";
             case "alreadyVeiled":
                 return "The item may already carry a veiled or unveiled modifier — a veiled orb can't be used on it.";
+            case "veiledWouldSurvive":
+                return "A veiled or unveiled modifier would survive the reforge (on a protected side, or fractured) — the item can't take a second one.";
             case "unveilNotAvailable":
                 return `"${failure.mod}" is not an available unveil option on this item.`;
             case "unveilNotGuaranteed":

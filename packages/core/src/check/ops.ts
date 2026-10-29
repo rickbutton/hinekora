@@ -124,6 +124,7 @@ export type PreconditionFailure =
     | { readonly kind: "alreadyFractured" }
     | { readonly kind: "noVeiledMod" }
     | { readonly kind: "alreadyVeiled" }
+    | { readonly kind: "veiledWouldSurvive" }
     | { readonly kind: "unveilNotAvailable"; readonly mod: string }
     | { readonly kind: "unveilNotGuaranteed"; readonly mod: string; readonly options: number }
     | { readonly kind: "scourRarityUnknown"; readonly lower: Rarity; readonly upper: Rarity };
@@ -307,7 +308,7 @@ function failing(
             const unprovenLock = hasFracture(a) && fractured.size === 0;
             const kept = (t: TypeId): boolean =>
                 unprovenLock || fractured.has(t) || rules.protected.has(sideOf(a, registry, t));
-            return mayHaveVeiled(a, registry, kept) ? { kind: "alreadyVeiled" } : null;
+            return mayHaveVeiled(a, registry, kept) ? { kind: "veiledWouldSurvive" } : null;
         }
         case "noBlockingMetamod":
             return rules.blocksSourced ? { kind: "metamodBlocks" } : null;

@@ -7,6 +7,7 @@ import {
     AMULET_BASE,
     CATALOG,
     PROTECT_PREFIXES_CARRIER,
+    PROTECT_SUFFIXES_CARRIER,
     RING_BASE,
     VEILED_CATALOG,
 } from "../__fixtures__/mods.js";
@@ -15,7 +16,7 @@ import { GroupId, TypeId } from "../model/ids.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE, AMULET_BASE],
-    mods: [...CATALOG, ...VEILED_CATALOG, PROTECT_PREFIXES_CARRIER],
+    mods: [...CATALOG, ...VEILED_CATALOG, PROTECT_PREFIXES_CARRIER, PROTECT_SUFFIXES_CARRIER],
     baseAliases: { "Iron Ring": "IronRing", "Coral Amulet": "CoralAmulet" },
 });
 const ctx: CheckContext = { registry };
@@ -81,10 +82,10 @@ describe("veiled orbs", () => {
         expect(r.diagnostics).toEqual([]);
     });
 
-    it("a veiled chaos is refused when a lock would keep the item's veiled modifier", () => {
+    it("a veiled chaos is refused when a protected side keeps the item's veiled modifier", () => {
         // "Prefixes Cannot Be Changed" keeps the veiled prefix through the reforge,
         // and the orb cannot add a second one; an unveiled suffix beside the same
-        // lock is rerolled away, so that orb goes through.
+        // metamod is rerolled away, so that orb goes through.
         const kept = item({
             base: "Iron Ring",
             ilvl: 100,
@@ -96,6 +97,42 @@ describe("veiled orbs", () => {
         expect(r.diagnostics[0]!.message).toContain("veiled or unveiled modifier");
         const rerolled = rareRing(["SharedVeilUnveiled1", PROTECT_PREFIXES_CARRIER.id]);
         expect(check(craft(rerolled, [veiled("chaos")]), ctx).diagnostics).toEqual([]);
+    });
+
+    it("a veiled chaos is refused when a protected side keeps an unveiled modifier", () => {
+        const kept = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: [PROTECT_SUFFIXES_CARRIER.id],
+            suffixes: ["SharedVeilUnveiled1"],
+        });
+        const r = check(craft(kept, [veiled("chaos")]), ctx);
+        expect(r.diagnostics[0]!.message).toContain("would survive the reforge");
+    });
+
+    it("a veiled chaos is refused when the unveiled modifier is fractured", () => {
+        const kept = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            suffixes: [{ mod: "SharedVeilUnveiled1", fractured: true }],
+        });
+        const r = check(craft(kept, [veiled("chaos")]), ctx);
+        expect(r.diagnostics[0]!.message).toContain("would survive the reforge");
+    });
+
+    it("a veiled chaos is refused under an unproven fracture beside an unveiled modifier", () => {
+        // The Fracturing Orb may have locked the unveiled suffix, so it may survive.
+        const start = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: ["random", "random"],
+            suffixes: ["SharedVeilUnveiled1", "random"],
+        });
+        const r = check(craft(start, [op("fracture"), veiled("chaos")]), ctx);
+        expect(r.diagnostics[0]!.message).toContain("would survive the reforge");
     });
 
     it("veiled exalt keeps the affix count (removes one, adds the veiled mod)", () => {
