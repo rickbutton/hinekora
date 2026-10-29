@@ -191,6 +191,8 @@ describe("parser — veiled orbs and unveil", () => {
         expect(bodyOf('beast aspect "cat"')).toMatchObject({
             action: { kind: "aspect", name: "cat" },
         });
+        expect(bodyOf("beast imprint")).toMatchObject({ action: { kind: "imprint" } });
+        expect(bodyOf("restore")).toMatchObject({ kind: "restore" });
     });
 
     it("parses harvest change with two modifier names", () => {

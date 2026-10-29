@@ -136,6 +136,10 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                         return `"${failure.mod}" sits on a side a metamod protects, so it can't be changed.`;
                 }
                 break;
+            case "noImprint":
+                return "No imprint of the item is held on every path — create one with 'beast imprint' first.";
+            case "notImprintable":
+                return "The Bestiary imprints a Magic item or a Rare talisman, nothing else.";
             case "noMetamodFits":
                 return "No metamod fits: its side is full on some path, or every metamod may already be on the item.";
             case "wrongBase":

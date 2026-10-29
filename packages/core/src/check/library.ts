@@ -186,6 +186,23 @@ export function beastAspectOps(row: Mod): readonly Op[] {
     ];
 }
 
+/** Beastcraft "create an imprint" of a Magic item or a Rare talisman
+ *  (Beastcrafting, Imprint): the item as it stands is held, so long as it is
+ *  not fractured. */
+export const BEAST_IMPRINT: readonly Op[] = [
+    require({ kind: "imprintable" }),
+    require({ kind: "noFracture" }),
+    { kind: "imprint" },
+];
+
+/** Apply the held imprint (Imprint § Mechanics): the item becomes what it was
+ *  when imprinted; an item fractured since cannot take it. */
+export const RESTORE: readonly Op[] = [
+    require({ kind: "hasImprint" }),
+    require({ kind: "noFracture" }),
+    { kind: "restore" },
+];
+
 /** Beastcraft "add a crafted meta-modifier": one of the five metamods, random
  *  among those that fit, within the crafted limit (Beastcrafting). */
 export const BEAST_METAMOD: readonly Op[] = [

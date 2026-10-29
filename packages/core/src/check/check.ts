@@ -46,6 +46,7 @@ import {
 import { rollableGen, rollableTiers, tierMod } from "../resolve/tiers.js";
 import {
     BEAST_FRACTURE,
+    BEAST_IMPRINT,
     BEAST_METAMOD,
     beastAddOps,
     beastAspectOps,
@@ -58,6 +59,7 @@ import {
     harvestChangeOps,
     harvestReforgeOps,
     resonatorOps,
+    RESTORE,
     unveilOps,
     VEILED_CHAOS,
     VEILED_EXALT,
@@ -441,6 +443,8 @@ class Checker {
                 return this.checkHarvestChange(a, stmt);
             case "beast":
                 return this.checkBeast(a, stmt);
+            case "restore":
+                return this.checkMethod(a, RESTORE, stmt.span);
             case "veiled":
                 return this.checkVeiled(a, stmt);
             case "foulborn":
@@ -555,6 +559,8 @@ class Checker {
                 return this.checkMethod(a, BEAST_FRACTURE, stmt.span);
             case "metamod":
                 return this.checkMethod(a, BEAST_METAMOD, stmt.span);
+            case "imprint":
+                return this.checkMethod(a, BEAST_IMPRINT, stmt.span);
             case "aspect": {
                 const name = this.literalString(action.name, stmt.span);
                 if (name === null) return { kind: "fall", state: a };
@@ -1196,6 +1202,7 @@ function noteStmtUses(u: ParamUses, s: Stmt): void {
     switch (s.kind) {
         case "op":
         case "restart":
+        case "restore":
             return;
         case "essence":
         case "bench":
@@ -1324,6 +1331,7 @@ function substituteStmt(stmt: Stmt, env: Map<string, Arg>): Stmt {
     switch (stmt.kind) {
         case "op":
         case "restart":
+        case "restore":
             return stmt;
         case "essence":
         case "bench": {

@@ -202,6 +202,12 @@ Operations that take a name (and an optional `t<n>`):
   [Aspect](https://www.poewiki.net/wiki/Aspect_of_the_Cat) of the cat, avian, spider or
   crab (`beast aspect "cat"`), a suffix that needs an open suffix slot and no other
   skill-granting modifier possibly present.
+- `beast imprint` creates an [imprint](https://www.poewiki.net/wiki/Imprint) of a Magic
+  item or a Rare talisman (the two Bestiary recipes), and `restore` applies it: the item
+  becomes what it was at the imprint, on every path. Neither works on a fractured item
+  ([Imprint § Mechanics](https://www.poewiki.net/wiki/Imprint#Mechanics)); corruption
+  and mirroring are not modelled. One imprint is held at a time, and `restore` consumes
+  it.
 - `unveil ["<mod>"]` is the three-option unveil of a
   [veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) and needs a veiled
   modifier on the item. Bare, the result is one of the valid options

@@ -101,6 +101,7 @@ export type Stmt =
     | BenchRemoveStmt
     | UnveilStmt
     | RestartStmt
+    | RestoreStmt
     | UntilStmt
     | IfStmt
     | CallStmt;
@@ -193,7 +194,9 @@ export type BeastAction =
     /** `beast metamod`: craft a random metamod among those that fit. */
     | { readonly kind: "metamod" }
     /** `beast aspect "<animal>"`: craft that Aspect skill's modifier. */
-    | { readonly kind: "aspect"; readonly name: string | ParamRef };
+    | { readonly kind: "aspect"; readonly name: string | ParamRef }
+    /** `beast imprint`: hold an imprint of a Magic item or a Rare talisman. */
+    | { readonly kind: "imprint" };
 
 /** `harvest change "<mod>" "<mod>"`: the first modifier becomes a similar-tier
  *  modifier of the second's kind. Inside a proc body a name may be a `ParamRef`. */
@@ -229,6 +232,12 @@ export interface CallStmt {
     readonly kind: "call";
     readonly name: string;
     readonly args: readonly Arg[];
+    readonly span: SourceSpan;
+}
+
+/** `restore`, apply the held imprint: the item becomes what it was when imprinted. */
+export interface RestoreStmt {
+    readonly kind: "restore";
     readonly span: SourceSpan;
 }
 

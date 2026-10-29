@@ -43,6 +43,8 @@ export interface AItem {
     /** How many bench-CRAFTED mods are present (a range). `bench` requires it
      *  provably below the crafted cap (one, or three under an active multimod). */
     readonly crafted: Range;
+    /** The item an imprint would restore, when one is held on every path. */
+    readonly imprint?: AItem;
 }
 
 /** The caps this item's counts live under (rarity + base). */
@@ -515,6 +517,7 @@ export function join(a: AItem, b: AItem): AItem {
         possible: SetDomain.join(a.possible, b.possible),
         tiers: TierDomain.join(a.tiers, b.tiers),
         crafted: RangeDomain.join(a.crafted, b.crafted),
+        ...(a.imprint && b.imprint && { imprint: join(a.imprint, b.imprint) }),
     };
 }
 
@@ -531,7 +534,10 @@ export function stateEqual(a: AItem, b: AItem): boolean {
         a.presence === b.presence &&
         SetDomain.equal(a.possible, b.possible) &&
         TierDomain.equal(a.tiers, b.tiers) &&
-        RangeDomain.equal(a.crafted, b.crafted)
+        RangeDomain.equal(a.crafted, b.crafted) &&
+        (a.imprint === undefined
+            ? b.imprint === undefined
+            : b.imprint !== undefined && stateEqual(a.imprint, b.imprint))
     );
 }
 

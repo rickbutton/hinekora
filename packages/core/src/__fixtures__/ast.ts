@@ -30,6 +30,7 @@ import type {
     HarvestChangeStmt,
     HarvestStmt,
     OpStmt,
+    RestoreStmt,
     UnveilStmt,
     VeiledStmt,
     ParamRef,
@@ -107,6 +108,7 @@ export const harvest = (verb: "reforge" | "augment", tag: string | ParamRef): Ha
 });
 export const benchRemove = (): BenchRemoveStmt => ({ kind: "benchRemove", span: DS });
 export const beast = (action: BeastAction): BeastStmt => ({ kind: "beast", action, span: DS });
+export const restore = (): RestoreStmt => ({ kind: "restore", span: DS });
 export const fossil = (...names: (string | ParamRef)[]): FossilStmt => ({
     kind: "fossil",
     names,

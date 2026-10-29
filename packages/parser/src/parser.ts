@@ -350,6 +350,10 @@ class Parser {
             const t = this.advance();
             return { kind: "restart", span: t.span };
         }
+        if (this.atKeyword("restore")) {
+            const t = this.advance();
+            return { kind: "restore", span: t.span };
+        }
         if (this.atKeyword("else")) {
             throw this.error("'else' without a matching 'if'");
         }
@@ -470,7 +474,7 @@ class Parser {
         const start = this.expectKeyword("beast").span.start;
         const verbTok = this.expect(
             "ident",
-            "a beast recipe ('add', 'fracture', 'metamod' or 'aspect')",
+            "a beast recipe ('add', 'fracture', 'metamod', 'aspect' or 'imprint')",
         );
         const verb = verbTok.text.toLowerCase();
         if (verb === "aspect") {
@@ -481,7 +485,7 @@ class Parser {
                 span: span(start, this.prev.span.end),
             };
         }
-        if (verb === "fracture" || verb === "metamod") {
+        if (verb === "fracture" || verb === "metamod" || verb === "imprint") {
             return {
                 kind: "beast",
                 action: { kind: verb },
@@ -490,7 +494,7 @@ class Parser {
         }
         if (verb !== "add") {
             throw this.error(
-                `a beast recipe must be 'add', 'fracture', 'metamod' or 'aspect', not '${verbTok.text}'`,
+                `a beast recipe must be 'add', 'fracture', 'metamod', 'aspect' or 'imprint', not '${verbTok.text}'`,
                 verbTok.span,
             );
         }

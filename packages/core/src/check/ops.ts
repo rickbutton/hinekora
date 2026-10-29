@@ -8,7 +8,15 @@
  * prefixes.
  */
 import { craftedCapOf, type Effect } from "../model/effects.js";
-import type { ClassId, Gen, GroupId, ModId, Rarity, TagId, TypeId } from "../model/ids.js";
+import {
+    type ClassId,
+    type Gen,
+    type GroupId,
+    type ModId,
+    type Rarity,
+    TagId,
+    type TypeId,
+} from "../model/ids.js";
 import type { ItemFacts } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
 import type { EssenceSpec, FossilSpec } from "../model/sources.js";
@@ -124,6 +132,10 @@ export type Check =
     | { readonly kind: "noBlockingMetamod" }
     /** The modifier is guaranteed present, not fractured, and on an unprotected side. */
     | { readonly kind: "typeRemovable"; readonly type: TypeId; readonly label: string }
+    /** An imprint is held on every path. */
+    | { readonly kind: "hasImprint" }
+    /** The Bestiary imprints a Magic item or a Rare talisman. */
+    | { readonly kind: "imprintable" }
     /** Some metamod fits the item (the Bestiary's random metamod). */
     | { readonly kind: "metamodFits" }
     /** The base carries the tag (a talisman for the Bestiary fractures). */
@@ -150,7 +162,11 @@ export type Op =
     /** `survivors`: the rarity a scour leaves, by how many modifiers remain. */
     | { readonly kind: "rarity"; readonly rarity: Rarity | "survivors" }
     /** One random present modifier becomes fractured. */
-    | { readonly kind: "lock" };
+    | { readonly kind: "lock" }
+    /** Hold the item as it is now, to restore later. */
+    | { readonly kind: "imprint" }
+    /** Replace the item with the held imprint, consuming it. */
+    | { readonly kind: "restore" };
 
 /** Why an operation's precondition fails on the current state. */
 export type PreconditionFailure =
@@ -172,6 +188,8 @@ export type PreconditionFailure =
     | { readonly kind: "fossilCorrupts"; readonly fossil: string }
     | { readonly kind: "wrongBase"; readonly needed: string }
     | { readonly kind: "noMetamodFits" }
+    | { readonly kind: "noImprint" }
+    | { readonly kind: "notImprintable" }
     | {
           readonly kind: "typeNotRemovable";
           readonly mod: string;
@@ -241,6 +259,13 @@ function apply(
             });
         case "lock":
             return lock(a);
+        case "imprint": {
+            const { imprint: _held, ...now } = a;
+            return { ...a, imprint: now };
+        }
+        case "restore":
+            // `hasImprint` ran first; a missing imprint here is unreachable.
+            return a.imprint ?? a;
     }
 }
 
@@ -253,6 +278,8 @@ function apply(
 // to be provably there.
 
 const ALL_GENS: readonly Gen[] = ["prefix", "suffix"];
+/** The base tag of a talisman, the one Rare the Bestiary imprints. */
+const TALISMAN = TagId("talisman");
 
 /** The rules the metamods impose on a method, read once when it is applied. */
 interface Rules {
@@ -415,6 +442,12 @@ function failing(
             }
             return null;
         }
+        case "hasImprint":
+            return a.imprint === undefined ? { kind: "noImprint" } : null;
+        case "imprintable":
+            return a.rarity === "magic" || (a.rarity === "rare" && a.base.tags.has(TALISMAN))
+                ? null
+                : { kind: "notImprintable" };
         case "metamodFits":
             return metamodRows(a, registry).length > 0 ? null : { kind: "noMetamodFits" };
         case "baseHasTag":

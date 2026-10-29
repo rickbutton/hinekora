@@ -39,10 +39,10 @@ from the library of `check/library.ts`. What remains:
 
 ## Step 3. The remaining single-item methods
 
-In the order of the ledger's **composes** rows, each a library entry plus tests and the
-surface name: imprint and restore. The
-Bestiary's two-modifier fracture waits on a fracture count in the abstract item. The bench reroll recipes wait on Q7; the Orb of Chance and the
-bench's reroll-the-rarity on Q15 (a set of rarities in the state).
+Every **composes** row of the ledger is built. What waits: the bench reroll recipes on
+Q7; the Orb of Chance and the bench's reroll-the-rarity on Q15 (a set of rarities in
+the state); the Bestiary's two-modifier fracture on a fracture count in the abstract
+item.
 
 ## Step 4. Marks
 

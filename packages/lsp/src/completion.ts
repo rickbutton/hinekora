@@ -41,7 +41,7 @@ type Context =
     | "aspect"
     | "fossil";
 
-const CONTROL_KEYWORDS = ["until", "if", "else", "with", "restart"];
+const CONTROL_KEYWORDS = ["until", "if", "else", "with", "restart", "restore"];
 /** Statement-starting keywords for the sourced/tag-directed crafts. */
 const SOURCED_KEYWORDS = [
     "essence",

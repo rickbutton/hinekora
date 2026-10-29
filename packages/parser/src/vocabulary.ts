@@ -16,6 +16,7 @@ export const KEYWORDS = [
     "if",
     "else",
     "restart",
+    "restore",
     "essence",
     "bench",
     "harvest",
@@ -45,7 +46,7 @@ export const GAME = "poe1";
 export const HARVEST_VERBS: readonly HarvestVerb[] = ["reforge", "augment", "change"];
 export const VEILED_VERBS: readonly VeiledVerb[] = ["chaos", "exalt"];
 /** The second word of `beast <verb>`. */
-export const BEAST_VERBS = ["add", "fracture", "metamod", "aspect"] as const;
+export const BEAST_VERBS = ["add", "fracture", "metamod", "aspect", "imprint"] as const;
 /** The side `beast add` names. */
 export const SIDE_WORDS = ["prefix", "suffix"] as const;
 /** The second word of `bench remove`. */

@@ -288,6 +288,10 @@ total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = t
   crafted mod on the kept side may survive; a `remove` with the random selector drops its
   lower bound (the crafted mod may have been removed), one with the crafted selector
   (`removeCrafted`) leaves only what is fractured.
+- `imprint`: the item an imprint would restore, itself an `AItem` (with no imprint of
+  its own), present only when one is held on every path: a join keeps it when both
+  sides hold one, joining the two, and drops it otherwise; `restore` needs it and
+  replaces the state with it.
 - **Tier presence atoms.** A tier-qualified predicate (`has X t1`) also asserts a SECOND
   BDD variable (`type` + NUL + `modId`), so a disjunction of tier-qualified clauses
   (`fire@t1 ∨ cold@t1 ∨ light@t1`) survives a `join` where the flat overlay would drop
@@ -408,7 +412,10 @@ in it. Notes:
   at the source's tier rank, or all its rows while that rank is unknown. A **metamods**
   pool (`metamodRows`) is the bench's effect carriers that fit, a crafted disjunction
   (`BEAST_METAMOD`); an Aspect (`beastAspectOps`) is a one-row pool of the row the
-  registry's `resolveAspect` names (`ASPECTS`, the four animals).
+  registry's `resolveAspect` names (`ASPECTS`, the four animals). `imprint` and
+  `restore` are the two exact primitives (`BEAST_IMPRINT` after `imprintable`, a Magic
+  item or a Rare talisman, and `noFracture`; `RESTORE` after `hasImprint` and
+  `noFracture`).
 - A `remove` with the random selector draws from an **allowed-gens** set = `both − protected`,
   or one side minus the protected when the selector names a side (`allowedFor`); a
   side-limited removal whose side is protected is skipped, not refused, the table's "will
