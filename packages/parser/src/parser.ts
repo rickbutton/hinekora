@@ -17,6 +17,7 @@ import {
     type ItemBlock,
     type Method,
     methodsAfter,
+    type NameKind,
     type OperationArg,
     type OperationStmt,
     type ParamRef,
@@ -49,6 +50,37 @@ const CMP_KINDS: Partial<Record<TokenKind, Cmp>> = {
     gt: ">",
     ge: ">=",
 };
+
+/** What a name slot asks for, in the guide writer's words. */
+const QUOTED: Readonly<Record<NameKind, string>> = {
+    mod: "a quoted mod name",
+    essence: "a quoted essence name",
+    bench: "a quoted bench craft",
+    fossil: "a quoted fossil name",
+    tag: "a quoted modifier type",
+    aspect: "a quoted Aspect name",
+};
+
+/** An argument as the guide wrote it, for quoting a statement back in an error. */
+function renderArg(arg: OperationArg): string {
+    switch (arg.kind) {
+        case "string":
+            return `"${arg.value}"`;
+        case "tier":
+            return `t${arg.value}`;
+        case "int":
+            return String(arg.value);
+        case "word":
+            return arg.value;
+        case "param":
+            return arg.param;
+    }
+}
+
+/** `, not '<text>'` for the token found instead, or nothing at the end of the input. */
+function notThis(tok: Token): string {
+    return tok.kind === "eof" ? "" : `, not '${tok.text}'`;
+}
 
 export function parseTokens(tokens: Token[]): Craft {
     return new Parser(tokens).parseCraft();
@@ -363,7 +395,7 @@ class Parser {
             } else if (findMethod(words) === undefined) {
                 const options = continuations.map((m) => `'${m.words[1]}'`);
                 throw this.error(
-                    `after '${first.text}' expected one of ${options.join(", ")}, not '${next.text}'`,
+                    `after '${first.text}' expected one of ${options.join(", ")}${notThis(next)}`,
                     next.span,
                 );
             }
@@ -376,21 +408,24 @@ class Parser {
         return { kind: "operation", words, args, span: span(first.span.start, this.prev.span.end) };
     }
 
-    /** Parse the argument(s) one slot asks for, appending to `args`. */
+    /**
+     * Parse the argument(s) one slot asks for, appending to `args`. An error
+     * names what is expected in the guide's words and quotes the statement so
+     * far, so `harvest change "fire res"` says which of its two mods is missing.
+     */
     private parseSlot(method: Method, slot: Slot, args: OperationArg[]): void {
-        const where = `after '${method.words.join(" ")}'`;
+        const where = `after '${[...method.words, ...args.map(renderArg)].join(" ")}'`;
         switch (slot.kind) {
             case "name": {
                 const arg = this.quotedOrParam();
                 if (arg !== undefined) args.push(arg);
-                else if (!slot.optional)
-                    throw this.error(`expected a quoted ${slot.of} name ${where}`);
+                else if (!slot.optional) throw this.error(`expected ${QUOTED[slot.of]} ${where}`);
                 return;
             }
             case "names": {
                 const firstArg = this.quotedOrParam();
                 if (firstArg === undefined)
-                    throw this.error(`expected a quoted ${slot.of} name ${where}`);
+                    throw this.error(`expected ${QUOTED[slot.of]} ${where}`);
                 args.push(firstArg);
                 for (let n = 1; n < slot.max; n++) {
                     const more = this.quotedOrParam();
@@ -403,11 +438,11 @@ class Parser {
                 const tok = this.peek();
                 const options = slot.oneOf.map((w) => `'${w}'`);
                 const expected = `${options.slice(0, -1).join(", ")} or ${options[options.length - 1]}`;
-                if (tok.kind !== "ident" || !slot.oneOf.includes(tok.text.toLowerCase())) {
-                    throw this.error(`expected ${expected}, not '${tok.text}'`, tok.span);
+                if (tok.kind !== "ident" || !slot.oneOf.includes(tok.text)) {
+                    throw this.error(`expected ${expected} ${where}${notThis(tok)}`, tok.span);
                 }
                 this.advance();
-                args.push({ kind: "word", value: tok.text.toLowerCase(), span: tok.span });
+                args.push({ kind: "word", value: tok.text, span: tok.span });
                 return;
             }
             case "int": {

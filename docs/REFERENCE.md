@@ -164,6 +164,8 @@ A statement that is not control flow or a call is an `OperationStmt`: `parseOper
 takes its opening word, a second word when `methodsAfter` says the family has one, and
 then one argument per slot of the method's `args` (`parseSlot`: a quoted name or a
 parameter, a word from a fixed set, a number, a tier; optional slots may be left off).
+A missing argument's error says what the slot wants in the guide's words (`QUOTED`)
+after the statement as written so far.
 An unknown opening word still parses as an operation, so the checker names it. `parse(source)` returns `{ ok, craft }` or
 `{ ok: false, error }` with a message + span. Tokens carry spans whose `offset` is a
 UTF-16 code-unit index into the source (the LSP's own offset convention). The lexer

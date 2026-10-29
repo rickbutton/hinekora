@@ -187,13 +187,25 @@ describe("parser — operation statements, shaped by the method table", () => {
             words: "harvest change",
             args: ["fire res", "cold res"],
         });
-        expect(() => bodyOf('harvest change "fire res"')).toThrow(/quoted mod name/);
+        expect(() => bodyOf('harvest change "fire res"')).toThrow(
+            /quoted mod name after 'harvest change "fire res"'/,
+        );
         expect(opOf('fossil "pristine"')).toEqual({ words: "fossil", args: ["pristine"] });
         expect(opOf('fossil "pristine" "dense"')).toEqual({
             words: "fossil",
             args: ["pristine", "dense"],
         });
-        expect(() => bodyOf("fossil")).toThrow(/fossil name/);
+        expect(() => bodyOf("fossil")).toThrow(/a quoted fossil name after 'fossil'/);
+    });
+
+    it("names a missing argument in the guide's words, without a token at the end", () => {
+        expect(() => bodyOf("bench")).toThrow(/a quoted bench craft after 'bench'$/);
+        expect(() => bodyOf("harvest reforge 3")).toThrow(/a quoted modifier type/);
+        expect(() => bodyOf("beast add")).toThrow(/'prefix' or 'suffix' after 'beast add'$/);
+        expect(() => bodyOf("beast add 3")).toThrow(
+            /'prefix' or 'suffix' after 'beast add', not '3'/,
+        );
+        expect(() => bodyOf("beast")).toThrow(/after 'beast' expected one of 'add'.*'imprint'$/);
         expect(opOf("unveil")).toEqual({ words: "unveil", args: [] });
         expect(opOf('unveil "double damage"')).toEqual({
             words: "unveil",
