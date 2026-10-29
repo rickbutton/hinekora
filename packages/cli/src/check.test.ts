@@ -53,6 +53,15 @@ exalt`);
         expect(r.output).toContain("declare the tier");
     });
 
+    it("a corrupted essence reforges a Rare and guarantees its modifier", () => {
+        const r = run(`craft in poe1
+item { base: "Iron Ring" ilvl: 84 rarity: rare }
+essence "horror"
+if not has "cold damage per frenzy charge" { exalt }`);
+        expect(r.ok).toBe(false);
+        expect(r.output).toContain("can never run");
+    });
+
     it("checks the bundled example.craft clean (bench after a proven-suffix reforge)", () => {
         const src = readFileSync(
             fileURLToPath(new URL("../../../examples/example.craft", import.meta.url)),

@@ -149,10 +149,10 @@ table decides the keep-set and the selector of every row that meets a metamod.
 
 Per [Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting): tiers 1–4 on a Normal item, 5–7 on Normal or Rare, never Magic, blocked by any metamod but multimod.
 
-| Method                                                                                                       | Composition                                                                                  | Status   |
-| ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | -------- |
-| Any tiered essence                                                                                           | `strip(fractured); rarity(rare); fill(natural.levelCap(tier), [3,5]); fill(grant(class), 1)` | built    |
-| Corrupted essences ([Essence § Corrupted essences](https://www.poewiki.net/wiki/Essence#Corrupted_essences)) | same, the grant an untiered exclusive row                                                    | composes |
+| Method                                                                                                       | Composition                                                                                  | Status |
+| ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | ------ |
+| Any tiered essence                                                                                           | `strip(fractured); rarity(rare); fill(natural.levelCap(tier), [3,5]); fill(grant(class), 1)` | built  |
+| Corrupted essences ([Essence § Corrupted essences](https://www.poewiki.net/wiki/Essence#Corrupted_essences)) | same, the grant an untiered exclusive row                                                    | built  |
 
 ### 3.4 Fossils
 

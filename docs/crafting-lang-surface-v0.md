@@ -133,9 +133,11 @@ Operations that take a name (and an optional `t<n>`):
 - `essence "<name>" [t<n>]` applies an [essence](https://www.poewiki.net/wiki/Essence#Crafting):
   a full name (`"Deafening Essence of Greed"`) or a type with a tier (`essence "greed" t1`,
   T1 = Deafening). The tier table of that section decides what it accepts: a Normal item at
-  any tier, a Rare item from Screaming up, never a Magic item; the base must be one that
-  can be Rare; the essence must grant a modifier for the item's class; and no protection
-  or cannot-roll metamod may be on the item.
+  any tier, a Rare item from Screaming up (the four
+  [corrupted essences](https://www.poewiki.net/wiki/Essence#Corrupted_essences) count as
+  the top tier), never a Magic item; the base must be one that can be Rare; the essence
+  must grant a modifier for the item's class; and no protection or cannot-roll metamod may
+  be on the item.
 - `bench "<mod>" [t<n>]` adds a [crafting bench](https://www.poewiki.net/wiki/Crafting_Bench)
   modifier, named by the modifier it adds (`bench "maximum life"`). It needs an open slot
   in the modifier's generation, the crafted-modifier limit not reached (one, or three under

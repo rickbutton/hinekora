@@ -482,7 +482,9 @@ function essenceSignature(
     }
     const e = res.value;
     const blocks = [
-        `**${e.name}** — essence (T${8 - e.tier})`, // ladder 7 = Deafening = T1
+        e.tier === 8
+            ? `**${e.name}** — corrupted essence`
+            : `**${e.name}** — essence (T${8 - e.tier})`, // ladder 7 = Deafening = T1
         e.tier >= 5
             ? "Reforges a **Normal or Rare** item, guaranteeing one mod."
             : "Upgrades a **Normal** item to Rare, guaranteeing one mod.",
