@@ -33,7 +33,7 @@ import {
     VEILED_CHAOS,
     VEILED_EXALT,
 } from "./library.js";
-import type { Op } from "./ops.js";
+import { influenceTagsOf, type Op } from "./ops.js";
 
 /** What a quoted name in an argument slot names in the catalog. */
 export type NameKind = "mod" | "essence" | "bench" | "fossil" | "aspect" | "tag";
@@ -109,7 +109,8 @@ function harvestChange(
     a: AItem,
     registry: Registry,
 ): readonly Op[] | Refusal {
-    const ctx = { base: a.base, ilvl: a.ilvl };
+    const tags = influenceTagsOf(a, registry).sure;
+    const ctx = { base: a.base, ilvl: a.ilvl, tags };
     const from = registry.resolveModType(fromName, ctx);
     if (!from.ok) return refuse(resolveMessage(from.error));
     const to = registry.resolveModType(toName, ctx);
@@ -130,12 +131,12 @@ function harvestChange(
             `The grove changes a fire, cold or lightning resistance into another of the three, or a fire, cold or lightning damage modifier likewise — not "${fromName}" into "${toName}".`,
         );
     }
-    const targets = rollableTiers(catalog, a.base, a.ilvl, to.value);
+    const targets = rollableTiers(catalog, a.base, a.ilvl, to.value, tags);
     if (targets.length === 0) return refuse(`"${toName}" cannot roll on this item.`);
     // A similar tier: the target's row at the source's rank when the source is
     // pinned to one row, else any of the target's rows.
     const pinned = a.tiers.get(from.value);
-    const sources = rollableTiers(catalog, a.base, a.ilvl, from.value);
+    const sources = rollableTiers(catalog, a.base, a.ilvl, from.value, tags);
     const rank = pinned?.size === 1 ? sources.findIndex((m) => pinned.has(m.id)) : -1;
     const rows = rank >= 0 && rank < targets.length ? [targets[rank]!] : targets;
     return harvestChangeOps(from.value, registry.typeLabel(from.value), rows);
@@ -254,7 +255,11 @@ export const METHODS: readonly Method[] = [
         doc: 'unveil ["<mod>"] — reveal the veiled modifier; with a name, that option, guaranteed only when three or fewer are offered.',
         build: ([n], a, registry) => {
             if (n === undefined) return unveilOps(undefined);
-            const type = registry.resolveModType(text(n), { base: a.base, ilvl: a.ilvl });
+            const type = registry.resolveModType(text(n), {
+                base: a.base,
+                ilvl: a.ilvl,
+                tags: influenceTagsOf(a, registry).sure,
+            });
             if (!type.ok) return refuse(resolveMessage(type.error));
             return unveilOps({ type: type.value, name: text(n) });
         },

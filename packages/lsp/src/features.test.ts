@@ -74,6 +74,13 @@ describe("hover", () => {
         expect(getHover(src, src.indexOf("isRare"), registry)).not.toContain("Orb");
     });
 
+    it("names the item's marks in the tooltip", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare influences: hunter corrupted }\nexalt`;
+        const h = getHover(src, src.indexOf("exalt"), registry)!;
+        expect(h).toContain("Hunter");
+        expect(h).toContain("corrupted");
+    });
+
     it("hovers a local def (declaration, call, and param share one signature)", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
 def anyEleRes(t) = has "fire resistance" t or has "cold resistance" t
@@ -317,5 +324,15 @@ describe("semantic tokens", () => {
 
     it("returns empty on unlexable input rather than throwing", () => {
         expect(getSemanticTokens(`has "unterminated`, registry).data).toEqual([]);
+    });
+
+    it("colours the marks' words: the fields, the predicates and the influence names", () => {
+        const plain = getSemanticTokens(SRC, registry).data.length;
+        const marked = getSemanticTokens(
+            `${SRC}\nif influenced hunter and corrupted { chaos }`,
+            registry,
+        ).data.length;
+        // `if`, `influenced`, `hunter`, `and`, `corrupted`, `chaos`: six tokens of five ints.
+        expect(marked - plain).toBe(30);
     });
 });

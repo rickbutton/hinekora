@@ -10,12 +10,14 @@ import {
     type Base,
     check,
     excludedTypes,
+    isInfluence,
     METHODS,
     methodsAfter,
     type NameKind,
     type Registry,
     rollableTypes,
     slotAt,
+    type TagId,
     traceAt,
     type TypeId,
 } from "@hinekora/core";
@@ -125,15 +127,25 @@ function contextAt(source: string, offset: number): Context {
     return { kind: "statement" };
 }
 
-/** Best-effort base + ilvl for the craft, read from the text (tolerant of a broken tail). */
-function itemContext(source: string, registry: Registry): { base: Base; ilvl: number } | undefined {
+/** Best-effort base, ilvl and influence tags for the craft, read from the text
+ *  (tolerant of a broken tail). */
+function itemContext(
+    source: string,
+    registry: Registry,
+): { base: Base; ilvl: number; tags: ReadonlySet<TagId> } | undefined {
     const ilvl = Number(/\bilvl\s*:\s*(\d+)/.exec(source)?.[1] ?? 100);
     // Take the last `base: "…"` (there is one item block; last wins under edits).
     let name: string | undefined;
     for (const m of source.matchAll(/\bbase\s*:\s*"([^"]*)"/g)) name = m[1];
     if (name === undefined) return undefined;
     const b = registry.resolveBase(name);
-    return b.ok ? { base: b.value, ilvl } : undefined;
+    if (!b.ok) return undefined;
+    const tags = new Set<TagId>();
+    const influences = /\binfluences\s*:((?:\s+[a-z]+)+)/.exec(source)?.[1] ?? "";
+    for (const word of influences.trim().split(/\s+/)) {
+        if (isInfluence(word)) for (const t of registry.influenceTags(b.value, word)) tags.add(t);
+    }
+    return { base: b.value, ilvl, tags };
 }
 
 /**
@@ -236,7 +248,9 @@ export function getCompletions(
 /** Stat descriptions, narrowed to what can roll here and is not proven absent. */
 function modItems(source: string, offset: number, registry: Registry): CompletionItem[] {
     const ctx = itemContext(source, registry);
-    const rollable = ctx ? rollableTypes(registry.catalog, ctx.base, ctx.ilvl) : undefined;
+    const rollable = ctx
+        ? rollableTypes(registry.catalog, ctx.base, ctx.ilvl, ctx.tags)
+        : undefined;
     const excluded = excludedAt(source, offset, registry);
     return registry.statSuggestions
         .filter((s) => (!rollable || rollable.has(s.type)) && !excluded.has(s.type))

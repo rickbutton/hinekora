@@ -289,7 +289,7 @@ export const HUNTER_RING_SUFFIX: Mod = mkMod({
     minLevel: 1,
     families: ["HunterRing"],
     spawn: [spawn(TagId("ring_basilisk"), 500), spawn(TAG_DEFAULT, 0)],
-    implicitTags: ["chaos"],
+    implicitTags: ["chaos", "influence_only"],
     text: "Hunter ring suffix",
 });
 

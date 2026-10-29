@@ -3,7 +3,9 @@ import { check, type CheckContext } from "./check.js";
 import { BddManager } from "./bdd.js";
 import { type InitialCounts, initialState, join, refine } from "./astate.js";
 import { runMethod } from "./ops.js";
-import { currencyOps } from "./library.js";
+import { currencyOps, harvestReforgeOps } from "./library.js";
+import { TagId } from "../model/ids.js";
+import { influenceKey } from "../model/marks.js";
 import { preconditionMessage, renderState } from "./diagnostics.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { corruptedP, craft, has, iff, influencedP, item, op, until } from "../__fixtures__/ast.js";
@@ -43,6 +45,46 @@ describe("influence", () => {
         const loop = [until(has("Hunter ring suffix"), [op("chaos")])];
         expect(messages(craft(ring({ influences: ["hunter"] }), loop))).toEqual([]);
         expect(messages(craft(ring(), loop)).join("\n")).toMatch(/never/);
+    });
+
+    it("resolves and tiers an influence modifier on the declared item and in `has`", () => {
+        const declared = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            suffixes: [{ mod: "Hunter ring suffix", tier: 1 }],
+            influences: ["hunter"],
+        });
+        const r = check(craft(declared, [until(has("Hunter ring suffix", 1), [op("chaos")])]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(HUNTER_RING_SUFFIX.type)).toEqual(
+            new Set([HUNTER_RING_SUFFIX.id]),
+        );
+        const plain = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            suffixes: [{ mod: "Hunter ring suffix", tier: 1 }],
+        });
+        expect(messages(craft(plain, [])).join("\n")).toMatch(/only 0 tiers roll here/);
+    });
+
+    it("reads a two-influence item as both, for `influenced` and for a fracture", () => {
+        const both = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: ["life", "mana", "armour"],
+            suffixes: ["cold"],
+            influences: ["shaper", "elder"],
+        });
+        const r = check(
+            craft(both, [iff(influencedP("shaper"), [op("fracture")], [op("chaos")])]),
+            ctx,
+        );
+        const text = r.diagnostics.map((d) => d.message).join("\n");
+        expect(text).toContain("'else' branch can never run");
+        expect(text).toContain("this item has Shaper and Elder");
     });
 
     it("refuses a fracture on an influenced item", () => {
@@ -113,16 +155,18 @@ describe("marks where paths meet", () => {
     const met = join(hunter, plain);
 
     it("joins to the set of what either path had", () => {
-        expect(met.influences).toEqual(new Set(["hunter", ""]));
+        expect(met.influences).toEqual(new Set([influenceKey(["hunter"]), influenceKey([])]));
         expect(met.corrupted).toEqual(new Set([true, false]));
         expect(renderState(met)).toContain("· Hunter or no influence · maybe corrupted");
     });
 
     it("refines back to one path, and to none when the predicate is impossible", () => {
         expect(refine(met, { kind: "influenced", influence: "hunter" })!.influences).toEqual(
-            new Set(["hunter"]),
+            new Set([influenceKey(["hunter"])]),
         );
-        expect(refine(met, { kind: "influenced" }, false)!.influences).toEqual(new Set([""]));
+        expect(refine(met, { kind: "influenced" }, false)!.influences).toEqual(
+            new Set([influenceKey([])]),
+        );
         expect(refine(met, { kind: "corrupted" })!.corrupted).toEqual(new Set([true]));
         expect(refine(hunter, { kind: "corrupted" })).toBeNull();
         expect(refine(plain, { kind: "influenced", influence: "shaper" })).toBeNull();
@@ -132,6 +176,15 @@ describe("marks where paths meet", () => {
         const maybeHunter = refine(met, { kind: "corrupted" }, false)!;
         const r = runMethod(maybeHunter, currencyOps("chaos"), registry);
         expect(r.ok && r.state.possible.has(HUNTER_RING_SUFFIX.type)).toBe(true);
+    });
+
+    it("does not let an influence held on some path only prove a tagged pool non-empty", () => {
+        const reforge = harvestReforgeOps(TagId("influence_only"));
+        const sure = runMethod(hunter, reforge, registry);
+        expect(sure.ok).toBe(true);
+        const unsure = runMethod(refine(met, { kind: "corrupted" }, false)!, reforge, registry);
+        expect(unsure.ok).toBe(false);
+        if (!unsure.ok) expect(unsure.failure.kind).toBe("harvestBlocked");
     });
 
     it("judges a mark that holds on some path as unproven", () => {

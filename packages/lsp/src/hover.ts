@@ -28,6 +28,7 @@ import {
     type TypeId,
     veiledPool,
     isCorruptedEssence,
+    influenceTagsOf,
     marksLabel,
     rarityLabel,
 } from "@hinekora/core";
@@ -271,7 +272,13 @@ function modLine(a: AItem, type: TypeId, registry: Registry, pinMod?: ModId): st
                   const r = registry.resolveMod(id);
                   return r.ok ? [r.value] : [];
               })
-            : rollableTiers(registry.catalog, a.base, a.ilvl, type);
+            : rollableTiers(
+                  registry.catalog,
+                  a.base,
+                  a.ilvl,
+                  type,
+                  influenceTagsOf(a, registry).sure,
+              );
     const texts = mods
         .map((m) => m.text)
         .filter((t): t is string => t !== undefined)
@@ -286,7 +293,9 @@ function modLine(a: AItem, type: TypeId, registry: Registry, pinMod?: ModId): st
  */
 function tooltip(a: AItem, registry: Registry, caption?: string): string {
     const guaranteed = guaranteedTypes(a);
-    const genOf = (t: TypeId): Gen => rollableGen(registry.catalog, a.base, a.ilvl, t) ?? "prefix";
+    const tags = influenceTagsOf(a, registry).sure;
+    const genOf = (t: TypeId): Gen =>
+        rollableGen(registry.catalog, a.base, a.ilvl, t, tags) ?? "prefix";
 
     const known: Record<Gen, TypeId[]> = { prefix: [], suffix: [] };
     for (const t of guaranteed) known[genOf(t)].push(t);
@@ -447,7 +456,13 @@ function modSignature(
     entry: TraceEntry | undefined,
     registry: Registry,
 ): string {
-    const ctx = entry ? { base: entry.before.base, ilvl: entry.before.ilvl } : undefined;
+    const ctx = entry
+        ? {
+              base: entry.before.base,
+              ilvl: entry.before.ilvl,
+              tags: influenceTagsOf(entry.before, registry).sure,
+          }
+        : undefined;
 
     const t = registry.resolveModType(text, ctx);
     if (!t.ok) {
@@ -465,7 +480,7 @@ function modSignature(
         return `${header}\n\n_tiers depend on the item — hover inside a craft to list them._`;
     }
     const baseName = ctx.base.name ?? ctx.base.id;
-    const tiers = rollableTiers(registry.catalog, ctx.base, ctx.ilvl, type);
+    const tiers = rollableTiers(registry.catalog, ctx.base, ctx.ilvl, type, ctx.tags);
     if (tiers.length === 0) {
         return `${header}\n\n_cannot roll on ${baseName} at ilvl ${ctx.ilvl}._`;
     }

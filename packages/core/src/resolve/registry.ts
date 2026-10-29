@@ -144,6 +144,8 @@ const fail = <T>(error: ResolveError): Resolved<T> => ({ ok: false, error });
 export interface ModTypeContext {
     readonly base: Base;
     readonly ilvl: number;
+    /** The item's influence tags, under which its influence rows roll. */
+    readonly tags?: ReadonlySet<TagId>;
 }
 
 export interface Registry {
@@ -455,7 +457,7 @@ export function buildRegistry(data: RegistryData): Registry {
                 const rollable = matches.filter(
                     (m) =>
                         veiledTypes.has(m.type) ||
-                        rollableTiers(catalog, ctx.base, ctx.ilvl, m.type).length > 0,
+                        rollableTiers(catalog, ctx.base, ctx.ilvl, m.type, ctx.tags).length > 0,
                 );
                 if (rollable.length > 0) matches = rollable;
             }
