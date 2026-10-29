@@ -169,7 +169,8 @@ Ingest scripts (`scripts/ingest-poe1.mjs`) project the RePoE-fork JSON dump down
 the fields needed (mods, bases, essences, bench options, fossils), minified, with a
 **provenance manifest** (repoe commit SHA + sha256 hashes; gameVersion "unknown" because
 repoe doesn't stamp it; a file taken from a later dump than the rest carries its own
-`provenance` entry). A fossil's projection keeps what decides which modifiers a
+`provenance` entry, written by hand when the file was added, which the next full
+re-ingest supersedes along with the file). A fossil's projection keeps what decides which modifiers a
 resonator can roll (`projectFossils`: blocked category tags, added and forced rows, the
 base tags it allows, its chance of a corrupted-essence modifier, a fracture), never the
 weight multipliers. A mod's projection keeps `implicit_tags` (the category tags harvest and fossils
@@ -555,6 +556,10 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/check/harvest.test.ts`                             | harvest reforge / augment through the checker                                                      |
 | `packages/core/src/check/metacraft.test.ts`                           | metamods: protection, cannot-roll, multimod, essence blocking                                      |
 | `packages/core/src/check/fossil.test.ts`                              | resonators: blocked tags, added and forced rows, the corrupted-essence guarantee, the fracture     |
+| `packages/core/src/check/bench.test.ts`                               | bench remove and the replace of a crafted modifier                                                 |
+| `packages/core/src/check/foulborn.test.ts`                            | the Foulborn orbs' top-tier cull                                                                   |
+| `packages/core/src/check/beast.test.ts`                               | the Bestiary recipes                                                                               |
+| `packages/core/src/check/harvest-change.test.ts`                      | the Harvest change of a modifier into another element                                              |
 | `packages/core/src/check/veiled.test.ts`                              | veiled orbs and `unveil` through the checker                                                       |
 | `packages/lsp/src/features.test.ts`                                   | hover / completion / semantic-token tests                                                          |
 | `packages/lsp/src/service.test.ts`                                    | `getDiagnostics` over the real data pipeline                                                       |

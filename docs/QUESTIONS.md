@@ -101,6 +101,54 @@ the damage types; the checker does not validate the pair (`check/check.ts`
 `checkHarvestChange`).
 **Answer:**
 
+### Q19 · game probe · open
+
+**Asked:** 2026-10-28
+**Goal:** how a fossil's own modifiers (the Faceted Fossil's gem-level rows) are
+admitted. [Fossil § Mechanics](https://www.poewiki.net/wiki/Fossil#Mechanics) says only
+that some fossils roll fossil-exclusive modifiers; the data gives those rows spawn
+weights by base tag like any other row.
+**Procure:** a Faceted Fossil and a resonator; a weapon and a body armour.
+**Steps:** resonate each several times; note which gem-level modifiers appear on which.
+**Record:** the modifiers seen per base.
+**Assumed meanwhile:** a fossil's row joins the pool when its weight on the base's tags is
+positive and its level is within the item's (`check/ops.ts`, the `fossil` pool).
+**Answer:**
+
+### Q20 · game probe · open
+
+**Asked:** 2026-10-28
+**Goal:** what a resonator does when another fossil blocks every row a fossil would force
+or guarantee: a Glyphic Fossil beside a fossil that blocks the chaos tag on a base whose
+corrupted-essence modifiers all carry it, or a Hollow Fossil beside one blocking its
+row's tag. [Glyphic Fossil § Mechanics](https://www.poewiki.net/wiki/Glyphic_Fossil#Mechanics)
+says a Jagged Fossil blocks the chaos-tagged essence modifiers, not what happens when
+none is left.
+**Procure:** a Glyphic and a Jagged Fossil, a Potent Chaotic Resonator, a base whose four
+corrupted-essence modifiers are all chaos-tagged (check the ring's four).
+**Steps:** resonate; note whether an essence modifier appears anyway, the resonator is
+refused, or the item rolls without one.
+**Record:** the outcome.
+**Assumed meanwhile:** the guarantee lapses and no such row rolls (`check/library.ts`
+`resonatorOps` filters the forced and essence rows by the blocked tags and asserts nothing
+when none remain).
+**Answer:**
+
+### Q21 · game probe · open
+
+**Asked:** 2026-10-28
+**Goal:** whether the Tangled Fossil still rolls fossil-only modifiers or a
+corrupted-essence modifier. [Fossil § Mechanics](https://www.poewiki.net/wiki/Fossil#Mechanics)
+describes it as a random "greatly more" and "no" tag since 3.16; the data still lists
+every fossil-only row under it and a one-in-ten corrupted-essence chance.
+**Procure:** Tangled Fossils and resonators, any rare base.
+**Steps:** resonate many times; note any fossil-only or corrupted-essence modifier.
+**Record:** whether either ever appears.
+**Assumed meanwhile:** the data's reading, which only widens what may appear (the
+`packages/data/data/poe1/fossils.json` entry, `resonatorOps`); the hover says "may roll" rather than asserting a
+chance.
+**Answer:**
+
 ---
 
 ## Resolved

@@ -177,7 +177,8 @@ Operations that take a name (and an optional `t<n>`):
   fossils' "no X modifiers" tags leave the pool, their own modifiers join it, a forced
   modifier (Hollow) or a corrupted-essence modifier (Glyphic) is guaranteed, and the
   Fractured Fossil fractures one of the rolled modifiers, so it needs an item without
-  one. A name is the fossil's first word or its full name. Needs a Rare item with no
+  one (in the game also one without influence or synthesis, which the model cannot
+  see). A name is the fossil's first word or its full name. Needs a Rare item with no
   protection or cannot-roll metamod, on a base every socketed fossil allows. Weight
   changes are not modelled: a Serrated Fossil reads as a plain reforge. A Bloodstained
   Fossil corrupts the item, which nothing can craft afterwards, so it is refused until
