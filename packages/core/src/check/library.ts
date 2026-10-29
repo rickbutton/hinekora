@@ -131,8 +131,8 @@ export function harvestReforgeOps(tag: TagId): readonly Op[] {
     return [
         isRare,
         strip(),
-        fill(natural, reforge(RARE_REFORGE)),
         require({ kind: "poolNonEmpty", pool: tagged(tag), tag }),
+        fill(natural, reforge(RARE_REFORGE)),
         fill(tagged(tag), within),
     ];
 }

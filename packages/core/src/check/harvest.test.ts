@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { disjunctiveGuarantees, guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, harvest, item } from "../__fixtures__/ast.js";
+import { craft, harvest, item, op } from "../__fixtures__/ast.js";
 import {
     AMULET_BASE,
     CATALOG,
+    PROTECT_PREFIXES_CARRIER,
     FLASK_BASE,
     RATCHETING_BASE,
     RING_BASE,
@@ -15,7 +16,7 @@ import { TypeId } from "../model/ids.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE, AMULET_BASE, SIMPLEX_BASE, RATCHETING_BASE, FLASK_BASE],
-    mods: CATALOG,
+    mods: [...CATALOG, PROTECT_PREFIXES_CARRIER],
     modAliases: { "T1 Life": "IncreasedLife1" },
     baseAliases: { "Iron Ring": "IronRing" },
 });
@@ -51,6 +52,20 @@ describe("harvest reforge", () => {
         expect(clauses).toContainEqual(new Set([TypeId("FireResist"), TypeId("FireChaosResist")]));
     });
 
+    it("rejects a tag whose only modifier a possibly kept one may block", () => {
+        // The exalt may have added the armour, the only defence modifier; a
+        // reforge that keeps the prefixes then has no defence modifier to add on
+        // that path, so the craft may be greyed out.
+        const kept = craft(rareRing([], [PROTECT_PREFIXES_CARRIER.id]), [
+            op("exalt"),
+            harvest("reforge", "defence"),
+        ]);
+        expect(check(kept, ctx).diagnostics[0]!.message).toContain("No defences modifier");
+        // Nothing kept: the reforge clears the armour, so the pool is whole.
+        const cleared = craft(rareRing(), [op("chaos"), harvest("reforge", "defence")]);
+        expect(check(cleared, ctx).diagnostics).toEqual([]);
+    });
+
     it("rejects a tag no mod can roll here (the grayed-out case)", () => {
         const c = craft(rareRing(), [harvest("reforge", "minion")]);
         const r = check(c, ctx);
@@ -84,6 +99,11 @@ describe("harvest augment (add tagged, remove a random other)", () => {
         expect(r.finalState!.counts.total).toEqual([1, 1]);
         const clauses = disjunctiveGuarantees(r.finalState!).map((c) => new Set(c));
         expect(clauses).toContainEqual(new Set([TypeId("FireResist"), TypeId("FireChaosResist")]));
+    });
+
+    it("rejects a tag whose only modifier may already be on the item", () => {
+        const c = craft(rareRing(), [op("chaos"), harvest("augment", "defence")]);
+        expect(check(c, ctx).diagnostics[0]!.message).toContain("No defences modifier");
     });
 
     it("requires a mod to remove", () => {

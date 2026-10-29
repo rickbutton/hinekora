@@ -31,12 +31,16 @@ export function lookupWeight(
     m: Mod,
     tags: ReadonlySet<TagId>,
     maybeTags?: ReadonlySet<TagId>,
+    pessimistic = false,
 ): number | null {
     for (const entry of m.spawn) {
         if (tags.has(entry.tag)) return entry.weight;
-        // A tag the item may carry can only ever help: a positive entry on it
-        // counts, a zero entry on it is skipped, so the answer covers both cases.
-        if (maybeTags?.has(entry.tag) && entry.weight > 0) return entry.weight;
+        // A tag the item may carry: read optimistically it only ever helps (a
+        // positive entry counts, a zero is skipped), read pessimistically it
+        // only ever hurts (a zero stops the row, a positive is skipped).
+        if (maybeTags?.has(entry.tag) && (pessimistic ? entry.weight === 0 : entry.weight > 0)) {
+            return entry.weight;
+        }
     }
     return null;
 }
@@ -63,6 +67,7 @@ export function pool(
     catalog: ModCatalog,
     it: ItemFacts,
     maybeTags?: ReadonlySet<TagId>,
+    pessimistic = false,
 ): readonly PoolCandidate[] {
     const restrict = poolRestrictPredicate(it.effects); // pool-restrict effects shrink the set
 
@@ -83,7 +88,7 @@ export function pool(
         // pool-restrict effects
         if (!restrict(m)) continue;
         // eligibility: a matching, nonzero spawn weight
-        const weight = lookupWeight(m, it.tags, maybeTags);
+        const weight = lookupWeight(m, it.tags, maybeTags, pessimistic);
         if (weight === null || weight <= 0) continue;
 
         candidates.push({ mod: m, weight });

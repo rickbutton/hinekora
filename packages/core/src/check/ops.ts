@@ -482,12 +482,15 @@ function failing(
             return sharesFamilyWithPresent(a, check.mod, registry)
                 ? { kind: "modConflict", group: registry.typeLabel(check.mod.type) }
                 : null;
-        case "poolNonEmpty":
-            // Read from the add-pool, which over-approximates: a tagged pool a
-            // possibly present mod would empty is not caught; a subset pool would.
-            return resolvePool(a, check.pool, registry).types.length > 0
-                ? null
-                : { kind: "harvestEmptyPool", tag: check.tag };
+        case "poolNonEmpty": {
+            // A fill reads a superset of every path's pool; this must read a
+            // subset, so a path on which the tagged pool is empty is caught.
+            const mods =
+                check.pool.kind === "tagged"
+                    ? subsetMods(a, registry).filter((m) => m.implicitTags.has(check.tag))
+                    : resolvePool(a, check.pool, registry).mods;
+            return mods.length > 0 ? null : { kind: "harvestEmptyPool", tag: check.tag };
+        }
         case "unveilTarget": {
             const offered = resolvePool(a, { kind: "unveil" }, registry).types;
             if (!offered.includes(check.type)) {
@@ -1156,6 +1159,30 @@ function addableMods(a: AItem, registry: Registry, level = a.ilvl): Mod[] {
         candidates = pool(registry.catalog, facts, maybeTags);
     }
     return candidates.map((c) => c.mod);
+}
+
+/**
+ * Under-approximate the mods a draw could introduce on every path: the pool as
+ * if every possibly present modifier were present (its type, its groups, its
+ * restrictions), with the tags it may add read pessimistically. A subset of
+ * each path's real pool, so an empty one means the draw is empty somewhere.
+ */
+function subsetMods(a: AItem, registry: Registry): Mod[] {
+    const facts = guaranteedFacts(a, registry);
+    const types = new Set(facts.types);
+    const families = new Set(facts.families);
+    const effects = [...facts.effects];
+    const maybeTags = new Set<TagId>();
+    for (const t of a.possible) {
+        if (isExcluded(a, t) || types.has(t)) continue;
+        types.add(t);
+        for (const f of registry.familiesOfType(t)) families.add(f);
+        for (const tag of registry.addsTagsOfType(t)) maybeTags.add(tag);
+        effects.push(...registry.effectsOfType(t));
+    }
+    return pool(registry.catalog, { ...facts, types, families, effects }, maybeTags, true).map(
+        (c) => c.mod,
+    );
 }
 
 /** The state's guaranteed mods as the facts the pool reads, at rare caps. */

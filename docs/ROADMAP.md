@@ -29,10 +29,6 @@ from the library of `check/library.ts`. What remains:
 
 - One generic operation statement in the AST whose arguments the library's signature
   drives, so the parser, completion and hover stop knowing each method.
-- A `require` that needs a pool to be non-empty (the harvest crafts' `harvestEmptyPool`)
-  must read a pool that is a subset of every path's real pool, while a fill reads a
-  superset; today both read the add-pool, so a greyed-out harvest craft whose tagged pool
-  a possibly present modifier empties can be accepted.
 - The rarity after a scour is one value, read from what the strip kept; when a kept side's
   count is uncertain the scour is refused until the count is narrowed. A set of rarities
   would accept it and say both.

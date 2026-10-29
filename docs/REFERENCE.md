@@ -526,9 +526,12 @@ in it. Notes:
   [Harvest crafting § Mechanics](https://www.poewiki.net/wiki/Harvest_crafting#Mechanics):
   it obeys prefix/suffix locks but ignores cannot-roll metamods. A tag is matched against
   `Mod.implicitTags`; the `require` that the tagged pool is non-empty sits after the
-  reforge or the removal, reading the state they produce, and fails as
-  `harvestEmptyPool`; it reads the add-pool, which over-approximates: a tagged pool a
-  possibly present mod would empty is not caught (`ROADMAP.md` Step 2).
+  strip or the removal, reading the state they produce, and fails as
+  `harvestEmptyPool`. It reads a **subset pool** (`subsetMods`): the pool as if every
+  possibly present modifier were present, with the tags it may add read pessimistically
+  (`lookupWeight`'s pessimistic mode), a subset of every path's real pool where a fill
+  reads a superset (`addableMods`); so a tagged pool that a possibly kept modifier
+  empties refuses the craft.
 
 ### `diagnostics.ts`: messages
 
