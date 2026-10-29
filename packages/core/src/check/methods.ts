@@ -338,5 +338,12 @@ export function slotAt(method: Method, i: number): Slot | undefined {
     return last?.kind === "names" ? last : undefined;
 }
 
-/** Every word that opens or continues a method statement. */
-export const METHOD_WORDS: readonly string[] = [...new Set(METHODS.flatMap((m) => m.words))];
+/** Every word that opens or continues a method statement, and every word a word slot accepts. */
+export const METHOD_WORDS: readonly string[] = [
+    ...new Set(
+        METHODS.flatMap((m) => [
+            ...m.words,
+            ...m.args.flatMap((s) => (s.kind === "word" ? s.oneOf : [])),
+        ]),
+    ),
+];

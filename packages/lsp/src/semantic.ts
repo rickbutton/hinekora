@@ -43,8 +43,6 @@ const KEYWORDS = new Set([
     "magic",
     "rare",
     "poe1",
-    "prefix",
-    "suffix",
     ...METHOD_WORDS.filter((w) => !CURRENCY_NAMES.has(w)),
 ]);
 const FIELDS = new Set(["base", "ilvl", "rarity", "prefixes", "suffixes"]);
