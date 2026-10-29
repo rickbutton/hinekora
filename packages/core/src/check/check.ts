@@ -48,6 +48,7 @@ import {
     BEAST_FRACTURE,
     BEAST_IMPRINT,
     BEAST_METAMOD,
+    ANY_BEAST_LEVEL,
     beastAddOps,
     beastAspectOps,
     BENCH_REMOVE,
@@ -552,7 +553,7 @@ class Checker {
             case "add":
                 return this.checkMethod(
                     a,
-                    beastAddOps(action.side, action.level ?? a.ilvl),
+                    beastAddOps(action.side, action.level ?? ANY_BEAST_LEVEL),
                     stmt.span,
                 );
             case "fracture":

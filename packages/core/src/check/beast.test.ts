@@ -87,6 +87,13 @@ describe("beast add", () => {
             ctx,
         );
         expect(high.finalState!.tiers.get(LIFE)).toEqual(new Set([LIFE_T1.id, "IncreasedLife2"]));
+        // No level named: a beast of any level, so the top tier is possible on a
+        // level-20 ring.
+        const any = check(
+            craft(rareRing([], [FIRE_RESIST.id], 20), [beast({ kind: "add", side: "prefix" })]),
+            ctx,
+        );
+        expect(any.finalState!.tiers.get(LIFE)).toEqual(new Set([LIFE_T1.id, "IncreasedLife2"]));
     });
 
     it("needs an open slot on the added side and a modifier to remove", () => {

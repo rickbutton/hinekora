@@ -421,7 +421,8 @@ in it. Notes:
   or one side minus the protected when the selector names a side (`allowedFor`); a
   side-limited removal whose side is protected is skipped, not refused, the table's "will
   add without removing" for the beast recipes (`beastAddOps`, whose fill reads the
-  natural pool at the beast's level, `addableMods` at a level other than the item's). A guarantee whose
+  natural pool at the beast's level, `addableMods` at a level other than the item's, or
+  at `ANY_BEAST_LEVEL` when the guide names none). A guarantee whose
   generation is not in that set survives (protected), as does one the cannot-roll shield
   covers and a fractured one; an empty set means nothing is removable.
 - `strip` keeps the protected sides and the fractured mod and drops the rest: counts fall

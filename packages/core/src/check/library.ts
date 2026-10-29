@@ -159,6 +159,10 @@ export function foulbornOps(verb: FoulbornStmt["verb"]): readonly Op[] {
     );
 }
 
+/** The level a beast of unknown level is read at: the pool at the top of the
+ *  ladder holds every row a beast of any level could add. */
+export const ANY_BEAST_LEVEL = 100;
+
 /** Beastcraft "add a prefix, remove a random suffix" and its mirror
  *  (Beastcrafting): the added modifier is drawn at the beast's level rather than
  *  the item's; under the other side's protection it adds without removing

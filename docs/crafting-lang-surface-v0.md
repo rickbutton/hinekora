@@ -185,8 +185,9 @@ Operations that take a name (and an optional `t<n>`):
   corruption is modelled.
 - `beast add prefix [<level>]` and `beast add suffix [<level>]` are the
   [Bestiary](https://www.poewiki.net/wiki/Beastcrafting) recipes "Add a Prefix, Remove a
-  Random Suffix" and its mirror: the added modifier is drawn at the beast's level, the
-  item's when none is given; the removed one is random on the other side. Needs a Rare
+  Random Suffix" and its mirror: the added modifier is drawn at the beast's level, not
+  the item's; without a level the checker allows every modifier a beast of any level
+  could add. The removed one is random on the other side. Needs a Rare
   item with an open slot on the added side and a modifier to remove, unless the other
   side is protected, when the recipe adds without removing
   ([Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions)).
