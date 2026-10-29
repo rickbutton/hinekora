@@ -1,58 +1,30 @@
 /**
- * Completion. The cursor's context comes from a small backward text scan
- * (tolerant of half-typed source). Mod suggestions are narrowed to what is
- * possible at the cursor — rollable on the base + ilvl and not proven absent
- * by the checker — with each filter degrading to "all mods" when the source
- * can't be read, never to nothing.
+ * Completion. The cursor's context comes from the current line's pieces before
+ * it (tolerant of half-typed source): which method the line's opening words
+ * name, and which of its slots the cursor is in, all read from the method
+ * table. Mod suggestions are narrowed to what is possible at the cursor,
+ * rollable on the base + ilvl and not proven absent by the checker, with each
+ * filter degrading to "all mods" when the source can't be read, never to nothing.
  */
 import {
     type Base,
     check,
     excludedTypes,
+    findMethod,
+    type Method,
+    METHODS,
+    methodsAfter,
+    type NameKind,
     type Registry,
     rollableTypes,
+    slotAt,
     traceAt,
     type TypeId,
 } from "@hinekora/core";
-import {
-    BEAST_VERBS,
-    FOULBORN_VERBS,
-    HARVEST_VERBS,
-    parse,
-    SIDE_WORDS,
-    VEILED_VERBS,
-} from "@hinekora/parser";
+import { parse } from "@hinekora/parser";
 import { type CompletionItem, CompletionItemKind } from "vscode-languageserver-types";
 
-type Context =
-    | "statement"
-    | "base"
-    | "mod"
-    | "predicate"
-    | "essence"
-    | "bench"
-    | "benchVerb"
-    | "harvestVerb"
-    | "harvestTag"
-    | "veiledVerb"
-    | "foulbornVerb"
-    | "beastVerb"
-    | "beastSide"
-    | "aspect"
-    | "fossil";
-
-const CONTROL_KEYWORDS = ["until", "if", "else", "with", "restart", "restore"];
-/** Statement-starting keywords for the sourced/tag-directed crafts. */
-const SOURCED_KEYWORDS = [
-    "essence",
-    "bench",
-    "harvest",
-    "veiled",
-    "unveil",
-    "foulborn",
-    "fossil",
-    "beast",
-];
+const CONTROL_KEYWORDS = ["until", "if", "else", "restart"];
 
 /** The keywords that can START a predicate (after `if` / `until` / `not`). */
 const PREDICATE_KEYWORDS: { label: string; detail: string; kind: CompletionItemKind }[] = [
@@ -78,71 +50,86 @@ function localDefs(source: string): { name: string; params: string }[] {
     return out;
 }
 
-function isSpace(c: string | undefined): boolean {
-    return c === " " || c === "\t" || c === "\n" || c === "\r";
-}
-function isWord(c: string | undefined): boolean {
-    return c !== undefined && /[A-Za-z_]/.test(c);
+/** A piece of the line before the cursor: a word, a number, a closed string,
+ *  or the string the cursor is inside (`open`). */
+interface Piece {
+    readonly kind: "word" | "int" | "string" | "open";
+    readonly text: string;
 }
 
-/** Infer what should be completed at `offset` from the text before it. */
+function piecesOf(line: string): Piece[] {
+    const out: Piece[] = [];
+    for (const m of line.matchAll(/"([^"]*)"|"([^"]*)$|([A-Za-z_]\w*)|(\d+)/g)) {
+        if (m[1] !== undefined) out.push({ kind: "string", text: m[1] });
+        else if (m[2] !== undefined) out.push({ kind: "open", text: m[2] });
+        else if (m[3] !== undefined) out.push({ kind: "word", text: m[3] });
+        else out.push({ kind: "int", text: m[4]! });
+    }
+    return out;
+}
+
+/** The method the line's opening words name, and how many words it took. */
+function methodOf(pieces: readonly Piece[]): { method: Method; words: number } | undefined {
+    const words = pieces.filter((p, i) => p.kind === "word" && i < 2).map((p) => p.text);
+    if (words.length === 2 && pieces[1]?.kind === "word") {
+        const two = findMethod(words);
+        if (two) return { method: two, words: 2 };
+    }
+    const one = words.length > 0 ? findMethod([words[0]!]) : undefined;
+    return one ? { method: one, words: 1 } : undefined;
+}
+
+type Context =
+    | { readonly kind: "statement" }
+    | { readonly kind: "predicate" }
+    | { readonly kind: "base" }
+    | { readonly kind: "mod" }
+    | { readonly kind: "nothing" }
+    | { readonly kind: "secondWord"; readonly first: string }
+    | { readonly kind: "name"; readonly of: NameKind }
+    | { readonly kind: "word"; readonly oneOf: readonly string[] };
+
+/** Infer what should be completed at `offset` from the line before it. */
 function contextAt(source: string, offset: number): Context {
-    let inString = false;
-    let open = -1;
-    for (let i = 0; i < offset && i < source.length; i++) {
-        if (source[i] === '"' && source[i - 1] !== "\\") {
-            inString = !inString;
-            if (inString) open = i;
+    const line = source.slice(source.lastIndexOf("\n", offset - 1) + 1, offset);
+    const pieces = piecesOf(line);
+    const open = pieces[pieces.length - 1]?.kind === "open";
+
+    if (open) {
+        // A field's string (`base: "…"`, an affix list) is a base or a mod.
+        const before = line.slice(0, line.lastIndexOf('"')).trimEnd();
+        if (before.endsWith(":")) {
+            return before.replace(/:$/, "").trimEnd().endsWith("base")
+                ? { kind: "base" }
+                : { kind: "mod" };
         }
+        const closed = pieces.slice(0, -1);
+        const found = methodOf(closed);
+        if (found) {
+            const slot = slotAt(found.method, closed.length - found.words);
+            if (slot?.kind === "name" || slot?.kind === "names")
+                return { kind: "name", of: slot.of };
+        }
+        return { kind: "mod" }; // after `has`, or inside an affix list
     }
 
-    if (!inString) {
-        // Predicate position iff the completed word before the cursor introduces
-        // a predicate; otherwise a statement position.
-        if (isSpace(source[offset - 1])) {
-            let j = offset - 1;
-            while (j >= 0 && isSpace(source[j])) j--;
-            const end = j + 1;
-            while (j >= 0 && isWord(source[j])) j--;
-            const word = source.slice(j + 1, end);
-            if (PREDICATE_INTRODUCERS.has(word)) return "predicate";
-            if (word === "harvest") return "harvestVerb";
-            if (word === "veiled") return "veiledVerb";
-            if (word === "foulborn") return "foulbornVerb";
-            if (word === "beast") return "beastVerb";
-            if (word === "bench") return "benchVerb";
-            if (word === "add") return "beastSide";
-        }
-        return "statement";
+    // A word still being typed is not part of the context; the client filters
+    // the offered items by it.
+    const complete = /\s$/.test(line) || line.length === 0;
+    const done = complete ? pieces : pieces.slice(0, -1);
+    if (done.length === 0) return { kind: "statement" };
+    const last = done[done.length - 1]!;
+    if (last.kind === "word" && PREDICATE_INTRODUCERS.has(last.text)) return { kind: "predicate" };
+    const words = done.filter((p) => p.kind === "word").map((p) => p.text);
+    if (done.length === 1 && last.kind === "word" && methodsAfter(words).length > 0) {
+        return { kind: "secondWord", first: last.text };
     }
-
-    // Inside a string: what precedes the opening quote?
-    let j = open - 1;
-    while (j >= 0 && isSpace(source[j])) j--;
-    // Earlier strings on the line belong to a `fossil` list; look past them.
-    while (source[j] === '"') {
-        j = source.lastIndexOf('"', j - 1) - 1;
-        while (j >= 0 && isSpace(source[j])) j--;
+    const found = methodOf(done);
+    if (found) {
+        const slot = slotAt(found.method, done.length - found.words);
+        return slot?.kind === "word" ? { kind: "word", oneOf: slot.oneOf } : { kind: "nothing" };
     }
-    if (source[j] === ":") {
-        let k = j - 1;
-        while (k >= 0 && isSpace(source[k])) k--;
-        const end = k + 1;
-        while (k >= 0 && isWord(source[k])) k--;
-        return source.slice(k + 1, end) === "base" ? "base" : "mod";
-    }
-    // A bare word before the quote: `essence`/`bench "…"` → their catalogs;
-    // otherwise a mod (after `has`, or inside a prefixes/suffixes list).
-    const end = j + 1;
-    let k = j;
-    while (k >= 0 && isWord(source[k])) k--;
-    const word = source.slice(k + 1, end);
-    if (word === "essence") return "essence";
-    if (word === "fossil") return "fossil";
-    if (word === "aspect") return "aspect";
-    if (word === "bench") return "bench";
-    if (word === "reforge" || word === "augment") return "harvestTag";
-    return "mod";
+    return { kind: "statement" };
 }
 
 /** Best-effort base + ilvl for the craft, read from the text (tolerant of a broken tail). */
@@ -171,12 +158,55 @@ function excludedAt(source: string, offset: number, registry: Registry): Readonl
     return new Set();
 }
 
+/** The catalog names a slot offers. */
+function namesOf(of: NameKind, registry: Registry): readonly string[] {
+    switch (of) {
+        case "essence":
+            return registry.essenceNames;
+        case "bench":
+            return registry.benchNames;
+        case "fossil":
+            return registry.fossilNames;
+        case "aspect":
+            return registry.aspectNames;
+        case "tag":
+            return registry.harvestTags;
+        case "mod":
+            return [];
+    }
+}
+
+const value = (label: string): CompletionItem => ({ label, kind: CompletionItemKind.Value });
+const keyword = (label: string, detail?: string): CompletionItem => ({
+    label,
+    ...(detail !== undefined && { detail }),
+    kind: CompletionItemKind.Keyword,
+});
+
+/** The words that open a statement: each method's first word once, with its
+ *  help, or "…" for a family of methods. */
+function statementItems(): CompletionItem[] {
+    const seen = new Map<string, CompletionItem>();
+    for (const m of METHODS) {
+        const first = m.words[0]!;
+        if (seen.has(first)) continue;
+        const family = methodsAfter([first]);
+        seen.set(first, {
+            label: first,
+            detail: family.length > 0 && m.words.length > 1 ? `${first} …` : m.doc,
+            kind: CompletionItemKind.Function,
+        });
+    }
+    return [...seen.values(), ...CONTROL_KEYWORDS.map((w) => keyword(w))];
+}
+
 export function getCompletions(
     source: string,
     offset: number,
     registry: Registry,
 ): CompletionItem[] {
-    switch (contextAt(source, offset)) {
+    const ctx = contextAt(source, offset);
+    switch (ctx.kind) {
         case "predicate":
             return [
                 ...PREDICATE_KEYWORDS.map((k) => ({
@@ -192,74 +222,30 @@ export function getCompletions(
                 })),
             ];
         case "base":
-            return registry.baseNames.map((label) => ({ label, kind: CompletionItemKind.Value }));
-        case "essence":
-            return registry.essenceNames.map((label) => ({
-                label,
-                kind: CompletionItemKind.Value,
-            }));
-        case "bench":
-            return registry.benchNames.map((label) => ({ label, kind: CompletionItemKind.Value }));
-        case "benchVerb":
-            return [{ label: "remove", detail: "bench remove", kind: CompletionItemKind.Keyword }];
-        case "harvestVerb":
-            return HARVEST_VERBS.map((label) => ({
-                label,
-                detail:
-                    label === "change"
-                        ? 'harvest change "<mod>" "<mod>"'
-                        : `harvest ${label} "<tag>"`,
-                kind: CompletionItemKind.Keyword,
-            }));
-        case "harvestTag":
-            return registry.harvestTags.map((label) => ({ label, kind: CompletionItemKind.Value }));
-        case "veiledVerb":
-            return VEILED_VERBS.map((label) => ({
-                label,
-                detail: `veiled ${label}`,
-                kind: CompletionItemKind.Keyword,
-            }));
-        case "foulbornVerb":
-            return FOULBORN_VERBS.map((label) => ({
-                label,
-                detail: `foulborn ${label}`,
-                kind: CompletionItemKind.Keyword,
-            }));
-        case "fossil":
-            return registry.fossilNames.map((label) => ({ label, kind: CompletionItemKind.Value }));
-        case "beastVerb":
-            return BEAST_VERBS.map((label) => ({
-                label,
-                detail:
-                    label === "add"
-                        ? "beast add prefix|suffix [<level>]"
-                        : label === "aspect"
-                          ? 'beast aspect "<animal>"'
-                          : `beast ${label}`,
-                kind: CompletionItemKind.Keyword,
-            }));
-        case "beastSide":
-            return SIDE_WORDS.map((label) => ({ label, kind: CompletionItemKind.Keyword }));
-        case "aspect":
-            return registry.aspectNames.map((label) => ({ label, kind: CompletionItemKind.Value }));
-        case "mod": {
-            const ctx = itemContext(source, registry);
-            const rollable = ctx ? rollableTypes(registry.catalog, ctx.base, ctx.ilvl) : undefined;
-            const excluded = excludedAt(source, offset, registry);
-            return registry.statSuggestions
-                .filter((s) => (!rollable || rollable.has(s.type)) && !excluded.has(s.type))
-                .map((s) => ({ label: s.label, detail: s.detail, kind: CompletionItemKind.Value }));
-        }
+            return registry.baseNames.map(value);
+        case "secondWord":
+            return methodsAfter([ctx.first]).map((m) => keyword(m.words[1]!, m.doc));
+        case "word":
+            return ctx.oneOf.map((w) => keyword(w));
+        case "name":
+            return ctx.of === "mod"
+                ? modItems(source, offset, registry)
+                : namesOf(ctx.of, registry).map(value);
+        case "mod":
+            return modItems(source, offset, registry);
+        case "nothing":
+            return [];
         case "statement":
-            return [
-                ...registry.currencies.map((c) => ({
-                    label: c.name,
-                    detail: c.displayName,
-                    documentation: c.description,
-                    kind: CompletionItemKind.Function,
-                })),
-                ...CONTROL_KEYWORDS.map((label) => ({ label, kind: CompletionItemKind.Keyword })),
-                ...SOURCED_KEYWORDS.map((label) => ({ label, kind: CompletionItemKind.Keyword })),
-            ];
+            return statementItems();
     }
+}
+
+/** Stat descriptions, narrowed to what can roll here and is not proven absent. */
+function modItems(source: string, offset: number, registry: Registry): CompletionItem[] {
+    const ctx = itemContext(source, registry);
+    const rollable = ctx ? rollableTypes(registry.catalog, ctx.base, ctx.ilvl) : undefined;
+    const excluded = excludedAt(source, offset, registry);
+    return registry.statSuggestions
+        .filter((s) => (!rollable || rollable.has(s.type)) && !excluded.has(s.type))
+        .map((s) => ({ label: s.label, detail: s.detail, kind: CompletionItemKind.Value }));
 }

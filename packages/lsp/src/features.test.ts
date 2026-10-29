@@ -59,6 +59,15 @@ describe("hover", () => {
         expect(md!).toMatch(/prefix|suffix/);
     });
 
+    it("hovers a method's words with its help and a tag argument with what it is", () => {
+        const src = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nharvest reforge "fire"`;
+        const onWord = getHover(src, src.indexOf("reforge"), registry);
+        expect(onWord).toContain('**harvest reforge "<tag>"**');
+        expect(onWord).toContain("Rare");
+        const onTag = getHover(src, src.indexOf('"fire"') + 2, registry);
+        expect(onTag).toContain('**"fire"**');
+    });
+
     it("hovers a local def (declaration, call, and param share one signature)", () => {
         const src = `craft in poe1
 item { base: "Iron Ring" ilvl: 84 rarity: rare }
@@ -240,6 +249,23 @@ describe("completion", () => {
         const tags = getCompletions(tagSrc, tagSrc.length, registry).map((c) => c.label);
         expect(tags).toEqual(expect.arrayContaining(["fire", "caster", "life"]));
         expect(tags).not.toContain("maximum life"); // tags, not mods
+    });
+
+    it("offers a word slot's choices and nothing once a method's slots are spent", () => {
+        const side = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nbeast add `;
+        expect(getCompletions(side, side.length, registry).map((c) => c.label)).toEqual([
+            "prefix",
+            "suffix",
+        ]);
+        const spent = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nexalt `;
+        expect(getCompletions(spent, spent.length, registry)).toEqual([]);
+    });
+
+    it('offers Aspect names inside a `beast aspect "` string', () => {
+        const src = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nbeast aspect "`;
+        const labels = getCompletions(src, src.length, registry).map((c) => c.label);
+        expect(labels).toContain("cat");
+        expect(labels).not.toContain("maximum life");
     });
 
     it("offers local def names as predicates (after a connective too)", () => {

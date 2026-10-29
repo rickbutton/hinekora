@@ -3,7 +3,7 @@
  * grammar: keyword / item field / resolved currency name (the payoff a plain
  * grammar can't provide). Unlexable source returns no tokens.
  */
-import type { Registry } from "@hinekora/core";
+import { METHOD_WORDS, type Registry, STANDARD_CURRENCIES } from "@hinekora/core";
 import { tokenize } from "@hinekora/parser";
 import { SemanticTokensBuilder } from "vscode-languageserver";
 import type { SemanticTokens } from "vscode-languageserver-types";
@@ -17,6 +17,9 @@ const T_KEYWORD = 0;
 const T_PROPERTY = 1;
 const T_FUNCTION = 2;
 
+/** A currency's name is coloured as a function wherever it appears, even as
+ *  the second word of `veiled chaos`. */
+const CURRENCY_NAMES = new Set(STANDARD_CURRENCIES.map((c) => c.name));
 const KEYWORDS = new Set([
     "craft",
     "in",
@@ -25,25 +28,6 @@ const KEYWORDS = new Set([
     "if",
     "else",
     "restart",
-    "restore",
-    "essence",
-    "bench",
-    "harvest",
-    "reforge",
-    "augment",
-    "change",
-    "veiled",
-    "unveil",
-    "foulborn",
-    "fossil",
-    "beast",
-    "add",
-    "metamod",
-    "aspect",
-    "imprint",
-    "prefix",
-    "suffix",
-    "remove",
     "def",
     "has",
     "fractured",
@@ -59,6 +43,9 @@ const KEYWORDS = new Set([
     "magic",
     "rare",
     "poe1",
+    "prefix",
+    "suffix",
+    ...METHOD_WORDS.filter((w) => !CURRENCY_NAMES.has(w)),
 ]);
 const FIELDS = new Set(["base", "ilvl", "rarity", "prefixes", "suffixes"]);
 

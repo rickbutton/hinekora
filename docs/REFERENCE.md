@@ -205,23 +205,26 @@ Transport-free service functions + a stdio server:
       tier. (Tier ids rarely match T-numbers: `IncreasedLife11` can be T1; ids count up
       with [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level), T-numbers down from
       best.)
-    - `essence`/`bench "<name>" [t1]` and a def's declaration/calls/params each hover as
-      one shared signature (`namedAt` / `defAt`).
-- `completion.ts`: `getCompletions`. A backward text-scan (`contextAt`) picks the
-  context: statement (currencies + control keywords + the sourced keywords `essence`,
-  `bench`, `harvest`, `veiled`, `unveil`, `foulborn`, `fossil`, `beast`), predicate (after
-  `if`/`until`/`not`/`and`/`or`; includes local def names scraped by regex), base,
-  essence, bench, harvest verb (after `harvest`), harvest tag (after `reforge`/`augment`),
-  veiled verb (after `veiled`), foulborn verb (after `foulborn`), fossil name (inside a
-  `fossil` line's strings), beast verb and side (after `beast`, after `add`), `remove`
-  (after `bench`), Aspect name (inside `beast aspect`'s string), or mod. Mod candidates
-  are **filtered to what's possible
-  at the cursor**: rollable on the item's base+ilvl (`rollableTypes`, base read from the text)
-  AND not proven-absent by the checker's state at that point (`excludedAt` parses the
-  craft, retrying with the open string closed). Both filters degrade gracefully to "all
-  mods" when the base can't be read / nothing parses.
+    - An operation statement hovers by the method table (`operationSignature`): its
+      words show the method's `doc` (a currency's description and what it requires; the
+      veiled orbs and `unveil` append the unveil options), and a string argument shows
+      the signature of what its slot names (essence, bench craft, fossil set, harvest
+      tag, Aspect, or mod with a trailing `t1`). A def's declaration/calls/params hover
+      as one shared signature (`defAt`).
+- `completion.ts`: `getCompletions`. The pieces of the current line before the cursor
+  (`piecesOf`: words, numbers, closed strings, the open string) pick the context
+  (`contextAt`): statement (each method's first word + control keywords), predicate
+  (after `if`/`until`/`not`/`and`/`or`; includes local def names scraped by regex),
+  base, the second word of a method family (`methodsAfter`), a `word` slot's choices,
+  a `name` slot's catalog names (essences, bench crafts, fossils, Aspects, harvest
+  tags), or mod. Mod candidates are **filtered to what's possible at the cursor**:
+  rollable on the item's base+ilvl (`rollableTypes`, base read from the text) AND not
+  proven-absent by the checker's state at that point (`excludedAt` parses the craft,
+  retrying with the open string closed). Both filters degrade gracefully to "all mods"
+  when the base can't be read / nothing parses.
 - `semantic.ts`: `getSemanticTokens`, lexer-driven; legend
-  `["keyword","property","function"]`; returns empty on unlexable input.
+  `["keyword","property","function"]`; keywords are the control and predicate words plus
+  `METHOD_WORDS` (currency names colour as functions); returns empty on unlexable input.
 - `server.ts`: `createServer(connection, registry)`, capabilities + handlers.
   `triggerCharacters` includes `"` so the mod/base list pops when a string opens.
 - `node.ts`: stdio entry (`vscode-languageserver/node.js`, explicit `.js` for NodeNext).

@@ -11,15 +11,18 @@ import {
     type Def,
     describePred,
     disjunctiveTier,
+    findMethod,
     type Gen,
     type GroupId,
     guaranteedTypes,
     isFractured,
+    type Method,
     type ModId,
     type Range,
     type Registry,
     rollableGen,
     rollableTiers,
+    slotAt,
     suffixRange,
     traceAt,
     type TraceEntry,
@@ -52,12 +55,6 @@ const KEYWORD_DOC: Record<string, string> = {
     if: "`if <pred> { … } else { … }` — branch on the item's state at this point. A branch that can never run is flagged.",
     else: "The alternative branch of an `if`.",
     restart: "`restart` — abandon this attempt and re-run the enclosing loop from the top.",
-    restore: "`restore` — apply the held imprint: the item becomes what it was at `beast imprint`.",
-    bench: '`bench "<mod>" [t1]` — add a crafted modifier, replacing the item\'s single crafted one; `bench remove` clears them.',
-    remove: "`bench remove` — clear the item's crafted modifiers at the bench (a fractured one stays).",
-    beast: '`beast add prefix|suffix [<level>]` adds a modifier of that side, drawn at the beast\'s level (any level when none is given), and removes a random one of the other; `beast fracture` fractures one modifier of a Rare talisman; `beast metamod` crafts a random metamod among those that fit; `beast aspect "<animal>"` crafts that Aspect skill; `beast imprint` holds an imprint of a Magic item or a Rare talisman for `restore`.',
-    foulborn:
-        "`foulborn augment | regal | exalt` — the plain orb, but only the top half of each modifier's tiers can roll.",
     has: '`has "<mod>" [t1]` — true when the item is guaranteed to carry that mod (optionally at that tier; `t1` = best).',
     not: "`not <pred>` — logical negation of a predicate.",
     craft: "`craft in <game>` — the file header declaring which game's data this craft targets.",
@@ -88,38 +85,106 @@ function stringIsBase(tokens: readonly Token[], i: number): boolean {
     return prev?.kind === "colon" && prev2?.kind === "ident" && prev2.text === "base";
 }
 
+/** The tokens on the line of token `i`, and `i`'s index among them. */
+function lineOf(tokens: readonly Token[], i: number): { line: Token[]; at: number } {
+    const row = tokens[i]!.span.start.line;
+    let start = i;
+    while (start > 0 && tokens[start - 1]!.span.start.line === row) start--;
+    let end = i;
+    while (end + 1 < tokens.length && tokens[end + 1]!.span.start.line === row) end++;
+    return { line: tokens.slice(start, end + 1), at: i - start };
+}
+
+/** The method a line's opening words name, and how many words it took. */
+function methodOfLine(line: readonly Token[]): { method: Method; words: number } | undefined {
+    const w0 = line[0];
+    const w1 = line[1];
+    if (w0?.kind !== "ident") return undefined;
+    if (w1?.kind === "ident") {
+        const two = findMethod([w0.text, w1.text]);
+        if (two) return { method: two, words: 2 };
+    }
+    const one = findMethod([w0.text]);
+    return one ? { method: one, words: 1 } : undefined;
+}
+
 /**
- * If the token at `i` belongs to a `<keyword> "<name>" [t1]` statement, the
- * keyword, the name string, OR the `t1` tier, return that (name, tier). All
- * three tokens then share one hover. Shared by `essence` and `bench`.
+ * The hover for a token of an operation statement: the method's help on its
+ * words, and on an argument the signature of what the slot names.
  */
-function namedAt(
-    tokens: readonly Token[],
-    i: number,
-    keyword: string,
-): { name: string; tier: number | undefined } | undefined {
-    const tok = tokens[i];
-    if (!tok) return undefined;
-    // The keyword: the name is the following string.
-    if (tok.kind === "ident" && tok.text === keyword) {
-        const nameTok = tokens[i + 1];
-        return nameTok?.kind === "string"
-            ? { name: nameTok.text, tier: tierAfter(tokens, i + 1) }
+function operationSignature(
+    line: readonly Token[],
+    at: number,
+    found: { method: Method; words: number },
+    entry: TraceEntry | undefined,
+    registry: Registry,
+): string | null {
+    const { method, words } = found;
+    const tok = line[at]!;
+    if (at < words) return methodHover(method, entry, registry);
+    // Arguments follow the words one token each; a `t1` after a name belongs
+    // to that name.
+    let argIndex = at - words;
+    let argTok = tok;
+    if (tok.kind === "ident" && tierToken(tok.text) && line[at - 1]?.kind === "string") {
+        argIndex -= 1;
+        argTok = line[at - 1]!;
+    }
+    const slot = slotAt(method, argIndex);
+    if (argTok.kind !== "string" || slot === undefined) return methodHover(method, entry, registry);
+    const tier = tierAfter(line, line.indexOf(argTok));
+    const of = slot.kind === "name" || slot.kind === "names" ? slot.of : undefined;
+    switch (of) {
+        case "essence":
+            return essenceSignature(argTok.text, tier, entry, registry);
+        case "bench":
+            return benchSignature(argTok.text, tier, entry, registry);
+        case "fossil":
+            return fossilSignature(
+                line.filter((t) => t.kind === "string").map((t) => t.text),
+                registry,
+            );
+        case "tag":
+            return `**"${argTok.text}"** — a modifier type the harvest crafts target.`;
+        case "aspect": {
+            const row = registry.resolveAspect(argTok.text);
+            return row.ok
+                ? `**${row.value.text ?? argTok.text}** — the Aspect's suffix the Bestiary crafts.`
+                : `**"${argTok.text}"** — unknown Aspect; the Bestiary crafts cat, avian, spider or crab.`;
+        }
+        case "mod":
+            return modSignature(argTok.text, tier, entry, registry);
+        default:
+            return methodHover(method, entry, registry);
+    }
+}
+
+/** A method's help: a currency's description with what it requires, the
+ *  unveil options for the veiled orbs and the unveil, the table's line otherwise. */
+function methodHover(method: Method, entry: TraceEntry | undefined, registry: Registry): string {
+    const [first] = method.words;
+    const cur =
+        method.words.length === 1 && first !== undefined
+            ? registry.resolveCurrency(first)
             : undefined;
+    if (cur?.ok) {
+        const c = cur.value;
+        return [
+            `**${first}** — *${c.displayName}*`,
+            c.description,
+            `**Requires:** ${REQUIRES[c.kind]}`,
+        ].join("\n\n");
     }
-    // The name string, directly after the keyword.
-    const kw = tokens[i - 1];
-    if (tok.kind === "string" && kw?.kind === "ident" && kw.text === keyword) {
-        return { name: tok.text, tier: tierAfter(tokens, i) };
+    // A doc reads `<usage> — <what it does>`; the usage is the heading.
+    const dash = method.doc.indexOf(" — ");
+    const head =
+        dash < 0
+            ? method.doc
+            : `**${method.doc.slice(0, dash)}** — ${method.doc.slice(dash + " — ".length)}`;
+    if (first === "veiled" || first === "unveil") {
+        return [head, unveilOptionsHover(entry, registry)].join("\n\n");
     }
-    // The `t1` tier, after `<keyword> "<name>"`.
-    const m = tok.kind === "ident" ? /^t(\d+)$/i.exec(tok.text) : null;
-    const str = tokens[i - 1];
-    const opKw = tokens[i - 2];
-    if (m && str?.kind === "string" && opKw?.kind === "ident" && opKw.text === keyword) {
-        return { name: str.text, tier: Number(m[1]) };
-    }
-    return undefined;
+    return head;
 }
 
 /**
@@ -315,14 +380,10 @@ function signature(
     const d = defAt(tokens, i, defs);
     if (d) return defSignature(d);
 
-    // `essence`/`bench "<name>" [t1]`, the keyword, name, and tier tokens all
-    // hover as one signature.
-    const fossils = fossilAt(tokens, i);
-    if (fossils) return fossilSignature(fossils, registry);
-    const ess = namedAt(tokens, i, "essence");
-    if (ess) return essenceSignature(ess.name, ess.tier, entry, registry);
-    const bch = namedAt(tokens, i, "bench");
-    if (bch) return benchSignature(bch.name, bch.tier, entry, registry);
+    // A method statement: its words and arguments hover by the method table.
+    const { line, at } = lineOf(tokens, i);
+    const found = methodOfLine(line);
+    if (found) return operationSignature(line, at, found, entry, registry);
 
     if (tok.kind === "ident") {
         // A `t1` tier shorthand hovers exactly like the mod string it qualifies.
@@ -331,22 +392,10 @@ function signature(
         if (tierM && prev?.kind === "string" && !stringIsBase(tokens, i - 1)) {
             return modSignature(prev.text, Number(tierM[1]), entry, registry);
         }
-        const cur = registry.resolveCurrency(tok.text);
-        if (cur.ok) {
-            const c = cur.value;
-            return [
-                `**${tok.text}** — *${c.displayName}*`,
-                c.description,
-                `**Requires:** ${REQUIRES[c.kind]}`,
-            ].join("\n\n");
-        }
         const proj = PROJECTION[tok.text];
         if (proj) {
             const line = `**${tok.text}** — ${proj.measures}.`;
             return entry ? `${line}\n\n_here:_ ${fmtRange(proj.of(entry.before))}` : line;
-        }
-        if (tok.text === "veiled" || tok.text === "unveil") {
-            return unveilOptionsHover(entry, registry, tok.text);
         }
         const kw = KEYWORD_DOC[tok.text];
         if (kw) return kw;
@@ -370,21 +419,13 @@ function signature(
  * item could reveal (the `veiledPool`), split by generation so the prefix/suffix
  * choices are visible before committing. Blocked families are already excluded.
  */
-function unveilOptionsHover(
-    entry: TraceEntry | undefined,
-    registry: Registry,
-    keyword: string,
-): string {
-    const head =
-        keyword === "veiled"
-            ? "**veiled** — adds a veiled modifier (`chaos` reforges, `exalt` swaps one) to unveil later"
-            : "**unveil** — reveal the pending veiled modifier";
-    if (!entry) return head;
+function unveilOptionsHover(entry: TraceEntry | undefined, registry: Registry): string {
+    if (!entry) return "_hover inside a craft to list the unveil options_";
     const a = entry.before;
     const families = new Set<GroupId>();
     for (const t of guaranteedTypes(a)) for (const f of registry.familiesOfType(t)) families.add(f);
     const pool = veiledPool(registry.catalog, a.base, a.ilvl, families);
-    if (pool.length === 0) return `${head}\n\n_no unveil options on this item_`;
+    if (pool.length === 0) return "_no unveil options on this item_";
 
     const label = (m: { text?: string; type: TypeId }): string =>
         (m.text ?? m.type).replace(/\n/g, " / ");
@@ -394,7 +435,7 @@ function unveilOptionsHover(
         pool.length <= 3
             ? "≤ 3 options — a chosen mod is guaranteed"
             : "block conflicting groups to 3 or fewer to guarantee a chosen mod";
-    const lines = [head, `**Unveil options (${pool.length})** — ${note}`];
+    const lines = [`**Unveil options (${pool.length})** — ${note}`];
     if (pre.length > 0) lines.push(`Prefixes: ${pre.join("; ")}`);
     if (suf.length > 0) lines.push(`Suffixes: ${suf.join("; ")}`);
     return lines.join("\n\n");
@@ -470,21 +511,6 @@ function modSignature(
     return blocks.join("\n\n");
 }
 
-/**
- * The signature for an essence name: its tier, reforge behaviour, and, using the
- * item at the cursor, the SPECIFIC mod it guarantees on this base's item class.
- */
-/** The names of a `fossil "<name>" …` line when `i` is its keyword or one of its names. */
-function fossilAt(tokens: readonly Token[], i: number): string[] | undefined {
-    let k = i;
-    while (k > 0 && tokens[k]?.kind === "string") k--;
-    const kw = tokens[k];
-    if (kw?.kind !== "ident" || kw.text !== "fossil") return undefined;
-    const names: string[] = [];
-    for (let j = k + 1; tokens[j]?.kind === "string"; j++) names.push(tokens[j]!.text);
-    return names.length > 0 ? names : undefined;
-}
-
 /** What each fossil of a resonator does to the reforge. */
 function fossilSignature(names: readonly string[], registry: Registry): string {
     const lines = names.map((text) => {
@@ -520,6 +546,10 @@ function fossilSignature(names: readonly string[], registry: Registry): string {
     ].join("\n\n");
 }
 
+/**
+ * The signature for an essence name: its tier, reforge behaviour, and, using the
+ * item at the cursor, the SPECIFIC mod it guarantees on this base's item class.
+ */
 function essenceSignature(
     text: string,
     tier: number | undefined,
