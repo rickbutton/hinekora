@@ -95,6 +95,18 @@ describe("imprint and restore", () => {
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
 
+    it("converges when the loop body itself imprints", () => {
+        // Each round imprints a differently rerolled item; the held imprint is
+        // widened with the rest, so the loop settles and the restore applies.
+        const c = craft(magicRing(["T1 Life"]), [
+            until(has(FIRE_RESIST.id), [op("alteration"), beast({ kind: "imprint" })]),
+            restore(),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.rarities).toEqual(new Set(["magic"]));
+    });
+
     it("joins imprints of different rarities into one that may be either", () => {
         // A Magic talisman imprinted on one arm, a Rare one on the other: the
         // restore brings back an item that is Magic or Rare, so a regal after

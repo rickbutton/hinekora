@@ -786,6 +786,22 @@ const resistTiers = (element: string, family: string): readonly Mod[] =>
 export const FIRE_RES_TIERS = resistTiers("fire", "Fire");
 export const COLD_RES_TIERS = resistTiers("cold", "Cold");
 
+/** Flat elemental damage prefixes, one row each, for the damage half of the
+ *  Harvest change. Not in `CATALOG`. */
+const damageRow = (element: string, family: string): Mod =>
+    mkMod({
+        id: `${family}Damage1`,
+        type: `${family}Damage`,
+        gen: "prefix",
+        minLevel: 1,
+        families: [`${family}Damage`],
+        spawn: [spawn(TAG_RING, 1000), spawn(TAG_DEFAULT, 0)],
+        implicitTags: [element, "elemental", "damage"],
+        text: `Adds # to # ${family} Damage`,
+    });
+export const FIRE_DAMAGE = damageRow("fire", "Fire");
+export const COLD_DAMAGE = damageRow("cold", "Cold");
+
 /** A second three-tier type at MaxLife's levels, for tier-to-tier changes. */
 export const MAXMANA_TIERS: readonly Mod[] = [
     ["MaxManaLow", 1],

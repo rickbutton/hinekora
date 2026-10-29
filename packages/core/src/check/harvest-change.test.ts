@@ -6,7 +6,9 @@ import { craft, harvestChange, item, op } from "../__fixtures__/ast.js";
 import {
     AMULET_BASE,
     CATALOG,
+    COLD_DAMAGE,
     COLD_RESIST,
+    FIRE_DAMAGE,
     FIRE_RESIST,
     COLD_RES_TIERS,
     FIRE_RES_TIERS,
@@ -17,7 +19,14 @@ import { TypeId } from "../model/ids.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE, AMULET_BASE],
-    mods: [...CATALOG, ...FIRE_RES_TIERS, ...COLD_RES_TIERS, PROTECT_SUFFIXES_CARRIER],
+    mods: [
+        ...CATALOG,
+        ...FIRE_RES_TIERS,
+        ...COLD_RES_TIERS,
+        FIRE_DAMAGE,
+        COLD_DAMAGE,
+        PROTECT_SUFFIXES_CARRIER,
+    ],
     modAliases: { "T1 Life": "IncreasedLife1" },
     baseAliases: { "Iron Ring": "IronRing", "Coral Amulet": "CoralAmulet" },
 });
@@ -90,6 +99,17 @@ describe("harvest change", () => {
             ctx,
         );
         expect(same.diagnostics[0]!.message).toContain("fire, cold or lightning resistance");
+        const damage = check(
+            craft(rareRing([FIRE_DAMAGE.id]), [harvestChange(FIRE_DAMAGE.id, COLD_DAMAGE.id)]),
+            ctx,
+        );
+        expect(damage.diagnostics).toEqual([]);
+        expect(guaranteedTypes(damage.finalState!).has(COLD_DAMAGE.type)).toBe(true);
+        const crossKind = check(
+            craft(rareRing([], [FIRE_RESIST.id]), [harvestChange(FIRE_RESIST.id, COLD_DAMAGE.id)]),
+            ctx,
+        );
+        expect(crossKind.diagnostics[0]!.message).toContain("fire, cold or lightning resistance");
     });
 
     it("refuses a target already on the item or one that cannot roll here", () => {

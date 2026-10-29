@@ -103,20 +103,8 @@ damage, one with fire penetration; the grove's "Fire Damage into Cold Damage" cr
 **Record:** the modifiers it changed.
 **Assumed meanwhile:** any type whose rows carry the element's tag and the damage tag
 (`check/check.ts` `elementalKind`), and for resistances the element's tag and the
-resistance tag, which admits the fire-and-chaos hybrid.
-**Answer:**
-
-### Q22 · game probe · open
-
-**Asked:** 2026-10-28
-**Goal:** what "similar-tier" means for the Harvest change, and whether it works on a
-Magic item. The option text says "similar-tier"; the checker takes the target's row of
-the same rank among its tiers when the source's tier is known (`check/check.ts`
-`checkHarvestChange`) and sets no rarity gate.
-**Procure:** a Rare and a Magic item each with a T3 fire resistance; the change to cold.
-**Steps:** apply it; note the cold resistance's tier and whether the Magic item took it.
-**Record:** the resulting tier on each.
-**Assumed meanwhile:** the same rank; any rarity with the modifier present.
+resistance tag, which admits the fire-and-chaos hybrid; a type that names two of the
+three elements (the fire-and-cold hybrid) is refused.
 **Answer:**
 
 ### Q19 · game probe · open
@@ -181,6 +169,19 @@ ordinary item-domain rows with no weight, the level-20 bench rows separate.
 **Assumed meanwhile:** not crafted: `beast aspect` leaves the crafted count alone
 (`check/library.ts` `beastAspectOps`) and the removal ignores the row. The level-20 bench
 Aspects have no surface form.
+**Answer:**
+
+### Q22 · game probe · open
+
+**Asked:** 2026-10-28
+**Goal:** what "similar-tier" means for the Harvest change, and whether it works on a
+Magic item. The option text says "similar-tier"; the checker takes the target's row of
+the same rank among its tiers when the source's tier is known (`check/check.ts`
+`checkHarvestChange`) and sets no rarity gate.
+**Procure:** a Rare and a Magic item each with a T3 fire resistance; the change to cold.
+**Steps:** apply it; note the cold resistance's tier and whether the Magic item took it.
+**Record:** the resulting tier on each.
+**Assumed meanwhile:** the same rank; any rarity with the modifier present.
 **Answer:**
 
 ---
