@@ -175,16 +175,6 @@ describe("checker — the wider currency set", () => {
         expect(r.finalState?.rarities).toEqual(new Set(["magic"]));
     });
 
-    it("binding is an alchemy: a Normal item to a Rare with 4–6 mods, refused on Magic", () => {
-        const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [op("binding")]);
-        const r = check(c, ctx);
-        expect(r.diagnostics).toEqual([]);
-        expect(r.finalState?.rarities).toEqual(new Set(["rare"]));
-        expect(r.finalState?.counts.total).toEqual([4, 6]);
-        const m = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "magic" }), [op("binding")]);
-        expect(check(m, ctx).diagnostics[0]?.message).toContain("Requires a Normal item");
-    });
-
     it("rejects alchemy on a Magic item (wrong rarity)", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "magic" }), [op("alchemy")]);
         expect(check(c, ctx).diagnostics[0]?.message).toContain("Requires a Normal item");

@@ -81,7 +81,7 @@ block before any operation is checked.
 ## 2. Names
 
 **Currencies** are written by their short name: `transmute`, `augment`, `alteration`,
-`regal`, `alchemy`, `chaos`, `exalt`, `annul`, `scour`, `fracture`, `binding` (§3). There
+`regal`, `alchemy`, `chaos`, `exalt`, `annul`, `scour`, `fracture` (§3). There
 are no other aliases.
 
 **Mods** are written as a stat description, matched to a modifier _type_ (every tier of a
@@ -126,7 +126,6 @@ page groups them:
 | `annul`      | [Orb of Annulment](https://www.poewiki.net/wiki/Orb_of_Annulment)                      | a removable modifier (Magic or Rare)                            |
 | `scour` | [Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) | Magic or Rare, with a side a metamod does not protect |
 | `fracture`   | [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)                | Rare, at least four modifiers, not already fractured            |
-| `binding`    | [Orb of Binding](https://www.poewiki.net/wiki/Orb_of_Binding)                          | Normal, a base that can be Rare (an alchemy; sockets are not modelled) |
 
 "Open slot" and "removable" are decided by the checker's knowledge of the item: a slot is
 open only if it is open on every path, a modifier is removable only if one is present on

@@ -48,7 +48,6 @@ const REQUIRES: Record<CurrencyKind, string> = {
     annul: "a Magic or Rare item with a removable affix",
     scour: "a Magic or Rare item",
     fracture: "a Rare item with at least four modifiers",
-    binding: "a Normal item",
 };
 
 const KEYWORD_DOC: Record<string, string> = {
