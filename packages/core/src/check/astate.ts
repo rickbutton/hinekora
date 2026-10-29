@@ -166,6 +166,21 @@ function isAtom(name: string): boolean {
     return isTierAtom(name) || isFracAtom(name);
 }
 
+/**
+ * Forget which tier each present modifier is, for the types `relaxed` admits:
+ * the overlay entry goes and every tier atom of the type is quantified away,
+ * so the modifier could be any row that rolls here (the Tainted Divine
+ * Teardrop). Sound: it only forgets.
+ */
+export function relaxTiers(a: AItem, relaxed: (type: TypeId) => boolean): AItem {
+    const tiers = new Map([...a.tiers].filter(([t]) => !relaxed(t)));
+    let presence = a.presence;
+    for (const v of a.bdd.variables()) {
+        if (isTierAtom(v) && relaxed(tierAtomType(v))) presence = a.bdd.exists(presence, v);
+    }
+    return { ...a, tiers, presence };
+}
+
 /** The tier atoms allocated for `type` (the specific mods a predicate has named). */
 function tierAtomsOf(a: AItem, type: TypeId): ModId[] {
     const out: ModId[] = [];

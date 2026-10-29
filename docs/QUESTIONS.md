@@ -280,6 +280,23 @@ natural modifier is ever added.
 pool at the beast's level (`check/library.ts` `beastAddInfluenceOps`).
 **Answer:**
 
+### Q32 · game probe · open
+
+**Asked:** 2026-10-29
+**Goal:** which influence the Corruption Altar's reforge gives, and how many modifiers a
+corruption reforge rolls on a base that holds fewer than six.
+[Locus of Corruption § Possible outcomes](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes)
+says "an influenced rare item of the same base type, with random affix modifiers" and
+no more; [Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment) says
+"rolling six random affixes" without naming a jewel's four.
+**Procure:** an uninfluenced Rare ring and a Rare jewel; altar access and Vaal Orbs.
+**Steps:** corrupt several rings at the altar until the influenced outcome shows; note
+the influences; corrupt jewels with Vaal Orbs until the reforge shows; count the affixes.
+**Record:** the influences seen; the affix counts on the jewel.
+**Assumed meanwhile:** any one influence, and six capped by the base's limit
+(`check/library.ts` `locusOps`, `vaalOps`).
+**Answer:**
+
 ---
 
 ## Resolved

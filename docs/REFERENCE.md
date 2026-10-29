@@ -422,8 +422,11 @@ in `library.ts` and run by `runMethod(state, ops, registry)` in `ops.ts`, which 
 `{ok, state}` or `{ok:false, failure}`. The operations are `require(check)`, `strip`,
 `fill(pool, count)`, `remove(selector)`, `rarity(r | survivors)`, `lock`,
 `imprint`/`restore`, `influence(change)` (set the mark, add an influence to every
-possible set, or randomise to every set of the same size) and `unprotect` (the metamods
-no longer govern the rest of the method, the Awakener's Orb); a method is
+possible set, or randomise to every set of the same size), `unprotect` (the metamods
+no longer govern the rest of the method, the Awakener's Orb), `corrupt`, `relax`
+(forget the present modifiers' tiers, `relaxTiers`, the crafted ones excepted when
+asked) and `either(branches)`, the join of running each branch of effects, a branch of
+`end` alone being an outcome that destroys the item and adds nothing; a method is
 all or nothing, so a failed `require` anywhere leaves the state as it was. The metamods
 in force (`Rules`: protected sides, the cannot-roll shield, the crafted cap, whether an
 essence is blocked) are read once when the method is applied and govern every operation
@@ -457,9 +460,9 @@ in it. Notes:
   item's class; a **rows** pool is one of a few given rows, asserted as a disjunction (a
   forced row, the Glyphic Fossil's guarantee). `resonatorOps` composes a resonator from
   them ([Resonator § Mechanics](https://www.poewiki.net/wiki/Resonator#Mechanics):
-  refused like an essence under a protect or cannot-roll metamod, on a base a fossil
-  does not allow, and for a fossil that corrupts the item, `fossilAllowed`), the
-  Fractured Fossil adding a `lock`. The harvest
+  refused like an essence under a protect or cannot-roll metamod and on a base a fossil
+  does not allow, `fossilAllowed`), the Fractured Fossil adding a `lock` and the
+  Bloodstained a `corrupt`. The harvest
   change (`harvestChangeOps`) is a `remove` with the **type selector** (`removeType`: the
   named modifier goes, excluded afterwards, everything else stays) after `typeRemovable`
   (guaranteed, not fractured, unprotected side), then a `rows` fill of the target's row

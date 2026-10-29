@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes, hasFracture, isExcluded } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { bench, callStmt, craft, fossil, item, param, procDef } from "../__fixtures__/ast.js";
+import { bench, callStmt, craft, fossil, item, op, param, procDef } from "../__fixtures__/ast.js";
 import {
     AMULET_BASE,
     CATALOG,
@@ -132,9 +132,10 @@ describe("a resonator", () => {
         expect(r.diagnostics[0]!.message).toContain('no modifier "NoSuchRow1"');
     });
 
-    it("refuses a fossil that corrupts the item", () => {
-        const r = check(craft(rareRing(), [fossil("bloodstained")]), ctx);
-        expect(r.diagnostics[0]!.message).toContain("corrupts the item");
+    it("corrupts the item with a Bloodstained Fossil, so nothing crafts it afterwards", () => {
+        const r = check(craft(rareRing(), [fossil("bloodstained"), op("exalt")]), ctx);
+        expect(r.finalState!.corrupted).toEqual(new Set([true]));
+        expect(r.diagnostics.map((d) => d.message).join("\n")).toContain("The item is corrupted");
     });
 
     it("holds distinct fossils, at most four", () => {

@@ -20,8 +20,13 @@ import {
     harvestAugmentOps,
     harvestChangeOps,
     harvestReforgeOps,
+    locusOps,
     resonatorOps,
+    TAINTED_CHAOS,
+    TAINTED_DIVINE,
+    TAINTED_EXALT,
     unveilOps,
+    vaalOps,
 } from "./library.js";
 import { buildRegistry, STANDARD_CURRENCIES } from "../resolve/registry.js";
 import {
@@ -54,8 +59,11 @@ const registry = buildRegistry({
     aspects: { cat: ASPECT_CAT.id },
 });
 
+/** Every method settles corruption first: refused on a corrupted item, or, for
+ *  the Tainted currency, required. */
 const opensWithCorruptionCheck = (ops: readonly Op[]): boolean =>
-    ops[0]?.kind === "require" && ops[0].check.kind === "notCorrupted";
+    ops[0]?.kind === "require" &&
+    (ops[0].check.kind === "notCorrupted" || ops[0].check.kind === "corruptedItem");
 
 describe("every method refuses a corrupted item first", () => {
     it("holds for each sequence the library states", () => {
@@ -78,6 +86,11 @@ describe("every method refuses a corrupted item first", () => {
             veiledChaos: VEILED_CHAOS,
             veiledExalt: VEILED_EXALT,
             unveil: unveilOps(undefined),
+            vaal: vaalOps(RING_BASE),
+            locus: locusOps(RING_BASE),
+            taintedChaos: TAINTED_CHAOS,
+            taintedExalt: TAINTED_EXALT,
+            taintedDivine: TAINTED_DIVINE,
         };
         for (const [name, ops] of Object.entries(sequences)) {
             expect(opensWithCorruptionCheck(ops), name).toBe(true);

@@ -31,11 +31,10 @@ Orb of Chance is out of scope (Q15).
 
 ## Step 3. Marks
 
-The abstract item and the item block carry the influences and corruption; the influence
-currencies and crafts are built. What remains are the rows marked **later** for the
-marks: the Orb of Dominance once the elevated modifiers are in the data; the Vaal Orb
-(an `either` over its outcomes), the Locus, the Tainted currency, the Bloodstained
-Fossil; the eldritch currency once the dominant implicit is a declarable mark.
+The abstract item and the item block carry the influences and corruption, and the
+currencies that set or use them are built. What remains are the rows marked **later**
+for the marks: the Orb of Dominance once the elevated modifiers are in the data, and the
+eldritch currency once the dominant implicit is a declarable mark.
 
 ## Step 4. Language and editor follow-ons
 

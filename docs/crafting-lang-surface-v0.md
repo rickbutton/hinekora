@@ -72,7 +72,10 @@ item {
   error. The Astrolabe Amulet, which counts as having every influence, is out of scope.
 - `corrupted`, a bare flag, marks a
   [corrupted item](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items), which
-  takes no craft but the Tainted currency.
+  takes no craft but the Tainted currency (§3). A guide that corrupts an item mid-way
+  (`vaal`, `locus`, a Bloodstained Fossil) continues under every outcome at once; a
+  branch on `corrupted` or `influenced` (§5) picks one out, and an outcome that destroys
+  the item ends the craft on that path.
 
 Name resolution happens here, so an unknown or ambiguous name is reported on the item
 block before any operation is checked.
@@ -129,6 +132,11 @@ page groups them:
 | `fracture`   | [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)                | Rare, at least four modifiers, not already fractured, no influence |
 | `exalt <influence>` | the influence's [Exalted Orb](https://www.poewiki.net/wiki/Hunter%27s_Exalted_Orb#Mechanics) (`exalt hunter`) | Rare with an open slot, no influence, no fracture; the item gains the influence and one of its modifiers |
 | `awakener <influence>` | [Awakener's Orb](https://www.poewiki.net/wiki/Awakener%27s_Orb#Mechanics), the donor item's influence named | exactly one influence, not the donor's; the item is reforged Rare with both, metamods ignored |
+| `vaal` | [Vaal Orb](https://www.poewiki.net/wiki/Vaal_Orb#Equipment) | not corrupted; afterwards the item is corrupted and either as it was or a Rare with six modifiers |
+| `locus` | the [Corruption Altar](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes) | not corrupted; as `vaal`, but the Rare is influenced and the item may be destroyed, which ends the craft on that path |
+| `tainted chaos` | [Tainted Chaos Orb](https://www.poewiki.net/wiki/Tainted_Chaos_Orb#Mechanics) | corrupted Rare; reforged, or stripped to the rarity its survivors allow |
+| `tainted exalt` | [Tainted Exalted Orb](https://www.poewiki.net/wiki/Tainted_Exalted_Orb) | corrupted Rare; a modifier added or removed |
+| `tainted divine` | [Tainted Divine Teardrop](https://www.poewiki.net/wiki/Tainted_Divine_Teardrop#Mechanics) | corrupted Rare; every modifier but a crafted one may move a tier, so their tiers are forgotten |
 
 "Open slot" and "removable" are decided by the checker's knowledge of the item: a slot is
 open only if it is open on every path, a modifier is removable only if one is present on
@@ -198,8 +206,7 @@ Operations that take a name (and an optional `t<n>`):
   see). A name is the fossil's first word or its full name. Needs a Rare item with no
   protection or cannot-roll metamod, on a base every socketed fossil allows. Weight
   changes are not modelled: a Serrated Fossil reads as a plain reforge. A Bloodstained
-  Fossil corrupts the item, which nothing can craft afterwards, so it is refused until
-  corruption is modelled.
+  Fossil corrupts the item, so only the Tainted currency crafts it afterwards.
 - `beast add prefix [<level>]` and `beast add suffix [<level>]` are the
   [Bestiary](https://www.poewiki.net/wiki/Beastcrafting) recipes "Add a Prefix, Remove a
   Random Suffix" and its mirror: the added modifier is drawn at the beast's level, not

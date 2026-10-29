@@ -4,6 +4,8 @@
  * placed where the check belongs: usually first, after a removal or a reforge
  * when the check reads the state those produce.
  */
+import type { Base } from "../model/base.js";
+import { canBeRare as canBeRareBase } from "../model/capacity.js";
 import { type Gen, type Rarity, TagId, type TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import type { EssenceSpec, FossilSpec } from "../model/sources.js";
@@ -241,6 +243,64 @@ export function beastAddInfluenceOps(target: Influence, level: number): readonly
     ];
 }
 
+const corrupt: Op = { kind: "corrupt" };
+const end: readonly Op[] = [{ kind: "end" }];
+const either = (...branches: (readonly Op[])[]): Op => ({ kind: "either", branches });
+const corruptedItem = (what: string): Op => require({ kind: "corruptedItem", what });
+
+/** A Vaal Orb's one outcome that touches the modifiers: a Rare with six, the
+ *  metamods respected (Vaal Orb § Equipment); the implicit and socket outcomes
+ *  and "no effect" leave the modifiers as they are. */
+function brickBranch(base: Base, influenced: boolean): readonly Op[] {
+    if (!canBeRareBase(base)) return [];
+    return [
+        strip(),
+        rarity("rare"),
+        ...(influenced ? [influence({ kind: "anyOne" })] : []),
+        fill(natural, reforge([6, 6])),
+    ];
+}
+
+/** A Vaal Orb: the item is corrupted, and either unchanged in what the checker
+ *  tracks or reforged Rare with six modifiers (Vaal Orb § Equipment). */
+export function vaalOps(base: Base): readonly Op[] {
+    const brick = brickBranch(base, false);
+    return [notCorrupted, corrupt, ...(brick.length > 0 ? [either([], brick)] : [])];
+}
+
+/** The Corruption Altar (Locus of Corruption § Possible outcomes): as a Vaal
+ *  Orb, but the reforge makes an influenced Rare, and one outcome destroys the
+ *  item, ending the craft on that path. An item with no influence takes any one
+ *  (`QUESTIONS.md` Q32). */
+export function locusOps(base: Base): readonly Op[] {
+    const brick = brickBranch(base, true);
+    return [notCorrupted, corrupt, either([], ...(brick.length > 0 ? [brick] : []), end)];
+}
+
+/** A Tainted Chaos Orb: a corrupted Rare is reforged, or stripped to the
+ *  rarity its survivors allow (Tainted Chaos Orb § Mechanics). */
+export const TAINTED_CHAOS: readonly Op[] = [
+    corruptedItem("A Tainted Chaos Orb"),
+    isRare,
+    either([strip(), fill(natural, reforge(RARE_REFORGE))], [strip(), rarity("survivors")]),
+];
+
+/** A Tainted Exalted Orb: a corrupted Rare gains a modifier or loses one. */
+export const TAINTED_EXALT: readonly Op[] = [
+    corruptedItem("A Tainted Exalted Orb"),
+    isRare,
+    either([fill(natural, add([1, 1]))], [remove(anyMod)]),
+];
+
+/** A Tainted Divine Teardrop: each modifier of a corrupted Rare may move a
+ *  tier either way, the crafted ones excepted (Tainted Divine Teardrop §
+ *  Mechanics); the checker forgets their tiers. */
+export const TAINTED_DIVINE: readonly Op[] = [
+    corruptedItem("A Tainted Divine Teardrop"),
+    isRare,
+    { kind: "relax", crafted: false },
+];
+
 /** A Foulborn orb is its plain counterpart drawing from the top half of each
  *  type's tiers (Foulborn currency § Mechanics). */
 export function foulbornOps(verb: "augment" | "regal" | "exalt"): readonly Op[] {
@@ -360,6 +420,7 @@ export function resonatorOps(r: Resonator): readonly Op[] {
     const essenceChance = Math.max(0, ...r.fossils.map((f) => f.corruptedEssenceChance));
     const essence = essenceChance > 0 ? r.corrupted.filter(unblocked) : [];
     const fractures = r.fossils.some((f) => f.fractures);
+    const corrupts = r.fossils.some((f) => f.corrupts);
     return [
         notCorrupted,
         isRare,
@@ -375,6 +436,8 @@ export function resonatorOps(r: Resonator): readonly Op[] {
         ...r.forced.filter(unblocked).map((mod) => fill({ kind: "rows", mods: [mod] }, within)),
         ...(essenceChance === 100 ? [fill({ kind: "rows", mods: essence }, within)] : []),
         ...(fractures ? [lock()] : []),
+        // The Bloodstained Fossil corrupts the item (Fossil § Version history 3.19.0).
+        ...(corrupts ? [corrupt] : []),
     ];
 }
 

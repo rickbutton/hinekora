@@ -176,8 +176,8 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return "No metamod fits: the item may have no open slot, or every metamod is already on it.";
             case "wrongBase":
                 return `Needs a ${failure.needed}.`;
-            case "fossilCorrupts":
-                return `A ${failure.fossil} corrupts the item, and a corrupted item takes no further craft — it is not supported yet.`;
+            case "notCorruptedItem":
+                return `${failure.what} needs a corrupted item — this item ${failure.sure ? "is not" : "may not be"} corrupted.`;
             case "fossilBaseRestricted":
                 return `A ${failure.fossil} cannot be used on ${withArticle(state.base.name ?? "base like this")}.`;
             case "metamodBlocks":

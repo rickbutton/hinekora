@@ -44,8 +44,10 @@ import {
     guaranteedTypes,
     hasFracture,
     isExcluded,
+    join,
     presenceFacts,
     rarityOf,
+    relaxTiers,
     settled,
     suffixRange,
     type AItem,
@@ -139,6 +141,8 @@ export type Check =
     /** The item is not corrupted on any path; every method but the Tainted
      *  currency requires it (Corrupted § Modifying corrupted items). */
     | { readonly kind: "notCorrupted" }
+    /** The item is corrupted on every path (the Tainted currency). */
+    | { readonly kind: "corruptedItem"; readonly what: string }
     /** The item has no influence on any path (a fracture, an influence orb). */
     | { readonly kind: "noInfluence"; readonly what: string }
     /** The item is influenced on every path, with that influence when one is named. */
@@ -189,6 +193,16 @@ export type Op =
     /** The metamods no longer govern the rest of the method (an Awakener's Orb
      *  ignores them, Metamod § Rules and Exceptions). */
     | { readonly kind: "unprotect" }
+    /** One of several outcomes: the join of running each branch, which holds
+     *  effects only. A branch of `end` alone is an outcome on which the item is
+     *  gone and the craft stops, so it adds nothing to the join. */
+    | { readonly kind: "either"; readonly branches: readonly (readonly Op[])[] }
+    | { readonly kind: "end" }
+    /** The item is corrupted from here on. */
+    | { readonly kind: "corrupt" }
+    /** Forget which tier each present modifier is; a crafted one keeps its tier
+     *  when `crafted` is false. */
+    | { readonly kind: "relax"; readonly crafted: boolean }
     /** Change the influence mark: to one set, by adding an influence to every
      *  possible set, or to every set of the same size (the grove's randomise). */
     | { readonly kind: "influence"; readonly change: InfluenceChange }
@@ -206,7 +220,10 @@ export type Op =
 export type InfluenceChange =
     | { readonly kind: "set"; readonly key: InfluenceKey }
     | { readonly kind: "add"; readonly influence: Influence }
-    | { readonly kind: "randomise" };
+    /** Every set of the size the item has (the grove's randomise). */
+    | { readonly kind: "randomise" }
+    /** Any one influence, whatever the item had (the Corruption Altar). */
+    | { readonly kind: "anyOne" };
 
 /** Why an operation's precondition fails on the current state. */
 export type PreconditionFailure =
@@ -235,7 +252,6 @@ export type PreconditionFailure =
     | { readonly kind: "harvestBlocked"; readonly tag: TagId }
     | { readonly kind: "metamodBlocks" }
     | { readonly kind: "fossilBaseRestricted"; readonly fossil: string }
-    | { readonly kind: "fossilCorrupts"; readonly fossil: string }
     | { readonly kind: "wrongBase"; readonly needed: string }
     | { readonly kind: "noMetamodFits" }
     | { readonly kind: "noImprint" }
@@ -248,6 +264,7 @@ export type PreconditionFailure =
     | { readonly kind: "tooFewMods"; readonly needed: number }
     | { readonly kind: "alreadyFractured" }
     | { readonly kind: "corrupted"; readonly sure: boolean }
+    | { readonly kind: "notCorruptedItem"; readonly what: string; readonly sure: boolean }
     | { readonly kind: "influenced"; readonly what: string; readonly sure: boolean }
     | {
           readonly kind: "notInfluenced";
@@ -317,6 +334,9 @@ function apply(
                             influences.add(k);
                         }
                         break;
+                    case "anyOne":
+                        for (const k of influenceSetsOfSize(1)) influences.add(k);
+                        break;
                 }
             }
             return { ...a, influences };
@@ -353,6 +373,28 @@ function apply(
         case "restore":
             // `hasImprint` ran first; a missing imprint here is unreachable.
             return a.imprint ?? a;
+        case "either": {
+            const outcomes: AItem[] = [];
+            for (const branch of op.branches) {
+                if (branch.some((o) => o.kind === "end")) continue;
+                let s = a;
+                for (const o of branch) {
+                    if (o.kind === "require" || o.kind === "unprotect") continue;
+                    s = apply(s, a0, o, rules, registry);
+                }
+                outcomes.push(s);
+            }
+            return outcomes.reduce((x, y) => join(x, y), outcomes[0] ?? a);
+        }
+        case "end":
+            return a;
+        case "corrupt":
+            return { ...a, corrupted: new Set([true]) };
+        case "relax":
+            return relaxTiers(
+                a,
+                (t) => op.crafted || !rowsOf(a, t, registry).some((m) => m.source === "bench"),
+            );
     }
 }
 
@@ -501,6 +543,10 @@ function failing(
             return a.corrupted.has(true)
                 ? { kind: "corrupted", sure: !a.corrupted.has(false) }
                 : null;
+        case "corruptedItem":
+            return a.corrupted.has(false)
+                ? { kind: "notCorruptedItem", what: check.what, sure: !a.corrupted.has(true) }
+                : null;
         case "noInfluence":
             return a.influences.has(NO_INFLUENCE) && a.influences.size === 1
                 ? null
@@ -588,9 +634,6 @@ function failing(
         case "baseHasTag":
             return a.base.tags.has(check.tag) ? null : { kind: "wrongBase", needed: check.what };
         case "fossilAllowed": {
-            // A corrupted item takes no further craft, and the state has no
-            // corruption yet, so the resonator is refused rather than followed.
-            if (check.fossil.corrupts) return { kind: "fossilCorrupts", fossil: check.fossil.name };
             const allowed = check.fossil.allowedTags;
             if (allowed === undefined) return null;
             for (const t of a.base.tags) if (allowed.has(t)) return null;
