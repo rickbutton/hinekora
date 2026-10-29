@@ -184,6 +184,23 @@ the same rank among its tiers when the source's tier is known (`check/check.ts`
 **Assumed meanwhile:** the same rank; any rarity with the modifier present.
 **Answer:**
 
+### Q24 · decision · open
+
+**Asked:** 2026-10-28
+**Question:** the shape of the generic operation statement (`ROADMAP.md` Step 2). Today
+each method family has its own statement, parser branch, completion context and hover
+(`essence`, `bench`, `harvest`, `veiled`, `foulborn`, `fossil`, `beast`, `unveil`,
+`restore`), so adding a method touches six files. Options: (1) one operation statement
+`<name> <arg> …` whose arguments the library's **signature** for that name drives (a
+list of slots: a quoted catalog name, a word from a fixed set, an integer, a list of
+names), so the parser, completion and hover read the signature table and know no
+method; the surface forms above stay as they are, only their machinery is shared. (2)
+Keep per-method statements and accept the cost. Recommendation: (1), in two steps: a
+signature table that completion and hover read first (no surface change), then the
+parser.
+**Assumed meanwhile:** (2) until ruled; nothing in the code depends on the choice.
+**Answer:**
+
 ---
 
 ## Resolved
