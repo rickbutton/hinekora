@@ -21,8 +21,6 @@ const T_FUNCTION = 2;
  *  the second word of `veiled chaos`. */
 const CURRENCY_NAMES = new Set(STANDARD_CURRENCIES.map((c) => c.name));
 const KEYWORDS = new Set([
-    "craft",
-    "in",
     "item",
     "until",
     "if",
@@ -43,7 +41,6 @@ const KEYWORDS = new Set([
     "normal",
     "magic",
     "rare",
-    "poe1",
     ...INFLUENCES,
     ...METHOD_WORDS.filter((w) => !CURRENCY_NAMES.has(w)),
 ]);

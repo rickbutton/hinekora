@@ -7,8 +7,8 @@
  */
 import { INFLUENCES, type Rarity } from "@hinekora/core";
 
-/** Words that open a statement or a header: `craft in`, `item`, control flow, defs. */
-export const KEYWORDS = ["craft", "in", "item", "def", "until", "if", "else", "restart"] as const;
+/** Words that open the item block, a statement or a def. */
+export const KEYWORDS = ["item", "def", "until", "if", "else", "restart"] as const;
 
 /** Predicate connectives and the predicate symbols. */
 export const PREDICATE_WORDS = ["has", "fractured", "influenced", "not", "and", "or"] as const;
@@ -32,8 +32,6 @@ export const ITEM_FIELDS = [
 export const RARITY_WORDS = ["normal", "magic", "rare"] as const;
 /** The six influences, as `influences:` lists them and `influenced` names one. */
 export const INFLUENCE_WORDS = INFLUENCES;
-/** The one word the header accepts after `craft in`. */
-export const GAME = "poe1";
 
 /** Every word above, for the docs check and the grammar. */
 export const VOCABULARY: readonly string[] = [
@@ -44,5 +42,4 @@ export const VOCABULARY: readonly string[] = [
     ...ITEM_FIELDS,
     ...RARITY_WORDS,
     ...INFLUENCE_WORDS,
-    GAME,
 ];

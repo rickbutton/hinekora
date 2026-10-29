@@ -7,8 +7,7 @@ const registry = registryOf(loadDefaultPoe1());
 describe("getDiagnostics — LSP diagnostics from the real pipeline", () => {
     it("returns no diagnostics for a valid craft", () => {
         const diags = getDiagnostics(
-            `craft in poe1
-item { base: "Iron Ring" ilvl: 84 rarity: normal }
+            `item { base: "Iron Ring" ilvl: 84 rarity: normal }
 transmute
 regal`,
             registry,
@@ -18,15 +17,14 @@ regal`,
 
     it("reports a precondition failure with a 0-based range and message", () => {
         const diags = getDiagnostics(
-            `craft in poe1
-item { base: "Iron Ring" ilvl: 84 rarity: magic }
+            `item { base: "Iron Ring" ilvl: 84 rarity: magic }
 exalt`,
             registry,
         );
         expect(diags).toHaveLength(1);
         const d = diags[0]!;
-        // "exalt" is on source line 3 → 0-based line 2, character 0.
-        expect(d.range.start).toEqual({ line: 2, character: 0 });
+        // "exalt" is on source line 2 → 0-based line 1, character 0.
+        expect(d.range.start).toEqual({ line: 1, character: 0 });
         expect(d.message).toContain("Requires a Rare item");
         expect(d.severity).toBe(1); // Error
         expect(d.source).toBe("hinekora");
@@ -34,8 +32,7 @@ exalt`,
 
     it("reports a parse error as a diagnostic", () => {
         const diags = getDiagnostics(
-            `craft in poe1
-item { base: "Iron Ring" ilvl: 84 rarity: rare
+            `item { base: "Iron Ring" ilvl: 84 rarity: rare
 exalt`,
             registry,
         );
@@ -45,8 +42,7 @@ exalt`,
 
     it("surfaces fuzzy-resolution ambiguity as a diagnostic", () => {
         const diags = getDiagnostics(
-            `craft in poe1
-item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "resistance" ] }
+            `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "resistance" ] }
 exalt`,
             registry,
         );
@@ -57,8 +53,7 @@ exalt`,
         // A rare Simplex holds only 3 mods, so it is full after an alchemy —
         // the exalt has no open slot. This exercises the real base's capDelta.
         const full = getDiagnostics(
-            `craft in poe1
-item { base: "Simplex Amulet" ilvl: 84 rarity: normal }
+            `item { base: "Simplex Amulet" ilvl: 84 rarity: normal }
 alchemy
 exalt`,
             registry,
@@ -67,8 +62,7 @@ exalt`,
 
         // Annulling first reopens a slot, so the exalt is fine.
         const reopened = getDiagnostics(
-            `craft in poe1
-item { base: "Simplex Amulet" ilvl: 84 rarity: normal }
+            `item { base: "Simplex Amulet" ilvl: 84 rarity: normal }
 alchemy
 annul
 exalt`,
@@ -79,8 +73,7 @@ exalt`,
 
     it("inlines an operation function through the real pipeline", () => {
         const diags = getDiagnostics(
-            `craft in poe1
-item { base: "Iron Ring" ilvl: 84 rarity: normal }
+            `item { base: "Iron Ring" ilvl: 84 rarity: normal }
 def prep() { transmute regal }
 prep()`,
             registry,
@@ -90,8 +83,7 @@ prep()`,
 
     it("expands a mod-name parameter into a loop guard", () => {
         const diags = getDiagnostics(
-            `craft in poe1
-item { base: "Iron Ring" ilvl: 84 rarity: rare }
+            `item { base: "Iron Ring" ilvl: 84 rarity: rare }
 def fill(m) { until has m { chaos } }
 fill("maximum life")`,
             registry,
@@ -101,16 +93,14 @@ fill("maximum life")`,
 
     it("rejects making a real flask Rare, but allows Magic crafting", () => {
         const rare = getDiagnostics(
-            `craft in poe1
-item { base: "Quicksilver Flask" ilvl: 84 rarity: normal }
+            `item { base: "Quicksilver Flask" ilvl: 84 rarity: normal }
 alchemy`,
             registry,
         );
         expect(rare.some((d) => d.message.includes("cannot be made Rare"))).toBe(true);
 
         const magic = getDiagnostics(
-            `craft in poe1
-item { base: "Quicksilver Flask" ilvl: 84 rarity: normal }
+            `item { base: "Quicksilver Flask" ilvl: 84 rarity: normal }
 transmute
 alteration`,
             registry,

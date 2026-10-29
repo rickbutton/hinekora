@@ -10,8 +10,6 @@
 # `t1` selects the best tier (Deafening); we spin until the random fill happens to
 # include a T1 fire, cold, or lightning resistance — any of the three is a win.
 
-craft in poe1
-
 item {
     base:   "Titan Greaves"
     ilvl:   84            # high enough for T1 elemental resistances to roll

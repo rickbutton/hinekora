@@ -37,7 +37,6 @@ import {
 import { CraftSyntaxError } from "./errors.js";
 import type { Token, TokenKind } from "./token.js";
 import {
-    GAME,
     PROJECTIONS as PROJECTION_WORDS,
     RARITY_PREDICATES,
     RARITY_WORDS as RARITY_WORD_LIST,
@@ -148,12 +147,13 @@ class Parser {
     parseCraft(): Craft {
         const start = this.peek().span.start;
 
-        // `craft in <game>` must come first; the item block and body follow at
-        // file scope (no braces wrap the craft).
-        this.expectKeyword("craft");
-        this.expectKeyword("in");
-        this.parseGame();
-
+        // The item block comes first; the body follows at file scope (no braces
+        // wrap the craft). Files once opened with a `craft in poe1` header.
+        if (this.atKeyword("craft")) {
+            throw this.error(
+                "a craft file starts with its item block; the 'craft in poe1' header is no longer written",
+            );
+        }
         const item = this.parseItemBlock();
 
         // Defs are file-level bindings, not steps — collected separately, and
@@ -217,12 +217,6 @@ class Parser {
         } finally {
             this.defParams = new Set();
         }
-    }
-
-    private parseGame(): void {
-        const t = this.expect("ident", `'${GAME}'`);
-        if (t.text.toLowerCase() === GAME) return;
-        throw this.error(`unknown game '${t.text}' (expected '${GAME}')`, t.span);
     }
 
     // --- item block --------------------------------------------------------

@@ -24,16 +24,15 @@ relates to it.
 
 ## 0.1 Concrete syntax
 
-- **`craft in poe1` comes first.** The data, the currencies and every rule below are
-  Path of Exile 1's; the header names the game the file is written for and no other
-  word is accepted.
+- **The item block comes first.** The data, the currencies and every rule below are
+  Path of Exile 1's; a file needs no header to say so.
 - **Blocks are C-style `{ … }`.** Whitespace, including newlines, is insignificant.
 - **Text values are quoted**: `base: "Cobalt Jewel"`, mod names, essence and bench names,
   harvest tags.
 - **Comments** run from `#` to the end of the line.
 - **Statements are self-delimiting**; no separators.
-- **Case:** keywords and the camelCase predicate symbols are lowercase; `rarity` values and
-  game names are case-insensitive.
+- **Case:** keywords and the camelCase predicate symbols are lowercase; `rarity` values
+  are case-insensitive.
 
 ---
 
@@ -339,8 +338,6 @@ Error categories:
 ## 7. Example
 
 ```
-craft in poe1
-
 item {
     base:   "Titan Greaves"
     ilvl:   84

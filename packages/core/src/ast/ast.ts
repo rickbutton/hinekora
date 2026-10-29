@@ -8,7 +8,7 @@ import type { Rarity } from "../model/ids.js";
 import type { Influence } from "../model/marks.js";
 import type { SourceSpan } from "./span.js";
 
-/** A whole craft file: the `craft in poe1` header, an item block, then a body. */
+/** A whole craft file: an item block, then a body. */
 export interface Craft {
     readonly kind: "craft";
     readonly item: ItemBlock;

@@ -12,8 +12,6 @@
 #     resistance is a new group here; benching "fire resistance" instead would be
 #     rejected, since this ring already has one (an item holds one mod per group).
 
-craft in poe1
-
 item {
     base:     "Iron Ring"
     ilvl:     84

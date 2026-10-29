@@ -32,7 +32,7 @@
         "keywords": {
             "patterns": [
                 {
-                    "match": "\\b(craft|in|item|until|if|else|restart|restore)\\b",
+                    "match": "\\b(item|until|if|else|restart|restore)\\b",
                     "name": "keyword.control.hinekora"
                 },
                 { "match": "\\b(def)\\b", "name": "storage.type.hinekora" },
@@ -53,7 +53,7 @@
                     "name": "variable.parameter.hinekora"
                 },
                 {
-                    "match": "\\b(normal|magic|rare|poe1|shaper|elder|crusader|hunter|redeemer|warlord)\\b",
+                    "match": "\\b(normal|magic|rare|shaper|elder|crusader|hunter|redeemer|warlord)\\b",
                     "name": "constant.language.hinekora"
                 }
             ]

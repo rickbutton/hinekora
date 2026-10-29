@@ -32,8 +32,6 @@ The language generalizes that to the whole craft.
 Example (the first half of `examples/example.craft`):
 
 ```
-craft in poe1
-
 item {
     base:     "Vaal Regalia"
     ilvl:     84
@@ -158,7 +156,7 @@ resolveEssence / resolveBench / resolveHarvestTag`
 
 Lexer (`tokenize`) → `Token[]` (trivia-free; no keyword token kind, every word is an
 `ident` and the parser decides by text). The words the parser gives meaning to are the
-tables in `vocabulary.ts` (headers, control flow, predicates, item fields) and the core's
+tables in `vocabulary.ts` (the item block, control flow, predicates, item fields) and the core's
 method table (`check/methods.ts`), which completion, hover and the docs check read too.
 A statement that is not control flow or a call is an `OperationStmt`: `parseOperation`
 takes its opening word, a second word when `methodsAfter` says the family has one, and

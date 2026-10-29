@@ -58,8 +58,6 @@ const KEYWORD_DOC: Record<string, string> = {
     restart: "`restart` — abandon this attempt and re-run the enclosing loop from the top.",
     has: '`has "<mod>" [t1]` — true when the item is guaranteed to carry that mod (optionally at that tier; `t1` = best).',
     not: "`not <pred>` — logical negation of a predicate.",
-    craft: "`craft in <game>` — the file header declaring which game's data this craft targets.",
-    in: "Part of the `craft in <game>` header.",
     item: "`item { base: … ilvl: … rarity: … }` — the starting item this craft operates on.",
 };
 
