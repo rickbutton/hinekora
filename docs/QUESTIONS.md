@@ -41,16 +41,13 @@ change, metamods respected), as `operations.md` §3.2 states; not built until an
 **Asked:** 2026-10-28
 **Question:** the [Orb of Chance](https://www.poewiki.net/wiki/Orb_of_Chance) has three
 outcomes: Magic (as a transmute), Rare (as an alchemy), or Unique, where the craft ends.
-The abstract item holds one rarity, so the orb needs either a set of rarities in the
-state (the `ROADMAP.md` Step 2 remainder wants the same for a scour on an uncertain
-count) together with a way to say the item has left the crafting domain, or a surface
-form that fixes the outcome by looping (`until isRare { chance; scour }`), which still
-needs the set inside the loop. The usual guide is "scour-chance until unique", about
-which only cost modelling has anything to say. Options: (1) build the rarity set and a
-`unique` rarity no later operation accepts; (2) leave the orb out of scope, like Rog.
-Recommendation: (2) until a guide needs it. The state now holds a set of rarities
-(`check/astate.ts` `rarities`), so the Magic-or-Rare half of the orb is expressible; what
-is still missing is the Unique outcome, where the item leaves the crafting domain.
+The state holds a set of rarities (`check/astate.ts` `rarities`), so the Magic-or-Rare
+half is expressible; what is missing is the Unique outcome, where the item leaves the
+crafting domain and nothing later can be done to it. The usual guide is "scour-chance
+until unique", about which only cost modelling has anything to say. Options: (1) a
+`unique` rarity no later operation accepts, so a guide that goes on after a chance is
+refused unless it narrows the rarity first; (2) leave the orb out of scope, like Rog.
+Recommendation: (2) until a guide needs it.
 **Assumed meanwhile:** not built; the ledger rows for the Orb of Chance and the bench's
 "Reroll the rarity" are marked **later** in `operations.md` §3.
 **Answer:**
@@ -199,6 +196,28 @@ Keep per-method statements and accept the cost. Recommendation: (1), in two step
 signature table that completion and hover read first (no surface change), then the
 parser.
 **Assumed meanwhile:** (2) until ruled; nothing in the code depends on the choice.
+**Answer:**
+
+### Q25 · game probe · open
+
+**Asked:** 2026-10-28
+**Goal:** when the Sacred Grove greys a harvest craft out.
+[Harvest crafting § Mechanics](https://www.poewiki.net/wiki/Harvest_crafting#Mechanics)
+says only that the added modifier obeys "Prefixes/Suffixes Cannot Be Changed". Three
+cases decide the checker's rule: (a) a reforge whose tagged modifier can roll on the
+base but not beside what the metamod keeps (the only life modifier already among the
+protected prefixes); (b) a reforge for a prefix-only tag with three protected prefixes;
+(c) an augment whose removal may take a suffix while the prefixes stay full.
+**Procure:** a Rare with "Prefixes Cannot Be Changed": for (a) its only life modifier
+among the prefixes, for (b) three prefixes, for (c) three prefixes and three suffixes.
+**Steps:** open the grove's "Reforge … including a Life modifier" for (a) and (b), and
+"Add a new Defence modifier and remove another random modifier" for (c); note which are
+offered and, when used, what happens.
+**Record:** greyed out or not, and the outcome.
+**Assumed meanwhile:** the craft is refused unless a tagged row can roll on every path
+after the lock-respecting strip or the removal (`check/library.ts`
+`harvestReforgeOps` and `harvestAugmentOps`, `check/ops.ts` `poolNonEmpty` reading
+`subsetMods`).
 **Answer:**
 
 ---
