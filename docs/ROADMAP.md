@@ -40,12 +40,11 @@ from the library of `check/library.ts`. What remains:
 ## Step 3. The remaining single-item methods
 
 In the order of the ledger's **composes** rows, each a library entry plus tests and the
-surface name: Orb of Chance and Binding, Foulborn currency, the bench's remove and
-replace crafted modifiers and reroll-the-rarity, corrupted essences, fossils (the
-weight fossils, Fractured, Hollow, Glyphic), the Harvest sibling swaps and the more /
-less likely reforges, the beastcrafts (add-and-remove across sides, talisman fractures,
-random metamod, Aspects), imprint and restore. The bench reroll recipes wait on Q7, the
-chaotic resonator on Q8.
+surface name: the bench's remove and replace crafted modifiers, corrupted essences,
+fossils (the weight fossils, Fractured, Hollow, Glyphic), the Harvest sibling swaps, the
+beastcrafts (add-and-remove across sides, talisman fractures, random metamod, Aspects),
+imprint and restore. The bench reroll recipes wait on Q7; the Orb of Chance and the
+bench's reroll-the-rarity on Q15 (a set of rarities in the state).
 
 ## Step 4. Marks
 

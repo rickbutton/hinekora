@@ -36,6 +36,23 @@ Rare with one modifier of each side; note whether the result keeps the side.
 change, metamods respected), as `operations.md` §3.2 states; not built until answered.
 **Answer:**
 
+### Q15 · decision · open
+
+**Asked:** 2026-10-28
+**Question:** the [Orb of Chance](https://www.poewiki.net/wiki/Orb_of_Chance) has three
+outcomes: Magic (as a transmute), Rare (as an alchemy), or Unique, where the craft ends.
+The abstract item holds one rarity, so the orb needs either a set of rarities in the
+state (the `ROADMAP.md` Step 2 remainder wants the same for a scour on an uncertain
+count) together with a way to say the item has left the crafting domain, or a surface
+form that fixes the outcome by looping (`until isRare { chance; scour }`), which still
+needs the set inside the loop. The usual guide is "scour-chance until unique", about
+which only cost modelling has anything to say. Options: (1) build the rarity set and a
+`unique` rarity no later operation accepts; (2) leave the orb out of scope, like Rog.
+Recommendation: (2) until a guide needs it.
+**Assumed meanwhile:** not built; the ledger rows for the Orb of Chance and the bench's
+"Reroll the rarity" are marked **later** in `operations.md` §3.
+**Answer:**
+
 ---
 
 ## Resolved
