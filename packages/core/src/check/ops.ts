@@ -173,6 +173,8 @@ export type Check =
     | { readonly kind: "metamodFits" }
     /** The base carries the tag (a talisman for the Bestiary fractures). */
     | { readonly kind: "baseHasTag"; readonly tag: TagId; readonly what: string }
+    /** The base carries one of the tags (the Corruption Altar's item types). */
+    | { readonly kind: "baseHasAnyTag"; readonly tags: readonly TagId[]; readonly what: string }
     /** The fossil's base restriction admits this item. */
     | { readonly kind: "fossilAllowed"; readonly fossil: FossilSpec }
     | { readonly kind: "essenceRarity"; readonly tier: number }
@@ -194,9 +196,11 @@ export type Op =
      *  ignores them, Metamod § Rules and Exceptions). */
     | { readonly kind: "unprotect" }
     /** One of several outcomes: the join of running each branch, which holds
-     *  effects only. A branch of `end` alone is an outcome on which the item is
-     *  gone and the craft stops, so it adds nothing to the join. */
-    | { readonly kind: "either"; readonly branches: readonly (readonly Op[])[] }
+     *  effects only (a check or an `unprotect` belongs before it, at method
+     *  level). A branch of `end` alone is an outcome on which the item is gone
+     *  and the craft stops, so it adds nothing to the join; some branch must
+     *  survive, since no method in the library ends on every outcome. */
+    | { readonly kind: "either"; readonly branches: readonly (readonly Transform[])[] }
     | { readonly kind: "end" }
     /** The item is corrupted from here on. */
     | { readonly kind: "corrupt" }
@@ -216,6 +220,9 @@ export type Op =
     | { readonly kind: "imprint" }
     /** Replace the item with the held imprint, consuming it. */
     | { readonly kind: "restore" };
+
+/** An operation that changes the state: everything but a check or `unprotect`. */
+export type Transform = Exclude<Op, { kind: "require" | "unprotect" }>;
 
 export type InfluenceChange =
     | { readonly kind: "set"; readonly key: InfluenceKey }
@@ -308,13 +315,7 @@ export function runMethod(a0: AItem, ops: readonly Op[], registry: Registry): Tr
     return { ok: true, state: a };
 }
 
-function apply(
-    a: AItem,
-    a0: AItem,
-    op: Exclude<Op, { kind: "require" | "unprotect" }>,
-    rules: Rules,
-    registry: Registry,
-): AItem {
+function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Registry): AItem {
     switch (op.kind) {
         case "strip":
             return strip(a, rules, registry);
@@ -335,6 +336,9 @@ function apply(
                         }
                         break;
                     case "anyOne":
+                        // Wide while the altar's outcome is a probe: the sets the
+                        // item had stay beside the six.
+                        influences.add(key);
                         for (const k of influenceSetsOfSize(1)) influences.add(k);
                         break;
                 }
@@ -378,10 +382,7 @@ function apply(
             for (const branch of op.branches) {
                 if (branch.some((o) => o.kind === "end")) continue;
                 let s = a;
-                for (const o of branch) {
-                    if (o.kind === "require" || o.kind === "unprotect") continue;
-                    s = apply(s, a0, o, rules, registry);
-                }
+                for (const o of branch) s = apply(s, a0, o, rules, registry);
                 outcomes.push(s);
             }
             return outcomes.reduce((x, y) => join(x, y), outcomes[0] ?? a);
@@ -391,10 +392,16 @@ function apply(
         case "corrupt":
             return { ...a, corrupted: new Set([true]) };
         case "relax":
-            return relaxTiers(
-                a,
-                (t) => op.crafted || !rowsOf(a, t, registry).some((m) => m.source === "bench"),
-            );
+            // A modifier keeps its tier only when it is provably crafted: every
+            // row it may be is a bench row. An unpinned type may be any row.
+            return relaxTiers(a, (t) => {
+                if (op.crafted) return true;
+                const pinned = a.tiers.get(t);
+                return (
+                    pinned === undefined ||
+                    !rowsOf(a, t, registry).every((m) => m.source === "bench")
+                );
+            });
     }
 }
 
@@ -633,6 +640,10 @@ function failing(
                 : { kind: "noMetamodFits" };
         case "baseHasTag":
             return a.base.tags.has(check.tag) ? null : { kind: "wrongBase", needed: check.what };
+        case "baseHasAnyTag":
+            return check.tags.some((t) => a.base.tags.has(t))
+                ? null
+                : { kind: "wrongBase", needed: check.what };
         case "fossilAllowed": {
             const allowed = check.fossil.allowedTags;
             if (allowed === undefined) return null;
@@ -668,24 +679,33 @@ function failing(
                     : { kind: "harvestEmptyPool", tag: check.tag };
             }
             const tag = check.tag;
-            const hasTag =
-                check.pool.kind === "tagged"
-                    ? (m: Mod): boolean => m.implicitTags.has(tag)
-                    : influenceRowTest(a, registry);
-            const tagged = (p: number, s: number): boolean =>
-                subsetMods(a, registry, p, s).some(hasTag);
-            if (!tagged(0, 0)) {
-                // Either no tagged row rolls here at all, or one does but a
-                // modifier the item may carry blocks it (its type, its group).
-                return resolvePool(a, check.pool, registry).mods.some(hasTag)
-                    ? { kind: "harvestBlocked", tag }
-                    : { kind: "harvestEmptyPool", tag };
-            }
-            // Every realisable pair of side counts must leave a tagged row room:
-            // the sides are coupled through the total, so each path's pair is
-            // judged on its own rather than both sides at their fullest at once.
-            for (const [p, s] of sidePairs(a)) {
-                if (!tagged(p, s)) return { kind: "harvestNoRoom", tag };
+            // The influence pool differs per possible influence set, so each
+            // set is judged on its own path rather than through the shared tags.
+            const paths =
+                check.pool.kind === "influence"
+                    ? [...a.influences].map((key) => ({ ...a, influences: new Set([key]) }))
+                    : [a];
+            for (const path of paths) {
+                const hasTag =
+                    check.pool.kind === "tagged"
+                        ? (m: Mod): boolean => m.implicitTags.has(tag)
+                        : influenceRowTest(path, registry);
+                const tagged = (p: number, s: number): boolean =>
+                    subsetMods(path, registry, p, s).some(hasTag);
+                if (!tagged(0, 0)) {
+                    // Either no tagged row rolls here at all, or one does but a
+                    // modifier the item may carry blocks it (its type, its group).
+                    return resolvePool(path, check.pool, registry).mods.some(hasTag)
+                        ? { kind: "harvestBlocked", tag }
+                        : { kind: "harvestEmptyPool", tag };
+                }
+                // Every realisable pair of side counts must leave a tagged row
+                // room: the sides are coupled through the total, so each path's
+                // pair is judged on its own rather than both sides at their
+                // fullest at once.
+                for (const [p, s] of sidePairs(path)) {
+                    if (!tagged(p, s)) return { kind: "harvestNoRoom", tag };
+                }
             }
             return null;
         }

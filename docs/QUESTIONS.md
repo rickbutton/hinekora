@@ -293,8 +293,33 @@ no more; [Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment
 **Steps:** corrupt several rings at the altar until the influenced outcome shows; note
 the influences; corrupt jewels with Vaal Orbs until the reforge shows; count the affixes.
 **Record:** the influences seen; the affix counts on the jewel.
-**Assumed meanwhile:** any one influence, and six capped by the base's limit
-(`check/library.ts` `locusOps`, `vaalOps`).
+**Assumed meanwhile:** any one influence or what the item had, a jewel reforged without
+one (no influence can mark a jewel), and six capped by the base's limit
+(`check/library.ts` `locusOps`, `vaalOps`, `brickBranch`).
+**Answer:**
+
+### Q33 · game probe · open
+
+**Asked:** 2026-10-29
+**Goal:** how the Tainted currency treats the metamods and the item level. The Metamod
+table has a row for the Tainted Exalted Orb only
+([Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions));
+[Tainted Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Tainted_Chaos_Orb#Mechanics)
+names the fractured modifier as the only survivor of its strip and says nothing of its
+reforge under a protection; and
+[Tainted Divine Teardrop § Mechanics](https://www.poewiki.net/wiki/Tainted_Divine_Teardrop#Mechanics)
+bounds a raised tier by "a tier usually obtainable on that base type", not by the item's
+level.
+**Procure:** a corrupted Rare with "Suffixes Cannot Be Changed" and a corrupted low-level
+Rare with a modifier at its level's top tier; Tainted Chaos Orbs and Teardrops.
+**Steps:** apply the orb to the first until each outcome shows; note whether the suffixes
+survived either; apply Teardrops to the second; note whether a tier above the level's
+cap appears.
+**Record:** the suffixes after each outcome; the highest tier seen.
+**Assumed meanwhile:** both halves of the Tainted Chaos Orb ignore the protection
+(`check/library.ts` `TAINTED_CHAOS`, `unprotect`), and a Teardrop's tier stays among
+those the item level allows (`check/astate.ts` `relaxTiers`, the tier resolution in
+`check/check.ts`).
 **Answer:**
 
 ---

@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { corruptedP, craft, iff, influencedP, item, op } from "../__fixtures__/ast.js";
+import { corruptedP, craft, has, iff, influencedP, item, notp, op } from "../__fixtures__/ast.js";
 import type { OperationStmt } from "../ast/ast.js";
 import {
+    BENCH_LIFE_ROW,
     CATALOG,
+    COLD_RESIST,
     FLASK_BASE,
+    JEWEL_BASE,
     LIFE_T1,
     PROTECT_SUFFIXES_CARRIER,
     RING_BASE,
@@ -14,8 +17,8 @@ import {
 import { influenceKey, INFLUENCES } from "../model/marks.js";
 
 const registry = buildRegistry({
-    bases: [RING_BASE, FLASK_BASE],
-    mods: [...CATALOG, PROTECT_SUFFIXES_CARRIER],
+    bases: [RING_BASE, FLASK_BASE, JEWEL_BASE],
+    mods: [...CATALOG, PROTECT_SUFFIXES_CARRIER, BENCH_LIFE_ROW],
     modAliases: { life: "IncreasedLife1", cold: "ColdResist1" },
     baseAliases: { "Iron Ring": "IronRing", "Life Flask": "LifeFlask" },
 });
@@ -60,6 +63,15 @@ describe("the Vaal Orb", () => {
         );
     });
 
+    it("may turn a basic jewel into a unique, on which the craft ends", () => {
+        const jewel = item({ base: "Cobalt Jewel", ilvl: 100, rarity: "rare" });
+        const r = run(craft(jewel, [op("vaal")]));
+        expect(r.diagnostics).toEqual([]);
+        // The join of the kept and bricked outcomes; the unique one adds nothing.
+        expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
+        expect(r.finalState!.corrupted).toEqual(new Set([true]));
+    });
+
     it("only corrupts a base that cannot be Rare", () => {
         const flask = item({ base: "Life Flask", ilvl: 100, rarity: "magic" });
         const r = run(craft(flask, [op("vaal")]));
@@ -70,6 +82,17 @@ describe("the Vaal Orb", () => {
 });
 
 describe("the Corruption Altar", () => {
+    it("takes weapons, armour, jewellery, quivers and jewels only", () => {
+        const flask = item({ base: "Life Flask", ilvl: 100, rarity: "magic" });
+        expect(messages(craft(flask, [op("locus")]))).toContain(
+            "Needs a weapon, armour, piece of jewellery, quiver or jewel",
+        );
+        const jewel = item({ base: "Cobalt Jewel", ilvl: 100, rarity: "rare" });
+        const r = run(craft(jewel, [op("locus")]));
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.influences).toEqual(new Set([influenceKey([])]));
+    });
+
     it("may make an influenced Rare, or destroy the item", () => {
         const r = run(craft(ring(), [op("locus")]));
         expect(r.diagnostics).toEqual([]);
@@ -106,6 +129,44 @@ describe("the Tainted currency", () => {
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.counts.total).toEqual([1, 3]);
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(false);
+    });
+
+    it("chaos: a protected side is not kept, and a fractured modifier leaves a Magic item", () => {
+        const guarded = ring({
+            corrupted: true,
+            prefixes: [PROTECT_SUFFIXES_CARRIER.id],
+            suffixes: ["cold"],
+        });
+        const r = run(craft(guarded, [words("tainted", "chaos")]));
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteedTypes(r.finalState!).has(COLD_RESIST.type)).toBe(false);
+        expect(r.finalState!.rarities).toEqual(new Set(["normal", "rare"]));
+
+        const locked = ring({ corrupted: true, suffixes: [{ mod: "cold", fractured: true }] });
+        const f = run(craft(locked, [words("tainted", "chaos")]));
+        expect(f.finalState!.rarities).toEqual(new Set(["magic", "rare"]));
+    });
+
+    it("needs the corruption on every path", () => {
+        // Whether the reforge rolled T1 life is unknown, so only one path corrupts.
+        const c = craft(ring(), [
+            op("chaos"),
+            iff(has("life", 1), [op("vaal")]),
+            words("tainted", "exalt"),
+        ]);
+        expect(messages(c)).toContain("may not be corrupted");
+    });
+
+    it("divine: forgets a tier fact about a modifier that may be natural", () => {
+        // A life modifier may be the bench row or a natural one; a negative tier
+        // fact about it must not survive the Teardrop.
+        const c = craft(ring({ corrupted: true, prefixes: ["life"] }), [
+            iff(notp(has("life", 1)), [], []),
+            words("tainted", "divine"),
+            iff(has("life", 1), [], []),
+        ]);
+        const text = messages(c);
+        expect(text).not.toContain("'if' branch can never run: has \"life\" t1");
     });
 
     it("divine: forgets every tier but a crafted modifier's", () => {

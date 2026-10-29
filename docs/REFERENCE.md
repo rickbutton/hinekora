@@ -323,7 +323,8 @@ total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = t
   item may have. `influenced [x]` refines it; `noInfluence` requires it to be exactly
   `{""}`. `corrupted` is `{false}`, `{true}` or
   both; every method's sequence opens with `require(notCorrupted)` (a corruption
-  possible on any path refuses the craft), and `corrupted` refines it.
+  possible on any path refuses the craft), or with `corruptedItem` for the Tainted
+  currency, which needs it on every path; `corrupted` refines it.
 - **Tier presence atoms.** A tier-qualified predicate (`has X t1`) also asserts a SECOND
   BDD variable (`type` + NUL + `modId`), so a disjunction of tier-qualified clauses
   (`fire@t1 ∨ cold@t1 ∨ light@t1`) survives a `join` where the flat overlay would drop

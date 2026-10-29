@@ -154,6 +154,12 @@ describe("the grove's randomise under a protection metamod", () => {
         );
     });
 
+    it("is refused while a known influence modifier sits on the protected side", () => {
+        expect(
+            messages(craft(protectedRing(["Hunter ring suffix"]), [words("harvest", "randomise")])),
+        ).toContain("not offered while the suffixes cannot be changed");
+    });
+
     it("is offered when the protected side holds natural modifiers only", () => {
         const r = run(craft(protectedRing(["cold"]), [words("harvest", "randomise")]));
         expect(r.diagnostics).toEqual([]);
@@ -190,7 +196,7 @@ describe("the grove's influence crafts", () => {
         expect(narrowed.diagnostics).toHaveLength(2);
     });
 
-    it("reforges at the item's rarity when it is Magic", () => {
+    it("reforges at the item's rarity when it is Magic or Normal", () => {
         const magic = item({
             base: "Iron Ring",
             ilvl: 100,
@@ -200,6 +206,47 @@ describe("the grove's influence crafts", () => {
         const r = run(craft(magic, [words("harvest", "randomise")]));
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.counts.total).toEqual([1, 2]);
+        const normal = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "normal",
+            influences: ["hunter"],
+        });
+        expect(
+            run(craft(normal, [words("harvest", "randomise")])).finalState!.counts.total,
+        ).toEqual([0, 0]);
+    });
+
+    it("reforges including an influence modifier after a randomise, judging each path", () => {
+        // The fixture has Hunter rows only, so an item of another influence,
+        // or one that may have another, has no influence modifier to include.
+        expect(messages(craft(ring(["shaper"]), [harvest("reforge", "influence")]))).toContain(
+            "No influence modifier can appear",
+        );
+        const after = craft(ring(["hunter"]), [
+            words("harvest", "randomise"),
+            harvest("reforge", "influence"),
+        ]);
+        expect(messages(after)).toContain("No influence modifier can appear");
+        const narrowed = craft(ring(["hunter"]), [
+            words("harvest", "randomise"),
+            iff(influencedP("hunter"), [harvest("reforge", "influence")]),
+        ]);
+        expect(run(narrowed).diagnostics).toEqual([]);
+    });
+
+    it("needs room for an influence modifier when it reforges including one", () => {
+        const full = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: [PROTECT_SUFFIXES_CARRIER.id],
+            suffixes: ["cold", "random", "random"],
+            influences: ["hunter"],
+        });
+        expect(messages(craft(full, [harvest("reforge", "influence")]))).toContain(
+            "An influence modifier has no slot on some path",
+        );
     });
 
     it("refuses a harvest augment on an influenced item", () => {

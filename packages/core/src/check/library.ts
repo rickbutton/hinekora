@@ -10,16 +10,24 @@ import { type Gen, type Rarity, TagId, type TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import type { EssenceSpec, FossilSpec } from "../model/sources.js";
 import type { CurrencyKind } from "../resolve/registry.js";
-import { type Influence, INFLUENCE_ORB, influenceKey } from "../model/marks.js";
+import { type Influence, INFLUENCE_ORB, INFLUENCE_STEMS, influenceKey } from "../model/marks.js";
 import type { Range } from "./astate.js";
-import type { Check, FillCount, InfluenceChange, Op, PoolSpec, Selector } from "./ops.js";
+import type {
+    Check,
+    FillCount,
+    InfluenceChange,
+    Op,
+    PoolSpec,
+    Selector,
+    Transform,
+} from "./ops.js";
 
 const require = (check: Check): Op => ({ kind: "require", check });
-const rarity = (rarity: Rarity | "survivors"): Op => ({ kind: "rarity", rarity });
-const strip = (): Op => ({ kind: "strip" });
-const fill = (pool: PoolSpec, count: FillCount): Op => ({ kind: "fill", pool, count });
-const remove = (selector: Selector): Op => ({ kind: "remove", selector });
-const lock = (): Op => ({ kind: "lock" });
+const rarity = (rarity: Rarity | "survivors"): Transform => ({ kind: "rarity", rarity });
+const strip = (): Transform => ({ kind: "strip" });
+const fill = (pool: PoolSpec, count: FillCount): Transform => ({ kind: "fill", pool, count });
+const remove = (selector: Selector): Transform => ({ kind: "remove", selector });
+const lock = (): Transform => ({ kind: "lock" });
 
 const add = (n: Range): FillCount => ({ kind: "add", n });
 const reforge = (n: Range | "byRarity"): FillCount => ({ kind: "reforge", n });
@@ -28,7 +36,7 @@ const natural: PoolSpec = { kind: "natural" };
 const tagged = (tag: TagId): PoolSpec => ({ kind: "tagged", tag });
 const veiledPlaceholder: PoolSpec = { kind: "veiledPlaceholder" };
 const influencePool: PoolSpec = { kind: "influence" };
-const influence = (change: InfluenceChange): Op => ({ kind: "influence", change });
+const influence = (change: InfluenceChange): Transform => ({ kind: "influence", change });
 
 /** A corrupted item takes no craft but the Tainted currency (Corrupted §
  *  Modifying corrupted items), so every other method opens with this. */
@@ -243,45 +251,73 @@ export function beastAddInfluenceOps(target: Influence, level: number): readonly
     ];
 }
 
-const corrupt: Op = { kind: "corrupt" };
-const end: readonly Op[] = [{ kind: "end" }];
-const either = (...branches: (readonly Op[])[]): Op => ({ kind: "either", branches });
+const corrupt: Transform = { kind: "corrupt" };
+const end: readonly Transform[] = [{ kind: "end" }];
+const either = (...branches: readonly (readonly Transform[])[]): Op => ({
+    kind: "either",
+    branches,
+});
 const corruptedItem = (what: string): Op => require({ kind: "corruptedItem", what });
 
 /** A Vaal Orb's one outcome that touches the modifiers: a Rare with six, the
  *  metamods respected (Vaal Orb § Equipment); the implicit and socket outcomes
  *  and "no effect" leave the modifiers as they are. */
-function brickBranch(base: Base, influenced: boolean): readonly Op[] {
+function brickBranch(base: Base, influenced: boolean): readonly Transform[] {
     if (!canBeRareBase(base)) return [];
+    // A class no influence can mark is reforged without one (`QUESTIONS.md` Q32).
+    const marks = influenced && INFLUENCE_STEMS[base.itemClass] !== undefined;
     return [
         strip(),
         rarity("rare"),
-        ...(influenced ? [influence({ kind: "anyOne" })] : []),
+        ...(marks ? [influence({ kind: "anyOne" })] : []),
         fill(natural, reforge([6, 6])),
     ];
 }
 
+/** The three jewels a Vaal Orb may turn into a corruption-exclusive unique
+ *  (Vaal Orb § Jewels), on which the craft ends. */
+const UNIQUE_JEWELS = new Set(["Cobalt Jewel", "Crimson Jewel", "Viridian Jewel"]);
+
 /** A Vaal Orb: the item is corrupted, and either unchanged in what the checker
- *  tracks or reforged Rare with six modifiers (Vaal Orb § Equipment). */
+ *  tracks or reforged Rare with six modifiers (Vaal Orb § Equipment); one of
+ *  the three basic jewels may become a unique instead (Vaal Orb § Jewels). */
 export function vaalOps(base: Base): readonly Op[] {
     const brick = brickBranch(base, false);
-    return [notCorrupted, corrupt, ...(brick.length > 0 ? [either([], brick)] : [])];
+    const unique = UNIQUE_JEWELS.has(base.name ?? "") ? [end] : [];
+    const outcomes = [...(brick.length > 0 ? [brick] : []), ...unique];
+    return [notCorrupted, corrupt, ...(outcomes.length > 0 ? [either([], ...outcomes)] : [])];
 }
+
+/** The item types the Corruption Altar takes: weapons, armour, jewellery,
+ *  quivers and jewels (Locus of Corruption § Corruption Altar). */
+const ALTAR_TAGS = ["weapon", "armour", "ring", "amulet", "belt", "quiver", "jewel"].map(TagId);
 
 /** The Corruption Altar (Locus of Corruption § Possible outcomes): as a Vaal
  *  Orb, but the reforge makes an influenced Rare, and one outcome destroys the
- *  item, ending the craft on that path. An item with no influence takes any one
- *  (`QUESTIONS.md` Q32). */
+ *  item, ending the craft on that path. Which influence is a probe, so the
+ *  item may have any one or what it had (`QUESTIONS.md` Q32). */
 export function locusOps(base: Base): readonly Op[] {
     const brick = brickBranch(base, true);
-    return [notCorrupted, corrupt, either([], ...(brick.length > 0 ? [brick] : []), end)];
+    return [
+        notCorrupted,
+        require({
+            kind: "baseHasAnyTag",
+            tags: ALTAR_TAGS,
+            what: "weapon, armour, piece of jewellery, quiver or jewel",
+        }),
+        corrupt,
+        either([], ...(brick.length > 0 ? [brick] : []), end),
+    ];
 }
 
 /** A Tainted Chaos Orb: a corrupted Rare is reforged, or stripped to the
- *  rarity its survivors allow (Tainted Chaos Orb § Mechanics). */
+ *  rarity its survivors allow; a protected side is not kept, since the wiki
+ *  names the fractured modifier as the one survivor (Tainted Chaos Orb §
+ *  Mechanics; the reforge half is `QUESTIONS.md` Q33). */
 export const TAINTED_CHAOS: readonly Op[] = [
     corruptedItem("A Tainted Chaos Orb"),
     isRare,
+    { kind: "unprotect" },
     either([strip(), fill(natural, reforge(RARE_REFORGE))], [strip(), rarity("survivors")]),
 ];
 
@@ -436,7 +472,7 @@ export function resonatorOps(r: Resonator): readonly Op[] {
         ...r.forced.filter(unblocked).map((mod) => fill({ kind: "rows", mods: [mod] }, within)),
         ...(essenceChance === 100 ? [fill({ kind: "rows", mods: essence }, within)] : []),
         ...(fractures ? [lock()] : []),
-        // The Bloodstained Fossil corrupts the item (Fossil § Version history 3.19.0).
+        // The Bloodstained Fossil corrupts the item (Fossil § Version history 3.16.0).
         ...(corrupts ? [corrupt] : []),
     ];
 }
