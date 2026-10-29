@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes, hasFracture, isExcluded } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { bench, craft, fossil, item } from "../__fixtures__/ast.js";
+import { bench, callStmt, craft, fossil, item, param, procDef } from "../__fixtures__/ast.js";
 import {
     AMULET_BASE,
     CATALOG,
@@ -110,6 +110,21 @@ describe("a resonator", () => {
         expect(wrongBase.diagnostics[0]!.message).toContain("cannot be used on a");
         const amulet = item({ base: "Coral Amulet", ilvl: 100, rarity: "rare" });
         expect(check(craft(amulet, [fossil("pendant")]), ctx).diagnostics).toEqual([]);
+    });
+
+    it("admits a fossil's own row only where it rolls", () => {
+        // The fossil-only ring row has no weight on an amulet.
+        const amulet = item({ base: "Coral Amulet", ilvl: 100, rarity: "rare" });
+        const r = check(craft(amulet, [fossil("faceted")]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.possible.has(DELVE_RING_ROW.type)).toBe(false);
+    });
+
+    it("takes a fossil name from a proc parameter", () => {
+        const p = procDef("reso", ["f"], [fossil(param("f"))]);
+        const r = check(craft(rareRing(["T1 Life"]), [callStmt("reso", ["dense"])], [], [p]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.possible.has(LIFE)).toBe(false);
     });
 
     it("refuses a fossil that corrupts the item", () => {

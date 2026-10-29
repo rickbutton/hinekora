@@ -25,6 +25,16 @@ describe("hover", () => {
         expect(md!).toContain("Rare"); // after regal
     });
 
+    it("hovers a fossil line with what each fossil does", () => {
+        const src = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nfossil "pristine" "hollow"`;
+        const md = getHover(src, src.indexOf("pristine") + 1, registry);
+        expect(md).not.toBeNull();
+        expect(md!).toContain("Pristine Fossil");
+        expect(md!).toContain("no defences modifiers");
+        expect(md!).toContain("Hollow Fossil");
+        expect(md!).toContain("only on: weapon, helmet, boots, gloves, body armour");
+    });
+
     it("hovers an essence name with its tier and the mod it guarantees here", () => {
         const src = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: normal }\nessence "Deafening Essence of Greed"`;
         const md = getHover(src, src.indexOf("Deafening") + 1, registry);
@@ -193,6 +203,22 @@ describe("completion", () => {
         const labels = getCompletions(src, src.length, registry).map((c) => c.label);
         expect(labels).toContain("Deafening Essence of Greed");
         expect(labels).not.toContain("maximum life"); // not mod suggestions
+    });
+
+    it('offers fossil names inside a `fossil "` string, also after an earlier name', () => {
+        const first = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nfossil "`;
+        expect(getCompletions(first, first.length, registry).map((c) => c.label)).toContain(
+            "Pristine Fossil",
+        );
+        const second = `${first}pristine" "`;
+        const labels = getCompletions(second, second.length, registry).map((c) => c.label);
+        expect(labels).toContain("Dense Fossil");
+        expect(labels).not.toContain("maximum life");
+    });
+
+    it("offers `remove` after `bench`", () => {
+        const src = `craft in poe1\nitem { base: "Iron Ring" ilvl: 84 rarity: rare }\nbench `;
+        expect(getCompletions(src, src.length, registry).map((c) => c.label)).toContain("remove");
     });
 
     it('offers bench mod names inside a `bench "` string', () => {
