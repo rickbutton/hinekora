@@ -120,7 +120,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return "Requires a removable affix — the item may have none.";
             case "essenceRarity":
                 return failure.actual.has("magic")
-                    ? "Essences cannot be used on a Magic item."
+                    ? `Essences cannot be used on a Magic item — this item ${failure.actual.size === 1 ? "is" : "may be"} ${rarityLabel(failure.actual)}.`
                     : `Requires a Normal item — this item ${failure.actual.size === 1 ? "is" : "may be"} ${rarityLabel(failure.actual)}, and only Screaming-tier and higher essences reforge a Rare.`;
             case "essenceClass":
                 return `This essence grants no mod for a ${failure.itemClass}, so it cannot be used on this item.`;
@@ -137,7 +137,9 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
             case "craftedCapUnknown":
                 return "The item may carry 'can have up to 3 crafted modifiers' — the bench would add beside the crafted modifier on that path and replace it otherwise, so narrow it with an if first.";
             case "harvestEmptyPool":
-                return `No ${failure.tag} modifier can appear on a ${state.base.name ?? "item"} at this item level.`;
+                return `No ${failure.tag} modifier can appear on ${withArticle(state.base.name ?? "item")} at this item level.`;
+            case "harvestNoRoom":
+                return `A ${failure.tag} modifier has no slot on some path — the side it would take may be full.`;
             case "typeNotRemovable":
                 switch (failure.why) {
                     case "absent":

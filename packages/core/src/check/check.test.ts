@@ -577,6 +577,19 @@ describe("checker — the rarity seam (surface §6 errors)", () => {
             craft(magicRing, [...meet, essence("Muttering Essence of Greed")]),
             ctx,
         );
+        expect(essenced.diagnostics[0]!.message).toContain("may be Normal or Magic");
+        // Normal or Rare: a scour in one arm of a Rare, then the low essence
+        // may land on the Rare path.
+        const rare = item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes: ["T1 Life"] });
+        const scouredOrNot = check(
+            craft(rare, [
+                op("exalt"),
+                iff(has("FireResist1"), [op("scour")]),
+                essence("Muttering Essence of Greed"),
+            ]),
+            ctx,
+        );
+        expect(scouredOrNot.diagnostics[0]!.message).toContain("may be Normal or Rare");
         expect(essenced.diagnostics[0]!.message).toContain("Magic");
     });
 

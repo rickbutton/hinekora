@@ -191,6 +191,7 @@ export type PreconditionFailure =
     | { readonly kind: "craftedMultiple" }
     | { readonly kind: "craftedCapUnknown" }
     | { readonly kind: "harvestEmptyPool"; readonly tag: TagId }
+    | { readonly kind: "harvestNoRoom"; readonly tag: TagId }
     | { readonly kind: "metamodBlocks" }
     | { readonly kind: "fossilBaseRestricted"; readonly fossil: string }
     | { readonly kind: "fossilCorrupts"; readonly fossil: string }
@@ -495,11 +496,22 @@ function failing(
         case "poolNonEmpty": {
             // A fill reads a superset of every path's pool; this must read a
             // subset, so a path on which the tagged pool is empty is caught.
-            const mods =
-                check.pool.kind === "tagged"
-                    ? subsetMods(a, registry).filter((m) => m.implicitTags.has(check.tag))
-                    : resolvePool(a, check.pool, registry).mods;
-            return mods.length > 0 ? null : { kind: "harvestEmptyPool", tag: check.tag };
+            if (check.pool.kind !== "tagged") {
+                return resolvePool(a, check.pool, registry).mods.length > 0
+                    ? null
+                    : { kind: "harvestEmptyPool", tag: check.tag };
+            }
+            const tag = check.tag;
+            const tagged = (p: number, s: number): boolean =>
+                subsetMods(a, registry, p, s).some((m) => m.implicitTags.has(tag));
+            if (!tagged(0, 0)) return { kind: "harvestEmptyPool", tag };
+            // Every realisable pair of side counts must leave a tagged row room:
+            // the sides are coupled through the total, so each path's pair is
+            // judged on its own rather than both sides at their fullest at once.
+            for (const [p, s] of sidePairs(a)) {
+                if (!tagged(p, s)) return { kind: "harvestNoRoom", tag };
+            }
+            return null;
         }
         case "unveilTarget": {
             const offered = resolvePool(a, { kind: "unveil" }, registry).types;
@@ -1181,12 +1193,13 @@ function addableMods(a: AItem, registry: Registry, level = a.ilvl): Mod[] {
 }
 
 /**
- * Under-approximate the mods a draw could introduce on every path: the pool as
- * if every possibly present modifier were present (its type, its groups, its
- * restrictions), with the tags it may add read pessimistically. A subset of
- * each path's real pool, so an empty one means the draw is empty somewhere.
+ * Under-approximate the mods a draw could introduce on a path holding `prefixCount`
+ * prefixes and `suffixCount` suffixes: the pool as if every possibly present
+ * modifier were present (its type, its groups, its restrictions), with the
+ * tags it may add read pessimistically. A subset of that path's real pool, so
+ * an empty one means the draw is empty there.
  */
-function subsetMods(a: AItem, registry: Registry): Mod[] {
+function subsetMods(a: AItem, registry: Registry, prefixCount: number, suffixCount: number): Mod[] {
     const facts = guaranteedFacts(a, registry);
     const types = new Set(facts.types);
     const families = new Set(facts.families);
@@ -1199,18 +1212,28 @@ function subsetMods(a: AItem, registry: Registry): Mod[] {
         for (const tag of registry.addsTagsOfType(t)) maybeTags.add(tag);
         effects.push(...registry.effectsOfType(t));
     }
-    // The sides as full as any path has them, so a side that may be full offers
-    // no row.
-    const fullest = {
-        prefixCount: a.counts.prefix[1],
-        suffixCount: suffixRange(a)[1],
-    };
     return pool(
         registry.catalog,
-        { ...facts, ...fullest, types, families, effects },
+        { ...facts, prefixCount, suffixCount, types, families, effects },
         maybeTags,
         true,
     ).map((c) => c.mod);
+}
+
+/** The (prefix, suffix) pairs the counts allow: a count enumeration over two
+ *  small ranges, never a listing of outcomes. */
+function sidePairs(a: AItem): [number, number][] {
+    const pairs: [number, number][] = [];
+    const [t0, t1] = a.counts.total;
+    const [p0, p1] = a.counts.prefix;
+    const [s0, s1] = suffixRange(a);
+    for (let p = p0; p <= p1; p++) {
+        for (let t = t0; t <= t1; t++) {
+            const s = t - p;
+            if (s >= s0 && s <= s1) pairs.push([p, s]);
+        }
+    }
+    return pairs;
 }
 
 /** The state's guaranteed mods as the facts the pool reads, at rare caps. */

@@ -531,11 +531,15 @@ in it. Notes:
   it obeys prefix/suffix locks but ignores cannot-roll metamods. A tag is matched against
   `Mod.implicitTags`; the `require` that the tagged pool is non-empty sits after the
   strip or the removal, reading the state they produce, and fails as
-  `harvestEmptyPool`. It reads a **subset pool** (`subsetMods`): the pool as if every
-  possibly present modifier were present, with the tags it may add read pessimistically
-  (`lookupWeight`'s pessimistic mode), a subset of every path's real pool where a fill
-  reads a superset (`addableMods`); so a tagged pool that a possibly kept modifier
-  empties refuses the craft.
+  `harvestEmptyPool` when no tagged row rolls on the base at all, or `harvestNoRoom` when
+  one does but some path leaves it no slot. It reads a **subset pool** (`subsetMods`): the
+  pool as if every possibly present modifier were present, with the tags it may add read
+  pessimistically (`lookupWeight`'s pessimistic mode), a subset of every path's real pool
+  where a fill reads a superset (`addableMods`); so a tagged pool that a possibly kept
+  modifier empties refuses the craft. The counts are read per path: every (prefix,
+  suffix) pair the coupled count ranges allow (`sidePairs`) must leave a tagged row
+  room, so a full Rare whose removal may take either side still admits a tag with rows
+  on both.
 
 ### `diagnostics.ts`: messages
 

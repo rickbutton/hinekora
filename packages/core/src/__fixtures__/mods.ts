@@ -753,6 +753,8 @@ export const ASPECT_AVIAN: Mod = mkMod({
     text: "Grants Level 30 Aspect of the Avian Skill",
 });
 
+/** An attack-tagged suffix, the other side's half of the attack tag beside
+ *  `ATTACK_PREFIX`. Not in `CATALOG`. */
 export const ATTACK_SPEED: Mod = mkMod({
     id: "AttackSpeed1",
     type: "AttackSpeed",
@@ -760,6 +762,7 @@ export const ATTACK_SPEED: Mod = mkMod({
     minLevel: 1,
     families: ["AttackSpeed"],
     spawn: [spawn(TAG_DEFAULT, 500)],
+    implicitTags: ["attack", "speed"],
 });
 
 /** Catalog for fuzzy/tier tests: a 3-tier life type + a fire resist, on rings. */

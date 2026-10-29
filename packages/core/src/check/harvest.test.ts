@@ -5,7 +5,11 @@ import { buildRegistry } from "../resolve/registry.js";
 import { craft, harvest, item, op } from "../__fixtures__/ast.js";
 import {
     AMULET_BASE,
+    ATTACK_PREFIX,
+    ATTACK_SPEED,
     CATALOG,
+    INCREASED_ARMOUR,
+    INCREASED_MANA,
     PROTECT_PREFIXES_CARRIER,
     FLASK_BASE,
     RATCHETING_BASE,
@@ -16,7 +20,7 @@ import { TypeId } from "../model/ids.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE, AMULET_BASE, SIMPLEX_BASE, RATCHETING_BASE, FLASK_BASE],
-    mods: [...CATALOG, PROTECT_PREFIXES_CARRIER],
+    mods: [...CATALOG, PROTECT_PREFIXES_CARRIER, ATTACK_PREFIX, ATTACK_SPEED],
     modAliases: { "T1 Life": "IncreasedLife1" },
     baseAliases: { "Iron Ring": "IronRing" },
 });
@@ -73,7 +77,9 @@ describe("harvest reforge", () => {
             rareRing(["random", "random", "random"], [PROTECT_PREFIXES_CARRIER.id]),
             [harvest("reforge", "life")],
         );
-        expect(check(locked, ctx).diagnostics[0]!.message).toContain("No life modifier");
+        expect(check(locked, ctx).diagnostics[0]!.message).toContain(
+            "life modifier has no slot on some path",
+        );
         // The augment: the removal may take a suffix and leave the prefixes full.
         const full = craft(
             rareRing(
@@ -82,7 +88,18 @@ describe("harvest reforge", () => {
             ),
             [harvest("augment", "defence")],
         );
-        expect(check(full, ctx).diagnostics[0]!.message).toContain("No defences modifier");
+        expect(check(full, ctx).diagnostics[0]!.message).toContain(
+            "defences modifier has no slot on some path",
+        );
+        // A tag with rows on both sides fits whichever side the removal opened.
+        const either = craft(
+            rareRing(
+                ["T1 Life", INCREASED_MANA.id, INCREASED_ARMOUR.id],
+                ["FireResist1", "ColdResist1", "LightningResist1"],
+            ),
+            [harvest("augment", "attack")],
+        );
+        expect(check(either, ctx).diagnostics).toEqual([]);
     });
 
     it("rejects a tag no mod can roll here (the grayed-out case)", () => {
