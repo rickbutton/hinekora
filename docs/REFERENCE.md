@@ -158,7 +158,13 @@ resolveEssence / resolveBench / resolveHarvestTag`
 
 Lexer (`tokenize`) → `Token[]` (trivia-free; no keyword token kind, every word is an
 `ident` and the parser decides by text). The words the parser gives meaning to are the
-tables in `vocabulary.ts`, which completion and the docs check read too. `parse(source)` returns `{ ok, craft }` or
+tables in `vocabulary.ts` (headers, control flow, predicates, item fields) and the core's
+method table (`check/methods.ts`), which completion, hover and the docs check read too.
+A statement that is not control flow or a call is an `OperationStmt`: `parseOperation`
+takes its opening word, a second word when `methodsAfter` says the family has one, and
+then one argument per slot of the method's `args` (`parseSlot`: a quoted name or a
+parameter, a word from a fixed set, a number, a tier; optional slots may be left off).
+An unknown opening word still parses as an operation, so the checker names it. `parse(source)` returns `{ ok, craft }` or
 `{ ok: false, error }` with a message + span. Tokens carry spans whose `offset` is a
 UTF-16 code-unit index into the source (the LSP's own offset convention). The lexer
 emits `eq` for `==` and `assign` for a lone `=` (the def binding).
@@ -364,6 +370,12 @@ body)`, the states that re-enter the loop head after one iteration (fall-off-end
   statements (`noteStmtUses`) and substitution recurses through them (`substituteStmt`);
   a param can fill a `has`/`bench`/`essence` mod-name or tier slot, a `harvest` tag, or an
   `unveil` mod. Procs share the def name space and `expanding` guard; the inlined body is a trace black box (`suppressTrace`).
+- **Operation statements** (`checkOperation`): look the statement's words up in the
+  method table (`findMethod`; an unknown word is "Unknown currency" or "Unknown
+  operation"), bind its arguments to the method's slots as `Literal`s (a parameter left
+  unbound is an error), call the entry's `build` for the op sequence (or its `Refusal`,
+  reported as a diagnostic) and run it with `runMethod`. The slot kinds give param sorts
+  (`slotSort`) and substitution (`subOperationArg`).
 - **Trace** (`TraceEntry[]`): `{ span, kind, before, after? }` per statement (and the
   item block), recorded only on the real (non-quiet) pass. `traceAt(trace, offset)`
   returns the innermost entry covering an offset; this powers hover.
@@ -371,6 +383,19 @@ body)`, the states that re-enter the loop head after one iteration (fall-off-end
   exact id/alias or a description + `t<n>`; a bare description is an error. Placeholders
   (`"random"`/`"?"`) stay anonymous. Pinned tiers seed the `tiers` overlay, so the
   starting item is fully concrete.
+
+### `methods.ts`: the method table
+
+Every crafting method the surface names is one `Method` entry in `METHODS`: its `words`
+(one for a currency, two for a family such as `harvest reforge`), its argument `args` as
+`Slot`s (`name` of a `NameKind`: mod, essence, bench, fossil, tag, aspect; `names` with
+a `max`; `word` with its `oneOf`; `int`; `tier`; optional slots last), a one-line `doc`
+in the game's words, and `build(args, state, registry)`, which turns the bound `Literal`s
+into the op sequence from `library.ts` or returns a `Refusal` (a name the catalog lacks,
+a pair the grove does not offer). The currencies' entries are generated from
+`STANDARD_CURRENCIES`. `findMethod(words)`, `methodsAfter(words)`, `slotAt(method, i)`
+and `METHOD_WORDS` are what the parser, checker and editor read; nothing outside this
+file knows a method by name.
 
 ### `ops.ts` and `library.ts`: the operations and the methods
 
@@ -565,6 +590,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/check/bdd.ts`                                      | the hash-consed ROBDD behind `presence`                                                            |
 | `packages/core/src/check/check.ts`                                    | driver, `Flow`, loops/branches, defs, `TraceEntry`, `traceAt`                                      |
 | `packages/core/src/check/ops.ts` / `library.ts`                       | the primitive operations and their interpreter / every method as a sequence of them                |
+| `packages/core/src/check/methods.ts`                                  | the method table: each method's words, argument slots, help and `build`                            |
 | `packages/core/src/check/diagnostics.ts`                              | `renderState`, message builders                                                                    |
 | `packages/core/src/model/metamods.ts`                                 | the curated metamod id → effect table, attached to the catalog at registry build                   |
 | `packages/core/src/model/veiled.ts`                                   | veiled placeholder types and the unveiled-result predicate                                         |
@@ -573,7 +599,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/resolve/fuzzy.ts` / `tiers.ts`                     | fuzzy mod matching / rollable tiers (+ the memoized empty pool)                                    |
 | `packages/core/src/pool/pool.ts`                                      | eligibility + weights                                                                              |
 | `packages/parser/src/{lexer,parser,token}.ts`                         | lexer / parser / token types                                                                       |
-| `packages/parser/src/vocabulary.ts`                                   | the surface vocabulary (keywords, predicate words, item fields, verbs)                             |
+| `packages/parser/src/vocabulary.ts`                                   | the surface vocabulary outside the method table (keywords, predicate words, item fields)           |
 | `packages/data/src/{load,adapter}.ts` + `scripts/ingest-poe1.mjs`     | data load + ingest                                                                                 |
 | `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts` | LSP features                                                                                       |
 | `packages/core/src/check/check.test.ts`                               | checker tests (currency set, count-coupling regression, loops, defs)                               |

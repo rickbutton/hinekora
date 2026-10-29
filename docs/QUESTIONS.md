@@ -83,7 +83,7 @@ damage, one with fire penetration; the grove's "Fire Damage into Cold Damage" cr
 **Steps:** try the craft on each; note which it offers.
 **Record:** the modifiers it changed.
 **Assumed meanwhile:** any type whose rows carry the element's tag and the damage tag
-(`check/check.ts` `elementalKind`), and for resistances the element's tag and the
+(`check/methods.ts` `elementalKind`), and for resistances the element's tag and the
 resistance tag, which admits the fire-and-chaos hybrid; a type that names two of the
 three elements (the fire-and-cold hybrid) is refused.
 **Answer:**
@@ -157,29 +157,12 @@ Aspects have no surface form.
 **Asked:** 2026-10-28
 **Goal:** what "similar-tier" means for the Harvest change, and whether it works on a
 Magic item. The option text says "similar-tier"; the checker takes the target's row of
-the same rank among its tiers when the source's tier is known (`check/check.ts`
-`checkHarvestChange`) and sets no rarity gate.
+the same rank among its tiers when the source's tier is known (`check/methods.ts`
+`harvestChange`) and sets no rarity gate.
 **Procure:** a Rare and a Magic item each with a T3 fire resistance; the change to cold.
 **Steps:** apply it; note the cold resistance's tier and whether the Magic item took it.
 **Record:** the resulting tier on each.
 **Assumed meanwhile:** the same rank; any rarity with the modifier present.
-**Answer:**
-
-### Q24 · decision · open
-
-**Asked:** 2026-10-28
-**Question:** the shape of the generic operation statement (`ROADMAP.md` Step 2). Today
-each method family has its own statement, parser branch, completion context and hover
-(`essence`, `bench`, `harvest`, `veiled`, `foulborn`, `fossil`, `beast`, `unveil`,
-`restore`), so adding a method touches six files. Options: (1) one operation statement
-`<name> <arg> …` whose arguments the library's **signature** for that name drives (a
-list of slots: a quoted catalog name, a word from a fixed set, an integer, a list of
-names), so the parser, completion and hover read the signature table and know no
-method; the surface forms above stay as they are, only their machinery is shared. (2)
-Keep per-method statements and accept the cost. Recommendation: (1), in two steps: a
-signature table that completion and hover read first (no surface change), then the
-parser.
-**Assumed meanwhile:** (2) until ruled; nothing in the code depends on the choice.
 **Answer:**
 
 ### Q25 · game probe · open
@@ -208,6 +191,23 @@ pair of side counts (`sidePairs`),
 ---
 
 ## Resolved
+
+### Q24 · decision · resolved
+
+**Asked:** 2026-10-28
+**Question:** the shape of the generic operation statement. Each method family had its
+own statement, parser branch, completion context and hover (`essence`, `bench`,
+`harvest`, `veiled`, `foulborn`, `fossil`, `beast`, `unveil`, `restore`), so adding a
+method touched six files. Options: (1) one operation statement `<name> <arg> …` whose
+arguments a **signature** table for that name drives (a list of slots: a quoted catalog
+name, a word from a fixed set, an integer, a list of names), so the parser, completion
+and hover read the table and know no method; the surface forms stay as they are, only
+their machinery is shared. (2) Keep per-method statements and accept the cost.
+Recommendation: (1).
+**Answer:** Rick ruled (2026-10-29): (1), the whole surface as a library over one
+operation dispatch. Built as the method table `check/methods.ts` (`Method`, `Slot`,
+`findMethod`), the AST's single `OperationStmt`, the parser's `parseOperation`, the
+checker's `checkOperation`, and completion, hover and highlighting reading the table.
 
 ### Q15 · decision · resolved
 
@@ -254,7 +254,7 @@ leave the pool matching on base tags only?
 another jewel modifier adds; without it the jewel pool overstates what can roll, which
 makes `until has X` look reachable when it is not.
 **Applied meanwhile:** added tags only (then `pool.itemTags`, now `ItemFacts.tags`); influence arrives with the
-influence currencies (ROADMAP Step 4).
+influence currencies (ROADMAP Step 3).
 **Where the assumption lives:** `packages/core/src/pool/pool.ts`, `pool.test.ts`.
 **Answer:** Rick ruled option 1 (2026-10-27). Applied in `1a3c83e` and `138cb13`.
 
@@ -306,7 +306,8 @@ carry over); the redesign waits for the answer.
 method is an ordered sequence of irreducible operations; a precondition is itself an
 operation (`require`) that may sit anywhere in the sequence, including after the
 effects it checks; and a method is all or nothing, a failed `require` anywhere leaves
-the item as it was. Implementation is `ROADMAP.md` Step 2.
+the item as it was. Built: `check/ops.ts`, `check/library.ts` and the method table of
+`check/methods.ts` (Q24).
 
 ### Q14 · game probe · resolved
 

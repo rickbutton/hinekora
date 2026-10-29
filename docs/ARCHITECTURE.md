@@ -61,6 +61,11 @@ downstream:
 
 - **No keyword token kind.** Every word lexes as an `ident`; the parser decides meaning by
   position. This keeps the lexer trivial and the vocabulary in one place.
+- **One operation statement.** The parser knows control flow, defs and calls; every
+  crafting method is the same `OperationStmt` (its words and arguments), shaped by the
+  checker's method table (`check/methods.ts`), which says which words open a method and
+  what argument slots follow. Adding a method is a table entry; the parser, completion
+  and hover pick it up unchanged.
 - **The AST is deliberately shallow.** It mirrors the surface syntax and does _no_
   resolution or lowering; names stay raw strings. So the parser is a pure syntax→tree
   transform, and the AST is the stable contract between front end and checker.
@@ -187,14 +192,17 @@ The operations are _transformers_, not part of any domain, which is why they liv
 their own file (`check/ops.ts`, with the library of methods in `check/library.ts`) and
 do not shrink when the domains are refactored. This split is standard for abstract
 interpretation: the domains supply the lattice; the transformers supply the abstract
-semantics of the operations.
+semantics of the operations. The method table (`check/methods.ts`) sits on top: it maps
+a statement's words and arguments to a library sequence, so the surface is a library
+over one dispatch rather than a case per method.
 
 ### 4.4 The driver: sequencing, branches, loops
 
 `check.ts` threads a summary through the program. A statement either _falls through_ with a
 new summary or _restarts_ (diverges, re-entering the enclosing loop).
 
-- **Sequence**: run each statement's method.
+- **Sequence**: look each statement's words up in the method table and run the sequence
+  its entry builds from the arguments.
 - **Branch (`if`)**: refine the summary into each arm (narrow by the condition), check
   each, then `join` the arms that fall through. An arm whose condition is impossible here
   is flagged as dead.

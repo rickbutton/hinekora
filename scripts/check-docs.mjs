@@ -7,11 +7,13 @@
  *   - names a code symbol in backticks (camelCase / PascalCase, optionally dotted or
  *     called) that no source file defines or mentions outside a comment;
  *   - names, in the surface doc, a lowercase word in backticks that is not a word of
- *     the language (the parser's vocabulary, a currency, a harvest tag);
- *   - omits a word of the language: every word of the parser's vocabulary, every
- *     currency name and every harvest tag must be documented in the
- *     surface doc, the vocabulary must be coloured by the VSCode grammar, and every
- *     field of the checker's abstract state must be named in REFERENCE.md §4;
+ *     the language (the parser's vocabulary, a method table word, a currency, a harvest
+ *     tag);
+ *   - omits a word of the language: every word of the parser's vocabulary and of the
+ *     method table, every currency name and every harvest tag must be documented in
+ *     the surface doc, the vocabulary and the method words must be coloured by the
+ *     VSCode grammar, and every field of the checker's abstract state must be named in
+ *     REFERENCE.md §4;
  *   - links a poewiki.net page or section that the local wiki cache does not hold
  *     (skipped with a notice when the cache is absent, e.g. in CI).
  *
@@ -45,6 +47,7 @@ const SURFACE = "docs/crafting-lang-surface-v0.md";
 const REFERENCE = "docs/REFERENCE.md";
 const GRAMMAR = "editors/vscode/syntaxes/hinekora.tmLanguage.json";
 const VOCABULARY_FILE = "packages/parser/src/vocabulary.ts";
+const METHODS_FILE = "packages/core/src/check/methods.ts";
 
 function walk(dir, pred, out = []) {
     for (const name of readdirSync(dir)) {
@@ -99,10 +102,12 @@ const block = (text, from, to) => {
 const literals = (text) => [...text.matchAll(/"([A-Za-z][\w?]*)"/g)].map((m) => m[1]);
 const vocabularySource = read(VOCABULARY_FILE);
 const vocabulary = new Set(literals(vocabularySource));
-const currencyVerbs = new Set([
-    ...literals(block(vocabularySource, "VEILED_VERBS", ";")),
-    ...literals(block(vocabularySource, "FOULBORN_VERBS", ";")),
-]);
+/** The method table's words: each entry's `words: [...]` and each word slot's `oneOf`. */
+const methodWords = new Set(
+    [...read(METHODS_FILE).matchAll(/\b(?:words|oneOf): \[([^\]]*)\]/g)].flatMap((m) =>
+        literals(m[1]),
+    ),
+);
 const registry = read("packages/core/src/resolve/registry.ts");
 const currencies = new Set(
     [...block(registry, "STANDARD_CURRENCIES", "];").matchAll(/name: "([a-z]+)"/g)].map(
@@ -118,7 +123,7 @@ const astate = read("packages/core/src/check/astate.ts");
 const aitemFields = [
     ...block(astate, "export interface AItem {", "\n}").matchAll(/readonly (\w+):/g),
 ].map((m) => m[1]);
-const languageWords = new Set([...vocabulary, ...currencies, ...harvestTags]);
+const languageWords = new Set([...vocabulary, ...methodWords, ...currencies, ...harvestTags]);
 
 // --- 1. backticked tokens: paths, symbols, language words ------------------------
 
@@ -178,7 +183,7 @@ for (const doc of DOCS) {
 const surface = read(SURFACE);
 /** Is `word` written inside backticks (inline code or a fence) somewhere in the surface doc? */
 const documented = (word) => new RegExp(`\`[^\`]*(?<![\w])${word}(?![\w])[^\`]*\``).test(surface);
-for (const w of vocabulary) {
+for (const w of [...vocabulary, ...methodWords]) {
     if (!documented(w)) fail(SURFACE, 1, `the word \`${w}\` is not documented`);
 }
 for (const c of currencies) {
@@ -188,8 +193,8 @@ for (const t of harvestTags) {
     if (!documented(t)) fail(SURFACE, 1, `the harvest tag \`${t}\` is not documented`);
 }
 const grammar = read(GRAMMAR);
-for (const w of vocabulary) {
-    if (currencyVerbs.has(w)) continue; // currency names are coloured by semantic tokens
+for (const w of [...vocabulary, ...methodWords]) {
+    if (currencies.has(w)) continue; // currency names are coloured by semantic tokens
     if (!new RegExp(`[|(]${w}[|)]`).test(grammar))
         fail(GRAMMAR, 1, `the word \`${w}\` is not highlighted`);
 }
@@ -265,5 +270,5 @@ if (problems.length > 0) {
     process.exit(1);
 }
 console.log(
-    `docs ok: ${DOCS.length} files, ${vocabulary.size} words, ${currencies.size} currencies, ${wikiLinks} wiki links`,
+    `docs ok: ${DOCS.length} files, ${vocabulary.size + methodWords.size} words, ${currencies.size} currencies, ${wikiLinks} wiki links`,
 );

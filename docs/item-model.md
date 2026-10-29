@@ -241,7 +241,7 @@ Checked against the ingested PoE1 data (12,643 affix rows, 4,561 bases):
 
 The checker's abstract state is the implementation's only item: a declared item is a
 state with no uncertainty beyond its `"random"` affixes, and the marks of §7 live there
-(fracture and veiled state today; influence with its currencies, `ROADMAP.md` Step 4).
+(fracture and veiled state today; influence with its currencies, `ROADMAP.md` Step 3).
 The pool reads a projection of it, the facts of §7 a roll depends on: base, level, rarity,
 counts, present types and families, tags, active effects (`ItemFacts` in
 `packages/core/src/model/item.ts`). There is no concrete item type (`QUESTIONS.md` Q3).

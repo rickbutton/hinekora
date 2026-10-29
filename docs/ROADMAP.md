@@ -19,24 +19,17 @@ The audit of the code against `item-model.md` is applied: its decisions are reso
 `QUESTIONS.md`, its bugs fixed, the §8 rules the checker can express are enforced by its
 item block and transfer functions and the §9 facts are data tests. What remains is a
 re-audit of the code against
-`item-model.md` §§4–9, rule by rule, now that Step 2 has settled the shape of the
-operations. The expected remaining divergence is influence (Step 4) and nothing else.
+`item-model.md` §§4–9, rule by rule, now that the operations model has settled the shape
+of the operations. The expected remaining divergence is influence (Step 3) and nothing
+else.
 
-## Step 2. The operations model (Q5)
-
-The checker runs every method as a sequence of the primitives of `operations.md` §2
-from the library of `check/library.ts`. What remains:
-
-- One generic operation statement in the AST whose arguments the library's signature
-  drives, so the parser, completion and hover stop knowing each method.
-
-## Step 3. The remaining single-item methods
+## Step 2. The remaining single-item methods
 
 Every **composes** row of the ledger is built. What waits: the bench reroll recipes on
 Q7; the Bestiary's two-modifier fracture on a fracture count in the abstract item. The
 Orb of Chance is out of scope (Q15).
 
-## Step 4. Marks
+## Step 3. Marks
 
 Add the mark set to the abstract item and the item block (`influences:`, `corrupted`),
 then the rows marked **later** for them: the conqueror Exalted Orbs, Orb of Dominance,
@@ -45,7 +38,7 @@ Locus, the Tainted currency, the Bloodstained Fossil; the eldritch currency once
 dominant implicit is a declarable mark. Influence also widens the natural pool with the
 influence's rows ([Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics)).
 
-## Step 5. Language and editor follow-ons
+## Step 4. Language and editor follow-ons
 
 - **Negative facts in the tooltip.** `not has X` yields an exclusion that is filtered
   from completion candidates but never shown. Surface it as a "without …" line: an
