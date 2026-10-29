@@ -35,6 +35,7 @@ import {
 } from "../__fixtures__/ast.js";
 import {
     AMULET_BASE,
+    BENCH_LIFE_ROW,
     CATALOG,
     CLASS_RING,
     COLD_RESIST,
@@ -59,7 +60,11 @@ import { ClassId } from "../model/ids.js";
 import type { BenchCraft, EssenceSpec } from "../model/sources.js";
 
 // A fixture bench craft that adds T1 life (a prefix) on a Ring.
-const BENCH_LIFE: BenchCraft = { mod: LIFE_T1.id, tier: 1, itemClasses: new Set([CLASS_RING]) };
+const BENCH_LIFE: BenchCraft = {
+    mod: BENCH_LIFE_ROW.id,
+    tier: 1,
+    itemClasses: new Set([CLASS_RING]),
+};
 
 // Two fixture essences, both granting T1 life on a Ring: Deafening (ladder 7, so
 // it reforges Rare too) and Muttering (ladder 2, Normal-only).
@@ -78,7 +83,7 @@ const ESS_MUTTERING: EssenceSpec = {
 
 const registry = buildRegistry({
     bases: [RING_BASE, AMULET_BASE, SIMPLEX_BASE, RATCHETING_BASE, FLASK_BASE],
-    mods: CATALOG,
+    mods: [...CATALOG, BENCH_LIFE_ROW],
     modAliases: { "T1 Life": "IncreasedLife1" },
     baseAliases: {
         "Iron Ring": "IronRing",

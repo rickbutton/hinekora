@@ -166,6 +166,21 @@ export const LIFE_T2: Mod = mkMod({
     implicitTags: ["life"],
 });
 
+/** The bench's life craft: a bench row of the natural life type, as the game's
+ *  is, so a benched life pins to it and the bench can tell it from a rolled one.
+ *  Not in `CATALOG`. */
+export const BENCH_LIFE_ROW: Mod = mkMod({
+    id: "BenchLife1",
+    type: "IncreasedLife",
+    source: "bench",
+    gen: "prefix",
+    minLevel: 1,
+    families: ["Life"],
+    spawn: [spawn(TAG_DEFAULT, 0)],
+    implicitTags: ["life"],
+    text: "+(15-25) to maximum Life",
+});
+
 /** A second, unrelated prefix so we can fill prefix slots with distinct types. */
 export const INCREASED_MANA: Mod = mkMod({
     id: "IncreasedMana1",
