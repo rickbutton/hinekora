@@ -2,7 +2,17 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, dominantP, eldritchP, hasP, iff, item, op, until } from "../__fixtures__/ast.js";
+import {
+    craft,
+    dominantP,
+    eldritchP,
+    hasP,
+    iff,
+    item,
+    notp,
+    op,
+    until,
+} from "../__fixtures__/ast.js";
 import type { OperationStmt } from "../ast/ast.js";
 import { TypeId } from "../model/ids.js";
 import {
@@ -196,6 +206,27 @@ describe("which implicit an ember gave", () => {
         expect(
             messages(craft(boots(), [iff(eldritchP("exarch", undefined, "spell damage"), [], [])])),
         ).toContain('No Searing Exarch implicit reads "spell damage"');
+    });
+
+    it("is excluded by a negated wording only when the implicit is surely present", () => {
+        const sure = craft(boots({ exarch: "grand" }), [
+            wordArg(["ember"], "grand"),
+            iff(notp(eldritchP("exarch", undefined, "movement speed")), [], []),
+        ]);
+        expect(run(sure).diagnostics).toEqual([]);
+        const declared = craft(boots({ exarch: { tier: "grand", text: "movement speed" } }), [
+            iff(notp(eldritchP("exarch", undefined, "movement speed")), [], []),
+        ]);
+        expect(messages(declared)).toContain("'if' branch can never run");
+        // Merely possible: the implicit may be absent, so nothing is excluded.
+        const maybe = craft(boots(), [
+            op("chaos"),
+            iff(hasP("life"), [wordArg(["ember"], "grand")], []),
+            iff(notp(eldritchP("exarch", undefined, "movement speed")), [], []),
+        ]);
+        const s = run(maybe).finalState!;
+        // The path without an ember knows nothing, so the join knows nothing.
+        expect(s.eldritchTypes.exarch).toBe("any");
     });
 
     it("is declared with the item, and survives an Orb of Conflict", () => {

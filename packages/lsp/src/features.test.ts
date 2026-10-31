@@ -74,6 +74,14 @@ describe("hover", () => {
         expect(getHover(src, src.indexOf("isRare"), registry)).not.toContain("Orb");
     });
 
+    it("names the eldritch implicit the item has", () => {
+        const src = `item { base: "Iron Gauntlets" ilvl: 84 rarity: rare exarch: grand "increased attack speed" }\nexalt`;
+        const h = getHover(src, src.indexOf("exalt"), registry)!;
+        expect(h).toContain("Grand Exarch");
+        expect(h).toContain("Exarch implicit: ");
+        expect(h).toContain("Attack Speed");
+    });
+
     it("names the item's marks in the tooltip", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare influences: hunter corrupted }\nexalt`;
         const h = getHover(src, src.indexOf("exalt"), registry)!;
@@ -285,6 +293,17 @@ describe("completion", () => {
         expect(getCompletions(pred, pred.length, registry).map((c) => c.label)).toContain(
             "maximum life",
         );
+    });
+
+    it("offers an eldritch implicit's wording after its side, as a field and as a predicate", () => {
+        const field = `item { base: "Iron Gauntlets" ilvl: 84 rarity: rare exarch: grand "`;
+        const fieldLabels = getCompletions(field, field.length, registry).map((c) => c.label);
+        expect(fieldLabels.some((l) => /Attack Speed/.test(l))).toBe(true);
+        expect(fieldLabels).not.toContain("maximum life");
+        const pred = `item { base: "Iron Gauntlets" ilvl: 84 rarity: rare }\nif eater "`;
+        const predLabels = getCompletions(pred, pred.length, registry).map((c) => c.label);
+        expect(predLabels.length).toBeGreaterThan(50);
+        expect(predLabels).not.toContain("maximum life");
     });
 
     it('offers Aspect names inside a `beast aspect "` string', () => {

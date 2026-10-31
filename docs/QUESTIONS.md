@@ -298,7 +298,8 @@ one (no influence can mark a jewel), and six capped by the base's limit
 (`check/library.ts` `locusOps`, `vaalOps`, `brickBranch`). An item with an eldritch
 implicit cannot be influenced, and the wiki does not say what the altar's influenced
 reforge does to one; the checker lets the outcome keep the implicits beside the new
-influence, the wide reading.
+influence, the wide reading. A Gilded Fossil's extra implicit, which the altar's two
+replacements could spare an eldritch one beside, is not modelled.
 **Answer:**
 
 ### Q36 · game probe · open
@@ -313,6 +314,38 @@ not whether a Perfect stays while the other still drops or only the other can ri
 **Record:** the pairs seen.
 **Assumed meanwhile:** both readings, the raised one capped at Perfect with the other
 lowered either way (`check/ops.ts`, the `conflict` change).
+**Answer:**
+
+### Q37 · game probe · open
+
+**Asked:** 2026-10-30
+**Goal:** what an Orb of Conflict makes of an implicit raised past the top tier of its
+own kind. The data gives the "presence" variants of an implicit (stronger while a
+Unique or Pinnacle enemy is near) fewer tiers than the plain one: the Unique-presence
+families stop at Exquisite and the Pinnacle-presence ones at Exceptional, so raising one
+of those at its top cannot keep its type.
+[Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)
+says only that the orb raises a tier.
+**Procure:** gloves with a Pinnacle-presence Exceptional Exarch implicit and a Greater
+Eater one; Orbs of Conflict.
+**Steps:** apply until the Exarch side rises; note what the implicit became.
+**Record:** the plain variant of the same stat, another Exquisite, or a refusal.
+**Assumed meanwhile:** the implicit keeps its type when raised (`check/ops.ts`, the
+`conflict` change leaves `eldritchTypes` alone), which is exact while a wording never
+separates a variant from its plain sibling.
+**Answer:**
+
+### Q38 · game probe · open
+
+**Asked:** 2026-10-30
+**Goal:** whether an Eldritch Ember or Ichor needs an item level. The rows carry a
+required level of 75 in the data, and the item pages say only "a normal, magic or rare
+item" ([Lesser Eldritch Ember](https://www.poewiki.net/wiki/Lesser_Eldritch_Ember)).
+**Procure:** a pair of gloves of item level 20; a Lesser Eldritch Ember.
+**Steps:** apply it; note whether it is refused.
+**Record:** refused or applied.
+**Assumed meanwhile:** any item level (`check/library.ts` `eldritchImplicitOps` has no
+level gate; `packages/data/scripts/ingest-eldritch.mjs` drops the row's level).
 **Answer:**
 
 ### Q33 · game probe · open
