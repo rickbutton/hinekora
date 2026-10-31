@@ -9,8 +9,11 @@
 import {
     type Base,
     check,
+    type EldritchSide,
     excludedTypes,
     findMethod,
+    isEldritchSide,
+    isEldritchTier,
     isInfluence,
     METHODS,
     methodsAfter,
@@ -89,6 +92,7 @@ type Context =
      *  too when the first word is a method on its own (`exalt`, `bench`). */
     | { readonly kind: "secondWord"; readonly first: string; readonly alone: boolean }
     | { readonly kind: "name"; readonly of: NameKind }
+    | { readonly kind: "eldritchName"; readonly side: EldritchSide }
     | { readonly kind: "word"; readonly oneOf: readonly string[] };
 
 /** Infer what should be completed at `offset` from the line before it. */
@@ -106,6 +110,19 @@ function contextAt(source: string, offset: number): Context {
                 : { kind: "mod" };
         }
         const closed = pieces.slice(0, -1);
+        // An eldritch implicit's wording, after `exarch`/`eater` as a predicate or
+        // after the tier of an `exarch:` field.
+        const sideWord = [...closed]
+            .reverse()
+            .find((p) => p.kind === "word" && isEldritchSide(p.text));
+        const last = closed[closed.length - 1];
+        if (
+            sideWord &&
+            last &&
+            (last === sideWord || (last.kind === "word" && isEldritchTier(last.text)))
+        ) {
+            return { kind: "eldritchName", side: sideWord.text as EldritchSide };
+        }
         const found = methodAt(closed.map(atomOf), closed.length);
         if (found) {
             const slot = slotAt(found.method, closed.length - found.start - found.words);
@@ -253,6 +270,8 @@ export function getCompletions(
                 : namesOf(ctx.of, registry).map(value);
         case "mod":
             return modItems(source, offset, registry);
+        case "eldritchName":
+            return registry.eldritchNames(ctx.side).map(value);
         case "nothing":
             return [];
         case "statement":

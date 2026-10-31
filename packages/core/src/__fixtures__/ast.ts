@@ -15,6 +15,7 @@ import type {
     CorruptedPred,
     Craft,
     DominantPred,
+    EldritchDecl,
     EldritchPred,
     BinaryPred,
     Def,
@@ -55,9 +56,12 @@ interface ItemSpec {
     readonly suffixes?: readonly AffixSpec[];
     readonly influences?: readonly Influence[];
     readonly corrupted?: boolean;
-    readonly exarch?: EldritchTierName;
-    readonly eater?: EldritchTierName;
+    readonly exarch?: EldritchTierName | EldritchDecl;
+    readonly eater?: EldritchTierName | EldritchDecl;
 }
+
+const eldritchDecl = (d: EldritchTierName | EldritchDecl): EldritchDecl =>
+    typeof d === "string" ? { tier: d } : d;
 
 const affix = (a: AffixSpec): AffixDecl => (typeof a === "string" ? { mod: a } : a);
 
@@ -84,8 +88,8 @@ export const item = (spec: ItemSpec): ItemBlock => ({
     suffixes: (spec.suffixes ?? []).map(affix),
     influences: spec.influences ?? [],
     corrupted: spec.corrupted ?? false,
-    ...(spec.exarch !== undefined && { exarch: spec.exarch }),
-    ...(spec.eater !== undefined && { eater: spec.eater }),
+    ...(spec.exarch !== undefined && { exarch: eldritchDecl(spec.exarch) }),
+    ...(spec.eater !== undefined && { eater: eldritchDecl(spec.eater) }),
     span: DS,
 });
 
@@ -194,10 +198,17 @@ export const influencedP = (influence?: Influence): InfluencedPred =>
         ? { kind: "influenced", span: DS }
         : { kind: "influenced", influence, span: DS };
 export const corruptedP = (): CorruptedPred => ({ kind: "corrupted", span: DS });
-export const eldritchP = (side: EldritchSide, tier?: EldritchTierName): EldritchPred =>
-    tier === undefined
-        ? { kind: "eldritch", side, span: DS }
-        : { kind: "eldritch", side, tier, span: DS };
+export const eldritchP = (
+    side: EldritchSide,
+    tier?: EldritchTierName,
+    text?: string,
+): EldritchPred => ({
+    kind: "eldritch",
+    side,
+    ...(tier !== undefined && { tier }),
+    ...(text !== undefined && { text }),
+    span: DS,
+});
 export const dominantP = (side: EldritchSide): DominantPred => ({
     kind: "dominant",
     side,

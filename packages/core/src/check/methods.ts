@@ -249,8 +249,11 @@ export const METHODS: readonly Method[] = [
             words: [item],
             args: [word(...ELDRITCH_TIERS.slice(0, 4))],
             doc: `${item} <tier> — an Eldritch ${side === "exarch" ? "Ember" : "Ichor"}: set the ${what} implicit of an armour piece to that tier (lesser to exceptional).`,
-            build: ([tier]) =>
-                eldritchImplicitOps(side, eldritchTierOf(text(tier) as EldritchTierName)),
+            build: ([tier], a, registry) => {
+                const t = eldritchTierOf(text(tier) as EldritchTierName);
+                const types = registry.eldritchPool(a.base, side, t).map((e) => e.type);
+                return eldritchImplicitOps(side, t, types);
+            },
         };
     }),
     {

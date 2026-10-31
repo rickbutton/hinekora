@@ -29,7 +29,8 @@ import {
     TypeId,
 } from "../model/index.js";
 import { effectsOf } from "../model/effects.js";
-import type { FossilSpec } from "../model/sources.js";
+import type { EldritchImplicitSpec, FossilSpec } from "../model/sources.js";
+import type { EldritchSide } from "../model/marks.js";
 
 // --- Domains --------------------------------------------------------------
 
@@ -115,6 +116,43 @@ export const BOOTS_BASE: Base = {
     domain: DOMAIN_ITEM,
     tags: new Set([TAG_DEFAULT, TagId("boots"), TagId("armour"), TagId("str_armour")]),
 };
+
+/** Eldritch implicit rows for boots: two Exarch implicits at Grand (one with a
+ *  "presence" variant sharing its wording) and one at Greater, one Eater at Grand. */
+const eldritchRow = (
+    id: string,
+    side: EldritchSide,
+    tier: number,
+    type: string,
+    text: string,
+): EldritchImplicitSpec => ({
+    id: ModId(id),
+    side,
+    tier,
+    type: TypeId(type),
+    classes: new Set([TagId("boots")]),
+    implicitTags: new Set(),
+    text,
+});
+export const ELDRITCH_ROWS: readonly EldritchImplicitSpec[] = [
+    eldritchRow("EldritchSpeed3", "exarch", 3, "ImplicitMoveSpeed", "10% increased Movement Speed"),
+    eldritchRow(
+        "EldritchSpeedPresence3",
+        "exarch",
+        3,
+        "ImplicitMoveSpeedUniquePresence",
+        "15% increased Movement Speed",
+    ),
+    eldritchRow(
+        "EldritchLifeRegen3",
+        "exarch",
+        3,
+        "ImplicitLifeRegen",
+        "Regenerate 2% of Life per second",
+    ),
+    eldritchRow("EldritchSpeed2", "exarch", 2, "ImplicitMoveSpeed", "8% increased Movement Speed"),
+    eldritchRow("EldritchChaosRes3", "eater", 3, "ImplicitChaosRes", "+15% to Chaos Resistance"),
+];
 
 /** A jewel: a class no influence can mark (its spawn tables name no influence stem). */
 export const JEWEL_BASE: Base = {

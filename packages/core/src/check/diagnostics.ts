@@ -102,7 +102,11 @@ export function describePred(pred: Pred): string {
         case "corrupted":
             return "corrupted";
         case "eldritch":
-            return pred.tier === undefined ? pred.side : `${pred.side} ${pred.tier}`;
+            return [
+                pred.side,
+                ...(pred.text !== undefined ? [`"${pred.text}"`] : []),
+                ...(pred.tier !== undefined ? [pred.tier] : []),
+            ].join(" ");
         case "dominant":
             return `dominant ${pred.side}`;
         case "compare":

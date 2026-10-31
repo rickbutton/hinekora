@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, dominantP, eldritchP, iff, item, op } from "../__fixtures__/ast.js";
+import { craft, dominantP, eldritchP, hasP, iff, item, op, until } from "../__fixtures__/ast.js";
 import type { OperationStmt } from "../ast/ast.js";
+import { TypeId } from "../model/ids.js";
 import {
     ATTACK_PREFIX,
+    ELDRITCH_ROWS,
     BOOTS_BASE,
     CANNOT_ROLL_ATTACK_CARRIER,
     CATALOG,
@@ -27,6 +29,7 @@ const registry = buildRegistry({
     ],
     modAliases: { life: "IncreasedLife1", cold: "ColdResist1", mana: "IncreasedMana1" },
     baseAliases: { "Iron Ring": "IronRing" },
+    eldritch: ELDRITCH_ROWS,
 });
 const ctx: CheckContext = { registry };
 
@@ -156,6 +159,63 @@ describe("the Eldritch orbs act on the dominant implicit's side", () => {
             words("eldritch", "chaos"),
         ]);
         expect(messages(split)).toContain("differs between paths");
+    });
+});
+
+describe("which implicit an ember gave", () => {
+    const speed = new Set([TypeId("ImplicitMoveSpeed"), TypeId("ImplicitMoveSpeedUniquePresence")]);
+
+    it("is one of the tier's pool on the base, which a wording narrows", () => {
+        const r = run(craft(boots(), [wordArg(["ember"], "grand")]));
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.eldritchTypes.exarch).toEqual(
+            new Set([...speed, TypeId("ImplicitLifeRegen")]),
+        );
+        const narrowed = run(
+            craft(boots(), [
+                wordArg(["ember"], "grand"),
+                iff(eldritchP("exarch", undefined, "movement speed"), [], []),
+            ]),
+        );
+        expect(narrowed.diagnostics).toEqual([]);
+        const loop = craft(boots(), [
+            until(eldritchP("exarch", undefined, "movement speed"), [wordArg(["ember"], "grand")]),
+        ]);
+        const l = run(loop);
+        expect(l.diagnostics).toEqual([]);
+        expect(l.finalState!.eldritchTypes.exarch).toEqual(speed);
+    });
+
+    it("cannot be a wording the tier's pool lacks, nor one no implicit has", () => {
+        const never = craft(boots(), [
+            until(eldritchP("exarch", undefined, "life per second"), [
+                wordArg(["ember"], "greater"),
+            ]),
+        ]);
+        expect(messages(never)).toMatch(/never/);
+        expect(
+            messages(craft(boots(), [iff(eldritchP("exarch", undefined, "spell damage"), [], [])])),
+        ).toContain('No Searing Exarch implicit reads "spell damage"');
+    });
+
+    it("is declared with the item, and survives an Orb of Conflict", () => {
+        const declared = boots({
+            exarch: { tier: "grand", text: "movement speed" },
+            eater: "lesser",
+        });
+        const r = run(craft(declared, [words("conflict")]));
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.eldritchTypes.exarch).toEqual(speed);
+        expect(r.finalState!.eldritchTypes.eater).toBe("any");
+    });
+
+    it("is unknown again where a path with another meets", () => {
+        const c = craft(boots({ exarch: { tier: "grand", text: "movement speed" } }), [
+            op("chaos"),
+            iff(hasP("life"), [wordArg(["ember"], "grand")], []),
+        ]);
+        const s = run(c).finalState!;
+        expect(s.eldritchTypes.exarch).toEqual(new Set([...speed, TypeId("ImplicitLifeRegen")]));
     });
 });
 

@@ -190,6 +190,8 @@ export interface Registry {
     resolveEldritch(name: string, side: EldritchSide, base?: Base): Resolved<readonly TypeId[]>;
     /** The eldritch implicits' texts of that side, each once, for completion. */
     eldritchNames(side: EldritchSide): readonly string[];
+    /** The wording of an eldritch implicit type, its most common text. */
+    eldritchTextOf(type: TypeId): string | undefined;
     /** Resolve an Aspect by its animal ("cat") to the row the Bestiary crafts. */
     resolveAspect(name: string): Resolved<Mod>;
     /** The generation (prefix/suffix) a ModType always occupies, if known. */
@@ -568,6 +570,10 @@ export function buildRegistry(data: RegistryData): Registry {
 
         eldritchNames(side) {
             return [...new Set(eldritch.filter((e) => e.side === side).map((e) => e.text))];
+        },
+
+        eldritchTextOf(type) {
+            return eldritch.find((e) => e.type === type)?.text;
         },
 
         resolveBench(name, itemClass, tier) {

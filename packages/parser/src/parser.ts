@@ -14,6 +14,7 @@ import {
     type Def,
     findMethod,
     ELDRITCH_TIERS,
+    type EldritchDecl,
     type EldritchTierName,
     type IfStmt,
     type Influence,
@@ -237,8 +238,8 @@ class Parser {
         let suffixes: readonly AffixDecl[] | undefined;
         let influences: readonly Influence[] | undefined;
         let corrupted = false;
-        let exarch: EldritchTierName | undefined;
-        let eater: EldritchTierName | undefined;
+        let exarch: EldritchDecl | undefined;
+        let eater: EldritchDecl | undefined;
 
         const setOnce = <T>(
             current: T | undefined,
@@ -322,8 +323,9 @@ class Parser {
         };
     }
 
-    /** `exarch: grand`: one of the six eldritch tier names. */
-    private parseEldritchTier(field: string): EldritchTierName {
+    /** `exarch: grand ["<wording>"]`: one of the six eldritch tier names, then
+     *  the implicit's wording when it is known. */
+    private parseEldritchTier(field: string): EldritchDecl {
         const t = this.expect(
             "ident",
             `an eldritch tier after '${field}' (${ELDRITCH_TIERS.join(", ")})`,
@@ -334,7 +336,8 @@ class Parser {
                 t.span,
             );
         }
-        return t.text;
+        const text = this.at("string") ? this.advance().text : undefined;
+        return { tier: t.text, ...(text !== undefined && { text }) };
     }
 
     /** `influences: hunter` or `influences: shaper elder` (a comma between them
@@ -693,17 +696,25 @@ class Parser {
 
         if (isEldritchSide(t.text)) {
             this.advance();
-            const next = this.peek();
-            if (next.kind === "ident" && isEldritchTier(next.text)) {
+            // A wording and a tier, either or both, in either order.
+            let tier: EldritchTierName | undefined;
+            let text: string | undefined;
+            for (;;) {
+                const next = this.peek();
+                if (next.kind === "ident" && isEldritchTier(next.text) && tier === undefined) {
+                    tier = next.text;
+                } else if (next.kind === "string" && text === undefined) {
+                    text = next.text;
+                } else break;
                 this.advance();
-                return {
-                    kind: "eldritch",
-                    side: t.text,
-                    tier: next.text,
-                    span: span(t.span.start, next.span.end),
-                };
             }
-            return { kind: "eldritch", side: t.text, span: t.span };
+            return {
+                kind: "eldritch",
+                side: t.text,
+                ...(tier !== undefined && { tier }),
+                ...(text !== undefined && { text }),
+                span: span(t.span.start, this.prev.span.end),
+            };
         }
 
         if (t.text === "dominant") {

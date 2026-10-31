@@ -11,6 +11,7 @@ import type {
     Arg,
     Craft,
     Def,
+    EldritchDecl,
     ItemBlock,
     OperationArg,
     ParamRef,
@@ -20,7 +21,7 @@ import type {
 } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import type { Gen, GroupId, ModId, TagId, TypeId } from "../model/ids.js";
-import { eldritchTierOf } from "../model/marks.js";
+import { type EldritchSide, eldritchTierOf } from "../model/marks.js";
 import type { ModTypeContext, Registry } from "../resolve/registry.js";
 import {
     type AItem,
@@ -390,6 +391,22 @@ class Checker {
             prefixCount = Math.min(prefixCount, tCap - suffixCount);
         }
 
+        // A declared implicit's wording names which implicit it is.
+        const implicitTypes = (
+            side: EldritchSide,
+            decl: EldritchDecl | undefined,
+        ): ReadonlySet<TypeId> | undefined => {
+            if (decl?.text === undefined) return undefined;
+            const types = this.registry.resolveEldritch(decl.text, side, base);
+            if (!types.ok) {
+                this.diag(resolveMessage(types.error), item.span);
+                return undefined;
+            }
+            return new Set(types.value);
+        };
+        const exarchTypes = implicitTypes("exarch", item.exarch);
+        const eaterTypes = implicitTypes("eater", item.eater);
+
         // An influenced item cannot be fractured (Influenced item § Mechanics)
         // nor carry an eldritch implicit (Eldritch implicit modifier).
         if (item.influences.length > 0 && (item.exarch !== undefined || item.eater !== undefined)) {
@@ -415,8 +432,10 @@ class Checker {
             {
                 influences: item.influences,
                 corrupted: item.corrupted,
-                ...(item.exarch !== undefined && { exarch: eldritchTierOf(item.exarch) }),
-                ...(item.eater !== undefined && { eater: eldritchTierOf(item.eater) }),
+                ...(item.exarch !== undefined && { exarch: eldritchTierOf(item.exarch.tier) }),
+                ...(item.eater !== undefined && { eater: eldritchTierOf(item.eater.tier) }),
+                ...(exarchTypes !== undefined && { exarchTypes }),
+                ...(eaterTypes !== undefined && { eaterTypes }),
             },
         );
     }
@@ -799,10 +818,23 @@ class Checker {
                     : { kind: "influenced", influence: pred.influence };
             case "corrupted":
                 return { kind: "corrupted" };
-            case "eldritch":
-                return pred.tier === undefined
-                    ? { kind: "eldritch", side: pred.side }
-                    : { kind: "eldritch", side: pred.side, tier: eldritchTierOf(pred.tier) };
+            case "eldritch": {
+                let types: ReadonlySet<TypeId> | undefined;
+                if (pred.text !== undefined) {
+                    const found = this.registry.resolveEldritch(pred.text, pred.side, a.base);
+                    if (!found.ok) {
+                        this.diag(resolveMessage(found.error), pred.span);
+                        return null;
+                    }
+                    types = new Set(found.value);
+                }
+                return {
+                    kind: "eldritch",
+                    side: pred.side,
+                    ...(pred.tier !== undefined && { tier: eldritchTierOf(pred.tier) }),
+                    ...(types !== undefined && { types }),
+                };
+            }
             case "dominant":
                 return { kind: "dominant", side: pred.side };
             case "compare": {

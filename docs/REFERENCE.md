@@ -332,7 +332,12 @@ total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = t
   Conflict maps each pair to the two it can reach, and `dominantOf` reads which side the
   Eldritch orbs act on, which the table (`dominantSide`) requires to agree on every
   path; `exarch`/`eater` and `dominant` refine it, `noEldritch` and `bothEldritch`
-  require it. `corrupted` is `{false}`, `{true}` or
+  require it. `eldritchTypes` is which implicit each side may be (`ImplicitTypes`: a
+  set of types, or `"any"` when nothing is known), set by an ember's draw to its pool's
+  types and narrowed by a wording in `exarch "…"` or the item block; it is independent
+  of the tiers, since the Orb of Conflict moves a tier without changing the implicit,
+  and a wording's negation only narrows when the implicit is surely present.
+  `corrupted` is `{false}`, `{true}` or
   both; every method's sequence opens with `require(notCorrupted)` (a corruption
   possible on any path refuses the craft), or with `corruptedItem` for the Tainted
   currency, which needs it on every path; `corrupted` refines it.

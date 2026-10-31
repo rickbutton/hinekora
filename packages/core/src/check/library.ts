@@ -369,7 +369,11 @@ const dominantOrb = (name: string, side: EldritchSide): Op =>
 /** An Eldritch Ember or Ichor: that implicit set to the tier the item comes
  *  in, on an armour piece of any rarity with no influence (the item's help
  *  text; Eldritch implicit modifier). */
-export function eldritchImplicitOps(side: EldritchSide, tier: number): readonly Op[] {
+export function eldritchImplicitOps(
+    side: EldritchSide,
+    tier: number,
+    types: readonly TypeId[],
+): readonly Op[] {
     return [
         notCorrupted,
         require({
@@ -378,7 +382,7 @@ export function eldritchImplicitOps(side: EldritchSide, tier: number): readonly 
             what: "body armour, boots, gloves or helmet",
         }),
         noInfluence(ELDRITCH_NAME[side]),
-        { kind: "eldritch", change: { kind: "set", side, tier } },
+        { kind: "eldritch", change: { kind: "set", side, tier, types } },
     ];
 }
 

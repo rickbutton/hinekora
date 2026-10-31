@@ -66,9 +66,25 @@ export interface AItem {
     /** The pairs of eldritch implicit tiers the item may have (`eldritchKey`),
      *  tracked as pairs so the dominance rule survives a join. */
     readonly eldritch: ReadonlySet<EldritchKey>;
+    /** Which implicit each side may be: the types an ember's pool holds, narrowed
+     *  by a wording; `"any"` when nothing is known. Independent of the tiers,
+     *  which a wording never changes. */
+    readonly eldritchTypes: Readonly<Record<EldritchSide, ImplicitTypes>>;
     /** The item an imprint would restore, when one is held on every path. */
     readonly imprint?: AItem;
 }
+
+export type ImplicitTypes = ReadonlySet<TypeId> | "any";
+
+export const ImplicitTypesDomain = {
+    join(a: ImplicitTypes, b: ImplicitTypes): ImplicitTypes {
+        return a === "any" || b === "any" ? "any" : SetDomain.join(a, b);
+    },
+    equal(a: ImplicitTypes, b: ImplicitTypes): boolean {
+        if (a === "any" || b === "any") return a === b;
+        return SetDomain.equal(a, b);
+    },
+} satisfies Domain<ImplicitTypes>;
 
 /** The loosest caps over the item's rarities: what its counts may reach on some
  *  path, the bound the ranges are kept under. */
@@ -507,6 +523,9 @@ export interface InitialMarks {
     /** The eldritch implicits' tiers, 1 to 6, absent for none. */
     readonly exarch?: number;
     readonly eater?: number;
+    /** Which implicit each is, when the item block names it. */
+    readonly exarchTypes?: ReadonlySet<TypeId>;
+    readonly eaterTypes?: ReadonlySet<TypeId>;
 }
 
 export function initialState(
@@ -526,6 +545,10 @@ export function initialState(
         influences: new Set([influenceKey(marks.influences)]),
         corrupted: new Set([marks.corrupted]),
         eldritch: new Set([eldritchKey(marks.exarch ?? 0, marks.eater ?? 0)]),
+        eldritchTypes: {
+            exarch: marks.exarchTypes ?? "any",
+            eater: marks.eaterTypes ?? "any",
+        },
         counts: CountDomain.point(p, s),
         bdd,
         presence:
@@ -587,6 +610,10 @@ export function join(a: AItem, b: AItem): AItem {
         influences: SetDomain.join(a.influences, b.influences),
         corrupted: SetDomain.join(a.corrupted, b.corrupted),
         eldritch: SetDomain.join(a.eldritch, b.eldritch),
+        eldritchTypes: {
+            exarch: ImplicitTypesDomain.join(a.eldritchTypes.exarch, b.eldritchTypes.exarch),
+            eater: ImplicitTypesDomain.join(a.eldritchTypes.eater, b.eldritchTypes.eater),
+        },
         bdd: a.bdd,
         counts: CountDomain.join(a.counts, b.counts),
         presence: a.bdd.or(a.presence, b.presence),
@@ -609,6 +636,8 @@ export function stateEqual(a: AItem, b: AItem): boolean {
         SetDomain.equal(a.influences, b.influences) &&
         SetDomain.equal(a.corrupted, b.corrupted) &&
         SetDomain.equal(a.eldritch, b.eldritch) &&
+        ImplicitTypesDomain.equal(a.eldritchTypes.exarch, b.eldritchTypes.exarch) &&
+        ImplicitTypesDomain.equal(a.eldritchTypes.eater, b.eldritchTypes.eater) &&
         CountDomain.equal(a.counts, b.counts) &&
         a.presence === b.presence &&
         SetDomain.equal(a.possible, b.possible) &&
@@ -646,8 +675,14 @@ export type RPred =
     /** The item has that influence, or any influence when none is named. */
     | { readonly kind: "influenced"; readonly influence?: Influence }
     | { readonly kind: "corrupted" }
-    /** That eldritch implicit is present, at that tier when one is named. */
-    | { readonly kind: "eldritch"; readonly side: EldritchSide; readonly tier?: number }
+    /** That eldritch implicit is present, at that tier when one is named, and
+     *  one of `types` when a wording was given. */
+    | {
+          readonly kind: "eldritch";
+          readonly side: EldritchSide;
+          readonly tier?: number;
+          readonly types?: ReadonlySet<TypeId>;
+      }
     /** That implicit is the dominant one. */
     | { readonly kind: "dominant"; readonly side: EldritchSide }
     | { readonly kind: "not"; readonly inner: RPred }
@@ -696,8 +731,33 @@ export function refine(a: AItem, pred: RPred, positive = true): AItem | null {
                 const tier = eldritchOf(key)[pred.side];
                 return pred.tier === undefined ? tier > 0 : tier === pred.tier;
             };
-            const eldritch = new Set([...a.eldritch].filter((k) => holds(k) === positive));
-            return eldritch.size === 0 ? null : { ...a, eldritch };
+            const wanted = pred.types;
+            const have = a.eldritchTypes[pred.side];
+            if (positive) {
+                const eldritch = new Set([...a.eldritch].filter(holds));
+                if (eldritch.size === 0) return null;
+                if (wanted === undefined) return { ...a, eldritch };
+                const types =
+                    have === "any" ? wanted : new Set([...have].filter((t) => wanted.has(t)));
+                if (types.size === 0) return null;
+                return {
+                    ...a,
+                    eldritch,
+                    eldritchTypes: { ...a.eldritchTypes, [pred.side]: types },
+                };
+            }
+            // Negative with a wording: the implicit may be absent, or present and
+            // another; only when it is surely present can the wording be excluded.
+            if (wanted === undefined) {
+                const eldritch = new Set([...a.eldritch].filter((k) => !holds(k)));
+                return eldritch.size === 0 ? null : { ...a, eldritch };
+            }
+            if ([...a.eldritch].every(holds) && have !== "any") {
+                const types = new Set([...have].filter((t) => !wanted.has(t)));
+                if (types.size === 0) return null;
+                return { ...a, eldritchTypes: { ...a.eldritchTypes, [pred.side]: types } };
+            }
+            return a;
         }
 
         case "dominant": {

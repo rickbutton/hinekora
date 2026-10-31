@@ -11,6 +11,8 @@ import {
     type Def,
     describePred,
     disjunctiveTier,
+    ELDRITCH_SIDES,
+    eldritchOf,
     type Gen,
     type GroupId,
     guaranteedTypes,
@@ -354,6 +356,20 @@ function tooltip(a: AItem, registry: Registry, caption?: string): string {
         `ilvl ${a.ilvl}`,
         ...marksLabel(a),
     ].join(" · ");
+    // Which eldritch implicit a side may be, when the item carries one.
+    for (const side of ELDRITCH_SIDES) {
+        const types = a.eldritchTypes[side];
+        if (types === "any" || types.size === 0) continue;
+        const present = [...a.eldritch].some((k) => eldritchOf(k)[side] > 0);
+        if (!present) continue;
+        const texts = [...new Set([...types].map((t) => registry.eldritchTextOf(t) ?? t))];
+        const label = side === "exarch" ? "Exarch" : "Eater";
+        lines.push(
+            texts.length === 1
+                ? `_${label} implicit: ${oneLine(texts[0]!)}_`
+                : `_${label} implicit: one of ${texts.length} (${texts.slice(0, 3).map(oneLine).join("; ")}${texts.length > 3 ? "; …" : ""})_`,
+        );
+    }
     const body = lines.length > 0 ? lines.join("  \n") : "_no modifiers_";
     return [caption ? `_${caption}_` : undefined, head, body]
         .filter((x): x is string => x !== undefined)

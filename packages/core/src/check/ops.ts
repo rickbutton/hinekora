@@ -246,7 +246,13 @@ export type Op =
 export type Transform = Exclude<Op, { kind: "require" | "unprotect" | "keep" }>;
 
 export type EldritchChange =
-    | { readonly kind: "set"; readonly side: EldritchSide; readonly tier: number }
+    /** That implicit set to a tier, one of `types` (the ember's pool). */
+    | {
+          readonly kind: "set";
+          readonly side: EldritchSide;
+          readonly tier: number;
+          readonly types: readonly TypeId[];
+      }
     /** One implicit up a tier, the other down; a Lesser lowered is removed
      *  (Orb of Conflict). */
     | { readonly kind: "conflict" }
@@ -435,6 +441,15 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
         case "eldritch": {
             const change = op.change;
             const eldritch = new Set<EldritchKey>();
+            // A wording never changes with the tier, so only an ember's draw
+            // replaces what the side may be; an empty pool leaves it unknown.
+            const eldritchTypes =
+                change.kind === "set"
+                    ? {
+                          ...a.eldritchTypes,
+                          [change.side]: change.types.length > 0 ? new Set(change.types) : "any",
+                      }
+                    : a.eldritchTypes;
             for (const key of a.eldritch) {
                 const { exarch, eater } = eldritchOf(key);
                 if (change.kind === "set") {
@@ -461,7 +476,7 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
                 eldritch.add(eldritchKey(Math.min(exarch + 1, 6), eater - 1));
                 eldritch.add(eldritchKey(exarch - 1, Math.min(eater + 1, 6)));
             }
-            return { ...a, eldritch };
+            return { ...a, eldritch, eldritchTypes };
         }
         case "relax":
             // A modifier keeps its tier only when it is provably crafted: every

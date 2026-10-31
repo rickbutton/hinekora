@@ -156,8 +156,12 @@ describe("parser — item block", () => {
         const both = parseOk(
             'item { base: "R" ilvl: 1 rarity: rare exarch: grand eater: lesser } exalt',
         ).item;
-        expect(both.exarch).toBe("grand");
-        expect(both.eater).toBe("lesser");
+        expect(both.exarch).toEqual({ tier: "grand" });
+        expect(both.eater).toEqual({ tier: "lesser" });
+        const named = parseOk(
+            'item { base: "R" ilvl: 1 rarity: rare exarch: grand "movement speed" } exalt',
+        ).item;
+        expect(named.exarch).toEqual({ tier: "grand", text: "movement speed" });
         expect(
             parseOk('item { base: "R" ilvl: 1 rarity: rare } exalt').item.exarch,
         ).toBeUndefined();
@@ -175,6 +179,15 @@ describe("parser — item block", () => {
         );
         expect(c.body[0]).toMatchObject({ pred: { kind: "eldritch", side: "exarch" } });
         expect((c.body[0] as IfStmt).pred).not.toHaveProperty("tier");
+        const worded = parseOk(
+            'item { base: "R" ilvl: 1 rarity: rare } if exarch "movement speed" grand { exalt } if eater greater "chaos res" { exalt }',
+        );
+        expect(worded.body[0]).toMatchObject({
+            pred: { kind: "eldritch", side: "exarch", tier: "grand", text: "movement speed" },
+        });
+        expect(worded.body[1]).toMatchObject({
+            pred: { kind: "eldritch", side: "eater", tier: "greater", text: "chaos res" },
+        });
         expect(c.body[1]).toMatchObject({
             pred: {
                 kind: "and",

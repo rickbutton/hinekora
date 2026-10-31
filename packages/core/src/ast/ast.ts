@@ -88,10 +88,16 @@ export interface ItemBlock {
     readonly influences: readonly Influence[];
     /** The bare `corrupted` flag. */
     readonly corrupted: boolean;
-    /** `exarch: grand` and `eater: lesser`, the eldritch implicits' tiers. */
-    readonly exarch?: EldritchTierName;
-    readonly eater?: EldritchTierName;
+    /** `exarch: grand` and `eater: lesser "<wording>"`, the eldritch implicits. */
+    readonly exarch?: EldritchDecl;
+    readonly eater?: EldritchDecl;
     readonly span: SourceSpan;
+}
+
+/** A declared eldritch implicit: its tier, and its wording when known. */
+export interface EldritchDecl {
+    readonly tier: EldritchTierName;
+    readonly text?: string;
 }
 
 // --- Statements (surface §3–§4) -------------------------------------------
@@ -178,11 +184,13 @@ export interface CorruptedPred {
     readonly span: SourceSpan;
 }
 
-/** `exarch` or `eater` (that implicit is present), `exarch grand` (at that tier). */
+/** `exarch` or `eater` (that implicit is present), `exarch grand` (at that tier),
+ *  `exarch "<wording>"` (that implicit), in any combination. */
 export interface EldritchPred {
     readonly kind: "eldritch";
     readonly side: EldritchSide;
     readonly tier?: EldritchTierName;
+    readonly text?: string;
     readonly span: SourceSpan;
 }
 

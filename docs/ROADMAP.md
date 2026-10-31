@@ -32,11 +32,8 @@ Orb of Chance is out of scope (Q15).
 ## Step 3. Marks
 
 The abstract item and the item block carry the influences, corruption and the eldritch
-implicits' tiers, and the currencies that set or use them are built. What remains: the
-Orb of Dominance once the elevated modifiers are in the data; and the eldritch
-implicits' identity (which stat an ember gave, so a guide can loop on it), which needs
-the ingest to keep implicit rows and a per-class, per-tier pool, the ember's result
-being a disjunction a predicate narrows.
+implicits, and the currencies that set or use them are built. What remains is the Orb
+of Dominance, once the elevated modifiers are in the data.
 
 ## Step 4. Language and editor follow-ons
 
