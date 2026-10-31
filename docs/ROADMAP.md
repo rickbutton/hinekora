@@ -22,12 +22,7 @@ re-audit of the code against
 `item-model.md` §§4–9, rule by rule, now that the operations model has settled the shape
 of the operations; no divergence is expected.
 
-## Step 2. The remaining single-item methods
-
-Every **composes** row of the ledger is built. What waits: the bench reroll recipes on
-Q7. The Orb of Chance is out of scope (Q15).
-
-## Step 3. Language and editor follow-ons
+## Step 2. Language and editor follow-ons
 
 - **Negative facts in the tooltip.** `not has X` yields an exclusion that is filtered
   from completion candidates but never shown. Surface it as a "without …" line: an

@@ -18,24 +18,6 @@ The next session applies it, records the commit, and moves the entry to Resolved
 
 ## Open
 
-### Q7 · game probe · open
-
-**Asked:** 2026-10-26
-**Goal:** the semantics of the two new bench recipes "Reroll three random modifiers on a
-Rare item" (3 Chaos) and "Reroll a random modifier" (8 Chaos), added in 3.29. The wiki
-([Version 3.29.0](https://www.poewiki.net/wiki/Version_3.29.0)) says only "reroll".
-**Procure:** any Rare with 6 modifiers, two of them of a known group, and a spare with
-"Prefixes Cannot Be Changed" benched.
-**Steps:** (1) apply "reroll three" to the full Rare several times; note whether the
-count stays 6 and whether the three rerolled modifiers can land on the other side (prefix
-count changing). (2) apply it to the metamod item; note whether prefixes are ever touched
-and whether the metamod itself can be rerolled. (3) apply "reroll a random modifier" to a
-Rare with one modifier of each side; note whether the result keeps the side.
-**Record:** before/after prefix and suffix counts for each try.
-**Assumed meanwhile:** `remove(unlocked, k); fill(natural, k)` (count preserved, side may
-change, metamods respected), as `operations.md` §3.2 states; not built until answered.
-**Answer:**
-
 ### Q16 · game probe · open
 
 **Asked:** 2026-10-28
@@ -393,6 +375,25 @@ those the item level allows (`check/astate.ts` `relaxTiers`, the tier resolution
 ---
 
 ## Resolved
+
+### Q7 · game probe · resolved
+
+**Asked:** 2026-10-26
+**Goal:** the semantics of the two new bench recipes "Reroll three random modifiers on a
+Rare item" (3 Chaos) and "Reroll a random modifier" (8 Chaos), added in 3.29. The wiki
+([Version 3.29.0](https://www.poewiki.net/wiki/Version_3.29.0)) says only "reroll".
+**Procure:** any Rare with 6 modifiers, two of them of a known group, and a spare with
+"Prefixes Cannot Be Changed" benched.
+**Steps:** (1) apply "reroll three" to the full Rare several times; note whether the
+count stays 6 and whether the three rerolled modifiers can land on the other side (prefix
+count changing). (2) apply it to the metamod item; note whether prefixes are ever touched
+and whether the metamod itself can be rerolled. (3) apply "reroll a random modifier" to a
+Rare with one modifier of each side; note whether the result keeps the side.
+**Record:** before/after prefix and suffix counts for each try.
+**Assumed meanwhile:** `remove(unlocked, k); fill(natural, k)` (count preserved, side may
+change, metamods respected), as `operations.md` §3.2 states; not built until answered.
+**Answer:** Rick ruled (2026-10-30): deferred, not worth modelling yet. The ledger row
+is deferred; the probe stands for when it is.
 
 ### Q34 · decision · resolved
 

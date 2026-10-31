@@ -138,14 +138,14 @@ table decides the keep-set and the selector of every row that meets a metamod.
 
 ### 3.2 Crafting bench
 
-| Method                                                                                              | Precondition                                                     | Composition                                              | Status                     |
-| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------- | -------------------------- |
-| Craft a modifier ([Crafting Bench](https://www.poewiki.net/wiki/Crafting_Bench))                    | open slot on its side, crafted limit, group not possibly present | `fill(bench(row), 1)`                                    | built                      |
-| The five metamods ([Metamod](https://www.poewiki.net/wiki/Metamod))                                 | as any crafted modifier                                          | `fill(bench(row), 1)`; their effect is read off presence | built                      |
-| Remove crafted modifiers                                                                            | a crafted modifier present                                       | `remove(crafted ∖ fractured, all)`                       | built                      |
-| Replace a crafted modifier                                                                          | exactly one crafted modifier                                     | remove crafted; craft                                    | built                      |
-| Reroll three / one random modifiers ([Version 3.29.0](https://www.poewiki.net/wiki/Version_3.29.0)) | Rare                                                             | `remove(unlocked, k); fill(natural, k)`                  | probe                      |
-| Reroll the rarity (1 Chance)                                                                        | non-unique                                                       | scour; chance                                            | out (as the Orb of Chance) |
+| Method                                                                                              | Precondition                                                     | Composition                                              | Status                                                |
+| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------- |
+| Craft a modifier ([Crafting Bench](https://www.poewiki.net/wiki/Crafting_Bench))                    | open slot on its side, crafted limit, group not possibly present | `fill(bench(row), 1)`                                    | built                                                 |
+| The five metamods ([Metamod](https://www.poewiki.net/wiki/Metamod))                                 | as any crafted modifier                                          | `fill(bench(row), 1)`; their effect is read off presence | built                                                 |
+| Remove crafted modifiers                                                                            | a crafted modifier present                                       | `remove(crafted ∖ fractured, all)`                       | built                                                 |
+| Replace a crafted modifier                                                                          | exactly one crafted modifier                                     | remove crafted; craft                                    | built                                                 |
+| Reroll three / one random modifiers ([Version 3.29.0](https://www.poewiki.net/wiki/Version_3.29.0)) | Rare                                                             | `remove(unlocked, k); fill(natural, k)`                  | deferred (not worth modelling yet, `QUESTIONS.md` Q7) |
+| Reroll the rarity (1 Chance)                                                                        | non-unique                                                       | scour; chance                                            | out (as the Orb of Chance)                            |
 
 ### 3.3 Essences
 
@@ -189,16 +189,16 @@ rows of the Metamod table.
 
 Per [Beastcrafting](https://www.poewiki.net/wiki/Beastcrafting).
 
-| Method                                                | Composition                                                                               | Status                          |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------- |
-| Add a prefix, remove a random suffix (and the mirror) | `remove(suffix ∖ protected, 1); fill(natural[prefix], 1)` (the pool at the beast's level) | built                           |
-| Add a modifier to an influenced item                  | `fill(natural ∪ influence, 1)`                                                            | built (`beast add <influence>`) |
-| Fracture one / two modifiers on a talisman            | `lock(any, 1)` / `lock(any, 2)`                                                           | built (`beast fracture [2]`)    |
-| Add a random metamod                                  | `fill(metamods, 1)`                                                                       | built                           |
-| Craft an Aspect                                       | `fill(aspect row, 1)`                                                                     | built                           |
-| Imprint a Magic item / a Rare talisman                | `imprint`                                                                                 | built                           |
-| Reroll a talisman base                                | base change keeping modifiers                                                             | later: base change              |
-| Corrupt, split, unique and flask recipes              |                                                                                           | out                             |
+| Method                                                | Composition                                                                               | Status                                   |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Add a prefix, remove a random suffix (and the mirror) | `remove(suffix ∖ protected, 1); fill(natural[prefix], 1)` (the pool at the beast's level) | built                                    |
+| Add a modifier to an influenced item                  | `fill(natural ∪ influence, 1)`                                                            | built (`beast add <influence>`)          |
+| Fracture one / two modifiers on a talisman            | `lock(any, 1)` / `lock(any, 2)`                                                           | built (`beast fracture [2]`)             |
+| Add a random metamod                                  | `fill(metamods, 1)`                                                                       | built                                    |
+| Craft an Aspect                                       | `fill(aspect row, 1)`                                                                     | built                                    |
+| Imprint a Magic item / a Rare talisman                | `imprint`                                                                                 | built                                    |
+| Reroll a talisman base                                | base change keeping modifiers                                                             | out (a base change, not worth modelling) |
+| Corrupt, split, unique and flask recipes              |                                                                                           | out                                      |
 
 ### 3.7 Allflame and league content
 
