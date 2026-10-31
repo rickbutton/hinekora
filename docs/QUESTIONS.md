@@ -326,6 +326,29 @@ those the item level allows (`check/astate.ts` `relaxTiers`, the tier resolution
 
 ## Resolved
 
+### Q34 · decision · resolved
+
+**Asked:** 2026-10-30
+**Question:** whether to model [Hinekora's Lock](https://www.poewiki.net/wiki/Hinekora%27s_Lock):
+a method applied under a condition on its own outcome, the join of the narrowed
+after-state and the unchanged one, which would also flag a condition the method can
+never produce.
+**Answer:** Rick ruled (2026-10-30): not for now. The ledger row is deferred.
+
+### Q35 · decision · open
+
+**Asked:** 2026-10-30
+**Question:** the surface for the eldritch implicits. Item block fields `exarch: grand`
+and `eater: lesser`; statements `ember <tier>`, `ichor <tier>` (the four tiers an ember
+or ichor comes in), `eldritch chaos`, `eldritch exalt`, `eldritch annul`, `conflict`;
+predicates `exarch [<tier>]`, `eater [<tier>]` and `dominant exarch|eater`. The tier
+words are the game's: `lesser`, `greater`, `grand`, `exceptional`, `exquisite`,
+`perfect`. Alternatives: the in-game item names (`lesser ember`), or one `eldritch`
+family for everything.
+**Assumed meanwhile:** the words above (`check/methods.ts`, `parser/src/parser.ts`,
+the surface doc §1, §3 and §5).
+**Answer:**
+
 ### Q31 · decision · resolved
 
 **Asked:** 2026-10-29
