@@ -123,6 +123,15 @@ bench "cold resistance"`;
         expect(md!).not.toMatch(/\bmodifiers\b/); // no total-count line
     });
 
+    it("names what the item is proven not to have", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
+chaos
+if not has "maximum life" { exalt }`;
+        const md = getHover(src, src.indexOf("exalt"), registry)!;
+        expect(md).toContain("_without: ");
+        expect(md).toMatch(/without: .*maximum life/i);
+    });
+
     it("shows a disjunctive guarantee as 'at least one of'", () => {
         const src = `item { base: "Titan Greaves" ilvl: 84 rarity: normal }
 until has "fire resistance" t1 or has "cold resistance" t1 or has "lightning resistance" t1 {

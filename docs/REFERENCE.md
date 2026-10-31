@@ -214,7 +214,9 @@ Transport-free service functions + a stdio server:
       (`cardinalityGuarantees`, "≥k of n"). Adding a new readable form means adding a
       layer. Each mod line shows the exact roll when its tier is pinned, else the roll
       span across candidate tiers; the undetermined remainder renders as ONE coupled line
-      ("1 more, a prefix or a suffix"), not two independent per-side ranges.
+      ("1 more, a prefix or a suffix"), not two independent per-side ranges. A closing
+      "without …" line names the modifiers proven absent (a `not has` branch, a
+      harvest removal), the first six by wording and the rest as a count.
     - A mod string's hover shows the resolved canonical wording, generation, and a
       table of every tier rollable on this base/ilvl; a trailing `t1` spotlights that
       tier. (Tier ids rarely match T-numbers: `IncreasedLife11` can be T1; ids count up

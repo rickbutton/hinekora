@@ -24,10 +24,6 @@ of the operations; no divergence is expected.
 
 ## Step 2. Language and editor follow-ons
 
-- **Negative facts in the tooltip.** `not has X` yields an exclusion that is filtered
-  from completion candidates but never shown. Surface it as a "without …" line: an
-  additive layer over the presence decomposition (units → prime implicates →
-  cardinality), not a special case.
 - A currency- or block-valued **parameter** (only value params, tier/count/mod, for now).
 - **Completion perf:** `getCompletions` runs a full check per mod-string request;
   memoize if latency shows.

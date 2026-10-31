@@ -13,6 +13,7 @@ import {
     disjunctiveTier,
     ELDRITCH_SIDES,
     eldritchOf,
+    excludedTypes,
     type Gen,
     type GroupId,
     guaranteedTypes,
@@ -411,6 +412,13 @@ function tooltip(a: AItem, registry: Registry, caption?: string): string {
                 ? `_${label} implicit: ${oneLine(texts[0]!)}_`
                 : `_${label} implicit: one of ${texts.length} (${texts.slice(0, 3).map(oneLine).join("; ")}${texts.length > 3 ? "; …" : ""})_`,
         );
+    }
+    // What is proven absent: a `not has` the guide relied on, a modifier a
+    // harvest change took, read off the same presence function as the rest.
+    const without = [...excludedTypes(a)].map((t) => registry.typeLabel(t));
+    if (without.length > 0) {
+        const shown = without.slice(0, 6).join("; ");
+        lines.push(`_without: ${shown}${without.length > 6 ? `; … (${without.length})` : ""}_`);
     }
     const body = lines.length > 0 ? lines.join("  \n") : "_no modifiers_";
     return [caption ? `_${caption}_` : undefined, head, body]
