@@ -7,6 +7,13 @@
  */
 import type { Gen, ModId, TypeId } from "../model/ids.js";
 import {
+    dominantOf,
+    ELDRITCH_SIDES,
+    ELDRITCH_TIERS,
+    type EldritchSide,
+    type EldritchTierName,
+    eldritchLabel,
+    eldritchTierOf,
     type Influence,
     INFLUENCE_ORB,
     influenceKey,
@@ -27,6 +34,11 @@ import {
     BEAST_IMPRINT,
     BEAST_METAMOD,
     BENCH_REMOVE,
+    CONFLICT,
+    eldritchAnnulOps,
+    eldritchChaosOps,
+    eldritchExaltOps,
+    eldritchImplicitOps,
     beastAddInfluenceOps,
     beastAddOps,
     beastAspectOps,
@@ -193,6 +205,25 @@ function resonator(
     return resonatorOps({ fossils, added, forced, corrupted });
 }
 
+/** The side an Eldritch orb acts on: the dominant implicit, which must be the
+ *  same on every path for the orb to have one meaning. */
+function dominantSide(
+    a: AItem,
+    orb: string,
+    ops: (side: EldritchSide) => readonly Op[],
+): readonly Op[] | Refusal {
+    const sides = new Set([...a.eldritch].map(dominantOf));
+    if (sides.size === 1 && !sides.has(undefined)) return ops([...sides][0]!);
+    if (sides.has(undefined) && sides.size === 1) {
+        return refuse(
+            `An ${orb} needs an item where the Searing Exarch or the Eater of Worlds is dominant — this item has ${eldritchLabel(a.eldritch)}.`,
+        );
+    }
+    return refuse(
+        `An ${orb} acts on the dominant implicit's side, which differs between paths here (${eldritchLabel(a.eldritch)}); narrow it with 'if dominant exarch' first.`,
+    );
+}
+
 const CURRENCIES: readonly Method[] = STANDARD_CURRENCIES.map((c) => ({
     words: [c.name],
     args: [],
@@ -211,6 +242,41 @@ export const METHODS: readonly Method[] = [
         doc: `exalt ${target} — ${INFLUENCE_ORB[target]}: add ${influenceSetLabel(influenceKey([target]))} influence and one of its modifiers to a Rare item with no influence.`,
         build: () => influenceExaltOps(target),
     })),
+    ...ELDRITCH_SIDES.map((side): Method => {
+        const item = side === "exarch" ? "ember" : "ichor";
+        const what = side === "exarch" ? "Searing Exarch" : "Eater of Worlds";
+        return {
+            words: [item],
+            args: [word(...ELDRITCH_TIERS.slice(0, 4))],
+            doc: `${item} <tier> — an Eldritch ${side === "exarch" ? "Ember" : "Ichor"}: set the ${what} implicit of an armour piece to that tier (lesser to exceptional).`,
+            build: ([tier]) =>
+                eldritchImplicitOps(side, eldritchTierOf(text(tier) as EldritchTierName)),
+        };
+    }),
+    {
+        words: ["eldritch", "chaos"],
+        args: [],
+        doc: "eldritch chaos — Eldritch Chaos Orb: reroll the prefixes when the Exarch is dominant, the suffixes when the Eater is.",
+        build: (_args, a) => dominantSide(a, "Eldritch Chaos Orb", eldritchChaosOps),
+    },
+    {
+        words: ["eldritch", "exalt"],
+        args: [],
+        doc: "eldritch exalt — Eldritch Exalted Orb: add a prefix when the Exarch is dominant, a suffix when the Eater is.",
+        build: (_args, a) => dominantSide(a, "Eldritch Exalted Orb", eldritchExaltOps),
+    },
+    {
+        words: ["eldritch", "annul"],
+        args: [],
+        doc: "eldritch annul — Eldritch Orb of Annulment: remove a prefix when the Exarch is dominant, a suffix when the Eater is.",
+        build: (_args, a) => dominantSide(a, "Eldritch Orb of Annulment", eldritchAnnulOps),
+    },
+    {
+        words: ["conflict"],
+        args: [],
+        doc: "conflict — Orb of Conflict: raise one eldritch implicit a tier and lower the other; a lowered Lesser is removed.",
+        build: () => CONFLICT,
+    },
     {
         words: ["vaal"],
         args: [],

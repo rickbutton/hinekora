@@ -6,7 +6,14 @@
 import type { Pred } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import type { Rarity } from "../model/ids.js";
-import { influenceKey, influenceLabel, influenceSetLabel, NO_INFLUENCE } from "../model/marks.js";
+import {
+    eldritchLabel,
+    influenceKey,
+    influenceLabel,
+    influenceSetLabel,
+    NO_ELDRITCH,
+    NO_INFLUENCE,
+} from "../model/marks.js";
 import type { ResolveError } from "../resolve/registry.js";
 import { baseLabel } from "../render/render.js";
 import { type AItem, type Range, suffixRange } from "./astate.js";
@@ -66,6 +73,8 @@ export function marksLabel(a: AItem): string[] {
         out.push(influenceLabel(a.influences));
     }
     if (a.corrupted.has(true)) out.push(a.corrupted.has(false) ? "maybe corrupted" : "corrupted");
+    if (!(a.eldritch.size === 1 && a.eldritch.has(NO_ELDRITCH)))
+        out.push(eldritchLabel(a.eldritch));
     return out;
 }
 
@@ -92,6 +101,10 @@ export function describePred(pred: Pred): string {
             return pred.influence === undefined ? "influenced" : `influenced ${pred.influence}`;
         case "corrupted":
             return "corrupted";
+        case "eldritch":
+            return pred.tier === undefined ? pred.side : `${pred.side} ${pred.tier}`;
+        case "dominant":
+            return `dominant ${pred.side}`;
         case "compare":
             return `${pred.projection} ${pred.op} ${val(pred.value)}`;
         case "not":
@@ -188,8 +201,14 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return "The item already has a fractured modifier — it can hold only one.";
             case "corrupted":
                 return `The item ${failure.sure ? "is" : "may be"} corrupted — a corrupted item takes no further craft, only the Tainted currency.`;
+            case "eldritchPresent":
+                return `${failure.what} cannot be used on an item with an eldritch implicit — this item ${failure.sure ? "has" : "may have"} ${eldritchLabel(state.eldritch)}.`;
+            case "notDominant":
+                return `${failure.what} needs an item where ${failure.side === "exarch" ? "The Searing Exarch" : "The Eater of Worlds"} is dominant — this item has ${eldritchLabel(state.eldritch)}.`;
+            case "notBothEldritch":
+                return `An Orb of Conflict needs both a Searing Exarch and an Eater of Worlds implicit — this item ${failure.sure ? "has" : "may have"} ${eldritchLabel(state.eldritch)}.`;
             case "influenced":
-                return `A ${failure.what} cannot be used on an influenced item — this item ${failure.sure ? "has" : "may have"} ${influenceLabel(state.influences)}.`;
+                return `${capitalise(withArticle(failure.what))} cannot be used on an influenced item — this item ${failure.sure ? "has" : "may have"} ${influenceLabel(state.influences)}.`;
             case "notInfluenced":
                 return `${failure.what} needs ${failure.influence === undefined ? "an influenced" : `a ${influenceSetLabel(influenceKey([failure.influence]))}`} item — this item ${failure.sure ? "has" : "may have"} ${influenceLabel(state.influences)}.`;
             case "notInfluenceable":

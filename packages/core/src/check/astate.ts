@@ -11,6 +11,11 @@ import type { Cmp } from "../ast/ast.js";
 import type { Gen, Rarity } from "../model/ids.js";
 import { ModId, TypeId } from "../model/ids.js";
 import {
+    dominantOf,
+    type EldritchKey,
+    type EldritchSide,
+    eldritchKey,
+    eldritchOf,
     type Influence,
     type InfluenceKey,
     influenceKey,
@@ -58,6 +63,9 @@ export interface AItem {
     /** Whether the item may be corrupted: `{false}`, `{true}`, or both where a
      *  path that corrupted it meets one that did not. */
     readonly corrupted: ReadonlySet<boolean>;
+    /** The pairs of eldritch implicit tiers the item may have (`eldritchKey`),
+     *  tracked as pairs so the dominance rule survives a join. */
+    readonly eldritch: ReadonlySet<EldritchKey>;
     /** The item an imprint would restore, when one is held on every path. */
     readonly imprint?: AItem;
 }
@@ -496,6 +504,9 @@ export interface InitialCounts {
 export interface InitialMarks {
     readonly influences: readonly Influence[];
     readonly corrupted: boolean;
+    /** The eldritch implicits' tiers, 1 to 6, absent for none. */
+    readonly exarch?: number;
+    readonly eater?: number;
 }
 
 export function initialState(
@@ -514,6 +525,7 @@ export function initialState(
         rarities: new Set([rarity]),
         influences: new Set([influenceKey(marks.influences)]),
         corrupted: new Set([marks.corrupted]),
+        eldritch: new Set([eldritchKey(marks.exarch ?? 0, marks.eater ?? 0)]),
         counts: CountDomain.point(p, s),
         bdd,
         presence:
@@ -574,6 +586,7 @@ export function join(a: AItem, b: AItem): AItem {
         rarities: SetDomain.join(a.rarities, b.rarities),
         influences: SetDomain.join(a.influences, b.influences),
         corrupted: SetDomain.join(a.corrupted, b.corrupted),
+        eldritch: SetDomain.join(a.eldritch, b.eldritch),
         bdd: a.bdd,
         counts: CountDomain.join(a.counts, b.counts),
         presence: a.bdd.or(a.presence, b.presence),
@@ -595,6 +608,7 @@ export function stateEqual(a: AItem, b: AItem): boolean {
         SetDomain.equal(a.rarities, b.rarities) &&
         SetDomain.equal(a.influences, b.influences) &&
         SetDomain.equal(a.corrupted, b.corrupted) &&
+        SetDomain.equal(a.eldritch, b.eldritch) &&
         CountDomain.equal(a.counts, b.counts) &&
         a.presence === b.presence &&
         SetDomain.equal(a.possible, b.possible) &&
@@ -632,6 +646,10 @@ export type RPred =
     /** The item has that influence, or any influence when none is named. */
     | { readonly kind: "influenced"; readonly influence?: Influence }
     | { readonly kind: "corrupted" }
+    /** That eldritch implicit is present, at that tier when one is named. */
+    | { readonly kind: "eldritch"; readonly side: EldritchSide; readonly tier?: number }
+    /** That implicit is the dominant one. */
+    | { readonly kind: "dominant"; readonly side: EldritchSide }
     | { readonly kind: "not"; readonly inner: RPred }
     | { readonly kind: "and" | "or"; readonly left: RPred; readonly right: RPred };
 
@@ -671,6 +689,22 @@ export function refine(a: AItem, pred: RPred, positive = true): AItem | null {
         case "corrupted": {
             const corrupted = new Set([...a.corrupted].filter((c) => c === positive));
             return corrupted.size === 0 ? null : { ...a, corrupted };
+        }
+
+        case "eldritch": {
+            const holds = (key: EldritchKey): boolean => {
+                const tier = eldritchOf(key)[pred.side];
+                return pred.tier === undefined ? tier > 0 : tier === pred.tier;
+            };
+            const eldritch = new Set([...a.eldritch].filter((k) => holds(k) === positive));
+            return eldritch.size === 0 ? null : { ...a, eldritch };
+        }
+
+        case "dominant": {
+            const eldritch = new Set(
+                [...a.eldritch].filter((k) => (dominantOf(k) === pred.side) === positive),
+            );
+            return eldritch.size === 0 ? null : { ...a, eldritch };
         }
 
         case "compare":

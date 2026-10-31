@@ -10,7 +10,13 @@ import { type Gen, type Rarity, TagId, type TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import type { EssenceSpec, FossilSpec } from "../model/sources.js";
 import type { CurrencyKind } from "../resolve/registry.js";
-import { type Influence, INFLUENCE_ORB, INFLUENCE_STEMS, influenceKey } from "../model/marks.js";
+import {
+    type EldritchSide,
+    type Influence,
+    INFLUENCE_ORB,
+    INFLUENCE_STEMS,
+    influenceKey,
+} from "../model/marks.js";
 import type { Range } from "./astate.js";
 import type {
     Check,
@@ -208,6 +214,8 @@ export function influenceExaltOps(target: Influence): readonly Op[] {
     return [
         notCorrupted,
         isRare,
+        // An item with an eldritch implicit takes no influence (Eldritch implicit modifier).
+        require({ kind: "noEldritch", what: `A ${INFLUENCE_ORB[target]}` }),
         require({ kind: "influenceable", influence: target, what: INFLUENCE_ORB[target] }),
         noInfluence(INFLUENCE_ORB[target]),
         require({ kind: "noFracture" }),
@@ -335,6 +343,78 @@ export const TAINTED_DIVINE: readonly Op[] = [
     corruptedItem("A Tainted Divine Teardrop"),
     isRare,
     { kind: "relax", crafted: false },
+];
+
+/** The classes an ember or ichor marks: body armour, boots, gloves and helmets. */
+const ELDRITCH_TAGS = ["body_armour", "boots", "gloves", "helmet"].map(TagId);
+const ELDRITCH_NAME: Readonly<Record<EldritchSide, string>> = {
+    exarch: "Eldritch Ember",
+    eater: "Eldritch Ichor",
+};
+const SIDE_OF: Readonly<Record<EldritchSide, Gen>> = { exarch: "prefix", eater: "suffix" };
+const ELDRITCH_ORB = (name: string, side: EldritchSide): Op =>
+    require({ kind: "dominant", side, what: `An ${name}` });
+
+/** An Eldritch Ember or Ichor: that implicit set to the tier the item comes
+ *  in, on an armour piece of any rarity with no influence (the item's help
+ *  text; Eldritch implicit modifier). */
+export function eldritchImplicitOps(side: EldritchSide, tier: number): readonly Op[] {
+    return [
+        notCorrupted,
+        require({
+            kind: "baseHasAnyTag",
+            tags: ELDRITCH_TAGS,
+            what: "body armour, boots, gloves or helmet",
+        }),
+        noInfluence(ELDRITCH_NAME[side]),
+        { kind: "eldritch", change: { kind: "set", side, tier } },
+    ];
+}
+
+/** An Eldritch Chaos Orb: the dominant implicit's side is rerolled, the
+ *  other kept (Eldritch Chaos Orb). */
+export function eldritchChaosOps(side: EldritchSide): readonly Op[] {
+    const other: Gen = SIDE_OF[side] === "prefix" ? "suffix" : "prefix";
+    return [
+        notCorrupted,
+        isRare,
+        ELDRITCH_ORB("Eldritch Chaos Orb", side),
+        { kind: "keep", gen: other },
+        strip(),
+        fill({ kind: "natural", gen: SIDE_OF[side] }, reforge(RARE_REFORGE)),
+    ];
+}
+
+/** An Eldritch Exalted Orb: a modifier added on the dominant implicit's side. */
+export function eldritchExaltOps(side: EldritchSide): readonly Op[] {
+    const gen = SIDE_OF[side];
+    return [
+        notCorrupted,
+        isRare,
+        ELDRITCH_ORB("Eldritch Exalted Orb", side),
+        openSlot(gen),
+        fill({ kind: "natural", gen }, add([1, 1])),
+    ];
+}
+
+/** An Eldritch Orb of Annulment: a modifier removed from the dominant
+ *  implicit's side, on a Magic or Rare item. */
+export function eldritchAnnulOps(side: EldritchSide): readonly Op[] {
+    const victim: Selector = { kind: "random", honourCannotRoll: false, gen: SIDE_OF[side] };
+    return [
+        notCorrupted,
+        ELDRITCH_ORB("Eldritch Orb of Annulment", side),
+        removable(victim),
+        remove(victim),
+    ];
+}
+
+/** An Orb of Conflict: one eldritch implicit up a tier, the other down, on an
+ *  item that has both (Orb of Conflict). */
+export const CONFLICT: readonly Op[] = [
+    notCorrupted,
+    require({ kind: "bothEldritch" }),
+    { kind: "eldritch", change: { kind: "conflict" } },
 ];
 
 /** A Foulborn orb is its plain counterpart drawing from the top half of each

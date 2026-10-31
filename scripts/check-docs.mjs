@@ -103,8 +103,11 @@ const literals = (text) => [...text.matchAll(/"([A-Za-z][\w?]*)"/g)].map((m) => 
 const vocabularySource = read(VOCABULARY_FILE);
 const vocabulary = new Set([
     ...literals(vocabularySource),
-    // The influence names, which the vocabulary takes from the model.
+    // The influence names and the eldritch tiers, which the vocabulary takes from the model.
     ...literals(block(read("packages/core/src/model/marks.ts"), "export const INFLUENCES", "]")),
+    ...literals(
+        block(read("packages/core/src/model/marks.ts"), "export const ELDRITCH_TIERS", "]"),
+    ),
 ]);
 /** The method table's words: each entry's `words: [...]` and each word slot's `oneOf`. */
 const methodWords = new Set(

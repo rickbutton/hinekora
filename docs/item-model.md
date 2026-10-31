@@ -169,6 +169,7 @@ Three kinds cover the five real metamods ([Metamod](https://www.poewiki.net/wiki
 | `prefixes`, `suffixes` | the affixes; order within a side carries no meaning                                                                                                                                                                            |
 | `fractured`            | affixes locked against removal and reroll ([Fractured item](https://www.poewiki.net/wiki/Fractured_item#Mechanics)); never beside an influence ([Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics))     |
 | `corrupted`            | set by a Vaal Orb and never cleared ([Corrupted](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items))                                                                                                            |
+| `eldritch`             | the Searing Exarch and Eater of Worlds implicits by tier; the higher is dominant and never beside an influence ([Eldritch implicit modifier](https://www.poewiki.net/wiki/Eldritch_implicit_modifier))                         |
 
 Derived:
 

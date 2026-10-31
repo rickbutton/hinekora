@@ -5,7 +5,7 @@
  * strings, keeping the parser a pure syntax-to-tree transform.
  */
 import type { Rarity } from "../model/ids.js";
-import type { Influence } from "../model/marks.js";
+import type { EldritchSide, EldritchTierName, Influence } from "../model/marks.js";
 import type { SourceSpan } from "./span.js";
 
 /** A whole craft file: an item block, then a body. */
@@ -88,6 +88,9 @@ export interface ItemBlock {
     readonly influences: readonly Influence[];
     /** The bare `corrupted` flag. */
     readonly corrupted: boolean;
+    /** `exarch: grand` and `eater: lesser`, the eldritch implicits' tiers. */
+    readonly exarch?: EldritchTierName;
+    readonly eater?: EldritchTierName;
     readonly span: SourceSpan;
 }
 
@@ -155,6 +158,8 @@ export type Pred =
     | FracturedPred
     | InfluencedPred
     | CorruptedPred
+    | EldritchPred
+    | DominantPred
     | ComparePred
     | NotPred
     | BinaryPred
@@ -170,6 +175,21 @@ export interface InfluencedPred {
 /** `corrupted`, whether the item is corrupted. */
 export interface CorruptedPred {
     readonly kind: "corrupted";
+    readonly span: SourceSpan;
+}
+
+/** `exarch` or `eater` (that implicit is present), `exarch grand` (at that tier). */
+export interface EldritchPred {
+    readonly kind: "eldritch";
+    readonly side: EldritchSide;
+    readonly tier?: EldritchTierName;
+    readonly span: SourceSpan;
+}
+
+/** `dominant exarch` / `dominant eater`: that implicit's tier is the higher. */
+export interface DominantPred {
+    readonly kind: "dominant";
+    readonly side: EldritchSide;
     readonly span: SourceSpan;
 }
 

@@ -55,6 +55,90 @@ export const INFLUENCE_STEMS: Readonly<Record<string, string>> = {
     "Two Hand Mace": "2h_mace",
 };
 
+// --- the eldritch implicits -------------------------------------------------
+
+/** The two eldritch implicits an item may carry (Eldritch implicit modifier). */
+export const ELDRITCH_SIDES = ["exarch", "eater"] as const;
+export type EldritchSide = (typeof ELDRITCH_SIDES)[number];
+
+/** The six named tiers, lowest first; an ember or ichor comes in the first four. */
+export const ELDRITCH_TIERS = [
+    "lesser",
+    "greater",
+    "grand",
+    "exceptional",
+    "exquisite",
+    "perfect",
+] as const;
+export type EldritchTierName = (typeof ELDRITCH_TIERS)[number];
+
+export function isEldritchSide(word: string): word is EldritchSide {
+    return (ELDRITCH_SIDES as readonly string[]).includes(word);
+}
+export function isEldritchTier(word: string): word is EldritchTierName {
+    return (ELDRITCH_TIERS as readonly string[]).includes(word);
+}
+
+/** A tier as a number, 1 (Lesser) to 6 (Perfect); 0 is no implicit. */
+export function eldritchTierOf(name: EldritchTierName): number {
+    return ELDRITCH_TIERS.indexOf(name) + 1;
+}
+
+declare const eldritchBrand: unique symbol;
+/**
+ * The pair of eldritch tiers as a key, `<exarch>/<eater>` with 0 for none. The
+ * abstract item holds a set of these: the dominance rule reads the two tiers
+ * together, so they are tracked as pairs rather than two independent sets.
+ */
+export type EldritchKey = string & { readonly [eldritchBrand]: true };
+
+export function eldritchKey(exarch: number, eater: number): EldritchKey {
+    return `${exarch}/${eater}` as EldritchKey;
+}
+
+/** The pair of no eldritch implicit at all. */
+export const NO_ELDRITCH: EldritchKey = eldritchKey(0, 0);
+
+export function eldritchOf(key: EldritchKey): { exarch: number; eater: number } {
+    const [exarch, eater] = key.split("/").map(Number);
+    return { exarch: exarch ?? 0, eater: eater ?? 0 };
+}
+
+/** Which implicit is dominant: the higher tier; none when equal or absent. */
+export function dominantOf(key: EldritchKey): EldritchSide | undefined {
+    const { exarch, eater } = eldritchOf(key);
+    if (exarch === eater) return undefined;
+    return exarch > eater ? "exarch" : "eater";
+}
+
+const ELDRITCH_LABEL: Readonly<Record<EldritchSide, string>> = {
+    exarch: "Exarch",
+    eater: "Eater",
+};
+
+function tierLabel(n: number): string {
+    const name = ELDRITCH_TIERS[n - 1];
+    return name === undefined ? "" : name[0]!.toUpperCase() + name.slice(1);
+}
+
+/** "Grand Exarch and Lesser Eater", "Grand Exarch", "no eldritch implicit". */
+export function eldritchSetLabel(key: EldritchKey): string {
+    const { exarch, eater } = eldritchOf(key);
+    const parts = [
+        ...(exarch > 0 ? [`${tierLabel(exarch)} ${ELDRITCH_LABEL.exarch}`] : []),
+        ...(eater > 0 ? [`${tierLabel(eater)} ${ELDRITCH_LABEL.eater}`] : []),
+    ];
+    return parts.length === 0 ? "no eldritch implicit" : parts.join(" and ");
+}
+
+/** The eldritch pairs an item may have, "… or …", with "no eldritch implicit" last. */
+export function eldritchLabel(keys: ReadonlySet<EldritchKey>): string {
+    const named = [...keys].filter((k) => k !== NO_ELDRITCH).sort();
+    return [...named, ...(keys.has(NO_ELDRITCH) ? [NO_ELDRITCH] : [])]
+        .map(eldritchSetLabel)
+        .join(" or ");
+}
+
 export function isInfluence(word: string): word is Influence {
     return (INFLUENCES as readonly string[]).includes(word);
 }

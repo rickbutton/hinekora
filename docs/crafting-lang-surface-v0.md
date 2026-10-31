@@ -70,6 +70,11 @@ item {
   leaves the mark as it is; the influence rows roll in every pool and resolve and tier
   like the base's own. An influenced item cannot be fractured, so declaring both is an
   error. The Astrolabe Amulet, which counts as having every influence, is out of scope.
+- `exarch: grand` and `eater: lesser` give the tiers of the item's
+  [eldritch implicits](https://www.poewiki.net/wiki/Eldritch_implicit_modifier), the
+  Searing Exarch's and the Eater of Worlds'; the six tiers are `lesser`, `greater`,
+  `grand`, `exceptional`, `exquisite` and `perfect`. Which implicit the item has (its
+  stat) is not tracked yet, only the tiers and which is dominant.
 - `corrupted`, a bare flag, marks a
   [corrupted item](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items), which
   takes no craft but the Tainted currency (§3). A guide that corrupts an item mid-way
@@ -137,6 +142,11 @@ page groups them:
 | `tainted chaos` | [Tainted Chaos Orb](https://www.poewiki.net/wiki/Tainted_Chaos_Orb#Mechanics) | corrupted Rare; reforged, or stripped to the rarity its survivors allow |
 | `tainted exalt` | [Tainted Exalted Orb](https://www.poewiki.net/wiki/Tainted_Exalted_Orb) | corrupted Rare; a modifier added or removed |
 | `tainted divine` | [Tainted Divine Teardrop](https://www.poewiki.net/wiki/Tainted_Divine_Teardrop#Mechanics) | corrupted Rare; every modifier but a crafted one may move a tier, so their tiers are forgotten |
+| `ember <tier>` / `ichor <tier>` | an [Eldritch Ember](https://www.poewiki.net/wiki/Lesser_Eldritch_Ember) or [Ichor](https://www.poewiki.net/wiki/Lesser_Eldritch_Ichor) of that tier, `lesser` to `exceptional` | body armour, boots, gloves or helmet of any rarity, no influence; sets the Exarch (ember) or Eater (ichor) implicit's tier |
+| `eldritch chaos` | [Eldritch Chaos Orb](https://www.poewiki.net/wiki/Eldritch_Chaos_Orb) | Rare with a dominant implicit; rerolls the prefixes under the Exarch, the suffixes under the Eater, the other side kept |
+| `eldritch exalt` | [Eldritch Exalted Orb](https://www.poewiki.net/wiki/Eldritch_Exalted_Orb) | Rare with a dominant implicit and an open slot on its side |
+| `eldritch annul` | [Eldritch Orb of Annulment](https://www.poewiki.net/wiki/Eldritch_Orb_of_Annulment) | Magic or Rare with a dominant implicit and a removable modifier on its side |
+| `conflict` | [Orb of Conflict](https://www.poewiki.net/wiki/Orb_of_Conflict) | both implicits; one goes up a tier and the other down, a lowered `lesser` is removed, so the dominance may differ between paths until a `dominant` branch (§5) picks one |
 
 "Open slot" and "removable" are decided by the checker's knowledge of the item: a slot is
 open only if it is open on every path, a modifier is removable only if one is present on
@@ -309,6 +319,8 @@ pred := isRare | isMagic | isNormal
       | fractured "<mod>"                   # that modifier is the fractured one
       | influenced [<influence>]            # the item has that influence (any, when none is named)
       | corrupted                           # the item is corrupted
+      | exarch [<tier>] | eater [<tier>]    # that eldritch implicit is present (at that tier)
+      | dominant exarch | dominant eater    # that implicit's tier is the higher
       | prefixCount <cmp> <int>
       | suffixCount <cmp> <int>
       | not <pred>

@@ -19,11 +19,17 @@ import {
 } from "../model/ids.js";
 import type { ItemFacts } from "../model/item.js";
 import {
+    dominantOf,
+    type EldritchKey,
+    type EldritchSide,
+    eldritchKey,
+    eldritchOf,
     type Influence,
     type InfluenceKey,
     influenceKey,
     influenceSetsOfSize,
     influencesOf,
+    NO_ELDRITCH,
     NO_INFLUENCE,
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
@@ -145,6 +151,12 @@ export type Check =
     | { readonly kind: "corruptedItem"; readonly what: string }
     /** The item has no influence on any path (a fracture, an influence orb). */
     | { readonly kind: "noInfluence"; readonly what: string }
+    /** The item has no eldritch implicit on any path (an influence orb). */
+    | { readonly kind: "noEldritch"; readonly what: string }
+    /** That eldritch implicit is dominant on every path (the Eldritch orbs). */
+    | { readonly kind: "dominant"; readonly side: EldritchSide; readonly what: string }
+    /** Both eldritch implicits are present on every path (an Orb of Conflict). */
+    | { readonly kind: "bothEldritch" }
     /** The item is influenced on every path, with that influence when one is named. */
     | { readonly kind: "influenced"; readonly what: string; readonly influence?: Influence }
     /** The item has exactly one influence, other than the donor's, on every path
@@ -195,6 +207,12 @@ export type Op =
     /** The metamods no longer govern the rest of the method (an Awakener's Orb
      *  ignores them, Metamod § Rules and Exceptions). */
     | { readonly kind: "unprotect" }
+    /** That side is kept through the rest of the method, as a protection
+     *  would keep it (an Eldritch Chaos Orb rerolls the other side). */
+    | { readonly kind: "keep"; readonly gen: Gen }
+    /** Change the eldritch mark: one implicit set to a tier, or an Orb of
+     *  Conflict's raise-one-lower-the-other. */
+    | { readonly kind: "eldritch"; readonly change: EldritchChange }
     /** One of several outcomes: the join of running each branch, which holds
      *  effects only (a check or an `unprotect` belongs before it, at method
      *  level). A branch of `end` alone is an outcome on which the item is gone
@@ -221,8 +239,14 @@ export type Op =
     /** Replace the item with the held imprint, consuming it. */
     | { readonly kind: "restore" };
 
-/** An operation that changes the state: everything but a check or `unprotect`. */
-export type Transform = Exclude<Op, { kind: "require" | "unprotect" }>;
+/** An operation that changes the state: everything but a check or a rule change. */
+export type Transform = Exclude<Op, { kind: "require" | "unprotect" | "keep" }>;
+
+export type EldritchChange =
+    | { readonly kind: "set"; readonly side: EldritchSide; readonly tier: number }
+    /** One implicit up a tier, the other down; a Lesser lowered is removed
+     *  (Orb of Conflict). */
+    | { readonly kind: "conflict" };
 
 export type InfluenceChange =
     | { readonly kind: "set"; readonly key: InfluenceKey }
@@ -281,6 +305,9 @@ export type PreconditionFailure =
       }
     | { readonly kind: "awakenerTarget"; readonly donor: Influence; readonly sure: boolean }
     | { readonly kind: "notInfluenceable"; readonly influence: Influence; readonly what: string }
+    | { readonly kind: "eldritchPresent"; readonly what: string; readonly sure: boolean }
+    | { readonly kind: "notDominant"; readonly side: EldritchSide; readonly what: string }
+    | { readonly kind: "notBothEldritch"; readonly sure: boolean }
     | { readonly kind: "influencedOnProtected"; readonly what: string; readonly gen: Gen }
     | { readonly kind: "noVeiledMod" }
     | { readonly kind: "alreadyVeiled" }
@@ -308,6 +335,10 @@ export function runMethod(a0: AItem, ops: readonly Op[], registry: Registry): Tr
         }
         if (op.kind === "unprotect") {
             rules = { ...rules, protected: new Set(), cannotRoll: null };
+            continue;
+        }
+        if (op.kind === "keep") {
+            rules = { ...rules, protected: new Set([...rules.protected, op.gen]) };
             continue;
         }
         a = apply(a, a0, op, rules, registry);
@@ -391,6 +422,26 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
             return a;
         case "corrupt":
             return { ...a, corrupted: new Set([true]) };
+        case "eldritch": {
+            const change = op.change;
+            const eldritch = new Set<EldritchKey>();
+            for (const key of a.eldritch) {
+                const { exarch, eater } = eldritchOf(key);
+                if (change.kind === "set") {
+                    eldritch.add(
+                        change.side === "exarch"
+                            ? eldritchKey(change.tier, eater)
+                            : eldritchKey(exarch, change.tier),
+                    );
+                    continue;
+                }
+                // A lowered Lesser (tier 1) is removed (tier 0); the raised one
+                // tops out at Perfect.
+                eldritch.add(eldritchKey(Math.min(exarch + 1, 6), eater - 1));
+                eldritch.add(eldritchKey(exarch - 1, Math.min(eater + 1, 6)));
+            }
+            return { ...a, eldritch };
+        }
         case "relax":
             // A modifier keeps its tier only when it is provably crafted: every
             // row it may be is a bench row. An unpinned type may be any row.
@@ -584,6 +635,22 @@ function failing(
             return registry.influenceTags(a.base, check.influence).size > 0
                 ? null
                 : { kind: "notInfluenceable", influence: check.influence, what: check.what };
+        case "noEldritch":
+            return a.eldritch.has(NO_ELDRITCH) && a.eldritch.size === 1
+                ? null
+                : { kind: "eldritchPresent", what: check.what, sure: !a.eldritch.has(NO_ELDRITCH) };
+        case "dominant":
+            return [...a.eldritch].every((k) => dominantOf(k) === check.side)
+                ? null
+                : { kind: "notDominant", side: check.side, what: check.what };
+        case "bothEldritch": {
+            const both = (k: EldritchKey): boolean => {
+                const { exarch, eater } = eldritchOf(k);
+                return exarch > 0 && eater > 0;
+            };
+            const keys = [...a.eldritch];
+            return keys.every(both) ? null : { kind: "notBothEldritch", sure: !keys.some(both) };
+        }
         case "noInfluencedOnProtected": {
             // Pessimistic: every modifier that may sit on a protected side must
             // be a known type that is no influence modifier, so a side holding

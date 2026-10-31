@@ -98,13 +98,15 @@ describe("every method refuses a corrupted item first", () => {
     });
 
     it("holds for each entry of the method table, built with a sample argument per slot", () => {
-        const a = initialState(new BddManager(), RING_BASE, 100, "rare", {
-            prefixCount: 0,
-            suffixCount: 0,
-            present: new Set(),
-            pinned: new Map(),
-            crafted: 0,
-        });
+        // An Exarch implicit, so the Eldritch orbs have a dominant side to build for.
+        const a = initialState(
+            new BddManager(),
+            RING_BASE,
+            100,
+            "rare",
+            { prefixCount: 0, suffixCount: 0, present: new Set(), pinned: new Map(), crafted: 0 },
+            { influences: [], corrupted: false, exarch: 3 },
+        );
         // Two mod slots in one method (the harvest change) take two elements.
         const sample: Record<string, readonly string[]> = {
             mod: [FIRE_RESIST.id, COLD_RESIST.id],

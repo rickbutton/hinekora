@@ -20,6 +20,7 @@ import type {
 } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import type { Gen, GroupId, ModId, TagId, TypeId } from "../model/ids.js";
+import { eldritchTierOf } from "../model/marks.js";
 import type { ModTypeContext, Registry } from "../resolve/registry.js";
 import {
     type AItem,
@@ -407,7 +408,12 @@ class Checker {
                 ...(fracturedType !== undefined && { fractured: fracturedType }),
                 ...(fracturedAnonymous ? { fracturedAnonymous: true } : {}),
             },
-            { influences: item.influences, corrupted: item.corrupted },
+            {
+                influences: item.influences,
+                corrupted: item.corrupted,
+                ...(item.exarch !== undefined && { exarch: eldritchTierOf(item.exarch) }),
+                ...(item.eater !== undefined && { eater: eldritchTierOf(item.eater) }),
+            },
         );
     }
 
@@ -789,6 +795,12 @@ class Checker {
                     : { kind: "influenced", influence: pred.influence };
             case "corrupted":
                 return { kind: "corrupted" };
+            case "eldritch":
+                return pred.tier === undefined
+                    ? { kind: "eldritch", side: pred.side }
+                    : { kind: "eldritch", side: pred.side, tier: eldritchTierOf(pred.tier) };
+            case "dominant":
+                return { kind: "dominant", side: pred.side };
             case "compare": {
                 const value = this.literalInt(pred.value, pred.span);
                 return value === null
@@ -990,6 +1002,8 @@ function notePredUses(u: ParamUses, p: Pred): void {
         case "isRarity":
         case "influenced":
         case "corrupted":
+        case "eldritch":
+        case "dominant":
             return;
     }
 }
@@ -1091,6 +1105,8 @@ function substitute(pred: Pred, env: Map<string, Arg>): Pred {
         case "isRarity":
         case "influenced":
         case "corrupted":
+        case "eldritch":
+        case "dominant":
             return pred;
         case "call":
             return { ...pred, args: subArgs(pred.args, env) };

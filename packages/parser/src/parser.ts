@@ -13,9 +13,13 @@ import {
     type Craft,
     type Def,
     findMethod,
+    ELDRITCH_TIERS,
+    type EldritchTierName,
     type IfStmt,
     type Influence,
     INFLUENCES,
+    isEldritchSide,
+    isEldritchTier,
     isInfluence,
     type ItemBlock,
     type Method,
@@ -233,6 +237,8 @@ class Parser {
         let suffixes: readonly AffixDecl[] | undefined;
         let influences: readonly Influence[] | undefined;
         let corrupted = false;
+        let exarch: EldritchTierName | undefined;
+        let eater: EldritchTierName | undefined;
 
         const setOnce = <T>(
             current: T | undefined,
@@ -283,6 +289,12 @@ class Parser {
                 case "influences":
                     influences = setOnce(influences, key, this.parseInfluences(), keyTok.span);
                     break;
+                case "exarch":
+                    exarch = setOnce(exarch, key, this.parseEldritchTier(key), keyTok.span);
+                    break;
+                case "eater":
+                    eater = setOnce(eater, key, this.parseEldritchTier(key), keyTok.span);
+                    break;
                 default:
                     throw this.error(`unknown item field '${key}'`, keyTok.span);
             }
@@ -304,8 +316,25 @@ class Parser {
             suffixes: suffixes ?? [],
             influences: influences ?? [],
             corrupted,
+            ...(exarch !== undefined && { exarch }),
+            ...(eater !== undefined && { eater }),
             span: span(start, close.span.end),
         };
+    }
+
+    /** `exarch: grand`: one of the six eldritch tier names. */
+    private parseEldritchTier(field: string): EldritchTierName {
+        const t = this.expect(
+            "ident",
+            `an eldritch tier after '${field}' (${ELDRITCH_TIERS.join(", ")})`,
+        );
+        if (!isEldritchTier(t.text)) {
+            throw this.error(
+                `unknown eldritch tier '${t.text}' (expected ${ELDRITCH_TIERS.join(", ")})`,
+                t.span,
+            );
+        }
+        return t.text;
     }
 
     /** `influences: hunter` or `influences: shaper elder` (a comma between them
@@ -660,6 +689,33 @@ class Parser {
         if (t.text === "corrupted") {
             this.advance();
             return { kind: "corrupted", span: t.span };
+        }
+
+        if (isEldritchSide(t.text)) {
+            this.advance();
+            const next = this.peek();
+            if (next.kind === "ident" && isEldritchTier(next.text)) {
+                this.advance();
+                return {
+                    kind: "eldritch",
+                    side: t.text,
+                    tier: next.text,
+                    span: span(t.span.start, next.span.end),
+                };
+            }
+            return { kind: "eldritch", side: t.text, span: t.span };
+        }
+
+        if (t.text === "dominant") {
+            this.advance();
+            const side = this.expect("ident", "'exarch' or 'eater' after 'dominant'");
+            if (!isEldritchSide(side.text)) {
+                throw this.error(
+                    `expected 'exarch' or 'eater' after 'dominant', not '${side.text}'`,
+                    side.span,
+                );
+            }
+            return { kind: "dominant", side: side.text, span: span(t.span.start, side.span.end) };
         }
 
         if (PROJECTIONS.has(t.text)) {

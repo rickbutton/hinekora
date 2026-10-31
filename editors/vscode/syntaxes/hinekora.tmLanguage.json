@@ -37,11 +37,11 @@
                 },
                 { "match": "\\b(def)\\b", "name": "storage.type.hinekora" },
                 {
-                    "match": "\\b(essence|bench|harvest|reforge|augment|randomise|change|veiled|unveil|foulborn|remove|fossil|beast|add|fracture|metamod|aspect|imprint|awakener|vaal|locus|tainted|divine|prefix|suffix)\\b",
+                    "match": "\\b(essence|bench|harvest|reforge|augment|randomise|change|veiled|unveil|foulborn|remove|fossil|beast|add|fracture|metamod|aspect|imprint|awakener|vaal|locus|tainted|divine|ember|ichor|eldritch|annul|conflict|prefix|suffix)\\b",
                     "name": "keyword.other.operation.hinekora"
                 },
                 {
-                    "match": "\\b(has|fractured|influenced|not|and|or)\\b",
+                    "match": "\\b(has|fractured|influenced|dominant|not|and|or)\\b",
                     "name": "keyword.other.hinekora"
                 },
                 {
@@ -49,11 +49,11 @@
                     "name": "support.function.hinekora"
                 },
                 {
-                    "match": "\\b(base|ilvl|rarity|prefixes|suffixes|influences|corrupted)\\b",
+                    "match": "\\b(base|ilvl|rarity|prefixes|suffixes|influences|corrupted|exarch|eater)\\b",
                     "name": "variable.parameter.hinekora"
                 },
                 {
-                    "match": "\\b(normal|magic|rare|shaper|elder|crusader|hunter|redeemer|warlord)\\b",
+                    "match": "\\b(normal|magic|rare|shaper|elder|crusader|hunter|redeemer|warlord|lesser|greater|grand|exceptional|exquisite|perfect)\\b",
                     "name": "constant.language.hinekora"
                 }
             ]

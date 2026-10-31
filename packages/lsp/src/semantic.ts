@@ -3,7 +3,13 @@
  * grammar: keyword / item field / resolved currency name (the payoff a plain
  * grammar can't provide). Unlexable source returns no tokens.
  */
-import { INFLUENCES, METHOD_WORDS, type Registry, STANDARD_CURRENCIES } from "@hinekora/core";
+import {
+    ELDRITCH_TIERS,
+    INFLUENCES,
+    METHOD_WORDS,
+    type Registry,
+    STANDARD_CURRENCIES,
+} from "@hinekora/core";
 import { tokenize } from "@hinekora/parser";
 import { SemanticTokensBuilder } from "vscode-languageserver";
 import type { SemanticTokens } from "vscode-languageserver-types";
@@ -30,6 +36,7 @@ const KEYWORDS = new Set([
     "has",
     "fractured",
     "influenced",
+    "dominant",
     "not",
     "and",
     "or",
@@ -42,6 +49,7 @@ const KEYWORDS = new Set([
     "magic",
     "rare",
     ...INFLUENCES,
+    ...ELDRITCH_TIERS,
     ...METHOD_WORDS.filter((w) => !CURRENCY_NAMES.has(w)),
 ]);
 const FIELDS = new Set([
@@ -52,6 +60,8 @@ const FIELDS = new Set([
     "suffixes",
     "influences",
     "corrupted",
+    "exarch",
+    "eater",
 ]);
 
 export function getSemanticTokens(source: string, registry: Registry): SemanticTokens {

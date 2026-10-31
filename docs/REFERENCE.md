@@ -321,7 +321,12 @@ total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = t
   optimistically and the subset pool pessimistically; a name or tier a predicate writes
   resolves against the tags of any path (`influenceTagsAny`), since it names what the
   item may have. `influenced [x]` refines it; `noInfluence` requires it to be exactly
-  `{""}`. `corrupted` is `{false}`, `{true}` or
+  `{""}`. `eldritch` is the set of pairs of eldritch implicit tiers (`eldritchKey`,
+  `<exarch>/<eater>`, 0 for none): an ember or ichor sets one coordinate, the Orb of
+  Conflict maps each pair to the two it can reach, and `dominantOf` reads which side the
+  Eldritch orbs act on, which the table (`dominantSide`) requires to agree on every
+  path; `exarch`/`eater` and `dominant` refine it, `noEldritch` and `bothEldritch`
+  require it. `corrupted` is `{false}`, `{true}` or
   both; every method's sequence opens with `require(notCorrupted)` (a corruption
   possible on any path refuses the craft), or with `corruptedItem` for the Tainted
   currency, which needs it on every path; `corrupted` refines it.
@@ -423,8 +428,10 @@ in `library.ts` and run by `runMethod(state, ops, registry)` in `ops.ts`, which 
 `{ok, state}` or `{ok:false, failure}`. The operations are `require(check)`, `strip`,
 `fill(pool, count)`, `remove(selector)`, `rarity(r | survivors)`, `lock`,
 `imprint`/`restore`, `influence(change)` (set the mark, add an influence to every
-possible set, or randomise to every set of the same size), `unprotect` (the metamods
-no longer govern the rest of the method, the Awakener's Orb), `corrupt`, `relax`
+possible set, or randomise to every set of the same size), `eldritch(change)` (set an
+implicit's tier, or the Orb of Conflict's raise and lower), `unprotect` (the metamods
+no longer govern the rest of the method, the Awakener's Orb), `keep(gen)` (that side is
+kept through the rest of the method, the Eldritch Chaos Orb), `corrupt`, `relax`
 (forget the present modifiers' tiers, `relaxTiers`, the crafted ones excepted when
 asked) and `either(branches)`, the join of running each branch of effects, a branch of
 `end` alone being an outcome that destroys the item and adds nothing; a method is

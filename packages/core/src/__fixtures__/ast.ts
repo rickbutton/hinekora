@@ -14,6 +14,8 @@ import type {
     ComparePred,
     CorruptedPred,
     Craft,
+    DominantPred,
+    EldritchPred,
     BinaryPred,
     Def,
     HasPred,
@@ -35,7 +37,7 @@ import type {
 } from "../ast/index.js";
 import type { Cmp } from "../ast/ast.js";
 import type { Rarity } from "../model/ids.js";
-import type { Influence } from "../model/marks.js";
+import type { EldritchSide, EldritchTierName, Influence } from "../model/marks.js";
 
 const DS: SourceSpan = {
     start: { offset: 0, line: 1, column: 1 },
@@ -53,6 +55,8 @@ interface ItemSpec {
     readonly suffixes?: readonly AffixSpec[];
     readonly influences?: readonly Influence[];
     readonly corrupted?: boolean;
+    readonly exarch?: EldritchTierName;
+    readonly eater?: EldritchTierName;
 }
 
 const affix = (a: AffixSpec): AffixDecl => (typeof a === "string" ? { mod: a } : a);
@@ -80,6 +84,8 @@ export const item = (spec: ItemSpec): ItemBlock => ({
     suffixes: (spec.suffixes ?? []).map(affix),
     influences: spec.influences ?? [],
     corrupted: spec.corrupted ?? false,
+    ...(spec.exarch !== undefined && { exarch: spec.exarch }),
+    ...(spec.eater !== undefined && { eater: spec.eater }),
     span: DS,
 });
 
@@ -188,6 +194,15 @@ export const influencedP = (influence?: Influence): InfluencedPred =>
         ? { kind: "influenced", span: DS }
         : { kind: "influenced", influence, span: DS };
 export const corruptedP = (): CorruptedPred => ({ kind: "corrupted", span: DS });
+export const eldritchP = (side: EldritchSide, tier?: EldritchTierName): EldritchPred =>
+    tier === undefined
+        ? { kind: "eldritch", side, span: DS }
+        : { kind: "eldritch", side, tier, span: DS };
+export const dominantP = (side: EldritchSide): DominantPred => ({
+    kind: "dominant",
+    side,
+    span: DS,
+});
 export const andp = (left: Pred, right: Pred): BinaryPred => ({
     kind: "and",
     left,

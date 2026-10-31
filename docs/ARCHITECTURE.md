@@ -159,8 +159,10 @@ bound, to merge branches) and `equal` (to detect a fixpoint). The pieces:
   follow the loosest of them.
 - **Imprint**: the item an imprint would restore, a nested abstract item; present only when
   every path holds one.
-- **Marks** (`SetDomain`): the influence sets the item may have, and whether it may be
-  corrupted. Each is a set of the concrete values the paths reaching this point allow,
+- **Marks** (`SetDomain`): the influence sets the item may have, whether it may be
+  corrupted, and the pairs of eldritch implicit tiers it may have (a pair, because which
+  implicit is dominant is a relation between the two tiers that two independent sets
+  would lose). Each is a set of the concrete values the paths reaching this point allow,
   so a join is a union and a branch on `influenced` or `corrupted` picks the paths back
   out. Influence reaches the pool as tags, the same way a present modifier's added tags
   do.
