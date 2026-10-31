@@ -33,7 +33,7 @@ const rarity = (rarity: Rarity | "survivors"): Transform => ({ kind: "rarity", r
 const strip = (): Transform => ({ kind: "strip" });
 const fill = (pool: PoolSpec, count: FillCount): Transform => ({ kind: "fill", pool, count });
 const remove = (selector: Selector): Transform => ({ kind: "remove", selector });
-const lock = (): Transform => ({ kind: "lock" });
+const lock = (n = 1): Transform => ({ kind: "lock", n });
 
 const add = (n: Range): FillCount => ({ kind: "add", n });
 const reforge = (n: Range | "byRarity"): FillCount => ({ kind: "reforge", n });
@@ -524,16 +524,19 @@ export const BEAST_METAMOD: readonly Op[] = [
 ];
 
 /** Beastcraft "fracture a modifier on a Rare Talisman with at least 4 modifiers"
- *  (Beastcrafting): the Fracturing Orb's rule on a talisman. */
-export const BEAST_FRACTURE: readonly Op[] = [
-    notCorrupted,
-    isRare,
-    require({ kind: "baseHasTag", tag: TagId("talisman"), what: "talisman" }),
-    noInfluence("Bestiary fracture"),
-    require({ kind: "noFracture" }),
-    require({ kind: "atLeast", count: 4 }),
-    lock(),
-];
+ *  and "fracture two modifiers … with at least 6" (Beastcrafting): neither
+ *  works on an influenced or fractured item. */
+export function beastFractureOps(n: 1 | 2): readonly Op[] {
+    return [
+        notCorrupted,
+        isRare,
+        require({ kind: "baseHasTag", tag: TagId("talisman"), what: "talisman" }),
+        noInfluence("Bestiary fracture"),
+        require({ kind: "noFracture" }),
+        require({ kind: "atLeast", count: n === 2 ? 6 : 4 }),
+        lock(n),
+    ];
+}
 
 /** Harvest "change a modifier into a similar tier modifier of another element"
  *  (Harvest crafting): the named modifier goes and one of the target's rows at

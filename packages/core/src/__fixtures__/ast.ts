@@ -138,7 +138,7 @@ export const unveil = (mod?: string | ParamRef): OperationStmt =>
 /** A Bestiary recipe: `beast add prefix 84`, `beast fracture`, `beast aspect "cat"`, … */
 type BeastAction =
     | { readonly kind: "add"; readonly side: "prefix" | "suffix"; readonly level?: number }
-    | { readonly kind: "fracture" }
+    | { readonly kind: "fracture"; readonly n?: number }
     | { readonly kind: "metamod" }
     | { readonly kind: "aspect"; readonly name: string | ParamRef }
     | { readonly kind: "imprint" };
@@ -155,6 +155,11 @@ export const beast = (action: BeastAction): OperationStmt => {
         }
         case "aspect":
             return operation(["beast", "aspect"], [named(action.name)]);
+        case "fracture":
+            return operation(
+                ["beast", "fracture"],
+                action.n === undefined ? [] : [{ kind: "int", value: action.n, span: DS }],
+            );
         default:
             return operation(["beast", action.kind]);
     }

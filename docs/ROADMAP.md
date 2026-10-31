@@ -25,8 +25,7 @@ of the operations; no divergence is expected.
 ## Step 2. The remaining single-item methods
 
 Every **composes** row of the ledger is built. What waits: the bench reroll recipes on
-Q7; the Bestiary's two-modifier fracture on a fracture count in the abstract item. The
-Orb of Chance is out of scope (Q15).
+Q7. The Orb of Chance is out of scope (Q15).
 
 ## Step 3. Language and editor follow-ons
 

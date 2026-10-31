@@ -562,13 +562,18 @@ in it. Notes:
 - **Fractures** ([Fractured item § Mechanics](https://www.poewiki.net/wiki/Fractured_item#Mechanics))
   are a per-mod lock, tracked as `frac@type` atoms in the presence BDD (the tier-atom
   pattern; a `FRAC_EXISTS` sentinel marks "some mod is fractured" so a fracture on an
-  anonymous mod still counts). A declared `fractured "…"` affix asserts a definite fracture;
-  the **Fracturing Orb** (`lock`; its checks are
+  anonymous mod still counts), with `fractures`, how many modifiers are locked, as a range
+  beside them; `unprovenFractures` is that count less the pinned types, the locks that may
+  sit on any current modifier. A declared `fractured "…"` affix asserts a definite
+  fracture; the **Fracturing Orb** and the Bestiary's talisman fractures (`lock(n)`; the
+  orb's checks are
   [Fracturing Orb § Mechanics](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics): Rare,
-  ≥4 mods, not already fractured) asserts "exactly one of the current mods is fractured" —
-  pinnable by a `fractured X` branch (`refine`). Hinekora therefore models at most one
-  fracture per item; the wiki's multi-fracture routes (Synthesis, Necropolis, beastcrafting)
-  are not modelled. `remove` and `strip` keep the fracture by preserving
+  ≥4 mods, not already fractured) assert "at most `n` of the current mods are fractured",
+  and "at least `n`" when the current mods are all named, so a `fractured X` branch chain
+  (`refine`) can prove where the locks landed. One method fractures an item once; only the
+  talisman recipe locks two at a time, and a scour leaves such an item Rare
+  ([Fractured item § Mechanics](https://www.poewiki.net/wiki/Fractured_item#Mechanics)).
+  `remove` and `strip` keep the fracture by preserving
   `fractureProjection(a)` (the presence BDD reduced to the fracture atoms, with
   "a locked mod is present" re-asserted; a candidate's own presence is forgotten, since
   the operation may have removed it), so a proven fracture keeps its type and an unproven

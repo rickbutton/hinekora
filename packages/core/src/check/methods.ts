@@ -30,7 +30,7 @@ import { resolveMessage } from "./diagnostics.js";
 import {
     ANY_BEAST_LEVEL,
     awakenerOps,
-    BEAST_FRACTURE,
+    beastFractureOps,
     BEAST_IMPRINT,
     BEAST_METAMOD,
     BENCH_REMOVE,
@@ -438,9 +438,15 @@ export const METHODS: readonly Method[] = [
     },
     {
         words: ["beast", "fracture"],
-        args: [],
-        doc: "beast fracture — fracture one modifier of a Rare talisman with at least four.",
-        build: () => BEAST_FRACTURE,
+        args: [{ kind: "int", optional: true }],
+        doc: "beast fracture [2] — fracture one modifier of a Rare talisman with at least four, or two of one with at least six.",
+        build: ([n]) => {
+            const count = num(n) ?? 1;
+            if (count !== 1 && count !== 2) {
+                return refuse(`The Bestiary fractures one modifier or two, not ${count}.`);
+            }
+            return beastFractureOps(count);
+        },
     },
     {
         words: ["beast", "metamod"],

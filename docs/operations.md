@@ -189,16 +189,16 @@ rows of the Metamod table.
 
 Per [Beastcrafting](https://www.poewiki.net/wiki/Beastcrafting).
 
-| Method                                                | Composition                                                                               | Status                                     |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------ |
-| Add a prefix, remove a random suffix (and the mirror) | `remove(suffix ∖ protected, 1); fill(natural[prefix], 1)` (the pool at the beast's level) | built                                      |
-| Add a modifier to an influenced item                  | `fill(natural ∪ influence, 1)`                                                            | built (`beast add <influence>`)            |
-| Fracture one / two modifiers on a talisman            | `lock(any, 1)` / `lock(any, 2)`                                                           | built (one); later: two (a fracture count) |
-| Add a random metamod                                  | `fill(metamods, 1)`                                                                       | built                                      |
-| Craft an Aspect                                       | `fill(aspect row, 1)`                                                                     | built                                      |
-| Imprint a Magic item / a Rare talisman                | `imprint`                                                                                 | built                                      |
-| Reroll a talisman base                                | base change keeping modifiers                                                             | later: base change                         |
-| Corrupt, split, unique and flask recipes              |                                                                                           | out                                        |
+| Method                                                | Composition                                                                               | Status                          |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------- |
+| Add a prefix, remove a random suffix (and the mirror) | `remove(suffix ∖ protected, 1); fill(natural[prefix], 1)` (the pool at the beast's level) | built                           |
+| Add a modifier to an influenced item                  | `fill(natural ∪ influence, 1)`                                                            | built (`beast add <influence>`) |
+| Fracture one / two modifiers on a talisman            | `lock(any, 1)` / `lock(any, 2)`                                                           | built (`beast fracture [2]`)    |
+| Add a random metamod                                  | `fill(metamods, 1)`                                                                       | built                           |
+| Craft an Aspect                                       | `fill(aspect row, 1)`                                                                     | built                           |
+| Imprint a Magic item / a Rare talisman                | `imprint`                                                                                 | built                           |
+| Reroll a talisman base                                | base change keeping modifiers                                                             | later: base change              |
+| Corrupt, split, unique and flask recipes              |                                                                                           | out                             |
 
 ### 3.7 Allflame and league content
 

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
-import { disjunctiveGuarantees, guaranteedTypes, hasFracture } from "./astate.js";
+import { disjunctiveGuarantees, fracturedTypes, guaranteedTypes, hasFracture } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { beast, craft, item, op } from "../__fixtures__/ast.js";
+import { beast, craft, fracturedP, iff, item, op } from "../__fixtures__/ast.js";
 import {
     ASPECT_AVIAN,
     ASPECT_CAT,
@@ -35,7 +35,12 @@ const registry = buildRegistry({
     benchCrafts: [
         { mod: PROTECT_SUFFIXES_CARRIER.id, tier: 1, itemClasses: new Set([CLASS_RING]) },
     ],
-    modAliases: { "T1 Life": "IncreasedLife1" },
+    modAliases: {
+        "T1 Life": "IncreasedLife1",
+        mana: "IncreasedMana1",
+        armour: "IncreasedArmour1",
+        cold: "ColdResist1",
+    },
     baseAliases: { "Iron Ring": "IronRing", Talisman: "BlackMawTalisman" },
 });
 const ctx: CheckContext = { registry };
@@ -143,6 +148,64 @@ describe("beast fracture", () => {
             ctx,
         );
         expect(twice.diagnostics[0]!.message).toContain("already has a fractured");
+    });
+
+    it("fractures two modifiers of a talisman with six, which a scour leaves Rare", () => {
+        const r = check(craft(talisman(6), [beast({ kind: "fracture", n: 2 }), op("scour")]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        const s = r.finalState!;
+        expect(s.fractures).toEqual([2, 2]);
+        expect(s.counts.total).toEqual([2, 2]);
+        expect(s.rarities).toEqual(new Set(["rare"]));
+        const few = check(craft(talisman(5), [beast({ kind: "fracture", n: 2 })]), ctx);
+        expect(few.diagnostics[0]!.message).toContain("at least 6");
+        expect(
+            check(craft(talisman(6), [beast({ kind: "fracture", n: 3 })]), ctx).diagnostics[0]!
+                .message,
+        ).toContain("fractures one modifier or two");
+    });
+
+    it("lets a branch prove both locked modifiers, and no third", () => {
+        const named = item({
+            base: "Talisman",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: ["T1 Life", "mana", "armour"],
+            suffixes: ["cold", FIRE_RESIST.id, "random"],
+        });
+        const both = craft(named, [
+            beast({ kind: "fracture", n: 2 }),
+            iff(fracturedP("T1 Life"), [iff(fracturedP("mana"), [], [])], []),
+        ]);
+        expect(check(both, ctx).diagnostics).toEqual([]);
+        const third = craft(named, [
+            beast({ kind: "fracture", n: 2 }),
+            iff(
+                fracturedP("T1 Life"),
+                [iff(fracturedP("mana"), [iff(fracturedP("armour"), [], [])], [])],
+                [],
+            ),
+        ]);
+        expect(
+            check(third, ctx)
+                .diagnostics.map((d) => d.message)
+                .join("\n"),
+        ).toContain("'if' branch can never run");
+    });
+
+    it("takes a declared item with two fractured modifiers", () => {
+        const declared = item({
+            base: "Talisman",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: [{ mod: "T1 Life", fractured: true }, "mana"],
+            suffixes: [{ mod: "cold", fractured: true }],
+        });
+        const r = check(craft(declared, [op("scour")]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.fractures).toEqual([2, 2]);
+        expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
+        expect(fracturedTypes(r.finalState!).size).toBe(2);
     });
 });
 

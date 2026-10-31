@@ -202,7 +202,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
             case "tooFewMods":
                 return `A Fracturing Orb needs at least ${failure.needed} modifiers on the item.`;
             case "alreadyFractured":
-                return "The item already has a fractured modifier — it can hold only one.";
+                return "The item already has a fractured modifier — nothing fractures an item twice.";
             case "corrupted":
                 return `The item ${failure.sure ? "is" : "may be"} corrupted — a corrupted item takes no further craft, only the Tainted currency.`;
             case "eldritchPresent":

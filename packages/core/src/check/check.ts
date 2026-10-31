@@ -225,8 +225,8 @@ class Checker {
         // Named mods pin an exact tier so the starting item is fully concrete;
         // placeholders (`"random"`) stay anonymous.
         const pinned = new Map<TypeId, ModId>();
-        let fracturedType: TypeId | undefined;
-        let fracturedAnonymous = false;
+        const fracturedTypes: TypeId[] = [];
+        let fracturedAnonymous = 0;
         let crafted = 0;
         // A declared influence's rows roll on the item, so they resolve and tier here.
         const tags = new Set(
@@ -340,13 +340,9 @@ class Checker {
                 const anonymous = PLACEHOLDERS.test(affix.mod.trim().toLowerCase());
                 const type = anonymous ? undefined : pinAffix(affix, gen);
                 if (!affix.fractured || (!anonymous && type === undefined)) continue;
-                if (fracturedType !== undefined || fracturedAnonymous) {
-                    this.diag("an item holds at most one fractured modifier.", item.span);
-                } else if (anonymous) {
-                    fracturedAnonymous = true; // a lock exists; no type is known to carry it
-                } else {
-                    fracturedType = type;
-                }
+                if (anonymous)
+                    fracturedAnonymous++; // a lock exists; no type is known to carry it
+                else fracturedTypes.push(type!);
             }
             return affixes.length;
         };
@@ -412,7 +408,7 @@ class Checker {
         if (item.influences.length > 0 && (item.exarch !== undefined || item.eater !== undefined)) {
             this.diag("An influenced item cannot have an eldritch implicit.", item.span);
         }
-        if (item.influences.length > 0 && (fracturedType !== undefined || fracturedAnonymous)) {
+        if (item.influences.length > 0 && fracturedTypes.length + fracturedAnonymous > 0) {
             this.diag("An influenced item cannot have a fractured modifier.", item.span);
         }
         return initialState(
@@ -426,8 +422,8 @@ class Checker {
                 present,
                 pinned,
                 crafted,
-                ...(fracturedType !== undefined && { fractured: fracturedType }),
-                ...(fracturedAnonymous ? { fracturedAnonymous: true } : {}),
+                ...(fracturedTypes.length > 0 && { fractured: fracturedTypes }),
+                ...(fracturedAnonymous > 0 && { fracturedAnonymous }),
             },
             {
                 influences: item.influences,

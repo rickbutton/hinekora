@@ -57,6 +57,7 @@ import {
     relaxTiers,
     settled,
     suffixRange,
+    unprovenFractures,
     type AItem,
     type Range,
 } from "./astate.js";
@@ -247,7 +248,8 @@ export type Op =
     /** `survivors`: the rarity a scour leaves, by how many modifiers remain. */
     | { readonly kind: "rarity"; readonly rarity: Rarity | "survivors" }
     /** One random present modifier becomes fractured. */
-    | { readonly kind: "lock" }
+    /** `n` random present modifiers become fractured. */
+    | { readonly kind: "lock"; readonly n: number }
     /** Hold the item as it is now, to restore later. */
     | { readonly kind: "imprint" }
     /** Replace the item with the held imprint, consuming it. */
@@ -437,7 +439,7 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
                         : new Set([op.rarity]),
             });
         case "lock":
-            return lock(a);
+            return lock(a, op.n);
         case "imprint": {
             const { imprint: _held, ...now } = a;
             return { ...a, imprint: now };
@@ -740,7 +742,7 @@ function failing(
             return mayHaveVeiled(a, registry) ? { kind: "alreadyVeiled" } : null;
         case "noVeiledKept": {
             const fractured = fracturedTypes(a);
-            const unprovenLock = hasFracture(a) && fractured.size === 0;
+            const unprovenLock = unprovenFractures(a)[1] > 0;
             const kept = (t: TypeId): boolean =>
                 unprovenLock || fractured.has(t) || rules.protected.has(sideOf(a, registry, t));
             return mayHaveVeiled(a, registry, kept) ? { kind: "veiledWouldSurvive" } : null;
@@ -750,7 +752,7 @@ function failing(
             if (!guaranteedTypes(a).has(type))
                 return { kind: "typeNotRemovable", mod: label, why: "absent" };
             const fractured = fracturedTypes(a);
-            if (fractured.has(type) || (hasFracture(a) && fractured.size === 0)) {
+            if (fractured.has(type) || unprovenFractures(a)[1] > 0) {
                 return { kind: "typeNotRemovable", mod: label, why: "fractured" };
             }
             if (rules.protected.has(genOf(a, registry, type))) {
@@ -883,7 +885,7 @@ function hasRemovable(
     // A fractured mod is locked, so it doesn't count toward what's removable; an
     // unproven fracture likewise locks one mod (of unknown generation).
     const fractured = fracturedTypes(a);
-    const unprovenLock = hasFracture(a) && fractured.size === 0 ? 1 : 0;
+    const unprovenLock = unprovenFractures(a)[1];
     // Under a shield an anonymous mod may be a shielded tagged one, so only the
     // guaranteed, unshielded, unlocked mods on allowed sides prove a removal (one
     // more than the unproven lock, which may sit on any of them).
@@ -995,7 +997,7 @@ function strip(a: AItem, rules: Rules, registry: Registry): AItem {
     const isKept = (t: TypeId): boolean => keep.has(genOfT(t)) || fractured.has(t);
     const fracIn = (g: Gen): number => fracturedIn(a, registry, g);
     // An unproven fracture keeps one mod of unknown generation.
-    const unprovenLock = hasFracture(a) && fractured.size === 0 ? 1 : 0;
+    const unprovenLock = unprovenFractures(a)[1];
 
     // Kept counts per side: the whole side if protected, else just its fractured mod.
     const keptPrefix: Range = keep.has("prefix")
@@ -1008,7 +1010,7 @@ function strip(a: AItem, rules: Rules, registry: Registry): AItem {
     // The unproven lock may sit on a kept mod, so it adds to the floor only
     // what the kept side cannot already account for.
     const total: Range = [
-        Math.max(keptPrefix[0] + keptSuffix[0], unprovenLock),
+        Math.max(keptPrefix[0] + keptSuffix[0], a.fractures[0]),
         keptPrefix[1] + keptSuffix[1] + unprovenLock,
     ];
 
@@ -1046,12 +1048,12 @@ function strip(a: AItem, rules: Rules, registry: Registry): AItem {
 function fracturedCrafted(a: AItem, registry: Registry): number {
     const fractured = fracturedTypes(a);
     // An unproven lock may sit on any current mod, a crafted one included.
-    if (fractured.size === 0) return hasFracture(a) ? Math.min(1, a.crafted[1]) : 0;
+    const unprovenHi = unprovenFractures(a)[1];
     let n = 0;
     for (const t of fractured) {
         if (rowsOf(a, t, registry).some((m) => m.source === "bench")) n++;
     }
-    return Math.min(n, a.crafted[1]);
+    return Math.min(n + unprovenHi, a.crafted[1]);
 }
 
 /** The fractured mods on one side. */
@@ -1079,10 +1081,10 @@ function keptBounds(a0: AItem, rules: Rules, registry: Registry): { prefix: Rang
  *  the fractured mod, which under an unproven lock may be one of the kept ones. */
 function survivorsOf(a0: AItem, rules: Rules, registry: Registry): Range {
     const kept = keptBounds(a0, rules, registry);
-    const unprovenLock = hasFracture(a0) && fracturedTypes(a0).size === 0 ? 1 : 0;
+    const unprovenHi = unprovenFractures(a0)[1];
     return [
-        Math.max(kept.prefix[0] + kept.suffix[0], unprovenLock),
-        kept.prefix[1] + kept.suffix[1] + unprovenLock,
+        Math.max(kept.prefix[0] + kept.suffix[0], a0.fractures[0]),
+        kept.prefix[1] + kept.suffix[1] + unprovenHi,
     ];
 }
 
@@ -1538,7 +1540,7 @@ function removeCrafted(a: AItem, rules: Rules, registry: Registry, replacing: bo
     if (replacing && rules.craftedCap > 1) return a;
     if (a.crafted[1] === 0) return a;
     const fractured = fracturedTypes(a);
-    const unprovenLock = hasFracture(a) && fractured.size === 0;
+    const unprovenLock = unprovenFractures(a)[1] > 0;
     const isBench = (m: Mod): boolean => m.source === "bench";
     let fracturedLower = 0;
     for (const t of fractured) if (rowsOf(a, t, registry).every(isBench)) fracturedLower++;
@@ -1588,12 +1590,14 @@ function removeCrafted(a: AItem, rules: Rules, registry: Registry, replacing: bo
  *  mod is proven fractured yet: every present named mod becomes a candidate a
  *  `fractured X` branch can pin, and when they account for every mod the lock
  *  provably landed among them. A metamod is an ordinary candidate. */
-function lock(a: AItem): AItem {
-    const candidates = [...guaranteedTypes(a)];
-    const exhaustive = a.counts.total[1] <= candidates.length;
+function lock(a: AItem, n: number): AItem {
+    const already = fracturedTypes(a);
+    const candidates = [...guaranteedTypes(a)].filter((t) => !already.has(t));
+    const exhaustive = a.counts.total[1] <= guaranteedTypes(a).size;
     return settled({
         ...a,
-        presence: assertFractureDisjunction(a.bdd, a.presence, candidates, exhaustive),
+        fractures: [a.fractures[0] + n, a.fractures[1] + n],
+        presence: assertFractureDisjunction(a.bdd, a.presence, candidates, exhaustive, n),
     });
 }
 

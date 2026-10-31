@@ -5,7 +5,7 @@ import { type Literal, METHODS } from "./methods.js";
 import { type Op } from "./ops.js";
 import {
     BENCH_REMOVE,
-    BEAST_FRACTURE,
+    beastFractureOps,
     BEAST_IMPRINT,
     BEAST_METAMOD,
     RESTORE,
@@ -81,7 +81,8 @@ describe("every method refuses a corrupted item first", () => {
             beastImprint: BEAST_IMPRINT,
             restore: RESTORE,
             beastMetamod: BEAST_METAMOD,
-            beastFracture: BEAST_FRACTURE,
+            beastFracture: beastFractureOps(1),
+            beastFractureTwo: beastFractureOps(2),
             resonator: resonatorOps({ fossils: [], added: [], forced: [], corrupted: [] }),
             veiledChaos: VEILED_CHAOS,
             veiledExalt: VEILED_EXALT,
@@ -129,7 +130,7 @@ describe("every method refuses a corrupted item first", () => {
                     case "word":
                         return [{ kind: "word", value: slot.oneOf[0]! }];
                     case "int":
-                        return [{ kind: "int", value: 50 }];
+                        return [{ kind: "int", value: 2 }];
                     case "tier":
                         return [];
                 }

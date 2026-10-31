@@ -60,10 +60,8 @@ item {
   under the wrong side is an error.
 - `fractured "<mod>" t<n>` (or `fractured "random"`, when the locked modifier is not
   named: the item is known to be fractured, the modifier is not) marks a
-  [fractured modifier](https://www.poewiki.net/wiki/Fractured_item#Mechanics). Hinekora
-  models at most one per item, the
-  [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)'s own limit; the
-  wiki's multi-fracture items are out of scope.
+  [fractured modifier](https://www.poewiki.net/wiki/Fractured_item#Mechanics). An item
+  may declare more than one, as the Bestiary's two-modifier talisman recipe (§3) makes.
 - `influences: hunter` (or two of them, `influences: shaper elder`) marks an
   [influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics); the six are
   `shaper`, `elder`, `crusader`, `hunter`, `redeemer` and `warlord`. Every method in §3
@@ -234,9 +232,11 @@ Operations that take a name (and an optional `t<n>`):
   Hunter Item" and its five siblings: a modifier into an open slot of a Rare item with
   that influence, drawn at the beast's level.
 - `beast fracture` is the recipe that fractures a modifier on a Rare
-  [talisman](https://www.poewiki.net/wiki/Talisman) with at least four modifiers; like
-  the Fracturing Orb it needs an item with no fracture yet. The two-modifier recipe is
-  not offered: the checker tracks one fracture.
+  [talisman](https://www.poewiki.net/wiki/Talisman) with at least four modifiers, and
+  `beast fracture 2` the one that fractures two on a talisman with at least six; like
+  the Fracturing Orb, both need an item with no fracture yet and no influence. A scour
+  leaves an item with two fractured modifiers Rare
+  ([Fractured item § Mechanics](https://www.poewiki.net/wiki/Fractured_item#Mechanics)).
 - `beast metamod` is the recipe "Add a crafted Meta-modifier": one of the five
   [metamods](https://www.poewiki.net/wiki/Metamod), random among those that fit (not
   already on the item, a slot on its side), within the crafted limit; some one metamod

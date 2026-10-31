@@ -66,6 +66,11 @@ export interface AItem {
     /** The pairs of eldritch implicit tiers the item may have (`eldritchKey`),
      *  tracked as pairs so the dominance rule survives a join. */
     readonly eldritch: ReadonlySet<EldritchKey>;
+    /** How many modifiers are fractured, a range: one per Fracturing Orb or
+     *  Bestiary fracture, two for the talisman recipe; which ones is the
+     *  presence BDD's business (`frac@type` atoms), and the difference between
+     *  this count and the pinned types is the locks on unnamed modifiers. */
+    readonly fractures: Range;
     /** Which implicit each side may be: the types an ember's pool holds, narrowed
      *  by a wording; `"any"` when nothing is known. Independent of the tiers,
      *  which a wording never changes. */
@@ -293,8 +298,8 @@ export function isFractured(a: AItem, type: TypeId): boolean {
     return a.bdd.entails(a.presence, a.bdd.variable(fracAtomName(type)));
 }
 
-/** The types proven to be the fractured (locked) mod. At most one under the
- *  exactly-one invariant; empty when a fracture exists but isn't yet pinned. */
+/** The types proven to be fractured (locked); empty when a fracture exists
+ *  but isn't yet pinned to a type. */
 export function fracturedTypes(a: AItem): Set<TypeId> {
     const out = new Set<TypeId>();
     for (const v of a.bdd.variables()) {
@@ -303,6 +308,13 @@ export function fracturedTypes(a: AItem): Set<TypeId> {
         }
     }
     return out;
+}
+
+/** The fractured modifiers not pinned to a type, as a range: the count less
+ *  the proven types. Such a lock may sit on any current modifier. */
+export function unprovenFractures(a: AItem): Range {
+    const pinned = fracturedTypes(a).size;
+    return [Math.max(0, a.fractures[0] - pinned), Math.max(0, a.fractures[1] - pinned)];
 }
 
 /** Does the item carry a fracture at all (proven or not)? Tracked by the
@@ -507,11 +519,11 @@ export interface InitialCounts {
     readonly present: ReadonlySet<TypeId>;
     /** For each declared mod pinned to a specific tier, that exact mod (id). */
     readonly pinned: ReadonlyMap<TypeId, ModId>;
-    /** The declared fractured (locked) mod's type, if the item block marks one. */
-    readonly fractured?: TypeId;
-    /** The item block marks an anonymous (`"random"`) affix as fractured: a lock
-     *  exists but no type is known to carry it. */
-    readonly fracturedAnonymous?: boolean;
+    /** The declared fractured (locked) mods' types. */
+    readonly fractured?: readonly TypeId[];
+    /** How many anonymous (`"random"`) affixes the item block marks fractured:
+     *  locks that exist with no type known to carry them. */
+    readonly fracturedAnonymous?: number;
     /** How many declared mods are bench-crafted rows. */
     readonly crafted: number;
 }
@@ -538,10 +550,17 @@ export function initialState(
 ): AItem {
     const p = counts.prefixCount;
     const s = counts.suffixCount;
+    const fracturedTypes = counts.fractured ?? [];
+    const anonymousLocks = counts.fracturedAnonymous ?? 0;
+    const locks = fracturedTypes.length + anonymousLocks;
+    let presence = presenceFacts(bdd, counts.present, []);
+    for (const t of fracturedTypes) presence = assertDeclaredFracture(bdd, presence, t);
+    if (anonymousLocks > 0) presence = bdd.and(presence, bdd.variable(FRAC_EXISTS));
     return settled({
         base,
         ilvl,
         rarities: new Set([rarity]),
+        fractures: [locks, locks],
         influences: new Set([influenceKey(marks.influences)]),
         corrupted: new Set([marks.corrupted]),
         eldritch: new Set([eldritchKey(marks.exarch ?? 0, marks.eater ?? 0)]),
@@ -551,16 +570,7 @@ export function initialState(
         },
         counts: CountDomain.point(p, s),
         bdd,
-        presence:
-            counts.fractured !== undefined
-                ? assertDeclaredFracture(
-                      bdd,
-                      presenceFacts(bdd, counts.present, []),
-                      counts.fractured,
-                  )
-                : counts.fracturedAnonymous
-                  ? bdd.and(presenceFacts(bdd, counts.present, []), bdd.variable(FRAC_EXISTS))
-                  : presenceFacts(bdd, counts.present, []),
+        presence,
         possible: new Set(counts.present),
         tiers: new Map([...counts.pinned].map(([type, mod]) => [type, new Set([mod])])),
         crafted: [counts.crafted, counts.crafted],
@@ -610,6 +620,7 @@ export function join(a: AItem, b: AItem): AItem {
         influences: SetDomain.join(a.influences, b.influences),
         corrupted: SetDomain.join(a.corrupted, b.corrupted),
         eldritch: SetDomain.join(a.eldritch, b.eldritch),
+        fractures: RangeDomain.join(a.fractures, b.fractures),
         eldritchTypes: {
             exarch: ImplicitTypesDomain.join(a.eldritchTypes.exarch, b.eldritchTypes.exarch),
             eater: ImplicitTypesDomain.join(a.eldritchTypes.eater, b.eldritchTypes.eater),
@@ -636,6 +647,7 @@ export function stateEqual(a: AItem, b: AItem): boolean {
         SetDomain.equal(a.influences, b.influences) &&
         SetDomain.equal(a.corrupted, b.corrupted) &&
         SetDomain.equal(a.eldritch, b.eldritch) &&
+        RangeDomain.equal(a.fractures, b.fractures) &&
         ImplicitTypesDomain.equal(a.eldritchTypes.exarch, b.eldritchTypes.exarch) &&
         ImplicitTypesDomain.equal(a.eldritchTypes.eater, b.eldritchTypes.eater) &&
         CountDomain.equal(a.counts, b.counts) &&
@@ -911,32 +923,39 @@ export function assertDeclaredFracture(bdd: BddManager, presence: Bdd, type: Typ
 }
 
 /**
- * Assert a Fracturing Orb: a fracture exists and exactly one of `candidates` is
- * it (pairwise-exclusive, each implying its mod present). `exhaustive` is true
- * when the candidates cover every mod (no anonymous ones), which lets a branch
- * chain over them prove the fracture landed on one of the named mods.
+ * Assert a fracture of `n` modifiers: a fracture exists and at most `n` of
+ * `candidates` are it (each implying its mod present), and, when the
+ * candidates cover every mod (`exhaustive`, no anonymous ones), at least `n`
+ * of them, which lets a branch chain over them prove where the locks landed.
+ * The candidate sets are small (an item's few modifiers), so the cardinality
+ * constraints enumerate subsets.
  */
 export function assertFractureDisjunction(
     bdd: BddManager,
     presence: Bdd,
     candidates: readonly TypeId[],
     exhaustive: boolean,
+    n = 1,
 ): Bdd {
     let p = bdd.and(presence, bdd.variable(FRAC_EXISTS));
     const fracOf = (t: TypeId): Bdd => bdd.variable(fracAtomName(t));
     // Each candidate: frac ⇒ present.
     for (const c of candidates) p = bdd.and(p, bdd.or(bdd.not(fracOf(c)), bdd.variable(c)));
-    // At most one fractured (pairwise exclusion).
-    for (let i = 0; i < candidates.length; i++) {
-        for (let j = i + 1; j < candidates.length; j++) {
-            p = bdd.and(p, bdd.not(bdd.and(fracOf(candidates[i]!), fracOf(candidates[j]!))));
-        }
+    // At most n fractured: no n+1 of them together.
+    for (const group of combinations(candidates, n + 1)) {
+        let all = bdd.TRUE;
+        for (const c of group) all = bdd.and(all, fracOf(c));
+        p = bdd.and(p, bdd.not(all));
     }
-    // If the named candidates are all the mods, the fracture is one of them.
-    if (exhaustive && candidates.length > 0) {
-        let atLeast = bdd.FALSE;
-        for (const c of candidates) atLeast = bdd.or(atLeast, fracOf(c));
-        p = bdd.and(p, bdd.or(bdd.not(bdd.variable(FRAC_EXISTS)), atLeast));
+    // If the named candidates are all the mods, the locks are among them.
+    if (exhaustive && candidates.length >= n) {
+        let some = bdd.FALSE;
+        for (const group of combinations(candidates, n)) {
+            let all = bdd.TRUE;
+            for (const c of group) all = bdd.and(all, fracOf(c));
+            some = bdd.or(some, all);
+        }
+        p = bdd.and(p, bdd.or(bdd.not(bdd.variable(FRAC_EXISTS)), some));
     }
     return p;
 }
