@@ -42,7 +42,6 @@ export function projectEldritch(raw) {
             side,
             tier,
             type: m.type,
-            groups: m.groups,
             classes,
             implicit_tags: m.implicit_tags ?? [],
             text: m.text ?? "",

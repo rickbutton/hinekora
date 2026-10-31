@@ -190,7 +190,7 @@ export interface Registry {
     resolveEldritch(name: string, side: EldritchSide, base?: Base): Resolved<readonly TypeId[]>;
     /** The eldritch implicits' texts of that side, each once, for completion. */
     eldritchNames(side: EldritchSide): readonly string[];
-    /** The wording of an eldritch implicit type, its most common text. */
+    /** The wording of an eldritch implicit type, the most common text among its rows. */
     eldritchTextOf(type: TypeId): string | undefined;
     /** Resolve an Aspect by its animal ("cat") to the row the Bestiary crafts. */
     resolveAspect(name: string): Resolved<Mod>;
@@ -547,33 +547,58 @@ export function buildRegistry(data: RegistryData): Registry {
                     e.side === side &&
                     (base === undefined || [...e.classes].some((t) => base.tags.has(t))),
             );
-            // Every query word must be a word (or a prefix of one) of the text;
-            // all the types that wording covers are meant, the presence
-            // variants among them.
-            const types = new Set<TypeId>();
+            // Every query word must be a word (or a prefix of one) of the text.
+            // Rows of one wording (the tiers, and the presence variants the data
+            // words alike) are one candidate; several wordings are ambiguous.
+            const byWording = new Map<string, { text: string; types: Set<TypeId> }>();
             for (const e of rows) {
-                const tokens = new Set(normalizeText(e.text));
-                if (
-                    q.every(
-                        (w) =>
-                            tokens.has(w) ||
-                            [...tokens].some((t) => w.length >= 3 && t.startsWith(w)),
-                    )
-                ) {
-                    types.add(e.type);
-                }
+                const tokens = normalizeText(e.text);
+                const set = new Set(tokens);
+                const hit = q.every(
+                    (w) => set.has(w) || [...set].some((t) => w.length >= 3 && t.startsWith(w)),
+                );
+                if (!hit) continue;
+                const key = [...set].sort().join(" ");
+                const entry = byWording.get(key) ?? { text: e.text, types: new Set<TypeId>() };
+                entry.types.add(e.type);
+                byWording.set(key, entry);
             }
-            return types.size > 0
-                ? found([...types])
-                : fail({ kind: "unknownEldritch", name, side });
+            if (byWording.size === 0) return fail({ kind: "unknownEldritch", name, side });
+            if (byWording.size > 1) {
+                return fail({
+                    kind: "ambiguous",
+                    name,
+                    candidates: [...byWording.values()].map((c) => c.text),
+                });
+            }
+            return found([...[...byWording.values()][0]!.types]);
         },
 
         eldritchNames(side) {
-            return [...new Set(eldritch.filter((e) => e.side === side).map((e) => e.text))];
+            // One wording per implicit: the tiers and the presence variants of
+            // one implicit differ only in their numbers.
+            const seen = new Set<string>();
+            const out: string[] = [];
+            for (const e of eldritch) {
+                if (e.side !== side) continue;
+                const key = [...new Set(normalizeText(e.text))].sort().join(" ");
+                if (seen.has(key)) continue;
+                seen.add(key);
+                out.push(e.text);
+            }
+            return out;
         },
 
         eldritchTextOf(type) {
-            return eldritch.find((e) => e.type === type)?.text;
+            // The most common text among the type's rows, as the mod index does.
+            const counts = new Map<string, number>();
+            for (const e of eldritch) {
+                if (e.type === type) counts.set(e.text, (counts.get(e.text) ?? 0) + 1);
+            }
+            let best: string | undefined;
+            let bestN = 0;
+            for (const [text, n] of counts) if (n > bestN) [best, bestN] = [text, n];
+            return best;
         },
 
         resolveBench(name, itemClass, tier) {

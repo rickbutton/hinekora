@@ -92,7 +92,6 @@ export interface RepoeEldritch {
     /** 1 (Lesser) to 6 (Perfect). */
     readonly tier: number;
     readonly type: string;
-    readonly groups: readonly string[];
     /** The class tags the row rolls on (`gloves`, `body_armour`, …). */
     readonly classes: readonly string[];
     readonly implicit_tags: readonly string[];

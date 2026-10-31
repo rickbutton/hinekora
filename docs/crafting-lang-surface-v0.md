@@ -75,9 +75,10 @@ item {
   Searing Exarch's and the Eater of Worlds'; the six tiers are `lesser`, `greater`,
   `grand`, `exceptional`, `exquisite` and `perfect`. A wording after the tier names
   which implicit it is (`exarch: grand "increased movement speed"`), matched by word as
-  a mod name is (§2) among the implicits of that side; a wording covers the implicit's
-  "presence" variants too, which the data words alike. An influenced item cannot carry
-  one, so declaring both is an error.
+  a mod name is (§2) among the implicits of that side, and ambiguous as in §2 when the
+  words fit several wordings; the one wording covers the implicit's "presence" variants
+  too, which the data words alike. An influenced item cannot carry one, so declaring
+  both is an error.
 - `corrupted`, a bare flag, marks a
   [corrupted item](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items), which
   takes no craft but the Tainted currency (§3). A guide that corrupts an item mid-way
@@ -322,8 +323,8 @@ pred := isRare | isMagic | isNormal
       | fractured "<mod>"                   # that modifier is the fractured one
       | influenced [<influence>]            # the item has that influence (any, when none is named)
       | corrupted                           # the item is corrupted
-      | exarch ["<wording>"] [<tier>]       # that eldritch implicit is present (that one, at that tier)
-      | eater ["<wording>"] [<tier>]
+      | exarch ["<wording>"] [<tier>]       # that eldritch implicit is present (that one, at that tier;
+      | eater ["<wording>"] [<tier>]        #   the wording and the tier in either order)
       | dominant exarch | dominant eater    # that implicit's tier is the higher
       | prefixCount <cmp> <int>
       | suffixCount <cmp> <int>

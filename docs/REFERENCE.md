@@ -186,7 +186,8 @@ filter on). The eldritch implicit rows (eldritch.json, `scripts/ingest-eldritch.
 class tags it rolls on and its text; a row with no tier or no class is not obtainable
 and is dropped. `adaptEldritch` makes an `EldritchImplicitSpec`; the registry offers
 `eldritchPool(base, side, tier)`, `resolveEldritch(name, side, base?)` (every type the
-wording covers, the "presence" variants among them) and `eldritchNames(side)`. For a base it also folds the affix-count implicit stats
+wording covers, the "presence" variants among them; several wordings are ambiguous),
+`eldritchNames(side)` (one wording per implicit) and `eldritchTextOf(type)`. For a base it also folds the affix-count implicit stats
 (`local_maximum_{prefixes,suffixes}_allowed_+`) into a `capDelta` (absent when zero).
 `adapter.ts` adapts rows into model types and stamps `ModSource` via `classifySource`
 (domain + generation_type + is_essence_only). `load.ts`: `loadDefaultPoe1()` →

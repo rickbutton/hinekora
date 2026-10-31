@@ -80,7 +80,12 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         const speed = registry.resolveEldritch("attack speed", "exarch", gloves);
         expect(speed.ok && speed.value.length).toBe(3);
         expect(registry.resolveEldritch("attack speed", "eater", gloves).ok).toBe(false);
-        expect(registry.eldritchNames("eater").length).toBeGreaterThan(500);
+        const vague = registry.resolveEldritch("increased", "exarch", gloves);
+        expect(!vague.ok && vague.error.kind).toBe("ambiguous");
+        // One wording per implicit, not one per tier.
+        const names = registry.eldritchNames("eater");
+        expect(names.length).toBeGreaterThan(50);
+        expect(names.length).toBeLessThan(400);
     });
 
     it("resolves the four Aspects the Bestiary crafts to level-30 suffix rows", () => {
