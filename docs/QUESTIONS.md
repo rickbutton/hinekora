@@ -335,6 +335,23 @@ Eater one; Orbs of Conflict.
 separates a variant from its plain sibling.
 **Answer:**
 
+### Q39 · game probe · open
+
+**Asked:** 2026-10-30
+**Goal:** which elevated row an Orb of Dominance makes of a top-tier influenced
+modifier, and whether the removed one can be the same it upgraded.
+[Orb of Dominance § Mechanics](https://www.poewiki.net/wiki/Orb_of_Dominance#Mechanics)
+says a tier 1 modifier "will replace it with a new elevated mod"; the data gives the
+elevated rows as types of their own, named "Elevated", sharing the modifier's group,
+which is how the checker pairs them.
+**Procure:** gloves with two Hunter modifiers at tier 1; Orbs of Dominance.
+**Steps:** apply; note which modifier was elevated, into what, and which was removed.
+**Record:** the pairs seen.
+**Assumed meanwhile:** the elevated row shares the modifier's group and influence tag
+(`check/ops.ts` `elevate`), one modifier is removed and a different one raised, and a
+Magic item is accepted as the page says.
+**Answer:**
+
 ### Q38 · game probe · open
 
 **Asked:** 2026-10-30
@@ -478,7 +495,7 @@ leave the pool matching on base tags only?
 another jewel modifier adds; without it the jewel pool overstates what can roll, which
 makes `until has X` look reachable when it is not.
 **Applied meanwhile:** added tags only (then `pool.itemTags`, now `ItemFacts.tags`); influence arrives with the
-influence currencies (ROADMAP Step 3).
+influence currencies (built).
 **Where the assumption lives:** `packages/core/src/pool/pool.ts`, `pool.test.ts`.
 **Answer:** Rick ruled option 1 (2026-10-27). Applied in `1a3c83e` and `138cb13`.
 

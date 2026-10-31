@@ -356,7 +356,7 @@ export const TAINTED_DIVINE: readonly Op[] = [
     { kind: "relax", crafted: false },
 ];
 
-/** The classes an ember or ichor marks: body armour, boots, gloves and helmets. */
+/** The four armour classes an ember or ichor marks and an Orb of Dominance takes. */
 const ELDRITCH_TAGS = ["body_armour", "boots", "gloves", "helmet"].map(TagId);
 const ELDRITCH_NAME: Readonly<Record<EldritchSide, string>> = {
     exarch: "Eldritch Ember",
@@ -431,6 +431,21 @@ export function eldritchAnnulOps(side: EldritchSide): readonly Op[] {
 
 /** An Orb of Conflict: one eldritch implicit up a tier, the other down, on an
  *  item that has both (Orb of Conflict). */
+/** An Orb of Dominance (Orb of Dominance § Mechanics): on a body armour,
+ *  boots, gloves or helmet with two influenced modifiers a metamod does not
+ *  protect, one is removed and another goes a tier up, or to its elevated row. */
+export const DOMINANCE: readonly Op[] = [
+    notCorrupted,
+    require({
+        kind: "baseHasAnyTag",
+        tags: ELDRITCH_TAGS,
+        what: "body armour, boots, gloves or helmet",
+    }),
+    require({ kind: "influencedAtLeast", count: 2 }),
+    remove({ kind: "influenced" }),
+    { kind: "elevate" },
+];
+
 export const CONFLICT: readonly Op[] = [
     notCorrupted,
     require({ kind: "bothEldritch" }),

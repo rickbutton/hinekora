@@ -20,8 +20,7 @@ The audit of the code against `item-model.md` is applied: its decisions are reso
 item block and transfer functions and the §9 facts are data tests. What remains is a
 re-audit of the code against
 `item-model.md` §§4–9, rule by rule, now that the operations model has settled the shape
-of the operations. The expected remaining divergence is influence (Step 3) and nothing
-else.
+of the operations; no divergence is expected.
 
 ## Step 2. The remaining single-item methods
 
@@ -29,13 +28,7 @@ Every **composes** row of the ledger is built. What waits: the bench reroll reci
 Q7; the Bestiary's two-modifier fracture on a fracture count in the abstract item. The
 Orb of Chance is out of scope (Q15).
 
-## Step 3. Marks
-
-The abstract item and the item block carry the influences, corruption and the eldritch
-implicits, and the currencies that set or use them are built. What remains is the Orb
-of Dominance, once the elevated modifiers are in the data.
-
-## Step 4. Language and editor follow-ons
+## Step 3. Language and editor follow-ons
 
 - **Negative facts in the tooltip.** `not has X` yields an exclusion that is filtered
   from completion candidates but never shown. Surface it as a "without …" line: an

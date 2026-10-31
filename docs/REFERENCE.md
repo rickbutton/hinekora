@@ -445,7 +445,9 @@ implicit's tier, or the Orb of Conflict's raise and lower), `unprotect` (the met
 no longer govern the rest of the method, the Awakener's Orb), `keep(gen)` (that side is
 kept through the rest of the method, the Eldritch Chaos Orb), `corrupt`, `relax`
 (forget the present modifiers' tiers, `relaxTiers`, the crafted ones excepted when
-asked) and `either(branches)`, the join of running each branch of effects, a branch of
+asked), `elevate` (the Orb of Dominance's upgrade: every influenced modifier the item
+may have loses its tier and may be its elevated row, a type of its own sharing its
+group and named "Elevated"; one of them remains) and `either(branches)`, the join of running each branch of effects, a branch of
 `end` alone being an outcome that destroys the item and adds nothing; a method is
 all or nothing, so a failed `require` anywhere leaves the state as it was. The metamods
 in force (`Rules`: protected sides, the cannot-roll shield, the crafted cap, whether an

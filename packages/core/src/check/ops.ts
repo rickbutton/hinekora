@@ -132,7 +132,10 @@ export type Selector =
      *  Using the crafting bench). */
     | { readonly kind: "crafted"; readonly replacing: boolean }
     /** Exactly this modifier (a harvest change). */
-    | { readonly kind: "type"; readonly type: TypeId };
+    | { readonly kind: "type"; readonly type: TypeId }
+    /** One of the item's influenced modifiers on an unprotected side (the Orb
+     *  of Dominance); the other modifiers' guarantees survive. */
+    | { readonly kind: "influenced" };
 
 /** A check a `require` must prove on every path. */
 export type Check =
@@ -160,6 +163,9 @@ export type Check =
     /** That side is not protected by a metamod (an Eldritch Orb of Annulment
      *  would otherwise remove nothing). */
     | { readonly kind: "unprotectedSide"; readonly gen: Gen; readonly what: string }
+    /** At least that many influenced modifiers are guaranteed on unprotected
+     *  sides (the Orb of Dominance). */
+    | { readonly kind: "influencedAtLeast"; readonly count: number }
     /** The item is influenced on every path, with that influence when one is named. */
     | { readonly kind: "influenced"; readonly what: string; readonly influence?: Influence }
     /** The item has exactly one influence, other than the donor's, on every path
@@ -228,6 +234,10 @@ export type Op =
     /** Forget which tier each present modifier is; a crafted one keeps its tier
      *  when `crafted` is false. */
     | { readonly kind: "relax"; readonly crafted: boolean }
+    /** One influenced modifier went up a tier, or to its elevated row at the
+     *  top (the Orb of Dominance): every influenced modifier the item may have
+     *  loses its tier and may be its elevated row, and one of them remains. */
+    | { readonly kind: "elevate" }
     /** Change the influence mark: to one set, by adding an influence to every
      *  possible set, or to every set of the same size (the grove's randomise). */
     | { readonly kind: "influence"; readonly change: InfluenceChange }
@@ -321,6 +331,7 @@ export type PreconditionFailure =
     | { readonly kind: "notDominant"; readonly side: EldritchSide; readonly what: string }
     | { readonly kind: "notBothEldritch"; readonly sure: boolean }
     | { readonly kind: "sideProtected"; readonly gen: Gen; readonly what: string }
+    | { readonly kind: "tooFewInfluenced"; readonly needed: number; readonly have: number }
     | { readonly kind: "influencedOnProtected"; readonly what: string; readonly gen: Gen }
     | { readonly kind: "noVeiledMod" }
     | { readonly kind: "alreadyVeiled" }
@@ -405,8 +416,17 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
                     if (allowed.size === 0 && op.selector.gen !== undefined) return a;
                     return removeOne(a, allowed, shieldFor(op.selector, rules), registry);
                 }
+                case "influenced":
+                    return removeOne(
+                        a,
+                        allowedFor(op.selector, rules),
+                        influenceShield(a, registry),
+                        registry,
+                    );
             }
             break;
+        case "elevate":
+            return elevate(a, registry);
         case "rarity":
             return settled({
                 ...a,
@@ -601,9 +621,20 @@ function failing(
             ) {
                 return null; // the side is protected: the method adds without removing
             }
-            return hasRemovable(a, allowed, shieldFor(check.selector, rules), registry)
+            const shield =
+                check.selector.kind === "influenced"
+                    ? influenceShield(a, registry)
+                    : shieldFor(check.selector, rules);
+            return hasRemovable(a, allowed, shield, registry) ? null : { kind: "nothingToRemove" };
+        }
+        case "influencedAtLeast": {
+            const have = [...guaranteedTypes(a)].filter(
+                (t) =>
+                    isInfluenceType(a, t, registry) && !rules.protected.has(genOf(a, registry, t)),
+            ).length;
+            return have >= check.count
                 ? null
-                : { kind: "nothingToRemove" };
+                : { kind: "tooFewInfluenced", needed: check.count, have };
         }
         case "craftedRemovable":
             return a.crafted[0] - fracturedCrafted(a, registry) >= 1
@@ -1336,6 +1367,61 @@ function influenceRowTest(a: AItem, registry: Registry): (m: Mod) => boolean {
     const sure = influenceTagsOf(a, registry).sure;
     const own = new Set([...facts.tags].filter((t) => !sure.has(t)));
     return (m) => (lookupWeight(m, own) ?? 0) <= 0;
+}
+
+/** The guaranteed modifiers that are not influenced: what a removal of an
+ *  influenced modifier cannot reach. */
+function influenceShield(a: AItem, registry: Registry): Shield {
+    const types = new Set<TypeId>();
+    for (const t of guaranteedTypes(a)) if (!isInfluenceType(a, t, registry)) types.add(t);
+    return { types };
+}
+
+/**
+ * The Orb of Dominance's upgrade (Orb of Dominance § Mechanics): one of the
+ * influenced modifiers went a tier up, or, at the top tier, became its
+ * elevated row, a type of its own sharing its group. Which one is unknown, so
+ * every influenced modifier the item may have loses its tier and may be its
+ * elevated row; one of them remains, since only one was removed.
+ */
+function elevate(a: AItem, registry: Registry): AItem {
+    const { sure, maybe } = influenceTagsOf(a, registry);
+    const tags = new Set([...sure, ...maybe]);
+    const influenced = [...a.possible].filter(
+        (t) => !isExcluded(a, t) && isInfluenceType(a, t, registry),
+    );
+    const elevated = new Map<TypeId, Mod[]>();
+    for (const t of influenced) {
+        const families = registry.familiesOfType(t);
+        const rows = registry.catalog.filter(
+            (m) =>
+                m.name?.startsWith("Elevated") === true &&
+                [...m.families].some((f) => families.has(f)) &&
+                m.spawn.some((w) => tags.has(w.tag)),
+        );
+        if (rows.length > 0) elevated.set(t, rows);
+    }
+    const s = relaxTiers(a, (t) => influenced.includes(t));
+    const possible = new Set(s.possible);
+    const tiers = new Map(s.tiers);
+    const rows: Mod[] = [];
+    for (const list of elevated.values()) {
+        for (const m of list) {
+            possible.add(m.type);
+            tiers.set(m.type, new Set([...(tiers.get(m.type) ?? []), m.id]));
+            rows.push(m);
+        }
+    }
+    let presence = admitAdd({ ...s, possible }, rows);
+    if (influenced.length > 0) {
+        let clause = a.bdd.FALSE;
+        for (const t of influenced) clause = a.bdd.or(clause, a.bdd.variable(t));
+        for (const list of elevated.values()) {
+            for (const m of list) clause = a.bdd.or(clause, a.bdd.variable(m.type));
+        }
+        presence = a.bdd.and(presence, clause);
+    }
+    return settled({ ...s, possible, tiers, presence });
 }
 
 /** Is a modifier type an influence modifier on this item: some row of it is

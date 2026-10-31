@@ -35,6 +35,7 @@ import {
     BEAST_METAMOD,
     BENCH_REMOVE,
     CONFLICT,
+    DOMINANCE,
     eldritchAnnulOps,
     eldritchChaosOps,
     eldritchExaltOps,
@@ -273,6 +274,12 @@ export const METHODS: readonly Method[] = [
         args: [],
         doc: "eldritch annul — Eldritch Orb of Annulment: remove a prefix when the Exarch is dominant, a suffix when the Eater is.",
         build: (_args, a) => dominantSide(a, "Eldritch Orb of Annulment", eldritchAnnulOps),
+    },
+    {
+        words: ["dominance"],
+        args: [],
+        doc: "dominance — Orb of Dominance: on an armour piece with two influenced modifiers, remove one and raise another a tier, to its elevated form at the top.",
+        build: () => DOMINANCE,
     },
     {
         words: ["conflict"],

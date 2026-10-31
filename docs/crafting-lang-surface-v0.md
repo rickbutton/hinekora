@@ -150,6 +150,7 @@ page groups them:
 | `eldritch chaos` | [Eldritch Chaos Orb](https://www.poewiki.net/wiki/Eldritch_Chaos_Orb) | Rare with a dominant implicit; rerolls the prefixes under the Exarch, the suffixes under the Eater, the other side kept |
 | `eldritch exalt` | [Eldritch Exalted Orb](https://www.poewiki.net/wiki/Eldritch_Exalted_Orb) | Rare with a dominant implicit and an open slot on its side |
 | `eldritch annul` | [Eldritch Orb of Annulment](https://www.poewiki.net/wiki/Eldritch_Orb_of_Annulment) | Magic or Rare with a dominant implicit and a removable modifier on its side |
+| `dominance` | [Orb of Dominance](https://www.poewiki.net/wiki/Orb_of_Dominance#Mechanics) | body armour, boots, gloves or helmet with two influenced modifiers on sides no metamod protects; one is removed and another goes a tier up or, at the top, to its elevated form, so every influenced modifier's tier is forgotten and one of them is known to remain |
 | `conflict` | [Orb of Conflict](https://www.poewiki.net/wiki/Orb_of_Conflict) | both implicits; one goes up a tier and the other down, a lowered `lesser` is removed, so the dominance may differ between paths until a `dominant` branch (§5) picks one |
 
 "Open slot" and "removable" are decided by the checker's knowledge of the item: a slot is

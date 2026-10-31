@@ -336,6 +336,38 @@ export const RING_DISABLED: Mod = mkMod({
     spawn: [spawn(TAG_RING, 0), spawn(TAG_DEFAULT, 100)],
 });
 
+/** Hunter-influence rows for boots, a prefix and a suffix, and the prefix's
+ *  elevated row: the same group, named "Elevated", never rolling (an Orb of
+ *  Dominance alone makes it). */
+export const HUNTER_BOOTS_PREFIX: Mod = mkMod({
+    id: "HunterBootsPrefix1",
+    type: "HunterBootsPrefix",
+    gen: "prefix",
+    minLevel: 1,
+    families: ["HunterBootsPrefix"],
+    spawn: [spawn(TagId("boots_basilisk"), 500), spawn(TAG_DEFAULT, 0)],
+    text: "Hunter boots prefix",
+});
+export const HUNTER_BOOTS_SUFFIX: Mod = mkMod({
+    id: "HunterBootsSuffix1",
+    type: "HunterBootsSuffix",
+    gen: "suffix",
+    minLevel: 1,
+    families: ["HunterBootsSuffix"],
+    spawn: [spawn(TagId("boots_basilisk"), 500), spawn(TAG_DEFAULT, 0)],
+    text: "Hunter boots suffix",
+});
+export const ELEVATED_BOOTS_PREFIX: Mod = mkMod({
+    id: "HunterBootsPrefixUberMaven",
+    type: "HunterBootsPrefixMaven",
+    gen: "prefix",
+    minLevel: 1,
+    families: ["HunterBootsPrefix"],
+    spawn: [spawn(TagId("boots_basilisk"), 0), spawn(TAG_DEFAULT, 0)],
+    name: "Elevated Hunter's",
+    text: "Elevated hunter boots prefix",
+});
+
 /** A Hunter-influence suffix for rings: its only positive weight is on the
  *  `ring_basilisk` tag an influenced ring carries, so it rolls there and nowhere else. */
 export const HUNTER_RING_SUFFIX: Mod = mkMod({

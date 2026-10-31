@@ -37,7 +37,7 @@
                 },
                 { "match": "\\b(def)\\b", "name": "storage.type.hinekora" },
                 {
-                    "match": "\\b(essence|bench|harvest|reforge|augment|randomise|change|veiled|unveil|foulborn|remove|fossil|beast|add|fracture|metamod|aspect|imprint|awakener|vaal|locus|tainted|divine|ember|ichor|eldritch|annul|conflict|prefix|suffix)\\b",
+                    "match": "\\b(essence|bench|harvest|reforge|augment|randomise|change|veiled|unveil|foulborn|remove|fossil|beast|add|fracture|metamod|aspect|imprint|awakener|vaal|locus|tainted|divine|ember|ichor|eldritch|annul|conflict|dominance|prefix|suffix)\\b",
                     "name": "keyword.other.operation.hinekora"
                 },
                 {
