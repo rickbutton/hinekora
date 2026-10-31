@@ -140,8 +140,9 @@ resolveEssence / resolveBench / resolveHarvestTag`
     - `genOfType(type)` → prefix/suffix; `familiesOfType(type)` → mod groups (drives the
       bench group-exclusivity check); `typeLabel(type)` → friendly wording for display.
     - Precomputed completion lists: `currencies`/`currencyNames`, `baseNames` (only
-      the classes that take modifiers: one base per class is tried against the pool, so
-      gems, currency and cards drop out without a hand-kept class table),
+      names that resolve to one base of a class that takes modifiers: a class is kept
+      once any base of it has a pool, so gems, currency and cards drop out without a
+      hand-kept class table),
       `statSuggestions` (each carries its `type` so completion can filter by
       rollability), `essenceNames`, `benchNames`, `harvestTags`.
     - `STANDARD_CURRENCIES`: the 10-currency catalog. `name`/`kind` drive the language;

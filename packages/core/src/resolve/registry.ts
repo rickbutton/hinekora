@@ -217,7 +217,7 @@ export interface Registry {
     readonly currencyNames: readonly string[];
     /** The full currency catalog (alias + kind + display name + description). */
     readonly currencies: readonly CurrencySpec[];
-    /** Unique display names of the bases whose class takes modifiers. */
+    /** Display names that name one base of a class that takes modifiers. */
     readonly baseNames: readonly string[];
     /** Stat-description suggestions for mod completion. */
     readonly statSuggestions: readonly StatSuggestion[];
@@ -405,21 +405,24 @@ export function buildRegistry(data: RegistryData): Registry {
     // --- precompute completion lists ---
     const currencies = [...new Set(currencyByName.values())];
     const currencyNames = currencies.map((c) => c.name);
-    // A base is worth offering when its class takes modifiers at all: one base
-    // per class is tried against the pool, which keeps maps, gems and currency
-    // out of the list without a hand-kept class table.
-    const classSample = new Map<ClassId, Base>();
-    for (const b of data.bases) if (!classSample.has(b.itemClass)) classSample.set(b.itemClass, b);
+    // A base is worth offering when its class takes modifiers at all: a class
+    // is kept once any base of it has a modifier pool (at the loosest gate,
+    // ilvl 100 and rare), which keeps gems, currency and cards out of the list
+    // without a hand-kept class table. A name shared by several bases cannot be
+    // written in `base:` and is left out too.
     const craftableClasses = new Set<ClassId>();
-    for (const [cls, b] of classSample) {
-        if (pool(catalog, emptyItem(b, 100, "rare")).length > 0) craftableClasses.add(cls);
+    for (const b of data.bases) {
+        if (craftableClasses.has(b.itemClass)) continue;
+        if (pool(catalog, emptyItem(b, 100, "rare")).length > 0) craftableClasses.add(b.itemClass);
     }
     const baseNames = [
         ...new Set(
             data.bases
                 .filter((b) => craftableClasses.has(b.itemClass))
                 .map((b) => b.name)
-                .filter((n): n is string => n !== undefined),
+                .filter(
+                    (n): n is string => n !== undefined && baseByName.get(norm(n))?.length === 1,
+                ),
         ),
     ];
     const statSuggestions: StatSuggestion[] = [];
