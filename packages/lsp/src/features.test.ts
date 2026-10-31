@@ -213,10 +213,14 @@ describe("completion", () => {
         expect(labels).toContain("has");
     });
 
-    it("offers base names inside a base: string", () => {
+    it("offers base names inside a base: string, of the classes that take modifiers", () => {
         const src = `item { base: "Iron`;
         const labels = getCompletions(src, src.length, registry).map((c) => c.label);
         expect(labels).toContain("Iron Ring");
+        expect(labels).toContain("Cobalt Jewel");
+        expect(labels).not.toContain("Chaos Orb");
+        expect(labels).not.toContain("The Doctor");
+        expect(labels).not.toContain("Multistrike Support");
         expect(labels).not.toContain("exalt");
     });
 

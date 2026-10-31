@@ -139,7 +139,9 @@ resolveEssence / resolveBench / resolveHarvestTag`
       as a **≥3-char prefix** of an entry token ("max life" → "maximum life").
     - `genOfType(type)` → prefix/suffix; `familiesOfType(type)` → mod groups (drives the
       bench group-exclusivity check); `typeLabel(type)` → friendly wording for display.
-    - Precomputed completion lists: `currencies`/`currencyNames`, `baseNames`,
+    - Precomputed completion lists: `currencies`/`currencyNames`, `baseNames` (only
+      the classes that take modifiers: one base per class is tried against the pool, so
+      gems, currency and cards drop out without a hand-kept class table),
       `statSuggestions` (each carries its `type` so completion can filter by
       rollability), `essenceNames`, `benchNames`, `harvestTags`.
     - `STANDARD_CURRENCIES`: the 10-currency catalog. `name`/`kind` drive the language;

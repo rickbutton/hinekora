@@ -30,7 +30,6 @@ of the operations; no divergence is expected.
   cardinality), not a special case.
 - Statement-position **completion** of proc names and proc-name **hover** signatures.
 - A currency- or block-valued **parameter** (only value params, tier/count/mod, for now).
-- Restrict **base** completion to craftable classes.
 - **Completion perf:** `getCompletions` runs a full check per mod-string request;
   memoize if latency shows.
 - **Tier-atom tightenings:** assert `tierAtom ⇒ family` and tier mutual-exclusion in the

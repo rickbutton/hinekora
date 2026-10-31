@@ -10,7 +10,9 @@ import type { ClassId, Gen, GroupId, TypeId } from "../model/ids.js";
 import { TagId } from "../model/ids.js";
 import { type EldritchSide, type Influence, influenceTags } from "../model/marks.js";
 import { withMetamodEffects } from "../model/metamods.js";
+import { emptyItem } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
+import { pool } from "../pool/pool.js";
 import type {
     BenchCraft,
     EldritchImplicitSpec,
@@ -215,7 +217,7 @@ export interface Registry {
     readonly currencyNames: readonly string[];
     /** The full currency catalog (alias + kind + display name + description). */
     readonly currencies: readonly CurrencySpec[];
-    /** Unique base display names. */
+    /** Unique display names of the bases whose class takes modifiers. */
     readonly baseNames: readonly string[];
     /** Stat-description suggestions for mod completion. */
     readonly statSuggestions: readonly StatSuggestion[];
@@ -403,8 +405,22 @@ export function buildRegistry(data: RegistryData): Registry {
     // --- precompute completion lists ---
     const currencies = [...new Set(currencyByName.values())];
     const currencyNames = currencies.map((c) => c.name);
+    // A base is worth offering when its class takes modifiers at all: one base
+    // per class is tried against the pool, which keeps maps, gems and currency
+    // out of the list without a hand-kept class table.
+    const classSample = new Map<ClassId, Base>();
+    for (const b of data.bases) if (!classSample.has(b.itemClass)) classSample.set(b.itemClass, b);
+    const craftableClasses = new Set<ClassId>();
+    for (const [cls, b] of classSample) {
+        if (pool(catalog, emptyItem(b, 100, "rare")).length > 0) craftableClasses.add(cls);
+    }
     const baseNames = [
-        ...new Set(data.bases.map((b) => b.name).filter((n): n is string => n !== undefined)),
+        ...new Set(
+            data.bases
+                .filter((b) => craftableClasses.has(b.itemClass))
+                .map((b) => b.name)
+                .filter((n): n is string => n !== undefined),
+        ),
     ];
     const statSuggestions: StatSuggestion[] = [];
     const seenStat = new Set<string>();
