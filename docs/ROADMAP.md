@@ -28,7 +28,6 @@ of the operations; no divergence is expected.
   from completion candidates but never shown. Surface it as a "without …" line: an
   additive layer over the presence decomposition (units → prime implicates →
   cardinality), not a special case.
-- Statement-position **completion** of proc names and proc-name **hover** signatures.
 - A currency- or block-valued **parameter** (only value params, tier/count/mod, for now).
 - **Completion perf:** `getCompletions` runs a full check per mod-string request;
   memoize if latency shows.

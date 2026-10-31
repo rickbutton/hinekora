@@ -51,11 +51,12 @@ const PREDICATE_KEYWORDS: { label: string; detail: string; kind: CompletionItemK
 /** Keywords after which a predicate begins (control headers + logical connectives). */
 const PREDICATE_INTRODUCERS = new Set(["if", "until", "not", "and", "or"]);
 
-/** Local `def` names (+ param text), scraped by regex so it works mid-edit. */
-function localDefs(source: string): { name: string; params: string }[] {
-    const out: { name: string; params: string }[] = [];
-    for (const m of source.matchAll(/\bdef\s+([A-Za-z_]\w*)\s*\(([^)]*)\)/g)) {
-        out.push({ name: m[1]!, params: m[2]!.trim() });
+/** Local `def` names (+ param text), scraped by regex so it works mid-edit; a
+ *  `{` body makes an operation function, `=` a predicate, nothing yet either. */
+function localDefs(source: string): { name: string; params: string; proc: boolean }[] {
+    const out: { name: string; params: string; proc: boolean }[] = [];
+    for (const m of source.matchAll(/\bdef\s+([A-Za-z_]\w*)\s*\(([^)]*)\)\s*([{=])?/g)) {
+        out.push({ name: m[1]!, params: m[2]!.trim(), proc: m[3] === "{" });
     }
     return out;
 }
@@ -219,7 +220,7 @@ const keyword = (label: string, detail?: string): CompletionItem => ({
 
 /** The words that open a statement: each method's first word once, with its
  *  help, or "…" for a family of methods. */
-function statementItems(): CompletionItem[] {
+function statementItems(source: string): CompletionItem[] {
     const seen = new Map<string, CompletionItem>();
     for (const m of METHODS) {
         const first = m.words[0]!;
@@ -231,7 +232,15 @@ function statementItems(): CompletionItem[] {
             kind: CompletionItemKind.Function,
         });
     }
-    return [...seen.values(), ...CONTROL_KEYWORDS.map((w) => keyword(w))];
+    // Local operation functions are steps too.
+    const procs = localDefs(source)
+        .filter((d) => d.proc)
+        .map((d) => ({
+            label: d.name,
+            detail: `${d.name}(${d.params})`,
+            kind: CompletionItemKind.Function,
+        }));
+    return [...seen.values(), ...procs, ...CONTROL_KEYWORDS.map((w) => keyword(w))];
 }
 
 export function getCompletions(
@@ -248,19 +257,21 @@ export function getCompletions(
                     detail: k.detail,
                     kind: k.kind,
                 })),
-                // Local defs are callable predicates too.
-                ...localDefs(source).map((d) => ({
-                    label: d.name,
-                    detail: `${d.name}(${d.params})`,
-                    kind: CompletionItemKind.Function,
-                })),
+                // Local predicate defs are callable predicates too.
+                ...localDefs(source)
+                    .filter((d) => !d.proc)
+                    .map((d) => ({
+                        label: d.name,
+                        detail: `${d.name}(${d.params})`,
+                        kind: CompletionItemKind.Function,
+                    })),
             ];
         case "base":
             return registry.baseNames.map(value);
         case "secondWord":
             return [
                 ...methodsAfter([ctx.first]).map((m) => keyword(m.words[1]!, m.doc)),
-                ...(ctx.alone ? statementItems() : []),
+                ...(ctx.alone ? statementItems(source) : []),
             ];
         case "word":
             return ctx.oneOf.map((w) => keyword(w));
@@ -275,7 +286,7 @@ export function getCompletions(
         case "nothing":
             return [];
         case "statement":
-            return statementItems();
+            return statementItems(source);
     }
 }
 

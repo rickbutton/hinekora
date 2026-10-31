@@ -19,11 +19,13 @@ import {
     isFractured,
     type Method,
     type ModId,
+    type ProcDef,
     type Range,
     type Registry,
     rollableGen,
     rollableTiers,
     slotAt,
+    type Stmt,
     suffixRange,
     traceAt,
     type TraceEntry,
@@ -176,14 +178,21 @@ function methodHover(method: Method, entry: TraceEntry | undefined, registry: Re
     return head;
 }
 
+type LocalDef = Def | ProcDef;
+
 /**
- * If the ident at `i` names a local def, its declaration, a call, or one of
- * its parameters inside the body, return that def; all three share one hover.
+ * If the ident at `i` names a local def (a predicate or an operation
+ * function), its declaration, a call, or one of its parameters inside the
+ * body, return that def; all three share one hover.
  */
-function defAt(tokens: readonly Token[], i: number, defs: readonly Def[]): Def | undefined {
+function defAt(
+    tokens: readonly Token[],
+    i: number,
+    defs: readonly LocalDef[],
+): LocalDef | undefined {
     const tok = tokens[i];
     if (!tok || tok.kind !== "ident") return undefined;
-    const byName = (n: string): Def | undefined => defs.find((d) => d.name === n);
+    const byName = (n: string): LocalDef | undefined => defs.find((d) => d.name === n);
 
     // The declaration name (after `def`) or a call (name immediately before `(`).
     const prev = tokens[i - 1];
@@ -208,13 +217,46 @@ function defAt(tokens: readonly Token[], i: number, defs: readonly Def[]): Def |
     return undefined;
 }
 
-/** The signature block for a local predicate def: its shape and what it expands to. */
-function defSignature(def: Def): string {
+/** The signature block for a local def: its shape and what it expands to or runs. */
+function defSignature(def: LocalDef): string {
     const sig = `${def.name}(${def.params.join(", ")})`;
+    if (def.kind === "def") {
+        return [
+            `**\`def ${sig}\`** — local predicate`,
+            `Expands to: \`${describePred(def.body)}\``,
+        ].join("\n\n");
+    }
     return [
-        `**\`def ${sig}\`** — local predicate`,
-        `Expands to: \`${describePred(def.body)}\``,
+        `**\`def ${sig} { … }\`** — local operation function`,
+        `Runs: \`${def.body.map(describeStmt).join("; ")}\``,
     ].join("\n\n");
+}
+
+/** One statement, as a guide would write it, for a proc's hover. */
+function describeStmt(s: Stmt): string {
+    switch (s.kind) {
+        case "operation":
+            return [
+                ...s.words,
+                ...s.args.map((a) =>
+                    a.kind === "string"
+                        ? `"${a.value}"`
+                        : a.kind === "tier"
+                          ? `t${a.value}`
+                          : a.kind === "param"
+                            ? a.param
+                            : String(a.value),
+                ),
+            ].join(" ");
+        case "until":
+            return `until ${describePred(s.pred)} { … }`;
+        case "if":
+            return `if ${describePred(s.pred)} { … }${s.elseBody ? " else { … }" : ""}`;
+        case "call":
+            return `${s.name}(…)`;
+        case "restart":
+            return "restart";
+    }
 }
 
 /** The tier in a `… "<mod>" t1` predicate, if the mod string is at `i`. */
@@ -382,7 +424,7 @@ function signature(
     i: number,
     entry: TraceEntry | undefined,
     registry: Registry,
-    defs: readonly Def[],
+    defs: readonly LocalDef[],
 ): string | null {
     const tok = tokens[i]!;
 
@@ -624,7 +666,7 @@ function benchSignature(
 export function getHover(source: string, offset: number, registry: Registry): string | null {
     const parsed = parse(source);
     const entry = parsed.ok ? traceAt(check(parsed.craft, { registry }).trace, offset) : undefined;
-    const defs = parsed.ok ? parsed.craft.defs : [];
+    const defs: LocalDef[] = parsed.ok ? [...parsed.craft.defs, ...parsed.craft.procs] : [];
 
     let sig: string | null = null;
     try {

@@ -229,12 +229,14 @@ Transport-free service functions + a stdio server:
       veiled orbs and `unveil` append the unveil options), and a string argument shows
       the signature of what its slot names (essence, bench craft, fossil set, harvest
       tag, Aspect, or mod with a trailing `t1`). A def's declaration/calls/params hover
-      as one shared signature (`defAt`).
+      as one shared signature (`defAt`): a predicate def shows what it expands to, an
+      operation function the steps it runs.
 - `completion.ts`: `getCompletions`. The pieces of the current line before the cursor
   (`piecesOf`: words, numbers, closed strings, the open string) pick the context
-  (`contextAt`): statement (each method's first word + control keywords; also once
-  the method before the cursor has no slot left), predicate (after
-  `if`/`until`/`not`/`and`/`or`; includes local def names scraped by regex), base, the
+  (`contextAt`): statement (each method's first word, the local operation functions,
+  and the control keywords; also once the method before the cursor has no slot left),
+  predicate (after `if`/`until`/`not`/`and`/`or`; includes the local predicate defs),
+  base, the
   second word of a method family (`methodsAfter`), a `word` slot's choices, a `name`
   slot's catalog names (essences, bench crafts, fossils, Aspects, harvest tags), or
   mod; the slot comes from the same `methodAt` hover uses. Mod candidates are **filtered to what's possible at the cursor**:

@@ -224,6 +224,20 @@ describe("completion", () => {
         expect(labels).not.toContain("exalt");
     });
 
+    it("offers a local operation function as a step and hovers it", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
+def spam(m) { until has m { chaos } }
+def isDone() = has "maximum life"
+`;
+        const labels = getCompletions(src, src.length, registry).map((c) => c.label);
+        expect(labels).toContain("spam");
+        expect(labels).not.toContain("isDone");
+        const h = getHover(src, src.indexOf("spam") + 1, registry)!;
+        expect(h).toContain("def spam(m) { … }");
+        expect(h).toContain("local operation function");
+        expect(h).toContain('until has "m" { … }');
+    });
+
     it('offers essence names inside an `essence "` string, not mods', () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: normal }\nessence "`;
         const labels = getCompletions(src, src.length, registry).map((c) => c.label);
