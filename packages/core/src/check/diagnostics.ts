@@ -205,6 +205,8 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return `${failure.what} cannot be used on an item with an eldritch implicit — this item ${failure.sure ? "has" : "may have"} ${eldritchLabel(state.eldritch)}.`;
             case "notDominant":
                 return `${failure.what} needs an item where ${failure.side === "exarch" ? "The Searing Exarch" : "The Eater of Worlds"} is dominant — this item has ${eldritchLabel(state.eldritch)}.`;
+            case "sideProtected":
+                return `${failure.what} removes a ${failure.gen}, but the ${failure.gen}es cannot be changed here.`;
             case "notBothEldritch":
                 return `An Orb of Conflict needs both a Searing Exarch and an Eater of Worlds implicit — this item ${failure.sure ? "has" : "may have"} ${eldritchLabel(state.eldritch)}.`;
             case "influenced":

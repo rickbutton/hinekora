@@ -295,7 +295,24 @@ the influences; corrupt jewels with Vaal Orbs until the reforge shows; count the
 **Record:** the influences seen; the affix counts on the jewel.
 **Assumed meanwhile:** any one influence or what the item had, a jewel reforged without
 one (no influence can mark a jewel), and six capped by the base's limit
-(`check/library.ts` `locusOps`, `vaalOps`, `brickBranch`).
+(`check/library.ts` `locusOps`, `vaalOps`, `brickBranch`). An item with an eldritch
+implicit cannot be influenced, and the wiki does not say what the altar's influenced
+reforge does to one; the checker lets the outcome keep the implicits beside the new
+influence, the wide reading.
+**Answer:**
+
+### Q36 · game probe · open
+
+**Asked:** 2026-10-30
+**Goal:** what an Orb of Conflict does when the implicit it would raise is already
+Perfect. [Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)
+says the orb raises one and lowers the other and is the only way to the top two tiers,
+not whether a Perfect stays while the other still drops or only the other can rise.
+**Procure:** an item with a Perfect Exarch and a Grand Eater implicit; Orbs of Conflict.
+**Steps:** apply several; note each result.
+**Record:** the pairs seen.
+**Assumed meanwhile:** both readings, the raised one capped at Perfect with the other
+lowered either way (`check/ops.ts`, the `conflict` change).
 **Answer:**
 
 ### Q33 · game probe · open

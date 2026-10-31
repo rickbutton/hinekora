@@ -390,7 +390,11 @@ class Checker {
             prefixCount = Math.min(prefixCount, tCap - suffixCount);
         }
 
-        // An influenced item cannot be fractured (Influenced item § Mechanics).
+        // An influenced item cannot be fractured (Influenced item § Mechanics)
+        // nor carry an eldritch implicit (Eldritch implicit modifier).
+        if (item.influences.length > 0 && (item.exarch !== undefined || item.eater !== undefined)) {
+            this.diag("An influenced item cannot have an eldritch implicit.", item.span);
+        }
         if (item.influences.length > 0 && (fracturedType !== undefined || fracturedAnonymous)) {
             this.diag("An influenced item cannot have a fractured modifier.", item.span);
         }

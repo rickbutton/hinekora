@@ -292,8 +292,13 @@ const UNIQUE_JEWELS = new Set(["Cobalt Jewel", "Crimson Jewel", "Viridian Jewel"
 export function vaalOps(base: Base): readonly Op[] {
     const brick = brickBranch(base, false);
     const unique = UNIQUE_JEWELS.has(base.name ?? "") ? [end] : [];
-    const outcomes = [...(brick.length > 0 ? [brick] : []), ...unique];
-    return [notCorrupted, corrupt, ...(outcomes.length > 0 ? [either([], ...outcomes)] : [])];
+    // The implicit outcome replaces one of the item's implicits, an eldritch
+    // one among them (Eldritch implicit modifier).
+    const implicit: readonly Transform[] = [
+        { kind: "eldritch", change: { kind: "replaced", count: 1 } },
+    ];
+    const outcomes = [implicit, ...(brick.length > 0 ? [brick] : []), ...unique];
+    return [notCorrupted, corrupt, either([], ...outcomes)];
 }
 
 /** The item types the Corruption Altar takes: weapons, armour, jewellery,
@@ -314,7 +319,13 @@ export function locusOps(base: Base): readonly Op[] {
             what: "weapon, armour, piece of jewellery, quiver or jewel",
         }),
         corrupt,
-        either([], ...(brick.length > 0 ? [brick] : []), end),
+        // The double corruption replaces two implicits, both eldritch ones among them.
+        either(
+            [],
+            [{ kind: "eldritch", change: { kind: "replaced", count: 2 } }],
+            ...(brick.length > 0 ? [brick] : []),
+            end,
+        ),
     ];
 }
 
@@ -352,7 +363,7 @@ const ELDRITCH_NAME: Readonly<Record<EldritchSide, string>> = {
     eater: "Eldritch Ichor",
 };
 const SIDE_OF: Readonly<Record<EldritchSide, Gen>> = { exarch: "prefix", eater: "suffix" };
-const ELDRITCH_ORB = (name: string, side: EldritchSide): Op =>
+const dominantOrb = (name: string, side: EldritchSide): Op =>
     require({ kind: "dominant", side, what: `An ${name}` });
 
 /** An Eldritch Ember or Ichor: that implicit set to the tier the item comes
@@ -378,7 +389,7 @@ export function eldritchChaosOps(side: EldritchSide): readonly Op[] {
     return [
         notCorrupted,
         isRare,
-        ELDRITCH_ORB("Eldritch Chaos Orb", side),
+        dominantOrb("Eldritch Chaos Orb", side),
         { kind: "keep", gen: other },
         strip(),
         fill({ kind: "natural", gen: SIDE_OF[side] }, reforge(RARE_REFORGE)),
@@ -391,7 +402,7 @@ export function eldritchExaltOps(side: EldritchSide): readonly Op[] {
     return [
         notCorrupted,
         isRare,
-        ELDRITCH_ORB("Eldritch Exalted Orb", side),
+        dominantOrb("Eldritch Exalted Orb", side),
         openSlot(gen),
         fill({ kind: "natural", gen }, add([1, 1])),
     ];
@@ -400,10 +411,15 @@ export function eldritchExaltOps(side: EldritchSide): readonly Op[] {
 /** An Eldritch Orb of Annulment: a modifier removed from the dominant
  *  implicit's side, on a Magic or Rare item. */
 export function eldritchAnnulOps(side: EldritchSide): readonly Op[] {
-    const victim: Selector = { kind: "random", honourCannotRoll: false, gen: SIDE_OF[side] };
+    // Every metamod is respected (Metamod § Rules and Exceptions), the
+    // cannot-roll shield as for the plain orb; a protected side is refused
+    // rather than left alone, since the orb would be spent for nothing.
+    const gen = SIDE_OF[side];
+    const victim: Selector = { kind: "random", honourCannotRoll: true, gen };
     return [
         notCorrupted,
-        ELDRITCH_ORB("Eldritch Orb of Annulment", side),
+        dominantOrb("Eldritch Orb of Annulment", side),
+        require({ kind: "unprotectedSide", gen, what: "An Eldritch Orb of Annulment" }),
         removable(victim),
         remove(victim),
     ];

@@ -36,6 +36,11 @@ const PREDICATE_KEYWORDS: { label: string; detail: string; kind: CompletionItemK
     { label: "isNormal", detail: "rarity is Normal", kind: CompletionItemKind.Keyword },
     { label: "isMagic", detail: "rarity is Magic", kind: CompletionItemKind.Keyword },
     { label: "isRare", detail: "rarity is Rare", kind: CompletionItemKind.Keyword },
+    { label: "influenced", detail: "influenced [<influence>]", kind: CompletionItemKind.Keyword },
+    { label: "corrupted", detail: "the item is corrupted", kind: CompletionItemKind.Keyword },
+    { label: "exarch", detail: "exarch [<tier>]", kind: CompletionItemKind.Keyword },
+    { label: "eater", detail: "eater [<tier>]", kind: CompletionItemKind.Keyword },
+    { label: "dominant", detail: "dominant exarch|eater", kind: CompletionItemKind.Keyword },
     { label: "prefixCount", detail: "prefixCount <op> N", kind: CompletionItemKind.Variable },
     { label: "suffixCount", detail: "suffixCount <op> N", kind: CompletionItemKind.Variable },
 ];

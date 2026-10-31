@@ -152,6 +152,41 @@ describe("parser — item block", () => {
         ).toMatch(/'corrupted' is a bare flag and takes no value/);
     });
 
+    it("reads the eldritch implicits' tiers and refuses a tier it does not know", () => {
+        const both = parseOk(
+            'item { base: "R" ilvl: 1 rarity: rare exarch: grand eater: lesser } exalt',
+        ).item;
+        expect(both.exarch).toBe("grand");
+        expect(both.eater).toBe("lesser");
+        expect(
+            parseOk('item { base: "R" ilvl: 1 rarity: rare } exalt').item.exarch,
+        ).toBeUndefined();
+        expect(
+            parseErr('item { base: "R" ilvl: 1 rarity: rare exarch: huge } exalt').message,
+        ).toMatch(/unknown eldritch tier 'huge' \(expected lesser, greater/);
+        expect(parseErr('item { base: "R" ilvl: 1 rarity: rare eater: } exalt').message).toMatch(
+            /an eldritch tier after 'eater'/,
+        );
+    });
+
+    it("parses the eldritch predicates", () => {
+        const c = parseOk(
+            'item { base: "R" ilvl: 1 rarity: rare } if exarch { exalt } if eater grand and dominant eater { exalt }',
+        );
+        expect(c.body[0]).toMatchObject({ pred: { kind: "eldritch", side: "exarch" } });
+        expect((c.body[0] as IfStmt).pred).not.toHaveProperty("tier");
+        expect(c.body[1]).toMatchObject({
+            pred: {
+                kind: "and",
+                left: { kind: "eldritch", side: "eater", tier: "grand" },
+                right: { kind: "dominant", side: "eater" },
+            },
+        });
+        expect(
+            parseErr('item { base: "R" ilvl: 1 rarity: rare } if dominant life { exalt }').message,
+        ).toMatch(/expected 'exarch' or 'eater' after 'dominant', not 'life'/);
+    });
+
     it("rejects an unknown, repeated or third influence", () => {
         expect(
             parseErr('item { base: "R" ilvl: 1 rarity: rare influences: hunters } exalt').message,

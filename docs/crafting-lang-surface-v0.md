@@ -74,7 +74,8 @@ item {
   [eldritch implicits](https://www.poewiki.net/wiki/Eldritch_implicit_modifier), the
   Searing Exarch's and the Eater of Worlds'; the six tiers are `lesser`, `greater`,
   `grand`, `exceptional`, `exquisite` and `perfect`. Which implicit the item has (its
-  stat) is not tracked yet, only the tiers and which is dominant.
+  stat) is not tracked yet, only the tiers and which is dominant. An influenced item
+  cannot carry one, so declaring both is an error.
 - `corrupted`, a bare flag, marks a
   [corrupted item](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items), which
   takes no craft but the Tainted currency (§3). A guide that corrupts an item mid-way

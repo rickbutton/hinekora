@@ -157,6 +157,9 @@ export type Check =
     | { readonly kind: "dominant"; readonly side: EldritchSide; readonly what: string }
     /** Both eldritch implicits are present on every path (an Orb of Conflict). */
     | { readonly kind: "bothEldritch" }
+    /** That side is not protected by a metamod (an Eldritch Orb of Annulment
+     *  would otherwise remove nothing). */
+    | { readonly kind: "unprotectedSide"; readonly gen: Gen; readonly what: string }
     /** The item is influenced on every path, with that influence when one is named. */
     | { readonly kind: "influenced"; readonly what: string; readonly influence?: Influence }
     /** The item has exactly one influence, other than the donor's, on every path
@@ -207,8 +210,8 @@ export type Op =
     /** The metamods no longer govern the rest of the method (an Awakener's Orb
      *  ignores them, Metamod § Rules and Exceptions). */
     | { readonly kind: "unprotect" }
-    /** That side is kept through the rest of the method, as a protection
-     *  would keep it (an Eldritch Chaos Orb rerolls the other side). */
+    /** That side alone is kept through the rest of the method, in place of
+     *  the item's own protections (an Eldritch Chaos Orb rerolls the other). */
     | { readonly kind: "keep"; readonly gen: Gen }
     /** Change the eldritch mark: one implicit set to a tier, or an Orb of
      *  Conflict's raise-one-lower-the-other. */
@@ -246,7 +249,10 @@ export type EldritchChange =
     | { readonly kind: "set"; readonly side: EldritchSide; readonly tier: number }
     /** One implicit up a tier, the other down; a Lesser lowered is removed
      *  (Orb of Conflict). */
-    | { readonly kind: "conflict" };
+    | { readonly kind: "conflict" }
+    /** A corruption implicit replaces one of the item's implicits (a Vaal Orb)
+     *  or two (the Corruption Altar): that many eldritch implicits may go. */
+    | { readonly kind: "replaced"; readonly count: 1 | 2 };
 
 export type InfluenceChange =
     | { readonly kind: "set"; readonly key: InfluenceKey }
@@ -308,6 +314,7 @@ export type PreconditionFailure =
     | { readonly kind: "eldritchPresent"; readonly what: string; readonly sure: boolean }
     | { readonly kind: "notDominant"; readonly side: EldritchSide; readonly what: string }
     | { readonly kind: "notBothEldritch"; readonly sure: boolean }
+    | { readonly kind: "sideProtected"; readonly gen: Gen; readonly what: string }
     | { readonly kind: "influencedOnProtected"; readonly what: string; readonly gen: Gen }
     | { readonly kind: "noVeiledMod" }
     | { readonly kind: "alreadyVeiled" }
@@ -338,7 +345,10 @@ export function runMethod(a0: AItem, ops: readonly Op[], registry: Registry): Tr
             continue;
         }
         if (op.kind === "keep") {
-            rules = { ...rules, protected: new Set([...rules.protected, op.gen]) };
+            // The kept side replaces the item's own protections, which the
+            // method ignores (Metamod § Rules and Exceptions: the Eldritch Chaos
+            // Orb ignores "cannot be changed", respects "cannot roll").
+            rules = { ...rules, protected: new Set([op.gen]) };
             continue;
         }
         a = apply(a, a0, op, rules, registry);
@@ -433,6 +443,17 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
                             ? eldritchKey(change.tier, eater)
                             : eldritchKey(exarch, change.tier),
                     );
+                    continue;
+                }
+                if (change.kind === "replaced") {
+                    // Which implicit the corruption replaces is random, and an
+                    // item with no implicit of its own only gains one.
+                    eldritch.add(key);
+                    if (change.count === 2) eldritch.add(NO_ELDRITCH);
+                    else {
+                        eldritch.add(eldritchKey(0, eater));
+                        eldritch.add(eldritchKey(exarch, 0));
+                    }
                     continue;
                 }
                 // A lowered Lesser (tier 1) is removed (tier 0); the raised one
@@ -651,6 +672,10 @@ function failing(
             const keys = [...a.eldritch];
             return keys.every(both) ? null : { kind: "notBothEldritch", sure: !keys.some(both) };
         }
+        case "unprotectedSide":
+            return rules.protected.has(check.gen)
+                ? { kind: "sideProtected", gen: check.gen, what: check.what }
+                : null;
         case "noInfluencedOnProtected": {
             // Pessimistic: every modifier that may sit on a protected side must
             // be a known type that is no influence modifier, so a side holding
