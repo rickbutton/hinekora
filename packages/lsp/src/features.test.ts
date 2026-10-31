@@ -4,6 +4,7 @@ import { loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { getCompletions } from "./completion.js";
 import { getHover } from "./hover.js";
 import { getSemanticTokens } from "./semantic.js";
+import { getDiagnostics } from "./service.js";
 
 const registry = registryOf(loadDefaultPoe1());
 
@@ -124,10 +125,10 @@ bench "cold resistance"`;
     });
 
     it("names what the item is proven not to have", () => {
-        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
-chaos
-if not has "maximum life" { exalt }`;
-        const md = getHover(src, src.indexOf("exalt"), registry)!;
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: ["random"] suffixes: ["random"] }
+if not has "maximum life" { bench "cold resistance" }`;
+        expect(getDiagnostics(src, registry)).toEqual([]);
+        const md = getHover(src, src.indexOf("bench"), registry)!;
         expect(md).toContain("_without: ");
         expect(md).toMatch(/without: .*maximum life/i);
     });
