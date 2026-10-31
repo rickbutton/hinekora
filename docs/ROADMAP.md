@@ -48,7 +48,8 @@ Q7. The Orb of Chance is out of scope (Q15).
 
 - the **cost/probability layer** (expected attempts, spawn weights, fossil and Harvest
   biases, memory strands).
-- **multi-item crafts** (Awakener's Orb, Recombinator, Reflecting Mist, Kishara's Ducat)
+- **multi-item crafts** (Recombinator, Reflecting Mist, Kishara's Ducat; the Awakener's
+  Orb is built with the donor reduced to its influence)
   and **choice over an operation's outcomes** (Hinekora's Lock, Allflame crafting).
 - English negation sugar (`doesn't have` → `not has`); a power-user annotation tier for
   reusable techniques.
