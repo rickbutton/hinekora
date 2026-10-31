@@ -82,6 +82,9 @@ export function marksLabel(a: AItem): string[] {
 export function describePred(pred: Pred): string {
     const val = (v: string | number | { param: string }): string =>
         typeof v === "object" ? v.param : String(v);
+    // A mod literal prints quoted as written; a param prints bare, as its name.
+    const modText = (v: string | { param: string }): string =>
+        typeof v === "object" ? v.param : `"${v}"`;
     switch (pred.kind) {
         case "isRarity":
             return `is${pred.rarity[0]!.toUpperCase()}${pred.rarity.slice(1)}`;
@@ -93,10 +96,10 @@ export function describePred(pred: Pred): string {
                     : typeof pred.tier === "object"
                       ? ` ${pred.tier.param}`
                       : ` t${pred.tier}`;
-            return `has "${val(pred.mod)}"${tier}`;
+            return `has ${modText(pred.mod)}${tier}`;
         }
         case "fractured":
-            return `fractured "${val(pred.mod)}"`;
+            return `fractured ${modText(pred.mod)}`;
         case "influenced":
             return pred.influence === undefined ? "influenced" : `influenced ${pred.influence}`;
         case "corrupted":

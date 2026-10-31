@@ -242,10 +242,29 @@ def isDone() = has "maximum life"
         const labels = getCompletions(src, src.length, registry).map((c) => c.label);
         expect(labels).toContain("spam");
         expect(labels).not.toContain("isDone");
+        const inPred = `${src}if `;
+        const predLabels = getCompletions(inPred, inPred.length, registry).map((c) => c.label);
+        expect(predLabels).toContain("isDone");
+        expect(predLabels).not.toContain("spam");
         const h = getHover(src, src.indexOf("spam") + 1, registry)!;
         expect(h).toContain("def spam(m) { … }");
         expect(h).toContain("local operation function");
-        expect(h).toContain('until has "m" { … }');
+        expect(h).toContain("until has m { … }");
+    });
+
+    it("offers a def with no body yet in both positions, and reads past a comment", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
+def half(m)
+def noted(m) # a step
+{ chaos }
+`;
+        const step = getCompletions(src, src.length, registry).map((c) => c.label);
+        expect(step).toContain("half");
+        expect(step).toContain("noted");
+        const inPred = `${src}if `;
+        const pred = getCompletions(inPred, inPred.length, registry).map((c) => c.label);
+        expect(pred).toContain("half");
+        expect(pred).not.toContain("noted");
     });
 
     it('offers essence names inside an `essence "` string, not mods', () => {

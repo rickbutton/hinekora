@@ -51,12 +51,22 @@ const PREDICATE_KEYWORDS: { label: string; detail: string; kind: CompletionItemK
 /** Keywords after which a predicate begins (control headers + logical connectives). */
 const PREDICATE_INTRODUCERS = new Set(["if", "until", "not", "and", "or"]);
 
-/** Local `def` names (+ param text), scraped by regex so it works mid-edit; a
- *  `{` body makes an operation function, `=` a predicate, nothing yet either. */
-function localDefs(source: string): { name: string; params: string; proc: boolean }[] {
-    const out: { name: string; params: string; proc: boolean }[] = [];
-    for (const m of source.matchAll(/\bdef\s+([A-Za-z_]\w*)\s*\(([^)]*)\)\s*([{=])?/g)) {
-        out.push({ name: m[1]!, params: m[2]!.trim(), proc: m[3] === "{" });
+/**
+ * Local `def` names (+ param text), scraped by regex so it works mid-edit. A
+ * `{` body makes an operation function (`proc: true`), `=` a predicate
+ * (`false`); a def with no body yet is undecided (`undefined`) and offered in
+ * both positions. Comments may sit between the parameter list and the body.
+ */
+function localDefs(source: string): { name: string; params: string; proc?: boolean }[] {
+    const out: { name: string; params: string; proc?: boolean }[] = [];
+    const re = /\bdef\s+([A-Za-z_]\w*)\s*\(([^)]*)\)\s*(?:#[^\n]*\n\s*)*([{=])?/g;
+    for (const m of source.matchAll(re)) {
+        const body = m[3];
+        out.push({
+            name: m[1]!,
+            params: m[2]!.trim(),
+            ...(body === undefined ? {} : { proc: body === "{" }),
+        });
     }
     return out;
 }
@@ -234,7 +244,7 @@ function statementItems(source: string): CompletionItem[] {
     }
     // Local operation functions are steps too.
     const procs = localDefs(source)
-        .filter((d) => d.proc)
+        .filter((d) => d.proc !== false)
         .map((d) => ({
             label: d.name,
             detail: `${d.name}(${d.params})`,
@@ -259,7 +269,7 @@ export function getCompletions(
                 })),
                 // Local predicate defs are callable predicates too.
                 ...localDefs(source)
-                    .filter((d) => !d.proc)
+                    .filter((d) => d.proc !== true)
                     .map((d) => ({
                         label: d.name,
                         detail: `${d.name}(${d.params})`,
