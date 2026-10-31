@@ -86,6 +86,20 @@ export interface RepoeFossil {
 }
 export type RepoeFossils = Readonly<Record<string, RepoeFossil>>;
 
+/** `eldritch.json` entry (projected): one eldritch implicit row. */
+export interface RepoeEldritch {
+    readonly side: "exarch" | "eater";
+    /** 1 (Lesser) to 6 (Perfect). */
+    readonly tier: number;
+    readonly type: string;
+    readonly groups: readonly string[];
+    /** The class tags the row rolls on (`gloves`, `body_armour`, …). */
+    readonly classes: readonly string[];
+    readonly implicit_tags: readonly string[];
+    readonly text: string;
+}
+export type RepoeEldritchRows = Readonly<Record<string, RepoeEldritch>>;
+
 /** `bench.json` entry (projected): a mod-adding crafting-bench option. */
 export interface RepoeBench {
     readonly mod: string;

@@ -3,7 +3,8 @@
  * source-specific crafting. Only `natural` mods roll via chaos/exalt;
  * essence/bench/veiled/fossil mods come from their own mechanic.
  */
-import type { ClassId, ModId, TagId } from "./ids.js";
+import type { ClassId, ModId, TagId, TypeId } from "./ids.js";
+import type { EldritchSide } from "./marks.js";
 
 export type ModSource =
     | "natural" // rolls via chaos/exalt (nonzero spawn weight on an item base)
@@ -73,6 +74,25 @@ export interface FossilSpec {
     readonly fractures: boolean;
     /** Corrupts the item (the Bloodstained Fossil). */
     readonly corrupts: boolean;
+}
+
+/**
+ * One eldritch implicit row (Eldritch implicit modifier): which implicit, at
+ * which tier, on which classes, with the text a guide names it by. Rows of one
+ * type are the tiers of one implicit; the "presence" variants (stronger while
+ * a Unique or Pinnacle enemy is near) are types of their own with the same
+ * wording, so a name resolves to every type that wording covers.
+ */
+export interface EldritchImplicitSpec {
+    readonly id: ModId;
+    readonly side: EldritchSide;
+    /** 1 (Lesser) to 6 (Perfect). */
+    readonly tier: number;
+    readonly type: TypeId;
+    /** The class tags the row rolls on (`gloves`, `body_armour`, …). */
+    readonly classes: ReadonlySet<TagId>;
+    readonly implicitTags: ReadonlySet<TagId>;
+    readonly text: string;
 }
 
 /** A crafting-bench option that adds one specific mod to matching item classes. */

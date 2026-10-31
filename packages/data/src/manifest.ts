@@ -38,6 +38,7 @@ export interface ManifestExtent {
     readonly essences?: number;
     readonly benchCrafts?: number;
     readonly fossils?: number;
+    readonly eldritch?: number;
 }
 
 export interface DataManifest {

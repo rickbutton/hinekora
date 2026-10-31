@@ -68,6 +68,21 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         expect(registry.resolveFossil("amber").ok).toBe(false);
     });
 
+    it("loads the eldritch implicit catalog and finds an implicit by its wording", () => {
+        expect(data.eldritch.length).toBe(data.manifest.extent.eldritch);
+        expect(data.eldritch.length).toBeGreaterThan(3000);
+        const gloves = base("Iron Gauntlets");
+        const grand = registry.eldritchPool(gloves, "exarch", 3);
+        expect(grand.length).toBeGreaterThan(50);
+        expect(grand.every((e) => e.tier === 3 && e.side === "exarch")).toBe(true);
+        expect(registry.eldritchPool(base("Iron Ring"), "exarch", 3)).toEqual([]);
+        // The wording covers the plain implicit and its two "presence" variants.
+        const speed = registry.resolveEldritch("attack speed", "exarch", gloves);
+        expect(speed.ok && speed.value.length).toBe(3);
+        expect(registry.resolveEldritch("attack speed", "eater", gloves).ok).toBe(false);
+        expect(registry.eldritchNames("eater").length).toBeGreaterThan(500);
+    });
+
     it("resolves the four Aspects the Bestiary crafts to level-30 suffix rows", () => {
         for (const name of ["cat", "avian", "spider", "crab"]) {
             const r = registry.resolveAspect(name);

@@ -180,7 +180,13 @@ re-ingest supersedes along with the file). A fossil's projection keeps what deci
 resonator can roll (`projectFossils`: blocked category tags, added and forced rows, the
 base tags it allows, its chance of a corrupted-essence modifier, a fracture), never the
 weight multipliers. A mod's projection keeps `implicit_tags` (the category tags harvest and fossils
-filter on). For a base it also folds the affix-count implicit stats
+filter on). The eldritch implicit rows (eldritch.json, `scripts/ingest-eldritch.mjs`,
+`projectEldritch`) come from the current export with their own `provenance`: side, tier
+(read off the `no_tier_<n>_eldritch_implicit` tag that excludes the row), type, the
+class tags it rolls on and its text; a row with no tier or no class is not obtainable
+and is dropped. `adaptEldritch` makes an `EldritchImplicitSpec`; the registry offers
+`eldritchPool(base, side, tier)`, `resolveEldritch(name, side, base?)` (every type the
+wording covers, the "presence" variants among them) and `eldritchNames(side)`. For a base it also folds the affix-count implicit stats
 (`local_maximum_{prefixes,suffixes}_allowed_+`) into a `capDelta` (absent when zero).
 `adapter.ts` adapts rows into model types and stamps `ModSource` via `classifySource`
 (domain + generation_type + is_essence_only). `load.ts`: `loadDefaultPoe1()` →

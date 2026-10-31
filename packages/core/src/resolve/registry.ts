@@ -8,10 +8,15 @@ import type { Base } from "../model/base.js";
 import type { Effect } from "../model/effects.js";
 import type { ClassId, Gen, GroupId, TypeId } from "../model/ids.js";
 import { TagId } from "../model/ids.js";
-import { type Influence, influenceTags } from "../model/marks.js";
+import { type EldritchSide, type Influence, influenceTags } from "../model/marks.js";
 import { withMetamodEffects } from "../model/metamods.js";
 import type { Mod } from "../model/mod.js";
-import type { BenchCraft, EssenceSpec, FossilSpec } from "../model/sources.js";
+import type {
+    BenchCraft,
+    EldritchImplicitSpec,
+    EssenceSpec,
+    FossilSpec,
+} from "../model/sources.js";
 import { buildTypeIndex, matchTypes, normalizeText } from "./fuzzy.js";
 import { rollableTiers } from "./tiers.js";
 
@@ -70,6 +75,7 @@ export type ResolveError =
     | { readonly kind: "unknownCurrency"; readonly name: string }
     | { readonly kind: "unknownEssence"; readonly name: string }
     | { readonly kind: "unknownFossil"; readonly name: string }
+    | { readonly kind: "unknownEldritch"; readonly name: string; readonly side: EldritchSide }
     | { readonly kind: "unknownAspect"; readonly name: string }
     | { readonly kind: "unknownBench"; readonly name: string }
     | { readonly kind: "unknownHarvestTag"; readonly name: string }
@@ -177,6 +183,13 @@ export interface Registry {
     resolveBench(name: string, itemClass?: ClassId, tier?: number): Resolved<BenchCraft>;
     /** Resolve a fossil by name, in full ("Pristine Fossil") or by its first word. */
     resolveFossil(name: string): Resolved<FossilSpec>;
+    /** The eldritch implicit rows an ember or ichor of that tier can give a base. */
+    eldritchPool(base: Base, side: EldritchSide, tier: number): readonly EldritchImplicitSpec[];
+    /** Resolve an eldritch implicit's wording to every type it covers on that side
+     *  (the "presence" variants share a wording), narrowed to the base when given. */
+    resolveEldritch(name: string, side: EldritchSide, base?: Base): Resolved<readonly TypeId[]>;
+    /** The eldritch implicits' texts of that side, each once, for completion. */
+    eldritchNames(side: EldritchSide): readonly string[];
     /** Resolve an Aspect by its animal ("cat") to the row the Bestiary crafts. */
     resolveAspect(name: string): Resolved<Mod>;
     /** The generation (prefix/suffix) a ModType always occupies, if known. */
@@ -296,6 +309,7 @@ export interface RegistryData {
     readonly essences?: readonly EssenceSpec[];
     readonly benchCrafts?: readonly BenchCraft[];
     readonly fossils?: readonly FossilSpec[];
+    readonly eldritch?: readonly EldritchImplicitSpec[];
     /** Aspect name → the row the Bestiary crafts; the game's four by default. */
     readonly aspects?: Readonly<Record<string, string>>;
 }
@@ -340,6 +354,7 @@ export function buildRegistry(data: RegistryData): Registry {
     const essences = data.essences ?? [];
     const benchCrafts = data.benchCrafts ?? [];
     const fossils = data.fossils ?? [];
+    const eldritch = data.eldritch ?? [];
     const aspects = new Map(
         Object.entries(data.aspects ?? ASPECTS).map(
             ([name, id]) => [norm(name), norm(id)] as const,
@@ -511,6 +526,48 @@ export function buildRegistry(data: RegistryData): Registry {
             if (matches.length === 1) return found(matches[0]!);
             if (matches.length === 0) return fail({ kind: "unknownFossil", name });
             return fail({ kind: "ambiguous", name, candidates: matches.map((f) => f.name) });
+        },
+
+        eldritchPool(base, side, tier) {
+            return eldritch.filter(
+                (e) =>
+                    e.side === side &&
+                    e.tier === tier &&
+                    [...e.classes].some((t) => base.tags.has(t)),
+            );
+        },
+
+        resolveEldritch(name, side, base) {
+            const q = normalizeText(name);
+            if (q.length === 0) return fail({ kind: "unknownEldritch", name, side });
+            const rows = eldritch.filter(
+                (e) =>
+                    e.side === side &&
+                    (base === undefined || [...e.classes].some((t) => base.tags.has(t))),
+            );
+            // Every query word must be a word (or a prefix of one) of the text;
+            // all the types that wording covers are meant, the presence
+            // variants among them.
+            const types = new Set<TypeId>();
+            for (const e of rows) {
+                const tokens = new Set(normalizeText(e.text));
+                if (
+                    q.every(
+                        (w) =>
+                            tokens.has(w) ||
+                            [...tokens].some((t) => w.length >= 3 && t.startsWith(w)),
+                    )
+                ) {
+                    types.add(e.type);
+                }
+            }
+            return types.size > 0
+                ? found([...types])
+                : fail({ kind: "unknownEldritch", name, side });
+        },
+
+        eldritchNames(side) {
+            return [...new Set(eldritch.filter((e) => e.side === side).map((e) => e.text))];
         },
 
         resolveBench(name, itemClass, tier) {

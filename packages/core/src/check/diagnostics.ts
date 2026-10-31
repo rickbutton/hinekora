@@ -248,6 +248,8 @@ export function resolveMessage(error: ResolveError): string {
             return `No bench craft adds "${error.name}" to this item.`;
         case "unknownFossil":
             return `Unknown fossil "${error.name}".`;
+        case "unknownEldritch":
+            return `No ${error.side === "exarch" ? "Searing Exarch" : "Eater of Worlds"} implicit reads "${error.name}".`;
         case "unknownAspect":
             return `Unknown Aspect "${error.name}" — the Bestiary crafts cat, avian, spider or crab.`;
         case "unknownHarvestTag":

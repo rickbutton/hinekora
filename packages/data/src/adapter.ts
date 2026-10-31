@@ -9,6 +9,7 @@ import {
     type BenchCraft,
     ClassId,
     Domain,
+    type EldritchImplicitSpec,
     type EssenceSpec,
     type FossilSpec,
     type Gen,
@@ -19,7 +20,14 @@ import {
     TagId,
     TypeId,
 } from "@hinekora/core";
-import type { RepoeBase, RepoeBench, RepoeEssence, RepoeFossil, RepoeMod } from "./repoe/schema.js";
+import type {
+    RepoeBase,
+    RepoeBench,
+    RepoeEldritch,
+    RepoeEssence,
+    RepoeFossil,
+    RepoeMod,
+} from "./repoe/schema.js";
 
 /** Only prefix/suffix mods are modelled; other generation types (essence,
  * corrupted, …) are skipped by returning `null`. */
@@ -75,6 +83,18 @@ export function adaptEssence(id: string, e: RepoeEssence): EssenceSpec {
         tier: e.tier,
         ...(e.maxRandomModLevel != null && { maxRandomModLevel: e.maxRandomModLevel }),
         grants,
+    };
+}
+
+export function adaptEldritch(id: string, e: RepoeEldritch): EldritchImplicitSpec {
+    return {
+        id: ModId(id),
+        side: e.side,
+        tier: e.tier,
+        type: TypeId(e.type),
+        classes: new Set(e.classes.map((t) => TagId(t))),
+        implicitTags: new Set(e.implicit_tags.map((t) => TagId(t))),
+        text: e.text,
     };
 }
 

@@ -12,16 +12,25 @@ import {
     type Base,
     type BenchCraft,
     buildRegistry,
+    type EldritchImplicitSpec,
     type EssenceSpec,
     type FossilSpec,
     type Mod,
     type Registry,
 } from "@hinekora/core";
-import { adaptBase, adaptBench, adaptEssence, adaptFossil, adaptMod } from "./adapter.js";
+import {
+    adaptBase,
+    adaptBench,
+    adaptEldritch,
+    adaptEssence,
+    adaptFossil,
+    adaptMod,
+} from "./adapter.js";
 import type { DataManifest } from "./manifest.js";
 import type {
     RepoeBases,
     RepoeBenches,
+    RepoeEldritchRows,
     RepoeEssences,
     RepoeFossils,
     RepoeMods,
@@ -33,6 +42,7 @@ export interface LoadedData {
     readonly essences: readonly EssenceSpec[];
     readonly benchCrafts: readonly BenchCraft[];
     readonly fossils: readonly FossilSpec[];
+    readonly eldritch: readonly EldritchImplicitSpec[];
     readonly manifest: DataManifest;
 }
 
@@ -49,6 +59,7 @@ export function loadPoe1(dir: string): LoadedData {
     const rawEssences = readJson<RepoeEssences>(`${dir}/essences.json`);
     const rawBench = readJson<RepoeBenches>(`${dir}/bench.json`);
     const rawFossils = readJson<RepoeFossils>(`${dir}/fossils.json`);
+    const rawEldritch = readJson<RepoeEldritchRows>(`${dir}/eldritch.json`);
 
     const mods = Object.entries(rawMods)
         .map(([id, m]) => adaptMod(id, m))
@@ -57,8 +68,9 @@ export function loadPoe1(dir: string): LoadedData {
     const essences = Object.entries(rawEssences).map(([id, e]) => adaptEssence(id, e));
     const benchCrafts = rawBench.map(adaptBench);
     const fossils = Object.entries(rawFossils).map(([id, f]) => adaptFossil(id, f));
+    const eldritch = Object.entries(rawEldritch).map(([id, e]) => adaptEldritch(id, e));
 
-    return { mods, bases, essences, benchCrafts, fossils, manifest };
+    return { mods, bases, essences, benchCrafts, fossils, eldritch, manifest };
 }
 
 /** Absolute path to the bundled PoE1 catalog committed in this package. */
@@ -79,5 +91,6 @@ export function registryOf(data: LoadedData): Registry {
         essences: data.essences,
         benchCrafts: data.benchCrafts,
         fossils: data.fossils,
+        eldritch: data.eldritch,
     });
 }

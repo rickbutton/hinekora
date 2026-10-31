@@ -17,7 +17,8 @@
         "mods": 12643,
         "essences": 105,
         "benchCrafts": 728,
-        "fossils": 25
+        "fossils": 25,
+        "eldritch": 3360
     },
     "files": {
         "mods.json": {
@@ -39,6 +40,15 @@
         "fossils.json": {
             "sha256": "a981e687f9fe072589ac25518f347771c1471b2c3e74dd5f147c30dd90efe58d",
             "count": 25,
+            "provenance": {
+                "commit": "aa9fa7c394b18a7a89f913f86703112b3f9d20f1",
+                "commitDate": "2026-10-25T03:48:01Z",
+                "publishedAt": "Mon, 19 Oct 2026 04:15:14 GMT"
+            }
+        },
+        "eldritch.json": {
+            "sha256": "c143696af02cc83754dc29da460f4e56671f08d138f68865ef85c0647a865136",
+            "count": 3360,
             "provenance": {
                 "commit": "aa9fa7c394b18a7a89f913f86703112b3f9d20f1",
                 "commitDate": "2026-10-25T03:48:01Z",
