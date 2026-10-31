@@ -364,8 +364,21 @@ export const ELEVATED_BOOTS_PREFIX: Mod = mkMod({
     minLevel: 1,
     families: ["HunterBootsPrefix"],
     spawn: [spawn(TagId("boots_basilisk"), 0), spawn(TAG_DEFAULT, 0)],
+    source: "elevated",
     name: "Elevated Hunter's",
     text: "Elevated hunter boots prefix",
+});
+/** The suffix's elevated row shares its type, as half the data's elevated rows do. */
+export const ELEVATED_BOOTS_SUFFIX: Mod = mkMod({
+    id: "HunterBootsSuffixUberMaven",
+    type: "HunterBootsSuffix",
+    gen: "suffix",
+    minLevel: 1,
+    families: ["HunterBootsSuffix"],
+    spawn: [spawn(TagId("boots_basilisk"), 0), spawn(TAG_DEFAULT, 0)],
+    source: "elevated",
+    name: "of the Elevated Hunt",
+    text: "Elevated hunter boots suffix",
 });
 
 /** A Hunter-influence suffix for rings: its only positive weight is on the

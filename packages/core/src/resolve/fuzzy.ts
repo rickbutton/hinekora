@@ -33,7 +33,9 @@ export function buildTypeIndex(mods: readonly Mod[]): Map<TypeId, TypeEntry> {
     const byType = new Map<TypeId, Map<string, number>>();
     for (const m of mods) {
         if (!m.text) continue;
-        if (!m.spawn.some((s) => s.weight > 0)) continue; // skip non-spawnable variants
+        // Skip non-spawnable variants; an elevated row never spawns but is named,
+        // since an Orb of Dominance makes it.
+        if (!m.spawn.some((s) => s.weight > 0) && m.source !== "elevated") continue;
         let counts = byType.get(m.type);
         if (!counts) {
             counts = new Map();

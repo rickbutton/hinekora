@@ -338,18 +338,19 @@ separates a variant from its plain sibling.
 ### Q39 · game probe · open
 
 **Asked:** 2026-10-30
-**Goal:** which elevated row an Orb of Dominance makes of a top-tier influenced
-modifier, and whether the removed one can be the same it upgraded.
+**Goal:** whether an Orb of Dominance takes a Magic item.
 [Orb of Dominance § Mechanics](https://www.poewiki.net/wiki/Orb_of_Dominance#Mechanics)
-says a tier 1 modifier "will replace it with a new elevated mod"; the data gives the
-elevated rows as types of their own, named "Elevated", sharing the modifier's group,
-which is how the checker pairs them.
-**Procure:** gloves with two Hunter modifiers at tier 1; Orbs of Dominance.
-**Steps:** apply; note which modifier was elevated, into what, and which was removed.
-**Record:** the pairs seen.
-**Assumed meanwhile:** the elevated row shares the modifier's group and influence tag
-(`check/ops.ts` `elevate`), one modifier is removed and a different one raised, and a
-Magic item is accepted as the page says.
+says "Magic and Rare items that have two or more Influenced modifiers", while
+[Elevated modifier](https://www.poewiki.net/wiki/Elevated_modifier) says elevated
+modifiers "can only be crafted onto Rare Influenced items".
+**Procure:** a Magic pair of gloves with a Hunter prefix and a Hunter suffix at tier 1;
+an Orb of Dominance.
+**Steps:** apply it; note whether it is accepted and what the result is.
+**Record:** accepted or not; the modifiers after.
+**Assumed meanwhile:** the orb's own page, a Magic item accepted (`check/library.ts`
+`DOMINANCE` has no rarity gate); the elevated row is the one sharing the modifier's
+group under the item's influence tag (`check/ops.ts` `elevate`), which pairs every
+influenced modifier of the four classes in the data.
 **Answer:**
 
 ### Q38 · game probe · open

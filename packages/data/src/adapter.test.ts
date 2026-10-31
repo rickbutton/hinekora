@@ -75,6 +75,13 @@ describe("classifySource", () => {
         expect(classifySource({ ...LIFE, domain: "unveiled" })).toBe("veiled");
         expect(classifySource({ ...LIFE, domain: "delve" })).toBe("fossil");
         expect(classifySource({ ...LIFE, generation_type: "unique" })).toBe("other");
+        expect(
+            classifySource({
+                ...LIFE,
+                name: "of the Elevated Hunt",
+                spawn_weights: [{ tag: "boots_basilisk", weight: 0 }],
+            }),
+        ).toBe("elevated");
         expect(classifySource({ ...LIFE, generation_type: "corrupted" })).toBe("other");
         // item-domain but non-spawnable and not essence → other.
         expect(classifySource({ ...LIFE, spawn_weights: [{ tag: "default", weight: 0 }] })).toBe(

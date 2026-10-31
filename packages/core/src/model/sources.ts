@@ -12,6 +12,7 @@ export type ModSource =
     | "bench" // crafting-bench option
     | "veiled" // a veiled placeholder or an unveiled result
     | "fossil" // delve / fossils
+    | "elevated" // an elevated influenced modifier, made by an Orb of Dominance alone
     | "other"; // a row nothing places (no partition of its own, no weight anywhere)
 
 /** The ladder tier above Deafening: the corrupted essences and the retired

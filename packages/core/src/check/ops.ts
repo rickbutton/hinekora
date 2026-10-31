@@ -27,6 +27,7 @@ import {
     type Influence,
     type InfluenceKey,
     influenceKey,
+    influenceOfTag,
     influenceSetsOfSize,
     influencesOf,
     NO_ELDRITCH,
@@ -426,7 +427,7 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
             }
             break;
         case "elevate":
-            return elevate(a, registry);
+            return elevate(a, rules, registry);
         case "rarity":
             return settled({
                 ...a,
@@ -621,11 +622,9 @@ function failing(
             ) {
                 return null; // the side is protected: the method adds without removing
             }
-            const shield =
-                check.selector.kind === "influenced"
-                    ? influenceShield(a, registry)
-                    : shieldFor(check.selector, rules);
-            return hasRemovable(a, allowed, shield, registry) ? null : { kind: "nothingToRemove" };
+            return hasRemovable(a, allowed, shieldFor(check.selector, rules), registry)
+                ? null
+                : { kind: "nothingToRemove" };
         }
         case "influencedAtLeast": {
             const have = [...guaranteedTypes(a)].filter(
@@ -1366,7 +1365,9 @@ function influenceRowTest(a: AItem, registry: Registry): (m: Mod) => boolean {
     const facts = guaranteedFacts(a, registry);
     const sure = influenceTagsOf(a, registry).sure;
     const own = new Set([...facts.tags].filter((t) => !sure.has(t)));
-    return (m) => (lookupWeight(m, own) ?? 0) <= 0;
+    return (m) =>
+        (lookupWeight(m, own) ?? 0) <= 0 &&
+        m.spawn.some((w) => influenceOfTag(w.tag) !== undefined);
 }
 
 /** The guaranteed modifiers that are not influenced: what a removal of an
@@ -1384,18 +1385,22 @@ function influenceShield(a: AItem, registry: Registry): Shield {
  * every influenced modifier the item may have loses its tier and may be its
  * elevated row; one of them remains, since only one was removed.
  */
-function elevate(a: AItem, registry: Registry): AItem {
+function elevate(a: AItem, rules: Rules, registry: Registry): AItem {
     const { sure, maybe } = influenceTagsOf(a, registry);
     const tags = new Set([...sure, ...maybe]);
+    // A modifier on a protected side is not affected (Metamod § Rules and Exceptions).
     const influenced = [...a.possible].filter(
-        (t) => !isExcluded(a, t) && isInfluenceType(a, t, registry),
+        (t) =>
+            !isExcluded(a, t) &&
+            isInfluenceType(a, t, registry) &&
+            !rules.protected.has(genOf(a, registry, t)),
     );
     const elevated = new Map<TypeId, Mod[]>();
     for (const t of influenced) {
         const families = registry.familiesOfType(t);
         const rows = registry.catalog.filter(
             (m) =>
-                m.name?.startsWith("Elevated") === true &&
+                m.source === "elevated" &&
                 [...m.families].some((f) => families.has(f)) &&
                 m.spawn.some((w) => tags.has(w.tag)),
         );
@@ -1408,7 +1413,11 @@ function elevate(a: AItem, registry: Registry): AItem {
     for (const list of elevated.values()) {
         for (const m of list) {
             possible.add(m.type);
-            tiers.set(m.type, new Set([...(tiers.get(m.type) ?? []), m.id]));
+            // An elevated row of a type the item already carries joins that
+            // type's relaxed tiers (any row); a type of its own is pinned to it.
+            if (!influenced.includes(m.type)) {
+                tiers.set(m.type, new Set([...(tiers.get(m.type) ?? []), m.id]));
+            }
             rows.push(m);
         }
     }
@@ -1429,13 +1438,15 @@ function elevate(a: AItem, registry: Registry): AItem {
 function isInfluenceType(a: AItem, type: TypeId, registry: Registry): boolean {
     const isRow = influenceRowTest(a, registry);
     const { sure, maybe } = influenceTagsOf(a, registry);
-    const tags = new Set([...a.base.tags, ...sure, ...maybe]);
+    const tags = new Set([...sure, ...maybe]);
+    // The row's spawn table naming the influence's tag is what makes it an
+    // influence modifier; an elevated row names it with no weight at all.
     return registry.catalog.some(
         (m) =>
             m.type === type &&
             m.domain === a.base.domain &&
             isRow(m) &&
-            (lookupWeight(m, tags) ?? 0) > 0,
+            m.spawn.some((w) => tags.has(w.tag)),
     );
 }
 

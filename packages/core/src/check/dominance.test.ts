@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { disjunctiveGuarantees, guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, item, op } from "../__fixtures__/ast.js";
+import { craft, has, iff, item, op } from "../__fixtures__/ast.js";
 import {
     BOOTS_BASE,
     CATALOG,
     ELEVATED_BOOTS_PREFIX,
+    ELEVATED_BOOTS_SUFFIX,
     HUNTER_BOOTS_PREFIX,
     HUNTER_BOOTS_SUFFIX,
     LIFE_T1,
@@ -21,6 +22,7 @@ const registry = buildRegistry({
         HUNTER_BOOTS_PREFIX,
         HUNTER_BOOTS_SUFFIX,
         ELEVATED_BOOTS_PREFIX,
+        ELEVATED_BOOTS_SUFFIX,
         PROTECT_SUFFIXES_CARRIER,
     ],
     modAliases: { life: "IncreasedLife1" },
@@ -72,6 +74,46 @@ describe("the Orb of Dominance", () => {
                 HUNTER_BOOTS_SUFFIX.type,
             ]),
         );
+    });
+
+    it("leaves an elevated row that shares its type free to be any tier, and nameable", () => {
+        const r = run(
+            craft(boots([HUNTER_BOOTS_PREFIX.id], [HUNTER_BOOTS_SUFFIX.id]), [op("dominance")]),
+        );
+        expect(r.diagnostics).toEqual([]);
+        const s = r.finalState!;
+        expect(s.tiers.has(HUNTER_BOOTS_SUFFIX.type)).toBe(false);
+        expect(s.possible.has(HUNTER_BOOTS_SUFFIX.type)).toBe(true);
+        // The elevated prefix is a type of its own, which a guide can name.
+        const named = craft(boots([HUNTER_BOOTS_PREFIX.id], [HUNTER_BOOTS_SUFFIX.id]), [
+            op("dominance"),
+            iff(has("Elevated hunter boots prefix"), [], []),
+        ]);
+        expect(messages(named)).toBe("");
+    });
+
+    it("leaves an influenced modifier on a protected side alone, and takes a Magic item", () => {
+        const guarded = item({
+            base: "Iron Greaves",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: [HUNTER_BOOTS_PREFIX.id, "life", PROTECT_SUFFIXES_CARRIER.id],
+            suffixes: [HUNTER_BOOTS_SUFFIX.id],
+            influences: ["hunter"],
+        });
+        // Only the prefix is unprotected: too few to use the orb.
+        expect(messages(craft(guarded, [op("dominance")]))).toContain("only one is guaranteed");
+        const magic = item({
+            base: "Iron Greaves",
+            ilvl: 100,
+            rarity: "magic",
+            prefixes: [HUNTER_BOOTS_PREFIX.id],
+            suffixes: [HUNTER_BOOTS_SUFFIX.id],
+            influences: ["hunter"],
+        });
+        const r = run(craft(magic, [op("dominance")]));
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.counts.total).toEqual([1, 1]);
     });
 
     it("needs two influenced modifiers on sides a metamod does not protect", () => {

@@ -40,6 +40,9 @@ function toGen(generationType: string): Gen | null {
 export function classifySource(m: RepoeMod): ModSource {
     if (m.generation_type !== "prefix" && m.generation_type !== "suffix") return "other";
     if (m.is_essence_only) return "essence";
+    // An elevated row rolls nowhere; only an Orb of Dominance makes it, and its
+    // name says so ("Elevated Hunter's", "of the Elevated Hunt").
+    if (/\bElevated\b/.test(m.name ?? "")) return "elevated";
     switch (m.domain) {
         case "crafted":
             return "bench";

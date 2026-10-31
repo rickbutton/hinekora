@@ -199,6 +199,28 @@ describe("influence tags against real data", () => {
         expect(tag("Cobalt Jewel", "elder")).toEqual([]);
     });
 
+    it("pairs every influenced modifier of the four armour classes with an elevated row", () => {
+        const armour = new Set(["body_armour", "boots", "gloves", "helmet"]);
+        const elevated = registry.catalog.filter((m) => m.source === "elevated");
+        expect(elevated.length).toBeGreaterThan(200);
+        const unpaired: string[] = [];
+        for (const m of registry.catalog) {
+            if (m.source !== "natural") continue;
+            for (const w of m.spawn) {
+                const hit = influenceOfTag(w.tag);
+                if (!hit || w.weight <= 0 || !armour.has(hit.stem)) continue;
+                const families = registry.familiesOfType(m.type);
+                const paired = elevated.some(
+                    (e) =>
+                        [...e.families].some((f) => families.has(f)) &&
+                        e.spawn.some((x) => x.tag === w.tag),
+                );
+                if (!paired) unpaired.push(`${m.type} on ${w.tag}`);
+            }
+        }
+        expect(unpaired).toEqual([]);
+    });
+
     it("lets a Shaper two-handed sword roll a row that spawns only on its class tag", () => {
         const blade = base("Corroded Blade");
         const row = registry.catalog.find((m) =>

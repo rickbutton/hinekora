@@ -429,8 +429,6 @@ export function eldritchAnnulOps(side: EldritchSide): readonly Op[] {
     ];
 }
 
-/** An Orb of Conflict: one eldritch implicit up a tier, the other down, on an
- *  item that has both (Orb of Conflict). */
 /** An Orb of Dominance (Orb of Dominance § Mechanics): on a body armour,
  *  boots, gloves or helmet with two influenced modifiers a metamod does not
  *  protect, one is removed and another goes a tier up, or to its elevated row. */
@@ -446,6 +444,8 @@ export const DOMINANCE: readonly Op[] = [
     { kind: "elevate" },
 ];
 
+/** An Orb of Conflict: one eldritch implicit up a tier, the other down, on an
+ *  item that has both (Orb of Conflict). */
 export const CONFLICT: readonly Op[] = [
     notCorrupted,
     require({ kind: "bothEldritch" }),

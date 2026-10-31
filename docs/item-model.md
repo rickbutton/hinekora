@@ -134,9 +134,11 @@ Derived: `is_carrier` (has effects); `is_veiled_placeholder` (domain `veiled`) a
 
 Rules every row satisfies:
 
-- **Source follows the row.** `essence_only` ⇒ `essence`; else domain `crafted` ⇒ `bench`,
-  `veiled`/`unveiled` ⇒ `veiled`, `delve` ⇒ `fossil`; else any positive spawn weight ⇒
-  `natural`, none ⇒ `other`. (This is the adapter's `classifySource`.)
+- **Source follows the row.** `essence_only` ⇒ `essence`; else a name with "Elevated"
+  ⇒ `elevated` (an [elevated modifier](https://www.poewiki.net/wiki/Elevated_modifier),
+  which rolls nowhere and only an Orb of Dominance makes); else domain `crafted` ⇒
+  `bench`, `veiled`/`unveiled` ⇒ `veiled`, `delve` ⇒ `fossil`; else any positive spawn
+  weight ⇒ `natural`, none ⇒ `other`. (This is the adapter's `classifySource`.)
 - **Essence-only rows never roll**: every spawn weight is zero.
 - **Carriers are bench metamods**: in PoE1 every row with effects is a bench craft.
 
