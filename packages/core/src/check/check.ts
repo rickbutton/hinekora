@@ -339,10 +339,9 @@ class Checker {
             for (const affix of affixes) {
                 const anonymous = PLACEHOLDERS.test(affix.mod.trim().toLowerCase());
                 const type = anonymous ? undefined : pinAffix(affix, gen);
-                if (!affix.fractured || (!anonymous && type === undefined)) continue;
-                if (anonymous)
-                    fracturedAnonymous++; // a lock exists; no type is known to carry it
-                else fracturedTypes.push(type!);
+                if (!affix.fractured) continue;
+                if (type !== undefined) fracturedTypes.push(type);
+                else if (anonymous) fracturedAnonymous++; // a lock on a mod no type is known to carry
             }
             return affixes.length;
         };

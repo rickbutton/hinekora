@@ -321,7 +321,7 @@ until anyEleRes(t1) { chaos }
 ```
 pred := isRare | isMagic | isNormal
       | has "<mod>" [t<n>]                  # that modifier type is present (at that tier)
-      | fractured "<mod>"                   # that modifier is the fractured one
+      | fractured "<mod>"                   # that modifier is fractured
       | influenced [<influence>]            # the item has that influence (any, when none is named)
       | corrupted                           # the item is corrupted
       | exarch ["<wording>"] [<tier>]       # that eldritch implicit is present (that one, at that tier;

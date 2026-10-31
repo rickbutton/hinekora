@@ -129,6 +129,15 @@ describe("the Orb of Dominance", () => {
         expect(messages(craft(guarded, [op("dominance")]))).toContain("only one is guaranteed");
     });
 
+    it("counts an elevated modifier among the two, and may remove it", () => {
+        const r = run(
+            craft(boots([ELEVATED_BOOTS_PREFIX.id], [HUNTER_BOOTS_SUFFIX.id]), [op("dominance")]),
+        );
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteedTypes(r.finalState!).has(ELEVATED_BOOTS_PREFIX.type)).toBe(false);
+        expect(r.finalState!.counts.total).toEqual([1, 1]);
+    });
+
     it("takes the four armour classes only", () => {
         const ring = item({ base: "Iron Ring", ilvl: 100, rarity: "rare", influences: ["hunter"] });
         expect(messages(craft(ring, [op("dominance")]))).toContain(

@@ -893,9 +893,9 @@ function isFractureCandidate(a: AItem, type: TypeId): boolean {
     return a.bdd.variables().includes(fracAtomName(type));
 }
 
-/** Narrow to "X is the fractured mod". A non-candidate can never be fractured,
- *  so the branch is dead; otherwise assert the fracture atom (exactly-one then
- *  forces the other candidates unfractured, and the `frac ⇒ present` coupling
+/** Narrow to "X is a fractured mod". A non-candidate can never be fractured,
+ *  so the branch is dead; otherwise assert the fracture atom (the at-most-n
+ *  rule then limits the other candidates, and the `frac ⇒ present` coupling
  *  makes X present). */
 function refineFractured(a: AItem, type: TypeId): AItem | null {
     if (!isFractureCandidate(a, type)) return null;
@@ -924,18 +924,18 @@ export function assertDeclaredFracture(bdd: BddManager, presence: Bdd, type: Typ
 
 /**
  * Assert a fracture of `n` modifiers: a fracture exists and at most `n` of
- * `candidates` are it (each implying its mod present), and, when the
- * candidates cover every mod (`exhaustive`, no anonymous ones), at least `n`
- * of them, which lets a branch chain over them prove where the locks landed.
- * The candidate sets are small (an item's few modifiers), so the cardinality
- * constraints enumerate subsets.
+ * `candidates` are it (each implying its mod present), and at least `atLeast`
+ * of them, the locks the anonymous mods cannot account for, which lets a branch
+ * chain over the named mods prove where they landed. The candidate sets are
+ * small (an item's few modifiers), so the cardinality constraints enumerate
+ * subsets.
  */
 export function assertFractureDisjunction(
     bdd: BddManager,
     presence: Bdd,
     candidates: readonly TypeId[],
-    exhaustive: boolean,
     n = 1,
+    atLeast = 0,
 ): Bdd {
     let p = bdd.and(presence, bdd.variable(FRAC_EXISTS));
     const fracOf = (t: TypeId): Bdd => bdd.variable(fracAtomName(t));
@@ -947,10 +947,10 @@ export function assertFractureDisjunction(
         for (const c of group) all = bdd.and(all, fracOf(c));
         p = bdd.and(p, bdd.not(all));
     }
-    // If the named candidates are all the mods, the locks are among them.
-    if (exhaustive && candidates.length >= n) {
+    // The locks the anonymous mods cannot account for are among the candidates.
+    if (atLeast > 0 && candidates.length >= atLeast) {
         let some = bdd.FALSE;
-        for (const group of combinations(candidates, n)) {
+        for (const group of combinations(candidates, atLeast)) {
             let all = bdd.TRUE;
             for (const c of group) all = bdd.and(all, fracOf(c));
             some = bdd.or(some, all);

@@ -247,7 +247,6 @@ export type Op =
     | { readonly kind: "remove"; readonly selector: Selector }
     /** `survivors`: the rarity a scour leaves, by how many modifiers remain. */
     | { readonly kind: "rarity"; readonly rarity: Rarity | "survivors" }
-    /** One random present modifier becomes fractured. */
     /** `n` random present modifiers become fractured. */
     | { readonly kind: "lock"; readonly n: number }
     /** Hold the item as it is now, to restore later. */
@@ -664,7 +663,8 @@ function failing(
                 ? null
                 : { kind: "tooFewMods", needed: check.count };
         case "noFracture":
-            return hasFracture(a) ? { kind: "alreadyFractured" } : null;
+            // A fracture on any path refuses: the orb and the recipes take none.
+            return a.fractures[1] > 0 ? { kind: "alreadyFractured" } : null;
         case "notCorrupted":
             return a.corrupted.has(true)
                 ? { kind: "corrupted", sure: !a.corrupted.has(false) }
@@ -883,7 +883,7 @@ function hasRemovable(
 ): boolean {
     if (allowed.size === 0) return false; // every side protected → nothing to remove
     // A fractured mod is locked, so it doesn't count toward what's removable; an
-    // unproven fracture likewise locks one mod (of unknown generation).
+    // unproven fracture likewise locks a mod of unknown generation.
     const fractured = fracturedTypes(a);
     const unprovenLock = unprovenFractures(a)[1];
     // Under a shield an anonymous mod may be a shielded tagged one, so only the
@@ -996,7 +996,7 @@ function strip(a: AItem, rules: Rules, registry: Registry): AItem {
     const fractured = fracturedTypes(a);
     const isKept = (t: TypeId): boolean => keep.has(genOfT(t)) || fractured.has(t);
     const fracIn = (g: Gen): number => fracturedIn(a, registry, g);
-    // An unproven fracture keeps one mod of unknown generation.
+    // The unproven fractures keep as many mods, of unknown generation.
     const unprovenLock = unprovenFractures(a)[1];
 
     // Kept counts per side: the whole side if protected, else just its fractured mod.
@@ -1007,8 +1007,8 @@ function strip(a: AItem, rules: Rules, registry: Registry): AItem {
         ? suffixRange(a)
         : [fracIn("suffix"), fracIn("suffix")];
     const prefix: Range = [keptPrefix[0], keptPrefix[1] + unprovenLock];
-    // The unproven lock may sit on a kept mod, so it adds to the floor only
-    // what the kept side cannot already account for.
+    // An unproven lock may sit on a kept mod, so the floor is the kept counts or
+    // the locks, whichever is more, never their sum.
     const total: Range = [
         Math.max(keptPrefix[0] + keptSuffix[0], a.fractures[0]),
         keptPrefix[1] + keptSuffix[1] + unprovenLock,
@@ -1078,7 +1078,7 @@ function keptBounds(a0: AItem, rules: Rules, registry: Registry): { prefix: Rang
 }
 
 /** How many modifiers a strip leaves, as a range: the kept sides' counts plus
- *  the fractured mod, which under an unproven lock may be one of the kept ones. */
+ *  the fractured mods, which under an unproven lock may be among the kept ones. */
 function survivorsOf(a0: AItem, rules: Rules, registry: Registry): Range {
     const kept = keptBounds(a0, rules, registry);
     const unprovenHi = unprovenFractures(a0)[1];
@@ -1586,18 +1586,19 @@ function removeCrafted(a: AItem, rules: Rules, registry: Registry, replacing: bo
 
 // --- lock -----------------------------------------------------------------------
 
-/** One random modifier becomes fractured. The target is random, so no specific
- *  mod is proven fractured yet: every present named mod becomes a candidate a
- *  `fractured X` branch can pin, and when they account for every mod the lock
- *  provably landed among them. A metamod is an ordinary candidate. */
+/** `n` random modifiers become fractured. The targets are random, so no
+ *  specific mod is proven fractured yet: every present named mod becomes a
+ *  candidate a `fractured X` branch can pin, and the locks the anonymous mods
+ *  cannot account for provably landed among them. A metamod is an ordinary
+ *  candidate. */
 function lock(a: AItem, n: number): AItem {
     const already = fracturedTypes(a);
     const candidates = [...guaranteedTypes(a)].filter((t) => !already.has(t));
-    const exhaustive = a.counts.total[1] <= guaranteedTypes(a).size;
+    const anonymous = Math.max(0, a.counts.total[1] - guaranteedTypes(a).size);
     return settled({
         ...a,
         fractures: [a.fractures[0] + n, a.fractures[1] + n],
-        presence: assertFractureDisjunction(a.bdd, a.presence, candidates, exhaustive, n),
+        presence: assertFractureDisjunction(a.bdd, a.presence, candidates, n, n - anonymous),
     });
 }
 

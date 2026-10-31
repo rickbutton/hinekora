@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
-import { disjunctiveGuarantees, fracturedTypes, guaranteedTypes, hasFracture } from "./astate.js";
+import {
+    disjunctiveGuarantees,
+    fracturedTypes,
+    guaranteedTypes,
+    hasFracture,
+    join,
+} from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { beast, craft, fracturedP, iff, item, op } from "../__fixtures__/ast.js";
+import { beast, craft, fracturedP, has, iff, item, op, until } from "../__fixtures__/ast.js";
 import {
     ASPECT_AVIAN,
     ASPECT_CAT,
@@ -191,6 +197,41 @@ describe("beast fracture", () => {
                 .diagnostics.map((d) => d.message)
                 .join("\n"),
         ).toContain("'if' branch can never run");
+    });
+
+    it("refuses an item that may be fractured, so a loop of fractures settles", () => {
+        // After a reforge, whether the item has T1 life is unknown, so only one
+        // path fractures first.
+        const maybe = craft(talisman(4), [
+            op("chaos"),
+            iff(has("T1 Life"), [beast({ kind: "fracture" })], []),
+            beast({ kind: "fracture" }),
+        ]);
+        const r = check(maybe, ctx);
+        expect(r.diagnostics.map((d) => d.message).join("\n")).toContain(
+            "already has a fractured modifier",
+        );
+        expect(r.finalState!.fractures).toEqual([0, 1]);
+        const loop = craft(talisman(4), [
+            until(fracturedP("T1 Life"), [beast({ kind: "fracture" })]),
+        ]);
+        const l = check(loop, ctx);
+        expect(l.finalState!.fractures[1]).toBeLessThanOrEqual(1);
+    });
+
+    it("counts both locks against what an annul may remove", () => {
+        const annuls = Array.from({ length: 5 }, () => op("annul"));
+        const r = check(craft(talisman(6), [beast({ kind: "fracture", n: 2 }), ...annuls]), ctx);
+        const text = r.diagnostics.map((d) => d.message).join("\n");
+        expect(r.diagnostics).toHaveLength(1);
+        expect(text).toContain("Requires a removable affix");
+        expect(r.finalState!.counts.total).toEqual([2, 2]);
+    });
+
+    it("joins the count where one path locked two and another one", () => {
+        const two = check(craft(talisman(6), [beast({ kind: "fracture", n: 2 })]), ctx).finalState!;
+        const one = check(craft(talisman(6), [beast({ kind: "fracture" })]), ctx).finalState!;
+        expect(join(two, one).fractures).toEqual([1, 2]);
     });
 
     it("takes a declared item with two fractured modifiers", () => {
