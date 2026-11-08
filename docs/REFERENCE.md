@@ -84,6 +84,7 @@ examples/                    - the guide suite; every file here checks clean (`p
   self-fracture.craft        - a Fracturing Orb, the `fractured` branch, the fillers annulled.
   influence-merge.craft      - a Redeemer receiver merged with an Awakener's Orb.
   matron-metamod.craft       - the Wild Bristle Matron's random metamod made deterministic.
+  eldritch-gloves.craft      - a fractured base, essences, an eldritch annul to make room, embers for the implicit.
   future/                    - recipes that wait on a feature, each headed by which; not tested.
 docs/
   REFERENCE.md, ARCHITECTURE.md, ROADMAP.md, item-model.md, QUESTIONS.md + the two design docs
@@ -167,7 +168,15 @@ these suffix modifiers }`, `{ 1-3 more modifiers, prefixes and/or suffixes }`,
   statement that contains them, loops as blocks with their exit in words, branches with
   their arms, and for a method its display name, the step as written and what it does
   from the method table. `itemDelta`/`stepDelta` list what a step added and removed, as
-  the lines of the item view a player would notice.
+  the lines of the item view a player would notice. `instructions.ts` lays that out as a
+  written guide reads (`instructions(w, craft, registry, wording?)`): one flat numbered
+  list where an operation is a step to do, a loop is its body's steps followed by a check
+  that sends the player back to the body's first step, a branch is a check naming the
+  steps to take or skip (with a jump past the other arm), `restart` is a jump to the
+  enclosing loop's first step, and the list ends with the item produced. `clause` words
+  a predicate in the player's terms ("maximum life at T1 and exactly 2 prefixes"),
+  resolving mod names through the registry when given the item's base and level and
+  expanding a local predicate call as its body with the arguments in place.
 - **resolve/**: `Registry` (the resolved data surface). Key methods:
     - `resolveBase / resolveMod / resolveModType(name, ctx?) / resolveCurrency /
 resolveEssence / resolveBench / resolveHarvestTag`
@@ -405,19 +414,21 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   lines in their colours, a bracketed "one of" group for a disjunction, a dashed line for
   the modifiers whose identity is unknown, "possibly" marks, and the absent modifiers
   struck through. The affix name and tags are the line's tooltip.
-- `src/walkthrough.ts`: `createWalkthroughPane(root, hooks)`, the guide as a list of
-  step cards from the core's `walkthrough` model: a "start with" card with the declared
-  item, then one card per statement with a badge for the currency or method, its display
-  name and the step as written, what the method does, what the step added to and took
-  from the item (`stepDelta`), and the checker's findings on it; a loop is a "repeat
-  until" block holding its steps and a branch an "if" block with its arms. The card for
-  the statement at the cursor is open with the full item card after it; hovering a card
-  highlights its statement in the editor, clicking one moves the cursor, and a card whose
-  item changed since the last edit flashes once. A toolbar steps through the leaf steps
-  in order, for following the guide at the bench.
+- `src/walkthrough.ts`: `createWalkthroughPane(root, hooks)`, the guide as a numbered
+  list of instructions from the core's `instructions`: a "start with" card with the
+  declared item, then "Use a Chaos Orb" for an operation (a badge for the currency, the
+  step as written, what it does, what the step added to and took from the item by
+  `stepDelta`, and the checker's findings on it), "Does the item have …? Yes: continue.
+  No: go back to step 3 and repeat" after a loop's steps, "Yes: do steps 3 to 4. No: skip
+  to step 5" for a branch, "Go back to step 1" for a restart, and "Done" with the item at
+  the end. Step references are links that move the cursor. The instruction for the
+  statement at the cursor is open; hovering one highlights its statement in the editor,
+  clicking one moves the cursor, and one whose item changed since the last edit flashes
+  once. A toolbar steps through the list, for following the guide at the bench.
 - `src/main.ts`: the page: the example guides (`examples/*.craft`, picked from a menu), the
   walkthrough pane bound to the editor both ways, a problems panel that jumps to a
-  finding, a format button, the data provenance in the header, and `window.hinekora`
+  finding, a format button, a handle that resizes the sidebar (the width is kept in the
+  browser for the next visit), the data provenance in the header, and `window.hinekora`
   (`editor`, `monaco`, `registry`) for the browser console.
 
 The package is part of `tsc -b` (declarations only; Vite does the real build), lint and
@@ -698,8 +709,9 @@ in it. Notes:
   would add passed as "maybe" tags: a positive spawn entry on one admits the row, a zero
   entry on one is skipped (`addsTagsOfType`). The maybe set is closed under the pool's own
   rows, since a reforge's later rolls see the tags of its earlier ones (`QUESTIONS.md`
-  Q13). A declared `"random"` affix is outside `possible`, so an adder hidden behind one
-  is not seen, the same anonymous-affix gap as the bench group conflict.
+  Q13). A declared `"random"` affix is every natural modifier of its side the item could
+  roll (`anonymousTypes`, added to `possible` by the item block), so an adder hidden
+  behind one flows through as a maybe tag.
 - **Essence** = `strip; rarity(rare); fill(natural ≤ level, reforge 4–6); fill(grant, within)`,
   the rules of [Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting) (tiers 1–4
   are an alchemy with one guaranteed affix, tier 5+ also reforge a Rare; the fill is capped
@@ -712,7 +724,8 @@ in it. Notes:
   provably below the cap (what each op does to it is under `crafted` in §4); and
   **group exclusivity** — the [mod group](https://www.poewiki.net/wiki/Modifier#Group/family)
   rule — where the mod's family must not be possibly-present, via `familiesOfType`. Not
-  modelled: a conflict hidden behind an anonymous "random" affix. The fill is preceded by
+  modelled as a clash: a conflict with an anonymous "random" affix, which may be any
+  modifier of its side (`QUESTIONS.md` Q49 for the crafted case). The fill is preceded by
   a `remove` with the **crafted selector** in replacing mode (`removeCrafted`): under a
   limit of one it clears the crafted modifier a craft replaces
   ([Crafting Bench § Using the crafting bench](https://www.poewiki.net/wiki/Crafting_Bench#Using_the_crafting_bench)),
@@ -840,6 +853,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `editors/playground/src/walkthrough.ts`                                  | the walkthrough pane: step cards bound to the editor both ways                                     |
 | `packages/core/src/render/item.ts`                                       | `itemView`, `renderItemText`: the item as a player reads it, in the game's copy layout             |
 | `packages/core/src/render/walkthrough.ts`                                | `walkthrough`, `stepDelta`: the guide as steps with the item before and after each                 |
+| `packages/core/src/render/instructions.ts`                               | `instructions`, `clause`: the guide as a numbered list in the player's words                       |
 | `packages/lsp/src/walkthrough.test.ts`                                   | the walkthrough model over real guides                                                             |
 | `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts`    | LSP features                                                                                       |
 | `packages/lsp/src/analysis.ts`                                           | the parse and check of a document, memoized by text; every feature reads it                        |

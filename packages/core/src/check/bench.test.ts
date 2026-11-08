@@ -6,6 +6,7 @@ import { bench, benchRemove, craft, item, op } from "../__fixtures__/ast.js";
 import {
     BENCH_LIFE_ROW,
     CATALOG,
+    FIRE_CHAOS_RESIST,
     CLASS_RING,
     INCREASED_ARMOUR,
     INCREASED_MANA,
@@ -158,5 +159,30 @@ describe("a bench craft on an item with a crafted modifier", () => {
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.crafted).toEqual([3, 3]);
         expect(guaranteedTypes(r.finalState!).has(LIFE)).toBe(true);
+    });
+});
+
+describe("a bench craft named the way a guide writes it", () => {
+    // The game's wording is "+(16-20)% to Fire and Chaos Resistances"; a guide
+    // says "fire and chaos resistance" or "fire chaos res".
+    const hybridRow = {
+        ...FIRE_CHAOS_RESIST,
+        id: FIRE_CHAOS_RESIST.id.replace("1", "Bench1") as typeof FIRE_CHAOS_RESIST.id,
+        source: "bench" as const,
+        text: "+(16-20)% to Fire and Chaos Resistances",
+    };
+    const named = buildRegistry({
+        bases: [RING_BASE],
+        mods: [...CATALOG, hybridRow],
+        baseAliases: { "Iron Ring": "IronRing" },
+        benchCrafts: [benchOf(hybridRow.id)],
+    });
+
+    it("tolerates a singular and an abbreviation", () => {
+        for (const name of ["fire and chaos resistance", "fire chaos res"]) {
+            const r = check(craft(rareRing(), [bench(name)]), { registry: named });
+            expect(r.diagnostics).toEqual([]);
+            expect(guaranteedTypes(r.finalState!).has(FIRE_CHAOS_RESIST.type)).toBe(true);
+        }
     });
 });

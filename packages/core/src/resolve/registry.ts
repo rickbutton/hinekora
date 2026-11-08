@@ -19,7 +19,7 @@ import type {
     EssenceSpec,
     FossilSpec,
 } from "../model/sources.js";
-import { buildTypeIndex, matchTypes, normalizeText } from "./fuzzy.js";
+import { buildTypeIndex, matchTypes, normalizeText, tokenMatches } from "./fuzzy.js";
 import { rollableTiers } from "./tiers.js";
 
 /** DSL tier (T1 = best) → catalog ladder level (Deafening = 7, Whispering = 1). */
@@ -501,17 +501,19 @@ export function buildRegistry(data: RegistryData): Registry {
 
             let matches = matchTypes(typeIndex, name);
             // Narrow to types that can actually roll on this item, when known;
-            // failing any, to those the bench can put on its class.
+            // failing any, to those an unveil or the bench can put on it. The
+            // words name what rolls first: a veiled-only type shares many of
+            // them with the natural modifier it resembles.
             if (ctx) {
                 const rollable = matches.filter(
-                    (m) =>
-                        veiledTypes.has(m.type) ||
-                        rollableTiers(catalog, ctx.base, ctx.ilvl, m.type, ctx.tags).length > 0,
+                    (m) => rollableTiers(catalog, ctx.base, ctx.ilvl, m.type, ctx.tags).length > 0,
                 );
                 const benchable = benchTypesByClass.get(ctx.base.itemClass);
-                const benched = matches.filter((m) => benchable?.has(m.type));
+                const reachable = matches.filter(
+                    (m) => veiledTypes.has(m.type) || benchable?.has(m.type),
+                );
                 if (rollable.length > 0) matches = rollable;
-                else if (benched.length > 0) matches = benched;
+                else if (reachable.length > 0) matches = reachable;
             }
             if (matches.length === 0) return fail({ kind: "unknownMod", name });
 
@@ -584,7 +586,11 @@ export function buildRegistry(data: RegistryData): Registry {
             );
             // Every query word must be a word (or a prefix of one) of the text.
             // Rows of one wording (the tiers, and the presence variants the data
-            // words alike) are one candidate; several wordings are ambiguous.
+            // words alike) are one candidate; several wordings are ambiguous. A
+            // tier that changes a number also changes a plural ("1 additional
+            // nearby Enemy", "2 additional nearby Enemies"), so plurals are folded.
+            const singular = (w: string): string =>
+                w.endsWith("ies") ? `${w.slice(0, -3)}y` : w.endsWith("s") ? w.slice(0, -1) : w;
             const byWording = new Map<string, { text: string; types: Set<TypeId> }>();
             for (const e of rows) {
                 const tokens = normalizeText(e.text);
@@ -593,7 +599,7 @@ export function buildRegistry(data: RegistryData): Registry {
                     (w) => set.has(w) || [...set].some((t) => w.length >= 3 && t.startsWith(w)),
                 );
                 if (!hit) continue;
-                const key = [...set].sort().join(" ");
+                const key = [...new Set(tokens.map(singular))].sort().join(" ");
                 const entry = byWording.get(key) ?? { text: e.text, types: new Set<TypeId>() };
                 entry.types.add(e.type);
                 byWording.set(key, entry);
@@ -647,7 +653,7 @@ export function buildRegistry(data: RegistryData): Registry {
                 const mod = modById.get(norm(craft.mod));
                 if (!mod?.text) continue;
                 const tokens = new Set(normalizeText(mod.text));
-                if (q.every((w) => tokens.has(w))) {
+                if (q.every((w) => tokenMatches(w, tokens))) {
                     scored.push({ craft, mod, score: q.length / tokens.size });
                 }
             }

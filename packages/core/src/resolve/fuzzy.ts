@@ -74,7 +74,7 @@ export interface TypeMatch {
 
 /** Exact token match, or a ≥3-char prefix so abbreviations resolve ("max" →
  *  "maximum"); the length floor keeps fragments from matching half the catalog. */
-function tokenMatches(w: string, tokens: ReadonlySet<string>): boolean {
+export function tokenMatches(w: string, tokens: ReadonlySet<string>): boolean {
     if (tokens.has(w)) return true;
     if (w.length < 3) return false;
     for (const tk of tokens) if (tk.startsWith(w)) return true;
