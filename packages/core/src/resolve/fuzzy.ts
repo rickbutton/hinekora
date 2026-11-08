@@ -43,7 +43,9 @@ export function buildTypeIndex(mods: readonly Mod[]): Map<TypeId, TypeEntry> {
             counts = new Map();
             byType.set(m.type, counts);
         }
-        counts.set(m.text, (counts.get(m.text) ?? 0) + 1);
+        // A bench row's wording ranks below the modifier's own, so a type that
+        // also rolls or unveils is shown with its natural numbers.
+        counts.set(m.text, (counts.get(m.text) ?? 0) + (m.source === "bench" ? 0.5 : 1));
     }
 
     const index = new Map<TypeId, TypeEntry>();
