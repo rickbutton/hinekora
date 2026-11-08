@@ -35,3 +35,10 @@ export interface Token {
     readonly text: string;
     readonly span: SourceSpan;
 }
+
+/** A `#` comment, trivia to the parser but kept for the formatter and folding. */
+export interface Comment {
+    /** The text after `#`, as written. */
+    readonly text: string;
+    readonly span: SourceSpan;
+}

@@ -5,7 +5,7 @@
  */
 import { type Pos, span } from "@hinekora/core";
 import { CraftSyntaxError } from "./errors.js";
-import type { Token, TokenKind } from "./token.js";
+import type { Comment, Token, TokenKind } from "./token.js";
 
 function isDigit(c: string): boolean {
     return c >= "0" && c <= "9";
@@ -21,11 +21,22 @@ export function tokenize(source: string): Token[] {
     return new Lexer(source).run();
 }
 
+/** The tokens plus the comments the parser skips, for tools that keep them. */
+export function tokenizeWithComments(source: string): {
+    tokens: Token[];
+    comments: Comment[];
+} {
+    const lexer = new Lexer(source);
+    const tokens = lexer.run();
+    return { tokens, comments: lexer.comments };
+}
+
 class Lexer {
     private offset = 0;
     private line = 1;
     private col = 1;
     private readonly tokens: Token[] = [];
+    readonly comments: Comment[] = [];
 
     constructor(private readonly src: string) {}
 
@@ -77,7 +88,14 @@ class Lexer {
             if (c === " " || c === "\t" || c === "\r" || c === "\n") {
                 this.advance();
             } else if (c === "#") {
-                while (!this.eof() && this.peek() !== "\n") this.advance();
+                const start = this.pos();
+                let text = "";
+                this.advance();
+                while (!this.eof() && this.peek() !== "\n") text += this.advance();
+                this.comments.push({
+                    text: text.replace(/\r$/, ""),
+                    span: span(start, this.pos()),
+                });
             } else {
                 return;
             }

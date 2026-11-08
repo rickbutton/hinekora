@@ -165,7 +165,8 @@ resolveEssence / resolveBench / resolveHarvestTag`
 ### 3b. `@hinekora/parser`
 
 Lexer (`tokenize`) → `Token[]` (trivia-free; no keyword token kind, every word is an
-`ident` and the parser decides by text). The words the parser gives meaning to are the
+`ident` and the parser decides by text; `tokenizeWithComments` also returns the `#`
+comments with their spans, for folding and the formatter). The words the parser gives meaning to are the
 tables in `vocabulary.ts` (the item block, control flow, predicates, item fields) and the core's
 method table (`check/methods.ts`), which completion, hover and the docs check read too.
 A statement that is not control flow or a call is an `OperationStmt`: `parseOperation`
@@ -271,6 +272,10 @@ Transport-free service functions + a stdio server:
   proven-absent by the checker's state at that point (`excludedAt` parses the craft,
   retrying with the open string closed). Both filters degrade gracefully to "all mods"
   when the base can't be read / nothing parses.
+- `folding.ts`: `getFoldingRanges`: every brace pair from the tokens (the item block,
+  bodies, block arguments; works mid-edit, an unmatched `{` folds nothing), each run of
+  consecutive comment lines as a comment fold (`tokenizeWithComments` keeps what the
+  parser skips), and a predicate def written over several lines from the tree.
 - `semantic.ts`: `getSemanticTokens`, lexer-driven; legend
   `["keyword","property","function","parameter"]` with the `declaration` modifier;
   keywords are the control and predicate words plus `METHOD_WORDS` (currency names
@@ -700,6 +705,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts` | LSP features                                                                                       |
 | `packages/lsp/src/navigation.ts`                                      | highlights, definition, references, rename, outline over the bindings                              |
 | `packages/lsp/src/signature-help.ts`                                  | `getSignatureHelp`: a call's parameters or a method's slots, the active one marked                 |
+| `packages/lsp/src/folding.ts`                                         | `getFoldingRanges`: brace blocks, comment runs, multi-line predicate defs                          |
 | `packages/core/src/ast/bindings.ts`                                   | `bindingsOf`: every def and parameter with its declaration and references                          |
 | `packages/lsp/src/method-at.ts`                                       | `methodAt`: the method statement a token or cursor position belongs to                             |
 | `packages/core/src/check/check.test.ts`                               | checker tests (currency set, count-coupling regression, loops, defs)                               |

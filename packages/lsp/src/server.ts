@@ -28,6 +28,7 @@ import {
     prepareRename,
 } from "./navigation.js";
 import { getSignatureHelp } from "./signature-help.js";
+import { getFoldingRanges } from "./folding.js";
 
 export function createServer(connection: Connection, registry: Registry): void {
     const documents = new TextDocuments(TextDocument);
@@ -46,6 +47,7 @@ export function createServer(connection: Connection, registry: Registry): void {
             referencesProvider: true,
             renameProvider: { prepareProvider: true },
             documentSymbolProvider: true,
+            foldingRangeProvider: true,
             signatureHelpProvider: {
                 triggerCharacters: ["(", ",", " "],
                 retriggerCharacters: ['"'],
@@ -134,6 +136,13 @@ export function createServer(connection: Connection, registry: Registry): void {
         const doc = documents.get(params.textDocument.uri);
         if (!doc) return null;
         return getSignatureHelp(doc.getText(), doc.offsetAt(params.position));
+    });
+
+    // --- folding ---
+    connection.onFoldingRanges((params) => {
+        const doc = documents.get(params.textDocument.uri);
+        if (!doc) return [];
+        return getFoldingRanges(doc.getText());
     });
 
     documents.listen(connection);

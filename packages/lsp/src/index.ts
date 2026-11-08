@@ -10,4 +10,5 @@ export * from "./completion.js";
 export * from "./semantic.js";
 export * from "./navigation.js";
 export * from "./signature-help.js";
+export * from "./folding.js";
 export * from "./server.js";
