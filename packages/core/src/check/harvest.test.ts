@@ -73,26 +73,36 @@ describe("harvest reforge", () => {
     });
 
     it("rejects a side-only tag when that side may be full after the strip", () => {
-        // Three anonymous prefixes kept by the metamod: no life modifier, a
-        // prefix, can land, and one of the three may already be the life.
+        // Three prefixes of other groups kept by the metamod: no life modifier,
+        // a prefix, can land.
         const locked = craft(
-            rareRing(["random", "random", "random"], [PROTECT_PREFIXES_CARRIER.id]),
+            rareRing(
+                ["IncreasedMana1", "IncreasedArmour1", ATTACK_PREFIX.id],
+                [PROTECT_PREFIXES_CARRIER.id],
+            ),
             [harvest("reforge", "life")],
         );
         expect(check(locked, ctx).diagnostics[0]!.message).toContain(
+            "life modifier has no slot on some path",
+        );
+        // Anonymous prefixes instead: one of them may already be the life.
+        const anonymous = craft(
+            rareRing(["random", "random", "random"], [PROTECT_PREFIXES_CARRIER.id]),
+            [harvest("reforge", "life")],
+        );
+        expect(check(anonymous, ctx).diagnostics[0]!.message).toContain(
             "life modifier may be blocked on some path",
         );
         // The augment: the removal may take a suffix and leave the prefixes full.
         const full = craft(
             rareRing(
-                ["T1 Life", "random", "random"],
+                ["T1 Life", "IncreasedMana1", ATTACK_PREFIX.id],
                 ["FireResist1", "ColdResist1", "LightningResist1"],
             ),
             [harvest("augment", "defence")],
         );
-        // One of the anonymous prefixes may itself be the defence modifier.
         expect(check(full, ctx).diagnostics[0]!.message).toContain(
-            "defences modifier may be blocked on some path",
+            "defences modifier has no slot on some path",
         );
     });
 

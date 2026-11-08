@@ -60,7 +60,8 @@ export function adaptMod(id: string, m: RepoeMod): Mod | null {
     const gen = toGen(m.generation_type);
     if (gen === null) return null;
     // Path of Exile: Royale's rows share the item domain and carry weights, but
-    // never roll in the main game; kept, they give a modifier one tier too many.
+    // the wiki's per-class modifier lists and craftofexile both omit them, and
+    // kept they give a modifier one tier too many (QUESTIONS.md Q48).
     if (/Royale/.test(id)) return null;
 
     return {
