@@ -257,6 +257,8 @@ function describeStmt(s: Stmt): string {
             return `${s.name}(…)`;
         case "restart":
             return "restart";
+        case "paramStep":
+            return s.param;
     }
 }
 

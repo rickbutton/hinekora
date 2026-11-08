@@ -443,6 +443,60 @@ e(t1)`);
         const c = parseDef(`exalt`);
         expect(c.body[0]).toMatchObject({ kind: "operation", words: ["exalt"] });
     });
+
+    it("parses a parameter in statement position as a step parameter", () => {
+        const c = parseDef(`def roll(m, c) { until has m { c } }`);
+        expect(c.procs[0]!.body[0]).toMatchObject({
+            kind: "until",
+            body: [{ kind: "paramStep", param: "c" }],
+        });
+    });
+
+    it("a parameter shadows a method word of the same name inside the body", () => {
+        const c = parseDef(`def f(chaos) { chaos }`);
+        expect(c.procs[0]!.body[0]).toMatchObject({ kind: "paramStep", param: "chaos" });
+    });
+
+    it("parses a single step as a block argument, slots included", () => {
+        const c = parseDef(`def roll(m, c) { until has m { c } }
+roll("life", harvest reforge "fire")`);
+        expect(c.body[0]).toMatchObject({
+            kind: "call",
+            args: [
+                { kind: "string", value: "life" },
+                {
+                    kind: "block",
+                    body: [{ kind: "operation", words: ["harvest", "reforge"] }],
+                },
+            ],
+        });
+    });
+
+    it("parses a { … } block argument and a call as a block argument", () => {
+        const c = parseDef(`def once(b) { b }
+once({ scour alchemy })
+once(once(chaos))`);
+        expect(c.body[0]).toMatchObject({
+            kind: "call",
+            args: [
+                {
+                    kind: "block",
+                    body: [
+                        { kind: "operation", words: ["scour"] },
+                        { kind: "operation", words: ["alchemy"] },
+                    ],
+                },
+            ],
+        });
+        expect(c.body[1]).toMatchObject({
+            kind: "call",
+            args: [{ kind: "block", body: [{ kind: "call", name: "once" }] }],
+        });
+    });
+
+    it("names the argument forms when none fits", () => {
+        expect(() => parseDef(`def once(b) { b }\nonce(=)`)).toThrow(/block of steps/);
+    });
 });
 
 describe("parser — predicates", () => {

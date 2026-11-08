@@ -252,6 +252,18 @@ def isDone() = has "maximum life"
         expect(h).toContain("until has m { … }");
     });
 
+    it("hovers a step parameter and a call with a block argument", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
+def roll(m, c) { until has m { c } }
+roll("maximum life", { scour alchemy })
+`;
+        expect(getDiagnostics(src, registry)).toEqual([]);
+        const h = getHover(src, src.indexOf("roll") + 1, registry)!;
+        expect(h).toContain("until has m { … }");
+        const inner = getHover(src, src.indexOf("alchemy"), registry)!;
+        expect(inner).toContain("Orb of Alchemy");
+    });
+
     it("offers a def with no body yet in both positions, and reads past a comment", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
 def half(m)

@@ -261,7 +261,8 @@ Operations that take a name (and an optional `t<n>`):
   modifier that shares a group with an option. Hovering the line shows the current
   options by side.
 
-A statement may also be a **call**, `name(arg, …)`, to an operation function (§4.4).
+A statement may also be a **call**, `name(arg, …)`, to an operation function (§4.4), or,
+inside one, a bare parameter standing for the steps bound to it.
 
 ---
 
@@ -295,22 +296,30 @@ Used in a failure branch, typically after a removal that may have taken a wanted
 `def name(params) = <pred>` declares a predicate; `def name(params) { <statements> }` an
 operation function. Both are local to the file, may appear anywhere at file scope, and are
 inlined at each use. A parameter's sort is inferred from its use: a tier slot, a count
-slot, or a name slot (a mod name, a bench or essence name, a harvest tag, an unveil
-target); the three sorts are distinct (`t1` is not the number `1`), and conflicting uses,
-an unused parameter, recursion, or calling a predicate as a statement (or a function in a
+slot, a name slot (a mod name, a bench or essence name, a harvest tag, an unveil target),
+or, in an operation function, statement position, where it stands for **steps**. The four
+sorts are distinct (`t1` is not the number `1`), and conflicting uses, an unused
+parameter, recursion, or calling a predicate as a statement (or a function in a
 condition) are errors.
+
+A step parameter is bound at the call site to a single statement (a method with its
+arguments, or another call) or to a `{ … }` block of them; the steps run where the
+parameter is written, as if pasted there, so a `restart` inside them re-enters the
+caller's loop. Inside a function body a parameter name shadows a method word of the same
+name. Steps passed as an argument may call the function they are passed to; only a
+function whose own body reaches itself is recursive.
 
 ```
 def anyEleRes(t) = has "fire res" t or has "cold res" t or has "lightning res" t
 
-def guarantee(m) {
+def guarantee(m, step) {
     until has m {
-        scour
-        alchemy
+        step
     }
 }
 
-guarantee("maximum life")
+guarantee("maximum life", { scour alchemy })
+guarantee("maximum life", chaos)
 until anyEleRes(t1) { chaos }
 ```
 

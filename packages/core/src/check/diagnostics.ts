@@ -131,6 +131,8 @@ export function describePred(pred: Pred): string {
                         return `t${a.value}`;
                     case "int":
                         return String(a.value);
+                    case "block":
+                        return "{ … }";
                 }
             };
             return `${pred.name}(${pred.args.map(argText).join(", ")})`;

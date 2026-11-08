@@ -275,6 +275,10 @@ export const call = (
     args: args.map(toArg),
     span: DS,
 });
+/** Steps bound to a step parameter at a call site. */
+export const blockArg = (body: readonly Stmt[]): Arg => ({ kind: "block", body, span: DS });
+/** A step parameter in statement position inside a proc body. */
+export const paramStep = (param: string): Stmt => ({ kind: "paramStep", param, span: DS });
 /** A call to an operation function, in statement position. */
 export const callStmt = (
     name: string,

@@ -56,13 +56,16 @@ export interface ParamRef {
 
 /**
  * An argument to a def call. A `tier` (`t1`) is a distinct sort from an `int`
- * count; `param` is a parameter forwarded to a nested call (`def a(t) = b(t)`).
+ * count; `param` is a parameter forwarded to a nested call (`def a(t) = b(t)`);
+ * a `block` is one or more steps, written as a single statement or a `{ … }`
+ * block, for a parameter the callee runs in statement position.
  */
 export type Arg =
     | { readonly kind: "tier"; readonly value: number; readonly span: SourceSpan }
     | { readonly kind: "int"; readonly value: number; readonly span: SourceSpan }
     | { readonly kind: "string"; readonly value: string; readonly span: SourceSpan }
-    | { readonly kind: "param"; readonly param: string; readonly span: SourceSpan };
+    | { readonly kind: "param"; readonly param: string; readonly span: SourceSpan }
+    | { readonly kind: "block"; readonly body: readonly Stmt[]; readonly span: SourceSpan };
 
 /**
  * A declared affix in the item block: a named modifier with its tier
@@ -102,7 +105,18 @@ export interface EldritchDecl {
 
 // --- Statements (surface §3–§4) -------------------------------------------
 
-export type Stmt = OperationStmt | RestartStmt | UntilStmt | IfStmt | CallStmt;
+export type Stmt = OperationStmt | RestartStmt | UntilStmt | IfStmt | CallStmt | ParamStmt;
+
+/**
+ * A def parameter in statement position inside an operation function's body:
+ * the steps bound to it at the call site run here. Inlining replaces it with
+ * the bound block, so the checker only sees one when no value was given.
+ */
+export interface ParamStmt {
+    readonly kind: "paramStep";
+    readonly param: string;
+    readonly span: SourceSpan;
+}
 
 /**
  * A crafting method applied to the item: the words that name it (`chaos`,

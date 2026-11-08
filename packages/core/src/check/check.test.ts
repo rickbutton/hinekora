@@ -13,6 +13,7 @@ import { buildRegistry } from "../resolve/registry.js";
 import {
     andp,
     bench,
+    blockArg,
     call,
     callStmt,
     craft,
@@ -28,6 +29,7 @@ import {
     op,
     orp,
     param,
+    paramStep,
     procDef,
     restart,
     tierArg,
@@ -537,6 +539,132 @@ describe("checker — operation functions", () => {
         expect(calls).toHaveLength(1);
         // The inlined transmute/regal are a black box — no op entries leak into the trace.
         expect(trace.some((e) => e.kind === "operation")).toBe(false);
+    });
+});
+
+describe("checker — step parameters", () => {
+    const normalRing = () => item({ base: "Iron Ring", ilvl: 100, rarity: "normal" });
+
+    it("runs a single step bound to a step parameter", () => {
+        // def roll(m, c) { until has m { c } }   roll("maximum life", chaos)
+        const p = procDef("roll", ["m", "c"], [until(hasP(param("m")), [paramStep("c")])]);
+        const c = craft(
+            rareRing(),
+            [callStmt("roll", ["maximum life", blockArg([op("chaos")])])],
+            [],
+            [p],
+        );
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
+    });
+
+    it("runs a block of steps bound to a step parameter", () => {
+        // def retry(b) { until has "life" { b } }   retry({ scour alchemy })
+        const p = procDef("retry", ["b"], [until(has("IncreasedLife1"), [paramStep("b")])]);
+        const c = craft(
+            rareRing(),
+            [callStmt("retry", [blockArg([op("scour"), op("alchemy")])])],
+            [],
+            [p],
+        );
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
+    });
+
+    it("threads state through the bound steps, so a refused step is reported", () => {
+        // def once(b) { b }   once(regal) on a Normal item: regal needs a Magic item.
+        const p = procDef("once", ["b"], [paramStep("b")]);
+        const c = craft(normalRing(), [callStmt("once", [blockArg([op("regal")])])], [], [p]);
+        expect(check(c, ctx).ok).toBe(false);
+    });
+
+    it("lets a step argument call the proc it is passed to", () => {
+        // def twice(b) { b b }   twice(twice(chaos)) runs four chaos orbs, not recursion.
+        const p = procDef("twice", ["b"], [paramStep("b"), paramStep("b")]);
+        const inner = callStmt("twice", [blockArg([op("chaos")])]);
+        const c = craft(rareRing(), [callStmt("twice", [blockArg([inner])])], [], [p]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.ok).toBe(true);
+    });
+
+    it("still rejects mutual recursion between procs", () => {
+        const a = procDef("a", [], [op("scour"), callStmt("b")]);
+        const b = procDef("b", [], [callStmt("a")]);
+        const c = craft(rareRing(), [callStmt("a")], [], [a, b]);
+        const msgs = check(c, ctx).diagnostics.map((d) => d.message);
+        expect(msgs).toContain(`recursive def "a" is not allowed`);
+        expect(msgs).toContain(`recursive def "b" is not allowed`);
+    });
+
+    it("substitutes the enclosing proc's params inside a step argument", () => {
+        // def once(b) { b }   def want(m) { once(until has m { chaos }) }   want("maximum life")
+        const once = procDef("once", ["b"], [paramStep("b")]);
+        const want = procDef(
+            "want",
+            ["m"],
+            [callStmt("once", [blockArg([until(hasP(param("m")), [op("chaos")])])])],
+        );
+        const c = craft(rareRing(), [callStmt("want", ["maximum life"])], [], [once, want]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
+    });
+
+    it("keeps a callee parameter from capturing a name inside the bound steps", () => {
+        // Both procs call their parameter `m`: a mod name in `want`, steps in `once`.
+        const once = procDef("once", ["m"], [paramStep("m")]);
+        const want = procDef(
+            "want",
+            ["m"],
+            [callStmt("once", [blockArg([until(hasP(param("m")), [op("chaos")])])])],
+        );
+        const c = craft(rareRing(), [callStmt("want", ["maximum life"])], [], [once, want]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
+    });
+
+    it("a restart inside the bound steps re-enters the caller's loop", () => {
+        const once = procDef("once", ["b"], [paramStep("b")]);
+        const body = blockArg([op("exalt"), iff(notp(has("IncreasedLife1")), [restart()])]);
+        const c = craft(
+            rareRing(),
+            [until(has("IncreasedLife1"), [callStmt("once", [body])])],
+            [],
+            [once],
+        );
+        const r = check(c, ctx);
+        expect(r.ok).toBe(false);
+        expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
+    });
+
+    it("reports a value where steps are expected, and steps where a value is", () => {
+        const once = procDef("once", ["b"], [paramStep("b")]);
+        const add = procDef("add", ["m"], [bench(param("m"))]);
+        const c1 = craft(rareRing(), [callStmt("once", ["maximum life"])], [], [once]);
+        expect(check(c1, ctx).diagnostics[0]?.message).toContain(
+            "should be a step or a { … } block of steps",
+        );
+        const c2 = craft(rareRing(), [callStmt("add", [blockArg([op("chaos")])])], [], [add]);
+        expect(check(c2, ctx).diagnostics[0]?.message).toContain("should be a quoted mod name");
+    });
+
+    it("reports a parameter used both as steps and as a mod name", () => {
+        const p = procDef("f", ["x"], [paramStep("x"), bench(param("x"))]);
+        const c = craft(rareRing(), [callStmt("f", [blockArg([op("chaos")])])], [], [p]);
+        const msg = check(c, ctx).diagnostics[0]?.message ?? "";
+        expect(msg).toContain("conflicting ways");
+        expect(msg).toContain("a step");
+    });
+
+    it("forwards a step parameter to a nested proc", () => {
+        const once = procDef("once", ["b"], [paramStep("b")]);
+        const via = procDef("via", ["b"], [callStmt("once", [param("b")])]);
+        const c = craft(rareRing(), [callStmt("via", [blockArg([op("chaos")])])], [], [once, via]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 });
 

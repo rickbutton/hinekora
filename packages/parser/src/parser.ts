@@ -440,6 +440,9 @@ class Parser {
         // A call to an operation function — an ident immediately followed by
         // `(`. Checked before the method case.
         if (this.at("ident") && this.peek(1).kind === "lparen") return this.parseCallStmt();
+        // Inside a def body a parameter shadows a method word of the same name.
+        const p = this.paramRef();
+        if (p !== undefined) return { kind: "paramStep", param: p.param, span: p.span };
         if (this.at("ident")) return this.parseOperation();
         throw this.error("expected an operation or control statement");
     }
@@ -766,8 +769,9 @@ class Parser {
         };
     }
 
-    /** A call argument: a `t1` tier, an int, a quoted string, or (in a def
-     *  body) a parameter forwarded to a nested call. */
+    /** A call argument: a `t1` tier, an int, a quoted string, (in a def body) a
+     *  parameter forwarded to a nested call, or steps for a step parameter: a
+     *  `{ … }` block or a single statement. */
     private parseArg(): Arg {
         const t = this.peek();
         const m = t.kind === "ident" ? /^t(\d+)$/i.exec(t.text) : null;
@@ -785,7 +789,17 @@ class Parser {
         }
         const p = this.paramRef();
         if (p) return { kind: "param", param: p.param, span: p.span };
-        throw this.error("expected an argument (a number, a `t1` tier, or a quoted string)");
+        if (t.kind === "lbrace") {
+            const body = this.parseBlock();
+            return { kind: "block", body, span: span(t.span.start, this.prev.span.end) };
+        }
+        if (t.kind === "ident") {
+            const stmt = this.parseStatement();
+            return { kind: "block", body: [stmt], span: stmt.span };
+        }
+        throw this.error(
+            "expected an argument (a number, a `t1` tier, a quoted mod name, a step, or a { … } block of steps)",
+        );
     }
 
     /** A `has` target: a quoted mod name, or a param standing in for one. */

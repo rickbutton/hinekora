@@ -24,7 +24,6 @@ of the operations; no divergence is expected.
 
 ## Step 2. Language and editor follow-ons
 
-- A currency- or block-valued **parameter** (only value params, tier/count/mod, for now).
 - **Completion perf:** `getCompletions` runs a full check per mod-string request;
   memoize if latency shows.
 - **Tier-atom tightenings:** assert `tierAtom ⇒ family` and tier mutual-exclusion in the

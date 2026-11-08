@@ -478,6 +478,11 @@ class Checker {
                 return this.checkIf(a, stmt);
             case "call":
                 return this.checkCall(a, stmt);
+            case "paramStep":
+                // Inlining splices the bound steps in; one left standing was
+                // never bound (the proc's own error was reported).
+                this.diag(`parameter "${stmt.param}" was never given a value`, stmt.span);
+                return { kind: "fall", state: a };
         }
     }
 
@@ -727,6 +732,14 @@ class Checker {
             }
             this.procs.set(proc.name, { proc, paramTypes: types, valid: conflicts.length === 0 });
         }
+        // Recursion is decided on the definitions, not while inlining: a step
+        // argument may legitimately call the very proc it is passed to
+        // (`twice(twice({ chaos }))`), which an expansion-time guard would refuse.
+        for (const name of recursiveProcs(this.procs)) {
+            const entry = this.procs.get(name)!;
+            this.diag(`recursive def "${name}" is not allowed`, entry.proc.span);
+            this.procs.set(name, { ...entry, valid: false });
+        }
     }
 
     /** Check a call to an operation function: resolve it, bind args, then inline
@@ -749,20 +762,11 @@ class Checker {
         }
         const { proc, paramTypes, valid } = entry;
         if (!valid) return { kind: "fall", state: a }; // the proc's own error was reported
-        if (this.expanding.has(stmt.name)) {
-            this.diag(`recursive def "${stmt.name}" is not allowed`, stmt.span);
-            return { kind: "fall", state: a };
-        }
         const env = this.bindArgs(stmt.name, proc.params, paramTypes, stmt.args, stmt.span);
         if (env === null) return { kind: "fall", state: a };
 
         const body = substituteStmts(proc.body, env);
-        this.expanding.add(stmt.name);
-        try {
-            return this.untraced(() => this.checkSeq(a, body));
-        } finally {
-            this.expanding.delete(stmt.name);
-        }
+        return this.untraced(() => this.checkSeq(a, body));
     }
 
     /** Bind call arguments to parameters, checking arity and each arg's sort.
@@ -960,16 +964,18 @@ class Checker {
 // --- def parameter types + substitution (module-level, pure) --------------
 
 /**
- * The sort of a def parameter, three distinct kinds even though a tier and a
+ * The sort of a def parameter, four distinct kinds even though a tier and a
  * count are both written with digits: a `tier` (t1) indexes a mod's tier
- * ladder, a `count` is a number of affixes, a `mod` is a stat description.
+ * ladder, a `count` is a number of affixes, a `mod` is a stat description, a
+ * `block` is one or more steps run where the parameter stands.
  */
-type ParamType = "tier" | "count" | "mod";
+type ParamType = "tier" | "count" | "mod" | "block";
 
 const SORT_LABEL: Record<ParamType, string> = {
     tier: "a tier",
     count: "a count",
     mod: "a mod name",
+    block: "a step",
 };
 
 /** The one argument kind each sort accepts (a pass-through param has no sort and
@@ -978,12 +984,54 @@ const WANT_KIND: Record<ParamType, Arg["kind"]> = {
     tier: "tier",
     count: "int",
     mod: "string",
+    block: "block",
 };
 const WANT_LABEL: Record<ParamType, string> = {
     tier: "a tier (t1)",
     count: "a number",
     mod: "a quoted mod name",
+    block: "a step or a { … } block of steps",
 };
+
+/** The procs a statement list calls, directly or inside a step argument. */
+function calledProcs(stmts: readonly Stmt[], out = new Set<string>()): Set<string> {
+    for (const s of stmts) {
+        switch (s.kind) {
+            case "call":
+                out.add(s.name);
+                for (const arg of s.args) if (arg.kind === "block") calledProcs(arg.body, out);
+                break;
+            case "until":
+                calledProcs(s.body, out);
+                break;
+            case "if":
+                calledProcs(s.body, out);
+                if (s.elseBody !== undefined) calledProcs(s.elseBody, out);
+                break;
+            case "operation":
+            case "restart":
+            case "paramStep":
+                break;
+        }
+    }
+    return out;
+}
+
+/** The procs that can reach themselves through the call graph of their bodies. */
+function recursiveProcs(procs: ReadonlyMap<string, { proc: ProcDef }>): string[] {
+    const calls = new Map<string, Set<string>>();
+    for (const [name, { proc }] of procs) calls.set(name, calledProcs(proc.body));
+    const reaches = (from: string, target: string, seen: Set<string>): boolean => {
+        for (const next of calls.get(from) ?? []) {
+            if (next === target) return true;
+            if (seen.has(next)) continue;
+            seen.add(next);
+            if (reaches(next, target, seen)) return true;
+        }
+        return false;
+    };
+    return [...calls.keys()].filter((name) => reaches(name, name, new Set([name])));
+}
 
 /** Accumulates where each parameter is used, so its sort can be inferred (uses at
  *  two different sorts conflict) and an unused one flagged. */
@@ -1028,7 +1076,7 @@ function notePredUses(u: ParamUses, p: Pred): void {
             notePredUses(u, p.right);
             return;
         case "call":
-            for (const arg of p.args) if (arg.kind === "param") markUsed(u, arg.param);
+            noteArgUses(u, p.args);
             return;
         case "isRarity":
         case "influenced":
@@ -1056,9 +1104,21 @@ function slotSort(method: Method | undefined, i: number): ParamType | undefined 
     }
 }
 
+/** A pass-through arg counts as a use; the steps of a block arg are walked like
+ *  any other statements, since they may use the enclosing def's params. */
+function noteArgUses(u: ParamUses, args: readonly Arg[]): void {
+    for (const arg of args) {
+        if (arg.kind === "param") markUsed(u, arg.param);
+        else if (arg.kind === "block") for (const s of arg.body) noteStmtUses(u, s);
+    }
+}
+
 function noteStmtUses(u: ParamUses, s: Stmt): void {
     switch (s.kind) {
         case "restart":
+            return;
+        case "paramStep":
+            noteSort(u, { param: s.param, span: s.span }, "block");
             return;
         case "operation": {
             const method = findMethod(s.words);
@@ -1079,7 +1139,7 @@ function noteStmtUses(u: ParamUses, s: Stmt): void {
             if (s.elseBody !== undefined) for (const b of s.elseBody) noteStmtUses(u, b);
             return;
         case "call":
-            for (const arg of s.args) if (arg.kind === "param") markUsed(u, arg.param);
+            noteArgUses(u, s.args);
             return;
     }
 }
@@ -1125,9 +1185,16 @@ function subValue<T extends string | number>(v: T | ParamRef, env: Map<string, A
 }
 
 /** A pass-through param arg (`… b(t) …` called with `t` bound) is replaced by the
- *  value bound here; other args pass unchanged. */
+ *  value bound here; a block arg has the enclosing def's params substituted into
+ *  its steps; other args pass unchanged. */
 function subArgs(args: readonly Arg[], env: Map<string, Arg>): Arg[] {
-    return args.map((arg) => (arg.kind === "param" ? (env.get(arg.param) ?? arg) : arg));
+    return args.map((arg) =>
+        arg.kind === "param"
+            ? (env.get(arg.param) ?? arg)
+            : arg.kind === "block"
+              ? { ...arg, body: substituteStmts(arg.body, env) }
+              : arg,
+    );
 }
 
 /** Replace parameter references in a predicate with the bound argument values. */
@@ -1163,22 +1230,31 @@ function substitute(pred: Pred, env: Map<string, Arg>): Pred {
     }
 }
 
-/** Replace parameter references throughout a proc body's statements. */
+/** Replace parameter references throughout a proc body's statements. A step
+ *  parameter bound to a block is spliced in as the block's statements, already
+ *  substituted in the caller's scope, so a callee param of the same name cannot
+ *  capture a name inside them. */
 function substituteStmts(stmts: readonly Stmt[], env: Map<string, Arg>): Stmt[] {
-    return stmts.map((s) => substituteStmt(s, env));
+    return stmts.flatMap((s) => {
+        if (s.kind !== "paramStep") return [substituteStmt(s, env)];
+        const bound = env.get(s.param);
+        return bound?.kind === "block" ? [...bound.body] : [s];
+    });
 }
 
 /** A bound parameter in an operation's argument becomes the bound literal; an
- *  unbound one stays a reference, caught downstream. */
+ *  unbound one stays a reference, caught downstream. A block cannot fill a
+ *  value slot; `bindArgs` refuses it before substitution runs. */
 function subOperationArg(arg: OperationArg, env: Map<string, Arg>): OperationArg {
     if (arg.kind !== "param") return arg;
     const bound = env.get(arg.param);
-    return bound === undefined ? arg : bound;
+    return bound === undefined || bound.kind === "block" ? arg : bound;
 }
 
 function substituteStmt(stmt: Stmt, env: Map<string, Arg>): Stmt {
     switch (stmt.kind) {
         case "restart":
+        case "paramStep":
             return stmt;
         case "operation":
             return { ...stmt, args: stmt.args.map((arg) => subOperationArg(arg, env)) };

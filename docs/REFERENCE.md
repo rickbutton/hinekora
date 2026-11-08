@@ -400,11 +400,12 @@ body)`, the states that re-enter the loop head after one iteration (fall-off-end
   diagnostics, no trace, for probe/fixpoint passes) and `untraced` (trace off, diagnostics
   on, for inlined proc bodies).
 - **Predicate defs** (`def name(p) = <pred>`): local, parameterized, pure. Param sorts
-  are **inferred from use**: `tier | count | mod`, three DISTINCT sorts (`t1` is not
-  the int `1`); conflicting uses are an error and the def is dropped without cascading;
-  unused params are an error; recursion is caught (`expanding` set). A call checks arity
-  and arg sorts, substitutes args into the body, then resolves it, so all existing
-  narrowing just works. Params can be forwarded to nested calls (`def a(t) = b(t)`).
+  are **inferred from use**: `tier | count | mod | block`, four DISTINCT sorts (`t1` is
+  not the int `1`); conflicting uses are an error and the def is dropped without
+  cascading; unused params are an error; recursion is caught (`expanding` set). A call
+  checks arity and arg sorts, substitutes args into the body, then resolves it, so all
+  existing narrowing just works. Params can be forwarded to nested calls (`def a(t) =
+b(t)`).
 - **Operation functions** (`def name(p) { <stmts> }`): the statement-valued sibling of a
   predicate def, dispatched at parse time by a `{ … }` body. A `CallStmt` (`checkCall`)
   binds args (shared `bindArgs`/param-sort machinery) and inlines the substituted body
@@ -412,7 +413,14 @@ body)`, the states that re-enter the loop head after one iteration (fall-off-end
   `restart` back-edges compose with no special handling. Param-sort inference walks the
   statements (`noteStmtUses`) and substitution recurses through them (`substituteStmt`);
   a param can fill a `has`/`bench`/`essence` mod-name or tier slot, a `harvest` tag, or an
-  `unveil` mod. Procs share the def name space and `expanding` guard; the inlined body is a trace black box (`suppressTrace`).
+  `unveil` mod. A param in statement position (`ParamStmt`, kind `paramStep`) has the
+  `block` sort: the call site binds it to a `block` `Arg` (one statement or a `{ … }`
+  block, `parseArg`), and `substituteStmts` splices the bound steps in place, already
+  substituted in the caller's scope, so a callee param cannot capture a name inside them.
+  Procs share the def name space; recursion is decided statically on the call graph of
+  the bodies (`recursiveProcs`), not while inlining, so steps passed as an argument may
+  call the proc they are passed to. The inlined body is a trace black box
+  (`suppressTrace`).
 - **Operation statements** (`checkOperation`): look the statement's words up in the
   method table (`findMethod`; an unknown word is "Unknown currency" or "Unknown
   operation"), bind its arguments to the method's slots as `Literal`s (a parameter left
