@@ -3,7 +3,7 @@ import { rollableTiers } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { getCompletions } from "./completion.js";
 import { getHover } from "./hover.js";
-import { getSemanticTokens } from "./semantic.js";
+import { getSemanticTokens, SEMANTIC_LEGEND } from "./semantic.js";
 import { getDiagnostics } from "./service.js";
 
 const registry = registryOf(loadDefaultPoe1());
@@ -411,6 +411,38 @@ describe("semantic tokens", () => {
 
     it("returns empty on unlexable input rather than throwing", () => {
         expect(getSemanticTokens(`has "unterminated`, registry).data).toEqual([]);
+    });
+
+    it("colours def names and parameters, a parameter named like a currency included", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
+def roll(m, chaos) { until has m { chaos } }
+roll("maximum life", chaos)`;
+        const data = getSemanticTokens(src, registry).data;
+        // Decode the deltas into absolute (line, char, type, modifiers) tuples.
+        const decoded: [number, number, number, number][] = [];
+        let line = 0;
+        let char = 0;
+        for (let i = 0; i < data.length; i += 5) {
+            line += data[i]!;
+            char = data[i]! === 0 ? char + data[i + 1]! : data[i + 1]!;
+            decoded.push([line, char, data[i + 3]!, data[i + 4]!]);
+        }
+        const at = (l: number, text: string) =>
+            decoded.find(([ln, ch]) => ln === l && ch === src.split("\n")[l]!.indexOf(text));
+        const T = SEMANTIC_LEGEND.tokenTypes;
+        expect(at(1, "roll")).toMatchObject({ 2: T.indexOf("function"), 3: 1 });
+        expect(at(1, "m,")).toMatchObject({ 2: T.indexOf("parameter"), 3: 1 });
+        expect(at(1, "{ chaos }")).toBeUndefined(); // the `{`, not a token
+        expect(
+            decoded.filter(([ln, , ty]) => ln === 1 && ty === T.indexOf("parameter")),
+        ).toHaveLength(4);
+        expect(at(2, "roll")).toMatchObject({ 2: T.indexOf("function"), 3: 0 });
+        // The Chaos Orb at the call site is a currency, not a parameter.
+        const callChaos = src.split("\n")[2]!.indexOf("chaos");
+        expect(decoded.find(([ln, ch]) => ln === 2 && ch === callChaos)).toMatchObject({
+            2: T.indexOf("function"),
+            3: 0,
+        });
     });
 
     it("colours the marks' words: the fields, the predicates and the influence names", () => {

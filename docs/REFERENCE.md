@@ -261,8 +261,12 @@ Transport-free service functions + a stdio server:
   retrying with the open string closed). Both filters degrade gracefully to "all mods"
   when the base can't be read / nothing parses.
 - `semantic.ts`: `getSemanticTokens`, lexer-driven; legend
-  `["keyword","property","function"]`; keywords are the control and predicate words plus
-  `METHOD_WORDS` (currency names colour as functions); returns empty on unlexable input.
+  `["keyword","property","function","parameter"]` with the `declaration` modifier;
+  keywords are the control and predicate words plus `METHOD_WORDS` (currency names
+  colour as functions). When the guide parses, the bindings decide first: a def name is
+  a function and a parameter a parameter wherever they appear, so a parameter named
+  like a currency colours as a parameter inside its def. Returns empty on unlexable
+  input.
 - `server.ts`: `createServer(connection, registry)`, capabilities + handlers.
   `triggerCharacters` includes `"` so the mod/base list pops when a string opens. A
   refused rename is returned as an `InvalidRequest` error so the editor shows the reason.
