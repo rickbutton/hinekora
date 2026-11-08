@@ -1,0 +1,646 @@
+{
+  "build": "Winter Orb Power Charge Stacking Occultist (Fubgun, Pcharge Stack set)",
+  "slug": "winter-orb-occultist-fubgun",
+  "source": "https://pobb.in/MwTyQN55T8tE",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Witch",
+    "ascendancy": "Occultist",
+    "level": 100,
+    "mainSocketGroup": 1,
+    "mainSkillGems": [
+      "Winter Orb",
+      "Infused Channelling",
+      "Cold Penetration",
+      "Power Charge On Critical",
+      "Inspiration",
+      "Focused Channelling"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "3",
+      "title": "Entering maps",
+      "active": false,
+      "slotCount": 30
+    },
+    {
+      "id": "1",
+      "title": "Early game",
+      "active": false,
+      "slotCount": 31
+    },
+    {
+      "id": "2",
+      "title": "Mid game",
+      "active": false,
+      "slotCount": 31
+    },
+    {
+      "id": "7",
+      "title": "Optional Clear setup",
+      "active": false,
+      "slotCount": 31
+    },
+    {
+      "id": "5",
+      "title": "Endgame Optional",
+      "active": false,
+      "slotCount": 32
+    },
+    {
+      "id": "4",
+      "title": "Pcharge Stack",
+      "active": false,
+      "slotCount": 31
+    },
+    {
+      "id": "6",
+      "title": "Uber Pcharge",
+      "active": true,
+      "slotCount": 31
+    }
+  ],
+  "chosenItemSet": {
+    "id": "4",
+    "title": "Pcharge Stack"
+  },
+  "items": {
+    "Flask 3": {
+      "flaskActive": true,
+      "rarity": "UNIQUE",
+      "name": "Stormblood",
+      "base": "Topaz Flask",
+      "ilvl": null,
+      "flags": []
+    },
+    "Belt": {
+      "rarity": "UNIQUE",
+      "name": "Graven's Secret",
+      "base": "Cloth Belt",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "2"
+    },
+    "Weapon 1": {
+      "rarity": "UNIQUE",
+      "name": "Tulfall",
+      "base": "Opal Wand",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "3"
+    },
+    "Helmet": {
+      "rarity": "UNIQUE",
+      "name": "Willclash",
+      "base": "Golden Mask",
+      "ilvl": null,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Weapon 2": {
+      "rarity": "UNIQUE",
+      "name": "Malachai's Loop",
+      "base": "Harmonic Spirit Shield",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "4"
+    },
+    "Body Armour": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Twilight Regalia",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "+(24-25)% to Critical Strike Multiplier for Spell Damage",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "11% of Physical Damage from Hits taken as Chaos Damage",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+95 to maximum Energy Shield"
+        },
+        {
+          "text": "140% increased Energy Shield"
+        },
+        {
+          "text": "+48% to Fire Resistance"
+        },
+        {
+          "text": "+44% to Cold Resistance"
+        },
+        {
+          "text": "+44% to Lightning Resistance"
+        },
+        {
+          "text": "13% increased Stun and Block Recovery"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Gloves": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Warlock Gloves",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "25% chance to Unnerve Enemies for 4 seconds on Hit",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "Inflict Cold Exposure on Hit, applying -16% to Cold Resistance",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+49 to maximum Energy Shield"
+        },
+        {
+          "text": "135% increased Energy Shield"
+        },
+        {
+          "text": "+47% to Fire Resistance"
+        },
+        {
+          "text": "+47% to Cold Resistance"
+        },
+        {
+          "text": "50% increased damage with hits against chilled enemies"
+        },
+        {
+          "text": "15% increased Stun and Block Recovery"
+        },
+        {
+          "text": "+(17-20)% to Fire and Lightning Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Boots": {
+      "rarity": "UNIQUE",
+      "name": "Ralakesh's Impatience",
+      "base": "Riveted Boots",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "5"
+    },
+    "Ring 2": {
+      "rarity": "UNIQUE",
+      "name": "Foulborn Romira's Banquet",
+      "base": "Diamond Ring",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "3"
+    },
+    "Flask 2": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Alchemist's Quicksilver Flask of Incision",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "23% reduced Duration"
+        },
+        {
+          "text": "25% increased effect"
+        },
+        {
+          "text": "55% increased Critical Strike Chance during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 1": {
+      "rarity": "UNIQUE",
+      "name": "Foulborn Romira's Banquet",
+      "base": "Diamond Ring",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "3"
+    },
+    "Amulet": {
+      "rarity": "UNIQUE",
+      "name": "Badge of the Brotherhood",
+      "base": "Turquoise Amulet",
+      "ilvl": null,
+      "flags": []
+    },
+    "Flask 5": {
+      "flaskActive": true,
+      "rarity": "UNIQUE",
+      "name": "Dying Sun",
+      "base": "Ruby Flask",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "4"
+    },
+    "Flask 1": {
+      "flaskActive": true,
+      "rarity": "UNIQUE",
+      "name": "Rumi's Concoction",
+      "base": "Granite Flask",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "4"
+    },
+    "Flask 4": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Brewer's Silver Flask of the Owl",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "24% reduced Charges per use"
+        },
+        {
+          "text": "63% reduced Effect of Curses on you during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 61834": {
+      "rarity": "UNIQUE",
+      "name": "Sublime Vision",
+      "base": "Prismatic Jewel",
+      "ilvl": null,
+      "flags": [
+        "Shaper"
+      ],
+      "selectedVariant": "4"
+    },
+    "Tree Jewel 9408": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Cobalt Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+14% to Critical Strike Multiplier for Spell Damage"
+        },
+        {
+          "text": "+17% to Critical Strike Multiplier with Cold Skills"
+        },
+        {
+          "text": "8% increased maximum Energy Shield"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 36634": {
+      "rarity": "UNIQUE",
+      "name": "Elegant Hubris 86600; 4; Mind Over Matter",
+      "base": "Timeless Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "3"
+    },
+    "Tree Jewel 29712": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Medium Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 4 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "1 Added Passive Skill is a Jewel Socket",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 10% increased Area Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "1 Added Passive Skill is Assert Dominance"
+        },
+        {
+          "text": "1 Added Passive Skill is Vast Power"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 12613": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Cobalt Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+14% to Critical Strike Multiplier for Spell Damage"
+        },
+        {
+          "text": "+17% to Critical Strike Multiplier with Cold Skills"
+        },
+        {
+          "text": "8% increased maximum Energy Shield"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 55190": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Large Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Cold Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "1 Added Passive Skill is Blanketed Snow"
+        },
+        {
+          "text": "1 Added Passive Skill is Prismatic Heart"
+        },
+        {
+          "text": "1 Added Passive Skill is Widespread Destruction"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 7960": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Large Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Cold Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "1 Added Passive Skill is Blast-Freeze"
+        },
+        {
+          "text": "1 Added Passive Skill is Prismatic Heart"
+        },
+        {
+          "text": "1 Added Passive Skill is Widespread Destruction"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 13170": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Cobalt Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+14% to Critical Strike Multiplier for Spell Damage"
+        },
+        {
+          "text": "+17% to Critical Strike Multiplier with Cold Skills"
+        },
+        {
+          "text": "8% increased maximum Energy Shield"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 26196": {
+      "rarity": "UNIQUE",
+      "name": "Impossible Escape",
+      "base": "Viridian Jewel",
+      "ilvl": null,
+      "flags": [
+        "Corrupted"
+      ],
+      "selectedVariant": "27"
+    },
+    "Tree Jewel 49080": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Cobalt Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+14% to Critical Strike Multiplier for Spell Damage"
+        },
+        {
+          "text": "+17% to Critical Strike Multiplier with Cold Skills"
+        },
+        {
+          "text": "8% increased maximum Energy Shield"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 61419": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Cobalt Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+14% to Critical Strike Multiplier for Spell Damage"
+        },
+        {
+          "text": "+17% to Critical Strike Multiplier with Cold Skills"
+        },
+        {
+          "text": "8% increased maximum Energy Shield"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 6230": {
+      "rarity": "UNIQUE",
+      "name": "Unnatural Instinct",
+      "base": "Viridian Jewel",
+      "ilvl": null,
+      "flags": []
+    },
+    "Tree Jewel 48768": {
+      "rarity": "UNIQUE",
+      "name": "The Light of Meaning",
+      "base": "Prismatic Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "10"
+    },
+    "Tree Jewel 44169": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Cobalt Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+14% to Critical Strike Multiplier for Spell Damage"
+        },
+        {
+          "text": "+17% to Critical Strike Multiplier with Cold Skills"
+        },
+        {
+          "text": "8% increased maximum Energy Shield"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 21984": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Large Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Cold Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "1 Added Passive Skill is Blanketed Snow"
+        },
+        {
+          "text": "1 Added Passive Skill is Prismatic Heart"
+        },
+        {
+          "text": "1 Added Passive Skill is Widespread Destruction"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 64583": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Cobalt Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+14% to Critical Strike Multiplier for Spell Damage"
+        },
+        {
+          "text": "+17% to Critical Strike Multiplier with Cold Skills"
+        },
+        {
+          "text": "8% increased maximum Energy Shield"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    }
+  }
+}

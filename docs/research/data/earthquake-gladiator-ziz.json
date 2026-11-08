@@ -1,0 +1,745 @@
+{
+  "build": "Earthquake Gladiator (Zizaran, Endgame set)",
+  "slug": "earthquake-gladiator-ziz",
+  "source": "https://pobb.in/CQjwpiUqHfs1",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Duelist",
+    "ascendancy": "Gladiator",
+    "level": 98,
+    "mainSocketGroup": 1,
+    "mainSkillGems": [
+      "Earthquake",
+      "Melee Physical Damage",
+      "Brutality",
+      "Fist of War",
+      "Fortify",
+      "Less Duration"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "4",
+      "title": "Level 13 example",
+      "active": false,
+      "slotCount": 18
+    },
+    {
+      "id": "3",
+      "title": "Early Game",
+      "active": false,
+      "slotCount": 24
+    },
+    {
+      "id": "1",
+      "title": "Midgame {1}",
+      "active": false,
+      "slotCount": 24
+    },
+    {
+      "id": "6",
+      "title": "Endgame {2,4}",
+      "active": true,
+      "slotCount": 24
+    },
+    {
+      "id": "2",
+      "title": "Endgame - suppress {3}",
+      "active": false,
+      "slotCount": 24
+    },
+    {
+      "id": "5",
+      "title": "Minmax",
+      "active": false,
+      "slotCount": 24
+    }
+  ],
+  "chosenItemSet": {
+    "id": "6",
+    "title": "Endgame {2,4}"
+  },
+  "items": {
+    "Flask 2": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Flagellant's Granite Flask of the Armadillo",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Gain 3 Charges when you are Hit by an Enemy"
+        },
+        {
+          "text": "59% increased Armour during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 4": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Flagellant's Quartz Flask of the Cheetah",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Gain 3 Charges when you are Hit by an Enemy"
+        },
+        {
+          "text": "13% increased Movement Speed during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 3": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Flagellant's Quicksilver Flask of the Owl",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Gain 3 Charges when you are Hit by an Enemy"
+        },
+        {
+          "text": "61% reduced Effect of Curses on you during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 1": {
+      "rarity": "RARE",
+      "name": "Endgame Axe",
+      "base": "Reaver Axe",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "211% increased Physical Damage"
+        },
+        {
+          "text": "Adds 26 to 49 Physical Damage"
+        },
+        {
+          "text": "25% increased Attack Speed"
+        },
+        {
+          "text": "+111 to Accuracy Rating"
+        },
+        {
+          "text": "+(18-20)% to Physical Damage over Time Multiplier",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Amulet": {
+      "rarity": "RARE",
+      "name": "Endgame Amulet",
+      "base": "Turquoise Amulet",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Allocates Endurance",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+(16-24) to Dexterity and Intelligence"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+21% to Damage over Time Multiplier"
+        },
+        {
+          "text": "+112 to maximum Life"
+        },
+        {
+          "text": "+44% to Lightning Resistance"
+        },
+        {
+          "text": "+(16-20)% to Cold and Chaos Resistances",
+          "markers": [
+            "custom"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Helmet": {
+      "rarity": "RARE",
+      "name": "Pre-Suppress Endgame Helmet",
+      "base": "Giantslayer Helmet",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "10% increased Vulnerability Curse Effect",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "6% of Physical Damage from Hits taken as Fire Damage",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+51 to Strength"
+        },
+        {
+          "text": "90% increased Armour"
+        },
+        {
+          "text": "+130 to maximum Life"
+        },
+        {
+          "text": "+48% to Cold Resistance"
+        },
+        {
+          "text": "+29% to Chaos Resistance"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Body Armour": {
+      "rarity": "RARE",
+      "name": "Pre-Suppress Endgame Chest",
+      "base": "Royal Plate",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "+1% to all maximum Resistances",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "Pride has (19-21)% increased Aura Effect",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+164 to maximum Life"
+        },
+        {
+          "text": "+39% to Cold Resistance"
+        },
+        {
+          "text": "+44% to Lightning Resistance"
+        },
+        {
+          "text": "(20-25)% chance to Avoid Elemental Ailments",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "(20-25)% chance to Avoid being Stunned",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "(5-7)% Chance to Block Attack Damage",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Can have up to 3 Crafted Modifiers",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 4,
+      "fracturedExplicitCount": 0
+    },
+    "Gloves": {
+      "rarity": "RARE",
+      "name": "Pre-Suppress Endgame Gloves",
+      "base": "Leviathan Gauntlets",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "+(5-7)% to Physical Damage over Time Multiplier",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "Replace Aggravate with \"Exerted Attacks Deal increased damage\" if you take Jagged Technique",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "10% chance to Aggravate Bleeding on targets you Hit with Attacks",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "94% increased Armour"
+        },
+        {
+          "text": "+113 to maximum Life"
+        },
+        {
+          "text": "+45% to Fire Resistance"
+        },
+        {
+          "text": "+(17-20)% to Fire and Lightning Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 1": {
+      "rarity": "UNIQUE",
+      "name": "Kaom's Sign",
+      "base": "Coral Ring",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "3"
+    },
+    "Ring 2": {
+      "rarity": "RARE",
+      "name": "Alternative Endgame Ring",
+      "base": "Vermillion Ring",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "(5-7)% increased maximum Life"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+127 to maximum Life"
+        },
+        {
+          "text": "+28% to Chaos Resistance"
+        },
+        {
+          "text": "+(12-15)% to Damage over Time Multiplier",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "+1 to Minimum Frenzy Charges",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 1": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Bubbling Divine Life Flask of Alleviation",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "37% reduced Amount Recovered"
+        },
+        {
+          "text": "135% increased Recovery rate"
+        },
+        {
+          "text": "50% of Recovery applied Instantly"
+        },
+        {
+          "text": "Grants Immunity to Bleeding for 11 seconds if used while Bleeding"
+        },
+        {
+          "text": "Grants Immunity to Corrupted Blood for 11 seconds if used while affected by Corrupted Blood"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Belt": {
+      "rarity": "UNIQUE",
+      "name": "Ryslatha's Coil",
+      "base": "Studded Belt",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "2"
+    },
+    "Weapon 2": {
+      "rarity": "RARE",
+      "name": "Pre-Suppress Life on Block Shield",
+      "base": "Colossal Tower Shield",
+      "ilvl": null,
+      "flags": [
+        "Shaper"
+      ],
+      "implicits": [
+        {
+          "text": "+(10-20) to maximum Life"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "You take 60% reduced Extra Damage from Critical Strikes"
+        },
+        {
+          "text": "99% increased Armour"
+        },
+        {
+          "text": "+103 to maximum Life"
+        },
+        {
+          "text": "Recover 5% of Life when you Block"
+        },
+        {
+          "text": "+(21-25) to Strength and Intelligence",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Boots": {
+      "rarity": "RARE",
+      "name": "Pre-Suppress Endgame Boots",
+      "base": "Leviathan Greaves",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "4% increased Action Speed",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "Regenerate 0.2% of Life per second per Endurance Charge",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "74% increased Armour"
+        },
+        {
+          "text": "+92 to maximum Life"
+        },
+        {
+          "text": "+44% to Fire Resistance"
+        },
+        {
+          "text": "+30% to Chaos Resistance"
+        },
+        {
+          "text": "30% increased Movement Speed"
+        },
+        {
+          "text": "(31-35)% chance to Avoid Elemental Ailments",
+          "markers": [
+            "custom"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 5": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Brewer's Sulphur Flask",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Creates Consecrated Ground on Use"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "25% reduced Charges per use"
+        },
+        {
+          "text": "Regenerate 3% of Life per second during Effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 22994": {
+      "rarity": "RARE",
+      "name": "Jewel",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "15% increased Global Physical Damage"
+        },
+        {
+          "text": "+8% to Physical Damage over Time Multiplier"
+        },
+        {
+          "text": "7% increased maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 10532": {
+      "rarity": "RARE",
+      "name": "Jewel",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "15% increased Global Physical Damage"
+        },
+        {
+          "text": "+8% to Physical Damage over Time Multiplier"
+        },
+        {
+          "text": "7% increased maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 26725": {
+      "rarity": "RARE",
+      "name": "Jewel",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "15% increased Global Physical Damage"
+        },
+        {
+          "text": "+8% to Physical Damage over Time Multiplier"
+        },
+        {
+          "text": "7% increased maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 54127": {
+      "rarity": "UNIQUE",
+      "name": "The Light of Meaning",
+      "base": "Prismatic Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "8"
+    },
+    "Tree Jewel 46519": {
+      "rarity": "RARE",
+      "name": "Jewel",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "15% increased Global Physical Damage"
+        },
+        {
+          "text": "+8% to Physical Damage over Time Multiplier"
+        },
+        {
+          "text": "7% increased maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 46393": {
+      "rarity": "RARE",
+      "name": "Jewel",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "15% increased Global Physical Damage"
+        },
+        {
+          "text": "+8% to Physical Damage over Time Multiplier"
+        },
+        {
+          "text": "7% increased maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 46882": {
+      "rarity": "RARE",
+      "name": "Cluster Jewel",
+      "base": "Large Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Physical Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: +2 to All Attributes"
+        },
+        {
+          "text": "1 Added Passive Skill is Battle-Hardened"
+        },
+        {
+          "text": "1 Added Passive Skill is Furious Assault"
+        },
+        {
+          "text": "1 Added Passive Skill is Master the Fundamentals"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 28475": {
+      "rarity": "RARE",
+      "name": "Jewel",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "15% increased Global Physical Damage"
+        },
+        {
+          "text": "+8% to Physical Damage over Time Multiplier"
+        },
+        {
+          "text": "7% increased maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 2491": {
+      "rarity": "RARE",
+      "name": "Cluster Jewel",
+      "base": "Large Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Physical Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: +2 to All Attributes"
+        },
+        {
+          "text": "1 Added Passive Skill is Battle-Hardened"
+        },
+        {
+          "text": "1 Added Passive Skill is Furious Assault"
+        },
+        {
+          "text": "1 Added Passive Skill is Master the Fundamentals"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    }
+  }
+}

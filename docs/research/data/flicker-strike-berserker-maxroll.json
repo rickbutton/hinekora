@@ -1,0 +1,617 @@
+{
+  "build": "Flicker Strike Berserker (Maxroll, Ghostwrithe Endgame set)",
+  "slug": "flicker-strike-berserker-maxroll",
+  "source": "https://maxroll.gg/poe/build-guides/flicker-strike-berserker-league-starter",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Marauder",
+    "ascendancy": "Berserker",
+    "level": 99,
+    "mainSocketGroup": 1,
+    "mainSkillGems": [
+      "Vaal Flicker Strike",
+      "Greater Multistrike",
+      "Volatility",
+      "Invert the Rules",
+      "Ruthless",
+      "Close Combat",
+      "Melee Splash"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "1",
+      "title": "Act 1 {1}",
+      "active": false,
+      "slotCount": 17
+    },
+    {
+      "id": "6",
+      "title": "Act 2-5 {2}",
+      "active": false,
+      "slotCount": 8
+    },
+    {
+      "id": "5",
+      "title": "Act 6 Flicker Swap {3}",
+      "active": false,
+      "slotCount": 10
+    },
+    {
+      "id": "2",
+      "title": "Early Maps {4}",
+      "active": false,
+      "slotCount": 21
+    },
+    {
+      "id": "4",
+      "title": "Late Maps before Ghostwrithe {5}",
+      "active": false,
+      "slotCount": 21
+    },
+    {
+      "id": "3",
+      "title": "Ghostwrithe Endgame {6}",
+      "active": true,
+      "slotCount": 23
+    }
+  ],
+  "chosenItemSet": {
+    "id": "3",
+    "title": "Ghostwrithe Endgame {6}"
+  },
+  "items": {
+    "Flask 5": {
+      "rarity": "UNIQUE",
+      "name": "Forbidden Taste - Do not qual",
+      "base": "Quartz Flask",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "4"
+    },
+    "Flask 2": {
+      "flaskActive": true,
+      "rarity": "UNIQUE",
+      "name": "Cinderswallow Urn",
+      "base": "Silver Flask",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "18"
+    },
+    "Flask 3": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Alchemist's Quicksilver Flask of the Cheetah",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "23% reduced Duration"
+        },
+        {
+          "text": "25% increased effect"
+        },
+        {
+          "text": "14% increased Movement Speed during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 1": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Any melee weapon with Abyssal Socket Wraith Sword",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "45% increased Global Accuracy Rating"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Has 1 Abyssal Socket",
+          "markers": [
+            "custom"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Amulet": {
+      "rarity": "UNIQUE",
+      "name": "Foulborn Voice of the Storm",
+      "base": "Lapis Amulet",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Helmet": {
+      "rarity": "UNIQUE",
+      "name": "Crown of the Inward Eye",
+      "base": "Prophet Crown",
+      "ilvl": null,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Belt Abyssal Socket 1": {
+      "rarity": "RARE",
+      "name": "Reminder: Flat Fire Damage for Cinderswallow Igniting",
+      "base": "Murderous Eye Jewel",
+      "ilvl": null,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [
+        {
+          "text": "Corrupted Blood cannot be inflicted on you"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+16 to Intelligence"
+        },
+        {
+          "text": "+40 to maximum Life"
+        },
+        {
+          "text": "+10% to all Elemental Resistances"
+        },
+        {
+          "text": "18 to 31 Added Fire Damage with Sword Attacks"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Belt": {
+      "rarity": "RARE",
+      "name": "MB or HH also good obviously",
+      "base": "Stygian Vise",
+      "ilvl": null,
+      "flags": [
+        "Hunter"
+      ],
+      "implicits": [
+        {
+          "text": "Has 1 Abyssal Socket"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+144 to maximum Life"
+        },
+        {
+          "text": "10% increased maximum Life"
+        },
+        {
+          "text": "+47% to Cold Resistance"
+        },
+        {
+          "text": "+47% to Lightning Resistance"
+        },
+        {
+          "text": "+33% to Chaos Resistance"
+        },
+        {
+          "text": "45% increased Elemental Damage with Attack Skills"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Body Armour": {
+      "rarity": "UNIQUE",
+      "name": "Foulborn Ghostwrithe",
+      "base": "Silken Vest",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Gloves": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Leviathan Gauntlets",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "Non-Vaal Strike Skills target 2 additional nearby Enemies",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "+8% chance to Suppress Spell Damage",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "16% increased Attack Speed"
+        },
+        {
+          "text": "+129 to maximum Life"
+        },
+        {
+          "text": "+47% to Fire Resistance"
+        },
+        {
+          "text": "+34% to Chaos Resistance"
+        },
+        {
+          "text": "(37-43)% increased Damage while Leeching",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "(14-16)% increased Area of Effect",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "(17-20)% increased Area Damage",
+          "markers": [
+            "custom"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Boots": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Leviathan Greaves",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "6% increased Action Speed",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "Regenerate 0.2% of Life per second per Endurance Charge",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+129 to maximum Life"
+        },
+        {
+          "text": "+47% to Fire Resistance"
+        },
+        {
+          "text": "+48% to Cold Resistance"
+        },
+        {
+          "text": "+48% to Lightning Resistance"
+        },
+        {
+          "text": "(25-30)% increased Movement Speed",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "(13-16)% chance to gain Onslaught for 4 seconds on Kill",
+          "markers": [
+            "custom"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 1": {
+      "rarity": "RARE",
+      "name": "Prio life, res",
+      "base": "Vermillion Ring",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "(5-7)% increased maximum Life"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+55 to Dexterity"
+        },
+        {
+          "text": "+55 to Intelligence"
+        },
+        {
+          "text": "+136 to maximum Life"
+        },
+        {
+          "text": "+16% to all Elemental Resistances"
+        },
+        {
+          "text": "41% increased Elemental Damage with Attack Skills"
+        },
+        {
+          "text": "Non-Channelling Skills have -(7-6) to Total Mana Cost",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 2": {
+      "rarity": "UNIQUE",
+      "name": "Kalandra's Touch",
+      "base": "Ring",
+      "ilvl": null,
+      "flags": [
+        "Mirrored"
+      ]
+    },
+    "Weapon 1 Abyssal Socket 1": {
+      "rarity": "RARE",
+      "name": "CB + Fire Damage for Cinderswallow",
+      "base": "Murderous Eye Jewel",
+      "ilvl": null,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [
+        {
+          "text": "Corrupted Blood cannot be inflicted on you"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+16 to Intelligence"
+        },
+        {
+          "text": "+40 to maximum Life"
+        },
+        {
+          "text": "18 to 31 Added Fire Damage with Sword Attacks"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 1": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Horticultural Prismatic Tincture of Overpowering",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "(70-122)% increased Elemental Damage with Melee Weapons"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "22% increased effect"
+        },
+        {
+          "text": "Melee Weapon Damage Penetrates 24% Elemental Resistances"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 4": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Flagellant's Granite Flask of the Armadillo",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Gain 3 Charges when you are Hit by an Enemy"
+        },
+        {
+          "text": "60% increased Armour during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 26725": {
+      "rarity": "UNIQUE",
+      "name": "The Light of Meaning",
+      "base": "Prismatic Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "9"
+    },
+    "Tree Jewel 55190": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Large Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Damage with Two Handed Weapons",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "1 Added Passive Skill is Fuel the Fight"
+        },
+        {
+          "text": "1 Added Passive Skill is Smite the Weak"
+        },
+        {
+          "text": "1 Added Passive Skill is Titanic Swings"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 26196": {
+      "rarity": "RARE",
+      "name": "Prio Life",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "16% increased Damage with Swords"
+        },
+        {
+          "text": "5% increased Attack Speed"
+        },
+        {
+          "text": "7% increased maximum Life"
+        },
+        {
+          "text": "+13% to Chaos Resistance"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 49080": {
+      "rarity": "RARE",
+      "name": "Megalo 2prop better",
+      "base": "Small Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 2 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 15% increased Armour",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: +16 to Maximum Life"
+        },
+        {
+          "text": "1 Added Passive Skill is Enduring Composure"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 33631": {
+      "rarity": "UNIQUE",
+      "name": "Glorious Vanity 2365; 18.32; Eternal Youth",
+      "base": "Timeless Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "3"
+    },
+    "Tree Jewel 54127": {
+      "rarity": "RARE",
+      "name": "Prio Life",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "16% increased Damage with Swords"
+        },
+        {
+          "text": "5% increased Attack Speed"
+        },
+        {
+          "text": "7% increased maximum Life"
+        },
+        {
+          "text": "+13% to Chaos Resistance"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 44169": {
+      "rarity": "RARE",
+      "name": "Prio Life",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "16% increased Damage with Swords"
+        },
+        {
+          "text": "5% increased Attack Speed"
+        },
+        {
+          "text": "7% increased maximum Life"
+        },
+        {
+          "text": "+13% to Chaos Resistance"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    }
+  }
+}

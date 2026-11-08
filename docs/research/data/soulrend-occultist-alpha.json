@@ -1,0 +1,517 @@
+{
+  "build": "Soulrend Occultist (Alpha POE, Endgame set)",
+  "slug": "soulrend-occultist-alpha",
+  "source": "https://pobb.in/Vesy4e5HV3gt",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Witch",
+    "ascendancy": "Occultist",
+    "level": 100,
+    "mainSocketGroup": 4,
+    "mainSkillGems": [
+      "Grace",
+      "Enlighten",
+      "Purity of Elements"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "3",
+      "title": "Day 1 - Early Mapping - Life Version",
+      "active": false,
+      "slotCount": 26
+    },
+    {
+      "id": "4",
+      "title": "ES Transition ( Day 2-3 )",
+      "active": false,
+      "slotCount": 24
+    },
+    {
+      "id": "2",
+      "title": "Endgame",
+      "active": false,
+      "slotCount": 24
+    },
+    {
+      "id": "5",
+      "title": "Uber Endgame",
+      "active": false,
+      "slotCount": 24
+    },
+    {
+      "id": "6",
+      "title": "Uber Endgame - Unholy Accomplice",
+      "active": false,
+      "slotCount": 24
+    },
+    {
+      "id": "7",
+      "title": "Uber Endgame - Unholy - Tanky",
+      "active": false,
+      "slotCount": 24
+    },
+    {
+      "id": "1",
+      "title": "Aspirational Endgame",
+      "active": true,
+      "slotCount": 23
+    }
+  ],
+  "chosenItemSet": {
+    "id": "2",
+    "title": "Endgame"
+  },
+  "items": {
+    "Belt": {
+      "rarity": "RARE",
+      "name": "Pain Bond",
+      "base": "Crystal Belt",
+      "ilvl": 82,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+86 to maximum Energy Shield"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+52 to Strength"
+        },
+        {
+          "text": "10% increased maximum Energy Shield"
+        },
+        {
+          "text": "+127 to maximum Life"
+        },
+        {
+          "text": "+20% to Fire Resistance"
+        },
+        {
+          "text": "Flasks applied to you have 9% increased Effect"
+        },
+        {
+          "text": "+22 to Dexterity and Intelligence",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 1": {
+      "flaskActive": true,
+      "rarity": "UNIQUE",
+      "name": "Coruscating Elixir",
+      "base": "Ruby Flask",
+      "ilvl": 80,
+      "flags": []
+    },
+    "Flask 2": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Experimenter's Sapphire Flask",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Reused at the end of this Flask's effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "39% increased Duration"
+        },
+        {
+          "text": "60% increased Armour during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 3": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Experimenter's Topaz Flask of the Gazelle",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Reused at the end of this Flask's effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "40% increased Duration"
+        },
+        {
+          "text": "42% increased Evasion Rating during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 1": {
+      "rarity": "RARE",
+      "name": "Brood Thirst",
+      "base": "Imbued Wand",
+      "ilvl": 68,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "37% increased Spell Damage"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+33% to Chaos Damage over Time Multiplier",
+          "markers": [
+            "fractured"
+          ]
+        },
+        {
+          "text": "39% increased Spell Damage"
+        },
+        {
+          "text": "20% increased Cast Speed"
+        },
+        {
+          "text": "14% increased Spell Critical Strike Chance"
+        },
+        {
+          "text": "+1 to Level of all Spell Skill Gems"
+        },
+        {
+          "text": "+1 to Level of all Chaos Spell Skill Gems"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 1
+    },
+    "Amulet": {
+      "rarity": "UNIQUE",
+      "name": "Replica Dragonfang's Flight",
+      "base": "Onyx Amulet",
+      "ilvl": 79,
+      "flags": []
+    },
+    "Helmet": {
+      "rarity": "UNIQUE",
+      "name": "Crown of the Inward Eye",
+      "base": "Prophet Crown",
+      "ilvl": 86,
+      "flags": []
+    },
+    "Weapon 2": {
+      "rarity": "UNIQUE",
+      "name": "Prism Guardian",
+      "base": "Archon Kite Shield",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "4"
+    },
+    "Body Armour": {
+      "rarity": "UNIQUE",
+      "name": "Ghostwrithe",
+      "base": "Silken Vest",
+      "ilvl": 83,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Gloves": {
+      "rarity": "UNIQUE",
+      "name": "Asenath's Gentle Touch",
+      "base": "Silk Gloves",
+      "ilvl": 80,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Boots": {
+      "rarity": "UNIQUE",
+      "name": "Sin Trek",
+      "base": "Stealth Boots",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Ring 1": {
+      "rarity": "UNIQUE",
+      "name": "The Hungry Loop",
+      "base": "Unset Ring",
+      "ilvl": 83,
+      "flags": []
+    },
+    "Ring 2": {
+      "rarity": "RARE",
+      "name": "Entropy Grip",
+      "base": "Unset Ring",
+      "ilvl": 76,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Has 1 Socket"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+2 to Level of Socketed Gems"
+        },
+        {
+          "text": "+13 to all Attributes"
+        },
+        {
+          "text": "+60 to Strength"
+        },
+        {
+          "text": "+33 to Dexterity"
+        },
+        {
+          "text": "Adds 6 to 12 Physical Damage to Attacks"
+        },
+        {
+          "text": "+31 to maximum Energy Shield"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 64583": {
+      "rarity": "RARE",
+      "name": "Carrion Hope",
+      "base": "Small Cluster Jewel",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 3 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 6% increased Mana Reservation Efficiency of Skills",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: +3 to Dexterity"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +13 to Strength"
+        },
+        {
+          "text": "Added Small Passive Skills have 35% increased Effect"
+        },
+        {
+          "text": "1 Added Passive Skill is Sublime Form"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 2311": {
+      "rarity": "UNIQUE",
+      "name": "Forbidden Flesh",
+      "base": "Cobalt Jewel",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 9408": {
+      "rarity": "RARE",
+      "name": "Bramble Ruin",
+      "base": "Medium Cluster Jewel",
+      "ilvl": 83,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 5 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "1 Added Passive Skill is a Jewel Socket",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Chaos Damage over Time",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: +3 to Dexterity"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +4 to Strength"
+        },
+        {
+          "text": "1 Added Passive Skill is Brush with Death"
+        },
+        {
+          "text": "1 Added Passive Skill is Wicked Pall"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 29712": {
+      "rarity": "UNIQUE",
+      "name": "Forbidden Flame",
+      "base": "Crimson Jewel",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 21984": {
+      "rarity": "RARE",
+      "name": "Armageddon Ruin",
+      "base": "Large Cluster Jewel",
+      "ilvl": 78,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Chaos Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: +2 to Dexterity"
+        },
+        {
+          "text": "1 Added Passive Skill is Touch of Cruelty"
+        },
+        {
+          "text": "1 Added Passive Skill is Unholy Grace"
+        },
+        {
+          "text": "1 Added Passive Skill is Wicked Pall"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 7960": {
+      "rarity": "RARE",
+      "name": "Cataclysm Ornament",
+      "base": "Large Cluster Jewel",
+      "ilvl": 76,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Chaos Damage",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Corrupted Blood cannot be inflicted on you"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: +2 to All Attributes"
+        },
+        {
+          "text": "1 Added Passive Skill is Dark Ideation"
+        },
+        {
+          "text": "1 Added Passive Skill is Unholy Grace"
+        },
+        {
+          "text": "1 Added Passive Skill is Wicked Pall"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 6230": {
+      "rarity": "UNIQUE",
+      "name": "Unnatural Instinct",
+      "base": "Viridian Jewel",
+      "ilvl": 80,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 61419": {
+      "rarity": "UNIQUE",
+      "name": "Brutal Restraint",
+      "base": "Timeless Jewel",
+      "ilvl": 84,
+      "flags": []
+    },
+    "Tree Jewel 41263": {
+      "rarity": "UNIQUE",
+      "name": "Foulborn Inspired Learning",
+      "base": "Crimson Jewel",
+      "ilvl": 85,
+      "flags": []
+    },
+    "Tree Jewel 13170": {
+      "rarity": "UNIQUE",
+      "name": "Watcher's Eye",
+      "base": "Prismatic Jewel",
+      "ilvl": 87,
+      "flags": []
+    },
+    "Tree Jewel 48768": {
+      "rarity": "UNIQUE",
+      "name": "The Light of Meaning",
+      "base": "Prismatic Jewel",
+      "ilvl": 85,
+      "flags": []
+    }
+  }
+}

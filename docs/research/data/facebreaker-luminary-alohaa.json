@@ -1,0 +1,642 @@
+{
+  "build": "Facebreaker Luminary (Alohaa, endgame)",
+  "slug": "facebreaker-luminary-alohaa",
+  "source": "https://pobb.in/EREgIua0dUwQ",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Scion",
+    "ascendancy": "Luminary",
+    "level": 97,
+    "mainSocketGroup": 8,
+    "mainSkillGems": [
+      "Earthshatter"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "1",
+      "title": null,
+      "active": true,
+      "slotCount": 29
+    }
+  ],
+  "chosenItemSet": {
+    "id": "1",
+    "title": null
+  },
+  "items": {
+    "Flask 1": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Seething Divine Life Flask of Sealing",
+      "ilvl": 74,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "66% reduced Amount Recovered"
+        },
+        {
+          "text": "Instant Recovery"
+        },
+        {
+          "text": "Grants Immunity to Bleeding for 8 seconds if used while Bleeding"
+        },
+        {
+          "text": "Grants Immunity to Corrupted Blood for 8 seconds if used while affected by Corrupted Blood"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 2": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Doctor's Diamond Flask of the Abalone",
+      "ilvl": 82,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "22% chance to gain a Flask Charge when you deal a Critical Strike"
+        },
+        {
+          "text": "44% increased Armour during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 3": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Abecedarian's Silver Flask of the Tortoise",
+      "ilvl": 61,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "34% reduced Duration"
+        },
+        {
+          "text": "25% increased effect"
+        },
+        {
+          "text": "46% increased Armour during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 4": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Transgressor's Quicksilver Flask of Piercing",
+      "ilvl": 57,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Gain 1 Charge when you are Hit by an Enemy"
+        },
+        {
+          "text": "32% increased Critical Strike Chance during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 1 Swap": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Great White Claw of the Falcon",
+      "ilvl": 62,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Grants 46 Life per Enemy Hit"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+23 to Dexterity"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 2 Swap": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Polar Gutting Knife of Regenesis",
+      "ilvl": 63,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "42% increased Global Critical Strike Chance"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Adds 54 to 123 Cold Damage"
+        },
+        {
+          "text": "Grants 18 Life per Enemy Hit"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 5": {
+      "rarity": "UNIQUE",
+      "name": "Lion's Roar",
+      "base": "Granite Flask",
+      "ilvl": 85,
+      "flags": []
+    },
+    "Boots Abyssal Socket 1": {
+      "rarity": "RARE",
+      "name": "Morbid Arbiter",
+      "base": "Hypnotic Eye Jewel",
+      "ilvl": 83,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+9% to Global Critical Strike Multiplier"
+        },
+        {
+          "text": "+39 to maximum Life"
+        },
+        {
+          "text": "15 to 19 Added Spell Physical Damage while holding a Shield"
+        },
+        {
+          "text": "+12% to Fire and Cold Resistances"
+        },
+        {
+          "text": "+10% to Critical Strike Multiplier if you've Killed Recently"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Body Armour": {
+      "rarity": "UNIQUE",
+      "name": "Seven Teachings",
+      "base": "Waxed Garb",
+      "ilvl": null,
+      "flags": []
+    },
+    "Ring 2": {
+      "rarity": "RARE",
+      "name": "Blight Gyre",
+      "base": "Steel Ring",
+      "ilvl": 85,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 4 to 16 Physical Damage to Attacks"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+34 to Intelligence"
+        },
+        {
+          "text": "Adds 13 to 19 Physical Damage to Attacks"
+        },
+        {
+          "text": "+96 to maximum Life"
+        },
+        {
+          "text": "+12% to all Elemental Resistances"
+        },
+        {
+          "text": "+43% to Cold Resistance"
+        },
+        {
+          "text": "Non-Channelling Skills have -7 to Total Mana Cost",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 1": {
+      "rarity": "RARE",
+      "name": "Sol Whorl",
+      "base": "Vermillion Ring",
+      "ilvl": 84,
+      "flags": [
+        "Warlord"
+      ],
+      "implicits": [
+        {
+          "text": "8% increased maximum Life"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Adds 4 to 6 Physical Damage to Attacks"
+        },
+        {
+          "text": "+134 to maximum Life"
+        },
+        {
+          "text": "+11% to all Elemental Resistances"
+        },
+        {
+          "text": "+48% to Lightning Resistance"
+        },
+        {
+          "text": "Curse Enemies with Vulnerability on Hit"
+        },
+        {
+          "text": "Non-Channelling Skills have -8 to Total Mana Cost",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Boots": {
+      "rarity": "RARE",
+      "name": "Wrath Urge",
+      "base": "Leviathan Greaves",
+      "ilvl": 86,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds",
+        "Fractured"
+      ],
+      "implicits": [
+        {
+          "text": "Intimidating Cry has 20% increased Cooldown Recovery Rate"
+        },
+        {
+          "text": "5% increased Action Speed"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+129 to maximum Life"
+        },
+        {
+          "text": "+47% to Lightning Resistance"
+        },
+        {
+          "text": "+32% to Chaos Resistance"
+        },
+        {
+          "text": "29% increased Movement Speed"
+        },
+        {
+          "text": "100% chance to Avoid being Chilled"
+        },
+        {
+          "text": "100% chance to Avoid being Frozen",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Has 1 Abyssal Socket",
+          "markers": [
+            "fractured"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 1
+    },
+    "Gloves": {
+      "rarity": "UNIQUE",
+      "name": "Facebreaker",
+      "base": "Strapped Mitts",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "6"
+    },
+    "Weapon 2": {
+      "rarity": "UNIQUE",
+      "name": "Svalinn",
+      "base": "Girded Tower Shield",
+      "ilvl": 85,
+      "flags": []
+    },
+    "Amulet": {
+      "rarity": "RARE",
+      "name": "Cataclysm Choker",
+      "base": "Pearlescent Amulet",
+      "ilvl": 78,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Allocates Diamond Skin",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+10% to all Elemental Resistances"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Adds 12 to 20 Physical Damage to Attacks"
+        },
+        {
+          "text": "+31% to Global Critical Strike Multiplier"
+        },
+        {
+          "text": "+103 to maximum Life"
+        },
+        {
+          "text": "+15% to all Elemental Resistances"
+        },
+        {
+          "text": "+27% to Fire Resistance",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Belt": {
+      "rarity": "UNIQUE",
+      "name": "Ryslatha's Coil",
+      "base": "Studded Belt",
+      "ilvl": 80,
+      "flags": []
+    },
+    "Helmet": {
+      "rarity": "RARE",
+      "name": "Rift Ward",
+      "base": "Giantslayer Helmet",
+      "ilvl": 85,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds",
+        "Fractured"
+      ],
+      "implicits": [
+        {
+          "text": "6% of Physical Damage from Hits taken as Lightning Damage"
+        },
+        {
+          "text": "26% increased Mana Cost Efficiency"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+537 to Accuracy Rating"
+        },
+        {
+          "text": "+200 to Armour"
+        },
+        {
+          "text": "+88 to maximum Life"
+        },
+        {
+          "text": "+33% to Chaos Resistance"
+        },
+        {
+          "text": "70% increased Armour",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Skills have +2.98% to Critical Strike Chance for each Warcry Exerting them",
+          "markers": [
+            "fractured"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 1
+    },
+    "Tree Jewel 10532": {
+      "rarity": "UNIQUE",
+      "name": "Forbidden Flesh",
+      "base": "Cobalt Jewel",
+      "ilvl": 86,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 2491": {
+      "rarity": "RARE",
+      "name": "Hypnotic Eye",
+      "base": "Large Cluster Jewel",
+      "ilvl": 74,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Attack Damage while holding a Shield",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: +4% to Chaos Resistance"
+        },
+        {
+          "text": "1 Added Passive Skill is Fuel the Fight"
+        },
+        {
+          "text": "1 Added Passive Skill is Martial Prowess"
+        },
+        {
+          "text": "1 Added Passive Skill is Prodigious Defence"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 31683": {
+      "rarity": "UNIQUE",
+      "name": "The Light of Meaning",
+      "base": "Prismatic Jewel",
+      "ilvl": 85,
+      "flags": []
+    },
+    "Tree Jewel 55190": {
+      "rarity": "RARE",
+      "name": "Empyrean Joy",
+      "base": "Large Cluster Jewel",
+      "ilvl": 83,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Attack Damage while holding a Shield",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: 5% increased Mana Regeneration Rate"
+        },
+        {
+          "text": "1 Added Passive Skill is Martial Prowess"
+        },
+        {
+          "text": "1 Added Passive Skill is Precise Retaliation"
+        },
+        {
+          "text": "1 Added Passive Skill is Prodigious Defence"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 46519": {
+      "rarity": "UNIQUE",
+      "name": "Forbidden Flame",
+      "base": "Crimson Jewel",
+      "ilvl": 86,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 33631": {
+      "rarity": "UNIQUE",
+      "name": "Elegant Hubris",
+      "base": "Timeless Jewel",
+      "ilvl": 84,
+      "flags": []
+    },
+    "Tree Jewel 54127": {
+      "rarity": "UNIQUE",
+      "name": "Impossible Escape",
+      "base": "Viridian Jewel",
+      "ilvl": 87,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 6230": {
+      "rarity": "UNIQUE",
+      "name": "Might of the Meek",
+      "base": "Crimson Jewel",
+      "ilvl": 83,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 49080": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+3% Chance to Block Spell Damage while holding a Shield"
+        },
+        {
+          "text": "+15% to Melee Critical Strike Multiplier"
+        },
+        {
+          "text": "7% increased maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 44169": {
+      "rarity": "UNIQUE",
+      "name": "Watcher's Eye",
+      "base": "Prismatic Jewel",
+      "ilvl": 87,
+      "flags": []
+    },
+    "Tree Jewel 48768": {
+      "rarity": "UNIQUE",
+      "name": "Unnatural Instinct",
+      "base": "Viridian Jewel",
+      "ilvl": 84,
+      "flags": []
+    },
+    "Tree Jewel 26725": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+3% Chance to Block Spell Damage while holding a Shield"
+        },
+        {
+          "text": "+15% to Melee Critical Strike Multiplier"
+        },
+        {
+          "text": "7% increased maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    }
+  }
+}

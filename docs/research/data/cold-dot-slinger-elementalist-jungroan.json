@@ -1,0 +1,515 @@
+{
+  "build": "Spellslinger Cold DoT Elementalist (jungroan, Level 95 set)",
+  "slug": "cold-dot-slinger-elementalist-jungroan",
+  "source": "https://pobb.in/AadCGMhml9fa",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Witch",
+    "ascendancy": "Elementalist",
+    "level": 100,
+    "mainSocketGroup": 1,
+    "mainSkillGems": [
+      "Creeping Frost of Floes",
+      "Vortex",
+      "Controlled Destruction",
+      "Swift Affliction",
+      "Elemental Focus",
+      "Efficacy"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "1",
+      "title": "Day 2",
+      "active": true,
+      "slotCount": 24
+    },
+    {
+      "id": "2",
+      "title": "Level 95",
+      "active": false,
+      "slotCount": 21
+    },
+    {
+      "id": "3",
+      "title": "2-Stone (Level 80)",
+      "active": false,
+      "slotCount": 23
+    },
+    {
+      "id": "4",
+      "title": "Merciless Lab (Level 65)",
+      "active": false,
+      "slotCount": 13
+    },
+    {
+      "id": "6",
+      "title": "Normal Lab + Golem (Level 34)",
+      "active": false,
+      "slotCount": 8
+    },
+    {
+      "id": "5",
+      "title": "Spellslinger Swap (Level 28)",
+      "active": false,
+      "slotCount": 8
+    },
+    {
+      "id": "7",
+      "title": "Kinetic Fusillade Levelling (12 min, 16 for Heralds)",
+      "active": false,
+      "slotCount": 8
+    }
+  ],
+  "chosenItemSet": {
+    "id": "2",
+    "title": "Level 95"
+  },
+  "items": {
+    "Flask 1": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Quicksilver Flask (Room Temp IQ Check)",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 1": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Driftwood Wand",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "(8-12)% increased Spell Damage"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+1 to Level of all Cold Spell Skill Gems"
+        },
+        {
+          "text": "(51-60)% increased Spell Damage",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "(13-15)% increased Mana Regeneration Rate",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 0
+    },
+    "Amulet": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Citrine Amulet",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Allocates Ash, Frost and Storm",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+(16-24) to Strength and Dexterity"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+110 to maximum Life"
+        },
+        {
+          "text": "+1 to Minimum Endurance Charges",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Helmet": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Jester Mask",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+133 to maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 2": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Twig Spirit Shield",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "(10-15)% increased Spell Damage"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+1 to Level of all Cold Spell Skill Gems"
+        },
+        {
+          "text": "+(56-70) to maximum Life",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Body Armour": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Torturer Garb",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+234 to Evasion Rating"
+        },
+        {
+          "text": "89% increased Evasion and Energy Shield"
+        },
+        {
+          "text": "+63 to maximum Energy Shield"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Gloves": {
+      "rarity": "UNIQUE",
+      "name": "Vaal Caress",
+      "base": "Bronzescale Gauntlets",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "3"
+    },
+    "Boots": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Infiltrator Boots",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+94 to maximum Life"
+        },
+        {
+          "text": "30% increased Movement Speed"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 1": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Amethyst Ring",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+(17-23)% to Chaos Resistance"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+101 to maximum Life"
+        },
+        {
+          "text": "+1 to Minimum Endurance Charges",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 2": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Amethyst Ring",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+(17-23)% to Chaos Resistance"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+101 to maximum Life"
+        },
+        {
+          "text": "+1 to Minimum Endurance Charges",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Belt": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Heavy Belt",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+(25-35) to Strength"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+144 to maximum Life"
+        },
+        {
+          "text": "Regenerate 150 Energy Shield per second while a Rare or Unique Enemy is Nearby",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 4": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Quartz Flask (Act 7 Reward)",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 3": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Jade Flask (Act 5 Reward)",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 61834": {
+      "rarity": "UNIQUE",
+      "name": "Immutable Force",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": []
+    },
+    "Tree Jewel 64583": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Cobalt Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+3% Chance to Block Attack Damage while holding a Shield"
+        },
+        {
+          "text": "+8% to Cold Damage over Time Multiplier"
+        },
+        {
+          "text": "7% increased maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 21984": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Large Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: Minions deal 10% increased Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "1 Added Passive Skill is Primordial Bond"
+        },
+        {
+          "text": "1 Added Passive Skill is Rotten Claws"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 13170": {
+      "rarity": "UNIQUE",
+      "name": "Primordial Eminence",
+      "base": "Viridian Jewel",
+      "ilvl": null,
+      "flags": []
+    },
+    "Tree Jewel 18436": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Cobalt Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+3% Chance to Block Attack Damage while holding a Shield"
+        },
+        {
+          "text": "+8% to Cold Damage over Time Multiplier"
+        },
+        {
+          "text": "7% increased maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 32763": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Large Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: Minions deal 10% increased Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "1 Added Passive Skill is Primordial Bond"
+        },
+        {
+          "text": "1 Added Passive Skill is Rotten Claws"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 6910": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Medium Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 4 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "1 Added Passive Skill is a Jewel Socket",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 10% increased Effect of Non-Damaging Ailments",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "1 Added Passive Skill is Cold Conduction"
+        },
+        {
+          "text": "1 Added Passive Skill is Inspired Oppression"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 33753": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Cobalt Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+3% Chance to Block Attack Damage while holding a Shield"
+        },
+        {
+          "text": "+8% to Cold Damage over Time Multiplier"
+        },
+        {
+          "text": "7% increased maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    }
+  }
+}

@@ -1,0 +1,702 @@
+{
+  "build": "Tornado Shot Deadeye (Kingy x, Endgame no HH set)",
+  "slug": "tornado-shot-deadeye-kingy",
+  "source": "https://pobb.in/qRlsxywy6DG6",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Ranger",
+    "ascendancy": "Deadeye",
+    "level": 100,
+    "mainSocketGroup": 1,
+    "mainSkillGems": [
+      "Mirage Archer",
+      "Inspiration",
+      "Trinity",
+      "Tornado Shot",
+      "Increased Critical Damage",
+      "Awakened Elemental Damage with Attacks"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "10",
+      "title": "Entering maps",
+      "active": false,
+      "slotCount": 28
+    },
+    {
+      "id": "9",
+      "title": "Crit swap",
+      "active": false,
+      "slotCount": 28
+    },
+    {
+      "id": "1",
+      "title": "Starter",
+      "active": false,
+      "slotCount": 28
+    },
+    {
+      "id": "8",
+      "title": "Mid game",
+      "active": false,
+      "slotCount": 28
+    },
+    {
+      "id": "11",
+      "title": "Inspired setup(Optional)",
+      "active": false,
+      "slotCount": 28
+    },
+    {
+      "id": "5",
+      "title": "Endgame no HH",
+      "active": false,
+      "slotCount": 29
+    },
+    {
+      "id": "2",
+      "title": "Headhunter",
+      "active": false,
+      "slotCount": 28
+    },
+    {
+      "id": "6",
+      "title": "Headhunter - Warden",
+      "active": false,
+      "slotCount": 28
+    },
+    {
+      "id": "7",
+      "title": "Uber Endgame",
+      "active": false,
+      "slotCount": 31
+    },
+    {
+      "id": "4",
+      "title": "Tornado shot - Far shot",
+      "active": false,
+      "slotCount": 30
+    },
+    {
+      "id": "3",
+      "title": "Tornado shot - point blank",
+      "active": true,
+      "slotCount": 29
+    }
+  ],
+  "chosenItemSet": {
+    "id": "5",
+    "title": "Endgame no HH"
+  },
+  "items": {
+    "Belt": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Stygian Vise",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Has 1 Abyssal Socket"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+124 to maximum Life"
+        },
+        {
+          "text": "+35% to Cold Resistance"
+        },
+        {
+          "text": "+29% to Chaos Resistance"
+        },
+        {
+          "text": "41% increased Elemental Damage with Attack Skills"
+        },
+        {
+          "text": "+(21-25) to Strength and Intelligence",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Belt Abyssal Socket 1": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Searching Eye Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+12% to Global Critical Strike Multiplier"
+        },
+        {
+          "text": "+40 to maximum Life"
+        },
+        {
+          "text": "5 to 50 Added Lightning Damage with Bow Attacks"
+        },
+        {
+          "text": "8% increased Attack Speed if you've dealt a Critical Strike Recently"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 4": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Experimenter's Diamond Flask of Incision",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "40% increased Duration"
+        },
+        {
+          "text": "55% increased Critical Strike Chance during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Amulet": {
+      "rarity": "UNIQUE",
+      "name": "Hyrri's Truth",
+      "base": "Jade Amulet",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "3"
+    },
+    "Helmet": {
+      "rarity": "UNIQUE",
+      "name": "The Fledgling",
+      "base": "Lacquered Helmet",
+      "ilvl": null,
+      "flags": []
+    },
+    "Weapon 2": {
+      "rarity": "RARE",
+      "name": "Cataclysm Bolt",
+      "base": "Feathered Arrow Quiver",
+      "ilvl": 81,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "30% increased Projectile Speed"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Adds 12 to 144 Lightning Damage to Attacks"
+        },
+        {
+          "text": "+36% to Critical Strike Multiplier with Bows"
+        },
+        {
+          "text": "+120 to maximum Life"
+        },
+        {
+          "text": "41% increased Damage with Bow Skills"
+        },
+        {
+          "text": "12% increased Attack Speed",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Body Armour": {
+      "rarity": "UNIQUE",
+      "name": "Daresso's Defiance",
+      "base": "Full Dragonscale",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "5"
+    },
+    "Gloves": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Velour Gloves",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "Gain 1 Rage on Attack Hit",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "Projectiles Pierce an additional Target",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+12% chance to Suppress Spell Damage"
+        },
+        {
+          "text": "+107 to maximum Life"
+        },
+        {
+          "text": "+31% to Fire Resistance"
+        },
+        {
+          "text": "+44% to Lightning Resistance"
+        },
+        {
+          "text": "(24-28)% increased Damage during any Flask Effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Boots": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Velour Boots",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "5% increased Action Speed",
+          "markers": [
+            "exarch"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+12% chance to Suppress Spell Damage"
+        },
+        {
+          "text": "+109 to maximum Life"
+        },
+        {
+          "text": "+29% to Cold Resistance"
+        },
+        {
+          "text": "+35% to Chaos Resistance"
+        },
+        {
+          "text": "30% increased Movement Speed"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 1": {
+      "rarity": "UNIQUE",
+      "name": "The Taming",
+      "base": "Prismatic Ring",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "3"
+    },
+    "Ring 2": {
+      "rarity": "UNIQUE",
+      "name": "The Taming",
+      "base": "Prismatic Ring",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "3"
+    },
+    "Flask 3": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Experimenter's Jade Flask of the Impala",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "40% increased Duration"
+        },
+        {
+          "text": "57% increased Evasion Rating during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 2": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Doctor's Quicksilver Flask of the Cheetah",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "23% chance to gain a Flask Charge when you deal a Critical Strike"
+        },
+        {
+          "text": "14% increased Movement Speed during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 1": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Brewer's Silver Flask of the Owl",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "24% reduced Charges per use"
+        },
+        {
+          "text": "65% reduced Effect of Curses on you during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 1": {
+      "rarity": "RARE",
+      "name": "Corpse Fletch",
+      "base": "Spine Bow",
+      "ilvl": 83,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Adds 147 to 282 Cold Damage",
+          "markers": [
+            "fractured"
+          ]
+        },
+        {
+          "text": "Adds 150 to 297 Fire Damage"
+        },
+        {
+          "text": "Adds 28 to 526 Lightning Damage"
+        },
+        {
+          "text": "12% increased Attack Speed"
+        },
+        {
+          "text": "11% increased Projectile Speed"
+        },
+        {
+          "text": "+(20-24) to Strength and Intelligence",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "(21-25)% increased Critical Strike Chance",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 1
+    },
+    "Flask 5": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Alarmed Divine Life Flask of Alleviation",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "21% reduced Amount Recovered"
+        },
+        {
+          "text": "Instant Recovery when on Low Life"
+        },
+        {
+          "text": "Grants Immunity to Bleeding for 11 seconds if used while Bleeding"
+        },
+        {
+          "text": "Grants Immunity to Corrupted Blood for 11 seconds if used while affected by Corrupted Blood"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 61834": {
+      "rarity": "UNIQUE",
+      "name": "Unnatural Instinct",
+      "base": "Viridian Jewel",
+      "ilvl": null,
+      "flags": []
+    },
+    "Tree Jewel 22994": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Medium Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 4 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "1 Added Passive Skill is a Jewel Socket",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 10% increased Projectile Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "1 Added Passive Skill is Repeater"
+        },
+        {
+          "text": "1 Added Passive Skill is Streamlined"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 34483": {
+      "rarity": "UNIQUE",
+      "name": "Unnatural Instinct",
+      "base": "Viridian Jewel",
+      "ilvl": null,
+      "flags": []
+    },
+    "Tree Jewel 33753": {
+      "rarity": "UNIQUE",
+      "name": "Watcher's Eye",
+      "base": "Prismatic Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "4"
+    },
+    "Tree Jewel 60735": {
+      "rarity": "UNIQUE",
+      "name": "Lethal Pride 15918; 4; Wind Dancer",
+      "base": "Timeless Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "1"
+    },
+    "Tree Jewel 3109": {
+      "rarity": "UNIQUE",
+      "name": "Forbidden Flame",
+      "base": "Crimson Jewel",
+      "ilvl": 83,
+      "flags": [
+        "Corrupted"
+      ],
+      "selectedVariant": "82"
+    },
+    "Tree Jewel 46393": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Medium Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 4 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "1 Added Passive Skill is a Jewel Socket",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 10% increased Projectile Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: +5 to Intelligence"
+        },
+        {
+          "text": "1 Added Passive Skill is Repeater"
+        },
+        {
+          "text": "1 Added Passive Skill is Streamlined"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 32763": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Large Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 12 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Damage with Bows",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Damage Over Time with Bow Skills"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: 3% increased Attack Speed"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +5% to Chaos Resistance"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +10 to Maximum Life"
+        },
+        {
+          "text": "Added Small Passive Skills have 35% increased Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 46882": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Large Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Damage with Bows",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Damage Over Time with Bow Skills"
+        },
+        {
+          "text": "1 Added Passive Skill is Feed the Fury"
+        },
+        {
+          "text": "1 Added Passive Skill is Fuel the Fight"
+        },
+        {
+          "text": "1 Added Passive Skill is Martial Prowess"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 33989": {
+      "rarity": "UNIQUE",
+      "name": "Thread of Hope",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "5"
+    },
+    "Tree Jewel 18436": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Viridian Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+17% to Critical Strike Multiplier with Lightning Skills"
+        },
+        {
+          "text": "+14% to Critical Strike Multiplier with Elemental Skills"
+        },
+        {
+          "text": "6% increased maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 61305": {
+      "rarity": "UNIQUE",
+      "name": "Forbidden Flesh",
+      "base": "Cobalt Jewel",
+      "ilvl": 83,
+      "flags": [
+        "Corrupted"
+      ],
+      "selectedVariant": "82"
+    },
+    "Tree Jewel 6910": {
+      "rarity": "UNIQUE",
+      "name": "Ancestral Vision",
+      "base": "Viridian Jewel",
+      "ilvl": null,
+      "flags": []
+    }
+  }
+}

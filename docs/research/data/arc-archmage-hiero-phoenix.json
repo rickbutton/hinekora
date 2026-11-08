@@ -1,0 +1,724 @@
+{
+  "build": "Arc Lightning Archmage Hierophant (Phoenix)",
+  "slug": "arc-archmage-hiero-phoenix",
+  "source": "https://maxroll.gg/poe/pob/13qoos0t",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Templar",
+    "ascendancy": "Hierophant",
+    "level": 100,
+    "mainSocketGroup": 1,
+    "mainSkillGems": [
+      "Arc",
+      "Arcane Surge",
+      "Archmage",
+      "Increased Critical Damage",
+      "Greater Spell Echo",
+      "Power Charge On Critical"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "1",
+      "title": null,
+      "active": true,
+      "slotCount": 28
+    }
+  ],
+  "chosenItemSet": {
+    "id": "1",
+    "title": null
+  },
+  "items": {
+    "Weapon 1 Swap": {
+      "rarity": "RARE",
+      "name": "Armageddon Song",
+      "base": "Omen Wand",
+      "ilvl": 74,
+      "flags": [
+        "Shaper"
+      ],
+      "implicits": [
+        {
+          "text": "31% increased Spell Damage"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+1 to Level of Socketed Chaos Gems"
+        },
+        {
+          "text": "7% increased Spell Damage"
+        },
+        {
+          "text": "+9 to maximum Mana"
+        },
+        {
+          "text": "Gain 25% of Physical Damage as Extra Lightning Damage"
+        },
+        {
+          "text": "+46 to Accuracy Rating"
+        },
+        {
+          "text": "Gain a Power Charge after Spending a total of 200 Mana"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 2": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Abecedarian's Quicksilver Flask of the Hare",
+      "ilvl": 62,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "70% increased effect",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Gains no Charges during Effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "33% reduced Duration"
+        },
+        {
+          "text": "25% increased effect"
+        },
+        {
+          "text": "14% increased Movement Speed during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 1": {
+      "rarity": "UNIQUE",
+      "name": "Void Battery",
+      "base": "Prophecy Wand",
+      "ilvl": 79,
+      "flags": []
+    },
+    "Amulet": {
+      "rarity": "UNIQUE",
+      "name": "Atziri's Foible",
+      "base": "Paua Amulet",
+      "ilvl": 86,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Helmet": {
+      "rarity": "UNIQUE",
+      "name": "Crown of the Inward Eye",
+      "base": "Prophet Crown",
+      "ilvl": 86,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Weapon 2": {
+      "rarity": "UNIQUE",
+      "name": "Void Battery",
+      "base": "Prophecy Wand",
+      "ilvl": 85,
+      "flags": []
+    },
+    "Body Armour": {
+      "rarity": "UNIQUE",
+      "name": "Cloak of Defiance",
+      "base": "Lacquered Garb",
+      "ilvl": 79,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Boots": {
+      "rarity": "RARE",
+      "name": "Demon Dash",
+      "base": "Paladin Boots",
+      "ilvl": 86,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds",
+        "Fractured"
+      ],
+      "implicits": [
+        {
+          "text": "41% increased Armour from Equipped Helmet and Gloves"
+        },
+        {
+          "text": "5% increased Action Speed"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+73 to maximum Mana",
+          "markers": [
+            "fractured"
+          ]
+        },
+        {
+          "text": "+127 to maximum Life"
+        },
+        {
+          "text": "+48% to Fire Resistance"
+        },
+        {
+          "text": "+48% to Cold Resistance"
+        },
+        {
+          "text": "30% increased Movement Speed"
+        },
+        {
+          "text": "15% chance to gain Onslaught for 4 seconds on Kill"
+        },
+        {
+          "text": "+20% to Fire and Lightning Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 1
+    },
+    "Belt": {
+      "rarity": "UNIQUE",
+      "name": "Mageblood",
+      "base": "Heavy Belt",
+      "ilvl": 85,
+      "flags": []
+    },
+    "Flask 1": {
+      "flaskActive": true,
+      "rarity": "UNIQUE",
+      "name": "Bottled Faith",
+      "base": "Sulphur Flask",
+      "ilvl": 85,
+      "flags": []
+    },
+    "Flask 3": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Abecedarian's Granite Flask of the Abalone",
+      "ilvl": 33,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "70% increased effect",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Gains no Charges during Effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "37% reduced Duration"
+        },
+        {
+          "text": "25% increased effect"
+        },
+        {
+          "text": "60% increased Armour during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 5": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Alchemist's Topaz Flask of Incision",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "70% increased effect",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Gains no Charges during Effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "26% reduced Duration"
+        },
+        {
+          "text": "25% increased effect"
+        },
+        {
+          "text": "55% increased Critical Strike Chance during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 4": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Dabbler's Amethyst Flask of the Rainbow",
+      "ilvl": 85,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "70% increased effect",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Gains no Charges during Effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "29% reduced Duration"
+        },
+        {
+          "text": "25% increased effect"
+        },
+        {
+          "text": "20% additional Elemental Resistances during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 2": {
+      "rarity": "RARE",
+      "name": "Sorrow Grasp",
+      "base": "Cogwork Ring",
+      "ilvl": 84,
+      "flags": [
+        "Fractured"
+      ],
+      "implicits": [
+        {
+          "text": "-1 Prefix Modifier allowed"
+        },
+        {
+          "text": "+1 Suffix Modifier allowed"
+        },
+        {
+          "text": "Implicit Modifiers Cannot Be Changed"
+        },
+        {
+          "text": "25% increased Suffix Modifier magnitudes"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+(51-55) to maximum Mana",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "(13-15)% increased Mana Cost Efficiency",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "+(41-45) to maximum Life",
+          "markers": [
+            "crafted",
+            "custom"
+          ]
+        },
+        {
+          "text": "Regenerate 4 Mana per second",
+          "markers": [
+            "crafted",
+            "custom"
+          ]
+        },
+        {
+          "text": "+25% to Global Critical Strike Multiplier",
+          "markers": [
+            "fractured"
+          ]
+        },
+        {
+          "text": "67% increased Mana Regeneration Rate"
+        },
+        {
+          "text": "+33% to Chaos Resistance"
+        },
+        {
+          "text": "16% increased Cast Speed"
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 1
+    },
+    "Ring 1": {
+      "rarity": "UNIQUE",
+      "name": "Kalandra's Touch",
+      "base": "Ring",
+      "ilvl": 85,
+      "flags": []
+    },
+    "Gloves": {
+      "rarity": "RARE",
+      "name": "Victory Grip",
+      "base": "Mesh Gloves",
+      "ilvl": 85,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "Inflict Lightning Exposure on Hit, applying -16% to Lightning Resistance"
+        },
+        {
+          "text": "25% chance to Unnerve Enemies for 4 seconds on Hit"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+48% to Cold Resistance",
+          "markers": [
+            "fractured"
+          ]
+        },
+        {
+          "text": "22% increased Global Critical Strike Chance"
+        },
+        {
+          "text": "+38 to Armour"
+        },
+        {
+          "text": "+129 to maximum Life"
+        },
+        {
+          "text": "+73 to maximum Mana"
+        },
+        {
+          "text": "30% increased Elemental Damage if you've dealt a Critical Strike Recently"
+        },
+        {
+          "text": "+20% to Fire and Lightning Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 1
+    },
+    "Tree Jewel 61834": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Sapphire Ghastly Eye Jewel",
+      "ilvl": 83,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Abyss"
+        },
+        {
+          "text": "+34 to maximum Mana",
+          "markers": [
+            "fractured"
+          ]
+        },
+        {
+          "text": "+12% to Global Critical Strike Multiplier"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 1
+    },
+    "Tree Jewel 64583": {
+      "rarity": "UNIQUE",
+      "name": "Melding of the Flesh",
+      "base": "Cobalt Jewel",
+      "ilvl": 86,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 9408": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Enlightened Viridian Jewel of the Leviathan",
+      "ilvl": 83,
+      "flags": [
+        "Fractured",
+        "Corrupted"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "10% increased maximum Mana"
+        },
+        {
+          "text": "+2% to maximum Lightning Resistance"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 29712": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Enlightened Cobalt Jewel of the Leviathan",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [
+        {
+          "text": "24% reduced Poison Duration on you"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "10% increased maximum Mana",
+          "markers": [
+            "fractured"
+          ]
+        },
+        {
+          "text": "+2% to maximum Lightning Resistance"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 1
+    },
+    "Tree Jewel 21984": {
+      "rarity": "RARE",
+      "name": "Dusk Scar",
+      "base": "Large Cluster Jewel",
+      "ilvl": 83,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Lightning Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: +4% to Fire Resistance"
+        },
+        {
+          "text": "1 Added Passive Skill is Prismatic Heart"
+        },
+        {
+          "text": "1 Added Passive Skill is Scintillating Idea"
+        },
+        {
+          "text": "1 Added Passive Skill is Widespread Destruction"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 55190": {
+      "rarity": "RARE",
+      "name": "Dusk Scar",
+      "base": "Large Cluster Jewel",
+      "ilvl": 83,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Lightning Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: +4% to Fire Resistance"
+        },
+        {
+          "text": "1 Added Passive Skill is Prismatic Heart"
+        },
+        {
+          "text": "1 Added Passive Skill is Scintillating Idea"
+        },
+        {
+          "text": "1 Added Passive Skill is Widespread Destruction"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 7960": {
+      "rarity": "RARE",
+      "name": "Eagle Ruin",
+      "base": "Large Cluster Jewel",
+      "ilvl": 83,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Lightning Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: Regenerate 0.15% of Life per Second"
+        },
+        {
+          "text": "1 Added Passive Skill is Disorienting Display"
+        },
+        {
+          "text": "1 Added Passive Skill is Paralysis"
+        },
+        {
+          "text": "1 Added Passive Skill is Scintillating Idea"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 13170": {
+      "rarity": "UNIQUE",
+      "name": "The Adorned",
+      "base": "Crimson Jewel",
+      "ilvl": 80,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 44169": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Enlightened Cobalt Jewel of the Elements",
+      "ilvl": 83,
+      "flags": [
+        "Fractured",
+        "Corrupted"
+      ],
+      "implicits": [
+        {
+          "text": "22% reduced Effect of Chill on you"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "10% increased maximum Mana",
+          "markers": [
+            "fractured"
+          ]
+        },
+        {
+          "text": "+15% to Critical Strike Multiplier with Elemental Skills"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 1
+    },
+    "Tree Jewel 26196": {
+      "rarity": "UNIQUE",
+      "name": "Healthy Mind",
+      "base": "Cobalt Jewel",
+      "ilvl": 86,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 49080": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Enlightened Cobalt Jewel of Unmaking",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "10% increased maximum Mana",
+          "markers": [
+            "fractured"
+          ]
+        },
+        {
+          "text": "+15% to Critical Strike Multiplier for Spell Damage"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 1
+    },
+    "Tree Jewel 61419": {
+      "rarity": "UNIQUE",
+      "name": "Militant Faith",
+      "base": "Timeless Jewel",
+      "ilvl": 86,
+      "flags": []
+    }
+  }
+}

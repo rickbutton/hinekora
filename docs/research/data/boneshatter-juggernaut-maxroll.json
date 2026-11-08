@@ -1,0 +1,580 @@
+{
+  "build": "Boneshatter of Complex Trauma Juggernaut (Maxroll, Endgame set)",
+  "slug": "boneshatter-juggernaut-maxroll",
+  "source": "https://maxroll.gg/poe/build-guides/boneshatter-juggernaut-league-starter",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Marauder",
+    "ascendancy": "Juggernaut",
+    "level": 99,
+    "mainSocketGroup": 1,
+    "mainSkillGems": [
+      "Boneshatter of Complex Trauma",
+      "Volatility",
+      "Melee Physical Damage",
+      "Brutality",
+      "Ruthless",
+      "Endurance Charge on Melee Stun"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "3",
+      "title": "^4Early Game {1}",
+      "active": false,
+      "slotCount": 19
+    },
+    {
+      "id": "2",
+      "title": "^4Midgame {2}",
+      "active": false,
+      "slotCount": 19
+    },
+    {
+      "id": "1",
+      "title": "^4Endgame {3,4,5}",
+      "active": true,
+      "slotCount": 19
+    }
+  ],
+  "chosenItemSet": {
+    "id": "1",
+    "title": "^4Endgame {3,4,5}"
+  },
+  "items": {
+    "Belt": {
+      "rarity": "UNIQUE",
+      "name": "Ryslatha's Coil",
+      "base": "Studded Belt",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "2"
+    },
+    "Flask 5": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Flagellant's Quartz Flask of the Heron",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Gain 3 Charges when you are Hit by an Enemy"
+        },
+        {
+          "text": "62% reduced Effect of Shock on you during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 4": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Flagellant's Granite Flask of the Armadillo",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Gain 3 Charges when you are Hit by an Enemy"
+        },
+        {
+          "text": "58% increased Armour during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 2": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Persevering Blood Sap Tincture of Dissolution",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "20% chance to cause Bleeding with Melee Weapons"
+        },
+        {
+          "text": "(60-90)% increased Damage with Bleeding from Melee Weapons"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "26% reduced Mana Burn rate"
+        },
+        {
+          "text": "+30% to Damage over Time Multiplier with Melee Weapon Attacks"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 3": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Flagellant's Quicksilver Flask of the Owl",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Gain 3 Charges when you are Hit by an Enemy"
+        },
+        {
+          "text": "61% reduced Effect of Curses on you during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 1": {
+      "rarity": "RARE",
+      "name": "Endgame Axe",
+      "base": "Sundering Axe",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+20% to Damage over Time Multiplier for Bleeding"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "49% increased Physical Damage"
+        },
+        {
+          "text": "Adds 42 to 79 Physical Damage"
+        },
+        {
+          "text": "+108 to Accuracy Rating"
+        },
+        {
+          "text": "(120-139)% increased Physical Damage",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "(21-25)% chance to Blind Enemies on hit",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "Can have up to 3 Crafted Modifiers",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+(31-35)% to Physical Damage over Time Multiplier",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+(20-24) to Dexterity and Intelligence",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "(13-16)% increased Attack Speed",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 4,
+      "fracturedExplicitCount": 0
+    },
+    "Boots": {
+      "rarity": "RARE",
+      "name": "Endgame Boots",
+      "base": "Leviathan Greaves",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "4% increased Action Speed",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "Regenerate 0.2% of Life per second per Endurance Charge",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+110 to maximum Life"
+        },
+        {
+          "text": "+44% to Lightning Resistance"
+        },
+        {
+          "text": "+29% to Chaos Resistance"
+        },
+        {
+          "text": "+(17-20)% to Fire and Cold Resistances",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "(25-30)% increased Movement Speed",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "(13-16)% chance to gain Onslaught for 4 seconds on Kill",
+          "markers": [
+            "custom"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Amulet": {
+      "rarity": "RARE",
+      "name": "Endgame Amulet",
+      "base": "Turquoise Amulet",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Allocates Sione's Ambition",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+(16-24) to Dexterity and Intelligence"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+25% to Damage over Time Multiplier"
+        },
+        {
+          "text": "+111 to maximum Life"
+        },
+        {
+          "text": "+16% to all Elemental Resistances"
+        },
+        {
+          "text": "+29% to Chaos Resistance"
+        },
+        {
+          "text": "Non-Channelling Skills have -(7-6) to Total Mana Cost",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Helmet": {
+      "rarity": "RARE",
+      "name": "Endgame Helmet",
+      "base": "Giantslayer Helmet",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "(38-40)% increased Mana Cost Efficiency of Attacks",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "6% of Physical Damage from Hits taken as Fire Damage",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "74% increased Armour"
+        },
+        {
+          "text": "+122 to maximum Life"
+        },
+        {
+          "text": "+44% to Fire Resistance"
+        },
+        {
+          "text": "+29% to Chaos Resistance"
+        },
+        {
+          "text": "+(17-20)% to Cold and Lightning Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Body Armour": {
+      "rarity": "RARE",
+      "name": "Endgame Chest",
+      "base": "Royal Plate",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "+1% to all maximum Resistances",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "10% of Physical Damage from Hits taken as Fire Damage",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+446 to Armour"
+        },
+        {
+          "text": "99% increased Armour"
+        },
+        {
+          "text": "7% additional Physical Damage Reduction"
+        },
+        {
+          "text": "You take 10% reduced Extra Damage from Critical Strikes per Endurance Charge",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "+(17-20)% to Cold and Lightning Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Gloves": {
+      "rarity": "RARE",
+      "name": "Endgame Gloves",
+      "base": "Leviathan Gauntlets",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "Non-Vaal Strike Skills target 2 additional nearby Enemy",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "10% chance to Aggravate Bleeding on targets you Hit with Attacks",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "74% increased Armour"
+        },
+        {
+          "text": "+104 to maximum Life"
+        },
+        {
+          "text": "+43% to Fire Resistance"
+        },
+        {
+          "text": "+44% to Cold Resistance"
+        },
+        {
+          "text": "+30% to Chaos Resistance"
+        },
+        {
+          "text": "(9-10)% increased Melee Damage",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+0.1 metres to Melee Strike Range",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 1": {
+      "rarity": "UNIQUE",
+      "name": "+2 Endurance Kaom's Sign",
+      "base": "Coral Ring",
+      "ilvl": null,
+      "flags": [
+        "Corrupted"
+      ],
+      "selectedVariant": "3"
+    },
+    "Ring 2": {
+      "rarity": "RARE",
+      "name": "Random Corrupted +1 Endurance Ring",
+      "base": "Ruby Ring",
+      "ilvl": null,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [
+        {
+          "text": "+1 to Maximum Endurance Charges"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+82 to maximum Life"
+        },
+        {
+          "text": "+15% to all Elemental Resistances"
+        },
+        {
+          "text": "+20% to Chaos Resistance"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 1": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Seething Divine Life Flask of Alleviation",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "66% reduced Amount Recovered"
+        },
+        {
+          "text": "Instant Recovery"
+        },
+        {
+          "text": "Grants Immunity to Bleeding for 11 seconds if used while Bleeding"
+        },
+        {
+          "text": "Grants Immunity to Corrupted Blood for 11 seconds if used while affected by Corrupted Blood"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 26725": {
+      "rarity": "UNIQUE",
+      "name": "The Light of Meaning",
+      "base": "Prismatic Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "8"
+    },
+    "Tree Jewel 54127": {
+      "rarity": "RARE",
+      "name": "Jewel",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "11% increased Damage over Time"
+        },
+        {
+          "text": "6% increased maximum Life"
+        },
+        {
+          "text": "Damaging Ailments deal damage 6% faster"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 26196": {
+      "rarity": "RARE",
+      "name": "Jewel",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "11% increased Damage over Time"
+        },
+        {
+          "text": "6% increased maximum Life"
+        },
+        {
+          "text": "Damaging Ailments deal damage 6% faster"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 28475": {
+      "rarity": "RARE",
+      "name": "Jewel",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "11% increased Damage over Time"
+        },
+        {
+          "text": "6% increased maximum Life"
+        },
+        {
+          "text": "Damaging Ailments deal damage 6% faster"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 33631": {
+      "rarity": "UNIQUE",
+      "name": "Glorious Vanity",
+      "base": "Timeless Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "1"
+    }
+  }
+}

@@ -1,0 +1,822 @@
+{
+  "build": "Creeping Frost + Winter Orb Elementalist (PhazePlays, Lategame set)",
+  "slug": "arctic-salvo-elementalist-phaze",
+  "source": "https://pobb.in/gej8Ani3GFoa",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Witch",
+    "ascendancy": "Elementalist",
+    "level": 100,
+    "mainSocketGroup": 1,
+    "mainSkillGems": [
+      "Creeping Frost",
+      "Overloaded Intensity",
+      "Gluttony",
+      "Pinpoint",
+      "Increased Critical Damage",
+      "Empower"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "6",
+      "title": "1 - 11",
+      "active": false,
+      "slotCount": 15
+    },
+    {
+      "id": "7",
+      "title": "12 - 33",
+      "active": false,
+      "slotCount": 17
+    },
+    {
+      "id": "8",
+      "title": "34 - 52",
+      "active": false,
+      "slotCount": 17
+    },
+    {
+      "id": "9",
+      "title": "Maps",
+      "active": false,
+      "slotCount": 24
+    },
+    {
+      "id": "5",
+      "title": "Lvl 90",
+      "active": false,
+      "slotCount": 24
+    },
+    {
+      "id": "3",
+      "title": "Earlygame",
+      "active": false,
+      "slotCount": 24
+    },
+    {
+      "id": "2",
+      "title": "Midgame",
+      "active": false,
+      "slotCount": 25
+    },
+    {
+      "id": "1",
+      "title": "Lategame",
+      "active": true,
+      "slotCount": 26
+    }
+  ],
+  "chosenItemSet": {
+    "id": "1",
+    "title": "Lategame"
+  },
+  "items": {
+    "Flask 3": {
+      "rarity": "UNIQUE",
+      "name": "Oriath's End",
+      "base": "Bismuth Flask",
+      "ilvl": null,
+      "flags": []
+    },
+    "Weapon 1": {
+      "rarity": "UNIQUE",
+      "name": "Mystic Refractor",
+      "base": "Pagan Wand",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Amulet": {
+      "rarity": "RARE",
+      "name": "Lategame",
+      "base": "Citrine Amulet",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Allocates Ash, Frost and Storm",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+(16-24) to Strength and Dexterity"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "20% increased Cast Speed"
+        },
+        {
+          "text": "+38% to Global Critical Strike Multiplier",
+          "markers": [
+            "fractured"
+          ]
+        },
+        {
+          "text": "+62 to maximum Life"
+        },
+        {
+          "text": "+1 to Level of all Skill Gems"
+        },
+        {
+          "text": "+1 to Level of all Cold Skill Gems"
+        },
+        {
+          "text": "(23-30)% increased Effect of Non-Damaging Ailments",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 1
+    },
+    "Helmet": {
+      "rarity": "RARE",
+      "name": "Lategame",
+      "base": "Archdemon Crown",
+      "ilvl": null,
+      "flags": [
+        "Shaper"
+      ],
+      "implicits": [
+        {
+          "text": "-2 to Level of Socketed Support Gems"
+        },
+        {
+          "text": "+2 to Level of Socketed Skill Gems"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Socketed Gems are Supported by Level 20 Increased Area of Effect"
+        },
+        {
+          "text": "Socketed Gems are Supported by Level 20 Hypothermia"
+        },
+        {
+          "text": "Socketed Spells have +3% to Critical Strike Chance"
+        },
+        {
+          "text": "15% increased Area of Effect"
+        },
+        {
+          "text": "20% increased Effect of Cold Ailments"
+        },
+        {
+          "text": "Socketed Gems deal 30% more Elemental Damage",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "+2 to Level of Socketed AoE Gems",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "(8-10)% increased Area of Effect",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "+1 to Level of Socketed Projectile Gems",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Projectiles Pierce an additional Target",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 2": {
+      "rarity": "RARE",
+      "name": "Lategame",
+      "base": "Transfer-attuned Spirit Shield",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Sap Enemies when you Block their Damage"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "81% increased Chance to Block"
+        },
+        {
+          "text": "109% increased Cold Damage"
+        },
+        {
+          "text": "+1 to Level of all Cold Spell Skill Gems"
+        },
+        {
+          "text": "+2% to all maximum Resistances",
+          "markers": [
+            "fractured"
+          ]
+        },
+        {
+          "text": "(6-7)% chance to deal Double Damage",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "(13-15)% chance to deal Double Damage while Focused",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 1
+    },
+    "Body Armour": {
+      "rarity": "RARE",
+      "name": "Lategame",
+      "base": "Sacred Chainmail",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "+2% to all maximum Resistances",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "11% of Physical Damage from Hits taken as Lightning Damage",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+375 to Armour"
+        },
+        {
+          "text": "150% increased Armour and Energy Shield"
+        },
+        {
+          "text": "+80 to maximum Energy Shield"
+        },
+        {
+          "text": "+38% to Fire Resistance"
+        },
+        {
+          "text": "16% increased Stun and Block Recovery"
+        },
+        {
+          "text": "8% additional Physical Damage Reduction"
+        },
+        {
+          "text": "+(21-25) to Strength and Intelligence",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 4": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Surgeon's Topaz Flask",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "35% chance to gain a Flask Charge when you deal a Critical Strike"
+        },
+        {
+          "text": "50% Chance to Avoid being Stunned during Effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Gloves": {
+      "rarity": "RARE",
+      "name": "Lategame",
+      "base": "Paladin Gloves",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "Inflict Cold Exposure on Hit, applying -14% to Cold Resistance"
+        },
+        {
+          "text": "20% chance to Unnerve Enemies for 4 seconds on Hit"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+63 to Armour"
+        },
+        {
+          "text": "97% increased Armour and Energy Shield"
+        },
+        {
+          "text": "+25 to maximum Energy Shield"
+        },
+        {
+          "text": "+125 to maximum Life"
+        },
+        {
+          "text": "+47% to Cold Resistance",
+          "markers": [
+            "fractured"
+          ]
+        },
+        {
+          "text": "50% increased Damage with Hits against Chilled Enemies",
+          "markers": [
+            "fractured"
+          ]
+        },
+        {
+          "text": "(45-50)% increased Attack and Cast Speed while Focused",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "(15-16)% increased Global Critical Strike Chance",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "(20-22)% increased Elemental Damage if you've dealt a Critical Strike Recently",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 2
+    },
+    "Ring 1": {
+      "rarity": "RARE",
+      "name": "Lategame1",
+      "base": "Amethyst Ring",
+      "ilvl": null,
+      "flags": [
+        "Crusader"
+      ],
+      "implicits": [
+        {
+          "text": "+(17-23)% to Chaos Resistance"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+30 to Dexterity"
+        },
+        {
+          "text": "30% increased Spell Damage"
+        },
+        {
+          "text": "19% increased Cast Speed"
+        },
+        {
+          "text": "+114 to maximum Life"
+        },
+        {
+          "text": "+29% to Chaos Resistance"
+        },
+        {
+          "text": "(15-17)% increased Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 2": {
+      "rarity": "RARE",
+      "name": "Lategame2",
+      "base": "Amethyst Ring",
+      "ilvl": null,
+      "flags": [
+        "Crusader"
+      ],
+      "implicits": [
+        {
+          "text": "+(17-23)% to Chaos Resistance"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "16% increased Cast Speed"
+        },
+        {
+          "text": "15% increased maximum Energy Shield"
+        },
+        {
+          "text": "+114 to maximum Life"
+        },
+        {
+          "text": "+56% to Cold Resistance"
+        },
+        {
+          "text": "+36% to Chaos Resistance"
+        },
+        {
+          "text": "(15-17)% increased Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 2 Swap": {
+      "rarity": "RARE",
+      "name": "Woe Mark",
+      "base": "Crested Tower Shield",
+      "ilvl": 85,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+24 to maximum Life"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+98 to maximum Life"
+        },
+        {
+          "text": "+18% to all Elemental Resistances"
+        },
+        {
+          "text": "+7% Chance to Block"
+        },
+        {
+          "text": "5% additional Physical Damage Reduction"
+        },
+        {
+          "text": "69% increased Armour",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Belt": {
+      "rarity": "RARE",
+      "name": "Lategame",
+      "base": "Stygian Vise",
+      "ilvl": null,
+      "flags": [
+        "Hunter"
+      ],
+      "implicits": [
+        {
+          "text": "Has 1 Abyssal Socket"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+34 to maximum Energy Shield"
+        },
+        {
+          "text": "+172 to maximum Life"
+        },
+        {
+          "text": "12% increased maximum Life"
+        },
+        {
+          "text": "+42% to Fire Resistance"
+        },
+        {
+          "text": "+(16-20)% to Lightning and Chaos Resistances",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "+(21-25) to Strength and Intelligence",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 1": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Perpetual Quicksilver Flask",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "50% increased Charge Recovery"
+        },
+        {
+          "text": "(20-30)% increased Rarity of Items found during Effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Belt Abyssal Socket 1": {
+      "rarity": "RARE",
+      "name": "Lategame",
+      "base": "Hypnotic Eye Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+12% to Global Critical Strike Multiplier"
+        },
+        {
+          "text": "+35 to maximum Energy Shield"
+        },
+        {
+          "text": "+34 to maximum Life"
+        },
+        {
+          "text": "7% increased Cast Speed if you've dealt a Critical Strike Recently"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Boots": {
+      "rarity": "RARE",
+      "name": "Lategame",
+      "base": "Two-Toned Boots (Armour/Energy Shield)",
+      "ilvl": null,
+      "flags": [
+        "Hunter",
+        "Redeemer"
+      ],
+      "implicits": [
+        {
+          "text": "+(8-12)% to Fire and Lightning Resistances"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+102 to maximum Life"
+        },
+        {
+          "text": "+33% to Fire Resistance"
+        },
+        {
+          "text": "10% chance to gain Elusive on Critical Strike"
+        },
+        {
+          "text": "You have Tailwind if you have dealt a Critical Strike Recently"
+        },
+        {
+          "text": "(18-20)% increased Movement Speed",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "(8-12)% chance to gain Onslaught for 4 seconds on Kill",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 5": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Flagellant's Sapphire Flask",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Gain 3 Charges when you are Hit by an Enemy"
+        },
+        {
+          "text": "Regenerate 3% of Life per second during Effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 2": {
+      "flaskActive": true,
+      "rarity": "UNIQUE",
+      "name": "Dying Sun",
+      "base": "Ruby Flask",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "4"
+    },
+    "Tree Jewel 9408": {
+      "rarity": "UNIQUE",
+      "name": "Megalomaniac",
+      "base": "Medium Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "90"
+    },
+    "Tree Jewel 36634": {
+      "rarity": "UNIQUE",
+      "name": "Nadir Mode",
+      "base": "Cobalt Jewel",
+      "ilvl": 82,
+      "flags": [],
+      "selectedVariant": "2"
+    },
+    "Tree Jewel 29712": {
+      "rarity": "UNIQUE",
+      "name": "Rational Doctrine",
+      "base": "Cobalt Jewel",
+      "ilvl": null,
+      "flags": []
+    },
+    "Tree Jewel 21984": {
+      "rarity": "RARE",
+      "name": "Lategame12p",
+      "base": "Large Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 12 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Cold Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: +4 to All Attributes"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: 3% increased Attack and Cast Speed with Cold Skills"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +12 to Maximum Energy Shield"
+        },
+        {
+          "text": "Added Small Passive Skills have 35% increased Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 7960": {
+      "rarity": "RARE",
+      "name": "Lategame2",
+      "base": "Large Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Cold Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "1 Added Passive Skill is Doryani's Lesson"
+        },
+        {
+          "text": "1 Added Passive Skill is Prismatic Heart"
+        },
+        {
+          "text": "1 Added Passive Skill is Stormrider"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 26196": {
+      "rarity": "UNIQUE",
+      "name": "The Red Nightmare",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "2"
+    },
+    "Tree Jewel 61419": {
+      "rarity": "UNIQUE",
+      "name": "Watcher's Eye",
+      "base": "Prismatic Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "104"
+    },
+    "Tree Jewel 13170": {
+      "rarity": "UNIQUE",
+      "name": "Forbidden Flame",
+      "base": "Crimson Jewel",
+      "ilvl": 83,
+      "flags": [
+        "Corrupted"
+      ],
+      "selectedVariant": "148"
+    },
+    "Tree Jewel 64583": {
+      "rarity": "UNIQUE",
+      "name": "Forbidden Flesh",
+      "base": "Cobalt Jewel",
+      "ilvl": 83,
+      "flags": [
+        "Corrupted"
+      ],
+      "selectedVariant": "148"
+    }
+  }
+}

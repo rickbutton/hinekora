@@ -1,0 +1,504 @@
+{
+  "build": "Facebreaker Luminary (EXILED CAT)",
+  "slug": "facebreaker-luminary-exiledcat",
+  "source": "https://pobb.in/_s6FUr3jCaTD",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Scion",
+    "ascendancy": "Luminary",
+    "level": 90,
+    "mainSocketGroup": 7,
+    "mainSkillGems": [
+      "Sunder",
+      "Fortify",
+      "Pulverise",
+      "Melee Physical Damage",
+      "Fist of War"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "1",
+      "title": null,
+      "active": true,
+      "slotCount": 17
+    }
+  ],
+  "chosenItemSet": {
+    "id": "1",
+    "title": null
+  },
+  "items": {
+    "Flask 2": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Transgressor's Granite Flask of the Orca",
+      "ilvl": 42,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Gain 1 Charge when you are Hit by an Enemy"
+        },
+        {
+          "text": "33% chance to Avoid being Chilled during Effect"
+        },
+        {
+          "text": "34% chance to Avoid being Frozen during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 3": {
+      "rarity": "NORMAL",
+      "name": null,
+      "base": "Divine Life Flask",
+      "ilvl": 61,
+      "flags": [],
+      "implicits": [],
+      "explicits": [],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 4": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Seething Divine Mana Flask",
+      "ilvl": 60,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "66% reduced Amount Recovered"
+        },
+        {
+          "text": "Instant Recovery"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 5": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Undiluted Divine Life Flask of Thermodynamics",
+      "ilvl": 61,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "45% increased Recovery rate"
+        },
+        {
+          "text": "Grants Immunity to Chill for 11 seconds if used while Chilled"
+        },
+        {
+          "text": "Grants Immunity to Freeze for 11 seconds if used while Frozen"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 1": {
+      "rarity": "NORMAL",
+      "name": null,
+      "base": "Quicksilver Flask",
+      "ilvl": 4,
+      "flags": [],
+      "implicits": [],
+      "explicits": [],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 1": {
+      "rarity": "RARE",
+      "name": "Loath Roar",
+      "base": "Karui Chopper",
+      "ilvl": 85,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "44% increased Physical Damage"
+        },
+        {
+          "text": "+18% to Damage over Time Multiplier"
+        },
+        {
+          "text": "Adds 37 to 75 Physical Damage"
+        },
+        {
+          "text": "15% increased Critical Strike Chance"
+        },
+        {
+          "text": "Gain 8 Life per Enemy Killed"
+        },
+        {
+          "text": "+97 to Accuracy Rating"
+        },
+        {
+          "text": "99% increased Physical Damage",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "19% chance to cause Bleeding on Hit",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 0
+    },
+    "Amulet": {
+      "rarity": "RARE",
+      "name": "Viper Rosary",
+      "base": "Turquoise Amulet",
+      "ilvl": 69,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Allocates Hatchet Master",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+24 to Dexterity and Intelligence"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+23 to Strength"
+        },
+        {
+          "text": "8% increased Spell Damage"
+        },
+        {
+          "text": "+111 to maximum Life"
+        },
+        {
+          "text": "+36% to Fire Resistance"
+        },
+        {
+          "text": "+12% to Lightning Resistance"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Helmet": {
+      "rarity": "RARE",
+      "name": "Pain Halo",
+      "base": "Nightmare Bascinet",
+      "ilvl": 69,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+133 to Armour"
+        },
+        {
+          "text": "+149 to Evasion Rating"
+        },
+        {
+          "text": "+125 to maximum Life"
+        },
+        {
+          "text": "Regenerate 30.1 Life per second"
+        },
+        {
+          "text": "+21% to Fire Resistance"
+        },
+        {
+          "text": "+39% to Lightning Resistance"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Body Armour": {
+      "rarity": "RARE",
+      "name": "Gale Pelt",
+      "base": "Full Dragonscale",
+      "ilvl": 73,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+245 to Armour"
+        },
+        {
+          "text": "+241 to Evasion Rating"
+        },
+        {
+          "text": "79% increased Armour and Evasion"
+        },
+        {
+          "text": "+38% to Cold Resistance"
+        },
+        {
+          "text": "+32% to Lightning Resistance"
+        },
+        {
+          "text": "13% increased Stun and Block Recovery"
+        },
+        {
+          "text": "+42 to maximum Mana",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Gloves": {
+      "rarity": "RARE",
+      "name": "Rapture Hand",
+      "base": "Serpentscale Gauntlets",
+      "ilvl": 72,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+34 to Strength"
+        },
+        {
+          "text": "Adds 5 to 11 Fire Damage to Attacks"
+        },
+        {
+          "text": "+110 to maximum Life"
+        },
+        {
+          "text": "+28% to Cold Resistance"
+        },
+        {
+          "text": "+22% to Lightning Resistance",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Boots": {
+      "rarity": "RARE",
+      "name": "Plague Trail",
+      "base": "Wyrmscale Boots",
+      "ilvl": 53,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "21% increased Armour and Evasion"
+        },
+        {
+          "text": "+111 to maximum Life"
+        },
+        {
+          "text": "Regenerate 19.8 Life per second"
+        },
+        {
+          "text": "+29% to Fire Resistance"
+        },
+        {
+          "text": "+34% to Lightning Resistance"
+        },
+        {
+          "text": "10% increased Stun and Block Recovery"
+        },
+        {
+          "text": "20% increased Movement Speed",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "100% chance to Avoid being Chilled",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 1": {
+      "rarity": "RARE",
+      "name": "Glyph Gyre",
+      "base": "Two-Stone Ring",
+      "ilvl": 59,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+16% to Fire and Cold Resistances"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+22 to maximum Energy Shield"
+        },
+        {
+          "text": "+71 to maximum Life"
+        },
+        {
+          "text": "+38 to maximum Mana"
+        },
+        {
+          "text": "+30% to Fire Resistance"
+        },
+        {
+          "text": "+21% to Cold Resistance",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 2": {
+      "rarity": "RARE",
+      "name": "Skull Eye",
+      "base": "Two-Stone Ring",
+      "ilvl": 59,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+14% to Fire and Lightning Resistances"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Adds 4 to 8 Cold Damage to Attacks"
+        },
+        {
+          "text": "12% increased Global Accuracy Rating"
+        },
+        {
+          "text": "+60 to maximum Life"
+        },
+        {
+          "text": "10% increased Mana Regeneration Rate"
+        },
+        {
+          "text": "+21% to Chaos Resistance"
+        },
+        {
+          "text": "10% increased Light Radius"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Belt": {
+      "rarity": "RARE",
+      "name": "Torment Tether",
+      "base": "Leather Belt",
+      "ilvl": 68,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+38 to maximum Life"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+25 to maximum Energy Shield"
+        },
+        {
+          "text": "+144 to maximum Life"
+        },
+        {
+          "text": "+21% to Chaos Resistance"
+        },
+        {
+          "text": "Reflects 9 Physical Damage to Melee Attackers"
+        },
+        {
+          "text": "+28% to Cold Resistance",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 26725": {
+      "rarity": "RARE",
+      "name": "Hypnotic Eye",
+      "base": "Viridian Jewel",
+      "ilvl": 55,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "14% increased Damage with Axes"
+        },
+        {
+          "text": "5% increased maximum Life"
+        },
+        {
+          "text": "17% increased Burning Damage"
+        },
+        {
+          "text": "34% reduced Effect of Shock on you"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 54127": {
+      "rarity": "RARE",
+      "name": "Vivid Bane",
+      "base": "Crimson Jewel",
+      "ilvl": 57,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "14% increased Damage with Axes"
+        },
+        {
+          "text": "6% increased maximum Life"
+        },
+        {
+          "text": "Totems gain +7% to all Elemental Resistances"
+        },
+        {
+          "text": "+10% to Fire and Lightning Resistances"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 28475": {
+      "rarity": "RARE",
+      "name": "Brood Ruin",
+      "base": "Crimson Jewel",
+      "ilvl": 57,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "10% increased Damage"
+        },
+        {
+          "text": "14% increased Damage with Axes"
+        },
+        {
+          "text": "6% increased Attack Speed while holding a Shield"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    }
+  }
+}

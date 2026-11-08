@@ -1,0 +1,616 @@
+{
+  "build": "Explosive Arrow Ballista Champion (Zizaran, Endgame set)",
+  "slug": "ea-ballista-champion-ziz",
+  "source": "https://pobb.in/SS4brAQOXXM9",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Duelist",
+    "ascendancy": "Champion",
+    "level": 99,
+    "mainSocketGroup": 1,
+    "mainSkillGems": [
+      "Explosive Arrow",
+      "Combustion",
+      "Ballista Totem",
+      "Lifetap",
+      "Elemental Damage with Attacks",
+      "Ignite Proliferation",
+      "Empower",
+      "Volatility"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "4",
+      "title": "Splitting Steel Leveling",
+      "active": false,
+      "slotCount": 11
+    },
+    {
+      "id": "6",
+      "title": "Useful leveling uniques",
+      "active": false,
+      "slotCount": 12
+    },
+    {
+      "id": "3",
+      "title": "Early Game",
+      "active": false,
+      "slotCount": 17
+    },
+    {
+      "id": "2",
+      "title": "Midgame",
+      "active": false,
+      "slotCount": 17
+    },
+    {
+      "id": "5",
+      "title": "Endgame",
+      "active": true,
+      "slotCount": 17
+    },
+    {
+      "id": "1",
+      "title": "Endgame - Replica Dragonfang",
+      "active": false,
+      "slotCount": 17
+    }
+  ],
+  "chosenItemSet": {
+    "id": "5",
+    "title": "Endgame"
+  },
+  "items": {
+    "Weapon 1": {
+      "rarity": "RARE",
+      "name": "Endgame Bow",
+      "base": "Thicket Bow",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Quality does not increase Physical Damage",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "1% increased Attack Speed per 8% Quality",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+1 to Level of Socketed Gems"
+        },
+        {
+          "text": "+2 to Level of Socketed Bow Gems"
+        },
+        {
+          "text": "19% increased Attack Speed"
+        },
+        {
+          "text": "50% increased Elemental Damage with Attack Skills"
+        },
+        {
+          "text": "Minions have (25-28)% increased Attack Speed",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Minions have (25-28)% increased Cast Speed",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 0
+    },
+    "Amulet": {
+      "rarity": "RARE",
+      "name": "Endgame Amulet",
+      "base": "Marble Amulet",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Allocates Watchtowers",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Regenerate (1.2-1.6)% of Life per second"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+20% to Chaos Resistance"
+        },
+        {
+          "text": "+1 to Level of all Skill Gems"
+        },
+        {
+          "text": "+1 to Level of all Fire Skill Gems"
+        },
+        {
+          "text": "Can have up to 3 Crafted Modifiers",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+(41-55) to maximum Life",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+(13-15)% to Cold and Chaos Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 3,
+      "fracturedExplicitCount": 0
+    },
+    "Helmet": {
+      "rarity": "RARE",
+      "name": "Endgame Helmet",
+      "base": "Haunted Bascinet",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "10% increased Flammability Curse Effect",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "6% of Physical Damage from Hits taken as Fire Damage",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+133 to Armour"
+        },
+        {
+          "text": "+133 to Evasion Rating"
+        },
+        {
+          "text": "94% increased Armour and Evasion"
+        },
+        {
+          "text": "+133 to maximum Life"
+        },
+        {
+          "text": "+39% to Lightning Resistance"
+        },
+        {
+          "text": "+(16-20)% to Cold and Chaos Resistances",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "+(21-25) to Strength and Dexterity",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 2": {
+      "rarity": "RARE",
+      "name": "Endgame Quiver",
+      "base": "Broadhead Arrow Quiver",
+      "ilvl": null,
+      "flags": [
+        "Hunter"
+      ],
+      "implicits": [
+        {
+          "text": "10% increased attack speed"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+23% to Damage over Time Multiplier with Attack Skills"
+        },
+        {
+          "text": "+24% to Fire Damage over Time Multiplier with Attack Skills"
+        },
+        {
+          "text": "+93 to maximum Life"
+        },
+        {
+          "text": "6% increased Movement Speed"
+        },
+        {
+          "text": "44% increased Damage with Bow Skills"
+        },
+        {
+          "text": "(7-12)% increased Attack Speed",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Body Armour": {
+      "rarity": "RARE",
+      "name": "Midgame/Endgame Chest",
+      "base": "Conquest Lamellar",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "(11-12)% increased effect of Non-Curse Auras from your Skills",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "Determination has (19-21)% increased Aura Effect",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+10% chance to Suppress Spell Damage"
+        },
+        {
+          "text": "+331 to Armour"
+        },
+        {
+          "text": "+331 to Evasion Rating"
+        },
+        {
+          "text": "+189 to maximum Life"
+        },
+        {
+          "text": "+40% to Cold Resistance"
+        },
+        {
+          "text": "+20% to Chaos Resistance"
+        },
+        {
+          "text": "(56-74)% increased Armour and Evasion",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Boots": {
+      "rarity": "RARE",
+      "name": "Midgame/Endgame Boots",
+      "base": "Wyvernscale Boots",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "10% increased Totem Placement speed",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "Ignites you inflict deal Damage 6% faster",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+129 to maximum Life"
+        },
+        {
+          "text": "+38% to Fire Resistance"
+        },
+        {
+          "text": "+42% to Lightning Resistance"
+        },
+        {
+          "text": "30% increased Movement Speed"
+        },
+        {
+          "text": "+(5-6)% chance to Suppress Spell Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 1": {
+      "rarity": "RARE",
+      "name": "Midgame/Endgame Ring 1",
+      "base": "Vermillion Ring",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "(5-7)% increased maximum Life"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+79 to maximum Life"
+        },
+        {
+          "text": "+45% to Lightning Resistance"
+        },
+        {
+          "text": "35% increased Elemental Damage with Attack Skills"
+        },
+        {
+          "text": "+(13-15)% to Lightning and Chaos Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 2": {
+      "rarity": "RARE",
+      "name": "Midgame/Endgame Ring 2",
+      "base": "Vermillion Ring",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "(5-7)% increased maximum Life"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Adds 1 to 5 Lightning Damage to Attacks"
+        },
+        {
+          "text": "+79 to maximum Life"
+        },
+        {
+          "text": "+36% to Fire Resistance"
+        },
+        {
+          "text": "+36% to Cold Resistance"
+        },
+        {
+          "text": "+(21-25) to Dexterity and Intelligence",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Gloves": {
+      "rarity": "RARE",
+      "name": "Endgame Gloves",
+      "base": "Wyvernscale Gauntlets",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "+5% chance to Suppress Spell Damage",
+          "markers": [
+            "eater"
+          ]
+        },
+        {
+          "text": "Ignites you inflict spread to other Enemies within 1.2 metres",
+          "markers": [
+            "exarch"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+12% chance to Suppress Spell Damage"
+        },
+        {
+          "text": "10% increased Attack Speed"
+        },
+        {
+          "text": "+66 to Armour"
+        },
+        {
+          "text": "+66 to Evasion Rating"
+        },
+        {
+          "text": "74% increased Armour and Evasion"
+        },
+        {
+          "text": "+129 to maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 3": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Delinquent's Quicksilver Flask of the Cheetah",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Gain 3 Charges when you are Hit by an Enemy"
+        },
+        {
+          "text": "14% increased Movement Speed during Flask effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 2": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Delinquent's Granite Flask of the Armadillo",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Gain 3 Charges when you are Hit by an Enemy"
+        },
+        {
+          "text": "60% increased Armour during Flask effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 1": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Bubbling Divine Life Flask of Assuaging",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "36% reduced Amount Recovered"
+        },
+        {
+          "text": "135% increased Recovery rate"
+        },
+        {
+          "text": "50% of Recovery applied Instantly"
+        },
+        {
+          "text": "Grants Immunity to Bleeding for 17 seconds if used while Bleeding"
+        },
+        {
+          "text": "Grants Immunity to Corrupted Blood for 17 seconds if used while affected by Corrupted Blood"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Belt": {
+      "rarity": "UNIQUE",
+      "name": "Dyadian Dawn",
+      "base": "Heavy Belt",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "2"
+    },
+    "Flask 4": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Delinquent's Quartz Flask of the Owl",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Gain 3 Charges when you are Hit by an Enemy"
+        },
+        {
+          "text": "65% reduced Effect of Curses on you during Flask Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 5": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Delinquent's Jade Flask of the Heron",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Gain 3 Charges when you are Hit by an Enemy"
+        },
+        {
+          "text": "63% reduced Effect of Shock on you during Flask Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 33631": {
+      "rarity": "RARE",
+      "name": "Jewel",
+      "base": "Viridian Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "5% increased Attack Speed"
+        },
+        {
+          "text": "8% increased Attack Speed with Bows"
+        },
+        {
+          "text": "7% increased maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 34483": {
+      "rarity": "RARE",
+      "name": "Jewel",
+      "base": "Viridian Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "5% increased Attack Speed"
+        },
+        {
+          "text": "8% increased Attack Speed with Bows"
+        },
+        {
+          "text": "7% increased maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    }
+  }
+}

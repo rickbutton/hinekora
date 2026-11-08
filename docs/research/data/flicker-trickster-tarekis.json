@@ -1,0 +1,652 @@
+{
+  "build": "Flicker Strike CI Aegis Trickster (Tarekis, High-End set)",
+  "slug": "flicker-trickster-tarekis",
+  "source": "https://pobb.in/u/tarekis%235639/tarekis-flicker-trickster",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Shadow",
+    "ascendancy": "Trickster",
+    "level": 96,
+    "mainSocketGroup": 1,
+    "mainSkillGems": [
+      "Flicker Strike",
+      "Multistrike",
+      "Volatility",
+      "Close Combat",
+      "Elemental Damage with Attacks",
+      "Double Strike of Momentum",
+      "Damage on Full Life"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "4",
+      "title": "Starter",
+      "active": false,
+      "slotCount": 26
+    },
+    {
+      "id": "2",
+      "title": "Midgame",
+      "active": true,
+      "slotCount": 26
+    },
+    {
+      "id": "8",
+      "title": "High-End",
+      "active": false,
+      "slotCount": 26
+    },
+    {
+      "id": "5",
+      "title": "Min-Max",
+      "active": false,
+      "slotCount": 28
+    },
+    {
+      "id": "3",
+      "title": "Uber-Tank (multi-mirror + craft intensive)",
+      "active": false,
+      "slotCount": 26
+    }
+  ],
+  "chosenItemSet": {
+    "id": "8",
+    "title": "High-End"
+  },
+  "items": {
+    "Belt Abyssal Socket 1": {
+      "rarity": "RARE",
+      "name": "Shock Jewel",
+      "base": "Murderous Eye Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Adds 3 to 46 Lightning Damage to Attacks"
+        },
+        {
+          "text": "+38 to maximum Energy Shield"
+        },
+        {
+          "text": "50% chance to Avoid being Shocked"
+        },
+        {
+          "text": "3 to 49 Added Lightning Damage with Sword Attacks"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 1": {
+      "rarity": "UNIQUE",
+      "name": "Ephemeral Edge",
+      "base": "Dusk Blade",
+      "ilvl": null,
+      "flags": [
+        "Corrupted"
+      ],
+      "selectedVariant": "5"
+    },
+    "Amulet": {
+      "rarity": "UNIQUE",
+      "name": "Voice of the Storm",
+      "base": "Lapis Amulet",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "3"
+    },
+    "Helmet": {
+      "rarity": "RARE",
+      "name": "High-End Helmet",
+      "base": "Lich's Circlet",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "(27-28)% increased Mana Cost Efficiency",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "9% increased Mana Reservation Efficiency of Skills",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+53 to maximum Energy Shield"
+        },
+        {
+          "text": "94% increased Energy Shield"
+        },
+        {
+          "text": "+43% to Fire Resistance"
+        },
+        {
+          "text": "+43% to Cold Resistance"
+        },
+        {
+          "text": "+2 to Level of Socketed Aura Gems",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "(18-21)% increased Energy Shield",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+(14-16) to maximum Life",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 2": {
+      "rarity": "UNIQUE",
+      "name": "Aegis Aurora",
+      "base": "Champion Kite Shield",
+      "ilvl": null,
+      "flags": [
+        "Corrupted"
+      ],
+      "selectedVariant": "3"
+    },
+    "Body Armour": {
+      "rarity": "RARE",
+      "name": "High-End Body Armour",
+      "base": "Necrotic Armour",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "8% increased Explicit Defence Modifier magnitudes",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "(13-14)% increased effect of Non-Curse Auras from your Skills",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "Melee Hits have (10-11)% chance to Fortify",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+375 to Evasion Rating"
+        },
+        {
+          "text": "152% increased Evasion and Energy Shield"
+        },
+        {
+          "text": "+80 to maximum Energy Shield"
+        },
+        {
+          "text": "+48% to Fire Resistance"
+        },
+        {
+          "text": "+48% to Cold Resistance"
+        },
+        {
+          "text": "+48% to Lightning Resistance"
+        },
+        {
+          "text": "17% increased Stun and Block Recovery"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Gloves": {
+      "rarity": "RARE",
+      "name": "High-End Gloves",
+      "base": "Warlock Gloves",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "Non-Vaal Strike Skills target 2 additional nearby Enemy",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "Inflict Lightning Exposure on Hit, applying -13% to Lightning Resistance",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+46 to Intelligence"
+        },
+        {
+          "text": "+45 to maximum Energy Shield"
+        },
+        {
+          "text": "96% increased Energy Shield"
+        },
+        {
+          "text": "+44% to Cold Resistance"
+        },
+        {
+          "text": "(17-18)% increased Attack Speed",
+          "markers": [
+            "custom"
+          ]
+        },
+        {
+          "text": "(18-21)% increased Energy Shield",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+(12-14) to maximum Life",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 1": {
+      "rarity": "UNIQUE",
+      "name": "Shavronne's Revelation",
+      "base": "Moonstone Ring",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "4"
+    },
+    "Ring 2": {
+      "rarity": "UNIQUE",
+      "name": "Foulborn Warrior's Legacy",
+      "base": "Ruby Ring",
+      "ilvl": 83,
+      "flags": []
+    },
+    "Flask 1": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Enriched Prismatic Tincture of Overpowering",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "(70-160)% increased Elemental Damage with Melee Weapons"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "35% increased effect"
+        },
+        {
+          "text": "41% increased Mana Burn rate"
+        },
+        {
+          "text": "Melee Weapon Damage Penetrates 19% Elemental Resistances"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Belt": {
+      "rarity": "UNIQUE",
+      "name": "Darkness Enthroned",
+      "base": "Stygian Vise",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "3"
+    },
+    "Belt Abyssal Socket 2": {
+      "rarity": "RARE",
+      "name": "Dex Jewel",
+      "base": "Murderous Eye Jewel",
+      "ilvl": null,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [
+        {
+          "text": "(20-25)% chance to Avoid Bleeding"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+16 to Dexterity"
+        },
+        {
+          "text": "Adds 4 to 48 Lightning Damage to Attacks"
+        },
+        {
+          "text": "+38 to maximum Energy Shield"
+        },
+        {
+          "text": "3 to 49 Added Lightning Damage with Sword Attacks"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 3": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Masochist's Basalt Flask of the Impala",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Gain 2 Charges when you are Hit by an Enemy"
+        },
+        {
+          "text": "58% increased Evasion Rating during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 2": {
+      "flaskActive": true,
+      "rarity": "UNIQUE",
+      "name": "Bottled Faith",
+      "base": "Sulphur Flask",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "3"
+    },
+    "Flask 5": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Masochist's Silver Flask of the Armadillo",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Gain 2 Charges when you are Hit by an Enemy"
+        },
+        {
+          "text": "58% increased Armour during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 4": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Masochist's Stibnite Flask of Wreaking",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Creates a Smoke Cloud on Use"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Gain 2 Charges when you are Hit by an Enemy"
+        },
+        {
+          "text": "30% chance to Freeze, Shock and Ignite during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Boots": {
+      "rarity": "RARE",
+      "name": "High-End Boots",
+      "base": "Warlock Boots",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "(18-20)% chance to Avoid Elemental Ailments",
+          "markers": [
+            "eater"
+          ]
+        },
+        {
+          "text": "5% increased Action Speed",
+          "markers": [
+            "exarch"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+64 to maximum Energy Shield"
+        },
+        {
+          "text": "100% increased Energy Shield"
+        },
+        {
+          "text": "+28 to maximum Life"
+        },
+        {
+          "text": "+47% to Fire Resistance"
+        },
+        {
+          "text": "+47% to Lightning Resistance"
+        },
+        {
+          "text": "(56-60)% chance to Avoid being Shocked",
+          "markers": [
+            "custom"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 61834": {
+      "rarity": "UNIQUE",
+      "name": "Lethal Pride",
+      "base": "Timeless Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "4"
+    },
+    "Tree Jewel 22994": {
+      "rarity": "RARE",
+      "name": "Corrupted Blood Jewel",
+      "base": "Murderous Eye Jewel",
+      "ilvl": null,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [
+        {
+          "text": "Corrupted Blood cannot be inflicted on you"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Adds 2 to 45 Lightning Damage to Attacks"
+        },
+        {
+          "text": "+38 to maximum Energy Shield"
+        },
+        {
+          "text": "3 to 48 Added Lightning Damage with Sword Attacks"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 54127": {
+      "rarity": "RARE",
+      "name": "Midgame DPS Jewel",
+      "base": "Murderous Eye Jewel",
+      "ilvl": null,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Adds 3 to 32 Lightning Damage to Attacks"
+        },
+        {
+          "text": "+32 to maximum Energy Shield"
+        },
+        {
+          "text": "3 to 34 Added Lightning Damage with Sword Attacks"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 60735": {
+      "rarity": "UNIQUE",
+      "name": "Stormshroud",
+      "base": "Viridian Jewel",
+      "ilvl": null,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 2491": {
+      "rarity": "UNIQUE",
+      "name": "Stormshroud",
+      "base": "Viridian Jewel",
+      "ilvl": null,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 46393": {
+      "rarity": "RARE",
+      "name": "Midgame DPS Jewel",
+      "base": "Murderous Eye Jewel",
+      "ilvl": null,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Adds 3 to 32 Lightning Damage to Attacks"
+        },
+        {
+          "text": "+32 to maximum Energy Shield"
+        },
+        {
+          "text": "3 to 34 Added Lightning Damage with Sword Attacks"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 33989": {
+      "rarity": "UNIQUE",
+      "name": "Watcher's Eye 1Mod",
+      "base": "Prismatic Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "93"
+    },
+    "Tree Jewel 46882": {
+      "rarity": "RARE",
+      "name": "Cluster: DPS",
+      "base": "Large Cluster Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 12% increased Attack Damage while holding a Shield",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: +4 to All Attributes"
+        },
+        {
+          "text": "1 Added Passive Skill is Feed the Fury"
+        },
+        {
+          "text": "1 Added Passive Skill is Fuel the Fight"
+        },
+        {
+          "text": "1 Added Passive Skill is Martial Prowess"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 32763": {
+      "rarity": "UNIQUE",
+      "name": "Watcher's Eye 1Mod",
+      "base": "Prismatic Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "93"
+    }
+  }
+}

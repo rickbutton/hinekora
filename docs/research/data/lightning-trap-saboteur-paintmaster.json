@@ -1,0 +1,434 @@
+{
+  "build": "Lightning Trap of Sparking Saboteur (PaintMasterPoE, 1 Divine challenge)",
+  "slug": "lightning-trap-saboteur-paintmaster",
+  "source": "https://pobb.in/u/paintmaster%232396/RbTkWnm74nsr",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Shadow",
+    "ascendancy": "Saboteur",
+    "level": 91,
+    "mainSocketGroup": 1,
+    "mainSkillGems": [
+      "Lightning Trap of Sparking",
+      "Charged Traps",
+      "Increased Critical Damage",
+      "Trap and Mine Damage",
+      "Increased Critical Strikes",
+      "Swift Assembly"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "1",
+      "title": null,
+      "active": true,
+      "slotCount": 15
+    }
+  ],
+  "chosenItemSet": {
+    "id": "1",
+    "title": null
+  },
+  "items": {
+    "Belt": {
+      "rarity": "RARE",
+      "name": "Domination Shackle",
+      "base": "Heavy Belt",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+35 to Strength"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+131 to maximum Life"
+        },
+        {
+          "text": "+42% to Lightning Resistance"
+        },
+        {
+          "text": "+21% to Chaos Resistance"
+        },
+        {
+          "text": "13% increased Flask Life Recovery rate"
+        },
+        {
+          "text": "+35% to Fire Resistance",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Body Armour": {
+      "rarity": "RARE",
+      "name": "Kraken Keep",
+      "base": "Necrotic Armour",
+      "ilvl": 85,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "10% of Physical Damage from Hits taken as Cold Damage"
+        },
+        {
+          "text": "+21% to Critical Strike Multiplier for Spell Damage"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "33% increased Evasion and Energy Shield"
+        },
+        {
+          "text": "+38 to maximum Mana"
+        },
+        {
+          "text": "+48% to Fire Resistance"
+        },
+        {
+          "text": "+48% to Cold Resistance"
+        },
+        {
+          "text": "+25% to Chaos Resistance"
+        },
+        {
+          "text": "14% increased Stun and Block Recovery"
+        },
+        {
+          "text": "73% increased Evasion and Energy Shield",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Gloves": {
+      "rarity": "UNIQUE",
+      "name": "Hand of the Lords",
+      "base": "Carnal Mitts",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Boots": {
+      "rarity": "RARE",
+      "name": "Anarchy Slippers",
+      "base": "Phantom Boots",
+      "ilvl": 84,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "16% increased Warcry Speed"
+        },
+        {
+          "text": "4% increased Action Speed"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "26% increased Evasion and Energy Shield"
+        },
+        {
+          "text": "+119 to maximum Life"
+        },
+        {
+          "text": "+42% to Fire Resistance"
+        },
+        {
+          "text": "+44% to Cold Resistance"
+        },
+        {
+          "text": "25% increased Movement Speed"
+        },
+        {
+          "text": "10% increased Stun and Block Recovery"
+        },
+        {
+          "text": "+13% to Cold and Chaos Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 1": {
+      "rarity": "UNIQUE",
+      "name": "Anathema",
+      "base": "Moonstone Ring",
+      "ilvl": 83,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Ring 2": {
+      "rarity": "RARE",
+      "name": "Demon Loop",
+      "base": "Two-Stone Ring",
+      "ilvl": 85,
+      "flags": [
+        "Fractured"
+      ],
+      "implicits": [
+        {
+          "text": "+16% to Cold and Lightning Resistances"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Adds 1 to 34 Lightning Damage to Attacks"
+        },
+        {
+          "text": "+15% to Global Critical Strike Multiplier"
+        },
+        {
+          "text": "+101 to maximum Life"
+        },
+        {
+          "text": "+19 to maximum Mana"
+        },
+        {
+          "text": "6% increased Rarity of Items found"
+        },
+        {
+          "text": "+27% to Chaos Resistance",
+          "markers": [
+            "fractured"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 1
+    },
+    "Flask 1": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Transgressor's Eternal Life Flask of Sealing",
+      "ilvl": 73,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Gain 1 Charge when you are Hit by an Enemy"
+        },
+        {
+          "text": "Grants Immunity to Bleeding for 8 seconds if used while Bleeding"
+        },
+        {
+          "text": "Grants Immunity to Corrupted Blood for 8 seconds if used while affected by Corrupted Blood"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 2": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Physician's Jade Flask of the Hare",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "20% chance to gain a Flask Charge when you deal a Critical Strike"
+        },
+        {
+          "text": "8% increased Movement Speed during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 3": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Physician's Quicksilver Flask of the Ibex",
+      "ilvl": 81,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "18% chance to gain a Flask Charge when you deal a Critical Strike"
+        },
+        {
+          "text": "52% increased Evasion Rating during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 1": {
+      "rarity": "RARE",
+      "name": "Soul Mast",
+      "base": "Primordial Staff",
+      "ilvl": 85,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+25% Chance to Block Spell Damage"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "114% increased Spell Damage"
+        },
+        {
+          "text": "Adds 10 to 254 Lightning Damage to Spells"
+        },
+        {
+          "text": "126% increased Spell Critical Strike Chance"
+        },
+        {
+          "text": "+3 to Level of all Lightning Spell Skill Gems"
+        },
+        {
+          "text": "23% increased Trap Throwing Speed",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Helmet": {
+      "rarity": "RARE",
+      "name": "Havoc Brow",
+      "base": "Jester Mask",
+      "ilvl": 75,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "6% of Physical Damage from Hits taken as Lightning Damage"
+        },
+        {
+          "text": "Adds 4 to 36 Lightning Damage to Spells"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "15% increased Evasion and Energy Shield"
+        },
+        {
+          "text": "+18 to maximum Energy Shield"
+        },
+        {
+          "text": "+135 to maximum Life"
+        },
+        {
+          "text": "+22 to maximum Mana"
+        },
+        {
+          "text": "+44% to Lightning Resistance"
+        },
+        {
+          "text": "+22% to Chaos Resistance"
+        },
+        {
+          "text": "8% increased Stun and Block Recovery"
+        },
+        {
+          "text": "+15% to Lightning and Chaos Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Amulet": {
+      "rarity": "UNIQUE",
+      "name": "Replica Dragonfang's Flight",
+      "base": "Onyx Amulet",
+      "ilvl": 84,
+      "flags": []
+    },
+    "Tree Jewel 61834": {
+      "rarity": "RARE",
+      "name": "Honour Ruin",
+      "base": "Cobalt Jewel",
+      "ilvl": 85,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "16% increased Lightning Damage"
+        },
+        {
+          "text": "6% increased maximum Life"
+        },
+        {
+          "text": "12% increased Projectile Damage"
+        },
+        {
+          "text": "+11% to Fire and Lightning Resistances"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 60735": {
+      "rarity": "RARE",
+      "name": "Glyph Curio",
+      "base": "Crimson Jewel",
+      "ilvl": 83,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "16% increased Lightning Damage"
+        },
+        {
+          "text": "6% increased maximum Life"
+        },
+        {
+          "text": "12% increased Projectile Damage"
+        },
+        {
+          "text": "+11% to Cold and Lightning Resistances"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 33989": {
+      "rarity": "UNIQUE",
+      "name": "Watcher's Eye",
+      "base": "Prismatic Jewel",
+      "ilvl": 85,
+      "flags": []
+    }
+  }
+}

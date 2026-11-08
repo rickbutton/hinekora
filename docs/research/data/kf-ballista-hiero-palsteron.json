@@ -1,0 +1,509 @@
+{
+  "build": "Kinetic Fusillade Ballista Hierophant (Palsteron, AegisRespec set)",
+  "slug": "kf-ballista-hiero-palsteron",
+  "source": "https://pobb.in/ktAkVJm59exq",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Templar",
+    "ascendancy": "Hierophant",
+    "level": 13,
+    "mainSocketGroup": 2,
+    "mainSkillGems": [
+      "Holy Flame Totem",
+      "Summon Phantasm",
+      "Combustion",
+      "Infused Channelling"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "4",
+      "title": "A1",
+      "active": true,
+      "slotCount": 2
+    },
+    {
+      "id": "5",
+      "title": "A3",
+      "active": false,
+      "slotCount": 2
+    },
+    {
+      "id": "6",
+      "title": "A3 (after Respec)",
+      "active": false,
+      "slotCount": 7
+    },
+    {
+      "id": "3",
+      "title": "EarlyMaps",
+      "active": false,
+      "slotCount": 15
+    },
+    {
+      "id": "2",
+      "title": "BeforeAegis",
+      "active": false,
+      "slotCount": 15
+    },
+    {
+      "id": "1",
+      "title": "AegisRespec",
+      "active": false,
+      "slotCount": 16
+    }
+  ],
+  "chosenItemSet": {
+    "id": "1",
+    "title": "AegisRespec"
+  },
+  "items": {
+    "Flask 2": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Quicksilver Flask of the Cheetah",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "13% increased Movement Speed during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 3": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Quartz Flask of the Kakapo",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "56% reduced Effect of Curses on you during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 4": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Granite Flask of the Armadillo",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "58% increased Armour during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 1": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Diamond Flask of Penetrating",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "47% increased Critical Strike Chance during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Belt": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Stygian Vise",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Has 1 Abyssal Socket"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+120 to maximum Life"
+        },
+        {
+          "text": "+22% to Chaos Resistance"
+        },
+        {
+          "text": "33% increased Elemental Damage with Attack Skills"
+        },
+        {
+          "text": "+(21-25) to Dexterity and Intelligence",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 1": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Kinetic Wand",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Cannot roll Caster Modifiers"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Adds 80 to 146 Cold Damage"
+        },
+        {
+          "text": "27% increased Critical Strike Chance"
+        },
+        {
+          "text": "Can have up to 3 Crafted Modifiers",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "(11-13)% increased Attack Speed",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Attacks with this Weapon Penetrate (11-13)% Elemental Resistances",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Adds (13-19) to (266-310) Lightning Damage",
+          "markers": [
+            "custom"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 3,
+      "fracturedExplicitCount": 0
+    },
+    "Amulet": {
+      "rarity": "UNIQUE",
+      "name": "Yoke of Suffering",
+      "base": "Onyx Amulet",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "2"
+    },
+    "Helmet": {
+      "rarity": "UNIQUE",
+      "name": "Wilma's Requital",
+      "base": "Solaris Circlet",
+      "ilvl": null,
+      "flags": []
+    },
+    "Weapon 2": {
+      "rarity": "UNIQUE",
+      "name": "Aegis Aurora",
+      "base": "Champion Kite Shield",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "3"
+    },
+    "Body Armour": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Sacred Chainmail",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "(9-10)% increased effect of Non-Curse Auras from your Skills",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "6% Chance to Block Attack Damage",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+248 to Armour"
+        },
+        {
+          "text": "118% increased Armour and Energy Shield"
+        },
+        {
+          "text": "+65 to maximum Energy Shield"
+        },
+        {
+          "text": "+43% to Fire Resistance"
+        },
+        {
+          "text": "+33% to Cold Resistance"
+        },
+        {
+          "text": "13% increased Stun and Block Recovery"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 5": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Chemist's Eternal Life Flask of Assuaging",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "28% reduced Charges per use"
+        },
+        {
+          "text": "Grants Immunity to Bleeding for 17 seconds if used while Bleeding"
+        },
+        {
+          "text": "Grants Immunity to Corrupted Blood for 17 seconds if used while affected by Corrupted Blood"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 1": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Amethyst Ring",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+(17-23)% to Chaos Resistance"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+42 to Dexterity"
+        },
+        {
+          "text": "Adds 3 to 42 Lightning Damage to Attacks"
+        },
+        {
+          "text": "+91 to maximum Life"
+        },
+        {
+          "text": "+12% to all Elemental Resistances"
+        },
+        {
+          "text": "+(13-15)% to Cold and Chaos Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 2": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Amethyst Ring",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+(17-23)% to Chaos Resistance"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+39 to Dexterity"
+        },
+        {
+          "text": "Adds 4 to 49 Lightning Damage to Attacks"
+        },
+        {
+          "text": "14% increased Cast Speed"
+        },
+        {
+          "text": "+91 to maximum Life"
+        },
+        {
+          "text": "+(13-15)% to Cold and Chaos Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Gloves": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Paladin Gloves",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "15% chance to Intimidate Enemies for 4 seconds on Hit",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "(9-10)% increased Global Accuracy Rating",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+47 to Armour"
+        },
+        {
+          "text": "87% increased Armour and Energy Shield"
+        },
+        {
+          "text": "+21 to maximum Energy Shield"
+        },
+        {
+          "text": "+107 to maximum Life"
+        },
+        {
+          "text": "+37% to Lightning Resistance"
+        },
+        {
+          "text": "(7-12)% increased Attack Speed",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Boots": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Paladin Boots",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "4% increased Action Speed",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "Regenerate 0.2% of Life per second per Endurance Charge",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+44 to Armour"
+        },
+        {
+          "text": "87% increased Armour and Energy Shield"
+        },
+        {
+          "text": "+20 to maximum Energy Shield"
+        },
+        {
+          "text": "+18% to Chaos Resistance"
+        },
+        {
+          "text": "30% increased Movement Speed"
+        },
+        {
+          "text": "+(13-15)% to Cold and Chaos Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Belt Abyssal Socket 1": {
+      "rarity": "RARE",
+      "name": "New Item",
+      "base": "Searching Eye Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+11% to Global Critical Strike Multiplier"
+        },
+        {
+          "text": "+33 to maximum Life"
+        },
+        {
+          "text": "14 to 24 Added Fire Damage with Wand Attacks"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    }
+  }
+}

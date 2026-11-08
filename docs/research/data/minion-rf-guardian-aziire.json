@@ -1,0 +1,539 @@
+{
+  "build": "Minion RF Auto Bomber Guardian (Aziire)",
+  "slug": "minion-rf-guardian-aziire",
+  "source": "https://pobb.in/WjIVdWRuM3bE",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Templar",
+    "ascendancy": "Guardian",
+    "level": 95,
+    "mainSocketGroup": 1,
+    "mainSkillGems": [
+      "Summon Sentinel of Radiance"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "1",
+      "title": null,
+      "active": true,
+      "slotCount": 25
+    },
+    {
+      "id": "2",
+      "title": "Animate Guardian",
+      "active": false,
+      "slotCount": 15
+    }
+  ],
+  "chosenItemSet": {
+    "id": "1",
+    "title": null
+  },
+  "items": {
+    "Flask 5": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Clinician's Ruby Flask of Craft",
+      "ilvl": 83,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "32% increased Duration"
+        },
+        {
+          "text": "Regenerate 3% of Life per second during Effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 1": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Brewer's Quicksilver Flask of the Cheetah",
+      "ilvl": 100,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "23% reduced Charges per use"
+        },
+        {
+          "text": "12% increased Movement Speed during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 3": {
+      "flaskActive": true,
+      "rarity": "UNIQUE",
+      "name": "Rumi's Concoction",
+      "base": "Granite Flask",
+      "ilvl": 84,
+      "flags": []
+    },
+    "Flask 4": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Clinician's Jade Flask of the Armadillo",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "31% increased Duration"
+        },
+        {
+          "text": "56% increased Armour during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 1": {
+      "rarity": "RARE",
+      "name": "Plague Edge",
+      "base": "Convoking Wand",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Minions deal 29% increased Damage"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+42 to maximum Mana"
+        },
+        {
+          "text": "11% increased Mana Regeneration Rate"
+        },
+        {
+          "text": "Minions deal 143% increased Damage"
+        },
+        {
+          "text": "Minions have +32% to Critical Strike Multiplier"
+        },
+        {
+          "text": "Minions created Recently have 77% increased Critical Hit Chance"
+        },
+        {
+          "text": "+2 to Level of Socketed Support Gems",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Amulet": {
+      "rarity": "RARE",
+      "name": "Vortex Choker",
+      "base": "Hybrid Arachnid Talisman",
+      "ilvl": 85,
+      "flags": [
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "Intangibility: 35%"
+        },
+        {
+          "text": "Minions have +30% to Damage over Time Multiplier",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "7% Chance to Block Attack Damage"
+        },
+        {
+          "text": "+6 to maximum Energy Shield"
+        },
+        {
+          "text": "Regenerate 54.2 Life per second"
+        },
+        {
+          "text": "+47 to maximum Mana"
+        },
+        {
+          "text": "22% increased Rarity of Items found"
+        },
+        {
+          "text": "Minions deal 26% increased Damage"
+        },
+        {
+          "text": "Minions have 19% increased Movement Speed",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Helmet": {
+      "rarity": "UNIQUE",
+      "name": "Subsume the Source",
+      "base": "Faithful Helmet",
+      "ilvl": 86,
+      "flags": []
+    },
+    "Weapon 2": {
+      "rarity": "RELIC",
+      "name": "Svalinn",
+      "base": "Girded Tower Shield",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+20 to maximum Life"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "13% Chance to Block Spell Damage"
+        },
+        {
+          "text": "+113 to Ward"
+        },
+        {
+          "text": "-10% to maximum Chance to Block Attack Damage"
+        },
+        {
+          "text": "-10% to maximum Chance to Block Spell Damage"
+        },
+        {
+          "text": "Chance to Block is Lucky"
+        },
+        {
+          "text": "Trigger a Socketed Elemental Spell on Block, with a 0.25 second Cooldown"
+        },
+        {
+          "text": "Foil Unique (Celestial Ruby)"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Body Armour": {
+      "rarity": "UNIQUE",
+      "name": "Servant of Decay",
+      "base": "Torturer Garb",
+      "ilvl": 86,
+      "flags": []
+    },
+    "Gloves": {
+      "rarity": "RARE",
+      "name": "Brimstone Knuckle",
+      "base": "Soldier Gloves",
+      "ilvl": 75,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds",
+        "Fractured"
+      ],
+      "implicits": [
+        {
+          "text": "Inflict Fire Exposure on Hit, applying -12% to Fire Resistance"
+        },
+        {
+          "text": "Minions deal 19% increased Damage"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+12 to maximum Energy Shield"
+        },
+        {
+          "text": "+124 to maximum Life"
+        },
+        {
+          "text": "+19 to maximum Mana"
+        },
+        {
+          "text": "Gain 42 Life per Enemy Killed"
+        },
+        {
+          "text": "Minions deal 28% increased Damage"
+        },
+        {
+          "text": "+15% to Fire and Chaos Resistances",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Regenerate 92.1 Life per second",
+          "markers": [
+            "fractured"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 1
+    },
+    "Boots": {
+      "rarity": "UNIQUE",
+      "name": "Foulborn Windscream",
+      "base": "Reinforced Greaves",
+      "ilvl": 83,
+      "flags": []
+    },
+    "Ring 2": {
+      "rarity": "UNIQUE",
+      "name": "Pearl of Tsoatha",
+      "base": "Prismatic Ring",
+      "ilvl": 85,
+      "flags": []
+    },
+    "Ring 1": {
+      "rarity": "UNIQUE",
+      "name": "Pearl of Tsoatha",
+      "base": "Prismatic Ring",
+      "ilvl": 85,
+      "flags": []
+    },
+    "Belt": {
+      "rarity": "UNIQUE",
+      "name": "The Arkhon's Tools",
+      "base": "Cloth Belt",
+      "ilvl": 86,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Flask 2": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Flagellant's Silver Flask of the Impala",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Gain 3 Charges when you are Hit by an Enemy"
+        },
+        {
+          "text": "56% increased Evasion Rating during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 64583": {
+      "rarity": "RARE",
+      "name": "Whispering Portent",
+      "base": "Ghastly Eye Jewel",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Intangibility: 11%"
+        },
+        {
+          "text": "+28 to maximum Energy Shield"
+        },
+        {
+          "text": "+35 to maximum Life"
+        },
+        {
+          "text": "Minions have 12% increased maximum Life"
+        },
+        {
+          "text": "Minions have 3% chance to Blind on Hit with Attacks"
+        },
+        {
+          "text": "Minions have 3% chance to Hinder Enemies on Hit with Spells"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 9408": {
+      "rarity": "UNIQUE",
+      "name": "Forbidden Flesh",
+      "base": "Cobalt Jewel",
+      "ilvl": 86,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 36634": {
+      "rarity": "UNIQUE",
+      "name": "Amanamu's Gaze",
+      "base": "Ghastly Eye Jewel",
+      "ilvl": 85,
+      "flags": []
+    },
+    "Tree Jewel 29712": {
+      "rarity": "UNIQUE",
+      "name": "Forbidden Flame",
+      "base": "Crimson Jewel",
+      "ilvl": 86,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 21984": {
+      "rarity": "RARE",
+      "name": "Cataclysm Scar",
+      "base": "Large Cluster Jewel",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: Minions deal 10% increased Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: +3% to Chaos Resistance"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +3 to Maximum Life"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: Minions have 3% increased Attack and Cast Speed"
+        },
+        {
+          "text": "1 Added Passive Skill is Feasting Fiends"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 7960": {
+      "rarity": "RARE",
+      "name": "Eagle Heart",
+      "base": "Large Cluster Jewel",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: Minions deal 10% increased Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: +4% to Chaos Resistance"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +10 to Maximum Life"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: Regenerate 0.1% of Life per Second"
+        },
+        {
+          "text": "1 Added Passive Skill is Feasting Fiends"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 26196": {
+      "rarity": "UNIQUE",
+      "name": "Amanamu's Gaze",
+      "base": "Ghastly Eye Jewel",
+      "ilvl": 85,
+      "flags": []
+    },
+    "Tree Jewel 61419": {
+      "rarity": "UNIQUE",
+      "name": "Elegant Hubris",
+      "base": "Timeless Jewel",
+      "ilvl": 84,
+      "flags": []
+    },
+    "Tree Jewel 41263": {
+      "rarity": "UNIQUE",
+      "name": "Impossible Escape",
+      "base": "Viridian Jewel",
+      "ilvl": 87,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 13170": {
+      "rarity": "UNIQUE",
+      "name": "Watcher's Eye",
+      "base": "Prismatic Jewel",
+      "ilvl": 86,
+      "flags": []
+    }
+  }
+}

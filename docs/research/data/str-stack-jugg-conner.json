@@ -1,0 +1,983 @@
+{
+  "build": "Hybrid Strength Stack Juggernaut (Conner Converse, final form)",
+  "slug": "str-stack-jugg-conner",
+  "source": "https://pobb.in/Kvl1jpKGgk2G",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Marauder",
+    "ascendancy": "Juggernaut",
+    "level": 100,
+    "mainSocketGroup": 7,
+    "mainSkillGems": [
+      "Heavy Strike of Trarthus",
+      "Greater Multistrike",
+      "Increased Critical Damage",
+      "Ruthless",
+      "Void Manipulation",
+      "Volatility"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "1",
+      "title": null,
+      "active": true,
+      "slotCount": 31
+    }
+  ],
+  "chosenItemSet": {
+    "id": "1",
+    "title": null
+  },
+  "items": {
+    "Weapon 1": {
+      "rarity": "RARE",
+      "name": "Brimstone Thirst",
+      "base": "Kinetic Wand",
+      "ilvl": 84,
+      "flags": [
+        "Shaper",
+        "Elder"
+      ],
+      "implicits": [
+        {
+          "text": "Intangibility: 68%"
+        },
+        {
+          "text": "Quality does not increase Physical Damage",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Grants 1% increased Accuracy per 2% Quality",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Cannot roll Caster Modifiers"
+        },
+        {
+          "text": "Socketed Gems are Supported by Level 20 Momentum"
+        },
+        {
+          "text": "Socketed Gems are supported by Level 20 Increased Critical Damage"
+        },
+        {
+          "text": "Socketed Gems are Supported by Level 20 Multiple Projectiles"
+        },
+        {
+          "text": "Socketed Skills deal 40% more Attack Damage"
+        },
+        {
+          "text": "12% increased Attack Speed"
+        },
+        {
+          "text": "+29% to Global Critical Strike Multiplier"
+        },
+        {
+          "text": "30% increased Projectile Damage"
+        },
+        {
+          "text": "Attacks with this Weapon Penetrate 16% Chaos Resistance"
+        },
+        {
+          "text": "+8% to Quality of Socketed Gems",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Amulet": {
+      "rarity": "RARE",
+      "name": "Oblivion Locket",
+      "base": "Simplex Amulet",
+      "ilvl": 86,
+      "flags": [
+        "Shaper",
+        "Warlord"
+      ],
+      "implicits": [
+        {
+          "text": "Intangibility: 20%"
+        },
+        {
+          "text": "Allocates Force of Darkness",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "-2 Prefix Modifiers allowed"
+        },
+        {
+          "text": "-1 Suffix Modifier allowed"
+        },
+        {
+          "text": "Implicit Modifiers Cannot Be Changed"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "100% increased Explicit Modifier magnitudes"
+        },
+        {
+          "text": "19% increased Attributes"
+        },
+        {
+          "text": "26% increased Strength"
+        },
+        {
+          "text": "2% increased Damage per 15 Strength"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Helmet": {
+      "rarity": "RARE",
+      "name": "Gloom Shelter",
+      "base": "Lich's Circlet",
+      "ilvl": 94,
+      "flags": [
+        "Warlord",
+        "Hunter"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Intangibility: 94%"
+        },
+        {
+          "text": "+60 to Strength"
+        },
+        {
+          "text": "12% increased Strength"
+        },
+        {
+          "text": "+61 to maximum Energy Shield"
+        },
+        {
+          "text": "100% increased Energy Shield"
+        },
+        {
+          "text": "+144 to maximum Life"
+        },
+        {
+          "text": "1% increased Critical Strike Chance per 10 Strength"
+        },
+        {
+          "text": "Gain Accuracy Rating equal to your Strength"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 2": {
+      "rarity": "UNIQUE",
+      "name": "The Squire",
+      "base": "Elegant Round Shield",
+      "ilvl": 2,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Body Armour": {
+      "rarity": "UNIQUE",
+      "name": "The Iron Fortress",
+      "base": "Crusader Plate",
+      "ilvl": 84,
+      "flags": []
+    },
+    "Gloves": {
+      "rarity": "RARE",
+      "name": "Vengeance Fingers",
+      "base": "Crusader Gloves",
+      "ilvl": 86,
+      "flags": [
+        "Warlord",
+        "Hunter",
+        "Corrupted"
+      ],
+      "implicits": [
+        {
+          "text": "6% increased maximum Life"
+        },
+        {
+          "text": "+29% to Chaos Resistance"
+        },
+        {
+          "text": "+1 to Maximum Frenzy Charges"
+        },
+        {
+          "text": "Attacks have +0.8% to Critical Strike Chance"
+        },
+        {
+          "text": "Can be modified while Corrupted"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+55 to Strength"
+        },
+        {
+          "text": "12% increased Strength"
+        },
+        {
+          "text": "+129 to maximum Life"
+        },
+        {
+          "text": "+1 to Maximum Frenzy Charges"
+        },
+        {
+          "text": "Culling Strike"
+        },
+        {
+          "text": "25% increased Area of Effect if you've dealt a Culling Strike Recently"
+        },
+        {
+          "text": "10% chance that if you would gain Frenzy Charges, you instead gain up to your maximum number of Frenzy Charges"
+        },
+        {
+          "text": "Non-Vaal Strike Skills target 2 additional nearby Enemies"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Boots": {
+      "rarity": "UNIQUE",
+      "name": "Replica Alberon's Warpath",
+      "base": "Soldier Boots",
+      "ilvl": 86,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Ring 1": {
+      "rarity": "RARE",
+      "name": "Phoenix Grasp",
+      "base": "Helical Ring",
+      "ilvl": 85,
+      "flags": [
+        "Fractured"
+      ],
+      "implicits": [
+        {
+          "text": "Intangibility: 56%"
+        },
+        {
+          "text": "-2 Prefix Modifiers allowed"
+        },
+        {
+          "text": "+1 Suffix Modifier allowed"
+        },
+        {
+          "text": "Implicit Modifiers Cannot Be Changed"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "50% increased Suffix Modifier magnitudes"
+        },
+        {
+          "text": "Grants Level 20 Aspect of Lunaris Skill"
+        },
+        {
+          "text": "+141 to Strength"
+        },
+        {
+          "text": "42% increased Global Accuracy Rating"
+        },
+        {
+          "text": "31% increased Light Radius"
+        },
+        {
+          "text": "Adds 4 to 8 Physical Damage to Attacks",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+52% to Global Critical Strike Multiplier",
+          "markers": [
+            "fractured"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 1
+    },
+    "Ring 2": {
+      "rarity": "RARE",
+      "name": "Tempest Knot",
+      "base": "Helical Ring",
+      "ilvl": 86,
+      "flags": [
+        "Hunter"
+      ],
+      "implicits": [
+        {
+          "text": "Intangibility: 79%"
+        },
+        {
+          "text": "-2 Prefix Modifiers allowed"
+        },
+        {
+          "text": "+1 Suffix Modifier allowed"
+        },
+        {
+          "text": "Implicit Modifiers Cannot Be Changed"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "50% increased Suffix Modifier magnitudes"
+        },
+        {
+          "text": "+27 to all Attributes"
+        },
+        {
+          "text": "+98 to Strength"
+        },
+        {
+          "text": "30% increased Global Accuracy Rating"
+        },
+        {
+          "text": "+52% to Chaos Resistance"
+        },
+        {
+          "text": "Gain 19 Life per Enemy Hit with Attacks"
+        },
+        {
+          "text": "22% increased Light Radius"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 1": {
+      "flaskActive": true,
+      "rarity": "RELIC",
+      "name": "Progenesis",
+      "base": "Amethyst Flask",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "18% reduced Charges per use"
+        },
+        {
+          "text": "35% increased Duration"
+        },
+        {
+          "text": "When Hit during effect, 25% of Life loss from Damage taken occurs over 4 seconds instead"
+        },
+        {
+          "text": "Foil Unique (Celestial Quartz)"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 2": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Dabbler's Ruby Flask of the Opossum",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "70% increased effect",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Gains no Charges during Effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "32% reduced Duration"
+        },
+        {
+          "text": "39% less Duration"
+        },
+        {
+          "text": "25% increased effect"
+        },
+        {
+          "text": "Immunity to Poison during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 3": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Abecedarian's Diamond Flask of Incision",
+      "ilvl": 83,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Intangibility: 7%"
+        },
+        {
+          "text": "70% increased effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Gains no Charges during Effect",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "33% reduced Duration"
+        },
+        {
+          "text": "25% increased effect"
+        },
+        {
+          "text": "55% increased Critical Strike Chance during Effect"
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 4": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Alchemist's Silver Flask of the Cheetah",
+      "ilvl": 85,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Intangibility: 1%"
+        },
+        {
+          "text": "70% increased effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Gains no Charges during Effect",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "25% reduced Duration"
+        },
+        {
+          "text": "25% increased effect"
+        },
+        {
+          "text": "14% increased Movement Speed during Effect"
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Belt": {
+      "rarity": "UNIQUE",
+      "name": "Mageblood",
+      "base": "Heavy Belt",
+      "ilvl": 80,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Weapon 1 Swap": {
+      "rarity": "RARE",
+      "name": "Miracle Gnarl",
+      "base": "Lathi",
+      "ilvl": 85,
+      "flags": [
+        "Shaper",
+        "Elder"
+      ],
+      "implicits": [
+        {
+          "text": "Intangibility: 27%"
+        },
+        {
+          "text": "Quality does not increase Physical Damage",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Grants 1% increased Accuracy per 2% Quality",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+25% Chance to Block Spell Damage"
+        },
+        {
+          "text": "Socketed Gems are Supported by Level 10 Endurance Charge on Melee Stun"
+        },
+        {
+          "text": "Socketed Skills deal 20% more Attack Damage"
+        },
+        {
+          "text": "30% increased Attack Speed"
+        },
+        {
+          "text": "+1 to Maximum Endurance Charges"
+        },
+        {
+          "text": "1% increased Spell Damage per 10 Strength"
+        },
+        {
+          "text": "+24 to Strength and Intelligence",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "25% increased Critical Strike Chance",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 5": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Abecedarian's Quicksilver Flask of Craft",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "70% increased effect",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Gains no Charges during Effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "34% reduced Duration"
+        },
+        {
+          "text": "25% increased effect"
+        },
+        {
+          "text": "Regenerate 3% of Life per second during Effect",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 22994": {
+      "rarity": "RARE",
+      "name": "Armageddon Glimmer",
+      "base": "Medium Cluster Jewel",
+      "ilvl": 84,
+      "flags": [
+        "Fractured"
+      ],
+      "implicits": [
+        {
+          "text": "Intangibility: 34%"
+        },
+        {
+          "text": "Adds 5 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "1 Added Passive Skill is a Jewel Socket",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills grant: 15% increased Critical Strike Chance",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +4 to All Attributes"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +8 to Strength"
+        },
+        {
+          "text": "Added Small Passive Skills have 35% increased Effect"
+        },
+        {
+          "text": "1 Added Passive Skill is Overwhelming Malice",
+          "markers": [
+            "fractured"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 1
+    },
+    "Tree Jewel 10532": {
+      "rarity": "UNIQUE",
+      "name": "Forbidden Flesh",
+      "base": "Cobalt Jewel",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 2491": {
+      "rarity": "RARE",
+      "name": "Vivid Prism",
+      "base": "Large Cluster Jewel",
+      "ilvl": 84,
+      "flags": [
+        "Fractured"
+      ],
+      "implicits": [
+        {
+          "text": "Intangibility: 59%"
+        },
+        {
+          "text": "Adds 12 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills grant: 10% increased Spell Damage",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +4 to All Attributes"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +10 to Maximum Life"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +8 to Strength"
+        },
+        {
+          "text": "Added Small Passive Skills have 35% increased Effect",
+          "markers": [
+            "fractured"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 1
+    },
+    "Tree Jewel 55190": {
+      "rarity": "RARE",
+      "name": "Entropy Spark",
+      "base": "Large Cluster Jewel",
+      "ilvl": 84,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [
+        {
+          "text": "Intangibility: 22%"
+        },
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: Staff Attacks deal 12% increased Damage with Hits and Ailments",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills grant: Mace or Sceptre Attacks deal 12% increased Damage with Hits and Ailments"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +8 to Strength"
+        },
+        {
+          "text": "1 Added Passive Skill is Fuel the Fight"
+        },
+        {
+          "text": "1 Added Passive Skill is Martial Prowess"
+        },
+        {
+          "text": "1 Added Passive Skill is Overlord"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 61305": {
+      "rarity": "UNIQUE",
+      "name": "Split Personality",
+      "base": "Crimson Jewel",
+      "ilvl": 84,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 46519": {
+      "rarity": "UNIQUE",
+      "name": "Forbidden Flame",
+      "base": "Crimson Jewel",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 33631": {
+      "rarity": "UNIQUE",
+      "name": "Watcher's Eye",
+      "base": "Prismatic Jewel",
+      "ilvl": 86,
+      "flags": []
+    },
+    "Tree Jewel 54127": {
+      "rarity": "UNIQUE",
+      "name": "Lethal Pride",
+      "base": "Timeless Jewel",
+      "ilvl": 84,
+      "flags": []
+    },
+    "Tree Jewel 46393": {
+      "rarity": "UNIQUE",
+      "name": "Split Personality",
+      "base": "Crimson Jewel",
+      "ilvl": 84,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 46882": {
+      "rarity": "RARE",
+      "name": "Soul Shard",
+      "base": "Large Cluster Jewel",
+      "ilvl": 84,
+      "flags": [
+        "Fractured"
+      ],
+      "implicits": [
+        {
+          "text": "Intangibility: 41%"
+        },
+        {
+          "text": "Adds 12 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills grant: 10% increased Spell Damage",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +4 to All Attributes"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +10 to Maximum Life"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +8 to Strength"
+        },
+        {
+          "text": "Added Small Passive Skills have 35% increased Effect",
+          "markers": [
+            "fractured"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 1
+    },
+    "Tree Jewel 26196": {
+      "rarity": "RARE",
+      "name": "Entropy Heart",
+      "base": "Viridian Jewel",
+      "ilvl": 84,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [
+        {
+          "text": "Intangibility: 22%"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "5% increased Damage"
+        },
+        {
+          "text": "+8 to all Attributes"
+        },
+        {
+          "text": "+10 to Strength and Dexterity"
+        },
+        {
+          "text": "+17% to Critical Strike Multiplier with Two Handed Melee Weapons"
+        },
+        {
+          "text": "7% increased maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 49080": {
+      "rarity": "UNIQUE",
+      "name": "Sublime Vision",
+      "base": "Prismatic Jewel",
+      "ilvl": 87,
+      "flags": [
+        "Shaper"
+      ]
+    },
+    "Tree Jewel 44169": {
+      "rarity": "UNIQUE",
+      "name": "Bound By Destiny",
+      "base": "Prismatic Jewel",
+      "ilvl": 86,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 28475": {
+      "rarity": "RARE",
+      "name": "Empyrean Vessel",
+      "base": "Viridian Jewel",
+      "ilvl": 85,
+      "flags": [
+        "Fractured"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Intangibility: 60%"
+        },
+        {
+          "text": "+8 to all Attributes"
+        },
+        {
+          "text": "+16 to Strength"
+        },
+        {
+          "text": "7% increased maximum Life"
+        },
+        {
+          "text": "+18% to Critical Strike Multiplier with Two Handed Melee Weapons",
+          "markers": [
+            "fractured"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 1
+    },
+    "Tree Jewel 26725": {
+      "rarity": "RARE",
+      "name": "Foe Scar",
+      "base": "Viridian Jewel",
+      "ilvl": 80,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [
+        {
+          "text": "Corrupted Blood cannot be inflicted on you"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+7 to all Attributes"
+        },
+        {
+          "text": "+10 to Strength and Intelligence"
+        },
+        {
+          "text": "4% increased Attack Speed with Two Handed Melee Weapons"
+        },
+        {
+          "text": "7% increased maximum Life"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    }
+  }
+}

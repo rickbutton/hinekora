@@ -1,0 +1,551 @@
+{
+  "build": "Cyclone Shockwave Slayer (Sanavixx, Lvl 100 HIGH Budget set)",
+  "slug": "cyclone-slayer-sanavixx",
+  "source": "https://pobb.in/4txxyICBSfk8",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Duelist",
+    "ascendancy": "Slayer",
+    "level": 96,
+    "mainSocketGroup": 4,
+    "mainSkillGems": [
+      "Cyclone of Tumult",
+      "Melee Physical Damage",
+      "Brutality",
+      "Infused Channelling",
+      "Pulverise",
+      "Void Shockwave"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "5",
+      "title": "Lvl 1-12 (Spectral Throw)",
+      "active": false,
+      "slotCount": 4
+    },
+    {
+      "id": "7",
+      "title": "Lvl 12-32 (Static Strike)",
+      "active": false,
+      "slotCount": 4
+    },
+    {
+      "id": "1",
+      "title": "Lvl 32 (Cyclone Swap + Lab)",
+      "active": false,
+      "slotCount": 4
+    },
+    {
+      "id": "9",
+      "title": "Lvl 58 (Cruel Lab)",
+      "active": false,
+      "slotCount": 4
+    },
+    {
+      "id": "10",
+      "title": "Lvl 68 (Merc Lab)",
+      "active": false,
+      "slotCount": 4
+    },
+    {
+      "id": "11",
+      "title": "Lvl 77 (Uber Lab)",
+      "active": false,
+      "slotCount": 17
+    },
+    {
+      "id": "6",
+      "title": "Lvl 90",
+      "active": false,
+      "slotCount": 18
+    },
+    {
+      "id": "2",
+      "title": "Lvl 96",
+      "active": true,
+      "slotCount": 18
+    },
+    {
+      "id": "8",
+      "title": "Lvl 100 (HIGH Budget)",
+      "active": false,
+      "slotCount": 17
+    },
+    {
+      "id": "4",
+      "title": "Lvl 100 Giga Endgame - Speed Variant",
+      "active": false,
+      "slotCount": 18
+    },
+    {
+      "id": "3",
+      "title": "Lvl 100 Giga Endgame - Bossing",
+      "active": false,
+      "slotCount": 18
+    },
+    {
+      "id": "12",
+      "title": "Lvl 100 Giga Endgame - Deep Delve",
+      "active": false,
+      "slotCount": 20
+    }
+  ],
+  "chosenItemSet": {
+    "id": "8",
+    "title": "Lvl 100 (HIGH Budget)"
+  },
+  "items": {
+    "Flask 5": {
+      "flaskActive": true,
+      "rarity": "UNIQUE",
+      "name": "Rumi's Concoction",
+      "base": "Granite Flask",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "4"
+    },
+    "Belt": {
+      "rarity": "UNIQUE",
+      "name": "Lvl 100, Ryslatha's Coil",
+      "base": "Studded Belt",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "2"
+    },
+    "Weapon 1": {
+      "rarity": "RARE",
+      "name": "Lvl 100 Essence",
+      "base": "Ezomyte Staff",
+      "ilvl": 100,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "8% increased Explicit Physical Modifier magnitudes",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+25% Chance to Block Attack Damage while wielding a Staff"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Adds 40 to 74 Physical Damage"
+        },
+        {
+          "text": "178% increased Physical Damage"
+        },
+        {
+          "text": "57% increased Physical Damage"
+        },
+        {
+          "text": "+130 to Accuracy Rating"
+        },
+        {
+          "text": "26% increased Attack Speed"
+        },
+        {
+          "text": "13% chance to deal Double Damage"
+        },
+        {
+          "text": "25% increased Critical Strike Chance",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+21 to Strength and Intelligence",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 0
+    },
+    "Amulet": {
+      "rarity": "RARE",
+      "name": "Lvl 100",
+      "base": "Turquoise Amulet",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Allocates Enigmatic Defence",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+(16-24) to Dexterity and Intelligence"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+450 to Accuracy Rating"
+        },
+        {
+          "text": "+32% to Global Critical Strike Multiplier"
+        },
+        {
+          "text": "+144 to maximum Life"
+        },
+        {
+          "text": "+(13-15)% to Fire and Chaos Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Helmet": {
+      "rarity": "RARE",
+      "name": "Lvl 100",
+      "base": "Haunted Bascinet",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "8% increased Mana Reservation Efficiency of Skills",
+          "markers": [
+            "eater"
+          ]
+        },
+        {
+          "text": "(19-20)% reduced Mana Cost of Attacks",
+          "markers": [
+            "exarch"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+50 to Intelligence"
+        },
+        {
+          "text": "+143 to maximum Life"
+        },
+        {
+          "text": "+48% to Cold Resistance"
+        },
+        {
+          "text": "+47% to Lightning Resistance"
+        },
+        {
+          "text": "+1 to Level of Socketed Melee Gems",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+0.2 metres to Melee Strike Range",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 0
+    },
+    "Body Armour": {
+      "rarity": "RARE",
+      "name": "Lvl 100",
+      "base": "Conquest Lamellar",
+      "ilvl": null,
+      "flags": [
+        "Warlord",
+        "Hunter"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Ignore Stuns while using Socketed Attack Skills"
+        },
+        {
+          "text": "Socketed Attacks have -20 to Total Mana Cost"
+        },
+        {
+          "text": "67% increased Armour and Evasion"
+        },
+        {
+          "text": "You can apply an additional Curse"
+        },
+        {
+          "text": "8% additional Physical Damage Reduction"
+        },
+        {
+          "text": "Attacks have +1.9% to Critical Strike Chance"
+        },
+        {
+          "text": "+(250-320) to Armour",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Gloves": {
+      "rarity": "RARE",
+      "name": "Lvl 100",
+      "base": "Wyvernscale Gauntlets",
+      "ilvl": null,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "While a Unique Enemy is in your Presence, 16% increased Attack Speed",
+          "markers": [
+            "exarch"
+          ]
+        },
+        {
+          "text": "30% chance to Impale Enemies on Hit with Attacks",
+          "markers": [
+            "eater"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "16% increased Attack Speed"
+        },
+        {
+          "text": "100% increased Armour and Evasion"
+        },
+        {
+          "text": "+100 to maximum Life"
+        },
+        {
+          "text": "+43% to Fire Resistance"
+        },
+        {
+          "text": "+32% to Chaos Resistance"
+        },
+        {
+          "text": "(14-16)% increased Melee Damage",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+0.1 metres to Melee Strike Range",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 1": {
+      "rarity": "RARE",
+      "name": "Lvl 100",
+      "base": "Amethyst Ring",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+(17-23)% to Chaos Resistance"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+215 to Accuracy Rating"
+        },
+        {
+          "text": "+126 to maximum Life"
+        },
+        {
+          "text": "+44% to Cold Resistance"
+        },
+        {
+          "text": "+44% to Lightning Resistance"
+        },
+        {
+          "text": "(15-17)% increased Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 2": {
+      "rarity": "RARE",
+      "name": "Lvl 100",
+      "base": "Amethyst Ring",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+(17-23)% to Chaos Resistance"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+50 to Dexterity"
+        },
+        {
+          "text": "+108 to maximum Life"
+        },
+        {
+          "text": "+12% to all Elemental Resistances"
+        },
+        {
+          "text": "+42% to Chaos Resistance"
+        },
+        {
+          "text": "(15-17)% increased Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 1": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Specialist's Silver Flask of the Armadillo",
+      "ilvl": 86,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "27% chance to gain a Flask Charge when you deal a Critical Strike"
+        },
+        {
+          "text": "60% increased Armour during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 2": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Surgeon's Basalt Flask of the Iguana",
+      "ilvl": 85,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Taunts nearby Enemies on use"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "31% chance to gain a Flask Charge when you deal a Critical Strike"
+        },
+        {
+          "text": "38% less Duration"
+        },
+        {
+          "text": "Immunity to Bleeding and Corrupted Blood during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 3": {
+      "flaskActive": true,
+      "rarity": "UNIQUE",
+      "name": "Bottled Faith",
+      "base": "Sulphur Flask",
+      "ilvl": 84,
+      "flags": []
+    },
+    "Flask 4": {
+      "flaskActive": true,
+      "rarity": "UNIQUE",
+      "name": "Replica Witchfire Brew",
+      "base": "Stibnite Flask",
+      "ilvl": null,
+      "flags": []
+    },
+    "Boots": {
+      "rarity": "UNIQUE",
+      "name": "Lvl 100, The Stampede",
+      "base": "Assassin's Boots",
+      "ilvl": null,
+      "flags": []
+    },
+    "Tree Jewel 26725": {
+      "rarity": "RARE",
+      "name": "Lvl 96",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+3% Chance to Block Attack Damage while wielding a Staff"
+        },
+        {
+          "text": "6% increased maximum Life"
+        },
+        {
+          "text": "5% chance to Impale Enemies on Hit with Attacks"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 54127": {
+      "rarity": "UNIQUE",
+      "name": "Lvl 96, Lethal Pride",
+      "base": "Timeless Jewel",
+      "ilvl": null,
+      "flags": [],
+      "selectedVariant": "1"
+    },
+    "Tree Jewel 26196": {
+      "rarity": "RARE",
+      "name": "Lvl 96",
+      "base": "Crimson Jewel",
+      "ilvl": null,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+3% Chance to Block Attack Damage while wielding a Staff"
+        },
+        {
+          "text": "6% increased maximum Life"
+        },
+        {
+          "text": "5% chance to Impale Enemies on Hit with Attacks"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    }
+  }
+}

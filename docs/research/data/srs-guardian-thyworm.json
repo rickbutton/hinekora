@@ -1,0 +1,685 @@
+{
+  "build": "SRS Guardian SSF (Thyworm)",
+  "slug": "srs-guardian-thyworm",
+  "source": "https://pobb.in/W221pDmdOLBE",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Templar",
+    "ascendancy": "Guardian",
+    "level": 98,
+    "mainSocketGroup": 9,
+    "mainSkillGems": [
+      "Animate Guardian",
+      "Meat Shield",
+      "Minion Life",
+      "Raise Spectre"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "1",
+      "title": null,
+      "active": true,
+      "slotCount": 21
+    }
+  ],
+  "chosenItemSet": {
+    "id": "1",
+    "title": null
+  },
+  "items": {
+    "Flask 3": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Apprentice's Quicksilver Flask of the Impala",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "16% reduced Charges per use"
+        },
+        {
+          "text": "57% increased Evasion Rating during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 1": {
+      "rarity": "RARE",
+      "name": "Onslaught Bane",
+      "base": "Convoking Wand",
+      "ilvl": 85,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Minions deal 30% increased Damage"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+32 to Intelligence"
+        },
+        {
+          "text": "+25 to maximum Mana"
+        },
+        {
+          "text": "+1 to Level of all Minion Skill Gems"
+        },
+        {
+          "text": "Minions deal 86% increased Damage"
+        },
+        {
+          "text": "Minions have +28% to Critical Strike Multiplier"
+        },
+        {
+          "text": "Trigger a Socketed Spell when you Use a Skill, with a 8 second Cooldown",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Spells Triggered this way have 150% more Cost",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 2,
+      "fracturedExplicitCount": 0
+    },
+    "Amulet": {
+      "rarity": "RARE",
+      "name": "Brimstone Braid",
+      "base": "Jade Amulet",
+      "ilvl": 81,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Allocates Testudo",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "+30 to Dexterity"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+37 to Strength"
+        },
+        {
+          "text": "+21 to Intelligence"
+        },
+        {
+          "text": "+113 to maximum Life"
+        },
+        {
+          "text": "+47 to maximum Mana"
+        },
+        {
+          "text": "21% increased Rarity of Items found"
+        },
+        {
+          "text": "+15% to Lightning and Chaos Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Helmet": {
+      "rarity": "RARE",
+      "name": "Rift Visor",
+      "base": "Great Crown",
+      "ilvl": 84,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "6% of Physical Damage from Hits taken as Cold Damage"
+        },
+        {
+          "text": "Minions have 20% increased maximum Life"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+51 to Dexterity"
+        },
+        {
+          "text": "136% increased Armour and Energy Shield"
+        },
+        {
+          "text": "+2 to Level of all Minion Skill Gems"
+        },
+        {
+          "text": "34% increased Stun and Block Recovery"
+        },
+        {
+          "text": "+15% to Cold and Chaos Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 2": {
+      "rarity": "RARE",
+      "name": "Vengeance Chant",
+      "base": "Fossilised Spirit Shield",
+      "ilvl": 85,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Minions deal 10% increased Damage"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "13% Chance to Block Spell Damage"
+        },
+        {
+          "text": "46% faster start of Energy Shield Recharge"
+        },
+        {
+          "text": "+1 to Level of all Minion Skill Gems"
+        },
+        {
+          "text": "Minions deal 83% increased Damage"
+        },
+        {
+          "text": "Minions have +28% to all Elemental Resistances"
+        },
+        {
+          "text": "+15% to Cold and Chaos Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Body Armour": {
+      "rarity": "RARE",
+      "name": "Vortex Shroud",
+      "base": "Sacred Chainmail",
+      "ilvl": 84,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "10% of Physical Damage from Hits taken as Cold Damage"
+        },
+        {
+          "text": "+1% to all maximum Resistances"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+309 to Armour"
+        },
+        {
+          "text": "39% increased Armour and Energy Shield"
+        },
+        {
+          "text": "+79 to maximum Energy Shield"
+        },
+        {
+          "text": "+42% to Fire Resistance"
+        },
+        {
+          "text": "+38% to Lightning Resistance"
+        },
+        {
+          "text": "17% increased Stun and Block Recovery"
+        },
+        {
+          "text": "6% additional Physical Damage Reduction"
+        },
+        {
+          "text": "72% increased Armour and Energy Shield",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Gloves": {
+      "rarity": "RARE",
+      "name": "Glyph Mitts",
+      "base": "Paladin Gloves",
+      "ilvl": 85,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "+5% chance to Suppress Spell Damage"
+        },
+        {
+          "text": "Minions deal 19% increased Damage"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+51 to Dexterity"
+        },
+        {
+          "text": "+72 to Armour"
+        },
+        {
+          "text": "+24 to maximum Energy Shield"
+        },
+        {
+          "text": "+122 to maximum Life"
+        },
+        {
+          "text": "+28 to maximum Mana"
+        },
+        {
+          "text": "+39% to Fire Resistance"
+        },
+        {
+          "text": "+15% to Cold and Chaos Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Boots": {
+      "rarity": "RARE",
+      "name": "Woe March",
+      "base": "Legion Boots",
+      "ilvl": 79,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "33% chance to Avoid Bleeding"
+        },
+        {
+          "text": "4% increased Action Speed"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "28% increased Energy Shield Recharge Rate"
+        },
+        {
+          "text": "+120 to maximum Life"
+        },
+        {
+          "text": "+63 to maximum Mana"
+        },
+        {
+          "text": "+36% to Cold Resistance"
+        },
+        {
+          "text": "30% increased Movement Speed"
+        },
+        {
+          "text": "+15% to Lightning and Chaos Resistances",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 1": {
+      "rarity": "UNIQUE",
+      "name": "Profane Proxy",
+      "base": "Unset Ring",
+      "ilvl": 83,
+      "flags": []
+    },
+    "Flask 1": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Prudent Divine Life Flask of Sealing",
+      "ilvl": 76,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "106% more Recovery if used while on Low Life"
+        },
+        {
+          "text": "Grants Immunity to Bleeding for 7 seconds if used while Bleeding"
+        },
+        {
+          "text": "Grants Immunity to Corrupted Blood for 7 seconds if used while affected by Corrupted Blood"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 2": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Practitioner's Jade Flask of the Lynx",
+      "ilvl": 76,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "22% reduced Charges per use"
+        },
+        {
+          "text": "9% increased Movement Speed during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Belt Abyssal Socket 1": {
+      "rarity": "RARE",
+      "name": "Whispering Glare",
+      "base": "Ghastly Eye Jewel",
+      "ilvl": 83,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+35 to maximum Energy Shield"
+        },
+        {
+          "text": "+37 to maximum Life"
+        },
+        {
+          "text": "Minions have 10% increased maximum Life"
+        },
+        {
+          "text": "Minions deal 15% increased Damage if you've used a Minion Skill Recently"
+        },
+        {
+          "text": "Minions deal 21 to 30 additional Fire Damage"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 2": {
+      "rarity": "RARE",
+      "name": "Entropy Knuckle",
+      "base": "Topaz Ring",
+      "ilvl": 83,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "+20% to Lightning Resistance"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+46 to Dexterity"
+        },
+        {
+          "text": "+52 to Evasion Rating"
+        },
+        {
+          "text": "+29 to maximum Energy Shield"
+        },
+        {
+          "text": "+109 to maximum Life"
+        },
+        {
+          "text": "+36% to Fire Resistance"
+        },
+        {
+          "text": "+35% to Chaos Resistance"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Belt": {
+      "rarity": "UNIQUE",
+      "name": "Darkness Enthroned",
+      "base": "Stygian Vise",
+      "ilvl": 85,
+      "flags": []
+    },
+    "Flask 4": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Perpetual Granite Flask of the Pangolin",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "47% increased Charge Recovery"
+        },
+        {
+          "text": "53% increased Armour during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 5": {
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Experimenter's Quartz Flask of the Petrel",
+      "ilvl": 85,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "38% increased Duration"
+        },
+        {
+          "text": "38% reduced Effect of Curses on you during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Belt Abyssal Socket 2": {
+      "rarity": "RARE",
+      "name": "Whispering Orb",
+      "base": "Ghastly Eye Jewel",
+      "ilvl": 72,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Minions have 13% increased Movement Speed"
+        },
+        {
+          "text": "Minions have 5% increased Attack Speed"
+        },
+        {
+          "text": "Minions have 5% increased Cast Speed"
+        },
+        {
+          "text": "Minions have 10% chance to Poison Enemies on Hit"
+        },
+        {
+          "text": "Minions deal 18 to 22 additional Cold Damage"
+        },
+        {
+          "text": "Minions deal 15 to 23 additional Fire Damage"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 36634": {
+      "rarity": "RARE",
+      "name": "Foul Stare",
+      "base": "Ghastly Eye Jewel",
+      "ilvl": 83,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+39 to maximum Life"
+        },
+        {
+          "text": "33% chance to Avoid being Poisoned"
+        },
+        {
+          "text": "Minions have 5% increased Attack Speed"
+        },
+        {
+          "text": "Minions have 5% increased Cast Speed"
+        },
+        {
+          "text": "Minions deal 16 to 20 additional Physical Damage"
+        },
+        {
+          "text": "Minions have 6% chance to Blind on Hit with Attacks"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 33631": {
+      "rarity": "RARE",
+      "name": "Grim Lens",
+      "base": "Ghastly Eye Jewel",
+      "ilvl": 83,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Minions have 6% increased Attack Speed"
+        },
+        {
+          "text": "Minions have 4% increased Cast Speed"
+        },
+        {
+          "text": "Minions have 8% chance to Taunt on Hit with Attacks"
+        },
+        {
+          "text": "Minions deal 27 to 33 additional Cold Damage"
+        },
+        {
+          "text": "Minions deal 15 to 22 additional Physical Damage"
+        },
+        {
+          "text": "Regenerate 10 Energy Shield per second"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 26196": {
+      "rarity": "RARE",
+      "name": "Foul Oculus",
+      "base": "Ghastly Eye Jewel",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+28 to maximum Life"
+        },
+        {
+          "text": "Minions Leech 0.4% of Damage as Life"
+        },
+        {
+          "text": "+3% Chance to Block Attack Damage if you were Damaged by a Hit Recently"
+        },
+        {
+          "text": "Minions have 8% chance to Taunt on Hit with Attacks"
+        },
+        {
+          "text": "Minions deal 21 to 30 additional Fire Damage"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 61419": {
+      "rarity": "RARE",
+      "name": "Grim Vision",
+      "base": "Ghastly Eye Jewel",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Minions deal 18% increased Damage if you've used a Minion Skill Recently"
+        },
+        {
+          "text": "Minions have +8% to all Elemental Resistances"
+        },
+        {
+          "text": "Minions deal 17 to 21 additional Fire Damage"
+        },
+        {
+          "text": "Minions deal 11 to 16 additional Physical Damage"
+        },
+        {
+          "text": "Regenerate 17 Energy Shield per second"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    }
+  }
+}

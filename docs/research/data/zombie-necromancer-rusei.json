@@ -1,0 +1,631 @@
+{
+  "build": "Zombie Necromancer (Rusei, Character set)",
+  "slug": "zombie-necromancer-rusei",
+  "source": "https://pobb.in/vhxVREeYrcoc",
+  "extractedFrom": "Path of Building share code, decoded; items are PoB's own item text (see builds.md, Caveats)",
+  "character": {
+    "class": "Witch",
+    "ascendancy": "Necromancer",
+    "level": 97,
+    "mainSocketGroup": 1,
+    "mainSkillGems": [
+      "Congregation",
+      "Greater Multistrike",
+      "Empower",
+      "Raise Zombie of Slamming",
+      "Increased Critical Damage",
+      "Ruthless",
+      "Annihilation"
+    ]
+  },
+  "itemSets": [
+    {
+      "id": "1",
+      "title": "Character",
+      "active": true,
+      "slotCount": 27
+    },
+    {
+      "id": "4",
+      "title": "AG Voidforge",
+      "active": false,
+      "slotCount": 15
+    }
+  ],
+  "chosenItemSet": {
+    "id": "1",
+    "title": "Character"
+  },
+  "items": {
+    "Belt": {
+      "rarity": "UNIQUE",
+      "name": "Leash of Oblation",
+      "base": "Leather Belt",
+      "ilvl": 85,
+      "flags": []
+    },
+    "Weapon 1": {
+      "rarity": "UNIQUE",
+      "name": "Replica Maata's Teaching",
+      "base": "Karui Sceptre",
+      "ilvl": 86,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Amulet": {
+      "rarity": "UNIQUE",
+      "name": "Ashes of the Stars",
+      "base": "Onyx Amulet",
+      "ilvl": 87,
+      "flags": []
+    },
+    "Helmet": {
+      "rarity": "UNIQUE",
+      "name": "Ancient Skull",
+      "base": "Bone Helmet",
+      "ilvl": 82,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Body Armour": {
+      "rarity": "UNIQUE",
+      "name": "The Covenant",
+      "base": "Spidersilk Robe",
+      "ilvl": 83,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Gloves": {
+      "rarity": "RARE",
+      "name": "Soul Grasp",
+      "base": "Ancient Gauntlets",
+      "ilvl": 82,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "Withered you Inflict expires 12% slower"
+        },
+        {
+          "text": "Minions deal 16% increased Damage"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+77 to Armour"
+        },
+        {
+          "text": "+113 to maximum Life"
+        },
+        {
+          "text": "+43% to Fire Resistance"
+        },
+        {
+          "text": "+42% to Cold Resistance"
+        },
+        {
+          "text": "+39% to Lightning Resistance"
+        },
+        {
+          "text": "Minions deal 19% increased Damage",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Boots": {
+      "rarity": "RARE",
+      "name": "Glyph Dash",
+      "base": "Dragonscale Boots",
+      "ilvl": 84,
+      "flags": [
+        "Searing Exarch",
+        "Eater of Worlds"
+      ],
+      "implicits": [
+        {
+          "text": "7% increased Life Regeneration rate"
+        },
+        {
+          "text": "5% increased Movement Speed"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+46 to Armour"
+        },
+        {
+          "text": "+136 to maximum Life"
+        },
+        {
+          "text": "+44% to Cold Resistance"
+        },
+        {
+          "text": "+34% to Chaos Resistance"
+        },
+        {
+          "text": "25% increased Movement Speed"
+        },
+        {
+          "text": "+35% to Fire Resistance",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Ring 1": {
+      "rarity": "UNIQUE",
+      "name": "Kalandra's Touch",
+      "base": "Ring",
+      "ilvl": 85,
+      "flags": []
+    },
+    "Ring 2": {
+      "rarity": "RARE",
+      "name": "Doom Gyre",
+      "base": "Bone Ring",
+      "ilvl": 83,
+      "flags": [
+        "Fractured"
+      ],
+      "implicits": [
+        {
+          "text": "Intangibility: 77%"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Minions have +15% to all Elemental Resistances"
+        },
+        {
+          "text": "+112 to maximum Life"
+        },
+        {
+          "text": "+32% to Chaos Resistance"
+        },
+        {
+          "text": "Minions have 34% increased Movement Speed"
+        },
+        {
+          "text": "Minions have 19% increased Attack and Cast Speed"
+        },
+        {
+          "text": "Non-Channelling Skills have -7 to Total Mana Cost",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Minions deal 42% increased Damage",
+          "markers": [
+            "fractured"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 1
+    },
+    "Flask 4": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Scholar's Amethyst Flask of the Kaleidoscope",
+      "ilvl": 86,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "18% reduced Charges per use"
+        },
+        {
+          "text": "17% additional Elemental Resistances during Effect"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 5": {
+      "flaskActive": true,
+      "rarity": "UNIQUE",
+      "name": "Witchfire Brew",
+      "base": "Stibnite Flask",
+      "ilvl": 77,
+      "flags": []
+    },
+    "Weapon 1 Swap": {
+      "rarity": "RARE",
+      "name": "Honour Bane",
+      "base": "Somatic Wand",
+      "ilvl": 15,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Cannot roll Caster Modifiers"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "+17% to Physical Damage over Time Multiplier"
+        },
+        {
+          "text": "Adds 4 to 8 Physical Damage"
+        },
+        {
+          "text": "Adds 8 to 15 Fire Damage"
+        },
+        {
+          "text": "19% increased Cold Damage"
+        },
+        {
+          "text": "+16 to Strength",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Weapon 2 Swap": {
+      "rarity": "UNIQUE",
+      "name": "Midnight Bargain",
+      "base": "Calling Wand",
+      "ilvl": 49,
+      "flags": []
+    },
+    "Weapon 2": {
+      "rarity": "UNIQUE",
+      "name": "Foulborn Severed in Sleep",
+      "base": "Cutlass",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Flask 1": {
+      "flaskActive": true,
+      "rarity": "UNIQUE",
+      "name": "Bottled Faith",
+      "base": "Sulphur Flask",
+      "ilvl": 85,
+      "flags": []
+    },
+    "Flask 2": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Experimenter's Quicksilver Flask of Stabilisation",
+      "ilvl": 86,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Intangibility: 3%"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "37% increased Duration"
+        },
+        {
+          "text": "77% increased Block and Stun Recovery during Effect"
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Flask 3": {
+      "flaskActive": true,
+      "rarity": "MAGIC",
+      "name": null,
+      "base": "Practitioner's Granite Flask of Stabilisation",
+      "ilvl": 84,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Intangibility: 1%"
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Used when Charges reach full",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "21% reduced Charges per use"
+        },
+        {
+          "text": "78% increased Block and Stun Recovery during Effect"
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 9408": {
+      "rarity": "UNIQUE",
+      "name": "Fortress Covenant",
+      "base": "Cobalt Jewel",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 36634": {
+      "rarity": "RARE",
+      "name": "Morbid Vision",
+      "base": "Ghastly Eye Jewel",
+      "ilvl": 83,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Intangibility: 11%"
+        },
+        {
+          "text": "+14 to Dexterity"
+        },
+        {
+          "text": "+24 to maximum Mana"
+        },
+        {
+          "text": "Minions deal 23 to 33 additional Physical Damage"
+        },
+        {
+          "text": "Minions have 6% chance to Blind on Hit with Attacks"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 29712": {
+      "rarity": "UNIQUE",
+      "name": "Quickening Covenant",
+      "base": "Viridian Jewel",
+      "ilvl": 85,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 26725": {
+      "rarity": "UNIQUE",
+      "name": "Forbidden Flesh",
+      "base": "Cobalt Jewel",
+      "ilvl": 86,
+      "flags": [
+        "Corrupted"
+      ]
+    },
+    "Tree Jewel 55190": {
+      "rarity": "RARE",
+      "name": "Bramble Desire",
+      "base": "Large Cluster Jewel",
+      "ilvl": 83,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Intangibility: 11%"
+        },
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills grant: Minions deal 10% increased Damage",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills also grant: 4% increased Mana Regeneration Rate"
+        },
+        {
+          "text": "1 Added Passive Skill is Raze and Pillage"
+        },
+        {
+          "text": "1 Added Passive Skill is Renewal"
+        },
+        {
+          "text": "1 Added Passive Skill is Vicious Bite"
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 7960": {
+      "rarity": "RARE",
+      "name": "Damnation Cut",
+      "base": "Large Cluster Jewel",
+      "ilvl": 83,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Intangibility: 10%"
+        },
+        {
+          "text": "Adds 8 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "2 Added Passive Skills are Jewel Sockets",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills grant: Minions deal 10% increased Damage",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +4% to Cold Resistance"
+        },
+        {
+          "text": "1 Added Passive Skill is Raze and Pillage"
+        },
+        {
+          "text": "1 Added Passive Skill is Renewal"
+        },
+        {
+          "text": "1 Added Passive Skill is Vicious Bite"
+        }
+      ],
+      "craftedExplicitCount": 1,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 26196": {
+      "rarity": "RELIC",
+      "name": "Forbidden Flame",
+      "base": "Crimson Jewel",
+      "ilvl": 84,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Requires Class Witch"
+        },
+        {
+          "text": "Allocates Unnatural Strength if you have the matching modifier on Forbidden Flesh"
+        },
+        {
+          "text": "Foil Unique (Celestial Amethyst)"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 49080": {
+      "rarity": "RARE",
+      "name": "Hollow Arbiter",
+      "base": "Ghastly Eye Jewel",
+      "ilvl": 83,
+      "flags": [],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "+29 to maximum Life"
+        },
+        {
+          "text": "Minions deal 18% increased Damage if you've used a Minion Skill Recently"
+        },
+        {
+          "text": "Minions Leech 0.41% of Damage as Life"
+        },
+        {
+          "text": "Minions Regenerate 29 Life per second"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 61419": {
+      "rarity": "RARE",
+      "name": "Morbid Vision",
+      "base": "Ghastly Eye Jewel",
+      "ilvl": 83,
+      "flags": [
+        "Corrupted"
+      ],
+      "implicits": [],
+      "explicits": [
+        {
+          "text": "Intangibility: 11%"
+        },
+        {
+          "text": "+14 to Dexterity"
+        },
+        {
+          "text": "+24 to maximum Mana"
+        },
+        {
+          "text": "Minions deal 23 to 33 additional Physical Damage"
+        },
+        {
+          "text": "Minions have 6% chance to Blind on Hit with Attacks"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    },
+    "Tree Jewel 44169": {
+      "rarity": "RARE",
+      "name": "Viper Shard",
+      "base": "Small Cluster Jewel",
+      "ilvl": 83,
+      "flags": [],
+      "implicits": [
+        {
+          "text": "Adds 2 Passive Skills",
+          "markers": [
+            "crafted"
+          ]
+        },
+        {
+          "text": "Added Small Passive Skills grant: 15% increased Armour",
+          "markers": [
+            "crafted"
+          ]
+        }
+      ],
+      "explicits": [
+        {
+          "text": "Added Small Passive Skills also grant: +20 to Armour"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: +7 to Dexterity"
+        },
+        {
+          "text": "Added Small Passive Skills also grant: 7% increased Mana Regeneration Rate"
+        },
+        {
+          "text": "1 Added Passive Skill is Enduring Composure"
+        }
+      ],
+      "craftedExplicitCount": 0,
+      "fracturedExplicitCount": 0
+    }
+  }
+}
