@@ -8,6 +8,7 @@
         { "path": "packages/parser" },
         { "path": "packages/data" },
         { "path": "packages/cli" },
-        { "path": "packages/lsp" }
+        { "path": "packages/lsp" },
+        { "path": "editors/playground" }
     ]
 }

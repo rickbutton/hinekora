@@ -18,7 +18,7 @@ export default tseslint.config(
             "tools/**",
             // The VSCode extension is a standalone CommonJS app (own tsconfig,
             // `require.resolve`); typechecked separately, not part of this lint.
-            "editors/**",
+            "editors/vscode/**",
         ],
     },
 

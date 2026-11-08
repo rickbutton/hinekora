@@ -1,0 +1,117 @@
+:root {
+    color-scheme: dark;
+    --bg: #1e1e1e;
+    --panel: #252526;
+    --border: #3c3c3c;
+    --fg: #d4d4d4;
+    --muted: #8a8a8a;
+    --error: #f48771;
+    font-family:
+        system-ui,
+        -apple-system,
+        "Segoe UI",
+        sans-serif;
+    font-size: 14px;
+}
+
+html,
+body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--fg);
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 6px 12px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+}
+
+header label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+}
+
+header select,
+header button {
+    background: var(--bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 2px 8px;
+    font: inherit;
+}
+
+#status {
+    margin-left: auto;
+    color: var(--muted);
+}
+
+main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    min-height: 0;
+}
+
+#editor {
+    min-height: 0;
+}
+
+#problems {
+    border-left: 1px solid var(--border);
+    background: var(--panel);
+    overflow: auto;
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+#problems p {
+    margin: 0 0 8px;
+}
+
+#problems .muted {
+    color: var(--muted);
+}
+
+#problems .problem {
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    border-left: 3px solid var(--error);
+    background: var(--bg);
+    cursor: pointer;
+    white-space: pre-wrap;
+}
+
+#problems .problem .where {
+    color: var(--muted);
+    margin-right: 6px;
+}
+
+@media (max-width: 800px) {
+    main {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr) 200px;
+    }
+    #problems {
+        border-left: none;
+        border-top: 1px solid var(--border);
+    }
+}

@@ -72,6 +72,8 @@ packages/
   cli/      @hinekora/cli    - command-line checker and formatter.
 editors/
   vscode/                    - VSCode extension (TextMate grammar + LSP client).
+  playground/                - browser playground: Monaco + the language service in-page
+                                (Vite; `pnpm -C editors/playground dev`).
 examples/
   example.craft              - the demo craft (open in the Extension Dev Host).
   essence-life-boots.craft   - essence + def + or example.
@@ -341,6 +343,33 @@ outside the workspace.
 TextMate grammar for highlighting (kept in sync with the language by hand,
 `syntaxes/hinekora.tmLanguage.json`) + a language client that spawns the LSP server via
 `require.resolve("@hinekora/lsp/node")` + `TransportKind.ipc`. CommonJS tsconfig.
+
+### 3f. `editors/playground`
+
+A static page (Vite) with Monaco and the whole language service running in the page, no
+server: `pnpm -C editors/playground dev` to run it, `build` for a deployable `dist/`.
+The catalog is fetched as the seven JSON files of `packages/data/data/poe1` (served through
+the data package's `./data/*` export) and adapted with `adaptPoe1` from
+`@hinekora/data/browser`, the package's disk-free entry.
+
+- `src/monaco.ts`: Monaco assembled from its parts, the editor API plus the feature
+  registrations the service backs (hover, suggest with its controller, parameter hints,
+  word highlighter, go to symbol, references, rename, outline, folding, inlay hints,
+  format, semantic tokens) and the editing basics; the package's main entry would bundle
+  every built-in language.
+- `src/language.ts`: the `hinekora` language: a Monarch tokenizer built from the parser's
+  word tables and the method table, the bracket and comment configuration, and a theme
+  that also colours the service's semantic token types (`function`, `parameter`).
+- `src/providers.ts`: each service function behind the matching Monaco provider, with
+  positions and enumerations translated by `src/convert.ts` (LSP is 0-based and numbers
+  its kinds from 1, Monaco 1-based and from 0; `byName` maps a kind through both tables).
+  Diagnostics become markers after each change.
+- `src/main.ts`: the page: the example guides (`examples/*.craft`, picked from a menu), a
+  problems panel that jumps to a finding, a format button, the data provenance in the
+  header, and `window.hinekora` (`editor`, `monaco`, `registry`) for the browser console.
+
+The package is part of `tsc -b` (declarations only; Vite does the real build), lint and
+the test run (`src/convert.test.ts`).
 
 ---
 
@@ -729,55 +758,56 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 
 ## 5. Key files index
 
-| Path                                                                  | What                                                                                               |
-| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `packages/core/src/check/astate.ts`                                   | `AItem` (the reduced product), `normalize`, `refine`, `join`, `TierDomain`, presence views         |
-| `packages/core/src/check/domain.ts`                                   | `Domain<T>` contract, `RangeDomain`, `SetDomain`, range algebra                                    |
-| `packages/core/src/model/capacity.ts`                                 | the affix caps (`sideCap`, `hardTotalCap`, `maxTotal`, `caps`), shared by the pool and the checker |
-| `packages/core/src/check/counts.ts`                                   | `CountDomain` (suffix, the total/prefix coupling, count refine, `learnPresent`)                    |
-| `packages/core/src/check/bdd.ts`                                      | the hash-consed ROBDD behind `presence`                                                            |
-| `packages/core/src/check/check.ts`                                    | driver, `Flow`, loops/branches, defs, `TraceEntry`, `traceAt`                                      |
-| `packages/core/src/check/ops.ts` / `library.ts`                       | the primitive operations and their interpreter / every method as a sequence of them                |
-| `packages/core/src/check/methods.ts`                                  | the method table: each method's words, argument slots, help and `build`                            |
-| `packages/core/src/model/marks.ts`                                    | the influences and their data tags, `InfluenceKey`, the mark labels                                |
-| `packages/core/src/check/diagnostics.ts`                              | `renderState`, message builders                                                                    |
-| `packages/core/src/model/metamods.ts`                                 | the curated metamod id → effect table, attached to the catalog at registry build                   |
-| `packages/core/src/model/veiled.ts`                                   | veiled placeholder types and the unveiled-result predicate                                         |
-| `packages/core/src/pool/veiled.ts`                                    | `veiledPool`: which unveiled mods an `unveil` can reveal on an item                                |
-| `packages/core/src/resolve/registry.ts`                               | `Registry`, `buildRegistry`, resolution, completion lists                                          |
-| `packages/core/src/resolve/fuzzy.ts` / `tiers.ts`                     | fuzzy mod matching / rollable tiers (+ the memoized empty pool)                                    |
-| `packages/core/src/pool/pool.ts`                                      | eligibility + weights                                                                              |
-| `packages/parser/src/{lexer,parser,token}.ts`                         | lexer / parser / token types                                                                       |
-| `packages/parser/src/vocabulary.ts`                                   | the surface vocabulary outside the method table (keywords, predicate words, item fields)           |
-| `packages/data/src/{load,adapter}.ts` + `scripts/ingest-poe1.mjs`     | data load + ingest                                                                                 |
-| `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts` | LSP features                                                                                       |
-| `packages/lsp/src/analysis.ts`                                        | the parse and check of a document, memoized by text; every feature reads it                        |
-| `packages/lsp/src/navigation.ts`                                      | highlights, definition, references, rename, outline over the bindings                              |
-| `packages/lsp/src/signature-help.ts`                                  | `getSignatureHelp`: a call's parameters or a method's slots, the active one marked                 |
-| `packages/lsp/src/folding.ts`                                         | `getFoldingRanges`: brace blocks, comment runs, multi-line predicate defs                          |
-| `packages/lsp/src/inlay-hints.ts`                                     | `getInlayHints`: parameter sorts at declarations, parameter names at calls                         |
-| `packages/lsp/src/formatting.ts`                                      | `getFormattingEdits`: Format Document over `formatCraft`                                           |
-| `packages/parser/src/format.ts`                                       | `formatCraft`: the formatter, comments and blank-line grouping kept                                |
-| `packages/parser/src/format.test.ts`                                  | formatter layout tests; the example guides stay stable and keep their meaning                      |
-| `packages/core/src/ast/bindings.ts`                                   | `bindingsOf`: every def and parameter with its declaration and references                          |
-| `packages/lsp/src/method-at.ts`                                       | `methodAt`: the method statement a token or cursor position belongs to                             |
-| `packages/core/src/check/check.test.ts`                               | checker tests (currency set, count-coupling regression, loops, defs)                               |
-| `packages/core/src/check/check-tiers.test.ts`                         | tier-pinned predicates and the tier overlay through the checker                                    |
-| `packages/core/src/check/counts.test.ts`                              | `CountDomain` in isolation (caps, coupling, refine)                                                |
-| `packages/core/src/check/bdd.test.ts`                                 | the ROBDD manager (canonicity, operators)                                                          |
-| `packages/core/src/check/fracture.test.ts`                            | fractured items and the Fracturing Orb through the checker                                         |
-| `packages/core/src/check/harvest.test.ts`                             | harvest reforge / augment through the checker                                                      |
-| `packages/core/src/check/metacraft.test.ts`                           | metamods: protection, cannot-roll, multimod, essence blocking                                      |
-| `packages/core/src/check/fossil.test.ts`                              | resonators: blocked tags, added and forced rows, the corrupted-essence guarantee, the fracture     |
-| `packages/core/src/check/bench.test.ts`                               | bench remove and the replace of a crafted modifier                                                 |
-| `packages/core/src/check/foulborn.test.ts`                            | the Foulborn orbs' top-tier cull                                                                   |
-| `packages/core/src/check/beast.test.ts`                               | the Bestiary recipes                                                                               |
-| `packages/core/src/check/harvest-change.test.ts`                      | the Harvest change of a modifier into another element                                              |
-| `packages/core/src/check/veiled.test.ts`                              | veiled orbs and `unveil` through the checker                                                       |
-| `packages/lsp/src/features.test.ts`                                   | hover / completion / semantic-token tests                                                          |
-| `packages/lsp/src/navigation.test.ts`                                 | highlight / definition / references / rename / outline tests                                       |
-| `packages/lsp/src/signature-help.test.ts`                             | signature help for def calls and method slots                                                      |
-| `packages/lsp/src/service.test.ts`                                    | `getDiagnostics` over the real data pipeline                                                       |
+| Path                                                                     | What                                                                                               |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `packages/core/src/check/astate.ts`                                      | `AItem` (the reduced product), `normalize`, `refine`, `join`, `TierDomain`, presence views         |
+| `packages/core/src/check/domain.ts`                                      | `Domain<T>` contract, `RangeDomain`, `SetDomain`, range algebra                                    |
+| `packages/core/src/model/capacity.ts`                                    | the affix caps (`sideCap`, `hardTotalCap`, `maxTotal`, `caps`), shared by the pool and the checker |
+| `packages/core/src/check/counts.ts`                                      | `CountDomain` (suffix, the total/prefix coupling, count refine, `learnPresent`)                    |
+| `packages/core/src/check/bdd.ts`                                         | the hash-consed ROBDD behind `presence`                                                            |
+| `packages/core/src/check/check.ts`                                       | driver, `Flow`, loops/branches, defs, `TraceEntry`, `traceAt`                                      |
+| `packages/core/src/check/ops.ts` / `library.ts`                          | the primitive operations and their interpreter / every method as a sequence of them                |
+| `packages/core/src/check/methods.ts`                                     | the method table: each method's words, argument slots, help and `build`                            |
+| `packages/core/src/model/marks.ts`                                       | the influences and their data tags, `InfluenceKey`, the mark labels                                |
+| `packages/core/src/check/diagnostics.ts`                                 | `renderState`, message builders                                                                    |
+| `packages/core/src/model/metamods.ts`                                    | the curated metamod id → effect table, attached to the catalog at registry build                   |
+| `packages/core/src/model/veiled.ts`                                      | veiled placeholder types and the unveiled-result predicate                                         |
+| `packages/core/src/pool/veiled.ts`                                       | `veiledPool`: which unveiled mods an `unveil` can reveal on an item                                |
+| `packages/core/src/resolve/registry.ts`                                  | `Registry`, `buildRegistry`, resolution, completion lists                                          |
+| `packages/core/src/resolve/fuzzy.ts` / `tiers.ts`                        | fuzzy mod matching / rollable tiers (+ the memoized empty pool)                                    |
+| `packages/core/src/pool/pool.ts`                                         | eligibility + weights                                                                              |
+| `packages/parser/src/{lexer,parser,token}.ts`                            | lexer / parser / token types                                                                       |
+| `packages/parser/src/vocabulary.ts`                                      | the surface vocabulary outside the method table (keywords, predicate words, item fields)           |
+| `packages/data/src/{load,bundle,adapter}.ts` + `scripts/ingest-poe1.mjs` | data load (disk in `load`, pure in `bundle`) + ingest                                              |
+| `editors/playground/src/{main,monaco,language,providers,convert}.ts`     | the browser playground: Monaco bound to the language service                                       |
+| `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts`    | LSP features                                                                                       |
+| `packages/lsp/src/analysis.ts`                                           | the parse and check of a document, memoized by text; every feature reads it                        |
+| `packages/lsp/src/navigation.ts`                                         | highlights, definition, references, rename, outline over the bindings                              |
+| `packages/lsp/src/signature-help.ts`                                     | `getSignatureHelp`: a call's parameters or a method's slots, the active one marked                 |
+| `packages/lsp/src/folding.ts`                                            | `getFoldingRanges`: brace blocks, comment runs, multi-line predicate defs                          |
+| `packages/lsp/src/inlay-hints.ts`                                        | `getInlayHints`: parameter sorts at declarations, parameter names at calls                         |
+| `packages/lsp/src/formatting.ts`                                         | `getFormattingEdits`: Format Document over `formatCraft`                                           |
+| `packages/parser/src/format.ts`                                          | `formatCraft`: the formatter, comments and blank-line grouping kept                                |
+| `packages/parser/src/format.test.ts`                                     | formatter layout tests; the example guides stay stable and keep their meaning                      |
+| `packages/core/src/ast/bindings.ts`                                      | `bindingsOf`: every def and parameter with its declaration and references                          |
+| `packages/lsp/src/method-at.ts`                                          | `methodAt`: the method statement a token or cursor position belongs to                             |
+| `packages/core/src/check/check.test.ts`                                  | checker tests (currency set, count-coupling regression, loops, defs)                               |
+| `packages/core/src/check/check-tiers.test.ts`                            | tier-pinned predicates and the tier overlay through the checker                                    |
+| `packages/core/src/check/counts.test.ts`                                 | `CountDomain` in isolation (caps, coupling, refine)                                                |
+| `packages/core/src/check/bdd.test.ts`                                    | the ROBDD manager (canonicity, operators)                                                          |
+| `packages/core/src/check/fracture.test.ts`                               | fractured items and the Fracturing Orb through the checker                                         |
+| `packages/core/src/check/harvest.test.ts`                                | harvest reforge / augment through the checker                                                      |
+| `packages/core/src/check/metacraft.test.ts`                              | metamods: protection, cannot-roll, multimod, essence blocking                                      |
+| `packages/core/src/check/fossil.test.ts`                                 | resonators: blocked tags, added and forced rows, the corrupted-essence guarantee, the fracture     |
+| `packages/core/src/check/bench.test.ts`                                  | bench remove and the replace of a crafted modifier                                                 |
+| `packages/core/src/check/foulborn.test.ts`                               | the Foulborn orbs' top-tier cull                                                                   |
+| `packages/core/src/check/beast.test.ts`                                  | the Bestiary recipes                                                                               |
+| `packages/core/src/check/harvest-change.test.ts`                         | the Harvest change of a modifier into another element                                              |
+| `packages/core/src/check/veiled.test.ts`                                 | veiled orbs and `unveil` through the checker                                                       |
+| `packages/lsp/src/features.test.ts`                                      | hover / completion / semantic-token tests                                                          |
+| `packages/lsp/src/navigation.test.ts`                                    | highlight / definition / references / rename / outline tests                                       |
+| `packages/lsp/src/signature-help.test.ts`                                | signature help for def calls and method slots                                                      |
+| `packages/lsp/src/service.test.ts`                                       | `getDiagnostics` over the real data pipeline                                                       |
 
 ---
 

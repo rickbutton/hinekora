@@ -1,0 +1,25 @@
+{
+    "name": "@hinekora/playground",
+    "version": "0.0.0",
+    "private": true,
+    "description": "A browser playground: Monaco with every language feature of the Hinekora service, no server.",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "typecheck": "tsc -b",
+        "test": "vitest run"
+    },
+    "dependencies": {
+        "@hinekora/core": "workspace:*",
+        "@hinekora/data": "workspace:*",
+        "@hinekora/lsp": "workspace:*",
+        "@hinekora/parser": "workspace:*",
+        "monaco-editor": "^0.57.0",
+        "vscode-languageserver-types": "3.17.5"
+    },
+    "devDependencies": {
+        "vite": "^7.3.6"
+    }
+}

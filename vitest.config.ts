@@ -24,7 +24,7 @@ export default defineConfig({
         },
     },
     test: {
-        projects: ["packages/*"],
+        projects: ["packages/*", "editors/playground"],
         coverage: {
             provider: "v8",
             reporter: ["text", "html", "lcov", "json-summary"],

@@ -22,11 +22,6 @@ re-audit of the code against
 `item-model.md` §§4–9, rule by rule, now that the operations model has settled the shape
 of the operations; no divergence is expected.
 
-## Step 2. Language and editor follow-ons
-
-- A **Monaco playground** (a new `editors/` package) reusing the transport-free LSP
-  service.
-
 ## Deferred by design (don't build until called for)
 
 - the **cost/probability layer** (expected attempts, spawn weights, fossil and Harvest

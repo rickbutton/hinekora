@@ -282,5 +282,7 @@ highlight cannot disagree.
 
 Thin, by design. The CLI runs the checker and prints diagnostics, or formats a guide. The VSCode extension is a
 language client: a TextMate grammar for coloring plus an LSP client that spawns the stdio
-server. Neither holds any analysis logic; all of it is in `core`, reachable only through the
-one-way dependency arrow of §1.
+server. The browser playground binds the same transport-free service functions to Monaco's
+providers directly, with the catalog fetched as JSON; it is the proof that the service
+needs no server. None of the three holds any analysis logic; all of it is in `core`,
+reachable only through the one-way dependency arrow of §1.

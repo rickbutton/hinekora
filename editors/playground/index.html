@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Hinekora playground</title>
+        <link rel="stylesheet" href="./src/style.css" />
+    </head>
+    <body>
+        <header>
+            <h1>Hinekora</h1>
+            <label>
+                example
+                <select id="example"></select>
+            </label>
+            <button id="format" type="button" title="Format the guide (Shift+Alt+F)">format</button>
+            <span id="status">loading the catalog…</span>
+        </header>
+        <main>
+            <div id="editor"></div>
+            <aside id="problems"><p class="muted">The checker's findings appear here.</p></aside>
+        </main>
+        <script type="module" src="./src/main.ts"></script>
+    </body>
+</html>
