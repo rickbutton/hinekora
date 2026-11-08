@@ -160,7 +160,14 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
 these suffix modifiers }`, `{ 1-3 more modifiers, prefixes and/or suffixes }`,
   `Possibly: Corrupted`, `Without: …`). The hover, the CLI and the playground's card all
   read the view, so they cannot disagree; `renderState` stays the one-line summary for
-  diagnostics.
+  diagnostics. `walkthrough.ts` turns a craft and its check result into the guide as a
+  player follows it (`walkthrough(craft, result, registry)`): the declared item, then a
+  `Step` per statement with the item before and after it from the trace, matched by
+  statement kind and start offset, the checker's findings owned by the innermost
+  statement that contains them, loops as blocks with their exit in words, branches with
+  their arms, and for a method its display name, the step as written and what it does
+  from the method table. `itemDelta`/`stepDelta` list what a step added and removed, as
+  the lines of the item view a player would notice.
 - **resolve/**: `Registry` (the resolved data surface). Key methods:
     - `resolveBase / resolveMod / resolveModType(name, ctx?) / resolveCurrency /
 resolveEssence / resolveBench / resolveHarvestTag`
