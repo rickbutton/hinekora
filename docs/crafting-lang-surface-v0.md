@@ -56,8 +56,9 @@ item {
 - `prefixes` / `suffixes` list the affixes. Each named affix **must pin a tier**: either a
   mod name plus `t<n>` (§2) or an exact mod id. A bare name is an error, because a
   starting item is a concrete item. `"random"` (or `"?"`) is an anonymous affix: counted,
-  not named, and any modifier of its side the item could roll, so a `has` may be it and a
-  bench craft of its group may clash with it. A count over the base's limit for the rarity is an error; a named mod listed
+  not named, and any natural modifier of its side the item could roll (never a bench craft
+  or another unrollable row, `QUESTIONS.md` Q49), so a `has` may be it and a bench craft of
+  its group may clash with it. A count over the base's limit for the rarity is an error; a named mod listed
   under the wrong side is an error.
 - `fractured "<mod>" t<n>` (or `fractured "random"`, when the locked modifier is not
   named: the item is known to be fractured, the modifier is not) marks a
@@ -140,7 +141,7 @@ page groups them:
 | `annul`      | [Orb of Annulment](https://www.poewiki.net/wiki/Orb_of_Annulment)                      | a removable modifier (Magic or Rare)                            |
 | `scour` | [Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) | Magic or Rare, with a side a metamod does not protect |
 | `fracture`   | [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)                | Rare, at least four modifiers, not already fractured, no influence |
-| `exalt <influence>` | the influence's [Exalted Orb](https://www.poewiki.net/wiki/Hunter%27s_Exalted_Orb#Mechanics) (`exalt hunter`) | Rare with an open slot, no influence, no fracture, at an item level one of the influence's modifiers rolls at; the item gains the influence and one of its modifiers |
+| `exalt <influence>` | the influence's [Exalted Orb](https://www.poewiki.net/wiki/Hunter%27s_Exalted_Orb#Mechanics) (`exalt hunter`) | Rare with an open slot, no influence, no fracture, with an influence modifier the item can take; the item gains the influence and one of its modifiers |
 | `awakener <influence>` | [Awakener's Orb](https://www.poewiki.net/wiki/Awakener%27s_Orb#Mechanics), the donor item's influence named | exactly one influence, not the donor's; the item is reforged Rare with both, metamods ignored |
 | `vaal` | [Vaal Orb](https://www.poewiki.net/wiki/Vaal_Orb#Equipment) | not corrupted; afterwards the item is corrupted and either as it was or a Rare with six modifiers |
 | `locus` | the [Corruption Altar](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes) | not corrupted; as `vaal`, but the Rare is influenced and the item may be destroyed, which ends the craft on that path |

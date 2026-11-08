@@ -416,8 +416,8 @@ is usually right about what the client refuses.
 implicit; a Fracturing Orb.
 **Steps:** apply the orb.
 **Record:** refused, or which modifier fractured.
-**Assumed meanwhile:** the wiki's reading, accepted (`check/library.ts` `FRACTURE` has no
-eldritch gate).
+**Assumed meanwhile:** the wiki's reading, accepted (the `fracture` entry of the currency table in
+`check/library.ts` has no eldritch gate).
 **Answer:**
 
 ### Q45 · game probe · open
@@ -436,49 +436,17 @@ cheap way would be that recipe.
 `removeCrafted` touches bench rows only), so a bad unveil is cleared with an annul.
 **Answer:**
 
----
-
-## Resolved
-
-### Q7 · game probe · resolved
-
-**Asked:** 2026-10-26
-**Goal:** the semantics of the two new bench recipes "Reroll three random modifiers on a
-Rare item" (3 Chaos) and "Reroll a random modifier" (8 Chaos), added in 3.29. The wiki
-([Version 3.29.0](https://www.poewiki.net/wiki/Version_3.29.0)) says only "reroll".
-**Procure:** any Rare with 6 modifiers, two of them of a known group, and a spare with
-"Prefixes Cannot Be Changed" benched.
-**Steps:** (1) apply "reroll three" to the full Rare several times; note whether the
-count stays 6 and whether the three rerolled modifiers can land on the other side (prefix
-count changing). (2) apply it to the metamod item; note whether prefixes are ever touched
-and whether the metamod itself can be rerolled. (3) apply "reroll a random modifier" to a
-Rare with one modifier of each side; note whether the result keeps the side.
-**Record:** before/after prefix and suffix counts for each try.
-**Assumed meanwhile:** `remove(unlocked, k); fill(natural, k)` (count preserved, side may
-change, metamods respected), as `operations.md` §3.2 states; not built until answered.
-**Answer:** Rick ruled (2026-10-30): deferred, not worth modelling yet. The ledger row
-is deferred; the probe stands for when it is.
-
-### Q34 · decision · resolved
-
-**Asked:** 2026-10-30
-**Question:** whether to model [Hinekora's Lock](https://www.poewiki.net/wiki/Hinekora%27s_Lock):
-a method applied under a condition on its own outcome, the join of the narrowed
-after-state and the unchanged one, which would also flag a condition the method can
-never produce.
-**Answer:** Rick ruled (2026-10-30): not for now. The ledger row is deferred.
-
-### Q42 · decision · open
+### Q46 · decision · open
 
 **Asked:** 2026-11-08
-**Question:** whether the playground's walkthrough cards may carry the game's currency
-icons. The wiki hosts them, but they are Grinding Gear Games' art; shipping them in the
+**Question:** whether the playground's walkthrough may carry the game's currency icons.
+The wiki hosts them, but they are Grinding Gear Games' art; shipping them in the
 repository and on the published page is a licensing call, not a technical one. The
 alternatives: fetch them from the wiki at page load (no copy in the repo, but a
-dependency on the wiki being up and on its hotlinking policy), or keep the lettered,
-colour-coded badges the cards use now.
-**Assumed meanwhile:** the badges (`editors/playground/src/walkthrough.ts`, `badgeText`
-and the `badge-<word>` styles).
+dependency on the wiki being up and on its hotlinking policy), or lettered,
+colour-coded badges drawn by the page.
+**Assumed meanwhile:** the badges (the `badge-<word>` styles in
+`editors/playground/src/style.css`).
 **Answer:**
 
 ### Q41 · game probe · open
@@ -625,6 +593,86 @@ concrete item gains fields only when the pool needs them.
 uncertainty, so the checker's state is the only item model; the pool reads a projection
 of it (`ItemFacts`). The concrete currency library and validator were deleted in
 `1f62c9d` and the pool's parameter became the projection in `294d7c1`.
+
+### Q47 · game probe · open
+
+**Asked:** 2026-11-08
+**Goal:** what a conqueror's, Shaper's or Elder's Exalted Orb does on a Rare whose item
+level is below every row of that influence (an ilvl 50 body armour and a Hunter's
+Exalted Orb). [Hunter's Exalted Orb § Mechanics](https://www.poewiki.net/wiki/Hunter%27s_Exalted_Orb#Mechanics)
+lists only the influenced, synthesised, fractured and eldritch refusals; the help text
+says "a high-level rare item"; craftofexile refuses below item level 68.
+**Procure:** a Rare body armour of item level 50 with an open slot; a Hunter's Exalted Orb.
+**Steps:** apply the orb.
+**Record:** refused; or marked Hunter with no modifier added; or marked with one (which).
+**Assumed meanwhile:** refused (`check/library.ts` `influenceExaltOps` requires an
+influence modifier the item can take), the reading under which the checker never
+claims a modifier the game did not add.
+**Answer:**
+
+### Q48 · game probe · open
+
+**Asked:** 2026-11-08
+**Goal:** whether the four Path of Exile: Royale modifier rows (movement speed on boots,
+cast speed, attack speed) ever roll in the main game. The export gives them weights; the
+wiki's per-class modifier lists ([List of modifiers for wands](https://www.poewiki.net/wiki/List_of_modifiers_for_wands))
+omit them, as does craftofexile, but no page states the rule.
+**Procure:** a few low-level Normal boots and gloves; Orbs of Transmutation and Alteration.
+**Steps:** roll them; watch for a "Sprinter's" boots prefix of 15–25% or a gloves "of
+Ease" of 8–15% that the ordinary ladder does not have.
+**Record:** whether such a roll ever appears.
+**Assumed meanwhile:** never (`packages/data/src/adapter.ts` `adaptMod` drops a row whose
+id names Royale), which rests on the lists' omission.
+**Answer:**
+
+### Q49 · decision · open
+
+**Asked:** 2026-11-08
+**Question:** a declared `"random"` affix is read as a natural modifier of its side the item
+could roll: never a bench craft, an essence-only, fossil-only or unveiled row, nor one a
+declared cannot-roll metamod would have blocked. A bought item whose unnamed prefix is in
+fact a bench craft then checks as if it had none, and a later `bench` is let through
+where the game refuses on the crafted limit.
+**Options:** (a) keep natural-only and say so (the surface doc does); (b) a spelling for
+an unnamed crafted modifier, `crafted "random"`, counted toward the crafted range;
+(c) read `"random"` as any row of any source, which would block most crafts on a
+placeholder item.
+**Recommendation:** (b) when a guide needs it; (a) meanwhile.
+**Assumed meanwhile:** (a) (`check/ops.ts` `anonymousTypes`; the `crafted` range counts
+named bench rows only).
+**Answer:**
+
+---
+
+## Resolved
+
+### Q7 · game probe · resolved
+
+**Asked:** 2026-10-26
+**Goal:** the semantics of the two new bench recipes "Reroll three random modifiers on a
+Rare item" (3 Chaos) and "Reroll a random modifier" (8 Chaos), added in 3.29. The wiki
+([Version 3.29.0](https://www.poewiki.net/wiki/Version_3.29.0)) says only "reroll".
+**Procure:** any Rare with 6 modifiers, two of them of a known group, and a spare with
+"Prefixes Cannot Be Changed" benched.
+**Steps:** (1) apply "reroll three" to the full Rare several times; note whether the
+count stays 6 and whether the three rerolled modifiers can land on the other side (prefix
+count changing). (2) apply it to the metamod item; note whether prefixes are ever touched
+and whether the metamod itself can be rerolled. (3) apply "reroll a random modifier" to a
+Rare with one modifier of each side; note whether the result keeps the side.
+**Record:** before/after prefix and suffix counts for each try.
+**Assumed meanwhile:** `remove(unlocked, k); fill(natural, k)` (count preserved, side may
+change, metamods respected), as `operations.md` §3.2 states; not built until answered.
+**Answer:** Rick ruled (2026-10-30): deferred, not worth modelling yet. The ledger row
+is deferred; the probe stands for when it is.
+
+### Q34 · decision · resolved
+
+**Asked:** 2026-10-30
+**Question:** whether to model [Hinekora's Lock](https://www.poewiki.net/wiki/Hinekora%27s_Lock):
+a method applied under a condition on its own outcome, the join of the narrowed
+after-state and the unchanged one, which would also flag a condition the method can
+never produce.
+**Answer:** Rick ruled (2026-10-30): not for now. The ledger row is deferred.
 
 ### Q4 · decision · resolved
 
