@@ -1,0 +1,3 @@
+# The formatter keeps a guide's own line endings, and the example guides are
+# asserted to be in the house style; a checkout must not rewrite them.
+*.craft text eol=lf

@@ -18,7 +18,7 @@ import { checkSource } from "./check.js";
 
 const USAGE = "usage: hinekora check <file.craft> | hinekora fmt [--check] <file.craft>\n";
 
-function readOrExit(file: string): string | undefined {
+function tryRead(file: string): string | undefined {
     try {
         return readFileSync(file, "utf8");
     } catch {
@@ -28,7 +28,7 @@ function readOrExit(file: string): string | undefined {
 }
 
 function check(file: string): number {
-    const source = readOrExit(file);
+    const source = tryRead(file);
     if (source === undefined) return 2;
 
     const data = loadDefaultPoe1();
@@ -43,7 +43,7 @@ function check(file: string): number {
 }
 
 function fmt(file: string, checkOnly: boolean): number {
-    const source = readOrExit(file);
+    const source = tryRead(file);
     if (source === undefined) return 2;
     const formatted = formatCraft(source);
     if (formatted === undefined) {

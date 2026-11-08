@@ -404,6 +404,18 @@ after-state and the unchanged one, which would also flag a condition the method 
 never produce.
 **Answer:** Rick ruled (2026-10-30): not for now. The ledger row is deferred.
 
+### Q40 · decision · open
+
+**Asked:** 2026-11-08
+**Question:** the formatter's style choices, each a one-line change if you want them
+otherwise: a width of 100 columns (the repo's Prettier width); the item block's fields
+in a fixed order (`base`, `ilvl`, `rarity`, `prefixes`, `suffixes`, `influences`,
+`exarch`, `eater`, then `corrupted`) with the values aligned; an `and` under an `or`
+in parentheses for the reader though the grammar does not need them; a body kept on one
+line only when the author wrote it on one; the source's own line ending kept.
+**Assumed meanwhile:** the above (`packages/parser/src/format.ts`, REFERENCE §3b).
+**Answer:**
+
 ### Q35 · decision · open
 
 **Asked:** 2026-10-30

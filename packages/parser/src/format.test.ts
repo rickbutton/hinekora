@@ -23,11 +23,10 @@ const fmt = (source: string): string => {
 describe("formatter — the example guides", () => {
     const dir = join(import.meta.dirname, "../../../examples");
     for (const file of readdirSync(dir).filter((f) => f.endsWith(".craft"))) {
-        it(`${file}: keeps its meaning and is stable`, () => {
+        it(`${file}: is in the house style and keeps its meaning`, () => {
             const src = readFileSync(join(dir, file), "utf8");
-            const once = fmt(src);
-            expect(shape(once)).toEqual(shape(src));
-            expect(fmt(once)).toBe(once);
+            expect(fmt(src)).toBe(src);
+            expect(shape(fmt(src))).toEqual(shape(src));
         });
     }
 });
@@ -154,6 +153,75 @@ if has "maximum life" {
     roll("maximum life", chaos)
 }
 `);
+    });
+
+    it("keeps a block argument written over several lines, comments included", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
+def roll(m, step) { until has m { step } }
+roll("maximum life", {
+    scour # first
+    alchemy
+})
+roll("maximum life", {
+        scour }, chaos)`;
+        expect(fmt(src)).toContain(`roll("maximum life", {
+    scour # first
+    alchemy
+})
+roll("maximum life", {
+    scour
+}, chaos)
+`);
+    });
+
+    it("keeps a comment before a closing brace inside the block that closes", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
+until has "a" {
+    chaos
+    # nothing more here
+}
+if has "a" {
+    exalt
+    # done
+}
+else { chaos }`;
+        expect(fmt(src)).toContain(`until has "a" {
+    chaos
+    # nothing more here
+}
+if has "a" {
+    exalt
+    # done
+} else {
+    chaos
+}
+`);
+    });
+
+    it("prints an empty body as {} and orders corrupted last, its comment with it", () => {
+        const src = `item { corrupted # bricked
+base: "Iron Ring" ilvl: 84 rarity: rare }
+def nothing() { }
+until has "a" { }`;
+        expect(fmt(src)).toBe(`item {
+    base:   "Iron Ring"
+    ilvl:   84
+    rarity: rare
+    corrupted # bricked
+}
+def nothing() {}
+until has "a" {}
+`);
+    });
+
+    it("keeps Windows line endings when the source uses them", () => {
+        const src =
+            'item { base: "Iron Ring" ilvl: 84 rarity: rare }\r\n# note\r\nuntil has "a" {\r\nchaos\r\n}\r\n';
+        const out = fmt(src);
+        expect(out).toBe(
+            'item {\r\n    base:   "Iron Ring"\r\n    ilvl:   84\r\n    rarity: rare\r\n}\r\n# note\r\nuntil has "a" {\r\n    chaos\r\n}\r\n',
+        );
+        expect(fmt(out)).toBe(out);
     });
 
     it("escapes quotes and backslashes in strings", () => {

@@ -71,12 +71,24 @@ function callArg(a: Arg, source: string, depth: number): string {
             return String(a.value);
         case "param":
             return a.param;
-        case "block": {
-            const inline = a.body.map((s) => inlineStmt(s, source, depth)).join(" ");
+        case "block":
             // A single step written bare stays bare; braces stay braces.
-            return source[a.span.start.offset] === "{" ? `{ ${inline} }` : inline;
-        }
+            return braced(a, source)
+                ? inlineBody(a.body, source, depth)
+                : a.body.map((s) => inlineStmt(s, source, depth)).join(" ");
     }
+}
+
+/** Whether a block argument was written with braces. */
+function braced(a: Extract<Arg, { kind: "block" }>, source: string): boolean {
+    return source[a.span.start.offset] === "{";
+}
+
+/** A body on one line: `{ a b }`, or `{}` when empty. */
+function inlineBody(body: readonly Stmt[], source: string, depth: number): string {
+    return body.length === 0
+        ? "{}"
+        : `{ ${body.map((s) => inlineStmt(s, source, depth)).join(" ")} }`;
 }
 
 function pred(p: Pred, source: string, depth: number): string {
@@ -114,7 +126,8 @@ function pred(p: Pred, source: string, depth: number): string {
         case "corrupted":
             return "corrupted";
         case "eldritch":
-            return [p.side, p.text !== undefined ? quote(p.text) : undefined, p.tier]
+            // Tier before wording, as the item block writes it.
+            return [p.side, p.tier, p.text !== undefined ? quote(p.text) : undefined]
                 .filter((x) => x !== undefined)
                 .join(" ");
         case "dominant":
@@ -145,12 +158,12 @@ function inlineStmt(s: Stmt, source: string, depth: number): string {
         case "call":
             return `${s.name}(${callArgs(s.args, source, depth)})`;
         case "until":
-            return `until ${pred(s.pred, source, depth)} { ${s.body.map((b) => inlineStmt(b, source, depth)).join(" ")} }`;
+            return `until ${pred(s.pred, source, depth)} ${inlineBody(s.body, source, depth)}`;
         case "if": {
-            const head = `if ${pred(s.pred, source, depth)} { ${s.body.map((b) => inlineStmt(b, source, depth)).join(" ")} }`;
+            const head = `if ${pred(s.pred, source, depth)} ${inlineBody(s.body, source, depth)}`;
             return s.elseBody === undefined
                 ? head
-                : `${head} else { ${s.elseBody.map((b) => inlineStmt(b, source, depth)).join(" ")} }`;
+                : `${head} else ${inlineBody(s.elseBody, source, depth)}`;
         }
     }
 }
@@ -179,15 +192,46 @@ class Printer {
         span: { start: { line: number }; end: { line: number } },
         tail = "",
     ): void {
-        const inline = `${head} { ${body.map((s) => inlineStmt(s, this.source, depth)).join(" ")} }${tail}`;
+        const inline = `${head} ${inlineBody(body, this.source, depth)}${tail}`;
         const oneLine = span.start.line === span.end.line;
-        if (oneLine && this.fits(depth, inline)) {
+        if ((oneLine && this.fits(depth, inline)) || body.length === 0) {
             this.line(depth, inline, span.start.line);
             return;
         }
         this.line(depth, `${head} {`, span.start.line);
         this.stmts(body, depth + 1);
         this.line(depth, `}${tail}`, span.end.line);
+    }
+
+    /**
+     * A call statement. A braced block argument the author wrote over several
+     * lines keeps that shape: the call opens up to its `{`, the steps follow
+     * indented, and `}` carries on with the remaining arguments.
+     */
+    private call(depth: number, s: Extract<Stmt, { kind: "call" }>): void {
+        const spread = (a: Arg): a is Extract<Arg, { kind: "block" }> =>
+            a.kind === "block" &&
+            braced(a, this.source) &&
+            a.body.length > 0 &&
+            a.span.start.line !== a.span.end.line;
+        if (!s.args.some(spread)) {
+            this.line(depth, inlineStmt(s, this.source, depth), s.span.start.line);
+            return;
+        }
+        let head = `${s.name}(`;
+        let headSrc = s.span.start.line;
+        s.args.forEach((a, i) => {
+            const sep = i === 0 ? "" : ", ";
+            if (spread(a)) {
+                this.line(depth, `${head}${sep}{`, headSrc);
+                this.stmts(a.body, depth + 1);
+                head = "}";
+                headSrc = a.span.end.line;
+            } else {
+                head += sep + callArg(a, this.source, depth);
+            }
+        });
+        this.line(depth, `${head})`, headSrc);
     }
 
     stmts(stmts: readonly Stmt[], depth: number): void {
@@ -199,8 +243,10 @@ class Printer {
             case "operation":
             case "restart":
             case "paramStep":
-            case "call":
                 this.line(depth, inlineStmt(s, this.source, depth), s.span.start.line);
+                return;
+            case "call":
+                this.call(depth, s);
                 return;
             case "until":
                 this.block(depth, `until ${pred(s.pred, this.source, depth)}`, s.body, s.span);
@@ -214,13 +260,9 @@ class Printer {
                 const elseAt = this.elseLine(s.span);
                 const ifSpan = { start: s.span.start, end: { line: elseAt } };
                 const elseSpan = { start: { line: elseAt }, end: s.span.end };
-                const inlineIf = `if ${pred(s.pred, this.source, depth)} { ${s.body.map((b) => inlineStmt(b, this.source, depth)).join(" ")} }`;
-                const inlineElse = `else { ${s.elseBody.map((b) => inlineStmt(b, this.source, depth)).join(" ")} }`;
-                if (
-                    s.span.start.line === s.span.end.line &&
-                    this.fits(depth, `${inlineIf} ${inlineElse}`)
-                ) {
-                    this.line(depth, `${inlineIf} ${inlineElse}`, s.span.start.line);
+                const inline = inlineStmt(s, this.source, depth);
+                if (s.span.start.line === s.span.end.line && this.fits(depth, inline)) {
+                    this.line(depth, inline, s.span.start.line);
                     return;
                 }
                 this.line(depth, `if ${pred(s.pred, this.source, depth)} {`, ifSpan.start.line);
@@ -244,7 +286,7 @@ class Printer {
             else if (t.kind === "ident" && t.text === "else" && depth === 0)
                 return t.span.start.line;
         }
-        return span.start.offset >= 0 ? (this.lines[this.lines.length - 1]?.src ?? 1) : 1;
+        throw new Error("an if statement with an else branch has an else token");
     }
 
     def(d: Def | ProcDef, depth: number): void {
@@ -319,25 +361,35 @@ function list(affixes: readonly AffixDecl[]): string {
 
 // --- assembly ----------------------------------------------------------------
 
+/** Whether a comment is the first thing on its line (else it follows code). */
+export function commentOpensLine(c: Comment, source: string): boolean {
+    const line = source.split(/\r?\n/)[c.span.start.line - 1] ?? "";
+    return line.slice(0, c.span.start.column - 1).trim() === "";
+}
+
 /** Put the comments back by source line and keep one blank line where the source had any. */
 function assemble(lines: readonly Line[], comments: readonly Comment[], source: string): string {
-    const srcLines = source.split("\n");
+    const srcLines = source.split(/\r?\n/);
+    const eol = source.includes("\r\n") ? "\r\n" : "\n";
     const blankBetween = (a: number, b: number): boolean => {
         for (let l = a + 1; l < b; l++) if (srcLines[l - 1]?.trim() === "") return true;
         return false;
     };
-    const codeOnLine = (c: Comment): boolean =>
-        (srcLines[c.span.start.line - 1] ?? "").slice(0, c.span.start.column - 1).trim() !== "";
 
-    const trailing = new Map<number, string[]>();
+    // A line holds one comment at most, since a comment runs to its end.
+    const trailing = new Map<number, string>();
     const standalone: Comment[] = [];
     for (const c of comments) {
-        if (codeOnLine(c) && lines.some((l) => l.src === c.span.start.line)) {
-            const at = trailing.get(c.span.start.line) ?? [];
-            at.push(c.text);
-            trailing.set(c.span.start.line, at);
+        const line = c.span.start.line;
+        if (!commentOpensLine(c, source) && lines.some((l) => l.src === line)) {
+            trailing.set(line, c.text);
         } else standalone.push(c);
     }
+
+    // Several nodes written on one source line print on several, not always
+    // adjacent (`corrupted` prints last); the comment follows the last of them.
+    const lastOfSrc = new Map<number, number>();
+    lines.forEach((line, i) => lastOfSrc.set(line.src, i));
 
     const out: string[] = [];
     let prevSrc = 0; // the last source line emitted, 0 before anything
@@ -348,24 +400,23 @@ function assemble(lines: readonly Line[], comments: readonly Comment[], source: 
         prevSrc = src;
     };
     lines.forEach((line, i) => {
-        // Comments that came before this line in the source go before it, at its depth.
+        // Comments that came before this line in the source go before it, at
+        // its depth; before a closing brace, inside the block that is closing.
+        const depth = line.text.startsWith("}") ? line.depth + 1 : line.depth;
         while (next < standalone.length && standalone[next]!.span.start.line < line.src) {
             const c = standalone[next]!;
-            emit(`${INDENT.repeat(line.depth)}#${c.text}`, c.span.start.line);
+            emit(`${INDENT.repeat(depth)}#${c.text}`, c.span.start.line);
             next++;
         }
-        // Several nodes written on one source line print on several; the
-        // comment that followed them all follows the last.
-        const lastOfSrc = lines[i + 1]?.src !== line.src;
-        const tail = lastOfSrc ? trailing.get(line.src) : undefined;
+        const tail = lastOfSrc.get(line.src) === i ? trailing.get(line.src) : undefined;
         const text = `${INDENT.repeat(line.depth)}${line.text}`;
-        emit(tail === undefined ? text : `${text} #${tail.join(" #")}`, line.src);
+        emit(tail === undefined ? text : `${text} #${tail}`, line.src);
     });
     for (; next < standalone.length; next++) {
         const c = standalone[next]!;
         emit(`#${c.text}`, c.span.start.line);
     }
-    return `${out.join("\n")}\n`;
+    return `${out.join(eol)}${eol}`;
 }
 
 /** The guide in the house style, or `undefined` when it does not parse. */

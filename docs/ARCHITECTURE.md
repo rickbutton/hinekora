@@ -68,7 +68,10 @@ downstream:
   and hover pick it up unchanged.
 - **The AST is deliberately shallow.** It mirrors the surface syntax and does _no_
   resolution or lowering; names stay raw strings. So the parser is a pure syntax→tree
-  transform, and the AST is the stable contract between front end and checker.
+  transform, and the AST is the stable contract between front end and checker. The same
+  package carries the inverse, the formatter (`formatCraft`), which prints a tree back
+  in the house style; the only thing the tree lacks for that, the comments, the lexer
+  keeps alongside the tokens.
 
 Spans thread through every node: they are what later render a diagnostic under the right
 op and let hover find the statement at the cursor.

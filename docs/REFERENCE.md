@@ -182,19 +182,24 @@ emits `eq` for `==` and `assign` for a lone `=` (the def binding).
 
 `format.ts`: `formatCraft(source)` prints the tree in the house style, or `undefined`
 when the guide does not parse. Four-space indent, width 100. The item block one field
-per line with the values aligned, empty affix lists left out, `corrupted` last. A block
-(a body, a block argument) stays on one line when the author wrote it on one and it
-fits, else one statement per line. A predicate def that does not fit goes under its
-header, one operand of the loosest chain per line with the connective leading.
-Parentheses appear where the grammar needs them (an `or` under an `and`, a right operand
-of the same connective) and around an `and` under an `or` for the reader. Comments are
-kept by source line (`tokenizeWithComments`): one after code stays after that code, one
-on its own line stays before the next code at its depth; one blank line is kept wherever
-the source had any. Every printed line remembers its source line, which is what makes
-both of those work; several nodes written on one line print on several and the trailing
-comment follows the last. Stable: formatting formatted text changes nothing, which the
-example guides test. The CLI's `hinekora fmt [--check] <file>` and the editor's Format
-Document both call it.
+per line with the values aligned, the fields in a fixed order, empty affix lists left
+out, `corrupted` last. A body stays on one line when the author wrote it on one and it
+fits, else one statement per line; an empty one is `{}`. A braced block argument written
+over several lines keeps that shape, the call opening up to its `{` and `}` carrying on
+with the remaining arguments; written on one line, or bare, it stays inline. A predicate
+def that does not fit goes under its header, one operand of the loosest chain per line
+with the connective leading. Parentheses appear where the grammar needs them (an `or`
+under an `and`, a right operand of the same connective) and around an `and` under an
+`or` for the reader; an eldritch predicate writes the tier before the wording, as the
+item block does. Comments are kept by source line (`tokenizeWithComments`): one after
+code stays after that code, one on its own line stays before the next code at its depth
+(inside the block, when the next line closes one); one blank line is kept wherever the
+source had any. Every printed line remembers its source line, which is what makes both
+of those work; several nodes written on one line print on several and the trailing
+comment follows the last. The source's line ending is kept (`\r\n` when it has any,
+else `\n`). Stable: formatting formatted text changes nothing, and the example guides
+are asserted to be in the house style. The CLI's `hinekora fmt [--check] <file>` and
+the editor's Format Document both call it.
 
 ### 3c. `@hinekora/data`
 
