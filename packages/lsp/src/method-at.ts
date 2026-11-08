@@ -45,10 +45,6 @@ function argReach(method: Method): number {
     return method.args.reduce((n, s) => n + (s.kind === "names" ? s.max : 1), 0);
 }
 
-/**
- * The method statement that reaches position `i`: the atom at `i`, or the
- * position after the last atom when `i` is `atoms.length`.
- */
 /** A token as the method lookup sees it: a word, an argument, or a stop. */
 export function atomOf(tok: Token): Atom {
     switch (tok.kind) {
@@ -62,6 +58,10 @@ export function atomOf(tok: Token): Atom {
     }
 }
 
+/**
+ * The method statement that reaches position `i`: the atom at `i`, or the
+ * position after the last atom when `i` is `atoms.length`.
+ */
 export function methodAt(atoms: readonly Atom[], i: number): MethodAt | undefined {
     for (let s = Math.min(i, atoms.length - 1); s >= 0; s--) {
         const a = atoms[s]!;

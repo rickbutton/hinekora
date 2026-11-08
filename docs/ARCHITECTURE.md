@@ -40,7 +40,7 @@ function of `(source, registry)`; no I/O anywhere in it.
    abstract interpretation                 Layer 3 · the checker  ◀── the heart
         │   ⇒ diagnostics  +  a per-statement trace
         ▼
-   language service                        Layer 4 · LSP (diagnostics, hover, completion, names)
+   language service                        Layer 4 · LSP (diagnostics, hover, completion, names, signatures)
         │
         ▼
    editors / CLI                           Layer 5 · thin clients

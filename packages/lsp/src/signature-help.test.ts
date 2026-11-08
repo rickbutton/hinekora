@@ -31,9 +31,24 @@ describe("signature help — def calls", () => {
     });
 
     it("returns to the call after a block argument's braces", () => {
+        const three = `${HEAD}def three(a, b, c) { a b c }\n`;
+        const help = (tail: string) => getSignatureHelp(three + tail, three.length + tail.length);
         // Inside the block the cursor belongs to the block's steps, not the call.
-        expect(at('roll("maximum life", { scour ')).toBeNull();
-        expect(at('roll("maximum life", { scour alchemy }, ')!.activeParameter).toBe(1);
+        expect(help('three("maximum life", { scour ')).toBeNull();
+        const after = help('three("maximum life", { scour alchemy }, ')!;
+        expect(after.signatures[0]!.label).toBe("three(a, b, c)");
+        expect(after.activeParameter).toBe(2);
+    });
+
+    it("follows the innermost call, and the outer one again once it closes", () => {
+        const three = `${HEAD}def three(a, b, c) { a b c }\n`;
+        const help = (tail: string) => getSignatureHelp(three + tail, three.length + tail.length);
+        const inner = help('three("x", roll("y", ')!;
+        expect(inner.signatures[0]!.label).toBe("roll(m, step)");
+        expect(inner.activeParameter).toBe(1);
+        const outer = help('three("x", roll("y", chaos), ')!;
+        expect(outer.signatures[0]!.label).toBe("three(a, b, c)");
+        expect(outer.activeParameter).toBe(2);
     });
 
     it("knows nothing about a call to an undefined name", () => {
