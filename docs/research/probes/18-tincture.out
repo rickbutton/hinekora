@@ -1,0 +1,6 @@
+
+18-tincture.craft:1:1: error: Ambiguous name "Ashbark Tincture" — candidates: Metadata/Items/Tinctures/TinctureIgnite, Metadata/Items/Tinctures/Tincture4.
+  1 | item { base: "Ashbark Tincture" ilvl: 84 rarity: magic }
+    | ^
+
+✗ 1 error

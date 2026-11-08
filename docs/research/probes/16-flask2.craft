@@ -1,0 +1,2 @@
+item { base: "Divine Life Flask" ilvl: 84 rarity: magic }
+until has "immunity to bleeding" and has "increased recovery rate" { alteration }

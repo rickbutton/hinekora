@@ -1,0 +1,3 @@
+item { base: "Murderous Eye Jewel" ilvl: 84 rarity: normal }
+alchemy
+until has "maximum life" and has "onslaught" { chaos }
