@@ -32,9 +32,10 @@ export function toMonacoPosition(p: Position): MonacoPosition {
 }
 
 /**
- * Monaco numbers the shared enumerations (symbol kinds, highlight kinds,
- * completion kinds) from 0 where LSP numbers them from 1, member for member,
- * so a kind translates by name through both tables.
+ * Monaco and LSP number the shared enumerations (symbol kinds, completion
+ * kinds) differently, and not by a fixed offset: Monaco's completion kinds
+ * start at Method where LSP's start at Text. The member names agree, so a
+ * kind translates by name through both tables.
  */
 export function byName<K extends string>(
     lspTable: Readonly<Record<string, number | K>>,

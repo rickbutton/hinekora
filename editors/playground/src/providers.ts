@@ -28,6 +28,7 @@ import {
     type Diagnostic,
     type DocumentSymbol,
     DocumentHighlightKind,
+    InlayHintKind,
     SymbolKind,
 } from "vscode-languageserver-types";
 import { byName, toMonacoPosition, toMonacoRange } from "./convert.js";
@@ -210,7 +211,10 @@ export function registerProviders(registry: Registry): void {
                         typeof h.label === "string"
                             ? h.label
                             : h.label.map((p) => p.value).join(""),
-                    kind: h.kind === 1 ? L.InlayHintKind.Type : L.InlayHintKind.Parameter,
+                    kind:
+                        h.kind === InlayHintKind.Type
+                            ? L.InlayHintKind.Type
+                            : L.InlayHintKind.Parameter,
                     ...(h.paddingRight !== undefined && { paddingRight: h.paddingRight }),
                 })),
                 dispose() {},

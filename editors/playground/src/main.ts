@@ -13,6 +13,7 @@ import modsUrl from "@hinekora/data/data/poe1/mods.json?url";
 import { monaco } from "./monaco.js";
 // The package maps `monaco-editor/<path>.js` onto its ESM tree.
 import EditorWorker from "monaco-editor/editor/editor.worker.js?worker";
+import { toMonacoPosition } from "./convert.js";
 import { LANGUAGE_ID, registerLanguage, THEME_ID } from "./language.js";
 import { publishDiagnostics, registerProviders } from "./providers.js";
 
@@ -83,10 +84,7 @@ function showProblems(
         where.textContent = `${d.range.start.line + 1}:${d.range.start.character + 1}`;
         row.append(where, d.message);
         row.addEventListener("click", () => {
-            editor.setPosition({
-                lineNumber: d.range.start.line + 1,
-                column: d.range.start.character + 1,
-            });
+            editor.setPosition(toMonacoPosition(d.range.start));
             editor.revealLineInCenter(d.range.start.line + 1);
             editor.focus();
         });

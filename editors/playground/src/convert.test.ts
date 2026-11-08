@@ -10,6 +10,15 @@ describe("LSP to Monaco", () => {
         ).toEqual({ startLineNumber: 1, startColumn: 1, endLineNumber: 2, endColumn: 4 });
     });
 
+    it("finds every kind name the page relies on in the LSP tables", () => {
+        for (const name of ["Function", "Keyword", "Variable", "Value", "Text"]) {
+            expect(name in CompletionItemKind).toBe(true);
+        }
+        for (const name of ["Boolean", "Function", "Variable", "Object"]) {
+            expect(name in SymbolKind).toBe(true);
+        }
+    });
+
     it("translates an enumeration member by its name", () => {
         // Monaco's tables are numbered from 0; a stand-in with the same names.
         const monacoSymbols = { File: 0, Module: 1, Function: 11, Boolean: 16 };

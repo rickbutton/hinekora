@@ -5,8 +5,5 @@
  * the adapter, and tracks provenance in a `DataManifest`. Depends only on
  * @hinekora/core (the one-way arrow).
  */
-export * from "./repoe/schema.js";
-export * from "./manifest.js";
-export * from "./adapter.js";
-export * from "./bundle.js";
+export * from "./browser.js";
 export * from "./load.js";

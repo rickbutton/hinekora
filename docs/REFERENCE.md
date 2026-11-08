@@ -348,6 +348,9 @@ TextMate grammar for highlighting (kept in sync with the language by hand,
 
 A static page (Vite) with Monaco and the whole language service running in the page, no
 server: `pnpm -C editors/playground dev` to run it, `build` for a deployable `dist/`.
+It resolves the workspace packages through their `exports`, which point at `dist/`, so
+run `pnpm build` first and keep `tsc -b -w` running next to `vite` while changing core or
+the service; the page otherwise serves the last built behaviour.
 The catalog is fetched as the seven JSON files of `packages/data/data/poe1` (served through
 the data package's `./data/*` export) and adapted with `adaptPoe1` from
 `@hinekora/data/browser`, the package's disk-free entry.

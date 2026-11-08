@@ -2,9 +2,9 @@
  * Transport-agnostic server wiring: given an LSP `Connection` and a resolved
  * `Registry`, advertise capabilities and wire the handlers (diagnostics, hover,
  * completion, semantic tokens, highlights, definition, references, rename,
- * outline, signature help). The connection's transport (stdio/IPC for Node,
- * message-port for a browser worker) is the caller's concern, so this same
- * function serves both the VSCode server and the future playground worker.
+ * outline, signature help). The connection's transport is the caller's
+ * concern (stdio/IPC for the VSCode server), so an embedding with another
+ * transport reuses this wiring unchanged.
  */
 import {
     type Connection,

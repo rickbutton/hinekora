@@ -1,7 +1,8 @@
 /**
  * The transport-free language service: pure functions over (source, registry),
- * wrapped by the Node entry now and a browser worker later. The parser and
- * checker already return `{ message, span }`; this only converts spans.
+ * wrapped by the Node server and bound to Monaco by the browser playground.
+ * The parser and checker already return `{ message, span }`; this only
+ * converts spans.
  */
 import { type Diagnostic, DiagnosticSeverity, type Range } from "vscode-languageserver-types";
 import type { Registry, SourceSpan } from "@hinekora/core";
