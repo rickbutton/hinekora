@@ -15,7 +15,7 @@ import {
     type SourceSpan,
     type Stmt,
 } from "@hinekora/core";
-import { parse } from "@hinekora/parser";
+import { parseCached } from "./analysis.js";
 import { type InlayHint, InlayHintKind, type Position } from "vscode-languageserver-types";
 
 function positionAfter(span: SourceSpan): Position {
@@ -103,7 +103,7 @@ class Hints {
 }
 
 export function getInlayHints(source: string): InlayHint[] {
-    const parsed = parse(source);
+    const parsed = parseCached(source);
     if (!parsed.ok) return [];
     const h = new Hints(parsed.craft);
     for (const d of parsed.craft.defs) {

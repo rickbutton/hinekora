@@ -234,6 +234,11 @@ fixed tier regardless of ilvl (not stated on the wiki; confirmed by in-game test
 
 Transport-free service functions + a stdio server:
 
+- `analysis.ts`: `parseCached(source)` and `checkCached(source, registry)`, the parse
+  and the check of a document memoized by its text (the last 16 texts; checks per
+  registry). Every feature below reads these, so an edit is parsed once, by the
+  diagnostics, and checked once, by the first feature that needs the item state; a
+  hover, completion or hint on unchanged text does no analysis at all.
 - `service.ts`: `getDiagnostics`.
 - `hover.ts`: `getHover(source, offset, registry)` is **token-centric**. The hovered
   token's signature (currency op / mod / base / essence / bench / def / projection /
@@ -735,6 +740,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/parser/src/vocabulary.ts`                                   | the surface vocabulary outside the method table (keywords, predicate words, item fields)           |
 | `packages/data/src/{load,adapter}.ts` + `scripts/ingest-poe1.mjs`     | data load + ingest                                                                                 |
 | `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts` | LSP features                                                                                       |
+| `packages/lsp/src/analysis.ts`                                        | the parse and check of a document, memoized by text; every feature reads it                        |
 | `packages/lsp/src/navigation.ts`                                      | highlights, definition, references, rename, outline over the bindings                              |
 | `packages/lsp/src/signature-help.ts`                                  | `getSignatureHelp`: a call's parameters or a method's slots, the active one marked                 |
 | `packages/lsp/src/folding.ts`                                         | `getFoldingRanges`: brace blocks, comment runs, multi-line predicate defs                          |

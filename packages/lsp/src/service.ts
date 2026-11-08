@@ -4,8 +4,8 @@
  * checker already return `{ message, span }`; this only converts spans.
  */
 import { type Diagnostic, DiagnosticSeverity, type Range } from "vscode-languageserver-types";
-import { check, type Registry, type SourceSpan } from "@hinekora/core";
-import { parse } from "@hinekora/parser";
+import type { Registry, SourceSpan } from "@hinekora/core";
+import { checkCached, parseCached } from "./analysis.js";
 
 /** Our spans are 1-based line/column; LSP ranges are 0-based line/character. */
 export function toRange(span: SourceSpan): Range {
@@ -29,10 +29,10 @@ function toDiagnostic(message: string, span: SourceSpan): Diagnostic {
 
 /** Parse + check `source`, returning LSP diagnostics (empty ⇒ the craft is clean). */
 export function getDiagnostics(source: string, registry: Registry): Diagnostic[] {
-    const parsed = parse(source);
+    const parsed = parseCached(source);
     if (!parsed.ok) {
         return [toDiagnostic(parsed.error.message, parsed.error.span)];
     }
-    const result = check(parsed.craft, { registry });
+    const result = checkCached(source, registry)!;
     return result.diagnostics.map((d) => toDiagnostic(d.message, d.span));
 }

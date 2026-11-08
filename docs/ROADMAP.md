@@ -24,8 +24,6 @@ of the operations; no divergence is expected.
 
 ## Step 2. Language and editor follow-ons
 
-- **Completion perf:** `getCompletions` runs a full check per mod-string request;
-  memoize if latency shows.
 - **Tier-atom tightenings:** assert `tierAtom ⇒ family` and tier mutual-exclusion in the
   presence BDD. Both are true facts we currently omit; omitting them only ever
   under-claims (sound), so they are precision, not correctness.

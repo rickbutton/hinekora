@@ -4,7 +4,8 @@
  * predicate def written over several lines, which has no braces, read off the
  * tree when the guide parses.
  */
-import { commentOpensLine, parse, tokenizeWithComments } from "@hinekora/parser";
+import { commentOpensLine, tokenizeWithComments } from "@hinekora/parser";
+import { parseCached } from "./analysis.js";
 import { type FoldingRange, FoldingRangeKind } from "vscode-languageserver-types";
 
 export function getFoldingRanges(source: string): FoldingRange[] {
@@ -45,7 +46,7 @@ export function getFoldingRanges(source: string): FoldingRange[] {
     }
     if (runStart !== undefined) fold(runStart, runEnd, FoldingRangeKind.Comment);
 
-    const parsed = parse(source);
+    const parsed = parseCached(source);
     if (parsed.ok) {
         for (const d of parsed.craft.defs) fold(d.span.start.line - 1, d.span.end.line - 1);
     }

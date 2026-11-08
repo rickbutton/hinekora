@@ -4,6 +4,7 @@
  * pieces (the service functions + server wiring) for embedding and for the
  * future browser-worker entry.
  */
+export * from "./analysis.js";
 export * from "./service.js";
 export * from "./hover.js";
 export * from "./completion.js";

@@ -14,7 +14,8 @@ import {
     METHOD_WORDS,
     type ProcDef,
 } from "@hinekora/core";
-import { parse, VOCABULARY } from "@hinekora/parser";
+import { VOCABULARY } from "@hinekora/parser";
+import { parseCached } from "./analysis.js";
 import {
     type DocumentHighlight,
     DocumentHighlightKind,
@@ -26,7 +27,7 @@ import {
 import { toRange } from "./service.js";
 
 function craftOf(source: string): Craft | undefined {
-    const parsed = parse(source);
+    const parsed = parseCached(source);
     return parsed.ok ? parsed.craft : undefined;
 }
 

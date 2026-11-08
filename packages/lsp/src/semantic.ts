@@ -12,7 +12,8 @@ import {
     type Registry,
     STANDARD_CURRENCIES,
 } from "@hinekora/core";
-import { parse, tokenize } from "@hinekora/parser";
+import { tokenize } from "@hinekora/parser";
+import { parseCached } from "./analysis.js";
 import { SemanticTokensBuilder } from "vscode-languageserver";
 import type { SemanticTokens } from "vscode-languageserver-types";
 
@@ -34,7 +35,7 @@ const M_DECLARATION = 1;
  */
 function boundNames(source: string): Map<number, { type: number; modifiers: number }> {
     const out = new Map<number, { type: number; modifiers: number }>();
-    const parsed = parse(source);
+    const parsed = parseCached(source);
     if (!parsed.ok) return out;
     for (const b of bindingsOf(parsed.craft)) {
         const type = b.kind === "param" ? T_PARAMETER : T_FUNCTION;

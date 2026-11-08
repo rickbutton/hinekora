@@ -7,7 +7,6 @@ import {
     type AItem,
     bindingAt,
     bindingsOf,
-    check,
     type Craft,
     type CurrencyKind,
     cardinalityGuarantees,
@@ -40,7 +39,8 @@ import {
     marksLabel,
     rarityLabel,
 } from "@hinekora/core";
-import { parse, type Token, tokenize } from "@hinekora/parser";
+import { type Token, tokenize } from "@hinekora/parser";
+import { checkCached, parseCached } from "./analysis.js";
 import { atomOf, type MethodAt, methodAt } from "./method-at.js";
 
 // --- doc tables ------------------------------------------------------------
@@ -668,10 +668,10 @@ function insideStepArgument(stmts: readonly Stmt[], offset: number): boolean {
 }
 
 export function getHover(source: string, offset: number, registry: Registry): string | null {
-    const parsed = parse(source);
+    const parsed = parseCached(source);
     const entry =
         parsed.ok && !insideStepArgument(parsed.craft.body, offset)
-            ? traceAt(check(parsed.craft, { registry }).trace, offset)
+            ? traceAt(checkCached(source, registry)!.trace, offset)
             : undefined;
     const def = parsed.ok ? defAt(parsed.craft, offset) : undefined;
 

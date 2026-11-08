@@ -8,7 +8,6 @@
  */
 import {
     type Base,
-    check,
     type EldritchSide,
     excludedTypes,
     findMethod,
@@ -25,8 +24,8 @@ import {
     traceAt,
     type TypeId,
 } from "@hinekora/core";
-import { parse } from "@hinekora/parser";
 import { type CompletionItem, CompletionItemKind } from "vscode-languageserver-types";
+import { checkCached } from "./analysis.js";
 import { type Atom, methodAt } from "./method-at.js";
 
 const CONTROL_KEYWORDS = ["until", "if", "else", "restart"];
@@ -195,9 +194,9 @@ function itemContext(
 function excludedAt(source: string, offset: number, registry: Registry): ReadonlySet<TypeId> {
     const repaired = source.slice(0, offset) + '"' + source.slice(offset);
     for (const s of [source, repaired]) {
-        const p = parse(s);
-        if (!p.ok) continue;
-        const entry = traceAt(check(p.craft, { registry }).trace, offset);
+        const result = checkCached(s, registry);
+        if (result === undefined) continue;
+        const entry = traceAt(result.trace, offset);
         if (entry) return excludedTypes(entry.before);
     }
     return new Set();
