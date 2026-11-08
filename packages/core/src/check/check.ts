@@ -970,7 +970,7 @@ class Checker {
  * ladder, a `count` is a number of affixes, a `mod` is a stat description, a
  * `block` is one or more steps run where the parameter stands.
  */
-type ParamType = "tier" | "count" | "mod" | "block";
+export type ParamType = "tier" | "count" | "mod" | "block";
 
 const SORT_LABEL: Record<ParamType, string> = {
     tier: "a tier",
@@ -1171,6 +1171,22 @@ function inferProcParamTypes(proc: ProcDef): ReturnType<typeof finishUses> {
     const u: ParamUses = { params: new Set(proc.params), sorts: new Map(), used: new Set() };
     for (const s of proc.body) noteStmtUses(u, s);
     return finishUses(u);
+}
+
+/** What a def's parameter stands for, in the guide's words, for the editor. */
+export const PARAM_SORT_WORD: Record<ParamType, string> = {
+    tier: "tier",
+    count: "count",
+    mod: "mod",
+    block: "steps",
+};
+
+/**
+ * The sort of each parameter of a def as its uses determine it; a parameter
+ * used in conflicting ways, or only forwarded to another def, has none.
+ */
+export function paramSorts(d: Def | ProcDef): ReadonlyMap<string, ParamType> {
+    return (d.kind === "def" ? inferParamTypes(d) : inferProcParamTypes(d)).types;
 }
 
 /** Substitute a bound value into a `mod`/`tier`/`count` slot. Bound to a literal

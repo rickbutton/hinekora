@@ -276,6 +276,11 @@ Transport-free service functions + a stdio server:
   bodies, block arguments; works mid-edit, an unmatched `{` folds nothing), each run of
   consecutive comment lines as a comment fold (`tokenizeWithComments` keeps what the
   parser skips), and a predicate def written over several lines from the tree.
+- `inlay-hints.ts`: `getInlayHints`: at a def's declaration what each parameter stands
+  for as its uses determine it (`m: mod`, `step: steps`, `t: tier`, `n: count`, from the
+  checker's `paramSorts`; a parameter only forwarded to another def has none), and at
+  each call the parameter the argument fills (`roll(m: "maximum life", …)`), except a
+  forwarded parameter of the same name. Nothing while the guide does not parse.
 - `semantic.ts`: `getSemanticTokens`, lexer-driven; legend
   `["keyword","property","function","parameter"]` with the `declaration` modifier;
   keywords are the control and predicate words plus `METHOD_WORDS` (currency names
@@ -444,7 +449,9 @@ body)`, the states that re-enter the loop head after one iteration (fall-off-end
   binds args (shared `bindArgs`/param-sort machinery) and inlines the substituted body
   via `checkSeq` in the caller's context, so state threading, nested loops/ifs, and
   `restart` back-edges compose with no special handling. Param-sort inference walks the
-  statements (`noteStmtUses`) and substitution recurses through them (`substituteStmt`);
+  statements (`noteStmtUses`; `paramSorts` exposes the result per def, with
+  `PARAM_SORT_WORD` naming each sort for the editor) and substitution recurses through
+  them (`substituteStmt`);
   a param can fill a `has`/`bench`/`essence` mod-name or tier slot, a `harvest` tag, or an
   `unveil` mod. A param in statement position (`ParamStmt`, kind `paramStep`) has the
   `block` sort: the call site binds it to a `block` `Arg` (one statement or a `{ … }`
@@ -706,6 +713,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/lsp/src/navigation.ts`                                      | highlights, definition, references, rename, outline over the bindings                              |
 | `packages/lsp/src/signature-help.ts`                                  | `getSignatureHelp`: a call's parameters or a method's slots, the active one marked                 |
 | `packages/lsp/src/folding.ts`                                         | `getFoldingRanges`: brace blocks, comment runs, multi-line predicate defs                          |
+| `packages/lsp/src/inlay-hints.ts`                                     | `getInlayHints`: parameter sorts at declarations, parameter names at calls                         |
 | `packages/core/src/ast/bindings.ts`                                   | `bindingsOf`: every def and parameter with its declaration and references                          |
 | `packages/lsp/src/method-at.ts`                                       | `methodAt`: the method statement a token or cursor position belongs to                             |
 | `packages/core/src/check/check.test.ts`                               | checker tests (currency set, count-coupling regression, loops, defs)                               |

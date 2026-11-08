@@ -29,6 +29,7 @@ import {
 } from "./navigation.js";
 import { getSignatureHelp } from "./signature-help.js";
 import { getFoldingRanges } from "./folding.js";
+import { getInlayHints } from "./inlay-hints.js";
 
 export function createServer(connection: Connection, registry: Registry): void {
     const documents = new TextDocuments(TextDocument);
@@ -48,6 +49,7 @@ export function createServer(connection: Connection, registry: Registry): void {
             renameProvider: { prepareProvider: true },
             documentSymbolProvider: true,
             foldingRangeProvider: true,
+            inlayHintProvider: true,
             signatureHelpProvider: {
                 triggerCharacters: ["(", ",", " "],
                 retriggerCharacters: ['"'],
@@ -143,6 +145,13 @@ export function createServer(connection: Connection, registry: Registry): void {
         const doc = documents.get(params.textDocument.uri);
         if (!doc) return [];
         return getFoldingRanges(doc.getText());
+    });
+
+    // --- inlay hints (the whole document; the client clips to its range) ---
+    connection.languages.inlayHint.on((params) => {
+        const doc = documents.get(params.textDocument.uri);
+        if (!doc) return [];
+        return getInlayHints(doc.getText());
     });
 
     documents.listen(connection);
