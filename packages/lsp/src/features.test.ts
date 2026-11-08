@@ -151,7 +151,7 @@ if not has "fire resistance" { bench "maximum life" }`;
     });
 
     it("names what the item is proven not to have", () => {
-        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: ["random"] suffixes: ["random"] }
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: ["random"] suffixes: ["fire resistance" t3] }
 if not has "maximum life" { bench "cold resistance" }`;
         expect(getDiagnostics(src, registry)).toEqual([]);
         const md = getHover(src, src.indexOf("bench"), registry)!;

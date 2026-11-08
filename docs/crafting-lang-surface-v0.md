@@ -56,7 +56,8 @@ item {
 - `prefixes` / `suffixes` list the affixes. Each named affix **must pin a tier**: either a
   mod name plus `t<n>` (§2) or an exact mod id. A bare name is an error, because a
   starting item is a concrete item. `"random"` (or `"?"`) is an anonymous affix: counted,
-  not named. A count over the base's limit for the rarity is an error; a named mod listed
+  not named, and any modifier of its side the item could roll, so a `has` may be it and a
+  bench craft of its group may clash with it. A count over the base's limit for the rarity is an error; a named mod listed
   under the wrong side is an error.
 - `fractured "<mod>" t<n>` (or `fractured "random"`, when the locked modifier is not
   named: the item is known to be fractured, the modifier is not) marks a

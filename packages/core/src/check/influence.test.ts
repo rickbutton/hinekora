@@ -241,7 +241,7 @@ describe("the grove's influence crafts", () => {
             ilvl: 100,
             rarity: "rare",
             prefixes: [PROTECT_SUFFIXES_CARRIER.id],
-            suffixes: ["cold", "random", "random"],
+            suffixes: ["cold", "FireResist1", "LightningResist1"],
             influences: ["hunter"],
         });
         expect(messages(craft(full, [harvest("reforge", "influence")]))).toContain(

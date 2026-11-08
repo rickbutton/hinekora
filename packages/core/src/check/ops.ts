@@ -1106,6 +1106,13 @@ function scouredRarities(a0: AItem, rules: Rules, registry: Registry): ReadonlyS
 
 // --- fill ---------------------------------------------------------------------
 
+/** The types an anonymous affix (a declared `"random"`) on `gen` may be: every
+ *  natural modifier that rolls on the item, those a declared modifier's group
+ *  rules out excluded. */
+export function anonymousTypes(a: AItem, registry: Registry, gen: Gen): readonly TypeId[] {
+    return resolvePool(a, { kind: "natural", gen }, registry).types;
+}
+
 /** A pool resolved against a state: its rows, the types a draw may be, and
  *  whether the draw is narrow enough to assert "at least one of these". */
 interface ResolvedPool {

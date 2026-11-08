@@ -14,6 +14,7 @@ import {
     FIRE_RES_TIERS,
     PROTECT_SUFFIXES_CARRIER,
     RING_BASE,
+    LIGHTNING_RESIST,
 } from "../__fixtures__/mods.js";
 import { TypeId } from "../model/ids.js";
 
@@ -38,7 +39,7 @@ const rareRing = (prefixes: Affix[] = [], suffixes: Affix[] = []) =>
 
 describe("harvest change", () => {
     it("turns the named modifier into the other, keeping the count", () => {
-        const c = craft(rareRing([], [FIRE_RESIST.id, "random"]), [
+        const c = craft(rareRing([], [FIRE_RESIST.id, LIGHTNING_RESIST.id]), [
             harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
         ]);
         const r = check(c, ctx);

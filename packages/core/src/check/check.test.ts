@@ -1302,7 +1302,7 @@ describe("checker — the one-crafted-mod limit", () => {
     });
 
     it("an annul may or may not remove the crafted mod; a re-bench adds or replaces", () => {
-        const c = craft(rareRing(["random"]), [
+        const c = craft(rareRing(["IncreasedMana1"]), [
             bench("maximum life"),
             op("annul"),
             bench("maximum life"),

@@ -46,7 +46,7 @@ import {
 } from "./diagnostics.js";
 import { rollableGen, rollableTiers, tierMod } from "../resolve/tiers.js";
 import { findMethod, type Literal, type Method, slotAt } from "./methods.js";
-import { influenceTagsAny, runMethod } from "./ops.js";
+import { anonymousTypes, influenceTagsAny, runMethod } from "./ops.js";
 
 export interface CheckContext {
     readonly registry: Registry;
@@ -336,9 +336,11 @@ class Checker {
             return type;
         };
 
+        const anonymousBy = { prefix: 0, suffix: 0 };
         const countAffixes = (affixes: readonly AffixDecl[], gen: Gen): number => {
             for (const affix of affixes) {
                 const anonymous = PLACEHOLDERS.test(affix.mod.trim().toLowerCase());
+                if (anonymous) anonymousBy[gen]++;
                 const type = anonymous ? undefined : pinAffix(affix, gen);
                 if (!affix.fractured) continue;
                 if (type !== undefined) fracturedTypes.push(type);
@@ -411,7 +413,7 @@ class Checker {
         if (item.influences.length > 0 && fracturedTypes.length + fracturedAnonymous > 0) {
             this.diag("An influenced item cannot have a fractured modifier.", item.span);
         }
-        return initialState(
+        const start = initialState(
             this.bdd,
             base,
             item.ilvl,
@@ -434,6 +436,14 @@ class Checker {
                 ...(eaterTypes !== undefined && { eaterTypes }),
             },
         );
+        // An anonymous affix is some modifier of its side the item could roll, so
+        // a `has` may name it and a bench craft of its group may clash with it.
+        const possible = new Set(start.possible);
+        for (const gen of ["prefix", "suffix"] as const) {
+            if (anonymousBy[gen] === 0) continue;
+            for (const t of anonymousTypes(start, this.registry, gen)) possible.add(t);
+        }
+        return { ...start, possible };
     }
 
     // --- statement sequencing ---------------------------------------------

@@ -141,7 +141,7 @@ describe("a bench craft on an item with a crafted modifier", () => {
         expect(r.diagnostics[0]!.message).toContain("more than one crafted");
         // Two benched under the multimod, then an annul that may have taken the
         // multimod itself: one or two crafted remain beside the carrier.
-        const c = craft(rareRing(["random"]), [
+        const c = craft(rareRing([INCREASED_MANA.id]), [
             bench("can have up to 3 crafted modifiers"),
             bench("maximum life"),
             op("annul"),

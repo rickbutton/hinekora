@@ -3,7 +3,7 @@
 Issues the checker itself showed while the research crafts were written, each with the
 probe that reproduces it (`probes/`), separated into soundness, precision, naming and
 language. "Precision" means a false positive: the game allows the step, the checker
-cannot prove it. Nothing here is a false negative so far.
+cannot prove it. B11 was the one false negative found.
 
 | #   | Kind       | Finding                                                                                                                                                                                                                                                                                                                                                                                                                     | Reproduce                                      |
 | --- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
