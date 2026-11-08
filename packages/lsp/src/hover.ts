@@ -673,9 +673,41 @@ function benchSignature(
     ].join("\n\n");
 }
 
+/**
+ * Whether the offset falls inside the steps passed as a call argument. Those
+ * steps run inside the callee, possibly many times, so the call's trace entry
+ * (the narrowest one covering them) is not their item state.
+ */
+function insideStepArgument(stmts: readonly Stmt[], offset: number): boolean {
+    const covers = (s: { readonly span: { start: { offset: number }; end: { offset: number } } }) =>
+        s.span.start.offset <= offset && offset < s.span.end.offset;
+    for (const s of stmts) {
+        if (!covers(s)) continue;
+        switch (s.kind) {
+            case "call":
+                return s.args.some((a) => a.kind === "block" && covers(a));
+            case "until":
+                return insideStepArgument(s.body, offset);
+            case "if":
+                return (
+                    insideStepArgument(s.body, offset) ||
+                    (s.elseBody !== undefined && insideStepArgument(s.elseBody, offset))
+                );
+            case "operation":
+            case "restart":
+            case "paramStep":
+                return false;
+        }
+    }
+    return false;
+}
+
 export function getHover(source: string, offset: number, registry: Registry): string | null {
     const parsed = parse(source);
-    const entry = parsed.ok ? traceAt(check(parsed.craft, { registry }).trace, offset) : undefined;
+    const entry =
+        parsed.ok && !insideStepArgument(parsed.craft.body, offset)
+            ? traceAt(check(parsed.craft, { registry }).trace, offset)
+            : undefined;
     const defs: LocalDef[] = parsed.ok ? [...parsed.craft.defs, ...parsed.craft.procs] : [];
 
     let sig: string | null = null;

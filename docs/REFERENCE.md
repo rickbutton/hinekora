@@ -404,8 +404,7 @@ body)`, the states that re-enter the loop head after one iteration (fall-off-end
   not the int `1`); conflicting uses are an error and the def is dropped without
   cascading; unused params are an error; recursion is caught (`expanding` set). A call
   checks arity and arg sorts, substitutes args into the body, then resolves it, so all
-  existing narrowing just works. Params can be forwarded to nested calls (`def a(t) =
-b(t)`).
+  existing narrowing just works. A param can be forwarded to a nested call.
 - **Operation functions** (`def name(p) { <stmts> }`): the statement-valued sibling of a
   predicate def, dispatched at parse time by a `{ … }` body. A `CallStmt` (`checkCall`)
   binds args (shared `bindArgs`/param-sort machinery) and inlines the substituted body
@@ -420,7 +419,8 @@ b(t)`).
   Procs share the def name space; recursion is decided statically on the call graph of
   the bodies (`recursiveProcs`), not while inlining, so steps passed as an argument may
   call the proc they are passed to. The inlined body is a trace black box
-  (`suppressTrace`).
+  (`suppressTrace`), and so are the steps written in a block argument: hover gives them
+  a signature but no tooltip (`insideStepArgument`).
 - **Operation statements** (`checkOperation`): look the statement's words up in the
   method table (`findMethod`; an unknown word is "Unknown currency" or "Unknown
   operation"), bind its arguments to the method's slots as `Literal`s (a parameter left

@@ -260,8 +260,13 @@ roll("maximum life", { scour alchemy })
         expect(getDiagnostics(src, registry)).toEqual([]);
         const h = getHover(src, src.indexOf("roll") + 1, registry)!;
         expect(h).toContain("until has m { … }");
+        // A step inside the argument may run many times, so it gets the method's
+        // signature but no item tooltip, like a step inside a proc body.
         const inner = getHover(src, src.indexOf("alchemy"), registry)!;
         expect(inner).toContain("Orb of Alchemy");
+        expect(inner).not.toContain("Iron Ring");
+        const callSite = getHover(src, src.lastIndexOf("roll"), registry)!;
+        expect(callSite).toContain("Iron Ring");
     });
 
     it("offers a def with no body yet in both positions, and reads past a comment", () => {
