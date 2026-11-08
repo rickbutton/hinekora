@@ -19,6 +19,16 @@ describe("the analysis cache", () => {
         expect(checkCached(SRC, second)).not.toBe(checkCached(SRC, registry));
     });
 
+    it("keeps the last sixteen texts and lets the oldest go", () => {
+        const texts = Array.from({ length: 17 }, (_, i) => `${SRC}\n# ${i}`);
+        const first = parseCached(texts[0]!);
+        const firstCheck = checkCached(texts[0]!, registry);
+        for (const t of texts.slice(1)) checkCached(t, registry);
+        expect(parseCached(texts[16]!)).toBe(parseCached(texts[16]!));
+        expect(parseCached(texts[0]!)).not.toBe(first);
+        expect(checkCached(texts[0]!, registry)).not.toBe(firstCheck);
+    });
+
     it("has nothing to check for a text that does not parse", () => {
         expect(parseCached("item {").ok).toBe(false);
         expect(checkCached("item {", registry)).toBeUndefined();

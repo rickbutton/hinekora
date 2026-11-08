@@ -266,6 +266,10 @@ outputs feed it:
   what is _provably impossible_ at the cursor, filtering the offered mods to those that can
   actually roll and are not already excluded.
 
+One analysis per document text, shared by every feature: the parse and the check are
+memoized by the text, so a keystroke costs one run of the checker however many requests
+the editor sends for it.
+
 The name features (highlight the other uses, go to definition, references, rename, the
 outline) need no checker at all: the parser already decides what each identifier is, a
 parameter of the enclosing def or a method word, and `bindingsOf` reads that off the

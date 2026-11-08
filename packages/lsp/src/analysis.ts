@@ -1,10 +1,9 @@
 /**
  * The parse and the check of a document, memoized by its text. Every editor
- * request (diagnostics on each change, then hover, completion, semantic
- * tokens, hints, folding, names) used to parse the same text again, and the
- * ones that need the item state checked it again; now the first request does
- * the work and the rest read it. The cache holds the last few texts, so the
- * edit-and-undo and the mid-string completion variants hit too.
+ * request on a document (diagnostics, hover, completion, semantic tokens,
+ * hints, folding, names) reads one parse and one check, so a keystroke costs
+ * one analysis however many features ask. A few texts are kept, so an
+ * edit-and-undo and completion's repaired mid-string variant hit too.
  */
 import { type CheckResult, check, type Registry } from "@hinekora/core";
 import { parse, type ParseResult } from "@hinekora/parser";

@@ -236,9 +236,9 @@ Transport-free service functions + a stdio server:
 
 - `analysis.ts`: `parseCached(source)` and `checkCached(source, registry)`, the parse
   and the check of a document memoized by its text (the last 16 texts; checks per
-  registry). Every feature below reads these, so an edit is parsed once, by the
-  diagnostics, and checked once, by the first feature that needs the item state; a
-  hover, completion or hint on unchanged text does no analysis at all.
+  registry). Every feature below reads these, so an edit is parsed once and checked
+  once, by whichever request arrives first; a hover, completion or hint on unchanged
+  text does no analysis at all.
 - `service.ts`: `getDiagnostics`.
 - `hover.ts`: `getHover(source, offset, registry)` is **token-centric**. The hovered
   token's signature (currency op / mod / base / essence / bench / def / projection /
