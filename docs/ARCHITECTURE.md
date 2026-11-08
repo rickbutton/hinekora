@@ -146,9 +146,9 @@ two operations the merge/fixpoint machinery needs from _every_ piece, `join` (le
 bound, to merge branches) and `equal` (to detect a fixpoint). The pieces:
 
 - **Counts** (`CountDomain`, `check/counts.ts`): how many prefixes / suffixes / affixes,
-  as integer ranges. The suffix is _derived_ so the correlation `prefix + suffix = total`
-  survives (two independent side-ranges would lose it). Owns the affix caps and the
-  `normalize` that keeps its ranges mutually consistent.
+  as three integer ranges kept consistent under `prefix + suffix = total` by its
+  `normalize` (two independent side-ranges would lose the correlation; a derived suffix
+  would lose any bound on the suffix side alone). Owns the affix caps.
 - **Presence**: which mod _types_ are on the item. This is the one **relational** domain:
   a BDD (a compact canonical boolean function) over "type X is present" variables. Its
   payoff is that a _disjunction_ ("at least one of these three resistances") survives a

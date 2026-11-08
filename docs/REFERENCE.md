@@ -425,10 +425,12 @@ just those ops applied field-by-field. A cross-domain fact (e.g. crafted ⊆ aff
 **reduction** applied explicitly at the product level in `normalize`, never hidden inside
 one domain. The sub-domains:
 
-- **Counts (`check/counts.ts`, `CountDomain`).** `total` and `prefix` are integer RANGES
-  `[min,max]`; **suffix is DERIVED**: `CountDomain.suffix = [total.min − prefix.max,
-total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = total`
-  correlation two independent side-ranges would lose. Reads the affix caps from
+- **Counts (`check/counts.ts`, `CountDomain`).** `total`, `prefix` and `suffix` are integer
+  RANGES `[min,max]`, closed under `p + s = total` by `normalize` (each range against the
+  other two and its cap). All three are kept because a fact about one side alone ("at most
+  two suffixes", the exit of every make-room loop) has no home in the other two unless that
+  other side is pinned; `CountDomain.suffix` reads the suffix range no looser than
+  `total − prefix`. Reads the affix caps from
   `model/capacity.ts` (`sideCap`/`hardTotalCap`/`maxTotal`/`caps`, re-exported here and the
   first three through `astate`), and owns the coupling `normalize`, count-comparison
   `refine`, and `learnPresent` (the "≥1 affix, ≥1 in gen" bump shared by `has` and

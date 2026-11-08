@@ -1007,6 +1007,7 @@ function strip(a: AItem, rules: Rules, registry: Registry): AItem {
         ? suffixRange(a)
         : [fracIn("suffix"), fracIn("suffix")];
     const prefix: Range = [keptPrefix[0], keptPrefix[1] + unprovenLock];
+    const suffix: Range = [keptSuffix[0], keptSuffix[1] + unprovenLock];
     // An unproven lock may sit on a kept mod, so the floor is the kept counts or
     // the locks, whichever is more, never their sum.
     const total: Range = [
@@ -1039,7 +1040,7 @@ function strip(a: AItem, rules: Rules, registry: Registry): AItem {
         presenceFacts(a.bdd, keptGuarantees, excludedTypes(a)),
         fractureProjection(a),
     );
-    return settled({ ...a, counts: { total, prefix }, presence, possible, tiers, crafted });
+    return settled({ ...a, counts: { total, prefix, suffix }, presence, possible, tiers, crafted });
 }
 
 /** How many of the fractured (locked, so reforge-proof) mods are bench rows: the
@@ -1296,16 +1297,29 @@ function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry
                 Math.min(a.counts.total[0] + lo, tight.total),
                 Math.min(a.counts.total[1] + hi, maxT),
             ];
+            // The side the pool draws from grows by the fill; the other side
+            // stays; a pool of either side may grow either.
+            const grown = (side: Range, tightCap: number, cap: number): Range => [
+                Math.min(side[0] + lo, tightCap),
+                Math.min(side[1] + hi, cap),
+            ];
+            const maybeGrown = (side: Range, cap: number): Range => [
+                side[0],
+                Math.min(side[1] + hi, cap),
+            ];
             const prefix: Range =
                 drawn.gen === "prefix"
-                    ? [
-                          Math.min(a.counts.prefix[0] + lo, tight.prefix),
-                          Math.min(a.counts.prefix[1] + hi, pCap),
-                      ]
+                    ? grown(a.counts.prefix, tight.prefix, pCap)
                     : drawn.gen === "suffix"
                       ? a.counts.prefix
-                      : [a.counts.prefix[0], Math.min(a.counts.prefix[1] + hi, pCap)];
-            counts = { total, prefix };
+                      : maybeGrown(a.counts.prefix, pCap);
+            const suffix: Range =
+                drawn.gen === "suffix"
+                    ? grown(a.counts.suffix, tight.suffix, sCap)
+                    : drawn.gen === "prefix"
+                      ? a.counts.suffix
+                      : maybeGrown(a.counts.suffix, sCap);
+            counts = { total, prefix, suffix };
             break;
         }
         case "reforge": {
@@ -1315,9 +1329,14 @@ function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry
                 counts = {
                     total,
                     prefix: [Math.max(0, total[0] - sCap), Math.min(pCap, total[1])],
+                    suffix: [Math.max(0, total[0] - pCap), Math.min(sCap, total[1])],
                 };
             } else {
-                counts = { total: [a.counts.total[0], maxT], prefix: [a.counts.prefix[0], pCap] };
+                counts = {
+                    total: [a.counts.total[0], maxT],
+                    prefix: [a.counts.prefix[0], pCap],
+                    suffix: [a.counts.suffix[0], sCap],
+                };
             }
             break;
         }
@@ -1472,11 +1491,18 @@ function removeOne(
     const total: Range = [Math.max(0, a.counts.total[0] - 1), Math.max(0, a.counts.total[1] - 1)];
     const onlyPrefix = allowed.size === 1 && allowed.has("prefix");
     const onlySuffix = allowed.size === 1 && allowed.has("suffix");
+    const lessOne = (r: Range): Range => [Math.max(0, r[0] - 1), Math.max(0, r[1] - 1)];
+    const maybeLessOne = (r: Range): Range => [Math.max(0, r[0] - 1), r[1]];
     const prefix: Range = onlyPrefix
-        ? [Math.max(0, a.counts.prefix[0] - 1), Math.max(0, a.counts.prefix[1] - 1)]
+        ? lessOne(a.counts.prefix)
         : onlySuffix
           ? a.counts.prefix
-          : [Math.max(0, a.counts.prefix[0] - 1), a.counts.prefix[1]];
+          : maybeLessOne(a.counts.prefix);
+    const suffix: Range = onlySuffix
+        ? lessOne(a.counts.suffix)
+        : onlyPrefix
+          ? a.counts.suffix
+          : maybeLessOne(a.counts.suffix);
 
     // A guarantee survives only if the removed affix could not have been it: one
     // in a generation the removal cannot reach (protected), one the shield covers,
@@ -1494,17 +1520,16 @@ function removeOne(
     );
     // The removed affix might have been the crafted mod, so the lower bound drops.
     const crafted: Range = [Math.max(0, a.crafted[0] - 1), a.crafted[1]];
-    return settled({ ...a, counts: { total, prefix }, presence, crafted });
+    return settled({ ...a, counts: { total, prefix, suffix }, presence, crafted });
 }
 
 /** Remove one named, guaranteed modifier: it is gone, everything else stays. */
 function removeType(a: AItem, type: TypeId, registry: Registry): AItem {
     const gen = genOf(a, registry, type);
-    const total: Range = [Math.max(0, a.counts.total[0] - 1), Math.max(0, a.counts.total[1] - 1)];
-    const prefix: Range =
-        gen === "prefix"
-            ? [Math.max(0, a.counts.prefix[0] - 1), Math.max(0, a.counts.prefix[1] - 1)]
-            : a.counts.prefix;
+    const lessOne = (r: Range): Range => [Math.max(0, r[0] - 1), Math.max(0, r[1] - 1)];
+    const total = lessOne(a.counts.total);
+    const prefix = gen === "prefix" ? lessOne(a.counts.prefix) : a.counts.prefix;
+    const suffix = gen === "suffix" ? lessOne(a.counts.suffix) : a.counts.suffix;
     const surviving = guaranteedTypes(a);
     surviving.delete(type);
     const gone = excludedTypes(a);
@@ -1516,7 +1541,7 @@ function removeType(a: AItem, type: TypeId, registry: Registry): AItem {
     const crafted: Range = rowsOf(a, type, registry).some((m) => m.source === "bench")
         ? [Math.max(0, a.crafted[0] - 1), a.crafted[1]]
         : a.crafted;
-    return settled({ ...a, counts: { total, prefix }, presence, tiers, crafted });
+    return settled({ ...a, counts: { total, prefix, suffix }, presence, tiers, crafted });
 }
 
 /** Might a crafted-limit carrier be on the item without being guaranteed? */
@@ -1576,12 +1601,16 @@ function removeCrafted(a: AItem, rules: Rules, registry: Registry, replacing: bo
         Math.max(0, a.counts.prefix[0] - removedUpper),
         Math.max(0, a.counts.prefix[1] - sure.prefix),
     ];
+    const suffix: Range = [
+        Math.max(0, a.counts.suffix[0] - removedUpper),
+        Math.max(0, a.counts.suffix[1] - sure.suffix),
+    ];
     const presence = a.bdd.and(presenceFacts(a.bdd, surviving, gone), fractureProjection(a));
     const crafted: Range = [
         Math.min(a.crafted[0], fracturedLower),
         Math.min(a.crafted[1], fracturedUpper),
     ];
-    return settled({ ...a, counts: { total, prefix }, presence, tiers, crafted });
+    return settled({ ...a, counts: { total, prefix, suffix }, presence, tiers, crafted });
 }
 
 // --- lock -----------------------------------------------------------------------
