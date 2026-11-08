@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
     type Base,
@@ -30,7 +31,13 @@ function base(name: string): Base {
 describe("loadPoe1 — the full committed PoE1 catalog", () => {
     it("loads thousands of bases and mods, matching the manifest counts", () => {
         expect(data.bases.length).toBe(data.manifest.extent.bases);
-        expect(data.mods.length).toBe(data.manifest.extent.mods);
+        // The manifest counts the export's rows; the adapter drops the Royale ones.
+        const raw = JSON.parse(
+            readFileSync(new URL("../data/poe1/mods.json", import.meta.url), "utf8"),
+        ) as Record<string, unknown>;
+        const royale = Object.keys(raw).filter((id) => /Royale/.test(id)).length;
+        expect(royale).toBeGreaterThan(0);
+        expect(data.mods.length).toBe(data.manifest.extent.mods - royale);
         expect(data.bases.length).toBeGreaterThan(1000);
         expect(data.mods.length).toBeGreaterThan(10000);
     });
