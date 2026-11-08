@@ -211,7 +211,19 @@ guides treat them as fixed costs and nothing in the modifier logic depends on th
 | `future/value-threshold`                                                   | R16 "life ≥ 110", divine                       | B2                                                     |
 | `future/cluster-harvest`                                                   | R18 reforge a cluster by tag                   | B5                                                     |
 
-## 4. A week's order
+## 4. Status
+
+Done on 2026-11-08, the day of the report: A1 (three count ranges), A2 (loop exit against
+the invariant), A3's first two items (influence exalt pool, Royale rows; the wand weights
+are a probe), A4's first item (bench-only modifiers in predicates, which also proved the
+Matron trick), A5 (the veiled modifier survives a replacing bench craft; Q45 asks how a
+bad unveil is cleared), and one soundness bug the probes had not reached: a declared
+`"random"` affix contributed no possible modifier type (`checker-findings.md` B11). Still
+open in Band A: the hybrid and alias naming of A4, the precision losses of A6 and the
+two new findings B9 and B10. The examples suite stands at nine checking guides and eight
+waiting.
+
+## 5. A week's order
 
 With the league on 2026-11-13 and the fixes above mostly small: A3 (soundness) and A1, A2
 (the two precision fixes) first, since they move six of the future examples into the

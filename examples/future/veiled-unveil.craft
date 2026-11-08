@@ -1,4 +1,5 @@
-# WAITS ON: feature-report.md A5 and B1 (the unveiled modifier at the bench; a way to end a dead path).
+# WAITS ON: feature-report.md B1 (a way to end the path where the life or the
+# lock is lost) and QUESTIONS.md Q45 (how a bad unveil is cleared).
 #
 # A veiled prefix under a suffix lock, unveiled until the right option shows.
 #
@@ -18,14 +19,15 @@ item {
     suffixes: [ "fire resistance" t2, "cold resistance" t2, "lightning resistance" t2 ]
 }
 
-until has "maximum life maximum mana" {
+until has "increased maximum life increased maximum mana" {
     bench "suffixes cannot be changed"
     veiled exalt
     unveil
-    # An unveiled mod is a crafted mod: a bad one is cleared at the bench along
-    # with the metamod, which puts the item back where the loop started.
-    if not has "maximum life maximum mana" {
-        bench remove
+    # An unveiled mod is not a crafted mod (QUESTIONS.md Q45), so a bad one
+    # can only be annulled away before the next orb, which may take the life
+    # or leave the unveiled mod in place: the loop cannot be proven as written.
+    if not has "increased maximum life increased maximum mana" {
+        annul
     }
 }
 

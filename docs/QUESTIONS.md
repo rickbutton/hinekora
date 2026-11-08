@@ -420,6 +420,22 @@ implicit; a Fracturing Orb.
 eldritch gate).
 **Answer:**
 
+### Q45 · game probe · open
+
+**Asked:** 2026-11-08
+**Goal:** whether the bench's "remove crafted modifiers" removes an unveiled modifier.
+[Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) says an unveiled modifier
+does not count as a crafted one (it does not take the crafted slot), not whether the
+removal recipe reaches it. Guides that loop a Veiled Exalted Orb need to clear a bad
+unveil before the next orb, which refuses an item with an unveiled modifier, and the
+cheap way would be that recipe.
+**Procure:** a Rare with an unveiled modifier and a bench modifier.
+**Steps:** use "remove crafted modifiers"; note which of the two went.
+**Record:** the modifiers after.
+**Assumed meanwhile:** the removal leaves an unveiled modifier alone (`check/ops.ts`
+`removeCrafted` touches bench rows only), so a bad unveil is cleared with an annul.
+**Answer:**
+
 ---
 
 ## Resolved
