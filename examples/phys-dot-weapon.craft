@@ -1,9 +1,8 @@
-
 item {
-    base: "Imbued Wand"
-    ilvl: 84
-    rarity: rare
-    suffixes: [fractured "damage over time multiplier" t1]
+    base:     "Imbued Wand"
+    ilvl:     84
+    rarity:   rare
+    suffixes: [ fractured "damage over time multiplier" t1 ]
 }
 
 def hasPrefixes() = has "level all spell skill gems" and has "spell damage" t1
@@ -12,7 +11,7 @@ def atLeastOneOpenSuffix() = suffixCount <= 2
 
 until hasPrefixes() and oneOpenPrefix() and atLeastOneOpenSuffix() {
     chaos # would fossil craft but this satisfies (but insane cost ofc)
-    
+
     if hasPrefixes() and not oneOpenPrefix() {
         annul
         if not hasPrefixes() { restart }

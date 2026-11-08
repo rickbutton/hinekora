@@ -1,8 +1,7 @@
-
 item {
-    base:     "Vaal Regalia"
-    ilvl:     84
-    rarity:   normal
+    base:   "Vaal Regalia"
+    ilvl:   84
+    rarity: normal
 }
 
 transmute

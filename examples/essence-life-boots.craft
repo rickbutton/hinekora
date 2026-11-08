@@ -12,7 +12,7 @@
 
 item {
     base:   "Titan Greaves"
-    ilvl:   84            # high enough for T1 elemental resistances to roll
+    ilvl:   84 # high enough for T1 elemental resistances to roll
     rarity: normal
 }
 
