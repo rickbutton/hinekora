@@ -294,9 +294,11 @@ Transport-free service functions + a stdio server:
   retrying with the open string closed). Both filters degrade gracefully to "all mods"
   when the base can't be read / nothing parses.
 - `folding.ts`: `getFoldingRanges`: every brace pair from the tokens (the item block,
-  bodies, block arguments; works mid-edit, an unmatched `{` folds nothing), each run of
-  consecutive comment lines as a comment fold (`tokenizeWithComments` keeps what the
-  parser skips), and a predicate def written over several lines from the tree.
+  bodies, block arguments; works mid-edit, an unmatched `{` folds nothing; the fold ends
+  on the line before `}` so the closing brace stays visible), each run of consecutive
+  lines that are comments as a comment fold (`tokenizeWithComments` keeps what the
+  parser skips; a comment after code belongs to that code's line, `commentOpensLine`),
+  and a predicate def written over several lines from the tree.
 - `inlay-hints.ts`: `getInlayHints`: at a def's declaration what each parameter stands
   for as its uses determine it (`m: mod`, `step: steps`, `t: tier`, `n: count`, from the
   checker's `paramSorts`; a parameter only forwarded to another def has none), and at

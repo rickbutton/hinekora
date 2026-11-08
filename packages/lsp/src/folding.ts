@@ -4,7 +4,7 @@
  * predicate def written over several lines, which has no braces, read off the
  * tree when the guide parses.
  */
-import { parse, tokenizeWithComments } from "@hinekora/parser";
+import { commentOpensLine, parse, tokenizeWithComments } from "@hinekora/parser";
 import { type FoldingRange, FoldingRangeKind } from "vscode-languageserver-types";
 
 export function getFoldingRanges(source: string): FoldingRange[] {
@@ -19,20 +19,22 @@ export function getFoldingRanges(source: string): FoldingRange[] {
         if (endLine > startLine) out.push({ startLine, endLine, ...(kind && { kind }) });
     };
 
-    // Brace pairs; an unmatched `{` mid-edit folds nothing.
+    // Brace pairs, the closing brace left visible; an unmatched `{` mid-edit folds nothing.
     const open: number[] = [];
     for (const t of lexed.tokens) {
         if (t.kind === "lbrace") open.push(t.span.start.line - 1);
         else if (t.kind === "rbrace") {
             const start = open.pop();
-            if (start !== undefined) fold(start, t.span.end.line - 1);
+            if (start !== undefined) fold(start, t.span.end.line - 2);
         }
     }
 
-    // Consecutive comment lines fold as one comment.
+    // Consecutive lines that are comments fold as one comment; a comment after
+    // code is part of that code's line, not of a run.
     let runStart: number | undefined;
     let runEnd = -1;
     for (const c of lexed.comments) {
+        if (!commentOpensLine(c, source)) continue;
         const line = c.span.start.line - 1;
         if (runStart !== undefined && line === runEnd + 1) runEnd = line;
         else {

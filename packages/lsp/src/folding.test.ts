@@ -23,18 +23,24 @@ describe("folding ranges", () => {
             "}", // 16
         ].join("\n");
         const ranges = getFoldingRanges(src).map((r) => [r.startLine, r.endLine, r.kind]);
+        // A brace fold ends on the line before `}`, so the closing brace stays visible.
         expect(ranges).toEqual([
             [0, 1, "comment"],
-            [2, 6, undefined],
+            [2, 5, undefined],
             [7, 9, undefined],
-            [11, 16, undefined],
-            [12, 15, undefined],
+            [11, 15, undefined],
+            [12, 14, undefined],
         ]);
+    });
+
+    it("does not count a comment after code as the start of a comment run", () => {
+        const src = "chaos # one\n# two\n# three\nexalt";
+        expect(getFoldingRanges(src)).toEqual([{ startLine: 1, endLine: 2, kind: "comment" }]);
     });
 
     it("still folds closed braces while the guide does not parse", () => {
         const src = 'item {\n    base: "Iron Ring"\n}\nuntil {\n    chaos\n';
-        expect(getFoldingRanges(src)).toEqual([{ startLine: 0, endLine: 2 }]);
+        expect(getFoldingRanges(src)).toEqual([{ startLine: 0, endLine: 1 }]);
     });
 
     it("returns nothing on unlexable input", () => {
