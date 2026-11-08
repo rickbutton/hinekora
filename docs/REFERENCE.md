@@ -243,8 +243,9 @@ Transport-free service functions + a stdio server:
       expands to, an operation function the steps it runs.
 - `navigation.ts`: the name-aware features over `bindingsOf`: `getDocumentHighlights`
   (declaration as a write, references as reads), `getDefinition`, `getReferences`,
-  `prepareRename` + `getRenameEdits` (refuses a non-identifier, a word of the language
-  or the method table, a taken def name, or a taken parameter name of the same def),
+  `prepareRename` + `getRenameEdits` (refuses a non-identifier, a tier shorthand such
+  as `t1`, a word of the language or the method table, a taken def name, or a taken
+  parameter name of the same def),
   and `getDocumentSymbols` (the item, then each def with its parameters as children).
   All return nothing while the guide does not parse.
 - `signature-help.ts`: `getSignatureHelp(source, offset)` works on the tokens before the
@@ -255,7 +256,8 @@ Transport-free service functions + a stdio server:
   marked; after a method's words it shows the method's slots as they are written
   (`"essence" [t<n>]`, `hunter|shaper`, `count`), the one being filled marked, a repeated
   names slot staying active, nothing for a method without slots. Triggered by `(`, `,`
-  and space.
+  and space. It reads tokens, not bindings, so a parameter named like a method shows
+  that method's slots inside its def.
 - `completion.ts`: `getCompletions`. The pieces of the current line before the cursor
   (`piecesOf`: words, numbers, closed strings, the open string) pick the context
   (`contextAt`): statement (each method's first word, the local operation functions,

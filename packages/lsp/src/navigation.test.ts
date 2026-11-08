@@ -62,6 +62,23 @@ want("maximum life")`;
         expect(lines).toEqual([2, 2]); // want's m: declaration and the use in the block
     });
 
+    it("finds a parameter in every slot it can fill", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
+def few(n) = prefixCount < n and not fractured "maximum life"
+def locked(m) = fractured m
+def viaFew(n) = few(n)
+def add(e, k) { if few(2) { essence e k } else { bench e } }
+add("Deafening Essence of Greed", t1)`;
+        const uses = (needle: string) =>
+            getDocumentHighlights(src, src.indexOf(needle) + needle.length - 1).length;
+        expect(uses("few(n")).toBe(2); // n: declaration + `< n`
+        expect(uses("locked(m")).toBe(2); // m: declaration + `fractured m`
+        expect(uses("viaFew(n")).toBe(2); // n: declaration + forwarded `few(n)`
+        expect(uses("add(e")).toBe(3); // e: declaration, `essence e`, `bench e` in the else
+        expect(uses("add(e, k")).toBe(2); // k: declaration + the tier slot
+        expect(uses("def few")).toBe(3); // few: declaration + two calls
+    });
+
     it("highlights nothing on a method word or when the guide does not parse", () => {
         expect(getDocumentHighlights(SRC, SRC.indexOf("until"))).toEqual([]);
         expect(getDocumentHighlights(`item { base: "Iron Ring"`, 10)).toEqual([]);
@@ -124,6 +141,18 @@ describe("rename", () => {
         });
         expect(getRenameEdits(SRC, SRC.indexOf("roll(") + 1, "1x")).toEqual({
             error: '"1x" is not a valid name',
+        });
+    });
+
+    it("refuses a tier shorthand as a name, which the parser would read as a tier", () => {
+        const t = SRC.indexOf("anyEleRes(t") + 10;
+        expect(getRenameEdits(SRC, t, "t1")).toEqual({ error: '"t1" is how a tier is written' });
+        expect(getRenameEdits(SRC, t, "T3")).toEqual({ error: '"T3" is how a tier is written' });
+    });
+
+    it("refuses to rename while the guide does not parse", () => {
+        expect(getRenameEdits(`item { base: "Iron Ring"`, 10, "x")).toEqual({
+            error: "the guide does not parse",
         });
     });
 });

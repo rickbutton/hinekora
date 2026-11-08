@@ -13,7 +13,6 @@ import {
     type Def,
     METHOD_WORDS,
     type ProcDef,
-    type SourceSpan,
 } from "@hinekora/core";
 import { parse, VOCABULARY } from "@hinekora/parser";
 import {
@@ -78,6 +77,8 @@ export function prepareRename(
 }
 
 const IDENT = /^[A-Za-z_]\w*$/;
+/** `t1`, `T3`: the parser reads the tier shorthand before a parameter name. */
+const TIER = /^t\d+$/i;
 const RESERVED = new Set<string>([...VOCABULARY, ...METHOD_WORDS]);
 
 /**
@@ -96,6 +97,7 @@ export function getRenameEdits(
     const b = bindingAt(bindings, offset);
     if (b === undefined) return { error: "nothing to rename here" };
     if (!IDENT.test(newName)) return { error: `"${newName}" is not a valid name` };
+    if (TIER.test(newName)) return { error: `"${newName}" is how a tier is written` };
     if (RESERVED.has(newName)) return { error: `"${newName}" is a word of the language` };
     if (b.kind !== "param" && bindings.some((o) => o.kind !== "param" && o.name === newName)) {
         return { error: `a def named "${newName}" already exists` };
@@ -144,11 +146,4 @@ export function getDocumentSymbols(source: string): DocumentSymbol[] {
         (a, b) => a.span.start.offset - b.span.start.offset,
     );
     return [item, ...defs.map(defSymbol)];
-}
-
-/** Exposed for hover: the span of whichever declaration or reference covers the offset. */
-export function symbolSpanAt(b: Binding, offset: number): SourceSpan | undefined {
-    return [b.declaration, ...b.references].find(
-        (s) => s.start.offset <= offset && offset < s.end.offset,
-    );
 }
