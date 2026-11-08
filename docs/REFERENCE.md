@@ -134,7 +134,26 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
   it names a parameter of the enclosing def, so steps written inside a call's block
   argument bind to the def they are written in. The editor's highlights, definition,
   references, rename and hover all read this one table.
-- **render/**: the labels diagnostics and hover show (`modLabel`, `baseLabel`).
+- **render/**: the labels diagnostics and hover show (`modLabel`, `baseLabel`), and the
+  item as a player reads it (`item.ts`). `itemView(a, registry)` is a view model shaped
+  like the game's tooltip: the base, class and level, the rarities, the eldritch
+  implicits, the modifiers by side (each with its stat text, its affix name and tier when
+  the row is known, a tier range and a roll span across the rows it may be otherwise, its
+  category tags, and whether it is fractured or crafted), "one of" groups for the
+  disjunctions (members pinned to their tier when the clause named one, exact when no
+  more could fit), one remainder line for the modifiers whose identity is unknown
+  (counted once against the coupled total, so never two independent per-side ranges),
+  the marks (influence, eldritch, fractured, corrupted, each "possibly" when on some
+  path only), and the modifiers proven absent. `renderItemText(view)` writes it in the
+  game's copy-to-clipboard layout: `Item Class:` / `Rarity:` / the base, `--------`
+  between sections, `Item Level:`, then each modifier under the advanced tooltip's
+  header `{ Prefix Modifier "Virile" (Tier: 1) — Life }` with `(fractured)` /
+  `(crafted)` after the text, the marks as the game writes them (`Hunter Item`,
+  `Corrupted`), and this project's extensions in the same brace style (`{ At least one of
+these suffix modifiers }`, `{ 1-3 more modifiers, prefixes and/or suffixes }`,
+  `Possibly: Corrupted`, `Without: …`). The hover, the CLI and the playground's card all
+  read the view, so they cannot disagree; `renderState` stays the one-line summary for
+  diagnostics.
 - **resolve/**: `Registry` (the resolved data surface). Key methods:
     - `resolveBase / resolveMod / resolveModType(name, ctx?) / resolveCurrency /
 resolveEssence / resolveBench / resolveHarvestTag`
@@ -248,15 +267,13 @@ Transport-free service functions + a stdio server:
 - `hover.ts`: `getHover(source, offset, registry)` is **token-centric**. The hovered
   token's signature (currency op / mod / base / essence / bench / def / projection /
   keyword) plus an item-tooltip footer of the state at that point. Details:
-    - The tooltip is a PoE-style item view built as **three general layers** over the
-      presence BDD, not per-case handlers: unit facts (`guaranteedTypes`/`excludedTypes`),
-      prime implicates (`disjunctiveGuarantees`), and a cardinality fold
-      (`cardinalityGuarantees`, "≥k of n"). Adding a new readable form means adding a
-      layer. Each mod line shows the exact roll when its tier is pinned, else the roll
-      span across candidate tiers; the undetermined remainder renders as ONE coupled line
-      ("1 more, a prefix or a suffix"), not two independent per-side ranges. A closing
-      "without …" line names the modifiers proven absent (a `not has` branch, a
-      harvest removal), the first six by wording and the rest as a count.
+    - The tooltip is the item in the game's copy-to-clipboard layout (`renderItemText`
+      over `itemView`, render/ above) as a code block, after the loop's exit state is
+      captioned "after the loop". The view is built from **three general layers** over
+      the presence BDD, not per-case handlers: unit facts
+      (`guaranteedTypes`/`excludedTypes`), prime implicates (`disjunctiveGuarantees`),
+      and a cardinality fold (`cardinalityGuarantees`, "≥k of n"). Adding a new readable
+      form means adding a layer.
     - A mod string's hover shows the resolved canonical wording, generation, and a
       table of every tier rollable on this base/ilvl; a trailing `t1` spotlights that
       tier. (Tier ids rarely match T-numbers: `IncreasedLife11` can be T1; ids count up
@@ -367,12 +384,23 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   positions and enumerations translated by `src/convert.ts` (LSP is 0-based and numbers
   its kinds from 1, Monaco 1-based and from 0; `byName` maps a kind through both tables).
   Diagnostics become markers after each change.
-- `src/main.ts`: the page: the example guides (`examples/*.craft`, picked from a menu), a
-  problems panel that jumps to a finding, a format button, the data provenance in the
-  header, and `window.hinekora` (`editor`, `monaco`, `registry`) for the browser console.
+- `src/item-card.ts`: `renderItemCard(view)`, the item drawn as the game draws one from
+  the core's `itemView`: a rarity-coloured header with the base, sections for the
+  implicits, the modifiers and the marks, modifier text in the game's blue with the side
+  and the tier (or tier range) at the right, roll ranges set apart, crafted and fractured
+  lines in their colours, a bracketed "one of" group for a disjunction, a dashed line for
+  the modifiers whose identity is unknown, "possibly" marks, and the absent modifiers
+  struck through. The affix name and tags are the line's tooltip.
+- `src/main.ts`: the page: the example guides (`examples/*.craft`, picked from a menu), the
+  item card for the statement at the cursor (the state after it, the final item when the
+  cursor is on no statement), a problems panel that jumps to a finding, a format button,
+  the data provenance in the header, and `window.hinekora` (`editor`, `monaco`,
+  `registry`) for the browser console.
 
 The package is part of `tsc -b` (declarations only; Vite does the real build), lint and
-the test run (`src/convert.test.ts`).
+the test run (`src/convert.test.ts`). Every push to `main` builds it and publishes it to
+GitHub Pages (`.github/workflows/pages.yml`; the repository's Pages source must be set to
+GitHub Actions once).
 
 ---
 
@@ -783,6 +811,8 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/parser/src/vocabulary.ts`                                      | the surface vocabulary outside the method table (keywords, predicate words, item fields)           |
 | `packages/data/src/{load,bundle,adapter}.ts` + `scripts/ingest-poe1.mjs` | data load (disk in `load`, pure in `bundle`) + ingest                                              |
 | `editors/playground/src/{main,monaco,language,providers,convert}.ts`     | the browser playground: Monaco bound to the language service                                       |
+| `editors/playground/src/item-card.ts`                                    | the item drawn in the game's style from `itemView`                                                 |
+| `packages/core/src/render/item.ts`                                       | `itemView`, `renderItemText`: the item as a player reads it, in the game's copy layout             |
 | `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts`    | LSP features                                                                                       |
 | `packages/lsp/src/analysis.ts`                                           | the parse and check of a document, memoized by text; every feature reads it                        |
 | `packages/lsp/src/navigation.ts`                                         | highlights, definition, references, rename, outline over the bindings                              |

@@ -3,7 +3,7 @@
  * print plus whether it passed. The `cli` shell adds file reading, data
  * loading, and exit codes.
  */
-import { check, type Registry, renderState } from "@hinekora/core";
+import { check, itemView, type Registry, renderItemText } from "@hinekora/core";
 import { parse } from "@hinekora/parser";
 import { formatDiagnostic } from "./format.js";
 
@@ -23,8 +23,14 @@ export function checkSource(source: string, file: string, registry: Registry): C
 
     const result = check(parsed.craft, { registry });
     if (result.ok) {
-        const state = result.finalState ? renderState(result.finalState) : "(diverged)";
-        return { ok: true, output: `✓ ${file} checks.\n  final item: ${state}` };
+        // The final item in the game's copy-to-clipboard layout, indented under the verdict.
+        const item = result.finalState
+            ? renderItemText(itemView(result.finalState, registry))
+                  .split("\n")
+                  .map((l) => `  ${l}`)
+                  .join("\n")
+            : "  (every path ends the craft before this point)";
+        return { ok: true, output: `✓ ${file} checks.\n\n${item}` };
     }
 
     const blocks = result.diagnostics.map((d) => formatDiagnostic(source, file, d.message, d.span));

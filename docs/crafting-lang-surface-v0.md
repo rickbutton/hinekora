@@ -369,9 +369,13 @@ Requires a Rare item — this item is Magic.
 ```
 
 The state line leads with the base, the rarity, the total affix count (a range when the
-checker is not certain), the split by side, and the item level. The same renderer powers
-hover ("what is my item here"), where the state is shown as an item tooltip with the
-guaranteed modifiers, their tiers or roll spans, and any "one of these" facts.
+checker is not certain), the split by side, and the item level. Hover ("what is my item
+here"), the CLI's final item and the playground's item card show the full item instead,
+laid out as the game's copy-to-clipboard text is: the class, rarity and base, the item
+level, each modifier under its `{ Prefix Modifier "Name" (Tier: n) — tags }` header, and
+the marks; where the checker is not certain the layout is extended rather than
+narrowed, with tier ranges and roll spans, "one of these" groups, a line for the
+modifiers whose identity is unknown, "possibly" marks, and the modifiers proven absent.
 
 Error categories:
 

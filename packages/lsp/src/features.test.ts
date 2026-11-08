@@ -48,7 +48,7 @@ describe("hover", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ fractured "maximum life" t1 ] }\nchaos`;
         const md = getHover(src, src.indexOf("chaos") + 1, registry);
         expect(md).not.toBeNull();
-        expect(md!).toContain("(Fractured)"); // the locked mod survives the chaos, flagged
+        expect(md!).toContain("to maximum Life (fractured)"); // the locked mod survives the chaos, flagged
     });
 
     it("hovers a bench mod with what it adds and its generation", () => {
@@ -78,16 +78,17 @@ describe("hover", () => {
     it("names the eldritch implicit the item has", () => {
         const src = `item { base: "Iron Gauntlets" ilvl: 84 rarity: rare exarch: grand "increased attack speed" }\nexalt`;
         const h = getHover(src, src.indexOf("exalt"), registry)!;
-        expect(h).toContain("Grand Exarch");
-        expect(h).toContain("Exarch implicit: ");
+        expect(h).toContain("{ Searing Exarch Implicit Modifier (Tier: Grand) }");
         expect(h).toContain("Attack Speed");
+        expect(h).toContain("(exarch implicit)");
+        expect(h).toContain("Searing Exarch Item");
     });
 
     it("names the item's marks in the tooltip", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare influences: hunter corrupted }\nexalt`;
         const h = getHover(src, src.indexOf("exalt"), registry)!;
-        expect(h).toContain("Hunter");
-        expect(h).toContain("corrupted");
+        expect(h).toContain("Hunter Item");
+        expect(h).toContain("\nCorrupted");
     });
 
     it("hovers a local def (declaration, call, and param share one signature)", () => {
@@ -118,8 +119,8 @@ until has "maximum life" t1 { exalt }`;
 bench "cold resistance"`;
         const md = getHover(src, src.indexOf("bench") + 1, registry);
         expect(md).not.toBeNull();
-        expect(md!).toContain("(P)"); // prefix tag
-        expect(md!).toContain("(S)"); // suffix tag
+        expect(md!).toContain("{ Prefix Modifier"); // the advanced tooltip's header
+        expect(md!).toContain("{ Suffix Modifier");
         expect(md!).toMatch(/maximum Life/); // resolved text, not the "maximum life" label
         expect(md!).not.toMatch(/\bmodifiers\b/); // no total-count line
     });
@@ -138,8 +139,7 @@ if not has "fire resistance" { bench "maximum life" }`;
 if not has "maximum life" { bench "cold resistance" }`;
         expect(getDiagnostics(src, registry)).toEqual([]);
         const md = getHover(src, src.indexOf("bench"), registry)!;
-        expect(md).toContain("_without: ");
-        expect(md).toMatch(/without: .*maximum life/i);
+        expect(md).toMatch(/\nWithout: .*maximum life/i);
     });
 
     it("shows a disjunctive guarantee as 'at least one of'", () => {
@@ -149,7 +149,7 @@ until has "fire resistance" t1 or has "cold resistance" t1 or has "lightning res
 }`;
         const md = getHover(src, src.indexOf("until") + 1, registry);
         expect(md).not.toBeNull();
-        expect(md!).toContain("at least one of:"); // 4–6 mods ⇒ could be more than one
+        expect(md!).toContain("{ At least one of these suffix modifiers }"); // 4–6 mods ⇒ could be more than one
         expect(md!).toMatch(/to Fire Resistance/); // resolved text, not the bare label
     });
 
@@ -159,8 +159,8 @@ until has "fire resistance" t1 or has "cold resistance" t1 or has "lightning res
         const src = `item { base: "Vaal Regalia" ilvl: 84 rarity: rare prefixes: [ "random" ] }
 until has "fire res" t1 or has "cold res" t1 { annul exalt }`;
         const md = getHover(src, src.indexOf("until") + 1, registry);
-        expect(md!).toContain("exactly one of:");
-        expect(md!).not.toContain("at least one of:");
+        expect(md!).toContain("{ Exactly one of these suffix modifiers }");
+        expect(md!).not.toContain("At least one of");
     });
 
     it("collapses `≥2 of 3` pairwise clauses into one 'exactly two of' block", () => {
@@ -168,8 +168,8 @@ until has "fire res" t1 or has "cold res" t1 { annul exalt }`;
         const src = `item { base: "Vaal Regalia" ilvl: 84 rarity: rare prefixes: [ "random" ] suffixes: [ "random" ] }
 until ${twoOf3} { annul annul exalt exalt }`;
         const md = getHover(src, src.indexOf("until") + 1, registry);
-        expect(md!).toContain("exactly two of:"); // total 2, all suffixes ⇒ exactly two
-        expect((md!.match(/one of:/g) ?? []).length).toBe(0); // not three pairwise blocks
+        expect(md!).toContain("{ Exactly two of these suffix modifiers }"); // total 2, all suffixes ⇒ exactly two
+        expect((md!.match(/one of these/g) ?? []).length).toBe(0); // not three pairwise blocks
     });
 
     it("pins the tier in a disjunctive block: shows the t1 roll, not the full span", () => {
@@ -202,7 +202,7 @@ until ${twoOf3} { annul annul exalt exalt }`;
         const src = `item { base: "Vaal Regalia" ilvl: 84 rarity: rare prefixes: [ "random" ] suffixes: [ "random" ] }
 annul`;
         const md = getHover(src, src.lastIndexOf("annul") + 1, registry);
-        expect(md!).toContain("1 undetermined — a prefix or a suffix");
+        expect(md!).toContain("{ 1 more modifier, a prefix or a suffix }");
     });
 
     it("returns null in dead space", () => {

@@ -9,23 +9,16 @@ import {
     bindingsOf,
     type Craft,
     type CurrencyKind,
-    cardinalityGuarantees,
     type Def,
     describePred,
-    disjunctiveTier,
-    ELDRITCH_SIDES,
-    eldritchOf,
-    excludedTypes,
-    type Gen,
     type GroupId,
     guaranteedTypes,
-    isFractured,
+    itemView,
     type Method,
-    type ModId,
     type ProcDef,
     type Range,
     type Registry,
-    rollableGen,
+    renderItemText,
     rollableTiers,
     slotAt,
     type Stmt,
@@ -36,8 +29,6 @@ import {
     veiledPool,
     isCorruptedEssence,
     influenceTagsAny,
-    marksLabel,
-    rarityLabel,
 } from "@hinekora/core";
 import { type Token, tokenize } from "@hinekora/parser";
 import { checkCached, parseCached } from "./analysis.js";
@@ -247,151 +238,12 @@ function fmtRange(r: Range): string {
     return r[0] === r[1] ? String(r[0]) : `${r[0]}–${r[1]}`;
 }
 
-const GEN_TAG: Record<Gen, string> = { prefix: "(P)", suffix: "(S)" };
-const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six"];
-const numberWord = (n: number): string => NUMBER_WORDS[n] ?? String(n);
-
-const oneLine = (text: string): string => text.replace(/\n/g, " / ");
-
-/**
- * Merge several tiers' texts into one overall roll span: "+(70-84) …" and
- * "+(20-29) …" ⇒ "+(20-84) …". Falls back to the first text if the tiers don't
- * share a range structure.
- */
-const RANGE = /\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)/g;
-function rollSpan(texts: readonly string[]): string {
-    if (texts.length === 1) return texts[0]!;
-    const nums = (s: string): [number, number][] =>
-        [...s.matchAll(RANGE)].map((m) => [Number(m[1]), Number(m[2])]);
-    const perTier = texts.map(nums);
-    const n = perTier[0]!.length;
-    if (n === 0 || perTier.some((r) => r.length !== n)) return texts[0]!; // structure differs
-    const lo = Array.from({ length: n }, (_, i) => Math.min(...perTier.map((r) => r[i]![0])));
-    const hi = Array.from({ length: n }, (_, i) => Math.max(...perTier.map((r) => r[i]![1])));
-    let i = 0;
-    return texts[0]!.replace(RANGE, () => `(${lo[i]}-${hi[i++]})`);
-}
-
-/**
- * One tooltip line for a guaranteed mod: the exact rolled text when the tier is
- * pinned, else the roll span across every tier the item could carry here, the
- * magnitude stays honest without committing to a tier we don't know.
- */
-function modLine(a: AItem, type: TypeId, registry: Registry, pinMod?: ModId): string {
-    const pinned = pinMod !== undefined ? new Set([pinMod]) : a.tiers.get(type);
-    const mods =
-        pinned && pinned.size > 0
-            ? [...pinned].flatMap((id) => {
-                  const r = registry.resolveMod(id);
-                  return r.ok ? [r.value] : [];
-              })
-            : rollableTiers(registry.catalog, a.base, a.ilvl, type, influenceTagsAny(a, registry));
-    const texts = mods
-        .map((m) => m.text)
-        .filter((t): t is string => t !== undefined)
-        .map(oneLine);
-    return texts.length > 0 ? rollSpan(texts) : registry.typeLabel(type);
-}
-
-/**
- * A PoE-style item tooltip for the state: one `(P)`/`(S)`-tagged line per mod,
- * prefixes then suffixes; "one of" blocks for disjunctive guarantees; one
- * coupled line for the undetermined remainder.
- */
+/** The item at this point, in the game's copy-to-clipboard layout, as a code block. */
 function tooltip(a: AItem, registry: Registry, caption?: string): string {
-    const guaranteed = guaranteedTypes(a);
-    const tags = influenceTagsAny(a, registry);
-    const genOf = (t: TypeId): Gen =>
-        rollableGen(registry.catalog, a.base, a.ilvl, t, tags) ?? "prefix";
-
-    const known: Record<Gen, TypeId[]> = { prefix: [], suffix: [] };
-    for (const t of guaranteed) known[genOf(t)].push(t);
-    const genHi = { prefix: a.counts.prefix[1], suffix: suffixRange(a)[1] };
-
-    // A cardinality guarantee is ≥k; it becomes EXACTLY k when at most k can
-    // fit, its generation (or, spanning both, the whole item) has only k
-    // undetermined slots.
-    const knownTotal = known.prefix.length + known.suffix.length;
-    const cardinalities = cardinalityGuarantees(a).map((c) => {
-        const gens = new Set(c.types.map(genOf));
-        const gen = gens.size === 1 ? [...gens][0]! : undefined;
-        const slots = gen ? genHi[gen] - known[gen].length : a.counts.total[1] - knownTotal;
-        return { ...c, gen, exact: slots <= c.atLeast };
-    });
-
-    // Candidates indent (non-breaking spaces) under the `N of:` header so they
-    // don't read as more top-level mods.
-    const INDENT = "    ";
-    const cardBlock = (x: (typeof cardinalities)[number]): string[] => {
-        // When the disjunction is tier-qualified (`X@t1 ∨ Y@t1`), pin each member
-        // to its tier rather than showing the whole roll span.
-        const tiers = disjunctiveTier(a, x.types);
-        return [
-            `${x.gen ? GEN_TAG[x.gen] : "(P/S)"} _${x.exact ? "exactly" : "at least"} ${numberWord(x.atLeast)} of:_`,
-            ...x.types.map((t) => `${INDENT}${modLine(a, t, registry, tiers.get(t))}`),
-        ];
-    };
-
-    const lines: string[] = [];
-    for (const gen of ["prefix", "suffix"] as const) {
-        for (const t of known[gen]) {
-            const frac = isFractured(a, t) ? " (Fractured)" : "";
-            lines.push(`${GEN_TAG[gen]} ${modLine(a, t, registry)}${frac}`);
-        }
-        for (const x of cardinalities) if (x.gen === gen) lines.push(...cardBlock(x));
-    }
-    for (const x of cardinalities) if (x.gen === undefined) lines.push(...cardBlock(x));
-
-    // The undetermined remainder, as ONE line respecting the count coupling:
-    // "a prefix or a suffix", not two independent per-generation ranges.
-    const cardSlots = (g?: Gen): number =>
-        cardinalities.filter((x) => x.gen === g).reduce((s, x) => s + x.atLeast, 0);
-    const accounted = knownTotal + cardinalities.reduce((s, x) => s + x.atLeast, 0);
-    const extraHi = a.counts.total[1] - accounted;
-    if (extraHi > 0) {
-        const extraLo = Math.max(0, a.counts.total[0] - accounted);
-        const prefCap = a.counts.prefix[1] - known.prefix.length - cardSlots("prefix");
-        const sufCap = genHi.suffix - known.suffix.length - cardSlots("suffix");
-        const range = fmtRange([extraLo, extraHi]);
-        if (sufCap <= 0) lines.push(`${GEN_TAG.prefix} _${range} undetermined_`);
-        else if (prefCap <= 0) lines.push(`${GEN_TAG.suffix} _${range} undetermined_`);
-        else {
-            const what = extraHi === 1 ? "a prefix or a suffix" : "prefixes and/or suffixes";
-            lines.push(`_${range} undetermined — ${what}_`);
-        }
-    }
-
-    const head = [
-        `**${a.base.name ?? a.base.id}**`,
-        rarityLabel(a.rarities),
-        `ilvl ${a.ilvl}`,
-        ...marksLabel(a),
-    ].join(" · ");
-    // Which eldritch implicit a side may be, when the item carries one.
-    for (const side of ELDRITCH_SIDES) {
-        const types = a.eldritchTypes[side];
-        if (types === "any" || types.size === 0) continue;
-        const present = [...a.eldritch].some((k) => eldritchOf(k)[side] > 0);
-        if (!present) continue;
-        const texts = [...new Set([...types].map((t) => registry.eldritchTextOf(t) ?? t))];
-        const label = side === "exarch" ? "Exarch" : "Eater";
-        lines.push(
-            texts.length === 1
-                ? `_${label} implicit: ${oneLine(texts[0]!)}_`
-                : `_${label} implicit: one of ${texts.length} (${texts.slice(0, 3).map(oneLine).join("; ")}${texts.length > 3 ? "; …" : ""})_`,
-        );
-    }
-    // What is proven absent: a `not has` the guide relied on, a modifier a
-    // harvest change took, read off the same presence function as the rest.
-    const without = [...excludedTypes(a)].map((t) => registry.typeLabel(t));
-    if (without.length > 0) {
-        const shown = without.slice(0, 6).join("; ");
-        lines.push(`_without: ${shown}${without.length > 6 ? `; … (${without.length})` : ""}_`);
-    }
-    const body = lines.length > 0 ? lines.join("  \n") : "_no modifiers_";
-    return [caption ? `_${caption}_` : undefined, head, body]
+    const text = renderItemText(itemView(a, registry));
+    return [caption ? `_${caption}_\n` : undefined, "```text", text, "```"]
         .filter((x): x is string => x !== undefined)
-        .join("\n\n");
+        .join("\n");
 }
 
 /** The signature block for a token, or null if the token carries no docs. */

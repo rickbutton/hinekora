@@ -15,7 +15,7 @@ transmute
 regal`);
         expect(r.ok).toBe(true);
         expect(r.output).toContain("checks");
-        expect(r.output).toContain("Iron Ring · Rare");
+        expect(r.output).toContain("  Item Class: Rings\n  Rarity: Rare\n  Iron Ring");
     });
 
     it("rejects a precondition failure with a located, carated error", () => {
@@ -72,9 +72,10 @@ if has "maximum life" { exalt }`);
         );
         const r = run(src);
         expect(r.ok).toBe(true);
-        // 1 prefix (the benched life, or the one a two-modifier transmute may have
-        // left) + 2 suffixes (the proven resistances), maybe a third.
-        expect(r.output).toContain("1 prefix · 2–3 suffixes");
+        // The final item in the game's layout, its unknown modifiers as one line.
+        expect(r.output).toContain("  Item Class: Body Armours\n  Rarity: Rare\n  Vaal Regalia");
+        expect(r.output).toContain("  --------\n  Item Level: 84\n  --------\n");
+        expect(r.output).toMatch(/\{ \d-\d more modifiers, prefixes and\/or suffixes \}/);
     });
 
     it("checks phys-dot-weapon.craft clean (fractured reforge keeps its count and clears crafted)", () => {
@@ -82,6 +83,11 @@ if has "maximum life" { exalt }`);
             fileURLToPath(new URL("../../../examples/phys-dot-weapon.craft", import.meta.url)),
             "utf8",
         );
-        expect(run(src).ok).toBe(true);
+        const r = run(src);
+        expect(r.ok).toBe(true);
+        // The advanced tooltip's headers, the fractured flag on its line, and the mark.
+        expect(r.output).toContain('{ Prefix Modifier "Magister\'s" (Tier: 1) — Caster, Gem }');
+        expect(r.output).toContain("to Damage over Time Multiplier (fractured)");
+        expect(r.output).toContain("  --------\n  Fractured Item");
     });
 });
