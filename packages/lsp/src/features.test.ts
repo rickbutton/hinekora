@@ -124,6 +124,15 @@ bench "cold resistance"`;
         expect(md!).not.toMatch(/\bmodifiers\b/); // no total-count line
     });
 
+    it("shows the T1 roll of the survivor once 'one of these is T1' loses a member", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
+until has "fire resistance" t1 or has "cold resistance" t1 { chaos }
+if not has "fire resistance" { bench "maximum life" }`;
+        const md = getHover(src, src.indexOf("bench"), registry)!;
+        // Cold resistance's T1 roll on a ring, not the span across every tier.
+        expect(md).toContain("+(46-48)% to Cold Resistance");
+    });
+
     it("names what the item is proven not to have", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: ["random"] suffixes: ["random"] }
 if not has "maximum life" { bench "cold resistance" }`;

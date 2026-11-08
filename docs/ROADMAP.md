@@ -24,9 +24,6 @@ of the operations; no divergence is expected.
 
 ## Step 2. Language and editor follow-ons
 
-- **Tier-atom tightenings:** assert `tierAtom ⇒ family` and tier mutual-exclusion in the
-  presence BDD. Both are true facts we currently omit; omitting them only ever
-  under-claims (sound), so they are precision, not correctness.
 - A **Monaco playground** (a new `editors/` package) reusing the transport-free LSP
   service.
 

@@ -3,8 +3,9 @@ import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { rollableTiers } from "../resolve/tiers.js";
-import { craft, has, iff, item, op } from "../__fixtures__/ast.js";
+import { andp, craft, has, iff, item, notp, op, orp, until } from "../__fixtures__/ast.js";
 import { FIRE_RES_TIERED, MAXLIFE_T1, RING_BASE, TIERED_CATALOG } from "../__fixtures__/mods.js";
+import type { TypeId } from "../model/ids.js";
 
 const registry = buildRegistry({ bases: [RING_BASE], mods: TIERED_CATALOG });
 const ctx: CheckContext = { registry };
@@ -77,5 +78,65 @@ describe("checker — tier tracking through operations", () => {
         ]);
         // The inner T1 narrow is redundant but not dead — no diagnostics.
         expect(check(c, ctx).diagnostics).toEqual([]);
+    });
+});
+
+describe("checker — one of several tiers, then the work after it", () => {
+    /** The tiers the state before the first `annul` allows for `type`. */
+    const tiersBeforeAnnul = (c: ReturnType<typeof craft>, type: TypeId) => {
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        const entry = r.trace.find((e) => e.kind === "operation" && e.before.tiers.has(type));
+        return entry === undefined ? undefined : [...entry.before.tiers.get(type)!];
+    };
+
+    it("pins the other member of 'one of these is T1' once the first is ruled out", () => {
+        // until has life t1 or has fire t1 { chaos }   if not has "fire resistance" { annul }
+        const c = craft(rareRing(), [
+            until(orp(has("maximum life", 1), has("fire resistance", 1)), [op("chaos")]),
+            iff(notp(has("fire resistance")), [op("annul")]),
+        ]);
+        expect(tiersBeforeAnnul(c, MAXLIFE_T1.type)).toEqual(["MaxLifeHigh"]);
+    });
+
+    it("pins the remaining tier once the other is ruled out", () => {
+        const c = craft(rareRing(), [
+            until(orp(has("maximum life", 1), has("maximum life", 2)), [op("chaos")]),
+            iff(notp(has("maximum life", 1)), [op("annul")]),
+        ]);
+        expect(tiersBeforeAnnul(c, MAXLIFE_T1.type)).toEqual(["MaxLifeMid"]);
+    });
+
+    it("knows a modifier proven at one row is at no other, through a join", () => {
+        const c = craft(rareRing(), [
+            until(orp(has("maximum life", 1), has("maximum life", 2)), [op("chaos")]),
+            iff(has("maximum life", 1), [iff(has("maximum life", 2), [op("annul")])]),
+        ]);
+        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("can never run"))).toBe(
+            true,
+        );
+    });
+
+    it("rules a branch dead when every tier the item could have is denied", () => {
+        const c = craft(rareRing(), [
+            until(orp(has("maximum life", 1), has("maximum life", 2)), [op("chaos")]),
+            iff(andp(notp(has("maximum life", 1)), notp(has("maximum life", 2))), [op("annul")]),
+        ]);
+        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("can never run"))).toBe(
+            true,
+        );
+    });
+
+    it("forgets the tier facts with the modifier when a removal may have taken it", () => {
+        // After an Orb of Annulment the life modifier may be gone, so denying
+        // both of its tiers is possible again; the branch is live.
+        const c = craft(rareRing(), [
+            until(orp(has("maximum life", 1), has("maximum life", 2)), [op("chaos")]),
+            op("annul"),
+            iff(andp(notp(has("maximum life", 1)), notp(has("maximum life", 2))), [op("scour")]),
+        ]);
+        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("can never run"))).toBe(
+            false,
+        );
     });
 });

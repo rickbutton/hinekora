@@ -146,9 +146,12 @@ export function presenceFacts(
 // joined per-type, would drop it. Atoms are introduced lazily by `refine`, only
 // for the tiers a predicate actually names.
 //
-// We do NOT assert `tierAtom ⇒ family` or tier mutual-exclusion. Both are true
-// facts we could AND in; omitting them only ever under-claims (loses precision,
-// never adds a false error, the soundness principle), and nothing yet needs them.
+// Two facts tie the atoms to the item: a modifier at a specific row is present
+// (`atom ⇒ family`), and it is at one row only (two atoms of a type exclude each
+// other). They are asserted whenever a predicate reasons about a type
+// (`withTierFacts`), which is what lets "one of these is T1" followed by "not
+// has fire" conclude that cold is the T1 one; the overlay is then read back
+// from what the presence function proves (`reduceTiers`).
 
 const TIER_SEP = "\u0000"; // NUL: cannot occur in a TypeId/ModId string
 
@@ -217,6 +220,59 @@ function tierAtomsOf(a: AItem, type: TypeId): ModId[] {
         if (isTierAtom(v) && tierAtomType(v) === type) out.push(tierAtomMod(v));
     }
     return out;
+}
+
+/**
+ * `p` with the facts every tier atom of `type` obeys: the modifier at that row
+ * is present, and it is at no other row. True of every item, so this only ever
+ * removes states that cannot exist.
+ */
+function withTierFacts(a: AItem, p: Bdd, type: TypeId): Bdd {
+    const atoms = tierAtomsOf(a, type).map((m) => a.bdd.variable(tierAtomName(type, m)));
+    const family = a.bdd.variable(type);
+    atoms.forEach((atom, i) => {
+        p = a.bdd.and(p, a.bdd.or(a.bdd.not(atom), family));
+        for (const other of atoms.slice(i + 1)) p = a.bdd.and(p, a.bdd.not(a.bdd.and(atom, other)));
+    });
+    return p;
+}
+
+/**
+ * The tier overlay narrowed by what the presence function proves: a type whose
+ * atom is forced true is pinned to that row, and a row whose atom is forced
+ * false leaves the type's set. `null` when a present type is left with no row.
+ */
+function reduceTiers(a: AItem): AItem | null {
+    let tiers: Map<TypeId, ReadonlySet<ModId>> | undefined;
+    const types = new Set(a.bdd.variables().filter(isTierAtom).map(tierAtomType));
+    for (const type of types) {
+        const atoms = tierAtomsOf(a, type);
+        const forced = atoms.find((m) =>
+            a.bdd.entails(a.presence, a.bdd.variable(tierAtomName(type, m))),
+        );
+        const current = a.tiers.get(type);
+        let next: ReadonlySet<ModId> | undefined;
+        if (forced !== undefined) {
+            if (current?.size === 1 && current.has(forced)) continue;
+            next = new Set([forced]);
+        } else if (current !== undefined) {
+            const gone = atoms.filter(
+                (m) =>
+                    current.has(m) &&
+                    a.bdd.entails(a.presence, a.bdd.not(a.bdd.variable(tierAtomName(type, m)))),
+            );
+            if (gone.length === 0) continue;
+            next = new Set([...current].filter((m) => !gone.includes(m)));
+            if (next.size === 0) {
+                if (isGuaranteed(a, type)) return null;
+                next = undefined; // absent: no tier to speak of
+            }
+        } else continue;
+        tiers ??= new Map(a.tiers);
+        if (next === undefined) tiers.delete(type);
+        else tiers.set(type, next);
+    }
+    return tiers === undefined ? a : { ...a, tiers };
 }
 
 /**
@@ -833,18 +889,26 @@ function refineHas(a: AItem, type: TypeId, gen: Gen, tierMod: ModId | undefined)
 
     // A named tier is also a presence atom, so it rides through a control-flow
     // join where the flat `tiers` overlay would drop it.
-    const withTier = (p: Bdd): Bdd =>
-        tierMod === undefined ? p : a.bdd.and(p, a.bdd.variable(tierAtomName(type, tierMod)));
+    const withTier = (p: Bdd): Bdd => {
+        if (tierMod === undefined) return withTierFacts(a, p, type);
+        const atom = a.bdd.variable(tierAtomName(type, tierMod));
+        return withTierFacts(a, a.bdd.and(p, atom), type);
+    };
 
     if (alreadyPresent) {
-        return tierMod === undefined ? a : { ...a, presence: withTier(a.presence), tiers };
+        if (tierMod === undefined) return a;
+        const presence = withTier(a.presence);
+        if (a.bdd.isFalse(presence)) return null; // proven at another row
+        return reduceTiers({ ...a, presence, tiers });
     }
 
     // Learn it present, and what that implies about counts (≥1 affix, ≥1 in its
     // generation) via the count domain.
     const presence = withTier(a.bdd.and(a.presence, a.bdd.variable(type)));
+    if (a.bdd.isFalse(presence)) return null;
     const counts = CountDomain.learnPresent(a.counts, gen);
-    return normalize({ ...a, presence, tiers, counts });
+    const s = normalize({ ...a, presence, tiers, counts });
+    return s === null ? null : reduceTiers(s);
 }
 
 function refineLacks(a: AItem, type: TypeId, tierMod: ModId | undefined): AItem | null {
@@ -852,10 +916,8 @@ function refineLacks(a: AItem, type: TypeId, tierMod: ModId | undefined): AItem 
         // "not has X t<n>": X may still be present at another tier. Record that
         // this specific tier is absent as a presence atom, that is what lets it
         // contradict a surviving tier-qualified disjunction (`X@t1 ∨ Y@t1`).
-        const presence = a.bdd.and(
-            a.presence,
-            a.bdd.not(a.bdd.variable(tierAtomName(type, tierMod))),
-        );
+        const atom = a.bdd.variable(tierAtomName(type, tierMod));
+        const presence = withTierFacts(a, a.bdd.and(a.presence, a.bdd.not(atom)), type);
         if (a.bdd.isFalse(presence)) return null;
 
         // The overlay also narrows the possible tiers rather than excluding X.
@@ -868,23 +930,25 @@ function refineLacks(a: AItem, type: TypeId, tierMod: ModId | undefined): AItem 
         ) {
             return null; // guaranteed to be exactly tier M → cannot lack it
         }
-        if (allowed === undefined) return { ...a, presence }; // overlay unconstrained; keep the atom
+        if (allowed === undefined) return reduceTiers({ ...a, presence }); // overlay unconstrained; keep the atom
         const narrowed = new Set(allowed);
         narrowed.delete(tierMod);
         if (narrowed.size === 0 && isGuaranteed(a, type)) return null; // present but only tier was M
         const tiers = new Map(a.tiers);
         if (narrowed.size === 0) tiers.delete(type);
         else tiers.set(type, narrowed);
-        return { ...a, presence, tiers };
+        return reduceTiers({ ...a, presence, tiers });
     }
 
     // Force the presence variable false: a guaranteed type collapses the BDD to
-    // FALSE (impossible); a disjunction that relied on it gets pruned.
-    const presence = a.bdd.and(a.presence, a.bdd.not(a.bdd.variable(type)));
+    // FALSE (impossible); a disjunction that relied on it gets pruned, and with
+    // the atom facts so does any tier atom of the type, which is what pins the
+    // other member of a "one of these is T1" clause to its row.
+    const presence = withTierFacts(a, a.bdd.and(a.presence, a.bdd.not(a.bdd.variable(type))), type);
     if (a.bdd.isFalse(presence)) return null; // known present → cannot lack it
     const tiers = new Map(a.tiers);
     tiers.delete(type); // absent ⇒ no tier info
-    return { ...a, presence, tiers };
+    return reduceTiers({ ...a, presence, tiers });
 }
 
 /** Is `type` a fracture candidate — i.e. does its fracture atom exist? Only the

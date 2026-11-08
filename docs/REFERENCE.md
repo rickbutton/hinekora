@@ -423,8 +423,14 @@ total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = t
   (`fire@t1 ∨ cold@t1 ∨ light@t1`) survives a `join` where the flat overlay would drop
   the tier. Atoms are lazy (only tiers a predicate names) and the type-level views filter
   them out; `disjunctiveTier(a, types)` reads them back for a known clause (drives the
-  hover so a disjunctive block shows the t1 roll, not the full span). We do NOT yet assert
-  `tierAtom ⇒ family` or tier mutual-exclusion; both only under-claim if omitted (sound).
+  hover so a disjunctive block shows the t1 roll, not the full span). Two facts tie the
+  atoms to the item, asserted whenever a predicate reasons about a type (`withTierFacts`):
+  an atom implies its family (a modifier at a row is present) and two atoms of one type
+  exclude each other (it is at one row only). They are what lets "one of these is T1"
+  followed by `not has fire` conclude that cold is the T1 one; `reduceTiers` then reads the
+  overlay back from the presence function, pinning a type whose atom is forced true and
+  dropping a row whose atom is forced false, so hover and the later `has` checks see it.
+  Removals rebuild presence from unit facts, which drops the atoms with the modifier.
 - **`normalize(a)`** runs `CountDomain.normalize` (the total/prefix coupling to a fixpoint,
   BOTH directions: `prefix ∈ [total−sCap, min(pCap, total)]` AND
   `total ∈ [prefix, min(tCap, prefix+sCap)]`) then re-applies the one cross-domain reduction
