@@ -20,14 +20,16 @@
 
 ## The files
 
-| File                      | Holds                                                                                        |
-| ------------------------- | -------------------------------------------------------------------------------------------- |
-| `builds.md`               | The popular builds, their rare item slots and the modifiers those slots carry                |
-| `data/`                   | Raw extractions (PoB item dumps, poe.ninja snapshots) the analysis is drawn from             |
-| `crafting-methodology.md` | How people craft: the recurring recipes per slot and archetype, each with its source         |
-| `feature-report.md`       | The deliverable: features Hinekora needs, in priority order, with the crafts each unlocks    |
-| `accuracy.md`             | The checker against craftofexile.com: what was compared, where they agree and disagree       |
-| `../../examples/`         | Crafts that check today; `../../examples/future/` holds crafts that wait on a listed feature |
+| File                      | Holds                                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------ |
+| `builds.md`               | The popular builds, their rare item slots and the modifiers those slots carry                    |
+| `data/`                   | Raw extractions (PoB item dumps, poe.ninja snapshots) the analysis is drawn from                 |
+| `crafting-methodology.md` | How people craft: the recurring recipes per slot and archetype, each with its source             |
+| `feature-report.md`       | The deliverable: features Hinekora needs, in priority order, with the crafts each unlocks        |
+| `accuracy.md`             | The checker against craftofexile.com: what was compared, where they agree and disagree           |
+| `checker-findings.md`     | The checker's own false positives, naming limits and missing constructs met while writing crafts |
+| `probes/`                 | The probe crafts behind those findings, each with the checker's verdict beside it                |
+| `../../examples/`         | Crafts that check today; `../../examples/future/` holds crafts that wait on a listed feature     |
 
 ## Sources
 
@@ -45,5 +47,6 @@
 
 ## Status
 
-Started 2026-11-08. Tools verified: PoB Redux MCP (works), Chrome extension (not yet
-connected), poe.ninja and craftofexile need the browser.
+Started 2026-11-08. The four questions are answered in the files above and the feature
+report ranks the work; the next step is the report's Band A (checker precision and the
+two soundness gaps), which moves most of `examples/future/` into the tested suite.
