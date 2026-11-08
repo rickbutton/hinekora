@@ -1,0 +1,919 @@
+{
+ "league": "allflame",
+ "snapshot": "2117-20261108-10735",
+ "characters": 124358,
+ "skills": [
+  {
+   "skill": "Winter Orb",
+   "count": 9439,
+   "pct": 7.59,
+   "filtered_total": 9439,
+   "characters": [
+    {
+     "account": "Wille4781-1093",
+     "name": "方源逆流河",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Wille4781-1093/%E6%96%B9%E6%BA%90%E9%80%86%E6%B5%81%E6%B2%B3"
+    },
+    {
+     "account": "Sunfish5-6757",
+     "name": "SunfishOrbing",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Sunfish5-6757/SunfishOrbing"
+    },
+    {
+     "account": "ClandestineBear-7592",
+     "name": "BrittlePaperBear",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/ClandestineBear-7592/BrittlePaperBear"
+    },
+    {
+     "account": "Jkrs-5113",
+     "name": "Jokers",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Jkrs-5113/Jokers"
+    },
+    {
+     "account": "shinjitora-7180",
+     "name": "geoffrey_floydstein",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/shinjitora-7180/geoffrey_floydstein"
+    },
+    {
+     "account": "Crawlerdin-2903",
+     "name": "Nicos_mor",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Crawlerdin-2903/Nicos_mor"
+    }
+   ]
+  },
+  {
+   "skill": "Righteous Fire",
+   "count": 6080,
+   "pct": 4.89,
+   "filtered_total": 6080,
+   "characters": [
+    {
+     "account": "묵은지김치찜2-7878",
+     "name": "Kimchi_Finale",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/%EB%AC%B5%EC%9D%80%EC%A7%80%EA%B9%80%EC%B9%98%EC%B0%9C2-7878/Kimchi_Finale"
+    },
+    {
+     "account": "Trebi-0760",
+     "name": "Fostarisznya",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Trebi-0760/Fostarisznya"
+    },
+    {
+     "account": "ShairoNN-4081",
+     "name": "Meowshiro",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/ShairoNN-4081/Meowshiro"
+    },
+    {
+     "account": "BoTz_-5169",
+     "name": "BoTzAF",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/BoTz_-5169/BoTzAF"
+    },
+    {
+     "account": "RUCKUSVD-2259",
+     "name": "ALPHAMALE_BUTTHOLEDIVER",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/RUCKUSVD-2259/ALPHAMALE_BUTTHOLEDIVER"
+    },
+    {
+     "account": "SelvaPeluda-7915",
+     "name": "MyQueefFlapsMyFUPA",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/SelvaPeluda-7915/MyQueefFlapsMyFUPA"
+    }
+   ]
+  },
+  {
+   "skill": "Animate Guardian",
+   "count": 5638,
+   "pct": 4.53,
+   "filtered_total": 5638,
+   "characters": [
+    {
+     "account": "holth21-4191",
+     "name": "狂蛮魔尊",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/holth21-4191/%E7%8B%82%E8%9B%AE%E9%AD%94%E5%B0%8A"
+    },
+    {
+     "account": "Stefan2ndacc-2120",
+     "name": "StoegsEi",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Stefan2ndacc-2120/StoegsEi"
+    },
+    {
+     "account": "GhoSt_In_Armor-6349",
+     "name": "iIiIiIiliIiIiIiIiliIiIi",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/GhoSt_In_Armor-6349/iIiIiIiliIiIiIiIiliIiIi"
+    },
+    {
+     "account": "Sideos161-4993",
+     "name": "LostInTheSupermarket",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Sideos161-4993/LostInTheSupermarket"
+    },
+    {
+     "account": "Muambeiro-0567",
+     "name": "Muambeiro",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Muambeiro-0567/Muambeiro"
+    },
+    {
+     "account": "Appalachia-9334",
+     "name": "culler_konfetka",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Appalachia-9334/culler_konfetka"
+    }
+   ]
+  },
+  {
+   "skill": "Raise Spectre",
+   "count": 4918,
+   "pct": 3.95,
+   "filtered_total": 4918,
+   "characters": [
+    {
+     "account": "PorkDF-5130",
+     "name": "Pork_Allflame",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/PorkDF-5130/Pork_Allflame"
+    },
+    {
+     "account": "voituretag70-6925",
+     "name": "FubDeepInMyAss",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/voituretag70-6925/FubDeepInMyAss"
+    },
+    {
+     "account": "Camou-4965",
+     "name": "camou_allflame",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Camou-4965/camou_allflame"
+    },
+    {
+     "account": "forwqsadfq-4013",
+     "name": "gktiiS",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/forwqsadfq-4013/gktiiS"
+    },
+    {
+     "account": "tasinh-5557",
+     "name": "tangocsinh",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/tasinh-5557/tangocsinh"
+    },
+    {
+     "account": "Sideos161-4993",
+     "name": "LostInTheSupermarket",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Sideos161-4993/LostInTheSupermarket"
+    }
+   ]
+  },
+  {
+   "skill": "Ethereal Knives",
+   "count": 3677,
+   "pct": 2.96,
+   "filtered_total": 3677,
+   "characters": [
+    {
+     "account": "IamKaru-4813",
+     "name": "SpongebobHeistLeague",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/IamKaru-4813/SpongebobHeistLeague"
+    },
+    {
+     "account": "PowerpuffLuv-9236",
+     "name": "powerxgod",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/PowerpuffLuv-9236/powerxgod"
+    },
+    {
+     "account": "JellyTotz-4439",
+     "name": "JellyuwuCute",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/JellyTotz-4439/JellyuwuCute"
+    },
+    {
+     "account": "Jerrin-4295",
+     "name": "Jerrin",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Jerrin-4295/Jerrin"
+    },
+    {
+     "account": "GiviMotorola1998-2503",
+     "name": "KolbaskaVkarmashke",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/GiviMotorola1998-2503/KolbaskaVkarmashke"
+    },
+    {
+     "account": "Macookta-3292",
+     "name": "Macookta",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Macookta-3292/Macookta"
+    }
+   ]
+  },
+  {
+   "skill": "Flicker Strike",
+   "count": 3160,
+   "pct": 2.54,
+   "filtered_total": 3160,
+   "characters": [
+    {
+     "account": "drugponu-5252",
+     "name": "КочБратан",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/drugponu-5252/%D0%9A%D0%BE%D1%87%D0%91%D1%80%D0%B0%D1%82%D0%B0%D0%BD"
+    },
+    {
+     "account": "Diewer-0712",
+     "name": "arena",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Diewer-0712/arena"
+    },
+    {
+     "account": "Mr_Shyi-6499",
+     "name": "下海阿烦闪打",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Mr_Shyi-6499/%E4%B8%8B%E6%B5%B7%E9%98%BF%E7%83%A6%E9%97%AA%E6%89%93"
+    },
+    {
+     "account": "akiraljh-1491",
+     "name": "喵喵喵闪打王朝",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/akiraljh-1491/%E5%96%B5%E5%96%B5%E5%96%B5%E9%97%AA%E6%89%93%E7%8E%8B%E6%9C%9D"
+    },
+    {
+     "account": "Haunterz-7064",
+     "name": "SSJ_Degoshi",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Haunterz-7064/SSJ_Degoshi"
+    },
+    {
+     "account": "I_Riothamus_I-0412",
+     "name": "JustSteeeeze",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/I_Riothamus_I-0412/JustSteeeeze"
+    }
+   ]
+  },
+  {
+   "skill": "Penance Brand",
+   "count": 2909,
+   "pct": 2.34,
+   "filtered_total": 2909,
+   "characters": [
+    {
+     "account": "HakuiKoyori-6418",
+     "name": "Pawsocks",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/HakuiKoyori-6418/Pawsocks"
+    },
+    {
+     "account": "wl024747024-5158",
+     "name": "ohmygahhhhhh",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/wl024747024-5158/ohmygahhhhhh"
+    },
+    {
+     "account": "cainsandesuyo-7512",
+     "name": "cain_no_oyu_alotof",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/cainsandesuyo-7512/cain_no_oyu_alotof"
+    },
+    {
+     "account": "mblake59-7746",
+     "name": "BalakyEle",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/mblake59-7746/BalakyEle"
+    },
+    {
+     "account": "jamiesleeeping-2785",
+     "name": "jamie_aseaofflame",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/jamiesleeeping-2785/jamie_aseaofflame"
+    },
+    {
+     "account": "mcpsmcps-5857",
+     "name": "致並跡",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/mcpsmcps-5857/%E8%87%B4%E4%B8%A6%E8%B7%A1"
+    }
+   ]
+  },
+  {
+   "skill": "Cyclone of Tumult",
+   "count": 2638,
+   "pct": 2.12,
+   "filtered_total": 2638,
+   "characters": [
+    {
+     "account": "kaito6343-0251",
+     "name": "溺れ声上げてはぐるぐる",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/kaito6343-0251/%E6%BA%BA%E3%82%8C%E5%A3%B0%E4%B8%8A%E3%81%92%E3%81%A6%E3%81%AF%E3%81%90%E3%82%8B%E3%81%90%E3%82%8B"
+    },
+    {
+     "account": "spagettisan-5755",
+     "name": "Hardstuck_campaign_Elon",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/spagettisan-5755/Hardstuck_campaign_Elon"
+    },
+    {
+     "account": "Sirnonebaka-2474",
+     "name": "OzempicFury",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Sirnonebaka-2474/OzempicFury"
+    },
+    {
+     "account": "IcyWhyNot-7084",
+     "name": "SKVIRTOVICHEK",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/IcyWhyNot-7084/SKVIRTOVICHEK"
+    },
+    {
+     "account": "TouchMiceElf-1600",
+     "name": "iTouchMiceElf",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/TouchMiceElf-1600/iTouchMiceElf"
+    },
+    {
+     "account": "CaptainDance9-3222",
+     "name": "규카츠",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/CaptainDance9-3222/%EA%B7%9C%EC%B9%B4%EC%B8%A0"
+    }
+   ]
+  },
+  {
+   "skill": "Kinetic Blast of Clustering",
+   "count": 2404,
+   "pct": 1.93,
+   "filtered_total": 2404,
+   "characters": [
+    {
+     "account": "Hodokenai-4848",
+     "name": "Chedum_Hodokenai",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Hodokenai-4848/Chedum_Hodokenai"
+    },
+    {
+     "account": "onikava-0869",
+     "name": "BusiuTrecias",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/onikava-0869/BusiuTrecias"
+    },
+    {
+     "account": "D1N0ZAVR-5849",
+     "name": "PlanDermyaKBoC",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/D1N0ZAVR-5849/PlanDermyaKBoC"
+    },
+    {
+     "account": "SmartFeeniX-0056",
+     "name": "Cricket_Eats_Crayons",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/SmartFeeniX-0056/Cricket_Eats_Crayons"
+    },
+    {
+     "account": "bluemooncs-1195",
+     "name": "CouilleGauche_a_JS",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/bluemooncs-1195/CouilleGauche_a_JS"
+    },
+    {
+     "account": "Amogususus-7764",
+     "name": "GAZVODOLAZ",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Amogususus-7764/GAZVODOLAZ"
+    }
+   ]
+  },
+  {
+   "skill": "Void Shockwave",
+   "count": 2364,
+   "pct": 1.9,
+   "filtered_total": 2364,
+   "characters": [
+    {
+     "account": "444831425-0342",
+     "name": "moyuhhh",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/444831425-0342/moyuhhh"
+    },
+    {
+     "account": "kaito6343-0251",
+     "name": "溺れ声上げてはぐるぐる",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/kaito6343-0251/%E6%BA%BA%E3%82%8C%E5%A3%B0%E4%B8%8A%E3%81%92%E3%81%A6%E3%81%AF%E3%81%90%E3%82%8B%E3%81%90%E3%82%8B"
+    },
+    {
+     "account": "1145141919810-2018",
+     "name": "重生之我是閃打人",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/1145141919810-2018/%E9%87%8D%E7%94%9F%E4%B9%8B%E6%88%91%E6%98%AF%E9%96%83%E6%89%93%E4%BA%BA"
+    },
+    {
+     "account": "spagettisan-5755",
+     "name": "Hardstuck_campaign_Elon",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/spagettisan-5755/Hardstuck_campaign_Elon"
+    },
+    {
+     "account": "traini1234-6450",
+     "name": "永雏塔菲闪打",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/traini1234-6450/%E6%B0%B8%E9%9B%8F%E5%A1%94%E8%8F%B2%E9%97%AA%E6%89%93"
+    },
+    {
+     "account": "AM04-9447",
+     "name": "討厭紅樓夢的",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/AM04-9447/%E8%A8%8E%E5%8E%AD%E7%B4%85%E6%A8%93%E5%A4%A2%E7%9A%84"
+    }
+   ]
+  },
+  {
+   "skill": "Kinetic Blast",
+   "count": 2270,
+   "pct": 1.83,
+   "filtered_total": 2270,
+   "characters": [
+    {
+     "account": "fanfon3-0737",
+     "name": "fanfon",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/fanfon3-0737/fanfon"
+    },
+    {
+     "account": "ee4gle-5944",
+     "name": "fdaccccccccccccqqeqeqeq",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/ee4gle-5944/fdaccccccccccccqqeqeqeq"
+    },
+    {
+     "account": "Kassadus-7130",
+     "name": "Kassadus_FpSAnnihilator",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Kassadus-7130/Kassadus_FpSAnnihilator"
+    },
+    {
+     "account": "Rafa-6874",
+     "name": "itsrafa_",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Rafa-6874/itsrafa_"
+    },
+    {
+     "account": "EggerT-2686",
+     "name": "EggerT_Prime",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/EggerT-2686/EggerT_Prime"
+    },
+    {
+     "account": "xxdasd-1410",
+     "name": "eqewqewq",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/xxdasd-1410/eqewqewq"
+    }
+   ]
+  },
+  {
+   "skill": "Cyclone",
+   "count": 2238,
+   "pct": 1.8,
+   "filtered_total": 2238,
+   "characters": [
+    {
+     "account": "Khao_dell-7548",
+     "name": "ALL_Khao",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Khao_dell-7548/ALL_Khao"
+    },
+    {
+     "account": "바로그거여-1485",
+     "name": "COTA_Halbae",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/%EB%B0%94%EB%A1%9C%EA%B7%B8%EA%B1%B0%EC%97%AC-1485/COTA_Halbae"
+    },
+    {
+     "account": "SInceReL1-2212",
+     "name": "wwwwsssppp",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/SInceReL1-2212/wwwwsssppp"
+    },
+    {
+     "account": "HeroSpuddz-4220",
+     "name": "SpuddzAllFlame",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/HeroSpuddz-4220/SpuddzAllFlame"
+    },
+    {
+     "account": "Wolfi3107-6167",
+     "name": "BingusSpinToWin",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Wolfi3107-6167/BingusSpinToWin"
+    },
+    {
+     "account": "brodru-1734",
+     "name": "YeahAgain",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/brodru-1734/YeahAgain"
+    }
+   ]
+  },
+  {
+   "skill": "Fire Trap",
+   "count": 2062,
+   "pct": 1.66,
+   "filtered_total": 2062,
+   "characters": [
+    {
+     "account": "묵은지김치찜2-7878",
+     "name": "Kimchi_Finale",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/%EB%AC%B5%EC%9D%80%EC%A7%80%EA%B9%80%EC%B9%98%EC%B0%9C2-7878/Kimchi_Finale"
+    },
+    {
+     "account": "SelvaPeluda-7915",
+     "name": "MyQueefFlapsMyFUPA",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/SelvaPeluda-7915/MyQueefFlapsMyFUPA"
+    },
+    {
+     "account": "Salad_Bottle-0234",
+     "name": "Zepetoo",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Salad_Bottle-0234/Zepetoo"
+    },
+    {
+     "account": "glfvl-3868",
+     "name": "K_lowlife",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/glfvl-3868/K_lowlife"
+    },
+    {
+     "account": "Aejynz-6654",
+     "name": "qck_SCUBA",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Aejynz-6654/qck_SCUBA"
+    },
+    {
+     "account": "angul121-4032",
+     "name": "linecuttingleague",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/angul121-4032/linecuttingleague"
+    }
+   ]
+  },
+  {
+   "skill": "Death Aura",
+   "count": 1975,
+   "pct": 1.59,
+   "filtered_total": 1975,
+   "characters": [
+    {
+     "account": "sky6195-3963",
+     "name": "咒海意意啊",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/sky6195-3963/%E5%92%92%E6%B5%B7%E6%84%8F%E6%84%8F%E5%95%8A"
+    },
+    {
+     "account": "7thHarbinger-1837",
+     "name": "Emperor_Curious",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/7thHarbinger-1837/Emperor_Curious"
+    },
+    {
+     "account": "xie5505030-7744",
+     "name": "下水道扫地机器人",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/xie5505030-7744/%E4%B8%8B%E6%B0%B4%E9%81%93%E6%89%AB%E5%9C%B0%E6%9C%BA%E5%99%A8%E4%BA%BA"
+    },
+    {
+     "account": "mugixd-6848",
+     "name": "KiertoBobb",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/mugixd-6848/KiertoBobb"
+    },
+    {
+     "account": "yangcy-0206",
+     "name": "焰超越",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/yangcy-0206/%E7%84%B0%E8%B6%85%E8%B6%8A"
+    },
+    {
+     "account": "fanfon3-0737",
+     "name": "СноваОбогнал",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/fanfon3-0737/%D0%A1%D0%BD%D0%BE%D0%B2%D0%B0%D0%9E%D0%B1%D0%BE%D0%B3%D0%BD%D0%B0%D0%BB"
+    }
+   ]
+  },
+  {
+   "skill": "Vaal Reap",
+   "count": 1713,
+   "pct": 1.38,
+   "filtered_total": 1713,
+   "characters": [
+    {
+     "account": "visionpepela-5207",
+     "name": "Beton_Racsimeow_",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/visionpepela-5207/Beton_Racsimeow_"
+    },
+    {
+     "account": "AENighthuntr-0237",
+     "name": "BoatLeagueInShambles",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/AENighthuntr-0237/BoatLeagueInShambles"
+    },
+    {
+     "account": "MemelordDuck-5927",
+     "name": "zzzsamueltwo",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/MemelordDuck-5927/zzzsamueltwo"
+    },
+    {
+     "account": "Barneylol-4007",
+     "name": "Barnussen_duCAT",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Barneylol-4007/Barnussen_duCAT"
+    },
+    {
+     "account": "crumbling322-6375",
+     "name": "Crumbling_duCAT",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/crumbling322-6375/Crumbling_duCAT"
+    },
+    {
+     "account": "reamer69-3447",
+     "name": "WeedSmokingMan__",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/reamer69-3447/WeedSmokingMan__"
+    }
+   ]
+  },
+  {
+   "skill": "Scorching Ray of Immolation",
+   "count": 1650,
+   "pct": 1.33,
+   "filtered_total": 1650,
+   "characters": [
+    {
+     "account": "Brainwar-1546",
+     "name": "BrainAllFlamed",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Brainwar-1546/BrainAllFlamed"
+    },
+    {
+     "account": "Letickl-5025",
+     "name": "Mazqueue",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Letickl-5025/Mazqueue"
+    },
+    {
+     "account": "Death_cure-5950",
+     "name": "Curseofthestunflame",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Death_cure-5950/Curseofthestunflame"
+    },
+    {
+     "account": "crownvv-7723",
+     "name": "KimDuckbok",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/crownvv-7723/KimDuckbok"
+    },
+    {
+     "account": "saiforos-7405",
+     "name": "Saiforos",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/saiforos-7405/Saiforos"
+    },
+    {
+     "account": "uNbea7-1254",
+     "name": "NinnieRFCurse",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/uNbea7-1254/NinnieRFCurse"
+    }
+   ]
+  },
+  {
+   "skill": "Corrupting Fever",
+   "count": 1613,
+   "pct": 1.3,
+   "filtered_total": 1613,
+   "characters": [
+    {
+     "account": "AENighthuntr-0237",
+     "name": "BoatLeagueInShambles",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/AENighthuntr-0237/BoatLeagueInShambles"
+    },
+    {
+     "account": "Barneylol-4007",
+     "name": "Barnussen_duCAT",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Barneylol-4007/Barnussen_duCAT"
+    },
+    {
+     "account": "crumbling322-6375",
+     "name": "Crumbling_duCAT",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/crumbling322-6375/Crumbling_duCAT"
+    },
+    {
+     "account": "reamer69-3447",
+     "name": "WeedSmokingMan__",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/reamer69-3447/WeedSmokingMan__"
+    },
+    {
+     "account": "dllmonlun79-1282",
+     "name": "StocktonRushIII",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/dllmonlun79-1282/StocktonRushIII"
+    },
+    {
+     "account": "KamahL-8860",
+     "name": "MoistOrbs",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/KamahL-8860/MoistOrbs"
+    }
+   ]
+  },
+  {
+   "skill": "Frenzy",
+   "count": 1445,
+   "pct": 1.16,
+   "filtered_total": 1445,
+   "characters": [
+    {
+     "account": "PourToujoursLumineux-6619",
+     "name": "Res_RedShirtSlave",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/PourToujoursLumineux-6619/Res_RedShirtSlave"
+    },
+    {
+     "account": "kl1mk4-6315",
+     "name": "ymb",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/kl1mk4-6315/ymb"
+    },
+    {
+     "account": "Kini_oce-5420",
+     "name": "Kini_Allflame",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Kini_oce-5420/Kini_Allflame"
+    },
+    {
+     "account": "hdw-5527",
+     "name": "InisMonaa",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/hdw-5527/InisMonaa"
+    },
+    {
+     "account": "krokam132-2410",
+     "name": "KrokamAllflame",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/krokam132-2410/KrokamAllflame"
+    },
+    {
+     "account": "boj_-0874",
+     "name": "bag_hunter",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/boj_-0874/bag_hunter"
+    }
+   ]
+  },
+  {
+   "skill": "Vaal Righteous Fire",
+   "count": 1372,
+   "pct": 1.1,
+   "filtered_total": 1372,
+   "characters": [
+    {
+     "account": "BoTz_-5169",
+     "name": "BoTzAF",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/BoTz_-5169/BoTzAF"
+    },
+    {
+     "account": "RUCKUSVD-2259",
+     "name": "ALPHAMALE_BUTTHOLEDIVER",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/RUCKUSVD-2259/ALPHAMALE_BUTTHOLEDIVER"
+    },
+    {
+     "account": "SelvaPeluda-7915",
+     "name": "MyQueefFlapsMyFUPA",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/SelvaPeluda-7915/MyQueefFlapsMyFUPA"
+    },
+    {
+     "account": "Asiangrandma-2957",
+     "name": "CircleUCircleU",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Asiangrandma-2957/CircleUCircleU"
+    },
+    {
+     "account": "twbtwb-3498",
+     "name": "Wizbizbooms",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/twbtwb-3498/Wizbizbooms"
+    },
+    {
+     "account": "Exorzon-6416",
+     "name": "ExorzonAllflame",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Exorzon-6416/ExorzonAllflame"
+    }
+   ]
+  },
+  {
+   "skill": "Ethereal Knives of the Massacre",
+   "count": 1309,
+   "pct": 1.05,
+   "filtered_total": 1309,
+   "characters": [
+    {
+     "account": "heygyus-0416",
+     "name": "AAAAARESURRECTTTT",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/heygyus-0416/AAAAARESURRECTTTT"
+    },
+    {
+     "account": "LazyStyle-1276",
+     "name": "я_срал_в_камень",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/LazyStyle-1276/%D1%8F_%D1%81%D1%80%D0%B0%D0%BB_%D0%B2_%D0%BA%D0%B0%D0%BC%D0%B5%D0%BD%D1%8C"
+    },
+    {
+     "account": "Fugigs-1867",
+     "name": "Doro",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Fugigs-1867/Doro"
+    },
+    {
+     "account": "allgameru-7474",
+     "name": "utgbrhdgf",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/allgameru-7474/utgbrhdgf"
+    },
+    {
+     "account": "Crygane-3282",
+     "name": "KeepersTwoPointZero",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Crygane-3282/KeepersTwoPointZero"
+    },
+    {
+     "account": "Shobla-3772",
+     "name": "ДолблюПещеруСТОчасов",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Shobla-3772/%D0%94%D0%BE%D0%BB%D0%B1%D0%BB%D1%8E%D0%9F%D0%B5%D1%89%D0%B5%D1%80%D1%83%D0%A1%D0%A2%D0%9E%D1%87%D0%B0%D1%81%D0%BE%D0%B2"
+    }
+   ]
+  },
+  {
+   "skill": "Animate Weapon of Ranged Arms",
+   "count": 1232,
+   "pct": 0.99,
+   "filtered_total": 1232,
+   "characters": [
+    {
+     "account": "Mikuwu-3972",
+     "name": "NoPP_Miku",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Mikuwu-3972/NoPP_Miku"
+    },
+    {
+     "account": "lollipopB-1757",
+     "name": "AFWitchPB",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/lollipopB-1757/AFWitchPB"
+    },
+    {
+     "account": "Zook740-3590",
+     "name": "Zookerz",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Zook740-3590/Zookerz"
+    },
+    {
+     "account": "Morvid-6044",
+     "name": "RekiPrawny",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Morvid-6044/RekiPrawny"
+    },
+    {
+     "account": "Theoshin-5988",
+     "name": "CotATheoKillerQueen",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Theoshin-5988/CotATheoKillerQueen"
+    },
+    {
+     "account": "lightxiii13xiii-2249",
+     "name": "LightXIII_NoLuckVI",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/lightxiii13xiii-2249/LightXIII_NoLuckVI"
+    }
+   ]
+  },
+  {
+   "skill": "Lancing Steel of Spraying",
+   "count": 1193,
+   "pct": 0.96,
+   "filtered_total": 1193,
+   "characters": [
+    {
+     "account": "iDei-1549",
+     "name": "CreatinyAfterlightBad",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/iDei-1549/CreatinyAfterlightBad"
+    },
+    {
+     "account": "Salcee-4502",
+     "name": "tjtjtjtjtjtjtjtjtj",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Salcee-4502/tjtjtjtjtjtjtjtjtj"
+    },
+    {
+     "account": "chetemax-1312",
+     "name": "BOLAALLFLAME",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/chetemax-1312/BOLAALLFLAME"
+    },
+    {
+     "account": "lich123asd-7125",
+     "name": "SitDOwn_Allflame",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/lich123asd-7125/SitDOwn_Allflame"
+    },
+    {
+     "account": "NotShinsoku-4671",
+     "name": "ShinAllflameA",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/NotShinsoku-4671/ShinAllflameA"
+    },
+    {
+     "account": "Rigbad-2058",
+     "name": "WhiteCheekedGibbon",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Rigbad-2058/WhiteCheekedGibbon"
+    }
+   ]
+  },
+  {
+   "skill": "Lightning Tendrils of Eccentricity",
+   "count": 1192,
+   "pct": 0.96,
+   "filtered_total": 1192,
+   "characters": [
+    {
+     "account": "ALEPH1986-5331",
+     "name": "ALEPH_Scion",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/ALEPH1986-5331/ALEPH_Scion"
+    },
+    {
+     "account": "Xevosh-5942",
+     "name": "BOAT_MY_GOAT",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Xevosh-5942/BOAT_MY_GOAT"
+    },
+    {
+     "account": "minhpham3981-7411",
+     "name": "Doom_Beo",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/minhpham3981-7411/Doom_Beo"
+    },
+    {
+     "account": "badzzzz-5615",
+     "name": "zzzzzzzzbb",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/badzzzz-5615/zzzzzzzzbb"
+    },
+    {
+     "account": "angry0ldman-2160",
+     "name": "TASTEMYTENDIES",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/angry0ldman-2160/TASTEMYTENDIES"
+    },
+    {
+     "account": "ezetw-4935",
+     "name": "ignitenlacola",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/ezetw-4935/ignitenlacola"
+    }
+   ]
+  },
+  {
+   "skill": "Forbidden Rite of Soul Sacrifice",
+   "count": 1178,
+   "pct": 0.95,
+   "filtered_total": 1178,
+   "characters": [
+    {
+     "account": "Khao_dell-7548",
+     "name": "ALL_Khao",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Khao_dell-7548/ALL_Khao"
+    },
+    {
+     "account": "goetzjam-3084",
+     "name": "goetzjam_anotherjebait",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/goetzjam-3084/goetzjam_anotherjebait"
+    },
+    {
+     "account": "Miniman7778-7272",
+     "name": "Mini_MyEyes",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Miniman7778-7272/Mini_MyEyes"
+    },
+    {
+     "account": "yari99999-7672",
+     "name": "Allflame_BlueAnt",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/yari99999-7672/Allflame_BlueAnt"
+    },
+    {
+     "account": "Lokkithen-0476",
+     "name": "Lokithen",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/Lokkithen-0476/Lokithen"
+    },
+    {
+     "account": "SorrbiiiT-4236",
+     "name": "SORBIIIT",
+     "url": "https://poe.ninja/poe1/builds/allflame/character/SorrbiiiT-4236/SORBIIIT"
+    }
+   ]
+  }
+ ]
+}
