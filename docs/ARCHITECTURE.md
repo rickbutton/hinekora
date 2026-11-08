@@ -40,7 +40,7 @@ function of `(source, registry)`; no I/O anywhere in it.
    abstract interpretation                 Layer 3 · the checker  ◀── the heart
         │   ⇒ diagnostics  +  a per-statement trace
         ▼
-   language service                        Layer 4 · LSP (diagnostics, hover, completion)
+   language service                        Layer 4 · LSP (diagnostics, hover, completion, names)
         │
         ▼
    editors / CLI                           Layer 5 · thin clients
@@ -262,6 +262,12 @@ outputs feed it:
   ("what is my item here"). **Completion** goes a step further and runs the checker to learn
   what is _provably impossible_ at the cursor, filtering the offered mods to those that can
   actually roll and are not already excluded.
+
+The name features (highlight the other uses, go to definition, references, rename, the
+outline) need no checker at all: the parser already decides what each identifier is, a
+parameter of the enclosing def or a method word, and `bindingsOf` reads that off the
+syntax tree. The same table tells hover which def an identifier belongs to, so hover and
+highlight cannot disagree.
 
 ---
 

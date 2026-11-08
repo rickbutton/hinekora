@@ -1,17 +1,32 @@
 /**
  * Transport-agnostic server wiring: given an LSP `Connection` and a resolved
  * `Registry`, advertise capabilities and wire the handlers (diagnostics, hover,
- * completion, semantic tokens). The connection's transport (stdio/IPC for Node,
+ * completion, semantic tokens, highlights, definition, references, rename,
+ * outline). The connection's transport (stdio/IPC for Node,
  * message-port for a browser worker) is the caller's concern, so this same
  * function serves both the VSCode server and the future playground worker.
  */
-import { type Connection, TextDocuments, TextDocumentSyncKind } from "vscode-languageserver";
+import {
+    type Connection,
+    ErrorCodes,
+    ResponseError,
+    TextDocuments,
+    TextDocumentSyncKind,
+} from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import type { Registry } from "@hinekora/core";
 import { getDiagnostics } from "./service.js";
 import { getHover } from "./hover.js";
 import { getCompletions } from "./completion.js";
 import { getSemanticTokens, SEMANTIC_LEGEND } from "./semantic.js";
+import {
+    getDefinition,
+    getDocumentHighlights,
+    getDocumentSymbols,
+    getReferences,
+    getRenameEdits,
+    prepareRename,
+} from "./navigation.js";
 
 export function createServer(connection: Connection, registry: Registry): void {
     const documents = new TextDocuments(TextDocument);
@@ -25,6 +40,11 @@ export function createServer(connection: Connection, registry: Registry): void {
             // characters already auto-trigger statement completions.)
             completionProvider: { triggerCharacters: ['"'] },
             semanticTokensProvider: { legend: SEMANTIC_LEGEND, full: true },
+            documentHighlightProvider: true,
+            definitionProvider: true,
+            referencesProvider: true,
+            renameProvider: { prepareProvider: true },
+            documentSymbolProvider: true,
         },
     }));
 
@@ -62,6 +82,46 @@ export function createServer(connection: Connection, registry: Registry): void {
         const doc = documents.get(params.textDocument.uri);
         if (!doc) return { data: [] };
         return getSemanticTokens(doc.getText(), registry);
+    });
+
+    // --- names: highlights, definition, references, rename, outline ---
+    connection.onDocumentHighlight((params) => {
+        const doc = documents.get(params.textDocument.uri);
+        if (!doc) return [];
+        return getDocumentHighlights(doc.getText(), doc.offsetAt(params.position));
+    });
+    connection.onDefinition((params) => {
+        const doc = documents.get(params.textDocument.uri);
+        if (!doc) return null;
+        const range = getDefinition(doc.getText(), doc.offsetAt(params.position));
+        return range === null ? null : { uri: doc.uri, range };
+    });
+    connection.onReferences((params) => {
+        const doc = documents.get(params.textDocument.uri);
+        if (!doc) return [];
+        const ranges = getReferences(
+            doc.getText(),
+            doc.offsetAt(params.position),
+            params.context.includeDeclaration,
+        );
+        return ranges.map((range) => ({ uri: doc.uri, range }));
+    });
+    connection.onPrepareRename((params) => {
+        const doc = documents.get(params.textDocument.uri);
+        if (!doc) return null;
+        return prepareRename(doc.getText(), doc.offsetAt(params.position));
+    });
+    connection.onRenameRequest((params) => {
+        const doc = documents.get(params.textDocument.uri);
+        if (!doc) return null;
+        const result = getRenameEdits(doc.getText(), doc.offsetAt(params.position), params.newName);
+        if ("error" in result) throw new ResponseError(ErrorCodes.InvalidRequest, result.error);
+        return { changes: { [doc.uri]: result.edits } };
+    });
+    connection.onDocumentSymbol((params) => {
+        const doc = documents.get(params.textDocument.uri);
+        if (!doc) return [];
+        return getDocumentSymbols(doc.getText());
     });
 
     documents.listen(connection);

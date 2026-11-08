@@ -125,6 +125,13 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
   tags, the base's plus the `adds_tags` of present mods, a rule the data carries rather
   than the wiki (`QUESTIONS.md` Q2), vs the mod's spawn table, first match wins, zero
   disables) plus the [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) gate.
+- **ast/**: the surface AST (`ast.ts`), spans (`span.ts`), and name binding
+  (`bindings.ts`): `bindingsOf(craft)` lists every def, operation function and parameter
+  with its declaration span and reference spans, `bindingAt` finds the one under an
+  offset. Scoping is the parser's: a bare identifier is a parameter reference only when
+  it names a parameter of the enclosing def, so steps written inside a call's block
+  argument bind to the def they are written in. The editor's highlights, definition,
+  references, rename and hover all read this one table.
 - **render/**: the labels diagnostics and hover show (`modLabel`, `baseLabel`).
 - **resolve/**: `Registry` (the resolved data surface). Key methods:
     - `resolveBase / resolveMod / resolveModType(name, ctx?) / resolveCurrency /
@@ -232,8 +239,14 @@ Transport-free service functions + a stdio server:
       veiled orbs and `unveil` append the unveil options), and a string argument shows
       the signature of what its slot names (essence, bench craft, fossil set, harvest
       tag, Aspect, or mod with a trailing `t1`). A def's declaration/calls/params hover
-      as one shared signature (`defAt`): a predicate def shows what it expands to, an
-      operation function the steps it runs.
+      as one shared signature (`defAt`, by the bindings): a predicate def shows what it
+      expands to, an operation function the steps it runs.
+- `navigation.ts`: the name-aware features over `bindingsOf`: `getDocumentHighlights`
+  (declaration as a write, references as reads), `getDefinition`, `getReferences`,
+  `prepareRename` + `getRenameEdits` (refuses a non-identifier, a word of the language
+  or the method table, a taken def name, or a taken parameter name of the same def),
+  and `getDocumentSymbols` (the item, then each def with its parameters as children).
+  All return nothing while the guide does not parse.
 - `completion.ts`: `getCompletions`. The pieces of the current line before the cursor
   (`piecesOf`: words, numbers, closed strings, the open string) pick the context
   (`contextAt`): statement (each method's first word, the local operation functions,
@@ -251,7 +264,8 @@ Transport-free service functions + a stdio server:
   `["keyword","property","function"]`; keywords are the control and predicate words plus
   `METHOD_WORDS` (currency names colour as functions); returns empty on unlexable input.
 - `server.ts`: `createServer(connection, registry)`, capabilities + handlers.
-  `triggerCharacters` includes `"` so the mod/base list pops when a string opens.
+  `triggerCharacters` includes `"` so the mod/base list pops when a string opens. A
+  refused rename is returned as an `InvalidRequest` error so the editor shows the reason.
 - `node.ts`: stdio entry (`vscode-languageserver/node.js`, explicit `.js` for NodeNext).
 - **Dependency pins that matter:** `vscode-languageserver ^9`, `-textdocument ^1.0.11`,
   `-types` pinned **exact `3.17.5`** (must match the framework's transitive version, else
@@ -669,6 +683,8 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/parser/src/vocabulary.ts`                                   | the surface vocabulary outside the method table (keywords, predicate words, item fields)           |
 | `packages/data/src/{load,adapter}.ts` + `scripts/ingest-poe1.mjs`     | data load + ingest                                                                                 |
 | `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts` | LSP features                                                                                       |
+| `packages/lsp/src/navigation.ts`                                      | highlights, definition, references, rename, outline over the bindings                              |
+| `packages/core/src/ast/bindings.ts`                                   | `bindingsOf`: every def and parameter with its declaration and references                          |
 | `packages/lsp/src/method-at.ts`                                       | `methodAt`: the method statement a token or cursor position belongs to                             |
 | `packages/core/src/check/check.test.ts`                               | checker tests (currency set, count-coupling regression, loops, defs)                               |
 | `packages/core/src/check/check-tiers.test.ts`                         | tier-pinned predicates and the tier overlay through the checker                                    |
@@ -684,6 +700,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/check/harvest-change.test.ts`                      | the Harvest change of a modifier into another element                                              |
 | `packages/core/src/check/veiled.test.ts`                              | veiled orbs and `unveil` through the checker                                                       |
 | `packages/lsp/src/features.test.ts`                                   | hover / completion / semantic-token tests                                                          |
+| `packages/lsp/src/navigation.test.ts`                                 | highlight / definition / references / rename / outline tests                                       |
 | `packages/lsp/src/service.test.ts`                                    | `getDiagnostics` over the real data pipeline                                                       |
 
 ---

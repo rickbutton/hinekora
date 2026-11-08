@@ -191,11 +191,15 @@ class Parser {
 
     private parseDef(): Def | ProcDef {
         const start = this.expectKeyword("def").span.start;
-        const name = this.expect("ident", "a def name after 'def'").text;
+        const nameTok = this.expect("ident", "a def name after 'def'");
+        const name = nameTok.text;
         this.expect("lparen", "'(' after the def name");
         const params: string[] = [];
+        const paramSpans: SourceSpan[] = [];
         while (!this.at("rparen")) {
-            params.push(this.expect("ident", "a parameter name").text);
+            const p = this.expect("ident", "a parameter name");
+            params.push(p.text);
+            paramSpans.push(p.span);
             if (this.at("comma")) this.advance();
             else break;
         }
@@ -214,11 +218,21 @@ class Parser {
                     params,
                     body,
                     span: span(start, this.prev.span.end),
+                    nameSpan: nameTok.span,
+                    paramSpans,
                 };
             }
             this.expect("assign", "'=' or '{' before the def body");
             const body = this.parsePred();
-            return { kind: "def", name, params, body, span: span(start, this.prev.span.end) };
+            return {
+                kind: "def",
+                name,
+                params,
+                body,
+                span: span(start, this.prev.span.end),
+                nameSpan: nameTok.span,
+                paramSpans,
+            };
         } finally {
             this.defParams = new Set();
         }

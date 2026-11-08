@@ -242,6 +242,8 @@ export const def = (name: string, params: readonly string[], body: Pred): Def =>
     params,
     body,
     span: DS,
+    nameSpan: DS,
+    paramSpans: params.map(() => DS),
 });
 /** An operation function (`def name(params) { body }`). */
 export const procDef = (
@@ -254,6 +256,8 @@ export const procDef = (
     params,
     body,
     span: DS,
+    nameSpan: DS,
+    paramSpans: params.map(() => DS),
 });
 /** A tier argument (`t1`) — a distinct sort from a bare-int count. */
 export const tierArg = (value: number): Arg => ({ kind: "tier", value, span: DS });

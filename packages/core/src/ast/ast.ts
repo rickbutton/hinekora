@@ -31,6 +31,10 @@ export interface Def {
     readonly params: readonly string[];
     readonly body: Pred;
     readonly span: SourceSpan;
+    /** The name token, so the editor can point at the declaration itself. */
+    readonly nameSpan: SourceSpan;
+    /** One span per parameter, parallel to `params`. */
+    readonly paramSpans: readonly SourceSpan[];
 }
 
 /**
@@ -46,6 +50,8 @@ export interface ProcDef {
     readonly params: readonly string[];
     readonly body: readonly Stmt[];
     readonly span: SourceSpan;
+    readonly nameSpan: SourceSpan;
+    readonly paramSpans: readonly SourceSpan[];
 }
 
 /** A reference to a def parameter, appearing in a value slot of the def body. */

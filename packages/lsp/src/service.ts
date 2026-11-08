@@ -8,7 +8,7 @@ import { check, type Registry, type SourceSpan } from "@hinekora/core";
 import { parse } from "@hinekora/parser";
 
 /** Our spans are 1-based line/column; LSP ranges are 0-based line/character. */
-function toRange(span: SourceSpan): Range {
+export function toRange(span: SourceSpan): Range {
     const start = { line: span.start.line - 1, character: span.start.column - 1 };
     let end = { line: span.end.line - 1, character: span.end.column - 1 };
     // Widen an empty range to one character so the squiggle is visible.

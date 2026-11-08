@@ -8,4 +8,5 @@ export * from "./service.js";
 export * from "./hover.js";
 export * from "./completion.js";
 export * from "./semantic.js";
+export * from "./navigation.js";
 export * from "./server.js";

@@ -5,7 +5,10 @@
  */
 import {
     type AItem,
+    bindingAt,
+    bindingsOf,
     check,
+    type Craft,
     type CurrencyKind,
     cardinalityGuarantees,
     type Def,
@@ -182,40 +185,16 @@ function methodHover(method: Method, entry: TraceEntry | undefined, registry: Re
 type LocalDef = Def | ProcDef;
 
 /**
- * If the ident at `i` names a local def (a predicate or an operation
- * function), its declaration, a call, or one of its parameters inside the
- * body, return that def; all three share one hover.
+ * The local def (a predicate or an operation function) the offset belongs to:
+ * its declaration, a call, or one of its parameters. The bindings decide, so a
+ * parameter that shadows a method word is the parameter. All three share one
+ * hover.
  */
-function defAt(
-    tokens: readonly Token[],
-    i: number,
-    defs: readonly LocalDef[],
-): LocalDef | undefined {
-    const tok = tokens[i];
-    if (!tok || tok.kind !== "ident") return undefined;
-    const byName = (n: string): LocalDef | undefined => defs.find((d) => d.name === n);
-
-    // The declaration name (after `def`) or a call (name immediately before `(`).
-    const prev = tokens[i - 1];
-    if (prev?.kind === "ident" && prev.text === "def") {
-        const d = byName(tok.text);
-        if (d) return d;
-    }
-    if (tokens[i + 1]?.kind === "lparen") {
-        const d = byName(tok.text);
-        if (d) return d;
-    }
-    // A parameter reference inside the def's own span.
-    for (const d of defs) {
-        if (
-            d.params.includes(tok.text) &&
-            d.span.start.offset <= tok.span.start.offset &&
-            tok.span.end.offset <= d.span.end.offset
-        ) {
-            return d;
-        }
-    }
-    return undefined;
+function defAt(craft: Craft, offset: number): LocalDef | undefined {
+    const b = bindingAt(bindingsOf(craft), offset);
+    if (b === undefined) return undefined;
+    const name = b.kind === "param" ? b.owner : b.name;
+    return [...craft.defs, ...craft.procs].find((d) => d.name === name);
 }
 
 /** The signature block for a local def: its shape and what it expands to or runs. */
@@ -434,13 +413,12 @@ function signature(
     i: number,
     entry: TraceEntry | undefined,
     registry: Registry,
-    defs: readonly LocalDef[],
+    def: LocalDef | undefined,
 ): string | null {
     const tok = tokens[i]!;
 
     // A local def, its declaration, a call to it, or one of its params.
-    const d = defAt(tokens, i, defs);
-    if (d) return defSignature(d);
+    if (def) return defSignature(def);
 
     // A method statement: its words and arguments hover by the method table.
     const found = methodAt(tokens.map(atomOf), i);
@@ -708,13 +686,13 @@ export function getHover(source: string, offset: number, registry: Registry): st
         parsed.ok && !insideStepArgument(parsed.craft.body, offset)
             ? traceAt(check(parsed.craft, { registry }).trace, offset)
             : undefined;
-    const defs: LocalDef[] = parsed.ok ? [...parsed.craft.defs, ...parsed.craft.procs] : [];
+    const def = parsed.ok ? defAt(parsed.craft, offset) : undefined;
 
     let sig: string | null = null;
     try {
         const tokens = tokenize(source);
         const i = tokenIndexAt(tokens, offset);
-        if (i >= 0) sig = signature(tokens, i, entry, registry, defs);
+        if (i >= 0) sig = signature(tokens, i, entry, registry, def);
     } catch {
         // Unlexable source (mid-edit): fall through to the state footer alone.
     }
