@@ -1,0 +1,27 @@
+# The Wild Bristle Matron trick: a random metamod made deterministic.
+#
+# The Bestiary recipe adds one of the five metamods at random, among those
+# that fit. Four of them are suffixes; only "Suffixes Cannot Be Changed" is a
+# prefix. Fill the suffixes first and the recipe has one choice left, so the
+# checker proves which metamod the item carries and the Harvest reforge that
+# follows is known to keep the suffixes. Each round needs a prefix slot for the
+# metamod; when the reforge fills the prefixes, an Eldritch Orb of Annulment
+# under the Exarch's dominance opens one without touching the suffixes.
+
+item {
+    base:     "Titan Greaves"
+    ilvl:     86
+    rarity:   rare
+    prefixes: [ "maximum life" t1 ]
+    suffixes: [ "fire resistance" t1, "cold resistance" t1, "chaos resistance" t2 ]
+}
+
+ember lesser
+
+until has "movement speed" t1 and has "maximum life" t1 {
+    if prefixCount == 3 {
+        eldritch annul
+    }
+    beast metamod
+    harvest reforge "speed"
+}

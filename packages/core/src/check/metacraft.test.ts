@@ -3,6 +3,7 @@ import { check, type CheckContext } from "./check.js";
 import { disjunctiveGuarantees, guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import {
+    beast,
     bench,
     cmp,
     craft,
@@ -11,6 +12,7 @@ import {
     has,
     iff,
     item,
+    notp,
     op,
     veiled,
 } from "../__fixtures__/ast.js";
@@ -80,6 +82,31 @@ describe("metamod effects are carried on the catalog", () => {
             { kind: "craftedCap", cap: 3 },
         ]);
         expect(registry.effectsOfType(TypeId("IncreasedLife"))).toEqual([]);
+    });
+});
+
+describe("a metamod named in a predicate", () => {
+    it("resolves although no spawn table admits it, and is proven once benched", () => {
+        const c = craft(rareRing(["T1 Life"]), [
+            bench("prefixes cannot be changed"),
+            iff(notp(has("prefixes cannot be changed")), [op("chaos")]),
+        ]);
+        const messages = check(c, ctx).diagnostics.map((d) => d.message);
+        expect(messages).toEqual([
+            expect.stringContaining('can never run: not has "prefixes cannot be changed"'),
+        ]);
+    });
+
+    it("lets the Bestiary's random metamod collapse to the one that fits", () => {
+        // With the suffixes full, only the prefix-side metamod can be added, so
+        // the recipe's result is known without a branch.
+        const full = rareRing(["T1 Life"], ["FireResist1", "ColdResist1", "LightningResist1"]);
+        const c = craft(full, [
+            beast({ kind: "metamod" }),
+            iff(notp(has("suffixes cannot be changed")), [op("chaos")]),
+        ]);
+        const messages = check(c, ctx).diagnostics.map((d) => d.message);
+        expect(messages).toEqual([expect.stringContaining("can never run")]);
     });
 });
 

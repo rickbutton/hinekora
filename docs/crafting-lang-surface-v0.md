@@ -101,7 +101,9 @@ word matches an entry word exactly or as a prefix of at least three letters, so
 `"max life"` finds "maximum Life" and `"fire res"` finds "Fire Resistance". The candidates
 are narrowed to the types that can roll on the craft's base at its item level, which is
 what keeps `"fire res"` from also meaning the fire-and-chaos hybrid on a base that cannot
-roll it. An exact mod id (`IncreasedLife5`) always resolves. A query that matches several
+roll it. A name that no modifier rolls under still resolves when the bench puts it on the
+item's class, which is how a metamod is named in a predicate (`has "suffixes cannot be
+changed"`). An exact mod id (`IncreasedLife5`) always resolves. A query that matches several
 types is an error listing them:
 
 ```

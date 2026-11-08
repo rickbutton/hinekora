@@ -358,6 +358,18 @@ export function buildRegistry(data: RegistryData): Registry {
     const essences = data.essences ?? [];
     const benchCrafts = data.benchCrafts ?? [];
     const fossils = data.fossils ?? [];
+    // The bench's types per item class: a name may mean a modifier only the
+    // bench puts on this class (a metamod), which no spawn table admits.
+    const benchTypesByClass = new Map<ClassId, Set<TypeId>>();
+    for (const craft of benchCrafts) {
+        const type = modById.get(norm(craft.mod))?.type;
+        if (!type) continue;
+        for (const cls of craft.itemClasses) {
+            let types = benchTypesByClass.get(cls);
+            if (!types) benchTypesByClass.set(cls, (types = new Set()));
+            types.add(type);
+        }
+    }
     const eldritch = data.eldritch ?? [];
     const aspects = new Map(
         Object.entries(data.aspects ?? ASPECTS).map(
@@ -488,14 +500,18 @@ export function buildRegistry(data: RegistryData): Registry {
             if (exact) return found(exact.type);
 
             let matches = matchTypes(typeIndex, name);
-            // Narrow to types that can actually roll on this item, when known.
+            // Narrow to types that can actually roll on this item, when known;
+            // failing any, to those the bench can put on its class.
             if (ctx) {
                 const rollable = matches.filter(
                     (m) =>
                         veiledTypes.has(m.type) ||
                         rollableTiers(catalog, ctx.base, ctx.ilvl, m.type, ctx.tags).length > 0,
                 );
+                const benchable = benchTypesByClass.get(ctx.base.itemClass);
+                const benched = matches.filter((m) => benchable?.has(m.type));
                 if (rollable.length > 0) matches = rollable;
+                else if (benched.length > 0) matches = benched;
             }
             if (matches.length === 0) return fail({ kind: "unknownMod", name });
 

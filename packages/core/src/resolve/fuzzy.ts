@@ -26,16 +26,18 @@ export interface TypeEntry {
     readonly text: string;
 }
 
-/** Type → its canonical token set. Only ROLLABLE types are indexed (a type whose
- * mods can actually spawn), so unique/implicit-only types don't pollute matches. */
+/** Type → its canonical token set. Only types a craft can put on an item are
+ * indexed (rollable ones, and the bench's and the Orb of Dominance's), so
+ * unique/implicit-only types don't pollute matches. */
 export function buildTypeIndex(mods: readonly Mod[]): Map<TypeId, TypeEntry> {
-    // type → (text → count), over rollable, text-bearing mods.
+    // type → (text → count), over reachable, text-bearing mods.
     const byType = new Map<TypeId, Map<string, number>>();
     for (const m of mods) {
         if (!m.text) continue;
         // Skip non-spawnable variants; an elevated row never spawns but is named,
-        // since an Orb of Dominance makes it.
-        if (!m.spawn.some((s) => s.weight > 0) && m.source !== "elevated") continue;
+        // since an Orb of Dominance makes it, and a bench row since the bench does.
+        if (!m.spawn.some((s) => s.weight > 0) && m.source !== "elevated" && m.source !== "bench")
+            continue;
         let counts = byType.get(m.type);
         if (!counts) {
             counts = new Map();
