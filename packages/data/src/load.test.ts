@@ -14,7 +14,8 @@ import {
     rollableTiers,
     TagId,
 } from "@hinekora/core";
-import { loadDefaultPoe1, registryOf } from "./load.js";
+import { registryOf } from "./bundle.js";
+import { loadDefaultPoe1 } from "./load.js";
 
 const data = loadDefaultPoe1();
 const registry = registryOf(data);

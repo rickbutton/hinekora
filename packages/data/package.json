@@ -8,7 +8,12 @@
         ".": {
             "types": "./dist/index.d.ts",
             "import": "./dist/index.js"
-        }
+        },
+        "./browser": {
+            "types": "./dist/browser.d.ts",
+            "import": "./dist/browser.js"
+        },
+        "./data/*": "./data/*"
     },
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",

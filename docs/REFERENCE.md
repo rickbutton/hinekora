@@ -223,7 +223,10 @@ wording covers, the "presence" variants among them; several wordings are ambiguo
 (`local_maximum_{prefixes,suffixes}_allowed_+`) into a `capDelta` (absent when zero).
 `adapter.ts` adapts rows into model types and stamps `ModSource` via `classifySource`
 (domain + generation_type + is_essence_only). `load.ts`: `loadDefaultPoe1()` →
-`LoadedData`, `registryOf(data)` → `Registry`.
+`LoadedData`; `bundle.ts`: the disk-free half, `adaptPoe1(raw)` over the seven parsed
+files (`POE1_FILES` names them) and `registryOf(data)` → `Registry`, exported on their
+own as `@hinekora/data/browser` for a page that fetches the JSON itself (the `./data/*`
+export serves it).
 
 Essence data note: `maxRandomModLevel` is the "maximum level for random mods" column of the
 tier table in [Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting) and caps only
