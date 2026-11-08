@@ -36,8 +36,11 @@ describe("inlay hints", () => {
         expect(hints).toContain(`4:${lines[4]!.indexOf("{ scour")} step:`);
         expect(hints).toContain(`4:${lines[4]!.indexOf(", 2)") + 2} n:`);
         expect(hints).toContain(`5:${lines[5]!.indexOf("t1")} t:`);
-        // `anyEleRes(t)` inside viaRes forwards t to t: nothing to say.
+        // `anyEleRes(t)` inside viaRes forwards t to t: nothing to say; a
+        // forwarded parameter under another name is named.
         expect(hints.filter((h) => h.startsWith("2:"))).toEqual([]);
+        const renamed = `${SRC}def viaU(u) = anyEleRes(u)\n`;
+        expect(render(renamed)).toContain(`6:${"def viaU(u) = anyEleRes(".length} t:`);
     });
 
     it("marks sorts as type hints and arguments as parameter hints", () => {
