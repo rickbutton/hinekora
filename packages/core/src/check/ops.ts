@@ -46,6 +46,7 @@ import {
     canBeRare,
     capsOver,
     excludedTypes,
+    forgetTypes,
     fracturedTypes,
     fractureProjection,
     guaranteedTypes,
@@ -1581,17 +1582,17 @@ function removeCrafted(a: AItem, rules: Rules, registry: Registry, replacing: bo
 
     const guaranteed = guaranteedTypes(a);
     const excluded = excludedTypes(a);
-    const surviving = new Set<TypeId>();
-    const gone = new Set(excluded);
+    // The types the removal may touch are forgotten; what the presence knows of
+    // the others, a pending veiled modifier or a disjunction among them, stays.
+    const forgotten = new Set<TypeId>();
+    const gone = new Set<TypeId>();
     const tiers = new Map(a.tiers);
     const sure = { prefix: 0, suffix: 0 };
     for (const t of a.possible) {
         if (excluded.has(t)) continue;
         const rows = rowsOf(a, t, registry);
-        if (!rows.some(isBench) || fractured.has(t)) {
-            if (guaranteed.has(t)) surviving.add(t);
-            continue;
-        }
+        if (!rows.some(isBench) || fractured.has(t)) continue;
+        forgotten.add(t);
         tiers.delete(t);
         if (rows.every(isBench) && !unprovenLock) {
             if (guaranteed.has(t)) sure[genOf(a, registry, t)]++;
@@ -1611,7 +1612,7 @@ function removeCrafted(a: AItem, rules: Rules, registry: Registry, replacing: bo
         Math.max(0, a.counts.suffix[0] - removedUpper),
         Math.max(0, a.counts.suffix[1] - sure.suffix),
     ];
-    const presence = a.bdd.and(presenceFacts(a.bdd, surviving, gone), fractureProjection(a));
+    const presence = a.bdd.and(forgetTypes(a, forgotten), presenceFacts(a.bdd, [], gone));
     const crafted: Range = [
         Math.min(a.crafted[0], fracturedLower),
         Math.min(a.crafted[1], fracturedUpper),

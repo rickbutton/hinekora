@@ -137,6 +137,19 @@ export function presenceFacts(
     return p;
 }
 
+/** The presence function with everything it knows about `types` forgotten (their
+ *  presence variables and tier atoms existentially quantified), every other fact,
+ *  the disjunctions among the rest included, kept. What a removal that can only
+ *  touch those types leaves. */
+export function forgetTypes(a: AItem, types: ReadonlySet<TypeId>): Bdd {
+    let p = a.presence;
+    for (const v of a.bdd.variables()) {
+        if (isFracAtom(v)) continue;
+        if (types.has(isTierAtom(v) ? tierAtomType(v) : TypeId(v))) p = a.bdd.exists(p, v);
+    }
+    return p;
+}
+
 // --- tier presence atoms --------------------------------------------------
 //
 // A family's presence is one BDD variable named by its `TypeId`. A tier-qualified

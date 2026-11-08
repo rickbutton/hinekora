@@ -405,11 +405,20 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   lines in their colours, a bracketed "one of" group for a disjunction, a dashed line for
   the modifiers whose identity is unknown, "possibly" marks, and the absent modifiers
   struck through. The affix name and tags are the line's tooltip.
+- `src/walkthrough.ts`: `createWalkthroughPane(root, hooks)`, the guide as a list of
+  step cards from the core's `walkthrough` model: a "start with" card with the declared
+  item, then one card per statement with a badge for the currency or method, its display
+  name and the step as written, what the method does, what the step added to and took
+  from the item (`stepDelta`), and the checker's findings on it; a loop is a "repeat
+  until" block holding its steps and a branch an "if" block with its arms. The card for
+  the statement at the cursor is open with the full item card after it; hovering a card
+  highlights its statement in the editor, clicking one moves the cursor, and a card whose
+  item changed since the last edit flashes once. A toolbar steps through the leaf steps
+  in order, for following the guide at the bench.
 - `src/main.ts`: the page: the example guides (`examples/*.craft`, picked from a menu), the
-  item card for the statement at the cursor (the state after it, the final item when the
-  cursor is on no statement), a problems panel that jumps to a finding, a format button,
-  the data provenance in the header, and `window.hinekora` (`editor`, `monaco`,
-  `registry`) for the browser console.
+  walkthrough pane bound to the editor both ways, a problems panel that jumps to a
+  finding, a format button, the data provenance in the header, and `window.hinekora`
+  (`editor`, `monaco`, `registry`) for the browser console.
 
 The package is part of `tsc -b` (declarations only; Vite does the real build), lint and
 the test run (`src/convert.test.ts`). Every push to `main` builds it and publishes it to
@@ -828,7 +837,10 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/data/src/{load,bundle,adapter}.ts` + `scripts/ingest-poe1.mjs` | data load (disk in `load`, pure in `bundle`) + ingest                                              |
 | `editors/playground/src/{main,monaco,language,providers,convert}.ts`     | the browser playground: Monaco bound to the language service                                       |
 | `editors/playground/src/item-card.ts`                                    | the item drawn in the game's style from `itemView`                                                 |
+| `editors/playground/src/walkthrough.ts`                                  | the walkthrough pane: step cards bound to the editor both ways                                     |
 | `packages/core/src/render/item.ts`                                       | `itemView`, `renderItemText`: the item as a player reads it, in the game's copy layout             |
+| `packages/core/src/render/walkthrough.ts`                                | `walkthrough`, `stepDelta`: the guide as steps with the item before and after each                 |
+| `packages/lsp/src/walkthrough.test.ts`                                   | the walkthrough model over real guides                                                             |
 | `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts`    | LSP features                                                                                       |
 | `packages/lsp/src/analysis.ts`                                           | the parse and check of a document, memoized by text; every feature reads it                        |
 | `packages/lsp/src/navigation.ts`                                         | highlights, definition, references, rename, outline over the bindings                              |
@@ -845,6 +857,8 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/check/counts.test.ts`                                 | `CountDomain` in isolation (caps, coupling, refine)                                                |
 | `packages/core/src/check/make-room.test.ts`                              | annulling a full item down to open slots: the suffix bound survives the loop                       |
 | `packages/core/src/check/loop-exit.test.ts`                              | a loop whose exit takes several iterations, and one whose exit is never reached                    |
+| `packages/core/src/check/veiled-bench.test.ts`                           | a bench craft between the veiled orb and the unveil keeps the veiled modifier                      |
+| `packages/core/src/check/anonymous-affix.test.ts`                        | a declared random affix may be any modifier of its side, and clashes with a craft of its group     |
 | `packages/cli/src/examples.test.ts`                                      | every guide under `examples/` checks clean against the bundled catalog                             |
 | `packages/core/src/check/bdd.test.ts`                                    | the ROBDD manager (canonicity, operators)                                                          |
 | `packages/core/src/check/fracture.test.ts`                               | fractured items and the Fracturing Orb through the checker                                         |
