@@ -572,27 +572,27 @@ class Checker {
     private checkUntil(a: AItem, stmt: Extract<Stmt, { kind: "until" }>): Flow {
         const rpred = this.resolvePred(stmt.pred, a);
 
-        // Reachability first: if the exit predicate can never be satisfied after
-        // one clean iteration, report that root cause instead of a downstream
-        // symptom.
-        const entryEnd = this.checkBodyQuiet(a, stmt.body);
-        const exitReachable = rpred === null ? entryEnd : refine(entryEnd, rpred, true);
+        // Compute the loop invariant (a quiet join-fixpoint) and probe the exit
+        // from it, quietly: a loop that needs several iterations to reach its
+        // goal (two annuls from a full item to two open slots) is only
+        // unsatisfiable when no head state of the whole invariant satisfies the
+        // predicate. Report that root cause instead of a downstream symptom.
+        const invariant = this.loopInvariant(a, stmt.body, rpred);
+        const probe = this.quietly(() => this.headStates(invariant, stmt.body));
+        const exitReachable = foldJoin(this.refineHeads(probe, rpred, true));
         if (rpred !== null && exitReachable === null) {
             this.diag(
                 `this loop can never exit: ${describePred(stmt.pred)} can never become true here`,
                 stmt.pred.span,
             );
-            return { kind: "fall", state: entryEnd };
+            return { kind: "fall", state: foldJoin(probe) ?? invariant };
         }
 
-        // Compute the loop invariant (a quiet join-fixpoint), then run the body
-        // once more FROM it, the real pass that emits the loop's diagnostics and
-        // trace, and catches a precondition that only fails on a later iteration
-        // (`until has X { exalt }` eventually fills the item). On exit the exit
-        // predicate is known to hold: the after-state is the join of every
-        // loop-head state refined by it. Fall back to the reachability pass if none
-        // survives.
-        const invariant = this.loopInvariant(a, stmt.body, rpred);
+        // Then run the body once more FROM the invariant, the real pass that
+        // emits the loop's diagnostics and trace, and catches a precondition that
+        // only fails on a later iteration (`until has X { exalt }` eventually fills
+        // the item). On exit the exit predicate is known to hold: the after-state
+        // is the join of every loop-head state refined by it.
         const exit = foldJoin(this.refineHeads(this.headStates(invariant, stmt.body), rpred, true));
         return { kind: "fall", state: this.tightenCounts(exit ?? exitReachable ?? invariant) };
     }
@@ -650,14 +650,6 @@ class Checker {
             if (minP > 0) s = refine(s, cmpAtLeast("prefixCount", minP));
         }
         return s ?? a;
-    }
-
-    /** The loop-head state after one iteration from `entry`, diagnostics
-     *  suppressed, the join of every back-edge (fall-off-end and every `restart`).
-     *  Used to probe reachability, so it sees a mod an op added even when the only
-     *  path back to the head is a restart. */
-    private checkBodyQuiet(entry: AItem, body: readonly Stmt[]): AItem {
-        return this.quietly(() => foldJoin(this.headStates(entry, body)) ?? entry);
     }
 
     /**
