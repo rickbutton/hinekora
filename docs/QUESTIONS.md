@@ -372,6 +372,54 @@ those the item level allows (`check/astate.ts` `relaxTiers`, the tier resolution
 `check/check.ts`).
 **Answer:**
 
+### Q42 · game probe · open
+
+**Asked:** 2026-11-08
+**Goal:** whether a resonator takes a Normal item. craftofexile's emulator enables
+fossils on a white base and fossil-crafting a white base is common play;
+[Resonator](https://www.poewiki.net/wiki/Resonator) says a chaotic resonator works
+"similarly to a Chaos Orb" and contrasts it with the alchemical ones, which take Normal
+items only, so the page does not settle it.
+**Procure:** a Normal body armour, a Primitive Chaotic Resonator with any fossil.
+**Steps:** apply the resonator.
+**Record:** refused, or the Rare it produced.
+**Assumed meanwhile:** a Rare item only (`check/library.ts` `resonatorOps`, `isRare`),
+which is the stricter reading; if the game accepts a Normal item the gate relaxes to
+"not Magic".
+**Answer:**
+
+### Q43 · game probe · open
+
+**Asked:** 2026-11-08
+**Goal:** which rarities the grove's "add a <tag> modifier and remove another random
+modifier" and "reforge … including a <tag> modifier" take. The reforge's option text
+names a Rare item; the add/remove craft's says only "from a non-Influenced item"
+([Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting)). craftofexile's
+emulator allows both on a Magic item and the reforge on a Normal one.
+**Procure:** a Magic ring with two modifiers and a Normal ring; lifeforce for one
+augment and one reforge.
+**Steps:** open the grove's "add a Life modifier, remove another" on the Magic ring and
+"reforge including a Life modifier" on the Normal ring; note which are offered.
+**Record:** offered or greyed out, and the result.
+**Assumed meanwhile:** both need a Rare item (`check/library.ts` `harvestReforgeOps`,
+`harvestAugmentOps`, `isRare`), the stricter reading.
+**Answer:**
+
+### Q44 · game probe · open
+
+**Asked:** 2026-11-08
+**Goal:** whether a Fracturing Orb takes an item with an eldritch implicit.
+[Fracturing Orb § Mechanics](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics) says
+it can be used on such an item; craftofexile's emulator greys it out, and the emulator
+is usually right about what the client refuses.
+**Procure:** a Rare pair of gloves with four modifiers and a Lesser Eldritch Ember's
+implicit; a Fracturing Orb.
+**Steps:** apply the orb.
+**Record:** refused, or which modifier fractured.
+**Assumed meanwhile:** the wiki's reading, accepted (`check/library.ts` `FRACTURE` has no
+eldritch gate).
+**Answer:**
+
 ---
 
 ## Resolved
@@ -403,6 +451,19 @@ a method applied under a condition on its own outcome, the join of the narrowed
 after-state and the unchanged one, which would also flag a condition the method can
 never produce.
 **Answer:** Rick ruled (2026-10-30): not for now. The ledger row is deferred.
+
+### Q42 · decision · open
+
+**Asked:** 2026-11-08
+**Question:** whether the playground's walkthrough cards may carry the game's currency
+icons. The wiki hosts them, but they are Grinding Gear Games' art; shipping them in the
+repository and on the published page is a licensing call, not a technical one. The
+alternatives: fetch them from the wiki at page load (no copy in the repo, but a
+dependency on the wiki being up and on its hotlinking policy), or keep the lettered,
+colour-coded badges the cards use now.
+**Assumed meanwhile:** the badges (`editors/playground/src/walkthrough.ts`, `badgeText`
+and the `badge-<word>` styles).
+**Answer:**
 
 ### Q41 · game probe · open
 
