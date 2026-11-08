@@ -137,7 +137,7 @@ page groups them:
 | `annul`      | [Orb of Annulment](https://www.poewiki.net/wiki/Orb_of_Annulment)                      | a removable modifier (Magic or Rare)                            |
 | `scour` | [Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) | Magic or Rare, with a side a metamod does not protect |
 | `fracture`   | [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)                | Rare, at least four modifiers, not already fractured, no influence |
-| `exalt <influence>` | the influence's [Exalted Orb](https://www.poewiki.net/wiki/Hunter%27s_Exalted_Orb#Mechanics) (`exalt hunter`) | Rare with an open slot, no influence, no fracture; the item gains the influence and one of its modifiers |
+| `exalt <influence>` | the influence's [Exalted Orb](https://www.poewiki.net/wiki/Hunter%27s_Exalted_Orb#Mechanics) (`exalt hunter`) | Rare with an open slot, no influence, no fracture, at an item level one of the influence's modifiers rolls at; the item gains the influence and one of its modifiers |
 | `awakener <influence>` | [Awakener's Orb](https://www.poewiki.net/wiki/Awakener%27s_Orb#Mechanics), the donor item's influence named | exactly one influence, not the donor's; the item is reforged Rare with both, metamods ignored |
 | `vaal` | [Vaal Orb](https://www.poewiki.net/wiki/Vaal_Orb#Equipment) | not corrupted; afterwards the item is corrupted and either as it was or a Rare with six modifiers |
 | `locus` | the [Corruption Altar](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes) | not corrupted; as `vaal`, but the Rare is influenced and the item may be destroyed, which ends the craft on that path |

@@ -300,3 +300,27 @@ describe("the Bestiary's add-to-an-influenced-item recipe", () => {
         );
     });
 });
+
+describe("an influence exalt on an item too low-level for any influence modifier", () => {
+    it("is refused instead of marking the item", () => {
+        // The orb needs a modifier to add; below the influence rows' level there is none.
+        const high = buildRegistry({
+            bases: [RING_BASE],
+            mods: [
+                ...CATALOG.filter((m) => m.id !== HUNTER_RING_SUFFIX.id),
+                { ...HUNTER_RING_SUFFIX, minLevel: 68 },
+            ],
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
+        const low = item({ base: "Iron Ring", ilvl: 50, rarity: "rare" });
+        const r = check(craft(low, [words("exalt", "hunter")]), { registry: high });
+        expect(r.diagnostics.map((d) => d.message).join("\n")).toContain(
+            "No influence modifier can appear",
+        );
+        expect(r.finalState!.counts.total).toEqual([0, 0]);
+        const fine = item({ base: "Iron Ring", ilvl: 68, rarity: "rare" });
+        expect(
+            check(craft(fine, [words("exalt", "hunter")]), { registry: high }).diagnostics,
+        ).toEqual([]);
+    });
+});

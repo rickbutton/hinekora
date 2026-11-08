@@ -221,6 +221,9 @@ export function influenceExaltOps(target: Influence): readonly Op[] {
         require({ kind: "noFracture" }),
         openSlot(),
         influence({ kind: "set", key: influenceKey([target]) }),
+        // The orb needs an influence modifier it can add: on an item whose level
+        // admits none, the game refuses it rather than marking the item.
+        require({ kind: "poolNonEmpty", pool: influencePool, tag: TagId("influence") }),
         fill(influencePool, add([1, 1])),
     ];
 }
