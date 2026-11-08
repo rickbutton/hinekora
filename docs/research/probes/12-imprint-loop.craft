@@ -1,0 +1,11 @@
+# Beast imprint a good magic item, regal, and restore when the regal is bad.
+item { base: "Hubris Circlet" ilvl: 86 rarity: magic prefixes: [ "maximum life" t1 ] }
+until has "maximum life" t1 and has "maximum energy shield" t1 and has "fire resistance" t1 {
+    beast imprint
+    regal
+    if not has "fire resistance" t1 {
+        restore
+        annul
+        augment
+    }
+}

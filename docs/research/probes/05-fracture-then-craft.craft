@@ -1,0 +1,12 @@
+# Fracture a 4-mod ring hoping the life sticks, then chaos spam on the fractured base.
+item {
+    base: "Amethyst Ring" ilvl: 84 rarity: rare
+    prefixes: [ "maximum life" t1, "random" ]
+    suffixes: [ "fire resistance" t3, "random" ]
+}
+fracture
+if fractured "maximum life" {
+    until has "fire resistance" t1 and has "cold resistance" t1 and has "chaos resistance" t1 {
+        chaos
+    }
+}

@@ -1,0 +1,11 @@
+# Eldritch body armour: implicits first, then eldritch chaos the prefixes until life + ES.
+item {
+    base: "Vaal Regalia" ilvl: 86 rarity: rare
+    prefixes: [ "random", "random", "random" ]
+    suffixes: [ "fire resistance" t2, "cold resistance" t2, "chaos resistance" t3 ]
+}
+ember exceptional
+ichor grand
+until has "maximum life" t1 and has "maximum energy shield" t1 {
+    eldritch chaos
+}

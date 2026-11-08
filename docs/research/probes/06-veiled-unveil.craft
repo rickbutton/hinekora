@@ -1,0 +1,7 @@
+# Veiled chaos then unveil for the +1 gem level unveil on a wand.
+item {
+    base: "Imbued Wand" ilvl: 84 rarity: rare
+    prefixes: [ fractured "level all spell skill gems" ]
+}
+veiled chaos
+unveil "spell damage and non-chaos damage as extra chaos"

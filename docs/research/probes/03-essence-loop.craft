@@ -1,0 +1,7 @@
+# Essence of Greed spam on boots until life + movement speed + two resists.
+item { base: "Dragonscale Boots" ilvl: 86 rarity: normal }
+def done() = has "movement speed" t1 and has "fire resistance" and has "cold resistance"
+until done() {
+    essence "greed" t1
+}
+if prefixCount <= 2 { bench "increased armour and evasion" }

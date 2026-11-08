@@ -1,0 +1,4 @@
+
+09-value-predicate.craft:2:26: error: expected '{' to open a block
+  2 | until has "maximum life" >= 70 { divine }
+    |                          ^

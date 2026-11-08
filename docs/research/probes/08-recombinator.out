@@ -1,0 +1,4 @@
+
+08-recombinator.craft:2:11: error: expected an operation or control statement
+  2 | recombine { base: "Imbued Wand" ilvl: 84 rarity: rare prefixes: [ "spell damage" t1 ] }
+    |           ^

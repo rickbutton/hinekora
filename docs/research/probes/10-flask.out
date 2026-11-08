@@ -1,0 +1,8 @@
+
+10-flask.craft:3:7: error: Ambiguous name "bleeding" — candidates: (120-139)% increased Physical Damage
+  (21-25)% chance to cause Bleeding on Hit, Adds (12-14) to (18-20) Physical Damage
+  40% chance to cause Bleeding on Hit.
+  3 | until has "bleeding" and has "recovery rate" {
+    |       ^
+
+✗ 1 error
