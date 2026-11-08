@@ -2,7 +2,7 @@
     "name": "@hinekora/cli",
     "version": "0.0.0",
     "private": true,
-    "description": "Command-line interface: check a .craft file end to end.",
+    "description": "Command-line interface: check or format a .craft file.",
     "type": "module",
     "bin": {
         "hinekora": "./dist/cli.js"

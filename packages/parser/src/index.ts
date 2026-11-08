@@ -12,6 +12,7 @@ export type { ParseResult, SyntaxDiagnostic } from "./errors.js";
 export { CraftSyntaxError } from "./errors.js";
 export { tokenize, tokenizeWithComments } from "./lexer.js";
 export { parseTokens } from "./parser.js";
+export { formatCraft } from "./format.js";
 export * from "./vocabulary.js";
 
 /**

@@ -12,4 +12,5 @@ export * from "./navigation.js";
 export * from "./signature-help.js";
 export * from "./folding.js";
 export * from "./inlay-hints.js";
+export * from "./formatting.js";
 export * from "./server.js";

@@ -40,7 +40,7 @@ function of `(source, registry)`; no I/O anywhere in it.
    abstract interpretation                 Layer 3 · the checker  ◀── the heart
         │   ⇒ diagnostics  +  a per-statement trace
         ▼
-   language service                        Layer 4 · LSP (diagnostics, hover, completion, names, signatures)
+   language service                        Layer 4 · LSP (diagnostics, hover, completion, names, hints, formatting)
         │
         ▼
    editors / CLI                           Layer 5 · thin clients
@@ -273,7 +273,7 @@ highlight cannot disagree.
 
 ## 6. Layer 5: clients
 
-Thin, by design. The CLI runs the checker and prints diagnostics. The VSCode extension is a
+Thin, by design. The CLI runs the checker and prints diagnostics, or formats a guide. The VSCode extension is a
 language client: a TextMate grammar for coloring plus an LSP client that spawns the stdio
 server. Neither holds any analysis logic; all of it is in `core`, reachable only through the
 one-way dependency arrow of §1.

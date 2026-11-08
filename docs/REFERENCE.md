@@ -69,7 +69,7 @@ packages/
   parser/   @hinekora/parser - hand-written lexer + parser: source → Craft AST.
   data/     @hinekora/data   - loads projected RePoE JSON, builds a Registry.
   lsp/      @hinekora/lsp    - transport-free language service + stdio server.
-  cli/      @hinekora/cli    - command-line checker.
+  cli/      @hinekora/cli    - command-line checker and formatter.
 editors/
   vscode/                    - VSCode extension (TextMate grammar + LSP client).
 examples/
@@ -180,6 +180,22 @@ An unknown opening word still parses as an operation, so the checker names it. `
 UTF-16 code-unit index into the source (the LSP's own offset convention). The lexer
 emits `eq` for `==` and `assign` for a lone `=` (the def binding).
 
+`format.ts`: `formatCraft(source)` prints the tree in the house style, or `undefined`
+when the guide does not parse. Four-space indent, width 100. The item block one field
+per line with the values aligned, empty affix lists left out, `corrupted` last. A block
+(a body, a block argument) stays on one line when the author wrote it on one and it
+fits, else one statement per line. A predicate def that does not fit goes under its
+header, one operand of the loosest chain per line with the connective leading.
+Parentheses appear where the grammar needs them (an `or` under an `and`, a right operand
+of the same connective) and around an `and` under an `or` for the reader. Comments are
+kept by source line (`tokenizeWithComments`): one after code stays after that code, one
+on its own line stays before the next code at its depth; one blank line is kept wherever
+the source had any. Every printed line remembers its source line, which is what makes
+both of those work; several nodes written on one line print on several and the trailing
+comment follows the last. Stable: formatting formatted text changes nothing, which the
+example guides test. The CLI's `hinekora fmt [--check] <file>` and the editor's Format
+Document both call it.
+
 ### 3c. `@hinekora/data`
 
 Ingest scripts (`scripts/ingest-poe1.mjs`) project the RePoE-fork JSON dump down to just
@@ -281,6 +297,8 @@ Transport-free service functions + a stdio server:
   checker's `paramSorts`; a parameter only forwarded to another def has none), and at
   each call the parameter the argument fills (`roll(m: "maximum life", …)`), except a
   forwarded parameter of the same name. Nothing while the guide does not parse.
+- `formatting.ts`: `getFormattingEdits`: the whole guide replaced by `formatCraft`'s
+  output as one edit; none when it does not parse or is already formatted.
 - `semantic.ts`: `getSemanticTokens`, lexer-driven; legend
   `["keyword","property","function","parameter"]` with the `declaration` modifier;
   keywords are the control and predicate words plus `METHOD_WORDS` (currency names
@@ -714,6 +732,9 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/lsp/src/signature-help.ts`                                  | `getSignatureHelp`: a call's parameters or a method's slots, the active one marked                 |
 | `packages/lsp/src/folding.ts`                                         | `getFoldingRanges`: brace blocks, comment runs, multi-line predicate defs                          |
 | `packages/lsp/src/inlay-hints.ts`                                     | `getInlayHints`: parameter sorts at declarations, parameter names at calls                         |
+| `packages/lsp/src/formatting.ts`                                      | `getFormattingEdits`: Format Document over `formatCraft`                                           |
+| `packages/parser/src/format.ts`                                       | `formatCraft`: the formatter, comments and blank-line grouping kept                                |
+| `packages/parser/src/format.test.ts`                                  | formatter layout tests; the example guides stay stable and keep their meaning                      |
 | `packages/core/src/ast/bindings.ts`                                   | `bindingsOf`: every def and parameter with its declaration and references                          |
 | `packages/lsp/src/method-at.ts`                                       | `methodAt`: the method statement a token or cursor position belongs to                             |
 | `packages/core/src/check/check.test.ts`                               | checker tests (currency set, count-coupling regression, loops, defs)                               |

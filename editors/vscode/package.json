@@ -1,7 +1,7 @@
 {
     "name": "hinekora-vscode",
     "displayName": "Hinekora",
-    "description": "Language support for Hinekora .craft files: diagnostics, hover, completion, signature help, highlights, navigation, rename and outline.",
+    "description": "Language support for Hinekora .craft files: diagnostics, hover, completion, signature help, inlay hints, highlights, navigation, rename, outline, folding and formatting.",
     "version": "0.0.0",
     "private": true,
     "publisher": "hinekora",

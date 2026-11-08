@@ -3,28 +3,33 @@
  * The `hinekora` command. Usage:
  *
  *   hinekora check <file.craft>
+ *   hinekora fmt [--check] <file.craft>
  *
- * Loads the bundled PoE1 catalog, prints its provenance, and checks the file.
- * Exit codes: 0 = checks pass, 1 = craft has errors, 2 = usage / I/O error.
+ * `check` loads the bundled PoE1 catalog, prints its provenance, and checks
+ * the file. `fmt` rewrites the file in the house style, or with `--check`
+ * only reports whether it already is.
+ * Exit codes: 0 = checks pass / formatted, 1 = craft has errors / needs
+ * formatting, 2 = usage / I/O error.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
+import { formatCraft } from "@hinekora/parser";
 import { checkSource } from "./check.js";
 
-function main(argv: readonly string[]): number {
-    const [cmd, file] = argv.slice(2);
-    if (cmd !== "check" || file === undefined) {
-        process.stderr.write("usage: hinekora check <file.craft>\n");
-        return 2;
-    }
+const USAGE = "usage: hinekora check <file.craft> | hinekora fmt [--check] <file.craft>\n";
 
-    let source: string;
+function readOrExit(file: string): string | undefined {
     try {
-        source = readFileSync(file, "utf8");
+        return readFileSync(file, "utf8");
     } catch {
         process.stderr.write(`hinekora: cannot read file: ${file}\n`);
-        return 2;
+        return undefined;
     }
+}
+
+function check(file: string): number {
+    const source = readOrExit(file);
+    if (source === undefined) return 2;
 
     const data = loadDefaultPoe1();
     const m = data.manifest;
@@ -35,6 +40,38 @@ function main(argv: readonly string[]): number {
     const { output, ok } = checkSource(source, file, registryOf(data));
     process.stdout.write(`${output}\n`);
     return ok ? 0 : 1;
+}
+
+function fmt(file: string, checkOnly: boolean): number {
+    const source = readOrExit(file);
+    if (source === undefined) return 2;
+    const formatted = formatCraft(source);
+    if (formatted === undefined) {
+        process.stderr.write(
+            `hinekora: ${file} does not parse; run 'hinekora check' for the error\n`,
+        );
+        return 1;
+    }
+    if (formatted === source) return 0;
+    if (checkOnly) {
+        process.stdout.write(`${file} needs formatting\n`);
+        return 1;
+    }
+    writeFileSync(file, formatted);
+    process.stdout.write(`formatted ${file}\n`);
+    return 0;
+}
+
+function main(argv: readonly string[]): number {
+    const [cmd, ...rest] = argv.slice(2);
+    if (cmd === "check" && rest.length === 1) return check(rest[0]!);
+    if (cmd === "fmt") {
+        const checkOnly = rest[0] === "--check";
+        const file = checkOnly ? rest[1] : rest[0];
+        if (file !== undefined && rest.length === (checkOnly ? 2 : 1)) return fmt(file, checkOnly);
+    }
+    process.stderr.write(USAGE);
+    return 2;
 }
 
 // Set exitCode (rather than process.exit) so stdout flushes before exit.

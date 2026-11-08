@@ -30,6 +30,7 @@ import {
 import { getSignatureHelp } from "./signature-help.js";
 import { getFoldingRanges } from "./folding.js";
 import { getInlayHints } from "./inlay-hints.js";
+import { getFormattingEdits } from "./formatting.js";
 
 export function createServer(connection: Connection, registry: Registry): void {
     const documents = new TextDocuments(TextDocument);
@@ -50,6 +51,7 @@ export function createServer(connection: Connection, registry: Registry): void {
             documentSymbolProvider: true,
             foldingRangeProvider: true,
             inlayHintProvider: true,
+            documentFormattingProvider: true,
             signatureHelpProvider: {
                 triggerCharacters: ["(", ",", " "],
                 retriggerCharacters: ['"'],
@@ -152,6 +154,13 @@ export function createServer(connection: Connection, registry: Registry): void {
         const doc = documents.get(params.textDocument.uri);
         if (!doc) return [];
         return getInlayHints(doc.getText());
+    });
+
+    // --- formatting ---
+    connection.onDocumentFormatting((params) => {
+        const doc = documents.get(params.textDocument.uri);
+        if (!doc) return [];
+        return getFormattingEdits(doc.getText());
     });
 
     documents.listen(connection);

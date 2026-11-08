@@ -2,7 +2,7 @@
     "name": "@hinekora/parser",
     "version": "0.0.0",
     "private": true,
-    "description": "Hand-written lexer + recursive-descent parser for the Hinekora surface language.",
+    "description": "Hand-written lexer + recursive-descent parser for the Hinekora surface language, and its formatter.",
     "type": "module",
     "exports": {
         ".": {
