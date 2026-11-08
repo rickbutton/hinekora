@@ -74,11 +74,17 @@ editors/
   vscode/                    - VSCode extension (TextMate grammar + LSP client).
   playground/                - browser playground: Monaco + the language service in-page
                                 (Vite; `pnpm -C editors/playground dev`).
-examples/
+examples/                    - the guide suite; every file here checks clean (`packages/cli/src/examples.test.ts`).
   example.craft              - the demo craft (open in the Extension Dev Host).
   essence-life-boots.craft   - essence + def + or example.
   bench-finish-resists.craft - finishing a Rare at the bench (open slot + group rule).
   phys-dot-weapon.craft      - a fractured Rare, chaos/annul/bench with predicate defs.
+  alt-regal-jewel.craft      - alt–aug–regal on a jewel (the cheap small-pool opener).
+  flask-alt-aug.craft        - a Magic flask: one prefix, one suffix.
+  self-fracture.craft        - a Fracturing Orb, the `fractured` branch, the fillers annulled.
+  influence-merge.craft      - a Redeemer receiver merged with an Awakener's Orb.
+  matron-metamod.craft       - the Wild Bristle Matron's random metamod made deterministic.
+  future/                    - recipes that wait on a feature, each headed by which; not tested.
 docs/
   REFERENCE.md, ARCHITECTURE.md, ROADMAP.md, item-model.md, QUESTIONS.md + the two design docs
   (CLAUDE.md stays at the repo root).
@@ -144,10 +150,11 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
   more could fit), one remainder line for the modifiers whose identity is unknown
   (counted once against the coupled total, so never two independent per-side ranges),
   the marks (influence, eldritch, fractured, corrupted, each "possibly" when on some
-  path only), and the modifiers proven absent. `renderItemText(view)` writes it in the
-  game's copy-to-clipboard layout: `Item Class:` / `Rarity:` / the base, `--------`
+  path only), and the modifiers proven absent. `renderItemText(view)` writes it modelled
+  on the game's copy-to-clipboard text (`QUESTIONS.md` Q41 probes the details the wiki
+  does not record): `Item Class:` / `Rarity:` / the base, `--------`
   between sections, `Item Level:`, then each modifier under the advanced tooltip's
-  header `{ Prefix Modifier "Virile" (Tier: 1) — Life }` with `(fractured)` /
+  header `{ Prefix Modifier "Virile" (Tier: 1) — Resource, Life }` with `(fractured)` /
   `(crafted)` after the text, the marks as the game writes them (`Hunter Item`,
   `Corrupted`), and this project's extensions in the same brace style (`{ At least one of
 these suffix modifiers }`, `{ 1-3 more modifiers, prefixes and/or suffixes }`,
@@ -829,6 +836,9 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/check/check.test.ts`                                  | checker tests (currency set, count-coupling regression, loops, defs)                               |
 | `packages/core/src/check/check-tiers.test.ts`                            | tier-pinned predicates and the tier overlay through the checker                                    |
 | `packages/core/src/check/counts.test.ts`                                 | `CountDomain` in isolation (caps, coupling, refine)                                                |
+| `packages/core/src/check/make-room.test.ts`                              | annulling a full item down to open slots: the suffix bound survives the loop                       |
+| `packages/core/src/check/loop-exit.test.ts`                              | a loop whose exit takes several iterations, and one whose exit is never reached                    |
+| `packages/cli/src/examples.test.ts`                                      | every guide under `examples/` checks clean against the bundled catalog                             |
 | `packages/core/src/check/bdd.test.ts`                                    | the ROBDD manager (canonicity, operators)                                                          |
 | `packages/core/src/check/fracture.test.ts`                               | fractured items and the Fracturing Orb through the checker                                         |
 | `packages/core/src/check/harvest.test.ts`                                | harvest reforge / augment through the checker                                                      |

@@ -116,10 +116,12 @@ const ELDRITCH_LABEL: Readonly<Record<EldritchSide, string>> = {
     eater: "Eater",
 };
 
-function tierLabel(n: number): string {
+/** An eldritch tier number as the game names it: 3 → "Grand". */
+export function eldritchTierLabel(n: number): string {
     const name = ELDRITCH_TIERS[n - 1];
     return name === undefined ? "" : name[0]!.toUpperCase() + name.slice(1);
 }
+const tierLabel = eldritchTierLabel;
 
 /** "Grand Exarch and Lesser Eater", "Grand Exarch", "no eldritch implicit". */
 export function eldritchSetLabel(key: EldritchKey): string {

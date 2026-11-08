@@ -91,6 +91,22 @@ describe("hover", () => {
         expect(h).toContain("\nCorrupted");
     });
 
+    it("names the influence sets an item may have, each as the game would write it", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare influences: hunter }\nharvest randomise`;
+        const h = getHover(src, src.indexOf("harvest"), registry)!;
+        expect(h).toMatch(/Possibly: Crusader Item, or Elder Item, or Hunter Item/);
+    });
+
+    it("marks an eldritch implicit present on one path only as possible", () => {
+        const src = `item { base: "Iron Gauntlets" ilvl: 84 rarity: rare }
+chaos
+if has "maximum life" { ember grand }
+annul`;
+        const h = getHover(src, src.indexOf("annul"), registry)!;
+        expect(h).toContain("{ Possibly: Searing Exarch Implicit Modifier (Tier: Grand) }");
+        expect(h).toContain("Possibly: Searing Exarch Item");
+    });
+
     it("hovers a local def (declaration, call, and param share one signature)", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
 def anyEleRes(t) = has "fire resistance" t or has "cold resistance" t

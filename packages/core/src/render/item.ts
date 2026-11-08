@@ -27,12 +27,11 @@ import type { Gen, ModId, Rarity, TypeId } from "../model/ids.js";
 import {
     ELDRITCH_SIDES,
     type EldritchSide,
-    ELDRITCH_TIERS,
     eldritchOf,
+    eldritchTierLabel,
     type Influence,
     influenceSetLabel,
     influencesOf,
-    NO_ELDRITCH,
     NO_INFLUENCE,
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
@@ -71,6 +70,8 @@ export interface ImplicitView {
     readonly tiers: readonly string[];
     /** The wordings it may be; one when known, empty when any. */
     readonly texts: readonly string[];
+    /** On some path only. */
+    readonly maybe: boolean;
 }
 
 export interface Mark {
@@ -112,16 +113,32 @@ const INFLUENCE_NAME: Readonly<Record<Influence, string>> = {
     warlord: "Warlord",
 };
 
-/** The game's class label, which it writes in the plural. */
-const CLASS_PLURAL: Readonly<Record<string, string>> = {
+/**
+ * The game's class label for a data class id, written in the plural as the
+ * `Item Class:` line is. The ids the game spells differently are listed; the
+ * rest split their camel case and take an `s`. The spellings are what the
+ * game shows for the craftable classes (`docs/QUESTIONS.md` Q41 probes the full
+ * list).
+ */
+const CLASS_LABEL: Readonly<Record<string, string>> = {
     Staff: "Staves",
     Warstaff: "Warstaves",
     Boots: "Boots",
     Gloves: "Gloves",
     "Body Armour": "Body Armours",
+    AbyssJewel: "Abyss Jewels",
+    LifeFlask: "Life Flasks",
+    ManaFlask: "Mana Flasks",
+    HybridFlask: "Hybrid Flasks",
+    UtilityFlask: "Utility Flasks",
+    FishingRod: "Fishing Rods",
+    AnimalCharm: "Charms",
 };
 export function itemClassLabel(itemClass: string): string {
-    return CLASS_PLURAL[itemClass] ?? (itemClass.endsWith("s") ? itemClass : `${itemClass}s`);
+    const known = CLASS_LABEL[itemClass];
+    if (known !== undefined) return known;
+    const spaced = itemClass.replace(/([a-z])([A-Z])/g, "$1 $2");
+    return spaced.endsWith("s") ? spaced : `${spaced}s`;
 }
 
 /** A category tag as the tooltip writes it: `physical_damage` → `Physical Damage`. */
@@ -185,11 +202,6 @@ function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: Mod
     };
 }
 
-function tierName(n: number): string {
-    const name = ELDRITCH_TIERS[n - 1] ?? "";
-    return name[0]!.toUpperCase() + name.slice(1);
-}
-
 export function itemView(a: AItem, registry: Registry): ItemView {
     const tags = influenceTagsAny(a, registry);
     const genOf = (t: TypeId): Gen =>
@@ -238,17 +250,23 @@ export function itemView(a: AItem, registry: Registry): ItemView {
     }
 
     const implicits: ImplicitView[] = [];
+    const sideTiers = (side: EldritchSide): number[] =>
+        [...a.eldritch].map((k) => eldritchOf(k)[side]);
     for (const side of ELDRITCH_SIDES) {
-        const tiers = [...new Set([...a.eldritch].map((k) => eldritchOf(k)[side]))]
-            .filter((n) => n > 0)
-            .sort((x, y) => x - y);
+        const all = sideTiers(side);
+        const tiers = [...new Set(all)].filter((n) => n > 0).sort((x, y) => x - y);
         if (tiers.length === 0) continue;
         const types = a.eldritchTypes[side];
         const texts =
             types === "any"
                 ? []
                 : [...new Set([...types].map((t) => oneLine(registry.eldritchTextOf(t) ?? t)))];
-        implicits.push({ side, tiers: tiers.map(tierName), texts });
+        implicits.push({
+            side,
+            tiers: tiers.map(eldritchTierLabel),
+            texts,
+            maybe: all.some((n) => n === 0),
+        });
     }
 
     const marks: Mark[] = [];
@@ -259,16 +277,15 @@ export function itemView(a: AItem, registry: Registry): ItemView {
             marks.push({ text: `${INFLUENCE_NAME[i]} Item`, maybe: false });
         }
     } else if (influenceSets.length > 0) {
-        const named = influenceSets.map(influenceSetLabel).join(", or ");
+        // Each possible influence set as the game would write it, or none.
+        const named = influenceSets.map((k) => `${influenceSetLabel(k)} Item`).join(", or ");
         marks.push({ text: `${named}${mayLackInfluence ? ", or no influence" : ""}`, maybe: true });
     }
-    if ([...a.eldritch].some((k) => k !== NO_ELDRITCH)) {
-        const sure = (side: EldritchSide): boolean =>
-            [...a.eldritch].every((k) => eldritchOf(k)[side] > 0);
-        const some = (side: EldritchSide): boolean =>
-            [...a.eldritch].some((k) => eldritchOf(k)[side] > 0);
-        if (some("exarch")) marks.push({ text: "Searing Exarch Item", maybe: !sure("exarch") });
-        if (some("eater")) marks.push({ text: "Eater of Worlds Item", maybe: !sure("eater") });
+    for (const side of ELDRITCH_SIDES) {
+        const all = sideTiers(side);
+        if (all.some((n) => n > 0)) {
+            marks.push({ text: `${SIDE_NAME[side]} Item`, maybe: all.some((n) => n === 0) });
+        }
     }
     if (a.fractures[1] > 0) marks.push({ text: "Fractured Item", maybe: a.fractures[0] === 0 });
     if (a.corrupted.has(true)) marks.push({ text: "Corrupted", maybe: a.corrupted.has(false) });
@@ -297,14 +314,41 @@ const RARITY_WORD: Readonly<Record<Rarity, string>> = {
     rare: "Rare",
 };
 const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six"];
-const numberWord = (n: number): string => NUMBER_WORDS[n] ?? String(n);
-const SIDE_NAME: Readonly<Record<EldritchSide, string>> = {
+/** A small count in words, as the "one of" headers write it. */
+export const numberWord = (n: number): string => NUMBER_WORDS[n] ?? String(n);
+/** The game's name for each eldritch side, as its `… Item` line writes it. */
+export const SIDE_NAME: Readonly<Record<EldritchSide, string>> = {
     exarch: "Searing Exarch",
     eater: "Eater of Worlds",
 };
 
 function rangeText(r: Range): string {
     return r[0] === r[1] ? String(r[0]) : `${r[0]}-${r[1]}`;
+}
+
+/** "1-3 more modifiers, prefixes and/or suffixes": the unknown modifiers in words. */
+export function remainderText(r: Remainder, dash = "-"): string {
+    const n = r.count;
+    const noun = n[1] === 1 ? "modifier" : "modifiers";
+    const where =
+        r.where === "either"
+            ? n[1] === 1
+                ? "a prefix or a suffix"
+                : "prefixes and/or suffixes"
+            : r.where === "prefix"
+              ? n[1] === 1
+                  ? "a prefix"
+                  : "prefixes"
+              : n[1] === 1
+                ? "a suffix"
+                : "suffixes";
+    const count = n[0] === n[1] ? String(n[0]) : `${n[0]}${dash}${n[1]}`;
+    return `${count} more ${noun}, ${where}`;
+}
+
+/** "at least one of" / "exactly two of": a disjunction group's header words. */
+export function groupLabel(g: Extract<ModGroup, { kind: "oneOf" }>): string {
+    return `${g.exact ? "exactly" : "at least"} ${numberWord(g.atLeast)} of`;
 }
 
 /** The game's advanced-tooltip header for a modifier: `{ Prefix Modifier "Virile" (Tier: 1) — Life }`. */
@@ -324,13 +368,16 @@ function modLines(m: ModView): string[] {
 function groupLines(gen: Gen | undefined, g: ModGroup): string[] {
     if (g.kind === "mod") return modLines(g.mod);
     const kind = gen === undefined ? "modifiers" : `${gen} modifiers`;
-    const head = `{ ${g.exact ? "Exactly" : "At least"} ${numberWord(g.atLeast)} of these ${kind} }`;
+    const label = groupLabel(g);
+    const head = `{ ${label[0]!.toUpperCase()}${label.slice(1)} these ${kind} }`;
     return [head, ...g.members.flatMap((m) => modLines(m).map((l) => `    ${l}`))];
 }
 
 /**
  * The item as the game's copy-to-clipboard text lays it out, with this
- * project's extensions where the state is not concrete.
+ * project's extensions where the state is not concrete. Modelled on the
+ * in-game copy and its advanced form; `docs/QUESTIONS.md` Q41 probes the
+ * details the wiki does not record.
  */
 export function renderItemText(v: ItemView): string {
     const sections: string[][] = [];
@@ -345,7 +392,8 @@ export function renderItemText(v: ItemView): string {
         sections.push(
             v.implicits.flatMap((i) => {
                 const tier = i.tiers.length === 1 ? i.tiers[0]! : i.tiers.join(" to ");
-                const head = `{ ${SIDE_NAME[i.side]} Implicit Modifier (Tier: ${tier}) }`;
+                const maybe = i.maybe ? "Possibly: " : "";
+                const head = `{ ${maybe}${SIDE_NAME[i.side]} Implicit Modifier (Tier: ${tier}) }`;
                 const tag = ` (${i.side} implicit)`;
                 if (i.texts.length === 1) return [head, `${i.texts[0]!}${tag}`];
                 if (i.texts.length === 0) return [head, `an implicit of that tier${tag}`];
@@ -359,23 +407,7 @@ export function renderItemText(v: ItemView): string {
         ...v.suffixes.flatMap((g) => groupLines("suffix", g)),
         ...v.either.flatMap((g) => groupLines(undefined, g)),
     ];
-    if (v.remainder !== undefined) {
-        const n = v.remainder.count;
-        const noun = n[1] === 1 ? "modifier" : "modifiers";
-        const where =
-            v.remainder.where === "either"
-                ? n[1] === 1
-                    ? "a prefix or a suffix"
-                    : "prefixes and/or suffixes"
-                : v.remainder.where === "prefix"
-                  ? n[1] === 1
-                      ? "a prefix"
-                      : "prefixes"
-                  : n[1] === 1
-                    ? "a suffix"
-                    : "suffixes";
-        mods.push(`{ ${rangeText(n)} more ${noun}, ${where} }`);
-    }
+    if (v.remainder !== undefined) mods.push(`{ ${remainderText(v.remainder)} }`);
     if (mods.length > 0) sections.push(mods);
 
     if (v.marks.length > 0) {

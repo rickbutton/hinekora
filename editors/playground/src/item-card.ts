@@ -7,7 +7,14 @@
  * identity is unknown, a "possibly" mark, and the modifiers proven absent.
  * Built from the same `ItemView` as the text form, so the two never disagree.
  */
-import type { ItemView, ModGroup, ModView } from "@hinekora/core";
+import {
+    groupLabel,
+    type ItemView,
+    type ModGroup,
+    type ModView,
+    remainderText,
+    SIDE_NAME,
+} from "@hinekora/core";
 
 const h = <K extends keyof HTMLElementTagNameMap>(
     tag: K,
@@ -51,17 +58,16 @@ function modRow(m: ModView): HTMLElement {
     const meta = h("span", "meta", side);
     if (tier) meta.append(h("span", `tier ${m.tier![0] === m.tier![1] ? "pinned" : "span"}`, tier));
     row.append(meta);
-    const details = [m.name, ...m.tags].filter((x): x is string => x !== undefined);
-    if (details.length > 0) row.title = details.join(" · ");
+    // The affix name under the text, as the advanced tooltip shows it; the tags
+    // on hover.
+    if (m.name !== undefined) text.append(h("span", "name", m.name));
+    if (m.tags.length > 0) row.title = m.tags.join(", ");
     return row;
 }
 
-const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six"];
-
 function group(g: ModGroup): HTMLElement {
     if (g.kind === "mod") return modRow(g.mod);
-    const label = `${g.exact ? "exactly" : "at least"} ${NUMBER_WORDS[g.atLeast] ?? g.atLeast} of`;
-    return h("div", "one-of", h("div", "label", label), ...g.members.map(modRow));
+    return h("div", "one-of", h("div", "label", groupLabel(g)), ...g.members.map(modRow));
 }
 
 export function renderItemCard(v: ItemView): HTMLElement {
@@ -86,8 +92,8 @@ export function renderItemCard(v: ItemView): HTMLElement {
         "implicits",
         ...v.implicits.map((i) => {
             const tier = i.tiers.length === 1 ? i.tiers[0]! : i.tiers.join("–");
-            const who = i.side === "exarch" ? "Searing Exarch" : "Eater of Worlds";
-            const row = h("div", `mod implicit ${i.side}`);
+            const who = SIDE_NAME[i.side];
+            const row = h("div", `mod implicit ${i.side}${i.maybe ? " maybe" : ""}`);
             const text =
                 i.texts.length === 1
                     ? statText(i.texts[0]!)
@@ -105,16 +111,7 @@ export function renderItemCard(v: ItemView): HTMLElement {
 
     const mods = [...v.prefixes.map(group), ...v.suffixes.map(group), ...v.either.map(group)];
     if (v.remainder !== undefined) {
-        const n = v.remainder.count;
-        const count = n[0] === n[1] ? String(n[0]) : `${n[0]}–${n[1]}`;
-        const noun = n[1] === 1 ? "modifier" : "modifiers";
-        const where =
-            v.remainder.where === "either"
-                ? n[1] === 1
-                    ? "a prefix or a suffix"
-                    : "prefixes and/or suffixes"
-                : `${v.remainder.where}${n[1] === 1 ? "" : "es"}`;
-        mods.push(h("div", "mod unknown", `${count} more ${noun}, ${where}`));
+        mods.push(h("div", "mod unknown", remainderText(v.remainder, "–")));
     }
     section("mods", ...mods);
 
@@ -130,6 +127,13 @@ export function renderItemCard(v: ItemView): HTMLElement {
         }),
     );
 
-    section("without", ...v.without.map((w) => h("div", "absent", w)));
+    // Proven absent: labelled and struck through, so it never reads as a modifier.
+    if (v.without.length > 0) {
+        section(
+            "without",
+            h("div", "label", "without"),
+            ...v.without.map((w) => h("div", "absent", h("s", "", w))),
+        );
+    }
     return card;
 }

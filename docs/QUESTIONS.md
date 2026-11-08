@@ -404,6 +404,27 @@ after-state and the unchanged one, which would also flag a condition the method 
 never produce.
 **Answer:** Rick ruled (2026-10-30): not for now. The ledger row is deferred.
 
+### Q41 · game probe · open
+
+**Asked:** 2026-11-08
+**Goal:** the exact text the game writes when an item is copied with Ctrl+C and with
+Ctrl+Alt+C (the advanced form), which the wiki does not record. The renderer
+(`packages/core/src/render/item.ts`) is modelled on memory of it; the points to settle:
+the header of a bench-crafted modifier (`{ Master Crafted Prefix Modifier "…" }` or the
+plain `{ Prefix Modifier … }` with `(crafted)` after the text); whether `Corrupted` and
+the influence lines (`Hunter Item`) share one `--------` section or each have their own;
+the header and the line suffix of an eldritch implicit (`{ Searing Exarch Implicit
+Modifier (Tier: Grand) }`, `(exarch implicit)`); and the plural class names on the `Item
+Class:` line for every craftable class (Abyss Jewels, Life Flasks, Charms, Staves, …).
+**Procure:** a Rare with a bench modifier, a fractured modifier, an influence and a
+corruption; an armour piece with an Exarch implicit; one item of each class.
+**Steps:** copy each with Ctrl+Alt+C and paste the text.
+**Record:** the text, verbatim.
+**Assumed meanwhile:** the layout `renderItemText` writes (`item.ts`): plain modifier
+headers with `(crafted)` after the text, one marks section, the eldritch header and
+suffix above, `CLASS_LABEL` plus a camel-case split and an `s` for the class names.
+**Answer:**
+
 ### Q40 · decision · open
 
 **Asked:** 2026-11-08
