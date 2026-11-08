@@ -1,0 +1,39 @@
+# Alt–aug–regal on a jewel: the cheap opener for small mod pools.
+#
+# A jewel holds two prefixes and two suffixes, so a guide rolls it with Orbs of
+# Alteration until the wanted prefix appears with the suffix side still empty,
+# adds a suffix with an Orb of Augmentation, and only then spends a Regal Orb.
+# Alterations are cheap; the Regal is the one roll that cannot be retried, so
+# the guide takes it only once two of the three wanted mods are in hand.
+
+item {
+    base:   "Viridian Jewel"
+    ilvl:   84
+    rarity: normal
+}
+
+def usefulSuffix() =
+    has "fire damage over time multiplier"
+    or has "attack speed with bows"
+    or has "global critical strike multiplier"
+
+transmute
+
+# An alteration lays down one or two mods; wait for the life roll with nothing
+# beside it, so the augment below is guaranteed a suffix slot.
+until has "increased maximum life" and suffixCount == 0 {
+    alteration
+}
+
+augment
+
+# A bad suffix is not annulled (that could take the life); the guide goes back
+# to rolling, which `restart` says exactly.
+until usefulSuffix() {
+    alteration
+    if has "increased maximum life" and suffixCount == 0 {
+        augment
+    }
+}
+
+regal

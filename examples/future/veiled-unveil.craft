@@ -1,0 +1,36 @@
+# WAITS ON: feature-report.md A5 and B1 (the unveiled modifier at the bench; a way to end a dead path).
+#
+# A veiled prefix under a suffix lock, unveiled until the right option shows.
+#
+# With the suffixes locked and all three present, a Veiled Exalted Orb must
+# add its veiled mod as a prefix; it also removes one unprotected mod, which
+# is either the metamod or the life roll. Unveiling offers three of the
+# possible prefixes; the guide takes the % life one when it is offered and
+# otherwise removes the unveiled mod at the bench and tries again. Jun's offer is random, so
+# a named unveil is only provable once blocking has left three options or
+# fewer; the bare form plus a branch is how a guide really reads.
+
+item {
+    base:     "Astral Plate"
+    ilvl:     86
+    rarity:   rare
+    prefixes: [ "maximum life" t1 ]
+    suffixes: [ "fire resistance" t2, "cold resistance" t2, "lightning resistance" t2 ]
+}
+
+until has "maximum life maximum mana" {
+    bench "suffixes cannot be changed"
+    veiled exalt
+    unveil
+    # An unveiled mod is a crafted mod: a bad one is cleared at the bench along
+    # with the metamod, which puts the item back where the loop started.
+    if not has "maximum life maximum mana" {
+        bench remove
+    }
+}
+
+# The orb may have taken the life roll instead of the metamod on the way; the
+# guide only keeps the item when it did not.
+if has "maximum life" t1 {
+    bench "maximum mana"
+}

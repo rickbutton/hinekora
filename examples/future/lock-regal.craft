@@ -1,0 +1,22 @@
+# WAITS ON: choice over an operation's outcomes (feature-report.md B3).
+#
+# Hinekora's Lock on a Magic amulet (the Craicic Croaker + Black Mórrígan
+# beastcraft): preview the Regal Orb and apply it only when it adds a suffix,
+# otherwise spend the preview on a Blessed Orb and lock again. The proposed
+# spelling keeps only the outcomes that satisfy the predicate and joins them
+# with the unchanged item; the loop then reads exactly as the guide does.
+
+item {
+    base:     "Turquoise Amulet"
+    ilvl:     84
+    rarity:   magic
+    prefixes: [ fractured "damage over time multiplier" t1, "level of all skill gems" t1 ]
+}
+
+until isRare {
+    lock regal keep suffixCount == 1
+}
+
+bench "prefixes cannot be changed"
+bench "can have up to 3 crafted modifiers"
+harvest augment "fire"

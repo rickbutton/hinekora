@@ -1,0 +1,27 @@
+# Self-fracturing: lock one of four mods, then clear the fillers if it stuck.
+#
+# A Fracturing Orb fractures one random mod of a four-mod rare. Guides build
+# the item so that the three other mods are cheap fillers, fracture, and keep
+# the item only when the lock landed on the mod they wanted; the checker
+# treats the fracture as "one of these four, unknown which" until the branch
+# names it. In the good branch three annuls clear the fillers, which the fractured mod
+# survives by definition, and the base is ready for essences.
+
+item {
+    base:     "Amethyst Ring"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum life" t1, "maximum mana" t6 ]
+    suffixes: [ "fire resistance" t7, "strength" t8 ]
+}
+
+fracture
+
+if fractured "maximum life" {
+    annul
+    annul
+    annul
+    until has "fire resistance" t1 and has "cold resistance" t1 {
+        essence "greed" t1
+    }
+}

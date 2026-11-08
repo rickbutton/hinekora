@@ -1,0 +1,39 @@
+# Essence spam, make room, then the bench: the league-start minion wand.
+#
+# A Deafening Essence of Fear guarantees +1 to Level of all Minion Skill Gems
+# on each application and reforges everything else. Once it is there the
+# random mods are annulled away until the bench has room, and the multimod
+# metamod turns the remaining slots into guaranteed crafted mods. An annul
+# that takes the minion gems themselves sends the craft back to the essences.
+
+item {
+    base:   "Convoking Wand"
+    ilvl:   84
+    rarity: normal
+}
+
+def keeper() = has "level of all minion skill gems"
+
+until keeper() {
+    essence "fear" t1
+}
+
+# Two open prefixes and one open suffix: room for the multimod and two crafts.
+until prefixCount <= 1 and suffixCount <= 2 {
+    annul
+    if not keeper() {
+        restart
+    }
+}
+
+bench "can have up to 3 crafted modifiers"
+
+# The essence rolls may already have given either prefix, and an item holds one
+# modifier per group, so each bench craft is guarded the way a guide says
+# "unless you already have it".
+if not has "spell damage" {
+    bench "spell damage"
+}
+if not has "fire damage to spells" {
+    bench "fire damage to spells"
+}

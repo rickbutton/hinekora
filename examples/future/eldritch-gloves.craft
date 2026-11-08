@@ -1,0 +1,53 @@
+# WAITS ON: feature-report.md A1 and A4 (the suffix bound; the implicit's two wordings).
+#
+# Eldritch gloves on a fractured base: essences, then the implicits.
+#
+# The base carries a fractured spell suppression roll, so every reforge keeps
+# it. Deafening Essence of Greed guarantees life and is repeated until one
+# elemental resistance lands at tier 1 (a Harvest swap can move it to the
+# right element later). With the Eater dominant, an Eldritch Orb of Annulment
+# only ever removes a suffix, which is how the guide opens a suffix slot
+# without risking the life roll; losing the resistance sends the craft back to
+# the essences. The implicits come last: embers until the Exarch one is right,
+# then an Orb of Conflict raises the lower implicit and lowers the other, so
+# the Eater side is refreshed with an ichor whenever it drops.
+
+item {
+    base:     "Dragonscale Gauntlets"
+    ilvl:     86
+    rarity:   rare
+    suffixes: [ fractured "suppress spell damage" t2 ]
+}
+
+def anyEleRes(t) =
+    has "fire resistance" t
+    or has "cold resistance" t
+    or has "lightning resistance" t
+
+until anyEleRes(t1) {
+    essence "greed" t1
+}
+
+# Make room on the suffix side under Eater dominance; the fractured mod and
+# the prefixes are safe from an eldritch annul there.
+if suffixCount == 3 {
+    ichor lesser
+    eldritch annul
+    if not anyEleRes(t1) {
+        restart
+    }
+}
+
+bench "fire and chaos resistance"
+
+# Implicits: embers until the Exarch implicit is the strike one, then raise it
+# with Orbs of Conflict, topping the Eater side up whenever it is the lower.
+until exarch "strike skills target 1" or exarch "strike skills target 2" {
+    ember grand
+}
+until exarch exquisite "strike skills target 2" {
+    conflict
+    if dominant exarch {
+        ichor exceptional
+    }
+}

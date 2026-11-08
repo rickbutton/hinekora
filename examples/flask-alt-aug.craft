@@ -1,0 +1,16 @@
+# A flask never goes past Magic: one prefix, one suffix, rolled with alterations.
+#
+# The guide rolls until the wanted prefix appears alone, then augments for the
+# suffix rather than gambling the prefix on more alterations.
+
+item {
+    base:   "Divine Life Flask"
+    ilvl:   84
+    rarity: normal
+}
+
+transmute
+until has "instant recovery" and suffixCount == 0 {
+    alteration
+}
+augment
