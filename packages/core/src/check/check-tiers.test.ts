@@ -127,6 +127,24 @@ describe("checker — one of several tiers, then the work after it", () => {
         );
     });
 
+    it("excludes the other rows once the presence function alone pins a modifier", () => {
+        // The join after the loop drops life from the overlay (only one branch
+        // named it), so only the atoms know: ruling fire out pins life to T1, and
+        // T2 is then impossible; before fire is ruled out, T2 is still live.
+        const pinned = craft(rareRing(), [
+            until(orp(has("maximum life", 1), has("fire resistance", 1)), [op("chaos")]),
+            iff(notp(has("fire resistance")), [iff(has("maximum life", 2), [op("annul")])]),
+        ]);
+        expect(
+            check(pinned, ctx).diagnostics.some((d) => d.message.includes("can never run")),
+        ).toBe(true);
+        const open = craft(rareRing(), [
+            until(orp(has("maximum life", 1), has("fire resistance", 1)), [op("chaos")]),
+            iff(has("maximum life", 2), [op("annul")]),
+        ]);
+        expect(check(open, ctx).diagnostics).toEqual([]);
+    });
+
     it("forgets the tier facts with the modifier when a removal may have taken it", () => {
         // After an Orb of Annulment the life modifier may be gone, so denying
         // both of its tiers is possible again; the branch is live.

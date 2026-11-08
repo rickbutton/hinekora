@@ -265,7 +265,7 @@ function reduceTiers(a: AItem): AItem | null {
             next = new Set([...current].filter((m) => !gone.includes(m)));
             if (next.size === 0) {
                 if (isGuaranteed(a, type)) return null;
-                next = undefined; // absent: no tier to speak of
+                next = undefined; // every named row ruled out; the overlay says nothing more
             }
         } else continue;
         tiers ??= new Map(a.tiers);

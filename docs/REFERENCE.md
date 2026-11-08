@@ -426,7 +426,9 @@ total.max − prefix.min]` (capped). Tracking the total preserves the `p + s = t
   hover so a disjunctive block shows the t1 roll, not the full span). Two facts tie the
   atoms to the item, asserted whenever a predicate reasons about a type (`withTierFacts`):
   an atom implies its family (a modifier at a row is present) and two atoms of one type
-  exclude each other (it is at one row only). They are what lets "one of these is T1"
+  exclude each other (every row of a type shares its groups, item-model.md §9, and one
+  modifier per group is
+  [Modifier § Group/family](https://www.poewiki.net/wiki/Modifier#Group/family)). They are what lets "one of these is T1"
   followed by `not has fire` conclude that cold is the T1 one; `reduceTiers` then reads the
   overlay back from the presence function, pinning a type whose atom is forced true and
   dropping a row whose atom is forced false, so hover and the later `has` checks see it.
