@@ -494,6 +494,12 @@ once(once(chaos))`);
         });
     });
 
+    it("refuses a repeated parameter name", () => {
+        expect(() => parseDef(`def f(m, m) { bench m }`)).toThrow(
+            /'f' already has a parameter named 'm'/,
+        );
+    });
+
     it("names the argument forms when none fits", () => {
         expect(() => parseDef(`def once(b) { b }\nonce(=)`)).toThrow(/block of steps/);
     });

@@ -298,9 +298,9 @@ operation function. Both are local to the file, may appear anywhere at file scop
 inlined at each use. A parameter's sort is inferred from its use: a tier slot, a count
 slot, a name slot (a mod name, a bench or essence name, a harvest tag, an unveil target),
 or, in an operation function, statement position, where it stands for **steps**. The four
-sorts are distinct (`t1` is not the number `1`), and conflicting uses, an unused
-parameter, recursion, or calling a predicate as a statement (or a function in a
-condition) are errors.
+sorts are distinct (`t1` is not the number `1`), and conflicting uses, an unused or
+repeated parameter name, recursion, or calling a predicate as a statement (or a function
+in a condition) are errors.
 
 A step parameter is bound at the call site to any single statement (a method with its
 arguments, a call, an `if` or `until`) or to a `{ … }` block of them; the steps run where

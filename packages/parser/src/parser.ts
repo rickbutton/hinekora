@@ -198,6 +198,9 @@ class Parser {
         const paramSpans: SourceSpan[] = [];
         while (!this.at("rparen")) {
             const p = this.expect("ident", "a parameter name");
+            if (params.includes(p.text)) {
+                throw this.error(`'${name}' already has a parameter named '${p.text}'`, p.span);
+            }
             params.push(p.text);
             paramSpans.push(p.span);
             if (this.at("comma")) this.advance();
