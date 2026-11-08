@@ -247,6 +247,15 @@ Transport-free service functions + a stdio server:
   or the method table, a taken def name, or a taken parameter name of the same def),
   and `getDocumentSymbols` (the item, then each def with its parameters as children).
   All return nothing while the guide does not parse.
+- `signature-help.ts`: `getSignatureHelp(source, offset)` works on the tokens before the
+  cursor alone (an open string is closed first), since the statement is unfinished while
+  this is wanted. Inside a call's argument list (`enclosingCall`, which skips closed
+  `{ … }` block arguments and gives up inside an open one) it shows the def's parameters
+  from the same regex scrape completion uses (`localDefs`), with the argument being typed
+  marked; after a method's words it shows the method's slots as they are written
+  (`"essence" [t<n>]`, `hunter|shaper`, `count`), the one being filled marked, a repeated
+  names slot staying active, nothing for a method without slots. Triggered by `(`, `,`
+  and space.
 - `completion.ts`: `getCompletions`. The pieces of the current line before the cursor
   (`piecesOf`: words, numbers, closed strings, the open string) pick the context
   (`contextAt`): statement (each method's first word, the local operation functions,
@@ -688,6 +697,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/data/src/{load,adapter}.ts` + `scripts/ingest-poe1.mjs`     | data load + ingest                                                                                 |
 | `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts` | LSP features                                                                                       |
 | `packages/lsp/src/navigation.ts`                                      | highlights, definition, references, rename, outline over the bindings                              |
+| `packages/lsp/src/signature-help.ts`                                  | `getSignatureHelp`: a call's parameters or a method's slots, the active one marked                 |
 | `packages/core/src/ast/bindings.ts`                                   | `bindingsOf`: every def and parameter with its declaration and references                          |
 | `packages/lsp/src/method-at.ts`                                       | `methodAt`: the method statement a token or cursor position belongs to                             |
 | `packages/core/src/check/check.test.ts`                               | checker tests (currency set, count-coupling regression, loops, defs)                               |
@@ -705,6 +715,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/check/veiled.test.ts`                              | veiled orbs and `unveil` through the checker                                                       |
 | `packages/lsp/src/features.test.ts`                                   | hover / completion / semantic-token tests                                                          |
 | `packages/lsp/src/navigation.test.ts`                                 | highlight / definition / references / rename / outline tests                                       |
+| `packages/lsp/src/signature-help.test.ts`                             | signature help for def calls and method slots                                                      |
 | `packages/lsp/src/service.test.ts`                                    | `getDiagnostics` over the real data pipeline                                                       |
 
 ---

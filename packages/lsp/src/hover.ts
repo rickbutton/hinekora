@@ -41,7 +41,7 @@ import {
     rarityLabel,
 } from "@hinekora/core";
 import { parse, type Token, tokenize } from "@hinekora/parser";
-import { type Atom, type MethodAt, methodAt } from "./method-at.js";
+import { atomOf, type MethodAt, methodAt } from "./method-at.js";
 
 // --- doc tables ------------------------------------------------------------
 
@@ -90,19 +90,6 @@ function stringIsBase(tokens: readonly Token[], i: number): boolean {
     const prev = tokens[i - 1];
     const prev2 = tokens[i - 2];
     return prev?.kind === "colon" && prev2?.kind === "ident" && prev2.text === "base";
-}
-
-/** A token as the method lookup sees it: a word, an argument, or a stop. */
-function atomOf(tok: Token): Atom {
-    switch (tok.kind) {
-        case "ident":
-            return { word: tok.text };
-        case "string":
-        case "int":
-            return {};
-        default:
-            return { stop: true };
-    }
 }
 
 /**

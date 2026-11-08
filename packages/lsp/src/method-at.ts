@@ -7,6 +7,7 @@
  * argument slots reach that far.
  */
 import { findMethod, type Method } from "@hinekora/core";
+import type { Token } from "@hinekora/parser";
 
 /** What the lookup needs of a token: its text when it is a word, and whether
  *  it ends a statement's reach (punctuation, a control or predicate word). */
@@ -48,6 +49,19 @@ function argReach(method: Method): number {
  * The method statement that reaches position `i`: the atom at `i`, or the
  * position after the last atom when `i` is `atoms.length`.
  */
+/** A token as the method lookup sees it: a word, an argument, or a stop. */
+export function atomOf(tok: Token): Atom {
+    switch (tok.kind) {
+        case "ident":
+            return { word: tok.text };
+        case "string":
+        case "int":
+            return {};
+        default:
+            return { stop: true };
+    }
+}
+
 export function methodAt(atoms: readonly Atom[], i: number): MethodAt | undefined {
     for (let s = Math.min(i, atoms.length - 1); s >= 0; s--) {
         const a = atoms[s]!;

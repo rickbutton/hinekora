@@ -2,7 +2,7 @@
  * Transport-agnostic server wiring: given an LSP `Connection` and a resolved
  * `Registry`, advertise capabilities and wire the handlers (diagnostics, hover,
  * completion, semantic tokens, highlights, definition, references, rename,
- * outline). The connection's transport (stdio/IPC for Node,
+ * outline, signature help). The connection's transport (stdio/IPC for Node,
  * message-port for a browser worker) is the caller's concern, so this same
  * function serves both the VSCode server and the future playground worker.
  */
@@ -27,6 +27,7 @@ import {
     getRenameEdits,
     prepareRename,
 } from "./navigation.js";
+import { getSignatureHelp } from "./signature-help.js";
 
 export function createServer(connection: Connection, registry: Registry): void {
     const documents = new TextDocuments(TextDocument);
@@ -45,6 +46,10 @@ export function createServer(connection: Connection, registry: Registry): void {
             referencesProvider: true,
             renameProvider: { prepareProvider: true },
             documentSymbolProvider: true,
+            signatureHelpProvider: {
+                triggerCharacters: ["(", ",", " "],
+                retriggerCharacters: ['"'],
+            },
         },
     }));
 
@@ -122,6 +127,13 @@ export function createServer(connection: Connection, registry: Registry): void {
         const doc = documents.get(params.textDocument.uri);
         if (!doc) return [];
         return getDocumentSymbols(doc.getText());
+    });
+
+    // --- signature help ---
+    connection.onSignatureHelp((params) => {
+        const doc = documents.get(params.textDocument.uri);
+        if (!doc) return null;
+        return getSignatureHelp(doc.getText(), doc.offsetAt(params.position));
     });
 
     documents.listen(connection);

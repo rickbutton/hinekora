@@ -57,7 +57,7 @@ const PREDICATE_INTRODUCERS = new Set(["if", "until", "not", "and", "or"]);
  * (`false`); a def with no body yet is undecided (`undefined`) and offered in
  * both positions. Comments may sit between the parameter list and the body.
  */
-function localDefs(source: string): { name: string; params: string; proc?: boolean }[] {
+export function localDefs(source: string): { name: string; params: string; proc?: boolean }[] {
     const out: { name: string; params: string; proc?: boolean }[] = [];
     const re = /\bdef\s+([A-Za-z_]\w*)\s*\(([^)]*)\)\s*(?:#[^\n]*\n\s*)*([{=])?/g;
     for (const m of source.matchAll(re)) {
