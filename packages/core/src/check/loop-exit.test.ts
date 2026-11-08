@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { andp, cmp, craft, has, item, op, until } from "../__fixtures__/ast.js";
+import { andp, cmp, craft, item, op, until } from "../__fixtures__/ast.js";
 import { RING_BASE, TIERED_CATALOG } from "../__fixtures__/mods.js";
 
 const registry = buildRegistry({ bases: [RING_BASE], mods: TIERED_CATALOG });
@@ -25,12 +25,15 @@ describe("checker — a loop whose exit takes several iterations", () => {
         expect(check(c, ctx).diagnostics).toEqual([]);
     });
 
-    it("still reports an exit no iteration can ever reach", () => {
-        const c = craft(item({ base: "IronRing", ilvl: 100, rarity: "rare" }), [
-            until(has("maximum life"), [op("exalt")]),
-            until(cmp("prefixCount", ">", 3), [op("exalt")]),
-        ]);
+    it("still reports an exit the body only moves away from", () => {
+        // An exalt never removes the prefix the item starts with, so no
+        // iteration reaches zero prefixes.
+        const c = craft(
+            item({ base: "IronRing", ilvl: 100, rarity: "rare", prefixes: ["maximum life"] }),
+            [until(cmp("prefixCount", "==", 0), [op("exalt")])],
+        );
         const messages = check(c, ctx).diagnostics.map((d) => d.message);
         expect(messages.some((m) => m.includes("can never exit"))).toBe(true);
+        expect(messages.some((m) => m.includes("has"))).toBe(false);
     });
 });

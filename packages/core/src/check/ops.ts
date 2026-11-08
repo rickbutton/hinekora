@@ -1066,8 +1066,7 @@ function fracturedIn(a: AItem, registry: Registry, gen: Gen): number {
 
 /**
  * What a strip keeps, per side: the protected sides' counts and the fractured
- * mod, read from the state the method started on (after the strip the suffix
- * range is derived from the total and carries the prefix uncertainty).
+ * mod, read from the state the method started on, before the strip moved them.
  */
 function keptBounds(a0: AItem, rules: Rules, registry: Registry): { prefix: Range; suffix: Range } {
     const fp = fracturedIn(a0, registry, "prefix");

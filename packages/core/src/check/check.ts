@@ -594,7 +594,7 @@ class Checker {
         // the item). On exit the exit predicate is known to hold: the after-state
         // is the join of every loop-head state refined by it.
         const exit = foldJoin(this.refineHeads(this.headStates(invariant, stmt.body), rpred, true));
-        return { kind: "fall", state: this.tightenCounts(exit ?? exitReachable ?? invariant) };
+        return { kind: "fall", state: this.tightenCounts(exit ?? invariant) };
     }
 
     /** Run a loop body while collecting the states of any `restart` inside it

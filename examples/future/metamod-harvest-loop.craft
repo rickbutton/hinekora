@@ -1,4 +1,4 @@
-# WAITS ON: feature-report.md A2 (a loop whose exit needs several annuls).
+# WAITS ON: an inner loop analysed from the outer loop's joined invariant, and the same group check (checker-findings.md B10, B9).
 #
 # Lock one side, reforge the other: the Harvest loop behind most finished rares.
 #

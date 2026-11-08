@@ -1,7 +1,7 @@
 /**
  * The abstract item state `AItem`, the symbolic summary the checker threads
  * instead of concrete items or enumerated outcome arms (see docs/REFERENCE.md §4).
- * Counts are coupled ranges (`total`, `prefix`; suffix derived); mod-presence
+ * Counts are three coupled ranges (`total`, `prefix`, `suffix`); mod-presence
  * knowledge is one BDD (`bdd.ts`) so disjunctions survive control-flow joins.
  * `refine` narrows by a predicate; `null` from `refine`/`normalize` means the
  * state is impossible, the dead-branch signal.
@@ -42,7 +42,7 @@ export interface AItem {
     /** The rarities the item may have: one on a straight line, more where paths
      *  that changed it meet or a scour's survivor count is uncertain. */
     readonly rarities: ReadonlySet<Rarity>;
-    /** Affix counts (total + prefix; suffix derived), the count sub-domain. */
+    /** Affix counts (total, prefix and suffix ranges), the count sub-domain. */
     readonly counts: Counts;
     /** Shared per-check BDD manager, ids only mean something within one manager. */
     readonly bdd: BddManager;
@@ -114,7 +114,7 @@ export function rarityOf(a: AItem): Rarity | undefined {
     return a.rarities.size === 1 ? [...a.rarities][0] : undefined;
 }
 
-/** The derived suffix range: `total − prefix`, clamped to the suffix cap. */
+/** The suffix range, no looser than `total − prefix` and clamped to the suffix cap. */
 export function suffixRange(a: AItem): Range {
     return CountDomain.suffix(a.counts, capsOf(a));
 }

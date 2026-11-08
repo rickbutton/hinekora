@@ -28,8 +28,8 @@ until has "increased maximum life" and suffixCount == 0 {
 augment
 
 # A bad suffix is not annulled (that could take the life); the guide goes back
-# to rolling, which `restart` says exactly.
-until usefulSuffix() {
+# to rolling, and only an item holding both wanted mods takes the Regal.
+until has "increased maximum life" and usefulSuffix() {
     alteration
     if has "increased maximum life" and suffixCount == 0 {
         augment
