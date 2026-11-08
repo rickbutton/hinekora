@@ -302,12 +302,15 @@ sorts are distinct (`t1` is not the number `1`), and conflicting uses, an unused
 parameter, recursion, or calling a predicate as a statement (or a function in a
 condition) are errors.
 
-A step parameter is bound at the call site to a single statement (a method with its
-arguments, or another call) or to a `{ … }` block of them; the steps run where the
-parameter is written, as if pasted there, so a `restart` inside them re-enters the
-caller's loop. Inside a function body a parameter name shadows a method word of the same
-name. Steps passed as an argument may call the function they are passed to; only a
-function whose own body reaches itself is recursive.
+A step parameter is bound at the call site to any single statement (a method with its
+arguments, a call, an `if` or `until`) or to a `{ … }` block of them; the steps run where
+the parameter is written, as if pasted there, so a `restart` inside them re-enters the
+innermost `until` enclosing that point (§4.3). Inside a function body a parameter name
+shadows a method's first word of the same name. Steps passed as an argument may call the
+function they are passed to; only a function whose own body reaches itself, directly or
+through the steps it passes along, is recursive, and that is reported at the definition
+whether or not it is called. Hovering a step written inside an argument shows what the
+step is but not the item at that point, since the steps may run several times.
 
 ```
 def anyEleRes(t) = has "fire res" t or has "cold res" t or has "lightning res" t

@@ -155,7 +155,8 @@ class Checker {
         string,
         { proc: ProcDef; paramTypes: Map<string, ParamType>; valid: boolean }
     >();
-    /** Defs/procs currently being expanded, guards against (mutual) recursion. */
+    /** Predicate defs currently being expanded, guards against (mutual)
+     *  recursion; procs are checked statically instead (`recursiveProcs`). */
     private readonly expanding = new Set<string>();
     /** When > 0, don't record trace entries, a proc call is a black box for
      *  hover: only the call site itself gets an entry, not the inlined body. */

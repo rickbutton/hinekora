@@ -590,6 +590,26 @@ describe("checker — step parameters", () => {
         expect(r.ok).toBe(true);
     });
 
+    it("rejects a proc that reaches itself through the steps it passes along", () => {
+        // def twice(b) { b b }   def g() { twice(g()) }
+        const twice = procDef("twice", ["b"], [paramStep("b"), paramStep("b")]);
+        const g = procDef("g", [], [callStmt("twice", [blockArg([callStmt("g")])])]);
+        const c = craft(rareRing(), [callStmt("g")], [], [twice, g]);
+        const msgs = check(c, ctx).diagnostics.map((d) => d.message);
+        expect(msgs).toContain(`recursive def "g" is not allowed`);
+        expect(msgs).not.toContain(`recursive def "twice" is not allowed`);
+    });
+
+    it("reports a recursive proc at its definition even when never called", () => {
+        const p = procDef("loop", [], [op("scour"), callStmt("loop")]);
+        const c = craft(rareRing(), [op("chaos")], [], [p]);
+        const r = check(c, ctx);
+        expect(r.diagnostics.map((d) => d.message)).toContain(
+            `recursive def "loop" is not allowed`,
+        );
+        expect(r.diagnostics[0]!.span).toEqual(p.span);
+    });
+
     it("still rejects mutual recursion between procs", () => {
         const a = procDef("a", [], [op("scour"), callStmt("b")]);
         const b = procDef("b", [], [callStmt("a")]);
