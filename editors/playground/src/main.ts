@@ -64,7 +64,7 @@ async function loadRegistry() {
     );
     const raw = Object.fromEntries(entries) as unknown as RawPoe1;
     const data = adaptPoe1(raw);
-    return { registry: registryOf(data), manifest: data.manifest };
+    return registryOf(data);
 }
 
 function showProblems(
@@ -109,11 +109,12 @@ async function main(): Promise<void> {
         renderWhitespace: "none",
     });
 
-    const { registry, manifest } = await loadRegistry();
+    const registry = await loadRegistry();
     registerProviders(registry);
     // A handle for the browser console: `hinekora.editor`, `hinekora.registry`.
     Object.assign(window, { hinekora: { editor, monaco, registry } });
-    status.textContent = `${manifest.source.name} @ ${manifest.source.commit.slice(0, 10)} · game ${manifest.gameVersion}`;
+    // The header speaks only while the catalog loads or when it cannot.
+    status.textContent = "";
 
     const model = editor.getModel()!;
     const cursorOffset = (): number =>

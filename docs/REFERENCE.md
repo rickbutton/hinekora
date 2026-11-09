@@ -465,8 +465,9 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
 - `src/main.ts`: the page: the example guides (`examples/*.craft`, picked from a menu), the
   storyboard bound to the editor both ways, a problems panel that jumps to a
   finding (and is absent when there is none), a format button, a handle that resizes the sidebar (the width is kept in the
-  browser for the next visit), the data provenance in the header, and `window.hinekora`
-  (`editor`, `monaco`, `registry`) for the browser console.
+  browser for the next visit), a header that speaks only while the catalog loads or
+  when it cannot, and `window.hinekora` (`editor`, `monaco`, `registry`) for the browser
+  console.
 
 The package is part of `tsc -b` (declarations only; Vite does the real build), lint and
 the test run (`src/convert.test.ts`). Every push to `main` builds it and publishes it to
