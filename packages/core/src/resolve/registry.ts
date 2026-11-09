@@ -19,7 +19,7 @@ import type {
     EssenceSpec,
     FossilSpec,
 } from "../model/sources.js";
-import { buildTypeIndex, matchTypes, normalizeText, tokenMatches } from "./fuzzy.js";
+import { buildTypeIndex, matchTypes, normalizeText, singular, tokenMatches } from "./fuzzy.js";
 import { rollableTiers } from "./tiers.js";
 
 /** DSL tier (T1 = best) → catalog ladder level (Deafening = 7, Whispering = 1). */
@@ -587,10 +587,7 @@ export function buildRegistry(data: RegistryData): Registry {
             // Every query word must be a word (or a prefix of one) of the text.
             // Rows of one wording (the tiers, and the presence variants the data
             // words alike) are one candidate; several wordings are ambiguous. A
-            // tier that changes a number also changes a plural ("1 additional
-            // nearby Enemy", "2 additional nearby Enemies"), so plurals are folded.
-            const singular = (w: string): string =>
-                w.endsWith("ies") ? `${w.slice(0, -3)}y` : w.endsWith("s") ? w.slice(0, -1) : w;
+            // tier that changes a number also changes a plural, so plurals are folded.
             const byWording = new Map<string, { text: string; types: Set<TypeId> }>();
             for (const e of rows) {
                 const tokens = normalizeText(e.text);
@@ -617,12 +614,12 @@ export function buildRegistry(data: RegistryData): Registry {
 
         eldritchNames(side) {
             // One wording per implicit: the tiers and the presence variants of
-            // one implicit differ only in their numbers.
+            // one implicit differ only in their numbers and the plurals they bring.
             const seen = new Set<string>();
             const out: string[] = [];
             for (const e of eldritch) {
                 if (e.side !== side) continue;
-                const key = [...new Set(normalizeText(e.text))].sort().join(" ");
+                const key = [...new Set(normalizeText(e.text).map(singular))].sort().join(" ");
                 if (seen.has(key)) continue;
                 seen.add(key);
                 out.push(e.text);
