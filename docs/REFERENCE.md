@@ -570,8 +570,7 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   and divine at the snapshot's league and date, with the currencies it could not price;
   a spread over what the item may hold is the line's tooltip. A repeat's foot gives its
   odds as guides quote them ("1/37 chance", `oddsText`) over a small table
-  (`repeatTable`): per currency what one round spends, what all the rounds spend
-  (`passSpend`: the body's spend over the guide divided by the repeat's own runs) and
+  (`repeatTable`): per currency what the rounds spend (`passSpend`: the body's spend over the guide divided by the repeat's own runs) and
   its worth in chaos, dearest first, with the sum. Clicking a cost line opens a dialog with the breakdown
   (`breakdown`): each currency's expected amount, its price and its worth, dearest
   first and the unpriced last, the sum in chaos and divine, and the snapshot's league,

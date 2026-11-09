@@ -227,31 +227,27 @@ export function passSpend(loop: StepCost, steps: readonly StepCost[]): Price[] {
     return loop.runs > 0 ? addPrices([], sum, 1 / loop.runs) : sum;
 }
 
-/** One currency of a repeat: what a round spends, what the rounds spend, its worth. */
+/** One currency of a repeat: what its rounds spend, and its worth. */
 export interface RepeatRow {
     readonly item: string;
-    readonly round: number;
     readonly total: number;
     /** `total` in chaos; absent when the snapshot does not price it. */
     readonly chaos?: number;
 }
 
 /**
- * A repeat's spend as a table: per currency what one round spends (its
- * expected spend over the rounds divided by them) and the whole, dearest
- * first; the sum in chaos when every currency has a price.
+ * A repeat's spend as a table: per currency what its rounds are expected to
+ * spend, dearest first; the sum in chaos when every currency has a price.
  */
 export function repeatTable(
-    rounds: number,
     pass: readonly Price[],
     snapshot?: Prices,
 ): { readonly rows: readonly RepeatRow[]; readonly chaos?: number } {
     const rows = pass.map((p): RepeatRow => {
         const each = snapshot?.chaos.get(p.item);
-        const round = rounds > 0 ? p.amount / rounds : p.amount;
         return each === undefined
-            ? { item: p.item, round, total: p.amount }
-            : { item: p.item, round, total: p.amount, chaos: p.amount * each };
+            ? { item: p.item, total: p.amount }
+            : { item: p.item, total: p.amount, chaos: p.amount * each };
     });
     rows.sort((a, b) => (b.chaos ?? -1) - (a.chaos ?? -1));
     const chaos = snapshot === undefined ? undefined : inChaos(pass, snapshot);
@@ -414,7 +410,6 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
 
         /** A repeat's odds over a table of what its rounds spend. */
         const repeatCost = (
-            rounds: number,
             chance: number,
             pass: readonly Price[],
             spread: string | undefined,
@@ -425,7 +420,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
             if (spread !== undefined) head.title = spread;
             el.append(head);
             if (pass.length === 0) return el;
-            const t = repeatTable(rounds, pass, prices);
+            const t = repeatTable(pass, prices);
             const num = (text: string): HTMLElement => h("td", "num", text);
             el.append(
                 h(
@@ -438,7 +433,6 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                             "tr",
                             "",
                             h("th", "", ""),
-                            h("th", "num", "per round"),
                             h("th", "num", "total"),
                             h("th", "num", "chaos"),
                         ),
@@ -451,7 +445,6 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                 "tr",
                                 r.chaos === undefined ? "unpriced" : "",
                                 h("td", "", r.item),
-                                num(figure(r.round)),
                                 num(approx(r.total)),
                                 num(r.chaos === undefined ? "no price" : approx(r.chaos)),
                             ),
@@ -466,7 +459,6 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                   h(
                                       "tr",
                                       "",
-                                      h("td", "", ""),
                                       h("td", "", ""),
                                       h("td", "", ""),
                                       num(approx(t.chaos)),
@@ -627,20 +619,19 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                     // What getting through the repeat once is expected to take.
                     const pass =
                         c === undefined || report === undefined ? [] : passSpend(c, report.steps);
-                    const rounds =
+                    const odds =
                         c?.attempts === undefined
                             ? undefined
                             : repeatCost(
-                                  c.attempts.expected,
                                   c.attempts.chance,
                                   pass,
                                   spreadTitle(c.attemptsRange, (n) => `${figure(n)} rounds`),
                                   report !== undefined && passIsPartial(c, report.steps),
                               );
                     // The repeat is one container: what it is for on top, its steps
-                    // inside, what it costs at its foot; the item it leaves follows it.
+                    // inside, what it costs at its foot.
                     const foot = present(
-                        rounds,
+                        odds,
                         c?.note === undefined ? undefined : h("div", "note", c.note),
                         problemList(s.problems),
                     );

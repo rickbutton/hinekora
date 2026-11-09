@@ -11,18 +11,18 @@ import {
 } from "./storyboard.js";
 
 describe("a repeat's table", () => {
-    it("splits each currency into one round and all the rounds, dearest first, with the sum", () => {
+    it("gives each currency's spend over the rounds and its worth, dearest first, with the sum", () => {
         const pass = [
             { item: "Chaos Orb", amount: 4 },
             { item: "Deafening Essence of Greed", amount: 8 },
         ];
-        const t = repeatTable(8, pass, snapshot);
+        const t = repeatTable(pass, snapshot);
         expect(t.rows).toEqual([
-            { item: "Deafening Essence of Greed", round: 1, total: 8, chaos: 20 },
-            { item: "Chaos Orb", round: 0.5, total: 4, chaos: 4 },
+            { item: "Deafening Essence of Greed", total: 8, chaos: 20 },
+            { item: "Chaos Orb", total: 4, chaos: 4 },
         ]);
         expect(t.chaos).toBe(24);
-        const bare = repeatTable(8, pass);
+        const bare = repeatTable(pass);
         expect(bare.chaos).toBeUndefined();
         expect(bare.rows.map((r) => r.chaos)).toEqual([undefined, undefined]);
     });
