@@ -13,12 +13,11 @@ import modsUrl from "@hinekora/data/data/poe1/mods.json?url";
 import { monaco } from "./monaco.js";
 // The package maps `monaco-editor/<path>.js` onto its ESM tree.
 import EditorWorker from "monaco-editor/editor/editor.worker.js?worker";
-import { type AItem, itemView, type Registry, traceAt } from "@hinekora/core";
-import { checkCached } from "@hinekora/lsp";
-import { toMonacoPosition } from "./convert.js";
-import { renderItemCard } from "./item-card.js";
+import type { SourceSpan } from "@hinekora/core";
+import { toMonacoPosition, toMonacoRange } from "./convert.js";
 import { LANGUAGE_ID, registerLanguage, THEME_ID } from "./language.js";
 import { publishDiagnostics, registerProviders } from "./providers.js";
+import { createChartPane } from "./chart.js";
 
 // Monaco's own worker (bracket matching, word suggestions); the language
 // service runs on the page, so no language worker is needed.
@@ -48,40 +47,7 @@ const EXAMPLES = Object.fromEntries(
 const el = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const status = el<HTMLSpanElement>("status");
 const problems = el<HTMLElement>("problems");
-const itemPanel = el<HTMLElement>("item");
 const examplePicker = el<HTMLSelectElement>("example");
-
-/**
- * The item card for the statement at the cursor: the state after it, or
- * before it when the step diverges; the final item when the cursor is on no
- * statement; nothing while the guide does not parse.
- */
-function showItem(source: string, offset: number, registry: Registry): void {
-    const result = checkCached(source, registry);
-    const caption = document.createElement("p");
-    caption.className = "caption";
-    if (result === undefined) {
-        caption.textContent = "The item appears here once the guide parses.";
-        itemPanel.replaceChildren(caption);
-        return;
-    }
-    const entry = traceAt(result.trace, offset);
-    let state: AItem | undefined;
-    if (entry !== undefined) {
-        state = entry.after ?? entry.before;
-        caption.textContent =
-            entry.after === undefined ? "the item before this step" : "the item after this step";
-    } else {
-        state = result.finalState;
-        caption.textContent = "the item at the end of the guide";
-    }
-    if (state === undefined) {
-        caption.textContent = "every path ends the craft before this point";
-        itemPanel.replaceChildren(caption);
-        return;
-    }
-    itemPanel.replaceChildren(caption, renderItemCard(itemView(state, registry)));
-}
 
 async function fetchJson<T>(url: string): Promise<T> {
     const response = await fetch(url);
@@ -157,11 +123,43 @@ async function main(): Promise<void> {
     const model = editor.getModel()!;
     const cursorOffset = (): number =>
         model.getOffsetAt(editor.getPosition() ?? { lineNumber: 1, column: 1 });
+
+    // The chart and the editor point at each other: a node hovered
+    // highlights its statement, a card chosen moves the cursor, the cursor
+    // opens the card.
+    const hovered = editor.createDecorationsCollection();
+    const pane = createChartPane(el<HTMLElement>("walkthrough"), {
+        onSelect(offset) {
+            editor.setPosition(model.getPositionAt(offset));
+            editor.revealPositionInCenterIfOutsideViewport(model.getPositionAt(offset));
+            editor.focus();
+        },
+        onHover(span: SourceSpan | null) {
+            hovered.set(
+                span === null
+                    ? []
+                    : [
+                          {
+                              range: toMonacoRange({
+                                  start: {
+                                      line: span.start.line - 1,
+                                      character: span.start.column - 1,
+                                  },
+                                  end: { line: span.end.line - 1, character: span.end.column - 1 },
+                              }),
+                              options: { className: "step-hover", isWholeLine: false },
+                          },
+                      ],
+            );
+        },
+    });
+
     let pending: number | undefined;
     const refresh = (): void => {
         pending = undefined;
         showProblems(editor, publishDiagnostics(model, registry));
-        showItem(model.getValue(), cursorOffset(), registry);
+        pane.render(model.getValue(), registry);
+        pane.setActive(cursorOffset());
     };
     refresh();
     model.onDidChangeContent(() => {
@@ -169,12 +167,51 @@ async function main(): Promise<void> {
         pending = window.setTimeout(refresh, 150);
     });
     editor.onDidChangeCursorPosition(() => {
-        if (pending === undefined) showItem(model.getValue(), cursorOffset(), registry);
+        if (pending === undefined) pane.setActive(cursorOffset());
     });
 
     examplePicker.addEventListener("change", () => {
         model.setValue(EXAMPLES[examplePicker.value] ?? "");
     });
+    // The sidebar's width follows the handle between the panes and is kept
+    // for the next visit; Monaco lays itself out again on its own.
+    const main = document.querySelector("main")!;
+    const splitter = el<HTMLDivElement>("splitter");
+    const WIDTH_KEY = "hinekora.sideWidth";
+    try {
+        const saved = localStorage.getItem(WIDTH_KEY);
+        if (saved) main.style.setProperty("--side-width", `${Number(saved)}px`);
+    } catch {
+        // storage unavailable: the default width stands
+    }
+    splitter.addEventListener("pointerdown", (down) => {
+        down.preventDefault();
+        splitter.setPointerCapture(down.pointerId);
+        document.body.classList.add("resizing");
+        const onMove = (move: PointerEvent): void => {
+            const width = Math.min(
+                Math.max(280, main.getBoundingClientRect().right - move.clientX),
+                Math.max(280, window.innerWidth - 400),
+            );
+            main.style.setProperty("--side-width", `${width}px`);
+        };
+        const onUp = (): void => {
+            splitter.removeEventListener("pointermove", onMove);
+            splitter.removeEventListener("pointerup", onUp);
+            document.body.classList.remove("resizing");
+            try {
+                localStorage.setItem(
+                    WIDTH_KEY,
+                    String(parseInt(main.style.getPropertyValue("--side-width"), 10)),
+                );
+            } catch {
+                // storage unavailable: the width lasts for this visit
+            }
+        };
+        splitter.addEventListener("pointermove", onMove);
+        splitter.addEventListener("pointerup", onUp);
+    });
+
     el<HTMLButtonElement>("format").addEventListener("click", () => {
         void editor.getAction("editor.action.formatDocument")?.run();
     });

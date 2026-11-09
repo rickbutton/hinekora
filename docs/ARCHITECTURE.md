@@ -284,5 +284,7 @@ Thin, by design. The CLI runs the checker and prints diagnostics, or formats a g
 language client: a TextMate grammar for coloring plus an LSP client that spawns the stdio
 server. The browser playground binds the same transport-free service functions to Monaco's
 providers directly, with the catalog fetched as JSON; it is the proof that the service
-needs no server. None of the three holds any analysis logic; all of it is in `core`,
+needs no server. Its chart is the trace read the other way round: not "what is my item
+here" for one cursor position but every statement as a node with the item before and
+after it, laid out as the flow chart a player follows at the bench. None of the three holds any analysis logic; all of it is in `core`,
 reachable only through the one-way dependency arrow of §1.

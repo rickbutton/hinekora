@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { itemDelta, itemView, stepDelta, walkthrough } from "@hinekora/core";
+import {
+    clause,
+    criteria,
+    type Criterion,
+    itemDelta,
+    itemView,
+    stepDelta,
+    walkthrough,
+} from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { checkCached, parseCached } from "./analysis.js";
 
@@ -81,5 +89,72 @@ bench "cold resistance"`);
         expect(d.removed).toContain("Magic");
         const v = itemView(w.start.item!, registry);
         expect(itemDelta(v, v)).toEqual({ added: [], removed: [] });
+    });
+});
+
+describe("a condition in the player's words", () => {
+    const parsedLoop = (pred: string) => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
+def both() = has "maximum life" and has "cold resistance"
+def few() = prefixCount <= 1
+def eleRes(t) = has "fire resistance" t or has "cold resistance" t
+until ${pred} { chaos }`;
+        const parsed = parseCached(src);
+        if (!parsed.ok) throw new Error(parsed.error.message);
+        const loop = parsed.craft.body[0]!;
+        if (loop.kind !== "until") throw new Error("expected a loop");
+        const base = registry.resolveBase("Iron Ring");
+        if (!base.ok) throw new Error("no ring");
+        return { pred: loop.pred, craft: parsed.craft, wording: { base: base.value, ilvl: 84 } };
+    };
+    const words = (pred: string): string => {
+        const { pred: p, craft, wording } = parsedLoop(pred);
+        return clause(p, craft, registry, wording);
+    };
+    const list = (pred: string): Criterion => {
+        const { pred: p, craft, wording } = parsedLoop(pred);
+        return criteria(p, craft, registry, wording);
+    };
+
+    it("turns a negated count round and says 'no' for a modifier", () => {
+        expect(words("not prefixCount == 2")).toBe("not exactly 2 prefixes");
+        expect(words("not suffixCount <= 2")).toBe("more than 2 suffixes");
+        expect(words('not has "maximum life"')).toBe("no +# to maximum Life");
+        expect(words("not both()")).toBe("not (+# to maximum Life and +#% to Cold Resistance)");
+    });
+
+    it("parenthesises only a mixed connective and expands a local predicate in place", () => {
+        expect(words('both() or has "fire resistance"')).toBe(
+            "(+# to maximum Life and +#% to Cold Resistance) or +#% to Fire Resistance",
+        );
+        expect(words("both() and few()")).toBe(
+            "+# to maximum Life and +#% to Cold Resistance and at most 1 prefix",
+        );
+        expect(words("eleRes(t1)")).toBe(
+            "+#% to Fire Resistance at T1 or +#% to Cold Resistance at T1",
+        );
+    });
+
+    it("lays a condition out as a checklist, alternatives grouped", () => {
+        expect(list('both() and eleRes(t1) and not has "chaos resistance"')).toEqual({
+            kind: "all",
+            items: [
+                { kind: "leaf", text: "+# to maximum Life", negated: false },
+                { kind: "leaf", text: "+#% to Cold Resistance", negated: false },
+                {
+                    kind: "any",
+                    items: [
+                        { kind: "leaf", text: "+#% to Fire Resistance (T1)", negated: false },
+                        { kind: "leaf", text: "+#% to Cold Resistance (T1)", negated: false },
+                    ],
+                },
+                { kind: "leaf", text: "+#% to Chaos Resistance", negated: true },
+            ],
+        });
+        expect(list("not prefixCount == 2")).toEqual({
+            kind: "leaf",
+            text: "not exactly 2 prefixes",
+            negated: false,
+        });
     });
 });

@@ -168,15 +168,13 @@ these suffix modifiers }`, `{ 1-3 more modifiers, prefixes and/or suffixes }`,
   statement that contains them, loops as blocks with their exit in words, branches with
   their arms, and for a method its display name, the step as written and what it does
   from the method table. `itemDelta`/`stepDelta` list what a step added and removed, as
-  the lines of the item view a player would notice. `instructions.ts` lays that out as a
-  written guide reads (`instructions(w, craft, registry, wording?)`): one flat numbered
-  list where an operation is a step to do, a loop is its body's steps followed by a check
-  that sends the player back to the body's first step, a branch is a check naming the
-  steps to take or skip (with a jump past the other arm), `restart` is a jump to the
-  enclosing loop's first step, and the list ends with the item produced. `clause` words
-  a predicate in the player's terms ("maximum life at T1 and exactly 2 prefixes"),
-  resolving mod names through the registry when given the item's base and level and
-  expanding a local predicate call as its body with the arguments in place.
+  the lines of the item view a player would notice. `conditions.ts` words a guide's
+  conditions for the player: `clause` as prose ("+# to maximum Life at T1 and exactly 2
+  prefixes", a negated count turned round, "no …" for a negated modifier), `criteria` as
+  a checklist (`Criterion`: every requirement its own line, alternatives grouped under
+  "any of", a requirement that must be absent negated). Both expand a local predicate
+  call as its body with the arguments in place and word a modifier as the trade site does
+  (`modWording`: the row's text with its numbers as `#`), given the item's base and level.
 - **resolve/**: `Registry` (the resolved data surface). Key methods:
     - `resolveBase / resolveMod / resolveModType(name, ctx?) / resolveCurrency /
 resolveEssence / resolveBench / resolveHarvestTag`
@@ -185,8 +183,10 @@ resolveEssence / resolveBench / resolveHarvestTag`
     - `resolveHarvestTag(name)` maps a surface category ("fire", "caster") to its
       canonical `Mod.implicitTags` tag via the curated `HARVEST_TAGS` table.
     - `resolveModType` is **fuzzy and base-aware**: text → ModType, narrowed to types that
-      can actually roll on the given base/ilvl (`ctx`), returning `ambiguous` with
-      candidates when several match. Built on `fuzzy.ts`; a query token matches exactly OR
+      can actually roll on the given base/ilvl (`ctx`), then, failing any, to those an
+      unveil or the bench can put on it, returning `ambiguous` with candidates when
+      several match. A veiled-only type whose words a natural one shares is therefore
+      named by its mod id. Built on `fuzzy.ts`; a query token matches exactly OR
       as a **≥3-char prefix** of an entry token ("max life" → "maximum life").
     - `genOfType(type)` → prefix/suffix; `familiesOfType(type)` → mod groups (drives the
       bench group-exclusivity check); `typeLabel(type)` → friendly wording for display.
@@ -414,19 +414,24 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   lines in their colours, a bracketed "one of" group for a disjunction, a dashed line for
   the modifiers whose identity is unknown, "possibly" marks, and the absent modifiers
   struck through. The affix name and tags are the line's tooltip.
-- `src/walkthrough.ts`: `createWalkthroughPane(root, hooks)`, the guide as a numbered
-  list of instructions from the core's `instructions`: a "start with" card with the
-  declared item, then "Use a Chaos Orb" for an operation (a badge for the currency, the
-  step as written, what it does, what the step added to and took from the item by
-  `stepDelta`, and the checker's findings on it), "Does the item have …? Yes: continue.
-  No: go back to step 3 and repeat" after a loop's steps, "Yes: do steps 3 to 4. No: skip
-  to step 5" for a branch, "Go back to step 1" for a restart, and "Done" with the item at
-  the end. Step references are links that move the cursor. The instruction for the
-  statement at the cursor is open; hovering one highlights its statement in the editor,
-  clicking one moves the cursor, and one whose item changed since the last edit flashes
-  once. A toolbar steps through the list, for following the guide at the bench.
+- `src/chart.ts`: `createChartPane(root, hooks)`, the guide as a flow chart from the
+  core's `walkthrough`: an action node per statement with the currency's badge and
+  display name (any other method as written), a decision node per loop exit or branch
+  with the condition as the author wrote it, "yes" and "no" arrows, a loop's arrow back
+  up its left lane to above its first step (a `restart` joins that lane), a merge after a
+  branch, start and end nodes. The layout is structured, measured then placed: a sequence
+  stacks downward, a loop is its body over its decision with a lane on the left, a branch
+  is a decision over two columns (or one and a pass-through) that merge below; nodes are
+  HTML positioned over an SVG that draws the arrows. A detail panel under the chart
+  follows the node at the cursor or under the pointer and keeps no position of its own:
+  for an action its words, what it does, what it changed (`stepDelta`), the checker's
+  findings and the item after it; for a decision the condition as a checklist
+  (`criteria`) and, for a loop, the item once it is done; for the start the declared
+  item. Hovering a node highlights its statement in the editor, clicking one moves the
+  cursor, the cursor marks its node, and a node whose item changed since the last edit
+  flashes once.
 - `src/main.ts`: the page: the example guides (`examples/*.craft`, picked from a menu), the
-  walkthrough pane bound to the editor both ways, a problems panel that jumps to a
+  chart pane bound to the editor both ways, a problems panel that jumps to a
   finding, a format button, a handle that resizes the sidebar (the width is kept in the
   browser for the next visit), the data provenance in the header, and `window.hinekora`
   (`editor`, `monaco`, `registry`) for the browser console.
@@ -850,10 +855,10 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/data/src/{load,bundle,adapter}.ts` + `scripts/ingest-poe1.mjs` | data load (disk in `load`, pure in `bundle`) + ingest                                              |
 | `editors/playground/src/{main,monaco,language,providers,convert}.ts`     | the browser playground: Monaco bound to the language service                                       |
 | `editors/playground/src/item-card.ts`                                    | the item drawn in the game's style from `itemView`                                                 |
-| `editors/playground/src/walkthrough.ts`                                  | the walkthrough pane: step cards bound to the editor both ways                                     |
+| `editors/playground/src/chart.ts`                                        | the flow chart pane: structured layout, nodes over SVG arrows, the detail panel                    |
 | `packages/core/src/render/item.ts`                                       | `itemView`, `renderItemText`: the item as a player reads it, in the game's copy layout             |
 | `packages/core/src/render/walkthrough.ts`                                | `walkthrough`, `stepDelta`: the guide as steps with the item before and after each                 |
-| `packages/core/src/render/instructions.ts`                               | `instructions`, `clause`: the guide as a numbered list in the player's words                       |
+| `packages/core/src/render/conditions.ts`                                 | `clause`, `criteria`: a guide's conditions as prose and as a checklist, in the player's words      |
 | `packages/lsp/src/walkthrough.test.ts`                                   | the walkthrough model over real guides                                                             |
 | `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts`    | LSP features                                                                                       |
 | `packages/lsp/src/analysis.ts`                                           | the parse and check of a document, memoized by text; every feature reads it                        |
