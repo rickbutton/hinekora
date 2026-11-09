@@ -582,7 +582,8 @@ one domain. The sub-domains:
   condition is impossible (or whose negation always holds) is flagged as never running.
 - `until` loops, three steps. (a) **reachability**: if the exit predicate can never be
   satisfied on this base, report "can never exit" (the root cause) instead of downstream
-  symptoms. (b) **soundness across iterations**: compute the loop invariant (a join
+  symptoms; if it already holds on every entry state, report that the body never runs,
+  the mirror of a dead branch. (b) **soundness across iterations**: compute the loop invariant (a join
   fixpoint over continue-states) and run the body once from its continuing part, the
   states where the exit predicate is false (`continuing`; a head state that already
   satisfies it leaves at once, and an inner loop entered from an outer loop's joined

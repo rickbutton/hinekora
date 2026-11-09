@@ -56,6 +56,15 @@ describe("checker — the body runs only where the exit predicate is false", () 
         expect(r.finalState!.counts.total).toEqual([6, 6]);
     });
 
+    it("reports a loop whose exit already holds, so its body never runs", () => {
+        const c = craft(
+            item({ base: "IronRing", ilvl: 100, rarity: "rare", prefixes: ["random"] }),
+            [until(cmp("prefixCount", "<=", 3), [op("annul")])],
+        );
+        const messages = check(c, ctx).diagnostics.map((d) => d.message);
+        expect(messages).toEqual([expect.stringContaining("this loop's body never runs")]);
+    });
+
     it("still reports a step that fails on a state that continues", () => {
         // From two prefixes the first exalt fills the item and the second has
         // no slot; that head state continues, so the body is checked on it.

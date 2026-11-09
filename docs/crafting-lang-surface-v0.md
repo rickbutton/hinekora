@@ -284,10 +284,12 @@ inside one, a bare parameter standing for the steps bound to it.
 Run the body until the predicate holds. On exit the predicate is proven, so later lines
 may rely on it. The checker proves the body safe on every iteration, not just the first
 (so `until has "X" { exalt }` is reported: the item fills before X is guaranteed), and
-reports a loop whose exit can never be true on this base:
+reports a loop whose exit can never be true on this base, or already holds when the loop
+is reached, so its body never runs:
 
 ```
 this loop can never exit: has "fire resistance" can never become true here
+this loop's body never runs: prefixCount <= 3 already holds here
 ```
 
 ### 4.2 `if <pred> { … } [else { … }]`
@@ -393,7 +395,8 @@ Error categories:
 - **Resolution**: unknown or ambiguous base, mod, currency, essence, bench craft, harvest
   tag; a mod without a tier in the item block; a tier that cannot roll here.
 - **Precondition**: the operation does not fit the item on some path (§3).
-- **Control**: a loop that can never exit; a branch that can never run; a def with
+- **Control**: a loop that can never exit or whose body never runs; a branch that can
+  never run; a def with
   conflicting or unused parameters, recursion, or the wrong kind of call.
 
 ---

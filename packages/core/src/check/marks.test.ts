@@ -55,7 +55,14 @@ describe("influence", () => {
             suffixes: [{ mod: "Hunter ring suffix", tier: 1 }],
             influences: ["hunter"],
         });
-        const r = check(craft(declared, [until(has("Hunter ring suffix", 1), [op("chaos")])]), ctx);
+        expect(check(craft(declared, [op("exalt")]), ctx).diagnostics).toEqual([]);
+        const hunter = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            influences: ["hunter"],
+        });
+        const r = check(craft(hunter, [until(has("Hunter ring suffix", 1), [op("chaos")])]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.tiers.get(HUNTER_RING_SUFFIX.type)).toEqual(
             new Set([HUNTER_RING_SUFFIX.id]),

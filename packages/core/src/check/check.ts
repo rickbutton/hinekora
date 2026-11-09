@@ -626,14 +626,20 @@ class Checker {
         // loop's joined invariant would otherwise run its body on states no path
         // continues from.
         const entering = this.continuing(invariant, rpred);
+        if (entering === null) {
+            this.diag(
+                `this loop's body never runs: ${describePred(stmt.pred)} already holds here`,
+                stmt.pred.span,
+            );
+            return { kind: "fall", state: a };
+        }
         // The states at the head are the entry and the body's results, so the
         // exits are the entry where it already satisfies the predicate and those
         // results where they do; the joined invariant would blur the two.
         const leaving = rpred === null ? null : refine(a, rpred, true);
         const exits = (heads: readonly AItem[]): AItem | null =>
             foldJoin([...(leaving ? [leaving] : []), ...this.refineHeads(heads, rpred, true)]);
-        const probe =
-            entering === null ? [] : this.quietly(() => this.headStates(entering, stmt.body));
+        const probe = this.quietly(() => this.headStates(entering, stmt.body));
         const exitReachable = exits(probe);
         if (rpred !== null && exitReachable === null) {
             this.diag(
@@ -648,7 +654,7 @@ class Checker {
         // only fails on a later iteration (`until has X { exalt }` eventually fills
         // the item). On exit the exit predicate is known to hold: the after-state
         // is the join of every loop-head state refined by it.
-        const exit = exits(entering === null ? [] : this.headStates(entering, stmt.body));
+        const exit = exits(this.headStates(entering, stmt.body));
         return { kind: "fall", state: this.tightenCounts(exit ?? invariant) };
     }
 
