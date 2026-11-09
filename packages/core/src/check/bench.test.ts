@@ -7,6 +7,7 @@ import {
     BENCH_LIFE_ROW,
     CATALOG,
     FIRE_CHAOS_RESIST,
+    FIRE_RESIST,
     CLASS_RING,
     INCREASED_ARMOUR,
     INCREASED_MANA,
@@ -15,7 +16,8 @@ import {
     RING_BASE,
 } from "../__fixtures__/mods.js";
 import type { BenchCraft } from "../model/sources.js";
-import { type ModId, TypeId } from "../model/ids.js";
+import type { Mod } from "../model/mod.js";
+import { ModId, TypeId } from "../model/ids.js";
 
 const benchOf = (mod: ModId): BenchCraft => ({ mod, tier: 1, itemClasses: new Set([CLASS_RING]) });
 
@@ -159,6 +161,43 @@ describe("a bench craft on an item with a crafted modifier", () => {
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.crafted).toEqual([3, 3]);
         expect(guaranteedTypes(r.finalState!).has(LIFE)).toBe(true);
+    });
+});
+
+describe("a bench craft's group clash names the modifiers that may clash", () => {
+    // The bench's fire resistance: a bench row of the natural type, as the game's is.
+    const benchFire: Mod = {
+        ...FIRE_RESIST,
+        id: ModId("BenchFire1"),
+        source: "bench",
+        text: "+(10-20)% to Fire Resistance",
+    };
+    const fireBench = buildRegistry({
+        bases: [RING_BASE],
+        mods: [...CATALOG, BENCH_LIFE_ROW, benchFire],
+        baseAliases: { "Iron Ring": "IronRing" },
+        benchCrafts: [benchOf(benchFire.id)],
+    });
+    const message = (c: ReturnType<typeof craft>): string =>
+        check(c, { registry: fireBench })
+            .diagnostics.map((d) => d.message)
+            .join("\n");
+    const hybrid = fireBench.typeLabel(FIRE_CHAOS_RESIST.type);
+
+    it("names a guaranteed modifier of another wording", () => {
+        const m = message(craft(rareRing([], [FIRE_CHAOS_RESIST.id]), [bench("fire resistance")]));
+        expect(m).toContain(`or one of its group ("${hybrid}")`);
+    });
+
+    it("names nothing else when the clashing modifier is the craft's own", () => {
+        const m = message(craft(rareRing([], [FIRE_RESIST.id]), [bench("fire resistance")]));
+        expect(m).toContain("at most one per group");
+        expect(m).not.toContain("or one of its group");
+    });
+
+    it("names the group's modifiers an anonymous suffix may be", () => {
+        const m = message(craft(rareRing([], ["random"]), [bench("fire resistance")]));
+        expect(m).toContain(`or one of its group ("${hybrid}")`);
     });
 });
 

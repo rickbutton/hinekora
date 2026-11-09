@@ -700,6 +700,19 @@ describe("checker — the rarity seam (surface §6 errors)", () => {
         expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
     });
 
+    it("reports a refused step once and judges the rest as the guide meant", () => {
+        // The regal is refused where the ring may still be Magic; the exalt after
+        // it is judged on the Rare the regal would have made, not refused again.
+        const c = craft(
+            item({ base: "Iron Ring", ilvl: 100, rarity: "magic", prefixes: ["T1 Life"] }),
+            [op("augment"), iff(has("FireResist1"), [op("regal")]), op("regal"), op("exalt")],
+        );
+        const r = check(c, ctx);
+        expect(r.diagnostics).toHaveLength(1);
+        expect(r.diagnostics[0]!.message).toContain("may be Magic or Rare");
+        expect(r.finalState!.counts.total).toEqual([4, 5]);
+    });
+
     it("judges a scour and an essence over every rarity the item may have", () => {
         // A scour in one arm leaves the ring Normal or Magic where the arms meet:
         // a second scour may be wasted, a low essence may land on a Magic.
