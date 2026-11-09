@@ -696,6 +696,24 @@ within the tier and nothing of the distribution.
 (`docs/research/cost-model.md` §1.4).
 **Answer:**
 
+### Q66 · game probe · open
+
+**Asked:** 2026-11-09
+**Goal:** by how much the grove's "Reforge a Rare item, being more / less likely to
+receive the same modifier types" tilts the weights. The option text
+([Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting)) states no factor;
+craftofexile multiplies the weight of every row sharing a harvest type with a modifier
+on the item by ten for "more likely" and by a tenth for "less likely".
+**Procure:** a Rare ring with one life modifier and no other life-typed modifier, 8000
+Wild Crystallised Lifeforce.
+**Steps:** "more likely" forty times; count the rolls holding a life modifier against the
+plain reforge's share (the cost report gives it).
+**Record:** the share of rolls with a life modifier.
+**Assumed meanwhile:** craftofexile's ten and one tenth (`cost/roll.ts` `LIKELY_FACTOR`);
+the checker reads the craft as a plain reforge either way, since the same modifiers can
+roll (`check/library.ts` `harvestLikelyOps`).
+**Answer:**
+
 ---
 
 ## Resolved

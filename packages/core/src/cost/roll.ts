@@ -7,11 +7,11 @@
  * (QUESTIONS.md Q57). Nothing here lists outcomes; a roll is a few weighted
  * rows per side and a distribution of counts.
  */
-import type { Gen, GroupId, TypeId } from "../model/ids.js";
+import type { Gen, GroupId, TagId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import { lookupWeight, pool } from "../pool/pool.js";
 import { veiledPool } from "../pool/veiled.js";
-import type { Registry } from "../resolve/registry.js";
+import { HARVEST_TAGS, type Registry } from "../resolve/registry.js";
 import { rollableGen, rollableTiers } from "../resolve/tiers.js";
 import {
     type AItem,
@@ -228,12 +228,33 @@ export function foulbornRows(rows: readonly Row[]): Row[] {
     return out;
 }
 
+/** The grove's "more likely" tilt: ten times the weight of the rows sharing a
+ *  harvest type with a modifier on the item; "less likely" a tenth
+ *  (craftofexile's reading of the two crafts, QUESTIONS.md Q66). */
+const LIKELY_FACTOR = { more: 10, less: 0.1 } as const;
+
+const HARVEST_TAG_IDS: ReadonlySet<TagId> = new Set(HARVEST_TAGS.values());
+
+/** The harvest types of the modifiers the item holds on every path. */
+function harvestTagsOn(a: AItem, registry: Registry): Set<TagId> {
+    const out = new Set<TagId>();
+    const types = guaranteedTypes(a);
+    for (const m of registry.catalog) {
+        if (!types.has(m.type)) continue;
+        const pinned = a.tiers.get(m.type);
+        if (pinned !== undefined && !pinned.has(m.id)) continue;
+        for (const tag of m.implicitTags) if (HARVEST_TAG_IDS.has(tag)) out.add(tag);
+    }
+    return out;
+}
+
 /**
  * The weighted rows a pool holds on the item as it stands before the fill:
  * the natural pool at the level asked, narrowed or re-weighted as the pool
- * says. Empty for a pool this model does not read.
+ * says. Empty for a pool this model does not read. `origin` is the item the
+ * method was used on, before its strip, for a tilt that reads what it held.
  */
-function poolRows(a: AItem, spec: PoolSpec, registry: Registry): Row[] {
+function poolRows(a: AItem, spec: PoolSpec, registry: Registry, origin: AItem = a): Row[] {
     const natural = (level?: number): Row[] =>
         pool(registry.catalog, sureFacts(a, registry, level)).map((c) => ({
             mod: c.mod,
@@ -242,9 +263,18 @@ function poolRows(a: AItem, spec: PoolSpec, registry: Registry): Row[] {
     switch (spec.kind) {
         case "natural": {
             const cap = spec.maxLevel ?? Infinity;
-            const rows = natural(spec.level).filter(
+            let rows = natural(spec.level).filter(
                 (r) => r.mod.minLevel <= cap && (spec.gen === undefined || r.mod.gen === spec.gen),
             );
+            if (spec.likely !== undefined) {
+                const tags = harvestTagsOn(origin, registry);
+                const factor = LIKELY_FACTOR[spec.likely];
+                rows = rows.map((r) =>
+                    [...r.mod.implicitTags].some((t) => tags.has(t))
+                        ? { mod: r.mod, weight: r.weight * factor }
+                        : r,
+                );
+            }
             return spec.topTiers ? foulbornRows(rows) : rows;
         }
         case "tagged":
@@ -441,7 +471,7 @@ export function rollOf(a: AItem, ops: readonly Op[], registry: Registry): Roll {
     }
     // Forced rows alone (a bench craft, a Harvest change) draw nothing: the
     // checker's item says what they placed.
-    return main === undefined ? NO_ROLL : drawRoll(main, forced, registry);
+    return main === undefined ? NO_ROLL : drawRoll(main, forced, registry, a);
 }
 
 /**
@@ -502,9 +532,14 @@ function unveilRoll(
     return options.length === 0 ? NO_ROLL : { kind: "unveil", options };
 }
 
-function drawRoll(main: FillPlan, forced: readonly FillPlan[], registry: Registry): Roll {
+function drawRoll(
+    main: FillPlan,
+    forced: readonly FillPlan[],
+    registry: Registry,
+    origin: AItem,
+): Roll {
     const a = main.before;
-    const rows = poolRows(a, main.spec, registry);
+    const rows = poolRows(a, main.spec, registry, origin);
     if (rows.length === 0) return NO_ROLL;
     const genOf = (m: Mod): Gen => genOfType(a, registry, m.type, m);
     const groups = groupRows(rows, genOf);

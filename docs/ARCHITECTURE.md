@@ -324,7 +324,7 @@ item the player is holding when the guide's step is right. A modifier the state 
 only as possible neither shrinks the pool nor adds its tags. This is exact for a reforge,
 which strips the uncertain modifiers away, and for an item whose named modifiers fill it;
 it is approximate for an add onto an item with unnamed modifiers (`QUESTIONS.md` Q57).
-The game's rules the estimate rests on and the ones no source settles are Q58–Q65.
+The game's rules the estimate rests on and the ones no source settles are Q58–Q66.
 
 ### 7.2 The race: an exact draw without listing outcomes
 
@@ -347,7 +347,8 @@ true draw couples the two through depletion, a second-order effect the race test
 
 `cost/roll.ts` reads a method's op sequence into its **roll**: the random `fill` with the
 pool it draws from (built with the checker's own `pool` on the sure facts, re-weighted by
-a resonator's fossils, narrowed to a tag or the top tiers), the count of draws
+a resonator's fossils or the grove's "more / less likely", narrowed to a tag or the top
+tiers), the count of draws
 (a rare reforge's [Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Chaos_Orb#Mechanics)
 ratio, one for an add), the modifiers present for certain
 (kept through the reforge, or placed first: an essence's grant, a Harvest tag's row drawn

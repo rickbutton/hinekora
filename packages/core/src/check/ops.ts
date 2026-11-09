@@ -81,6 +81,10 @@ export type PoolSpec =
           readonly topTiers?: true;
           readonly gen?: Gen;
           readonly level?: number;
+          /** The grove's "more / less likely to receive the same modifier types":
+           *  a tilt of the weights the cost layer reads; the checker's pool is the
+           *  natural one either way. */
+          readonly likely?: "more" | "less";
       }
     /** The natural pool's rows carrying a category tag (harvest). */
     | { readonly kind: "tagged"; readonly tag: TagId }

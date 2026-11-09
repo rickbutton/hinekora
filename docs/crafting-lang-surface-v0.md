@@ -223,7 +223,10 @@ Operations that take a name (and an optional `t<n>`):
   `minion`, `physical`, `speed`. Both need a Rare item and a tag some modifier of the base can carry;
   `augment` also needs a removable modifier and an item with no influence, as the grove
   offers it. `harvest reforge "influence"` is the grove's "Reforge an Influenced Rare
-  item with random modifiers, including an Influence modifier".
+  item with random modifiers, including an Influence modifier". `harvest reforge "more
+likely"` and `harvest reforge "less likely"` are its "Reforge a Rare item, being more /
+  less likely to receive the same modifier types": a plain reforge to the checker, since
+  the same modifiers can roll, and a tilt of the weights to the cost report.
 - `harvest randomise` is the grove's "Randomise the Influence types on an Influenced
   Normal, Magic or Rare Item, as well as reforging the item": the item keeps as many
   influences as it had, any of the six, and is reforged at its rarity; `influenced

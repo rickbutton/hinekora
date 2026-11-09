@@ -89,8 +89,9 @@ ignores depletion but is otherwise the same model.
   row lands is not stated. craftofexile treats the craft as an essence whose forced row is
   drawn among the tag's rows by weight [coe]. The "more / less likely" reforges change the
   weights of the modifier types already present by an unstated factor
-  (`ReforgeMoreLikely`, `ReforgeLessLikely` in the cargo `harvest_crafting_options`) [data];
-  out of scope (`../operations.md` §3.5).
+  (`ReforgeMoreLikely`, `ReforgeLessLikely` in the cargo `harvest_crafting_options`, 200
+  Wild lifeforce each) [data]; craftofexile multiplies the rows sharing a harvest type with
+  a modifier on the item by ten and by a tenth (`rfmlk`) [coe] [assumed, Q66].
 - **Veiled** orbs add a placeholder whose side is random when both are open; the Veiled
   Exalted Orb's removal is a random modifier respecting the "cannot be changed" metamods
   only ([Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb)) [wiki]. An
@@ -234,7 +235,7 @@ and a Sacred for the influence reforge) [data], beasts (unpriced), and the Allfl
 
 ## 4. Open questions, each with a recommendation
 
-Recorded as `../QUESTIONS.md` Q57–Q65 with the assumption the code proceeds under.
+Recorded as `../QUESTIONS.md` Q57–Q66 with the assumption the code proceeds under.
 
 | #   | Question                                                                                               | Recommendation                                                                                                                                                                       |
 | --- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -247,6 +248,7 @@ Recorded as `../QUESTIONS.md` Q57–Q65 with the assumption the code proceeds un
 | Q63 | Which tagged row a Harvest reforge places.                                                             | One of the tag's rows, by spawn weight, the remaining count drawn as a Chaos Orb would.                                                                                              |
 | Q64 | Whether an unveil's three options are a weighted draw.                                                 | Yes, by the unveiled rows' spawn weights, without replacement.                                                                                                                       |
 | Q65 | Whether a modifier's value is uniform over its range.                                                  | Yes.                                                                                                                                                                                 |
+| Q66 | The factor of the grove's "more / less likely" reforges.                                               | Ten and one tenth, craftofexile's reading.                                                                                                                                           |
 
 ---
 

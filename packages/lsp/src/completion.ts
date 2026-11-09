@@ -215,7 +215,7 @@ function namesOf(of: NameKind, registry: Registry): readonly string[] {
         case "aspect":
             return registry.aspectNames;
         case "tag":
-            return [...registry.harvestTags, "influence"];
+            return [...registry.harvestTags, "influence", "more likely", "less likely"];
         case "mod":
             return [];
     }

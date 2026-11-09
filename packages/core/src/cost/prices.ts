@@ -162,6 +162,9 @@ export function unitCost(
             if (second === "reforge" && tagName === "influence") {
                 return [{ item: "Primal Crystallised Lifeforce", amount: 5000 }, SACRED];
             }
+            if (second === "reforge" && (tagName === "more likely" || tagName === "less likely")) {
+                return [{ item: "Wild Crystallised Lifeforce", amount: 200 }];
+            }
             const tag = registry.resolveHarvestTag(tagName);
             if (!tag.ok) return undefined;
             const key: string = tag.value;

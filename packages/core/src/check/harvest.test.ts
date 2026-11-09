@@ -218,3 +218,17 @@ describe("harvest augment (add tagged, remove a random other)", () => {
         expect(r.diagnostics[0]!.message).toContain("minion");
     });
 });
+
+describe("the grove's more and less likely reforges", () => {
+    it("read as a plain reforge: a kept prefix stays, the rest is a fresh 4-6 mod Rare", () => {
+        const kept = craft(rareRing(["T1 Life"], [PROTECT_PREFIXES_CARRIER.id]), [
+            harvest("reforge", "more likely"),
+        ]);
+        const r = check(kept, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteed(r)).toContain("IncreasedLife");
+        const less = check(craft(rareRing(), [harvest("reforge", "less likely")]), ctx);
+        expect(less.diagnostics).toEqual([]);
+        expect(less.finalState!.counts.total).toEqual([4, 6]);
+    });
+});

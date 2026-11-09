@@ -250,7 +250,9 @@ resolveEssence / resolveBench / resolveHarvestTag`
   groups per side with their rows and weights, built with `pool` on the item's sure facts
   (`guaranteedFacts`, each side's count raised to its proven floor), re-weighted by a
   resonator's fossils (`FossilSpec.weights`, added up across fossils, Q60), narrowed to a
-  tag, culled to the Foulborn top tiers, or the influence's rows; the modifiers `present`
+  tag, culled to the Foulborn top tiers, tilted by the grove's "more / less likely"
+  (`PoolSpec.likely`, ten and a tenth on the rows sharing a harvest type with the item's
+  modifiers, Q66), or the influence's rows; the modifiers `present`
   for certain, kept or placed first; the count cases, a reforge's
   [Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Chaos_Orb#Mechanics) ratio, a Magic
   item's 1–2 at even odds (Q58, Q59), an add's one), a `removal` (uniform over what it
