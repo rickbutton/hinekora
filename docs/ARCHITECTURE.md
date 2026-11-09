@@ -157,6 +157,9 @@ bound, to merge branches) and `equal` (to detect a fixpoint). The pieces:
 - **Tiers** (`TierDomain`): which specific tier a present type could be. A per-type overlay;
   non-relational.
 - **Possible** (`SetDomain`): the pool whitelist: types that _could_ still roll.
+- **Values** (`ValueDomain`): for a present type, the span its value is known to lie in
+  when a predicate has narrowed it below its rows' spans; dropped by whatever rolls the
+  modifier again, the Divine Orb included.
 - **Crafted**: how many bench-crafted mods are present (a range).
 - **Rarities** (`SetDomain`): which rarities the item may have; the caps of the counts
   follow the loosest of them.

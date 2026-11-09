@@ -101,7 +101,7 @@ block before any operation is checked.
 ## 2. Names
 
 **Currencies** are written by their short name: `transmute`, `augment`, `alteration`,
-`regal`, `alchemy`, `chaos`, `exalt`, `annul`, `scour`, `fracture` (§3). There
+`regal`, `alchemy`, `chaos`, `exalt`, `annul`, `scour`, `fracture`, `divine` (§3). There
 are no other aliases.
 
 **Mods** are written as a stat description, matched to a modifier _type_ (every tier of a
@@ -154,6 +154,7 @@ page groups them:
 | `annul`      | [Orb of Annulment](https://www.poewiki.net/wiki/Orb_of_Annulment)                      | a removable modifier (Magic or Rare)                            |
 | `scour` | [Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) | Magic or Rare, with a side a metamod does not protect |
 | `fracture`   | [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)                | Rare, at least four modifiers, not already fractured, no influence |
+| `divine`     | [Divine Orb](https://www.poewiki.net/wiki/Divine_Orb)                                  | Magic or Rare; every modifier's value is rolled again within its tier, a fractured one's excepted |
 | `exalt <influence>` | the influence's [Exalted Orb](https://www.poewiki.net/wiki/Hunter%27s_Exalted_Orb#Mechanics) (`exalt hunter`) | Rare with an open slot, no influence, no fracture, with an influence modifier the item can take; the item gains the influence and one of its modifiers |
 | `awakener <influence>` | [Awakener's Orb](https://www.poewiki.net/wiki/Awakener%27s_Orb#Mechanics), the donor item's influence named | exactly one influence, not the donor's; the item is reforged Rare with both, metamods ignored |
 | `vaal` | [Vaal Orb](https://www.poewiki.net/wiki/Vaal_Orb#Equipment) | not corrupted; afterwards the item is corrupted and either as it was or a Rare with six modifiers |
@@ -358,7 +359,7 @@ until anyEleRes(t1) { chaos }
 
 ```
 pred := isRare | isMagic | isNormal
-      | has "<mod>" [t<n>]                  # that modifier type is present (at that tier)
+      | has "<mod>" [t<n>] [<cmp> <int>]    # that modifier type is present (at that tier; with its value so)
       | has group "<mod>"                   # some modifier of that modifier's group is present
       | fractured "<mod>"                   # that modifier is fractured
       | influenced [<influence>]            # the item has that influence (any, when none is named)
@@ -379,7 +380,13 @@ cmp  := == | != | < | <= | > | >=
 Precedence, loosest first: `or`, `and`, `not`, atom; binary operators are
 left-associative. A predicate asks about the item's current state only; there are no
 history predicates. `has "X"` means any tier of X; `has "X" t1` the specific tier, which the
-checker tracks through operations (a modifier narrowed to T1 is provably not T2). `has group
+checker tracks through operations (a modifier narrowed to T1 is provably not T2). `has "X"
+>= 110` compares the modifier's **value**, the first number of its text ("+(100-114) to
+maximum Life" is 100 to 114; a hybrid compares its first number): it holds where the roll
+reaches the comparison, so the tiers that cannot are ruled out, and afterwards the value is
+known to lie in the part of the span that does until something rolls the modifier again,
+a reforge or a `divine`. `until has "maximum life" >= 110 { divine }` is a guide's "divine
+the life into range"; a threshold no tier reaches is impossible, a branch on it dead. `has group
 "X"` asks for any modifier of X's [group](https://www.poewiki.net/wiki/Modifier#Group/family),
 which an item holds at most one of: a wand's spell, fire, cold, lightning and minion damage
 prefixes are one group, so `if not has group "spell damage" { bench "spell damage" }` is the

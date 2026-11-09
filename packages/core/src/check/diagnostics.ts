@@ -96,7 +96,8 @@ export function describePred(pred: Pred): string {
                     : typeof pred.tier === "object"
                       ? ` ${pred.tier.param}`
                       : ` t${pred.tier}`;
-            return `has ${pred.group ? "group " : ""}${modText(pred.mod)}${tier}`;
+            const value = pred.value === undefined ? "" : ` ${pred.value.op} ${pred.value.value}`;
+            return `has ${pred.group ? "group " : ""}${modText(pred.mod)}${tier}${value}`;
         }
         case "fractured":
             return `fractured ${modText(pred.mod)}`;
@@ -148,6 +149,8 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
         switch (failure.kind) {
             case "wrongRarity":
                 return `Requires a ${RARITY_LABEL[failure.needed]} item — this item ${failure.actual.size === 1 ? "is" : "may be"} ${rarityLabel(failure.actual)}.`;
+            case "normalRefused":
+                return `Requires a Magic or Rare item — this item ${failure.actual.size === 1 ? "is" : "may be"} ${rarityLabel(failure.actual)}.`;
             case "magicRefused":
                 return `Requires a Normal or Rare item — this item ${failure.actual.size === 1 ? "is" : "may be"} ${rarityLabel(failure.actual)}.`;
             case "noOpenSlot":

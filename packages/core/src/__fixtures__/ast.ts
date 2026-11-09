@@ -189,6 +189,13 @@ export const has = (mod: string, tier?: number): HasPred => ({
     ...(tier !== undefined && { tier }),
     span: DS,
 });
+export const hasValue = (mod: string, op: Cmp, value: number, tier?: number): HasPred => ({
+    kind: "has",
+    mod,
+    ...(tier !== undefined && { tier }),
+    value: { op, value },
+    span: DS,
+});
 export const fracturedP = (mod: string | ParamRef): FracturedPred => ({
     kind: "fractured",
     mod,

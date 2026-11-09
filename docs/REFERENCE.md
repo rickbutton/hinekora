@@ -521,6 +521,13 @@ one domain. The sub-domains:
   is joined per-type and a tier known in only one branch drops to unconstrained. Its
   refinement is coupled to `presence` (tier atoms), so that part lives in `refine`, not the
   domain.
+- `values` (`ValueDomain`, in `values.ts`): an overlay `Map<TypeId, Range>` of the span a
+  present modifier's value, the first number of its row's text (`rollRange`), is known to
+  lie in, narrower than its rows' spans; a `has "X" >= n` predicate sets it (and pins the
+  tiers whose spans reach `n`, `refineHasValue`), a join keeps a type only where both
+  branches constrain it, and whatever rolls the modifier again drops it: a `fill` of its
+  type, a `strip`, a `relax`, a removal, and `reroll`, the Divine Orb, which drops every
+  entry but a fractured modifier's.
 - `craftedTypes`: the SET of types a bench craft may have put on the item (the named and
   anonymous `bench` affixes of the item block, then every `bench` step's row and the
   Bestiary's random metamod; a Harvest change of one keeps its replacement among them,
@@ -895,6 +902,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | Path                                                                     | What                                                                                               |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
 | `packages/core/src/check/astate.ts`                                      | `AItem` (the reduced product), `normalize`, `refine`, `join`, `TierDomain`, presence views         |
+| `packages/core/src/check/values.ts`                                      | modifier values: `rollRange` from a row's text, `narrowRange` by a comparison, `ValueDomain`       |
 | `packages/core/src/check/domain.ts`                                      | `Domain<T>` contract, `RangeDomain`, `SetDomain`, range algebra                                    |
 | `packages/core/src/model/capacity.ts`                                    | the affix caps (`sideCap`, `hardTotalCap`, `maxTotal`, `caps`), shared by the pool and the checker |
 | `packages/core/src/check/counts.ts`                                      | `CountDomain` (suffix, the total/prefix coupling, count refine, `learnPresent`)                    |

@@ -8,6 +8,7 @@
  * prefixes.
  */
 import { craftedCapOf, type Effect } from "../model/effects.js";
+import { dropValues, keepValues } from "./values.js";
 import {
     type ClassId,
     type Gen,
@@ -151,6 +152,7 @@ export type Selector =
 export type Check =
     | { readonly kind: "rarity"; readonly rarity: Rarity }
     | { readonly kind: "notMagic" }
+    | { readonly kind: "notNormal" }
     | { readonly kind: "canBeRare" }
     | { readonly kind: "openSlot"; readonly gen?: Gen }
     | { readonly kind: "removable"; readonly selector: Selector }
@@ -245,6 +247,9 @@ export type Op =
     /** Forget which tier each present modifier is; a crafted one keeps its tier
      *  when `crafted` is false. */
     | { readonly kind: "relax"; readonly crafted: boolean }
+    /** Every present modifier's value is rolled again within its tier, the
+     *  fractured ones excepted (the Divine Orb). */
+    | { readonly kind: "reroll" }
     /** One influenced modifier went up a tier, or to its elevated row at the
      *  top (the Orb of Dominance): every influenced modifier the item may have
      *  loses its tier and may be its elevated row, and one of them remains. */
@@ -298,6 +303,7 @@ export type PreconditionFailure =
       }
     | { readonly kind: "noOpenSlot"; readonly gen?: Gen }
     | { readonly kind: "magicRefused"; readonly actual: ReadonlySet<Rarity> }
+    | { readonly kind: "normalRefused"; readonly actual: ReadonlySet<Rarity> }
     | {
           readonly kind: "modConflict";
           readonly group: string;
@@ -520,6 +526,10 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
             }
             return { ...a, eldritch, eldritchTypes };
         }
+        case "reroll": {
+            const fractured = fracturedTypes(a);
+            return { ...a, values: keepValues(a.values, (t) => fractured.has(t)) };
+        }
         case "relax":
             // A modifier keeps its tier only when it is provably crafted: every
             // row it may be is a bench row. An unpinned type may be any row.
@@ -628,6 +638,8 @@ function failing(
                 : { kind: "wrongRarity", needed: check.rarity, actual: a.rarities };
         case "notMagic":
             return a.rarities.has("magic") ? { kind: "magicRefused", actual: a.rarities } : null;
+        case "notNormal":
+            return a.rarities.has("normal") ? { kind: "normalRefused", actual: a.rarities } : null;
         case "canBeRare":
             return canBeRare(a.base) ? null : { kind: "rarityUnsupported", rarity: "rare" };
         case "openSlot":
@@ -1082,6 +1094,7 @@ function strip(a: AItem, rules: Rules, registry: Registry): AItem {
     for (const t of a.possible) if (mayRemain(t)) possible.add(t);
     const tiers = new Map<TypeId, ReadonlySet<ModId>>();
     for (const [t, s] of a.tiers) if (mayRemain(t)) tiers.set(t, s);
+    const values = keepValues(a.values, mayRemain);
 
     // A guaranteed metamod carrier on the stripped side is provably crafted and
     // provably gone; a kept (protected or fractured) one may survive, and an
@@ -1106,6 +1119,7 @@ function strip(a: AItem, rules: Rules, registry: Registry): AItem {
         presence,
         possible,
         tiers,
+        values,
         crafted,
         craftedTypes,
     });
@@ -1431,6 +1445,8 @@ function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry
         }
     }
     for (const t of drawn.types) possible.add(t);
+    // A drawn modifier is a fresh roll, whatever was known of the type's value.
+    const values = dropValues(a.values, drawn.types);
     for (const m of drawn.mods) {
         const cur = tiers.get(m.type);
         tiers.set(m.type, one ? new Set([m.id]) : cur ? new Set([...cur, m.id]) : new Set([m.id]));
@@ -1459,7 +1475,7 @@ function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry
     ) {
         craftedTypes = new Set([...a.craftedTypes, ...drawn.types]);
     }
-    return settled({ ...a, counts, presence, possible, tiers, crafted, craftedTypes });
+    return settled({ ...a, counts, presence, possible, tiers, values, crafted, craftedTypes });
 }
 
 /** Is a row an influence modifier here: one no tag of the item's own admits,
@@ -1639,13 +1655,14 @@ function removeType(a: AItem, type: TypeId, registry: Registry): AItem {
     const presence = a.bdd.and(presenceFacts(a.bdd, surviving, gone), fractureProjection(a));
     const tiers = new Map(a.tiers);
     tiers.delete(type);
+    const values = dropValues(a.values, [type]);
     // The named modifier may have been the crafted one; it stays among the
     // crafted types, excluded, so a Harvest change that replaces it can read
     // that it was one.
     const crafted: Range = a.craftedTypes.has(type)
         ? [Math.max(0, a.crafted[0] - 1), a.crafted[1]]
         : a.crafted;
-    return settled({ ...a, counts: { total, prefix, suffix }, presence, tiers, crafted });
+    return settled({ ...a, counts: { total, prefix, suffix }, presence, tiers, values, crafted });
 }
 
 /** Might a crafted-limit carrier be on the item without being guaranteed? */
@@ -1727,6 +1744,7 @@ function removeCrafted(a: AItem, rules: Rules, registry: Registry, replacing: bo
         counts: { total, prefix, suffix },
         presence,
         tiers,
+        values: dropValues(a.values, forgotten),
         crafted,
         craftedTypes,
     });

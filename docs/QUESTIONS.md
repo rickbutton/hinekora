@@ -448,6 +448,21 @@ family for everything.
 the surface doc §1, §3 and §5).
 **Answer:**
 
+### Q53 · game probe · open
+
+**Asked:** 2026-11-08
+**Goal:** whether a Divine Orb rolls a bench-crafted modifier's value again.
+[Divine Orb](https://www.poewiki.net/wiki/Divine_Orb) says it rerolls "the values of the
+random modifiers" and that a fractured modifier's are not rerolled; it does not name the
+crafted ones. It decides whether a value a guide has pinned on a crafted modifier
+survives a `divine`.
+**Procure:** a Rare with a bench-crafted modifier whose value is not at its maximum.
+**Steps:** use a Divine Orb; compare the crafted modifier's value before and after.
+**Record:** whether it changed.
+**Assumed meanwhile:** it is rerolled, the conservative reading (`check/ops.ts` `reroll`
+keeps only a fractured modifier's value).
+**Answer:**
+
 ### Q52 · game probe · open
 
 **Asked:** 2026-11-08

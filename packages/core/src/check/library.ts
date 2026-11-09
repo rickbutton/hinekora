@@ -53,6 +53,7 @@ const isRare = require({ kind: "rarity", rarity: "rare" });
 const isMagic = require({ kind: "rarity", rarity: "magic" });
 const isNormal = require({ kind: "rarity", rarity: "normal" });
 const notMagic = require({ kind: "notMagic" });
+const notNormal = require({ kind: "notNormal" });
 const canBeRare = require({ kind: "canBeRare" });
 const openSlot = (gen?: Gen): Op =>
     require(gen === undefined ? { kind: "openSlot" } : { kind: "openSlot", gen });
@@ -99,6 +100,10 @@ export function currencyOps(kind: CurrencyKind): readonly Op[] {
             return [notCorrupted, removable(unshielded), remove(unshielded)];
         case "scour":
             return [notCorrupted, require({ kind: "strippable" }), strip(), rarity("survivors")];
+        case "divine":
+            // Divine Orb: every random modifier's value is rolled again within its
+            // tier, a fractured one's excepted; Magic or Rare only.
+            return [notCorrupted, notNormal, { kind: "reroll" }];
         case "fracture":
             return [
                 notCorrupted,

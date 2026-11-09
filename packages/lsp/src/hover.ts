@@ -48,6 +48,7 @@ const REQUIRES: Record<CurrencyKind, string> = {
     annul: "a Magic or Rare item with a removable affix",
     scour: "a Magic or Rare item",
     fracture: "a Rare item with at least four modifiers",
+    divine: "a Magic or Rare item; every modifier's value is rolled again within its tier",
 };
 
 const KEYWORD_DOC: Record<string, string> = {
@@ -56,7 +57,7 @@ const KEYWORD_DOC: Record<string, string> = {
     else: "The alternative branch of an `if`.",
     restart: "`restart` — abandon this attempt and re-run the enclosing loop from the top.",
     stop: "`stop` — end the craft on this path: keep the item as it is, or spend no more on it.",
-    has: '`has "<mod>" [t1]` — true when the item is guaranteed to carry that mod (optionally at that tier; `t1` = best).',
+    has: '`has "<mod>" [t1] [>= <n>]` — true when the item is guaranteed to carry that mod (optionally at that tier, `t1` = best, or with its value comparing so).',
     group: '`has group "<mod>"` — true when the item carries any modifier of that modifier\'s group; an item holds one per group, so `if not has group "<mod>" { bench "<mod>" }` guards a bench craft in one clause.',
     not: "`not <pred>` — logical negation of a predicate.",
     item: "`item { base: … ilvl: … rarity: … }` — the starting item this craft operates on.",

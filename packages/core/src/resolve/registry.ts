@@ -61,7 +61,8 @@ export type CurrencyKind =
     | "exalt"
     | "annul"
     | "scour"
-    | "fracture";
+    | "fracture"
+    | "divine";
 
 /**
  * A currency in the catalog. `name`/`kind` drive the language (alias + which
@@ -313,6 +314,12 @@ export const STANDARD_CURRENCIES: readonly CurrencySpec[] = [
         kind: "fracture",
         displayName: "Fracturing Orb",
         description: "Fractures a random modifier on an item with at least four modifiers.",
+    },
+    {
+        name: "divine",
+        kind: "divine",
+        displayName: "Divine Orb",
+        description: "Randomises the values of the random modifiers on an item.",
     },
 ];
 

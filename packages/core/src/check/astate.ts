@@ -25,6 +25,7 @@ import {
 import { type Bdd, BddManager } from "./bdd.js";
 import { type Domain, type Range, RangeDomain, SetDomain } from "./domain.js";
 import { type Caps, type Counts, CountDomain, caps } from "./counts.js";
+import { narrowRange, NEGATED_CMP, ValueDomain, type Values } from "./values.js";
 
 // The sub-domains live in their own modules (`domain.ts`, `counts.ts`); re-export
 // the surface existing importers reach through `astate` (the caps + `Range`).
@@ -54,6 +55,11 @@ export interface AItem {
     /** Tier overlay (`TierDomain`): for a present type, which specific mods
      *  (tiers) it could be. Absent from the map ⇒ any tier. */
     readonly tiers: Tiers;
+    /** For a present type, the span its value (its first number) is known to lie
+     *  in, narrower than its rows' spans; absent means the rows' spans. A
+     *  predicate narrows it, and whatever rerolls or replaces the modifier
+     *  drops it (`values.ts`). */
+    readonly values: Values;
     /** How many bench-CRAFTED mods are present (a range). `bench` requires it
      *  provably below the crafted cap (one, or three under an active multimod). */
     readonly crafted: Range;
@@ -249,11 +255,12 @@ function isAtom(name: string): boolean {
  */
 export function relaxTiers(a: AItem, relaxed: (type: TypeId) => boolean): AItem {
     const tiers = new Map([...a.tiers].filter(([t]) => !relaxed(t)));
+    const values = new Map([...a.values].filter(([t]) => !relaxed(t)));
     let presence = a.presence;
     for (const v of a.bdd.support(presence)) {
         if (isTierAtom(v) && relaxed(tierAtomType(v))) presence = a.bdd.exists(presence, v);
     }
-    return { ...a, tiers, presence };
+    return { ...a, tiers, values, presence };
 }
 
 /** The tier atoms allocated for `type` (the specific mods a predicate has named). */
@@ -698,6 +705,7 @@ export function initialState(
         presence,
         possible: new Set(counts.present),
         tiers: new Map([...counts.pinned].map(([type, mod]) => [type, new Set([mod])])),
+        values: new Map(),
         crafted: [counts.crafted, counts.crafted],
         craftedTypes: new Set(counts.craftedTypes ?? []),
     });
@@ -756,6 +764,7 @@ export function join(a: AItem, b: AItem): AItem {
         presence: a.bdd.or(a.presence, b.presence),
         possible: SetDomain.join(a.possible, b.possible),
         tiers: TierDomain.join(a.tiers, b.tiers),
+        values: ValueDomain.join(a.values, b.values),
         crafted: RangeDomain.join(a.crafted, b.crafted),
         craftedTypes: SetDomain.join(a.craftedTypes, b.craftedTypes),
         ...(a.imprint && b.imprint && { imprint: join(a.imprint, b.imprint) }),
@@ -781,6 +790,7 @@ export function stateEqual(a: AItem, b: AItem): boolean {
         a.presence === b.presence &&
         SetDomain.equal(a.possible, b.possible) &&
         TierDomain.equal(a.tiers, b.tiers) &&
+        ValueDomain.equal(a.values, b.values) &&
         RangeDomain.equal(a.crafted, b.crafted) &&
         SetDomain.equal(a.craftedTypes, b.craftedTypes) &&
         (a.imprint === undefined
@@ -807,6 +817,16 @@ export type RPred =
       }
     /** Some modifier of the named modifier's group is present. */
     | { readonly kind: "hasGroup"; readonly type: TypeId; readonly types: ReadonlySet<TypeId> }
+    /** The modifier is present with its value comparing so; `rows` are the
+     *  spans of the rows it may be here. */
+    | {
+          readonly kind: "hasValue";
+          readonly type: TypeId;
+          readonly gen: Gen;
+          readonly op: Cmp;
+          readonly value: number;
+          readonly rows: ReadonlyMap<ModId, Range>;
+      }
     | {
           readonly kind: "compare";
           readonly projection: "prefixCount" | "suffixCount";
@@ -854,6 +874,9 @@ export function refine(a: AItem, pred: RPred, positive = true): AItem | null {
 
         case "hasGroup":
             return positive ? refineHasGroup(a, pred.types) : refineLacksGroup(a, pred.types);
+
+        case "hasValue":
+            return refineHasValue(a, pred, positive);
 
         case "fractured":
             return positive ? refineFractured(a, pred.type) : refineNotFractured(a, pred.type);
@@ -986,6 +1009,48 @@ function refineHas(a: AItem, type: TypeId, gen: Gen, tierMod: ModId | undefined)
     const counts = CountDomain.learnPresent(a.counts, gen);
     const s = normalize({ ...a, presence, tiers, counts });
     return s === null ? null : reduceTiers(s);
+}
+
+/**
+ * The modifier's value compares so. Positive: the modifier is present at one
+ * of the rows whose span reaches the comparison, and its value lies in the
+ * part of those spans that does; impossible when no row reaches it. Negative:
+ * the modifier is absent or its value compares the other way, so only a
+ * guaranteed modifier learns anything, and what it learns is the other part.
+ */
+function refineHasValue(
+    a: AItem,
+    pred: Extract<RPred, { kind: "hasValue" }>,
+    positive: boolean,
+): AItem | null {
+    const { type } = pred;
+    if (!positive && !isGuaranteed(a, type)) return a;
+    const op = positive ? pred.op : NEGATED_CMP[pred.op];
+    const pinned = a.tiers.get(type);
+    const known = a.values.get(type);
+    const kept = new Map<ModId, Range>();
+    for (const [id, span] of pred.rows) {
+        if (pinned !== undefined && !pinned.has(id)) continue;
+        const within =
+            known === undefined
+                ? span
+                : ([Math.max(span[0], known[0]), Math.min(span[1], known[1])] as const);
+        if (within[0] > within[1]) continue;
+        const part = narrowRange(within, op, pred.value);
+        if (part !== null) kept.set(id, part);
+    }
+    if (kept.size === 0) return null;
+    let hull: Range | undefined;
+    for (const r of kept.values()) hull = hull === undefined ? r : RangeDomain.join(hull, r);
+    const present = positive
+        ? refineHas(a, type, pred.gen, kept.size === 1 ? [...kept.keys()][0] : undefined)
+        : a;
+    if (present === null) return null;
+    const tiers = new Map(present.tiers);
+    if (kept.size < pred.rows.size || pinned !== undefined) tiers.set(type, new Set(kept.keys()));
+    const values = new Map(present.values);
+    values.set(type, hull!);
+    return reduceTiers({ ...present, tiers, values });
 }
 
 /** Some modifier of the group is present: one of the group's types the item may

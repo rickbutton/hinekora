@@ -697,11 +697,22 @@ class Parser {
             if (group && tier !== undefined) {
                 throw this.error('a group has no tier: write `has group "<mod>"`');
             }
+            let value: { op: Cmp; value: number } | undefined;
+            if (CMP_KINDS[this.peek().kind] !== undefined) {
+                if (group) throw this.error("a group has no value to compare");
+                const op = this.parseCmp();
+                const v = this.parseIntOrParam();
+                if (typeof v === "object") {
+                    throw this.error("a modifier's value compares to a number, not a parameter");
+                }
+                value = { op, value: v };
+            }
             return {
                 kind: "has",
                 mod,
                 ...(tier !== undefined && { tier }),
                 ...(group && { group: true as const }),
+                ...(value !== undefined && { value }),
                 span: span(t.span.start, this.prev.span.end),
             };
         }

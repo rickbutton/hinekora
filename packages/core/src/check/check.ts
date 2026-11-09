@@ -47,6 +47,8 @@ import {
 import { rollableGen, rollableTiers, tierMod } from "../resolve/tiers.js";
 import { findMethod, type Literal, type Method, slotAt } from "./methods.js";
 import { anonymousTypes, influenceTagsAny, runMethod } from "./ops.js";
+import { rollRange } from "./values.js";
+import type { Range } from "./domain.js";
 
 export interface CheckContext {
     readonly registry: Registry;
@@ -1002,6 +1004,40 @@ class Checker {
         const type = typeRes.value;
         if (pred.group) return { kind: "hasGroup", type, types: this.registry.groupOf(type) };
         const gen = rollableGen(this.registry.catalog, a.base, a.ilvl, type, tags) ?? "prefix";
+
+        if (pred.value !== undefined) {
+            const tiers = rollableTiers(this.registry.catalog, a.base, a.ilvl, type, tags);
+            const rows = new Map<ModId, Range>();
+            for (const m of tiers) {
+                const span = m.text === undefined ? undefined : rollRange(m.text);
+                if (span !== undefined) rows.set(m.id, span);
+            }
+            if (pred.tier !== undefined) {
+                const tier = this.literalInt(pred.tier, pred.span);
+                if (tier === null) return null;
+                const mod = tierMod(tiers, tier);
+                if (mod === undefined || !rows.has(mod.id)) {
+                    this.diag(
+                        `tier ${tier} of "${modName}" has no value to compare here`,
+                        pred.span,
+                    );
+                    return null;
+                }
+                for (const id of [...rows.keys()]) if (id !== mod.id) rows.delete(id);
+            }
+            if (rows.size === 0) {
+                this.diag(`"${modName}" has no number to compare`, pred.span);
+                return null;
+            }
+            return {
+                kind: "hasValue",
+                type,
+                gen,
+                op: pred.value.op,
+                value: pred.value.value,
+                rows,
+            };
+        }
 
         if (pred.tier === undefined) {
             return { kind: "has", type, gen };

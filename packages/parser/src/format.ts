@@ -117,7 +117,8 @@ function pred(p: Pred, source: string, depth: number): string {
                     : typeof p.tier === "object"
                       ? ` ${p.tier.param}`
                       : ` t${p.tier}`;
-            return `has ${mod}${tier}`;
+            const value = p.value === undefined ? "" : ` ${p.value.op} ${p.value.value}`;
+            return `has ${mod}${tier}${value}`;
         }
         case "fractured":
             return `fractured ${typeof p.mod === "object" ? p.mod.param : quote(p.mod)}`;
