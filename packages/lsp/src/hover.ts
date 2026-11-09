@@ -10,6 +10,7 @@ import {
     type Bounds,
     type CostReport,
     figure,
+    percentage,
     priceText,
     type Craft,
     type CurrencyKind,
@@ -565,6 +566,11 @@ function costLine(
     if (step.attempts !== undefined) {
         parts.push(
             `${oddsText(step.attempts.chance)}${spread(step.attemptsRange, (n) => `1/${figure(n)}`)}`,
+        );
+    }
+    if (step.branch !== undefined) {
+        parts.push(
+            `taken ${percentage(step.branch)} of the time${spread(step.branchRange, percentage)}`,
         );
     }
     if (

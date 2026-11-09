@@ -199,7 +199,7 @@ these suffix modifiers }`, `{ 1-3 additional prefix or suffix modifiers }`,
   binds the drawn nodes to the text; the CLI's `hinekora chart <file>` prints the text
   (`chartSource` in `packages/cli/src/check.ts`) for a README or a wiki page to embed;
   `hinekora cost <file>` prints the cost report (`costSource`): one line per statement
-  with its rounds, its branch chance or what it is expected to consume, the spread over
+  with a loop's odds (`oddsText`), a branch's chance or what it is expected to consume, the spread over
   what the item may hold in brackets where the ends differ, then the total per
   currency and in Chaos and Divine Orbs at the bundled snapshot's league and date. `itemDelta`/`stepDelta` list what a step added and removed, as
   the lines of the item view a player would notice. `conditions.ts` words a guide's
@@ -414,8 +414,7 @@ Transport-free service functions + a stdio server:
 - `hover.ts`: `getHover(source, offset, registry, prices?)` is **token-centric**. The
   hovered token's signature (currency op / mod / base / essence / bench / def / projection /
   keyword) plus an item-tooltip footer of the state at that point, then the cost line for
-  the statement (`costCached`, `analysis.ts`): a loop's rounds and the chance each ends
-  it, a branch's chance, what a step is expected to consume and, with a snapshot, its
+  the statement (`costCached`, `analysis.ts`): a loop's odds, a branch's chance, what a step is expected to consume and, with a snapshot, its
   price in chaos, each with its spread over what the item may hold where the ends
   differ; on the item block the guide's whole expected spend. Details:
     - The tooltip is the item in the game's copy-to-clipboard layout (`renderItemText`
@@ -557,7 +556,7 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   panel with a line joining them to it. A loop is one container: "repeat until the item
   has" with the checklist (the step's `check`) on top, its steps in an inner panel, its
   odds and cost table as a footer, and its result, the item once it is done, always a
-  card, closing the container; every other top-level step stands in a box of its own
+  card, closing the container; every other top-level block (the start, the second items, each step, the finished item) stands in a box of its own
   too, so nothing reads as hung off the step before it; a branch is a container with "if the item has" and its checklist on top and one panel per answer; a `restart`
   is a block pointing back and a `stop` one that keeps the item as it is; the start and
   the finished item open and close the board, the second items (`with <name> { … }`,

@@ -18,8 +18,9 @@ until keeper() {
     essence "fear" t1
 }
 
-# The lock is a suffix of its own and keeps every prefix, so a third prefix must
-# go first, and a suffix slot must be open. An annul that takes one of the kept
+# The lock is a suffix of its own, so a suffix slot must be open; and it keeps
+# every prefix through the scour, so a third prefix must go first or the mana
+# craft has no room. An annul that takes one of the kept
 # modifiers sends the craft back to the essences.
 until keeper() and prefixCount <= 2 and suffixCount <= 2 {
     if keeper() {

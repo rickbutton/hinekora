@@ -348,8 +348,9 @@ main {
     opacity: 0.55;
 }
 
-/* a top-level step stands in a box of its own, as a repeat or a branch does, so
-   nothing after it looks hung off it */
+/* a top-level block (the start, a second item, a step, the finished item)
+   stands in a box of its own, as a repeat or a branch does, so nothing after it
+   looks hung off it */
 #walkthrough > .block {
     margin: 6px 0;
     padding: 4px 6px 6px;

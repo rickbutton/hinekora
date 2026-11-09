@@ -127,6 +127,25 @@ describe("costSource — what a guide is expected to spend", () => {
         );
     });
 
+    it("gives a branch's chance but no figure for a restart, whose reach counts every round", () => {
+        const r = costSource(
+            `item { base: "Iron Ring" ilvl: 84 rarity: rare }
+until has "maximum life" {
+    chaos
+    if not has "maximum life" {
+        restart
+    }
+}`,
+            "test.craft",
+            registry,
+            prices,
+        );
+        expect(r.output).toMatch(/if not has "maximum life" \{\s+taken \d+(\.\d+)?%/);
+        const restart = r.output.split("\n").find((l) => l.includes("restart"));
+        expect(restart).toBeDefined();
+        expect(restart).not.toMatch(/%/);
+    });
+
     it("names what the snapshot cannot price and still sums the rest", () => {
         const r = costSource(
             `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] }\nlocus`,
