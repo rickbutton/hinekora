@@ -1,7 +1,7 @@
 /**
  * The economy snapshot (`data/poe1/economy.json`): what poe.ninja listed each
- * currency, essence, fossil and resonator at, in Chaos Orbs, for one league on
- * one day, written by `scripts/fetch-economy.mjs`. Adapted into an
+ * currency, essence, fossil, resonator and beast at, in Chaos Orbs, for one
+ * league on one day, written by `scripts/fetch-economy.mjs`. Adapted into an
  * `EconomySnapshot`, the shape a cost report prices with; the provenance stays
  * on the raw file.
  */

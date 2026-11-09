@@ -397,7 +397,8 @@ assumes one round or an even branch there, and names the assumption.
 ### 7.5 The economy
 
 Prices come from a **snapshot committed with the data**, `packages/data/data/poe1/economy.json`, taken from
-poe.ninja's exchange overview for one league on one day by `fetch-economy.mjs` (four
-requests), never from live calls in the checker, the CLI or the editor (Q61). A report
+poe.ninja's exchange overview, and its stash overview for the beasts, for one league on
+one day by `fetch-economy.mjs` (five requests), never from live calls in the checker, the
+CLI or the editor (Q61). A report
 converts its total to Chaos and Divine Orbs under the snapshot and names its date, so a
 guide's "about 22 Divine" is reproducible and dated.

@@ -194,7 +194,10 @@ five requests (a truthful user agent, `hinekora-cost-research/0.1 (…)`):
   `economyLeagues[].name`); the URL slug `allflame` returns an empty body with status 200.
 - `type` ∈ `Currency` (100 lines: the orbs, the four lifeforces, the eldritch currency,
   catalysts, the Tainted orbs), `Essence` (53), `Fossil` (21), `Resonator` (4). `Beast`
-  returns no lines; the Bestiary is priced elsewhere (not probed; the beasts stay unpriced).
+  returns no lines here; the beasts are stash items, listed by
+  `/poe1/api/economy/stash/current/item/overview?league=<League>&type=Beast` (`lines[].name`,
+  `lines[].chaosValue`; 196 lines on 2026-11-09, Craicic Croaker 1420, Black Mórrigan 1400,
+  Fenumal Plagued Arachnid 240, Wild Bristle Matron 110, Farric Wolf Alpha 4) [ninja].
 - The shape is `{ core: { items, rates: { divine: 0.002127 }, primary: "chaos", secondary:
 "divine" }, lines: [{ id, primaryValue, volumePrimaryValue, maxVolumeCurrency,
 maxVolumeRate, sparkline }], items: [{ id, name, image, category, detailsId }] }`.
@@ -214,8 +217,8 @@ maxVolumeRate, sparkline }], items: [{ id, name, image, category, detailsId }] }
 
 The endpoint is internal and may change without notice (the documented one did), and the
 site blocks crawlers, so the source of truth for hinekora is a **snapshot committed to the
-repository** with its provenance (league, the endpoint, the fetch time, the divine rate),
-refreshed by a script that makes one request per type, four in all, and nothing else; a
+repository** with its provenance (league, the endpoints, the fetch time, the divine rate),
+refreshed by a script that makes one request per type, five in all, and nothing else; a
 guide's cost is "as of" the snapshot's date. The 3.30 league starts 2026-11-13; the first
 snapshot is Allflame's closing week, the next the new league's once poe.ninja lists it.
 

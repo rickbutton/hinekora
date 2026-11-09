@@ -646,8 +646,8 @@ Harvest augment's, the beast recipes', the Orb of Dominance's)
 poe.ninja's documented endpoint is gone; its page reads
 `/poe1/api/economy/exchange/current/overview?league=<League>&type=<Type>`, an internal
 endpoint that may change again. Options: (a) a snapshot committed to the repository with
-its provenance, refreshed by a script making four requests (Currency, Essence, Fossil,
-Resonator), run by hand at least weekly and at a league's start, the report naming the
+its provenance, refreshed by a script making five requests (Currency, Essence, Fossil,
+Resonator, Beast), run by hand at least weekly and at a league's start, the report naming the
 snapshot's date; (b) live requests from the CLI at each run; (c) a hand-kept table.
 **Recommendation:** (a): the prices stay reproducible and the site is not polled by every
 check. Which league to track is the current trade league (Allflame until 2026-11-13, the

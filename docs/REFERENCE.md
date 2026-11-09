@@ -347,9 +347,10 @@ multiplier in percent, "More Life modifiers" being 1000) and a bench craft's `co
 (currency name → amount, read back from the export's currency ids through the bases) are
 kept for the cost layer alone; the checker reads neither. `economy.ts` adapts the economy
 snapshot `packages/data/data/poe1/economy.json` (`adaptEconomy` → an `EconomySnapshot`): every currency,
-essence, fossil and resonator priced in Chaos Orbs by poe.ninja for one league on one day,
-with the Divine Orb's rate, written by `scripts/fetch-economy.mjs` (four requests to the
-exchange overview the site's own pages read; `QUESTIONS.md` Q61) and loaded by
+essence, fossil, resonator and beast priced in Chaos Orbs by poe.ninja for one league on
+one day, with the Divine Orb's rate, written by `scripts/fetch-economy.mjs` (five requests
+to the exchange and stash overviews the site's own pages read; `QUESTIONS.md` Q61) and
+loaded by
 `loadDefaultEconomy`. `aliases.ts` holds `COMMUNITY_ALIASES`, the
 words guides use for a modifier where the game's wording differs (surface doc §2), which
 `registryOf` hands the registry as its `wordingAliases`. `load.ts`: `loadDefaultPoe1()` →
