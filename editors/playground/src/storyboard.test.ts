@@ -6,6 +6,7 @@ import {
     figure,
     moneyText,
     named,
+    passIsPartial,
     passSpend,
     percentage,
     stateLine,
@@ -88,6 +89,16 @@ describe("the storyboard's breakdown", () => {
             { item: "Deafening Essence of Greed", amount: 8.8 },
             { item: "Chaos Orb", amount: 2 },
         ]);
+        expect(passIsPartial(loop, steps)).toBe(false);
+        // A call inside the repeat that could not be costed makes the spend partial.
+        const call: StepCost = {
+            kind: "call",
+            span: span(50, 60),
+            reached: 1,
+            runs: 2,
+            note: "the steps inside a call are not costed",
+        };
+        expect(passIsPartial(loop, [...steps, call])).toBe(true);
     });
 });
 

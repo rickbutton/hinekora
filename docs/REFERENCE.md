@@ -582,7 +582,7 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   the browser console.
 
 The package is part of `tsc -b` (declarations only; Vite does the real build), lint and
-the test run (`src/convert.test.ts`). Every push to `main` builds it and publishes it to
+the test run (`src/convert.test.ts`, `src/storyboard.test.ts`). Every push to `main` builds it and publishes it to
 GitHub Pages (`.github/workflows/pages.yml`; the repository's Pages source must be set to
 GitHub Actions once).
 

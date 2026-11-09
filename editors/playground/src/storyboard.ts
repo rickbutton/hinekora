@@ -241,6 +241,18 @@ export function passSpend(loop: StepCost, steps: readonly StepCost[]): Price[] {
     return loop.runs > 0 ? addPrices([], sum, 1 / loop.runs) : sum;
 }
 
+/** Whether a step inside the repeat could not be costed, so its spend reads short. */
+export function passIsPartial(loop: StepCost, steps: readonly StepCost[]): boolean {
+    return steps.some(
+        (s) =>
+            s !== loop &&
+            s.span.start.offset >= loop.span.start.offset &&
+            s.span.end.offset <= loop.span.end.offset &&
+            (s.kind === "operation" || s.kind === "call") &&
+            (s.expected === undefined || s.note !== undefined),
+    );
+}
+
 /** The statement kind the cost layer files a step under. */
 const STMT_KIND: Readonly<Record<Step["kind"], Stmt["kind"]>> = {
     operation: "operation",
@@ -537,8 +549,21 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                     const toHit =
                         pass.length === 0
                             ? undefined
-                            : costLine(`to get there: ${moneyText(pass, prices)}`, undefined, () =>
-                                  showBreakdown("to get through this repeat once", pass, prices),
+                            : costLine(
+                                  `to get there: ${moneyText(pass, prices)}${
+                                      c !== undefined &&
+                                      report !== undefined &&
+                                      passIsPartial(c, report.steps)
+                                          ? ", and steps that could not be costed"
+                                          : ""
+                                  }`,
+                                  undefined,
+                                  () =>
+                                      showBreakdown(
+                                          "to get through this repeat once",
+                                          pass,
+                                          prices,
+                                      ),
                               );
                     const region = h(
                         "div",

@@ -118,10 +118,14 @@ async function main(): Promise<void> {
 
     const [registry, prices] = await Promise.all([
         loadRegistry(),
-        fetchJson<RawEconomy>(economyUrl).then(adaptEconomy),
+        // Without prices the board still draws, only without its cost lines.
+        fetchJson<RawEconomy>(economyUrl)
+            .then(adaptEconomy)
+            .catch(() => undefined),
     ]);
     registerProviders(registry);
-    // A handle for the browser console: `hinekora.editor`, `hinekora.registry`.
+    // A handle for the browser console: `hinekora.editor`, `hinekora.registry`,
+    // `hinekora.prices`.
     Object.assign(window, { hinekora: { editor, monaco, registry, prices } });
     // The header speaks only while the catalog loads or when it cannot.
     status.textContent = "";
