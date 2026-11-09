@@ -3,3 +3,4 @@ export { type Bounds, costOf, type CostReport, type StepCost } from "./report.js
 export { addPrices, inChaos, type Price, type Prices, unitCost } from "./prices.js";
 export { type Reading, rollOf, type Roll } from "./roll.js";
 export { chance } from "./chance.js";
+export { figure, percentage, priceText } from "./words.js";

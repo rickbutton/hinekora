@@ -7,9 +7,11 @@ import {
     check,
     costOf,
     flowchart,
+    figure,
     inChaos,
     itemView,
-    type Price,
+    percentage,
+    priceText,
     type Prices,
     type Registry,
     renderItemText,
@@ -101,16 +103,16 @@ export function costSource(
     }
     out.push("");
     if (report.total.length === 0) out.push("Expected spend: nothing this report can count.");
-    else out.push(`Expected spend: ${priceList(report.total)}.`);
+    else out.push(`Expected spend: ${priceText(report.total)}.`);
     if (prices !== undefined && report.total.length > 0) {
         const date = prices.fetchedAt.slice(0, 10);
         if (report.chaos !== undefined && report.divine !== undefined) {
             const spread =
                 report.chaosRange === undefined
                     ? ""
-                    : `, ${amount(report.chaosRange.low)} to ${amount(report.chaosRange.high)} by what the item may hold,`;
+                    : `, ${figure(report.chaosRange.low)} to ${figure(report.chaosRange.high)} by what the item may hold,`;
             out.push(
-                `About ${amount(report.chaos)} Chaos Orbs (${amount(report.divine)} Divine Orbs)${spread} at ${prices.league} prices of ${date}.`,
+                `About ${figure(report.chaos)} Chaos Orbs (${figure(report.divine)} Divine Orbs)${spread} at ${prices.league} prices of ${date}.`,
             );
         } else {
             out.push(
@@ -121,7 +123,7 @@ export function costSource(
         out.push(`Not counted: ${report.unpriced.join(", ")}.`);
     }
     if (report.stopped > 0) {
-        out.push(`The craft ends on a stop ${percent(report.stopped)} of the time.`);
+        out.push(`The craft ends on a stop ${percentage(report.stopped)} of the time.`);
     }
     return { ok: parsed.ok, output: out.join("\n") };
 }
@@ -143,19 +145,19 @@ function stepFigure(s: StepCost, prices: Prices | undefined): string {
         b === undefined ? "" : ` [${show(b.low)} to ${show(b.high)}]`;
     if (s.attempts !== undefined) {
         parts.push(
-            `${amount(s.attempts.expected)} rounds${spread(s.attemptsRange, amount)} (${percent(s.attempts.chance)} per round)`,
+            `${figure(s.attempts.expected)} rounds${spread(s.attemptsRange, figure)} (${percentage(s.attempts.chance)} per round)`,
         );
     }
     if (s.branch !== undefined) {
-        parts.push(`taken ${percent(s.branch)}${spread(s.branchRange, percent)}`);
+        parts.push(`taken ${percentage(s.branch)}${spread(s.branchRange, percentage)}`);
     }
-    if (s.kind === "restart" || s.kind === "stop") parts.push(`reached ${percent(s.reached)}`);
+    if (s.kind === "restart" || s.kind === "stop") parts.push(`reached ${percentage(s.reached)}`);
     if (s.kind === "operation") {
-        const runs = `×${amount(s.runs)}${spread(s.runsRange, amount)}`;
+        const runs = `×${figure(s.runs)}${spread(s.runsRange, figure)}`;
         if (s.expected !== undefined && s.expected.length > 0) {
-            parts.push(`${runs}: ${priceList(s.expected)}`);
+            parts.push(`${runs}: ${priceText(s.expected)}`);
             const chaos = prices === undefined ? undefined : inChaos(s.expected, prices);
-            if (chaos !== undefined) parts.push(`(${amount(chaos)} chaos)`);
+            if (chaos !== undefined) parts.push(`(${figure(chaos)} chaos)`);
         } else if (s.expected !== undefined) {
             parts.push(`${runs}: free`);
         } else if (s.runs !== 1 || s.runsRange !== undefined) {
@@ -163,22 +165,4 @@ function stepFigure(s: StepCost, prices: Prices | undefined): string {
         }
     }
     return parts.join("  ");
-}
-
-function priceList(prices: readonly Price[]): string {
-    return prices.map((p) => `${amount(p.amount)} ${p.item}`).join(", ");
-}
-
-function amount(n: number): string {
-    if (!Number.isFinite(n)) return "∞";
-    if (n >= 100) return String(Math.round(n));
-    if (n >= 10) return n.toFixed(1).replace(/\.0$/, "");
-    return n.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
-}
-
-function percent(p: number): string {
-    const v = p * 100;
-    if (v >= 10) return `${Math.round(v)}%`;
-    if (v >= 1) return `${v.toFixed(1)}%`;
-    return `${v.toFixed(2)}%`;
 }

@@ -296,7 +296,8 @@ resolveEssence / resolveBench / resolveHarvestTag`
   where they differ (`Bounds`: `runsRange`, `attemptsRange`, `branchRange`), the report
   its `chaosRange`; a step whose figure is an assumption (its `note`) in any reading, and
   the steps inside such a loop or branch, carry none, and the total's spread is left out
-  with them. The first step of a loop body is judged on the item the loop finds, not on
+  with them. `words.ts` is the figures in the guide's words (`figure`, `percentage`,
+  `priceText`), the one copy the CLI, the hover and the playground print. The first step of a loop body is judged on the item the loop finds, not on
   the join over its rounds, so the attempts are taken alike.
 
 ### 3b. `@hinekora/parser`
@@ -1089,6 +1090,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/cost/recombine.ts`                                    | the Recombinator's count table and weighted pick under the exclusive rule                            |
 | `packages/core/src/cost/chain.ts`                                        | a loop of removals, single draws and bench crafts as a Markov chain over counts and named modifiers  |
 | `packages/core/src/cost/prices.ts` / `report.ts`                         | unit costs and the `Prices` snapshot / `costOf`: the walk, one `StepCost` per statement              |
+| `packages/core/src/cost/words.ts`                                        | the report's figures, chances and prices in the guide's words, shared by every surface               |
 | `packages/core/src/cost/{race,chain,recombine,report}.test.ts`           | the race against brute force, the chain and the pick by hand, the walk over fixture guides           |
 | `packages/data/scripts/fetch-economy.mjs`                                | refreshes `packages/data/data/poe1/economy.json` from poe.ninja                                      |
 | `packages/cli/src/check.ts`                                              | `checkSource`, `chartSource`, `costSource`: the CLI's check, chart and cost report, pure             |

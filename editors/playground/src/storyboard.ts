@@ -23,6 +23,9 @@ import {
     type Bounds,
     type CostReport,
     type Criterion,
+    figure,
+    percentage,
+    priceText,
     groupWords,
     addPrices,
     inChaos,
@@ -146,29 +149,6 @@ function checklist(c: Criterion): HTMLElement {
 
 const present = (...nodes: (HTMLElement | undefined)[]): HTMLElement[] =>
     nodes.filter((n): n is HTMLElement => n !== undefined);
-
-/** A figure as a guide quotes it: "0.25", "8.8", "37", "473". */
-export function figure(n: number): string {
-    if (!Number.isFinite(n)) return "∞";
-    if (n >= 100) return String(Math.round(n));
-    if (n >= 10) return n.toFixed(1).replace(/\.0$/, "");
-    return n.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
-}
-
-/** A chance as a guide quotes it: "56%", "4.5%", "0.25%". */
-export function percentage(p: number): string {
-    const v = p * 100;
-    if (v >= 10) return `${Math.round(v)}%`;
-    if (v >= 1) return `${v.toFixed(1)}%`;
-    return `${v.toFixed(2)}%`;
-}
-
-/** "8.8 Deafening Essence of Greed, 2 Chaos Orb (about 24 chaos)". */
-export function moneyText(prices: readonly Price[], snapshot?: Prices): string {
-    const list = prices.map((p) => `${figure(p.amount)} ${p.item}`).join(", ");
-    const chaos = snapshot === undefined ? undefined : inChaos(prices, snapshot);
-    return chaos === undefined ? list : `${list} (about ${figure(chaos)} chaos)`;
-}
 
 /** The spread over the two ends of what the item may hold, as a tooltip. */
 function spreadTitle(b: Bounds | undefined, show: (n: number) => string): string | undefined {
@@ -401,7 +381,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                 const expected = c.expected;
                 lines.push(
                     costLine(
-                        `expected ${moneyText(expected, prices)}`,
+                        `expected ${priceText(expected, prices)}`,
                         spreadTitle(c.runsRange, (n) => `${figure(n)} uses`),
                         () =>
                             showBreakdown(`${label}: expected over the guide`, expected, prices, [
@@ -550,7 +530,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                         pass.length === 0
                             ? undefined
                             : costLine(
-                                  `to get there: ${moneyText(pass, prices)}${
+                                  `to get there: ${priceText(pass, prices)}${
                                       c !== undefined &&
                                       report !== undefined &&
                                       passIsPartial(c, report.steps)

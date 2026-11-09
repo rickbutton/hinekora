@@ -9,16 +9,17 @@ import {
     bindingsOf,
     type Bounds,
     type CostReport,
+    figure,
+    percentage,
+    priceText,
     type Craft,
     type CurrencyKind,
     type Def,
     describePred,
     type GroupId,
     guaranteedTypes,
-    inChaos,
     itemView,
     type Method,
-    type Price,
     type Prices,
     type ProcDef,
     type Range,
@@ -541,11 +542,6 @@ function costLine(
     report: CostReport,
     prices: Prices | undefined,
 ): string | undefined {
-    const money = (p: readonly Price[]): string => {
-        const list = p.map((x) => `${figure(x.amount)} ${x.item}`).join(", ");
-        const chaos = prices === undefined ? undefined : inChaos(p, prices);
-        return chaos === undefined ? list : `${list} (about ${figure(chaos)} chaos)`;
-    };
     // The spread over the two ends of what the checker allows the item to hold.
     const spread = (b: Bounds | undefined, show: (n: number) => string): string =>
         b === undefined ? "" : ` (${show(b.low)} to ${show(b.high)} by what the item may hold)`;
@@ -581,25 +577,11 @@ function costLine(
     }
     if (step.kind === "operation" && step.expected !== undefined && step.expected.length > 0) {
         parts.push(
-            `expected ${money(step.expected)}${spread(step.runsRange, (n) => `${figure(n)} uses`)}`,
+            `expected ${priceText(step.expected, prices)}${spread(step.runsRange, (n) => `${figure(n)} uses`)}`,
         );
     }
     if (step.note !== undefined) parts.push(step.note);
     return parts.length === 0 ? undefined : `_Cost:_ ${parts.join("; ")}.`;
-}
-
-function figure(n: number): string {
-    if (!Number.isFinite(n)) return "∞";
-    if (n >= 100) return String(Math.round(n));
-    if (n >= 10) return n.toFixed(1).replace(/\.0$/, "");
-    return n.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
-}
-
-function percentage(p: number): string {
-    const v = p * 100;
-    if (v >= 10) return `${Math.round(v)}%`;
-    if (v >= 1) return `${v.toFixed(1)}%`;
-    return `${v.toFixed(2)}%`;
 }
 
 export function getHover(
