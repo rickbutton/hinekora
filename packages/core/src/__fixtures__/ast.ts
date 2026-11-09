@@ -42,10 +42,16 @@ import type { Cmp } from "../ast/ast.js";
 import type { Rarity } from "../model/ids.js";
 import type { EldritchSide, EldritchTierName, Influence } from "../model/marks.js";
 
-const DS: SourceSpan = {
-    start: { offset: 0, line: 1, column: 1 },
-    end: { offset: 0, line: 1, column: 1 },
-};
+/** Each node gets a span of its own: a consumer that finds a statement by its
+ *  start offset, as the trace and the cost report do, must tell them apart. */
+let nextOffset = 0;
+function ds(): SourceSpan {
+    const offset = nextOffset++;
+    return {
+        start: { offset, line: 1, column: 1 },
+        end: { offset: offset + 1, line: 1, column: 1 },
+    };
+}
 
 /** A test affix: a bare mod id/alias (tier pinned by the id) or `{ mod, tier }`. */
 type AffixSpec = string | AffixDecl;
@@ -72,10 +78,10 @@ export const donor = (name: string, item: ItemBlock): DonorBlock => ({
     kind: "donor",
     name,
     item,
-    span: DS,
+    span: ds(),
 });
 export const recombine = (name: string): OperationStmt =>
-    operation(["recombine"], [{ kind: "word", value: name, span: DS }]);
+    operation(["recombine"], [{ kind: "word", value: name, span: ds() }]);
 export const craft = (
     item: ItemBlock,
     body: readonly Stmt[],
@@ -89,7 +95,7 @@ export const craft = (
     defs,
     procs,
     body,
-    span: DS,
+    span: ds(),
 });
 
 export const item = (spec: ItemSpec): ItemBlock => ({
@@ -104,7 +110,7 @@ export const item = (spec: ItemSpec): ItemBlock => ({
     ...(spec.enchant !== undefined && { enchant: spec.enchant }),
     ...(spec.exarch !== undefined && { exarch: eldritchDecl(spec.exarch) }),
     ...(spec.eater !== undefined && { eater: eldritchDecl(spec.eater) }),
-    span: DS,
+    span: ds(),
 });
 
 // --- operation statements: a method's words and its arguments -------------
@@ -112,13 +118,13 @@ export const item = (spec: ItemSpec): ItemBlock => ({
 /** A quoted-name slot's argument: the name, or a proc param standing in for it. */
 const named = (v: string | ParamRef): OperationArg =>
     typeof v === "string"
-        ? { kind: "string", value: v, span: DS }
-        : { kind: "param", param: v.param, span: DS };
+        ? { kind: "string", value: v, span: ds() }
+        : { kind: "param", param: v.param, span: ds() };
 /** A tier slot's argument: the tier, or a proc param standing in for it. */
 const tiered = (v: number | ParamRef): OperationArg =>
     typeof v === "number"
-        ? { kind: "tier", value: v, span: DS }
-        : { kind: "param", param: v.param, span: DS };
+        ? { kind: "tier", value: v, span: ds() }
+        : { kind: "param", param: v.param, span: ds() };
 const operation = (
     words: readonly string[],
     args: readonly OperationArg[] = [],
@@ -126,7 +132,7 @@ const operation = (
     kind: "operation",
     words,
     args,
-    span: DS,
+    span: ds(),
 });
 
 /** A bare currency: `chaos`, `exalt`, … */
@@ -159,12 +165,12 @@ type BeastAction =
 export const beast = (action: BeastAction): OperationStmt => {
     switch (action.kind) {
         case "add": {
-            const side: OperationArg = { kind: "word", value: action.side, span: DS };
+            const side: OperationArg = { kind: "word", value: action.side, span: ds() };
             return operation(
                 ["beast", "add"],
                 action.level === undefined
                     ? [side]
-                    : [side, { kind: "int", value: action.level, span: DS }],
+                    : [side, { kind: "int", value: action.level, span: ds() }],
             );
         }
         case "aspect":
@@ -172,59 +178,59 @@ export const beast = (action: BeastAction): OperationStmt => {
         case "fracture":
             return operation(
                 ["beast", "fracture"],
-                action.n === undefined ? [] : [{ kind: "int", value: action.n, span: DS }],
+                action.n === undefined ? [] : [{ kind: "int", value: action.n, span: ds() }],
             );
         default:
             return operation(["beast", action.kind]);
     }
 };
-export const restart = (): RestartStmt => ({ kind: "restart", span: DS });
-export const stop = (): StopStmt => ({ kind: "stop", span: DS });
+export const restart = (): RestartStmt => ({ kind: "restart", span: ds() });
+export const stop = (): StopStmt => ({ kind: "stop", span: ds() });
 export const until = (pred: Pred, body: readonly Stmt[]): UntilStmt => ({
     kind: "until",
     pred,
     body,
-    span: DS,
+    span: ds(),
 });
 export const iff = (pred: Pred, body: readonly Stmt[], elseBody?: readonly Stmt[]): IfStmt => ({
     kind: "if",
     pred,
     body,
     ...(elseBody !== undefined && { elseBody }),
-    span: DS,
+    span: ds(),
 });
 
 // predicates
-export const isRarity = (rarity: Rarity): RarityPred => ({ kind: "isRarity", rarity, span: DS });
+export const isRarity = (rarity: Rarity): RarityPred => ({ kind: "isRarity", rarity, span: ds() });
 export const has = (mod: string, tier?: number): HasPred => ({
     kind: "has",
     mod,
     ...(tier !== undefined && { tier }),
-    span: DS,
+    span: ds(),
 });
 export const hasValue = (mod: string, op: Cmp, value: number, tier?: number): HasPred => ({
     kind: "has",
     mod,
     ...(tier !== undefined && { tier }),
     value: { op, value },
-    span: DS,
+    span: ds(),
 });
 export const fracturedP = (mod: string | ParamRef): FracturedPred => ({
     kind: "fractured",
     mod,
-    span: DS,
+    span: ds(),
 });
 export const cmp = (
     projection: "prefixCount" | "suffixCount",
     op: Cmp,
     value: number,
-): ComparePred => ({ kind: "compare", projection, op, value, span: DS });
-export const notp = (inner: Pred): NotPred => ({ kind: "not", inner, span: DS });
+): ComparePred => ({ kind: "compare", projection, op, value, span: ds() });
+export const notp = (inner: Pred): NotPred => ({ kind: "not", inner, span: ds() });
 export const influencedP = (influence?: Influence): InfluencedPred =>
     influence === undefined
-        ? { kind: "influenced", span: DS }
-        : { kind: "influenced", influence, span: DS };
-export const corruptedP = (): CorruptedPred => ({ kind: "corrupted", span: DS });
+        ? { kind: "influenced", span: ds() }
+        : { kind: "influenced", influence, span: ds() };
+export const corruptedP = (): CorruptedPred => ({ kind: "corrupted", span: ds() });
 export const eldritchP = (
     side: EldritchSide,
     tier?: EldritchTierName,
@@ -234,38 +240,43 @@ export const eldritchP = (
     side,
     ...(tier !== undefined && { tier }),
     ...(text !== undefined && { text }),
-    span: DS,
+    span: ds(),
 });
 export const dominantP = (side: EldritchSide): DominantPred => ({
     kind: "dominant",
     side,
-    span: DS,
+    span: ds(),
 });
 export const andp = (left: Pred, right: Pred): BinaryPred => ({
     kind: "and",
     left,
     right,
-    span: DS,
+    span: ds(),
 });
-export const orp = (left: Pred, right: Pred): BinaryPred => ({ kind: "or", left, right, span: DS });
+export const orp = (left: Pred, right: Pred): BinaryPred => ({
+    kind: "or",
+    left,
+    right,
+    span: ds(),
+});
 
 // predicate defs
-export const param = (name: string): ParamRef => ({ param: name, span: DS });
+export const param = (name: string): ParamRef => ({ param: name, span: ds() });
 /** A `has` with a param in the tier and/or mod slot (for building def bodies). */
 export const hasP = (mod: string | ParamRef, tier?: number | ParamRef): HasPred => ({
     kind: "has",
     mod,
     ...(tier !== undefined && { tier }),
-    span: DS,
+    span: ds(),
 });
 export const def = (name: string, params: readonly string[], body: Pred): Def => ({
     kind: "def",
     name,
     params,
     body,
-    span: DS,
-    nameSpan: DS,
-    paramSpans: params.map(() => DS),
+    span: ds(),
+    nameSpan: ds(),
+    paramSpans: params.map(() => ds()),
 });
 /** An operation function (`def name(params) { body }`). */
 export const procDef = (
@@ -277,20 +288,20 @@ export const procDef = (
     name,
     params,
     body,
-    span: DS,
-    nameSpan: DS,
-    paramSpans: params.map(() => DS),
+    span: ds(),
+    nameSpan: ds(),
+    paramSpans: params.map(() => ds()),
 });
 /** A tier argument (`t1`) — a distinct sort from a bare-int count. */
-export const tierArg = (value: number): Arg => ({ kind: "tier", value, span: DS });
+export const tierArg = (value: number): Arg => ({ kind: "tier", value, span: ds() });
 const toArg = (v: number | string | ParamRef | Arg): Arg =>
     typeof v === "number"
-        ? { kind: "int", value: v, span: DS }
+        ? { kind: "int", value: v, span: ds() }
         : typeof v === "string"
-          ? { kind: "string", value: v, span: DS }
+          ? { kind: "string", value: v, span: ds() }
           : "kind" in v // already an Arg (e.g. tierArg)
             ? v
-            : { kind: "param", param: v.param, span: DS };
+            : { kind: "param", param: v.param, span: ds() };
 export const arg = toArg;
 export const call = (
     name: string,
@@ -299,12 +310,12 @@ export const call = (
     kind: "call",
     name,
     args: args.map(toArg),
-    span: DS,
+    span: ds(),
 });
 /** Steps bound to a step parameter at a call site. */
-export const blockArg = (body: readonly Stmt[]): Arg => ({ kind: "block", body, span: DS });
+export const blockArg = (body: readonly Stmt[]): Arg => ({ kind: "block", body, span: ds() });
 /** A step parameter in statement position inside a proc body. */
-export const paramStep = (param: string): Stmt => ({ kind: "paramStep", param, span: DS });
+export const paramStep = (param: string): Stmt => ({ kind: "paramStep", param, span: ds() });
 /** A call to an operation function, in statement position. */
 export const callStmt = (
     name: string,
@@ -313,5 +324,5 @@ export const callStmt = (
     kind: "call",
     name,
     args: args.map(toArg),
-    span: DS,
+    span: ds(),
 });
