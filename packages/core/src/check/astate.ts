@@ -617,6 +617,20 @@ export function cardinalityGuarantees(a: AItem): CardinalityGuarantee[] {
  * remains (an uninhabited state).
  */
 export function normalize(a: AItem): AItem | null {
+    // A rarity whose caps cannot hold the modifiers every path has is no path at
+    // all: a modifier the item is known to carry rules out Normal.
+    const rarities = new Set(
+        [...a.rarities].filter((r) => {
+            const c = caps(r, a.base);
+            return (
+                a.counts.total[0] <= c.total &&
+                a.counts.prefix[0] <= c.prefix &&
+                a.counts.suffix[0] <= c.suffix
+            );
+        }),
+    );
+    if (rarities.size === 0) return null;
+    if (rarities.size < a.rarities.size) a = { ...a, rarities };
     const counts = CountDomain.normalize(a.counts, capsOf(a));
     if (counts === null) return null;
     const cap = counts.total[1];

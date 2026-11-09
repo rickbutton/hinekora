@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { andp, cmp, craft, item, op, until } from "../__fixtures__/ast.js";
+import { andp, cmp, craft, has, iff, isRarity, item, op, until } from "../__fixtures__/ast.js";
 import { RING_BASE, TIERED_CATALOG } from "../__fixtures__/mods.js";
 
 const registry = buildRegistry({ bases: [RING_BASE], mods: TIERED_CATALOG });
@@ -79,5 +79,19 @@ describe("checker — the body runs only where the exit predicate is false", () 
         );
         const messages = check(c, ctx).diagnostics.map((d) => d.message);
         expect(messages.some((m) => m.includes("open affix slot"))).toBe(true);
+    });
+});
+
+describe("checker — a modifier the item is known to carry rules out Normal", () => {
+    it("leaves a loop entered Normal as Rare once its exit names a modifier", () => {
+        // The head joins the Normal item with the alchemised one; the exit's
+        // life is a modifier a Normal item cannot hold, so only Rare leaves.
+        const c = craft(item({ base: "IronRing", ilvl: 100, rarity: "normal" }), [
+            until(has("maximum life"), [iff(isRarity("normal"), [op("alchemy")], [op("scour")])]),
+            op("chaos"),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect([...r.finalState!.rarities]).toEqual(["rare"]);
     });
 });

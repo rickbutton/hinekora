@@ -731,7 +731,9 @@ one domain. The sub-domains:
   overlay back from the presence function, pinning a type whose atom is forced true and
   dropping a row whose atom is forced false, so hover and the later `has` checks see it.
   Removals rebuild presence from unit facts, which drops the atoms with the modifier.
-- **`normalize(a)`** runs `CountDomain.normalize` (the total/prefix coupling to a fixpoint,
+- **`normalize(a)`** first drops a rarity whose caps cannot hold the counts' minimums
+  (a modifier every path carries rules out Normal, three rule out Magic), then runs
+  `CountDomain.normalize` (the total/prefix coupling to a fixpoint,
   BOTH directions: `prefix ∈ [total−sCap, min(pCap, total)]` AND
   `total ∈ [prefix, min(tCap, prefix+sCap)]`) then re-applies the cross-domain reductions
   (crafted ≤ total). The second direction is essential: without it, refining

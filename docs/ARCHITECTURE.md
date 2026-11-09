@@ -163,7 +163,8 @@ bound, to merge branches) and `equal` (to detect a fixpoint). The pieces:
   modifier again, the Divine Orb included.
 - **Crafted**: how many bench-crafted mods are present (a range).
 - **Rarities** (`SetDomain`): which rarities the item may have; the caps of the counts
-  follow the loosest of them.
+  follow the loosest of them, and a rarity whose caps cannot hold the fewest modifiers the
+  counts allow is dropped (a known modifier rules out Normal).
 - **Imprint**: the item an imprint would restore, a nested abstract item; present only when
   every path holds one.
 - **Marks** (`SetDomain`): the influence sets the item may have, whether it may be
