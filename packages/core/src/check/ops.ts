@@ -43,6 +43,7 @@ import { rollableGen } from "../resolve/tiers.js";
 import {
     admitAdd,
     assertFractureDisjunction,
+    assertOneRemovedAmong,
     canBeRare,
     capsOver,
     excludedTypes,
@@ -1483,7 +1484,12 @@ function elevate(a: AItem, rules: Rules, registry: Registry): AItem {
             rows.push(m);
         }
     }
-    let presence = admitAdd({ ...s, possible }, rows);
+    // What the removal before it left of the influenced modifiers is restated
+    // below with their elevated rows, since the survivor may have changed type.
+    let presence = admitAdd(
+        { ...s, possible, presence: forgetTypes(s, new Set(influenced)) },
+        rows,
+    );
     if (influenced.length > 0) {
         let clause = a.bdd.FALSE;
         for (const t of influenced) clause = a.bdd.or(clause, a.bdd.variable(t));
@@ -1555,9 +1561,19 @@ function removeOne(
     }
     if (shield) for (const t of shield.types) surviving.add(t);
     for (const t of fracturedTypes(a)) surviving.add(t);
-    const presence = a.bdd.and(
-        presenceFacts(a.bdd, surviving, excludedTypes(a)),
-        fractureProjection(a),
+    // Of the guaranteed modifiers the removal can reach, all but one remain; and
+    // when every modifier it can reach is one of them, one of them is gone.
+    const atRisk = [...guaranteedTypes(a)].filter((t) => !surviving.has(t));
+    let reachable = 0;
+    for (const gen of allowed)
+        reachable += gen === "prefix" ? a.counts.prefix[1] : suffixRange(a)[1];
+    let keptThere = 0;
+    for (const t of surviving) if (allowed.has(genOf(a, registry, t))) keptThere++;
+    const presence = assertOneRemovedAmong(
+        a.bdd,
+        a.bdd.and(presenceFacts(a.bdd, surviving, excludedTypes(a)), fractureProjection(a)),
+        atRisk,
+        reachable - keptThere <= atRisk.length,
     );
     // The removed affix might have been the crafted mod, so the lower bound drops.
     const crafted: Range = [Math.max(0, a.crafted[0] - 1), a.crafted[1]];

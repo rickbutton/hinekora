@@ -141,6 +141,32 @@ export function presenceFacts(
     return p;
 }
 
+/**
+ * What a removal of one modifier leaves of the guaranteed types it could reach:
+ * all but one of them remain, so every pair has a present member; and when the
+ * removal could reach nothing else (`certainly`), one of them is gone, so not
+ * all are present. A branch on one of them then settles the others: "the orb
+ * took the metamod or the life" and "the life is still there" leave the metamod
+ * gone.
+ */
+export function assertOneRemovedAmong(
+    bdd: BddManager,
+    presence: Bdd,
+    types: readonly TypeId[],
+    certainly: boolean,
+): Bdd {
+    let p = presence;
+    for (const [x, y] of combinations(types, 2)) {
+        p = bdd.and(p, bdd.or(bdd.variable(x!), bdd.variable(y!)));
+    }
+    if (certainly && types.length > 0) {
+        let all = bdd.TRUE;
+        for (const t of types) all = bdd.and(all, bdd.variable(t));
+        p = bdd.and(p, bdd.not(all));
+    }
+    return p;
+}
+
 /** The presence function with everything it knows about `types` forgotten (their
  *  presence variables and tier atoms existentially quantified), every other fact,
  *  the disjunctions among the rest included, kept. What a removal that can only
