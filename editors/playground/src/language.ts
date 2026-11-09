@@ -23,7 +23,7 @@ export const THEME_ID = "hinekora-dark";
 const CURRENCIES = STANDARD_CURRENCIES.map((c) => c.name);
 
 export function registerLanguage(): void {
-    monaco.languages.register({ id: LANGUAGE_ID, extensions: [".craft"], aliases: ["Hinekora"] });
+    monaco.languages.register({ id: LANGUAGE_ID, extensions: [".craft"], aliases: ["hinekora"] });
 
     monaco.languages.setLanguageConfiguration(LANGUAGE_ID, {
         comments: { lineComment: "#" },

@@ -2,7 +2,7 @@
     "name": "@hinekora/playground",
     "version": "0.0.0",
     "private": true,
-    "description": "A browser playground: Monaco with every language feature of the Hinekora service, no server.",
+    "description": "A browser playground: Monaco with every language feature of the hinekora service, no server.",
     "type": "module",
     "scripts": {
         "dev": "vite",

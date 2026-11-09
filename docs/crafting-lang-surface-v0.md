@@ -125,7 +125,7 @@ Ambiguous name "res" — candidates: fire resistance, cold resistance, lightning
 ```
 
 **Tiers.** `t<n>` names a tier, T1 the best. The game stores no tier numbers, only each
-row's [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level); Hinekora numbers the
+row's [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level); hinekora numbers the
 rows of a type that can roll on this base at this item level, best first. So `t1` on a
 ring is a different row from `t1` on body armour, and from the in-game display, which
 numbers tiers across all bases. A tier that cannot roll here is an error.

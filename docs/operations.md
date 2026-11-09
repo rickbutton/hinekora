@@ -1,4 +1,4 @@
-# Hinekora: The Operations Model
+# hinekora: The Operations Model
 
 > How every crafting method is expressed as a short program over a handful of primitive
 > effects on the checker's abstract item, so that a method is a library entry rather

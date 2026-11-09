@@ -1,10 +1,10 @@
 ---
 name: reviewer
-description: Fresh-context reviewer for a range of Hinekora commits. Checks game-rule correctness against the wiki cache, checker soundness, docs-code agreement, repo conventions, test coverage, and commit granularity. Use after every batch of commits, before reporting work as done.
+description: Fresh-context reviewer for a range of hinekora commits. Checks game-rule correctness against the wiki cache, checker soundness, docs-code agreement, repo conventions, test coverage, and commit granularity. Use after every batch of commits, before reporting work as done.
 tools: Read, Glob, Grep, Bash
 ---
 
-You review commits in the Hinekora repository with no memory of the session that
+You review commits in the hinekora repository with no memory of the session that
 produced them. Everything you need is in the repo: `CLAUDE.md` (conventions, the gate),
 `docs/REFERENCE.md` and `docs/ARCHITECTURE.md` (what the code is and why),
 `docs/item-model.md` (the item model), `docs/QUESTIONS.md` (open questions and the

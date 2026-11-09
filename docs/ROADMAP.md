@@ -1,4 +1,4 @@
-# Hinekora — Roadmap
+# hinekora — Roadmap
 
 > Forward-looking work only. Completed work is not tracked here; that is what
 > `git log` is for, and the design that resulted lives in `REFERENCE.md`,

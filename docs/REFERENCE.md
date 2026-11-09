@@ -1,4 +1,4 @@
-# Hinekora: Codebase Reference
+# hinekora: Codebase Reference
 
 > Purpose: orient a fresh context (a new Claude session or a human) in the codebase.
 > This doc is the ground truth for _what exists and where_: package layout, the
@@ -11,12 +11,12 @@
 > `item-model.md`. Recent history lives in `git log`.
 >
 > Game mechanics are not re-explained here. Each rule links to the section of the Path of
-> Exile wiki (poewiki.net) that defines it, and the text covers only how Hinekora models it.
+> Exile wiki (poewiki.net) that defines it, and the text covers only how hinekora models it.
 > The wiki is cached locally (`tools/poewiki`, the `poewiki-render` skill).
 
 ---
 
-## 1. What Hinekora is
+## 1. What hinekora is
 
 A **statically-checked DSL for Path of Exile crafting guides**, in TypeScript. You
 write a craft (a sequence of currency operations, loops, and conditionals over an

@@ -1,13 +1,13 @@
-# Hinekora: Item Model
+# hinekora: Item Model
 
-> Purpose: the item and modifier vocabulary Hinekora models, for Path of Exile 1. What an
+> Purpose: the item and modifier vocabulary hinekora models, for Path of Exile 1. What an
 > item is made of, what a modifier is, and which combinations of modifiers may sit on an
 > item. This is what the code is audited against; the open decisions are `QUESTIONS.md` Q1–Q4
 > and the remaining work is `ROADMAP.md` Step 1.
 >
 > Game rules are not restated here. Each rule links the section of the Path of Exile wiki
-> (poewiki.net) that defines it and the text says only how Hinekora models it; where
-> Hinekora narrows a rule the text says so. The wiki is cached locally (`tools/poewiki`).
+> (poewiki.net) that defines it and the text says only how hinekora models it; where
+> hinekora narrows a rule the text says so. The wiki is cached locally (`tools/poewiki`).
 
 ---
 

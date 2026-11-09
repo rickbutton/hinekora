@@ -1,5 +1,5 @@
 /**
- * The Hinekora VSCode extension — a thin client. It contributes the `.craft`
+ * The hinekora VSCode extension — a thin client. It contributes the `.craft`
  * language (grammar + config, declared in package.json) and launches the
  * @hinekora/lsp Node server, which provides every language feature. All the
  * intelligence lives in the server; this file only wires the language client
@@ -29,7 +29,7 @@ export function activate(_context: ExtensionContext): void {
 
     client = new LanguageClient(
         "hinekora",
-        "Hinekora Language Server",
+        "hinekora Language Server",
         serverOptions,
         clientOptions,
     );

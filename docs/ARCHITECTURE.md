@@ -1,4 +1,4 @@
-# Hinekora: Implementation Architecture
+# hinekora: Implementation Architecture
 
 > This doc explains the **shape** of the implementation: the layers, how they compose,
 > and the theory behind the checker. It is the mental model, not the map.
@@ -10,11 +10,11 @@
 >   [crafting-lang-surface-v0.md](crafting-lang-surface-v0.md).
 > - **The operations model** (primitive effects and the library of crafting methods) →
 >   [operations.md](operations.md).
-> - **The item model** (what Hinekora models of items and modifiers, each rule linked to its
+> - **The item model** (what hinekora models of items and modifiers, each rule linked to its
 >   wiki section) → [item-model.md](item-model.md).
 > - **Conventions, the build gate, working style** → [../CLAUDE.md](../CLAUDE.md).
 > - **The game's rules** → the Path of Exile wiki, linked by section wherever a doc rests on
->   one; the docs say how Hinekora models a rule, never restate it. Cached locally via
+>   one; the docs say how hinekora models a rule, never restate it. Cached locally via
 >   `tools/poewiki` (the `poewiki-render` skill).
 >
 > Each detail lives in exactly one place. Where this doc names a symbol, it is to locate a

@@ -1,6 +1,6 @@
 /**
  * @hinekora/parser — hand-written lexer + recursive-descent parser for the
- * Hinekora surface language. Depends on @hinekora/core for the AST (the
+ * hinekora surface language. Depends on @hinekora/core for the AST (the
  * one-way arrow: parser → core, never the reverse).
  */
 import { CraftSyntaxError, type ParseResult } from "./errors.js";

@@ -1,6 +1,6 @@
 {
     "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-    "name": "Hinekora",
+    "name": "hinekora",
     "scopeName": "source.hinekora",
     "patterns": [
         { "include": "#comments" },
