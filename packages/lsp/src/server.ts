@@ -14,7 +14,7 @@ import {
     TextDocumentSyncKind,
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import type { Registry } from "@hinekora/core";
+import type { Prices, Registry } from "@hinekora/core";
 import { getDiagnostics } from "./service.js";
 import { getHover } from "./hover.js";
 import { getCompletions } from "./completion.js";
@@ -32,7 +32,7 @@ import { getFoldingRanges } from "./folding.js";
 import { getInlayHints } from "./inlay-hints.js";
 import { getFormattingEdits } from "./formatting.js";
 
-export function createServer(connection: Connection, registry: Registry): void {
+export function createServer(connection: Connection, registry: Registry, prices?: Prices): void {
     const documents = new TextDocuments(TextDocument);
 
     connection.onInitialize(() => ({
@@ -77,7 +77,7 @@ export function createServer(connection: Connection, registry: Registry): void {
     connection.onHover((params) => {
         const doc = documents.get(params.textDocument.uri);
         if (!doc) return null;
-        const md = getHover(doc.getText(), doc.offsetAt(params.position), registry);
+        const md = getHover(doc.getText(), doc.offsetAt(params.position), registry, prices);
         return md === null ? null : { contents: { kind: "markdown", value: md } };
     });
 

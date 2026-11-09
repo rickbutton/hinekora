@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { loadDefaultPoe1, registryOf } from "@hinekora/data";
-import { chartSource, checkSource } from "./check.js";
+import { loadDefaultEconomy, loadDefaultPoe1, registryOf } from "@hinekora/data";
+import { chartSource, checkSource, costSource } from "./check.js";
 
 // Built once against the real bundled catalog — the CLI's actual data path.
 const registry = registryOf(loadDefaultPoe1());
@@ -106,5 +106,54 @@ if has "maximum life" { exalt }`);
         expect(r.output).toContain('{ Prefix Modifier "Magister\'s" (Tier: 1) — Caster, Gem }');
         expect(r.output).toContain("to Damage over Time Multiplier (fractured)");
         expect(r.output).toContain("  --------\n  Fractured Item");
+    });
+});
+
+describe("costSource — what a guide is expected to spend", () => {
+    const prices = loadDefaultEconomy();
+
+    it("prices an essence loop by its rounds and the snapshot", () => {
+        const src = readFileSync(
+            fileURLToPath(new URL("../../../examples/essence-life-boots.craft", import.meta.url)),
+            "utf8",
+        );
+        const r = costSource(src, "essence-life-boots.craft", registry, prices);
+        expect(r.ok).toBe(true);
+        expect(r.output).toMatch(
+            /until anyEleRes\(t1\) \{\s+\d+(\.\d+)? rounds \(\d+% per round\)/,
+        );
+        expect(r.output).toMatch(/Deafening Essence of Greed/);
+        expect(r.output).toMatch(/Expected spend: .* Deafening Essence of Greed\./);
+        expect(r.output).toMatch(
+            /About \d+(\.\d+)? Chaos Orbs \(\d+(\.\d+)? Divine Orbs\) at Allflame prices of \d{4}-\d{2}-\d{2}\./,
+        );
+    });
+
+    it("names what the snapshot cannot price and still sums the rest", () => {
+        const r = costSource(
+            `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] }\nbeast imprint`,
+            "test.craft",
+            registry,
+            prices,
+        );
+        expect(r.ok).toBe(true);
+        expect(r.output).toContain("no price is known for this step");
+        expect(r.output).toContain("Expected spend: nothing this report can count.");
+    });
+
+    it("costs a guide with errors as written, and says so", () => {
+        const r = costSource(
+            `item { base: "Iron Ring" ilvl: 84 rarity: magic }\nexalt`,
+            "test.craft",
+            registry,
+        );
+        expect(r.output).toMatch(/^test\.craft: 1 error; the costs take the steps as written\./);
+        expect(r.output).toContain("Exalted Orb");
+    });
+
+    it("reports a parse error as the check does", () => {
+        const r = costSource(`item { base: "Iron Ring"`, "test.craft", registry);
+        expect(r.ok).toBe(false);
+        expect(r.output).toMatch(/test\.craft:\d+:\d+: error:/);
     });
 });

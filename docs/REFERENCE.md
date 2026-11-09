@@ -69,7 +69,7 @@ packages/
   parser/   @hinekora/parser - hand-written lexer + parser: source → Craft AST.
   data/     @hinekora/data   - loads projected RePoE JSON, builds a Registry.
   lsp/      @hinekora/lsp    - transport-free language service + stdio server.
-  cli/      @hinekora/cli    - command-line checker, formatter and chart printer.
+  cli/      @hinekora/cli    - command-line checker, formatter, chart printer and cost report.
 editors/
   vscode/                    - VSCode extension (TextMate grammar + LSP client).
   playground/                - browser playground: Monaco + the language service in-page
@@ -187,7 +187,10 @@ these suffix modifiers }`, `{ 1-3 additional prefix or suffix modifiers }`,
   its own path), start and end nodes
   (`FLOW_START`, `FLOW_END`), and the map from node id to statement for a consumer that
   binds the drawn nodes to the text; the CLI's `hinekora chart <file>` prints the text
-  (`chartSource` in `packages/cli/src/check.ts`) for a README or a wiki page to embed. `itemDelta`/`stepDelta` list what a step added and removed, as
+  (`chartSource` in `packages/cli/src/check.ts`) for a README or a wiki page to embed;
+  `hinekora cost <file>` prints the cost report (`costSource`): one line per statement
+  with its rounds, its branch chance or what it is expected to consume, then the total per
+  currency and in Chaos and Divine Orbs at the bundled snapshot's league and date. `itemDelta`/`stepDelta` list what a step added and removed, as
   the lines of the item view a player would notice. `conditions.ts` words a guide's
   conditions for the player: `clause` as prose ("+# to maximum Life at T1 and exactly 2
   prefixes", a negated count turned round, "no …" for a negated modifier), `criteria` as
@@ -363,15 +366,19 @@ fixed tier regardless of ilvl (not stated on the wiki; confirmed by in-game test
 
 Transport-free service functions + a stdio server:
 
-- `analysis.ts`: `parseCached(source)` and `checkCached(source, registry)`, the parse
-  and the check of a document memoized by its text (the last 16 texts; checks per
-  registry). Every feature below reads these, so an edit is parsed once and checked
+- `analysis.ts`: `parseCached(source)`, `checkCached(source, registry)` and
+  `costCached(source, registry, prices?)`, the parse, the check and the cost report of a
+  document memoized by its text (the last 16 texts; checks per registry, costs per
+  registry and snapshot). Every feature below reads these, so an edit is parsed once and checked
   once, by whichever request arrives first; a hover, completion or hint on unchanged
   text does no analysis at all.
 - `service.ts`: `getDiagnostics`.
-- `hover.ts`: `getHover(source, offset, registry)` is **token-centric**. The hovered
-  token's signature (currency op / mod / base / essence / bench / def / projection /
-  keyword) plus an item-tooltip footer of the state at that point. Details:
+- `hover.ts`: `getHover(source, offset, registry, prices?)` is **token-centric**. The
+  hovered token's signature (currency op / mod / base / essence / bench / def / projection /
+  keyword) plus an item-tooltip footer of the state at that point, then the cost line for
+  the statement (`costCached`, `analysis.ts`): a loop's rounds and the chance each ends
+  it, a branch's chance, what a step is expected to consume and, with a snapshot, its
+  price in chaos; on the item block the guide's whole expected spend. Details:
     - The tooltip is the item in the game's copy-to-clipboard layout (`renderItemText`
       over `itemView`, render/ above) as a code block, after the loop's exit state is
       captioned "after the loop". The view is built from **three general layers** over
@@ -448,7 +455,8 @@ Transport-free service functions + a stdio server:
 - `server.ts`: `createServer(connection, registry)`, capabilities + handlers.
   `triggerCharacters` includes `"` so the mod/base list pops when a string opens. A
   refused rename is returned as an `InvalidRequest` error so the editor shows the reason.
-- `node.ts`: stdio entry (`vscode-languageserver/node.js`, explicit `.js` for NodeNext).
+- `node.ts`: stdio entry (`vscode-languageserver/node.js`, explicit `.js` for NodeNext);
+  loads the catalog and the economy snapshot once and hands both to `createServer`.
 - **Dependency pins that matter:** `vscode-languageserver ^9`, `-textdocument ^1.0.11`,
   `-types` pinned **exact `3.17.5`** (must match the framework's transitive version, else
   a dual-version type clash). `SemanticTokensBuilder` imports from `vscode-languageserver`,
@@ -1023,6 +1031,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/cost/prices.ts` / `report.ts`                         | unit costs and the `Prices` snapshot / `costOf`: the walk, one `StepCost` per statement              |
 | `packages/core/src/cost/{race,countdown,report}.test.ts`                 | the race against brute force, the chain by hand, the walk over fixture guides                        |
 | `packages/data/scripts/fetch-economy.mjs`                                | refreshes `packages/data/data/poe1/economy.json` from poe.ninja                                      |
+| `packages/cli/src/check.ts`                                              | `checkSource`, `chartSource`, `costSource`: the CLI's check, chart and cost report, pure             |
 | `packages/lsp/src/{walkthrough,flowchart}.test.ts`                       | the walkthrough model and its flowchart over real guides                                             |
 | `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts`    | LSP features                                                                                         |
 | `packages/lsp/src/analysis.ts`                                           | the parse and check of a document, memoized by text; every feature reads it                          |

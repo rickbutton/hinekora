@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { rollableTiers } from "@hinekora/core";
-import { loadDefaultPoe1, registryOf } from "@hinekora/data";
+import { loadDefaultEconomy, loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { getCompletions } from "./completion.js";
 import { getHover } from "./hover.js";
 import { getSemanticTokens, SEMANTIC_LEGEND } from "./semantic.js";
@@ -478,5 +478,29 @@ roll("maximum life", chaos)`;
         ).data.length;
         // `if`, `influenced`, `hunter`, `and`, `corrupted`, `chaos`: six tokens of five ints.
         expect(marked - plain).toBe(30);
+    });
+});
+
+describe("hover: the cost line", () => {
+    const prices = loadDefaultEconomy();
+    const src = `item { base: "Titan Greaves" ilvl: 84 rarity: normal }
+until has "fire resistance" t1 { essence "greed" t1 }`;
+
+    it("tells a loop's rounds and a step's expected spend, priced by the snapshot", () => {
+        const loop = getHover(src, src.indexOf("until") + 1, registry, prices);
+        expect(loop!).toMatch(/_Cost:_ about \d+(\.\d+)? rounds, \d+(\.\d+)?% end it each time\./);
+        const step = getHover(src, src.indexOf("essence") + 1, registry, prices);
+        expect(step!).toMatch(
+            /_Cost:_ expected \d+(\.\d+)? Deafening Essence of Greed \(about \d+(\.\d+)? chaos\)\./,
+        );
+    });
+
+    it("sums the guide on the item block, and prices nothing without a snapshot", () => {
+        const total = getHover(src, src.indexOf("item") + 1, registry, prices);
+        expect(total!).toMatch(
+            /_Expected spend for the guide:_ about \d+(\.\d+)? chaos, \d+(\.\d+)? divine at Allflame prices of \d{4}-\d{2}-\d{2}\./,
+        );
+        const bare = getHover(src, src.indexOf("essence") + 1, registry);
+        expect(bare!).toMatch(/_Cost:_ expected \d+(\.\d+)? Deafening Essence of Greed\./);
     });
 });

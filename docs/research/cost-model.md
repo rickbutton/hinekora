@@ -249,6 +249,13 @@ Recorded as `../QUESTIONS.md` Q54–Q62 with the assumption the code proceeds un
 
 ## 5. The design that follows
 
+Built as described, with two things learned on the way: a make-room loop (random removals
+until the counts allow) is not a memoryless sequence of attempts and is solved as a chain
+over the counts instead (§5.5), and the walk keeps one branch per arm of the `if`s passed
+since the last roll so that a later condition is judged jointly with them rather than
+multiplied in. The symbol-level account is `../REFERENCE.md` §3a and the shape
+`../ARCHITECTURE.md` §7; where this section and those differ, those are current.
+
 ### 5.1 A second interpretation beside the checker, never inside it
 
 The checker proves; the cost layer estimates. They read the same op sequences
@@ -382,8 +389,28 @@ beside each step (owned by the `ui` stream).
 
 ## 6. Validation against craftofexile
 
-To be recorded once the implementation exists: for a few recipes of
-`crafting-methodology.md` §2 (R1's alteration loop on a jewel, R3's essence spam, R4's
-Pristine Fossil belt, R5's Harvest life reforge under a suffix lock, a blocked Exalted Orb),
-the per-attempt chance from craftofexile's calculator beside hinekora's, with the regime
-craftofexile was in (exact or extrapolation) and the reason for any gap.
+Recorded 2026-11-09 against craftofexile's calculator driven by URL (`b` the base,
+`m` the method, `lv` the item level, `req` the required modifiers by craftofexile's
+modifier id and the tier's level; `e` an essence, `f` a fossil list), Allflame 3.29 data,
+its own figures read from its "Final calculation" row and, where it matters, from its
+diagnostic trace (`poec_computeFinalProbsV2(null, true)`). hinekora's figures are
+`hinekora cost` on a guide of the base, the loop and nothing else; "rounds" is its
+expected rounds, craftofexile's "tries" its `ceil(1 / p)`.
+
+| Recipe (base, item level 84)                                                                 | craftofexile                                   | hinekora            | Note                                                                                                                                                                                                                                                          |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chaos Orb on Titan Greaves until T1 fire resistance                                          | 4.361 %, ~23 tries                             | 4.3 %, 23.1 rounds  | exact regime (10 suffix types)                                                                                                                                                                                                                                |
+| Deafening Essence of Greed on Titan Greaves until T1 fire resistance (R3/R7's shape)         | 3.953 %, ~26 tries                             | 3.9 %, 25.5 rounds  | the grant takes a prefix slot, 3–5 random draws at 8:3:1 in both                                                                                                                                                                                              |
+| Chaos Orb on Stygian Vise until T1 life                                                      | 3.907 %, ~26 tries                             | 3.9 %, 25.5 rounds  |                                                                                                                                                                                                                                                               |
+| Pristine Fossil (Primitive resonator) on Stygian Vise until T1 life (R4)                     | 9.038 %, ~12 tries                             | 9.0 %, 11.1 rounds  | the ×10 life weight and the blocked defences read alike                                                                                                                                                                                                       |
+| Chaos Orb on Titan Greaves until T1 life and T1 fire resistance                              | 0.198 %, ~503 tries                            | 0.20 %, 504 rounds  | two atoms, one per side: the split and the per-side races agree                                                                                                                                                                                               |
+| Chaos Orb on Imbued Wand until +1 to all spell gems and T1 spell damage (R2's wand prefixes) | 0.000183 %, ~545,204 tries                     | 0.000168 %, 596,976 | craftofexile's extrapolation regime (23 prefix types): its mean-field depletion is optimistic by a tenth against the exact race                                                                                                                               |
+| Orb of Alteration on Titan Greaves until T1 fire resistance                                  | 1.798 %, ~56 tries (`m=alteration`, mode `aa`) | 1.4 %, 69.8 rounds  | craftofexile's alteration assumes an Orb of Augmentation fills the empty side, so every roll has a suffix; hinekora prices the alteration alone, a one-modifier roll being a prefix alone 20 % of the time (Q55). Written with the augment, the guides agree. |
+| `m=alt` on a Viridian Jewel until % maximum life (R1)                                        | 3.070 %, ~33 tries                             | 1.3 %, 74.4 rounds  | not a comparison: `alt` is not a method of craftofexile's table and its page fell back to a rare roll of three or four modifiers (its trace says "Max. affixes by type 2", combinations 2/1, 1/2, 2/2)                                                        |
+
+The model agrees with craftofexile wherever craftofexile is exact, to the rounding of its
+display, and the one real difference, the wand, is the regime craftofexile itself marks as
+an extrapolation. The Orb of Alteration row is a difference of question, not of model.
+Not compared: a Harvest reforge under a lock (craftofexile's `hreroll` needs the metamod
+set through its item panel, not the URL) and the unveil's three options; both rest on the
+same race and on Q60 and Q61.

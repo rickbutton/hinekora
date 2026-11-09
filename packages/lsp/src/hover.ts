@@ -7,20 +7,25 @@ import {
     type AItem,
     bindingAt,
     bindingsOf,
+    type CostReport,
     type Craft,
     type CurrencyKind,
     type Def,
     describePred,
     type GroupId,
     guaranteedTypes,
+    inChaos,
     itemView,
     type Method,
+    type Price,
+    type Prices,
     type ProcDef,
     type Range,
     type Registry,
     renderItemText,
     rollableTiers,
     slotAt,
+    type StepCost,
     type Stmt,
     suffixRange,
     traceAt,
@@ -31,7 +36,7 @@ import {
     influenceTagsAny,
 } from "@hinekora/core";
 import { type Token, tokenize } from "@hinekora/parser";
-import { checkCached, parseCached } from "./analysis.js";
+import { checkCached, costCached, parseCached } from "./analysis.js";
 import { atomOf, type MethodAt, methodAt } from "./method-at.js";
 
 // --- doc tables ------------------------------------------------------------
@@ -525,7 +530,74 @@ function insideStepArgument(stmts: readonly Stmt[], offset: number): boolean {
     return false;
 }
 
-export function getHover(source: string, offset: number, registry: Registry): string | null {
+/**
+ * What the step costs, in the guide's words: a loop's rounds and the chance each
+ * ends it, a branch's chance, what an operation is expected to consume and its
+ * price under the snapshot; on the item block, the whole guide's total.
+ */
+function costLine(
+    entry: TraceEntry,
+    report: CostReport,
+    prices: Prices | undefined,
+): string | undefined {
+    const money = (p: readonly Price[]): string => {
+        const list = p.map((x) => `${figure(x.amount)} ${x.item}`).join(", ");
+        const chaos = prices === undefined ? undefined : inChaos(p, prices);
+        return chaos === undefined ? list : `${list} (about ${figure(chaos)} chaos)`;
+    };
+    if (entry.kind === "item") {
+        if (report.total.length === 0) return undefined;
+        const when =
+            prices === undefined
+                ? ""
+                : ` at ${prices.league} prices of ${prices.fetchedAt.slice(0, 10)}`;
+        const total =
+            report.chaos !== undefined && report.divine !== undefined
+                ? `about ${figure(report.chaos)} chaos, ${figure(report.divine)} divine${when}`
+                : report.total.map((x) => `${figure(x.amount)} ${x.item}`).join(", ");
+        return `_Expected spend for the guide:_ ${total}.`;
+    }
+    const step = report.steps.find(
+        (s: StepCost) => s.kind === entry.kind && s.span.start.offset === entry.span.start.offset,
+    );
+    if (step === undefined) return undefined;
+    const parts: string[] = [];
+    if (step.attempts !== undefined) {
+        parts.push(
+            `about ${figure(step.attempts.expected)} rounds, ${percentage(step.attempts.chance)} end it each time`,
+        );
+    }
+    if (step.branch !== undefined) parts.push(`taken ${percentage(step.branch)} of the time`);
+    if (step.kind === "restart" || step.kind === "stop") {
+        parts.push(`reached ${percentage(step.reached)} of the time`);
+    }
+    if (step.kind === "operation" && step.expected !== undefined && step.expected.length > 0) {
+        parts.push(`expected ${money(step.expected)}`);
+    }
+    if (step.note !== undefined) parts.push(step.note);
+    return parts.length === 0 ? undefined : `_Cost:_ ${parts.join("; ")}.`;
+}
+
+function figure(n: number): string {
+    if (!Number.isFinite(n)) return "∞";
+    if (n >= 100) return String(Math.round(n));
+    if (n >= 10) return n.toFixed(1).replace(/\.0$/, "");
+    return n.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+function percentage(p: number): string {
+    const v = p * 100;
+    if (v >= 10) return `${Math.round(v)}%`;
+    if (v >= 1) return `${v.toFixed(1)}%`;
+    return `${v.toFixed(2)}%`;
+}
+
+export function getHover(
+    source: string,
+    offset: number,
+    registry: Registry,
+    prices?: Prices,
+): string | null {
     const parsed = parseCached(source);
     const entry =
         parsed.ok && !insideStepArgument(parsed.craft.body, offset)
@@ -547,6 +619,9 @@ export function getHover(source: string, offset: number, registry: Registry): st
     if (entry) {
         const caption = entry.kind === "until" && entry.after ? "after the loop" : undefined;
         blocks.push(tooltip(entry.after ?? entry.before, registry, caption));
+        const report = costCached(source, registry, prices);
+        const cost = report === undefined ? undefined : costLine(entry, report, prices);
+        if (cost !== undefined) blocks.push(cost);
     }
     if (blocks.length === 0) return null;
     return blocks.join("\n\n---\n\n");
