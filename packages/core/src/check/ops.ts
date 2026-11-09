@@ -346,20 +346,24 @@ export type PreconditionFailure =
 
 export type TransferResult =
     | { readonly ok: true; readonly state: AItem }
-    | { readonly ok: false; readonly failure: PreconditionFailure };
+    | { readonly ok: false; readonly failure: PreconditionFailure; readonly state: AItem };
 
 /**
  * Run a method: the operations in order, each on the state the previous one
- * produced. A failed `require` fails the method as a whole; the caller keeps the
- * state before it, as the game never applies part of a currency.
+ * produced. A failed `require` fails the method as a whole and names the first
+ * failure. The state returned with it is the one the method leaves where its
+ * preconditions hold, so what follows a reported failure is judged against the
+ * guide's intent rather than against an item the failed step left untouched: a
+ * loop whose body fills the item is still one whose exit the body can reach,
+ * where a step that failed and did nothing would make every exit look unreachable.
  */
 export function runMethod(a0: AItem, ops: readonly Op[], registry: Registry): TransferResult {
     let rules = rulesInForce(a0, registry);
     let a = a0;
+    let failure: PreconditionFailure | null = null;
     for (const op of ops) {
         if (op.kind === "require") {
-            const failure = failing(a, op.check, rules, registry);
-            if (failure) return { ok: false, failure };
+            failure ??= failing(a, op.check, rules, registry);
             continue;
         }
         if (op.kind === "unprotect") {
@@ -375,7 +379,7 @@ export function runMethod(a0: AItem, ops: readonly Op[], registry: Registry): Tr
         }
         a = apply(a, a0, op, rules, registry);
     }
-    return { ok: true, state: a };
+    return failure === null ? { ok: true, state: a } : { ok: false, failure, state: a };
 }
 
 function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Registry): AItem {

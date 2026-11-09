@@ -302,8 +302,9 @@ describe("the Bestiary's add-to-an-influenced-item recipe", () => {
 });
 
 describe("an influence exalt on an item too low-level for any influence modifier", () => {
-    it("is refused instead of marking the item", () => {
-        // The orb needs a modifier to add; below the influence rows' level there is none.
+    it("is refused below the level of every influence modifier", () => {
+        // The orb needs a modifier to add; below the influence rows' level there is
+        // none. The state after the refused step is the one the orb would leave.
         const high = buildRegistry({
             bases: [RING_BASE],
             mods: [
@@ -317,7 +318,8 @@ describe("an influence exalt on an item too low-level for any influence modifier
         expect(r.diagnostics.map((d) => d.message).join("\n")).toContain(
             "No influence modifier can appear",
         );
-        expect(r.finalState!.counts.total).toEqual([0, 0]);
+        expect(r.ok).toBe(false);
+        expect(r.finalState!.counts.total).toEqual([1, 1]);
         const fine = item({ base: "Iron Ring", ilvl: 68, rarity: "rare" });
         expect(
             check(craft(fine, [words("exalt", "hunter")]), { registry: high }).diagnostics,

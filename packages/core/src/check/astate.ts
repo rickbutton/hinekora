@@ -536,17 +536,17 @@ export function cardinalityGuarantees(a: AItem): CardinalityGuarantee[] {
 
 /**
  * Re-establish the invariants after a field is changed: renormalize the count
- * sub-domain (the `total`/`prefix`/suffix coupling) and re-apply the one
- * cross-domain reduction, crafted mods are a subset of the affixes, so their
- * count can't exceed the total. Returns `null` if no consistent count assignment
+ * sub-domain (the `total`/`prefix`/suffix coupling) and re-apply the cross-domain
+ * reductions, crafted and fractured mods are subsets of the affixes, so neither
+ * count can exceed the total. Returns `null` if no consistent count assignment
  * remains (an uninhabited state).
  */
 export function normalize(a: AItem): AItem | null {
     const counts = CountDomain.normalize(a.counts, capsOf(a));
     if (counts === null) return null;
     const cap = counts.total[1];
-    const crafted: Range = [Math.min(a.crafted[0], cap), Math.min(a.crafted[1], cap)];
-    return { ...a, counts, crafted };
+    const within = (r: Range): Range => [Math.min(r[0], cap), Math.min(r[1], cap)];
+    return { ...a, counts, crafted: within(a.crafted), fractures: within(a.fractures) };
 }
 
 /**

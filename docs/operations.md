@@ -66,8 +66,12 @@ A method is an **ordered sequence** of these operations. Its preconditions are
 the sequence, including last, where it checks the state the earlier operations produced.
 A method is **all or nothing**: when any `require` in it fails, the method fails as a
 whole and the item is as it was before the first operation; the game never applies part
-of a currency. The checker therefore reports a failed `require` against the state before
-the method and continues from that state. The one other combinator is **either**, which
+of a currency. The checker reports the first failed `require` against the state before
+the method, then continues from the state the method would have left had its checks held
+(`QUESTIONS.md` Q50): the steps after a reported failure are judged against what the guide
+meant rather than against an item the failed step left untouched, so one wrong step does
+not cascade into a refusal of every step after it, and a loop whose body fills the item
+is still seen to reach its exit. The one other combinator is **either**, which
 joins the results of alternative sequences, for a method whose outcome is one of several
 distinct things.
 

@@ -405,6 +405,25 @@ line only when the author wrote it on one; the source's own line ending kept.
 **Assumed meanwhile:** the above (`packages/parser/src/format.ts`, REFERENCE §3b).
 **Answer:**
 
+### Q50 · decision · open
+
+**Asked:** 2026-11-08
+**Question:** what item state follows a step the checker refuses. The game applies none
+of a refused currency, so the item is as it was; the checker used to continue from that
+untouched state, and every later step that needed the refused one's effect was refused
+too (a `regal` refused on a maybe-Magic item left every Rare-only step after it refused as
+well), and a loop whose body fills the item looked like one that could never reach its
+exit, since the refused `exalt` changed nothing on the full paths.
+**Options:** (a) the untouched state, as before, with the cascade; (b) the state the
+method would have left had its checks held, so the steps after the one reported are
+judged against what the guide meant, and a refusal is reported once; (c) the state
+narrowed to where the check holds, then the method's effect, the most precise, but a
+narrowing for every kind of check, and nothing to narrow to when the check holds nowhere.
+**Recommendation:** (b); (c) if a cascade ever matters enough to pay for it.
+**Assumed meanwhile:** (b) (`check/ops.ts` `runMethod` returns the state with the
+failure, `check/check.ts` continues from it, `operations.md` §2).
+**Answer:**
+
 ### Q35 · decision · open
 
 **Asked:** 2026-10-30

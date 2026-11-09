@@ -696,7 +696,8 @@ describe("checker — the rarity seam (surface §6 errors)", () => {
         );
         const r = check(c, ctx);
         expect(r.diagnostics[0]!.message).toContain("may be Magic or Rare");
-        expect(r.finalState!.rarities).toEqual(new Set(["magic", "rare"]));
+        // After the refused regal the item is judged as the guide meant it: Rare.
+        expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
     });
 
     it("judges a scour and an essence over every rarity the item may have", () => {

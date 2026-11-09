@@ -648,7 +648,9 @@ file knows a method by name.
 
 Every crafting method is a sequence of primitive operations (`operations.md` §2), stated
 in `library.ts` and run by `runMethod(state, ops, registry)` in `ops.ts`, which returns
-`{ok, state}` or `{ok:false, failure}`. The operations are `require(check)`, `strip`,
+`{ok, state}` or `{ok:false, failure, state}`, the first failed check with the state the
+method would have left had its checks held (`operations.md` §2 on all-or-nothing). The
+operations are `require(check)`, `strip`,
 `fill(pool, count)`, `remove(selector)`, `rarity(r | survivors)`, `lock`,
 `imprint`/`restore`, `influence(change)` (set the mark, add an influence to every
 possible set, or randomise to every set of the same size), `eldritch(change)` (set an

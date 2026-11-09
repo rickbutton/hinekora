@@ -557,7 +557,7 @@ class Checker {
         const result = runMethod(a, built, this.registry);
         if (!result.ok) {
             this.diag(preconditionMessage(a, result.failure), stmt.span);
-            return { kind: "fall", state: a };
+            return { kind: "fall", state: result.state };
         }
         return { kind: "fall", state: result.state };
     }

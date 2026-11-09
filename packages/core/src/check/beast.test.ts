@@ -211,12 +211,15 @@ describe("beast fracture", () => {
         expect(r.diagnostics.map((d) => d.message).join("\n")).toContain(
             "already has a fractured modifier",
         );
-        expect(r.finalState!.fractures).toEqual([0, 1]);
+        // The refused fracture still counts as the guide meant it to.
+        expect(r.finalState!.fractures).toEqual([1, 2]);
         const loop = craft(talisman(4), [
             until(fracturedP("T1 Life"), [beast({ kind: "fracture" })]),
         ]);
         const l = check(loop, ctx);
-        expect(l.finalState!.fractures[1]).toBeLessThanOrEqual(1);
+        // A fractured modifier is one of the item's four, so the count the refused
+        // fractures pile up settles at four instead of growing every iteration.
+        expect(l.finalState!.fractures[1]).toBeLessThanOrEqual(4);
     });
 
     it("counts both locks against what an annul may remove", () => {
@@ -225,7 +228,8 @@ describe("beast fracture", () => {
         const text = r.diagnostics.map((d) => d.message).join("\n");
         expect(r.diagnostics).toHaveLength(1);
         expect(text).toContain("Requires a removable affix");
-        expect(r.finalState!.counts.total).toEqual([2, 2]);
+        // The refused annul is still counted, as the guide meant it.
+        expect(r.finalState!.counts.total).toEqual([1, 1]);
     });
 
     it("joins the count where one path locked two and another one", () => {
