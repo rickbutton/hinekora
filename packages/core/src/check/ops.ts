@@ -671,7 +671,11 @@ function failing(
                 : { kind: "tooFewInfluenced", needed: check.count, have };
         }
         case "craftedRemovable":
-            return a.crafted[0] - fracturedCrafted(a, registry) >= 1
+            // A guaranteed type that is only ever a bench row is a crafted
+            // modifier, whatever the count's lower bound knows.
+            return Math.max(a.crafted[0], sureCrafted(a, registry)) -
+                fracturedCrafted(a, registry) >=
+                1
                 ? null
                 : { kind: "noCraftedToRemove" };
         case "craftedReplaceable": {
@@ -919,6 +923,15 @@ function failing(
  *  on its own: the two sides together are also held to the rarity's total (a
  *  magic Ratcheting Ring may take four suffixes by its side cap but two by its
  *  total), so a named side must also leave the total under its cap. */
+/** How many guaranteed types are crafted for sure: every row they may be is a bench row. */
+function sureCrafted(a: AItem, registry: Registry): number {
+    let n = 0;
+    for (const t of guaranteedTypes(a)) {
+        if (a.craftedTypes.has(t) && rowsOf(a, t, registry).every((m) => m.source === "bench")) n++;
+    }
+    return n;
+}
+
 function hasOpenSlot(a: AItem, gen: Gen | undefined): boolean {
     // Open on every path: the counts' upper bounds against the tightest caps.
     const tight = capsOver(a, Math.min);

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes, isExcluded } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { bench, benchRemove, craft, item, op } from "../__fixtures__/ast.js";
+import { bench, benchRemove, craft, has, iff, item, op } from "../__fixtures__/ast.js";
 import {
     BENCH_LIFE_ROW,
     CATALOG,
@@ -76,6 +76,16 @@ describe("bench remove", () => {
 });
 
 describe("bench remove reaches the crafted types only", () => {
+    it("removes a metamod a branch has proven present, whatever the count knew", () => {
+        // The annul may have taken the metamod or the resistance; where the
+        // metamod is still there, it is a crafted modifier for sure.
+        const c = craft(
+            rareRing([BENCH_LIFE_ROW.id], [PROTECT_PREFIXES_CARRIER.id, FIRE_RESIST.id]),
+            [op("annul"), iff(has(PROTECT_PREFIXES_CARRIER.id), [benchRemove()])],
+        );
+        expect(check(c, ctx).diagnostics).toEqual([]);
+    });
+
     it("cannot cost a suffix for a crafted prefix", () => {
         const c = craft(rareRing([BENCH_LIFE_ROW.id], [FIRE_RESIST.id, COLD_RESIST.id]), [
             benchRemove(),
