@@ -621,7 +621,8 @@ LUB) and `equal` (fixpoint detection), plus the reusable `RangeDomain` (integer 
 and `SetDomain` (the `possible` whitelist). `join`/`stateEqual` in `astate.ts` are now
 just those ops applied field-by-field; the tier and value overlays keep what one branch
 knows of a type the other branch excludes (`joinKnown`), since the type can only have come
-from the branch that pinned it. A cross-domain fact (e.g. crafted ⊆ affixes) is a
+from the branch that pinned it; a branch whose item holds no modifier excludes every type,
+so the row an essence places survives the head of a repeat entered on a Normal item. A cross-domain fact (e.g. crafted ⊆ affixes) is a
 **reduction** applied explicitly at the product level in `normalize`, never hidden inside
 one domain. The sub-domains:
 

@@ -96,11 +96,11 @@ describe("checker — tier tracking through operations", () => {
 });
 
 describe("checker — one of several tiers, then the work after it", () => {
-    /** The tiers the state before the first `annul` allows for `type`. */
+    /** The tiers the state before the last step, the `annul`, allows for `type`. */
     const tiersBeforeAnnul = (c: ReturnType<typeof craft>, type: TypeId) => {
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        const entry = r.trace.find((e) => e.kind === "operation" && e.before.tiers.has(type));
+        const entry = r.trace.findLast((e) => e.kind === "operation" && e.before.tiers.has(type));
         return entry === undefined ? undefined : [...entry.before.tiers.get(type)!];
     };
 

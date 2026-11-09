@@ -788,7 +788,9 @@ export const TierDomain = {
  * Join a per-type overlay, keeping what one branch knows of a type the other
  * branch excludes: if the type is on the item at all, it came from the branch
  * that pinned it. Without this, "life or mana, one of them" refined into its
- * two arms and joined back forgot both tiers.
+ * two arms and joined back forgot both tiers. A branch whose item holds no
+ * modifier excludes every type, though its presence names none: the item a
+ * repeat starts on, joined with what a round made of it.
  */
 function joinKnown<V>(
     a: AItem,
@@ -798,8 +800,9 @@ function joinKnown<V>(
     join: (x: ReadonlyMap<TypeId, V>, y: ReadonlyMap<TypeId, V>) => ReadonlyMap<TypeId, V>,
 ): ReadonlyMap<TypeId, V> {
     const out = new Map(join(oa, ob));
-    for (const [t, v] of oa) if (!ob.has(t) && isExcluded(b, t)) out.set(t, v);
-    for (const [t, v] of ob) if (!oa.has(t) && isExcluded(a, t)) out.set(t, v);
+    const absent = (s: AItem, t: TypeId): boolean => s.counts.total[1] === 0 || isExcluded(s, t);
+    for (const [t, v] of oa) if (!ob.has(t) && absent(b, t)) out.set(t, v);
+    for (const [t, v] of ob) if (!oa.has(t) && absent(a, t)) out.set(t, v);
     return out;
 }
 

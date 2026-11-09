@@ -3,7 +3,9 @@ import { check, type CheckContext } from "./check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { narrowRange, rollRange } from "./values.js";
 import {
+    andp,
     bench,
+    cmp,
     craft,
     essence,
     has,
@@ -165,6 +167,32 @@ describe("has <mod> <cmp> <n>", () => {
         const r = check(reached, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.values.get(LIFE)).toEqual([115, 129]);
+    });
+
+    it("keeps an essence's row through a repeat entered on an item with no modifiers", () => {
+        // The Normal item the repeat starts on holds nothing, so the energy
+        // shield the exit finds can only be the row the essence placed.
+        const woe: EssenceSpec = {
+            id: "TestWoeShrieking",
+            name: "Shrieking Essence of Woe",
+            tier: 6,
+            grants: new Map([[CLASS_RING, AMULET_ES_ROW.id]]),
+        };
+        const placed = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...TIERED_CATALOG, AMULET_ES_ROW],
+            essences: [woe],
+        });
+        const c = craft(item({ base: "IronRing", ilvl: 100, rarity: "normal" }), [
+            until(andp(has("energy shield"), cmp("suffixCount", "<=", 1)), [
+                iff(has("energy shield"), [op("annul")], [essence("Shrieking Essence of Woe")]),
+            ]),
+        ]);
+        const r = check(c, { registry: placed });
+        expect(r.diagnostics).toEqual([]);
+        expect([...(r.finalState!.tiers.get(AMULET_ES_ROW.type) ?? [])]).toEqual([
+            AMULET_ES_ROW.id,
+        ]);
     });
 
     it("reads the row an essence places even where it never rolls", () => {
