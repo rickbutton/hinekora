@@ -10,7 +10,7 @@ import { maxTotal, sideCap } from "../model/capacity.js";
 import { poolRestrictPredicate } from "../model/effects.js";
 import type { ClassId, Gen, TagId } from "../model/ids.js";
 import type { ItemFacts } from "../model/item.js";
-import type { Mod } from "../model/mod.js";
+import type { Mod, SpawnEntry } from "../model/mod.js";
 
 /** The universe of mods `pool` draws from, the loaded catalog for this context. */
 export type ModCatalog = readonly Mod[];
@@ -22,10 +22,11 @@ export interface PoolCandidate {
 }
 
 /**
- * Resolve a mod's spawn weight against a base's tags. Spawn entries are
- * ordered and FIRST MATCH WINS, an early zero-weight entry disables the mod
- * for bases carrying that tag even if a later entry would allow it. `null`
- * when no spawn tag matches at all (the mod cannot roll here).
+ * Resolve a mod's weight against an item's tags: its spawn table, then its
+ * generation table scaling the result in percent. Both are ordered and FIRST
+ * MATCH WINS, so an early zero entry disables the mod for items carrying that
+ * tag even if a later entry would allow it. `null` when no spawn tag matches
+ * at all (the mod cannot roll here).
  */
 export function lookupWeight(
     m: Mod,
@@ -33,11 +34,24 @@ export function lookupWeight(
     maybeTags?: ReadonlySet<TagId>,
     pessimistic = false,
 ): number | null {
-    for (const entry of m.spawn) {
+    const weight = firstMatch(m.spawn, tags, maybeTags, pessimistic);
+    if (weight === null || weight <= 0) return weight;
+    const scale = firstMatch(m.generation, tags, maybeTags, pessimistic);
+    return scale === null ? weight : (weight * scale) / 100;
+}
+
+/** The first entry whose tag the item carries. A tag the item may carry is
+ *  read optimistically, it only ever helps (a positive entry counts, a zero is
+ *  skipped), or pessimistically, it only ever hurts (a zero stops the row, a
+ *  positive is skipped). `null` when no entry matches. */
+function firstMatch(
+    entries: readonly SpawnEntry[],
+    tags: ReadonlySet<TagId>,
+    maybeTags: ReadonlySet<TagId> | undefined,
+    pessimistic: boolean,
+): number | null {
+    for (const entry of entries) {
         if (tags.has(entry.tag)) return entry.weight;
-        // A tag the item may carry: read optimistically it only ever helps (a
-        // positive entry counts, a zero is skipped), read pessimistically it
-        // only ever hurts (a zero stops the row, a positive is skipped).
         if (maybeTags?.has(entry.tag) && (pessimistic ? entry.weight === 0 : entry.weight > 0)) {
             return entry.weight;
         }

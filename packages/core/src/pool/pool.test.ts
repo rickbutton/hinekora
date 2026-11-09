@@ -5,6 +5,11 @@ import {
     AMULET_ONLY,
     ATTACK_SPEED,
     CATALOG,
+    CLUSTER_BASE,
+    NOTABLE_SADIST,
+    SMALL_CLUSTER_BASE,
+    TAG_ENCHANT_LIGHTNING,
+    TAG_HAS_NOTABLE,
     COLD_RESIST,
     FIRE_CHAOS_RESIST,
     FIRE_RESIST,
@@ -249,6 +254,21 @@ describe("lookupWeight — spawn resolution", () => {
 
     it("returns null when no spawn tag matches the base", () => {
         expect(lookupWeight(JEWEL_ONLY_SPAWN, RING_BASE.tags)).toBeNull();
+    });
+
+    it("the generation table scales the weight, its first match winning too", () => {
+        // A notable's table: full weight on a Large or Medium jewel ahead of a
+        // zero on the tag a present notable adds, so only a Small jewel with a
+        // notable on it is closed to another.
+        const large = new Set([...CLUSTER_BASE.tags, TAG_ENCHANT_LIGHTNING, TAG_HAS_NOTABLE]);
+        expect(lookupWeight(NOTABLE_SADIST, large)).toBe(1000);
+        const small = new Set([...SMALL_CLUSTER_BASE.tags, TAG_ENCHANT_LIGHTNING]);
+        expect(lookupWeight(NOTABLE_SADIST, small)).toBe(1000);
+        expect(lookupWeight(NOTABLE_SADIST, new Set([...small, TAG_HAS_NOTABLE]))).toBe(0);
+        // Read pessimistically, a possible notable closes the row; optimistically it does not.
+        const maybe = new Set([TAG_HAS_NOTABLE]);
+        expect(lookupWeight(NOTABLE_SADIST, small, maybe, true)).toBe(0);
+        expect(lookupWeight(NOTABLE_SADIST, small, maybe)).toBe(1000);
     });
 });
 

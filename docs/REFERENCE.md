@@ -140,7 +140,9 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
   [spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag) rule (the item's
   tags, the base's plus the `adds_tags` of present mods, a rule the data carries rather
   than the wiki (`QUESTIONS.md` Q2), vs the mod's spawn table, first match wins, zero
-  disables) plus the [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) gate.
+  disables, then its generation table the same way, a percentage scale whose zero
+  disables: `Mod.generation`, item-model.md §5, which is what caps a Small Cluster
+  Jewel at one notable) plus the [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) gate.
 - **ast/**: the surface AST (`ast.ts`), spans (`span.ts`), and name binding
   (`bindings.ts`): `bindingsOf(craft)` lists every def, operation function and parameter
   with its declaration span and reference spans, `bindingAt` finds the one under an
@@ -285,7 +287,7 @@ re-ingest supersedes along with the file). A fossil's projection keeps what deci
 resonator can roll (`projectFossils`: blocked category tags, added and forced rows, the
 base tags it allows, its chance of a corrupted-essence modifier, a fracture), never the
 weight multipliers. A mod's projection keeps `implicit_tags` (the category tags harvest and fossils
-filter on). The eldritch implicit rows (eldritch.json, `scripts/ingest-eldritch.mjs`,
+filter on) and `generation_weights` (the table that scales a spawn weight by the item's tags). The eldritch implicit rows (eldritch.json, `scripts/ingest-eldritch.mjs`,
 `projectEldritch`) come from the current export with their own `provenance`: side, tier
 (Lesser = 1 up to Perfect = 6, the model's count; the export's
 `no_tier_<n>_eldritch_implicit` tag that excludes the row counts from Perfect = 1, so the

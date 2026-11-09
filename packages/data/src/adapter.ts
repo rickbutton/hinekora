@@ -70,6 +70,10 @@ export function adaptMod(id: string, m: RepoeMod): Mod | null {
         addsTags: new Set(m.adds_tags.map((t) => TagId(t))),
         implicitTags: new Set((m.implicit_tags ?? []).map((t) => TagId(t))),
         spawn: m.spawn_weights.map((w) => ({ tag: TagId(w.tag), weight: w.weight })),
+        generation: (m.generation_weights ?? []).map((w) => ({
+            tag: TagId(w.tag),
+            weight: w.weight,
+        })),
         source: classifySource(m),
         // Human-readable fields (omit empties so the field stays absent).
         ...(m.name ? { name: m.name } : {}),

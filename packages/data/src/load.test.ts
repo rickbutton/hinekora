@@ -328,6 +328,29 @@ describe("catalog-level facts of the item model", () => {
         }
     });
 
+    it("every cluster notable adds the notable tag and zeroes on it below the Medium size", () => {
+        // How the game caps a Small Cluster Jewel at one notable: the generation
+        // table reads the Large and Medium size tags at full weight before the
+        // zero on the tag every notable adds (Cluster jewel § Mechanics).
+        const notables = registry.catalog.filter((m) =>
+            m.addsTags.has(TagId("has_affliction_notable")),
+        );
+        expect(notables.length).toBeGreaterThan(250);
+        for (const m of notables) {
+            expect(m.generation.map((e) => `${e.tag}:${e.weight}`)).toEqual([
+                "expansion_jewel_large:100",
+                "expansion_jewel_medium:100",
+                "has_affliction_notable:0",
+                "expansion_jewel_small:100",
+                "default:0",
+            ]);
+        }
+        const others = registry.catalog.filter(
+            (m) => m.generation.length > 0 && !notables.includes(m),
+        );
+        expect(others.length).toBeGreaterThan(0);
+    });
+
     it("the five metamods are the only effect carriers, all bench-placed", () => {
         const carriers = registry.catalog.filter((m) => (m.effects?.length ?? 0) > 0);
         expect(carriers.map((m) => m.id).sort()).toEqual([

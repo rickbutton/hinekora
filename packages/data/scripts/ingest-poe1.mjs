@@ -65,6 +65,7 @@ function projectMods(raw) {
             groups: m.groups,
             required_level: m.required_level,
             spawn_weights: m.spawn_weights,
+            generation_weights: m.generation_weights ?? [],
             adds_tags: m.adds_tags,
             implicit_tags: m.implicit_tags ?? [], // tag-directed crafting (fossils, harvest)
             type: m.type,

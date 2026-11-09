@@ -91,6 +91,9 @@ item {
   8 to 12 on a Large) and the stat its small passives grant, which decides the notables it
   can roll, so `enchant: 8 "lightning damage"` is what makes `has "sadist"` possible. The
   stat is named by its words as a modifier is (§2); a cluster jewel without it is an error.
+  A Small Cluster Jewel holds one notable, a Medium two and a Large three, two prefixes and a
+  suffix ([Cluster jewel § Mechanics](https://www.poewiki.net/wiki/Cluster_jewel#Mechanics)),
+  so once a notable sits on a Small jewel no step can add another.
 - `corrupted`, a bare flag, marks a
   [corrupted item](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items), which
   takes no craft but the Tainted currency (§3). A guide that corrupts an item mid-way

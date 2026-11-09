@@ -2,19 +2,32 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, has, item, op, until } from "../__fixtures__/ast.js";
-import { CATALOG, CLUSTER_BASE, NOTABLE_SADIST, RING_BASE } from "../__fixtures__/mods.js";
+import {
+    CATALOG,
+    CLUSTER_BASE,
+    CLUSTER_EFFECT,
+    NOTABLE_OVERSHOCK,
+    NOTABLE_SADIST,
+    RING_BASE,
+    SMALL_CLUSTER_BASE,
+} from "../__fixtures__/mods.js";
 
 const registry = buildRegistry({
-    bases: [RING_BASE, CLUSTER_BASE],
-    mods: [...CATALOG, NOTABLE_SADIST],
+    bases: [RING_BASE, CLUSTER_BASE, SMALL_CLUSTER_BASE],
+    mods: [...CATALOG, NOTABLE_SADIST, NOTABLE_OVERSHOCK, CLUSTER_EFFECT],
     baseAliases: { "Iron Ring": "IronRing" },
 });
 const ctx: CheckContext = { registry };
-const jewel = (enchant?: { passives: number; text: string }) =>
+const jewel = (
+    enchant?: { passives: number; text: string },
+    prefixes: string[] = [],
+    base = "Large Cluster Jewel",
+) =>
     item({
-        base: "Large Cluster Jewel",
+        base,
         ilvl: 84,
         rarity: "rare",
+        prefixes,
         ...(enchant !== undefined && { enchant }),
     });
 
@@ -50,5 +63,33 @@ describe("a cluster jewel's enchant", () => {
         expect(check(craft(ring, []), ctx).diagnostics[0]?.message).toContain(
             "Only a cluster jewel",
         );
+    });
+});
+
+describe("a cluster jewel's notables", () => {
+    it("are one at most on a Small jewel, two on a Large", () => {
+        // Every notable adds a tag on which its generation table is zero below
+        // Medium, so with one on a Small jewel no exalt can add another.
+        const lightning = { passives: 2, text: "lightning damage" };
+        const small = check(
+            craft(jewel(lightning, ["sadist"], "Small Cluster Jewel"), [op("exalt")]),
+            ctx,
+        );
+        expect(small.diagnostics).toEqual([]);
+        expect(small.finalState!.possible.has(NOTABLE_OVERSHOCK.type)).toBe(false);
+        const large = check(
+            craft(jewel({ passives: 8, text: "lightning damage" }, ["sadist"]), [op("exalt")]),
+            ctx,
+        );
+        expect(large.diagnostics).toEqual([]);
+        expect(large.finalState!.possible.has(NOTABLE_OVERSHOCK.type)).toBe(true);
+    });
+
+    it("a Small jewel's loop for a second notable can never exit", () => {
+        const c = craft(
+            jewel({ passives: 2, text: "lightning damage" }, ["sadist"], "Small Cluster Jewel"),
+            [until(has("overshock"), [op("exalt")])],
+        );
+        expect(check(c, ctx).diagnostics.length).toBeGreaterThan(0);
     });
 });

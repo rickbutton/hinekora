@@ -23,6 +23,10 @@ export interface RepoeMod {
     /** Ordered; first entry whose tag the base has wins (see core `lookupWeight`). */
     readonly spawn_weights: readonly RepoeSpawnWeight[];
     readonly adds_tags: readonly string[];
+    /** Ordered like `spawn_weights`; the first entry whose tag the item carries
+     * scales the spawn weight in percent (see core `lookupWeight`). Optional
+     * because older projections omitted it. */
+    readonly generation_weights?: readonly RepoeSpawnWeight[];
     /** The tags that drive tag-directed crafting (fossils, harvest): a mod's
      * category membership (fire, caster, life, defences, …). Optional because
      * older projections omitted it. */

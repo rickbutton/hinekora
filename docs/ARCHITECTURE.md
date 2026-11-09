@@ -91,8 +91,8 @@ What resolution provides to the checker:
   prefix, narrowed to the types that can actually roll on this base/ilvl.
 - **the pool**: which mods can roll on a given item, by the wiki's
   [spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag) and
-  [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) rules. This is what a currency
-  add draws from.
+  [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) rules, with the generation
+  table the data pairs with each spawn table. This is what a currency add draws from.
 - **tiers**: the tier ladder per base/ilvl (T1 = the best mod that can roll here), derived
   by sorting a type's rollable rows by mod level, since the game stores no tier numbers.
 - **caps**: the per-base affix limits (the [rarity](https://www.poewiki.net/wiki/Rarity#Rarities)

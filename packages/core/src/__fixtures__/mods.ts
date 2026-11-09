@@ -65,16 +65,27 @@ export const RING_BASE: Base = {
     tags: new Set([TAG_DEFAULT, TAG_RING]),
 };
 
-/** A Large Cluster Jewel: its notables roll under the enchantment's tag. */
+/** Cluster jewels: their notables roll under the enchantment's tag. */
 export const DOMAIN_CLUSTER = Domain("affliction_jewel");
 export const TAG_CLUSTER_LARGE = TagId("expansion_jewel_large");
+export const TAG_CLUSTER_MEDIUM = TagId("expansion_jewel_medium");
+export const TAG_CLUSTER_SMALL = TagId("expansion_jewel_small");
 export const TAG_ENCHANT_LIGHTNING = TagId("affliction_lightning_damage");
+/** The tag every notable adds, on which its generation table zeroes below Medium. */
+export const TAG_HAS_NOTABLE = TagId("has_affliction_notable");
 export const CLUSTER_BASE: Base = {
     id: BaseId("LargeClusterJewel"),
     name: "Large Cluster Jewel",
     itemClass: ClassId("Jewel"),
     domain: DOMAIN_CLUSTER,
     tags: new Set([TAG_DEFAULT, TagId("jewel"), TAG_CLUSTER_LARGE]),
+};
+export const SMALL_CLUSTER_BASE: Base = {
+    id: BaseId("SmallClusterJewel"),
+    name: "Small Cluster Jewel",
+    itemClass: ClassId("Jewel"),
+    domain: DOMAIN_CLUSTER,
+    tags: new Set([TAG_DEFAULT, TagId("jewel"), TAG_CLUSTER_SMALL]),
 };
 
 export const AMULET_BASE: Base = {
@@ -185,6 +196,7 @@ interface ModSpec {
     readonly domain?: Domain; // defaults to item domain
     readonly families?: readonly string[];
     readonly spawn: readonly SpawnEntry[];
+    readonly generation?: readonly SpawnEntry[];
     readonly classRestriction?: ReadonlySet<ClassId>;
     /** Tags the mod adds to the item while present. */
     readonly addsTags?: readonly string[];
@@ -210,6 +222,7 @@ function mkMod(spec: ModSpec): Mod {
         addsTags: new Set<TagId>((spec.addsTags ?? []).map(TagId)),
         implicitTags: new Set<TagId>((spec.implicitTags ?? []).map(TagId)),
         spawn: spec.spawn,
+        generation: spec.generation ?? [],
         ...(spec.classRestriction !== undefined && { classRestriction: spec.classRestriction }),
         ...(spec.effects !== undefined && { effects: spec.effects }),
         ...(spec.source !== undefined && { source: spec.source }),
@@ -950,6 +963,16 @@ export const MAXMANA_TIERS: readonly Mod[] = [
 
 export const TIERED_CATALOG: readonly Mod[] = [MAXLIFE_T1, MAXLIFE_T2, MAXLIFE_T3, FIRE_RES_TIERED];
 
+/** The generation table of every cluster notable, as the data has it: full weight
+ *  on a Large or Medium jewel, none on a Small one once a notable is on it. */
+const NOTABLE_GENERATION: readonly SpawnEntry[] = [
+    spawn(TAG_CLUSTER_LARGE, 100),
+    spawn(TAG_CLUSTER_MEDIUM, 100),
+    spawn(TAG_HAS_NOTABLE, 0),
+    spawn(TAG_CLUSTER_SMALL, 100),
+    spawn(TAG_DEFAULT, 0),
+];
+
 /** A cluster notable, rolling only under the lightning damage enchantment. */
 export const NOTABLE_SADIST: Mod = mkMod({
     id: "AfflictionNotableSadist",
@@ -959,8 +982,42 @@ export const NOTABLE_SADIST: Mod = mkMod({
     domain: DOMAIN_CLUSTER,
     families: ["Sadist"],
     spawn: [spawn(TAG_ENCHANT_LIGHTNING, 1000)],
+    generation: NOTABLE_GENERATION,
+    addsTags: ["has_affliction_notable"],
     implicitTags: ["lightning", "damage"],
     text: "1 Added Passive Skill is Sadist",
+});
+
+/** A second notable of the same enchantment. */
+export const NOTABLE_OVERSHOCK: Mod = mkMod({
+    id: "AfflictionNotableOvershock",
+    type: "AfflictionNotableOvershock",
+    gen: "prefix",
+    minLevel: 1,
+    domain: DOMAIN_CLUSTER,
+    families: ["Overshock"],
+    spawn: [spawn(TAG_ENCHANT_LIGHTNING, 1000)],
+    generation: NOTABLE_GENERATION,
+    addsTags: ["has_affliction_notable"],
+    implicitTags: ["lightning", "damage"],
+    text: "1 Added Passive Skill is Overshock",
+});
+
+/** A cluster prefix that is not a notable, rolling on every size. */
+export const CLUSTER_EFFECT: Mod = mkMod({
+    id: "AfflictionJewelSmallPassivesHaveIncreasedEffect",
+    type: "AfflictionJewelSmallPassivesHaveIncreasedEffect",
+    gen: "prefix",
+    minLevel: 1,
+    domain: DOMAIN_CLUSTER,
+    families: ["AfflictionJewelSmallPassivesHaveIncreasedEffect"],
+    spawn: [
+        spawn(TAG_CLUSTER_SMALL, 500),
+        spawn(TAG_CLUSTER_MEDIUM, 500),
+        spawn(TAG_CLUSTER_LARGE, 500),
+        spawn(TAG_DEFAULT, 0),
+    ],
+    text: "Added Small Passive Skills have 25% increased Effect",
 });
 
 /** The full mini catalog. */

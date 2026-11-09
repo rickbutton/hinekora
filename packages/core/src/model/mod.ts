@@ -45,6 +45,15 @@ export interface Mod {
      * zero-weight entry can DISABLE a mod for bases carrying that tag.
      */
     readonly spawn: readonly SpawnEntry[];
+    /**
+     * `GenerationWeight_TagsKeys ‖ _Values`, read as `spawn` is, first match
+     * wins: the matching entry scales the spawn weight in percent, so a zero
+     * disables the row for an item carrying that tag unless an earlier entry
+     * matched. The data relies on it where a cap is not a side's: a cluster
+     * notable adds `has_affliction_notable` and zeroes on it after the Large
+     * and Medium size tags, so a Small Cluster Jewel takes one notable.
+     */
+    readonly generation: readonly SpawnEntry[];
 
     /**
      * `CraftingItemClassRestrictions`, if present, the mod may only appear on
