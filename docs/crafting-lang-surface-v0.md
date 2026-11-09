@@ -406,7 +406,9 @@ the life into range"; a threshold no tier reaches is impossible, a branch on it 
 which an item holds at most one of: a wand's spell, fire, cold, lightning and minion damage
 prefixes are one group, so `if not has group "spell damage" { bench "spell damage" }` is the
 guard a guide means by "unless you already have one of those", and it needs no name for
-each member, even one that is ambiguous on its own.
+each member, even one that is ambiguous on its own. The group is read across the whole
+catalog, every modifier that shares a group with X on any base, and only those the item
+may carry count.
 `influenced` and `corrupted` ask about the item's marks (§1): where paths with different
 marks meet, a branch on them narrows to one.
 
