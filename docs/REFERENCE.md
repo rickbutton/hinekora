@@ -69,7 +69,7 @@ packages/
   parser/   @hinekora/parser - hand-written lexer + parser: source → Craft AST.
   data/     @hinekora/data   - loads projected RePoE JSON, builds a Registry.
   lsp/      @hinekora/lsp    - transport-free language service + stdio server.
-  cli/      @hinekora/cli    - command-line checker and formatter.
+  cli/      @hinekora/cli    - command-line checker, formatter and chart printer.
 editors/
   vscode/                    - VSCode extension (TextMate grammar + LSP client).
   playground/                - browser playground: Monaco + the language service in-page
@@ -174,7 +174,8 @@ these suffix modifiers }`, `{ 1-3 more modifiers, prefixes and/or suffixes }`,
   checklist's lines, "yes" and "no" edges, a loop as a `repeat` subgraph whose decision
   leads back to its first step (a `restart` goes there too), start and end nodes
   (`FLOW_START`, `FLOW_END`), and the map from node id to statement that lets a page link
-  the drawing to the text. `itemDelta`/`stepDelta` list what a step added and removed, as
+  the drawing to the text; the CLI's `hinekora chart <file>` prints it for a README or a
+  wiki page to embed. `itemDelta`/`stepDelta` list what a step added and removed, as
   the lines of the item view a player would notice. `conditions.ts` words a guide's
   conditions for the player: `clause` as prose ("+# to maximum Life at T1 and exactly 2
   prefixes", a negated count turned round, "no …" for a negated modifier), `criteria` as
@@ -421,20 +422,24 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   lines in their colours, a bracketed "one of" group for a disjunction, a dashed line for
   the modifiers whose identity is unknown, "possibly" marks, and the absent modifiers
   struck through. The affix name and tags are the line's tooltip.
-- `src/chart.ts`: `createChartPane(root, hooks)`, the guide as a flow chart drawn by
-  Mermaid from the core's `flowchart` text, with `classDef` lines that colour each
-  method's nodes and a dark theme to match the page. Mermaid lays the graph out; the
-  pane binds the drawing to the editor by the node ids in Mermaid's group ids. A detail
-  panel under the chart follows the node at the cursor and keeps no position of its
-  own: for an action its words, what it does, what it changed (`stepDelta`), the
-  checker's findings and the item after it; for a decision the condition as a checklist
-  (the step's `check`) and, for a loop, the item once it is done; for the start the
-  declared item. Hovering a node only highlights its statement in the editor, clicking
-  one moves the cursor, the cursor marks its node, and a node whose item changed since
-  the last edit flashes once. While the guide does not parse the last drawing stays,
-  dimmed.
+- `src/storyboard.ts`: `createStoryboard(root, hooks)`, the guide as the item's journey
+  from the core's `walkthrough`: the declared item, then for each step a row with the
+  currency's icon, its display name, the step as written, what it does, what it changed
+  (`stepDelta`) and the checker's findings, followed by the item card after it (a card
+  is drawn only where the item differs from the last one shown; a step never reached is
+  dimmed). A loop is a bracketed "repeat" region closed by "until the item has" and the
+  checklist (the step's `check`), then the item once it is done; a branch is "if the
+  item has" with its checklist and one arm per answer; a `restart` is a row pointing
+  back; the finished item closes the board. Hovering a row highlights its statement in
+  the editor, clicking one moves the cursor there, and the cursor marks the row it is
+  in. While the guide does not parse the last board stays, dimmed.
+- `src/icons/*.png`: the currency icons, copied from the wiki by
+  `scripts/fetch-icons.mjs` (one file per method, keyed by its words joined with
+  dashes; the page falls back to the first word, then to a lettered glyph). The game's
+  CDN serves only the classic orbs under a public path, which is why the wiki's copies
+  are the source; `QUESTIONS.md` Q46 holds the ruling.
 - `src/main.ts`: the page: the example guides (`examples/*.craft`, picked from a menu), the
-  chart pane bound to the editor both ways, a problems panel that jumps to a
+  storyboard bound to the editor both ways, a problems panel that jumps to a
   finding (and is absent when there is none), a format button, a handle that resizes the sidebar (the width is kept in the
   browser for the next visit), the data provenance in the header, and `window.hinekora`
   (`editor`, `monaco`, `registry`) for the browser console.
@@ -861,7 +866,8 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/data/src/{load,bundle,adapter}.ts` + `scripts/ingest-poe1.mjs` | data load (disk in `load`, pure in `bundle`) + ingest                                              |
 | `editors/playground/src/{main,monaco,language,providers,convert}.ts`     | the browser playground: Monaco bound to the language service                                       |
 | `editors/playground/src/item-card.ts`                                    | the item drawn in the game's style from `itemView`                                                 |
-| `editors/playground/src/chart.ts`                                        | the flow chart pane: Mermaid draws the core's `flowchart`, bound to the editor, the detail panel   |
+| `editors/playground/src/storyboard.ts`                                   | the storyboard pane: the item after every step, loops and branches as regions, bound to the editor |
+| `editors/playground/scripts/fetch-icons.mjs`                             | copies the currency icons from the wiki into `src/icons/`                                          |
 | `packages/core/src/render/item.ts`                                       | `itemView`, `renderItemText`: the item as a player reads it, in the game's copy layout             |
 | `packages/core/src/render/walkthrough.ts`                                | `walkthrough`, `stepDelta`: the guide as steps with the item before and after each                 |
 | `packages/core/src/render/flowchart.ts`                                  | `flowchart`: a walkthrough as Mermaid flowchart text, node ids mapped to statements                |

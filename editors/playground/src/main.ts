@@ -1,6 +1,7 @@
 /**
  * The page: fetch the catalog, build the registry, open Monaco on an example
- * guide, and keep the problems panel in step with the checker.
+ * guide, and keep the storyboard and the problems panel in step with the
+ * checker.
  */
 import { adaptPoe1, type RawPoe1, registryOf } from "@hinekora/data/browser";
 import baseItemsUrl from "@hinekora/data/data/poe1/base_items.json?url";
@@ -17,7 +18,7 @@ import type { SourceSpan } from "@hinekora/core";
 import { toMonacoPosition, toMonacoRange } from "./convert.js";
 import { LANGUAGE_ID, registerLanguage, THEME_ID } from "./language.js";
 import { publishDiagnostics, registerProviders } from "./providers.js";
-import { createChartPane } from "./chart.js";
+import { createStoryboard } from "./storyboard.js";
 
 // Monaco's own worker (bracket matching, word suggestions); the language
 // service runs on the page, so no language worker is needed.
@@ -118,11 +119,11 @@ async function main(): Promise<void> {
     const cursorOffset = (): number =>
         model.getOffsetAt(editor.getPosition() ?? { lineNumber: 1, column: 1 });
 
-    // The chart and the editor point at each other: a node hovered
-    // highlights its statement, a node chosen moves the cursor, the cursor
-    // marks its node and opens its details.
+    // The storyboard and the editor point at each other: a step hovered
+    // highlights its statement, a step chosen moves the cursor, the cursor
+    // marks its step.
     const hovered = editor.createDecorationsCollection();
-    const pane = createChartPane(el<HTMLElement>("walkthrough"), {
+    const pane = createStoryboard(el<HTMLElement>("walkthrough"), {
         onSelect(offset) {
             editor.setPosition(model.getPositionAt(offset));
             editor.revealPositionInCenterIfOutsideViewport(model.getPositionAt(offset));
@@ -152,7 +153,8 @@ async function main(): Promise<void> {
     const refresh = (): void => {
         pending = undefined;
         showProblems(editor, publishDiagnostics(model, registry));
-        void pane.render(model.getValue(), registry).then(() => pane.setActive(cursorOffset()));
+        pane.render(model.getValue(), registry);
+        pane.setActive(cursorOffset());
     };
     refresh();
     model.onDidChangeContent(() => {

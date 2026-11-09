@@ -29,14 +29,14 @@ interface StepBase {
 export type Step =
     | (StepBase & {
           readonly kind: "operation";
+          /** The method's words ("harvest", "reforge"); an icon or colour keys on them. */
+          readonly words: readonly string[];
           /** The method's words as written, with its arguments. */
           readonly text: string;
           /** The currency or method by its display name ("Chaos Orb"). */
           readonly title: string;
           /** What the method does, from the method table. */
           readonly detail: string;
-          /** The alias that keys an icon or colour ("chaos", "harvest"). */
-          readonly key: string;
       })
     | (StepBase & { readonly kind: "call"; readonly text: string })
     | (StepBase & {
@@ -164,10 +164,10 @@ export function walkthrough(craft: Craft, result: CheckResult, registry: Registr
                     {
                         ...base,
                         kind: "operation",
+                        words: s.words,
                         text: [...s.words, ...s.args.map(operationArgText)].join(" "),
                         title,
                         detail: method === undefined ? "" : detailOf(method.doc),
-                        key: s.words[0] ?? "",
                     },
                 ];
             }

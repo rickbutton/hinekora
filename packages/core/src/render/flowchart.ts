@@ -122,7 +122,7 @@ export function flowchart(w: Walkthrough): Flowchart {
             case "operation": {
                 // A currency by its display name, any other method as written.
                 const text = s.text.startsWith(s.title) ? s.text : s.title;
-                const id = declare(fresh(), `[${label(text)}]:::${s.key}`, node);
+                const id = declare(fresh(), `[${label(text)}]:::${s.words[0] ?? "method"}`, node);
                 return { entry: id, exits: [{ id }] };
             }
             case "call": {

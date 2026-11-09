@@ -16,7 +16,6 @@
         "@hinekora/data": "workspace:*",
         "@hinekora/lsp": "workspace:*",
         "@hinekora/parser": "workspace:*",
-        "mermaid": "^11.17.2",
         "monaco-editor": "^0.57.0",
         "vscode-languageserver-types": "3.17.5"
     },

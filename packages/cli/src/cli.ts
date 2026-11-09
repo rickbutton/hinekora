@@ -4,19 +4,23 @@
  *
  *   hinekora check <file.craft>
  *   hinekora fmt [--check] <file.craft>
+ *   hinekora chart <file.craft>
  *
  * `check` loads the bundled PoE1 catalog, prints its provenance, and checks
  * the file. `fmt` rewrites the file in the house style, or with `--check`
- * only reports whether it already is.
- * Exit codes: 0 = checks pass / formatted, 1 = craft has errors / needs
- * formatting, 2 = usage / I/O error.
+ * only reports whether it already is. `chart` prints the guide as a Mermaid
+ * flowchart, for a README or a wiki page to embed.
+ * Exit codes: 0 = checks pass / formatted / charted, 1 = craft has errors /
+ * needs formatting / does not parse, 2 = usage / I/O error.
  */
 import { readFileSync, writeFileSync } from "node:fs";
+import { check as checkCraft, flowchart, walkthrough } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
-import { formatCraft } from "@hinekora/parser";
+import { formatCraft, parse } from "@hinekora/parser";
 import { checkSource } from "./check.js";
 
-const USAGE = "usage: hinekora check <file.craft> | hinekora fmt [--check] <file.craft>\n";
+const USAGE =
+    "usage: hinekora check <file.craft> | hinekora fmt [--check] <file.craft> | hinekora chart <file.craft>\n";
 
 function tryRead(file: string): string | undefined {
     try {
@@ -62,9 +66,26 @@ function fmt(file: string, checkOnly: boolean): number {
     return 0;
 }
 
+function chart(file: string): number {
+    const source = tryRead(file);
+    if (source === undefined) return 2;
+    const parsed = parse(source);
+    if (!parsed.ok) {
+        process.stderr.write(
+            `hinekora: ${file} does not parse; run 'hinekora check' for the error\n`,
+        );
+        return 1;
+    }
+    const registry = registryOf(loadDefaultPoe1());
+    const result = checkCraft(parsed.craft, { registry });
+    process.stdout.write(`${flowchart(walkthrough(parsed.craft, result, registry)).text}\n`);
+    return 0;
+}
+
 function main(argv: readonly string[]): number {
     const [cmd, ...rest] = argv.slice(2);
     if (cmd === "check" && rest.length === 1) return check(rest[0]!);
+    if (cmd === "chart" && rest.length === 1) return chart(rest[0]!);
     if (cmd === "fmt") {
         const checkOnly = rest[0] === "--check";
         const file = checkOnly ? rest[1] : rest[0];

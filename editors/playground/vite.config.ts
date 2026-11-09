@@ -5,10 +5,10 @@ export default defineConfig({
     // static host's subpath.
     base: "./",
     build: {
-        // Monaco and Mermaid each get a chunk of their own, so the page's own
-        // code is the only one that changes between deploys and the browser
-        // keeps the big ones cached. The libraries are large by nature; the
-        // size warning adds nothing.
+        // Monaco gets a chunk of its own, the other libraries another, so the
+        // page's own code is the only chunk that changes between deploys and
+        // the browser keeps the big ones cached. Monaco is large by nature;
+        // the size warning adds nothing.
         chunkSizeWarningLimit: 5000,
         rollupOptions: {
             output: {

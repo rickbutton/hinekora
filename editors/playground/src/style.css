@@ -287,152 +287,152 @@ main {
     text-align: left;
 }
 
-/* --- the chart ------------------------------------------------------------------ */
+/* --- the storyboard ------------------------------------------------------------- */
 
 #walkthrough {
-    padding: 10px 12px;
+    padding: 10px 12px 14px;
     border-bottom: 1px solid var(--border);
-}
-
-#walkthrough .caption {
-    color: var(--muted);
-    font-size: 12px;
-    margin: 0 0 8px;
-}
-
-.chart-scroll {
-    overflow-x: auto;
-    padding-bottom: 6px;
-}
-
-.chart {
-    display: flex;
-    justify-content: center;
     transition: opacity 0.2s;
 }
 
-.chart.stale {
+#walkthrough.stale {
     opacity: 0.4;
     pointer-events: none;
 }
 
-.chart svg {
-    display: block;
+#walkthrough .frame {
+    margin: 4px 0 4px 36px;
 }
 
-.chart svg .node {
-    cursor: pointer;
+#walkthrough .frame .caption {
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin: 6px 0 3px;
 }
 
-.chart svg .node:hover > *:first-child {
-    filter: brightness(1.25);
-}
-
-.chart svg .node.active > *:first-child {
-    stroke: #ffff77 !important;
-    stroke-width: 2.5px !important;
-}
-
-.chart svg .node.changed > *:first-child {
-    animation: node-flash 1.2s ease-out 1;
-}
-
-@keyframes node-flash {
-    0% {
-        filter: brightness(1.8);
-    }
-    100% {
-        filter: brightness(1);
-    }
-}
-
-.chart svg .cluster-label,
-.chart svg .cluster text {
-    font-style: italic;
-}
-
-.badge {
-    flex: none;
-    min-width: 26px;
-    height: 26px;
-    padding: 0 5px;
-    border-radius: 5px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+#walkthrough .item-card {
     font-size: 12px;
-    font-weight: 700;
-    color: #111;
-    background: #9a9a9a;
+    line-height: 1.3;
 }
 
-.badge-check,
-.badge-call {
-    background: #3c3c3c;
-    color: var(--fg);
+#walkthrough .item-card .base {
+    font-size: 14px;
 }
 
-/* --- the detail panel under the chart ----------------------------------------------- */
-
-.detail {
-    margin-top: 10px;
-    border-top: 1px solid var(--border);
-    padding-top: 10px;
+#walkthrough .item-card header {
+    padding: 5px 10px 4px;
 }
 
-.detail .head {
+#walkthrough .item-card section {
+    padding: 4px 10px;
+}
+
+.step {
     display: flex;
     align-items: flex-start;
     gap: 8px;
+    padding: 6px 6px 6px 4px;
+    margin: 2px -4px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
 }
 
-.detail .titles {
+.step:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.step.active,
+.region-head.active {
+    border-color: #ffff77;
+    background: rgba(255, 255, 119, 0.06);
+}
+
+.step.unreached {
+    opacity: 0.55;
+}
+
+.icon {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
+.icon.glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: #3c3c3c;
+    color: var(--fg);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.step .body {
     min-width: 0;
+    flex: 1;
 }
 
-.detail .title {
+.step .title {
     font-weight: 600;
+    line-height: 28px;
 }
 
-.detail .text {
+.step .text {
     display: block;
     color: var(--muted);
     font-size: 12px;
+    margin-top: -6px;
     word-break: break-word;
 }
 
-.detail .detail-text {
-    margin: 4px 0 0;
+.step .detail,
+.step .note {
     color: var(--muted);
     font-size: 12px;
+    margin-top: 2px;
 }
 
-.detail .delta {
+.step.restart .title,
+.step.start .title {
+    font-weight: 500;
+    color: var(--muted);
+}
+
+.step.start .title {
+    color: var(--fg);
+}
+
+.delta {
     list-style: none;
-    margin: 6px 0 0;
+    margin: 4px 0 0;
     padding: 0;
     font-size: 12px;
 }
 
-.detail .delta li::before {
+.delta li::before {
     display: inline-block;
     width: 1em;
     font-weight: 700;
 }
-.detail .delta .added {
+.delta .added {
     color: #8fd18f;
 }
-.detail .delta .added::before {
+.delta .added::before {
     content: "+";
 }
-.detail .delta .removed {
+.delta .removed {
     color: #e08a8a;
 }
-.detail .delta .removed::before {
+.delta .removed::before {
     content: "−";
 }
 
-.detail .problems {
+.problems {
     list-style: none;
     margin: 6px 0 0;
     padding: 6px 8px;
@@ -441,54 +441,114 @@ main {
     white-space: pre-wrap;
 }
 
-.detail .checklist,
-.detail .checklist ul {
-    list-style: none;
-    margin: 6px 0 0;
-    padding: 0;
-    font-size: 13px;
+/* a loop or a branch: a bracketed region with its question */
+
+.region {
+    margin: 6px 0;
+    border-left: 2px solid #6b6240;
+    border-radius: 6px 0 0 6px;
 }
 
-.detail .checklist .req {
-    padding: 2px 0 2px 22px;
+.region.branch {
+    border-left-color: #4e6a8a;
+}
+
+.region-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 6px 6px 6px;
+    margin: 0 -4px 0 -2px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+
+.region-head:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.region-head .title,
+.region-foot .title {
+    font-weight: 600;
+    color: #c8a35a;
+}
+
+.region.branch .region-head .title {
+    color: #9cbbe0;
+}
+
+.region-head .checklist {
+    flex-basis: 100%;
+    margin-left: 36px;
+}
+
+.region-body {
+    padding-left: 10px;
+}
+
+.region-foot {
+    padding: 4px 6px 6px 12px;
+}
+
+.arm {
+    padding-left: 10px;
+    margin-top: 4px;
+}
+
+.arm-label {
+    color: #9cbbe0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding-left: 2px;
+}
+
+.checklist,
+.checklist ul {
+    list-style: none;
+    margin: 4px 0 0;
+    padding: 0;
+    font-size: 12px;
+}
+
+.checklist .req {
+    padding: 1px 0 1px 20px;
     position: relative;
 }
 
-.detail .checklist .req::before {
+.checklist .req::before {
     content: "☐";
     position: absolute;
     left: 2px;
     color: var(--muted);
 }
 
-.detail .checklist .req.group {
+.checklist .req.group {
     padding-left: 0;
 }
 
-.detail .checklist .req.group::before {
+.checklist .req.group::before {
     content: none;
 }
 
-.detail .checklist .req.negated {
+.checklist .req.negated {
     color: #e08a8a;
 }
 
-.detail .checklist .any-label {
+.checklist .any-label {
     display: block;
     color: var(--muted);
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    padding-left: 22px;
+    padding-left: 20px;
 }
 
-.detail .checklist .any {
-    margin-left: 12px;
+.checklist .any {
+    margin-left: 10px;
     border-left: 2px solid #5a5340;
-}
-
-.detail .item-card {
-    margin-top: 6px;
 }
 
 /* the statement the hovered node points at, in the editor */

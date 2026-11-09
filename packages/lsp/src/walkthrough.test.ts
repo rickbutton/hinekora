@@ -30,7 +30,7 @@ describe("the walkthrough", () => {
         expect(regal.title).toBe("Regal Orb");
         expect(regal.text).toBe("regal");
         expect(regal.detail).toMatch(/^Upgrades a magic item/);
-        expect(regal.key).toBe("regal");
+        expect(regal.words).toEqual(["regal"]);
         expect(itemView(regal.before!, registry).rarities).toEqual(["magic"]);
         expect(itemView(regal.after!, registry).rarities).toEqual(["rare"]);
         expect(regal.problems).toEqual([]);

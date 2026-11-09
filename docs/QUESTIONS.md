@@ -384,6 +384,7 @@ colour-coded badges drawn by the page.
 **Assumed meanwhile:** the badges (the `badge-<word>` styles in
 `editors/playground/src/style.css`).
 **Answer:** Rick ruled (2026-11-08): the game's CDN hosts the icons for bases and currencies under hashed URLs that its APIs return (the build sites use those); derive them if we can, otherwise copy the currency icons from the wiki into an images or resources folder of the playground for now.
+**Applied:** the CDN's public path (`web.poecdn.com/image/Art/2DItems/Currency/<name>.png`) answers for the classic orbs only (the eldritch, tainted, veiled, harvest and bestiary currencies are not under it), and the ingested data carries no art paths, so the icons are copied from the wiki into `editors/playground/src/icons/` by `editors/playground/scripts/fetch-icons.mjs`, one per method.
 
 ### Q41 · game probe · open
 
