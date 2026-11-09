@@ -1,5 +1,3 @@
-# WAITS ON: an inner loop analysed from the outer loop's joined invariant, and the same group check (checker-findings.md B10, B9).
-#
 # Lock one side, reforge the other: the Harvest loop behind most finished rares.
 #
 # "Suffixes Cannot Be Changed" is itself a crafted prefix; a Harvest reforge
@@ -25,4 +23,6 @@ until has "maximum life" t1 and prefixCount <= 2 {
     harvest reforge "life"
 }
 
-bench "maximum mana"
+if not has "maximum mana" {
+    bench "maximum mana"
+}

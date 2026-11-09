@@ -1,4 +1,4 @@
-# WAITS ON: a bench craft's group check that a `not has` branch does not clear (checker-findings.md B9).
+# WAITS ON: a way to name one side's modifier, or a group-level `has`, for the guard over a wand's caster damage group (checker-findings.md B12).
 #
 # Essence spam, make room, then the bench: the league-start minion wand.
 #
@@ -30,9 +30,13 @@ until prefixCount <= 1 and suffixCount <= 2 {
 
 bench "can have up to 3 crafted modifiers"
 
-# The essence rolls may already have given either prefix, and an item holds one
-# modifier per group, so each bench craft is guarded the way a guide says
-# "unless you already have it".
+# The essence rolls may already have given a prefix of either group, and an item
+# holds one modifier per group: a wand's spell, fire, cold and lightning damage
+# prefixes, and on a base that rolls minion modifiers its minion damage prefix,
+# are one group; its added fire, cold and lightning damage to spells another.
+# The guard a guide means, "unless you already have one of these", needs each
+# member named, and "increased fire damage" on a wand is both that prefix and a
+# suffix.
 if not has "spell damage" {
     bench "spell damage"
 }

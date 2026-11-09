@@ -438,6 +438,28 @@ family for everything.
 the surface doc §1, §3 and §5).
 **Answer:**
 
+### Q51 · decision · open
+
+**Asked:** 2026-11-08
+**Question:** how a guide names one modifier of a group when the wording is shared by
+both sides. On a wand "increased fire damage" is a caster prefix (the group of the
+bench's spell damage) and a suffix of its own group, so the guard a guide means by
+"bench spell damage unless you already have a caster damage prefix" cannot be written:
+`not has "increased fire damage"` is ambiguous, and the clash message names the modifier
+by that very wording (`docs/research/checker-findings.md` B12).
+**Options:** (a) a side on the predicate, `has prefix "fire damage"`, the item block's
+words; (b) a group predicate, `has group "spell damage"`, true when the item may carry
+any modifier of the named modifier's group, which is exactly what the bench check tests,
+so the guard is one clause, `if not has group "spell damage" { bench "spell damage" }`;
+(c) both.
+**Recommendation:** (b) first: it is what every "unless you already have one" guard
+means, one clause instead of five, and it needs no new word in the item block; (a) when
+a guide needs one side's version of a shared wording for its own sake.
+**Assumed meanwhile:** neither; the essence wand stays in `examples/future/`
+(`essence-minion-wand.craft`), and the clash message lists the group's modifiers so a
+guard over unambiguous names can be written today.
+**Answer:**
+
 ---
 
 ## Resolved

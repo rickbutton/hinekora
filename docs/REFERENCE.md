@@ -85,6 +85,7 @@ examples/                    - the guide suite; every file here checks clean (`p
   influence-merge.craft      - a Redeemer receiver merged with an Awakener's Orb.
   matron-metamod.craft       - the Wild Bristle Matron's random metamod made deterministic.
   eldritch-gloves.craft      - a fractured base, essences, an eldritch annul to make room, embers for the implicit.
+  metamod-harvest-loop.craft - "Suffixes Cannot Be Changed" and a Harvest reforge, round until the life is T1.
   future/                    - recipes that wait on a feature, each headed by which; not tested.
 docs/
   REFERENCE.md, ARCHITECTURE.md, ROADMAP.md, item-model.md, QUESTIONS.md + the two design docs
