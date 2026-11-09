@@ -13,11 +13,12 @@ import { withMetamodEffects } from "../model/metamods.js";
 import { emptyItem } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
 import { pool } from "../pool/pool.js";
-import type {
-    BenchCraft,
-    EldritchImplicitSpec,
-    EssenceSpec,
-    FossilSpec,
+import {
+    type BenchCraft,
+    CORRUPTED_ESSENCE_TIER,
+    type EldritchImplicitSpec,
+    type EssenceSpec,
+    type FossilSpec,
 } from "../model/sources.js";
 import {
     buildTypeIndex,
@@ -626,12 +627,22 @@ export function buildRegistry(data: RegistryData): Registry {
             // Match against the FULL name so a bare type and a full name both
             // work; a tier narrows to that rung AND rejects a name that
             // disagrees with it ("Deafening…" + t2 → no match).
-            const matches = essences.filter((e) => {
-                if (tier !== undefined && e.tier !== ladderOf(tier)) return false;
+            const named = essences.filter((e) => {
                 const tokens = new Set(normalizeText(e.name));
                 return q.every((w) => tokens.has(w));
             });
+            const matches =
+                tier === undefined ? named : named.filter((e) => e.tier === ladderOf(tier));
             if (matches.length === 1) return found(matches[0]!);
+            // A corrupted essence is its ladder's one rung, so `t1` names it too.
+            if (
+                matches.length === 0 &&
+                tier === 1 &&
+                named.length === 1 &&
+                named[0]!.tier === CORRUPTED_ESSENCE_TIER
+            ) {
+                return found(named[0]!);
+            }
             if (matches.length === 0) return fail({ kind: "unknownEssence", name });
             return fail({ kind: "ambiguous", name, candidates: matches.map((e) => e.name) });
         },

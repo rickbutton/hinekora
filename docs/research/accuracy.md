@@ -201,8 +201,8 @@ not modelled, by design.
 ## Language limitations met (not accuracy findings)
 
 - `bench "cat"`: the bench's level-20 Aspect crafts are not offered (`QUESTIONS.md` Q23).
-- `essence "delirium" t1` is "Unknown essence"; the corrupted essences take their full
-  name (`essence "Essence of Delirium"`).
+- `essence "delirium" t1` was "Unknown essence"; a corrupted essence now takes `t1` or no
+  tier as well as its full name.
 - Harvest "reforge more/less likely", "keep prefixes/suffixes", the lucky divines and the
   Hinekora's Lock preview are deferred (`operations.md`).
 

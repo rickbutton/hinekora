@@ -135,6 +135,10 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         // Full name + a matching tier is fine; a bare type without one is ambiguous.
         expect(registry.resolveEssence("Deafening Essence of Greed", 1).ok).toBe(true);
         expect(registry.resolveEssence("greed").ok).toBe(false);
+        // A corrupted essence has one rung, so it takes `t1` or no tier.
+        expect(name(registry.resolveEssence("delirium"))).toBe("Essence of Delirium");
+        expect(name(registry.resolveEssence("delirium", 1))).toBe("Essence of Delirium");
+        expect(registry.resolveEssence("delirium", 2).ok).toBe(false);
         // Full name + a DISAGREEING tier does not silently resolve.
         expect(registry.resolveEssence("Deafening Essence of Greed", 2).ok).toBe(false);
     });
