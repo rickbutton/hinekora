@@ -389,6 +389,19 @@ describe("a declared bench-crafted mod counts toward the crafted limit", () => {
         expect(guaranteed(r)).not.toContain(PROTECT_PREFIXES_CARRIER.type);
     });
 
+    it("an annul under a cannot-roll metamod takes nothing off a side it cannot reach", () => {
+        // The one prefix is an attack modifier the metamod shields, so only the
+        // metamod itself can go: the prefix count stands, the suffix empties.
+        const c = craft(rareRing([ATTACK_PREFIX.id], [CANNOT_ROLL_ATTACK_CARRIER.id]), [
+            op("annul"),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.counts.prefix).toEqual([1, 1]);
+        expect(r.finalState!.counts.suffix).toEqual([0, 0]);
+        expect(guaranteed(r)).toContain(ATTACK_PREFIX.type);
+    });
+
     it("the declared metamod's effect is active from the start", () => {
         const c = craft(rareRing(["T1 Life"], [PROTECT_PREFIXES_CARRIER.id]), [op("annul")]);
         const r = check(c, ctx);

@@ -1616,32 +1616,41 @@ function removeOne(
     shield: Shield | null,
     registry: Registry,
 ): AItem {
-    const total: Range = [Math.max(0, a.counts.total[0] - 1), Math.max(0, a.counts.total[1] - 1)];
-    const onlyPrefix = allowed.size === 1 && allowed.has("prefix");
-    const onlySuffix = allowed.size === 1 && allowed.has("suffix");
-    const lessOne = (r: Range): Range => [Math.max(0, r[0] - 1), Math.max(0, r[1] - 1)];
-    const maybeLessOne = (r: Range): Range => [Math.max(0, r[0] - 1), r[1]];
-    const prefix: Range = onlyPrefix
-        ? lessOne(a.counts.prefix)
-        : onlySuffix
-          ? a.counts.prefix
-          : maybeLessOne(a.counts.prefix);
-    const suffix: Range = onlySuffix
-        ? lessOne(a.counts.suffix)
-        : onlyPrefix
-          ? a.counts.suffix
-          : maybeLessOne(a.counts.suffix);
-
     // A guarantee survives only if the removed affix could not have been it: one
     // in a generation the removal cannot reach (protected), one the shield covers,
     // or a fractured (locked) one. Exclusions always survive (a removal never adds
     // a mod), and so do the fracture facts.
+    const guaranteed = guaranteedTypes(a);
     const surviving = new Set<TypeId>();
-    for (const t of guaranteedTypes(a)) {
+    for (const t of guaranteed) {
         if (!allowed.has(genOf(a, registry, t))) surviving.add(t);
     }
     if (shield) for (const t of shield.types) surviving.add(t);
     for (const t of fracturedTypes(a)) surviving.add(t);
+
+    // A side loses a modifier only where it holds one the removal can reach: a
+    // side whose every modifier is a surviving one (shielded, fractured) keeps
+    // its count, so an annul under "Cannot roll Caster Modifiers" on a wand
+    // whose one prefix is a caster modifier can only take the metamod itself.
+    const mayLose = (gen: Gen): boolean => {
+        if (!allowed.has(gen)) return false;
+        const max = gen === "prefix" ? a.counts.prefix[1] : suffixRange(a)[1];
+        let kept = 0;
+        for (const t of surviving) {
+            if (!guaranteed.has(t)) continue;
+            const sides = sidesOf(a, registry, t);
+            if (sides.size === 1 && sides.has(gen)) kept++;
+        }
+        return max - kept > 0;
+    };
+    const losable = (["prefix", "suffix"] as const).filter(mayLose);
+    const lessOne = (r: Range): Range => [Math.max(0, r[0] - 1), Math.max(0, r[1] - 1)];
+    const maybeLessOne = (r: Range): Range => [Math.max(0, r[0] - 1), r[1]];
+    const side = (gen: Gen, r: Range): Range =>
+        losable.length === 2 ? maybeLessOne(r) : losable[0] === gen ? lessOne(r) : r;
+    const total: Range = losable.length === 0 ? a.counts.total : lessOne(a.counts.total);
+    const prefix = side("prefix", a.counts.prefix);
+    const suffix = side("suffix", a.counts.suffix);
     // Of the guaranteed modifiers the removal can reach, all but one remain; and
     // when every modifier it can reach is one of them, one of them is gone.
     const atRisk = [...guaranteedTypes(a)].filter((t) => !surviving.has(t));
