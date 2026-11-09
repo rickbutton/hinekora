@@ -89,6 +89,8 @@ export interface ItemView {
     readonly base: string;
     readonly itemClass: string;
     readonly ilvl: number;
+    /** The memory strands the item may hold, fewest to most; absent when none. */
+    readonly strands?: Range;
     readonly rarities: readonly Rarity[];
     readonly implicits: readonly ImplicitView[];
     readonly prefixes: readonly ModGroup[];
@@ -171,6 +173,14 @@ export function rollSpan(texts: readonly string[]): string {
 
 const oneLine = (text: string): string => text.replace(/\n/g, " / ");
 
+/** The text with its first span narrowed to `value`: "+(70-84)" at [75, 84] is "+(75-84)". */
+function withValue(text: string, value: Range): string {
+    const [lo, hi] = value;
+    const shown = lo === hi ? String(lo) : `(${lo}-${hi})`;
+    const re = /\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)/;
+    return re.test(text) ? text.replace(re, shown) : text;
+}
+
 /** The modifier view for a present type, pinned to `pin` when a disjunction names its tier. */
 function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: ModId): ModView {
     const tags = influenceTagsAny(a, registry);
@@ -184,6 +194,10 @@ function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: Mod
               })
             : [...rollable];
     const texts = mods.map((m) => m.text).filter((t): t is string => t !== undefined);
+    // A value the guide has proven ("life 110 or more") narrows the first span.
+    const known = a.values.get(type);
+    const span = texts.length > 0 ? oneLine(rollSpan(texts)) : registry.typeLabel(type);
+    const text = known === undefined ? span : withValue(span, known);
     const numbers = mods
         .map((m) => rollable.findIndex((r) => r.id === m.id) + 1)
         .filter((n) => n > 0);
@@ -191,7 +205,7 @@ function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: Mod
     for (const m of mods) for (const t of m.implicitTags) tagSet.add(tagLabel(t));
     return {
         gen,
-        text: texts.length > 0 ? oneLine(rollSpan(texts)) : registry.typeLabel(type),
+        text,
         ...(mods.length === 1 && mods[0]!.name !== undefined && { name: mods[0]!.name }),
         ...(numbers.length > 0 && {
             tier: [Math.min(...numbers), Math.max(...numbers)] as Range,
@@ -310,6 +324,7 @@ export function itemView(a: AItem, registry: Registry): ItemView {
         base: baseLabel(a.base),
         itemClass: itemClassLabel(a.base.itemClass),
         ilvl: a.ilvl,
+        ...(a.strands[1] > 0 && { strands: a.strands }),
         rarities: RARITY_ORDER.filter((r) => a.rarities.has(r)),
         implicits,
         prefixes: groups("prefix"),
@@ -337,6 +352,11 @@ export const SIDE_NAME: Readonly<Record<EldritchSide, string>> = {
     exarch: "Searing Exarch",
     eater: "Eater of Worlds",
 };
+
+/** "82", or "40-82" when some may have been spent: the memory strands in words. */
+export function strandsText(r: Range, dash = "-"): string {
+    return r[0] === r[1] ? String(r[0]) : `${r[0]}${dash}${r[1]}`;
+}
 
 /** The short name players use for each side ("a Grand Exarch implicit"). */
 export const SIDE_SHORT: Readonly<Record<EldritchSide, string>> = {
@@ -410,7 +430,10 @@ export function renderItemText(v: ItemView): string {
         `Rarity: ${v.rarities.map((r) => RARITY_WORD[r]).join(" or ")}`,
         v.base,
     ]);
-    sections.push([`Item Level: ${v.ilvl}`]);
+    sections.push([
+        `Item Level: ${v.ilvl}`,
+        ...(v.strands !== undefined ? [`Memory Strands: ${strandsText(v.strands)}`] : []),
+    ]);
 
     if (v.implicits.length > 0) {
         sections.push(

@@ -152,11 +152,14 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
   references, rename and hover all read this one table.
 - **render/**: the labels diagnostics and hover show (`modLabel`, `baseLabel`), and the
   item as a player reads it (`item.ts`). `itemView(a, registry)` is a view model shaped
-  like the game's tooltip: the base, class and level, the rarities, the eldritch
+  like the game's tooltip: the base, class and level, the memory strands when the item
+  has any (`strands`, fewest to most; "Memory Strands: 82" in the copy text), the
+  rarities, the eldritch
   implicits (each side's tier names and the wordings of its possible types at those
   tiers, taken from `eldritchPool`, since a family's text changes with the tier; empty
   when any implicit of the side may be there), the modifiers by side (each with its stat text, its affix name and tier when
-  the row is known, a tier range and a roll span across the rows it may be otherwise, its
+  the row is known, a tier range and a roll span across the rows it may be otherwise, the
+  span narrowed to the value a `has "<mod>" >= n` proved (`AItem.values`), its
   category tags, and whether it is fractured or crafted), "one of" groups for the
   disjunctions (members pinned to their tier when the clause named one, exact when no
   more could fit), one remainder line for the modifiers whose identity is unknown
@@ -173,7 +176,8 @@ these suffix modifiers }`, `{ 1-3 additional prefix or suffix modifiers }`,
   `Possibly: Corrupted`, `Without: …`). The hover, the CLI and the playground's card all
   read the view, so they cannot disagree; `renderState` stays the one-line summary for
   diagnostics. `walkthrough.ts` turns a craft and its check result into the guide as a
-  player follows it (`walkthrough(craft, result, registry)`): the declared item, then a
+  player follows it (`walkthrough(craft, result, registry)`): the declared item and the
+  second items (`donors`, from `donorItems`), then a
   `Step` per statement with the item before and after it from the trace, matched by
   statement kind and start offset, the checker's findings owned by the innermost
   statement that contains them, loops as blocks with their exit both as written and as a

@@ -9,7 +9,7 @@
 import type { Arg, Craft, OperationArg, Pred, Stmt } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import type { AItem } from "../check/astate.js";
-import type { CheckResult, TraceEntry } from "../check/check.js";
+import { type CheckResult, donorItems, type TraceEntry } from "../check/check.js";
 import { describePred } from "../check/diagnostics.js";
 import { findMethod } from "../check/methods.js";
 import type { Registry } from "../resolve/registry.js";
@@ -60,6 +60,12 @@ export type Step =
 export interface Walkthrough {
     /** The item block and the item it declares. */
     readonly start: { readonly span: SourceSpan; readonly item?: AItem };
+    /** The second items (`with <name> { … }`), each as declared, in order. */
+    readonly donors: readonly {
+        readonly name: string;
+        readonly span: SourceSpan;
+        readonly item?: AItem;
+    }[];
     readonly steps: readonly Step[];
 }
 
@@ -206,11 +212,16 @@ export function walkthrough(craft: Craft, result: CheckResult, registry: Registr
         }
     };
 
+    const donorStates = craft.donors.length > 0 ? donorItems(craft, registry) : undefined;
     return {
         start: {
             span: craft.item.span,
             ...(startItem !== undefined && { item: startItem }),
         },
+        donors: craft.donors.map((d) => {
+            const item = donorStates?.get(d.name);
+            return { name: d.name, span: d.span, ...(item !== undefined && { item }) };
+        }),
         steps: steps(craft.body),
     };
 }
