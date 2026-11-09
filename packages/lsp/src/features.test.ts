@@ -488,17 +488,17 @@ until has "fire resistance" t1 { essence "greed" t1 }`;
 
     it("tells a loop's rounds and a step's expected spend, priced by the snapshot", () => {
         const loop = getHover(src, src.indexOf("until") + 1, registry, prices);
-        expect(loop!).toMatch(/_Cost:_ about \d+(\.\d+)? rounds, \d+(\.\d+)?% end it each time\./);
+        expect(loop!).toMatch(/_Cost:_ ~\d+(\.\d+)? rounds, \d+(\.\d+)?% chance per round\./);
         const step = getHover(src, src.indexOf("essence") + 1, registry, prices);
         expect(step!).toMatch(
-            /_Cost:_ expected \d+(\.\d+)? Deafening Essence of Greed \(about \d+(\.\d+)? chaos\)\./,
+            /_Cost:_ expected \d+(\.\d+)? Deafening Essence of Greed \(~\d+(\.\d+)? chaos\)\./,
         );
     });
 
     it("sums the guide on the item block, and prices nothing without a snapshot", () => {
         const total = getHover(src, src.indexOf("item") + 1, registry, prices);
         expect(total!).toMatch(
-            /_Expected spend for the guide:_ about \d+(\.\d+)? chaos, \d+(\.\d+)? divine at \S+ prices of \d{4}-\d{2}-\d{2}\./,
+            /_Expected spend for the guide:_ ~\d+(\.\d+)? chaos, ~\d+(\.\d+)? divine at \S+ prices of \d{4}-\d{2}-\d{2}\./,
         );
         const bare = getHover(src, src.indexOf("essence") + 1, registry);
         expect(bare!).toMatch(/_Cost:_ expected \d+(\.\d+)? Deafening Essence of Greed\./);

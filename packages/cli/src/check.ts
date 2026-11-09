@@ -19,6 +19,8 @@ import {
     type StepCost,
     walkthrough,
     plural,
+    approx,
+    roundsText,
 } from "@hinekora/core";
 import { parse } from "@hinekora/parser";
 import { formatDiagnostic } from "./format.js";
@@ -110,7 +112,7 @@ export function costSource(
                     ? ""
                     : `, ${figure(report.chaosRange.low)} to ${figure(report.chaosRange.high)} by what the item may hold,`;
             out.push(
-                `About ${figure(report.chaos)} Chaos Orbs (${figure(report.divine)} Divine Orbs)${spread} at ${prices.league} prices of ${date}.`,
+                `${approx(report.chaos)} Chaos Orbs (${approx(report.divine)} Divine Orbs)${spread} at ${prices.league} prices of ${date}.`,
             );
         } else {
             out.push(
@@ -143,7 +145,7 @@ function stepFigure(s: StepCost, prices: Prices | undefined): string {
         b === undefined ? "" : ` [${show(b.low)} to ${show(b.high)}]`;
     if (s.attempts !== undefined) {
         parts.push(
-            `${figure(s.attempts.expected)} rounds${spread(s.attemptsRange, figure)} (${percentage(s.attempts.chance)} per round)`,
+            `${roundsText(s.attempts.expected, s.attempts.chance)}${spread(s.attemptsRange, figure)}`,
         );
     }
     if (s.branch !== undefined) {

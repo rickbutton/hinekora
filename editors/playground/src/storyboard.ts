@@ -46,6 +46,9 @@ import {
     pluralRange,
     rangeText,
     rarityText,
+    approx,
+    costIsObvious,
+    roundsText,
 } from "@hinekora/core";
 import { checkCached, costCached, parseCached } from "@hinekora/lsp";
 import { renderItemCard } from "./item-card.js";
@@ -345,7 +348,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                 h("tbody", "", ...rows),
             ),
             ...(b.chaos !== undefined && b.divine !== undefined
-                ? [h("div", "sum", `about ${figure(b.chaos)} chaos, ${figure(b.divine)} divine`)]
+                ? [h("div", "sum", `${approx(b.chaos)} chaos, ${approx(b.divine)} divine`)]
                 : []),
             ...notes,
             ...(snapshot !== undefined
@@ -379,7 +382,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
         const spend = (c: StepCost | undefined, label: string): HTMLElement[] => {
             if (c === undefined) return [];
             const lines: HTMLElement[] = [];
-            if (c.expected !== undefined && c.expected.length > 0) {
+            if (c.expected !== undefined && c.expected.length > 0 && !costIsObvious(c)) {
                 const expected = c.expected;
                 lines.push(
                     costLine(
@@ -390,7 +393,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                 h(
                                     "div",
                                     "note",
-                                    `about ${figure(c.runs)} uses over the guide${c.runsRange === undefined ? "" : ` (${figure(c.runsRange.low)} to ${figure(c.runsRange.high)} by what the item may hold)`}`,
+                                    `${approx(c.runs)} uses over the guide${c.runsRange === undefined ? "" : ` (${figure(c.runsRange.low)} to ${figure(c.runsRange.high)} by what the item may hold)`}`,
                                 ),
                             ]),
                     ),
@@ -522,7 +525,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                         c?.attempts === undefined
                             ? undefined
                             : costLine(
-                                  `about ${figure(c.attempts.expected)} rounds, ${percentage(c.attempts.chance)} end it each time`,
+                                  roundsText(c.attempts.expected, c.attempts.chance),
                                   spreadTitle(c.attemptsRange, figure),
                               );
                     // What getting through the repeat once is expected to take.
@@ -689,7 +692,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
             const list = report.total.map((p) => `${figure(p.amount)} ${p.item}`).join(", ");
             if (report.chaos !== undefined && report.divine !== undefined) {
                 el.append(
-                    `expected spend: about ${figure(report.chaos)} chaos, ${figure(report.divine)} divine`,
+                    `expected spend: ${approx(report.chaos)} chaos, ${approx(report.divine)} divine`,
                 );
                 el.title = [list, spreadTitle(report.chaosRange, (n) => `${figure(n)} chaos`)]
                     .filter((s) => s !== undefined)

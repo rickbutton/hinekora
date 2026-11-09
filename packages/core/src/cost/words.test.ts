@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Prices } from "./prices.js";
-import { figure, percentage, priceText } from "./words.js";
+import type { StepCost } from "./report.js";
+import { approx, costIsObvious, figure, percentage, priceText, roundsText } from "./words.js";
 
 describe("the cost report's words", () => {
     it("quotes figures and chances as a guide does", () => {
@@ -30,7 +31,31 @@ describe("the cost report's words", () => {
             ]),
         };
         expect(priceText(spend, snapshot)).toBe(
-            "8.8 Deafening Essence of Greed, 2 Chaos Orb (about 24 chaos)",
+            "8.8 Deafening Essence of Greed, 2 Chaos Orb (~24 chaos)",
         );
+    });
+
+    it("marks an estimate with ~ and words a repeat's rounds with their chance", () => {
+        expect(approx(24.9)).toBe("~24.9");
+        expect(roundsText(8.77, 0.114)).toBe("~8.77 rounds, 11% chance per round");
+    });
+
+    it("leaves out the cost of a step that runs once and spends one of one currency", () => {
+        const at = {
+            start: { offset: 0, line: 1, column: 1 },
+            end: { offset: 9, line: 1, column: 10 },
+        };
+        const once = (amount: number, runs = 1): StepCost => ({
+            kind: "operation",
+            span: at,
+            reached: 1,
+            runs,
+            unit: [{ item: "Regal Orb", amount }],
+            expected: [{ item: "Regal Orb", amount: amount * runs }],
+        });
+        expect(costIsObvious(once(1))).toBe(true);
+        expect(costIsObvious(once(1, 3))).toBe(false);
+        expect(costIsObvious(once(50))).toBe(false);
+        expect(costIsObvious({ ...once(1), note: "an assumed price" })).toBe(false);
     });
 });
