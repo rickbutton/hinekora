@@ -434,7 +434,7 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
             return { ...a, influences };
         }
         case "fill":
-            return fill(a, op.pool, op.count, rules, registry);
+            return fill(a, a0, op.pool, op.count, rules, registry);
         case "remove":
             switch (op.selector.kind) {
                 case "crafted":
@@ -1397,7 +1397,14 @@ function typesOf(mods: readonly Mod[]): TypeId[] {
  * the draw may be any of them; a pool narrow enough to name asserts "at least
  * one of its types is present". A bench craft raises the crafted count.
  */
-function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry: Registry): AItem {
+function fill(
+    a: AItem,
+    a0: AItem,
+    spec: PoolSpec,
+    count: FillCount,
+    rules: Rules,
+    registry: Registry,
+): AItem {
     // Upper bounds may reach the loosest caps over the rarities, lower bounds
     // only the tightest: a lower bound holds on the tightest path too.
     const { total: maxT, prefix: pCap, suffix: sCap } = capsOver(a, Math.max);
@@ -1505,7 +1512,11 @@ function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry
         spec.replacing !== undefined &&
         a.craftedTypes.has(spec.replacing)
     ) {
+        // The replacement is crafted exactly when the modifier it replaces was,
+        // so the count is the one the change started from; the removal between
+        // the two had let it fall.
         craftedTypes = new Set([...a.craftedTypes, ...drawn.types]);
+        crafted = a0.crafted;
     }
     return settled({ ...a, counts, presence, possible, tiers, values, crafted, craftedTypes });
 }

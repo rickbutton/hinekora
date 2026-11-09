@@ -306,6 +306,19 @@ export const FIRE_RESIST: Mod = mkMod({
     implicitTags: ["fire", "elemental", "resistance"],
 });
 
+/** The bench's fire resistance row, of the natural row's type. Not in `CATALOG`. */
+export const BENCH_FIRE_RES_ROW: Mod = mkMod({
+    id: "BenchFireResist1",
+    type: "FireResist",
+    source: "bench",
+    gen: "suffix",
+    minLevel: 1,
+    families: ["ResistFire"],
+    spawn: [spawn(TAG_DEFAULT, 0)],
+    implicitTags: ["fire", "elemental", "resistance"],
+    text: "+(13-18)% to Fire Resistance",
+});
+
 /** Fire & Chaos Resistance, DIFFERENT ModType, but SHARES family ResistFire. */
 export const FIRE_CHAOS_RESIST: Mod = mkMod({
     id: "FireChaosResist1",

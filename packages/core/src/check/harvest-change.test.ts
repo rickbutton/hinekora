@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes, isExcluded } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, harvestChange, item, op } from "../__fixtures__/ast.js";
+import { bench, craft, harvestChange, item, op } from "../__fixtures__/ast.js";
 import {
     AMULET_BASE,
+    BENCH_FIRE_RES_ROW,
+    BENCH_LIFE_ROW,
     CATALOG,
+    CLASS_RING,
     COLD_DAMAGE,
     COLD_RESIST,
     FIRE_DAMAGE,
@@ -27,9 +30,16 @@ const registry = buildRegistry({
         FIRE_DAMAGE,
         COLD_DAMAGE,
         PROTECT_SUFFIXES_CARRIER,
+        BENCH_FIRE_RES_ROW,
+        BENCH_LIFE_ROW,
     ],
     modAliases: { "T1 Life": "IncreasedLife1" },
     baseAliases: { "Iron Ring": "IronRing", "Coral Amulet": "CoralAmulet" },
+    benchCrafts: [BENCH_FIRE_RES_ROW, BENCH_LIFE_ROW].map((m) => ({
+        mod: m.id,
+        tier: 1,
+        itemClasses: new Set([CLASS_RING]),
+    })),
 });
 const ctx: CheckContext = { registry };
 
@@ -48,6 +58,32 @@ describe("harvest change", () => {
         expect(guaranteedTypes(s).has(COLD_RESIST.type)).toBe(true);
         expect(isExcluded(s, FIRE_RESIST.type)).toBe(true);
         expect(s.counts.total).toEqual([2, 2]);
+    });
+
+    it("keeps a benched modifier among the crafted ones, so the next bench replaces it", () => {
+        const changed = check(
+            craft(rareRing(), [
+                bench("fire resistance"),
+                harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
+            ]),
+            ctx,
+        );
+        expect(changed.diagnostics).toEqual([]);
+        expect(changed.finalState!.crafted).toEqual([1, 1]);
+        expect(changed.finalState!.craftedTypes.has(COLD_RESIST.type)).toBe(true);
+        const again = check(
+            craft(rareRing(), [
+                bench("fire resistance"),
+                harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
+                bench("maximum life"),
+            ]),
+            ctx,
+        );
+        expect(again.diagnostics).toEqual([]);
+        // The bench replaces the one crafted modifier, the changed resistance,
+        // rather than adding a second beside it.
+        expect(again.finalState!.counts.suffix).toEqual([0, 0]);
+        expect(guaranteedTypes(again.finalState!).has(COLD_RESIST.type)).toBe(false);
     });
 
     it("lands at the source's tier when that tier is known", () => {
