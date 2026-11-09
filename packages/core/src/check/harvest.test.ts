@@ -33,6 +33,26 @@ const rareRing = (prefixes: string[] = [], suffixes: string[] = []) =>
 const guaranteed = (r: ReturnType<typeof check>): Set<string> =>
     new Set([...guaranteedTypes(r.finalState!)]);
 
+describe("harvest augment against the modifiers the item may carry", () => {
+    it("is not blocked by one unknown suffix when its candidates span more groups", () => {
+        // The one unnamed suffix may be any resistance, but it is one modifier:
+        // of fire, cold and lightning two stay open on every path.
+        const c = craft(rareRing(["T1 Life"], ["random"]), [harvest("augment", "elemental")]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
+    });
+
+    it("is blocked when one unknown suffix can cover every candidate's group", () => {
+        // Every fire-tagged suffix shares the fire resistance family, which the
+        // unnamed suffix may be.
+        const c = craft(rareRing(["T1 Life"], ["random"]), [harvest("augment", "fire")]);
+        expect(
+            check(c, ctx)
+                .diagnostics.map((d) => d.message)
+                .join("\n"),
+        ).toContain("may be blocked");
+    });
+});
+
 describe("harvest reforge", () => {
     it("guarantees a single-type tag as a plain guarantee", () => {
         // "life" resolves to exactly the IncreasedLife type here, so the
@@ -91,7 +111,7 @@ describe("harvest reforge", () => {
             [harvest("reforge", "life")],
         );
         expect(check(anonymous, ctx).diagnostics[0]!.message).toContain(
-            "life modifier may be blocked on some path",
+            "life modifier has no slot on some path",
         );
         // The augment: the removal may take a suffix and leave the prefixes full.
         const full = craft(

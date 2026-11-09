@@ -871,9 +871,15 @@ function failing(
                     check.pool.kind === "tagged"
                         ? (m: Mod): boolean => m.implicitTags.has(tag)
                         : influenceRowTest(path, registry);
-                const tagged = (p: number, s: number): boolean =>
-                    subsetMods(path, registry, p, s).some(hasTag);
-                if (!tagged(0, 0)) {
+                // A pair of side counts is open when the pessimistic pool has a
+                // tagged row, or when the few unnamed modifiers of that path
+                // cannot block every tagged row the guaranteed facts leave.
+                const plain = (p: number, s: number): Mod[] =>
+                    taggedUnderGuaranteed(path, registry, p, s, hasTag);
+                const open = (p: number, s: number): boolean =>
+                    subsetMods(path, registry, p, s).some(hasTag) ||
+                    taggedRowSurvives(path, registry, p, s, plain(p, s));
+                if (!open(0, 0)) {
                     // Either no tagged row rolls here at all, or one does but a
                     // modifier the item may carry blocks it (its type, its group).
                     return resolvePool(path, check.pool, registry).mods.some(hasTag)
@@ -883,9 +889,14 @@ function failing(
                 // Every realisable pair of side counts must leave a tagged row
                 // room: the sides are coupled through the total, so each path's
                 // pair is judged on its own rather than both sides at their
-                // fullest at once.
+                // fullest at once. A pair with tagged rows that a possibly
+                // present modifier blocks is blocked, one with none has no room.
                 for (const [p, s] of sidePairs(path)) {
-                    if (!tagged(p, s)) return { kind: "harvestNoRoom", tag };
+                    if (!open(p, s)) {
+                        return plain(p, s).length > 0
+                            ? { kind: "harvestBlocked", tag }
+                            : { kind: "harvestNoRoom", tag };
+                    }
                 }
             }
             return null;
@@ -1387,6 +1398,7 @@ function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry
             ];
             // The side the pool draws from grows by the fill; the other side
             // stays; a pool of either side may grow either.
+            const gen = drawn.gen;
             const grown = (side: Range, tightCap: number, cap: number): Range => [
                 Math.min(side[0] + lo, tightCap),
                 Math.min(side[1] + hi, cap),
@@ -1396,15 +1408,15 @@ function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry
                 Math.min(side[1] + hi, cap),
             ];
             const prefix: Range =
-                drawn.gen === "prefix"
+                gen === "prefix"
                     ? grown(a.counts.prefix, tight.prefix, pCap)
-                    : drawn.gen === "suffix"
+                    : gen === "suffix"
                       ? a.counts.prefix
                       : maybeGrown(a.counts.prefix, pCap);
             const suffix: Range =
-                drawn.gen === "suffix"
+                gen === "suffix"
                     ? grown(a.counts.suffix, tight.suffix, sCap)
-                    : drawn.gen === "prefix"
+                    : gen === "prefix"
                       ? a.counts.suffix
                       : maybeGrown(a.counts.suffix, sCap);
             counts = { total, prefix, suffix };
@@ -1829,6 +1841,66 @@ function subsetMods(a: AItem, registry: Registry, prefixCount: number, suffixCou
         maybeTags,
         true,
     ).map((c) => c.mod);
+}
+
+/**
+ * Does a tagged row provably survive on every path with these side counts,
+ * though the pessimistic pool is empty? That pool takes every possibly present
+ * modifier as present, but a path holds at most `k` of them, the affixes no
+ * guaranteed type accounts for. Each possibly present type blocks the rows that
+ * share a family with it, so when `k` such types cannot cover the family
+ * signatures the tagged rows span under the guaranteed facts alone, some row is
+ * open on every path: one unknown suffix cannot block both a life leech and a
+ * mana leech.
+ */
+function taggedUnderGuaranteed(
+    a: AItem,
+    registry: Registry,
+    prefixCount: number,
+    suffixCount: number,
+    hasTag: (m: Mod) => boolean,
+): Mod[] {
+    const facts = guaranteedFacts(a, registry);
+    const guaranteed = new Set(facts.types);
+    // The restrictions a possibly present carrier imposes are read as in force.
+    const effects = [...facts.effects];
+    for (const t of a.possible) {
+        if (!isExcluded(a, t) && !guaranteed.has(t)) effects.push(...registry.effectsOfType(t));
+    }
+    return pool(
+        registry.catalog,
+        { ...facts, prefixCount, suffixCount, effects },
+        influenceTagsOf(a, registry).maybe,
+        true,
+    )
+        .map((c) => c.mod)
+        .filter(hasTag);
+}
+
+function taggedRowSurvives(
+    a: AItem,
+    registry: Registry,
+    prefixCount: number,
+    suffixCount: number,
+    rows: readonly Mod[],
+): boolean {
+    if (rows.length === 0) return false;
+    const guaranteed = guaranteedTypes(a);
+    const unnamed = [...a.possible].filter((t) => !isExcluded(a, t) && !guaranteed.has(t));
+    const k = prefixCount + suffixCount - guaranteed.size;
+    if (k <= 0) return true;
+    const signatures = new Map<string, ReadonlySet<GroupId>>();
+    for (const r of rows) signatures.set([...r.families].sort().join(" "), r.families);
+    let widest = 0;
+    for (const t of unnamed) {
+        const fams = registry.familiesOfType(t);
+        let cover = 0;
+        for (const sig of signatures.values()) {
+            if ([...sig].some((f) => fams.has(f))) cover++;
+        }
+        widest = Math.max(widest, cover);
+    }
+    return k * widest < signatures.size;
 }
 
 /** The (prefix, suffix) pairs the counts allow: a count enumeration over two
