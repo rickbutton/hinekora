@@ -671,3 +671,25 @@ describe("parser — stop", () => {
         expect(formatCraft(text)).toContain('if not has "maximum life" {\n    stop\n}\n');
     });
 });
+
+describe("parser — has group", () => {
+    it("parses the group form and formats it back; a group takes no tier", () => {
+        const text = [
+            'item { base: "R" ilvl: 84 rarity: rare }',
+            'if not has group "spell damage" {',
+            "    stop",
+            "}",
+            "",
+        ].join("\n");
+        const s = parseOk(text).body[0] as IfStmt;
+        expect(s.pred).toMatchObject({
+            kind: "not",
+            inner: { kind: "has", mod: "spell damage", group: true },
+        });
+        expect(formatCraft(text)).toContain('if not has group "spell damage" {');
+        expect(
+            parseErr('item { base: "R" ilvl: 84 rarity: rare }\nif has group "x" t1 { stop }')
+                .message,
+        ).toMatch(/a group has no tier/);
+    });
+});

@@ -211,6 +211,9 @@ export interface Registry {
     /** The mod groups (families) a ModType belongs to, across its tiers;
      *  drives the bench group-exclusivity check. */
     familiesOfType(type: TypeId): ReadonlySet<GroupId>;
+    /** The types sharing a modifier group (family) with this one, itself included:
+     *  what `has group` asks about and what a bench craft of it clashes with. */
+    groupOf(type: TypeId): ReadonlySet<TypeId>;
     /** The tags any row of a ModType adds to the item while present. */
     addsTagsOfType(type: TypeId): ReadonlySet<TagId>;
     /** The tags an influence adds to a base, the ones its rows' spawn tables name. */
@@ -404,6 +407,7 @@ export function buildRegistry(data: RegistryData): Registry {
         for (const t of m.addsTags) tags.add(t);
     }
     const typeFamilies = new Map<TypeId, Set<GroupId>>();
+    const groupOfType = new Map<TypeId, ReadonlySet<TypeId>>();
     for (const m of catalog) {
         let fams = typeFamilies.get(m.type);
         if (!fams) typeFamilies.set(m.type, (fams = new Set()));
@@ -697,6 +701,23 @@ export function buildRegistry(data: RegistryData): Registry {
 
         familiesOfType(type) {
             return typeFamilies.get(type) ?? EMPTY_FAMILIES;
+        },
+
+        groupOf(type) {
+            const cached = groupOfType.get(type);
+            if (cached) return cached;
+            const fams = typeFamilies.get(type) ?? EMPTY_FAMILIES;
+            const out = new Set<TypeId>([type]);
+            for (const [t, fs] of typeFamilies) {
+                for (const f of fs) {
+                    if (fams.has(f)) {
+                        out.add(t);
+                        break;
+                    }
+                }
+            }
+            groupOfType.set(type, out);
+            return out;
         },
 
         addsTagsOfType(type) {

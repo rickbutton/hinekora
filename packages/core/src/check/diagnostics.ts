@@ -96,7 +96,7 @@ export function describePred(pred: Pred): string {
                     : typeof pred.tier === "object"
                       ? ` ${pred.tier.param}`
                       : ` t${pred.tier}`;
-            return `has ${modText(pred.mod)}${tier}`;
+            return `has ${pred.group ? "group " : ""}${modText(pred.mod)}${tier}`;
         }
         case "fractured":
             return `fractured ${modText(pred.mod)}`;

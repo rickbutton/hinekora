@@ -57,6 +57,7 @@ const KEYWORDS = new Set([
     "stop",
     "def",
     "has",
+    "group",
     "fractured",
     "influenced",
     "dominant",

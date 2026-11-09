@@ -800,6 +800,8 @@ export type RPred =
           /** When a tier was requested, the specific mod for that tier. */
           readonly tierMod?: ModId;
       }
+    /** Some modifier of the named modifier's group is present. */
+    | { readonly kind: "hasGroup"; readonly type: TypeId; readonly types: ReadonlySet<TypeId> }
     | {
           readonly kind: "compare";
           readonly projection: "prefixCount" | "suffixCount";
@@ -844,6 +846,9 @@ export function refine(a: AItem, pred: RPred, positive = true): AItem | null {
             return positive
                 ? refineHas(a, pred.type, pred.gen, pred.tierMod)
                 : refineLacks(a, pred.type, pred.tierMod);
+
+        case "hasGroup":
+            return positive ? refineHasGroup(a, pred.types) : refineLacksGroup(a, pred.types);
 
         case "fractured":
             return positive ? refineFractured(a, pred.type) : refineNotFractured(a, pred.type);
@@ -976,6 +981,32 @@ function refineHas(a: AItem, type: TypeId, gen: Gen, tierMod: ModId | undefined)
     const counts = CountDomain.learnPresent(a.counts, gen);
     const s = normalize({ ...a, presence, tiers, counts });
     return s === null ? null : reduceTiers(s);
+}
+
+/** Some modifier of the group is present: one of the group's types the item may
+ *  carry, a disjunction when several may be. */
+function refineHasGroup(a: AItem, types: ReadonlySet<TypeId>): AItem | null {
+    const candidates = [...types].filter((t) => a.possible.has(t) && !isExcluded(a, t));
+    if (candidates.length === 0) return null;
+    if (candidates.some((t) => isGuaranteed(a, t))) return a;
+    let some = a.bdd.FALSE;
+    for (const t of candidates) some = a.bdd.or(some, a.bdd.variable(t));
+    const presence = a.bdd.and(a.presence, some);
+    if (a.bdd.isFalse(presence)) return null;
+    const total: Range = [Math.max(1, a.counts.total[0]), a.counts.total[1]];
+    const s = normalize({ ...a, presence, counts: { ...a.counts, total } });
+    return s === null ? null : reduceTiers(s);
+}
+
+/** No modifier of the group is present: every type of it the item may carry is
+ *  excluded, which is what lets a bench craft of the group through. */
+function refineLacksGroup(a: AItem, types: ReadonlySet<TypeId>): AItem | null {
+    let presence = a.presence;
+    for (const t of types) {
+        if (a.possible.has(t)) presence = a.bdd.and(presence, a.bdd.not(a.bdd.variable(t)));
+    }
+    if (a.bdd.isFalse(presence)) return null;
+    return reduceTiers({ ...a, presence });
 }
 
 function refineLacks(a: AItem, type: TypeId, tierMod: ModId | undefined): AItem | null {

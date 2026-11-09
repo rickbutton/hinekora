@@ -361,6 +361,7 @@ until anyEleRes(t1) { chaos }
 ```
 pred := isRare | isMagic | isNormal
       | has "<mod>" [t<n>]                  # that modifier type is present (at that tier)
+      | has group "<mod>"                   # some modifier of that modifier's group is present
       | fractured "<mod>"                   # that modifier is fractured
       | influenced [<influence>]            # the item has that influence (any, when none is named)
       | corrupted                           # the item is corrupted
@@ -380,7 +381,12 @@ cmp  := == | != | < | <= | > | >=
 Precedence, loosest first: `or`, `and`, `not`, atom; binary operators are
 left-associative. A predicate asks about the item's current state only; there are no
 history predicates. `has "X"` means any tier of X; `has "X" t1` the specific tier, which the
-checker tracks through operations (a modifier narrowed to T1 is provably not T2).
+checker tracks through operations (a modifier narrowed to T1 is provably not T2). `has group
+"X"` asks for any modifier of X's [group](https://www.poewiki.net/wiki/Modifier#Group/family),
+which an item holds at most one of: a wand's spell, fire, cold, lightning and minion damage
+prefixes are one group, so `if not has group "spell damage" { bench "spell damage" }` is the
+guard a guide means by "unless you already have one of those", and it needs no name for
+each member, even one that is ambiguous on its own.
 `influenced` and `corrupted` ask about the item's marks (§1): where paths with different
 marks meet, a branch on them narrows to one.
 

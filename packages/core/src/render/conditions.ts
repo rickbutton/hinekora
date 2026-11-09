@@ -245,7 +245,7 @@ export function criteria(
                     : typeof p.tier === "object"
                       ? ` (tier ${p.tier.param})`
                       : ` (T${p.tier})`;
-            return leaf(`${mod}${tier}`);
+            return leaf(p.group ? `a modifier of the ${mod} group` : `${mod}${tier}`);
         }
         case "fractured":
             return leaf(

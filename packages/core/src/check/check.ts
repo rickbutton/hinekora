@@ -1000,6 +1000,7 @@ class Checker {
             return null;
         }
         const type = typeRes.value;
+        if (pred.group) return { kind: "hasGroup", type, types: this.registry.groupOf(type) };
         const gen = rollableGen(this.registry.catalog, a.base, a.ilvl, type, tags) ?? "prefix";
 
         if (pred.tier === undefined) {

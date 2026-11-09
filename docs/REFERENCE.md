@@ -594,7 +594,9 @@ one domain. The sub-domains:
   implicit stats (`local_maximum_{prefixes,suffixes}_allowed_+`); see `ops.ts` for how
   reforge/add ops clamp their counts to `maxTotal` (transmute on a 0-cap magic base adds
   nothing, per [Simplex Amulet § Special Crafting Considerations](https://www.poewiki.net/wiki/Simplex_Amulet#Special_Crafting_Considerations)).
-- `refine(a, pred, positive)` narrows by a resolved predicate (De Morgan for and/or:
+- `refine(a, pred, positive)` narrows by a resolved predicate (`has group` is a
+  disjunction over the group's types the item may carry, `refineHasGroup`, or their
+  exclusion, `refineLacksGroup`; the group is the registry's `groupOf`; De Morgan for and/or:
   conjunction = sequential narrow, disjunction = `join`); `null` means the sub-state is
   impossible, the dead-branch signal. `join` is the branch-merge LUB; `stateEqual`
   detects loop fixpoints (`presence` compares by `===`, the BDD is canonical).

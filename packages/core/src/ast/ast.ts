@@ -252,6 +252,8 @@ export interface HasPred {
     /** A mod description, or (inside a def body) a parameter standing in for one. */
     readonly mod: string | ParamRef;
     readonly tier?: number | ParamRef;
+    /** `has group "<mod>"`: any modifier of the named modifier's group. */
+    readonly group?: true;
     readonly span: SourceSpan;
 }
 

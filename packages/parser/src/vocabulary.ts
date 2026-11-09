@@ -13,6 +13,7 @@ export const KEYWORDS = ["item", "def", "until", "if", "else", "restart", "stop"
 /** Predicate connectives and the predicate symbols. */
 export const PREDICATE_WORDS = [
     "has",
+    "group",
     "fractured",
     "influenced",
     "dominant",

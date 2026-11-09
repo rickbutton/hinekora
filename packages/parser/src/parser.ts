@@ -690,12 +690,18 @@ class Parser {
 
         if (t.text === "has") {
             this.advance();
+            const group = this.atKeyword("group");
+            if (group) this.advance();
             const mod = this.parseModOrParam();
             const tier = this.parseTierOrParam();
+            if (group && tier !== undefined) {
+                throw this.error('a group has no tier: write `has group "<mod>"`');
+            }
             return {
                 kind: "has",
                 mod,
                 ...(tier !== undefined && { tier }),
+                ...(group && { group: true as const }),
                 span: span(t.span.start, this.prev.span.end),
             };
         }

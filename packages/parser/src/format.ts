@@ -110,7 +110,7 @@ function pred(p: Pred, source: string, depth: number): string {
         case "isRarity":
             return `is${p.rarity[0]!.toUpperCase()}${p.rarity.slice(1)}`;
         case "has": {
-            const mod = typeof p.mod === "object" ? p.mod.param : quote(p.mod);
+            const mod = `${p.group ? "group " : ""}${typeof p.mod === "object" ? p.mod.param : quote(p.mod)}`;
             const tier =
                 p.tier === undefined
                     ? ""

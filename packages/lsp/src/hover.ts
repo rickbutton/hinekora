@@ -57,6 +57,7 @@ const KEYWORD_DOC: Record<string, string> = {
     restart: "`restart` — abandon this attempt and re-run the enclosing loop from the top.",
     stop: "`stop` — end the craft on this path: keep the item as it is, or spend no more on it.",
     has: '`has "<mod>" [t1]` — true when the item is guaranteed to carry that mod (optionally at that tier; `t1` = best).',
+    group: '`has group "<mod>"` — true when the item carries any modifier of that modifier\'s group; an item holds one per group, so `if not has group "<mod>" { bench "<mod>" }` guards a bench craft in one clause.',
     not: "`not <pred>` — logical negation of a predicate.",
     item: "`item { base: … ilvl: … rarity: … }` — the starting item this craft operates on.",
 };
