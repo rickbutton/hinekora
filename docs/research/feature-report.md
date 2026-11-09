@@ -193,23 +193,23 @@ guides treat them as fixed costs and nothing in the modifier logic depends on th
 
 ## 3. The examples suite
 
-| File                                                                       | Recipe                                         | Status                                                    |
-| -------------------------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------- |
-| `alt-regal-jewel`                                                          | R1 alt–aug–regal on a jewel                    | checks                                                    |
-| `flask-alt-aug`                                                            | R20 magic flask                                | checks                                                    |
-| `self-fracture`                                                            | R9 fracture, branch on the lock, clear fillers | checks (fixed annuls; the loop form waits on A2)          |
-| `influence-merge`                                                          | R8 Redeemer receiver + Awakener's Orb          | checks (the kept influence mods are not promised, Q28)    |
-| `bench-finish-resists`, `essence-life-boots`, `example`, `phys-dot-weapon` | the earlier examples                           | check                                                     |
-| `future/essence-minion-wand`                                               | R3 essence, make room, multimod                | B12 (a group member's name is ambiguous across the sides) |
-| `eldritch-gloves`                                                          | R7 essences, eldritch make-room, implicits     | checks (the Conflict loop to Exquisite waits on Q36)      |
-| `future/veiled-unveil`                                                     | R6 suffix lock, veiled orb, unveil loop        | B1 (`stop`), Q45 (how a bad unveil is cleared)            |
-| `metamod-harvest-loop`                                                     | R5 lock one side, Harvest reforge the other    | checks (the mana bench guarded by `if not has`)           |
-| `matron-metamod`                                                           | R17 the Wild Bristle Matron trick              | checks                                                    |
-| `future/imprint-regal-amulet`                                              | R2 imprint checkpoint, regal under a lock      | A6                                                        |
-| `future/lock-regal`                                                        | R11 Hinekora's Lock                            | B3                                                        |
-| `future/recombinator`                                                      | R10 two-item merge                             | B4                                                        |
-| `future/value-threshold`                                                   | R16 "life ≥ 110", divine                       | B2                                                        |
-| `future/cluster-harvest`                                                   | R18 reforge a cluster by tag                   | B5                                                        |
+| File                                                                       | Recipe                                         | Status                                                      |
+| -------------------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------- |
+| `alt-regal-jewel`                                                          | R1 alt–aug–regal on a jewel                    | checks                                                      |
+| `flask-alt-aug`                                                            | R20 magic flask                                | checks                                                      |
+| `self-fracture`                                                            | R9 fracture, branch on the lock, clear fillers | checks (fixed annuls; the loop form waits on A2)            |
+| `influence-merge`                                                          | R8 Redeemer receiver + Awakener's Orb          | checks (the kept influence mods are not promised, Q28)      |
+| `bench-finish-resists`, `essence-life-boots`, `example`, `phys-dot-weapon` | the earlier examples                           | check                                                       |
+| `future/essence-minion-wand`                                               | R3 essence, make room, multimod                | B12 (a group member's name is ambiguous across the sides)   |
+| `eldritch-gloves`                                                          | R7 essences, eldritch make-room, implicits     | checks (the Conflict loop to Exquisite waits on Q36)        |
+| `veiled-unveil`                                                            | R6 suffix lock, veiled orb, unveil loop        | checks (`stop` where the orb or the annul bricked the item) |
+| `metamod-harvest-loop`                                                     | R5 lock one side, Harvest reforge the other    | checks (the mana bench guarded by `if not has`)             |
+| `matron-metamod`                                                           | R17 the Wild Bristle Matron trick              | checks                                                      |
+| `future/imprint-regal-amulet`                                              | R2 imprint checkpoint, regal under a lock      | A6                                                          |
+| `future/lock-regal`                                                        | R11 Hinekora's Lock                            | B3                                                          |
+| `future/recombinator`                                                      | R10 two-item merge                             | B4                                                          |
+| `future/value-threshold`                                                   | R16 "life ≥ 110", divine                       | B2                                                          |
+| `future/cluster-harvest`                                                   | R18 reforge a cluster by tag                   | B5                                                          |
 
 ## 4. Status
 
@@ -222,9 +222,15 @@ bad unveil is cleared), and one soundness bug the probes had not reached: a decl
 open in Band A: the hybrid and alias naming of A4, the precision losses of A6, and B12,
 the side-ambiguous name a group guard needs. B9 and B10 are fixed (a group clash names
 the modifiers that may clash; a loop body runs only where its exit predicate is false),
-which brought the Harvest metamod loop in. The examples suite stands at eleven checking
-guides and seven waiting; the naming fixes of A4 (plurals, joiner words, the natural
-modifier first) brought the eldritch gloves in.
+which brought the Harvest metamod loop in. B1 is built: `stop` ends the craft on a path,
+and with two precision fixes it exposed (a crafted removal reaches only the types a bench
+craft may have placed; a random removal keeps all but one of the named modifiers it could
+reach, and takes one of them when it could reach nothing else) the veiled unveil loop
+checks as a guide writes it. The rest of A4 is in: a single-tier modifier needs no `t1`
+in the item block, and the words guides use ("es", "spell suppression", "+1 gems") name
+their modifiers. The examples suite stands at twelve checking guides and six waiting;
+the naming fixes of A4 (plurals, joiner words, the natural modifier first) brought the
+eldritch gloves in.
 
 ## 5. A week's order
 

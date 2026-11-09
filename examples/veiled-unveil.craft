@@ -1,15 +1,14 @@
-# WAITS ON: feature-report.md B1 (a way to end the path where the life or the
-# lock is lost) and QUESTIONS.md Q45 (how a bad unveil is cleared).
-#
 # A veiled prefix under a suffix lock, unveiled until the right option shows.
 #
 # With the suffixes locked and all three present, a Veiled Exalted Orb must
 # add its veiled mod as a prefix; it also removes one unprotected mod, which
 # is either the metamod or the life roll. Unveiling offers three of the
 # possible prefixes; the guide takes the % life one when it is offered and
-# otherwise removes the unveiled mod at the bench and tries again. Jun's offer is random, so
-# a named unveil is only provable once blocking has left three options or
-# fewer; the bare form plus a branch is how a guide really reads.
+# otherwise annuls the unveiled mod away and tries again. An unveiled mod is
+# not a crafted mod (QUESTIONS.md Q45), so the bench cannot take it, and an
+# annul may hit the life or a suffix instead: on those paths the item is
+# bricked and the guide stops, so what follows is judged on the paths where
+# the item is still worth the next orb.
 
 item {
     base:     "Astral Plate"
@@ -22,17 +21,19 @@ item {
 until has "increased maximum life increased maximum mana" {
     bench "suffixes cannot be changed"
     veiled exalt
+    # The orb took the life roll instead of the metamod.
+    if not has "maximum life" t1 {
+        stop
+    }
     unveil
-    # An unveiled mod is not a crafted mod (QUESTIONS.md Q45), so a bad one
-    # can only be annulled away before the next orb, which may take the life
-    # or leave the unveiled mod in place: the loop cannot be proven as written.
     if not has "increased maximum life increased maximum mana" {
         annul
+        # The annul took the life or a resistance, not the unveiled mod.
+        if not has "maximum life" t1 or suffixCount < 3 {
+            stop
+        }
+        restart
     }
 }
 
-# The orb may have taken the life roll instead of the metamod on the way; the
-# guide only keeps the item when it did not.
-if has "maximum life" t1 {
-    bench "maximum mana"
-}
+bench "maximum mana"
