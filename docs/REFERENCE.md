@@ -638,7 +638,8 @@ one domain. The sub-domains:
   item block), recorded only on the real (non-quiet) pass. `traceAt(trace, offset)`
   returns the innermost entry covering an offset; this powers hover.
 - `elaborateItem`: declared mods must **pin a tier** (`[ "maximum life" t1 ]`) via an
-  exact id/alias or a description + `t<n>`; a bare description is an error. Placeholders
+  exact id/alias or a description + `t<n>`; a bare description is an error unless a single
+  tier of the modifier rolls here, which it then pins. Placeholders
   (`"random"`/`"?"`) stay anonymous and widen `possible` to the natural rows of their
   side (`anonymousTypes`). A `bench` affix resolves through `resolveBench` for the
   item's class and counts toward `crafted`; anonymous, it widens `possible` to the

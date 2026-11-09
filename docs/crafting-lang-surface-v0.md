@@ -54,8 +54,9 @@ item {
 - `rarity` is `normal`, `magic` or `rare`. A base that can never be Rare (flasks,
   tinctures) is rejected at `rare`, per [Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare).
 - `prefixes` / `suffixes` list the affixes. Each named affix **must pin a tier**: either a
-  mod name plus `t<n>` (§2) or an exact mod id. A bare name is an error, because a
-  starting item is a concrete item. `"random"` (or `"?"`) is an anonymous affix: counted,
+  mod name plus `t<n>` (§2) or an exact mod id, because a starting item is a concrete
+  item; a bare name is accepted only where a single tier of the modifier rolls, and is an
+  error otherwise. `"random"` (or `"?"`) is an anonymous affix: counted,
   not named, and any natural modifier of its side the item could roll (never a bench craft
   or another unrollable row, `QUESTIONS.md` Q49), so a `has` may be it and a bench craft of
   its group may clash with it. A count over the base's limit for the rarity is an error; a named mod listed

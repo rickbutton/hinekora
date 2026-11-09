@@ -51,6 +51,20 @@ describe("checker — fuzzy names in predicates and item blocks", () => {
         );
     });
 
+    it("accepts a bare name whose modifier rolls a single tier here", () => {
+        const one = item({
+            base: "IronRing",
+            ilvl: 100,
+            rarity: "rare",
+            suffixes: ["fire resistance"],
+        });
+        const r = check(craft(one, []), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(FIRE_RES_TIERED.type)).toEqual(
+            new Set([FIRE_RES_TIERED.id]),
+        );
+    });
+
     it("errors on a tier that doesn't roll on this item", () => {
         const c = craft(rareRing(), [op("exalt"), iff(has("maximum life", 9), [op("annul")])]);
         expect(check(c, ctx).diagnostics.some((d) => d.message.includes("out of range"))).toBe(

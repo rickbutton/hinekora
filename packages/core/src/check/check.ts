@@ -272,8 +272,9 @@ class Checker {
         };
 
         // A named mod pins a tier via an exact id/alias, or a stat description
-        // plus `t<n>`; a bare description is an error. Returns the resolved type
-        // (for the fractured marker), or undefined when resolution failed.
+        // plus `t<n>`; a bare description is accepted only where a single tier of
+        // the modifier rolls. Returns the resolved type (for the fractured
+        // marker), or undefined when resolution failed.
         const pinAffix = (affix: AffixDecl, gen: Gen): TypeId | undefined => {
             const byId = this.registry.resolveMod(affix.mod);
             if (byId.ok) {
@@ -311,19 +312,20 @@ class Checker {
                 rollableGen(this.registry.catalog, base, item.ilvl, type, tags),
                 gen,
             );
-            if (affix.tier === undefined) {
+            const tiers = rollableTiers(this.registry.catalog, base, item.ilvl, type, tags);
+            if (affix.tier === undefined && tiers.length !== 1) {
                 this.diag(
-                    `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t1\`), a starting item's mods must name a specific tier.`,
+                    `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t1\`), a starting item's mods must name a specific tier and ${tiers.length} roll here.`,
                     item.span,
                 );
                 claim(affix.mod, type); // still count it as present, just untiered
                 return type;
             }
-            const tiers = rollableTiers(this.registry.catalog, base, item.ilvl, type, tags);
-            const mod = tierMod(tiers, affix.tier);
+            const tier = affix.tier ?? 1;
+            const mod = tierMod(tiers, tier);
             if (mod === undefined) {
                 this.diag(
-                    `tier ${affix.tier} is out of range for "${affix.mod}" (only ${tiers.length} tier${
+                    `tier ${tier} is out of range for "${affix.mod}" (only ${tiers.length} tier${
                         tiers.length === 1 ? "" : "s"
                     } roll here).`,
                     item.span,
