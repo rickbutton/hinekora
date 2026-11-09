@@ -591,7 +591,6 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                 }
                 case "restart":
                 case "stop": {
-                    const c = costOf(s);
                     into.push(
                         anchor(
                             h(
@@ -610,13 +609,6 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                             s.kind === "restart"
                                                 ? "back to the start of the repeat"
                                                 : "stop here: keep the item as it is",
-                                        ),
-                                        ...present(
-                                            c === undefined
-                                                ? undefined
-                                                : costLine(
-                                                      `reached ${percentage(c.reached)} of the time`,
-                                                  ),
                                         ),
                                     ),
                                 ),
@@ -680,14 +672,6 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                     return;
                 }
                 case "branch": {
-                    const c = costOf(s);
-                    const taken =
-                        c?.branch === undefined
-                            ? undefined
-                            : costLine(
-                                  `taken ${percentage(c.branch)} of the time`,
-                                  spreadTitle(c.branchRange, percentage),
-                              );
                     const before = last;
                     const yes: HTMLElement[] = [];
                     seq(s.then, yes);
@@ -725,7 +709,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                     glyph("?"),
                                     h("span", "title", "if the item has"),
                                     h("ul", "checklist", checklist(s.check)),
-                                    ...present(taken, problemList(s.problems)),
+                                    ...present(problemList(s.problems)),
                                 ),
                                 s.span,
                             ),

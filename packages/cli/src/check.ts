@@ -69,8 +69,7 @@ export function checkSource(source: string, file: string, registry: Registry): C
 
 /**
  * The guide's expected cost, step by step: for each statement what it is
- * expected to consume, for a loop its attempts and the chance of each, for a
- * branch how often it is taken; then the total in each currency and, under the
+ * expected to consume and for a loop the chance a round ends it; then the total in each currency and, under the
  * economy snapshot, in Chaos and Divine Orbs. A guide with errors is still
  * costed, as written, after a line saying so.
  */
@@ -148,10 +147,6 @@ function stepFigure(s: StepCost, prices: Prices | undefined): string {
             `${oddsText(s.attempts.chance)}${spread(s.attemptsRange, (n) => `1/${figure(n)}`)}`,
         );
     }
-    if (s.branch !== undefined) {
-        parts.push(`taken ${percentage(s.branch)}${spread(s.branchRange, percentage)}`);
-    }
-    if (s.kind === "restart" || s.kind === "stop") parts.push(`reached ${percentage(s.reached)}`);
     if (s.kind === "operation") {
         const runs = `×${figure(s.runs)}${spread(s.runsRange, figure)}`;
         if (s.expected !== undefined && s.expected.length > 0) {

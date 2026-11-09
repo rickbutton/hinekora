@@ -28,14 +28,14 @@ export function approx(n: number): string {
 }
 
 /**
- * A repeat's odds as guides quote them: "1/37 chance per round", the chance one round
- * ends it; a percentage once it is better than even ("60% chance per round"). The
+ * A repeat's odds as guides quote them: "1/37 chance", the chance one round
+ * ends it; a percentage once it is better than even ("60% chance"). The
  * expected rounds are the odds' denominator, so they are not said again.
  */
 export function oddsText(chance: number): string {
     if (!(chance > 0)) return "never ends";
-    if (chance >= 0.5) return `${percentage(chance)} chance per round`;
-    return `1/${Math.round(1 / chance)} chance per round`;
+    if (chance >= 0.5) return `${percentage(chance)} chance`;
+    return `1/${Math.round(1 / chance)} chance`;
 }
 
 /**

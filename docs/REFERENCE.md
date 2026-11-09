@@ -304,7 +304,7 @@ resolveEssence / resolveBench / resolveHarvestTag`
   the steps inside such a loop or branch, carry none, and the total's spread is left out
   with them. `words.ts` is the figures in the guide's words (`figure`, `percentage`,
   `priceText`; `approx` marks an estimate "~24", `oddsText` is a repeat's odds as guides
-  quote them, "1/37 chance per round", or a percentage once better than even), the one copy the CLI, the hover and the playground print, and
+  quote them, "1/37 chance", or a percentage once better than even), the one copy the CLI, the hover and the playground print, and
   `costIsObvious`, the step whose cost says nothing its name does not (it runs once and
   spends one of one currency), whose line the hover and the storyboard leave out. The first step of a loop body is judged on the item the loop finds, not on
   the join over its rounds, so the attempts are taken alike.
@@ -558,8 +558,7 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   has" with the checklist (the step's `check`) on top, its steps in an inner panel, its
   odds and cost table as a footer, and its result, the item once it is done, always a
   card, closing the container; every other top-level step stands in a box of its own
-  too, so nothing reads as hung off the step before it; a branch is a container with "if the item has", its checklist and its
-  chance on top and one panel per answer; a `restart`
+  too, so nothing reads as hung off the step before it; a branch is a container with "if the item has" and its checklist on top and one panel per answer; a `restart`
   is a block pointing back and a `stop` one that keeps the item as it is; the start and
   the finished item open and close the board, the second items (`with <name> { … }`,
   the walkthrough's `donors`) following the start as their own cards;
@@ -567,11 +566,10 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   cost layer's line for its statement (`costCached`, matched by statement kind and start
   offset): what a step is expected to consume and its price in chaos ("expected 8.8
   Deafening Essence of Greed (~24 chaos)"; left out when `costIsObvious`, and inside a
-  repeat, whose own table says it), how often a branch is taken, how often a `restart`
-  or `stop` is reached, and under the finished item the guide's expected spend in chaos
+  repeat, whose own table says it), and under the finished item the guide's expected spend in chaos
   and divine at the snapshot's league and date, with the currencies it could not price;
   a spread over what the item may hold is the line's tooltip. A repeat's foot gives its
-  odds as guides quote them ("1/37 chance per round", `oddsText`) over a small table
+  odds as guides quote them ("1/37 chance", `oddsText`) over a small table
   (`repeatTable`): per currency what one round spends, what all the rounds spend
   (`passSpend`: the body's spend over the guide divided by the repeat's own runs) and
   its worth in chaos, dearest first, with the sum. Clicking a cost line opens a dialog with the breakdown

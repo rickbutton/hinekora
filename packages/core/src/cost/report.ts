@@ -43,7 +43,8 @@ export interface Bounds {
 export interface StepCost {
     readonly span: SourceSpan;
     readonly kind: Stmt["kind"];
-    /** The chance the step is reached in one pass of its enclosing block. */
+    /** How often the step is reached in one pass of its enclosing block: a
+     *  chance outside a repeat, a count over all its rounds inside one. */
     readonly reached: number;
     /** How many times it is expected to run over the whole guide. */
     readonly runs: number;
