@@ -1064,7 +1064,16 @@ function strip(a: AItem, rules: Rules, registry: Registry): AItem {
         presenceFacts(a.bdd, keptGuarantees, excludedTypes(a)),
         fractureProjection(a),
     );
-    return settled({ ...a, counts: { total, prefix, suffix }, presence, possible, tiers, crafted });
+    const craftedTypes = new Set([...a.craftedTypes].filter(mayRemain));
+    return settled({
+        ...a,
+        counts: { total, prefix, suffix },
+        presence,
+        possible,
+        tiers,
+        crafted,
+        craftedTypes,
+    });
 }
 
 /** How many of the fractured (locked, so reforge-proof) mods are bench rows: the
@@ -1404,10 +1413,12 @@ function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry
     }
 
     let crafted = a.crafted;
+    let craftedTypes = a.craftedTypes;
     if (count.kind === "add" && (spec.kind === "bench" || spec.kind === "metamods")) {
         crafted = [a.crafted[0] + count.n[0], a.crafted[1] + count.n[1]];
+        craftedTypes = new Set([...a.craftedTypes, ...drawn.types]);
     }
-    return settled({ ...a, counts, presence, possible, tiers, crafted });
+    return settled({ ...a, counts, presence, possible, tiers, crafted, craftedTypes });
 }
 
 /** Is a row an influence modifier here: one no tag of the item's own admits,
@@ -1568,10 +1579,18 @@ function removeType(a: AItem, type: TypeId, registry: Registry): AItem {
     const tiers = new Map(a.tiers);
     tiers.delete(type);
     // The named modifier may have been the crafted one.
-    const crafted: Range = rowsOf(a, type, registry).some((m) => m.source === "bench")
+    const crafted: Range = a.craftedTypes.has(type)
         ? [Math.max(0, a.crafted[0] - 1), a.crafted[1]]
         : a.crafted;
-    return settled({ ...a, counts: { total, prefix, suffix }, presence, tiers, crafted });
+    const craftedTypes = new Set([...a.craftedTypes].filter((t) => t !== type));
+    return settled({
+        ...a,
+        counts: { total, prefix, suffix },
+        presence,
+        tiers,
+        crafted,
+        craftedTypes,
+    });
 }
 
 /** Might a crafted-limit carrier be on the item without being guaranteed? */
@@ -1612,9 +1631,8 @@ function removeCrafted(a: AItem, rules: Rules, registry: Registry, replacing: bo
     const tiers = new Map(a.tiers);
     const sure = { prefix: 0, suffix: 0 };
     for (const t of a.possible) {
-        if (excluded.has(t)) continue;
+        if (excluded.has(t) || !a.craftedTypes.has(t) || fractured.has(t)) continue;
         const rows = rowsOf(a, t, registry);
-        if (!rows.some(isBench) || fractured.has(t)) continue;
         forgotten.add(t);
         tiers.delete(t);
         if (rows.every(isBench) && !unprovenLock) {
@@ -1623,16 +1641,20 @@ function removeCrafted(a: AItem, rules: Rules, registry: Registry, replacing: bo
         }
     }
     const sureRemoved = Math.max(removedLower, sure.prefix + sure.suffix);
+    // A side loses at most one modifier per crafted type it may carry: a
+    // metamod prefix that may be present cannot cost the item a suffix.
+    const may = { prefix: 0, suffix: 0 };
+    for (const t of forgotten) may[genOf(a, registry, t)]++;
     const total: Range = [
         Math.max(0, a.counts.total[0] - removedUpper),
         Math.max(0, a.counts.total[1] - sureRemoved),
     ];
     const prefix: Range = [
-        Math.max(0, a.counts.prefix[0] - removedUpper),
+        Math.max(0, a.counts.prefix[0] - Math.min(removedUpper, may.prefix)),
         Math.max(0, a.counts.prefix[1] - sure.prefix),
     ];
     const suffix: Range = [
-        Math.max(0, a.counts.suffix[0] - removedUpper),
+        Math.max(0, a.counts.suffix[0] - Math.min(removedUpper, may.suffix)),
         Math.max(0, a.counts.suffix[1] - sure.suffix),
     ];
     const presence = a.bdd.and(forgetTypes(a, forgotten), presenceFacts(a.bdd, [], gone));
@@ -1640,7 +1662,19 @@ function removeCrafted(a: AItem, rules: Rules, registry: Registry, replacing: bo
         Math.min(a.crafted[0], fracturedLower),
         Math.min(a.crafted[1], fracturedUpper),
     ];
-    return settled({ ...a, counts: { total, prefix, suffix }, presence, tiers, crafted });
+    // Only a fractured crafted modifier survives; under an unproven lock any
+    // of them may be the fractured one.
+    const craftedTypes = new Set(
+        [...a.craftedTypes].filter((t) => fractured.has(t) || unprovenLock),
+    );
+    return settled({
+        ...a,
+        counts: { total, prefix, suffix },
+        presence,
+        tiers,
+        crafted,
+        craftedTypes,
+    });
 }
 
 // --- lock -----------------------------------------------------------------------

@@ -394,7 +394,8 @@ describe("a declared bench-crafted mod counts toward the crafted limit", () => {
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).toContain("IncreasedLife");
-        expect(r.finalState!.crafted).toEqual([0, 1]);
+        // The carrier is the only suffix, so the annul can have taken nothing else.
+        expect(r.finalState!.crafted).toEqual([0, 0]);
     });
 });
 

@@ -57,6 +57,9 @@ export interface AItem {
     /** How many bench-CRAFTED mods are present (a range). `bench` requires it
      *  provably below the crafted cap (one, or three under an active multimod). */
     readonly crafted: Range;
+    /** The types a bench craft may have put on the item, the ones `crafted`
+     *  counts: a removal of crafted modifiers reaches these and no others. */
+    readonly craftedTypes: ReadonlySet<TypeId>;
     /** The influence sets the item may have (`influenceKey`): one on a straight
      *  line, more after a Harvest randomise or where paths meet. */
     readonly influences: ReadonlySet<InfluenceKey>;
@@ -551,7 +554,16 @@ export function normalize(a: AItem): AItem | null {
     if (counts === null) return null;
     const cap = counts.total[1];
     const within = (r: Range): Range => [Math.min(r[0], cap), Math.min(r[1], cap)];
-    return { ...a, counts, crafted: within(a.crafted), fractures: within(a.fractures) };
+    // A crafted modifier is one of the crafted types still possibly present, so
+    // the count is bounded by those: once a branch rules the metamod out, the
+    // item is known to carry no crafted modifier at all.
+    let mayBeCrafted = 0;
+    for (const t of a.craftedTypes) if (!isExcluded(a, t)) mayBeCrafted++;
+    const crafted = within([
+        Math.min(a.crafted[0], mayBeCrafted),
+        Math.min(a.crafted[1], mayBeCrafted),
+    ]);
+    return { ...a, counts, crafted, fractures: within(a.fractures) };
 }
 
 /**
@@ -563,7 +575,12 @@ export function normalize(a: AItem): AItem | null {
  * bogus over-cap count.
  */
 export function settled(a: AItem): AItem {
-    const empty = { ...a, counts: CountDomain.empty(), crafted: [0, 0] as Range };
+    const empty = {
+        ...a,
+        counts: CountDomain.empty(),
+        crafted: [0, 0] as Range,
+        craftedTypes: new Set<TypeId>(),
+    };
     return normalize(a) ?? normalize(empty) ?? empty;
 }
 
@@ -601,6 +618,8 @@ export interface InitialCounts {
     readonly fracturedAnonymous?: number;
     /** How many declared mods are bench-crafted rows. */
     readonly crafted: number;
+    /** The types those rows may be. */
+    readonly craftedTypes?: ReadonlySet<TypeId>;
 }
 
 /** The marks the item block declares. */
@@ -649,6 +668,7 @@ export function initialState(
         possible: new Set(counts.present),
         tiers: new Map([...counts.pinned].map(([type, mod]) => [type, new Set([mod])])),
         crafted: [counts.crafted, counts.crafted],
+        craftedTypes: new Set(counts.craftedTypes ?? []),
     });
 }
 
@@ -706,6 +726,7 @@ export function join(a: AItem, b: AItem): AItem {
         possible: SetDomain.join(a.possible, b.possible),
         tiers: TierDomain.join(a.tiers, b.tiers),
         crafted: RangeDomain.join(a.crafted, b.crafted),
+        craftedTypes: SetDomain.join(a.craftedTypes, b.craftedTypes),
         ...(a.imprint && b.imprint && { imprint: join(a.imprint, b.imprint) }),
     };
 }
@@ -730,6 +751,7 @@ export function stateEqual(a: AItem, b: AItem): boolean {
         SetDomain.equal(a.possible, b.possible) &&
         TierDomain.equal(a.tiers, b.tiers) &&
         RangeDomain.equal(a.crafted, b.crafted) &&
+        SetDomain.equal(a.craftedTypes, b.craftedTypes) &&
         (a.imprint === undefined
             ? b.imprint === undefined
             : b.imprint !== undefined && stateEqual(a.imprint, b.imprint))

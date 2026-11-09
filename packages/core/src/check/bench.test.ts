@@ -9,6 +9,7 @@ import {
     FIRE_CHAOS_RESIST,
     FIRE_RESIST,
     CLASS_RING,
+    COLD_RESIST,
     INCREASED_ARMOUR,
     INCREASED_MANA,
     MULTIMOD_CARRIER,
@@ -71,6 +72,18 @@ describe("bench remove", () => {
         expect(r.diagnostics).toEqual([]);
         expect(guaranteedTypes(r.finalState!).has(LIFE)).toBe(true);
         expect(r.finalState!.crafted).toEqual([0, 0]);
+    });
+});
+
+describe("bench remove reaches the crafted types only", () => {
+    it("cannot cost a suffix for a crafted prefix", () => {
+        const c = craft(rareRing([BENCH_LIFE_ROW.id], [FIRE_RESIST.id, COLD_RESIST.id]), [
+            benchRemove(),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.counts.prefix).toEqual([0, 0]);
+        expect(r.finalState!.counts.suffix).toEqual([2, 2]);
     });
 });
 

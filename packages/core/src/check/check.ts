@@ -280,6 +280,7 @@ class Checker {
         // plus `t<n>`; a bare description is accepted only where a single tier of
         // the modifier rolls. Returns the resolved type (for the fractured
         // marker), or undefined when resolution failed.
+        const craftedTypes = new Set<TypeId>();
         const pinAffix = (affix: AffixDecl, gen: Gen): TypeId | undefined => {
             const byId = this.registry.resolveMod(affix.mod);
             if (byId.ok) {
@@ -303,7 +304,10 @@ class Checker {
                 }
                 claim(affix.mod, mod.type);
                 pinned.set(mod.type, mod.id);
-                if (mod.source === "bench") crafted++;
+                if (mod.source === "bench") {
+                    crafted++;
+                    craftedTypes.add(mod.type);
+                }
                 return mod.type;
             }
             const typeRes = this.registry.resolveModType(affix.mod, ctx);
@@ -355,6 +359,7 @@ class Checker {
             const mod = this.registry.resolveMod(res.value.mod);
             if (!mod.ok) return undefined;
             checkGen(affix.mod, mod.value.gen, gen);
+            craftedTypes.add(mod.value.type);
             claim(affix.mod, mod.value.type);
             pinned.set(mod.value.type, mod.value.id);
             crafted++;
@@ -446,6 +451,13 @@ class Checker {
         if (item.influences.length > 0 && fracturedTypes.length + fracturedAnonymous > 0) {
             this.diag("An influenced item cannot have a fractured modifier.", item.span);
         }
+        // An anonymous bench affix is some bench row of its side.
+        for (const gen of ["prefix", "suffix"] as const) {
+            if (craftedAnonymousBy[gen] === 0) continue;
+            for (const t of this.registry.benchTypesFor(base.itemClass)) {
+                if (this.registry.genOfType(t) === gen) craftedTypes.add(t);
+            }
+        }
         const start = initialState(
             this.bdd,
             base,
@@ -457,6 +469,7 @@ class Checker {
                 present,
                 pinned,
                 crafted,
+                craftedTypes,
                 ...(fracturedTypes.length > 0 && { fractured: fracturedTypes }),
                 ...(fracturedAnonymous > 0 && { fracturedAnonymous }),
             },
@@ -470,17 +483,11 @@ class Checker {
             },
         );
         // An anonymous affix is some modifier of its side the item could roll, so
-        // a `has` may name it and a bench craft of its group may clash with it;
-        // an anonymous bench one is some bench row of its side.
-        const possible = new Set(start.possible);
+        // a `has` may name it and a bench craft of its group may clash with it.
+        const possible = new Set([...start.possible, ...start.craftedTypes]);
         for (const gen of ["prefix", "suffix"] as const) {
             if (anonymousBy[gen] > 0) {
                 for (const t of anonymousTypes(start, this.registry, gen)) possible.add(t);
-            }
-            if (craftedAnonymousBy[gen] > 0) {
-                for (const t of this.registry.benchTypesFor(base.itemClass)) {
-                    if (this.registry.genOfType(t) === gen) possible.add(t);
-                }
             }
         }
         return { ...start, possible };

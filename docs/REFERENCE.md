@@ -510,6 +510,11 @@ one domain. The sub-domains:
   is joined per-type and a tier known in only one branch drops to unconstrained. Its
   refinement is coupled to `presence` (tier atoms), so that part lives in `refine`, not the
   domain.
+- `craftedTypes`: the SET of types a bench craft may have put on the item (the named and
+  anonymous `bench` affixes of the item block, then every `bench` step's row), which is
+  what a removal of crafted modifiers reaches and nothing else: an unveiled modifier whose
+  wording the bench also offers is not among them, so the removal cannot be charged a
+  suffix for it. A removal or strip keeps only the fractured ones.
 - `crafted`: a RANGE, how many [bench-crafted](https://www.poewiki.net/wiki/Crafting_Bench)
   mods are present. `bench` requires it provably below the crafted cap (one, or three under
   the multimod [metamod](https://www.poewiki.net/wiki/Metamod)); a pure reforge or a plain
