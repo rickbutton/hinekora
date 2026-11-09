@@ -975,13 +975,26 @@ function hasVeiledPlaceholder(a: AItem): boolean {
  *  Crafting), and the precondition must hold on every path, so a possible one
  *  is enough to refuse. */
 function mayHaveVeiled(a: AItem, registry: Registry, among?: (t: TypeId) => boolean): boolean {
+    const guaranteed = guaranteedTypes(a);
+    // Affixes of a side not pinned to a guaranteed type: with none, no other
+    // type can be present on that side, however possible it is otherwise.
+    const unidentifiedIn = (gen: Gen): number => {
+        let named = 0;
+        for (const t of guaranteed) if (sideOf(a, registry, t) === gen) named++;
+        const max = gen === "prefix" ? a.counts.prefix[1] : suffixRange(a)[1];
+        return max - named;
+    };
     for (const t of a.possible) {
         if (isExcluded(a, t)) continue;
         if (among && !among(t)) continue;
-        if (t === VEILED_PREFIX || t === VEILED_SUFFIX) return true;
         // Many unveiled rows share their type with natural rows, so the rows the
         // type may be (its tier overlay, else every row) decide, not the first row.
-        if (rowsOf(a, t, registry).some((m) => m.source === "veiled")) return true;
+        const veiled =
+            t === VEILED_PREFIX ||
+            t === VEILED_SUFFIX ||
+            rowsOf(a, t, registry).some((m) => m.source === "veiled");
+        if (!veiled) continue;
+        if (guaranteed.has(t) || unidentifiedIn(sideOf(a, registry, t)) > 0) return true;
     }
     return false;
 }
