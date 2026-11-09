@@ -25,7 +25,8 @@ import { findMethod, type Literal } from "../check/methods.js";
 import { rollableGen } from "../resolve/tiers.js";
 import { influenceTagsAny } from "../check/ops.js";
 import { chance } from "./chance.js";
-import { chain, type ChainAtom, type ChainState, type ChainStep } from "./chain.js";
+import { chain, type ChainAtom, type ChainState, type ChainStep, type Outcome } from "./chain.js";
+import { amongFirstDistribution } from "./race.js";
 import { guaranteedTypes, isExcluded, rarityOf, sideCap, suffixRange } from "../check/astate.js";
 import { lookupWeight } from "../pool/pool.js";
 import { rollableTiers } from "../resolve/tiers.js";
@@ -687,15 +688,29 @@ class Walker {
         const collect = (stmts: readonly Stmt[]): boolean => {
             for (const s of stmts) {
                 if (s.kind !== "if") continue;
-                if (s.elseBody !== undefined) return false;
                 const guard = this.resolve(s.pred, before);
                 const holds = guard === null ? undefined : compile(guard);
                 if (holds === undefined) return false;
                 guards.set(s, holds);
                 if (!collect(s.body)) return false;
+                if (s.elseBody !== undefined && !collect(s.elseBody)) return false;
             }
             return true;
         };
+        // The rows a condition tells apart; an atom no condition pins is tracked
+        // by its first row, so a reforge's outcomes stay few.
+        const needsRow = new Set<TypeId>();
+        const pinRows = (pred: RPred): void => {
+            for (const leaf of predLeaves(pred)) {
+                if (leaf.kind === "has" && leaf.tierMod !== undefined) needsRow.add(leaf.type);
+            }
+        };
+        pinRows(rpred);
+        for (const guard of guards.keys()) {
+            if (guard.kind !== "if") continue;
+            const g = this.resolve(guard.pred, before);
+            if (g !== null) pinRows(g);
+        }
         if (!collect(stmt.body)) return undefined;
 
         const known = { prefix: 0, suffix: 0 };
@@ -715,7 +730,15 @@ class Walker {
                 if (s.kind === "if") {
                     const body = mapSteps(s.body);
                     if (body === undefined) return undefined;
-                    out.push({ id, kind: "branch", holds: guards.get(s)!, body });
+                    const otherwise = s.elseBody === undefined ? undefined : mapSteps(s.elseBody);
+                    if (s.elseBody !== undefined && otherwise === undefined) return undefined;
+                    out.push({
+                        id,
+                        kind: "branch",
+                        holds: guards.get(s)!,
+                        body,
+                        ...(otherwise !== undefined && { otherwise }),
+                    });
                     continue;
                 }
                 if (s.kind !== "operation") return undefined;
@@ -765,6 +788,12 @@ class Walker {
                         break;
                     }
                     case "draw": {
+                        if (reforges(built)) {
+                            const outcomes = reforgeOutcomes(roll, atoms, atomIndex, needsRow);
+                            if (outcomes === undefined) return undefined;
+                            out.push({ id, kind: "reforge", outcomes });
+                            break;
+                        }
                         if (!singleAdd(built) || roll.variants.length !== 1) return undefined;
                         const v = roll.variants[0]!;
                         const weight = { prefix: 0, suffix: 0 };
@@ -931,7 +960,7 @@ class Walker {
                 chance: solved.passes > 0 ? Math.min(1, ending / solved.passes) : 1,
                 expected: rounds,
             },
-            ...(solved.unresolved > 1e-6 && {
+            ...(solved.unresolved >= 0.005 && {
                 note: `in ${Math.round(solved.unresolved * 100)}% of attempts the item fills up before the exit and the loop cannot end as written`,
             }),
         });
@@ -945,6 +974,9 @@ class Walker {
                     const taken = (solved.taken.get(step.id) ?? 0) * attempts;
                     this.record(s, reached, inner, { branch: reached > 0 ? taken / reached : 0 });
                     emit(s.body, step.body);
+                    if (s.elseBody !== undefined && step.otherwise !== undefined) {
+                        emit(s.elseBody, step.otherwise);
+                    }
                 } else if (s.kind === "restart" || s.kind === "stop") {
                     this.record(s, reached, inner, {});
                 } else {
@@ -1039,6 +1071,132 @@ function predLeaves(pred: RPred, out: RPred[] = []): RPred[] {
             out.push(pred);
             return out;
     }
+}
+
+/** Whether an op sequence reforges the item: a fill that lays down the reforge's count. */
+function reforges(ops: readonly Op[]): boolean {
+    return ops.some((op) => op.kind === "fill" && op.count.kind === "reforge");
+}
+
+/**
+ * The states a reforge leaves the chain in: for each variant and count case of
+ * its roll, which of the atoms the race draws on each side (`amongFirstDistribution`,
+ * the sides independent given the split), the present ones placed, each atom's
+ * row by weight share where a condition pins it; the counts are the modifiers
+ * placed, kept and drawn. Undefined when the roll has more atoms on a side
+ * than the race can list.
+ */
+function reforgeOutcomes(
+    roll: Extract<Roll, { kind: "draw" }>,
+    atoms: readonly ChainAtom[],
+    atomIndex: ReadonlyMap<TypeId, number>,
+    needsRow: ReadonlySet<TypeId>,
+): Outcome[] | undefined {
+    const typeOf = new Map<number, TypeId>();
+    for (const [type, i] of atomIndex) typeOf.set(i, type);
+    const rowsFor = (
+        i: number,
+        rows: readonly { readonly id: ModId; readonly weight: number }[],
+    ) => {
+        const type = typeOf.get(i)!;
+        if (!needsRow.has(type) || rows.length <= 1)
+            return [{ id: rows[0]?.id ?? atoms[i]!.rows[0]!.id, share: 1 }];
+        const total = rows.reduce((s, r) => s + r.weight, 0);
+        return rows.map((r) => ({
+            id: r.id,
+            share: total > 0 ? r.weight / total : 1 / rows.length,
+        }));
+    };
+    const outcomes = new Map<string, Outcome>();
+    const put = (state: ChainState, prob: number): void => {
+        if (prob <= 0) return;
+        const key = `${state.prefix}/${state.suffix}/${state.rows.map((r) => r ?? "-").join(",")}`;
+        const hit = outcomes.get(key);
+        if (hit) outcomes.set(key, { state, prob: hit.prob + prob });
+        else outcomes.set(key, { state, prob });
+    };
+    for (const v of roll.variants) {
+        const presentCount = { prefix: 0, suffix: 0 };
+        for (const p of v.present) presentCount[p.gen]++;
+        // The atoms the variant places for certain, with their rows.
+        const placed: { i: number; rows: { id: ModId; share: number }[] }[] = [];
+        for (const p of v.present) {
+            const i = atomIndex.get(p.type);
+            if (i !== undefined)
+                placed.push({
+                    i,
+                    rows: rowsFor(
+                        i,
+                        p.rows.map((r) => ({ id: r.mod.id, weight: r.weight })),
+                    ),
+                });
+        }
+        const sides = (["prefix", "suffix"] as const).map((gen) => {
+            const groups = gen === "prefix" ? v.prefix : v.suffix;
+            const special: number[] = [];
+            groups.forEach((g, gi) => {
+                if (atomIndex.has(g.type)) special.push(gi);
+            });
+            return { gen, groups, special };
+        });
+        if (sides.some((s) => s.special.length > 12)) return undefined;
+        for (const c of v.counts) {
+            const dists = sides.map((s) =>
+                amongFirstDistribution(
+                    s.groups.map((g) => g.weight),
+                    s.special,
+                    c[s.gen],
+                ),
+            );
+            const counts = {
+                prefix: presentCount.prefix + (v.before.prefix ?? 0) + c.prefix,
+                suffix: presentCount.suffix + (v.before.suffix ?? 0) + c.suffix,
+            };
+            const [pd, sd] = dists as [Float64Array, Float64Array];
+            for (let pm = 0; pm < pd.length; pm++) {
+                if (pd[pm] === 0) continue;
+                for (let sm = 0; sm < sd.length; sm++) {
+                    const prob = v.prob * c.prob * pd[pm]! * sd[sm]!;
+                    if (prob === 0) continue;
+                    // Every atom drawn or placed in this outcome, with its row choices.
+                    const drawn: { i: number; rows: { id: ModId; share: number }[] }[] = [
+                        ...placed,
+                    ];
+                    sides.forEach((s, si) => {
+                        const mask = si === 0 ? pm : sm;
+                        s.special.forEach((gi, b) => {
+                            if (!(mask & (1 << b))) return;
+                            const g = s.groups[gi]!;
+                            const i = atomIndex.get(g.type)!;
+                            drawn.push({
+                                i,
+                                rows: rowsFor(
+                                    i,
+                                    g.rows.map((r) => ({ id: r.mod.id, weight: r.weight })),
+                                ),
+                            });
+                        });
+                    });
+                    let states: { rows: (ModId | null)[]; prob: number }[] = [
+                        { rows: atoms.map(() => null), prob },
+                    ];
+                    for (const d of drawn) {
+                        const next: typeof states = [];
+                        for (const st of states) {
+                            for (const r of d.rows) {
+                                const rows = [...st.rows];
+                                rows[d.i] = r.id;
+                                next.push({ rows, prob: st.prob * r.share });
+                            }
+                        }
+                        states = next;
+                    }
+                    for (const st of states) put({ ...counts, rows: st.rows }, st.prob);
+                }
+            }
+        }
+    }
+    return [...outcomes.values()];
 }
 
 /** Whether an op sequence is one draw added to the item, nothing stripped or removed. */

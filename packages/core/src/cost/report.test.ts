@@ -154,6 +154,23 @@ describe("the cost of a guide", () => {
         expect(guard.branch).toBeLessThan(0.3);
     });
 
+    it("a reforge in a make-room loop's else arm pays for the kept modifier again", () => {
+        // Three prefixes with the life among them: an annul takes the life a
+        // third of the time and sends the loop back to the Chaos Orb until the
+        // life rolls again, so the orbs run a fair share of a whole reroll loop.
+        const c = craft(ring("rare", ["IncreasedLife1", "IncreasedMana1", "IncreasedArmour1"]), [
+            until(andp(has("IncreasedLife1"), cmp("prefixCount", "<=", 2)), [
+                iff(has("IncreasedLife1"), [op("annul")], [op("chaos")]),
+            ]),
+        ]);
+        const r = report(c);
+        const chaos = r.steps.find((s) => s.unit?.[0]?.item === "Chaos Orb")!;
+        const alone = report(craft(ring("rare"), [until(has("IncreasedLife1"), [op("chaos")])]));
+        const perLife = alone.steps[0]!.attempts!.expected;
+        expect(chaos.runs).toBeGreaterThan(0.2 * perLife);
+        expect(r.steps.find((s) => s.kind === "until")!.note).toBeUndefined();
+    });
+
     it("a Divine Orb reaches a value by the share of the range at or above it", () => {
         // LIFE_T1 rolls 70–84: fifteen values, five of them 80 or more.
         const c = craft(ring("rare", ["IncreasedLife1"]), [

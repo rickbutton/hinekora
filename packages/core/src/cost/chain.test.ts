@@ -166,6 +166,42 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.taken.get(0)).toBeCloseTo(1, 9);
     });
 
+    it("a reforge inside the body starts the item over, the else arm taking the other mass", () => {
+        // While the kept modifier is there an annul runs; once it is lost the
+        // reforge rolls it back with chance 1/4, so an attempt costs a reforge
+        // round whenever the annul takes it.
+        const kept: ChainAtom = { gen: "prefix", rows: [{ id: ModId("K"), weight: 1 }], weight: 1 };
+        const solved = chain({
+            atoms: [kept],
+            body: [
+                {
+                    id: 0,
+                    kind: "branch",
+                    holds: (s) => s.rows[0] !== null,
+                    body: [{ id: 1, kind: "remove", gen: "prefix" }],
+                    otherwise: [
+                        {
+                            id: 2,
+                            kind: "reforge",
+                            outcomes: [
+                                { prob: 0.25, state: at(3, 0, ["K"]) },
+                                { prob: 0.75, state: at(3, 0, [null]) },
+                            ],
+                        },
+                    ],
+                },
+            ],
+            starts: [{ state: at(3, 0, ["K"]), weight: 1 }],
+            caps: CAPS,
+            exit: (s) => s.rows[0] !== null && s.prefix <= 2,
+        })!;
+        // The first annul takes the kept one in a third of the rounds; each such
+        // loss costs four reforge rounds on average before another try.
+        expect(solved.exit).toBeCloseTo(1, 6);
+        expect(solved.reached.get(2)).toBeCloseTo(((1 / 3) * 4) / (2 / 3), 3);
+        expect(solved.taken.get(0)).toBeCloseTo(1.5, 3);
+    });
+
     it("a body that changes nothing is not a chain", () => {
         expect(
             chain({

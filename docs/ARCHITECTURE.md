@@ -393,8 +393,10 @@ craft's listed price).
   the craft. The head of the next attempt is where the last one left off short of the
   exit, so a condition at the top of the body reads the previous round's roll.
 - A loop whose body **changes the item one modifier at a time** (random removals, single
-  draws such as an Exalted Orb, bench crafts, and branches over them that restart, stop or
-  craft) is not memoryless: each round starts where the last left the item. It is solved
+  draws such as an Exalted Orb, bench crafts, and branches over them, with or without an
+  else arm, that restart, stop or craft; a reforge inside it starts the item over from its
+  roll's outcomes, as an essence spammed again once a kept modifier is lost) is not
+  memoryless: each round starts where the last left the item. It is solved
   as a Markov chain (`cost/chain.ts`) over a small state, the (prefix, suffix) counts and,
   for each modifier the loop's conditions name, whether it is on the item and at which
   row, from the states the loop may enter with (weighted by the path in), carrying the

@@ -3,7 +3,8 @@
  * (an Orb of Annulment, an Eldritch Orb of Annulment), single draws (an Exalted
  * Orb, an Orb of Augmentation), bench crafts, and the branches that catch a
  * kept modifier's loss or fill a gap, repeated until the counts and the named
- * modifiers allow. Such a loop is not a sequence of independent attempts: each
+ * modifiers allow; a reforge inside the body (an essence spammed again once a
+ * kept modifier is lost) starts the item over from its roll's outcomes. Such a loop is not a sequence of independent attempts: each
  * round starts from where the last one left the item. It is a Markov chain
  * over a small state, the (prefix, suffix) counts and, for each modifier the
  * loop's conditions name, whether it is on the item and at which row, solved by
@@ -51,18 +52,28 @@ export type ChainStep =
           readonly atom?: number;
           readonly row?: ModId;
       }
-    /** A branch: the body runs where the condition holds. */
+    /** A branch: the body runs where the condition holds, `otherwise` where not. */
     | {
           readonly id: number;
           readonly kind: "branch";
           readonly holds: (s: ChainState) => boolean;
           readonly body: readonly ChainStep[];
+          readonly otherwise?: readonly ChainStep[];
       }
+    /** A reforge: the item starts over as one of the roll's outcomes, whatever
+     *  it held, each outcome the counts and the atoms' rows it leaves. */
+    | { readonly id: number; readonly kind: "reforge"; readonly outcomes: readonly Outcome[] }
     /** The attempt ends; the craft ends. */
     | { readonly id: number; readonly kind: "restart" }
     | { readonly id: number; readonly kind: "stop" }
     /** A step the chain's state does not depend on. */
     | { readonly id: number; readonly kind: "other" };
+
+/** One way a reforge leaves the item, with its probability. */
+export interface Outcome {
+    readonly prob: number;
+    readonly state: ChainState;
+}
 
 export interface ChainInput {
     readonly atoms: readonly ChainAtom[];
@@ -132,7 +143,8 @@ function changes(steps: readonly ChainStep[]): boolean {
             s.kind === "remove" ||
             s.kind === "add" ||
             s.kind === "bench" ||
-            (s.kind === "branch" && changes(s.body)),
+            s.kind === "reforge" ||
+            (s.kind === "branch" && (changes(s.body) || changes(s.otherwise ?? []))),
     );
 }
 
@@ -194,8 +206,16 @@ function apply(step: ChainStep, alive: Dist, input: ChainInput, t: Totals): Dist
             }
             add(t.taken, step.id, massOf(inside));
             const out = run(step.body, inside, input, t);
-            for (const { state, prob } of out.values()) put(outside, state, prob);
-            return outside;
+            const rest =
+                step.otherwise === undefined ? outside : run(step.otherwise, outside, input, t);
+            for (const { state, prob } of out.values()) put(rest, state, prob);
+            return rest;
+        }
+        case "reforge": {
+            const next: Dist = new Map();
+            const mass = massOf(alive);
+            for (const o of step.outcomes) put(next, o.state, mass * o.prob);
+            return next;
         }
         case "bench": {
             const next: Dist = new Map();

@@ -284,7 +284,8 @@ resolveEssence / resolveBench / resolveHarvestTag`
   off the checker's item after the step (`refine` both ways), and a condition neither
   settles is unknown rather than guessed. `chain.ts` solves a loop whose body changes the
   item one modifier at a time (`chain`: `ChainStep`s of a random removal, a single draw, a
-  bench craft, a branch over them, a restart or a stop) as a Markov chain over the counts
+  bench craft, a branch over them with or without an else arm, a reforge whose `Outcome`s
+  the item starts over from, a restart or a stop) as a Markov chain over the counts
   and the named modifiers' rows (`ChainState`, one `ChainAtom` per modifier the loop's
   conditions name), from weighted start states to the exit, a restart, a stop or the
   mass it cannot resolve; the walk builds it in `chainLoop` for every `until` whose body
