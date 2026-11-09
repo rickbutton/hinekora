@@ -599,7 +599,13 @@ export function resonatorOps(r: Resonator): readonly Op[] {
         strip(),
         rarity("rare"),
         fill(
-            { kind: "fossil", blocked, added: r.added.filter(unblocked), essence },
+            {
+                kind: "fossil",
+                blocked,
+                added: r.added.filter(unblocked),
+                essence,
+                fossils: r.fossils,
+            },
             reforge(RARE_REFORGE),
         ),
         ...r.forced.filter(unblocked).map((mod) => fill({ kind: "rows", mods: [mod] }, within)),

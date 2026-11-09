@@ -232,6 +232,15 @@ class Checker {
         return result;
     }
 
+    /** The defs collected and every condition resolved quietly (`predicateResolver`). */
+    resolver(craft: Craft): (pred: Pred, a: AItem) => RPred | null {
+        this.quietly(() => {
+            this.collectDefs(craft.defs);
+            this.collectProcs(craft.procs);
+        });
+        return (pred, a) => this.quietly(() => this.resolvePred(pred, a));
+    }
+
     private diag(message: string, span: CheckDiagnostic["span"]): void {
         if (this.quiet > 0) return;
         this.diagnostics.push({ message, span });
@@ -1574,4 +1583,17 @@ function substituteStmt(stmt: Stmt, env: Map<string, Arg>): Stmt {
         case "call":
             return { ...stmt, args: subArgs(stmt.args, env) };
     }
+}
+
+/**
+ * The checker's reading of a guide's conditions, for a consumer that evaluates
+ * them against another model (the cost layer): the predicate defs collected,
+ * each condition resolved against the item it is read on, quietly, so nothing
+ * is reported twice. `null` where the checker could not resolve it.
+ */
+export function predicateResolver(
+    craft: Craft,
+    registry: Registry,
+): (pred: Pred, a: AItem) => RPred | null {
+    return new Checker(registry).resolver(craft);
 }

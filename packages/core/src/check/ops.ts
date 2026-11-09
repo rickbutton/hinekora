@@ -101,6 +101,9 @@ export type PoolSpec =
           readonly blocked: ReadonlySet<TagId>;
           readonly added: readonly Mod[];
           readonly essence: readonly Mod[];
+          /** The fossils socketed, for the weights they give the rows (the
+           *  cost layer reads them; the checker reads only the tags above). */
+          readonly fossils: readonly FossilSpec[];
       }
     /** One of these rows, guaranteed: a fossil's forced row, the Glyphic Fossil's
      *  corrupted-essence modifier. */
@@ -2134,7 +2137,7 @@ export function influenceTagsAny(a: AItem, registry: Registry): ReadonlySet<TagI
 }
 
 /** The state's guaranteed mods as the facts the pool reads, at rare caps. */
-function guaranteedFacts(a: AItem, registry: Registry, level = a.ilvl): ItemFacts {
+export function guaranteedFacts(a: AItem, registry: Registry, level = a.ilvl): ItemFacts {
     const types = guaranteedTypes(a);
     const families = new Set<GroupId>();
     const tags = new Set([...a.base.tags, ...influenceTagsOf(a, registry).sure]);
