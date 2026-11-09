@@ -82,12 +82,8 @@ main {
     font-size: 13px;
 }
 
-#problems p {
-    margin: 0 0 8px;
-}
-
-#problems .muted {
-    color: var(--muted);
+#problems:empty {
+    display: none;
 }
 
 #problems .problem {
@@ -124,6 +120,7 @@ main {
     border-left: 1px solid var(--border);
     background: var(--panel);
     overflow: auto;
+    scrollbar-gutter: stable;
     display: flex;
     flex-direction: column;
 }
@@ -309,114 +306,49 @@ main {
 }
 
 .chart {
-    position: relative;
-    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    transition: opacity 0.2s;
 }
 
-.chart svg {
-    position: absolute;
-    left: 0;
-    top: 0;
+.chart.stale {
+    opacity: 0.4;
     pointer-events: none;
 }
 
-.chart svg path {
-    fill: none;
-    stroke: #8a8a8a;
-    stroke-width: 1.5;
+.chart svg {
+    display: block;
 }
 
-.chart svg text {
-    fill: var(--muted);
-    font-size: 11px;
-}
-
-.chart .node {
-    position: absolute;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 10px;
-    background: var(--bg);
-    border: 1px solid #5a5a5a;
-    border-radius: 6px;
+.chart svg .node {
     cursor: pointer;
-    font-size: 13px;
-    transition: border-color 0.15s;
 }
 
-.chart .node:hover {
-    border-color: #9cdcfe;
+.chart svg .node:hover > *:first-child {
+    filter: brightness(1.25);
 }
 
-.chart .node.active {
-    border-color: #ffff77;
-    box-shadow: 0 0 0 1px #ffff77 inset;
+.chart svg .node.active > *:first-child {
+    stroke: #ffff77 !important;
+    stroke-width: 2.5px !important;
 }
 
-.chart .node.problem {
-    border-color: var(--error);
-}
-
-.chart .node.changed {
+.chart svg .node.changed > *:first-child {
     animation: node-flash 1.2s ease-out 1;
 }
 
 @keyframes node-flash {
     0% {
-        background: #3a3520;
+        filter: brightness(1.8);
     }
     100% {
-        background: var(--bg);
+        filter: brightness(1);
     }
 }
 
-.chart .node .label {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.chart .node.decision {
-    border-radius: 14px;
-    background: #24231b;
-    border-color: #6b6240;
-}
-
-.chart .node.decision .label {
-    white-space: normal;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    line-height: 1.25;
-    font-size: 12px;
-}
-
-.chart .node.decision em {
-    color: var(--muted);
-    font-style: normal;
-}
-
-.chart .node.restart {
-    background: transparent;
-    border-style: dashed;
-    color: var(--muted);
-    font-size: 12px;
-    justify-content: center;
-}
-
-.chart .node.start,
-.chart .node.end {
-    border-radius: 20px;
-    justify-content: center;
-}
-
-.chart .node.end {
-    background: #2f5d3a;
-    border-color: #2f5d3a;
+.chart svg .cluster-label,
+.chart svg .cluster text {
+    font-style: italic;
 }
 
 .badge {
@@ -434,45 +366,8 @@ main {
     background: #9a9a9a;
 }
 
-.badge-chaos,
-.badge-alchemy,
-.badge-alch {
-    background: #d9a441;
-}
-.badge-exalt,
-.badge-divine,
-.badge-regal {
-    background: #e8c547;
-}
-.badge-annul,
-.badge-scour {
-    background: #bdbdbd;
-}
-.badge-transmute,
-.badge-alteration,
-.badge-alt,
-.badge-augment {
-    background: #6f9fe8;
-}
-.badge-essence {
-    background: #5cc8c8;
-}
-.badge-bench {
-    background: #c48a5a;
-}
-.badge-harvest {
-    background: #7cc46a;
-}
-.badge-fossil {
-    background: #b58ad6;
-}
-.badge-beast,
-.badge-vaal {
-    background: #e06c5c;
-}
 .badge-check,
-.badge-call,
-.badge-start {
+.badge-call {
     background: #3c3c3c;
     color: var(--fg);
 }

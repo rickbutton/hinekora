@@ -6,13 +6,14 @@
  * second analysis; the playground's walkthrough pane draws it, and the step
  * spans are what link it to the editor.
  */
-import type { Arg, Craft, OperationArg, Stmt } from "../ast/ast.js";
+import type { Arg, Craft, OperationArg, Pred, Stmt } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import type { AItem } from "../check/astate.js";
 import type { CheckResult, TraceEntry } from "../check/check.js";
 import { describePred } from "../check/diagnostics.js";
 import { findMethod } from "../check/methods.js";
 import type { Registry } from "../resolve/registry.js";
+import { criteria, type Criterion, type Wording } from "./conditions.js";
 import { type ItemView, itemView, type ModGroup } from "./item.js";
 
 interface StepBase {
@@ -40,12 +41,16 @@ export type Step =
     | (StepBase & { readonly kind: "call"; readonly text: string })
     | (StepBase & {
           readonly kind: "loop";
+          /** The exit condition as written. */
           readonly condition: string;
+          /** The same in the player's words, one requirement per line. */
+          readonly check: Criterion;
           readonly body: readonly Step[];
       })
     | (StepBase & {
           readonly kind: "branch";
           readonly condition: string;
+          readonly check: Criterion;
           readonly then: readonly Step[];
           readonly else?: readonly Step[];
       })
@@ -135,6 +140,12 @@ export function walkthrough(craft: Craft, result: CheckResult, registry: Registr
         if (owner !== undefined) problems.set(owner, [...(problems.get(owner) ?? []), d.message]);
     }
 
+    const start = result.trace.find((e) => e.kind === "item");
+    const startItem = start?.after ?? start?.before;
+    const wording: Wording | undefined =
+        startItem === undefined ? undefined : { base: startItem.base, ilvl: craft.item.ilvl };
+    const check = (pred: Pred): Criterion => criteria(pred, craft, registry, wording);
+
     const steps = (stmts: readonly Stmt[]): Step[] => stmts.flatMap((s) => step(s));
     const step = (s: Stmt): Step[] => {
         const e = entryOf(s);
@@ -166,7 +177,13 @@ export function walkthrough(craft: Craft, result: CheckResult, registry: Registr
                 ];
             case "until":
                 return [
-                    { ...base, kind: "loop", condition: describePred(s.pred), body: steps(s.body) },
+                    {
+                        ...base,
+                        kind: "loop",
+                        condition: describePred(s.pred),
+                        check: check(s.pred),
+                        body: steps(s.body),
+                    },
                 ];
             case "if":
                 return [
@@ -174,6 +191,7 @@ export function walkthrough(craft: Craft, result: CheckResult, registry: Registr
                         ...base,
                         kind: "branch",
                         condition: describePred(s.pred),
+                        check: check(s.pred),
                         then: steps(s.body),
                         ...(s.elseBody !== undefined && { else: steps(s.elseBody) }),
                     },
@@ -185,11 +203,10 @@ export function walkthrough(craft: Craft, result: CheckResult, registry: Registr
         }
     };
 
-    const start = result.trace.find((e) => e.kind === "item");
     return {
         start: {
             span: craft.item.span,
-            ...(start !== undefined && { item: start.after ?? start.before }),
+            ...(startItem !== undefined && { item: startItem }),
         },
         steps: steps(craft.body),
     };

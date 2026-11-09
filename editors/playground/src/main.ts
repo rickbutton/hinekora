@@ -70,14 +70,8 @@ function showProblems(
     editor: monaco.editor.IStandaloneCodeEditor,
     diagnostics: ReturnType<typeof publishDiagnostics>,
 ): void {
+    // Nothing to say when nothing is wrong: the panel disappears.
     problems.replaceChildren();
-    if (diagnostics.length === 0) {
-        const ok = document.createElement("p");
-        ok.className = "muted";
-        ok.textContent = "The guide checks clean: every step's requirement holds on every path.";
-        problems.append(ok);
-        return;
-    }
     for (const d of diagnostics) {
         const row = document.createElement("div");
         row.className = "problem";
@@ -125,8 +119,8 @@ async function main(): Promise<void> {
         model.getOffsetAt(editor.getPosition() ?? { lineNumber: 1, column: 1 });
 
     // The chart and the editor point at each other: a node hovered
-    // highlights its statement, a card chosen moves the cursor, the cursor
-    // opens the card.
+    // highlights its statement, a node chosen moves the cursor, the cursor
+    // marks its node and opens its details.
     const hovered = editor.createDecorationsCollection();
     const pane = createChartPane(el<HTMLElement>("walkthrough"), {
         onSelect(offset) {
@@ -158,8 +152,7 @@ async function main(): Promise<void> {
     const refresh = (): void => {
         pending = undefined;
         showProblems(editor, publishDiagnostics(model, registry));
-        pane.render(model.getValue(), registry);
-        pane.setActive(cursorOffset());
+        void pane.render(model.getValue(), registry).then(() => pane.setActive(cursorOffset()));
     };
     refresh();
     model.onDidChangeContent(() => {

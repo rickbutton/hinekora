@@ -10,6 +10,7 @@ import type { Arg, Cmp, Craft, ParamRef, Pred } from "../ast/ast.js";
 import type { Base } from "../model/base.js";
 import type { Registry } from "../resolve/registry.js";
 import { rollableTiers } from "../resolve/tiers.js";
+import { numberWord } from "./item.js";
 
 /** Where the words are for: the item's base and level resolve the mod names. */
 export interface Wording {
@@ -152,13 +153,59 @@ export function clause(pred: Pred, craft: Craft, registry: Registry, wording?: W
 
 /**
  * A condition as the lines of a checklist: every requirement on its own line,
- * alternatives grouped under "any of", a requirement that must be absent
- * negated.
+ * alternatives grouped under "any of" (or "at least k of" when the guide spells
+ * that out), a requirement that must be absent negated.
  */
+
+/** The words over a group of alternatives: "one of", "at least two of". */
+export function groupWords(c: Extract<Criterion, { kind: "any" | "atLeast" }>): string {
+    return c.kind === "any" ? "one of" : `at least ${numberWord(c.count)} of`;
+}
 export type Criterion =
     | { readonly kind: "all"; readonly items: readonly Criterion[] }
     | { readonly kind: "any"; readonly items: readonly Criterion[] }
-    | { readonly kind: "leaf"; readonly text: string; readonly negated: boolean };
+    /** At least `count` of the `items`: a disjunction of every `count`-subset, folded. */
+    | { readonly kind: "atLeast"; readonly count: number; readonly items: readonly Leaf[] }
+    | Leaf;
+
+export interface Leaf {
+    readonly kind: "leaf";
+    readonly text: string;
+    readonly negated: boolean;
+}
+
+/**
+ * The "at least k of these" a guide spells out as every k-subset: `(a and b)
+ * or (a and c) or (b and c)` is at least two of a, b, c. Anything else stays
+ * a choice.
+ */
+function atLeastOf(items: readonly Criterion[]): Criterion | undefined {
+    const leaves = (c: Criterion): readonly Leaf[] | undefined =>
+        c.kind === "leaf"
+            ? [c]
+            : c.kind === "all" && c.items.every((i) => i.kind === "leaf")
+              ? c.items
+              : undefined;
+    const sets = items.map(leaves);
+    const k = sets[0]?.length ?? 0;
+    if (k < 2 || sets.some((s) => s === undefined || s.length !== k)) return undefined;
+    const key = (l: Leaf): string => `${l.negated ? "!" : ""}${l.text}`;
+    const union = new Map<string, Leaf>();
+    const seen = new Set<string>();
+    for (const s of sets as readonly (readonly Leaf[])[]) {
+        const keys = s.map(key);
+        if (new Set(keys).size !== k) return undefined;
+        const id = [...keys].sort().join("\u0000");
+        if (seen.has(id)) return undefined;
+        seen.add(id);
+        s.forEach((l, i) => union.set(keys[i]!, l));
+    }
+    const n = union.size;
+    let choose = 1;
+    for (let i = 0; i < k; i++) choose = (choose * (n - i)) / (i + 1);
+    if (choose !== items.length) return undefined;
+    return { kind: "atLeast", count: k, items: [...union.values()] };
+}
 
 export function criteria(
     pred: Pred,
@@ -177,8 +224,10 @@ export function criteria(
     switch (p.kind) {
         case "and":
             return { kind: "all", items: flatten("and", p).map(again) };
-        case "or":
-            return { kind: "any", items: flatten("or", p).map(again) };
+        case "or": {
+            const items = flatten("or", p).map(again);
+            return atLeastOf(items) ?? { kind: "any", items };
+        }
         case "not": {
             const inner = expand(p.inner, craft);
             if (inner.kind === "compare") return again({ ...inner, op: NEGATED[inner.op] });

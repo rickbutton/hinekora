@@ -157,4 +157,31 @@ until ${pred} { chaos }`;
             negated: false,
         });
     });
+
+    it("folds every pair of a set into 'at least two of', and nothing less", () => {
+        const pairs = (...ps: [string, string][]): string =>
+            ps.map(([a, b]) => `(has "${a}" and has "${b}")`).join(" or ");
+        const all = list(
+            pairs(
+                ["fire resistance", "cold resistance"],
+                ["fire resistance", "lightning resistance"],
+                ["cold resistance", "lightning resistance"],
+            ),
+        );
+        expect(all.kind).toBe("atLeast");
+        if (all.kind !== "atLeast") throw new Error("expected at least");
+        expect(all.count).toBe(2);
+        expect(all.items.map((l) => l.text)).toEqual([
+            "+#% to Fire Resistance",
+            "+#% to Cold Resistance",
+            "+#% to Lightning Resistance",
+        ]);
+        const some = list(
+            pairs(
+                ["fire resistance", "cold resistance"],
+                ["fire resistance", "lightning resistance"],
+            ),
+        );
+        expect(some.kind).toBe("any");
+    });
 });
