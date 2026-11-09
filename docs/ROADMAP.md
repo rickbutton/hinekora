@@ -30,7 +30,8 @@ of the operations; no divergence is expected.
   Orb is built with the donor reduced to its influence)
   and **choice over an operation's outcomes** (Hinekora's Lock, Allflame crafting).
 - English negation sugar (`doesn't have` → `not has`); a power-user annotation tier for
-  reusable techniques.
+  reusable techniques; a way to name an unveiled modifier whose words a natural one
+  shares other than by its mod id.
 - **reduced-cap base edge cases:** the split-beast, Awakener's Orb and Harvest routes
   that put modifiers on a magic Simplex Amulet, which no ordinary currency can
   ([Simplex Amulet § Special Crafting Considerations](https://www.poewiki.net/wiki/Simplex_Amulet#Special_Crafting_Considerations)),

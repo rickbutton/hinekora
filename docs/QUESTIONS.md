@@ -496,6 +496,58 @@ family for everything.
 the surface doc §1, §3 and §5).
 **Answer:**
 
+### Q47 · game probe · open
+
+**Asked:** 2026-11-08
+**Goal:** what a conqueror's, Shaper's or Elder's Exalted Orb does on a Rare whose item
+level is below every row of that influence (an ilvl 50 body armour and a Hunter's
+Exalted Orb). [Hunter's Exalted Orb § Mechanics](https://www.poewiki.net/wiki/Hunter%27s_Exalted_Orb#Mechanics)
+lists only the influenced, synthesised, fractured and eldritch refusals; the help text
+says "a high-level rare item"; craftofexile refuses below item level 68.
+**Procure:** a Rare body armour of item level 50 with an open slot; a Hunter's Exalted Orb.
+**Steps:** apply the orb.
+**Record:** refused; or marked Hunter with no modifier added; or marked with one (which).
+**Assumed meanwhile:** refused (`check/library.ts` `influenceExaltOps` requires an
+influence modifier the item can take), the reading under which the checker never
+claims a modifier the game did not add.
+**Answer:**
+
+### Q48 · game probe · open
+
+**Asked:** 2026-11-08
+**Goal:** whether the four Path of Exile: Royale modifier rows (movement speed on boots,
+cast speed, attack speed) ever roll in the main game. The export gives them weights; the
+wiki's per-class modifier lists ([List of modifiers for wands](https://www.poewiki.net/wiki/List_of_modifiers_for_wands))
+omit them, as does craftofexile, but no page states the rule.
+**Procure:** a few low-level Normal boots and gloves; Orbs of Transmutation and Alteration.
+**Steps:** roll them; watch for a "Sprinter's" boots prefix of 15–25% or a gloves "of
+Ease" of 8–15% that the ordinary ladder does not have.
+**Record:** whether such a roll ever appears.
+**Assumed meanwhile:** never (`packages/data/src/adapter.ts` `adaptMod` drops a row whose
+id names Royale), which rests on the lists' omission.
+**Answer:**
+
+### Q49 · decision · open
+
+**Asked:** 2026-11-08
+**Question:** a declared `"random"` affix is read as a natural modifier of its side the item
+could roll: never a bench craft, an essence-only, fossil-only or unveiled row, nor one a
+declared cannot-roll metamod would have blocked. A bought item whose unnamed prefix is in
+fact a bench craft then checks as if it had none, and a later `bench` is let through
+where the game refuses on the crafted limit.
+**Options:** (a) keep natural-only and say so (the surface doc does); (b) a spelling for
+an unnamed crafted modifier, `crafted "random"`, counted toward the crafted range;
+(c) read `"random"` as any row of any source, which would block most crafts on a
+placeholder item.
+**Recommendation:** (b) when a guide needs it; (a) meanwhile.
+**Assumed meanwhile:** (a) (`check/ops.ts` `anonymousTypes`; the `crafted` range counts
+named bench rows only).
+**Answer:**
+
+---
+
+## Resolved
+
 ### Q31 · decision · resolved
 
 **Asked:** 2026-10-29
@@ -593,58 +645,6 @@ concrete item gains fields only when the pool needs them.
 uncertainty, so the checker's state is the only item model; the pool reads a projection
 of it (`ItemFacts`). The concrete currency library and validator were deleted in
 `1f62c9d` and the pool's parameter became the projection in `294d7c1`.
-
-### Q47 · game probe · open
-
-**Asked:** 2026-11-08
-**Goal:** what a conqueror's, Shaper's or Elder's Exalted Orb does on a Rare whose item
-level is below every row of that influence (an ilvl 50 body armour and a Hunter's
-Exalted Orb). [Hunter's Exalted Orb § Mechanics](https://www.poewiki.net/wiki/Hunter%27s_Exalted_Orb#Mechanics)
-lists only the influenced, synthesised, fractured and eldritch refusals; the help text
-says "a high-level rare item"; craftofexile refuses below item level 68.
-**Procure:** a Rare body armour of item level 50 with an open slot; a Hunter's Exalted Orb.
-**Steps:** apply the orb.
-**Record:** refused; or marked Hunter with no modifier added; or marked with one (which).
-**Assumed meanwhile:** refused (`check/library.ts` `influenceExaltOps` requires an
-influence modifier the item can take), the reading under which the checker never
-claims a modifier the game did not add.
-**Answer:**
-
-### Q48 · game probe · open
-
-**Asked:** 2026-11-08
-**Goal:** whether the four Path of Exile: Royale modifier rows (movement speed on boots,
-cast speed, attack speed) ever roll in the main game. The export gives them weights; the
-wiki's per-class modifier lists ([List of modifiers for wands](https://www.poewiki.net/wiki/List_of_modifiers_for_wands))
-omit them, as does craftofexile, but no page states the rule.
-**Procure:** a few low-level Normal boots and gloves; Orbs of Transmutation and Alteration.
-**Steps:** roll them; watch for a "Sprinter's" boots prefix of 15–25% or a gloves "of
-Ease" of 8–15% that the ordinary ladder does not have.
-**Record:** whether such a roll ever appears.
-**Assumed meanwhile:** never (`packages/data/src/adapter.ts` `adaptMod` drops a row whose
-id names Royale), which rests on the lists' omission.
-**Answer:**
-
-### Q49 · decision · open
-
-**Asked:** 2026-11-08
-**Question:** a declared `"random"` affix is read as a natural modifier of its side the item
-could roll: never a bench craft, an essence-only, fossil-only or unveiled row, nor one a
-declared cannot-roll metamod would have blocked. A bought item whose unnamed prefix is in
-fact a bench craft then checks as if it had none, and a later `bench` is let through
-where the game refuses on the crafted limit.
-**Options:** (a) keep natural-only and say so (the surface doc does); (b) a spelling for
-an unnamed crafted modifier, `crafted "random"`, counted toward the crafted range;
-(c) read `"random"` as any row of any source, which would block most crafts on a
-placeholder item.
-**Recommendation:** (b) when a guide needs it; (a) meanwhile.
-**Assumed meanwhile:** (a) (`check/ops.ts` `anonymousTypes`; the `crafted` range counts
-named bench rows only).
-**Answer:**
-
----
-
-## Resolved
 
 ### Q7 · game probe · resolved
 

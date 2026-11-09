@@ -123,8 +123,9 @@ export function suffixRange(a: AItem): Range {
 
 /**
  * A presence BDD from unit facts: guaranteed types forced true, excluded ones
- * false. Rebuilding this way drops disjunctions, sound, because disjunctions
- * arise from and are consumed by control flow, not carried across operations.
+ * false. An operation that rebuilds its presence this way drops the
+ * disjunctions, soundly; one that must keep them forgets only the types it
+ * touches (`forgetTypes`).
  */
 export function presenceFacts(
     bdd: BddManager,
