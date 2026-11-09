@@ -50,7 +50,14 @@ import {
 } from "./diagnostics.js";
 import { rollableGen, rollableTiers, tierMod } from "../resolve/tiers.js";
 import { findMethod, type Literal, type Method, slotAt } from "./methods.js";
-import { anonymousTypes, influenceTagsAny, recombine, recombineRefusal, runMethod } from "./ops.js";
+import {
+    anonymousTypes,
+    influenceTagsAny,
+    influenceTagsOf,
+    recombine,
+    recombineRefusal,
+    runMethod,
+} from "./ops.js";
 import { rollRange } from "./values.js";
 import { lookupWeight } from "../pool/pool.js";
 import type { Range } from "./domain.js";
@@ -1133,8 +1140,9 @@ class Checker {
             // level, under a tag a present modifier may add too, a bench row its
             // class takes, an unveiled or otherwise placed row.
             const pinned = a.tiers.get(type);
-            const itemTags = new Set([...a.base.tags, ...tags]);
-            const maybeTags = new Set<TagId>();
+            const influence = influenceTagsOf(a, this.registry);
+            const itemTags = new Set([...a.base.tags, ...influence.sure]);
+            const maybeTags = new Set<TagId>(influence.maybe);
             for (const t of a.possible) {
                 if (isExcluded(a, t)) continue;
                 for (const tag of this.registry.addsTagsOfType(t)) maybeTags.add(tag);
@@ -1147,7 +1155,7 @@ class Checker {
             }
             const mayCarry = (m: Mod): boolean => {
                 if (pinned?.has(m.id) || granted.has(m.id)) return true;
-                switch (m.source) {
+                switch (m.source ?? "natural") {
                     case "natural": {
                         const weight = lookupWeight(m, itemTags, maybeTags);
                         return m.domain === a.base.domain && weight !== null && weight > 0;

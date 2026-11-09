@@ -26,6 +26,8 @@ import {
     MAXLIFE_T3,
     PROTECT_PREFIXES_CARRIER,
     RING_BASE,
+    STAFFY_ADDER,
+    STAFFY_VALUE,
     TIERED_CATALOG,
 } from "../__fixtures__/mods.js";
 import type { Rarity } from "../model/ids.js";
@@ -173,6 +175,24 @@ describe("has <mod> <cmp> <n>", () => {
             iff(hasValue("energy shield", ">=", 35), [op("divine")]),
         ]);
         expect(check(c, { registry: placed }).diagnostics).toEqual([]);
+    });
+
+    it("reads a row that rolls only under a tag an unnamed modifier may add", () => {
+        // The unnamed prefix may be the adder, under whose tag the gated suffix
+        // rolls, so the unnamed suffix may be that row and its span compares.
+        const gated = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...TIERED_CATALOG, STAFFY_ADDER, STAFFY_VALUE],
+        });
+        const anonymous = item({
+            base: "IronRing",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: ["random"],
+            suffixes: ["random"],
+        });
+        const c = craft(anonymous, [iff(hasValue(STAFFY_VALUE.id, ">=", 15), [stop()])]);
+        expect(check(c, { registry: gated }).diagnostics).toEqual([]);
     });
 
     it("reads only the rows the item may carry, so another base's row is out of reach", () => {

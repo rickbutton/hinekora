@@ -829,6 +829,16 @@ export const STAFFY_ENABLED: Mod = mkMod({
     spawn: [spawn(TAG_STAFFY, 500), spawn(TAG_RING, 0), spawn(TAG_DEFAULT, 500)],
     text: "staffy enabled",
 });
+/** The same gate on a row with a span, for a value comparison on it. */
+export const STAFFY_VALUE: Mod = mkMod({
+    id: "StaffyValue1",
+    type: "StaffyValue",
+    gen: "suffix",
+    minLevel: 1,
+    families: ["StaffyValue"],
+    spawn: [spawn(TAG_STAFFY, 500), spawn(TAG_RING, 0), spawn(TAG_DEFAULT, 500)],
+    text: "+(10-20) to staffy value",
+});
 
 /** A fourth plain ring suffix, outside `CATALOG`, for tests that need a
  *  suffix left to roll once the three resistances are on. */
