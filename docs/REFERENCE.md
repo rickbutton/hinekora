@@ -1014,7 +1014,8 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
   `ast/span.js`, not `ast/ast.js`.
 - **The vscode extension is CommonJS**: don't make it extend the ESM base tsconfig.
 - Base **display names are not unique**; resolution treats a name collision as
-  `ambiguous`, and ids are metadata paths.
+  `ambiguous` unless the bases agree on class, domain, tags and caps (`sameToTheModel`),
+  and ids are metadata paths.
 - **Loop widening over-approximates PRESENCE only** (the held imprint's included).
   Counts/`possible`/tiers converge on their own, so they are left exact; an earlier
   attempt that also interval-widened the counts corrupted the after-state total. Widen

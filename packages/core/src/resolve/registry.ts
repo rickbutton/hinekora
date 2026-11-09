@@ -367,6 +367,17 @@ export interface RegistryData {
  * Build a registry from loaded data. Lookups are case-insensitive on the whole
  * name; ids and aliases are both accepted.
  */
+/** Do two bases agree on everything the model reads of a base: class, domain,
+ *  tags and affix caps? */
+function sameToTheModel(a: Base, b: Base): boolean {
+    if (a.itemClass !== b.itemClass || a.domain !== b.domain) return false;
+    if (a.tags.size !== b.tags.size || [...a.tags].some((t) => !b.tags.has(t))) return false;
+    return (
+        (a.capDelta?.prefix ?? 0) === (b.capDelta?.prefix ?? 0) &&
+        (a.capDelta?.suffix ?? 0) === (b.capDelta?.suffix ?? 0)
+    );
+}
+
 export function buildRegistry(data: RegistryData): Registry {
     const norm = (s: string): string => s.trim().toLowerCase();
 
@@ -376,7 +387,8 @@ export function buildRegistry(data: RegistryData): Registry {
             ([alias, id]) => [norm(alias), norm(id)] as const,
         ),
     );
-    // Display names are not unique, so a name maps to a list; >1 hit = ambiguous.
+    // Display names are not unique, so a name maps to a list; >1 hit is ambiguous
+    // unless the hits are one base to the model.
     const baseByName = new Map<string, Base[]>();
     for (const b of data.bases) {
         if (b.name === undefined) continue;
@@ -545,6 +557,11 @@ export function buildRegistry(data: RegistryData): Registry {
             const byName = baseByName.get(key);
             if (byName && byName.length === 1) return found(byName[0]!);
             if (byName && byName.length > 1) {
+                // Variants that share a name and everything the model reads are one
+                // base to the checker, so any of them serves: a talisman's implicit
+                // variants, a tincture's old and new id.
+                const [first, ...rest] = byName;
+                if (rest.every((b) => sameToTheModel(first!, b))) return found(first!);
                 return fail({ kind: "ambiguous", name, candidates: byName.map((b) => b.id) });
             }
             return fail({ kind: "unknownBase", name });

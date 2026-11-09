@@ -166,8 +166,16 @@ describe("registry resolution against real data", () => {
         expect(registry.resolveBase("Iron Ring").ok).toBe(true);
     });
 
+    it("resolves a colliding base name when the bases are one to the checker", () => {
+        // A tincture's old and new id, a talisman's implicit variants: same class,
+        // domain, tags and caps, so a guide's name for them needs no id.
+        expect(registry.resolveBase("Ashbark Tincture").ok).toBe(true);
+        expect(registry.resolveBase("Black Maw Talisman").ok).toBe(true);
+        expect(registry.resolveBase("Avian Twins Talisman").ok).toBe(true);
+    });
+
     it("reports a colliding base name as ambiguous, with candidates", () => {
-        // Several bases share the name "Academy Map".
+        // Several bases share the name "Academy Map", with different tags.
         const r = registry.resolveBase("Academy Map");
         expect(r.ok).toBe(false);
         if (!r.ok) {

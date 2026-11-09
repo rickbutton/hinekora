@@ -49,7 +49,9 @@ item {
 ```
 
 - `base` resolves by display name against the catalog; a name shared by several bases is
-  rejected as ambiguous (the id, `Metadata/Items/...`, is the escape hatch).
+  rejected as ambiguous unless they are one base to the checker, the same class, domain,
+  tags and affix caps (a talisman's implicit variants, a tincture's old and new id); the
+  id, `Metadata/Items/...`, is the escape hatch.
 - `ilvl` is the [item level](https://www.poewiki.net/wiki/Item_level); it never changes.
 - `rarity` is `normal`, `magic` or `rare`. A base that can never be Rare (flasks,
   tinctures) is rejected at `rare`, per [Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare).
