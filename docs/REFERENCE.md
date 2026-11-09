@@ -198,6 +198,9 @@ these suffix modifiers }`, `{ 1-3 additional prefix or suffix modifiers }`,
 resolveEssence / resolveBench / resolveHarvestTag`
     - `effectsOfType(type)`: the effects a carrier type contributes (the metamod seam the
       checker folds over guaranteed types; empty for everything else).
+    - `resolveClusterEnchant(name)` names a cluster jewel's enchantment by the words of
+      its stat, matched against the `affliction_` spawn tags the notables roll under
+      (`clusterEnchants()` lists them); the checker reads the tag onto the base.
     - `resolveHarvestTag(name)` maps a surface category ("fire", "caster") to its
       canonical `Mod.implicitTags` tag via the curated `HARVEST_TAGS` table.
     - `resolveModType` is **fuzzy and base-aware**: text → ModType, narrowed to types that
@@ -679,7 +682,9 @@ one domain. The sub-domains:
 - **Trace** (`TraceEntry[]`): `{ span, kind, before, after? }` per statement (and the
   item block), recorded only on the real (non-quiet) pass. `traceAt(trace, offset)`
   returns the innermost entry covering an offset; this powers hover.
-- `elaborateItem`: declared mods must **pin a tier** (`[ "maximum life" t1 ]`) via an
+- `elaborateItem`: a cluster jewel's `enchant` must be present and fit its size
+  (`CLUSTER_PASSIVES`, `clusterSize`), and becomes a tag of the base so the pool holds its
+  notables; declared mods must **pin a tier** (`[ "maximum life" t1 ]`) via an
   exact id/alias or a description + `t<n>`; a bare description is an error unless a single
   tier of the modifier rolls here, which it then pins. Placeholders
   (`"random"`/`"?"`) stay anonymous and widen `possible` to the natural rows of their

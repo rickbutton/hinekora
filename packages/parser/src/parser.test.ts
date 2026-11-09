@@ -693,3 +693,23 @@ describe("parser — has group", () => {
         ).toMatch(/a group has no tier/);
     });
 });
+
+describe("item block — the cluster jewel enchant", () => {
+    it("reads the passive count and the stat, and formats them back", () => {
+        const text = [
+            "item {",
+            '    base:    "Large Cluster Jewel"',
+            "    ilvl:    84",
+            "    rarity:  rare",
+            '    enchant: 8 "lightning damage"',
+            "}",
+            "",
+        ].join("\n");
+        expect(parseOk(text).item.enchant).toEqual({ passives: 8, text: "lightning damage" });
+        expect(formatCraft(text)).toBe(text);
+        expect(
+            parseErr('item { base: "L" ilvl: 84 rarity: rare enchant: "lightning damage" }')
+                .message,
+        ).toMatch(/passive count/);
+    });
+});

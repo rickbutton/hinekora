@@ -65,6 +65,18 @@ export const RING_BASE: Base = {
     tags: new Set([TAG_DEFAULT, TAG_RING]),
 };
 
+/** A Large Cluster Jewel: its notables roll under the enchantment's tag. */
+export const DOMAIN_CLUSTER = Domain("affliction_jewel");
+export const TAG_CLUSTER_LARGE = TagId("expansion_jewel_large");
+export const TAG_ENCHANT_LIGHTNING = TagId("affliction_lightning_damage");
+export const CLUSTER_BASE: Base = {
+    id: BaseId("LargeClusterJewel"),
+    name: "Large Cluster Jewel",
+    itemClass: ClassId("Jewel"),
+    domain: DOMAIN_CLUSTER,
+    tags: new Set([TAG_DEFAULT, TagId("jewel"), TAG_CLUSTER_LARGE]),
+};
+
 export const AMULET_BASE: Base = {
     id: BaseId("CoralAmulet"),
     itemClass: CLASS_AMULET,
@@ -937,6 +949,19 @@ export const MAXMANA_TIERS: readonly Mod[] = [
 );
 
 export const TIERED_CATALOG: readonly Mod[] = [MAXLIFE_T1, MAXLIFE_T2, MAXLIFE_T3, FIRE_RES_TIERED];
+
+/** A cluster notable, rolling only under the lightning damage enchantment. */
+export const NOTABLE_SADIST: Mod = mkMod({
+    id: "AfflictionNotableSadist",
+    type: "AfflictionNotableSadist",
+    gen: "prefix",
+    minLevel: 1,
+    domain: DOMAIN_CLUSTER,
+    families: ["Sadist"],
+    spawn: [spawn(TAG_ENCHANT_LIGHTNING, 1000)],
+    implicitTags: ["lightning", "damage"],
+    text: "1 Added Passive Skill is Sadist",
+});
 
 /** The full mini catalog. */
 export const CATALOG: readonly Mod[] = [

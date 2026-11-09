@@ -86,6 +86,11 @@ item {
   winning and a tie ambiguous as in §2; an implicit's "presence" variant ("While a
   Unique Enemy is in your Presence, …") is a wording of its own, named by the words of
   its condition. An influenced item cannot carry one, so declaring both is an error.
+- `enchant: <passives> "<stat>"` is a [cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel)'s
+  two enchantments: how many passive skills it adds (2 to 3 on a Small, 4 to 6 on a Medium,
+  8 to 12 on a Large) and the stat its small passives grant, which decides the notables it
+  can roll, so `enchant: 8 "lightning damage"` is what makes `has "sadist"` possible. The
+  stat is named by its words as a modifier is (§2); a cluster jewel without it is an error.
 - `corrupted`, a bare flag, marks a
   [corrupted item](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items), which
   takes no craft but the Tainted currency (§3). A guide that corrupts an item mid-way

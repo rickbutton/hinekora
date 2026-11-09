@@ -41,6 +41,7 @@ export const ITEM_FIELDS = [
     "corrupted",
     "exarch",
     "eater",
+    "enchant",
 ] as const;
 export const RARITY_WORDS = ["normal", "magic", "rare"] as const;
 /** The six influences, as `influences:` lists them and `influenced` names one. */

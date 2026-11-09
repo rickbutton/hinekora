@@ -14,6 +14,7 @@ import {
     type Def,
     findMethod,
     ELDRITCH_TIERS,
+    type ClusterEnchantDecl,
     type EldritchDecl,
     type EldritchTierName,
     type IfStmt,
@@ -257,6 +258,7 @@ class Parser {
         let corrupted = false;
         let exarch: EldritchDecl | undefined;
         let eater: EldritchDecl | undefined;
+        let enchant: ClusterEnchantDecl | undefined;
 
         const setOnce = <T>(
             current: T | undefined,
@@ -313,6 +315,20 @@ class Parser {
                 case "eater":
                     eater = setOnce(eater, key, this.parseEldritchTier(key), keyTok.span);
                     break;
+                case "enchant": {
+                    const passives = this.expect("int", "the passive count after 'enchant:'");
+                    const text = this.expect(
+                        "string",
+                        "the stat the small passives grant, quoted, after the passive count",
+                    );
+                    enchant = setOnce(
+                        enchant,
+                        key,
+                        { passives: Number(passives.text), text: text.text },
+                        keyTok.span,
+                    );
+                    break;
+                }
                 default:
                     throw this.error(`unknown item field '${key}'`, keyTok.span);
             }
@@ -336,6 +352,7 @@ class Parser {
             corrupted,
             ...(exarch !== undefined && { exarch }),
             ...(eater !== undefined && { eater }),
+            ...(enchant !== undefined && { enchant }),
             span: span(start, close.span.end),
         };
     }

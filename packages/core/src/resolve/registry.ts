@@ -7,7 +7,7 @@
 import type { Base } from "../model/base.js";
 import type { Effect } from "../model/effects.js";
 import type { ClassId, Gen, GroupId, TypeId } from "../model/ids.js";
-import { TagId } from "../model/ids.js";
+import { Domain, TagId } from "../model/ids.js";
 import { type EldritchSide, type Influence, influenceTags } from "../model/marks.js";
 import { withMetamodEffects } from "../model/metamods.js";
 import { emptyItem } from "../model/item.js";
@@ -35,12 +35,20 @@ const ladderOf = (tier: number): number => 8 - tier;
 
 /** Shared empty result for `addsTagsOfType` on a type that adds none. */
 const EMPTY_TAGS: ReadonlySet<TagId> = new Set();
+/** The cluster jewels' domain, whose notables roll under their enchantment's tag. */
+const CLUSTER_DOMAIN = Domain("affliction_jewel");
 /** Shared empty result for `sidesOfType` on an unknown type. */
 const EMPTY_SIDES: ReadonlySet<Gen> = new Set();
 /** Shared empty result for `familiesOfType` on an unknown type. */
 const EMPTY_FAMILIES: ReadonlySet<GroupId> = new Set();
 /** Shared empty result for `effectsOfType` on a non-carrier type. */
 const EMPTY_EFFECTS: readonly Effect[] = [];
+
+/** A cluster jewel enchantment: the notables' spawn tag and the words of its stat. */
+export interface ClusterEnchant {
+    readonly tag: TagId;
+    readonly words: string;
+}
 
 /** A stat-description completion suggestion. */
 export interface StatSuggestion {
@@ -92,6 +100,7 @@ export type ResolveError =
     | { readonly kind: "unknownAspect"; readonly name: string }
     | { readonly kind: "unknownBench"; readonly name: string }
     | { readonly kind: "unknownHarvestTag"; readonly name: string }
+    | { readonly kind: "unknownEnchant"; readonly name: string }
     | { readonly kind: "ambiguous"; readonly name: string; readonly candidates: readonly string[] };
 
 /**
@@ -212,6 +221,12 @@ export interface Registry {
     resolveAspect(name: string): Resolved<Mod>;
     /** The generation (prefix/suffix) a ModType always occupies, if known. */
     genOfType(type: TypeId): Gen | undefined;
+    /** A cluster jewel's enchantment that decides its notable pool, named by the
+     *  words of the stat its small passives grant ("lightning damage"); the
+     *  catalog knows it as the spawn tag the notables roll under. */
+    resolveClusterEnchant(name: string): Resolved<TagId>;
+    /** Every cluster jewel enchantment the catalog knows, with its wording. */
+    clusterEnchants(): readonly ClusterEnchant[];
     /** The sides the type's rows sit on across the catalog: one for most types,
      *  both for a type that is a prefix on one base and a suffix on another. */
     sidesOfType(type: TypeId): ReadonlySet<Gen>;
@@ -410,6 +425,18 @@ export function buildRegistry(data: RegistryData): Registry {
 
     const typeGen = new Map<TypeId, Gen>();
     for (const m of catalog) if (!typeGen.has(m.type)) typeGen.set(m.type, m.gen);
+    // The cluster jewel enchantments are the `affliction_` spawn tags the
+    // notables roll under, worded by their slug ("affliction_lightning_damage").
+    const enchantTags = new Set<string>();
+    for (const m of catalog) {
+        if (m.domain !== CLUSTER_DOMAIN) continue;
+        for (const w of m.spawn)
+            if (w.weight > 0 && w.tag.startsWith("affliction_")) enchantTags.add(w.tag);
+    }
+    const enchants: ClusterEnchant[] = [...enchantTags].sort().map((tag) => ({
+        tag: TagId(tag),
+        words: tag.slice("affliction_".length).replace(/_+$/, "").replaceAll("_", " "),
+    }));
     const typeSides = new Map<TypeId, Set<Gen>>();
     for (const m of catalog) {
         let sides = typeSides.get(m.type);
@@ -569,6 +596,28 @@ export function buildRegistry(data: RegistryData): Registry {
         resolveHarvestTag(name) {
             const tag = HARVEST_TAGS.get(norm(name));
             return tag ? found(tag) : fail({ kind: "unknownHarvestTag", name });
+        },
+
+        resolveClusterEnchant(name) {
+            const q = normalizeText(name);
+            if (q.length === 0) return fail({ kind: "unknownEnchant", name });
+            const scored = enchants.flatMap((e) => {
+                const tokens = new Set(normalizeText(e.words));
+                return q.every((w) => tokenMatches(w, tokens))
+                    ? [{ e, score: q.length / tokens.size }]
+                    : [];
+            });
+            if (scored.length === 0) return fail({ kind: "unknownEnchant", name });
+            const best = Math.max(...scored.map((s) => s.score));
+            const top = scored.filter((s) => s.score === best);
+            if (top.length > 1) {
+                return fail({ kind: "ambiguous", name, candidates: top.map((s) => s.e.words) });
+            }
+            return found(top[0]!.e.tag);
+        },
+
+        clusterEnchants() {
+            return enchants;
         },
 
         resolveEssence(name, tier) {

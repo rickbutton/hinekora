@@ -49,7 +49,7 @@
                     "name": "support.function.hinekora"
                 },
                 {
-                    "match": "\\b(base|ilvl|rarity|prefixes|suffixes|influences|corrupted|exarch|eater)\\b",
+                    "match": "\\b(base|ilvl|rarity|prefixes|suffixes|influences|corrupted|exarch|eater|enchant)\\b",
                     "name": "variable.parameter.hinekora"
                 },
                 {

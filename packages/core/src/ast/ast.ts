@@ -103,7 +103,16 @@ export interface ItemBlock {
     /** `exarch: grand` and `eater: lesser "<wording>"`, the eldritch implicits. */
     readonly exarch?: EldritchDecl;
     readonly eater?: EldritchDecl;
+    /** `enchant: 8 "lightning damage"`, a cluster jewel's two enchantments. */
+    readonly enchant?: ClusterEnchantDecl;
     readonly span: SourceSpan;
+}
+
+/** A cluster jewel's enchantments: how many passive skills it adds, and the
+ *  stat its small passives grant, which decides the notables it can roll. */
+export interface ClusterEnchantDecl {
+    readonly passives: number;
+    readonly text: string;
 }
 
 /** A declared eldritch implicit: its tier, and its wording when known. */

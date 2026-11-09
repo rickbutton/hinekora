@@ -20,7 +20,8 @@ import type {
     Stmt,
 } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
-import type { Gen, GroupId, ModId, TagId, TypeId } from "../model/ids.js";
+import { type Gen, type GroupId, type ModId, TagId, type TypeId } from "../model/ids.js";
+import type { Base } from "../model/base.js";
 import { type EldritchSide, eldritchTierOf } from "../model/marks.js";
 import type { ModTypeContext, Registry } from "../resolve/registry.js";
 import {
@@ -111,6 +112,22 @@ const PLACEHOLDERS = /^random\b|^\?$/;
 
 /** Exact join iterations before widening kicks in (`widenPresence`): a small loop
  *  reaches a precise fixpoint first, a tall disjunction then gets over-approximated. */
+/** How many passive skills a cluster jewel of each size adds (Cluster jewel). */
+const CLUSTER_PASSIVES: Readonly<Record<ClusterSize, readonly [number, number]>> = {
+    small: [2, 3],
+    medium: [4, 6],
+    large: [8, 12],
+};
+type ClusterSize = "small" | "medium" | "large";
+
+/** The size of a cluster jewel base, from the tag that marks it; undefined for any other base. */
+function clusterSize(base: Base): ClusterSize | undefined {
+    for (const size of ["small", "medium", "large"] as const) {
+        if (base.tags.has(TagId(`expansion_jewel_${size}`))) return size;
+    }
+    return undefined;
+}
+
 const WIDEN_AFTER = 3;
 /** Cap on loop-invariant iterations. With widening every loop converges in a
  *  handful, so this is a wide safety backstop. */
@@ -229,7 +246,33 @@ class Checker {
             this.diag(resolveMessage(baseRes.error), item.span);
             return null; // without a base we cannot compute pools, abort
         }
-        const base = baseRes.value;
+        let base = baseRes.value;
+        // A cluster jewel's notables roll under its enchantment's tag (Cluster
+        // jewel: the enchantment that determines what bonuses the passives
+        // give decides which modifiers it can roll), so the enchant is read as
+        // a tag of the base.
+        const size = clusterSize(base);
+        if (item.enchant !== undefined) {
+            if (size === undefined) {
+                this.diag("Only a cluster jewel has an enchant.", item.span);
+            } else {
+                const [lo, hi] = CLUSTER_PASSIVES[size];
+                if (item.enchant.passives < lo || item.enchant.passives > hi) {
+                    this.diag(
+                        `A ${size} cluster jewel adds ${lo} to ${hi} passive skills, not ${item.enchant.passives}.`,
+                        item.span,
+                    );
+                }
+                const tag = this.registry.resolveClusterEnchant(item.enchant.text);
+                if (!tag.ok) this.diag(resolveMessage(tag.error), item.span);
+                else base = { ...base, tags: new Set([...base.tags, tag.value]) };
+            }
+        } else if (size !== undefined) {
+            this.diag(
+                'A cluster jewel\'s modifiers depend on its enchant: add `enchant: <passives> "<stat>"`.',
+                item.span,
+            );
+        }
         const present = new Set<TypeId>();
         // Named mods pin an exact tier so the starting item is fully concrete;
         // placeholders (`"random"`) stay anonymous.

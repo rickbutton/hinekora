@@ -53,6 +53,7 @@ interface ItemSpec {
     readonly base: string;
     readonly ilvl: number;
     readonly rarity: Rarity;
+    readonly enchant?: { readonly passives: number; readonly text: string };
     readonly prefixes?: readonly AffixSpec[];
     readonly suffixes?: readonly AffixSpec[];
     readonly influences?: readonly Influence[];
@@ -89,6 +90,7 @@ export const item = (spec: ItemSpec): ItemBlock => ({
     suffixes: (spec.suffixes ?? []).map(affix),
     influences: spec.influences ?? [],
     corrupted: spec.corrupted ?? false,
+    ...(spec.enchant !== undefined && { enchant: spec.enchant }),
     ...(spec.exarch !== undefined && { exarch: eldritchDecl(spec.exarch) }),
     ...(spec.eater !== undefined && { eater: eldritchDecl(spec.eater) }),
     span: DS,

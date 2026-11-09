@@ -101,7 +101,10 @@ Derived, per [Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare):
 
 - `holds_four`: class in `Jewel`, `AbyssJewel`, `HeistEquipmentWeapon`, `HeistEquipmentTool`,
   `HeistEquipmentUtility`, `HeistEquipmentReward` (jewels, abyss jewels, Rogue's equipment;
-  cluster jewels share the `Jewel` class).
+  cluster jewels share the `Jewel` class). A cluster jewel's modifiers roll under the
+  spawn tag of its enchantment ([Cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel):
+  the enchantment "determines what kind of mods the Cluster Jewel can roll"), which the
+  checker reads as a tag of the base.
 - `rare_capable`: class not in `LifeFlask`, `ManaFlask`, `HybridFlask`, `UtilityFlask`,
   `UtilityFlaskCritical`, `Tincture`, `Relic`, `SanctumSpecialRelic`, `AtlasRelic`,
   `AnimalCharm` (flasks, tinctures, relics and charms are never Rare).

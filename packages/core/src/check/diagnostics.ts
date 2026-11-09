@@ -274,6 +274,8 @@ export function resolveMessage(error: ResolveError): string {
             return `Unknown Aspect "${error.name}" — the Bestiary crafts cat, avian, spider or crab.`;
         case "unknownHarvestTag":
             return `"${error.name}" is not a harvest modifier type.`;
+        case "unknownEnchant":
+            return `"${error.name}" is not a cluster jewel enchantment — name the stat its small passives grant ("lightning damage", "minion damage").`;
         case "ambiguous":
             return `Ambiguous name "${error.name}" — candidates: ${error.candidates.join(", ")}.`;
     }

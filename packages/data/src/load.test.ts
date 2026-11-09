@@ -189,6 +189,14 @@ describe("registry resolution against real data", () => {
         expect(wording("socketed melee gems", "Vaal Axe")).toBe("level socketed melee gems");
     });
 
+    it("knows the cluster jewel enchantments by the words of their stat", () => {
+        expect(registry.clusterEnchants().length).toBeGreaterThan(40);
+        const lightning = registry.resolveClusterEnchant("lightning damage");
+        expect(lightning.ok && lightning.value).toBe("affliction_lightning_damage");
+        const vague = registry.resolveClusterEnchant("damage");
+        expect(!vague.ok && vague.error.kind).toBe("ambiguous");
+    });
+
     it("carries affix-cap deltas from experimented-base implicits", () => {
         // Simplex: −2 prefix / −1 suffix (rare 1p/2s); Ratcheting: −3 / +3.
         expect(base("Simplex Amulet").capDelta).toEqual({ prefix: -2, suffix: -1 });

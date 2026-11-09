@@ -86,6 +86,7 @@ const FIELDS = new Set([
     "corrupted",
     "exarch",
     "eater",
+    "enchant",
 ]);
 
 export function getSemanticTokens(source: string, registry: Registry): SemanticTokens {

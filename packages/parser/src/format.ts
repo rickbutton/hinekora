@@ -339,6 +339,9 @@ class Printer {
                 ]);
             }
         }
+        if (item.enchant !== undefined) {
+            fields.push(["enchant", `${item.enchant.passives} ${quote(item.enchant.text)}`]);
+        }
         const width = Math.max(...fields.map(([k]) => k.length)) + 1;
         this.line(0, "item {", item.span.start.line);
         for (const [key, value] of fields) {
