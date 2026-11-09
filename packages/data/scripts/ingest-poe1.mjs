@@ -142,16 +142,23 @@ function projectEssences(raw) {
     return out;
 }
 
-function projectBench(raw) {
+/** The craft's price, the export's currency ids read back to the currencies'
+ *  names through the bases export. */
+function projectBench(raw, bases) {
     const out = [];
     for (const b of raw) {
         const mod = b.actions?.add_explicit_mod;
         if (!mod) continue; // only mod-adding bench options
+        const cost = {};
+        for (const [id, amount] of Object.entries(b.cost ?? {})) {
+            cost[bases[id]?.name ?? id] = amount;
+        }
         out.push({
             mod,
             tier: b.bench_tier ?? 0,
             item_classes: b.item_classes ?? [],
             master: b.master ?? "",
+            ...(Object.keys(cost).length > 0 && { cost }),
         });
     }
     return out;
@@ -160,20 +167,25 @@ function projectBench(raw) {
 /**
  * Fossils: what each does to which modifiers a resonator can roll (Fossil §
  * Mechanics). Kept: the category tags it blocks ("No X modifiers", a zero
- * weight), the fossil-only rows it adds or forces, the base tags it is limited
- * to, its chance of a corrupted-essence modifier, and whether it fractures a
- * rolled modifier. Weight multipliers, lucky rolls, quality, sockets, sell
- * price and the corrupted implicit do not change which modifiers can appear.
+ * weight), the weight multipliers of the tags it favours (in percent, which the
+ * cost layer reads), the fossil-only rows it adds or forces, the base tags it
+ * is limited to, its chance of a corrupted-essence modifier, and whether it
+ * fractures a rolled modifier. Lucky rolls, quality, sockets, sell price and
+ * the corrupted implicit do not change which modifiers can appear.
  */
 export function projectFossils(raw) {
     const out = {};
     for (const [id, f] of Object.entries(raw)) {
         if (!f.name?.endsWith(" Fossil")) continue;
+        const weights = {};
+        for (const w of f.positive_mod_weights ?? []) weights[w.tag] = w.weight;
+        for (const w of f.negative_mod_weights ?? []) if (w.weight > 0) weights[w.tag] = w.weight;
         out[id] = {
             name: f.name,
             blocked_tags: (f.negative_mod_weights ?? [])
                 .filter((w) => w.weight === 0)
                 .map((w) => w.tag),
+            ...(Object.keys(weights).length > 0 && { weights }),
             added_mods: f.added_mods ?? [],
             forced_mods: f.forced_mods ?? [],
             ...(f.allowed_tags?.length ? { allowed_tags: f.allowed_tags } : {}),
@@ -210,7 +222,7 @@ async function main() {
     const modsFile = writeJson("mods.json", projectMods(mods.json));
     const basesFile = writeJson("base_items.json", projectBases(bases.json, mods.json));
     const essencesFile = writeJson("essences.json", projectEssences(essences.json));
-    const benchFile = writeJson("bench.json", projectBench(bench.json));
+    const benchFile = writeJson("bench.json", projectBench(bench.json, bases.json));
     const fossilsFile = writeJson("fossils.json", projectFossils(fossils.json));
 
     const manifest = {

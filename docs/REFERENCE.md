@@ -296,14 +296,18 @@ zero (`LADDER_TIER_FALLBACK`: the
 `no_tier_<n>_eldritch_implicit` tag that excludes the row counts from Perfect = 1, so the
 tier is 7 − n), type, the class tags it rolls on and its text (a "presence" row's text
 gains the condition the game prints first, `presenceText`); a row with no tier or no
-class is not obtainable and is dropped. `adaptEldritch` makes an `EldritchImplicitSpec`; the registry offers
+class is not obtainable and is dropped. `adaptEldritch` makes an `EldritchImplicitSpec`, its per-class spawn weights kept as
+`weights` for the cost layer; the registry offers
 `eldritchPool(base, side, tier)`, `resolveEldritch(name, side, base?)` (the types of the
 wording the query covers best, so "attack speed" is the plain implicit and a "presence"
 variant is reached by its condition's words; a tie is ambiguous),
 `eldritchNames(side)` (one wording per implicit) and `eldritchTextOf(type)`. For a base it also folds the affix-count implicit stats
 (`local_maximum_{prefixes,suffixes}_allowed_+`) into a `capDelta` (absent when zero).
 `adapter.ts` adapts rows into model types and stamps `ModSource` via `classifySource`
-(domain + generation_type + is_essence_only). `aliases.ts` holds `COMMUNITY_ALIASES`, the
+(domain + generation_type + is_essence_only). A fossil's `weights` (category tag → the
+multiplier in percent, "More Life modifiers" being 1000) and a bench craft's `cost`
+(currency name → amount, read back from the export's currency ids through the bases) are
+kept for the cost layer alone; the checker reads neither. `aliases.ts` holds `COMMUNITY_ALIASES`, the
 words guides use for a modifier where the game's wording differs (surface doc §2), which
 `registryOf` hands the registry as its `wordingAliases`. `load.ts`: `loadDefaultPoe1()` →
 `LoadedData`; `bundle.ts`: the disk-free half, `adaptPoe1(raw)` over the seven parsed

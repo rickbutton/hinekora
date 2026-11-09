@@ -34,15 +34,15 @@
             "count": 105
         },
         "bench.json": {
-            "sha256": "44c94ba479f621e3f73855002273e5237f45229d36ca61250749ad5e8a271c3d",
+            "sha256": "ae0a75c2d1ee22d3063f61f1b1e07a3e182e022035b66a704d525e353ff5e830",
             "count": 732
         },
         "fossils.json": {
-            "sha256": "a981e687f9fe072589ac25518f347771c1471b2c3e74dd5f147c30dd90efe58d",
+            "sha256": "26a627bc71dc1720b5ddaa02a9666ceea830dade10dfe65614967af3992b8066",
             "count": 25
         },
         "eldritch.json": {
-            "sha256": "69a0430ff433c2cc6528385b4a52d1d4415e68a71f0baff10f4040e1b41519a9",
+            "sha256": "1ac2f925781d698bb85baba8721c9141937052b81f15215e7494a738680db95f",
             "count": 3360,
             "provenance": {
                 "commit": "aa9fa7c394b18a7a89f913f86703112b3f9d20f1",

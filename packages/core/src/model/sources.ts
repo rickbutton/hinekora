@@ -55,13 +55,16 @@ export interface EssenceSpec {
 
 /**
  * A fossil: what it does to which modifiers a resonator's reforge can roll
- * (Fossil § Mechanics). Weight multipliers are not modelled.
+ * (Fossil § Mechanics), and how it weights them.
  */
 export interface FossilSpec {
     readonly id: string;
     readonly name: string;
     /** Category tags whose modifiers cannot roll ("No X modifiers"). */
     readonly blockedTags: ReadonlySet<TagId>;
+    /** Category tag → weight multiplier in percent ("More Life modifiers" is
+     *  1000, ten times); the cost layer reads it, the checker does not. */
+    readonly weights: ReadonlyMap<TagId, number>;
     /** Fossil-only rows that join the pool. */
     readonly addedMods: readonly ModId[];
     /** Rows one of which is guaranteed (the Hollow Fossil's abyssal socket). */
@@ -92,6 +95,8 @@ export interface EldritchImplicitSpec {
     readonly type: TypeId;
     /** The class tags the row rolls on (`gloves`, `body_armour`, …). */
     readonly classes: ReadonlySet<TagId>;
+    /** The row's spawn weight per class tag: its share of an ember's or ichor's draw. */
+    readonly weights: ReadonlyMap<TagId, number>;
     readonly implicitTags: ReadonlySet<TagId>;
     readonly text: string;
 }
@@ -103,4 +108,6 @@ export interface BenchCraft {
     readonly tier: number;
     readonly itemClasses: ReadonlySet<ClassId>;
     readonly master?: string;
+    /** What the craft costs, currency name → amount ("Divine Orb" → 2). */
+    readonly cost?: ReadonlyMap<string, number>;
 }

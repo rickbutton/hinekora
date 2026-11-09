@@ -56,14 +56,18 @@ export function projectEldritch(raw) {
         const side = SIDE_OF[m.generation_type];
         if (side === undefined) continue;
         const tier = tierOf(m);
-        const classes = m.spawn_weights.filter((w) => w.weight > 0).map((w) => w.tag);
+        const admitted = m.spawn_weights.filter((w) => w.weight > 0);
+        const classes = admitted.map((w) => w.tag);
         // A row no class tag admits, or with no tier, is not obtainable.
         if (tier === 0 || classes.length === 0) continue;
+        const weights = {};
+        for (const w of admitted) weights[w.tag] = w.weight;
         out[id] = {
             side,
             tier,
             type: m.type,
             classes,
+            weights,
             implicit_tags: m.implicit_tags ?? [],
             text: presenceText(id, m.text ?? ""),
         };

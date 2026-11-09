@@ -147,6 +147,7 @@ describe("adaptFossil", () => {
         const f = adaptFossil("Metadata/Fossil", {
             name: "Pristine Fossil",
             blocked_tags: ["defences"],
+            weights: { life: 1000 },
             added_mods: [],
             forced_mods: ["DelveAbyssJewelSocket1"],
             corrupted_essence_chance: 0,
@@ -154,6 +155,7 @@ describe("adaptFossil", () => {
             corrupts: false,
         });
         expect([...f.blockedTags]).toEqual(["defences"]);
+        expect([...f.weights]).toEqual([["life", 1000]]);
         expect(f.forcedMods).toEqual(["DelveAbyssJewelSocket1"]);
         expect("allowedTags" in f).toBe(false);
     });

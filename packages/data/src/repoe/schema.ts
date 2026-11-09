@@ -87,6 +87,8 @@ export interface RepoeFossil {
     readonly fractures: boolean;
     /** Corrupts the item. */
     readonly corrupts: boolean;
+    /** Category tag → weight multiplier in percent ("More Life modifiers": 1000). */
+    readonly weights?: Readonly<Record<string, number>>;
 }
 export type RepoeFossils = Readonly<Record<string, RepoeFossil>>;
 
@@ -98,6 +100,8 @@ export interface RepoeEldritch {
     readonly type: string;
     /** The class tags the row rolls on (`gloves`, `body_armour`, …). */
     readonly classes: readonly string[];
+    /** The row's spawn weight per class tag, for the chance an ember or ichor gives it. */
+    readonly weights?: Readonly<Record<string, number>>;
     readonly implicit_tags: readonly string[];
     readonly text: string;
 }
@@ -109,5 +113,7 @@ export interface RepoeBench {
     readonly tier: number;
     readonly item_classes: readonly string[];
     readonly master: string;
+    /** What the craft costs, currency name → amount ("Divine Orb": 2). */
+    readonly cost?: Readonly<Record<string, number>>;
 }
 export type RepoeBenches = readonly RepoeBench[];

@@ -100,9 +100,14 @@ export function adaptEldritch(id: string, e: RepoeEldritch): EldritchImplicitSpe
         tier: e.tier,
         type: TypeId(e.type),
         classes: new Set(e.classes.map((t) => TagId(t))),
+        weights: tagWeights(e.weights),
         implicitTags: new Set(e.implicit_tags.map((t) => TagId(t))),
         text: e.text,
     };
+}
+
+function tagWeights(weights: Readonly<Record<string, number>> | undefined): Map<TagId, number> {
+    return new Map(Object.entries(weights ?? {}).map(([tag, w]) => [TagId(tag), w]));
 }
 
 export function adaptFossil(id: string, f: RepoeFossil): FossilSpec {
@@ -110,6 +115,7 @@ export function adaptFossil(id: string, f: RepoeFossil): FossilSpec {
         id,
         name: f.name,
         blockedTags: new Set(f.blocked_tags.map((t) => TagId(t))),
+        weights: tagWeights(f.weights),
         addedMods: f.added_mods.map((m) => ModId(m)),
         forcedMods: f.forced_mods.map((m) => ModId(m)),
         ...(f.allowed_tags && { allowedTags: new Set(f.allowed_tags.map((t) => TagId(t))) }),
@@ -125,6 +131,7 @@ export function adaptBench(b: RepoeBench): BenchCraft {
         tier: b.tier,
         itemClasses: new Set(b.item_classes.map((c) => ClassId(c))),
         ...(b.master ? { master: b.master } : {}),
+        ...(b.cost ? { cost: new Map(Object.entries(b.cost)) } : {}),
     };
 }
 

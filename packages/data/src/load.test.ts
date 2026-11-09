@@ -49,12 +49,17 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         expect(data.benchCrafts.length).toBeGreaterThan(500);
         // An essence grants a specific mod per item class.
         expect(data.essences.every((e) => e.grants.size > 0)).toBe(true);
+        // A craft carries its price in the currency the bench names.
+        const lock = registry.resolveBench("suffixes cannot be changed", ClassId("Ring"));
+        expect(lock.ok && [...(lock.value.cost ?? [])]).toEqual([["Divine Orb", 2]]);
     });
 
     it("loads the fossil catalog and resolves a fossil by its first word", () => {
         expect(data.fossils.length).toBe(data.manifest.extent.fossils);
         const pristine = registry.resolveFossil("pristine");
         expect(pristine.ok && [...pristine.value.blockedTags]).toEqual(["defences"]);
+        // "More Life modifiers": ten times the weight (Fossil § Fossil weight multipliers).
+        expect(pristine.ok && [...pristine.value.weights]).toEqual([["life", 1000]]);
         const hollow = registry.resolveFossil("Hollow Fossil");
         expect(hollow.ok && hollow.value.forcedMods).toEqual(["DelveAbyssJewelSocket1"]);
         expect(hollow.ok && hollow.value.allowedTags?.has(TagId("helmet"))).toBe(true);

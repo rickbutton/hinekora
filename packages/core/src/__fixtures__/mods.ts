@@ -161,6 +161,7 @@ const eldritchRow = (
     tier,
     type: TypeId(type),
     classes: new Set([TagId("boots")]),
+    weights: new Map([[TagId("boots"), 1000]]),
     implicitTags: new Set(),
     text,
 });
@@ -923,6 +924,7 @@ const fossilSpec = (id: string, name: string, over: Partial<FossilSpec>): Fossil
     id,
     name,
     blockedTags: new Set(),
+    weights: new Map(),
     addedMods: [],
     forcedMods: [],
     corruptedEssenceChance: 0,
