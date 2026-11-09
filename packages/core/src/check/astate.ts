@@ -342,28 +342,33 @@ export function disjunctiveTier(a: AItem, types: readonly TypeId[]): Map<TypeId,
 }
 
 /**
- * Presence after an additive add of one of `added`: keep every positive fact,
- * relax only the excluded-and-addable atoms (an add removes nothing).
+ * Presence after an additive add of one of `added`: every model the item had,
+ * plus each of them with the added atom set true (an add removes nothing, so
+ * every positive fact and every disjunction among the rest survives). Taking
+ * the models with the atom set true, rather than only freeing an atom that is
+ * excluded on every path, is what keeps a path on which the atom was excluded
+ * alive where it meets one on which it was not: asserting the atom afterwards
+ * would otherwise delete that path's models and the state would inherit what
+ * the other paths knew.
  *
- * Only atoms that are ALREADY BDD variables can be excluded, and we must not
- * touch the rest, because `bdd.variable(name)` ALLOCATES a variable. One per
- * addable mod would be hundreds of variables a craft never constrains, paid for
- * on every operation and scanned by `tierAtomsOf` for the tier facts.
+ * Only atoms the presence function mentions are touched; the others are already
+ * free, and `bdd.variable(name)` ALLOCATES a variable, hundreds per natural pool
+ * that a craft never constrains.
  */
 export function admitAdd(
     a: AItem,
     added: Iterable<{ readonly type: TypeId; readonly id?: ModId }>,
 ): Bdd {
-    const allocated = new Set(a.bdd.variables());
+    const mentioned = new Set(a.bdd.support(a.presence));
     let p = a.presence;
-    const free = (atom: string): void => {
-        if (allocated.has(atom) && a.bdd.entails(p, a.bdd.not(a.bdd.variable(atom)))) {
-            p = a.bdd.exists(p, atom);
-        }
+    const admit = (atom: string): void => {
+        if (!mentioned.has(atom)) return;
+        const set = a.bdd.and(a.bdd.exists(p, atom), a.bdd.variable(atom));
+        p = a.bdd.or(p, set);
     };
     for (const m of added) {
-        free(m.type);
-        if (m.id !== undefined) free(tierAtomName(m.type, m.id));
+        admit(m.type);
+        if (m.id !== undefined) admit(tierAtomName(m.type, m.id));
     }
     return p;
 }

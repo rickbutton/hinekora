@@ -29,7 +29,7 @@ until has "increased maximum life increased maximum mana" {
     if not has "increased maximum life increased maximum mana" {
         annul
         # The annul took the life or a resistance, not the unveiled mod.
-        if not has "maximum life" t1 or suffixCount < 3 {
+        if not has "maximum life" t1 or not has "fire resistance" or not has "cold resistance" or not has "lightning resistance" {
             stop
         }
         restart
