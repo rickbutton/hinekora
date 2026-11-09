@@ -326,24 +326,16 @@ function rangeText(r: Range): string {
     return r[0] === r[1] ? String(r[0]) : `${r[0]}-${r[1]}`;
 }
 
-/** "1-3 more modifiers, prefixes and/or suffixes": the unknown modifiers in words. */
+/**
+ * "1-3 additional prefix or suffix modifiers": the unknown modifiers in words.
+ * A range is plural, as is any count but one.
+ */
 export function remainderText(r: Remainder, dash = "-"): string {
-    const n = r.count;
-    const noun = n[1] === 1 ? "modifier" : "modifiers";
-    const where =
-        r.where === "either"
-            ? n[1] === 1
-                ? "a prefix or a suffix"
-                : "prefixes and/or suffixes"
-            : r.where === "prefix"
-              ? n[1] === 1
-                  ? "a prefix"
-                  : "prefixes"
-              : n[1] === 1
-                ? "a suffix"
-                : "suffixes";
-    const count = n[0] === n[1] ? String(n[0]) : `${n[0]}${dash}${n[1]}`;
-    return `${count} more ${noun}, ${where}`;
+    const [lo, hi] = r.count;
+    const one = lo === 1 && hi === 1;
+    const where = r.where === "either" ? "prefix or suffix" : r.where;
+    const count = lo === hi ? String(lo) : `${lo}${dash}${hi}`;
+    return `${count} additional ${where} ${one ? "modifier" : "modifiers"}`;
 }
 
 /** "at least one of" / "exactly two of": a disjunction group's header words. */

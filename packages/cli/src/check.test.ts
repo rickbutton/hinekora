@@ -92,7 +92,7 @@ if has "maximum life" { exalt }`);
         // The final item in the game's layout, its unknown modifiers as one line.
         expect(r.output).toContain("  Item Class: Body Armours\n  Rarity: Rare\n  Vaal Regalia");
         expect(r.output).toContain("  --------\n  Item Level: 84\n  --------\n");
-        expect(r.output).toMatch(/\{ \d-\d more modifiers, prefixes and\/or suffixes \}/);
+        expect(r.output).toMatch(/\{ \d-\d additional prefix or suffix modifiers \}/);
     });
 
     it("checks phys-dot-weapon.craft clean (fractured reforge keeps its count and clears crafted)", () => {

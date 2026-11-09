@@ -240,7 +240,7 @@ export function itemDelta(before: ItemView, after: ItemView): ItemDelta {
         ...v.marks.map((m) => (m.maybe ? `possibly ${m.text}` : m.text)),
         ...(v.remainder !== undefined
             ? [
-                  `${v.remainder.count[0] === v.remainder.count[1] ? v.remainder.count[0] : `${v.remainder.count[0]}–${v.remainder.count[1]}`} unknown ${v.remainder.count[1] === 1 ? "modifier" : "modifiers"}`,
+                  `${v.remainder.count[0] === v.remainder.count[1] ? v.remainder.count[0] : `${v.remainder.count[0]}–${v.remainder.count[1]}`} unknown ${v.remainder.count[0] === 1 && v.remainder.count[1] === 1 ? "modifier" : "modifiers"}`,
               ]
             : []),
     ];

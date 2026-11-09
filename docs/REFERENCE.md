@@ -159,7 +159,7 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
   header `{ Prefix Modifier "Virile" (Tier: 1) — Resource, Life }` with `(fractured)` /
   `(crafted)` after the text, the marks as the game writes them (`Hunter Item`,
   `Corrupted`), and this project's extensions in the same brace style (`{ At least one of
-these suffix modifiers }`, `{ 1-3 more modifiers, prefixes and/or suffixes }`,
+these suffix modifiers }`, `{ 1-3 additional prefix or suffix modifiers }`,
   `Possibly: Corrupted`, `Without: …`). The hover, the CLI and the playground's card all
   read the view, so they cannot disagree; `renderState` stays the one-line summary for
   diagnostics. `walkthrough.ts` turns a craft and its check result into the guide as a

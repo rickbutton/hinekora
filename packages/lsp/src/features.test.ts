@@ -218,7 +218,7 @@ until ${twoOf3} { annul annul exalt exalt }`;
         const src = `item { base: "Vaal Regalia" ilvl: 84 rarity: rare prefixes: [ "random" ] suffixes: [ "random" ] }
 annul`;
         const md = getHover(src, src.lastIndexOf("annul") + 1, registry);
-        expect(md!).toContain("{ 1 more modifier, a prefix or a suffix }");
+        expect(md!).toContain("{ 1 additional prefix or suffix modifier }");
     });
 
     it("returns null in dead space", () => {

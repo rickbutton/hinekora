@@ -67,10 +67,10 @@ describe("the item in the game's copy layout", () => {
             suffixes: ["random"],
         });
         expect(after(craft(both, [op("annul")]))).toContain(
-            "{ 1 more modifier, a prefix or a suffix }",
+            "{ 1 additional prefix or suffix modifier }",
         );
         expect(after(craft(ring(["random", "random"]), [op("annul")]))).toContain(
-            "{ 1 more modifier, a prefix }",
+            "{ 1 additional prefix modifier }",
         );
     });
 
@@ -118,11 +118,16 @@ describe("the item in the game's copy layout", () => {
 
     it("words the unknown modifiers and a group header", () => {
         expect(remainderText({ count: [1, 3], where: "either" })).toBe(
-            "1-3 more modifiers, prefixes and/or suffixes",
+            "1-3 additional prefix or suffix modifiers",
         );
-        expect(remainderText({ count: [1, 1], where: "suffix" })).toBe("1 more modifier, a suffix");
+        expect(remainderText({ count: [1, 1], where: "suffix" })).toBe(
+            "1 additional suffix modifier",
+        );
+        expect(remainderText({ count: [0, 1], where: "suffix" })).toBe(
+            "0-1 additional suffix modifiers",
+        );
         expect(remainderText({ count: [0, 2], where: "prefix" }, "–")).toBe(
-            "0–2 more modifiers, prefixes",
+            "0–2 additional prefix modifiers",
         );
     });
 });
