@@ -3,9 +3,24 @@
  * print plus whether it passed. The `cli` shell adds file reading, data
  * loading, and exit codes.
  */
-import { check, itemView, type Registry, renderItemText } from "@hinekora/core";
+import {
+    check,
+    flowchart,
+    itemView,
+    type Registry,
+    renderItemText,
+    walkthrough,
+} from "@hinekora/core";
 import { parse } from "@hinekora/parser";
 import { formatDiagnostic } from "./format.js";
+
+/** The guide as Mermaid flowchart text; absent when it does not parse. */
+export function chartSource(source: string, registry: Registry): string | undefined {
+    const parsed = parse(source);
+    if (!parsed.ok) return undefined;
+    const result = check(parsed.craft, { registry });
+    return flowchart(walkthrough(parsed.craft, result, registry)).text;
+}
 
 export interface CheckOutput {
     readonly ok: boolean;

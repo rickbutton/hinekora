@@ -79,6 +79,8 @@ function icon(step: Extract<Step, { kind: "operation" | "call" }>): HTMLElement 
 
 function deltaList(delta: ItemDelta | undefined): HTMLElement | undefined {
     if (delta === undefined) return undefined;
+    // The count of unnamed modifiers shifts on nearly every step; listing it
+    // would bury the named changes, and the card under the step shows it.
     const keep = (l: string): boolean => !/unknown modifier/.test(l);
     const removed = delta.removed.filter(keep);
     const added = delta.added.filter(keep);

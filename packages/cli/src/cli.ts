@@ -14,10 +14,9 @@
  * needs formatting / does not parse, 2 = usage / I/O error.
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { check as checkCraft, flowchart, walkthrough } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
-import { formatCraft, parse } from "@hinekora/parser";
-import { checkSource } from "./check.js";
+import { formatCraft } from "@hinekora/parser";
+import { chartSource, checkSource } from "./check.js";
 
 const USAGE =
     "usage: hinekora check <file.craft> | hinekora fmt [--check] <file.craft> | hinekora chart <file.craft>\n";
@@ -69,16 +68,14 @@ function fmt(file: string, checkOnly: boolean): number {
 function chart(file: string): number {
     const source = tryRead(file);
     if (source === undefined) return 2;
-    const parsed = parse(source);
-    if (!parsed.ok) {
+    const text = chartSource(source, registryOf(loadDefaultPoe1()));
+    if (text === undefined) {
         process.stderr.write(
             `hinekora: ${file} does not parse; run 'hinekora check' for the error\n`,
         );
         return 1;
     }
-    const registry = registryOf(loadDefaultPoe1());
-    const result = checkCraft(parsed.craft, { registry });
-    process.stdout.write(`${flowchart(walkthrough(parsed.craft, result, registry)).text}\n`);
+    process.stdout.write(`${text}\n`);
     return 0;
 }
 

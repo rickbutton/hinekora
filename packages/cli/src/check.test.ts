@@ -2,11 +2,28 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
-import { checkSource } from "./check.js";
+import { chartSource, checkSource } from "./check.js";
 
 // Built once against the real bundled catalog — the CLI's actual data path.
 const registry = registryOf(loadDefaultPoe1());
 const run = (src: string) => checkSource(src, "test.craft", registry);
+
+describe("chartSource — the guide as Mermaid text", () => {
+    it("prints a flowchart with a node per step", () => {
+        const text = chartSource(
+            `item { base: "Iron Ring" ilvl: 84 rarity: normal }\ntransmute\nregal`,
+            registry,
+        );
+        expect(text).toMatch(/^flowchart TD\n/);
+        expect(text).toContain("Orb of Transmutation");
+        expect(text).toContain("Regal Orb");
+        expect(text).toContain("--> finish");
+    });
+
+    it("has nothing for a guide that does not parse", () => {
+        expect(chartSource("item {", registry)).toBeUndefined();
+    });
+});
 
 describe("checkSource — end to end against real data", () => {
     it("passes a valid craft and reports the final item", () => {

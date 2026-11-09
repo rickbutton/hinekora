@@ -173,14 +173,16 @@ these suffix modifiers }`, `{ 1-3 more modifiers, prefixes and/or suffixes }`,
   its method word, a hexagon per loop exit or branch asking "item has …?" with the
   checklist's lines, "yes" and "no" edges, a loop as a `repeat` subgraph whose decision
   leads back to its first step (a `restart` goes there too), start and end nodes
-  (`FLOW_START`, `FLOW_END`), and the map from node id to statement that lets a page link
-  the drawing to the text; the CLI's `hinekora chart <file>` prints it for a README or a
-  wiki page to embed. `itemDelta`/`stepDelta` list what a step added and removed, as
+  (`FLOW_START`, `FLOW_END`), and the map from node id to statement for a consumer that
+  binds the drawn nodes to the text; the CLI's `hinekora chart <file>` prints the text
+  (`chartSource` in `packages/cli/src/check.ts`) for a README or a wiki page to embed. `itemDelta`/`stepDelta` list what a step added and removed, as
   the lines of the item view a player would notice. `conditions.ts` words a guide's
   conditions for the player: `clause` as prose ("+# to maximum Life at T1 and exactly 2
   prefixes", a negated count turned round, "no …" for a negated modifier), `criteria` as
   a checklist (`Criterion`: every requirement its own line, alternatives grouped under
-  "any of", a requirement that must be absent negated). Both expand a local predicate
+  "one of", a disjunction of every k-subset of a set folded to "at least k of" those
+  (`atLeast`, worded by `groupWords`), a requirement that must be absent negated). Both
+  expand a local predicate
   call as its body with the arguments in place and word a modifier as the trade site does
   (`modWording`: the row's text with its numbers as `#`), given the item's base and level.
 - **resolve/**: `Registry` (the resolved data surface). Key methods:

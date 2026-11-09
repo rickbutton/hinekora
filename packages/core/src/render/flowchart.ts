@@ -3,8 +3,8 @@
  * decision per loop exit or branch asking for the condition in the player's
  * words, "yes" and "no" edges, a loop as a "repeat" region whose decision
  * leads back to its first step, start and end. The text is what a flowchart
- * renderer lays out; the node ids map back to the statements so a page can
- * link the drawing to the editor.
+ * renderer lays out; the node ids map back to the statements for a consumer
+ * that binds the drawn nodes to the text.
  */
 import type { SourceSpan } from "../ast/span.js";
 import { type Criterion, groupWords } from "./conditions.js";

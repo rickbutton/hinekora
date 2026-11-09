@@ -15,7 +15,13 @@ import { setTimeout as sleep } from "node:timers/promises";
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "icons");
 
-/** Icon key → the wiki's item name; the file is `<name> inventory icon.png`. */
+/**
+ * Icon key → the wiki's item name; the file is `<name> inventory icon.png`.
+ * `locus` (the Corruption Altar) has no inventory art on the wiki and keeps
+ * the page's lettered glyph. The lifeforce colours follow the Horticrafting
+ * bench: Wild reforges, Vivid augments and removes, Primal randomises and
+ * changes.
+ */
 const ICONS = {
     transmute: "Orb of Transmutation",
     augment: "Orb of Augmentation",
