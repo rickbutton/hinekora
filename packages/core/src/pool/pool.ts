@@ -109,7 +109,7 @@ export function pool(
         candidates.push({ mod: m, weight });
     }
     return it.strands !== undefined && it.strands > 0
-        ? topTiersUnderStrands(catalog, it, candidates, it.strands)
+        ? topTiersUnderStrands(catalog, it, candidates, it.strands, maybeTags, pessimistic)
         : candidates;
 }
 
@@ -124,6 +124,8 @@ function topTiersUnderStrands(
     it: ItemFacts,
     candidates: readonly PoolCandidate[],
     strands: number,
+    maybeTags?: ReadonlySet<TagId>,
+    pessimistic = false,
 ): PoolCandidate[] {
     const byType = new Map<TypeId, PoolCandidate[]>();
     for (const c of candidates) {
@@ -135,13 +137,14 @@ function topTiersUnderStrands(
     for (const m of catalog) {
         if (!byType.has(m.type) || m.domain !== it.base.domain) continue;
         if (!classPermitted(m, it.base.itemClass)) continue;
-        if ((lookupWeight(m, it.tags) ?? 0) <= 0) continue;
+        if ((lookupWeight(m, it.tags, maybeTags, pessimistic) ?? 0) <= 0) continue;
         ladder.set(m.type, (ladder.get(m.type) ?? 0) + 1);
     }
     const kept = new Set<ModId>();
     for (const [type, rows] of byType) {
         const sorted = [...rows].sort((x, y) => y.mod.minLevel - x.mod.minLevel);
-        const tiers = tiersWithStrands(strands, ladder.get(type) ?? rows.length);
+        // The rows admitted are tiers of the ladder, whatever tags let them in.
+        const tiers = tiersWithStrands(strands, Math.max(ladder.get(type) ?? 0, rows.length));
         for (const c of sorted.slice(0, tiers)) kept.add(c.mod.id);
     }
     return candidates.filter((c) => kept.has(c.mod.id));

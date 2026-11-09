@@ -1,9 +1,9 @@
 /**
  * Memory strands (Memory strand § Mechanics): an item found in the Atlas may
  * hold up to a hundred. While it holds some, a currency that adds or rerolls
- * modifiers lays down only the top tiers of each modifier, so many of the tiers
- * the item level admits, and uses up a random share of the strands, at most a
- * number that depends on the currency (§ Crafting methods consuming memory
+ * modifiers lays down only the top tiers of each modifier, so many of its
+ * whole ladder on the base, and uses up a random share of the strands, at most
+ * a number that depends on the currency (§ Crafting methods consuming memory
  * strands, the `strands` op of each method in `check/library.ts`).
  */
 

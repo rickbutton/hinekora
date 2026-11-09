@@ -352,8 +352,9 @@ true draw couples the two through depletion, a second-order effect the race test
 
 `cost/roll.ts` reads a method's op sequence into its **roll**: the random `fill` with the
 pool it draws from (built with the checker's own `pool` on the sure facts, so cut to the
-top tiers the item's memory strands allow, re-weighted by a resonator's fossils or the
-grove's "more / less likely", narrowed to a tag or the top tiers), the count of draws
+top tiers the item's memory strands allow for a method that uses them up, re-weighted by
+a resonator's fossils or the grove's "more / less likely", narrowed to a tag or the top
+tiers), the count of draws
 (a rare reforge's [Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Chaos_Orb#Mechanics)
 ratio, one for an add), the modifiers present for certain
 (kept through the reforge, or placed first: an essence's grant, a Harvest tag's row drawn

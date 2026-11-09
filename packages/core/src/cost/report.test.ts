@@ -240,6 +240,21 @@ describe("the spread over the item's unnamed modifiers", () => {
         expect(loop.steps[0]!.attemptsRange).toBeUndefined();
         expect(loop.chaosRange).toBeUndefined();
     });
+
+    it("reads the fullest item within what it can hold", () => {
+        // A Magic ring after a Regal Orb holds two or three modifiers, each side
+        // up to two: the fullest item is three, not two and two, so an Exalted
+        // Orb still finds a slot and its loop keeps a finite spread.
+        const c = craft(ring("normal"), [
+            op("transmute"),
+            op("regal"),
+            until(has("IncreasedLife1"), [op("annul"), op("exalt")]),
+        ]);
+        const loop = report(c).steps.find((s) => s.kind === "until")!;
+        expect(loop.attempts!.expected).toBeGreaterThan(0);
+        expect(loop.attemptsRange).toBeDefined();
+        expect(loop.attemptsRange!.high).toBeLessThan(20 * loop.attempts!.expected);
+    });
 });
 
 describe("the Recombinator", () => {
@@ -261,5 +276,19 @@ describe("the Recombinator", () => {
         expect(branch.branch).toBeCloseTo(0.333 + 0.667 * share, 6);
         // The Recombinator's gold and dust are not in the snapshot.
         expect(r.steps[0]!.unit).toBeUndefined();
+    });
+
+    it("recombining until both modifiers sit on one item is judged on the item as found", () => {
+        // Each attempt pools the two prefixes; both survive when two are kept.
+        const c = craft(
+            ring("rare", ["IncreasedLife1"]),
+            [until(andp(has("IncreasedLife1"), has("IncreasedMana1")), [recombine("d")])],
+            [],
+            [],
+            [donor("d", ring("rare", ["IncreasedMana1"]))],
+        );
+        const loop = report(c).steps.find((s) => s.kind === "until")!;
+        expect(loop.attempts!.chance).toBeCloseTo(0.333, 6);
+        expect(loop.note).toBeUndefined();
     });
 });

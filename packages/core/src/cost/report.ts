@@ -136,18 +136,19 @@ export function costOf(
     for (const p of estimate.total) {
         if (snapshot === undefined || inChaos([p], snapshot) === undefined) unpriced.add(p.item);
     }
+    const { steps, reliable } = withBounds(
+        estimate.steps,
+        ends.map((w) => w.steps),
+    );
     const chaosRange =
-        estimate.chaos === undefined
+        estimate.chaos === undefined || !reliable
             ? undefined
             : bounds(
                   estimate.chaos,
                   ends.map((w) => w.chaos),
               );
     return {
-        steps: withBounds(
-            estimate.steps,
-            ends.map((w) => w.steps),
-        ),
+        steps,
         total: estimate.total,
         ...(snapshot !== undefined &&
             estimate.chaos !== undefined && {
@@ -213,12 +214,18 @@ function bounds(estimate: number, others: readonly (number | undefined)[]): Boun
     return high - low > 1e-9 * scale ? { low, high } : undefined;
 }
 
-/** The estimate's steps, each with the spread of its figures over the other
- *  readings' walks; a step a reading never reached counts as run no times. */
+/**
+ * The estimate's steps, each with the spread of its figures over the other
+ * readings' walks; a step a reading never reached counts as run no times. A
+ * step whose figure rests on an assumption (its note) in any reading gets no
+ * spread, nor do the steps inside a loop or branch so judged: a difference of
+ * assumption is not a difference of item. `reliable` is false when one was
+ * left out, since the total's spread would carry it.
+ */
 function withBounds(
     estimate: readonly StepCost[],
     others: readonly (readonly StepCost[])[],
-): StepCost[] {
+): { steps: StepCost[]; reliable: boolean } {
     const key = (s: StepCost): string => `${s.kind}@${s.span.start.offset}`;
     const indexed = others.map((steps) => {
         const byKey = new Map<string, StepCost[]>();
@@ -230,11 +237,29 @@ function withBounds(
         return byKey;
     });
     const seen = new Map<string, number>();
-    return estimate.map((s) => {
+    const peersOf = (s: StepCost): (StepCost | undefined)[] => {
         const k = key(s);
         const n = seen.get(k) ?? 0;
         seen.set(k, n + 1);
-        const peers = indexed.map((byKey) => byKey.get(k)?.[n]);
+        return indexed.map((byKey) => byKey.get(k)?.[n]);
+    };
+    // The spans of the loops and branches a reading assumed rather than solved.
+    const assumed: { start: number; end: number }[] = [];
+    const peerLists = estimate.map((s) => peersOf(s));
+    estimate.forEach((s, i) => {
+        if (s.kind !== "until" && s.kind !== "if") return;
+        if (
+            s.note !== undefined ||
+            peerLists[i]!.some((p) => p !== undefined && p.note !== s.note)
+        ) {
+            assumed.push({ start: s.span.start.offset, end: s.span.end.offset });
+        }
+    });
+    const inside = (s: StepCost): boolean =>
+        assumed.some((a) => s.span.start.offset >= a.start && s.span.end.offset <= a.end);
+    const steps = estimate.map((s, i) => {
+        if (s.note !== undefined || inside(s)) return s;
+        const peers = peerLists[i]!;
         const runs = bounds(
             s.runs,
             peers.map((p) => p?.runs ?? 0),
@@ -260,6 +285,7 @@ function withBounds(
             ...(branch !== undefined && { branchRange: branch }),
         };
     });
+    return { steps, reliable: assumed.length === 0 };
 }
 
 function massOf(branches: readonly Branch[]): number {
@@ -283,6 +309,10 @@ function trim(branches: readonly Branch[]): Branch[] {
 class Walker {
     readonly steps: StepCost[] = [];
     private readonly byStart = new Map<string, TraceEntry>();
+    /** The item a statement is judged on where the trace's is not it: the
+     *  first step of a loop body reads the item the loop finds, not the join
+     *  over every round, so the attempts are taken alike. */
+    private readonly firstSteps = new Map<Stmt, AItem>();
     private readonly resolve: (pred: Pred, a: AItem) => RPred | null;
     /** The second items a `recombine` merges in, by name. */
     private readonly donors: ReadonlyMap<string, AItem>;
@@ -299,7 +329,9 @@ class Walker {
     }
 
     private entry(s: Stmt): TraceEntry | undefined {
-        return this.byStart.get(`${s.kind}@${s.span.start.offset}`);
+        const e = this.byStart.get(`${s.kind}@${s.span.start.offset}`);
+        const before = this.firstSteps.get(s);
+        return e === undefined || before === undefined ? e : { ...e, before };
     }
 
     /** Walk a sequence; the branches that fall off its end come back. */
@@ -470,6 +502,22 @@ class Walker {
     }
 
     private loop(
+        stmt: Extract<Stmt, { kind: "until" }>,
+        entry: TraceEntry | undefined,
+        branches: readonly Branch[],
+        frame: Frame,
+    ): Branch[] {
+        const first = stmt.body[0];
+        const before = entry?.before;
+        if (first !== undefined && before !== undefined) this.firstSteps.set(first, before);
+        try {
+            return this.loopFrom(stmt, entry, branches, frame);
+        } finally {
+            if (first !== undefined) this.firstSteps.delete(first);
+        }
+    }
+
+    private loopFrom(
         stmt: Extract<Stmt, { kind: "until" }>,
         entry: TraceEntry | undefined,
         branches: readonly Branch[],
@@ -702,9 +750,9 @@ class Walker {
                         // A side the removal cannot reach counts nothing; one it
                         // alone reaches is the side it takes from.
                         const gen: Gen | undefined =
-                            roll.sides.suffix.count === 0
+                            roll.sides.suffix.count === 0 && roll.sides.prefix.count > 0
                                 ? "prefix"
-                                : roll.sides.prefix.count === 0
+                                : roll.sides.prefix.count === 0 && roll.sides.suffix.count > 0
                                   ? "suffix"
                                   : roll.gen;
                         out.push(

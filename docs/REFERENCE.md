@@ -290,7 +290,10 @@ resolveEssence / resolveBench / resolveHarvestTag`
   `unpriced` items and the chance the craft `stopped`. The walk runs once per `Reading`,
   and each step carries the spread of its figures over the floors and ceilings walks
   where they differ (`Bounds`: `runsRange`, `attemptsRange`, `branchRange`), the report
-  its `chaosRange`.
+  its `chaosRange`; a step whose figure is an assumption (its `note`) in any reading, and
+  the steps inside such a loop or branch, carry none, and the total's spread is left out
+  with them. The first step of a loop body is judged on the item the loop finds, not on
+  the join over its rounds, so the attempts are taken alike.
 
 ### 3b. `@hinekora/parser`
 

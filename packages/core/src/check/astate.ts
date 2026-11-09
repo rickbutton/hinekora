@@ -81,9 +81,10 @@ export interface AItem {
      *  this count and the pinned types is the locks on unnamed modifiers. */
     readonly fractures: Range;
     /** How many memory strands the item may hold, a range: the ceiling what it
-     *  had, the floor after every currency that may have used some up. A fill
-     *  reads the floor, the fewest strands and so the most tiers that may roll,
-     *  which keeps its pool an over-approximation (`model/strands.ts`). */
+     *  had, the floor after every currency that may have used some up. The fill
+     *  of a method that uses them up reads the floor, the fewest strands and so
+     *  the most tiers that may roll, which keeps its pool an over-approximation
+     *  (`model/strands.ts`); other fills are not cut. */
     readonly strands: Range;
     /** Which implicit each side may be: the types an ember's pool holds, narrowed
      *  by a wording; `"any"` when nothing is known. Independent of the tiers,

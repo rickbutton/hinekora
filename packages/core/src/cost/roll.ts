@@ -204,9 +204,27 @@ function splitOf(
     return splitDistribution(prefix, suffix, m, Math.max(0, capPrefix), Math.max(0, capSuffix));
 }
 
+/**
+ * The counts a reading takes the item at. The estimate and the floors read each
+ * side at its floor. The ceilings read the fullest item the counts allow: the
+ * total at its ceiling, split between the sides as evenly as their own ceilings
+ * let it, since the sides' ceilings alone may add up to more than the item can
+ * hold and would show a full item where the checker proved a slot open.
+ */
+function countsAt(a: AItem, reading: Reading): Readonly<Record<Gen, number>> {
+    const prefix = a.counts.prefix;
+    const suffix = suffixRange(a);
+    if (reading !== "ceilings") return { prefix: prefix[0], suffix: suffix[0] };
+    const total = a.counts.total[1];
+    let p = Math.min(prefix[1], Math.ceil(total / 2));
+    const s = Math.min(suffix[1], total - p);
+    p = Math.min(prefix[1], total - s);
+    return { prefix: p, suffix: s };
+}
+
 /** The item's facts the pool reads: the guaranteed modifiers, with each side's
- *  count raised to its proven lower bound (its ceiling under the fullest
- *  reading), so a side the unnamed modifiers fill admits nothing more. */
+ *  count raised to what the reading takes it at, so a side the unnamed
+ *  modifiers fill admits nothing more. */
 function sureFacts(
     a: AItem,
     registry: Registry,
@@ -215,12 +233,12 @@ function sureFacts(
     withStrands = false,
 ) {
     const facts = guaranteedFacts(a, registry, level);
-    const end = reading === "ceilings" ? 1 : 0;
-    const strands = withStrands ? a.strands[end] : 0;
+    const counts = countsAt(a, reading);
+    const strands = withStrands ? a.strands[reading === "ceilings" ? 1 : 0] : 0;
     return {
         ...facts,
-        prefixCount: Math.max(facts.prefixCount, a.counts.prefix[end]),
-        suffixCount: Math.max(facts.suffixCount, suffixRange(a)[end]),
+        prefixCount: Math.max(facts.prefixCount, counts.prefix),
+        suffixCount: Math.max(facts.suffixCount, counts.suffix),
         ...(strands > 0 && { strands }),
     };
 }
@@ -541,8 +559,11 @@ function removalRoll(
 ): Roll {
     const kept = guaranteedTypes(after);
     const reachable = [...guaranteedTypes(before)].filter((t) => !kept.has(t));
-    const mid = (r: readonly [number, number]): number =>
-        reading === "floors" ? r[0] : reading === "ceilings" ? r[1] : (r[0] + r[1]) / 2;
+    const at = countsAt(before, reading);
+    const mid = (gen: Gen): number => {
+        const r = gen === "prefix" ? before.counts.prefix : suffixRange(before);
+        return reading === "estimate" ? (r[0] + r[1]) / 2 : at[gen];
+    };
     // A side a metamod protects, or the other side of a one-sided orb, is out
     // of the removal's reach.
     const protectedSides = new Set<Gen>();
@@ -552,8 +573,8 @@ function removalRoll(
     }
     const reaches = (g: Gen): boolean => (gen === undefined || gen === g) && !protectedSides.has(g);
     const count = {
-        prefix: reaches("prefix") ? mid(before.counts.prefix) : 0,
-        suffix: reaches("suffix") ? mid(suffixRange(before)) : 0,
+        prefix: reaches("prefix") ? mid("prefix") : 0,
+        suffix: reaches("suffix") ? mid("suffix") : 0,
     };
     const named = { prefix: 0, suffix: 0 };
     for (const t of reachable) named[genOfType(before, registry, t)]++;
@@ -635,7 +656,7 @@ function drawRoll(
     // What the item holds before the fill beyond the named modifiers: its
     // sure count less them, and exactly that when the side's count is settled
     // or the reading takes it at an end.
-    const facts = sureFacts(a, registry, undefined, reading);
+    const facts = sureFacts(a, registry, undefined, reading, stranded);
     const ranges = { prefix: a.counts.prefix, suffix: suffixRange(a) };
     const settled = (r: readonly [number, number]): boolean =>
         reading !== "estimate" || r[0] === r[1];
@@ -760,8 +781,7 @@ export function recombineRoll(
                 }
                 named.set(type, entry);
             }
-            const range = gen === "prefix" ? x.counts.prefix : suffixRange(x);
-            unnamed += Math.max(0, range[reading === "ceilings" ? 1 : 0] - onSide);
+            unnamed += Math.max(0, countsAt(x, reading)[gen] - onSide);
         }
         let pooled = unnamed;
         const list: Pooled[] = [];
