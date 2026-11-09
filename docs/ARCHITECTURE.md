@@ -323,8 +323,8 @@ influence, the modifiers present on every path with their groups and tags), whic
 item the player is holding when the guide's step is right. A modifier the state holds
 only as possible neither shrinks the pool nor adds its tags. This is exact for a reforge,
 which strips the uncertain modifiers away, and for an item whose named modifiers fill it;
-it is approximate for an add onto an item with unnamed modifiers (`QUESTIONS.md` Q56).
-The game's rules the estimate rests on and the ones no source settles are Q57–Q64.
+it is approximate for an add onto an item with unnamed modifiers (`QUESTIONS.md` Q57).
+The game's rules the estimate rests on and the ones no source settles are Q58–Q65.
 
 ### 7.2 The race: an exact draw without listing outcomes
 
@@ -399,6 +399,6 @@ assumes one round or an even branch there, and names the assumption.
 Prices come from a **snapshot committed with the data**, `packages/data/data/poe1/economy.json`, taken from
 poe.ninja's exchange overview, and its stash overview for the beasts, for one league on
 one day by `fetch-economy.mjs` (five requests), never from live calls in the checker, the
-CLI or the editor (Q61). A report
+CLI or the editor (Q62). A report
 converts its total to Chaos and Divine Orbs under the snapshot and names its date, so a
 guide's "about 22 Divine" is reproducible and dated.

@@ -17,7 +17,7 @@ export interface Price {
 
 /**
  * A snapshot of the economy: each item's price in Chaos Orbs and the Divine
- * Orb's, as poe.ninja listed them for a league on a date (QUESTIONS.md Q61).
+ * Orb's, as poe.ninja listed them for a league on a date (QUESTIONS.md Q62).
  */
 export interface Prices {
     readonly league: string;
