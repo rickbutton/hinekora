@@ -101,7 +101,13 @@ export type PoolSpec =
       }
     /** One of these rows, guaranteed: a fossil's forced row, the Glyphic Fossil's
      *  corrupted-essence modifier. */
-    | { readonly kind: "rows"; readonly mods: readonly Mod[] }
+    | {
+          readonly kind: "rows";
+          readonly mods: readonly Mod[];
+          /** The type these rows replace (a Harvest change); if it may be a
+           *  crafted modifier, so may they (QUESTIONS.md Q52). */
+          readonly replacing?: TypeId;
+      }
     /** One of the metamods not yet on the item whose side may have a slot (the
      *  Bestiary's random metamod); crafted. */
     | { readonly kind: "metamods" }
@@ -1446,6 +1452,12 @@ function fill(a: AItem, spec: PoolSpec, count: FillCount, rules: Rules, registry
     if (count.kind === "add" && (spec.kind === "bench" || spec.kind === "metamods")) {
         crafted = [a.crafted[0] + count.n[0], a.crafted[1] + count.n[1]];
         craftedTypes = new Set([...a.craftedTypes, ...drawn.types]);
+    } else if (
+        spec.kind === "rows" &&
+        spec.replacing !== undefined &&
+        a.craftedTypes.has(spec.replacing)
+    ) {
+        craftedTypes = new Set([...a.craftedTypes, ...drawn.types]);
     }
     return settled({ ...a, counts, presence, possible, tiers, crafted, craftedTypes });
 }
@@ -1627,19 +1639,13 @@ function removeType(a: AItem, type: TypeId, registry: Registry): AItem {
     const presence = a.bdd.and(presenceFacts(a.bdd, surviving, gone), fractureProjection(a));
     const tiers = new Map(a.tiers);
     tiers.delete(type);
-    // The named modifier may have been the crafted one.
+    // The named modifier may have been the crafted one; it stays among the
+    // crafted types, excluded, so a Harvest change that replaces it can read
+    // that it was one.
     const crafted: Range = a.craftedTypes.has(type)
         ? [Math.max(0, a.crafted[0] - 1), a.crafted[1]]
         : a.crafted;
-    const craftedTypes = new Set([...a.craftedTypes].filter((t) => t !== type));
-    return settled({
-        ...a,
-        counts: { total, prefix, suffix },
-        presence,
-        tiers,
-        crafted,
-        craftedTypes,
-    });
+    return settled({ ...a, counts: { total, prefix, suffix }, presence, tiers, crafted });
 }
 
 /** Might a crafted-limit carrier be on the item without being guaranteed? */

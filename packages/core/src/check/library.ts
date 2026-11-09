@@ -552,7 +552,7 @@ export function harvestChangeOps(from: TypeId, label: string, to: readonly Mod[]
         require({ kind: "typeRemovable", type: from, label }),
         ...to.slice(0, 1).map((mod) => require({ kind: "noGroupConflict", mod })),
         remove({ kind: "type", type: from }),
-        fill({ kind: "rows", mods: to }, add([1, 1])),
+        fill({ kind: "rows", mods: to, replacing: from }, add([1, 1])),
     ];
 }
 

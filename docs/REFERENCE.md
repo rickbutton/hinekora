@@ -521,7 +521,9 @@ one domain. The sub-domains:
   refinement is coupled to `presence` (tier atoms), so that part lives in `refine`, not the
   domain.
 - `craftedTypes`: the SET of types a bench craft may have put on the item (the named and
-  anonymous `bench` affixes of the item block, then every `bench` step's row), which is
+  anonymous `bench` affixes of the item block, then every `bench` step's row and the
+  Bestiary's random metamod; a Harvest change of one keeps its replacement among them,
+  `QUESTIONS.md` Q52), which is
   what a removal of crafted modifiers reaches and nothing else: an unveiled modifier whose
   wording the bench also offers is not among them, so the removal cannot be charged a
   suffix for it. A removal or strip keeps only the fractured ones.

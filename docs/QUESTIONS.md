@@ -448,6 +448,22 @@ family for everything.
 the surface doc §1, §3 and §5).
 **Answer:**
 
+### Q52 · game probe · open
+
+**Asked:** 2026-11-08
+**Goal:** whether a crafted modifier a Harvest "change a resistance / damage modifier to
+another element" craft changes stays a crafted modifier. [Harvest crafting § Mechanics](https://www.poewiki.net/wiki/Harvest_crafting#Mechanics)
+and [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions)
+do not say; it decides whether the bench's "remove crafted modifiers" reaches the new
+modifier and whether the crafted limit still counts it.
+**Procure:** a Rare with a bench-crafted fire resistance and no other crafted modifier.
+**Steps:** change it to cold at the Horticrafting Station; hover the new modifier; try
+"remove crafted modifiers".
+**Record:** whether the modifier shows as crafted and whether the recipe removes it.
+**Assumed meanwhile:** it stays crafted, the conservative reading (`check/ops.ts` `fill` on a
+`rows` pool that replaces a crafted type keeps the new rows among `craftedTypes`).
+**Answer:**
+
 ### Q51 · decision · open
 
 **Asked:** 2026-11-08
