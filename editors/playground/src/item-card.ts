@@ -58,10 +58,11 @@ function modRow(m: ModView): HTMLElement {
     const meta = h("span", "meta", side);
     if (tier) meta.append(h("span", `tier ${m.tier![0] === m.tier![1] ? "pinned" : "span"}`, tier));
     row.append(meta);
-    // The affix name under the text, as the advanced tooltip shows it; the tags
-    // on hover.
-    if (m.name !== undefined) text.append(h("span", "name", m.name));
-    if (m.tags.length > 0) row.title = m.tags.join(", ");
+    // The affix name ("of Tzteosh") and the tags are for the curious: on hover.
+    const title = [m.name, m.tags.length > 0 ? m.tags.join(", ") : undefined].filter(
+        (s) => s !== undefined,
+    );
+    if (title.length > 0) row.title = title.join(" — ");
     return row;
 }
 

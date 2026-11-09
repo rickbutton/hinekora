@@ -272,13 +272,6 @@ main {
     font-size: 13px;
 }
 
-.item-card .mod .name {
-    display: block;
-    color: var(--dim);
-    font-size: 11px;
-    line-height: 1.1;
-}
-
 .item-card .without .label {
     color: var(--dim);
     font-size: 11px;
