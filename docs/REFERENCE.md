@@ -570,8 +570,9 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   and divine at the snapshot's league and date, with the currencies it could not price;
   a spread over what the item may hold is the line's tooltip. A repeat's foot gives its
   odds as guides quote them ("1/37 chance", `oddsText`) over a small table
-  (`repeatTable`): per currency what the rounds spend (`passSpend`: the body's spend over the guide divided by the repeat's own runs) and
-  its worth in chaos, dearest first, with the sum. Clicking a cost line opens a dialog with the breakdown
+  (`repeatTable`): per currency what the rounds spend (`passSpend`: the body's spend
+  over the guide divided by the repeat's own runs) and its worth in chaos, dearest
+  first, with the sum. Clicking a cost line opens a dialog with the breakdown
   (`breakdown`): each currency's expected amount, its price and its worth, dearest
   first and the unpriced last, the sum in chaos and divine, and the snapshot's league,
   date and divine rate. The block is the unit of interaction: hovering
@@ -621,9 +622,9 @@ and `SetDomain` (the `possible` whitelist). `join`/`stateEqual` in `astate.ts` a
 just those ops applied field-by-field; the tier and value overlays keep what one branch
 knows of a type the other branch excludes (`joinKnown`), since the type can only have come
 from the branch that pinned it; a branch whose item holds no modifier excludes every type,
-so the row an essence places survives the head of a repeat entered on a Normal item. A cross-domain fact (e.g. crafted ⊆ affixes) is a
-**reduction** applied explicitly at the product level in `normalize`, never hidden inside
-one domain. The sub-domains:
+so the row an essence places survives the head of a repeat entered on a Normal item. A
+cross-domain fact (e.g. crafted ⊆ affixes) is a **reduction** applied explicitly at the
+product level in `normalize`, never hidden inside one domain. The sub-domains:
 
 - **Counts (`check/counts.ts`, `CountDomain`).** `total`, `prefix` and `suffix` are integer
   RANGES `[min,max]`, closed under `p + s = total` by `normalize` (each range against the
