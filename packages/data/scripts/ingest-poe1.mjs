@@ -113,9 +113,9 @@ function projectBases(raw, mods) {
     return out;
 }
 
-// The export leaves the Essence of Desolation at level 0; the wiki's essence table
-// puts it at 8 beside the corrupted essences, the ladder tier that lets it reforge a
-// Rare item (Essence § Mirage essences).
+// The export leaves the Essence of Desolation at level 0; its wiki page puts it at 8
+// (the infobox's essence level) and has it reforge a Rare item, the corrupted
+// essences' rung (Essence of Desolation).
 const LADDER_TIER_FALLBACK = { "Essence of Desolation": 8 };
 
 function projectEssences(raw) {

@@ -121,7 +121,10 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
             "Essence of Hysteria",
             "Essence of Insanity",
         ]);
-        expect(registry.essences.some((e) => e.tier === 8 && !isCorruptedEssence(e))).toBe(true);
+        // The export leaves it at level 0; the ingest reads the wiki's 8 for it.
+        const desolation = registry.essences.find((e) => e.name === "Essence of Desolation");
+        expect(desolation?.tier).toBe(8);
+        expect(desolation && isCorruptedEssence(desolation)).toBe(false);
     });
 
     it("resolves essences by full name, by type + tier, and flags conflicts", () => {

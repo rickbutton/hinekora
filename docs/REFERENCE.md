@@ -287,7 +287,9 @@ re-ingest supersedes along with the file). A fossil's projection keeps what deci
 resonator can roll (`projectFossils`: blocked category tags, added and forced rows, the
 base tags it allows, its chance of a corrupted-essence modifier, a fracture), never the
 weight multipliers. A mod's projection keeps `implicit_tags` (the category tags harvest and fossils
-filter on) and `generation_weights` (the table that scales a spawn weight by the item's tags). The eldritch implicit rows (eldritch.json, `scripts/ingest-eldritch.mjs`,
+filter on) and `generation_weights` (the table that scales a spawn weight by the item's tags).
+An essence's ladder tier is the export's `level`, with a fallback for the one it leaves at
+zero (`LADDER_TIER_FALLBACK`: the Essence of Desolation, 8 on its wiki page). The eldritch implicit rows (eldritch.json, `scripts/ingest-eldritch.mjs`,
 `projectEldritch`) come from the current export with their own `provenance`: side, tier
 (Lesser = 1 up to Perfect = 6, the model's count; the export's
 `no_tier_<n>_eldritch_implicit` tag that excludes the row counts from Perfect = 1, so the
