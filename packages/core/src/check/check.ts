@@ -1254,7 +1254,14 @@ class Checker {
             );
             return null;
         }
-        return { kind: "has", type, gen, tierMod: mod.id };
+        const tierSpan = mod.text === undefined ? undefined : rollRange(mod.text);
+        return {
+            kind: "has",
+            type,
+            gen,
+            tierMod: mod.id,
+            ...(tierSpan !== undefined && { tierSpan }),
+        };
     }
 
     /** Narrow a value slot to a literal; a leftover ParamRef never got a value. */

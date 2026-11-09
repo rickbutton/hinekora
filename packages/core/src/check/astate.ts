@@ -867,6 +867,8 @@ export type RPred =
           readonly gen: Gen;
           /** When a tier was requested, the specific mod for that tier. */
           readonly tierMod?: ModId;
+          /** That tier's roll span, which a value already known is clipped to. */
+          readonly tierSpan?: Range;
       }
     /** Some modifier of the named modifier's group is present. */
     | { readonly kind: "hasGroup"; readonly type: TypeId; readonly types: ReadonlySet<TypeId> }
@@ -925,7 +927,7 @@ export function refine(a: AItem, pred: RPred, positive = true): AItem | null {
 
         case "has":
             return positive
-                ? refineHas(a, pred.type, pred.gen, pred.tierMod)
+                ? refineHas(a, pred.type, pred.gen, pred.tierMod, pred.tierSpan)
                 : refineLacks(a, pred.type, pred.tierMod);
 
         case "hasGroup":
@@ -1033,7 +1035,13 @@ function tierAllows(a: AItem, type: TypeId, tierMod: ModId | undefined): boolean
     return allowed === undefined || allowed.has(tierMod); // unconstrained, or M is a possible tier
 }
 
-function refineHas(a: AItem, type: TypeId, gen: Gen, tierMod: ModId | undefined): AItem | null {
+function refineHas(
+    a: AItem,
+    type: TypeId,
+    gen: Gen,
+    tierMod: ModId | undefined,
+    tierSpan?: Range,
+): AItem | null {
     if (isExcluded(a, type)) return null;
     const alreadyPresent = isGuaranteed(a, type);
     if (!alreadyPresent && !a.possible.has(type)) return null;
@@ -1042,6 +1050,15 @@ function refineHas(a: AItem, type: TypeId, gen: Gen, tierMod: ModId | undefined)
     const tiers: ReadonlyMap<TypeId, ReadonlySet<ModId>> = tierMod === undefined
         ? a.tiers
         : new Map(a.tiers).set(type, new Set([tierMod]));
+    // A value learnt before the tier was named lies within the tier's own roll
+    // span, or the modifier is not at that tier.
+    let values = a.values;
+    const known = tierSpan === undefined ? undefined : a.values.get(type);
+    if (known !== undefined && tierSpan !== undefined) {
+        const clipped: Range = [Math.max(known[0], tierSpan[0]), Math.min(known[1], tierSpan[1])];
+        if (clipped[0] > clipped[1]) return null;
+        values = new Map(a.values).set(type, clipped);
+    }
 
     // A named tier is also a presence atom, so it rides through a control-flow
     // join where the flat `tiers` overlay would drop it.
@@ -1055,7 +1072,7 @@ function refineHas(a: AItem, type: TypeId, gen: Gen, tierMod: ModId | undefined)
         if (tierMod === undefined) return a;
         const presence = withTier(a.presence);
         if (a.bdd.isFalse(presence)) return null; // proven at another row
-        return reduceTiers({ ...a, presence, tiers });
+        return reduceTiers({ ...a, presence, tiers, values });
     }
 
     // Learn it present, and what that implies about counts (≥1 affix, ≥1 in its
@@ -1063,7 +1080,7 @@ function refineHas(a: AItem, type: TypeId, gen: Gen, tierMod: ModId | undefined)
     const presence = withTier(a.bdd.and(a.presence, a.bdd.variable(type)));
     if (a.bdd.isFalse(presence)) return null;
     const counts = CountDomain.learnPresent(a.counts, gen);
-    const s = normalize({ ...a, presence, tiers, counts });
+    const s = normalize({ ...a, presence, tiers, counts, values });
     return s === null ? null : reduceTiers(s);
 }
 

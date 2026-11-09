@@ -637,7 +637,8 @@ one domain. The sub-domains:
   domain.
 - `values` (`ValueDomain`, in `values.ts`): an overlay `Map<TypeId, Range>` of the span a
   present modifier's value, the first number of its row's text (`rollRange`), is known to
-  lie in, narrower than its rows' spans; a `has "X" >= n` predicate sets it (and pins the
+  lie in, narrower than its rows' spans; a `has "X" t<n>` check clips it to that tier's span
+  (`tierSpan`) or rules the tier out; a `has "X" >= n` predicate sets it (and pins the
   rows whose spans reach `n`, `refineHasValue`, every row the item may carry: a row the
   item is pinned to, the rows an essence grants its class, the natural rows that roll on its
   base (under an influence or a tag a present modifier may add too), the bench rows its

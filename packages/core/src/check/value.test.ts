@@ -156,6 +156,17 @@ describe("has <mod> <cmp> <n>", () => {
         expect(above.finalState!.values.get(LIFE)).toBeUndefined();
     });
 
+    it("is clipped to the tier a later check names", () => {
+        const reached = craft(ring(), [
+            until(has("maximum life"), [op("chaos")]),
+            iff(notp(hasValue("maximum life", ">=", 80)), [stop()]),
+            iff(notp(has("maximum life", 1)), [stop()]),
+        ]);
+        const r = check(reached, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.values.get(LIFE)).toEqual([115, 129]);
+    });
+
     it("reads the row an essence places even where it never rolls", () => {
         // The grove's and the bench's rows aside, an essence puts its row on the
         // item whatever the row's weight on the base.
