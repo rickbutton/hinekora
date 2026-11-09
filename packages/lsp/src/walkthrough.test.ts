@@ -7,6 +7,7 @@ import {
     itemView,
     renderItemText,
     stepDelta,
+    strandsText,
     walkthrough,
 } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
@@ -66,6 +67,32 @@ until has "maximum life" >= 150 { chaos }`);
         );
         if (life === undefined || life.kind !== "mod") throw new Error("expected life");
         expect(life.mod.text).toMatch(/^\+\(150-\d+\) to maximum Life$/);
+    });
+
+    it("never shows a value outside the span of the tier it is pinned to", () => {
+        const lifeText = (src: string): string => {
+            const w = walk(src);
+            const branch = w.steps[w.steps.length - 1]!;
+            if (branch.kind !== "branch") throw new Error("expected a branch");
+            const inside = branch.then[0]!;
+            const life = itemView(inside.before!, registry).prefixes.find(
+                (g) => g.kind === "mod" && /maximum Life/.test(g.mod.text),
+            );
+            if (life === undefined || life.kind !== "mod") throw new Error("expected life");
+            return life.mod.text;
+        };
+        const plain = lifeText(`item { base: "Vaal Regalia" ilvl: 86 rarity: rare }
+until has "maximum life" { chaos }
+if has "maximum life" t1 { chaos }`);
+        const valued = lifeText(`item { base: "Vaal Regalia" ilvl: 86 rarity: rare }
+until has "maximum life" >= 100 { chaos }
+if has "maximum life" t1 { chaos }`);
+        expect(valued).toBe(plain);
+    });
+
+    it("writes the memory strands as a range once some may be spent", () => {
+        expect(strandsText([82, 82])).toBe("82");
+        expect(strandsText([40, 82])).toBe("40-82");
     });
 
     it("carries the memory strands and the second items the guide declares", () => {

@@ -173,12 +173,19 @@ export function rollSpan(texts: readonly string[]): string {
 
 const oneLine = (text: string): string => text.replace(/\n/g, " / ");
 
-/** The text with its first span narrowed to `value`: "+(70-84)" at [75, 84] is "+(75-84)". */
+/**
+ * The text with its first span narrowed to `value`: "+(70-84)" at [75, 90] is
+ * "+(75-84)". The value is cut to the span shown, since the tiers can narrow
+ * after the value was learnt and a value never widens what the rows roll.
+ */
 function withValue(text: string, value: Range): string {
-    const [lo, hi] = value;
-    const shown = lo === hi ? String(lo) : `(${lo}-${hi})`;
     const re = /\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)/;
-    return re.test(text) ? text.replace(re, shown) : text;
+    const m = re.exec(text);
+    if (m === null) return text;
+    const lo = Math.max(value[0], Number(m[1]));
+    const hi = Math.min(value[1], Number(m[2]));
+    if (lo > hi) return text;
+    return text.replace(re, lo === hi ? String(lo) : `(${lo}-${hi})`);
 }
 
 /** The modifier view for a present type, pinned to `pin` when a disjunction names its tier. */
@@ -354,8 +361,8 @@ export const SIDE_NAME: Readonly<Record<EldritchSide, string>> = {
 };
 
 /** "82", or "40-82" when some may have been spent: the memory strands in words. */
-export function strandsText(r: Range, dash = "-"): string {
-    return r[0] === r[1] ? String(r[0]) : `${r[0]}${dash}${r[1]}`;
+export function strandsText(r: Range): string {
+    return r[0] === r[1] ? String(r[0]) : `${r[0]}-${r[1]}`;
 }
 
 /** The short name players use for each side ("a Grand Exarch implicit"). */
