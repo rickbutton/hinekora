@@ -4,9 +4,15 @@
  * craft's listed price), and the economy snapshot that turns those into Chaos
  * and Divine Orbs.
  */
-import { ELDRITCH_TIERS, INFLUENCE_ORB, isInfluence } from "../model/marks.js";
+import {
+    ELDRITCH_TIERS,
+    INFLUENCE_ORB,
+    type Influence,
+    INFLUENCES,
+    isInfluence,
+} from "../model/marks.js";
 import type { Registry } from "../resolve/registry.js";
-import type { AItem } from "../check/astate.js";
+import { type AItem, rarityOf } from "../check/astate.js";
 import type { Literal, Method } from "../check/methods.js";
 
 /** An amount of one currency item, by the item's name. */
@@ -68,6 +74,70 @@ const SACRED: Price = { item: "Sacred Crystallised Lifeforce", amount: 1 };
 
 const RESONATOR_BY_SOCKETS = ["", "Primitive", "Potent", "Powerful", "Prime"];
 
+/** The beasts the Bestiary's recipes take, by poe.ninja's names (the wiki's
+ *  `bestiary_recipes` and `bestiary_recipe_components` tables, Beastcrafting). */
+const BLACK_MORRIGAN: Price = { item: "Black Mórrigan", amount: 1 };
+const CRAICIC_MAW: Price = { item: "Craicic Maw", amount: 1 };
+const BEAST_ADD: Readonly<Record<"prefix" | "suffix", string>> = {
+    prefix: "Farric Wolf Alpha",
+    suffix: "Farric Lynx Alpha",
+};
+const BEAST_ADD_INFLUENCE: Readonly<Record<Influence, string>> = {
+    shaper: "Fenumal Devourer",
+    elder: "Saqawine Blood Viper",
+    redeemer: "Fenumal Queen",
+    hunter: "Craicic Watcher",
+    crusader: "Farric Goliath",
+    warlord: "Fenumal Scrabbler",
+};
+const BEAST_ASPECT: Readonly<Record<string, string>> = {
+    cat: "Farrul, First of the Plains",
+    avian: "Saqawal, First of the Sky",
+    spider: "Fenumus, First of the Night",
+    crab: "Craiceann, First of the Deep",
+};
+const BEAST_FRACTURE_ONE = "Farric Frost Hellion Alpha";
+const BEAST_FRACTURE_TWO = "Fenumal Plagued Arachnid";
+const BEAST_IMPRINT_MAGIC = "Craicic Croaker";
+const BEAST_IMPRINT_TALISMAN = "Fenumal Plagued Arachnid";
+const BEAST_METAMOD = "Wild Bristle Matron";
+
+function beastCost(
+    second: string | undefined,
+    args: readonly Literal[],
+    a: AItem,
+): readonly Price[] | undefined {
+    const one = (item: string): Price => ({ item, amount: 1 });
+    switch (second) {
+        case "add": {
+            const what = text(args[0]).toLowerCase();
+            if (what === "prefix" || what === "suffix") return [one(BEAST_ADD[what])];
+            return (INFLUENCES as readonly string[]).includes(what)
+                ? [one(BEAST_ADD_INFLUENCE[what as Influence]), CRAICIC_MAW]
+                : undefined;
+        }
+        case "fracture":
+            return tierArg(args[0]) === 2
+                ? [one(BEAST_FRACTURE_TWO), BLACK_MORRIGAN]
+                : [one(BEAST_FRACTURE_ONE)];
+        case "metamod":
+            return [one(BEAST_METAMOD)];
+        case "aspect": {
+            const beast = BEAST_ASPECT[text(args[0]).trim().toLowerCase()];
+            return beast === undefined ? undefined : [one(beast), BLACK_MORRIGAN];
+        }
+        case "imprint": {
+            // A Magic item's imprint and a Rare talisman's are different recipes.
+            const rarity = rarityOf(a);
+            if (rarity === "magic") return [one(BEAST_IMPRINT_MAGIC)];
+            if (rarity === "rare") return [one(BEAST_IMPRINT_TALISMAN)];
+            return undefined;
+        }
+        default:
+            return undefined;
+    }
+}
+
 function text(l: Literal | undefined): string {
     return l === undefined
         ? ""
@@ -82,7 +152,7 @@ function capital(s: string): string {
 
 /**
  * The currency one use of a method consumes, or `undefined` when its price is
- * not known to this table (a Bestiary recipe's beasts, a Corruption Altar).
+ * not known to this table (a Recombinator's gold and dust, a Corruption Altar).
  */
 export function unitCost(
     method: Method,
@@ -216,7 +286,7 @@ export function unitCost(
             return prices;
         }
         case "beast":
-            return undefined;
+            return beastCost(second, args, a);
         case "locus":
             return undefined;
         default:

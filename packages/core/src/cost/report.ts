@@ -10,18 +10,27 @@
  */
 import type { Craft, Pred, Stmt } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
-import type { Gen, TypeId } from "../model/ids.js";
+import type { Gen, ModId, TypeId } from "../model/ids.js";
+import type { Mod } from "../model/mod.js";
+import type { Op } from "../check/ops.js";
 import type { Registry } from "../resolve/registry.js";
 import { type AItem, type RPred, refine } from "../check/astate.js";
-import { type CheckResult, predicateResolver, type TraceEntry } from "../check/check.js";
+import {
+    type CheckResult,
+    donorItems,
+    predicateResolver,
+    type TraceEntry,
+} from "../check/check.js";
 import { findMethod, type Literal } from "../check/methods.js";
 import { rollableGen } from "../resolve/tiers.js";
 import { influenceTagsAny } from "../check/ops.js";
 import { chance } from "./chance.js";
-import { countdown, type CountdownStep } from "./countdown.js";
-import { guaranteedTypes } from "../check/astate.js";
+import { chain, type ChainAtom, type ChainState, type ChainStep } from "./chain.js";
+import { guaranteedTypes, isExcluded, rarityOf, sideCap } from "../check/astate.js";
+import { lookupWeight } from "../pool/pool.js";
+import { rollableTiers } from "../resolve/tiers.js";
 import { addPrices, inChaos, type Price, type Prices, unitCost } from "./prices.js";
-import { type Roll, rollOf, withPresent } from "./roll.js";
+import { NO_ROLL, recombineRoll, type Roll, rollOf, withPresent } from "./roll.js";
 
 /** What the cost layer says about one statement. */
 export interface StepCost {
@@ -132,7 +141,6 @@ export function costOf(
         stopped: Math.min(1, top.stopped * passes),
     };
 }
-
 function massOf(branches: readonly Branch[]): number {
     let m = 0;
     for (const b of branches) m += b.mass;
@@ -155,6 +163,8 @@ class Walker {
     readonly steps: StepCost[] = [];
     private readonly byStart = new Map<string, TraceEntry>();
     private readonly resolve: (pred: Pred, a: AItem) => RPred | null;
+    /** The second items a `recombine` merges in, by name. */
+    private readonly donors: ReadonlyMap<string, AItem>;
 
     constructor(
         craft: Craft,
@@ -163,6 +173,7 @@ class Walker {
     ) {
         for (const e of result.trace) this.byStart.set(`${e.kind}@${e.span.start.offset}`, e);
         this.resolve = predicateResolver(craft, registry);
+        this.donors = donorItems(craft, registry);
     }
 
     private entry(s: Stmt): TraceEntry | undefined {
@@ -259,7 +270,7 @@ class Walker {
         });
         const built = method.build(literals, entry.before, this.registry);
         if ("refused" in built || entry.after === undefined) return [...branches];
-        const roll = rollOf(entry.before, built, this.registry);
+        const roll = this.rollFor(stmt, literals, built, entry.before);
         if (roll.kind !== "none") {
             // A new roll: every way of getting here is one way of being after it.
             const mass = massOf(branches);
@@ -274,6 +285,24 @@ class Walker {
             );
         }
         return [...branches];
+    }
+
+    /** A method's roll on the item; the Recombinator's reads its second item. */
+    private rollFor(
+        stmt: Extract<Stmt, { kind: "operation" }>,
+        literals: readonly Literal[],
+        built: readonly Op[],
+        before: AItem,
+    ): Roll {
+        if (stmt.words[0] === "recombine") {
+            const name = literals[0];
+            const donor =
+                name !== undefined && (name.kind === "word" || name.kind === "string")
+                    ? this.donors.get(name.value)
+                    : undefined;
+            return donor === undefined ? NO_ROLL : recombineRoll(before, donor, this.registry);
+        }
+        return rollOf(before, built, this.registry);
     }
 
     private branchStmt(
@@ -326,7 +355,7 @@ class Walker {
         const before = entry?.before;
         const rpred = before === undefined ? null : this.resolve(stmt.pred, before);
         if (before !== undefined && rpred !== null) {
-            const solved = this.makeRoom(stmt, before, rpred, branches, frame);
+            const solved = this.chainLoop(stmt, before, rpred, branches, frame);
             if (solved !== undefined) return solved;
         }
         // One attempt: the body from the head with mass one, in a frame of its
@@ -414,27 +443,108 @@ class Walker {
     }
 
     /**
-     * A make-room loop (`countdown.ts`): a body of random removals and the
-     * branches that catch a kept modifier's loss, exiting on the counts. Solved
-     * as a chain over the counts the loop enters with; undefined for any other
-     * body, which takes the general path.
+     * A loop whose body changes the item one modifier at a time (`chain.ts`):
+     * random removals, single draws, bench crafts, and branches over them that
+     * restart, stop or craft, exiting on the counts and the named modifiers.
+     * Solved as a chain from the states the loop may enter with, exactly,
+     * including how often each step inside runs; undefined for any other body,
+     * which takes the general path.
      */
-    private makeRoom(
+    private chainLoop(
         stmt: Extract<Stmt, { kind: "until" }>,
         before: AItem,
         rpred: RPred,
         branches: readonly Branch[],
         frame: Frame,
     ): Branch[] | undefined {
-        if (!countsOnly(rpred)) return undefined;
         const mass = massOf(branches);
-        const kept = guaranteedTypes(before);
-        const keepers = { prefix: 0, suffix: 0 };
-        const keeperTypes = new Set<TypeId>();
-        const body: CountdownStep[] = [];
-        const guards: Extract<Stmt, { kind: "if" }>[] = [];
-        for (const s of stmt.body) {
-            if (s.kind === "operation") {
+        const registry = this.registry;
+        const tags = influenceTagsAny(before, registry);
+        const baseTags = new Set([...before.base.tags, ...tags]);
+        const atoms: ChainAtom[] = [];
+        const atomIndex = new Map<TypeId, number>();
+        const atomOf = (type: TypeId): number => {
+            let i = atomIndex.get(type);
+            if (i !== undefined) return i;
+            i = atoms.length;
+            atomIndex.set(type, i);
+            let rows = rollableTiers(registry.catalog, before.base, before.ilvl, type, tags)
+                .map((m) => ({ id: m.id, weight: lookupWeight(m, baseTags) ?? 0 }))
+                .filter((r) => r.weight > 0);
+            const weight = rows.reduce((sum, r) => sum + r.weight, 0);
+            if (rows.length === 0) {
+                // A row no roll lays down (a bench craft's): placed, never drawn.
+                rows = registry.catalog
+                    .filter((m) => m.type === type)
+                    .map((m) => ({ id: m.id, weight: 1 }));
+            }
+            atoms.push({ gen: genOfOn(registry, before, type), rows, weight });
+            return i;
+        };
+        // A leaf about neither the counts nor a named modifier is what the
+        // item entering the loop says, for the whole loop.
+        const fixed = new Map<RPred, boolean>();
+        const compile = (pred: RPred): ((s: ChainState) => boolean) | undefined => {
+            for (const leaf of predLeaves(pred)) {
+                switch (leaf.kind) {
+                    case "compare":
+                        break;
+                    case "has":
+                        atomOf(leaf.type);
+                        break;
+                    case "hasGroup":
+                        for (const t of leaf.types) atomOf(t);
+                        break;
+                    case "hasValue":
+                        return undefined;
+                    default: {
+                        const c = this.conditionChance(leaf, undefined, before);
+                        if (c === undefined) return undefined;
+                        fixed.set(leaf, c >= 0.5);
+                    }
+                }
+            }
+            return (state) => holdsOn(pred, state, atomIndex, fixed) === true;
+        };
+        const exit = compile(rpred);
+        if (exit === undefined) return undefined;
+        // Every condition first, so the atoms are known before the steps are read.
+        const guards = new Map<Stmt, (s: ChainState) => boolean>();
+        const collect = (stmts: readonly Stmt[]): boolean => {
+            for (const s of stmts) {
+                if (s.kind !== "if") continue;
+                if (s.elseBody !== undefined) return false;
+                const guard = this.resolve(s.pred, before);
+                const holds = guard === null ? undefined : compile(guard);
+                if (holds === undefined) return false;
+                guards.set(s, holds);
+                if (!collect(s.body)) return false;
+            }
+            return true;
+        };
+        if (!collect(stmt.body)) return undefined;
+
+        const known = { prefix: 0, suffix: 0 };
+        for (const t of guaranteedTypes(before)) {
+            if (!atomIndex.has(t)) known[genOfOn(registry, before, t)]++;
+        }
+        const stepOf = new Map<number, Stmt>();
+        const mapSteps = (stmts: readonly Stmt[]): ChainStep[] | undefined => {
+            const out: ChainStep[] = [];
+            for (const s of stmts) {
+                const id = stepOf.size;
+                stepOf.set(id, s);
+                if (s.kind === "restart" || s.kind === "stop") {
+                    out.push({ id, kind: s.kind });
+                    continue;
+                }
+                if (s.kind === "if") {
+                    const body = mapSteps(s.body);
+                    if (body === undefined) return undefined;
+                    out.push({ id, kind: "branch", holds: guards.get(s)!, body });
+                    continue;
+                }
+                if (s.kind !== "operation") return undefined;
                 const entry = this.entry(s);
                 const method = findMethod(s.words);
                 if (entry === undefined || method === undefined || entry.after === undefined)
@@ -442,112 +552,244 @@ class Walker {
                 const literals: Literal[] = [];
                 for (const arg of s.args) if (arg.kind !== "param") literals.push(arg);
                 if (literals.length !== s.args.length) return undefined;
-                const built = method.build(literals, entry.before, this.registry);
+                const built = method.build(literals, entry.before, registry);
                 if ("refused" in built) return undefined;
-                const roll = rollOf(entry.before, built, this.registry);
-                if (roll.kind === "none") body.push({ kind: "other" });
-                else if (roll.kind === "removal") {
-                    // A side the removal cannot reach counts nothing; one it alone
-                    // reaches is the side it takes from.
-                    const gen: Gen | undefined =
-                        roll.sides.suffix.count === 0
-                            ? "prefix"
-                            : roll.sides.prefix.count === 0
-                              ? "suffix"
-                              : roll.gen;
-                    body.push(gen === undefined ? { kind: "remove" } : { kind: "remove", gen });
-                } else return undefined;
-                continue;
-            }
-            if (s.kind === "if" && s.elseBody === undefined && s.body.length === 1) {
-                const only = s.body[0]!;
-                if (only.kind !== "restart" && only.kind !== "stop") return undefined;
-                const guard = this.resolve(s.pred, before);
-                if (guard === null) return undefined;
-                const types = keeperTypesOf(guard);
-                if (types === undefined) return undefined;
-                for (const t of types) {
-                    if (!kept.has(t) || keeperTypes.has(t)) continue;
-                    keeperTypes.add(t);
-                    keepers[genOfOn(this.registry, before, t)]++;
+                const roll = rollOf(entry.before, built, registry);
+                switch (roll.kind) {
+                    case "none": {
+                        const bench =
+                            s.words[0] === "bench"
+                                ? this.benchMod(literals, entry.before)
+                                : undefined;
+                        if (bench === undefined) {
+                            out.push({ id, kind: "other" });
+                            break;
+                        }
+                        const atom = atomIndex.get(bench.type);
+                        out.push({
+                            id,
+                            kind: "bench",
+                            gen: genOfOn(registry, entry.before, bench.type),
+                            ...(atom !== undefined && { atom, row: bench.id }),
+                        });
+                        break;
+                    }
+                    case "removal": {
+                        // A side the removal cannot reach counts nothing; one it
+                        // alone reaches is the side it takes from.
+                        const gen: Gen | undefined =
+                            roll.sides.suffix.count === 0
+                                ? "prefix"
+                                : roll.sides.prefix.count === 0
+                                  ? "suffix"
+                                  : roll.gen;
+                        out.push(
+                            gen === undefined
+                                ? { id, kind: "remove" }
+                                : { id, kind: "remove", gen },
+                        );
+                        break;
+                    }
+                    case "draw": {
+                        if (!singleAdd(built) || roll.variants.length !== 1) return undefined;
+                        const v = roll.variants[0]!;
+                        const weight = { prefix: 0, suffix: 0 };
+                        const mean = { prefix: 1, suffix: 1 };
+                        for (const gen of ["prefix", "suffix"] as const) {
+                            const groups = gen === "prefix" ? v.prefix : v.suffix;
+                            const total = groups.reduce((sum, g) => sum + g.weight, 0);
+                            if (groups.length > 0) mean[gen] = total / groups.length;
+                            // The pool with every atom's group open: a present
+                            // atom's group was left out of the roll's groups.
+                            let open = total;
+                            atoms.forEach((atom, i) => {
+                                const type = [...atomIndex].find(([, j]) => j === i)![0];
+                                if (atom.gen === gen && v.present.some((p) => p.type === type)) {
+                                    open += atom.weight;
+                                }
+                            });
+                            weight[gen] = open;
+                        }
+                        out.push({ id, kind: "add", weight, known, mean });
+                        break;
+                    }
+                    default:
+                        return undefined;
                 }
-                body.push({ kind: "guard", action: only.kind });
-                guards.push(s);
-                continue;
             }
-            return undefined;
-        }
-        // The counts the loop enters with: every pair the item allows, weighted
-        // by the chance the path in gives each, equal when no roll is on the path.
+            return out;
+        };
+        const body = mapSteps(stmt.body);
+        if (body === undefined) return undefined;
+
+        // The states the loop enters with: every count pair the item allows
+        // and every way the uncertain named modifiers may be present, weighted
+        // by the chance the path in gives each; equal over the counts when no
+        // roll is on the path.
+        const uncertain: number[] = [];
+        const presence: ("yes" | "no" | "maybe")[] = [];
+        atoms.forEach((_atom, i) => {
+            const type = [...atomIndex].find(([, j]) => j === i)![0];
+            if (guaranteedTypes(before).has(type)) presence.push("yes");
+            else if (isExcluded(before, type) || !before.possible.has(type)) presence.push("no");
+            else {
+                presence.push("maybe");
+                uncertain.push(i);
+            }
+        });
+        if (uncertain.length > 4) return undefined;
+        const rowsAtEntry = (i: number): readonly { id: ModId; weight: number }[] => {
+            const type = [...atomIndex].find(([, j]) => j === i)![0];
+            const pinned = before.tiers.get(type);
+            const rows = atoms[i]!.rows.filter((r) => pinned === undefined || pinned.has(r.id));
+            return rows.length > 0 ? rows : atoms[i]!.rows;
+        };
         const pairs: [number, number][] = [];
         const [t0, t1] = before.counts.total;
         const [p0, p1] = before.counts.prefix;
         for (let p = p0; p <= p1; p++) {
-            for (let t = t0; t <= t1; t++) {
-                const s = t - p;
-                if (s >= 0 && s >= keepers.suffix && p >= keepers.prefix) pairs.push([p, s]);
-            }
+            for (let t = t0; t <= t1; t++) if (t - p >= 0) pairs.push([p, t - p]);
         }
         if (pairs.length === 0) return undefined;
-        const starts: { prefix: number; suffix: number; weight: number }[] = [];
-        for (const [p, s] of pairs) {
-            let weight = 0;
-            for (const b of branches) {
-                const at: RPred = {
+        const starts: { state: ChainState; weight: number }[] = [];
+        for (let mask = 0; mask < 1 << uncertain.length; mask++) {
+            const present = presence.map((p, i) =>
+                p === "yes" || (p === "maybe" && mask & (1 << uncertain.indexOf(i))) ? true : false,
+            );
+            const named = { prefix: 0, suffix: 0 };
+            atoms.forEach((atom, i) => {
+                if (present[i]) named[atom.gen]++;
+            });
+            for (const [p, sfx] of pairs) {
+                if (p < named.prefix + known.prefix || sfx < named.suffix + known.suffix) continue;
+                let presenceCond: RPred | undefined;
+                for (const i of uncertain) {
+                    const type = [...atomIndex].find(([, j]) => j === i)![0];
+                    const has: RPred = { kind: "has", type, gen: atoms[i]!.gen };
+                    const term: RPred = present[i] ? has : { kind: "not", inner: has };
+                    presenceCond =
+                        presenceCond === undefined
+                            ? term
+                            : { kind: "and", left: presenceCond, right: term };
+                }
+                let cond: RPred = {
                     kind: "and",
                     left: { kind: "compare", projection: "prefixCount", op: "==", value: p },
-                    right: { kind: "compare", projection: "suffixCount", op: "==", value: s },
+                    right: { kind: "compare", projection: "suffixCount", op: "==", value: sfx },
                 };
-                const c = this.conditionChance(at, b.path, before);
-                weight += b.mass * (c ?? 1 / pairs.length);
+                if (presenceCond !== undefined) {
+                    cond = { kind: "and", left: cond, right: presenceCond };
+                }
+                let weight = 0;
+                for (const b of branches) {
+                    const c = this.conditionChance(cond, b.path, before);
+                    if (c !== undefined) {
+                        weight += b.mass * c;
+                        continue;
+                    }
+                    // The path does not know the counts: every pair alike, the
+                    // named modifiers' presence still read off the path.
+                    const alone =
+                        presenceCond === undefined
+                            ? 1
+                            : this.conditionChance(presenceCond, b.path, before);
+                    if (alone === undefined) return undefined;
+                    weight += (b.mass * alone) / pairs.length;
+                }
+                if (weight <= 0) continue;
+                // The rows of the present atoms, each combination by weight share.
+                let states: { rows: (ModId | null)[]; weight: number }[] = [
+                    { rows: atoms.map(() => null), weight },
+                ];
+                atoms.forEach((_atom, i) => {
+                    if (!present[i]) return;
+                    const rows = rowsAtEntry(i);
+                    const total = rows.reduce((sum, r) => sum + r.weight, 0);
+                    const next: typeof states = [];
+                    for (const st of states) {
+                        for (const r of rows) {
+                            const copy = [...st.rows];
+                            copy[i] = r.id;
+                            next.push({ rows: copy, weight: (st.weight * r.weight) / total });
+                        }
+                    }
+                    states = next;
+                });
+                for (const st of states) {
+                    starts.push({
+                        state: { prefix: p, suffix: sfx, rows: st.rows },
+                        weight: st.weight,
+                    });
+                }
             }
-            starts.push({ prefix: p, suffix: s, weight });
         }
-        const solved = countdown({
+        if (starts.length === 0) return undefined;
+        const rarity = rarityOf(before) ?? "rare";
+        const solved = chain({
+            atoms,
             body,
             starts,
-            keepers,
-            exit: (p, s) => holdsOnCounts(rpred, p, s),
+            caps: {
+                prefix: sideCap("prefix", rarity, before.base),
+                suffix: sideCap("suffix", rarity, before.base),
+            },
+            exit,
         });
         if (solved === undefined) return undefined;
-        const ending = solved.exit + solved.stop;
+        // An attempt that can never end (the item full, nothing removing) is
+        // counted as ending, so the figures stay finite; the note says so.
+        const ending = solved.exit + solved.stop + solved.unresolved;
         const attempts = ending > 0 ? 1 / ending : 1;
-        // Rounds, not attempts: an attempt here is as many removals as the counts
-        // take, and may be none when the loop is entered with room already.
+        // Rounds, not attempts: an attempt here is as many rounds as the item
+        // takes, and may be none when the loop is entered at its exit.
         const rounds = solved.passes * attempts;
         this.record(stmt, mass, frame, {
             attempts: {
-                chance: rounds > 0 ? Math.min(1, ending / solved.passes) : 1,
+                chance: solved.passes > 0 ? Math.min(1, ending / solved.passes) : 1,
                 expected: rounds,
             },
-            ...(keeperTypes.size === 0 && guards.length > 0
-                ? {
-                      note: "the branches inside read modifiers the item is not known to have; they never fire here",
-                  }
-                : {}),
+            ...(solved.unresolved > 1e-6 && {
+                note: `in ${Math.round(solved.unresolved * 100)}% of attempts the item fills up before the exit and the loop cannot end as written`,
+            }),
         });
-        stmt.body.forEach((s, i) => {
-            const reached = (solved.reached[i] ?? 0) * attempts;
-            const scale = frame.scale * mass;
-            if (s.kind === "if") {
-                const fired = (solved.fired[i] ?? 0) * attempts;
-                this.record(
-                    s,
-                    reached,
-                    { scale, stopped: 0, restarted: 0 },
-                    {
-                        branch: reached > 0 ? fired / reached : 0,
-                    },
-                );
-                this.record(s.body[0]!, fired, { scale, stopped: 0, restarted: 0 }, {});
-                return;
-            }
-            const inner: Frame = { scale, stopped: 0, restarted: 0 };
-            this.statement(s, [{ mass: reached, path: undefined }], inner);
-        });
+        const scale = frame.scale * mass;
+        const emit = (stmts: readonly Stmt[], steps: readonly ChainStep[]): void => {
+            stmts.forEach((s, i) => {
+                const step = steps[i]!;
+                const reached = (solved.reached.get(step.id) ?? 0) * attempts;
+                const inner: Frame = { scale, stopped: 0, restarted: 0 };
+                if (s.kind === "if" && step.kind === "branch") {
+                    const taken = (solved.taken.get(step.id) ?? 0) * attempts;
+                    this.record(s, reached, inner, { branch: reached > 0 ? taken / reached : 0 });
+                    emit(s.body, step.body);
+                } else if (s.kind === "restart" || s.kind === "stop") {
+                    this.record(s, reached, inner, {});
+                } else {
+                    this.statement(s, [{ mass: reached, path: undefined }], inner);
+                }
+            });
+        };
+        emit(stmt.body, body);
         const stopShare = ending > 0 ? solved.stop / ending : 0;
         frame.stopped += mass * stopShare;
         return [{ mass: mass * (1 - stopShare), path: undefined }];
+    }
+
+    /** The row a bench statement crafts on this item, when it resolves. */
+    private benchMod(literals: readonly Literal[], a: AItem): Mod | undefined {
+        const name = literals[0];
+        if (name === undefined || name.kind !== "string") return undefined;
+        const tier = literals[1];
+        const craft = this.registry.resolveBench(
+            name.value,
+            a.base.itemClass,
+            tier !== undefined && (tier.kind === "tier" || tier.kind === "int")
+                ? tier.value
+                : undefined,
+        );
+        if (!craft.ok) return undefined;
+        const mod = this.registry.resolveMod(craft.value.mod);
+        return mod.ok ? mod.value : undefined;
     }
 
     /** The item after the last statement of a body that has one in the trace. */
@@ -561,28 +803,17 @@ class Walker {
 
     /** A bench craft after a roll: its modifier is on the item for certain. */
     private benchOnPath(path: Path, literals: readonly Literal[], after: AItem): Path {
-        const name = literals[0];
-        if (name === undefined || name.kind !== "string") return path;
-        const tier = literals[1];
-        const craft = this.registry.resolveBench(
-            name.value,
-            after.base.itemClass,
-            tier !== undefined && (tier.kind === "tier" || tier.kind === "int")
-                ? tier.value
-                : undefined,
-        );
-        if (!craft.ok) return path;
-        const mod = this.registry.resolveMod(craft.value.mod);
-        if (!mod.ok) return path;
+        const mod = this.benchMod(literals, after);
+        if (mod === undefined) return path;
         const gen =
             rollableGen(
                 this.registry.catalog,
                 after.base,
                 after.ilvl,
-                mod.value.type,
+                mod.type,
                 influenceTagsAny(after, this.registry),
-            ) ?? mod.value.gen;
-        return { ...path, roll: withPresent(path.roll, mod.value.type, gen, mod.value), after };
+            ) ?? mod.gen;
+        return { ...path, roll: withPresent(path.roll, mod.type, gen, mod), after };
     }
 
     /** The chance a condition holds at a point, given the path since the last roll. */
@@ -612,25 +843,55 @@ class Walker {
     }
 }
 
-/** Whether a condition reads the counts alone. */
-function countsOnly(pred: RPred): boolean {
+/** The leaves of a condition. */
+function predLeaves(pred: RPred, out: RPred[] = []): RPred[] {
     switch (pred.kind) {
-        case "compare":
-            return true;
         case "not":
-            return countsOnly(pred.inner);
+            return predLeaves(pred.inner, out);
         case "and":
         case "or":
-            return countsOnly(pred.left) && countsOnly(pred.right);
+            predLeaves(pred.left, out);
+            return predLeaves(pred.right, out);
         default:
-            return false;
+            out.push(pred);
+            return out;
     }
 }
 
-function holdsOnCounts(pred: RPred, prefix: number, suffix: number): boolean {
+/** Whether an op sequence is one draw added to the item, nothing stripped or removed. */
+function singleAdd(ops: readonly Op[]): boolean {
+    let fills = 0;
+    for (const op of ops) {
+        if (op.kind === "strip" || op.kind === "remove") return false;
+        if (op.kind === "fill" && op.pool.kind !== "veiledPlaceholder") {
+            if (op.count.kind !== "add" || op.count.n[0] !== 1 || op.count.n[1] !== 1) return false;
+            fills++;
+        }
+    }
+    return fills === 1;
+}
+
+/** A condition on the chain's state: the counts, the named modifiers' rows,
+ *  and the leaves fixed by the item entering the loop. */
+function holdsOn(
+    pred: RPred,
+    s: ChainState,
+    atomIndex: ReadonlyMap<TypeId, number>,
+    fixed: ReadonlyMap<RPred, boolean>,
+): boolean {
     switch (pred.kind) {
+        case "not":
+            return !holdsOn(pred.inner, s, atomIndex, fixed);
+        case "and":
+            return (
+                holdsOn(pred.left, s, atomIndex, fixed) && holdsOn(pred.right, s, atomIndex, fixed)
+            );
+        case "or":
+            return (
+                holdsOn(pred.left, s, atomIndex, fixed) || holdsOn(pred.right, s, atomIndex, fixed)
+            );
         case "compare": {
-            const n = pred.projection === "prefixCount" ? prefix : suffix;
+            const n = pred.projection === "prefixCount" ? s.prefix : s.suffix;
             switch (pred.op) {
                 case "==":
                     return n === pred.value;
@@ -647,46 +908,20 @@ function holdsOnCounts(pred: RPred, prefix: number, suffix: number): boolean {
             }
             break;
         }
-        case "not":
-            return !holdsOnCounts(pred.inner, prefix, suffix);
-        case "and":
-            return (
-                holdsOnCounts(pred.left, prefix, suffix) &&
-                holdsOnCounts(pred.right, prefix, suffix)
-            );
-        case "or":
-            return (
-                holdsOnCounts(pred.left, prefix, suffix) ||
-                holdsOnCounts(pred.right, prefix, suffix)
-            );
+        case "has": {
+            const i = atomIndex.get(pred.type);
+            const row = i === undefined ? null : (s.rows[i] ?? null);
+            return row !== null && (pred.tierMod === undefined || row === pred.tierMod);
+        }
+        case "hasGroup":
+            return [...pred.types].some((t) => {
+                const i = atomIndex.get(t);
+                return i !== undefined && s.rows[i] !== null;
+            });
         default:
-            return false;
+            return fixed.get(pred) ?? false;
     }
     return false;
-}
-
-/** The modifiers a guard keeps: a condition of the form "not (has these)",
- *  in any combination of `and`/`or`; undefined for any other shape. */
-function keeperTypesOf(pred: RPred): TypeId[] | undefined {
-    if (pred.kind !== "not") return undefined;
-    const out: TypeId[] = [];
-    const walk = (p: RPred): boolean => {
-        switch (p.kind) {
-            case "has":
-            case "hasValue":
-                out.push(p.type);
-                return true;
-            case "hasGroup":
-                out.push(...p.types);
-                return true;
-            case "and":
-            case "or":
-                return walk(p.left) && walk(p.right);
-            default:
-                return false;
-        }
-    };
-    return walk(pred.inner) ? out : undefined;
 }
 
 function genOfOn(registry: Registry, a: AItem, type: TypeId): Gen {

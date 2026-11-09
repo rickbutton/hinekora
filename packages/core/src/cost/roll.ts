@@ -22,8 +22,16 @@ import {
     sideCap,
 } from "../check/astate.js";
 import type { FillCount, Op, PoolSpec } from "../check/ops.js";
-import { guaranteedFacts, influenceTagsAny, runMethod } from "../check/ops.js";
+import {
+    exclusiveTypes,
+    guaranteedFacts,
+    influenceTagsAny,
+    rowsOf,
+    runMethod,
+} from "../check/ops.js";
+import { emptyItem } from "../model/item.js";
 import { splitDistribution } from "./race.js";
+import { keptDistribution, type Pooled, type PooledSide } from "./recombine.js";
 
 /** One row of a group with the weight it rolls at here. */
 export interface Row {
@@ -61,6 +69,10 @@ export interface DrawVariant {
     readonly prefix: readonly Group[];
     readonly suffix: readonly Group[];
     readonly counts: readonly CountCase[];
+    /** The modifiers of each side on the item before the fill that no
+     *  condition names, when the item knows the side's count exactly; the
+     *  counts after the fill are these, the present ones and the draws. */
+    readonly before: Readonly<Record<Gen, number | undefined>>;
 }
 
 /** One candidate of a uniform pick: a removal or a fracture lands on one of them. */
@@ -103,6 +115,8 @@ export type Roll =
           readonly tier: number;
           readonly options: readonly Candidate[];
       }
+    /** A Recombinator: each side's pooled modifiers and how many it keeps (`recombine.ts`). */
+    | { readonly kind: "recombine"; readonly sides: Readonly<Record<Gen, PooledSide>> }
     /** Nothing this model reads: a deterministic step, or one it does not model. */
     | { readonly kind: "none" };
 
@@ -570,6 +584,10 @@ function drawRoll(
     const capP = sideCap("prefix", rarity, a.base);
     const capS = sideCap("suffix", rarity, a.base);
     const totals = countTotals(main.count, a);
+    // What the item holds before the fill beyond the named modifiers: its
+    // sure count less them, and exactly that when the side's count is settled.
+    const facts = sureFacts(a, registry);
+    const ranges = { prefix: a.counts.prefix, suffix: suffixRange(a) };
     const out: DrawVariant[] = [];
     for (const v of variants) {
         const taken = new Set(v.present.map((p) => p.type));
@@ -577,10 +595,17 @@ function drawRoll(
         const suffix = groups.filter((g) => g.gen === "suffix" && !taken.has(g.type));
         const presentP = v.present.filter((p) => p.gen === "prefix").length;
         const presentS = v.present.length - presentP;
+        const unnamedP = Math.max(0, facts.prefixCount - presentP);
+        const unnamedS = Math.max(0, facts.suffixCount - presentS);
+        const before = {
+            prefix: ranges.prefix[0] === ranges.prefix[1] ? unnamedP : undefined,
+            suffix: ranges.suffix[0] === ranges.suffix[1] ? unnamedS : undefined,
+        };
         const counts = new Map<string, CountCase>();
         for (const [m, prob] of totals) {
-            const draws = Math.max(0, m - v.present.length);
-            for (const c of countCases(prefix, suffix, draws, capP - presentP, capS - presentS)) {
+            const draws = Math.max(0, m - v.present.length - unnamedP - unnamedS);
+            const open = [capP - presentP - unnamedP, capS - presentS - unnamedS] as const;
+            for (const c of countCases(prefix, suffix, draws, open[0], open[1])) {
                 const key = `${c.prefix}/${c.suffix}`;
                 const seen = counts.get(key);
                 counts.set(key, {
@@ -596,16 +621,17 @@ function drawRoll(
             prefix,
             suffix,
             counts: [...counts.values()],
+            before,
         });
     }
     return { kind: "draw", variants: out };
 }
 
-/** The total modifier count a fill leaves, with its probability: the item's
- *  present modifiers count toward a reforge's total; an add is that many more. */
+/** The total modifier count a fill leaves, with its probability: what the item
+ *  holds for sure counts toward a reforge's total; an add is that many more. */
 function countTotals(count: FillCount, a: AItem): Map<number, number> {
     const cap = totalCap(a);
-    const present = guaranteedTypes(a).size;
+    const present = Math.max(guaranteedTypes(a).size, a.counts.total[0]);
     switch (count.kind) {
         case "add": {
             const out = new Map<number, number>();
@@ -630,6 +656,75 @@ function countTotals(count: FillCount, a: AItem): Map<number, number> {
     }
 }
 
+/**
+ * The Recombinator's roll on `a` and the second item `b`: per side, the
+ * modifiers both items hold on every path with the rows they may be, each at
+ * its spawn weight on the base (an unnamed one at the side's average), doubled
+ * when both items carry it, the exclusive ones marked; and the count the
+ * result keeps by the page's table over the pooled count, the item's unnamed
+ * modifiers counted at their proven floors.
+ */
+export function recombineRoll(a: AItem, b: AItem, registry: Registry): Roll {
+    const tags = influenceTagsAny(a, registry);
+    const baseTags = new Set([...a.base.tags, ...tags]);
+    const exclusive = new Set([...exclusiveTypes(a, registry), ...exclusiveTypes(b, registry)]);
+    const natural = groupRows(
+        pool(registry.catalog, emptyItem(a.base, a.ilvl, "rare")).map((c) => ({
+            mod: c.mod,
+            weight: c.weight,
+        })),
+        (m) => genOfType(a, registry, m.type, m),
+    );
+    const sides = {} as Record<Gen, PooledSide>;
+    for (const gen of ["prefix", "suffix"] as const) {
+        const groups = natural.filter((g) => g.gen === gen);
+        const mean =
+            groups.length === 0 ? 1 : groups.reduce((s, g) => s + g.weight, 0) / groups.length;
+        const weightOf = (type: TypeId): number => {
+            const w = rollableTiers(registry.catalog, a.base, a.ilvl, type, tags).reduce(
+                (s, m) => s + (lookupWeight(m, baseTags) ?? 0),
+                0,
+            );
+            return w > 0 ? w : mean;
+        };
+        const named = new Map<TypeId, { rows: Map<string, Row>; copies: number }>();
+        let unnamed = 0;
+        for (const x of [a, b]) {
+            let onSide = 0;
+            for (const type of guaranteedTypes(x)) {
+                if (genOfType(a, registry, type) !== gen) continue;
+                onSide++;
+                const entry = named.get(type) ?? { rows: new Map<string, Row>(), copies: 0 };
+                entry.copies++;
+                for (const m of rowsOf(x, type, registry)) {
+                    entry.rows.set(m.id, { mod: m, weight: lookupWeight(m, baseTags) ?? 1 });
+                }
+                named.set(type, entry);
+            }
+            const floor = gen === "prefix" ? x.counts.prefix[0] : suffixRange(x)[0];
+            unnamed += Math.max(0, floor - onSide);
+        }
+        let pooled = unnamed;
+        const list: Pooled[] = [];
+        for (const [type, { rows, copies }] of named) {
+            pooled += copies;
+            list.push({
+                type,
+                rows: [...rows.values()],
+                weight: weightOf(type) * copies,
+                exclusive: exclusive.has(type),
+            });
+        }
+        sides[gen] = {
+            named: list,
+            unnamed,
+            unnamedWeight: mean,
+            keeps: keptDistribution(pooled, sideCap(gen, "rare", a.base)),
+        };
+    }
+    return { kind: "recombine", sides };
+}
+
 /** A roll with one more modifier present for certain: a bench craft after it. */
 export function withPresent(roll: Roll, type: TypeId, gen: Gen, mod: Mod): Roll {
     if (roll.kind !== "draw") return roll;
@@ -641,6 +736,8 @@ export function withPresent(roll: Roll, type: TypeId, gen: Gen, mod: Mod): Roll 
             present: v.present.some((p) => p.type === type) ? v.present : [...v.present, added],
             prefix: v.prefix.filter((g) => g.type !== type),
             suffix: v.suffix.filter((g) => g.type !== type),
+            // A bench row fills a slot an unnamed modifier would otherwise be
+            // counted in only if the side was not already full of them.
         })),
     };
 }

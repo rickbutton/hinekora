@@ -232,6 +232,18 @@ class Checker {
         return result;
     }
 
+    /** The second items declared, each elaborated quietly (`donorItems`). */
+    donorsOf(craft: Craft): ReadonlyMap<string, AItem> {
+        const out = new Map<string, AItem>();
+        this.quietly(() => {
+            for (const donor of craft.donors) {
+                const state = this.elaborateItem(donor.item);
+                if (state !== null && !out.has(donor.name)) out.set(donor.name, state);
+            }
+        });
+        return out;
+    }
+
     /** The defs collected and every condition resolved quietly (`predicateResolver`). */
     resolver(craft: Craft): (pred: Pred, a: AItem) => RPred | null {
         this.quietly(() => {
@@ -1596,4 +1608,10 @@ export function predicateResolver(
     registry: Registry,
 ): (pred: Pred, a: AItem) => RPred | null {
     return new Checker(registry).resolver(craft);
+}
+
+/** The second items a guide declares (`with <name> { … }`), as the checker
+ *  elaborates them, for a consumer that reads what a `recombine` merges. */
+export function donorItems(craft: Craft, registry: Registry): ReadonlyMap<string, AItem> {
+    return new Checker(registry).donorsOf(craft);
 }

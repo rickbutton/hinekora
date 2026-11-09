@@ -119,8 +119,12 @@ ignores depletion but is otherwise the same model.
   ([Recombinator § Unpredictable Recombination](https://www.poewiki.net/wiki/Recombinator#Unpredictable_Recombination):
   one modifier pooled → 41% none / 59% one; two → 66.7% / 33.3%; three → 40/50/10; four →
   10/60/30; five → 43/57 for two or three; six → 30/70) and says which modifiers survive is
-  weighted "although the exact formula is unknown" [wiki]. The count table is usable; the
-  modifier selection is not. Later.
+  weighted "although the exact formula is unknown" [wiki]; one side is filled first at even
+  odds, a picked modifier closes its group, and an exclusive modifier (crafted, veiled,
+  essence-only, elevated, an Aspect) once picked removes every other exclusive from both
+  pools, the second side's count still enforced [wiki]. The count table is read as it
+  stands; the pick is taken proportional to spawn weight without replacement, a modifier
+  on both items at twice its weight, an unnamed one at its side's average [assumed, Q67].
 
 ### 1.5 What the abstract item contributes
 
@@ -228,14 +232,20 @@ from the export's `cost` field per option, which the catalog's projection drops 
 [data]; the five metamods cost 2 Divine Orbs each, a life craft an Orb of Alchemy or two),
 Harvest crafts (lifeforce amounts per craft in the cargo `harvest_crafting_options`: 50 Wild
 for a fire reforge, 75 Wild for life, 100 Vivid for chaos, 200 Primal for minion, 5000 Primal
-and a Sacred for the influence reforge) [data], beasts (unpriced), and the Allflame bench
-(out of scope).
+and a Sacred for the influence reforge) [data], the Bestiary's recipes (the beasts each
+takes, from the cargo `bestiary_recipes` and `bestiary_recipe_components`: an imprint of a
+Magic item a Craicic Croaker, of a Rare talisman a Fenumal Plagued Arachnid; add a prefix a
+Farric Wolf Alpha, a suffix a Farric Lynx Alpha; add a modifier to an influenced item one
+beast per influence and a Craicic Maw; fracture one modifier a Farric Frost Hellion Alpha,
+two a Fenumal Plagued Arachnid and a Black Mórrigan; a metamod a Wild Bristle Matron; a
+level-30 Aspect its First and a Black Mórrigan) [data], and the Allflame bench (out of
+scope).
 
 ---
 
 ## 4. Open questions, each with a recommendation
 
-Recorded as `../QUESTIONS.md` Q57–Q66 with the assumption the code proceeds under.
+Recorded as `../QUESTIONS.md` Q57–Q67 with the assumption the code proceeds under.
 
 | #   | Question                                                                                               | Recommendation                                                                                                                                                                       |
 | --- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -249,15 +259,17 @@ Recorded as `../QUESTIONS.md` Q57–Q66 with the assumption the code proceeds un
 | Q64 | Whether an unveil's three options are a weighted draw.                                                 | Yes, by the unveiled rows' spawn weights, without replacement.                                                                                                                       |
 | Q65 | Whether a modifier's value is uniform over its range.                                                  | Yes.                                                                                                                                                                                 |
 | Q66 | The factor of the grove's "more / less likely" reforges.                                               | Ten and one tenth, craftofexile's reading.                                                                                                                                           |
+| Q67 | How the Recombinator picks the surviving modifiers.                                                    | Proportional to spawn weight, without replacement, the page's exclusive rule; a probe with two one-prefix rings.                                                                     |
 
 ---
 
 ## 5. The design that follows
 
-Built as described, with two things learned on the way: a make-room loop (random removals
-until the counts allow) is not a memoryless sequence of attempts and is solved as a chain
-over the counts instead (§5.5), and the walk keeps one branch per arm of the `if`s passed
-since the last roll so that a later condition is judged jointly with them rather than
+Built as described, with two things learned on the way: a loop whose body changes the
+item one modifier at a time (removals, single draws, bench crafts) is not a memoryless
+sequence of attempts and is solved as a Markov chain over the counts and the named
+modifiers instead (§5.5), and the walk keeps one branch per arm of the `if`s passed since
+the last roll so that a later condition is judged jointly with them rather than
 multiplied in. The symbol-level account is `../REFERENCE.md` §3a and the shape
 `../ARCHITECTURE.md` §7; where this section and those differ, those are current.
 
@@ -356,9 +368,11 @@ a probability mass:
   joins what falls out of both arms;
 - an **`until`** with per-attempt exit probability `p` runs its body `1/p` times in
   expectation (the attempts are taken as independent trials, exact for a body that rerolls
-  what the exit reads and an approximation otherwise, stated in the report), so every
-  statement in the body is multiplied by `1/p` times the mass that reaches it within one
-  attempt; a nested loop multiplies again;
+  what the exit reads), so every statement in the body is multiplied by `1/p` times the
+  mass that reaches it within one attempt; a nested loop multiplies again. A body that
+  changes the item one modifier at a time (removals, single draws, bench crafts) is not
+  independent from round to round and is solved as a Markov chain over the counts and the
+  named modifiers instead (`../ARCHITECTURE.md` §7.4);
 - a **`restart`** inside a body ends the attempt early: the mass that reaches it is an
   attempt that failed, so the statements after it do not run on that path and `p` counts
   only the paths that fall off the end and satisfy the exit;

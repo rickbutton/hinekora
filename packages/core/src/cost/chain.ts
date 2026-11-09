@@ -1,0 +1,311 @@
+/**
+ * A loop whose rounds change the item one modifier at a time: random removals
+ * (an Orb of Annulment, an Eldritch Orb of Annulment), single draws (an Exalted
+ * Orb, an Orb of Augmentation), bench crafts, and the branches that catch a
+ * kept modifier's loss or fill a gap, repeated until the counts and the named
+ * modifiers allow. Such a loop is not a sequence of independent attempts: each
+ * round starts from where the last one left the item. It is a Markov chain
+ * over a small state, the (prefix, suffix) counts and, for each modifier the
+ * loop's conditions name, whether it is on the item and at which row, solved by
+ * carrying the distribution over that state through the body round after round
+ * until the mass has left. The named modifiers are the only ones tracked; the
+ * rest of the item is counted, never listed.
+ */
+import type { Gen, ModId } from "../model/ids.js";
+
+/** A modifier the loop's conditions name. */
+export interface ChainAtom {
+    readonly gen: Gen;
+    /** The rows it may land as, each with its weight among them. */
+    readonly rows: readonly { readonly id: ModId; readonly weight: number }[];
+    /** Its group's weight in its side's pool while it is absent. */
+    readonly weight: number;
+}
+
+/** The item as the chain sees it: the counts and, per atom, the row on the item or none. */
+export interface ChainState {
+    readonly prefix: number;
+    readonly suffix: number;
+    readonly rows: readonly (ModId | null)[];
+}
+
+export type ChainStep =
+    /** A random removal from one side, or from either in proportion to its count. */
+    | { readonly id: number; readonly kind: "remove"; readonly gen?: Gen }
+    /** One draw into an open side. `weight` is each side's whole pool weight
+     *  with every atom's group open; `known` how many modifiers of the side are
+     *  on the item throughout and already out of that weight; `mean` the weight
+     *  an unnamed modifier's group closes. */
+    | {
+          readonly id: number;
+          readonly kind: "add";
+          readonly weight: Readonly<Record<Gen, number>>;
+          readonly known: Readonly<Record<Gen, number>>;
+          readonly mean: Readonly<Record<Gen, number>>;
+      }
+    /** A bench craft: a named atom at a row, or an unnamed modifier of a side. */
+    | {
+          readonly id: number;
+          readonly kind: "bench";
+          readonly gen: Gen;
+          readonly atom?: number;
+          readonly row?: ModId;
+      }
+    /** A branch: the body runs where the condition holds. */
+    | {
+          readonly id: number;
+          readonly kind: "branch";
+          readonly holds: (s: ChainState) => boolean;
+          readonly body: readonly ChainStep[];
+      }
+    /** The attempt ends; the craft ends. */
+    | { readonly id: number; readonly kind: "restart" }
+    | { readonly id: number; readonly kind: "stop" }
+    /** A step the chain's state does not depend on. */
+    | { readonly id: number; readonly kind: "other" };
+
+export interface ChainInput {
+    readonly atoms: readonly ChainAtom[];
+    readonly body: readonly ChainStep[];
+    /** The states the loop may start in, each with its weight. */
+    readonly starts: readonly { readonly state: ChainState; readonly weight: number }[];
+    readonly caps: Readonly<Record<Gen, number>>;
+    readonly exit: (s: ChainState) => boolean;
+}
+
+export interface Chain {
+    /** How one attempt ends: in the exit, a restart or a stop. */
+    readonly exit: number;
+    readonly restart: number;
+    readonly stop: number;
+    /** Expected passes through the body in one attempt. */
+    readonly passes: number;
+    /** Per step id, how often it is reached in one attempt, and for a branch
+     *  how often its body is entered. */
+    readonly reached: ReadonlyMap<number, number>;
+    readonly taken: ReadonlyMap<number, number>;
+    /** Mass still going round when the rounds were cut off: a loop the chain
+     *  cannot see ending, the item full and nothing removing. */
+    readonly unresolved: number;
+}
+
+/** Rounds after which the chain stops following the mass still going round. */
+const MAX_PASSES = 2000;
+const EPSILON = 1e-9;
+
+type Dist = Map<string, { state: ChainState; prob: number }>;
+
+interface Totals {
+    exit: number;
+    restart: number;
+    stop: number;
+    passes: number;
+    reached: Map<number, number>;
+    taken: Map<number, number>;
+}
+
+function key(s: ChainState): string {
+    return `${s.prefix}/${s.suffix}/${s.rows.map((r) => r ?? "-").join(",")}`;
+}
+
+function put(d: Dist, state: ChainState, prob: number): void {
+    if (prob <= 0) return;
+    const k = key(state);
+    const hit = d.get(k);
+    if (hit) hit.prob += prob;
+    else d.set(k, { state, prob });
+}
+
+function massOf(d: Dist): number {
+    let m = 0;
+    for (const e of d.values()) m += e.prob;
+    return m;
+}
+
+function add(m: Map<number, number>, id: number, by: number): void {
+    m.set(id, (m.get(id) ?? 0) + by);
+}
+
+function changes(steps: readonly ChainStep[]): boolean {
+    return steps.some(
+        (s) =>
+            s.kind === "remove" ||
+            s.kind === "add" ||
+            s.kind === "bench" ||
+            (s.kind === "branch" && changes(s.body)),
+    );
+}
+
+/** Solve the chain; undefined when no step changes the state. */
+export function chain(input: ChainInput): Chain | undefined {
+    if (!changes(input.body)) return undefined;
+    const total = input.starts.reduce((s, x) => s + x.weight, 0);
+    if (!(total > 0)) return undefined;
+    const t: Totals = {
+        exit: 0,
+        restart: 0,
+        stop: 0,
+        passes: 0,
+        reached: new Map(),
+        taken: new Map(),
+    };
+    let head: Dist = new Map();
+    for (const { state, weight } of input.starts) {
+        if (input.exit(state)) t.exit += weight / total;
+        else put(head, state, weight / total);
+    }
+    for (let round = 0; round < MAX_PASSES && massOf(head) > EPSILON; round++) {
+        t.passes += massOf(head);
+        const alive = run(input.body, head, input, t);
+        head = new Map();
+        for (const { state, prob } of alive.values()) {
+            if (input.exit(state)) t.exit += prob;
+            else put(head, state, prob);
+        }
+    }
+    return { ...t, unresolved: massOf(head) };
+}
+
+function run(steps: readonly ChainStep[], alive: Dist, input: ChainInput, t: Totals): Dist {
+    let current = alive;
+    for (const step of steps) {
+        if (current.size === 0) break;
+        add(t.reached, step.id, massOf(current));
+        current = apply(step, current, input, t);
+    }
+    return current;
+}
+
+function apply(step: ChainStep, alive: Dist, input: ChainInput, t: Totals): Dist {
+    switch (step.kind) {
+        case "other":
+            return alive;
+        case "restart":
+            t.restart += massOf(alive);
+            return new Map();
+        case "stop":
+            t.stop += massOf(alive);
+            return new Map();
+        case "branch": {
+            const inside: Dist = new Map();
+            const outside: Dist = new Map();
+            for (const { state, prob } of alive.values()) {
+                put(step.holds(state) ? inside : outside, state, prob);
+            }
+            add(t.taken, step.id, massOf(inside));
+            const out = run(step.body, inside, input, t);
+            for (const { state, prob } of out.values()) put(outside, state, prob);
+            return outside;
+        }
+        case "bench": {
+            const next: Dist = new Map();
+            for (const { state, prob } of alive.values()) {
+                if (state[step.gen] >= input.caps[step.gen]) {
+                    put(next, state, prob);
+                    continue;
+                }
+                const rows = [...state.rows];
+                if (step.atom !== undefined) {
+                    if (rows[step.atom] !== null) {
+                        put(next, state, prob);
+                        continue;
+                    }
+                    rows[step.atom] = step.row ?? input.atoms[step.atom]?.rows[0]?.id ?? null;
+                }
+                put(next, bump(state, step.gen, 1, rows), prob);
+            }
+            return next;
+        }
+        case "remove":
+            return removeStep(step.gen, alive, input);
+        case "add":
+            return addStep(step, alive, input);
+    }
+}
+
+function bump(s: ChainState, gen: Gen, by: number, rows: readonly (ModId | null)[]): ChainState {
+    return {
+        prefix: gen === "prefix" ? s.prefix + by : s.prefix,
+        suffix: gen === "suffix" ? s.suffix + by : s.suffix,
+        rows,
+    };
+}
+
+/** A removal takes one of the modifiers on the sides it reaches, each equally
+ *  likely: a named one goes, or one of the unnamed count. */
+function removeStep(gen: Gen | undefined, alive: Dist, input: ChainInput): Dist {
+    const next: Dist = new Map();
+    const sides: readonly Gen[] = gen === undefined ? ["prefix", "suffix"] : [gen];
+    for (const { state, prob } of alive.values()) {
+        let n = 0;
+        for (const g of sides) n += state[g];
+        if (n <= 0) {
+            put(next, state, prob);
+            continue;
+        }
+        const named = { prefix: 0, suffix: 0 };
+        input.atoms.forEach((atom, i) => {
+            if (state.rows[i] !== null && sides.includes(atom.gen)) {
+                named[atom.gen]++;
+                const rows = [...state.rows];
+                rows[i] = null;
+                put(next, bump(state, atom.gen, -1, rows), prob / n);
+            }
+        });
+        for (const g of sides) {
+            const unnamed = Math.max(0, state[g] - named[g]);
+            if (unnamed > 0) put(next, bump(state, g, -1, state.rows), (prob * unnamed) / n);
+        }
+    }
+    return next;
+}
+
+/**
+ * A draw lands on an open side in proportion to what is left of the sides'
+ * pools (a present atom's group closed, an unnamed modifier closing an
+ * average group), then on an absent atom by its share or on an unnamed one.
+ */
+function addStep(step: Extract<ChainStep, { kind: "add" }>, alive: Dist, input: ChainInput): Dist {
+    const next: Dist = new Map();
+    for (const { state, prob } of alive.values()) {
+        const weight = { prefix: step.weight.prefix, suffix: step.weight.suffix };
+        const present = { prefix: 0, suffix: 0 };
+        input.atoms.forEach((atom, i) => {
+            if (state.rows[i] !== null) {
+                weight[atom.gen] -= atom.weight;
+                present[atom.gen]++;
+            }
+        });
+        for (const g of ["prefix", "suffix"] as const) {
+            const unnamed = Math.max(0, state[g] - present[g] - step.known[g]);
+            weight[g] = Math.max(0, weight[g] - unnamed * step.mean[g]);
+        }
+        const open = (["prefix", "suffix"] as const).filter(
+            (g) => state[g] < input.caps[g] && weight[g] > 0,
+        );
+        const totalWeight = open.reduce((s, g) => s + weight[g], 0);
+        if (open.length === 0 || totalWeight <= 0) {
+            put(next, state, prob);
+            continue;
+        }
+        for (const g of open) {
+            const sideProb = (prob * weight[g]) / totalWeight;
+            let namedShare = 0;
+            input.atoms.forEach((atom, i) => {
+                if (atom.gen !== g || state.rows[i] !== null || atom.weight <= 0) return;
+                const share = Math.min(1, atom.weight / weight[g]);
+                namedShare += share;
+                const rowTotal = atom.rows.reduce((s, r) => s + r.weight, 0);
+                for (const r of atom.rows) {
+                    const rows = [...state.rows];
+                    rows[i] = r.id;
+                    const rowShare = rowTotal > 0 ? r.weight / rowTotal : 1 / atom.rows.length;
+                    put(next, bump(state, g, 1, rows), sideProb * share * rowShare);
+                }
+            });
+            const unnamed = Math.max(0, 1 - namedShare);
+            if (unnamed > 0) put(next, bump(state, g, 1, state.rows), sideProb * unnamed);
+        }
+    }
+    return next;
+}

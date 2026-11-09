@@ -257,18 +257,28 @@ resolveEssence / resolveBench / resolveHarvestTag`
   [Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Chaos_Orb#Mechanics) ratio, a Magic
   item's 1–2 at even odds (Q58, Q59), an add's one), a `removal` (uniform over what it
   reaches, the protected sides excluded, Q61), a `lock`, an `unveil` (three weighted
-  draws, Q64), an `implicit` (an ember's weighted draw over `EldritchImplicitSpec.weights`)
-  or a `reroll`; `withPresent` folds a bench craft after a roll in. `chance.ts` evaluates a
+  draws, Q64), an `implicit` (an ember's weighted draw over `EldritchImplicitSpec.weights`),
+  a `reroll`, or a `recombine` (`recombineRoll(a, b, registry)` on the item and the second
+  item the checker lends through `donorItems`: per side the pooled types with their rows,
+  weights and exclusivity (`exclusiveTypes`, `rowsOf`) and the kept count by the page's
+  table, `recombine.ts` `keptDistribution`; `pickSide` is the weighted pick without
+  replacement under the exclusive rule, Q67); `withPresent` folds a bench craft after a
+  roll in. `chance.ts` evaluates a
   resolved predicate (`RPred`, from the checker's `predicateResolver`) against a roll
   (`chance`): the leaves the roll models are enumerated jointly (which named modifiers
   were drawn, which rows, which part of a value range, Q65), a leaf it does not is read
   off the checker's item after the step (`refine` both ways), and a condition neither
-  settles is unknown rather than guessed. `countdown.ts` solves a make-room loop (random
-  removals until the counts allow, guards that restart or stop on a kept modifier's loss)
-  as a chain over the (prefix, suffix) counts (`countdown`). `prices.ts` holds the unit
+  settles is unknown rather than guessed. `chain.ts` solves a loop whose body changes the
+  item one modifier at a time (`chain`: `ChainStep`s of a random removal, a single draw, a
+  bench craft, a branch over them, a restart or a stop) as a Markov chain over the counts
+  and the named modifiers' rows (`ChainState`, one `ChainAtom` per modifier the loop's
+  conditions name), from weighted start states to the exit, a restart, a stop or the
+  mass it cannot resolve; the walk builds it in `chainLoop` for every `until` whose body
+  and exit fit, the rest taking the independent-attempts path. `prices.ts` holds the unit
   cost of a method in its own currency (`unitCost`: the orb's name, the essence, the
   fossils and their resonator, the lifeforce per Harvest craft, a bench craft's
-  `BenchCraft.cost`), the `Prices` snapshot type and `inChaos`. `report.ts` is the walk
+  `BenchCraft.cost`, the beasts a Bestiary recipe takes), the `Prices` snapshot type and
+  `inChaos`. `report.ts` is the walk
   (`costOf(craft, result, registry, prices?)` → `CostReport`): one `StepCost` per
   statement keyed by its span (`reached`, `runs`, `unit`, `expected`, a loop's `attempts`
   as rounds and the chance each ends it, a branch's chance, a `note` where a figure is
@@ -751,7 +761,9 @@ one domain. The sub-domains:
   the floor of the pooled types present (`assertAtLeast`), tiers kept where known on
   either, one exclusive at most, the base's marks from either, values and the imprint
   gone; `recombineRefusal` names why two items cannot go in (rarity, corruption, class,
-  and here a differing base).
+  and here a differing base). `donorItems(craft, registry)` lends the elaborated second
+  items to the cost layer, `exclusiveTypes` the modifiers the Recombinator treats as
+  exclusive.
 - **Operation statements** (`checkOperation`): look the statement's words up in the
   method table (`findMethod`; an unknown word is "Unknown currency" or "Unknown
   operation"), bind its arguments to the method's slots as `Literal`s (a parameter left
@@ -1031,9 +1043,10 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/cost/race.ts`                                         | the weighted draw as an exponential race: top-`k` membership, its joint distribution, the split      |
 | `packages/core/src/cost/roll.ts`                                         | `rollOf`: a method's op sequence on the checker's item as the pools, counts and certainties it draws |
 | `packages/core/src/cost/chance.ts`                                       | `chance`: a resolved predicate's probability against a roll                                          |
-| `packages/core/src/cost/countdown.ts`                                    | a make-room loop solved as a chain over the counts                                                   |
+| `packages/core/src/cost/recombine.ts`                                    | the Recombinator's count table and weighted pick under the exclusive rule                            |
+| `packages/core/src/cost/chain.ts`                                        | a loop of removals, single draws and bench crafts as a Markov chain over counts and named modifiers  |
 | `packages/core/src/cost/prices.ts` / `report.ts`                         | unit costs and the `Prices` snapshot / `costOf`: the walk, one `StepCost` per statement              |
-| `packages/core/src/cost/{race,countdown,report}.test.ts`                 | the race against brute force, the chain by hand, the walk over fixture guides                        |
+| `packages/core/src/cost/{race,chain,recombine,report}.test.ts`           | the race against brute force, the chain and the pick by hand, the walk over fixture guides           |
 | `packages/data/scripts/fetch-economy.mjs`                                | refreshes `packages/data/data/poe1/economy.json` from poe.ninja                                      |
 | `packages/cli/src/check.ts`                                              | `checkSource`, `chartSource`, `costSource`: the CLI's check, chart and cost report, pure             |
 | `packages/lsp/src/{walkthrough,flowchart}.test.ts`                       | the walkthrough model and its flowchart over real guides                                             |

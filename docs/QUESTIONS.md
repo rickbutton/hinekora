@@ -714,6 +714,26 @@ the checker reads the craft as a plain reforge either way, since the same modifi
 roll (`check/library.ts` `harvestLikelyOps`).
 **Answer:**
 
+### Q67 · game probe · open
+
+**Asked:** 2026-11-09
+**Goal:** how the Recombinator picks which pooled modifiers survive.
+[Recombinator § Unpredictable Recombination](https://www.poewiki.net/wiki/Recombinator#Unpredictable_Recombination)
+gives the count per pooled count as a table and says "higher weight modifiers are more
+likely to be selected, although the exact formula is unknown"; it does not say whether a
+modifier both items carry is twice as likely, nor which of its two tiers the result takes.
+**Procure:** two Rare rings of one base, each with one prefix and nothing else, one
+prefix's spawn weight about three times the other's; Recombinators and gold for forty.
+**Steps:** recombine forty pairs; note which prefix survived when one did, and the tier
+when both items carried the same modifier at different tiers.
+**Record:** the survivors' frequencies against their spawn weights.
+**Assumed meanwhile:** a pick proportional to spawn weight on the result's base, without
+replacement, a modifier on both items at twice its weight and its tier one of either's
+by weight share, an unnamed modifier at the average weight of its side's pool, the
+exclusive rule as the page states it (`cost/recombine.ts` `pickSide`, `cost/roll.ts`
+`recombineRoll`).
+**Answer:**
+
 ---
 
 ## Resolved

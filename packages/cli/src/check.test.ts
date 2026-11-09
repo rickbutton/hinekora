@@ -131,7 +131,7 @@ describe("costSource — what a guide is expected to spend", () => {
 
     it("names what the snapshot cannot price and still sums the rest", () => {
         const r = costSource(
-            `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] }\nbeast imprint`,
+            `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] }\nlocus`,
             "test.craft",
             registry,
             prices,

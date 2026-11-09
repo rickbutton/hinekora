@@ -324,7 +324,7 @@ item the player is holding when the guide's step is right. A modifier the state 
 only as possible neither shrinks the pool nor adds its tags. This is exact for a reforge,
 which strips the uncertain modifiers away, and for an item whose named modifiers fill it;
 it is approximate for an add onto an item with unnamed modifiers (`QUESTIONS.md` Q57).
-The game's rules the estimate rests on and the ones no source settles are Q58–Q66.
+The game's rules the estimate rests on and the ones no source settles are Q58–Q67.
 
 ### 7.2 The race: an exact draw without listing outcomes
 
@@ -353,7 +353,11 @@ tiers), the count of draws
 ratio, one for an add), the modifiers present for certain
 (kept through the reforge, or placed first: an essence's grant, a Harvest tag's row drawn
 by weight among the tag's rows), or else a uniform removal, a fracture, an unveil's three
-weighted options, an ember's weighted implicit, a Divine Orb's reroll.
+weighted options, an ember's weighted implicit, a Divine Orb's reroll, or the
+Recombinator's pick (`cost/recombine.ts`: each side pools both items' modifiers, keeps as
+many as the page's count table says, and picks them by weight without replacement, one
+side first at even odds, an exclusive modifier once picked barring the rest; a dynamic
+program over which of the few named modifiers were taken).
 
 `cost/chance.ts` evaluates the checker's resolved predicate against the roll. A `has`
 atom on a side is "its group among the first p of that side's race", the row within the
@@ -382,18 +386,25 @@ craft's listed price).
   in the body runs that many times per pass, and the share of rounds ending in a stop ends
   the craft. The head of the next attempt is where the last one left off short of the
   exit, so a condition at the top of the body reads the previous round's roll.
-- A **make-room loop** (random removals until the counts allow, with branches that catch
-  a kept modifier's loss) is not memoryless: each round changes the counts. It is solved
-  as a short chain over the (prefix, suffix) counts the loop enters with (`cost/countdown.ts`),
-  exactly, including how often each guard fires.
+- A loop whose body **changes the item one modifier at a time** (random removals, single
+  draws such as an Exalted Orb, bench crafts, and branches over them that restart, stop or
+  craft) is not memoryless: each round starts where the last left the item. It is solved
+  as a Markov chain (`cost/chain.ts`) over a small state, the (prefix, suffix) counts and,
+  for each modifier the loop's conditions name, whether it is on the item and at which
+  row, from the states the loop may enter with (weighted by the path in), carrying the
+  distribution through the body round after round until the mass has left: the exit, a
+  restart or a stop, or an item full with nothing removing, which the report names. The
+  named modifiers are the only ones tracked; the rest of the item is a count whose draws
+  close an average group. The chance of the exit per round, how often each step and
+  branch inside runs, and the stop share all fall out exactly.
 - An **`if`** splits each branch by its condition's chance; a `restart` ends the attempt;
   a `stop` ends the craft; a top-level `restart` makes the whole guide one attempt of an
   outer loop.
 
-Where the model cannot say (a loop whose exit depends on modifiers already on the item
-that no roll in its body draws, a Bestiary recipe's beasts, an item the snapshot does not
-price), the report says so in the step's note rather than invent a figure; the walk
-assumes one round or an even branch there, and names the assumption.
+Where the model cannot say (a loop whose exit rests on a value no roll in its body
+changes, a Recombinator's gold and dust, an item the snapshot does not price), the report
+says so in the step's note rather than invent a figure; the walk assumes one round or an
+even branch there, and names the assumption.
 
 ### 7.5 The economy
 

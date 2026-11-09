@@ -1090,7 +1090,7 @@ function mayBePresentUnnamed(a: AItem, registry: Registry, t: TypeId): boolean {
 }
 
 /** The rows a present type may be: its tier overlay, else every row of the type. */
-function rowsOf(a: AItem, type: TypeId, registry: Registry): readonly Mod[] {
+export function rowsOf(a: AItem, type: TypeId, registry: Registry): readonly Mod[] {
     const pinned = a.tiers.get(type);
     return pinned
         ? [...pinned].map((id) => registry.resolveMod(id)).flatMap((r) => (r.ok ? [r.value] : []))
@@ -1922,6 +1922,23 @@ export function recombine(a: AItem, b: AItem, registry: Registry): AItem {
         crafted: [0, Math.min(1, a.crafted[1] + b.crafted[1])],
         craftedTypes: new Set([...a.craftedTypes, ...b.craftedTypes]),
     });
+}
+
+/** The modifiers on every path that the Recombinator treats as exclusive: the
+ *  crafted and veiled ones and every row that is not a natural roll. */
+export function exclusiveTypes(a: AItem, registry: Registry): Set<TypeId> {
+    const out = new Set<TypeId>();
+    for (const t of guaranteedTypes(a)) {
+        if (
+            a.craftedTypes.has(t) ||
+            t === VEILED_PREFIX ||
+            t === VEILED_SUFFIX ||
+            rowsOf(a, t, registry).some((m) => (m.source ?? "natural") !== "natural")
+        ) {
+            out.add(t);
+        }
+    }
+    return out;
 }
 
 /** Might the item carry a modifier the Recombinator treats as exclusive: one

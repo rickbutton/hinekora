@@ -15,6 +15,7 @@ import { type AItem, guaranteedTypes, type RPred, refine, suffixRange } from "..
 import type { Range } from "../check/domain.js";
 import { narrowRange } from "../check/values.js";
 import { amongFirstDistribution } from "./race.js";
+import { type Picked, pickSide } from "./recombine.js";
 import type { Candidate, DrawVariant, Group, Present, Roll } from "./roll.js";
 
 /** How many joint outcomes an exact enumeration may visit before the atoms are
@@ -91,7 +92,7 @@ export function chance(pred: RPred, roll: Roll, after: AItem): number | undefine
         case "none":
             return undefined;
         case "draw":
-            return drawChance(pred, roll.variants, base);
+            return drawChance(pred, roll.variants, after, base);
         case "removal":
             return removalChance(pred, roll, after, base);
         case "reroll":
@@ -108,6 +109,8 @@ export function chance(pred: RPred, roll: Roll, after: AItem): number | undefine
             });
         case "unveil":
             return unveilChance(pred, roll.options, base);
+        case "recombine":
+            return recombineChance(pred, roll, base);
     }
 }
 
@@ -131,6 +134,9 @@ function modelled(leaf: Leaf, roll: Roll): boolean {
                 leaf.kind === "hasGroup" ||
                 leaf.kind === "compare"
             );
+        case "recombine":
+            // Values do not survive a new item; a value atom is read off it.
+            return leaf.kind === "has" || leaf.kind === "hasGroup" || leaf.kind === "compare";
         case "reroll":
             return leaf.kind === "hasValue";
         case "lock":
@@ -234,7 +240,11 @@ function rerollChance(pred: RPred, after: AItem, base: Truth): number | undefine
         );
         needsRow.add(leaf.type);
     }
-    const counts = { prefix: after.counts.prefix[0], suffix: suffixRange(after)[0] };
+    const counts = {
+        prefix:
+            after.counts.prefix[0] === after.counts.prefix[1] ? after.counts.prefix[0] : undefined,
+        suffix: suffixRange(after)[0] === suffixRange(after)[1] ? suffixRange(after)[0] : undefined,
+    };
     return jointChance(
         pred,
         taken,
@@ -323,6 +333,59 @@ function offeredTruth(
     }
 }
 
+/**
+ * The Recombinator: one side picked first at even odds, then the other given
+ * whether an exclusive modifier went; each pair of picks says which named
+ * modifiers the result holds and how many of each side.
+ */
+function recombineChance(
+    pred: RPred,
+    roll: Extract<Roll, { kind: "recombine" }>,
+    base: Truth,
+): number | undefined {
+    const needsRow = new Set<TypeId>();
+    for (const leaf of leaves(pred)) {
+        if (leaf.kind === "has" && leaf.tierMod !== undefined) needsRow.add(leaf.type);
+    }
+    const rowsOf = (side: Gen, picked: Picked, into: Map<TypeId, readonly RowLike[]>): void => {
+        roll.sides[side].named.forEach((m, i) => {
+            if (picked.mask & (1 << i)) {
+                into.set(
+                    m.type,
+                    m.rows.map((r) => ({ id: r.mod.id, weight: r.weight })),
+                );
+            }
+        });
+    };
+    let total = 0;
+    for (const [first, second] of [
+        ["prefix", "suffix"],
+        ["suffix", "prefix"],
+    ] as const) {
+        const seconds = new Map<boolean, Picked[]>();
+        for (const p1 of pickSide(roll.sides[first], false)) {
+            let after = seconds.get(p1.exclusive);
+            if (after === undefined) {
+                after = pickSide(roll.sides[second], p1.exclusive);
+                seconds.set(p1.exclusive, after);
+            }
+            for (const p2 of after) {
+                const taken = new Map<TypeId, readonly RowLike[]>();
+                rowsOf(first, p1, taken);
+                rowsOf(second, p2, taken);
+                const counts = {
+                    prefix: first === "prefix" ? p1.count : p2.count,
+                    suffix: first === "suffix" ? p1.count : p2.count,
+                };
+                const r = jointChance(pred, taken, needsRow, [], counts, base);
+                if (r === undefined) return undefined;
+                total += 0.5 * p1.prob * p2.prob * r;
+            }
+        }
+    }
+    return Math.min(1, total);
+}
+
 function typesOfInterest(pred: RPred): Set<TypeId> {
     const out = new Set<TypeId>();
     for (const leaf of leaves(pred)) {
@@ -356,6 +419,7 @@ interface Drawn {
 function drawChance(
     pred: RPred,
     variants: readonly DrawVariant[],
+    after: AItem,
     base: Truth,
 ): number | undefined {
     const interest = typesOfInterest(pred);
@@ -393,9 +457,17 @@ function drawChance(
                 suffixSpecial,
                 c.suffix,
             );
+            // A side whose count the item left open has no count the roll can
+            // give; a count atom on it is what the item after settles.
             const counts = {
-                prefix: presentCount.prefix + c.prefix,
-                suffix: presentCount.suffix + c.suffix,
+                prefix:
+                    v.before.prefix === undefined
+                        ? undefined
+                        : presentCount.prefix + v.before.prefix + c.prefix,
+                suffix:
+                    v.before.suffix === undefined
+                        ? undefined
+                        : presentCount.suffix + v.before.suffix + c.suffix,
             };
             for (let pm = 0; pm < pd.length; pm++) {
                 if (pd[pm] === 0) continue;
@@ -416,7 +488,16 @@ function drawChance(
                     suffixSpecial.forEach((i, b) => {
                         if (sm & (1 << b)) taken.set(v.suffix[i]!.type, rowsOf(v.suffix[i]!.rows));
                     });
-                    const r = jointChance(pred, taken, needsRow, valueLeaves, counts, base);
+                    const r = jointChance(
+                        pred,
+                        taken,
+                        needsRow,
+                        valueLeaves,
+                        counts,
+                        (leaf) =>
+                            base(leaf) ??
+                            (leaf.kind === "compare" ? certainty(leaf, after) : undefined),
+                    );
                     if (r === undefined) return undefined;
                     total += prob * r;
                 }
@@ -436,7 +517,7 @@ function jointChance(
     taken: ReadonlyMap<TypeId, readonly RowLike[]>,
     needsRow: ReadonlySet<TypeId>,
     valueLeaves: readonly Extract<Leaf, { kind: "hasValue" }>[],
-    counts: Readonly<Record<Gen, number>>,
+    counts: Readonly<Record<Gen, number | undefined>>,
     base: Truth,
 ): number | undefined {
     const enumerated: { type: TypeId; outcomes: Outcome[] }[] = [];
@@ -456,12 +537,10 @@ function jointChance(
             const b = base(leaf);
             if (b !== undefined) return b;
             switch (leaf.kind) {
-                case "compare":
-                    return compare(
-                        counts[leaf.projection === "prefixCount" ? "prefix" : "suffix"],
-                        leaf.op,
-                        leaf.value,
-                    );
+                case "compare": {
+                    const n = counts[leaf.projection === "prefixCount" ? "prefix" : "suffix"];
+                    return n === undefined ? undefined : compare(n, leaf.op, leaf.value);
+                }
                 case "hasGroup":
                     return [...leaf.types].some((t) => taken.has(t));
                 case "has": {

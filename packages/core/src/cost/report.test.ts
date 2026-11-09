@@ -8,6 +8,7 @@ import {
     beast,
     cmp,
     craft,
+    donor,
     has,
     hasValue,
     iff,
@@ -15,6 +16,7 @@ import {
     notp,
     op,
     orp,
+    recombine,
     restart,
     stop,
     until,
@@ -180,9 +182,40 @@ describe("the cost of a guide", () => {
     });
 
     it("a step whose price is not known is reported, not priced", () => {
-        const c = craft(ring("magic", ["IncreasedLife1"]), [beast({ kind: "imprint" })]);
+        const c = craft(ring("rare", ["IncreasedLife1"]), [op("locus")]);
         const r = report(c);
         expect(r.steps[0]!.unit).toBeUndefined();
         expect(r.steps[0]!.note).toContain("no price");
+    });
+
+    it("a Bestiary recipe is priced by its beasts", () => {
+        const c = craft(ring("magic", ["IncreasedLife1"]), [beast({ kind: "imprint" })]);
+        expect(report(c).steps[0]!.unit).toEqual([{ item: "Craicic Croaker", amount: 1 }]);
+        const add = craft(ring("rare", ["IncreasedLife1"]), [
+            beast({ kind: "add", side: "prefix" }),
+        ]);
+        expect(report(add).steps[0]!.unit).toEqual([{ item: "Farric Wolf Alpha", amount: 1 }]);
+    });
+});
+
+describe("the Recombinator", () => {
+    it("keeps a named prefix by the count table and the weighted pick", () => {
+        // Two prefixes pooled, one from each item: the result keeps one (66.7%)
+        // or both (33.3%); with one kept, the life is picked by weight share.
+        const c = craft(
+            ring("rare", ["IncreasedLife1"]),
+            [recombine("d"), iff(has("IncreasedLife1"), [stop()])],
+            [],
+            [],
+            [donor("d", ring("rare", ["IncreasedMana1"]))],
+        );
+        const r = report(c);
+        const branch = r.steps.find((s) => s.kind === "if")!;
+        const prefixes = side("prefix");
+        const w = (type: string) => prefixes.weights[prefixes.types.indexOf(type)]!;
+        const share = w(LIFE_T1.type) / (w(LIFE_T1.type) + w("IncreasedMana"));
+        expect(branch.branch).toBeCloseTo(0.333 + 0.667 * share, 6);
+        // The Recombinator's gold and dust are not in the snapshot.
+        expect(r.steps[0]!.unit).toBeUndefined();
     });
 });
