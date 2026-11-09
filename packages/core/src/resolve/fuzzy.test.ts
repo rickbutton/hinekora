@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildTypeIndex, singular } from "./fuzzy.js";
+import { buildTypeIndex, expandAliases, singular, wordingAliases } from "./fuzzy.js";
 import { BENCH_LIFE_ROW, LIFE_T1, LIFE_T2 } from "../__fixtures__/mods.js";
 import { ModId } from "../model/ids.js";
 
@@ -15,6 +15,23 @@ describe("the name index", () => {
         expect(entry?.text).toBe(LIFE_T1.text);
         // Among a type's own rows, the most common wording is the canonical one.
         expect(buildTypeIndex([LIFE_T1, LIFE_T2]).get(LIFE_T1.type)?.text).toBeDefined();
+    });
+
+    it("rewrites community wordings inside a query, longest phrase first", () => {
+        const aliases = wordingAliases({
+            "spell suppression": "chance to suppress spell damage",
+            suppression: "suppress",
+            es: "energy shield",
+        });
+        expect(expandAliases(["max", "es"], aliases)).toEqual(["max", "energy", "shield"]);
+        expect(expandAliases(["spell", "suppression"], aliases)).toEqual([
+            "chance",
+            "suppress",
+            "spell",
+            "damage",
+        ]);
+        expect(expandAliases(["suppression"], aliases)).toEqual(["suppress"]);
+        expect(expandAliases(["fire", "res"], aliases)).toEqual(["fire", "res"]);
     });
 
     it("folds the plural a tier's number brings", () => {

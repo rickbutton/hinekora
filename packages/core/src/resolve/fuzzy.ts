@@ -25,6 +25,41 @@ export function normalizeText(s: string): string[] {
         .filter((w) => w.length > 0 && !STOPWORDS.has(w));
 }
 
+/** Community wordings → the game's, as token phrases ("spell suppression" →
+ *  "chance suppress spell damage"), applied to a query before matching. */
+export type WordingAliases = ReadonlyMap<string, readonly string[]>;
+
+/** Build the alias map from a plain table, normalising both sides as queries are. */
+export function wordingAliases(table: Readonly<Record<string, string>>): WordingAliases {
+    const out = new Map<string, readonly string[]>();
+    for (const [from, to] of Object.entries(table)) {
+        const key = normalizeText(from).join(" ");
+        if (key.length > 0) out.set(key, normalizeText(to));
+    }
+    return out;
+}
+
+/** Replace every alias phrase in the tokens, longest phrase first at each position. */
+export function expandAliases(tokens: readonly string[], aliases: WordingAliases): string[] {
+    if (aliases.size === 0) return [...tokens];
+    let longest = 1;
+    for (const key of aliases.keys()) longest = Math.max(longest, key.split(" ").length);
+    const out: string[] = [];
+    for (let i = 0; i < tokens.length;) {
+        let used = 0;
+        for (let n = Math.min(longest, tokens.length - i); n >= 1 && used === 0; n--) {
+            const to = aliases.get(tokens.slice(i, i + n).join(" "));
+            if (to !== undefined) {
+                out.push(...to);
+                used = n;
+            }
+        }
+        if (used === 0) out.push(tokens[i]!);
+        i += used === 0 ? 1 : used;
+    }
+    return out;
+}
+
 export interface TypeEntry {
     readonly type: TypeId;
     readonly tokens: ReadonlySet<string>;
@@ -89,8 +124,12 @@ export function tokenMatches(w: string, tokens: ReadonlySet<string>): boolean {
 
 /** Types whose wording covers every query token, ranked most-specific first
  *  (`score = query tokens / entry tokens`). */
-export function matchTypes(index: Map<TypeId, TypeEntry>, query: string): TypeMatch[] {
-    const q = [...new Set(normalizeText(query))];
+export function matchTypes(
+    index: Map<TypeId, TypeEntry>,
+    query: string,
+    aliases: WordingAliases = new Map(),
+): TypeMatch[] {
+    const q = [...new Set(expandAliases(normalizeText(query), aliases))];
     if (q.length === 0) return [];
     const out: TypeMatch[] = [];
     for (const entry of index.values()) {

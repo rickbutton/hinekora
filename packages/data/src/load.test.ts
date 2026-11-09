@@ -159,6 +159,20 @@ describe("registry resolution against real data", () => {
         expect(registry.resolveCurrency("exalt").ok).toBe(true);
     });
 
+    it("reads the words guides use for a modifier", () => {
+        const wording = (name: string, on: string): string => {
+            const r = registry.resolveModType(name, { base: base(on), ilvl: 86 });
+            if (!r.ok) throw new Error(`"${name}" on ${on}: ${JSON.stringify(r.error)}`);
+            return registry.typeLabel(r.value);
+        };
+        expect(wording("spell suppression", "Slink Boots")).toBe("chance suppress spell damage");
+        expect(wording("max es", "Vaal Regalia")).toBe("maximum energy shield");
+        expect(wording("+1 gems", "Jade Amulet")).toBe("level all skill gems");
+        expect(wording("ms", "Slink Boots")).toBe("increased movement speed");
+        expect(wording("dot multi", "Jade Amulet")).toBe("damage over time multiplier");
+        expect(wording("flat phys", "Vaal Axe")).toBe("adds physical damage");
+    });
+
     it("carries affix-cap deltas from experimented-base implicits", () => {
         // Simplex: −2 prefix / −1 suffix (rare 1p/2s); Ratcheting: −3 / +3.
         expect(base("Simplex Amulet").capDelta).toEqual({ prefix: -2, suffix: -1 });

@@ -19,7 +19,14 @@ import type {
     EssenceSpec,
     FossilSpec,
 } from "../model/sources.js";
-import { buildTypeIndex, matchTypes, normalizeText, singular, tokenMatches } from "./fuzzy.js";
+import {
+    buildTypeIndex,
+    matchTypes,
+    normalizeText,
+    singular,
+    tokenMatches,
+    wordingAliases,
+} from "./fuzzy.js";
 import { rollableTiers } from "./tiers.js";
 
 /** DSL tier (T1 = best) → catalog ladder level (Deafening = 7, Whispering = 1). */
@@ -312,6 +319,9 @@ export interface RegistryData {
     readonly modAliases?: Readonly<Record<string, string>>;
     /** Optional base aliases → base id. */
     readonly baseAliases?: Readonly<Record<string, string>>;
+    /** Optional community wordings → the game's ("spell suppression" → "chance to
+     *  suppress spell damage"), rewritten inside a modifier name before matching. */
+    readonly wordingAliases?: Readonly<Record<string, string>>;
     readonly currencies?: readonly CurrencySpec[];
     readonly essences?: readonly EssenceSpec[];
     readonly benchCrafts?: readonly BenchCraft[];
@@ -354,6 +364,8 @@ export function buildRegistry(data: RegistryData): Registry {
             ([alias, id]) => [norm(alias), norm(id)] as const,
         ),
     );
+
+    const wordings = wordingAliases(data.wordingAliases ?? {});
 
     const currencyByName = new Map(
         (data.currencies ?? STANDARD_CURRENCIES).map((c) => [norm(c.name), c] as const),
@@ -502,7 +514,7 @@ export function buildRegistry(data: RegistryData): Registry {
             const exact = modById.get(key) ?? modById.get(modAlias.get(key) ?? "");
             if (exact) return found(exact.type);
 
-            let matches = matchTypes(typeIndex, name);
+            let matches = matchTypes(typeIndex, name, wordings);
             // Narrow to types that can actually roll on this item, when known;
             // failing any, to those an unveil or the bench can put on it. The
             // words name what rolls first: a veiled-only type shares many of

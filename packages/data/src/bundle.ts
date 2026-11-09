@@ -22,6 +22,7 @@ import {
     adaptMod,
 } from "./adapter.js";
 import type { DataManifest } from "./manifest.js";
+import { COMMUNITY_ALIASES } from "./aliases.js";
 import type {
     RepoeBases,
     RepoeBenches,
@@ -76,11 +77,13 @@ export function adaptPoe1(raw: RawPoe1): LoadedData {
     return { mods, bases, essences, benchCrafts, fossils, eldritch, manifest: raw.manifest };
 }
 
-/** Build a core `Registry` (with the standard currencies) from loaded data. */
+/** Build a core `Registry` (with the standard currencies and the community
+ *  wordings) from loaded data. */
 export function registryOf(data: LoadedData): Registry {
     return buildRegistry({
         bases: data.bases,
         mods: data.mods,
+        wordingAliases: COMMUNITY_ALIASES,
         essences: data.essences,
         benchCrafts: data.benchCrafts,
         fossils: data.fossils,

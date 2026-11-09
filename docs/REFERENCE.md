@@ -198,7 +198,9 @@ resolveEssence / resolveBench / resolveHarvestTag`
       unveil or the bench can put on it, returning `ambiguous` with candidates when
       several match. A veiled-only type whose words a natural one shares is therefore
       named by its mod id. Built on `fuzzy.ts`; a query token matches exactly OR
-      as a **≥3-char prefix** of an entry token ("max life" → "maximum life").
+      as a **≥3-char prefix** of an entry token ("max life" → "maximum life"), after the
+      community wordings of `RegistryData.wordingAliases` are rewritten into the query
+      (`wordingAliases`, `expandAliases`: longest phrase first, "es" → "energy shield").
     - `genOfType(type)` → prefix/suffix; `familiesOfType(type)` → mod groups (drives the
       bench group-exclusivity check); `typeLabel(type)` → friendly wording for display.
     - Precomputed completion lists: `currencies`/`currencyNames`, `baseNames` (only
@@ -277,7 +279,9 @@ wording covers, the "presence" variants among them; several wordings are ambiguo
 `eldritchNames(side)` (one wording per implicit) and `eldritchTextOf(type)`. For a base it also folds the affix-count implicit stats
 (`local_maximum_{prefixes,suffixes}_allowed_+`) into a `capDelta` (absent when zero).
 `adapter.ts` adapts rows into model types and stamps `ModSource` via `classifySource`
-(domain + generation_type + is_essence_only). `load.ts`: `loadDefaultPoe1()` →
+(domain + generation_type + is_essence_only). `aliases.ts` holds `COMMUNITY_ALIASES`, the
+words guides use for a modifier where the game's wording differs (surface doc §2), which
+`registryOf` hands the registry as its `wordingAliases`. `load.ts`: `loadDefaultPoe1()` →
 `LoadedData`; `bundle.ts`: the disk-free half, `adaptPoe1(raw)` over the seven parsed
 files (`POE1_FILES` names them) and `registryOf(data)` → `Registry`, exported on their
 own as `@hinekora/data/browser` for a page that fetches the JSON itself (the `./data/*`

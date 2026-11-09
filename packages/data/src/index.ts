@@ -5,5 +5,6 @@
  * the adapter, and tracks provenance in a `DataManifest`. Depends only on
  * @hinekora/core (the one-way arrow).
  */
+export * from "./aliases.js";
 export * from "./browser.js";
 export * from "./load.js";

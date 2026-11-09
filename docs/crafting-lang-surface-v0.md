@@ -113,8 +113,14 @@ what keeps `"fire res"` from also meaning the fire-and-chaos hybrid on a base th
 roll it. A name that no modifier rolls under still resolves when an unveil or the bench
 puts it on the item's class, which is how a metamod is named in a predicate (`has "suffixes
 cannot be changed"`); the modifiers that roll come first, so an unveiled modifier whose
-words a natural one shares is named by its mod id. An exact mod id (`IncreasedLife5`) always resolves. A query that matches several
-types is an error listing them:
+words a natural one shares is named by its mod id. The words guides use where the game's
+wording differs are read as the game's before matching: "spell suppression" (or
+"suppression") as "chance to suppress spell damage", "es" as "energy shield", "ms" as
+"movement speed", "ias" as "attack speed", "dot" as "damage over time", "dmg" as "damage",
+"armor" as "armour", "flat" as "adds" and "gems" as "level of all skill gems", so `"max
+es"`, `"+1 gems"`, `"fire dot multi"` and `"flat phys"` name what a guide means (the table
+is `packages/data/src/aliases.ts`). An exact mod id (`IncreasedLife5`) always resolves. A
+query that matches several types is an error listing them:
 
 ```
 Ambiguous name "res" — candidates: fire resistance, cold resistance, lightning resistance.
