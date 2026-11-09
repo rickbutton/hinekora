@@ -405,6 +405,7 @@ main {
 }
 
 .block.restart .title,
+.block.stop .title,
 .block.finish .title {
     font-weight: 500;
     color: var(--muted);

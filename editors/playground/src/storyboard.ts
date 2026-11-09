@@ -86,14 +86,14 @@ function icon(step: Extract<Step, { kind: "operation" | "call" }>): HTMLElement 
     return img;
 }
 
-const RARITY_LINE = /^(Normal|Magic|Rare|Unique)( or (Normal|Magic|Rare|Unique))*$/;
+const RARITY_LINE = /^(Normal|Magic|Rare|Unique)$/;
 
 /**
  * The lines of a delta that name something: a modifier, an implicit, a mark.
  * The rarity and the count of unnamed modifiers move on nearly every step and
  * are read off the state line or the card instead.
  */
-function named(delta: ItemDelta): ItemDelta {
+export function named(delta: ItemDelta): ItemDelta {
     const keep = (l: string): boolean => !/unknown modifier/.test(l) && !RARITY_LINE.test(l);
     return { added: delta.added.filter(keep), removed: delta.removed.filter(keep) };
 }
@@ -134,9 +134,13 @@ const present = (...nodes: (HTMLElement | undefined)[]): HTMLElement[] =>
     nodes.filter((n): n is HTMLElement => n !== undefined);
 
 /** "Rare · 2–3 modifiers": the item in a line, when nothing named changed. */
-function stateLine(v: ItemView): string {
+export function stateLine(v: ItemView): string {
     const rarity = v.rarities.map((r) => r[0]!.toUpperCase() + r.slice(1)).join(" or ");
-    const shown = v.prefixes.length + v.suffixes.length + v.either.length;
+    // A group of alternatives stands for as many modifiers as it guarantees.
+    const shown = [...v.prefixes, ...v.suffixes, ...v.either].reduce(
+        (n, g) => n + (g.kind === "oneOf" ? g.atLeast : 1),
+        0,
+    );
     const [lo, hi] = v.remainder?.count ?? [0, 0];
     const [a, b] = [shown + lo, shown + hi];
     const count = a === b ? `${a}` : `${a}–${b}`;
@@ -152,14 +156,19 @@ function frame(view: ItemView, text: string, caption?: string): HTMLElement {
     copy.title = "Copy the item as the game writes it";
     copy.addEventListener("click", (e) => {
         e.stopPropagation();
-        void navigator.clipboard.writeText(text).then(() => {
-            copy.textContent = "copied";
-            copy.classList.add("done");
-            setTimeout(() => {
-                copy.textContent = "copy";
-                copy.classList.remove("done");
-            }, 1200);
-        });
+        navigator.clipboard
+            .writeText(text)
+            .then(() => {
+                copy.textContent = "copied";
+                copy.classList.add("done");
+                setTimeout(() => {
+                    copy.textContent = "copy";
+                    copy.classList.remove("done");
+                }, 1200);
+            })
+            .catch(() => {
+                // The clipboard was refused; the button simply stays as it is.
+            });
     });
     el.append(h("div", "card", renderItemCard(view), copy));
     return el;
@@ -182,8 +191,9 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
         let last: string | undefined;
 
         /**
-         * The item after a step, as a card when `full` or when something named
-         * changed, as a state line otherwise, as nothing when it did not change.
+         * The item after a step: always a card when `full`; otherwise a card
+         * when something named changed, a state line when only the counts or
+         * the rarity did, nothing when it did not change at all.
          */
         const result = (
             state: AItem | undefined,
@@ -194,7 +204,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
             if (state === undefined) return undefined;
             const view = itemView(state, registry);
             const text = renderItemText(view);
-            if (text === last) return undefined;
+            if (!full && text === last) return undefined;
             last = text;
             return full || changed
                 ? frame(view, text, caption)
@@ -267,6 +277,28 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                         "div",
                                         "body",
                                         h("div", "title", "back to the start of the repeat"),
+                                    ),
+                                ),
+                            ),
+                            s.span,
+                        ),
+                    );
+                    return;
+                }
+                case "stop": {
+                    into.push(
+                        anchor(
+                            h(
+                                "div",
+                                "block stop",
+                                h(
+                                    "div",
+                                    "row",
+                                    glyph("■"),
+                                    h(
+                                        "div",
+                                        "body",
+                                        h("div", "title", "stop here: keep the item as it is"),
                                     ),
                                 ),
                             ),

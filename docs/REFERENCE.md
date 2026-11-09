@@ -440,7 +440,8 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   did not change. A loop is a bracketed "repeat" region closed by "until the item has"
   with the checklist (the step's `check`) and the item once it is done, always a card;
   a branch is "if the item has" with its checklist and one arm per answer; a `restart`
-  is a block pointing back; the start and the finished item open and close the board;
+  is a block pointing back and a `stop` one that keeps the item as it is; the start and
+  the finished item open and close the board;
   a step never reached is dimmed. The block is the unit of interaction: hovering
   anywhere in it highlights its statement in the editor, clicking moves the cursor
   there, and the cursor marks the block it is in (a loop's head and foot together). A
