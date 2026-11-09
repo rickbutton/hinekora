@@ -88,6 +88,7 @@ examples/                    - the guide suite; every file here checks clean (`p
   metamod-harvest-loop.craft - "Suffixes Cannot Be Changed" and a Harvest reforge, round until the life is T1.
   veiled-unveil.craft        - a veiled orb under a suffix lock, unveiled until the right option shows; `stop` on a bricked item.
   essence-minion-wand.craft  - essence spam, annul to make room, multimod, bench crafts guarded by `has group`.
+  value-threshold.craft      - a finished ring divined until the life roll is 110 or more.
   future/                    - recipes that wait on a feature, each headed by which; not tested.
 docs/
   REFERENCE.md, ARCHITECTURE.md, ROADMAP.md, item-model.md, QUESTIONS.md + the two design docs

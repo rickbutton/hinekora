@@ -1,0 +1,15 @@
+# Finishing a ring: the life roll is tier 1 but the guide wants 110 or more of
+# its 100–114 span, so it divines until the roll is in range. A threshold inside
+# a tier is the most common stop condition of a finished item.
+
+item {
+    base:     "Amethyst Ring"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum life" t1 ]
+    suffixes: [ "fire resistance" t1, "cold resistance" t1, "chaos resistance" t1 ]
+}
+
+until has "maximum life" >= 110 {
+    divine
+}

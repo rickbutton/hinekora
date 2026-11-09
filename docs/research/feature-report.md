@@ -208,7 +208,7 @@ guides treat them as fixed costs and nothing in the modifier logic depends on th
 | `future/imprint-regal-amulet`                                              | R2 imprint checkpoint, regal under a lock      | A6                                                          |
 | `future/lock-regal`                                                        | R11 Hinekora's Lock                            | B3                                                          |
 | `future/recombinator`                                                      | R10 two-item merge                             | B4                                                          |
-| `future/value-threshold`                                                   | R16 "life ≥ 110", divine                       | B2                                                          |
+| `value-threshold`                                                          | R16 "life ≥ 110", divine                       | checks (`has … >= 110` and `divine`)                        |
 | `future/cluster-harvest`                                                   | R18 reforge a cluster by tag                   | B5                                                          |
 
 ## 4. Status
@@ -229,7 +229,9 @@ reach, and takes one of them when it could reach nothing else) the veiled unveil
 checks as a guide writes it. The rest of A4 is in: a single-tier modifier needs no `t1`
 in the item block, and the words guides use ("es", "spell suppression", "+1 gems") name
 their modifiers, and `has group "<mod>"` asks for any modifier of a group, which closes
-B12. The examples suite stands at thirteen checking guides and five waiting;
+B12. B2 is built: `has "<mod>" <cmp> <int>` compares a modifier's value, pinning the tiers
+that reach it, and `divine` rolls the values again. The examples suite stands at fourteen
+checking guides and four waiting;
 the naming fixes of A4 (plurals, joiner words, the natural modifier first) brought the
 eldritch gloves in.
 
