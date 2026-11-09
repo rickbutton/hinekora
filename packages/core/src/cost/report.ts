@@ -30,7 +30,14 @@ import { guaranteedTypes, isExcluded, rarityOf, sideCap } from "../check/astate.
 import { lookupWeight } from "../pool/pool.js";
 import { rollableTiers } from "../resolve/tiers.js";
 import { addPrices, inChaos, type Price, type Prices, unitCost } from "./prices.js";
-import { NO_ROLL, recombineRoll, type Roll, rollOf, withPresent } from "./roll.js";
+import { NO_ROLL, type Reading, recombineRoll, type Roll, rollOf, withPresent } from "./roll.js";
+
+/** The ends of a figure over the emptiest and fullest items the checker
+ *  allows at the step (`Reading`), given only where they differ. */
+export interface Bounds {
+    readonly low: number;
+    readonly high: number;
+}
 
 /** What the cost layer says about one statement. */
 export interface StepCost {
@@ -50,6 +57,11 @@ export interface StepCost {
     readonly branch?: number;
     /** Why a figure is missing or approximate, in the guide's words. */
     readonly note?: string;
+    /** The spread of `runs`, of a loop's expected rounds and of a branch's
+     *  chance over the item's open counts, where they differ. */
+    readonly runsRange?: Bounds;
+    readonly attemptsRange?: Bounds;
+    readonly branchRange?: Bounds;
 }
 
 export interface CostReport {
@@ -59,6 +71,8 @@ export interface CostReport {
     /** The total under the snapshot, where every item has a price. */
     readonly chaos?: number;
     readonly divine?: number;
+    /** The spread of `chaos` over the item's open counts, where it differs. */
+    readonly chaosRange?: Bounds;
     /** The items the snapshot could not price; a step whose price is unknown says
      *  so in its own note. */
     readonly unpriced: readonly string[];
@@ -98,13 +112,62 @@ interface Frame {
     restarted: number;
 }
 
+/** One walk's figures under one reading of the item's open counts. */
+interface Walk {
+    readonly steps: readonly StepCost[];
+    readonly total: readonly Price[];
+    readonly chaos?: number;
+    readonly stopped: number;
+}
+
 export function costOf(
     craft: Craft,
     result: CheckResult,
     registry: Registry,
     snapshot?: Prices,
 ): CostReport {
-    const walker = new Walker(craft, result, registry);
+    const estimate = walk(craft, result, registry, snapshot, "estimate");
+    // The two ends of what the checker allows, for the spread beside the estimate.
+    const ends = [
+        walk(craft, result, registry, snapshot, "emptiest"),
+        walk(craft, result, registry, snapshot, "fullest"),
+    ];
+    const unpriced = new Set<string>();
+    for (const p of estimate.total) {
+        if (snapshot === undefined || inChaos([p], snapshot) === undefined) unpriced.add(p.item);
+    }
+    const chaosRange =
+        estimate.chaos === undefined
+            ? undefined
+            : bounds(
+                  estimate.chaos,
+                  ends.map((w) => w.chaos),
+              );
+    return {
+        steps: withBounds(
+            estimate.steps,
+            ends.map((w) => w.steps),
+        ),
+        total: estimate.total,
+        ...(snapshot !== undefined &&
+            estimate.chaos !== undefined && {
+                chaos: estimate.chaos,
+                divine: estimate.chaos / snapshot.chaosPerDivine,
+            }),
+        ...(chaosRange !== undefined && { chaosRange }),
+        unpriced: [...unpriced],
+        stopped: estimate.stopped,
+    };
+}
+
+function walk(
+    craft: Craft,
+    result: CheckResult,
+    registry: Registry,
+    snapshot: Prices | undefined,
+    reading: Reading,
+): Walk {
+    const walker = new Walker(craft, result, registry, reading);
     const top: Frame = { scale: 1, stopped: 0, restarted: 0 };
     walker.sequence(craft.body, [{ mass: 1, path: undefined }], top);
     // A restart at the top level starts the guide over: every step runs once
@@ -123,24 +186,82 @@ export function costOf(
     );
     let total: Price[] = [];
     for (const s of steps) if (s.expected) total = addPrices(total, s.expected);
-    const unpriced = new Set<string>();
     let chaos: number | undefined = 0;
     for (const p of total) {
         const c = snapshot === undefined ? undefined : inChaos([p], snapshot);
-        if (c === undefined) {
-            unpriced.add(p.item);
-            chaos = undefined;
-        } else if (chaos !== undefined) chaos += c;
+        if (c === undefined) chaos = undefined;
+        else if (chaos !== undefined) chaos += c;
     }
     return {
         steps,
         total,
-        ...(snapshot !== undefined &&
-            chaos !== undefined && { chaos, divine: chaos / snapshot.chaosPerDivine }),
-        unpriced: [...unpriced],
+        ...(chaos !== undefined && { chaos }),
         stopped: Math.min(1, top.stopped * passes),
     };
 }
+
+/** The spread of a figure over the readings, when they do not agree. */
+function bounds(estimate: number, others: readonly (number | undefined)[]): Bounds | undefined {
+    let low = estimate;
+    let high = estimate;
+    for (const x of others) {
+        if (x === undefined) return undefined;
+        low = Math.min(low, x);
+        high = Math.max(high, x);
+    }
+    const scale = Math.max(1, Math.abs(estimate));
+    return high - low > 1e-9 * scale ? { low, high } : undefined;
+}
+
+/** The estimate's steps, each with the spread of its figures over the other
+ *  readings' walks; a step a reading never reached counts as run no times. */
+function withBounds(
+    estimate: readonly StepCost[],
+    others: readonly (readonly StepCost[])[],
+): StepCost[] {
+    const key = (s: StepCost): string => `${s.kind}@${s.span.start.offset}`;
+    const indexed = others.map((steps) => {
+        const byKey = new Map<string, StepCost[]>();
+        for (const s of steps) {
+            const list = byKey.get(key(s));
+            if (list) list.push(s);
+            else byKey.set(key(s), [s]);
+        }
+        return byKey;
+    });
+    const seen = new Map<string, number>();
+    return estimate.map((s) => {
+        const k = key(s);
+        const n = seen.get(k) ?? 0;
+        seen.set(k, n + 1);
+        const peers = indexed.map((byKey) => byKey.get(k)?.[n]);
+        const runs = bounds(
+            s.runs,
+            peers.map((p) => p?.runs ?? 0),
+        );
+        const attempts =
+            s.attempts === undefined
+                ? undefined
+                : bounds(
+                      s.attempts.expected,
+                      peers.map((p) => p?.attempts?.expected ?? s.attempts!.expected),
+                  );
+        const branch =
+            s.branch === undefined
+                ? undefined
+                : bounds(
+                      s.branch,
+                      peers.map((p) => p?.branch ?? s.branch!),
+                  );
+        return {
+            ...s,
+            ...(runs !== undefined && { runsRange: runs }),
+            ...(attempts !== undefined && { attemptsRange: attempts }),
+            ...(branch !== undefined && { branchRange: branch }),
+        };
+    });
+}
+
 function massOf(branches: readonly Branch[]): number {
     let m = 0;
     for (const b of branches) m += b.mass;
@@ -170,6 +291,7 @@ class Walker {
         craft: Craft,
         result: CheckResult,
         private readonly registry: Registry,
+        private readonly reading: Reading,
     ) {
         for (const e of result.trace) this.byStart.set(`${e.kind}@${e.span.start.offset}`, e);
         this.resolve = predicateResolver(craft, registry);
@@ -300,9 +422,11 @@ class Walker {
                 name !== undefined && (name.kind === "word" || name.kind === "string")
                     ? this.donors.get(name.value)
                     : undefined;
-            return donor === undefined ? NO_ROLL : recombineRoll(before, donor, this.registry);
+            return donor === undefined
+                ? NO_ROLL
+                : recombineRoll(before, donor, this.registry, this.reading);
         }
-        return rollOf(before, built, this.registry);
+        return rollOf(before, built, this.registry, this.reading);
     }
 
     private branchStmt(
@@ -554,7 +678,7 @@ class Walker {
                 if (literals.length !== s.args.length) return undefined;
                 const built = method.build(literals, entry.before, registry);
                 if ("refused" in built) return undefined;
-                const roll = rollOf(entry.before, built, registry);
+                const roll = rollOf(entry.before, built, registry, this.reading);
                 switch (roll.kind) {
                     case "none": {
                         const bench =
@@ -644,11 +768,17 @@ class Walker {
             const rows = atoms[i]!.rows.filter((r) => pinned === undefined || pinned.has(r.id));
             return rows.length > 0 ? rows : atoms[i]!.rows;
         };
-        const pairs: [number, number][] = [];
+        let pairs: [number, number][] = [];
         const [t0, t1] = before.counts.total;
         const [p0, p1] = before.counts.prefix;
         for (let p = p0; p <= p1; p++) {
             for (let t = t0; t <= t1; t++) if (t - p >= 0) pairs.push([p, t - p]);
+        }
+        if (this.reading !== "estimate") {
+            // The emptiest or the fullest item the counts allow.
+            const totals = pairs.map(([p, sfx]) => p + sfx);
+            const pick = this.reading === "emptiest" ? Math.min(...totals) : Math.max(...totals);
+            pairs = pairs.filter(([p, sfx]) => p + sfx === pick);
         }
         if (pairs.length === 0) return undefined;
         const starts: { state: ChainState; weight: number }[] = [];

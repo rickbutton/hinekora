@@ -295,7 +295,9 @@ the named modifiers fill the item; it is approximate for an add onto an item wit
 modifiers, where the true pool is smaller by the groups those modifiers occupy. The report
 says so where it applies ("unnamed modifiers may narrow this pool"). Bounds would be the
 same computation on the superset and the subset pools the checker already builds
-(`addableMods`, `subsetMods`); not built until a guide needs them (Q57).
+(`addableMods`, `subsetMods`). Built instead as a spread: the walk is run again with
+every range the checker left open (a side's count) at its floor and
+at its ceiling, and a figure whose ends differ is given with them (Q57).
 
 ### 5.3 The race: an exact weighted draw without enumeration
 

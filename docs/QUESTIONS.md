@@ -572,7 +572,10 @@ assumption where it applies; (b) bounds, the same computation on the checker's s
 and subset pools, reported as a range; (c) both.
 **Recommendation:** (a): exact for a reforge and for an item whose named modifiers fill
 it, which is where guides quote odds; (b) when a guide needs the range.
-**Assumed meanwhile:** (a).
+**Assumed meanwhile:** (a) for the figure, with (b) beside it as a spread: the walk is run
+again with every range the checker left open (a side's count) at its
+floor and at its ceiling, and a step whose ends differ shows them (`cost/roll.ts`
+`Reading`, `cost/report.ts` `Bounds`).
 **Answer:**
 
 ### Q58 · game probe · open

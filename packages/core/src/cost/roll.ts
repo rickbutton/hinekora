@@ -33,6 +33,16 @@ import { emptyItem } from "../model/item.js";
 import { splitDistribution } from "./race.js";
 import { keptDistribution, type Pooled, type PooledSide } from "./recombine.js";
 
+/**
+ * How the item's open counts are read where the checker leaves them a range:
+ * the `estimate` takes a side's count at its floor (exact for a reforge and
+ * for an item whose named modifiers fill it) and a removal's at the middle;
+ * `emptiest` and `fullest` take every count at its floor or its ceiling, the
+ * two items at the ends of what the checker allows, whose figures bracket the
+ * estimate (QUESTIONS.md Q57).
+ */
+export type Reading = "estimate" | "emptiest" | "fullest";
+
 /** One row of a group with the weight it rolls at here. */
 export interface Row {
     readonly mod: Mod;
@@ -195,14 +205,15 @@ function splitOf(
 }
 
 /** The item's facts the pool reads: the guaranteed modifiers, with each side's
- *  count raised to its proven lower bound, so a side the unnamed modifiers fill
- *  admits nothing more. */
-function sureFacts(a: AItem, registry: Registry, level?: number) {
+ *  count raised to its proven lower bound (its ceiling under the fullest
+ *  reading), so a side the unnamed modifiers fill admits nothing more. */
+function sureFacts(a: AItem, registry: Registry, level?: number, reading: Reading = "estimate") {
     const facts = guaranteedFacts(a, registry, level);
+    const end = reading === "fullest" ? 1 : 0;
     return {
         ...facts,
-        prefixCount: Math.max(facts.prefixCount, a.counts.prefix[0]),
-        suffixCount: Math.max(facts.suffixCount, suffixRange(a)[0]),
+        prefixCount: Math.max(facts.prefixCount, a.counts.prefix[end]),
+        suffixCount: Math.max(facts.suffixCount, suffixRange(a)[end]),
     };
 }
 
@@ -268,9 +279,15 @@ function harvestTagsOn(a: AItem, registry: Registry): Set<TagId> {
  * says. Empty for a pool this model does not read. `origin` is the item the
  * method was used on, before its strip, for a tilt that reads what it held.
  */
-function poolRows(a: AItem, spec: PoolSpec, registry: Registry, origin: AItem = a): Row[] {
+function poolRows(
+    a: AItem,
+    spec: PoolSpec,
+    registry: Registry,
+    origin: AItem = a,
+    reading: Reading = "estimate",
+): Row[] {
     const natural = (level?: number): Row[] =>
-        pool(registry.catalog, sureFacts(a, registry, level)).map((c) => ({
+        pool(registry.catalog, sureFacts(a, registry, level, reading)).map((c) => ({
             mod: c.mod,
             weight: c.weight,
         }));
@@ -323,7 +340,7 @@ function poolRows(a: AItem, spec: PoolSpec, registry: Registry, origin: AItem = 
         case "influence": {
             // The rows the influence admits: in the pool with the influence's
             // tags and not without them.
-            const facts = sureFacts(a, registry);
+            const facts = sureFacts(a, registry, undefined, reading);
             const tags = influenceTagsAny(a, registry);
             const plain = new Set(
                 pool(registry.catalog, {
@@ -412,7 +429,12 @@ interface FillPlan {
  * does not read (a Vaal Orb's outcomes, a Bestiary's random metamod) is
  * `none`.
  */
-export function rollOf(a: AItem, ops: readonly Op[], registry: Registry): Roll {
+export function rollOf(
+    a: AItem,
+    ops: readonly Op[],
+    registry: Registry,
+    reading: Reading = "estimate",
+): Roll {
     let main: FillPlan | undefined;
     const forced: FillPlan[] = [];
     for (let i = 0; i < ops.length; i++) {
@@ -422,7 +444,9 @@ export function rollOf(a: AItem, ops: readonly Op[], registry: Registry): Roll {
                 // The veiled placeholder is a modifier no condition names.
                 if (op.pool.kind === "veiledPlaceholder") break;
                 const before = runMethod(a, ops.slice(0, i), registry).state;
-                if (op.pool.kind === "unveil") return unveilRoll(before, op.pool, registry);
+                if (op.pool.kind === "unveil") {
+                    return unveilRoll(before, op.pool, registry, reading);
+                }
                 if (op.count.kind === "within") {
                     forced.push({ spec: op.pool, count: op.count, before });
                 } else if (main === undefined) {
@@ -439,7 +463,9 @@ export function rollOf(a: AItem, ops: readonly Op[], registry: Registry): Roll {
                     const fillsAfter = ops
                         .slice(i + 1)
                         .some((o) => o.kind === "fill" && o.pool.kind !== "veiledPlaceholder");
-                    if (!fillsAfter) return removalRoll(before, after, op.selector.gen, registry);
+                    if (!fillsAfter) {
+                        return removalRoll(before, after, op.selector.gen, registry, reading);
+                    }
                 }
                 break;
             case "reroll":
@@ -485,19 +511,27 @@ export function rollOf(a: AItem, ops: readonly Op[], registry: Registry): Roll {
     }
     // Forced rows alone (a bench craft, a Harvest change) draw nothing: the
     // checker's item says what they placed.
-    return main === undefined ? NO_ROLL : drawRoll(main, forced, registry, a);
+    return main === undefined ? NO_ROLL : drawRoll(main, forced, registry, a, reading);
 }
 
 /**
  * A random removal: the modifiers it may take are those guaranteed before and
  * not after on the sides it reaches, each as likely as any other modifier
  * there; what the item holds beyond the named ones is the unnamed share of
- * each side. The counts are read at the middle of their ranges.
+ * each side. The counts are read at the middle of their ranges, or at the
+ * end the reading asks for.
  */
-function removalRoll(before: AItem, after: AItem, gen: Gen | undefined, registry: Registry): Roll {
+function removalRoll(
+    before: AItem,
+    after: AItem,
+    gen: Gen | undefined,
+    registry: Registry,
+    reading: Reading,
+): Roll {
     const kept = guaranteedTypes(after);
     const reachable = [...guaranteedTypes(before)].filter((t) => !kept.has(t));
-    const mid = (r: readonly [number, number]): number => (r[0] + r[1]) / 2;
+    const mid = (r: readonly [number, number]): number =>
+        reading === "emptiest" ? r[0] : reading === "fullest" ? r[1] : (r[0] + r[1]) / 2;
     // A side a metamod protects, or the other side of a one-sided orb, is out
     // of the removal's reach.
     const protectedSides = new Set<Gen>();
@@ -540,8 +574,9 @@ function unveilRoll(
     before: AItem,
     spec: Extract<PoolSpec, { kind: "unveil" }>,
     registry: Registry,
+    reading: Reading,
 ): Roll {
-    const rows = poolRows(before, spec, registry);
+    const rows = poolRows(before, spec, registry, before, reading);
     const options = groupRows(rows, (m) => m.gen);
     return options.length === 0 ? NO_ROLL : { kind: "unveil", options };
 }
@@ -551,9 +586,10 @@ function drawRoll(
     forced: readonly FillPlan[],
     registry: Registry,
     origin: AItem,
+    reading: Reading,
 ): Roll {
     const a = main.before;
-    const rows = poolRows(a, main.spec, registry, origin);
+    const rows = poolRows(a, main.spec, registry, origin, reading);
     if (rows.length === 0) return NO_ROLL;
     const genOf = (m: Mod): Gen => genOfType(a, registry, m.type, m);
     const groups = groupRows(rows, genOf);
@@ -563,7 +599,7 @@ function drawRoll(
     // by weight, each a variant of the roll.
     let variants: { prob: number; present: Present[] }[] = [{ prob: 1, present }];
     for (const f of forced) {
-        const frows = poolRows(f.before, f.spec, registry);
+        const frows = poolRows(f.before, f.spec, registry, origin, reading);
         if (frows.length === 0) continue;
         const fgroups = groupRows(frows, genOf);
         const total = fgroups.reduce((s, g) => s + g.weight, 0);
@@ -583,11 +619,14 @@ function drawRoll(
     const rarity = rarityOf(a) ?? "rare";
     const capP = sideCap("prefix", rarity, a.base);
     const capS = sideCap("suffix", rarity, a.base);
-    const totals = countTotals(main.count, a);
+    const totals = countTotals(main.count, a, reading);
     // What the item holds before the fill beyond the named modifiers: its
-    // sure count less them, and exactly that when the side's count is settled.
-    const facts = sureFacts(a, registry);
+    // sure count less them, and exactly that when the side's count is settled
+    // or the reading takes it at an end.
+    const facts = sureFacts(a, registry, undefined, reading);
     const ranges = { prefix: a.counts.prefix, suffix: suffixRange(a) };
+    const settled = (r: readonly [number, number]): boolean =>
+        reading !== "estimate" || r[0] === r[1];
     const out: DrawVariant[] = [];
     for (const v of variants) {
         const taken = new Set(v.present.map((p) => p.type));
@@ -598,8 +637,8 @@ function drawRoll(
         const unnamedP = Math.max(0, facts.prefixCount - presentP);
         const unnamedS = Math.max(0, facts.suffixCount - presentS);
         const before = {
-            prefix: ranges.prefix[0] === ranges.prefix[1] ? unnamedP : undefined,
-            suffix: ranges.suffix[0] === ranges.suffix[1] ? unnamedS : undefined,
+            prefix: settled(ranges.prefix) ? unnamedP : undefined,
+            suffix: settled(ranges.suffix) ? unnamedS : undefined,
         };
         const counts = new Map<string, CountCase>();
         for (const [m, prob] of totals) {
@@ -629,9 +668,12 @@ function drawRoll(
 
 /** The total modifier count a fill leaves, with its probability: what the item
  *  holds for sure counts toward a reforge's total; an add is that many more. */
-function countTotals(count: FillCount, a: AItem): Map<number, number> {
+function countTotals(count: FillCount, a: AItem, reading: Reading): Map<number, number> {
     const cap = totalCap(a);
-    const present = Math.max(guaranteedTypes(a).size, a.counts.total[0]);
+    const present = Math.max(
+        guaranteedTypes(a).size,
+        a.counts.total[reading === "fullest" ? 1 : 0],
+    );
     switch (count.kind) {
         case "add": {
             const out = new Map<number, number>();
@@ -664,7 +706,12 @@ function countTotals(count: FillCount, a: AItem): Map<number, number> {
  * result keeps by the page's table over the pooled count, the item's unnamed
  * modifiers counted at their proven floors.
  */
-export function recombineRoll(a: AItem, b: AItem, registry: Registry): Roll {
+export function recombineRoll(
+    a: AItem,
+    b: AItem,
+    registry: Registry,
+    reading: Reading = "estimate",
+): Roll {
     const tags = influenceTagsAny(a, registry);
     const baseTags = new Set([...a.base.tags, ...tags]);
     const exclusive = new Set([...exclusiveTypes(a, registry), ...exclusiveTypes(b, registry)]);
@@ -701,8 +748,8 @@ export function recombineRoll(a: AItem, b: AItem, registry: Registry): Roll {
                 }
                 named.set(type, entry);
             }
-            const floor = gen === "prefix" ? x.counts.prefix[0] : suffixRange(x)[0];
-            unnamed += Math.max(0, floor - onSide);
+            const range = gen === "prefix" ? x.counts.prefix : suffixRange(x);
+            unnamed += Math.max(0, range[reading === "fullest" ? 1 : 0] - onSide);
         }
         let pooled = unnamed;
         const list: Pooled[] = [];

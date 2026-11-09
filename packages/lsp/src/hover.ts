@@ -7,6 +7,7 @@ import {
     type AItem,
     bindingAt,
     bindingsOf,
+    type Bounds,
     type CostReport,
     type Craft,
     type CurrencyKind,
@@ -545,6 +546,11 @@ function costLine(
         const chaos = prices === undefined ? undefined : inChaos(p, prices);
         return chaos === undefined ? list : `${list} (about ${figure(chaos)} chaos)`;
     };
+    // The spread over the emptiest and fullest items the checker allows.
+    const spread = (b: Bounds | undefined, show: (n: number) => string): string =>
+        b === undefined
+            ? ""
+            : ` (${show(b.low)} to ${show(b.high)} by the item's unnamed modifiers)`;
     if (entry.kind === "item") {
         if (report.total.length === 0) return undefined;
         const when =
@@ -553,7 +559,7 @@ function costLine(
                 : ` at ${prices.league} prices of ${prices.fetchedAt.slice(0, 10)}`;
         const total =
             report.chaos !== undefined && report.divine !== undefined
-                ? `about ${figure(report.chaos)} chaos, ${figure(report.divine)} divine${when}`
+                ? `about ${figure(report.chaos)} chaos, ${figure(report.divine)} divine${spread(report.chaosRange, (n) => `${figure(n)} chaos`)}${when}`
                 : report.total.map((x) => `${figure(x.amount)} ${x.item}`).join(", ");
         return `_Expected spend for the guide:_ ${total}.`;
     }
@@ -564,15 +570,21 @@ function costLine(
     const parts: string[] = [];
     if (step.attempts !== undefined) {
         parts.push(
-            `about ${figure(step.attempts.expected)} rounds, ${percentage(step.attempts.chance)} end it each time`,
+            `about ${figure(step.attempts.expected)} rounds${spread(step.attemptsRange, figure)}, ${percentage(step.attempts.chance)} end it each time`,
         );
     }
-    if (step.branch !== undefined) parts.push(`taken ${percentage(step.branch)} of the time`);
+    if (step.branch !== undefined) {
+        parts.push(
+            `taken ${percentage(step.branch)} of the time${spread(step.branchRange, percentage)}`,
+        );
+    }
     if (step.kind === "restart" || step.kind === "stop") {
         parts.push(`reached ${percentage(step.reached)} of the time`);
     }
     if (step.kind === "operation" && step.expected !== undefined && step.expected.length > 0) {
-        parts.push(`expected ${money(step.expected)}`);
+        parts.push(
+            `expected ${money(step.expected)}${spread(step.runsRange, (n) => `${figure(n)} uses`)}`,
+        );
     }
     if (step.note !== undefined) parts.push(step.note);
     return parts.length === 0 ? undefined : `_Cost:_ ${parts.join("; ")}.`;

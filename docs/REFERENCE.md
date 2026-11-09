@@ -189,7 +189,8 @@ these suffix modifiers }`, `{ 1-3 additional prefix or suffix modifiers }`,
   binds the drawn nodes to the text; the CLI's `hinekora chart <file>` prints the text
   (`chartSource` in `packages/cli/src/check.ts`) for a README or a wiki page to embed;
   `hinekora cost <file>` prints the cost report (`costSource`): one line per statement
-  with its rounds, its branch chance or what it is expected to consume, then the total per
+  with its rounds, its branch chance or what it is expected to consume, the spread over
+  what the item may hold in brackets where the ends differ, then the total per
   currency and in Chaos and Divine Orbs at the bundled snapshot's league and date. `itemDelta`/`stepDelta` list what a step added and removed, as
   the lines of the item view a player would notice. `conditions.ts` words a guide's
   conditions for the player: `clause` as prose ("+# to maximum Life at T1 and exactly 2
@@ -246,7 +247,9 @@ resolveEssence / resolveBench / resolveHarvestTag`
   `splitDistribution` (how `m` draws split between the sides, with the side caps and
   depletion), each a Poisson-binomial dynamic program under a Gauss–Legendre quadrature,
   checked against brute-force enumeration in `race.test.ts`. `roll.ts` reads a method's
-  op sequence on the checker's item into its `Roll` (`rollOf`): a `draw` (the pool's
+  op sequence on the checker's item into its `Roll` (`rollOf(a, ops, registry, reading?)`,
+  the `Reading` saying which end of each range the checker left open the roll reads:
+  `estimate`, `emptiest` or `fullest`): a `draw` (the pool's
   groups per side with their rows and weights, built with `pool` on the item's sure facts
   (`guaranteedFacts`, each side's count raised to its proven floor), re-weighted by a
   resonator's fossils (`FossilSpec.weights`, added up across fossils, Q60), narrowed to a
@@ -283,7 +286,10 @@ resolveEssence / resolveBench / resolveHarvestTag`
   statement keyed by its span (`reached`, `runs`, `unit`, `expected`, a loop's `attempts`
   as rounds and the chance each ends it, a branch's chance, a `note` where a figure is
   assumed), the `total` per currency, `chaos` and `divine` under the snapshot, the
-  `unpriced` items and the chance the craft `stopped`.
+  `unpriced` items and the chance the craft `stopped`. The walk runs once per `Reading`,
+  and each step carries the spread of its figures over the emptiest and fullest walks
+  where they differ (`Bounds`: `runsRange`, `attemptsRange`, `branchRange`), the report
+  its `chaosRange`.
 
 ### 3b. `@hinekora/parser`
 

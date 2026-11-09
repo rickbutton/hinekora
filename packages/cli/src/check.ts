@@ -13,6 +13,7 @@ import {
     type Prices,
     type Registry,
     renderItemText,
+    type Bounds,
     type StepCost,
     walkthrough,
 } from "@hinekora/core";
@@ -104,8 +105,12 @@ export function costSource(
     if (prices !== undefined && report.total.length > 0) {
         const date = prices.fetchedAt.slice(0, 10);
         if (report.chaos !== undefined && report.divine !== undefined) {
+            const spread =
+                report.chaosRange === undefined
+                    ? ""
+                    : `, ${amount(report.chaosRange.low)} to ${amount(report.chaosRange.high)} by the item's unnamed modifiers,`;
             out.push(
-                `About ${amount(report.chaos)} Chaos Orbs (${amount(report.divine)} Divine Orbs) at ${prices.league} prices of ${date}.`,
+                `About ${amount(report.chaos)} Chaos Orbs (${amount(report.divine)} Divine Orbs)${spread} at ${prices.league} prices of ${date}.`,
             );
         } else {
             out.push(
@@ -127,24 +132,33 @@ function stepText(lines: readonly string[], s: StepCost): string {
     return `${String(s.span.start.line).padStart(3)}  ${line.trim()}`;
 }
 
+/**
+ * A step's figures. Where the item's unnamed modifiers leave a figure open,
+ * the spread over the emptiest and fullest items follows it in brackets.
+ */
 function stepFigure(s: StepCost, prices: Prices | undefined): string {
     const parts: string[] = [];
+    const spread = (b: Bounds | undefined, show: (n: number) => string): string =>
+        b === undefined ? "" : ` [${show(b.low)} to ${show(b.high)}]`;
     if (s.attempts !== undefined) {
         parts.push(
-            `${amount(s.attempts.expected)} rounds (${percent(s.attempts.chance)} per round)`,
+            `${amount(s.attempts.expected)} rounds${spread(s.attemptsRange, amount)} (${percent(s.attempts.chance)} per round)`,
         );
     }
-    if (s.branch !== undefined) parts.push(`taken ${percent(s.branch)}`);
+    if (s.branch !== undefined) {
+        parts.push(`taken ${percent(s.branch)}${spread(s.branchRange, percent)}`);
+    }
     if (s.kind === "restart" || s.kind === "stop") parts.push(`reached ${percent(s.reached)}`);
     if (s.kind === "operation") {
+        const runs = `×${amount(s.runs)}${spread(s.runsRange, amount)}`;
         if (s.expected !== undefined && s.expected.length > 0) {
-            parts.push(`×${amount(s.runs)}: ${priceList(s.expected)}`);
+            parts.push(`${runs}: ${priceList(s.expected)}`);
             const chaos = prices === undefined ? undefined : inChaos(s.expected, prices);
             if (chaos !== undefined) parts.push(`(${amount(chaos)} chaos)`);
         } else if (s.expected !== undefined) {
-            parts.push(`×${amount(s.runs)}: free`);
-        } else if (s.runs !== 1) {
-            parts.push(`×${amount(s.runs)}`);
+            parts.push(`${runs}: free`);
+        } else if (s.runs !== 1 || s.runsRange !== undefined) {
+            parts.push(runs);
         }
     }
     return parts.join("  ");

@@ -198,6 +198,30 @@ describe("the cost of a guide", () => {
     });
 });
 
+describe("the spread over the item's unnamed modifiers", () => {
+    it("brackets an add onto an item whose counts the checker left open", () => {
+        // After a Chaos Orb the ring holds four to six modifiers: on the
+        // emptiest the Exalted Orb draws into the open slots, on the fullest it
+        // finds none and the Chaos Orb's roll is what the condition reads.
+        const c = craft(ring("rare"), [
+            op("chaos"),
+            op("exalt"),
+            iff(has("IncreasedLife1"), [stop()]),
+        ]);
+        const r = report(c);
+        const branch = r.steps.find((s) => s.kind === "if")!;
+        expect(branch.branch).toBeGreaterThan(0);
+        expect(branch.branchRange).toBeDefined();
+        expect(branch.branchRange!.low).toBeLessThan(branch.branchRange!.high);
+        expect(branch.branch).toBeGreaterThanOrEqual(branch.branchRange!.low - 1e-9);
+        expect(branch.branch).toBeLessThanOrEqual(branch.branchRange!.high + 1e-9);
+        // A reforge leaves nothing open: no spread on its loop.
+        const loop = report(craft(ring("rare"), [until(has("IncreasedLife1"), [op("chaos")])]));
+        expect(loop.steps[0]!.attemptsRange).toBeUndefined();
+        expect(loop.chaosRange).toBeUndefined();
+    });
+});
+
 describe("the Recombinator", () => {
     it("keeps a named prefix by the count table and the weighted pick", () => {
         // Two prefixes pooled, one from each item: the result keeps one (66.7%)

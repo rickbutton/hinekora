@@ -24,9 +24,7 @@ of the operations; no divergence is expected.
 
 ## Deferred by design (don't build until called for)
 
-- the **cost layer's** next steps (`ARCHITECTURE.md` §7 has what is built): a spread
-  beside the point estimate (the walk at the floors and at the ceilings of the counts the
-  checker left open, Q57), memory
+- the **cost layer's** next steps (`ARCHITECTURE.md` §7 has what is built): memory
   strands (an item's strands bar the lower tiers and are used up by the currencies that
   roll modifiers, [Memory strand § Mechanics](https://www.poewiki.net/wiki/Memory_strand#Mechanics)),
   the Orb of Unravelling's tier upgrade (its rule is not stated), a loop whose exit rests

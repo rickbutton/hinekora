@@ -324,6 +324,11 @@ item the player is holding when the guide's step is right. A modifier the state 
 only as possible neither shrinks the pool nor adds its tags. This is exact for a reforge,
 which strips the uncertain modifiers away, and for an item whose named modifiers fill it;
 it is approximate for an add onto an item with unnamed modifiers (`QUESTIONS.md` Q57).
+Beside the estimate the report carries a **spread**: the same walk with every range the
+checker left open (a side's count) read at its floor and at
+its ceiling (`Reading`), the two items at the ends of what the checker allows; where the
+ends disagree, the step's figure is given with them, so an Exalted Orb onto an item with
+unnamed modifiers says what it is worth on the emptiest and on the fullest item it may be.
 The game's rules the estimate rests on and the ones no source settles are Q58–Q67.
 
 ### 7.2 The race: an exact draw without listing outcomes
