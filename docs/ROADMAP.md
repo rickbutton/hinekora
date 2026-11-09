@@ -26,8 +26,9 @@ of the operations; no divergence is expected.
 
 - the **cost/probability layer** (expected attempts, spawn weights, fossil and Harvest
   biases, memory strands).
-- **multi-item crafts** (Recombinator, Reflecting Mist, Kishara's Ducat; the Awakener's
-  Orb is built with the donor reduced to its influence)
+- **multi-item crafts** beyond the Recombinator (Reflecting Mist, Kishara's Ducat; the
+  Awakener's Orb is built with the donor reduced to its influence, the Recombinator with
+  two items of one base, `QUESTIONS.md` Q55)
   and **choice over an operation's outcomes** (Hinekora's Lock, Allflame crafting).
 - English negation sugar (`doesn't have` → `not has`); a power-user annotation tier for
   reusable techniques; a way to name an unveiled modifier whose words a natural one
