@@ -127,7 +127,7 @@ describe("costSource — what a guide is expected to spend", () => {
         );
     });
 
-    it("gives a branch's chance but no figure for a restart, whose reach counts every round", () => {
+    it("gives a branch's chance but no figure for a restart", () => {
         const r = costSource(
             `item { base: "Iron Ring" ilvl: 84 rarity: rare }
 until has "maximum life" {
