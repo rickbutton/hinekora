@@ -558,6 +558,14 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                     const changed =
                         changes !== undefined &&
                         (changes.added.length > 0 || changes.removed.length > 0);
+                    // What the step did, found and costs, in one panel hung off its title.
+                    const facts = present(
+                        changes === undefined ? undefined : deltaList(changes),
+                        problemList(s.problems),
+                        s.before === undefined ? h("div", "note", "never reached") : undefined,
+                        ...spend(costOf(s), s.kind === "operation" ? s.title : s.text),
+                        result(s.after, false, changed),
+                    );
                     const block = h(
                         "div",
                         `block action${s.before === undefined ? " unreached" : ""}`,
@@ -573,16 +581,10 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                     s.kind === "operation" && s.text !== s.title
                                         ? h("code", "text", s.text)
                                         : undefined,
-                                    changes === undefined ? undefined : deltaList(changes),
-                                    problemList(s.problems),
-                                    s.before === undefined
-                                        ? h("div", "note", "never reached")
-                                        : undefined,
-                                    ...spend(costOf(s), s.kind === "operation" ? s.title : s.text),
                                 ),
                             ),
                         ),
-                        ...present(result(s.after, false, changed)),
+                        ...(facts.length > 0 ? [h("div", "details", ...facts)] : []),
                     );
                     into.push(anchor(block, s.span));
                     return;
@@ -643,31 +645,36 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                   spreadTitle(c.attemptsRange, (n) => `${figure(n)} rounds`),
                                   report !== undefined && passIsPartial(c, report.steps),
                               );
+                    // The repeat is one container: what it is for on top, its steps
+                    // inside, what it costs at its foot; the item it leaves follows it.
+                    const foot = present(
+                        rounds,
+                        c?.note === undefined ? undefined : h("div", "note", c.note),
+                        problemList(s.problems),
+                    );
                     const region = h(
                         "div",
                         "region loop",
                         anchor(
-                            h("div", "region-head row", glyph("⟳"), h("span", "title", "repeat")),
-                            s.span,
-                        ),
-                        h("div", "region-body", ...body),
-                        anchor(
                             h(
                                 "div",
-                                "region-foot",
-                                h("div", "title", "until the item has"),
+                                "region-head row",
+                                glyph("⟳"),
+                                h("span", "title", "repeat until the item has"),
                                 h("ul", "checklist", checklist(s.check)),
-                                ...present(
-                                    rounds,
-                                    c?.note === undefined ? undefined : h("div", "note", c.note),
-                                    problemList(s.problems),
-                                    result(s.after, true, true, "once the repeat is done"),
-                                ),
                             ),
                             s.span,
                         ),
+                        h("div", "region-body", ...body),
+                        ...(foot.length > 0
+                            ? [anchor(h("div", "region-foot", ...foot), s.span)]
+                            : []),
                     );
                     into.push(region);
+                    const outcome = result(s.after, true, true, "once the repeat is done");
+                    if (outcome !== undefined) {
+                        into.push(anchor(h("div", "block outcome", outcome), s.span));
+                    }
                     return;
                 }
                 case "branch": {
@@ -682,12 +689,26 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                     const before = last;
                     const yes: HTMLElement[] = [];
                     seq(s.then, yes);
-                    const arms = [h("div", "arm", h("div", "arm-label", "yes"), ...yes)];
+                    const arms = [
+                        h(
+                            "div",
+                            "arm",
+                            h("div", "arm-label", "yes"),
+                            h("div", "region-body", ...yes),
+                        ),
+                    ];
                     if (s.else !== undefined) {
                         last = before;
                         const no: HTMLElement[] = [];
                         seq(s.else, no);
-                        arms.push(h("div", "arm", h("div", "arm-label", "otherwise"), ...no));
+                        arms.push(
+                            h(
+                                "div",
+                                "arm",
+                                h("div", "arm-label", "otherwise"),
+                                h("div", "region-body", ...no),
+                            ),
+                        );
                     }
                     // The arms end in different items; whatever follows draws its own.
                     last = undefined;

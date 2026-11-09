@@ -409,6 +409,28 @@ main {
     color: var(--muted);
 }
 
+/* what a step did, found and costs: a panel hung off its title */
+
+.details {
+    margin: 2px 0 2px 42px;
+    padding: 3px 0 3px 10px;
+    border-left: 2px solid #3c3c3c;
+}
+
+.block.active > .details {
+    border-left-color: #ffff77;
+}
+
+.details > .state,
+.details > .frame,
+.details > .cost {
+    margin-left: 0;
+}
+
+.details > :first-child {
+    margin-top: 0;
+}
+
 /* the item after a step: a line when only counts moved, a card when something named did */
 
 .state {
@@ -429,7 +451,6 @@ main {
     margin-top: 1px;
 }
 
-.region-foot .cost,
 .region-head .cost {
     margin-left: 42px;
 }
@@ -694,18 +715,20 @@ dialog.breakdown .when {
     white-space: pre-wrap;
 }
 
-/* a loop or a branch: a bracketed region with its question */
+/* a loop or a branch: one container, its question on top, its steps inside */
 
 .region {
     position: relative;
-    margin: 4px 0;
-    padding-left: 8px;
-    border-left: 2px solid #6b6240;
-    border-radius: 6px 0 0 6px;
+    margin: 6px 0;
+    padding: 2px 6px 4px;
+    border: 1px solid #4a4532;
+    border-radius: 8px;
+    background: rgba(200, 163, 90, 0.035);
 }
 
 .region.branch {
-    border-left-color: #4e6a8a;
+    border-color: #34465c;
+    background: rgba(78, 106, 138, 0.05);
 }
 
 .region-head,
@@ -731,16 +754,10 @@ dialog.breakdown .when {
     align-items: center;
 }
 
-.region-head .title,
-.region-foot .title {
+.region-head .title {
     font-weight: 600;
     color: #c8a35a;
     line-height: 32px;
-}
-
-.region-foot .title {
-    line-height: 20px;
-    padding-left: 42px;
 }
 
 .region.branch .region-head .title {
@@ -752,16 +769,37 @@ dialog.breakdown .when {
     margin: 0 0 4px 42px;
 }
 
-.region-foot .checklist {
-    margin-left: 42px;
+/* the steps a region holds, in a panel of their own */
+.region-body {
+    margin: 2px 0;
+    padding: 2px 4px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.18);
 }
 
-.region-foot .frame {
-    margin-left: 42px;
+/* what the repeat costs, closing its container */
+.region-foot {
+    margin-top: 2px;
+    padding-left: 42px;
+    border-top: 1px dashed #4a4532;
+    border-radius: 0 0 6px 6px;
+}
+
+.region-foot .repeat-cost {
+    margin-left: 0;
+}
+
+/* the item a repeat leaves, on the rail after it */
+.block.outcome {
+    padding-top: 0;
+}
+
+.block.outcome .frame {
+    margin-top: 0;
 }
 
 .arm {
-    margin-top: 2px;
+    margin-top: 4px;
 }
 
 .arm-label {
@@ -769,7 +807,7 @@ dialog.breakdown .when {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    padding-left: 42px;
+    padding: 0 0 2px 4px;
 }
 
 .checklist,
