@@ -82,6 +82,24 @@ describe("the influence exalts", () => {
         expect(messages(craft(fractured, [words("exalt", "hunter")]))).toContain(
             "a Hunter's Exalted Orb takes no fractured item",
         );
+        // Fractured on one path only (the annul may have taken the life the
+        // fracture waits on): the refusal says so.
+        const maybe = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: ["IncreasedLife1", "IncreasedMana1", "IncreasedArmour1"],
+            suffixes: ["FireResist1", "ColdResist1"],
+        });
+        expect(
+            messages(
+                craft(maybe, [
+                    words("annul"),
+                    iff(hasT("IncreasedLife1"), [words("fracture")]),
+                    words("exalt", "hunter"),
+                ]),
+            ),
+        ).toContain("The item may have a fractured modifier — a Hunter's Exalted Orb");
     });
 
     it("refuse a base whose class cannot be influenced", () => {

@@ -69,7 +69,7 @@ describe("imprint and restore", () => {
         });
         expect(
             check(craft(fractured, [beast({ kind: "imprint" })]), ctx).diagnostics[0]!.message,
-        ).toContain("fractured");
+        ).toContain("an imprint cannot be made of a fractured item");
     });
 
     it("cannot be applied to an item fractured since", () => {
@@ -81,7 +81,9 @@ describe("imprint and restore", () => {
             op("fracture"),
             restore(),
         ]);
-        expect(check(c, ctx).diagnostics[0]!.message).toContain("fractured");
+        expect(check(c, ctx).diagnostics[0]!.message).toContain(
+            "has a fractured modifier — a fractured item cannot take the imprint",
+        );
     });
 
     it("survives a loop: the imprint taken before it is still held after", () => {
