@@ -372,71 +372,7 @@ those the item level allows (`check/astate.ts` `relaxTiers`, the tier resolution
 `check/check.ts`).
 **Answer:**
 
-### Q42 · game probe · open
-
-**Asked:** 2026-11-08
-**Goal:** whether a resonator takes a Normal item. craftofexile's emulator enables
-fossils on a white base and fossil-crafting a white base is common play;
-[Resonator](https://www.poewiki.net/wiki/Resonator) says a chaotic resonator works
-"similarly to a Chaos Orb" and contrasts it with the alchemical ones, which take Normal
-items only, so the page does not settle it.
-**Procure:** a Normal body armour, a Primitive Chaotic Resonator with any fossil.
-**Steps:** apply the resonator.
-**Record:** refused, or the Rare it produced.
-**Assumed meanwhile:** a Rare item only (`check/library.ts` `resonatorOps`, `isRare`),
-which is the stricter reading; if the game accepts a Normal item the gate relaxes to
-"not Magic".
-**Answer:**
-
-### Q43 · game probe · open
-
-**Asked:** 2026-11-08
-**Goal:** which rarities the grove's "add a <tag> modifier and remove another random
-modifier" and "reforge … including a <tag> modifier" take. The reforge's option text
-names a Rare item; the add/remove craft's says only "from a non-Influenced item"
-([Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting)). craftofexile's
-emulator allows both on a Magic item and the reforge on a Normal one.
-**Procure:** a Magic ring with two modifiers and a Normal ring; lifeforce for one
-augment and one reforge.
-**Steps:** open the grove's "add a Life modifier, remove another" on the Magic ring and
-"reforge including a Life modifier" on the Normal ring; note which are offered.
-**Record:** offered or greyed out, and the result.
-**Assumed meanwhile:** both need a Rare item (`check/library.ts` `harvestReforgeOps`,
-`harvestAugmentOps`, `isRare`), the stricter reading.
-**Answer:**
-
-### Q44 · game probe · open
-
-**Asked:** 2026-11-08
-**Goal:** whether a Fracturing Orb takes an item with an eldritch implicit.
-[Fracturing Orb § Mechanics](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics) says
-it can be used on such an item; craftofexile's emulator greys it out, and the emulator
-is usually right about what the client refuses.
-**Procure:** a Rare pair of gloves with four modifiers and a Lesser Eldritch Ember's
-implicit; a Fracturing Orb.
-**Steps:** apply the orb.
-**Record:** refused, or which modifier fractured.
-**Assumed meanwhile:** the wiki's reading, accepted (the `fracture` entry of the currency table in
-`check/library.ts` has no eldritch gate).
-**Answer:**
-
-### Q45 · game probe · open
-
-**Asked:** 2026-11-08
-**Goal:** whether the bench's "remove crafted modifiers" removes an unveiled modifier.
-[Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) says an unveiled modifier
-does not count as a crafted one (it does not take the crafted slot), not whether the
-removal recipe reaches it. Guides that loop a Veiled Exalted Orb need to clear a bad
-unveil before the next orb, which refuses an item with an unveiled modifier, and the
-cheap way would be that recipe.
-**Procure:** a Rare with an unveiled modifier and a bench modifier.
-**Steps:** use "remove crafted modifiers"; note which of the two went.
-**Record:** the modifiers after.
-**Assumed meanwhile:** the removal leaves an unveiled modifier alone (`check/ops.ts`
-`removeCrafted` touches bench rows only), so a bad unveil is cleared with an annul.
-**Answer:**
-
-### Q46 · decision · open
+### Q46 · decision · answered
 
 **Asked:** 2026-11-08
 **Question:** whether the playground's walkthrough may carry the game's currency icons.
@@ -447,7 +383,7 @@ dependency on the wiki being up and on its hotlinking policy), or lettered,
 colour-coded badges drawn by the page.
 **Assumed meanwhile:** the badges (the `badge-<word>` styles in
 `editors/playground/src/style.css`).
-**Answer:**
+**Answer:** Rick ruled (2026-11-08): the game's CDN hosts the icons for bases and currencies under hashed URLs that its APIs return (the build sites use those); derive them if we can, otherwise copy the currency icons from the wiki into an images or resources folder of the playground for now.
 
 ### Q41 · game probe · open
 
@@ -496,38 +432,11 @@ family for everything.
 the surface doc §1, §3 and §5).
 **Answer:**
 
-### Q47 · game probe · open
+---
 
-**Asked:** 2026-11-08
-**Goal:** what a conqueror's, Shaper's or Elder's Exalted Orb does on a Rare whose item
-level is below every row of that influence (an ilvl 50 body armour and a Hunter's
-Exalted Orb). [Hunter's Exalted Orb § Mechanics](https://www.poewiki.net/wiki/Hunter%27s_Exalted_Orb#Mechanics)
-lists only the influenced, synthesised, fractured and eldritch refusals; the help text
-says "a high-level rare item"; craftofexile refuses below item level 68.
-**Procure:** a Rare body armour of item level 50 with an open slot; a Hunter's Exalted Orb.
-**Steps:** apply the orb.
-**Record:** refused; or marked Hunter with no modifier added; or marked with one (which).
-**Assumed meanwhile:** refused (`check/library.ts` `influenceExaltOps` requires an
-influence modifier the item can take), the reading under which the checker never
-claims a modifier the game did not add.
-**Answer:**
+## Resolved
 
-### Q48 · game probe · open
-
-**Asked:** 2026-11-08
-**Goal:** whether the four Path of Exile: Royale modifier rows (movement speed on boots,
-cast speed, attack speed) ever roll in the main game. The export gives them weights; the
-wiki's per-class modifier lists ([List of modifiers for wands](https://www.poewiki.net/wiki/List_of_modifiers_for_wands))
-omit them, as does craftofexile, but no page states the rule.
-**Procure:** a few low-level Normal boots and gloves; Orbs of Transmutation and Alteration.
-**Steps:** roll them; watch for a "Sprinter's" boots prefix of 15–25% or a gloves "of
-Ease" of 8–15% that the ordinary ladder does not have.
-**Record:** whether such a roll ever appears.
-**Assumed meanwhile:** never (`packages/data/src/adapter.ts` `adaptMod` drops a row whose
-id names Royale), which rests on the lists' omission.
-**Answer:**
-
-### Q49 · decision · open
+### Q49 · decision · resolved
 
 **Asked:** 2026-11-08
 **Question:** a declared `"random"` affix is read as a natural modifier of its side the item
@@ -542,11 +451,102 @@ placeholder item.
 **Recommendation:** (b) when a guide needs it; (a) meanwhile.
 **Assumed meanwhile:** (a) (`check/ops.ts` `anonymousTypes`; the `crafted` range counts
 named bench rows only).
-**Answer:**
+**Answer:** Rick ruled (2026-11-08): (b). Applied: the item block takes `crafted "<mod>" [t<n>]` and `crafted "random"`, both counted toward the crafted limit.
 
----
+### Q42 · game probe · resolved
 
-## Resolved
+**Asked:** 2026-11-08
+**Goal:** whether a resonator takes a Normal item. craftofexile's emulator enables
+fossils on a white base and fossil-crafting a white base is common play;
+[Resonator](https://www.poewiki.net/wiki/Resonator) says a chaotic resonator works
+"similarly to a Chaos Orb" and contrasts it with the alchemical ones, which take Normal
+items only, so the page does not settle it.
+**Procure:** a Normal body armour, a Primitive Chaotic Resonator with any fossil.
+**Steps:** apply the resonator.
+**Record:** refused, or the Rare it produced.
+**Assumed meanwhile:** a Rare item only (`check/library.ts` `resonatorOps`, `isRare`),
+which is the stricter reading; if the game accepts a Normal item the gate relaxes to
+"not Magic".
+**Answer:** Rick ruled (2026-11-08): a resonator takes a Normal item. Applied: `resonatorOps` refuses only a Magic item (`notMagic`), and the fossil docs say Normal or Rare.
+
+### Q43 · game probe · resolved
+
+**Asked:** 2026-11-08
+**Goal:** which rarities the grove's "add a <tag> modifier and remove another random
+modifier" and "reforge … including a <tag> modifier" take. The reforge's option text
+names a Rare item; the add/remove craft's says only "from a non-Influenced item"
+([Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting)). craftofexile's
+emulator allows both on a Magic item and the reforge on a Normal one.
+**Procure:** a Magic ring with two modifiers and a Normal ring; lifeforce for one
+augment and one reforge.
+**Steps:** open the grove's "add a Life modifier, remove another" on the Magic ring and
+"reforge including a Life modifier" on the Normal ring; note which are offered.
+**Record:** offered or greyed out, and the result.
+**Assumed meanwhile:** both need a Rare item (`check/library.ts` `harvestReforgeOps`,
+`harvestAugmentOps`, `isRare`), the stricter reading.
+**Answer:** Rick ruled (2026-11-08): assume a Rare item for both crafts. Already what the checker encodes; nothing to change.
+
+### Q44 · game probe · resolved
+
+**Asked:** 2026-11-08
+**Goal:** whether a Fracturing Orb takes an item with an eldritch implicit.
+[Fracturing Orb § Mechanics](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics) says
+it can be used on such an item; craftofexile's emulator greys it out, and the emulator
+is usually right about what the client refuses.
+**Procure:** a Rare pair of gloves with four modifiers and a Lesser Eldritch Ember's
+implicit; a Fracturing Orb.
+**Steps:** apply the orb.
+**Record:** refused, or which modifier fractured.
+**Assumed meanwhile:** the wiki's reading, accepted (the `fracture` entry of the currency table in
+`check/library.ts` has no eldritch gate).
+**Answer:** Rick ruled (2026-11-08): a Fracturing Orb takes an item with an eldritch implicit, not an influenced one. Already what the checker encodes.
+
+### Q45 · game probe · resolved
+
+**Asked:** 2026-11-08
+**Goal:** whether the bench's "remove crafted modifiers" removes an unveiled modifier.
+[Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) says an unveiled modifier
+does not count as a crafted one (it does not take the crafted slot), not whether the
+removal recipe reaches it. Guides that loop a Veiled Exalted Orb need to clear a bad
+unveil before the next orb, which refuses an item with an unveiled modifier, and the
+cheap way would be that recipe.
+**Procure:** a Rare with an unveiled modifier and a bench modifier.
+**Steps:** use "remove crafted modifiers"; note which of the two went.
+**Record:** the modifiers after.
+**Assumed meanwhile:** the removal leaves an unveiled modifier alone (`check/ops.ts`
+`removeCrafted` touches bench rows only), so a bad unveil is cleared with an annul.
+**Answer:** Rick ruled (2026-11-08): the removal does not reach an unveiled modifier; the bench's own lower-tier versions of the veiled modifiers are crafted modifiers, a veiled orb's are not. Already what the checker encodes; a bad unveil is cleared with an annul.
+
+### Q47 · game probe · resolved
+
+**Asked:** 2026-11-08
+**Goal:** what a conqueror's, Shaper's or Elder's Exalted Orb does on a Rare whose item
+level is below every row of that influence (an ilvl 50 body armour and a Hunter's
+Exalted Orb). [Hunter's Exalted Orb § Mechanics](https://www.poewiki.net/wiki/Hunter%27s_Exalted_Orb#Mechanics)
+lists only the influenced, synthesised, fractured and eldritch refusals; the help text
+says "a high-level rare item"; craftofexile refuses below item level 68.
+**Procure:** a Rare body armour of item level 50 with an open slot; a Hunter's Exalted Orb.
+**Steps:** apply the orb.
+**Record:** refused; or marked Hunter with no modifier added; or marked with one (which).
+**Assumed meanwhile:** refused (`check/library.ts` `influenceExaltOps` requires an
+influence modifier the item can take), the reading under which the checker never
+claims a modifier the game did not add.
+**Answer:** Rick ruled (2026-11-08): refuse below the minimum item level, as craftofexile does. Already what `influenceExaltOps` encodes.
+
+### Q48 · game probe · resolved
+
+**Asked:** 2026-11-08
+**Goal:** whether the four Path of Exile: Royale modifier rows (movement speed on boots,
+cast speed, attack speed) ever roll in the main game. The export gives them weights; the
+wiki's per-class modifier lists ([List of modifiers for wands](https://www.poewiki.net/wiki/List_of_modifiers_for_wands))
+omit them, as does craftofexile, but no page states the rule.
+**Procure:** a few low-level Normal boots and gloves; Orbs of Transmutation and Alteration.
+**Steps:** roll them; watch for a "Sprinter's" boots prefix of 15–25% or a gloves "of
+Ease" of 8–15% that the ordinary ladder does not have.
+**Record:** whether such a roll ever appears.
+**Assumed meanwhile:** never (`packages/data/src/adapter.ts` `adaptMod` drops a row whose
+id names Royale), which rests on the lists' omission.
+**Answer:** Rick ruled (2026-11-08): the Royale rows belong to a game mode that no longer exists and must never be considered; they go away. Applied: the ingest script drops them, the committed catalog no longer holds them, and the adapter guard is gone.
 
 ### Q31 · decision · resolved
 
