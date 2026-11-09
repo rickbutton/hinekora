@@ -209,7 +209,7 @@ guides treat them as fixed costs and nothing in the modifier logic depends on th
 | `future/lock-regal`                                                        | R11 Hinekora's Lock                            | B3                                                          |
 | `future/recombinator`                                                      | R10 two-item merge                             | B4                                                          |
 | `value-threshold`                                                          | R16 "life ≥ 110", divine                       | checks (`has … >= 110` and `divine`)                        |
-| `future/cluster-harvest`                                                   | R18 reforge a cluster by tag                   | B5                                                          |
+| `cluster-harvest`                                                          | R18 reforge a cluster by tag                   | checks (`enchant:` names the notable pool)                  |
 
 ## 4. Status
 
@@ -233,7 +233,9 @@ B12. B2 is built: `has "<mod>" <cmp> <int>` compares a modifier's value, pinning
 that reach it, and `divine` rolls the values again. Of A6, B6 is fixed two ways: a tagged
 Harvest pool counts how many unknown modifiers could block it, and a side whose count the
 named modifiers fill carries no other; the two state-line items of `accuracy.md` 10 remain.
-The examples suite stands at fifteen checking guides and three waiting;
+B5 is built: a cluster jewel's `enchant:` field names the stat its passives grant, which
+the checker reads as the tag its notables roll under. The examples suite stands at sixteen
+checking guides and two waiting;
 the naming fixes of A4 (plurals, joiner words, the natural modifier first) brought the
 eldritch gloves in.
 

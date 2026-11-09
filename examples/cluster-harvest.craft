@@ -1,21 +1,21 @@
-# WAITS ON: the cluster jewel enchant as part of the base (feature-report.md B5).
-#
 # A Large Cluster Jewel's modifier pool is decided by its enchant: the passive
 # count and the small-passive effect. With the enchant stated, the notables
 # resolve as modifiers and the guide's Harvest loop is an ordinary reforge.
 
 item {
-    base:    "Large Cluster Jewel"
-    ilvl:    84
-    rarity:  rare
-    enchant: 8 "increased lightning damage"
+    base:     "Large Cluster Jewel"
+    ilvl:     84
+    rarity:   rare
     prefixes: [ "random", "random" ]
     suffixes: [ "random" ]
+    enchant:  8 "lightning damage"
 }
 
 until has "sadist" and has "doryani's lesson" {
     harvest reforge "lightning"
 }
-if prefixCount <= 2 {
+# A jewel holds two modifiers a side; the reforge may have left the second
+# suffix open.
+if suffixCount == 1 {
     exalt
 }
