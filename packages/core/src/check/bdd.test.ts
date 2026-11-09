@@ -53,6 +53,18 @@ describe("BddManager — a reduced, ordered BDD", () => {
         expect(m.restrict(y, "x", true)).toBe(y); // x doesn't appear in `y`
     });
 
+    it("knows which variables a function depends on, whatever else was allocated", () => {
+        const m = new BddManager();
+        const x = m.variable("x");
+        const y = m.variable("y");
+        const f = m.or(x, y);
+        m.variable("z");
+        expect(m.support(f)).toEqual(["x", "y"]);
+        expect(m.support(m.TRUE)).toEqual([]);
+        // A test dropped by canonicalisation leaves the support too.
+        expect(m.support(m.or(m.and(x, y), m.and(x, m.not(y))))).toEqual(["x"]);
+    });
+
     it("keeps a disjunction across an OR-join, so `not(all)` is unsatisfiable", () => {
         // This is the checker's Q2 case: after `has fire or has cold or has
         // lightning`, refining by `not fire and not cold and not lightning` must

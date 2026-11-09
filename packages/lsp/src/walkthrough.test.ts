@@ -56,6 +56,21 @@ until has "maximum life" t1 or has "fire resistance" t1 {
         expect(branch.else![0]!.after).toBeUndefined();
     });
 
+    it("reads an earlier item the same whatever a later step does", () => {
+        const head = `item { base: "Vaal Regalia" ilvl: 84 rarity: normal }
+transmute
+regal
+until has "fire res" t1 or has "cold res" t1 or has "light res" t1 { annul exalt }`;
+        const exit = (src: string): string => {
+            const loop = walk(src).steps.find((s) => s.kind === "loop")!;
+            return itemView(loop.after!, registry)
+                .suffixes.map((g) => g.kind)
+                .join(",");
+        };
+        expect(exit(head)).toBe("oneOf");
+        expect(exit(`${head}\nif prefixCount == 0 { bench "maximum life" }`)).toBe("oneOf");
+    });
+
     it("gives a finding to the innermost statement that contains it", () => {
         const w = walk(`item { base: "Iron Ring" ilvl: 84 rarity: rare }
 until has "maximum life" {

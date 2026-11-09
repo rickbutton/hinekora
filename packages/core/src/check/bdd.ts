@@ -42,6 +42,30 @@ export class BddManager {
         return [...this.varLevel.keys()];
     }
 
+    /**
+     * The variables `a` depends on, in allocation order. A view of one
+     * function must read these, not `variables()`: the manager is shared by
+     * every state of a craft, so a variable a later step allocated is
+     * unconstrained in an earlier state, and counting it there would change
+     * how that state reads after the fact.
+     */
+    support(a: Bdd): string[] {
+        const levels = new Set<number>();
+        const seen = new Set<Bdd>();
+        const stack = [a];
+        while (stack.length > 0) {
+            const id = stack.pop()!;
+            if (id <= this.TRUE || seen.has(id)) continue;
+            seen.add(id);
+            const n = this.node(id);
+            levels.add(n.level);
+            stack.push(n.lo, n.hi);
+        }
+        const names: string[] = [];
+        for (const [name, level] of this.varLevel) if (levels.has(level)) names.push(name);
+        return names;
+    }
+
     and(a: Bdd, b: Bdd): Bdd {
         return this.apply("and", a, b);
     }

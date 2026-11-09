@@ -144,7 +144,7 @@ export function presenceFacts(
  *  touch those types leaves. */
 export function forgetTypes(a: AItem, types: ReadonlySet<TypeId>): Bdd {
     let p = a.presence;
-    for (const v of a.bdd.variables()) {
+    for (const v of a.bdd.support(p)) {
         if (isFracAtom(v)) continue;
         if (types.has(isTierAtom(v) ? tierAtomType(v) : TypeId(v))) p = a.bdd.exists(p, v);
     }
@@ -221,7 +221,7 @@ function isAtom(name: string): boolean {
 export function relaxTiers(a: AItem, relaxed: (type: TypeId) => boolean): AItem {
     const tiers = new Map([...a.tiers].filter(([t]) => !relaxed(t)));
     let presence = a.presence;
-    for (const v of a.bdd.variables()) {
+    for (const v of a.bdd.support(presence)) {
         if (isTierAtom(v) && relaxed(tierAtomType(v))) presence = a.bdd.exists(presence, v);
     }
     return { ...a, tiers, presence };
@@ -258,7 +258,7 @@ function withTierFacts(a: AItem, p: Bdd, type: TypeId): Bdd {
  */
 function reduceTiers(a: AItem): AItem | null {
     let tiers: Map<TypeId, ReadonlySet<ModId>> | undefined;
-    const types = new Set(a.bdd.variables().filter(isTierAtom).map(tierAtomType));
+    const types = new Set(a.bdd.support(a.presence).filter(isTierAtom).map(tierAtomType));
     for (const type of types) {
         const atoms = tierAtomsOf(a, type);
         const forced = atoms.find((m) =>
@@ -348,7 +348,7 @@ export function isExcluded(a: AItem, type: TypeId): boolean {
 /** The types `presence` forces present (over the constrained variables only). */
 export function guaranteedTypes(a: AItem): Set<TypeId> {
     const out = new Set<TypeId>();
-    for (const t of a.bdd.variables()) {
+    for (const t of a.bdd.support(a.presence)) {
         if (!isAtom(t) && isGuaranteed(a, TypeId(t))) out.add(TypeId(t));
     }
     return out;
@@ -357,7 +357,7 @@ export function guaranteedTypes(a: AItem): Set<TypeId> {
 /** The types `presence` forces absent. */
 export function excludedTypes(a: AItem): Set<TypeId> {
     const out = new Set<TypeId>();
-    for (const t of a.bdd.variables()) {
+    for (const t of a.bdd.support(a.presence)) {
         if (!isAtom(t) && isExcluded(a, TypeId(t))) out.add(TypeId(t));
     }
     return out;
@@ -372,7 +372,7 @@ export function isFractured(a: AItem, type: TypeId): boolean {
  *  but isn't yet pinned to a type. */
 export function fracturedTypes(a: AItem): Set<TypeId> {
     const out = new Set<TypeId>();
-    for (const v of a.bdd.variables()) {
+    for (const v of a.bdd.support(a.presence)) {
         if (isFracAtom(v) && v !== FRAC_EXISTS && a.bdd.entails(a.presence, a.bdd.variable(v))) {
             out.add(fracAtomType(v));
         }
@@ -391,7 +391,7 @@ export function unprovenFractures(a: AItem): Range {
  *  `FRAC_EXISTS` sentinel, so it holds even for a fracture on an anonymous mod. */
 export function hasFracture(a: AItem): boolean {
     return (
-        a.bdd.variables().includes(FRAC_EXISTS) &&
+        a.bdd.support(a.presence).includes(FRAC_EXISTS) &&
         a.bdd.entails(a.presence, a.bdd.variable(FRAC_EXISTS))
     );
 }
@@ -402,9 +402,10 @@ export function hasFracture(a: AItem): boolean {
  *  rest; keeping a candidate's own presence variable instead would carry its
  *  pre-strip guarantee across the operation that may have removed it. */
 export function fractureProjection(a: AItem): Bdd {
-    const fracAtoms = a.bdd.variables().filter(isFracAtom);
+    const support = a.bdd.support(a.presence);
+    const fracAtoms = support.filter(isFracAtom);
     let p = a.presence;
-    for (const v of a.bdd.variables()) if (!fracAtoms.includes(v)) p = a.bdd.exists(p, v);
+    for (const v of support) if (!fracAtoms.includes(v)) p = a.bdd.exists(p, v);
     for (const v of fracAtoms) {
         if (v === FRAC_EXISTS) continue;
         p = a.bdd.and(p, a.bdd.or(a.bdd.not(a.bdd.variable(v)), a.bdd.variable(fracAtomType(v))));
@@ -426,7 +427,7 @@ export function disjunctiveGuarantees(a: AItem): TypeId[][] {
     const guaranteed = guaranteedTypes(a);
     const excluded = excludedTypes(a);
     const cand = a.bdd
-        .variables()
+        .support(a.presence)
         .filter((v) => !isAtom(v))
         .map((v) => TypeId(v))
         .filter((t) => !guaranteed.has(t) && !excluded.has(t) && a.possible.has(t));

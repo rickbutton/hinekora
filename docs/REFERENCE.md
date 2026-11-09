@@ -490,7 +490,10 @@ one domain. The sub-domains:
   "excluded X" = entails ¬X; a disjunction ("one of these three is present") survives a
   control-flow `join` because **join is BDD-OR**. Views: `isGuaranteed`/`isExcluded`/
   `guaranteedTypes`/`excludedTypes`/`disjunctiveGuarantees`/`cardinalityGuarantees`.
-  `possible` stays a plain set: the pool whitelist of types that could roll.
+  The manager is shared by every state of a craft, so a view scans the function's own
+  `support`, never every variable allocated: one a later step allocated is unconstrained
+  in an earlier state and must not change how that state reads. `possible` stays a plain
+  set: the pool whitelist of types that could roll.
 - `tiers` (`TierDomain`, in `astate.ts`): an overlay `Map<TypeId, Set<ModId>>` refining
   which specific mod (tier) a present type could be. The overlay is non-relational, so it
   is joined per-type and a tier known in only one branch drops to unconstrained. Its
