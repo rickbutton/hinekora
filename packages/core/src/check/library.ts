@@ -69,18 +69,46 @@ const RARE_REFORGE: Range = [4, 6];
 /** A magic reforge lays down one or two. */
 const MAGIC_REFORGE: Range = [1, 2];
 
+/** The most memory strands one use may use up (Memory strand § Crafting
+ *  methods consuming memory strands). An Exalted Orb's depends on the modifiers
+ *  on the item, the empty item's "likely 0-10"; the Foulborn Exalted Orb's is
+ *  known at five modifiers only and taken the same below (QUESTIONS.md Q68). */
+const strands = (consume: number | readonly number[]): Op => ({ kind: "strands", consume });
+const EXALT_STRANDS: readonly number[] = [10, 16, 22, 26, 32, 34];
+const TAINTED_EXALT_STRANDS: readonly number[] = [10, 16, 22, 26, 32, 34, 38];
+const FOULBORN_STRANDS = { augment: 32, regal: 48, exalt: 62 } as const;
+
 /** The currencies by name (Crafting § Currency). */
 export function currencyOps(kind: CurrencyKind): readonly Op[] {
     switch (kind) {
         case "transmute":
             // A prefix, a suffix or both (Orb of Transmutation § Spending).
-            return [notCorrupted, isNormal, rarity("magic"), fill(natural, add(MAGIC_REFORGE))];
+            return [
+                notCorrupted,
+                isNormal,
+                rarity("magic"),
+                fill(natural, add(MAGIC_REFORGE)),
+                strands(8),
+            ];
         case "augment":
-            return [notCorrupted, isMagic, openSlot(), fill(natural, add([1, 1]))];
+            return [notCorrupted, isMagic, openSlot(), fill(natural, add([1, 1])), strands(8)];
         case "alteration":
-            return [notCorrupted, isMagic, strip(), fill(natural, reforge(MAGIC_REFORGE))];
+            return [
+                notCorrupted,
+                isMagic,
+                strip(),
+                fill(natural, reforge(MAGIC_REFORGE)),
+                strands(8),
+            ];
         case "regal":
-            return [notCorrupted, isMagic, canBeRare, rarity("rare"), fill(natural, add([1, 1]))];
+            return [
+                notCorrupted,
+                isMagic,
+                canBeRare,
+                rarity("rare"),
+                fill(natural, add([1, 1])),
+                strands(16),
+            ];
         case "alchemy":
             return [
                 notCorrupted,
@@ -89,11 +117,24 @@ export function currencyOps(kind: CurrencyKind): readonly Op[] {
                 strip(),
                 rarity("rare"),
                 fill(natural, reforge(RARE_REFORGE)),
+                strands(50),
             ];
         case "chaos":
-            return [notCorrupted, isRare, strip(), fill(natural, reforge(RARE_REFORGE))];
+            return [
+                notCorrupted,
+                isRare,
+                strip(),
+                fill(natural, reforge(RARE_REFORGE)),
+                strands(50),
+            ];
         case "exalt":
-            return [notCorrupted, isRare, openSlot(), fill(natural, add([1, 1]))];
+            return [
+                notCorrupted,
+                isRare,
+                openSlot(),
+                fill(natural, add([1, 1])),
+                strands(EXALT_STRANDS),
+            ];
         case "annul":
             // No rarity gate: it works on anything with a removable mod, and a
             // Normal item already fails the check with the accurate reason.
@@ -133,6 +174,7 @@ export function essenceOps(spec: EssenceSpec, ilvl: number): readonly Op[] {
         rarity("rare"),
         fill({ kind: "natural", maxLevel }, reforge(RARE_REFORGE)),
         fill({ kind: "essenceGrant", spec }, within),
+        strands(80),
     ];
 }
 
@@ -248,6 +290,7 @@ export function influenceExaltOps(target: Influence): readonly Op[] {
         // admits none, the game refuses it rather than marking the item.
         require({ kind: "poolNonEmpty", pool: influencePool, tag: TagId("influence") }),
         fill(influencePool, add([1, 1])),
+        strands(EXALT_STRANDS),
     ];
 }
 
@@ -265,6 +308,7 @@ export function awakenerOps(donor: Influence): readonly Op[] {
         rarity("rare"),
         influence({ kind: "add", influence: donor }),
         fill(natural, reforge(RARE_REFORGE)),
+        strands(100),
     ];
 }
 
@@ -364,6 +408,7 @@ export const TAINTED_CHAOS: readonly Op[] = [
     isRare,
     { kind: "unprotect" },
     either([strip(), fill(natural, reforge(RARE_REFORGE))], [strip(), rarity("survivors")]),
+    strands(60),
 ];
 
 /** A Tainted Exalted Orb: a corrupted Rare gains a modifier or loses one. */
@@ -371,6 +416,7 @@ export const TAINTED_EXALT: readonly Op[] = [
     corruptedItem("A Tainted Exalted Orb"),
     isRare,
     either([fill(natural, add([1, 1]))], [remove(anyMod)]),
+    strands(TAINTED_EXALT_STRANDS),
 ];
 
 /** A Tainted Divine Teardrop: each modifier of a corrupted Rare may move a
@@ -423,6 +469,7 @@ export function eldritchChaosOps(side: EldritchSide): readonly Op[] {
         { kind: "keep", gen: other },
         strip(),
         fill({ kind: "natural", gen: SIDE_OF[side] }, reforge(RARE_REFORGE)),
+        strands(60),
     ];
 }
 
@@ -435,6 +482,7 @@ export function eldritchExaltOps(side: EldritchSide): readonly Op[] {
         dominantOrb("Eldritch Exalted Orb", side),
         openSlot(gen),
         fill({ kind: "natural", gen }, add([1, 1])),
+        strands(EXALT_STRANDS),
     ];
 }
 
@@ -484,7 +532,9 @@ export function foulbornOps(verb: "augment" | "regal" | "exalt"): readonly Op[] 
     return currencyOps(verb).map((op) =>
         op.kind === "fill" && op.pool.kind === "natural"
             ? { ...op, pool: { ...op.pool, topTiers: true } }
-            : op,
+            : op.kind === "strands"
+              ? strands(FOULBORN_STRANDS[verb])
+              : op,
     );
 }
 
@@ -639,6 +689,7 @@ export const VEILED_CHAOS: readonly Op[] = [
     strip(),
     fill(natural, reforge(RARE_REFORGE)),
     fill(veiledPlaceholder, within),
+    strands(80),
 ];
 
 /** Veiled Exalted Orb: remove a random modifier and add a veiled one. */

@@ -7,7 +7,7 @@ import {
     MAXLIFE_T3,
     RING_BASE,
 } from "../__fixtures__/mods.js";
-import { craft, item } from "../__fixtures__/ast.js";
+import { craft, item, op } from "../__fixtures__/ast.js";
 import { check } from "../check/check.js";
 import { currencyOps, harvestLikelyOps } from "../check/library.js";
 import { buildRegistry } from "../resolve/registry.js";
@@ -62,5 +62,30 @@ describe("the Foulborn cull", () => {
         expect(life.map((r) => r.mod.id)).toEqual([MAXLIFE_T1.id, MAXLIFE_T2.id]);
         expect(life.reduce((s, r) => s + r.weight, 0)).toBeCloseTo((200 + 400) * 1.5, 9);
         expect(kept.find((r) => r.mod.id === FIRE_RES_TIERED.id)?.weight).toBe(500);
+    });
+});
+
+describe("memory strands in the pool", () => {
+    it("cull the lower tiers at the strands the item surely has, the ceiling under that reading", () => {
+        const c = craft(item({ base: "Iron Ring", ilvl: 84, rarity: "rare", strands: 82 }), [
+            op("chaos"),
+            op("chaos"),
+            op("chaos"),
+        ]);
+        // Three Chaos Orbs may have used every strand: the estimate reads none
+        // left and both life tiers roll; the ceilings reading keeps the 82.
+        const a = check(c, { registry }).finalState!;
+        const rowsOf = (roll: ReturnType<typeof rollOf>): string[] => {
+            if (roll.kind !== "draw") throw new Error("not a draw");
+            const life = roll.variants[0]!.prefix.find((g) => g.type === "IncreasedLife");
+            return (life?.rows ?? []).map((r) => r.mod.id).sort();
+        };
+        expect(rowsOf(rollOf(a, currencyOps("chaos"), registry))).toEqual([
+            "IncreasedLife1",
+            "IncreasedLife2",
+        ]);
+        expect(rowsOf(rollOf(a, currencyOps("chaos"), registry, "ceilings"))).toEqual([
+            "IncreasedLife1",
+        ]);
     });
 });

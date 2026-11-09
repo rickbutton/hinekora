@@ -115,6 +115,15 @@ ignores depletion but is otherwise the same model.
   ([Divine Orb](https://www.poewiki.net/wiki/Divine_Orb)) [wiki]. A `has "life" >= 110`
   exit therefore succeeds with the share of the row's integer range at or above 110, per
   Divine, assuming a uniform roll [assumed, Q65].
+- **Memory strands.** An item from the Atlas may hold up to a hundred; while it holds
+  some, a currency that adds or rerolls modifiers lays down only the top
+  `floor((100 / (2.5 × strands + 147.5)) × (tiers − 1)) + 1` tiers of each modifier and
+  uses up a random share of them, at most so many per currency (8 for an Orb of
+  Alteration, 50 for a Chaos Orb, 80 for an essence, an Exalted Orb's by the modifiers on
+  the item) ([Memory strand § Mechanics](https://www.poewiki.net/wiki/Memory_strand#Mechanics), [Memory strand § Crafting methods consuming memory strands](https://www.poewiki.net/wiki/Memory_strand#Crafting_methods_consuming_memory_strands)) [wiki]. The checker carries the strands as a range and
+  cuts every pool at the floor, the fewest strands and so the most tiers; the cost report
+  reads the floor for its estimate and the ceiling for the spread's other end. The share
+  used up is not stated, nor two of the table's cells [assumed, Q68].
 - **Recombinator.** The wiki gives the output count per pooled count as a table
   ([Recombinator § Unpredictable Recombination](https://www.poewiki.net/wiki/Recombinator#Unpredictable_Recombination):
   one modifier pooled → 41% none / 59% one; two → 66.7% / 33.3%; three → 40/50/10; four →
@@ -245,7 +254,7 @@ scope).
 
 ## 4. Open questions, each with a recommendation
 
-Recorded as `../QUESTIONS.md` Q57–Q67 with the assumption the code proceeds under.
+Recorded as `../QUESTIONS.md` Q57–Q68 with the assumption the code proceeds under.
 
 | #   | Question                                                                                               | Recommendation                                                                                                                                                                       |
 | --- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -260,6 +269,7 @@ Recorded as `../QUESTIONS.md` Q57–Q67 with the assumption the code proceeds un
 | Q65 | Whether a modifier's value is uniform over its range.                                                  | Yes.                                                                                                                                                                                 |
 | Q66 | The factor of the grove's "more / less likely" reforges.                                               | Ten and one tenth, craftofexile's reading.                                                                                                                                           |
 | Q67 | How the Recombinator picks the surviving modifiers.                                                    | Proportional to spawn weight, without replacement, the page's exclusive rule; a probe with two one-prefix rings.                                                                     |
+| Q68 | The memory strands two orbs use up where the wiki's table is blank.                                    | 62 for the Foulborn Exalted Orb, 10 for an Exalted Orb on an empty item; both tier cuts apply.                                                                                       |
 
 ---
 
@@ -296,7 +306,7 @@ modifiers, where the true pool is smaller by the groups those modifiers occupy. 
 says so where it applies ("unnamed modifiers may narrow this pool"). Bounds would be the
 same computation on the superset and the subset pools the checker already builds
 (`addableMods`, `subsetMods`). Built instead as a spread: the walk is run again with
-every range the checker left open (a side's count) at its floor and
+every range the checker left open (a side's count, the memory strands) at its floor and
 at its ceiling, and a figure whose ends differ is given with them (Q57).
 
 ### 5.3 The race: an exact weighted draw without enumeration

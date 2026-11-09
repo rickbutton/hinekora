@@ -326,6 +326,9 @@ class Printer {
         const fields: [string, string][] = [
             ["base", quote(item.base)],
             ["ilvl", String(item.ilvl)],
+            ...(item.strands !== undefined
+                ? [["strands", String(item.strands)] as [string, string]]
+                : []),
             ["rarity", item.rarity],
         ];
         if (item.prefixes.length > 0) fields.push(["prefixes", list(item.prefixes)]);

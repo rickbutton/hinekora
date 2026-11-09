@@ -32,7 +32,7 @@ import { rollableTiers } from "../resolve/tiers.js";
 import { addPrices, inChaos, type Price, type Prices, unitCost } from "./prices.js";
 import { NO_ROLL, type Reading, recombineRoll, type Roll, rollOf, withPresent } from "./roll.js";
 
-/** The ends of a figure over the emptiest and fullest items the checker
+/** The ends of a figure over the two items at the ends of what the checker
  *  allows at the step (`Reading`), given only where they differ. */
 export interface Bounds {
     readonly low: number;
@@ -129,8 +129,8 @@ export function costOf(
     const estimate = walk(craft, result, registry, snapshot, "estimate");
     // The two ends of what the checker allows, for the spread beside the estimate.
     const ends = [
-        walk(craft, result, registry, snapshot, "emptiest"),
-        walk(craft, result, registry, snapshot, "fullest"),
+        walk(craft, result, registry, snapshot, "floors"),
+        walk(craft, result, registry, snapshot, "ceilings"),
     ];
     const unpriced = new Set<string>();
     for (const p of estimate.total) {
@@ -777,7 +777,7 @@ class Walker {
         if (this.reading !== "estimate") {
             // The emptiest or the fullest item the counts allow.
             const totals = pairs.map(([p, sfx]) => p + sfx);
-            const pick = this.reading === "emptiest" ? Math.min(...totals) : Math.max(...totals);
+            const pick = this.reading === "floors" ? Math.min(...totals) : Math.max(...totals);
             pairs = pairs.filter(([p, sfx]) => p + sfx === pick);
         }
         if (pairs.length === 0) return undefined;

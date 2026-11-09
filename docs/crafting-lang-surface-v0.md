@@ -53,6 +53,12 @@ item {
   tags and affix caps (a talisman's implicit variants, a tincture's old and new id); the
   id, `Metadata/Items/...`, is the escape hatch.
 - `ilvl` is the [item level](https://www.poewiki.net/wiki/Item_level); it never changes.
+- `strands: 82` is the item's [memory strands](https://www.poewiki.net/wiki/Memory_strand#Mechanics), 0 to 100, none when
+  absent. While it holds some, a currency that adds or rerolls modifiers lays down only the
+  top tiers of each modifier and uses up a random share of them, at most so many per
+  currency ([Memory strand § Crafting methods consuming memory strands](https://www.poewiki.net/wiki/Memory_strand#Crafting_methods_consuming_memory_strands)); a removal, the bench, Harvest, the Bestiary and a resonator take
+  none. The checker counts the strands the item surely has left; the cost report gives the
+  odds at that count and, where it matters, at the count the item began with.
 - `rarity` is `normal`, `magic` or `rare`. A base that can never be Rare (flasks,
   tinctures) is rejected at `rare`, per [Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare).
 - `prefixes` / `suffixes` list the affixes. Each named affix **must pin a tier**: either a

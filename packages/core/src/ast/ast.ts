@@ -104,6 +104,8 @@ export interface ItemBlock {
     readonly kind: "itemBlock";
     readonly base: string;
     readonly ilvl: number;
+    /** `strands: 82`, the item's memory strands, 0 to 100; none when absent. */
+    readonly strands?: number;
     readonly rarity: Rarity;
     readonly prefixes: readonly AffixDecl[];
     readonly suffixes: readonly AffixDecl[];

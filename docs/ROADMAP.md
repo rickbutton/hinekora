@@ -24,12 +24,10 @@ of the operations; no divergence is expected.
 
 ## Deferred by design (don't build until called for)
 
-- the **cost layer's** next steps (`ARCHITECTURE.md` §7 has what is built): memory
-  strands (an item's strands bar the lower tiers and are used up by the currencies that
-  roll modifiers, [Memory strand § Mechanics](https://www.poewiki.net/wiki/Memory_strand#Mechanics)),
-  the Orb of Unravelling's tier upgrade (its rule is not stated), a loop whose exit rests
-  on a value no roll in its body changes, and the chance a modifier the checker holds only
-  as possible is there when a later roll is judged (the walk keeps the last roll alone, Q57).
+- the **cost layer's** finer points (`ARCHITECTURE.md` §7 has what is built): the
+  Orb of Unravelling's tier upgrade (its rule is not stated), a loop whose exit rests on a
+  value no roll in its body changes, and the chance a modifier the checker holds only as
+  possible is there when a later roll is judged (the walk keeps the last roll alone, Q57).
 - **multi-item crafts** beyond the Recombinator (Reflecting Mist, Kishara's Ducat; the
   Awakener's Orb is built with the donor reduced to its influence, the Recombinator with
   two items of one base, `QUESTIONS.md` Q55)

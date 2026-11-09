@@ -8,3 +8,4 @@ export * from "./item.js";
 export * from "./effects.js";
 export * from "./veiled.js";
 export * from "./marks.js";
+export * from "./strands.js";

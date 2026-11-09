@@ -279,3 +279,18 @@ describe("pool — intensionality guard", () => {
         expect(pool(CATALOG, it0).length).toBeLessThanOrEqual(CATALOG.length);
     });
 });
+
+describe("pool — memory strands", () => {
+    it("keeps only the top tiers of each modifier while the item holds strands", () => {
+        const full = idsOf(pool(CATALOG, mkItem({ rarity: "rare", base: RING_BASE })));
+        expect(full).toContain(LIFE_T1.id);
+        expect(full).toContain(LIFE_T2.id);
+        const culled = idsOf(
+            pool(CATALOG, mkItem({ rarity: "rare", base: RING_BASE, strands: 82 })),
+        );
+        expect(culled).toContain(LIFE_T1.id);
+        expect(culled).not.toContain(LIFE_T2.id);
+        // A one-tier modifier is untouched.
+        expect(culled).toContain(FIRE_RESIST.id);
+    });
+});

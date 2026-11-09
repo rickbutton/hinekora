@@ -80,6 +80,11 @@ export interface AItem {
      *  presence BDD's business (`frac@type` atoms), and the difference between
      *  this count and the pinned types is the locks on unnamed modifiers. */
     readonly fractures: Range;
+    /** How many memory strands the item may hold, a range: the ceiling what it
+     *  had, the floor after every currency that may have used some up. A fill
+     *  reads the floor, the fewest strands and so the most tiers that may roll,
+     *  which keeps its pool an over-approximation (`model/strands.ts`). */
+    readonly strands: Range;
     /** Which implicit each side may be: the types an ember's pool holds, narrowed
      *  by a wording; `"any"` when nothing is known. Independent of the tiers,
      *  which a wording never changes. */
@@ -693,6 +698,8 @@ export interface InitialMarks {
     /** Which implicit each is, when the item block names it. */
     readonly exarchTypes?: ReadonlySet<TypeId>;
     readonly eaterTypes?: ReadonlySet<TypeId>;
+    /** The memory strands the item holds; none when absent. */
+    readonly strands?: number;
 }
 
 export function initialState(
@@ -716,6 +723,7 @@ export function initialState(
         ilvl,
         rarities: new Set([rarity]),
         fractures: [locks, locks],
+        strands: [marks.strands ?? 0, marks.strands ?? 0],
         influences: new Set([influenceKey(marks.influences)]),
         corrupted: new Set([marks.corrupted]),
         eldritch: new Set([eldritchKey(marks.exarch ?? 0, marks.eater ?? 0)]),
@@ -797,6 +805,7 @@ export function join(a: AItem, b: AItem): AItem {
         corrupted: SetDomain.join(a.corrupted, b.corrupted),
         eldritch: SetDomain.join(a.eldritch, b.eldritch),
         fractures: RangeDomain.join(a.fractures, b.fractures),
+        strands: RangeDomain.join(a.strands, b.strands),
         eldritchTypes: {
             exarch: ImplicitTypesDomain.join(a.eldritchTypes.exarch, b.eldritchTypes.exarch),
             eater: ImplicitTypesDomain.join(a.eldritchTypes.eater, b.eldritchTypes.eater),
@@ -826,6 +835,7 @@ export function stateEqual(a: AItem, b: AItem): boolean {
         SetDomain.equal(a.corrupted, b.corrupted) &&
         SetDomain.equal(a.eldritch, b.eldritch) &&
         RangeDomain.equal(a.fractures, b.fractures) &&
+        RangeDomain.equal(a.strands, b.strands) &&
         ImplicitTypesDomain.equal(a.eldritchTypes.exarch, b.eldritchTypes.exarch) &&
         ImplicitTypesDomain.equal(a.eldritchTypes.eater, b.eldritchTypes.eater) &&
         CountDomain.equal(a.counts, b.counts) &&

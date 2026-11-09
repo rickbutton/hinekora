@@ -546,11 +546,9 @@ function costLine(
         const chaos = prices === undefined ? undefined : inChaos(p, prices);
         return chaos === undefined ? list : `${list} (about ${figure(chaos)} chaos)`;
     };
-    // The spread over the emptiest and fullest items the checker allows.
+    // The spread over the two ends of what the checker allows the item to hold.
     const spread = (b: Bounds | undefined, show: (n: number) => string): string =>
-        b === undefined
-            ? ""
-            : ` (${show(b.low)} to ${show(b.high)} by the item's unnamed modifiers)`;
+        b === undefined ? "" : ` (${show(b.low)} to ${show(b.high)} by what the item may hold)`;
     if (entry.kind === "item") {
         if (report.total.length === 0) return undefined;
         const when =

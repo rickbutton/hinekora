@@ -34,14 +34,14 @@ import { splitDistribution } from "./race.js";
 import { keptDistribution, type Pooled, type PooledSide } from "./recombine.js";
 
 /**
- * How the item's open counts are read where the checker leaves them a range:
- * the `estimate` takes a side's count at its floor (exact for a reforge and
- * for an item whose named modifiers fill it) and a removal's at the middle;
- * `emptiest` and `fullest` take every count at its floor or its ceiling, the
- * two items at the ends of what the checker allows, whose figures bracket the
- * estimate (QUESTIONS.md Q57).
+ * How the item's open ranges are read where the checker leaves them open, its
+ * counts and its memory strands: the `estimate` takes a side's count and the
+ * strands at their floors (exact for a reforge and for an item whose named
+ * modifiers fill it) and a removal's count at the middle; `floors` and
+ * `ceilings` take every range at that end, the two items at the ends of what
+ * the checker allows, whose figures bracket the estimate (QUESTIONS.md Q57).
  */
-export type Reading = "estimate" | "emptiest" | "fullest";
+export type Reading = "estimate" | "floors" | "ceilings";
 
 /** One row of a group with the weight it rolls at here. */
 export interface Row {
@@ -209,11 +209,14 @@ function splitOf(
  *  reading), so a side the unnamed modifiers fill admits nothing more. */
 function sureFacts(a: AItem, registry: Registry, level?: number, reading: Reading = "estimate") {
     const facts = guaranteedFacts(a, registry, level);
-    const end = reading === "fullest" ? 1 : 0;
+    const end = reading === "ceilings" ? 1 : 0;
+    const { strands: _floor, ...rest } = facts;
+    const strands = a.strands[end];
     return {
-        ...facts,
+        ...rest,
         prefixCount: Math.max(facts.prefixCount, a.counts.prefix[end]),
         suffixCount: Math.max(facts.suffixCount, suffixRange(a)[end]),
+        ...(strands > 0 && { strands }),
     };
 }
 
@@ -531,7 +534,7 @@ function removalRoll(
     const kept = guaranteedTypes(after);
     const reachable = [...guaranteedTypes(before)].filter((t) => !kept.has(t));
     const mid = (r: readonly [number, number]): number =>
-        reading === "emptiest" ? r[0] : reading === "fullest" ? r[1] : (r[0] + r[1]) / 2;
+        reading === "floors" ? r[0] : reading === "ceilings" ? r[1] : (r[0] + r[1]) / 2;
     // A side a metamod protects, or the other side of a one-sided orb, is out
     // of the removal's reach.
     const protectedSides = new Set<Gen>();
@@ -672,7 +675,7 @@ function countTotals(count: FillCount, a: AItem, reading: Reading): Map<number, 
     const cap = totalCap(a);
     const present = Math.max(
         guaranteedTypes(a).size,
-        a.counts.total[reading === "fullest" ? 1 : 0],
+        a.counts.total[reading === "ceilings" ? 1 : 0],
     );
     switch (count.kind) {
         case "add": {
@@ -749,7 +752,7 @@ export function recombineRoll(
                 named.set(type, entry);
             }
             const range = gen === "prefix" ? x.counts.prefix : suffixRange(x);
-            unnamed += Math.max(0, range[reading === "fullest" ? 1 : 0] - onSide);
+            unnamed += Math.max(0, range[reading === "ceilings" ? 1 : 0] - onSide);
         }
         let pooled = unnamed;
         const list: Pooled[] = [];

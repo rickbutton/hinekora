@@ -573,7 +573,7 @@ and subset pools, reported as a range; (c) both.
 **Recommendation:** (a): exact for a reforge and for an item whose named modifiers fill
 it, which is where guides quote odds; (b) when a guide needs the range.
 **Assumed meanwhile:** (a) for the figure, with (b) beside it as a spread: the walk is run
-again with every range the checker left open (a side's count) at its
+again with every range the checker left open (a side's count, the memory strands) at its
 floor and at its ceiling, and a step whose ends differ shows them (`cost/roll.ts`
 `Reading`, `cost/report.ts` `Bounds`).
 **Answer:**
@@ -735,6 +735,25 @@ replacement, a modifier on both items at twice its weight and its tier one of ei
 by weight share, an unnamed modifier at the average weight of its side's pool, the
 exclusive rule as the page states it (`cost/recombine.ts` `pickSide`, `cost/roll.ts`
 `recombineRoll`).
+**Answer:**
+
+### Q68 · game probe · open
+
+**Asked:** 2026-11-09
+**Goal:** the memory strands two orbs use up where the wiki's table is blank.
+[Memory strand § Crafting methods consuming memory strands](https://www.poewiki.net/wiki/Memory_strand#Crafting_methods_consuming_memory_strands) gives every currency's most, except the Foulborn Exalted Orb's below five
+modifiers ("0-?") and an Exalted Orb's on an item with none ("likely 0-10", "so far seen
+up to 9"); and the page does not say whether the Foulborn cut of the lower tiers and the
+strands' cut apply together.
+**Procure:** two Rare rings with 100 memory strands and no modifiers, Foulborn Exalted
+Orbs and Exalted Orbs; a third with 82 strands and a Foulborn Exalted Orb.
+**Steps:** use one orb on each empty ring and note the strands used; on the third, note
+whether the modifier added is one of the top tiers both rules allow.
+**Record:** the strands used per orb; the tier added.
+**Assumed meanwhile:** 62 for the Foulborn Exalted Orb at every count and 10 for the
+Exalted Orb on an empty item (`check/library.ts` `FOULBORN_STRANDS`, `EXALT_STRANDS`);
+both cuts apply, each keeping the top tiers it allows (`pool/pool.ts`, `check/ops.ts`
+`foulbornTiers`).
 **Answer:**
 
 ---

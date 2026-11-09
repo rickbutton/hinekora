@@ -27,6 +27,9 @@ export interface ItemFacts {
     readonly tags: ReadonlySet<TagId>;
     /** The effects the present carriers contribute. */
     readonly effects: readonly Effect[];
+    /** The memory strands the item surely holds; absent for none. While it
+     *  holds some, only the top tiers of each modifier roll (`model/strands.ts`). */
+    readonly strands?: number;
 }
 
 /** The facts of a bare base at a rarity: nothing present. */

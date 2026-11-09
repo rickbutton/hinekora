@@ -748,3 +748,22 @@ describe("a second item", () => {
         ).toMatch(/name of a second item/);
     });
 });
+
+describe("item block — memory strands", () => {
+    it("reads the count and formats it back after the item level", () => {
+        const text = [
+            "item {",
+            '    base:    "Iron Ring"',
+            "    ilvl:    84",
+            "    strands: 82",
+            "    rarity:  rare",
+            "}",
+            "",
+        ].join("\n");
+        expect(parseOk(text).item.strands).toBe(82);
+        expect(formatCraft(text)).toBe(text);
+        expect(
+            parseOk('item { base: "Iron Ring" ilvl: 84 rarity: rare }').item.strands,
+        ).toBeUndefined();
+    });
+});

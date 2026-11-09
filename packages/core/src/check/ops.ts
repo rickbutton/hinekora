@@ -274,6 +274,10 @@ export type Op =
     | { readonly kind: "rarity"; readonly rarity: Rarity | "survivors" }
     /** `n` random present modifiers become fractured. */
     | { readonly kind: "lock"; readonly n: number }
+    /** The item uses up memory strands: at most `consume` of them, or, given a
+     *  list, at most the entry for the modifiers on the item before the method
+     *  (the last entry beyond the list). The floor falls, the ceiling stays. */
+    | { readonly kind: "strands"; readonly consume: number | readonly number[] }
     /** Hold the item as it is now, to restore later. */
     | { readonly kind: "imprint" }
     /** Replace the item with the held imprint, consuming it. */
@@ -476,6 +480,13 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
             });
         case "lock":
             return lock(a, op.n);
+        case "strands": {
+            const most =
+                typeof op.consume === "number"
+                    ? op.consume
+                    : (op.consume[Math.min(op.consume.length - 1, a0.counts.total[1])] ?? 0);
+            return { ...a, strands: [Math.max(0, a.strands[0] - most), a.strands[1]] };
+        }
         case "imprint": {
             const { imprint: _held, ...now } = a;
             return { ...a, imprint: now };
@@ -1914,6 +1925,9 @@ export function recombine(a: AItem, b: AItem, registry: Registry): AItem {
             eater: ImplicitTypesDomain.join(a.eldritchTypes.eater, b.eldritchTypes.eater),
         },
         fractures: [0, Math.max(a.fractures[1], b.fractures[1])],
+        // The result is one of the two items made anew; the page says nothing
+        // of its strands, so either's may remain.
+        strands: [Math.min(a.strands[0], b.strands[0]), Math.max(a.strands[1], b.strands[1])],
         counts: { total, prefix, suffix },
         presence,
         possible,
@@ -2180,5 +2194,6 @@ export function guaranteedFacts(a: AItem, registry: Registry, level = a.ilvl): I
         families,
         tags,
         effects: activeEffects(a, registry),
+        ...(a.strands[0] > 0 && { strands: a.strands[0] }),
     };
 }

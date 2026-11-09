@@ -80,6 +80,7 @@ const KEYWORDS = new Set([
 const FIELDS = new Set([
     "base",
     "ilvl",
+    "strands",
     "rarity",
     "prefixes",
     "suffixes",

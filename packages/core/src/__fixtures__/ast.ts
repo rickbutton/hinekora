@@ -59,6 +59,7 @@ type AffixSpec = string | AffixDecl;
 interface ItemSpec {
     readonly base: string;
     readonly ilvl: number;
+    readonly strands?: number;
     readonly rarity: Rarity;
     readonly enchant?: { readonly passives: number; readonly text: string };
     readonly prefixes?: readonly AffixSpec[];
@@ -102,6 +103,7 @@ export const item = (spec: ItemSpec): ItemBlock => ({
     kind: "itemBlock",
     base: spec.base,
     ilvl: spec.ilvl,
+    ...(spec.strands !== undefined && { strands: spec.strands }),
     rarity: spec.rarity,
     prefixes: (spec.prefixes ?? []).map(affix),
     suffixes: (spec.suffixes ?? []).map(affix),

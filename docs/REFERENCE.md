@@ -249,9 +249,10 @@ resolveEssence / resolveBench / resolveHarvestTag`
   checked against brute-force enumeration in `race.test.ts`. `roll.ts` reads a method's
   op sequence on the checker's item into its `Roll` (`rollOf(a, ops, registry, reading?)`,
   the `Reading` saying which end of each range the checker left open the roll reads:
-  `estimate`, `emptiest` or `fullest`): a `draw` (the pool's
+  `estimate`, `floors` or `ceilings`): a `draw` (the pool's
   groups per side with their rows and weights, built with `pool` on the item's sure facts
-  (`guaranteedFacts`, each side's count raised to its proven floor), re-weighted by a
+  (`guaranteedFacts`, each side's count raised to its proven floor, the memory strands at
+  theirs, so the lower tiers the strands bar are out), re-weighted by a
   resonator's fossils (`FossilSpec.weights`, added up across fossils, Q60), narrowed to a
   tag, culled to the Foulborn top tiers, tilted by the grove's "more / less likely"
   (`PoolSpec.likely`, ten and a tenth on the rows sharing a harvest type with the item's
@@ -287,7 +288,7 @@ resolveEssence / resolveBench / resolveHarvestTag`
   as rounds and the chance each ends it, a branch's chance, a `note` where a figure is
   assumed), the `total` per currency, `chaos` and `divine` under the snapshot, the
   `unpriced` items and the chance the craft `stopped`. The walk runs once per `Reading`,
-  and each step carries the spread of its figures over the emptiest and fullest walks
+  and each step carries the spread of its figures over the floors and ceilings walks
   where they differ (`Bounds`: `runsRange`, `attemptsRange`, `branchRange`), the report
   its `chaosRange`.
 
@@ -398,7 +399,8 @@ Transport-free service functions + a stdio server:
   keyword) plus an item-tooltip footer of the state at that point, then the cost line for
   the statement (`costCached`, `analysis.ts`): a loop's rounds and the chance each ends
   it, a branch's chance, what a step is expected to consume and, with a snapshot, its
-  price in chaos; on the item block the guide's whole expected spend. Details:
+  price in chaos, each with its spread over what the item may hold where the ends
+  differ; on the item block the guide's whole expected spend. Details:
     - The tooltip is the item in the game's copy-to-clipboard layout (`renderItemText`
       over `itemView`, render/ above) as a code block, after the loop's exit state is
       captioned "after the loop". The view is built from **three general layers** over
@@ -629,6 +631,14 @@ one domain. The sub-domains:
   what a removal of crafted modifiers reaches and nothing else: an unveiled modifier whose
   wording the bench also offers is not among them, so the removal cannot be charged a
   suffix for it. A removal or strip keeps only the fractured ones.
+- `strands`: a RANGE, the [memory strands](https://www.poewiki.net/wiki/Memory_strand#Mechanics) the item may hold: the
+  ceiling what it had (`strands:` in the item block), the floor after every currency that
+  may have used some up (the `strands` op each such method ends with, the most one use
+  takes per [Memory strand § Crafting methods consuming memory strands](https://www.poewiki.net/wiki/Memory_strand#Crafting_methods_consuming_memory_strands); none for a removal, the bench, Harvest, the Bestiary, a resonator or
+  a Veiled Exalted Orb). A fill reads the floor: `pool` keeps only the top
+  `tiersWithStrands` tiers of each modifier (`model/strands.ts`), the fewest strands
+  admitting the most tiers, so the pool stays an over-approximation; the Recombinator's
+  result may hold either input's.
 - `crafted`: a RANGE, how many [bench-crafted](https://www.poewiki.net/wiki/Crafting_Bench)
   mods are present. `bench` requires it provably below the crafted cap (one, or three under
   the multimod [metamod](https://www.poewiki.net/wiki/Metamod)); a pure reforge or a plain
@@ -1022,6 +1032,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/check/values.ts`                                      | modifier values: `rollRange` from a row's text, `narrowRange` by a comparison, `ValueDomain`         |
 | `packages/core/src/check/domain.ts`                                      | `Domain<T>` contract, `RangeDomain`, `SetDomain`, range algebra                                      |
 | `packages/core/src/model/capacity.ts`                                    | the affix caps (`sideCap`, `hardTotalCap`, `maxTotal`, `caps`), shared by the pool and the checker   |
+| `packages/core/src/model/strands.ts`                                     | the tiers memory strands let roll, and their cap                                                     |
 | `packages/core/src/check/counts.ts`                                      | `CountDomain` (suffix, the total/prefix coupling, count refine, `learnPresent`)                      |
 | `packages/core/src/check/bdd.ts`                                         | the hash-consed ROBDD behind `presence`                                                              |
 | `packages/core/src/check/check.ts`                                       | driver, `Flow`, loops/branches, defs, `TraceEntry`, `traceAt`                                        |

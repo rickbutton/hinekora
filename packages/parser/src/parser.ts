@@ -268,6 +268,7 @@ class Parser {
         let prefixes: readonly AffixDecl[] | undefined;
         let suffixes: readonly AffixDecl[] | undefined;
         let influences: readonly Influence[] | undefined;
+        let strands: number | undefined;
         let corrupted = false;
         let exarch: EldritchDecl | undefined;
         let eater: EldritchDecl | undefined;
@@ -309,6 +310,9 @@ class Parser {
                     break;
                 case "ilvl":
                     ilvl = setOnce(ilvl, key, this.parseInt("ilvl"), keyTok.span);
+                    break;
+                case "strands":
+                    strands = setOnce(strands, key, this.parseInt("strands"), keyTok.span);
                     break;
                 case "rarity":
                     rarity = setOnce(rarity, key, this.parseRarityWord(), keyTok.span);
@@ -363,6 +367,7 @@ class Parser {
             suffixes: suffixes ?? [],
             influences: influences ?? [],
             corrupted,
+            ...(strands !== undefined && { strands }),
             ...(exarch !== undefined && { exarch }),
             ...(eater !== undefined && { eater }),
             ...(enchant !== undefined && { enchant }),

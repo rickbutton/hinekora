@@ -34,6 +34,7 @@ export const AFFIX_MARKS = ["fractured", "bench"] as const;
 export const ITEM_FIELDS = [
     "base",
     "ilvl",
+    "strands",
     "rarity",
     "prefixes",
     "suffixes",

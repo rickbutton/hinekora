@@ -8,9 +8,10 @@
  */
 import { maxTotal, sideCap } from "../model/capacity.js";
 import { poolRestrictPredicate } from "../model/effects.js";
-import type { ClassId, Gen, TagId } from "../model/ids.js";
+import type { ClassId, Gen, ModId, TagId, TypeId } from "../model/ids.js";
 import type { ItemFacts } from "../model/item.js";
 import type { Mod, SpawnEntry } from "../model/mod.js";
+import { tiersWithStrands } from "../model/strands.js";
 
 /** The universe of mods `pool` draws from, the loaded catalog for this context. */
 export type ModCatalog = readonly Mod[];
@@ -107,7 +108,29 @@ export function pool(
 
         candidates.push({ mod: m, weight });
     }
-    return candidates;
+    return it.strands !== undefined && it.strands > 0
+        ? topTiersUnderStrands(candidates, it.strands)
+        : candidates;
+}
+
+/** Under memory strands only so many of a modifier's eligible tiers roll, the
+ *  highest first (Memory strand § Mechanics). */
+function topTiersUnderStrands(
+    candidates: readonly PoolCandidate[],
+    strands: number,
+): PoolCandidate[] {
+    const byType = new Map<TypeId, PoolCandidate[]>();
+    for (const c of candidates) {
+        const rows = byType.get(c.mod.type);
+        if (rows) rows.push(c);
+        else byType.set(c.mod.type, [c]);
+    }
+    const kept = new Set<ModId>();
+    for (const rows of byType.values()) {
+        const sorted = [...rows].sort((x, y) => y.mod.minLevel - x.mod.minLevel);
+        for (const c of sorted.slice(0, tiersWithStrands(strands, rows.length))) kept.add(c.mod.id);
+    }
+    return candidates.filter((c) => kept.has(c.mod.id));
 }
 
 // --- small set helpers ----------------------------------------------------

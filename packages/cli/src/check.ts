@@ -108,7 +108,7 @@ export function costSource(
             const spread =
                 report.chaosRange === undefined
                     ? ""
-                    : `, ${amount(report.chaosRange.low)} to ${amount(report.chaosRange.high)} by the item's unnamed modifiers,`;
+                    : `, ${amount(report.chaosRange.low)} to ${amount(report.chaosRange.high)} by what the item may hold,`;
             out.push(
                 `About ${amount(report.chaos)} Chaos Orbs (${amount(report.divine)} Divine Orbs)${spread} at ${prices.league} prices of ${date}.`,
             );
@@ -133,8 +133,9 @@ function stepText(lines: readonly string[], s: StepCost): string {
 }
 
 /**
- * A step's figures. Where the item's unnamed modifiers leave a figure open,
- * the spread over the emptiest and fullest items follows it in brackets.
+ * A step's figures. Where what the item may hold (its unnamed modifiers, its
+ * memory strands) leaves a figure open, the spread over the two ends follows
+ * it in brackets.
  */
 function stepFigure(s: StepCost, prices: Prices | undefined): string {
     const parts: string[] = [];

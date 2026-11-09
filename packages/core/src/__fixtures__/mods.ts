@@ -1153,6 +1153,7 @@ interface ItemSpec {
     readonly rarity: Rarity;
     readonly prefixes?: readonly Mod[];
     readonly suffixes?: readonly Mod[];
+    readonly strands?: number;
 }
 
 /** The facts of an item carrying exactly these mods. */
@@ -1160,7 +1161,8 @@ export function mkItem(spec: ItemSpec): ItemFacts {
     const base = spec.base ?? RING_BASE;
     const prefixes = spec.prefixes ?? [];
     const suffixes = spec.suffixes ?? [];
-    return itemFacts(base, spec.ilvl ?? 100, spec.rarity, prefixes, suffixes);
+    const facts = itemFacts(base, spec.ilvl ?? 100, spec.rarity, prefixes, suffixes);
+    return spec.strands === undefined ? facts : { ...facts, strands: spec.strands };
 }
 
 export function itemFacts(

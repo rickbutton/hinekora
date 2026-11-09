@@ -24,6 +24,7 @@ import { type Gen, type GroupId, type ModId, TagId, type TypeId } from "../model
 import type { Base } from "../model/base.js";
 import type { Mod } from "../model/mod.js";
 import { type EldritchSide, eldritchTierOf } from "../model/marks.js";
+import { MAX_STRANDS } from "../model/strands.js";
 import type { ModTypeContext, Registry } from "../resolve/registry.js";
 import {
     type AItem,
@@ -530,6 +531,12 @@ class Checker {
         };
         const exarchTypes = implicitTypes("exarch", item.exarch);
         const eaterTypes = implicitTypes("eater", item.eater);
+        if (item.strands !== undefined && (item.strands < 0 || item.strands > MAX_STRANDS)) {
+            this.diag(
+                `An item holds 0 to ${MAX_STRANDS} memory strands, not ${item.strands}.`,
+                item.span,
+            );
+        }
 
         // An influenced item cannot be fractured (Influenced item § Mechanics)
         // nor carry an eldritch implicit (Eldritch implicit modifier).
@@ -568,6 +575,9 @@ class Checker {
                 ...(item.eater !== undefined && { eater: eldritchTierOf(item.eater.tier) }),
                 ...(exarchTypes !== undefined && { exarchTypes }),
                 ...(eaterTypes !== undefined && { eaterTypes }),
+                ...(item.strands !== undefined && {
+                    strands: Math.max(0, Math.min(MAX_STRANDS, item.strands)),
+                }),
             },
         );
         // An anonymous affix is some modifier of its side the item could roll, so
