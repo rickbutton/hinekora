@@ -448,6 +448,24 @@ family for everything.
 the surface doc §1, §3 and §5).
 **Answer:**
 
+### Q54 · decision · open
+
+**Asked:** 2026-11-08
+**Question:** whether to lift Q34's "not for now" on Hinekora's Lock. The research
+report ranks the Lock and the Allflame bench third of the constructs guides use and the
+language lacks (`docs/research/feature-report.md` B3): every advanced 3.29 route previews
+its risky step and keeps the outcome only on a condition. The model is one mechanism, a
+filtered transfer: run the operation, keep the outcomes that satisfy a predicate, join
+with the unchanged item for the rest, and report a condition the operation can never
+produce; a spelling such as `lock regal keep suffixCount == 1` (`examples/future/lock-regal.craft`).
+**Options:** (a) keep Q34 as ruled and leave the Lock to a later league; (b) build the
+Lock now, with its own rules (not after a bench, Harvest, beast or Recombinator step; not
+on a corrupted item); (c) build the Lock and the Allflame bench together, the bench as the
+same statement with a preview count that changes the cost, not the state.
+**Recommendation:** (b), then (c) when the Allflame bench's rules are in the wiki cache.
+**Assumed meanwhile:** (a), as Q34 ruled; `lock-regal` stays in `examples/future/`.
+**Answer:**
+
 ### Q53 · game probe · open
 
 **Asked:** 2026-11-08

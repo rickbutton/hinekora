@@ -89,6 +89,7 @@ examples/                    - the guide suite; every file here checks clean (`p
   veiled-unveil.craft        - a veiled orb under a suffix lock, unveiled until the right option shows; `stop` on a bricked item.
   essence-minion-wand.craft  - essence spam, annul to make room, multimod, bench crafts guarded by `has group`.
   value-threshold.craft      - a finished ring divined until the life roll is 110 or more.
+  imprint-regal-amulet.craft - an imprint as the checkpoint, a regal under a prefix lock, Harvest and the bench to finish.
   future/                    - recipes that wait on a feature, each headed by which; not tested.
 docs/
   REFERENCE.md, ARCHITECTURE.md, ROADMAP.md, item-model.md, QUESTIONS.md + the two design docs
