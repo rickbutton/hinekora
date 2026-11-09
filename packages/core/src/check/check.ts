@@ -29,6 +29,7 @@ import {
     canBeRare,
     cardinalityGuarantees,
     guaranteedTypes,
+    suffixRange,
     initialState,
     join,
     refine,
@@ -731,7 +732,39 @@ class Checker {
             const minP = minFor("prefix");
             if (minP > 0) s = refine(s, cmpAtLeast("prefixCount", minP));
         }
-        return s ?? a;
+        return s === null ? a : this.dropUnnamed(s);
+    }
+
+    /**
+     * The reduction the other way: a side whose count the guaranteed types fill
+     * carries no other modifier, so every other type that sits only on that
+     * side leaves `possible`. After `until prefixCount == 1` on an item whose
+     * one named prefix is sure, the prefixes a reforge might have rolled are
+     * gone for good, and a later bench craft of their group is not refused for
+     * them.
+     */
+    private dropUnnamed(a: AItem): AItem {
+        const guaranteed = guaranteedTypes(a);
+        const onlyOn = (t: TypeId, gen: Gen): boolean => {
+            const sides = this.registry.sidesOfType(t);
+            return sides.size === 1 && sides.has(gen);
+        };
+        const full = (["prefix", "suffix"] as const).filter((gen) => {
+            let named = 0;
+            for (const t of guaranteed) if (onlyOn(t, gen)) named++;
+            const max = gen === "prefix" ? a.counts.prefix[1] : suffixRange(a)[1];
+            return max <= named;
+        });
+        if (full.length === 0) return a;
+        const possible = new Set(a.possible);
+        for (const t of a.possible) {
+            if (guaranteed.has(t)) continue;
+            if (full.some((gen) => onlyOn(t, gen))) possible.delete(t);
+        }
+        if (possible.size === a.possible.size) return a;
+        const tiers = new Map([...a.tiers].filter(([t]) => possible.has(t)));
+        const values = new Map([...a.values].filter(([t]) => possible.has(t)));
+        return { ...a, possible, tiers, values };
     }
 
     /**

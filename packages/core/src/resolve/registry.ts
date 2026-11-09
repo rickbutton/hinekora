@@ -35,6 +35,8 @@ const ladderOf = (tier: number): number => 8 - tier;
 
 /** Shared empty result for `addsTagsOfType` on a type that adds none. */
 const EMPTY_TAGS: ReadonlySet<TagId> = new Set();
+/** Shared empty result for `sidesOfType` on an unknown type. */
+const EMPTY_SIDES: ReadonlySet<Gen> = new Set();
 /** Shared empty result for `familiesOfType` on an unknown type. */
 const EMPTY_FAMILIES: ReadonlySet<GroupId> = new Set();
 /** Shared empty result for `effectsOfType` on a non-carrier type. */
@@ -210,6 +212,9 @@ export interface Registry {
     resolveAspect(name: string): Resolved<Mod>;
     /** The generation (prefix/suffix) a ModType always occupies, if known. */
     genOfType(type: TypeId): Gen | undefined;
+    /** The sides the type's rows sit on across the catalog: one for most types,
+     *  both for a type that is a prefix on one base and a suffix on another. */
+    sidesOfType(type: TypeId): ReadonlySet<Gen>;
     /** The mod groups (families) a ModType belongs to, across its tiers;
      *  drives the bench group-exclusivity check. */
     familiesOfType(type: TypeId): ReadonlySet<GroupId>;
@@ -405,6 +410,12 @@ export function buildRegistry(data: RegistryData): Registry {
 
     const typeGen = new Map<TypeId, Gen>();
     for (const m of catalog) if (!typeGen.has(m.type)) typeGen.set(m.type, m.gen);
+    const typeSides = new Map<TypeId, Set<Gen>>();
+    for (const m of catalog) {
+        let sides = typeSides.get(m.type);
+        if (!sides) typeSides.set(m.type, (sides = new Set()));
+        sides.add(m.gen);
+    }
 
     // Union of families per ModType, the group set used for bench conflict checks.
     const typeAddsTags = new Map<TypeId, Set<TagId>>();
@@ -712,6 +723,10 @@ export function buildRegistry(data: RegistryData): Registry {
 
         genOfType(type) {
             return typeGen.get(type);
+        },
+
+        sidesOfType(type) {
+            return typeSides.get(type) ?? EMPTY_SIDES;
         },
 
         familiesOfType(type) {

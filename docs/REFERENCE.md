@@ -207,8 +207,10 @@ resolveEssence / resolveBench / resolveHarvestTag`
       as a **≥3-char prefix** of an entry token ("max life" → "maximum life"), after the
       community wordings of `RegistryData.wordingAliases` are rewritten into the query
       (`wordingAliases`, `expandAliases`: longest phrase first, "es" → "energy shield").
-    - `genOfType(type)` → prefix/suffix; `familiesOfType(type)` → mod groups (drives the
-      bench group-exclusivity check); `typeLabel(type)` → friendly wording for display.
+    - `genOfType(type)` → prefix/suffix (`sidesOfType(type)` → every side the type's rows
+      sit on, both for the few that are a prefix on one base and a suffix on another);
+      `familiesOfType(type)` → mod groups (drives the bench group-exclusivity check);
+      `typeLabel(type)` → friendly wording for display.
     - Precomputed completion lists: `currencies`/`currencyNames`, `baseNames` (only
       names that resolve to one base of a class that takes modifiers: a class is kept
       once any base of it has a pool, so gems, currency and cards drop out without a
@@ -635,7 +637,11 @@ one domain. The sub-domains:
   after-state is the entry and the body's results, each refined by the exit predicate.
   All three share one primitive, `headStates(entry, body)`, the states that re-enter the
   loop head after one iteration (fall-off-end + every `restart` back-edge), plus
-  `refineHeads(states, ¬/exit)`; `foldJoin` merges a list of states. Two suppression
+  `refineHeads(states, ¬/exit)`; `foldJoin` merges a list of states. `tightenCounts`, after every narrowing, pushes a proven "≥k of one side" into
+  the counts and, the other way (`dropUnnamed`), takes every other type that sits only on a
+  side whose count the guaranteed types fill out of `possible`: after `until prefixCount
+== 1` on an item whose one named prefix is sure, the prefixes a reforge might have
+  rolled are gone, and a bench craft of their group is not refused for them. Two suppression
   modes are scoped helpers, not manual counters: `quietly` (no
   diagnostics, no trace, for probe/fixpoint passes) and `untraced` (trace off, diagnostics
   on, for inlined proc bodies).
