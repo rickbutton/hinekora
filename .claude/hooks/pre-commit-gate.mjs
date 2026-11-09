@@ -12,8 +12,13 @@ let input = "";
 for await (const chunk of process.stdin) input += chunk;
 
 let command = "";
+let cwd = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
 try {
-    command = JSON.parse(input).tool_input?.command ?? "";
+    const hook = JSON.parse(input);
+    command = hook.tool_input?.command ?? "";
+    // The gate judges the tree the commit is made in: a worktree's commit is
+    // neither refused for another checkout's half-done work nor passed on it.
+    if (typeof hook.cwd === "string" && hook.cwd !== "") cwd = hook.cwd;
 } catch {
     process.exit(0);
 }
@@ -22,7 +27,7 @@ try {
 if (!/(^|[;&|\s])git\b[^|;&]*?\bcommit\b/.test(command)) process.exit(0);
 
 try {
-    execSync("pnpm gate", { cwd: process.env.CLAUDE_PROJECT_DIR ?? process.cwd(), stdio: "pipe" });
+    execSync("pnpm gate", { cwd, stdio: "pipe" });
 } catch (e) {
     const out = `${e.stdout ?? ""}${e.stderr ?? ""}`;
     process.stderr.write(`The gate failed; fix it before committing.\n${out.slice(-6000)}`);
