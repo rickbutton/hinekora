@@ -37,9 +37,9 @@ describe("the cost report's words", () => {
 
     it("marks an estimate with ~ and words a repeat's odds as guides quote them", () => {
         expect(approx(24.9)).toBe("~24.9");
-        expect(oddsText(0.114)).toBe("1/9 per round");
-        expect(oddsText(1 / 37)).toBe("1/37 per round");
-        expect(oddsText(0.6)).toBe("60% per round");
+        expect(oddsText(0.114)).toBe("1/9 chance per round");
+        expect(oddsText(1 / 37)).toBe("1/37 chance per round");
+        expect(oddsText(0.6)).toBe("60% chance per round");
         expect(oddsText(0)).toBe("never ends");
     });
 

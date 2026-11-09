@@ -671,7 +671,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                             : []),
                     );
                     into.push(region);
-                    const outcome = result(s.after, true, true, "once the repeat is done");
+                    const outcome = result(s.after, true, true, "result");
                     if (outcome !== undefined) {
                         into.push(anchor(h("div", "block outcome", outcome), s.span));
                     }

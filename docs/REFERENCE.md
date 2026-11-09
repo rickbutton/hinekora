@@ -304,7 +304,7 @@ resolveEssence / resolveBench / resolveHarvestTag`
   the steps inside such a loop or branch, carry none, and the total's spread is left out
   with them. `words.ts` is the figures in the guide's words (`figure`, `percentage`,
   `priceText`; `approx` marks an estimate "~24", `oddsText` is a repeat's odds as guides
-  quote them, "1/37 per round", or a percentage once better than even), the one copy the CLI, the hover and the playground print, and
+  quote them, "1/37 chance per round", or a percentage once better than even), the one copy the CLI, the hover and the playground print, and
   `costIsObvious`, the step whose cost says nothing its name does not (it runs once and
   spends one of one currency), whose line the hover and the storyboard leave out. The first step of a loop body is judged on the item the loop finds, not on
   the join over its rounds, so the attempts are taken alike.
@@ -570,7 +570,7 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   or `stop` is reached, and under the finished item the guide's expected spend in chaos
   and divine at the snapshot's league and date, with the currencies it could not price;
   a spread over what the item may hold is the line's tooltip. A repeat's foot gives its
-  odds as guides quote them ("1/37 per round", `oddsText`) over a small table
+  odds as guides quote them ("1/37 chance per round", `oddsText`) over a small table
   (`repeatTable`): per currency what one round spends, what all the rounds spend
   (`passSpend`: the body's spend over the guide divided by the repeat's own runs) and
   its worth in chaos, dearest first, with the sum. Clicking a cost line opens a dialog with the breakdown
