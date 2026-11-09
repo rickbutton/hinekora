@@ -25,6 +25,7 @@ import {
     normalizeText,
     singular,
     tokenMatches,
+    type WordingAliasEntry,
     wordingAliases,
 } from "./fuzzy.js";
 import { rollableTiers } from "./tiers.js";
@@ -324,7 +325,7 @@ export interface RegistryData {
     readonly baseAliases?: Readonly<Record<string, string>>;
     /** Optional community wordings → the game's ("spell suppression" → "chance to
      *  suppress spell damage"), rewritten inside a modifier name before matching. */
-    readonly wordingAliases?: Readonly<Record<string, string>>;
+    readonly wordingAliases?: Readonly<Record<string, WordingAliasEntry>>;
     readonly currencies?: readonly CurrencySpec[];
     readonly essences?: readonly EssenceSpec[];
     readonly benchCrafts?: readonly BenchCraft[];

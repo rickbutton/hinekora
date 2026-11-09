@@ -5,9 +5,12 @@
  * writes as a verb. Each entry is rewritten inside a name before matching, so
  * "max es" reads as "max energy shield" and "+1 gems" as "+1 level of all skill
  * gems". Words a prefix already reaches ("max", "res", "crit multi", "phys",
- * "ele") need no entry.
+ * "ele") need no entry. An entry may name the words that hold it back:
+ * "gems" is the skill gem level unless the query says "socketed".
  */
-export const COMMUNITY_ALIASES: Readonly<Record<string, string>> = {
+import type { WordingAliasEntry } from "@hinekora/core";
+
+export const COMMUNITY_ALIASES: Readonly<Record<string, WordingAliasEntry>> = {
     "spell suppression": "chance to suppress spell damage",
     suppression: "chance to suppress spell damage",
     es: "energy shield",
@@ -17,5 +20,5 @@ export const COMMUNITY_ALIASES: Readonly<Record<string, string>> = {
     dmg: "damage",
     armor: "armour",
     flat: "adds",
-    gems: "level of all skill gems",
+    gems: { to: "level of all skill gems", unless: ["socketed"] },
 };

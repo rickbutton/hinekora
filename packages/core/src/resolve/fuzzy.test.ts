@@ -32,6 +32,11 @@ describe("the name index", () => {
         ]);
         expect(expandAliases(["suppression"], aliases)).toEqual(["suppress"]);
         expect(expandAliases(["fire", "res"], aliases)).toEqual(["fire", "res"]);
+        const guarded = wordingAliases({
+            gems: { to: "level of all skill gems", unless: ["socketed"] },
+        });
+        expect(expandAliases(["gems"], guarded)).toEqual(["level", "all", "skill", "gems"]);
+        expect(expandAliases(["socketed", "gems"], guarded)).toEqual(["socketed", "gems"]);
     });
 
     it("folds the plural a tier's number brings", () => {

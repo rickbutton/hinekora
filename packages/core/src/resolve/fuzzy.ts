@@ -25,16 +25,31 @@ export function normalizeText(s: string): string[] {
         .filter((w) => w.length > 0 && !STOPWORDS.has(w));
 }
 
+/** A community wording's expansion, held back when the query carries a word
+ *  that marks another sense ("gems" is "level of all skill gems", unless the
+ *  query says "socketed"). */
+export interface WordingAlias {
+    readonly to: readonly string[];
+    readonly unless: ReadonlySet<string>;
+}
+
 /** Community wordings → the game's, as token phrases ("spell suppression" →
  *  "chance suppress spell damage"), applied to a query before matching. */
-export type WordingAliases = ReadonlyMap<string, readonly string[]>;
+export type WordingAliases = ReadonlyMap<string, WordingAlias>;
+
+/** An alias table entry: the wording, or the wording with the words that hold it back. */
+export type WordingAliasEntry =
+    string | { readonly to: string; readonly unless: readonly string[] };
 
 /** Build the alias map from a plain table, normalising both sides as queries are. */
-export function wordingAliases(table: Readonly<Record<string, string>>): WordingAliases {
-    const out = new Map<string, readonly string[]>();
-    for (const [from, to] of Object.entries(table)) {
+export function wordingAliases(table: Readonly<Record<string, WordingAliasEntry>>): WordingAliases {
+    const out = new Map<string, WordingAlias>();
+    for (const [from, entry] of Object.entries(table)) {
         const key = normalizeText(from).join(" ");
-        if (key.length > 0) out.set(key, normalizeText(to));
+        if (key.length === 0) continue;
+        const to = typeof entry === "string" ? entry : entry.to;
+        const unless = typeof entry === "string" ? [] : entry.unless;
+        out.set(key, { to: normalizeText(to), unless: new Set(unless.flatMap(normalizeText)) });
     }
     return out;
 }
@@ -48,9 +63,9 @@ export function expandAliases(tokens: readonly string[], aliases: WordingAliases
     for (let i = 0; i < tokens.length;) {
         let used = 0;
         for (let n = Math.min(longest, tokens.length - i); n >= 1 && used === 0; n--) {
-            const to = aliases.get(tokens.slice(i, i + n).join(" "));
-            if (to !== undefined) {
-                out.push(...to);
+            const alias = aliases.get(tokens.slice(i, i + n).join(" "));
+            if (alias !== undefined && !tokens.some((t) => alias.unless.has(t))) {
+                out.push(...alias.to);
                 used = n;
             }
         }

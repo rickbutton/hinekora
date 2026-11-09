@@ -186,6 +186,7 @@ describe("registry resolution against real data", () => {
         expect(wording("ms", "Slink Boots")).toBe("increased movement speed");
         expect(wording("dot multi", "Jade Amulet")).toBe("damage over time multiplier");
         expect(wording("flat phys", "Vaal Axe")).toBe("adds physical damage");
+        expect(wording("socketed melee gems", "Vaal Axe")).toBe("level socketed melee gems");
     });
 
     it("carries affix-cap deltas from experimented-base implicits", () => {
