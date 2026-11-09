@@ -448,6 +448,28 @@ family for everything.
 the surface doc §1, §3 and §5).
 **Answer:**
 
+### Q56 · game probe · open
+
+**Asked:** 2026-11-09
+**Goal:** how the game reads a modifier's generation table. The data pairs each spawn
+table with a `generation_weights` table the wiki does not describe; the code reads it as
+it reads the spawn table, the first entry whose tag the item carries deciding, that entry
+scaling the spawn weight in percent and a zero disabling the row (`pool/pool.ts`
+`lookupWeight`, `Mod.generation`). The one consequence in play is wiki-backed: every
+cluster notable adds `has_affliction_notable` and its table reads the Large and Medium
+size tags at full weight before a zero on that tag, the Small Cluster Jewel's cap of one
+notable ([Cluster jewel § Mechanics](https://www.poewiki.net/wiki/Cluster_jewel#Mechanics)).
+No other row in the data carries a zero generation entry; the rest scale weapon rows by
+50 or 100 percent.
+**Procure:** a Small Cluster Jewel and a Medium one, each Rare with one notable and an
+open prefix.
+**Steps:** use Exalted Orbs on each until the prefixes are full.
+**Record:** whether a second notable ever lands on the Small (the zero), and whether one
+does on the Medium (the size tag matching first).
+**Assumed meanwhile:** first match wins, percent scale, zero disables (`Mod.generation`,
+`lookupWeight`, `item-model.md` §5).
+**Answer:**
+
 ### Q55 · decision · open
 
 **Asked:** 2026-11-08

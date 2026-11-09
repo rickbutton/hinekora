@@ -80,6 +80,13 @@ export const CLUSTER_BASE: Base = {
     domain: DOMAIN_CLUSTER,
     tags: new Set([TAG_DEFAULT, TagId("jewel"), TAG_CLUSTER_LARGE]),
 };
+export const MEDIUM_CLUSTER_BASE: Base = {
+    id: BaseId("MediumClusterJewel"),
+    name: "Medium Cluster Jewel",
+    itemClass: ClassId("Jewel"),
+    domain: DOMAIN_CLUSTER,
+    tags: new Set([TAG_DEFAULT, TagId("jewel"), TAG_CLUSTER_MEDIUM]),
+};
 export const SMALL_CLUSTER_BASE: Base = {
     id: BaseId("SmallClusterJewel"),
     name: "Small Cluster Jewel",

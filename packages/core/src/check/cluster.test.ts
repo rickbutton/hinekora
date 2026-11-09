@@ -6,6 +6,7 @@ import {
     CATALOG,
     CLUSTER_BASE,
     CLUSTER_EFFECT,
+    MEDIUM_CLUSTER_BASE,
     NOTABLE_OVERSHOCK,
     NOTABLE_SADIST,
     RING_BASE,
@@ -13,7 +14,7 @@ import {
 } from "../__fixtures__/mods.js";
 
 const registry = buildRegistry({
-    bases: [RING_BASE, CLUSTER_BASE, SMALL_CLUSTER_BASE],
+    bases: [RING_BASE, CLUSTER_BASE, MEDIUM_CLUSTER_BASE, SMALL_CLUSTER_BASE],
     mods: [...CATALOG, NOTABLE_SADIST, NOTABLE_OVERSHOCK, CLUSTER_EFFECT],
     baseAliases: { "Iron Ring": "IronRing" },
 });
@@ -67,7 +68,7 @@ describe("a cluster jewel's enchant", () => {
 });
 
 describe("a cluster jewel's notables", () => {
-    it("are one at most on a Small jewel, two on a Large", () => {
+    it("are one at most on a Small jewel, two on a Medium or a Large", () => {
         // Every notable adds a tag on which its generation table is zero below
         // Medium, so with one on a Small jewel no exalt can add another.
         const lightning = { passives: 2, text: "lightning damage" };
@@ -77,6 +78,19 @@ describe("a cluster jewel's notables", () => {
         );
         expect(small.diagnostics).toEqual([]);
         expect(small.finalState!.possible.has(NOTABLE_OVERSHOCK.type)).toBe(false);
+        const medium = check(
+            craft(
+                jewel(
+                    { passives: 4, text: "lightning damage" },
+                    ["sadist"],
+                    "Medium Cluster Jewel",
+                ),
+                [op("exalt")],
+            ),
+            ctx,
+        );
+        expect(medium.diagnostics).toEqual([]);
+        expect(medium.finalState!.possible.has(NOTABLE_OVERSHOCK.type)).toBe(true);
         const large = check(
             craft(jewel({ passives: 8, text: "lightning damage" }, ["sadist"]), [op("exalt")]),
             ctx,
