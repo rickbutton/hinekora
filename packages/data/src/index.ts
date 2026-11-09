@@ -7,4 +7,5 @@
  */
 export * from "./aliases.js";
 export * from "./browser.js";
+export * from "./economy.js";
 export * from "./load.js";

@@ -7,6 +7,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { adaptPoe1, type LoadedData, POE1_FILES, type RawPoe1 } from "./bundle.js";
+import { adaptEconomy, type EconomySnapshot, type RawEconomy } from "./economy.js";
 import type { DataManifest } from "./manifest.js";
 import type {
     RepoeBases,
@@ -43,4 +44,17 @@ export function defaultPoe1Dir(): string {
 /** Load the bundled PoE1 catalog. */
 export function loadDefaultPoe1(): LoadedData {
     return loadPoe1(defaultPoe1Dir());
+}
+
+/** The file the economy snapshot is kept in, beside the catalog. */
+export const ECONOMY_FILE = "economy.json";
+
+/** Load the economy snapshot of a PoE1 data directory. */
+export function loadEconomy(dir: string): EconomySnapshot {
+    return adaptEconomy(readJson<RawEconomy>(`${dir}/${ECONOMY_FILE}`));
+}
+
+/** Load the bundled economy snapshot. */
+export function loadDefaultEconomy(): EconomySnapshot {
+    return loadEconomy(defaultPoe1Dir());
 }

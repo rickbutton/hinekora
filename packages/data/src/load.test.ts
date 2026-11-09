@@ -16,7 +16,7 @@ import {
     ModId,
 } from "@hinekora/core";
 import { registryOf } from "./bundle.js";
-import { loadDefaultPoe1 } from "./load.js";
+import { loadDefaultEconomy, loadDefaultPoe1 } from "./load.js";
 
 const data = loadDefaultPoe1();
 const registry = registryOf(data);
@@ -440,5 +440,27 @@ describe("real pool — a Cobalt Jewel draws its jewel mods", () => {
             families: new Set(mods.flatMap((m) => [...m.families])),
         };
         expect(pool(data.mods, full)).toHaveLength(0);
+    });
+});
+
+describe("the economy snapshot", () => {
+    it("prices the currencies the cost layer names, in chaos, with its provenance", () => {
+        const prices = loadDefaultEconomy();
+        expect(prices.league.length).toBeGreaterThan(0);
+        expect(prices.fetchedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+        expect(prices.chaosPerDivine).toBeGreaterThan(1);
+        expect(prices.chaos.get("Chaos Orb")).toBe(1);
+        for (const item of [
+            "Divine Orb",
+            "Exalted Orb",
+            "Orb of Annulment",
+            "Deafening Essence of Greed",
+            "Pristine Fossil",
+            "Primitive Chaotic Resonator",
+            "Wild Crystallised Lifeforce",
+            "Veiled Chaos Orb",
+        ]) {
+            expect(prices.chaos.get(item), item).toBeGreaterThan(0);
+        }
     });
 });

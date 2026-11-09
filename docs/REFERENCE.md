@@ -307,7 +307,12 @@ variant is reached by its condition's words; a tie is ambiguous),
 (domain + generation_type + is_essence_only). A fossil's `weights` (category tag → the
 multiplier in percent, "More Life modifiers" being 1000) and a bench craft's `cost`
 (currency name → amount, read back from the export's currency ids through the bases) are
-kept for the cost layer alone; the checker reads neither. `aliases.ts` holds `COMMUNITY_ALIASES`, the
+kept for the cost layer alone; the checker reads neither. `economy.ts` adapts the economy
+snapshot `packages/data/data/poe1/economy.json` (`adaptEconomy` → an `EconomySnapshot`): every currency,
+essence, fossil and resonator priced in Chaos Orbs by poe.ninja for one league on one day,
+with the Divine Orb's rate, written by `scripts/fetch-economy.mjs` (four requests to the
+exchange overview the site's own pages read; `QUESTIONS.md` Q59) and loaded by
+`loadDefaultEconomy`. `aliases.ts` holds `COMMUNITY_ALIASES`, the
 words guides use for a modifier where the game's wording differs (surface doc §2), which
 `registryOf` hands the registry as its `wordingAliases`. `load.ts`: `loadDefaultPoe1()` →
 `LoadedData`; `bundle.ts`: the disk-free half, `adaptPoe1(raw)` over the seven parsed
@@ -977,6 +982,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/render/walkthrough.ts`                                | `walkthrough`, `stepDelta`: the guide as steps with the item before and after each                 |
 | `packages/core/src/render/flowchart.ts`                                  | `flowchart`: a walkthrough as Mermaid flowchart text, node ids mapped to statements                |
 | `packages/core/src/render/conditions.ts`                                 | `clause`, `criteria`: a guide's conditions as prose and as a checklist, in the player's words      |
+| `packages/data/scripts/fetch-economy.mjs`                                | refreshes `packages/data/data/poe1/economy.json` from poe.ninja                                    |
 | `packages/lsp/src/{walkthrough,flowchart}.test.ts`                       | the walkthrough model and its flowchart over real guides                                           |
 | `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts`    | LSP features                                                                                       |
 | `packages/lsp/src/analysis.ts`                                           | the parse and check of a document, memoized by text; every feature reads it                        |
