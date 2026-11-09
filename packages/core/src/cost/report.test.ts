@@ -9,6 +9,7 @@ import {
     cmp,
     craft,
     donor,
+    harvest,
     has,
     hasValue,
     iff,
@@ -191,10 +192,29 @@ describe("the cost of a guide", () => {
     it("a Bestiary recipe is priced by its beasts", () => {
         const c = craft(ring("magic", ["IncreasedLife1"]), [beast({ kind: "imprint" })]);
         expect(report(c).steps[0]!.unit).toEqual([{ item: "Craicic Croaker", amount: 1 }]);
-        const add = craft(ring("rare", ["IncreasedLife1"]), [
-            beast({ kind: "add", side: "prefix" }),
+        const unitOf = (stmt: ReturnType<typeof beast>) =>
+            report(craft(ring("rare", ["IncreasedLife1"]), [stmt])).steps[0]!.unit;
+        expect(unitOf(beast({ kind: "add", side: "prefix" }))).toEqual([
+            { item: "Farric Wolf Alpha", amount: 1 },
         ]);
-        expect(report(add).steps[0]!.unit).toEqual([{ item: "Farric Wolf Alpha", amount: 1 }]);
+        expect(unitOf(beast({ kind: "fracture", n: 2 }))).toEqual([
+            { item: "Fenumal Plagued Arachnid", amount: 1 },
+            { item: "Black Mórrigan", amount: 1 },
+        ]);
+        expect(unitOf(beast({ kind: "metamod" }))).toEqual([
+            { item: "Wild Bristle Matron", amount: 1 },
+        ]);
+        expect(unitOf(beast({ kind: "aspect", name: "cat" }))).toEqual([
+            { item: "Farrul, First of the Plains", amount: 1 },
+            { item: "Black Mórrigan", amount: 1 },
+        ]);
+    });
+
+    it("the grove's likely reforges cost 200 Wild lifeforce", () => {
+        const c = craft(ring("rare", ["IncreasedLife1"]), [harvest("reforge", "more likely")]);
+        expect(report(c).steps[0]!.unit).toEqual([
+            { item: "Wild Crystallised Lifeforce", amount: 200 },
+        ]);
     });
 });
 

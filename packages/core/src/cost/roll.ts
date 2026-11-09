@@ -207,13 +207,18 @@ function splitOf(
 /** The item's facts the pool reads: the guaranteed modifiers, with each side's
  *  count raised to its proven lower bound (its ceiling under the fullest
  *  reading), so a side the unnamed modifiers fill admits nothing more. */
-function sureFacts(a: AItem, registry: Registry, level?: number, reading: Reading = "estimate") {
+function sureFacts(
+    a: AItem,
+    registry: Registry,
+    level?: number,
+    reading: Reading = "estimate",
+    withStrands = false,
+) {
     const facts = guaranteedFacts(a, registry, level);
     const end = reading === "ceilings" ? 1 : 0;
-    const { strands: _floor, ...rest } = facts;
-    const strands = a.strands[end];
+    const strands = withStrands ? a.strands[end] : 0;
     return {
-        ...rest,
+        ...facts,
         prefixCount: Math.max(facts.prefixCount, a.counts.prefix[end]),
         suffixCount: Math.max(facts.suffixCount, suffixRange(a)[end]),
         ...(strands > 0 && { strands }),
@@ -288,16 +293,18 @@ function poolRows(
     registry: Registry,
     origin: AItem = a,
     reading: Reading = "estimate",
+    stranded = false,
 ): Row[] {
-    const natural = (level?: number): Row[] =>
-        pool(registry.catalog, sureFacts(a, registry, level, reading)).map((c) => ({
+    // Only a method that uses memory strands up has its fill cut by them.
+    const natural = (level?: number, withStrands = false): Row[] =>
+        pool(registry.catalog, sureFacts(a, registry, level, reading, withStrands)).map((c) => ({
             mod: c.mod,
             weight: c.weight,
         }));
     switch (spec.kind) {
         case "natural": {
             const cap = spec.maxLevel ?? Infinity;
-            let rows = natural(spec.level).filter(
+            let rows = natural(spec.level, stranded).filter(
                 (r) => r.mod.minLevel <= cap && (spec.gen === undefined || r.mod.gen === spec.gen),
             );
             if (spec.likely !== undefined) {
@@ -343,7 +350,7 @@ function poolRows(
         case "influence": {
             // The rows the influence admits: in the pool with the influence's
             // tags and not without them.
-            const facts = sureFacts(a, registry, undefined, reading);
+            const facts = sureFacts(a, registry, undefined, reading, stranded);
             const tags = influenceTagsAny(a, registry);
             const plain = new Set(
                 pool(registry.catalog, {
@@ -351,7 +358,7 @@ function poolRows(
                     tags: new Set([...facts.tags].filter((t) => !tags.has(t))),
                 }).map((c) => c.mod.id),
             );
-            return natural().filter((r) => !plain.has(r.mod.id));
+            return natural(undefined, stranded).filter((r) => !plain.has(r.mod.id));
         }
         case "unveil": {
             const families = new Set<GroupId>();
@@ -440,6 +447,7 @@ export function rollOf(
 ): Roll {
     let main: FillPlan | undefined;
     const forced: FillPlan[] = [];
+    const stranded = ops.some((op) => op.kind === "strands");
     for (let i = 0; i < ops.length; i++) {
         const op = ops[i]!;
         switch (op.kind) {
@@ -514,7 +522,7 @@ export function rollOf(
     }
     // Forced rows alone (a bench craft, a Harvest change) draw nothing: the
     // checker's item says what they placed.
-    return main === undefined ? NO_ROLL : drawRoll(main, forced, registry, a, reading);
+    return main === undefined ? NO_ROLL : drawRoll(main, forced, registry, a, reading, stranded);
 }
 
 /**
@@ -590,9 +598,10 @@ function drawRoll(
     registry: Registry,
     origin: AItem,
     reading: Reading,
+    stranded: boolean,
 ): Roll {
     const a = main.before;
-    const rows = poolRows(a, main.spec, registry, origin, reading);
+    const rows = poolRows(a, main.spec, registry, origin, reading, stranded);
     if (rows.length === 0) return NO_ROLL;
     const genOf = (m: Mod): Gen => genOfType(a, registry, m.type, m);
     const groups = groupRows(rows, genOf);
@@ -763,6 +772,7 @@ export function recombineRoll(
                 rows: [...rows.values()],
                 weight: weightOf(type) * copies,
                 exclusive: exclusive.has(type),
+                groups: registry.familiesOfType(type),
             });
         }
         sides[gen] = {
@@ -786,8 +796,6 @@ export function withPresent(roll: Roll, type: TypeId, gen: Gen, mod: Mod): Roll 
             present: v.present.some((p) => p.type === type) ? v.present : [...v.present, added],
             prefix: v.prefix.filter((g) => g.type !== type),
             suffix: v.suffix.filter((g) => g.type !== type),
-            // A bench row fills a slot an unnamed modifier would otherwise be
-            // counted in only if the side was not already full of them.
         })),
     };
 }

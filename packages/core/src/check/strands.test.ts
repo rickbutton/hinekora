@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, item, op } from "../__fixtures__/ast.js";
+import { beast, craft, harvest, item, op, restore } from "../__fixtures__/ast.js";
 import { CATALOG, RING_BASE } from "../__fixtures__/mods.js";
 import { TypeId } from "../model/ids.js";
 
@@ -12,11 +12,12 @@ const registry = buildRegistry({
 });
 const ctx: CheckContext = { registry };
 
-const ring = (strands?: number) =>
+const ring = (strands?: number, rarity: "magic" | "rare" = "rare", prefixes: string[] = []) =>
     item({
         base: "Iron Ring",
         ilvl: 100,
-        rarity: "rare",
+        rarity,
+        prefixes,
         ...(strands !== undefined && { strands }),
     });
 
@@ -48,6 +49,28 @@ describe("memory strands", () => {
         // A removal and the bench take none.
         const annul = check(craft(ring(82), [op("chaos"), op("annul")]), ctx);
         expect(annul.finalState!.strands).toEqual([32, 82]);
+        // An Exalted Orb on a one-modifier Rare takes up to sixteen.
+        const exalted = check(craft(ring(82, "rare", ["IncreasedLife1"]), [op("exalt")]), ctx);
+        expect(exalted.finalState!.strands).toEqual([66, 82]);
+    });
+
+    it("leave a Harvest reforge's tiers alone, since the page names the currency orbs", () => {
+        const r = check(craft(ring(82), [harvest("reforge", "life")]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(lifeRows(r)).toEqual(new Set(["IncreasedLife1", "IncreasedLife2"]));
+    });
+
+    it("come back with an imprint", () => {
+        const r = check(
+            craft(ring(82, "magic", ["IncreasedLife1"]), [
+                beast({ kind: "imprint" }),
+                op("alteration"),
+                restore(),
+            ]),
+            ctx,
+        );
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.strands).toEqual([82, 82]);
     });
 
     it("rejects a count outside the item's range", () => {

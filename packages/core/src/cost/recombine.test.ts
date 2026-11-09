@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { TypeId } from "../model/ids.js";
+import { GroupId, TypeId } from "../model/ids.js";
 import { INCREASED_MANA, LIFE_T1 } from "../__fixtures__/mods.js";
 import { keptDistribution, pickSide, type PooledSide } from "./recombine.js";
 
-const named = (type: string, weight: number, exclusive = false) => ({
+const named = (type: string, weight: number, exclusive = false, group = type) => ({
     type: TypeId(type),
     rows: [{ mod: type === "life" ? LIFE_T1 : INCREASED_MANA, weight: 1 }],
     weight,
     exclusive,
+    groups: new Set([GroupId(group)]),
 });
 
 describe("the Recombinator's pick", () => {
@@ -43,6 +44,20 @@ describe("the Recombinator's pick", () => {
         // With an exclusive already taken on the other side, neither is eligible.
         const blocked = pickSide(side, true);
         expect(blocked).toEqual([{ mask: 0, count: 0, exclusive: false, prob: 1 }]);
+    });
+
+    it("closes a picked modifier's group to the rest of the pool", () => {
+        // Two kept of two named sharing a group: the second can never follow
+        // the first, so one named and nothing else.
+        const side: PooledSide = {
+            named: [named("life", 100, false, "damage"), named("mana", 300, false, "damage")],
+            unnamed: 0,
+            unnamedWeight: 1,
+            keeps: new Map([[2, 1]]),
+        };
+        const picks = pickSide(side, false);
+        expect(picks.every((p) => p.count === 1)).toBe(true);
+        expect(picks.find((p) => p.mask === 2)!.prob).toBeCloseTo(0.75, 9);
     });
 
     it("reads the page's count table, capped by the side", () => {

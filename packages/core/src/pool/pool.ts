@@ -109,13 +109,19 @@ export function pool(
         candidates.push({ mod: m, weight });
     }
     return it.strands !== undefined && it.strands > 0
-        ? topTiersUnderStrands(candidates, it.strands)
+        ? topTiersUnderStrands(catalog, it, candidates, it.strands)
         : candidates;
 }
 
-/** Under memory strands only so many of a modifier's eligible tiers roll, the
- *  highest first (Memory strand § Mechanics). */
+/**
+ * Under memory strands only so many of a modifier's tiers roll, the highest
+ * first (Memory strand § Mechanics). The page counts a modifier's tiers without
+ * saying whether those the item level bars are among them; the whole ladder on
+ * the base is taken, the reading that keeps the most tiers (Q68).
+ */
 function topTiersUnderStrands(
+    catalog: ModCatalog,
+    it: ItemFacts,
     candidates: readonly PoolCandidate[],
     strands: number,
 ): PoolCandidate[] {
@@ -125,10 +131,18 @@ function topTiersUnderStrands(
         if (rows) rows.push(c);
         else byType.set(c.mod.type, [c]);
     }
+    const ladder = new Map<TypeId, number>();
+    for (const m of catalog) {
+        if (!byType.has(m.type) || m.domain !== it.base.domain) continue;
+        if (!classPermitted(m, it.base.itemClass)) continue;
+        if ((lookupWeight(m, it.tags) ?? 0) <= 0) continue;
+        ladder.set(m.type, (ladder.get(m.type) ?? 0) + 1);
+    }
     const kept = new Set<ModId>();
-    for (const rows of byType.values()) {
+    for (const [type, rows] of byType) {
         const sorted = [...rows].sort((x, y) => y.mod.minLevel - x.mod.minLevel);
-        for (const c of sorted.slice(0, tiersWithStrands(strands, rows.length))) kept.add(c.mod.id);
+        const tiers = tiersWithStrands(strands, ladder.get(type) ?? rows.length);
+        for (const c of sorted.slice(0, tiers)) kept.add(c.mod.id);
     }
     return candidates.filter((c) => kept.has(c.mod.id));
 }

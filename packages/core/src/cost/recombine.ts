@@ -10,7 +10,7 @@
  * A side's pick is a small dynamic program over which of the few named
  * modifiers were taken, never over the item's outcomes.
  */
-import type { TypeId } from "../model/ids.js";
+import type { GroupId, TypeId } from "../model/ids.js";
 import type { Row } from "./roll.js";
 
 /** One modifier type in a side's pool. */
@@ -21,6 +21,8 @@ export interface Pooled {
     /** Its weight in the pick, doubled when both inputs carry it. */
     readonly weight: number;
     readonly exclusive: boolean;
+    /** Its modifier groups: a pick closes them to the rest of the side's pool. */
+    readonly groups: ReadonlySet<GroupId>;
 }
 
 export interface PooledSide {
@@ -70,8 +72,9 @@ export interface Picked {
 /**
  * The pick for one side: `k` modifiers drawn by weight without replacement
  * from the named and the unnamed, an exclusive modifier eligible only while
- * none has been taken (on this side or the one filled before it), the pick
- * ending early when nothing eligible is left.
+ * none has been taken (on this side or the one filled before it), a modifier
+ * whose group a pick already holds ineligible, the pick ending early when
+ * nothing eligible is left.
  */
 export function pickSide(side: PooledSide, exclusiveTaken: boolean): Picked[] {
     const out = new Map<string, Picked>();
@@ -95,16 +98,24 @@ export function pickSide(side: PooledSide, exclusiveTaken: boolean): Picked[] {
             };
             for (const s of states.values()) {
                 const unnamedLeft = side.unnamed - (s.count - bits(s.mask));
+                const closed = new Set<GroupId>();
+                side.named.forEach((m, i) => {
+                    if (s.mask & (1 << i)) for (const g of m.groups) closed.add(g);
+                });
+                const eligible = (m: Pooled, i: number): boolean =>
+                    !(s.mask & (1 << i)) &&
+                    !(m.exclusive && s.exclusive) &&
+                    ![...m.groups].some((g) => closed.has(g));
                 let total = unnamedLeft > 0 ? unnamedLeft * side.unnamedWeight : 0;
                 side.named.forEach((m, i) => {
-                    if (!(s.mask & (1 << i)) && !(m.exclusive && s.exclusive)) total += m.weight;
+                    if (eligible(m, i)) total += m.weight;
                 });
                 if (total <= 0) {
                     put(s);
                     continue;
                 }
                 side.named.forEach((m, i) => {
-                    if (s.mask & (1 << i) || (m.exclusive && s.exclusive)) return;
+                    if (!eligible(m, i)) return;
                     step({
                         mask: s.mask | (1 << i),
                         count: s.count + 1,

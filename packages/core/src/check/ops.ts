@@ -392,7 +392,7 @@ export type TransferResult =
  * where a step that failed and did nothing would make every exit look unreachable.
  */
 export function runMethod(a0: AItem, ops: readonly Op[], registry: Registry): TransferResult {
-    let rules = rulesInForce(a0, registry);
+    let rules = rulesInForce(a0, registry, ops);
     let a = a0;
     let failure: PreconditionFailure | null = null;
     for (const op of ops) {
@@ -593,9 +593,13 @@ interface Rules {
     readonly craftedCap: number;
     /** Protection and cannot-roll prevent an essence or a fossil; multimod does not. */
     readonly blocksSourced: boolean;
+    /** The method uses memory strands up (a currency orb, an essence), so its
+     *  fills lay down only the tiers the strands allow; the wiki names the cut
+     *  for those and not for Harvest, the Bestiary or a resonator (Q68). */
+    readonly strands: boolean;
 }
 
-function rulesInForce(a: AItem, registry: Registry): Rules {
+function rulesInForce(a: AItem, registry: Registry, ops: readonly Op[]): Rules {
     const effects = activeEffects(a, registry);
     const protectedGens = new Set<Gen>();
     for (const e of effects) if (e.kind === "protect") protectedGens.add(e.gen);
@@ -604,6 +608,7 @@ function rulesInForce(a: AItem, registry: Registry): Rules {
         cannotRoll: cannotRollShield(a, effects, registry),
         craftedCap: craftedCapOf(effects),
         blocksSourced: effects.some((e) => e.kind === "protect" || e.kind === "poolRestrict"),
+        strands: ops.some((op) => op.kind === "strands"),
     };
 }
 
@@ -1267,11 +1272,11 @@ interface ResolvedPool {
     readonly gen: Gen | undefined;
 }
 
-function resolvePool(a: AItem, spec: PoolSpec, registry: Registry): ResolvedPool {
+function resolvePool(a: AItem, spec: PoolSpec, registry: Registry, strands = false): ResolvedPool {
     switch (spec.kind) {
         case "natural": {
             const cap = spec.maxLevel ?? Infinity;
-            const eligible = addableMods(a, registry, spec.level).filter(
+            const eligible = addableMods(a, registry, spec.level, strands).filter(
                 (m) => m.minLevel <= cap && (spec.gen === undefined || m.gen === spec.gen),
             );
             const mods = spec.topTiers ? foulbornTiers(eligible, a, registry) : eligible;
@@ -1318,7 +1323,9 @@ function resolvePool(a: AItem, spec: PoolSpec, registry: Registry): ResolvedPool
         case "metamods":
             return oneOf(metamodRows(a, registry));
         case "influence": {
-            const mods = addableMods(a, registry).filter(influenceRowTest(a, registry));
+            const mods = addableMods(a, registry, a.ilvl, strands).filter(
+                influenceRowTest(a, registry),
+            );
             const types = typesOf(mods);
             return { mods, types, assert: types, gen: undefined };
         }
@@ -1442,7 +1449,7 @@ function fill(
     // Nothing fits on any path (a magic Simplex): the fill lays down nothing.
     if (count.kind === "add" && a.counts.total[0] >= maxT) return settled(a);
 
-    const drawn = resolvePool(a, spec, registry);
+    const drawn = resolvePool(a, spec, registry, rules.strands);
     const one = drawn.mods.length === 1 ? drawn.mods[0] : undefined;
 
     let counts = a.counts;
@@ -1926,7 +1933,7 @@ export function recombine(a: AItem, b: AItem, registry: Registry): AItem {
         },
         fractures: [0, Math.max(a.fractures[1], b.fractures[1])],
         // The result is one of the two items made anew; the page says nothing
-        // of its strands, so either's may remain.
+        // of its strands, so either's may remain (Q68).
         strands: [Math.min(a.strands[0], b.strands[0]), Math.max(a.strands[1], b.strands[1])],
         counts: { total, prefix, suffix },
         presence,
@@ -1993,8 +2000,8 @@ function lock(a: AItem, n: number): AItem {
  * superset of every arm's real pool). Returns mods, not just types, so the tier
  * overlay can record which tiers.
  */
-function addableMods(a: AItem, registry: Registry, level = a.ilvl): Mod[] {
-    const facts = guaranteedFacts(a, registry, level);
+function addableMods(a: AItem, registry: Registry, level = a.ilvl, strands = false): Mod[] {
+    const facts = guaranteedFacts(a, registry, level, strands);
     // Tags a possibly present mod would add may enable a row (the staff jewel mods
     // on a Strength jewel), so the pool admits what they would: the tags of the
     // state's possible mods, then, to a fixpoint, the tags of every row the pool
@@ -2172,7 +2179,14 @@ export function influenceTagsAny(a: AItem, registry: Registry): ReadonlySet<TagI
 }
 
 /** The state's guaranteed mods as the facts the pool reads, at rare caps. */
-export function guaranteedFacts(a: AItem, registry: Registry, level = a.ilvl): ItemFacts {
+/** `strands`: the facts carry the item's memory strands, for the fill of a
+ *  method that uses them up; other pools are not cut by them. */
+export function guaranteedFacts(
+    a: AItem,
+    registry: Registry,
+    level = a.ilvl,
+    strands = false,
+): ItemFacts {
     const types = guaranteedTypes(a);
     const families = new Set<GroupId>();
     const tags = new Set([...a.base.tags, ...influenceTagsOf(a, registry).sure]);
@@ -2194,6 +2208,6 @@ export function guaranteedFacts(a: AItem, registry: Registry, level = a.ilvl): I
         families,
         tags,
         effects: activeEffects(a, registry),
-        ...(a.strands[0] > 0 && { strands: a.strands[0] }),
+        ...(strands && a.strands[0] > 0 && { strands: a.strands[0] }),
     };
 }

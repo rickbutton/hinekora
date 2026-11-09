@@ -740,11 +740,15 @@ exclusive rule as the page states it (`cost/recombine.ts` `pickSide`, `cost/roll
 ### Q68 · game probe · open
 
 **Asked:** 2026-11-09
-**Goal:** the memory strands two orbs use up where the wiki's table is blank.
+**Goal:** the memory strands two orbs use up where the wiki's table is blank, and how far
+their cut of the lower tiers reaches.
 [Memory strand § Crafting methods consuming memory strands](https://www.poewiki.net/wiki/Memory_strand#Crafting_methods_consuming_memory_strands) gives every currency's most, except the Foulborn Exalted Orb's below five
 modifiers ("0-?") and an Exalted Orb's on an item with none ("likely 0-10", "so far seen
-up to 9"); and the page does not say whether the Foulborn cut of the lower tiers and the
-strands' cut apply together.
+up to 9"). The page does not say whether the Foulborn cut of the lower tiers and the
+strands' cut apply together; whether a Harvest, Bestiary or resonator fill, which uses no
+strands, is cut all the same (it names "currency orbs"); whether the formula's `tiers`
+counts the modifier's whole ladder or only the tiers the item level admits (its example
+has every tier eligible); nor what strands a Recombinator's result keeps.
 **Procure:** two Rare rings with 100 memory strands and no modifiers, Foulborn Exalted
 Orbs and Exalted Orbs; a third with 82 strands and a Foulborn Exalted Orb.
 **Steps:** use one orb on each empty ring and note the strands used; on the third, note
@@ -753,7 +757,10 @@ whether the modifier added is one of the top tiers both rules allow.
 **Assumed meanwhile:** 62 for the Foulborn Exalted Orb at every count and 10 for the
 Exalted Orb on an empty item (`check/library.ts` `FOULBORN_STRANDS`, `EXALT_STRANDS`);
 both cuts apply, each keeping the top tiers it allows (`pool/pool.ts`, `check/ops.ts`
-`foulbornTiers`).
+`foulbornTiers`); only the fills of a method that uses strands up are cut (`Rules.strands`
+in `check/ops.ts`); `tiers` is the whole ladder on the base, the reading that keeps the
+most tiers; a Recombinator's result may keep either input's strands (`check/ops.ts`
+`recombine`).
 **Answer:**
 
 ---

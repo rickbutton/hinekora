@@ -635,10 +635,12 @@ one domain. The sub-domains:
   ceiling what it had (`strands:` in the item block), the floor after every currency that
   may have used some up (the `strands` op each such method ends with, the most one use
   takes per [Memory strand § Crafting methods consuming memory strands](https://www.poewiki.net/wiki/Memory_strand#Crafting_methods_consuming_memory_strands); none for a removal, the bench, Harvest, the Bestiary, a resonator or
-  a Veiled Exalted Orb). A fill reads the floor: `pool` keeps only the top
-  `tiersWithStrands` tiers of each modifier (`model/strands.ts`), the fewest strands
-  admitting the most tiers, so the pool stays an over-approximation; the Recombinator's
-  result may hold either input's.
+  a Veiled Exalted Orb). The fill of a method that uses strands up (`Rules.strands`) reads
+  the floor: `pool` keeps only the top `tiersWithStrands` tiers of each modifier
+  (`model/strands.ts`), counted over the modifier's whole ladder on the base, the fewest
+  strands admitting the most tiers, so the pool stays an over-approximation; a Harvest,
+  Bestiary or resonator fill is not cut (Q68); the Recombinator's result may hold either
+  input's.
 - `crafted`: a RANGE, how many [bench-crafted](https://www.poewiki.net/wiki/Crafting_Bench)
   mods are present. `bench` requires it provably below the crafted cap (one, or three under
   the multimod [metamod](https://www.poewiki.net/wiki/Metamod)); a pure reforge or a plain

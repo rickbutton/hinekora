@@ -57,8 +57,9 @@ item {
   absent. While it holds some, a currency that adds or rerolls modifiers lays down only the
   top tiers of each modifier and uses up a random share of them, at most so many per
   currency ([Memory strand § Crafting methods consuming memory strands](https://www.poewiki.net/wiki/Memory_strand#Crafting_methods_consuming_memory_strands)); a removal, the bench, Harvest, the Bestiary and a resonator take
-  none. The checker counts the strands the item surely has left; the cost report gives the
-  odds at that count and, where it matters, at the count the item began with.
+  none, and their fills are not cut (`QUESTIONS.md` Q68). The checker counts the strands the
+  item surely has left; the cost report gives the odds at that count and, where it matters,
+  at the count the item began with.
 - `rarity` is `normal`, `magic` or `rare`. A base that can never be Rare (flasks,
   tinctures) is rejected at `rare`, per [Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare).
 - `prefixes` / `suffixes` list the affixes. Each named affix **must pin a tier**: either a
@@ -229,10 +230,11 @@ Operations that take a name (and an optional `t<n>`):
   `minion`, `physical`, `speed`. Both need a Rare item and a tag some modifier of the base can carry;
   `augment` also needs a removable modifier and an item with no influence, as the grove
   offers it. `harvest reforge "influence"` is the grove's "Reforge an Influenced Rare
-  item with random modifiers, including an Influence modifier". `harvest reforge "more
-likely"` and `harvest reforge "less likely"` are its "Reforge a Rare item, being more /
-  less likely to receive the same modifier types": a plain reforge to the checker, since
-  the same modifiers can roll, and a tilt of the weights to the cost report.
+  item with random modifiers, including an Influence modifier".
+  `harvest reforge "more likely"` and `harvest reforge "less likely"` are its "Reforge a
+  Rare item, being more / less likely to receive the same modifier types": a plain reforge
+  to the checker, since the same modifiers can roll, and a tilt of the weights to the cost
+  report.
 - `harvest randomise` is the grove's "Randomise the Influence types on an Influenced
   Normal, Magic or Rare Item, as well as reforging the item": the item keeps as many
   influences as it had, any of the six, and is reforged at its rarity; `influenced

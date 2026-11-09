@@ -26,7 +26,7 @@ import { rollableGen } from "../resolve/tiers.js";
 import { influenceTagsAny } from "../check/ops.js";
 import { chance } from "./chance.js";
 import { chain, type ChainAtom, type ChainState, type ChainStep } from "./chain.js";
-import { guaranteedTypes, isExcluded, rarityOf, sideCap } from "../check/astate.js";
+import { guaranteedTypes, isExcluded, rarityOf, sideCap, suffixRange } from "../check/astate.js";
 import { lookupWeight } from "../pool/pool.js";
 import { rollableTiers } from "../resolve/tiers.js";
 import { addPrices, inChaos, type Price, type Prices, unitCost } from "./prices.js";
@@ -771,11 +771,14 @@ class Walker {
         let pairs: [number, number][] = [];
         const [t0, t1] = before.counts.total;
         const [p0, p1] = before.counts.prefix;
+        const [s0, s1] = suffixRange(before);
         for (let p = p0; p <= p1; p++) {
-            for (let t = t0; t <= t1; t++) if (t - p >= 0) pairs.push([p, t - p]);
+            for (let t = t0; t <= t1; t++) {
+                if (t - p >= s0 && t - p <= s1) pairs.push([p, t - p]);
+            }
         }
         if (this.reading !== "estimate") {
-            // The emptiest or the fullest item the counts allow.
+            // The item with the fewest or the most modifiers the counts allow.
             const totals = pairs.map(([p, sfx]) => p + sfx);
             const pick = this.reading === "floors" ? Math.min(...totals) : Math.max(...totals);
             pairs = pairs.filter(([p, sfx]) => p + sfx === pick);
