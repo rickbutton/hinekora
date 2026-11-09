@@ -56,6 +56,9 @@ function projectMods(raw) {
     const out = {};
     for (const [id, m] of Object.entries(raw)) {
         if (!AFFIX_GENS.has(m.generation_type)) continue;
+        // Path of Exile: Royale's rows belong to a game mode that no longer exists
+        // and never roll in the main game; kept, they give a modifier one tier too many.
+        if (/Royale/.test(id)) continue;
         out[id] = {
             domain: m.domain,
             generation_type: m.generation_type,

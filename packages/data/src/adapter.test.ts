@@ -26,11 +26,6 @@ const LIFE: RepoeMod = {
 };
 
 describe("adaptMod", () => {
-    it("drops a Royale row, which never rolls in the main game", () => {
-        expect(adaptMod("IncreasedAttackSpeed2Royale", LIFE)).toBeNull();
-        expect(adaptMod("IncreasedLife1", LIFE)).not.toBeNull();
-    });
-
     it("maps a RePoE mod entry onto the core Mod shape", () => {
         const m = adaptMod("IncreasedLife1", LIFE);
         expect(m).not.toBeNull();

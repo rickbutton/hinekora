@@ -14,7 +14,7 @@
     "extent": {
         "description": "Full PoE1 catalog projected to the fields the core model uses: all prefix/suffix mods, all released named bases, plus the essence, bench (mod-adding) and fossil catalogs.",
         "bases": 4561,
-        "mods": 12643,
+        "mods": 12639,
         "essences": 105,
         "benchCrafts": 728,
         "fossils": 25,
