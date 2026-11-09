@@ -8,3 +8,4 @@ export * from "./pool/index.js";
 export * from "./render/index.js";
 export * from "./resolve/index.js";
 export * from "./check/index.js";
+export * from "./cost/index.js";

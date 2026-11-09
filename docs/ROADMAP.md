@@ -24,8 +24,11 @@ of the operations; no divergence is expected.
 
 ## Deferred by design (don't build until called for)
 
-- the **cost/probability layer** (expected attempts, spawn weights, fossil and Harvest
-  biases, memory strands).
+- the **cost layer's** next steps (`ARCHITECTURE.md` §7 has what is built): bounds beside
+  the point estimate (the same race on the checker's superset and subset pools, Q54), a
+  loop whose exit rests on modifiers already on the item (a presence distribution carried
+  across steps, which the per-roll model does not have), the Recombinator's chance, the
+  Bestiary's prices, Harvest's "more likely" bias and memory strands.
 - **multi-item crafts** beyond the Recombinator (Reflecting Mist, Kishara's Ducat; the
   Awakener's Orb is built with the donor reduced to its influence, the Recombinator with
   two items of one base, `QUESTIONS.md` Q55)

@@ -39,6 +39,7 @@ function of `(source, registry)`; no I/O anywhere in it.
         ▼
    abstract interpretation                 Layer 3 · the checker  ◀── the heart
         │   ⇒ diagnostics  +  a per-statement trace
+        │        └─▶ @hinekora/core: cost/   the cost layer reads the trace (§7)
         ▼
    language service                        Layer 4 · LSP (diagnostics, hover, completion, names, hints, folding, formatting)
         │
@@ -299,3 +300,101 @@ item here" for one cursor position but the item after every statement, laid out 
 bottom as the guide a player follows at the bench, the step with its currency between
 two items. None of the three holds any analysis logic; all of it is in `core`,
 reachable only through the one-way dependency arrow of §1.
+
+---
+
+## 7. The cost layer (beside the checker, not in it)
+
+The checker proves; the cost layer estimates. It answers the question every guide
+quotes but the checker cannot: how many tries a loop takes and what the craft is expected
+to spend. It lives in `packages/core/src/cost/`, reads the same method table and op
+sequences the checker runs, and consumes the checker's output, the trace with the item
+before every statement, without touching a transfer function. Nothing it computes can
+make the checker accept or refuse a step, which is what keeps the checker a pure soundness
+tool. The investigation behind it, with the sources, is
+[docs/research/cost-model.md](research/cost-model.md).
+
+### 7.1 Probabilities over a set of items
+
+The item at a step is a set of items, so a probability needs a stated reading of it. The
+cost layer takes a **point estimate on the path the guide describes**: the pool a draw
+sees is the pool of the facts the item holds on every path (the base at its level, the
+influence, the modifiers present on every path with their groups and tags), which is the
+item the player is holding when the guide's step is right. A modifier the state holds
+only as possible neither shrinks the pool nor adds its tags. This is exact for a reforge,
+which strips the uncertain modifiers away, and for an item whose named modifiers fill it;
+it is approximate for an add onto an item with unnamed modifiers (`QUESTIONS.md` Q54).
+The game's rules the estimate rests on and the ones no source settles are Q55–Q62.
+
+### 7.2 The race: an exact draw without listing outcomes
+
+The game draws modifiers one at a time by weight without replacement, a group closing
+once a modifier of it is drawn and a side closing when full. That draw has an exact
+representation as a **race**: give every group an exponential clock whose rate is its
+weight, read the groups off in the order their clocks fire, skip a group whose side is
+full. Then every question is a question about independent firing times. "These groups are
+all among the first k drawn" is "fewer than k minus their number of the other groups fired
+before the last of them", a Poisson-binomial count at a time, integrated against that
+time's density; the prefix/suffix split of m draws is a race between the two sides' order
+statistics. The dynamic program (`cost/race.ts`) carries a count, never a list of draws:
+this is the core invariant kept on the probability side. It is exact for one group, for
+any set of groups jointly (by inclusion–exclusion), and for the split with depletion,
+which craftofexile's calculator approximates.
+
+### 7.3 From a method to a roll, from a roll to a chance
+
+`cost/roll.ts` reads a method's op sequence into its **roll**: the random `fill` with the
+pool it draws from (built with the checker's own `pool` on the sure facts, re-weighted by
+a resonator's fossils, narrowed to a tag or the top tiers), the count of draws
+(4–6 at 8:3:1 for a rare reforge, one for an add), the modifiers present for certain
+(kept through the reforge, or placed first: an essence's grant, a Harvest tag's row drawn
+by weight among the tag's rows), or else a uniform removal, a fracture, an unveil's three
+weighted options, an ember's weighted implicit, a Divine Orb's reroll.
+
+`cost/chance.ts` evaluates the checker's resolved predicate against the roll. A `has`
+atom on a side is "its group among the first p of that side's race", the row within the
+group by weight share, the value within the row by the share of its range (uniform);
+count atoms read the split; `and`, `or` and `not` are combined exactly by enumerating
+which of the few modifiers the condition names were drawn and which rows they are, a
+space of a few dozen cases, never the item's outcomes. A leaf the roll does not model
+(a rarity, an influence) is read off the checker's item after the step, which settles it
+or leaves the chance unknown.
+
+### 7.4 Cost as a mass walk over the guide
+
+`cost/report.ts` walks the syntax tree once beside the trace, carrying a probability
+**mass** split into a few **branches**, one per arm of the `if`s passed since the last
+roll, each remembering that roll and the conditions it passed, so a later condition is
+judged jointly with them (the chance of `has life` after `if not has fire { restart }` is
+the chance of life and fire together over the same reforge, not a product). Expected cost
+is linear: a statement's expected runs is the mass that reaches it times the rounds of
+every loop around it, times its unit price (`cost/prices.ts`, in the step's own currency:
+the orb, the named essence, the fossils and their resonator, the lifeforce, a bench
+craft's listed price).
+
+- An **`until`** is a sequence of independent attempts: the body is walked once from the
+  head to find the chance one attempt ends in the exit (judged on each falling branch's
+  roll and conditions) or in a `stop`; the expected rounds is the reciprocal, every step
+  in the body runs that many times per pass, and the share of rounds ending in a stop ends
+  the craft. The head of the next attempt is where the last one left off short of the
+  exit, so a condition at the top of the body reads the previous round's roll.
+- A **make-room loop** (random removals until the counts allow, with branches that catch
+  a kept modifier's loss) is not memoryless: each round changes the counts. It is solved
+  as a short chain over the (prefix, suffix) counts the loop enters with (`cost/countdown.ts`),
+  exactly, including how often each guard fires.
+- An **`if`** splits each branch by its condition's chance; a `restart` ends the attempt;
+  a `stop` ends the craft; a top-level `restart` makes the whole guide one attempt of an
+  outer loop.
+
+Where the model cannot say (a loop whose exit depends on modifiers already on the item
+that no roll in its body draws, a Bestiary recipe's beasts, an item the snapshot does not
+price), the report says so in the step's note rather than invent a figure; the walk
+assumes one round or an even branch there, and names the assumption.
+
+### 7.5 The economy
+
+Prices come from a **snapshot committed with the data**, `packages/data/data/poe1/economy.json`, taken from
+poe.ninja's exchange overview for one league on one day by `fetch-economy.mjs` (four
+requests), never from live calls in the checker, the CLI or the editor (Q59). A report
+converts its total to Chaos and Divine Orbs under the snapshot and names its date, so a
+guide's "about 22 Divine" is reproducible and dated.
