@@ -240,7 +240,10 @@ second item (`with <name> { … }`) and `recombine <name>`, the Recombinator's c
 range, one base (`QUESTIONS.md` Q55 for what is left out). The examples suite stands at
 seventeen checking guides and one waiting, the Lock (Q54);
 the naming fixes of A4 (plurals, joiner words, the natural modifier first) brought the
-eldritch gloves in.
+eldritch gloves in. Of Band C, C1 (fossils on a Normal item, Q42), C3 (the probes) and C4
+(the three messages) are done, C5 is the `aisling` spelling, and B8's same-named bases
+resolve when they are one base to the checker; C2, C6's remainder and C7 stay out. The
+catalog is the 6 November export.
 
 ## 5. A week's order
 
