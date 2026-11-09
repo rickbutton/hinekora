@@ -112,6 +112,11 @@ function projectBases(raw, mods) {
     return out;
 }
 
+// The export leaves the Essence of Desolation at level 0; the wiki's essence table
+// puts it at 8 beside the corrupted essences, the ladder tier that lets it reforge a
+// Rare item (Essence § Mirage essences).
+const LADDER_TIER_FALLBACK = { "Essence of Desolation": 8 };
+
 function projectEssences(raw) {
     const out = {};
     for (const [id, e] of Object.entries(raw)) {
@@ -123,7 +128,7 @@ function projectEssences(raw) {
             // `e.level` is the ladder tier (1 = Whispering … 7 = Deafening, 8 =
             // corrupted). NOT `e.type.tier`, which is a mod-category number. The
             // ladder is what gates usage: level >= 5 may reforge a Rare item.
-            tier: e.level ?? 0,
+            tier: e.level || LADDER_TIER_FALLBACK[e.name] || 0,
             // `item_level_restriction` caps the RANDOM fill mods' level (absent =
             // no cap). It is NOT an item-level requirement — essences work on any
             // item level; the guaranteed mod is forced at its fixed tier.
