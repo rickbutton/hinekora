@@ -14,14 +14,10 @@ item {
 
 def keeper() = has "level of all minion skill gems" and has "minions deal increased damage"
 
-until keeper() {
-    essence "fear" t1
-}
-
 # The lock is a suffix of its own, so a suffix slot must be open; and it keeps
 # every prefix through the scour, so a third prefix must go first or the mana
-# craft has no room. An annul that takes one of the kept
-# modifiers sends the craft back to the essences.
+# craft has no room. Annulling risks the kept modifiers, and an annul that takes
+# one sends the craft back to the essences.
 until keeper() and prefixCount <= 2 and suffixCount <= 2 {
     if keeper() {
         annul

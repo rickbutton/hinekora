@@ -87,7 +87,7 @@ examples/                    - the guide suite; every file here checks clean (`p
   eldritch-gloves.craft      - a fractured base, essences, an eldritch annul to make room, embers for the implicit.
   metamod-harvest-loop.craft - "Suffixes Cannot Be Changed" and a Harvest reforge, round until the life is T1.
   veiled-unveil.craft        - a veiled orb under a suffix lock, unveiled until the right option shows; `stop` on a bricked item.
-  essence-minion-wand.craft  - essence spam, annul a third prefix away (back to the essences if a kept modifier goes), a prefix lock and a scour, multimod and bench crafts.
+  essence-minion-wand.craft  - one repeat of essence spam and annuls (back to the essences when an annul takes a kept modifier), a prefix lock and a scour, multimod and bench crafts.
   value-threshold.craft      - a finished ring divined until the life roll is 110 or more.
   imprint-regal-amulet.craft - an imprint as the checkpoint, a regal under a prefix lock, Harvest and the bench to finish.
   cluster-harvest.craft      - a Large Cluster Jewel reforged by tag until two notables sit, its enchant naming the pool.
