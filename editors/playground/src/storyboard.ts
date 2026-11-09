@@ -670,11 +670,13 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                             ? [anchor(h("div", "region-foot", ...foot), s.span)]
                             : []),
                     );
-                    into.push(region);
+                    // The item the repeat leaves closes its container, so it reads as
+                    // the repeat's and not as the start of the next step.
                     const outcome = result(s.after, true, true, "result");
                     if (outcome !== undefined) {
-                        into.push(anchor(h("div", "block outcome", outcome), s.span));
+                        region.append(anchor(h("div", "block outcome", outcome), s.span));
                     }
+                    into.push(region);
                     return;
                 }
                 case "branch": {

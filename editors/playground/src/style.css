@@ -348,6 +348,24 @@ main {
     opacity: 0.55;
 }
 
+/* a top-level step stands in a box of its own, as a repeat or a branch does, so
+   nothing after it looks hung off it */
+#walkthrough > .block {
+    margin: 6px 0;
+    padding: 4px 6px 6px;
+    border: 1px solid #3c3c3c;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+#walkthrough > .block::before {
+    display: none;
+}
+
+#walkthrough > .block.active {
+    border-color: #6b6b3a;
+}
+
 .row {
     position: relative;
     display: flex;
@@ -789,9 +807,16 @@ dialog.breakdown .when {
     margin-left: 0;
 }
 
-/* the item a repeat leaves, on the rail after it */
+/* the item a repeat leaves, closing its container */
 .block.outcome {
-    padding-top: 0;
+    margin-top: 2px;
+    padding: 4px 6px 2px 0;
+    border-top: 1px dashed #4a4532;
+    border-radius: 0 0 6px 6px;
+}
+
+.block.outcome::before {
+    display: none;
 }
 
 .block.outcome .frame {

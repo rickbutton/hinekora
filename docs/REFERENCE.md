@@ -556,8 +556,9 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   did not change. A step's changes, findings, cost and item hang off its title in one
   panel with a line joining them to it. A loop is one container: "repeat until the item
   has" with the checklist (the step's `check`) on top, its steps in an inner panel, its
-  odds and cost table as a footer, and the item once it is done after the container,
-  always a card; a branch is a container with "if the item has", its checklist and its
+  odds and cost table as a footer, and its result, the item once it is done, always a
+  card, closing the container; every other top-level step stands in a box of its own
+  too, so nothing reads as hung off the step before it; a branch is a container with "if the item has", its checklist and its
   chance on top and one panel per answer; a `restart`
   is a block pointing back and a `stop` one that keeps the item as it is; the start and
   the finished item open and close the board, the second items (`with <name> { … }`,
