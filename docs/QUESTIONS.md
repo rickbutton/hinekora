@@ -448,6 +448,25 @@ family for everything.
 the surface doc §1, §3 and §5).
 **Answer:**
 
+### Q55 · decision · open
+
+**Asked:** 2026-11-08
+**Question:** what the Recombinator model leaves out, and whether to carry it. The
+result keeps one of the two inputs' bases at random
+([Recombinator § Unpredictable Recombination](https://www.poewiki.net/wiki/Recombinator#Unpredictable_Recombination)),
+and the state carries one base, so `recombine` refuses two bases that differ; the
+result's rarity is read from its modifier count, since the page states no rule; the
+count table is read as a range, the weights dropped with the rest of the probability
+layer; and every non-natural row (crafted, veiled, essence-only, elevated) counts as an
+exclusive modifier, the page's list being "non-exhaustive".
+**Options:** (a) as built; (b) a base disjunction on the state (two bases on an item,
+every pool and cap a join), which the whole abstract item would have to learn; (c) a
+probe on the rarity rule and on which crafted modifiers are exclusive.
+**Recommendation:** (a) now, (c) when an item is at hand; (b) only if a guide needs two
+bases, which none in the research does.
+**Assumed meanwhile:** (a) (`check/ops.ts` `recombine`, `recombineRefusal`).
+**Answer:**
+
 ### Q54 · decision · open
 
 **Asked:** 2026-11-08

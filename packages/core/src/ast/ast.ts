@@ -16,7 +16,18 @@ export interface Craft {
     readonly defs: readonly Def[];
     /** Local operation functions (`def name(p) { <stmts> }`), callable as a step. */
     readonly procs: readonly ProcDef[];
+    /** `with <name> { … }`: the second items a step merges in (`recombine <name>`),
+     *  each a kind of item the guide makes again for every attempt. */
+    readonly donors: readonly DonorBlock[];
     readonly body: readonly Stmt[];
+    readonly span: SourceSpan;
+}
+
+/** A second item, bound to a name, described like the item block. */
+export interface DonorBlock {
+    readonly kind: "donor";
+    readonly name: string;
+    readonly item: ItemBlock;
     readonly span: SourceSpan;
 }
 

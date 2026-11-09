@@ -48,7 +48,7 @@ import {
 } from "./diagnostics.js";
 import { rollableGen, rollableTiers, tierMod } from "../resolve/tiers.js";
 import { findMethod, type Literal, type Method, slotAt } from "./methods.js";
-import { anonymousTypes, influenceTagsAny, runMethod } from "./ops.js";
+import { anonymousTypes, influenceTagsAny, recombine, recombineRefusal, runMethod } from "./ops.js";
 import { rollRange } from "./values.js";
 import type { Range } from "./domain.js";
 
@@ -174,6 +174,9 @@ class Checker {
         string,
         { def: Def; paramTypes: Map<string, ParamType>; valid: boolean }
     >();
+    /** The second items (`with <name> { … }`), each the kind of item a
+     *  `recombine` consumes; made again for every attempt, so never used up. */
+    private readonly donors = new Map<string, AItem>();
     /** Local operation functions (`def name(p) { … }`); `valid: false` marks an
      *  ill-formed proc whose calls are dropped without cascading errors. */
     private readonly procs = new Map<
@@ -196,6 +199,14 @@ class Checker {
     run(craft: Craft): CheckResult {
         this.collectDefs(craft.defs);
         this.collectProcs(craft.procs);
+        for (const donor of craft.donors) {
+            if (this.donors.has(donor.name)) {
+                this.diag(`a second item named "${donor.name}" is already declared`, donor.span);
+                continue;
+            }
+            const state = this.elaborateItem(donor.item);
+            if (state !== null) this.donors.set(donor.name, state);
+        }
         const initial = this.elaborateItem(craft.item);
         if (initial === null) {
             return { ok: false, diagnostics: this.diagnostics, trace: this.trace };
@@ -603,6 +614,9 @@ class Checker {
             this.diag(unknownOperation(stmt.words), stmt.span);
             return { kind: "fall", state: a };
         }
+        if (method.words.length === 1 && method.words[0] === "recombine") {
+            return this.checkRecombine(a, stmt);
+        }
         const literals: Literal[] = [];
         for (const arg of stmt.args) {
             if (arg.kind === "param") {
@@ -622,6 +636,34 @@ class Checker {
             return { kind: "fall", state: result.state };
         }
         return { kind: "fall", state: result.state };
+    }
+
+    /**
+     * `recombine <name>`: the item and the named second item go into the
+     * Recombinator and one item comes out (Recombinator § Unpredictable
+     * Recombination). The second item is a kind the guide makes for each
+     * attempt, so it is read, not consumed.
+     */
+    private checkRecombine(a: AItem, stmt: Extract<Stmt, { kind: "operation" }>): Flow {
+        const arg = stmt.args[0];
+        if (arg === undefined || arg.kind !== "word") {
+            this.diag(
+                "recombine needs the name of a second item (`with <name> { … }`).",
+                stmt.span,
+            );
+            return { kind: "fall", state: a };
+        }
+        const donor = this.donors.get(arg.value);
+        if (donor === undefined) {
+            this.diag(
+                `no second item is named "${arg.value}"; declare it with \`with ${arg.value} { … }\`.`,
+                stmt.span,
+            );
+            return { kind: "fall", state: a };
+        }
+        const refused = recombineRefusal(a, donor);
+        if (refused !== null) this.diag(refused, stmt.span);
+        return { kind: "fall", state: recombine(a, donor, this.registry) };
     }
 
     // --- narrowing (if / else) --------------------------------------------

@@ -10,6 +10,7 @@ import type {
     Arg,
     Craft,
     Def,
+    DonorBlock,
     ItemBlock,
     OperationArg,
     Pred,
@@ -321,7 +322,7 @@ class Printer {
         });
     }
 
-    item(item: ItemBlock): void {
+    item(item: ItemBlock, head = "item {"): void {
         const fields: [string, string][] = [
             ["base", quote(item.base)],
             ["ilvl", String(item.ilvl)],
@@ -343,7 +344,7 @@ class Printer {
             fields.push(["enchant", `${item.enchant.passives} ${quote(item.enchant.text)}`]);
         }
         const width = Math.max(...fields.map(([k]) => k.length)) + 1;
-        this.line(0, "item {", item.span.start.line);
+        this.line(0, head, item.span.start.line);
         for (const [key, value] of fields) {
             this.line(1, `${`${key}:`.padEnd(width)} ${value}`, this.fieldLine(item, key));
         }
@@ -438,11 +439,15 @@ export function formatCraft(source: string): string | undefined {
     }
     const printer = new Printer(source, lexed.tokens);
     printer.item(craft.item);
-    const top: (Def | ProcDef | Stmt)[] = [...craft.defs, ...craft.procs, ...craft.body].sort(
-        (a, b) => a.span.start.offset - b.span.start.offset,
-    );
+    const top: (Def | ProcDef | DonorBlock | Stmt)[] = [
+        ...craft.defs,
+        ...craft.procs,
+        ...craft.donors,
+        ...craft.body,
+    ].sort((a, b) => a.span.start.offset - b.span.start.offset);
     for (const node of top) {
         if (node.kind === "def" || node.kind === "procDef") printer.def(node, 0);
+        else if (node.kind === "donor") printer.item(node.item, `with ${node.name} {`);
         else printer.stmt(node, 0);
     }
     return assemble(printer.lines, lexed.comments, source);

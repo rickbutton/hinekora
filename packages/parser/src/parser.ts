@@ -15,6 +15,7 @@ import {
     findMethod,
     ELDRITCH_TIERS,
     type ClusterEnchantDecl,
+    type DonorBlock,
     type EldritchDecl,
     type EldritchTierName,
     type IfStmt,
@@ -167,13 +168,15 @@ class Parser {
         // or an operation function (`{ … }`); the body form decides which.
         const defs: Def[] = [];
         const procs: ProcDef[] = [];
+        const donors: DonorBlock[] = [];
         const body: Stmt[] = [];
         while (!this.at("eof") && !this.at("rbrace")) {
             if (this.atKeyword("def")) {
                 const d = this.parseDef();
                 if (d.kind === "def") defs.push(d);
                 else procs.push(d);
-            } else body.push(this.parseStatement());
+            } else if (this.atKeyword("with")) donors.push(this.parseDonor());
+            else body.push(this.parseStatement());
         }
 
         this.expect("eof", "end of input"); // a stray '}' lands here
@@ -183,6 +186,7 @@ class Parser {
             item,
             defs,
             procs,
+            donors,
             body,
             span: span(start, this.prev.span.end),
         };
@@ -244,9 +248,18 @@ class Parser {
 
     // --- item block --------------------------------------------------------
 
-    private parseItemBlock(): ItemBlock {
+    /** `with <name> { … }`: a second item, described like the item block. */
+    private parseDonor(): DonorBlock {
         const start = this.peek().span.start;
-        this.expectKeyword("item");
+        this.expectKeyword("with");
+        const name = this.expect("ident", "a name for the second item after 'with'");
+        const item = this.parseItemBlock(false);
+        return { kind: "donor", name: name.text, item, span: span(start, this.prev.span.end) };
+    }
+
+    private parseItemBlock(opensWithItem = true): ItemBlock {
+        const start = this.peek().span.start;
+        if (opensWithItem) this.expectKeyword("item");
         this.expect("lbrace", "'{' to open the item block");
 
         let base: string | undefined;
@@ -534,6 +547,18 @@ class Parser {
     private parseSlot(method: Method, slot: Slot, args: OperationArg[]): void {
         const where = `after '${[...method.words, ...args.map(renderArg)].join(" ")}'`;
         switch (slot.kind) {
+            case "donor": {
+                const tok = this.peek();
+                if (tok.kind !== "ident") {
+                    throw this.error(
+                        `expected the name of a second item ${where}${notThis(tok)}`,
+                        tok.span,
+                    );
+                }
+                this.advance();
+                args.push({ kind: "word", value: tok.text, span: tok.span });
+                return;
+            }
             case "name": {
                 const arg = this.quotedOrParam();
                 if (arg !== undefined) args.push(arg);

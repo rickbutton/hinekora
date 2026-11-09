@@ -173,6 +173,29 @@ export function assertOneRemovedAmong(
     return p;
 }
 
+/** `presence` with at least `k` of `types` present: every subset that leaves
+ *  fewer than `k` out has a present member. All of them when `k` is their count
+ *  or more; unchanged when `k` is nothing. */
+export function assertAtLeast(
+    bdd: BddManager,
+    presence: Bdd,
+    types: readonly TypeId[],
+    k: number,
+): Bdd {
+    if (k <= 0 || types.length === 0) return presence;
+    let p = presence;
+    if (k >= types.length) {
+        for (const t of types) p = bdd.and(p, bdd.variable(t));
+        return p;
+    }
+    for (const group of combinations(types, types.length - k + 1)) {
+        let some = bdd.FALSE;
+        for (const t of group) some = bdd.or(some, bdd.variable(t));
+        p = bdd.and(p, some);
+    }
+    return p;
+}
+
 /** The presence function with everything it knows about `types` forgotten (their
  *  presence variables and tier atoms existentially quantified), every other fact,
  *  the disjunctions among the rest included, kept. What a removal that can only

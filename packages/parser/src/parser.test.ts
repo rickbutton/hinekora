@@ -713,3 +713,38 @@ describe("item block — the cluster jewel enchant", () => {
         ).toMatch(/passive count/);
     });
 });
+
+describe("a second item", () => {
+    it("binds a `with` block to a name and recombines by it, formatting both back", () => {
+        const text = [
+            "item {",
+            '    base:     "Imbued Wand"',
+            "    ilvl:     84",
+            "    rarity:   magic",
+            '    prefixes: [ "maximum life" t1 ]',
+            "}",
+            "",
+            "with donor {",
+            '    base:     "Imbued Wand"',
+            "    ilvl:     84",
+            "    rarity:   magic",
+            '    prefixes: [ "maximum mana" t1 ]',
+            "}",
+            "",
+            "recombine donor",
+            "",
+        ].join("\n");
+        const c = parseOk(text);
+        expect(c.donors.map((d) => d.name)).toEqual(["donor"]);
+        expect(c.donors[0]!.item.prefixes[0]!.mod).toBe("maximum mana");
+        expect(c.body[0]).toMatchObject({
+            kind: "operation",
+            words: ["recombine"],
+            args: [{ kind: "word", value: "donor" }],
+        });
+        expect(formatCraft(text)).toBe(text);
+        expect(
+            parseErr('item { base: "W" ilvl: 84 rarity: magic }\nrecombine "donor"').message,
+        ).toMatch(/name of a second item/);
+    });
+});

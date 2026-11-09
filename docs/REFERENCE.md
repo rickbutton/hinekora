@@ -242,7 +242,9 @@ method table (`check/methods.ts`), which completion, hover and the docs check re
 A statement that is not control flow or a call is an `OperationStmt`: `parseOperation`
 takes its opening word, a second word when `methodsAfter` says the family has one, and
 then one argument per slot of the method's `args` (`parseSlot`: a quoted name or a
-parameter, a word from a fixed set, a number, a tier; optional slots may be left off).
+parameter, a word from a fixed set, a number, a tier, the name of a second item; optional
+slots may be left off). A file may declare second items, `with <name> { … }` (`parseDonor`,
+`Craft.donors`), described as the item block is.
 A missing argument's error says what the slot wants in the guide's words (`QUOTED`)
 after the statement as written so far.
 An unknown opening word still parses as an operation, so the checker names it. `parse(source)` returns `{ ok, craft }` or
@@ -674,6 +676,14 @@ one domain. The sub-domains:
   call the proc they are passed to. The inlined body is a trace black box
   (`suppressTrace`), and so are the steps written in a block argument: hover gives them
   a signature but no tooltip (`insideStepArgument`).
+- **`recombine <name>`** (`checkRecombine`, before the method table's sequence): the
+  item and the named second item (`donors`, elaborated as the item block is; a kind of
+  item made for each attempt, never consumed) go through `recombine` in `ops.ts`, the
+  Recombinator's own transfer: pooled sides, the page's count table as a range, at least
+  the floor of the pooled types present (`assertAtLeast`), tiers kept where known on
+  either, one exclusive at most, the base's marks from either, values and the imprint
+  gone; `recombineRefusal` names why two items cannot go in (rarity, corruption, class,
+  and here a differing base).
 - **Operation statements** (`checkOperation`): look the statement's words up in the
   method table (`findMethod`; an unknown word is "Unknown currency" or "Unknown
   operation"), bind its arguments to the method's slots as `Literal`s (a parameter left

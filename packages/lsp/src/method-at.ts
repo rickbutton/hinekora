@@ -34,6 +34,7 @@ const STOP_WORDS = new Set([
     "else",
     "restart",
     "stop",
+    "with",
     "has",
     "group",
     "fractured",

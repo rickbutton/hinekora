@@ -98,6 +98,11 @@ item {
   branch on `corrupted` or `influenced` (§5) picks one out, and an outcome that destroys
   the item ends the craft on that path.
 
+**A second item.** `with <name> { … }` declares another item, described exactly like the
+item block, for a step that merges two: `recombine <name>` (§3). It describes the kind of
+item the guide makes for each attempt ("roll another wand with +1 to fire gems"), so a
+loop may recombine with it again and again; nothing consumes the declaration.
+
 Name resolution happens here, so an unknown or ambiguous name is reported on the item
 block before any operation is checked.
 
@@ -162,6 +167,7 @@ page groups them:
 | `divine`     | [Divine Orb](https://www.poewiki.net/wiki/Divine_Orb)                                  | Magic or Rare; every modifier's value is rolled again within its tier, a fractured one's excepted |
 | `exalt <influence>` | the influence's [Exalted Orb](https://www.poewiki.net/wiki/Hunter%27s_Exalted_Orb#Mechanics) (`exalt hunter`) | Rare with an open slot, no influence, no fracture, with an influence modifier the item can take; the item gains the influence and one of its modifiers |
 | `awakener <influence>` | [Awakener's Orb](https://www.poewiki.net/wiki/Awakener%27s_Orb#Mechanics), the donor item's influence named | exactly one influence, not the donor's; the item is reforged Rare with both, metamods ignored |
+| `recombine <name>` | the [Recombinator](https://www.poewiki.net/wiki/Recombinator#Unpredictable_Recombination), the second item declared with `with <name> { … }` (§1) | two Magic or Rare items of one class, not corrupted, and of one base (`QUESTIONS.md` Q55); the result's modifiers come from both: on each side, none to one of a pool of one, one to two of two, one to three of three or four, two to three of five or more, at least that many of the pooled modifiers present and any of them possible, each at a tier it had; at most one exclusive modifier (crafted, veiled, essence-only, elevated), and where one may be a side may come out empty; the item level is the average plus two, capped at the higher |
 | `vaal` | [Vaal Orb](https://www.poewiki.net/wiki/Vaal_Orb#Equipment) | not corrupted; afterwards the item is corrupted and either as it was or a Rare with six modifiers |
 | `locus` | the [Corruption Altar](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes) | not corrupted; as `vaal`, but the Rare is influenced and the item may be destroyed, which ends the craft on that path |
 | `tainted chaos` | [Tainted Chaos Orb](https://www.poewiki.net/wiki/Tainted_Chaos_Orb#Mechanics) | corrupted Rare; reforged, or stripped to the rarity its survivors allow |

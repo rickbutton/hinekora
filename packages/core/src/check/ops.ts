@@ -44,7 +44,9 @@ import { rollableGen } from "../resolve/tiers.js";
 import {
     admitAdd,
     assertFractureDisjunction,
+    assertAtLeast,
     assertOneRemovedAmong,
+    ImplicitTypesDomain,
     canBeRare,
     capsOver,
     excludedTypes,
@@ -1782,6 +1784,121 @@ function removeCrafted(a: AItem, rules: Rules, registry: Registry, replacing: bo
         crafted,
         craftedTypes,
     });
+}
+
+// --- the Recombinator -----------------------------------------------------------
+
+/**
+ * Why the two items cannot go into the Recombinator, in the game's words, or
+ * null: two Magic or Rare items of one class (Recombinator § Unpredictable
+ * Recombination), not corrupted, and here of one base, since the result keeps
+ * one of the two at random and the state carries one (QUESTIONS.md Q55).
+ */
+export function recombineRefusal(a: AItem, b: AItem): string | null {
+    for (const [what, x] of [
+        ["this item", a],
+        ["the second item", b],
+    ] as const) {
+        if (x.rarities.has("normal")) {
+            return `Requires two Magic or Rare items — ${what} ${x.rarities.size === 1 ? "is" : "may be"} Normal.`;
+        }
+        if (x.corrupted.has(true)) {
+            return `Requires two uncorrupted items — ${what} ${x.corrupted.size === 1 ? "is" : "may be"} corrupted.`;
+        }
+    }
+    if (a.base.itemClass !== b.base.itemClass) {
+        return "Requires two items of one class — these differ.";
+    }
+    if (a.base.id !== b.base.id) {
+        return "The two items must share a base here: the result keeps one of the two at random, and the checker follows one base.";
+    }
+    return null;
+}
+
+/**
+ * The item the Recombinator makes of two (Recombinator § Unpredictable
+ * Recombination). Each side's modifiers are pooled from both; how many the
+ * result keeps follows the page's count table, read as a range: none to one
+ * from a pool of one, one to two from two, one to three from three or four,
+ * two to three from five or more. The kept modifiers are some of the pooled
+ * ones, so at least the floor of them are present and all of them may be,
+ * each at a tier it had on either input. Only one exclusive modifier (crafted,
+ * veiled, essence-only, elevated) can be on the result, and where one may be,
+ * a side may end up with nothing, so the floor drops to zero. The base is one
+ * of the two, so the marks are those of either; fractured status may be lost
+ * or kept, never gained; the item level is the inputs' average plus two,
+ * capped at the higher. Values and the imprint do not survive a new item.
+ */
+export function recombine(a: AItem, b: AItem, registry: Registry): AItem {
+    const ilvl = Math.min(Math.floor((a.ilvl + b.ilvl) / 2) + 2, Math.max(a.ilvl, b.ilvl));
+    const caps = capsOver({ ...a, rarities: new Set<Rarity>(["rare"]) }, Math.max);
+    const exclusive = mayCarryExclusive(a, registry) || mayCarryExclusive(b, registry);
+    const keptOf = (pooled: Range, cap: number): Range => {
+        const floor = exclusive || pooled[0] <= 1 ? 0 : pooled[0] <= 4 ? 1 : 2;
+        const ceiling = Math.min(cap, pooled[1] >= 3 ? 3 : pooled[1]);
+        return [Math.min(floor, ceiling), ceiling];
+    };
+    const prefix = keptOf(
+        [a.counts.prefix[0] + b.counts.prefix[0], a.counts.prefix[1] + b.counts.prefix[1]],
+        caps.prefix,
+    );
+    const sa = suffixRange(a);
+    const sb = suffixRange(b);
+    const suffix = keptOf([sa[0] + sb[0], sa[1] + sb[1]], caps.suffix);
+    const total: Range = [prefix[0] + suffix[0], Math.min(caps.total, prefix[1] + suffix[1])];
+
+    const mayHave = (x: AItem, t: TypeId): boolean => x.possible.has(t) && !isExcluded(x, t);
+    const possible = new Set<TypeId>();
+    for (const t of [...a.possible, ...b.possible]) {
+        if (mayHave(a, t) || mayHave(b, t)) possible.add(t);
+    }
+    let presence = a.bdd.TRUE;
+    for (const gen of ["prefix", "suffix"] as const) {
+        const pooled = [...possible].filter((t) => genOf(a, registry, t) === gen);
+        const floor = gen === "prefix" ? prefix[0] : suffix[0];
+        if (floor > 0) presence = assertAtLeast(a.bdd, presence, pooled, floor);
+    }
+    const tiers = new Map<TypeId, ReadonlySet<ModId>>();
+    for (const t of possible) {
+        const fromA = mayHave(a, t) ? a.tiers.get(t) : new Set<ModId>();
+        const fromB = mayHave(b, t) ? b.tiers.get(t) : new Set<ModId>();
+        if (fromA !== undefined && fromB !== undefined) tiers.set(t, new Set([...fromA, ...fromB]));
+    }
+    const rarities = new Set<Rarity>();
+    for (let n = total[0]; n <= total[1]; n++) rarities.add(rarityForSurvivors(n));
+    const { imprint: _gone, ...rest } = a;
+    return settled({
+        ...rest,
+        ilvl,
+        rarities,
+        influences: new Set([...a.influences, ...b.influences]),
+        corrupted: new Set([false]),
+        eldritch: new Set([...a.eldritch, ...b.eldritch]),
+        eldritchTypes: {
+            exarch: ImplicitTypesDomain.join(a.eldritchTypes.exarch, b.eldritchTypes.exarch),
+            eater: ImplicitTypesDomain.join(a.eldritchTypes.eater, b.eldritchTypes.eater),
+        },
+        fractures: [0, Math.max(a.fractures[1], b.fractures[1])],
+        counts: { total, prefix, suffix },
+        presence,
+        possible,
+        tiers,
+        values: new Map(),
+        crafted: [0, Math.min(1, a.crafted[1] + b.crafted[1])],
+        craftedTypes: new Set([...a.craftedTypes, ...b.craftedTypes]),
+    });
+}
+
+/** Might the item carry a modifier the Recombinator treats as exclusive: one
+ *  that is not a natural roll (crafted, veiled, essence-only, elevated)? */
+function mayCarryExclusive(a: AItem, registry: Registry): boolean {
+    if (a.crafted[1] > 0) return true;
+    for (const t of a.possible) {
+        if (isExcluded(a, t)) continue;
+        if (t === VEILED_PREFIX || t === VEILED_SUFFIX) return true;
+        if (rowsOf(a, t, registry).some((m) => (m.source ?? "natural") !== "natural")) return true;
+    }
+    return false;
 }
 
 // --- lock -----------------------------------------------------------------------
