@@ -155,7 +155,11 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                     ? "Requires an open affix slot — the item may be full."
                     : `Requires an open ${failure.gen} slot — none is guaranteed open here.`;
             case "modConflict":
-                return `The item may already carry a "${failure.group}" modifier — an item holds at most one per group, so this can't be benched.`;
+                return `The item may already carry a "${failure.group}" modifier${
+                    failure.among.length > 0
+                        ? ` or one of its group (${failure.among.map((n) => `"${n}"`).join(", ")})`
+                        : ""
+                } — an item holds at most one per group, so this can't be benched.`;
             case "nothingToRemove":
                 return "Requires a removable affix — the item may have none.";
             case "essenceRarity":

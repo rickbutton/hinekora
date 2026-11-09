@@ -291,7 +291,13 @@ export type PreconditionFailure =
       }
     | { readonly kind: "noOpenSlot"; readonly gen?: Gen }
     | { readonly kind: "magicRefused"; readonly actual: ReadonlySet<Rarity> }
-    | { readonly kind: "modConflict"; readonly group: string }
+    | {
+          readonly kind: "modConflict";
+          readonly group: string;
+          /** The other modifiers of the group the item may carry, named so a guide
+           *  can rule them out one by one. */
+          readonly among: readonly string[];
+      }
     | { readonly kind: "nothingToRemove" }
     | {
           readonly kind: "essenceRarity";
@@ -814,10 +820,18 @@ function failing(
             return a.crafted[1] >= rules.craftedCap
                 ? { kind: "craftedLimit", cap: rules.craftedCap }
                 : null;
-        case "noGroupConflict":
-            return sharesFamilyWithPresent(a, check.mod, registry)
-                ? { kind: "modConflict", group: registry.typeLabel(check.mod.type) }
+        case "noGroupConflict": {
+            const clashing = typesSharingFamilyWithPresent(a, check.mod, registry);
+            return clashing.length > 0
+                ? {
+                      kind: "modConflict",
+                      group: registry.typeLabel(check.mod.type),
+                      among: clashing
+                          .filter((t) => t !== check.mod.type)
+                          .map((t) => registry.typeLabel(t)),
+                  }
                 : null;
+        }
         case "poolNonEmpty": {
             // A fill reads a superset of every path's pool; this must read a
             // subset, so a path on which the tagged pool is empty is caught.
@@ -923,14 +937,16 @@ function hasRemovable(
  * proven "2 suffixes, 0 prefixes" item can still take a benched prefix). A
  * conflict hidden behind an anonymous "random" affix is not caught.
  */
-function sharesFamilyWithPresent(a: AItem, mod: Mod, registry: Registry): boolean {
+/** The types of the modifier's group the item may carry, a guaranteed one first;
+ *  empty when none can be present, which is what lets the bench add it. */
+function typesSharingFamilyWithPresent(a: AItem, mod: Mod, registry: Registry): TypeId[] {
     const guaranteed = guaranteedTypes(a);
     const shares = (type: TypeId): boolean => {
         const fams = registry.familiesOfType(type);
         for (const f of mod.families) if (fams.has(f)) return true;
         return false;
     };
-    for (const type of guaranteed) if (shares(type)) return true; // definitely present
+    for (const type of guaranteed) if (shares(type)) return [type]; // definitely present
 
     // Affixes in a generation not pinned to a guaranteed type: if none, no
     // non-guaranteed member of that generation can be present.
@@ -940,11 +956,12 @@ function sharesFamilyWithPresent(a: AItem, mod: Mod, registry: Registry): boolea
         const max = gen === "prefix" ? a.counts.prefix[1] : suffixRange(a)[1];
         return max - named;
     };
+    const clashing: TypeId[] = [];
     for (const type of a.possible) {
         if (guaranteed.has(type) || isExcluded(a, type) || !shares(type)) continue;
-        if (unidentifiedIn(genOf(a, registry, type)) > 0) return true;
+        if (unidentifiedIn(genOf(a, registry, type)) > 0) clashing.push(type);
     }
-    return false;
+    return clashing;
 }
 
 /** Is a veiled placeholder present (a mod awaiting unveil)? */
