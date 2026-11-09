@@ -812,10 +812,12 @@ in it. Notes:
   kept side could hold (`fracturedCrafted` for a fractured bench row).
 - The add-pool is over-approximated by running the real `pool` on the facts of the
   guaranteed mods alone at rare caps (`guaranteedFacts`), with the tags a possibly present mod
-  would add passed as "maybe" tags: a positive spawn entry on one admits the row, a zero
-  entry on one is skipped (`addsTagsOfType`). The maybe set is closed under the pool's own
-  rows, since a reforge's later rolls see the tags of its earlier ones (`QUESTIONS.md`
-  Q13). A declared `"random"` affix is every natural modifier of its side the item could
+  would add passed as "maybe" tags: a positive spawn or generation entry on one admits the
+  row, a zero entry on one is skipped (`addsTagsOfType`). The maybe set is closed under the
+  pool's own rows, since a reforge's later rolls see the tags of its earlier ones
+  (`QUESTIONS.md` Q13); so within one reforge a row another roll's tag would zero stays
+  admitted (two cluster notables on a Small jewel, both weapon-specific jewel modifiers),
+  and only a tag a present modifier surely adds closes it. A declared `"random"` affix is every natural modifier of its side the item could
   roll (`anonymousTypes`, added to `possible` by the item block), so an adder hidden
   behind one flows through as a maybe tag.
 - **Essence** = `strip; rarity(rare); fill(natural ≤ level, reforge 4–6); fill(grant, within)`,
