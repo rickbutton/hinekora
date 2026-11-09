@@ -613,6 +613,37 @@ export const SHARED_UNVEILED: Mod = mkMod({
     source: "veiled",
 });
 
+/**
+ * A ModType with a natural suffix row on rings and an unveiled prefix row: the
+ * shape of spell block on an Astral Plate, a suffix when rolled and a prefix when
+ * unveiled. Two of them, so an unveil leaves either possible without
+ * guaranteeing one. Not in `VEILED_CATALOG`.
+ */
+const crossSide = (name: string): readonly [Mod, Mod] => [
+    mkMod({
+        id: `${name}Natural1`,
+        type: name,
+        gen: "suffix",
+        minLevel: 1,
+        families: [name],
+        spawn: [spawn(TAG_RING, 500), spawn(TAG_DEFAULT, 0)],
+        text: `${name} modifier`,
+    }),
+    mkMod({
+        id: `${name}Unveiled1`,
+        type: name,
+        gen: "prefix",
+        minLevel: 1,
+        domain: DOMAIN_UNVEILED,
+        families: [name],
+        spawn: [spawn(TAG_DEFAULT, 100)],
+        source: "veiled",
+        text: `${name} modifier`,
+    }),
+];
+export const [CROSS_SIDE_A_NATURAL, CROSS_SIDE_A_UNVEILED] = crossSide("CrossSideA");
+export const [CROSS_SIDE_B_NATURAL, CROSS_SIDE_B_UNVEILED] = crossSide("CrossSideB");
+
 /** All veiled fixtures (placeholders + results), to append to a test catalog. */
 export const VEILED_CATALOG: readonly Mod[] = [
     VEILED_PREFIX_MOD,

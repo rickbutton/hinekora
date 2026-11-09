@@ -6,10 +6,16 @@ import { craft, has, iff, item, notp, op, orp, stop, unveil, veiled } from "../_
 import {
     AMULET_BASE,
     CATALOG,
+    CROSS_SIDE_A_NATURAL,
+    CROSS_SIDE_A_UNVEILED,
+    CROSS_SIDE_B_NATURAL,
+    CROSS_SIDE_B_UNVEILED,
     PROTECT_PREFIXES_CARRIER,
     PROTECT_SUFFIXES_CARRIER,
     RING_BASE,
     VEILED_CATALOG,
+    VEILED_PREFIX_MOD,
+    VEILED_SUFFIX_MOD,
 } from "../__fixtures__/mods.js";
 import { veiledPool } from "../pool/veiled.js";
 import { GroupId, TypeId } from "../model/ids.js";
@@ -186,6 +192,41 @@ describe("a veiled orb on an item whose placeholders were proven absent", () => 
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.presence).not.toBe(r.finalState!.bdd.FALSE);
+    });
+});
+
+describe("a modifier unveiled on the other side from its natural row", () => {
+    it("may be the unnamed affix of that side, so a later veiled orb is refused", () => {
+        const cross = buildRegistry({
+            bases: [RING_BASE],
+            mods: [
+                ...CATALOG,
+                VEILED_PREFIX_MOD,
+                VEILED_SUFFIX_MOD,
+                PROTECT_SUFFIXES_CARRIER,
+                CROSS_SIDE_A_NATURAL,
+                CROSS_SIDE_A_UNVEILED,
+                CROSS_SIDE_B_NATURAL,
+                CROSS_SIDE_B_UNVEILED,
+            ],
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
+        // The suffixes are locked and all named, so the veiled orb's modifier is
+        // a prefix and the unveil leaves one of the two cross-side modifiers as a
+        // prefix. Read from their natural suffix rows they would be judged
+        // absent, the suffix side being fully named, and the orb accepted.
+        const locked = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: ["IncreasedLife1", PROTECT_SUFFIXES_CARRIER.id],
+            suffixes: ["FireResist1", "ColdResist1", "LightningResist1"],
+        });
+        const r = check(craft(locked, [veiled("exalt"), unveil(), veiled("exalt")]), {
+            registry: cross,
+        });
+        expect(r.diagnostics).toHaveLength(1);
+        expect(r.diagnostics[0]!.message).toContain("veiled or unveiled modifier");
     });
 });
 
