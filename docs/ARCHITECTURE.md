@@ -220,9 +220,12 @@ new summary or _restarts_ (diverges, re-entering the enclosing loop).
   base? if never, report that root cause), the **loop invariant** (a join-fixpoint over the
   states that re-enter the head, so the body is checked at _every_ iteration; this is what
   catches `until has X { exalt }` filling the item), and _exit-as-proof_ (on exit the
-  predicate holds, so refine the after-state by it). All three are expressed over one
-  primitive: `headStates`, the states re-entering the loop head after one body run (the
-  fall-off-end state plus every `restart` back-edge).
+  predicate holds, so refine the after-state by it). The body runs only from the part of
+  a head state where the exit predicate is false: the rest leaves at once, and checking
+  the body on it would refuse steps no path takes (an inner loop entered from an outer
+  loop's joined invariant). All three are expressed over one primitive: `headStates`,
+  the states re-entering the loop head after one body run (the fall-off-end state plus
+  every `restart` back-edge).
 - **Termination**: the invariant lattice is finite and the step monotone, but the
   relational presence part is tall (~2^atoms), so past a few exact iterations the driver
   **widens**: it over-approximates presence to its unit facts, guaranteeing quick

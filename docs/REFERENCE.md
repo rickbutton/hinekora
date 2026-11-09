@@ -582,12 +582,16 @@ one domain. The sub-domains:
 - `until` loops, three steps. (a) **reachability**: if the exit predicate can never be
   satisfied on this base, report "can never exit" (the root cause) instead of downstream
   symptoms. (b) **soundness across iterations**: compute the loop invariant (a join
-  fixpoint over continue-states) and run the body once from it; this is what catches
-  `until has X { exalt }` eventually filling the item. (c) **loop-exit-as-proof**: refine
-  the after-state by the exit predicate. All three share one primitive, `headStates(entry,
-body)`, the states that re-enter the loop head after one iteration (fall-off-end +
-  every `restart` back-edge), plus `refineHeads(states, ¬/exit)`; `foldJoin` merges a list
-  of states. Two suppression modes are scoped helpers, not manual counters: `quietly` (no
+  fixpoint over continue-states) and run the body once from its continuing part, the
+  states where the exit predicate is false (`continuing`; a head state that already
+  satisfies it leaves at once, and an inner loop entered from an outer loop's joined
+  invariant would otherwise run on states no path continues from); this is what catches
+  `until has X { exalt }` eventually filling the item. (c) **loop-exit-as-proof**: the
+  after-state is the entry and the body's results, each refined by the exit predicate.
+  All three share one primitive, `headStates(entry, body)`, the states that re-enter the
+  loop head after one iteration (fall-off-end + every `restart` back-edge), plus
+  `refineHeads(states, ¬/exit)`; `foldJoin` merges a list of states. Two suppression
+  modes are scoped helpers, not manual counters: `quietly` (no
   diagnostics, no trace, for probe/fixpoint passes) and `untraced` (trace off, diagnostics
   on, for inlined proc bodies).
 - **Predicate defs** (`def name(p) = <pred>`): local, parameterized, pure. Param sorts

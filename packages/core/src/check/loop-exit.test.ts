@@ -37,3 +37,38 @@ describe("checker — a loop whose exit takes several iterations", () => {
         expect(messages.some((m) => m.includes("has"))).toBe(false);
     });
 });
+
+describe("checker — the body runs only where the exit predicate is false", () => {
+    it("does not refuse a step on the states that leave the loop", () => {
+        // With the suffixes full, the exalt is only ever used while a prefix is
+        // open: the head states with three prefixes exit instead of exalting.
+        const c = craft(
+            item({
+                base: "IronRing",
+                ilvl: 100,
+                rarity: "rare",
+                suffixes: ["random", "random", "random"],
+            }),
+            [until(cmp("prefixCount", "==", 3), [op("exalt")])],
+        );
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.counts.total).toEqual([6, 6]);
+    });
+
+    it("still reports a step that fails on a state that continues", () => {
+        // From two prefixes the first exalt fills the item and the second has
+        // no slot; that head state continues, so the body is checked on it.
+        const c = craft(
+            item({
+                base: "IronRing",
+                ilvl: 100,
+                rarity: "rare",
+                suffixes: ["random", "random", "random"],
+            }),
+            [until(cmp("prefixCount", "==", 3), [op("exalt"), op("exalt")])],
+        );
+        const messages = check(c, ctx).diagnostics.map((d) => d.message);
+        expect(messages.some((m) => m.includes("open affix slot"))).toBe(true);
+    });
+});

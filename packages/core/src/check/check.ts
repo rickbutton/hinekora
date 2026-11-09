@@ -621,8 +621,20 @@ class Checker {
         // unsatisfiable when no head state of the whole invariant satisfies the
         // predicate. Report that root cause instead of a downstream symptom.
         const invariant = this.loopInvariant(a, stmt.body, rpred);
-        const probe = this.quietly(() => this.headStates(invariant, stmt.body));
-        const exitReachable = foldJoin(this.refineHeads(probe, rpred, true));
+        // The body runs only where the exit predicate is false; a head state that
+        // already satisfies it leaves at once. An inner loop entered from an outer
+        // loop's joined invariant would otherwise run its body on states no path
+        // continues from.
+        const entering = this.continuing(invariant, rpred);
+        // The states at the head are the entry and the body's results, so the
+        // exits are the entry where it already satisfies the predicate and those
+        // results where they do; the joined invariant would blur the two.
+        const leaving = rpred === null ? null : refine(a, rpred, true);
+        const exits = (heads: readonly AItem[]): AItem | null =>
+            foldJoin([...(leaving ? [leaving] : []), ...this.refineHeads(heads, rpred, true)]);
+        const probe =
+            entering === null ? [] : this.quietly(() => this.headStates(entering, stmt.body));
+        const exitReachable = exits(probe);
         if (rpred !== null && exitReachable === null) {
             this.diag(
                 `this loop can never exit: ${describePred(stmt.pred)} can never become true here`,
@@ -636,7 +648,7 @@ class Checker {
         // only fails on a later iteration (`until has X { exalt }` eventually fills
         // the item). On exit the exit predicate is known to hold: the after-state
         // is the join of every loop-head state refined by it.
-        const exit = foldJoin(this.refineHeads(this.headStates(invariant, stmt.body), rpred, true));
+        const exit = exits(entering === null ? [] : this.headStates(entering, stmt.body));
         return { kind: "fall", state: this.tightenCounts(exit ?? invariant) };
     }
 
@@ -658,6 +670,12 @@ class Checker {
     private headStates(entry: AItem, body: readonly Stmt[]): AItem[] {
         const { flow, restarts } = this.runBody(entry, body);
         return flow.kind === "fall" ? [flow.state, ...restarts] : restarts;
+    }
+
+    /** The part of a loop-head state that runs the body: where the exit predicate
+     *  is false, or all of it while the predicate did not resolve. */
+    private continuing(head: AItem, rpred: RPred | null): AItem | null {
+        return rpred === null ? head : refine(head, rpred, false);
     }
 
     /** Refine each loop-head state by the exit predicate (`positive`) or its
@@ -705,7 +723,9 @@ class Checker {
         return this.quietly(() => {
             let invariant = entry;
             for (let i = 0; i < MAX_LOOP_ITERS; i++) {
-                const continues = this.refineHeads(this.headStates(invariant, body), rpred, false);
+                const entering = this.continuing(invariant, rpred);
+                if (entering === null) break; // every head state leaves at once
+                const continues = this.refineHeads(this.headStates(entering, body), rpred, false);
                 if (continues.length === 0) break; // no live back-edge → no further heads
                 const joined = [invariant, ...continues].reduce(join);
                 // Widen once past a few exact iterations: a small loop reaches a
