@@ -519,7 +519,7 @@ survives a `divine`.
 **Steps:** use a Divine Orb; compare the crafted modifier's value before and after.
 **Record:** whether it changed.
 **Assumed meanwhile:** it is rerolled, the conservative reading (`check/ops.ts` `reroll`
-keeps only a fractured modifier's value).
+keeps only a fractured modifier's value and those of a side a metamod protects).
 **Answer:**
 
 ### Q52 · game probe · open
