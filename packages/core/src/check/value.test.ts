@@ -2,8 +2,22 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { narrowRange, rollRange } from "./values.js";
-import { craft, hasValue, iff, item, notp, op, until } from "../__fixtures__/ast.js";
 import {
+    bench,
+    craft,
+    has,
+    hasValue,
+    iff,
+    item,
+    notp,
+    op,
+    stop,
+    until,
+} from "../__fixtures__/ast.js";
+import {
+    BENCH_MAXLIFE_ROW,
+    CLASS_RING,
+    MAXLIFE_BLANK,
     MAXLIFE_T1,
     MAXLIFE_T2,
     MAXLIFE_T3,
@@ -90,6 +104,40 @@ describe("has <mod> <cmp> <n>", () => {
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.values.has(LIFE)).toBe(false);
+    });
+
+    it("compares a benched modifier by the bench row's own span", () => {
+        const benched = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...TIERED_CATALOG, BENCH_MAXLIFE_ROW],
+            benchCrafts: [
+                { mod: BENCH_MAXLIFE_ROW.id, tier: 1, itemClasses: new Set([CLASS_RING]) },
+            ],
+        });
+        const c = craft(ring(), [
+            bench("maximum life"),
+            until(hasValue("maximum life", ">=", 20), [op("divine")]),
+        ]);
+        const r = check(c, { registry: benched });
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.values.get(LIFE)).toEqual([20, 25]);
+    });
+
+    it("neither rules a row without a number in nor out", () => {
+        const blank = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...TIERED_CATALOG, MAXLIFE_BLANK],
+        });
+        const c = craft(ring(), [
+            until(has("maximum life"), [op("chaos")]),
+            iff(hasValue("maximum life", ">=", 115), [stop()]),
+        ]);
+        const r = check(c, { registry: blank });
+        expect(r.diagnostics).toEqual([]);
+        const tiers = r.finalState!.tiers.get(LIFE);
+        expect(tiers?.has(MAXLIFE_BLANK.id)).toBe(true);
+        expect(tiers?.has(MAXLIFE_T1.id)).toBe(false);
+        expect(r.finalState!.values.get(LIFE)).toBeUndefined();
     });
 
     it("the Divine Orb is refused on a Normal item", () => {

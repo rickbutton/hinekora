@@ -647,6 +647,28 @@ export const MAXLIFE_T1: Mod = mkMod({
     text: "+(115-129) to maximum Life",
     name: "Virile",
 });
+/** The bench's life row, of the tiered life type; a span of its own. Not in
+ *  `TIERED_CATALOG`. */
+export const BENCH_MAXLIFE_ROW: Mod = mkMod({
+    id: "BenchMaxLife1",
+    type: "MaxLife",
+    source: "bench",
+    gen: "prefix",
+    minLevel: 1,
+    families: ["MaxLife"],
+    spawn: [spawn(TAG_DEFAULT, 0)],
+    text: "+(15-25) to maximum Life",
+});
+/** A row of the tiered life type with no number in its text. Not in `TIERED_CATALOG`. */
+export const MAXLIFE_BLANK: Mod = mkMod({
+    id: "MaxLifeBlank",
+    type: "MaxLife",
+    gen: "prefix",
+    minLevel: 1,
+    families: ["MaxLife"],
+    spawn: [spawn(TAG_DEFAULT, 1000)],
+    text: "maximum Life cannot be lowered",
+});
 export const FIRE_RES_TIERED: Mod = mkMod({
     id: "FireResTiered1",
     type: "FireResistTiered",

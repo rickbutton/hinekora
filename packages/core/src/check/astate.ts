@@ -868,6 +868,9 @@ export type RPred =
           readonly op: Cmp;
           readonly value: number;
           readonly rows: ReadonlyMap<ModId, Range>;
+          /** Rows of the type with no number in their text: the comparison can
+           *  neither rule them in nor out. */
+          readonly unnumbered: ReadonlySet<ModId>;
       }
     | {
           readonly kind: "compare";
@@ -1059,6 +1062,8 @@ function refineHas(a: AItem, type: TypeId, gen: Gen, tierMod: ModId | undefined)
  * part of those spans that does; impossible when no row reaches it. Negative:
  * the modifier is absent or its value compares the other way, so only a
  * guaranteed modifier learns anything, and what it learns is the other part.
+ * A row with no number stays possible on both branches, and while it may be
+ * the one present the value is unknown.
  */
 function refineHasValue(
     a: AItem,
@@ -1081,17 +1086,20 @@ function refineHasValue(
         const part = narrowRange(within, op, pred.value);
         if (part !== null) kept.set(id, part);
     }
-    if (kept.size === 0) return null;
+    const blank = [...pred.unnumbered].filter((id) => pinned === undefined || pinned.has(id));
+    if (kept.size === 0 && blank.length === 0) return null;
     let hull: Range | undefined;
     for (const r of kept.values()) hull = hull === undefined ? r : RangeDomain.join(hull, r);
-    const present = positive
-        ? refineHas(a, type, pred.gen, kept.size === 1 ? [...kept.keys()][0] : undefined)
-        : a;
+    const only = kept.size === 1 && blank.length === 0 ? [...kept.keys()][0] : undefined;
+    const present = positive ? refineHas(a, type, pred.gen, only) : a;
     if (present === null) return null;
     const tiers = new Map(present.tiers);
-    if (kept.size < pred.rows.size || pinned !== undefined) tiers.set(type, new Set(kept.keys()));
+    if (kept.size + blank.length < pred.rows.size + pred.unnumbered.size || pinned !== undefined) {
+        tiers.set(type, new Set([...kept.keys(), ...blank]));
+    }
     const values = new Map(present.values);
-    values.set(type, hull!);
+    if (hull !== undefined && blank.length === 0) values.set(type, hull);
+    else values.delete(type);
     return reduceTiers({ ...present, tiers, values });
 }
 

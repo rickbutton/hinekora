@@ -397,7 +397,8 @@ history predicates. `has "X"` means any tier of X; `has "X" t1` the specific tie
 checker tracks through operations (a modifier narrowed to T1 is provably not T2). `has "X"
 >= 110` compares the modifier's **value**, the first number of its text ("+(100-114) to
 maximum Life" is 100 to 114; a hybrid compares its first number): it holds where the roll
-reaches the comparison, so the tiers that cannot are ruled out, and afterwards the value is
+reaches the comparison, whichever row placed the modifier, rolled, benched or unveiled, so
+the rows that cannot are ruled out, and afterwards the value is
 known to lie in the part of the span that does until something rolls the modifier again,
 a reforge or a `divine`. `until has "maximum life" >= 110 { divine }` is a guide's "divine
 the life into range"; a threshold no tier reaches is impossible, a branch on it dead. `has group

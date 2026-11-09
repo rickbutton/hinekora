@@ -539,7 +539,9 @@ one domain. The sub-domains:
 - `values` (`ValueDomain`, in `values.ts`): an overlay `Map<TypeId, Range>` of the span a
   present modifier's value, the first number of its row's text (`rollRange`), is known to
   lie in, narrower than its rows' spans; a `has "X" >= n` predicate sets it (and pins the
-  tiers whose spans reach `n`, `refineHasValue`), a join keeps a type only where both
+  rows whose spans reach `n`, `refineHasValue`, the rows of every source, a bench or
+  unveiled row as much as a natural one; a row with no number is neither ruled in nor
+  out, and the value is unknown while it may be the one present), a join keeps a type only where both
   branches constrain it, and whatever rolls the modifier again drops it: a `fill` of its
   type, a `strip`, a `relax`, a removal, and `reroll`, the Divine Orb, which drops every
   entry but a fractured modifier's.

@@ -1124,15 +1124,20 @@ class Checker {
         const gen = rollableGen(this.registry.catalog, a.base, a.ilvl, type, tags) ?? "prefix";
 
         if (pred.value !== undefined) {
-            const tiers = rollableTiers(this.registry.catalog, a.base, a.ilvl, type, tags);
+            // Any row of the type may be the one on the item, a bench, essence or
+            // unveiled row as much as a natural one, so every row's span counts.
             const rows = new Map<ModId, Range>();
-            for (const m of tiers) {
+            const unnumbered = new Set<ModId>();
+            for (const m of this.registry.catalog) {
+                if (m.type !== type) continue;
                 const span = m.text === undefined ? undefined : rollRange(m.text);
                 if (span !== undefined) rows.set(m.id, span);
+                else unnumbered.add(m.id);
             }
             if (pred.tier !== undefined) {
                 const tier = this.literalInt(pred.tier, pred.span);
                 if (tier === null) return null;
+                const tiers = rollableTiers(this.registry.catalog, a.base, a.ilvl, type, tags);
                 const mod = tierMod(tiers, tier);
                 if (mod === undefined || !rows.has(mod.id)) {
                     this.diag(
@@ -1142,6 +1147,7 @@ class Checker {
                     return null;
                 }
                 for (const id of [...rows.keys()]) if (id !== mod.id) rows.delete(id);
+                unnumbered.clear();
             }
             if (rows.size === 0) {
                 this.diag(`"${modName}" has no number to compare`, pred.span);
@@ -1154,6 +1160,7 @@ class Checker {
                 op: pred.value.op,
                 value: pred.value.value,
                 rows,
+                unnumbered,
             };
         }
 
