@@ -83,9 +83,9 @@ export interface AffixDecl {
     readonly tier?: number;
     /** Marked `fractured` — the mod is locked (can't be removed or rerolled). */
     readonly fractured?: boolean;
-    /** Marked `crafted` — a bench craft, named by the modifier the bench adds or
-     *  left anonymous (`crafted "random"`); it counts toward the crafted limit. */
-    readonly crafted?: boolean;
+    /** Marked `bench` — a bench craft, named by the modifier the bench adds or
+     *  left anonymous (`bench "random"`); it counts toward the crafted limit. */
+    readonly bench?: boolean;
 }
 
 /** The item declaration, the only place state is given rather than inferred. */

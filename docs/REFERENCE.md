@@ -626,7 +626,7 @@ body)`, the states that re-enter the loop head after one iteration (fall-off-end
 - `elaborateItem`: declared mods must **pin a tier** (`[ "maximum life" t1 ]`) via an
   exact id/alias or a description + `t<n>`; a bare description is an error. Placeholders
   (`"random"`/`"?"`) stay anonymous and widen `possible` to the natural rows of their
-  side (`anonymousTypes`). A `crafted` affix resolves through `resolveBench` for the
+  side (`anonymousTypes`). A `bench` affix resolves through `resolveBench` for the
   item's class and counts toward `crafted`; anonymous, it widens `possible` to the
   bench's rows of its side (`benchTypesFor`). Pinned tiers seed the `tiers` overlay, so
   the starting item is fully concrete.

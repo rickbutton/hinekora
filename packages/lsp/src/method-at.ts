@@ -35,7 +35,6 @@ const STOP_WORDS = new Set([
     "restart",
     "has",
     "fractured",
-    "crafted",
     "not",
     "and",
     "or",

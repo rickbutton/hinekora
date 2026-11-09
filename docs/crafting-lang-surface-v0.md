@@ -64,12 +64,12 @@ item {
   named: the item is known to be fractured, the modifier is not) marks a
   [fractured modifier](https://www.poewiki.net/wiki/Fractured_item#Mechanics). An item
   may declare more than one, as the Bestiary's two-modifier talisman recipe (§3) makes.
-- `crafted "<mod>" [t<n>]` marks a [crafting bench](https://www.poewiki.net/wiki/Crafting_Bench)
-  modifier, named as `bench` names it (§3) with the bench's tier when it has several;
-  `crafted "random"` is an unnamed one, some bench modifier of its side. Either counts
-  toward the crafted-modifier limit, so a bought item's craft is declared rather than
-  mistaken for a natural modifier (`QUESTIONS.md` Q49). The two marks combine
-  (`fractured crafted "maximum life"`).
+- `bench "<mod>" [t<n>]` marks a [crafting bench](https://www.poewiki.net/wiki/Crafting_Bench)
+  modifier, named as the `bench` operation names it (§3) with the bench's tier when it
+  has several; `bench "random"` is an unnamed one, some bench modifier of its side. Either
+  counts toward the crafted-modifier limit, so a bought item's craft is declared rather
+  than mistaken for a natural modifier (`QUESTIONS.md` Q49). The two marks combine
+  (`fractured bench "maximum life"`).
 - `influences: hunter` (or two of them, `influences: shaper elder`) marks an
   [influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics); the six are
   `shaper`, `elder`, `crusader`, `hunter`, `redeemer` and `warlord`. Every method in §3

@@ -446,13 +446,13 @@ declared cannot-roll metamod would have blocked. A bought item whose unnamed pre
 fact a bench craft then checks as if it had none, and a later `bench` is let through
 where the game refuses on the crafted limit.
 **Options:** (a) keep natural-only and say so (the surface doc does); (b) a spelling for
-an unnamed crafted modifier, `crafted "random"`, counted toward the crafted range;
+an unnamed crafted modifier, `bench "random"`, counted toward the crafted range;
 (c) read `"random"` as any row of any source, which would block most crafts on a
 placeholder item.
 **Recommendation:** (b) when a guide needs it; (a) meanwhile.
 **Assumed meanwhile:** (a) (`check/ops.ts` `anonymousTypes`; the `crafted` range counts
 named bench rows only).
-**Answer:** Rick ruled (2026-11-08): (b). Applied: the item block takes `crafted "<mod>" [t<n>]` and `crafted "random"`, both counted toward the crafted limit.
+**Answer:** Rick ruled (2026-11-08): (b). Applied: the item block takes `bench "<mod>" [t<n>]` and `bench "random"`, both counted toward the crafted limit (spelled `bench`, the operation's word, by a later ruling).
 
 ### Q42 · game probe · resolved
 

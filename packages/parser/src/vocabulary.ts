@@ -27,7 +27,7 @@ export const RARITY_PREDICATES: Readonly<Record<string, Rarity>> = {
 };
 export const PROJECTIONS = ["prefixCount", "suffixCount"] as const;
 /** The marks an item-block affix may carry before its name. */
-export const AFFIX_MARKS = ["fractured", "crafted"] as const;
+export const AFFIX_MARKS = ["fractured", "bench"] as const;
 
 /** The item block's fields; `corrupted` is also the predicate of that name. */
 export const ITEM_FIELDS = [

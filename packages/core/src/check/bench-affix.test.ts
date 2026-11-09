@@ -5,7 +5,7 @@ import { buildRegistry } from "../resolve/registry.js";
 import { benchRemove, craft, item } from "../__fixtures__/ast.js";
 import { BENCH_LIFE_ROW, CATALOG, CLASS_RING, RING_BASE } from "../__fixtures__/mods.js";
 
-// A `crafted` affix in the item block is the bench's row: it counts toward the
+// A `bench` affix in the item block is the bench's row: it counts toward the
 // crafted limit, named or not.
 const registry = buildRegistry({
     bases: [RING_BASE],
@@ -15,14 +15,14 @@ const registry = buildRegistry({
 });
 const ctx: CheckContext = { registry };
 
-describe("a crafted affix in the item block", () => {
+describe("a bench affix in the item block", () => {
     it("named, is the bench's row and counts as crafted", () => {
         const c = craft(
             item({
                 base: "Iron Ring",
                 ilvl: 100,
                 rarity: "rare",
-                prefixes: [{ mod: "maximum life", tier: 1, crafted: true }],
+                prefixes: [{ mod: "maximum life", tier: 1, bench: true }],
             }),
             [],
         );
@@ -37,7 +37,7 @@ describe("a crafted affix in the item block", () => {
             base: "Iron Ring",
             ilvl: 100,
             rarity: "rare",
-            prefixes: [{ mod: "random", crafted: true }],
+            prefixes: [{ mod: "random", bench: true }],
             suffixes: ["FireResist1"],
         });
         const r = check(craft(start, [benchRemove()]), ctx);

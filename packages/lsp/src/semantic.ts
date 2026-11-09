@@ -57,7 +57,6 @@ const KEYWORDS = new Set([
     "def",
     "has",
     "fractured",
-    "crafted",
     "influenced",
     "dominant",
     "not",

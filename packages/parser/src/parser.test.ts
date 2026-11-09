@@ -643,16 +643,16 @@ describe("parser — comments and error spans", () => {
 });
 
 describe("item block — affix marks", () => {
-    it("parses `crafted` and `fractured` in either order, and the formatter writes them back", () => {
+    it("parses `bench` and `fractured` in either order, and the formatter writes them back", () => {
         const c = parseOk(
-            `item { base: "R" ilvl: 84 rarity: rare prefixes: [ crafted "maximum life" t1, crafted "random", fractured crafted "maximum mana" t1 ] }`,
+            `item { base: "R" ilvl: 84 rarity: rare prefixes: [ bench "maximum life" t1, bench "random", fractured bench "maximum mana" t1 ] }`,
         );
         expect(c.item.prefixes).toEqual([
-            { mod: "maximum life", tier: 1, crafted: true },
-            { mod: "random", crafted: true },
-            { mod: "maximum mana", tier: 1, fractured: true, crafted: true },
+            { mod: "maximum life", tier: 1, bench: true },
+            { mod: "random", bench: true },
+            { mod: "maximum mana", tier: 1, fractured: true, bench: true },
         ]);
-        const text = `item {\n    base:     "R"\n    ilvl:     84\n    rarity:   rare\n    prefixes: [ crafted "maximum life" t1, crafted "random", fractured crafted "maximum mana" t1 ]\n}\n`;
+        const text = `item {\n    base:     "R"\n    ilvl:     84\n    rarity:   rare\n    prefixes: [ bench "maximum life" t1, bench "random", fractured bench "maximum mana" t1 ]\n}\n`;
         expect(formatCraft(text)).toBe(text);
     });
 });

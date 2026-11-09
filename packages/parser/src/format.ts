@@ -52,7 +52,7 @@ function operationArg(a: OperationArg): string {
 function affix(a: AffixDecl): string {
     const parts = [quote(a.mod)];
     if (a.tier !== undefined) parts.push(`t${a.tier}`);
-    return `${a.fractured ? "fractured " : ""}${a.crafted ? "crafted " : ""}${parts.join(" ")}`;
+    return `${a.fractured ? "fractured " : ""}${a.bench ? "bench " : ""}${parts.join(" ")}`;
 }
 
 // --- predicates --------------------------------------------------------------
