@@ -296,9 +296,14 @@ function reduceTiers(a: AItem): AItem | null {
  * Empty when the clause carries no such tier (e.g. plain `has X` disjunctions).
  */
 export function disjunctiveTier(a: AItem, types: readonly TypeId[]): Map<TypeId, ModId> {
+    // A view: only the atoms this state's function mentions count, not the
+    // ones a later step named.
+    const support = a.bdd.support(a.presence);
     const pick = new Map<TypeId, ModId>();
     for (const t of types) {
-        const atoms = tierAtomsOf(a, t);
+        const atoms = support
+            .filter((v) => isTierAtom(v) && tierAtomType(v) === t)
+            .map(tierAtomMod);
         if (atoms.length !== 1) return new Map<TypeId, ModId>();
         pick.set(t, atoms[0]!);
     }
@@ -312,10 +317,9 @@ export function disjunctiveTier(a: AItem, types: readonly TypeId[]): Map<TypeId,
  * relax only the excluded-and-addable atoms (an add removes nothing).
  *
  * Only atoms that are ALREADY BDD variables can be excluded, and we must not
- * touch the rest, because `bdd.variable(name)` ALLOCATES a variable. Allocating
- * one per addable mod would flood `bdd.variables()` (used by the presence views,
- * e.g. `disjunctiveGuarantees`'s `MAX_DISJUNCTION_VARS` guard) with hundreds of
- * spurious entries.
+ * touch the rest, because `bdd.variable(name)` ALLOCATES a variable. One per
+ * addable mod would be hundreds of variables a craft never constrains, paid for
+ * on every operation and scanned by `tierAtomsOf` for the tier facts.
  */
 export function admitAdd(
     a: AItem,

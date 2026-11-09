@@ -69,6 +69,15 @@ until has "fire res" t1 or has "cold res" t1 or has "light res" t1 { annul exalt
         };
         expect(exit(head)).toBe("oneOf");
         expect(exit(`${head}\nif prefixCount == 0 { bench "maximum life" }`)).toBe("oneOf");
+        // A later step naming a second tier of a member keeps the group's pins.
+        const pinned = (src: string): string => {
+            const loop = walk(src).steps.find((s) => s.kind === "loop")!;
+            const group = itemView(loop.after!, registry).suffixes[0]!;
+            if (group.kind !== "oneOf") throw new Error("expected a group");
+            return group.members.map((m) => m.tier?.join("-") ?? "?").join(",");
+        };
+        expect(pinned(head)).toBe("1-1,1-1,1-1");
+        expect(pinned(`${head}\nif has "fire res" t2 { exalt }`)).toBe("1-1,1-1,1-1");
     });
 
     it("gives a finding to the innermost statement that contains it", () => {
