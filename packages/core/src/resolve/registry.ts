@@ -604,10 +604,15 @@ export function buildRegistry(data: RegistryData): Registry {
                     (base === undefined || [...e.classes].some((t) => base.tags.has(t))),
             );
             // Every query word must be a word (or a prefix of one) of the text.
-            // Rows of one wording (the tiers, and the presence variants the data
-            // words alike) are one candidate; several wordings are ambiguous. A
-            // tier that changes a number also changes a plural, so plurals are folded.
-            const byWording = new Map<string, { text: string; types: Set<TypeId> }>();
+            // Rows of one wording (the tiers) are one candidate, ranked by how much
+            // of the wording the query covers, so "attack speed" names the plain
+            // implicit and its presence variants are reached by their condition's
+            // words; a tie at the top is ambiguous. A tier that changes a number
+            // also changes a plural, so plurals are folded.
+            const byWording = new Map<
+                string,
+                { text: string; types: Set<TypeId>; score: number }
+            >();
             for (const e of rows) {
                 const tokens = normalizeText(e.text);
                 const set = new Set(tokens);
@@ -616,19 +621,21 @@ export function buildRegistry(data: RegistryData): Registry {
                 );
                 if (!hit) continue;
                 const key = [...new Set(tokens.map(singular))].sort().join(" ");
-                const entry = byWording.get(key) ?? { text: e.text, types: new Set<TypeId>() };
+                const entry = byWording.get(key) ?? {
+                    text: e.text,
+                    types: new Set<TypeId>(),
+                    score: q.length / set.size,
+                };
                 entry.types.add(e.type);
                 byWording.set(key, entry);
             }
             if (byWording.size === 0) return fail({ kind: "unknownEldritch", name, side });
-            if (byWording.size > 1) {
-                return fail({
-                    kind: "ambiguous",
-                    name,
-                    candidates: [...byWording.values()].map((c) => c.text),
-                });
+            const best = Math.max(...[...byWording.values()].map((c) => c.score));
+            const top = [...byWording.values()].filter((c) => c.score === best);
+            if (top.length > 1) {
+                return fail({ kind: "ambiguous", name, candidates: top.map((c) => c.text) });
             }
-            return found([...[...byWording.values()][0]!.types]);
+            return found([...top[0]!.types]);
         },
 
         eldritchNames(side) {

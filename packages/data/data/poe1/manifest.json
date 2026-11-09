@@ -47,12 +47,12 @@
             }
         },
         "eldritch.json": {
-            "sha256": "925c380bdc7e92d68582a9e1ad3b586ba7b5e2205a43aa9e1018ec074b812898",
+            "sha256": "69a0430ff433c2cc6528385b4a52d1d4415e68a71f0baff10f4040e1b41519a9",
             "count": 3360,
             "provenance": {
                 "commit": "aa9fa7c394b18a7a89f913f86703112b3f9d20f1",
                 "commitDate": "2026-10-25T03:48:01Z",
-                "publishedAt": "Mon, 19 Oct 2026 04:15:14 GMT"
+                "publishedAt": "Fri, 06 Nov 2026 16:49:17 GMT"
             }
         }
     }

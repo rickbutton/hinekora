@@ -13,6 +13,7 @@ import {
     pool,
     rollableTiers,
     TagId,
+    ModId,
 } from "@hinekora/core";
 import { registryOf } from "./bundle.js";
 import { loadDefaultPoe1 } from "./load.js";
@@ -76,12 +77,26 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         const grand = registry.eldritchPool(gloves, "exarch", 3);
         expect(grand.length).toBeGreaterThan(50);
         expect(grand.every((e) => e.tier === 3 && e.side === "exarch")).toBe(true);
+        // Tiers count from Lesser: the weakest attack speed row is tier 1, and a
+        // presence row's text carries the condition the game prints first.
+        const byId = new Map(data.eldritch.map((e) => [e.id, e]));
+        expect(byId.get(ModId("IncreasedAttackSpeedEldritchImplicit1"))).toMatchObject({
+            tier: 1,
+            text: "8% increased Attack Speed",
+        });
+        expect(byId.get(ModId("IncreasedAttackSpeedEldritchImplicit6"))?.tier).toBe(6);
+        expect(byId.get(ModId("IncreasedAttackSpeedEldritchImplicitUniquePresence6"))?.text).toBe(
+            "While a Unique Enemy is in your Presence, 17% increased Attack Speed",
+        );
         expect(registry.eldritchPool(base("Iron Ring"), "exarch", 3)).toEqual([]);
-        // The wording covers the plain implicit and its two "presence" variants.
+        // The plain wording names the plain implicit; a presence variant is
+        // reached by its condition's words.
         const speed = registry.resolveEldritch("attack speed", "exarch", gloves);
-        expect(speed.ok && speed.value.length).toBe(3);
+        expect(speed.ok && speed.value.length).toBe(1);
+        const unique = registry.resolveEldritch("unique enemy attack speed", "exarch", gloves);
+        expect(unique.ok && registry.eldritchTextOf(unique.value[0]!)).toMatch(/^While a Unique/);
         expect(registry.resolveEldritch("attack speed", "eater", gloves).ok).toBe(false);
-        const vague = registry.resolveEldritch("increased", "exarch", gloves);
+        const vague = registry.resolveEldritch("damage", "exarch", gloves);
         expect(!vague.ok && vague.error.kind).toBe("ambiguous");
         // One wording per implicit, not one per tier.
         const names = registry.eldritchNames("eater");

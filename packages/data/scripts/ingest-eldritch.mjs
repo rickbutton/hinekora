@@ -20,13 +20,34 @@ const SIDE_OF = {
     eater_of_worlds_implicit: "eater",
 };
 
-/** The tier a row is: the `no_tier_<n>_eldritch_implicit` tag that excludes it. */
+/**
+ * The tier a row is, Lesser = 1 up to Perfect = 6 as the model counts (a higher
+ * tier is the stronger ember, Eldritch Chaos Orb § Dominant). The export's
+ * `no_tier_<n>_eldritch_implicit` tag that excludes the row counts the other
+ * way, Perfect = 1 down to Lesser = 6: on List of Searing Exarch implicit
+ * modifiers the gloves' 8% attack speed row carries `no_tier_6` and the 13%
+ * row `no_tier_1`.
+ */
 function tierOf(m) {
     for (const w of m.spawn_weights) {
         const hit = /^no_tier_(\d)_eldritch_implicit$/.exec(w.tag);
-        if (hit) return Number(hit[1]);
+        if (hit) return 7 - Number(hit[1]);
     }
     return 0;
+}
+
+/**
+ * The export's text of a "presence" row omits the condition the game prints
+ * first; List of Searing Exarch implicit modifiers words it "While a Unique
+ * Enemy is in your Presence, 13% increased Attack Speed" and "While a Pinnacle
+ * Atlas Boss is in your Presence, 18% …".
+ */
+export function presenceText(id, text) {
+    if (id.includes("UniquePresence")) return `While a Unique Enemy is in your Presence, ${text}`;
+    if (id.includes("PinnaclePresence")) {
+        return `While a Pinnacle Atlas Boss is in your Presence, ${text}`;
+    }
+    return text;
 }
 
 export function projectEldritch(raw) {
@@ -44,7 +65,7 @@ export function projectEldritch(raw) {
             type: m.type,
             classes,
             implicit_tags: m.implicit_tags ?? [],
-            text: m.text ?? "",
+            text: presenceText(id, m.text ?? ""),
         };
     }
     return out;

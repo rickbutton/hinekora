@@ -82,10 +82,10 @@ item {
   Searing Exarch's and the Eater of Worlds'; the six tiers are `lesser`, `greater`,
   `grand`, `exceptional`, `exquisite` and `perfect`. A wording after the tier names
   which implicit it is (`exarch: grand "increased movement speed"`), matched by word as
-  a mod name is (§2) among the implicits of that side, and ambiguous as in §2 when the
-  words fit several wordings; the one wording covers the implicit's "presence" variants
-  too, which the data words alike. An influenced item cannot carry one, so declaring
-  both is an error.
+  a mod name is (§2) among the implicits of that side, the wording the words cover best
+  winning and a tie ambiguous as in §2; an implicit's "presence" variant ("While a
+  Unique Enemy is in your Presence, …") is a wording of its own, named by the words of
+  its condition. An influenced item cannot carry one, so declaring both is an error.
 - `corrupted`, a bare flag, marks a
   [corrupted item](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items), which
   takes no craft but the Tainted currency (§3). A guide that corrupts an item mid-way

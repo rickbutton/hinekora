@@ -276,11 +276,14 @@ base tags it allows, its chance of a corrupted-essence modifier, a fracture), ne
 weight multipliers. A mod's projection keeps `implicit_tags` (the category tags harvest and fossils
 filter on). The eldritch implicit rows (eldritch.json, `scripts/ingest-eldritch.mjs`,
 `projectEldritch`) come from the current export with their own `provenance`: side, tier
-(read off the `no_tier_<n>_eldritch_implicit` tag that excludes the row), type, the
-class tags it rolls on and its text; a row with no tier or no class is not obtainable
-and is dropped. `adaptEldritch` makes an `EldritchImplicitSpec`; the registry offers
-`eldritchPool(base, side, tier)`, `resolveEldritch(name, side, base?)` (every type the
-wording covers, the "presence" variants among them; several wordings are ambiguous),
+(Lesser = 1 up to Perfect = 6, the model's count; the export's
+`no_tier_<n>_eldritch_implicit` tag that excludes the row counts from Perfect = 1, so the
+tier is 7 − n), type, the class tags it rolls on and its text (a "presence" row's text
+gains the condition the game prints first, `presenceText`); a row with no tier or no
+class is not obtainable and is dropped. `adaptEldritch` makes an `EldritchImplicitSpec`; the registry offers
+`eldritchPool(base, side, tier)`, `resolveEldritch(name, side, base?)` (the types of the
+wording the query covers best, so "attack speed" is the plain implicit and a "presence"
+variant is reached by its condition's words; a tie is ambiguous),
 `eldritchNames(side)` (one wording per implicit) and `eldritchTextOf(type)`. For a base it also folds the affix-count implicit stats
 (`local_maximum_{prefixes,suffixes}_allowed_+`) into a `capDelta` (absent when zero).
 `adapter.ts` adapts rows into model types and stamps `ModSource` via `classifySource`

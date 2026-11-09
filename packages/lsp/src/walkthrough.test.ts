@@ -88,10 +88,16 @@ until has "fire res" t1 or has "cold res" t1 or has "light res" t1 { annul exalt
         const [implicit] = itemView(known.start.item!, registry).implicits;
         expect(implicit!.side).toBe("exarch");
         expect(implicit!.tiers).toEqual(["Grand"]);
-        // The wording names the plain family and its two presence variants,
-        // each at the Grand row's value.
-        expect(implicit!.texts).toHaveLength(3);
-        for (const t of implicit!.texts) expect(t).toMatch(/\d+% increased Attack Speed$/);
+        // The wording names the plain implicit at the Grand row's value; its
+        // presence variants are wordings of their own.
+        expect(implicit!.texts).toEqual(["10% increased Attack Speed"]);
+        const presence = walk(
+            `item { base: "Iron Gauntlets" ilvl: 84 rarity: rare exarch: grand "unique enemy attack speed" }
+exalt`,
+        );
+        expect(itemView(presence.start.item!, registry).implicits[0]!.texts).toEqual([
+            "While a Unique Enemy is in your Presence, 14% increased Attack Speed",
+        ]);
 
         const drawn = walk(`item { base: "Iron Gauntlets" ilvl: 84 rarity: rare }\nember grand`);
         const view = itemView(drawn.steps[0]!.after!, registry);
