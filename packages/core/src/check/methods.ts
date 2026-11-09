@@ -403,6 +403,12 @@ export const METHODS: readonly Method[] = [
         build: () => VEILED_EXALT,
     },
     {
+        words: ["aisling"],
+        args: [],
+        doc: "aisling — Aisling's bench in the Research safehouse, the shape of veiled exalt: remove a modifier and add a veiled one.",
+        build: () => VEILED_EXALT,
+    },
+    {
         words: ["unveil"],
         args: [name("mod", true)],
         doc: 'unveil ["<mod>"] — reveal the veiled modifier; with a name, that option, guaranteed only when three or fewer are offered.',

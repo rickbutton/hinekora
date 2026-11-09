@@ -236,7 +236,8 @@ Operations that take a name (and an optional `t<n>`):
 - `veiled chaos` and `veiled exalt` are the
   [Veiled Chaos Orb](https://www.poewiki.net/wiki/Veiled_Chaos_Orb) and
   [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb); both need a Rare
-  item, `veiled exalt` also a removable modifier.
+  item, `veiled exalt` also a removable modifier. `aisling` is the same step under the
+  name guides give it, Aisling's bench in the Research safehouse.
 - `foulborn augment`, `foulborn regal` and `foulborn exalt` are the
   [Foulborn](https://www.poewiki.net/wiki/Foulborn_currency) Orb of Augmentation, Regal
   Orb and Exalted Orb: the plain orb with the same needs, but of each modifier's eligible
