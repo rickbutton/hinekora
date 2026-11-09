@@ -557,8 +557,8 @@ so the guard is one clause, `if not has group "spell damage" { bench "spell dama
 means, one clause instead of five, and it needs no new word in the item block; (a) when
 a guide needs one side's version of a shared wording for its own sake.
 **Assumed meanwhile:** (b), built as `has group "<mod>"` (the surface doc §5,
-`check/check.ts` `resolveHas`, `check/astate.ts` `refineHasGroup`); the essence wand
-guide is written with it (`examples/essence-minion-wand.craft`).
+`check/check.ts` `resolveHas`, `check/astate.ts` `refineHasGroup`), tested in
+`check/group.test.ts`.
 **Answer:**
 
 ### Q57 · decision · open
