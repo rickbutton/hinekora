@@ -762,6 +762,25 @@ export const TierDomain = {
 } satisfies Domain<Tiers>;
 
 /**
+ * Join a per-type overlay, keeping what one branch knows of a type the other
+ * branch excludes: if the type is on the item at all, it came from the branch
+ * that pinned it. Without this, "life or mana, one of them" refined into its
+ * two arms and joined back forgot both tiers.
+ */
+function joinKnown<V>(
+    a: AItem,
+    b: AItem,
+    oa: ReadonlyMap<TypeId, V>,
+    ob: ReadonlyMap<TypeId, V>,
+    join: (x: ReadonlyMap<TypeId, V>, y: ReadonlyMap<TypeId, V>) => ReadonlyMap<TypeId, V>,
+): ReadonlyMap<TypeId, V> {
+    const out = new Map(join(oa, ob));
+    for (const [t, v] of oa) if (!ob.has(t) && isExcluded(b, t)) out.set(t, v);
+    for (const [t, v] of ob) if (!oa.has(t) && isExcluded(a, t)) out.set(t, v);
+    return out;
+}
+
+/**
  * The least-upper-bound of two states reaching the same program point, the
  * reduced product's join, applied field-by-field through each sub-domain.
  * `presence` is the one relational domain: its join is BDD-OR (`a.bdd.or`),
@@ -786,8 +805,8 @@ export function join(a: AItem, b: AItem): AItem {
         counts: CountDomain.join(a.counts, b.counts),
         presence: a.bdd.or(a.presence, b.presence),
         possible: SetDomain.join(a.possible, b.possible),
-        tiers: TierDomain.join(a.tiers, b.tiers),
-        values: ValueDomain.join(a.values, b.values),
+        tiers: joinKnown(a, b, a.tiers, b.tiers, (x, y) => TierDomain.join(x, y)),
+        values: joinKnown(a, b, a.values, b.values, (x, y) => ValueDomain.join(x, y)),
         crafted: RangeDomain.join(a.crafted, b.crafted),
         craftedTypes: SetDomain.join(a.craftedTypes, b.craftedTypes),
         ...(a.imprint && b.imprint && { imprint: join(a.imprint, b.imprint) }),

@@ -503,7 +503,9 @@ merge/fixpoint machinery treats them uniformly. `check/domain.ts` declares the s
 contract `Domain<T>`: the two ops every sub-domain must provide, `join` (branch-merge
 LUB) and `equal` (fixpoint detection), plus the reusable `RangeDomain` (integer ranges)
 and `SetDomain` (the `possible` whitelist). `join`/`stateEqual` in `astate.ts` are now
-just those ops applied field-by-field. A cross-domain fact (e.g. crafted ⊆ affixes) is a
+just those ops applied field-by-field; the tier and value overlays keep what one branch
+knows of a type the other branch excludes (`joinKnown`), since the type can only have come
+from the branch that pinned it. A cross-domain fact (e.g. crafted ⊆ affixes) is a
 **reduction** applied explicitly at the product level in `normalize`, never hidden inside
 one domain. The sub-domains:
 
