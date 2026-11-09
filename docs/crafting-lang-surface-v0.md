@@ -138,7 +138,8 @@ numbers tiers across all bases. A tier that cannot roll here is an error.
 
 Each statement applies one operation to the current item. The checker proves the
 operation's precondition from the state it has inferred; a failure is reported as in §6
-and the operation is skipped so checking continues.
+and checking continues from the item the operation would have made, so one wrong step is
+reported once rather than at every step after it (`operations.md` §2).
 
 The eleven **currencies**, grouped as the wiki's [Crafting](https://www.poewiki.net/wiki/Crafting)
 page groups them:
