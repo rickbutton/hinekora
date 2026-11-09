@@ -94,4 +94,17 @@ describe("checker — a modifier the item is known to carry rules out Normal", (
         expect(r.diagnostics).toEqual([]);
         expect([...r.finalState!.rarities]).toEqual(["rare"]);
     });
+
+    it("leaves a loop that may be Magic as Rare once its exit needs two prefixes", () => {
+        // A Magic item holds one prefix, so only the regalled paths leave.
+        const c = craft(item({ base: "IronRing", ilvl: 100, rarity: "magic" }), [
+            until(cmp("prefixCount", ">=", 2), [
+                iff(isRarity("magic"), [op("regal")], [op("scour"), op("transmute")]),
+            ]),
+            op("chaos"),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect([...r.finalState!.rarities]).toEqual(["rare"]);
+    });
 });

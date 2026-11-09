@@ -610,15 +610,15 @@ export function cardinalityGuarantees(a: AItem): CardinalityGuarantee[] {
 }
 
 /**
- * Re-establish the invariants after a field is changed: renormalize the count
- * sub-domain (the `total`/`prefix`/suffix coupling) and re-apply the cross-domain
- * reductions, crafted and fractured mods are subsets of the affixes, so neither
- * count can exceed the total. Returns `null` if no consistent count assignment
- * remains (an uninhabited state).
+ * Re-establish the invariants after a field is changed: drop a rarity whose caps
+ * cannot hold the counts' minimums (a modifier every path carries rules out
+ * Normal), renormalize the count sub-domain (the `total`/`prefix`/suffix
+ * coupling) and re-apply the cross-domain reductions, crafted and fractured mods
+ * are subsets of the affixes, so neither count can exceed the total. Returns
+ * `null` if no rarity or no consistent count assignment remains (an uninhabited
+ * state).
  */
 export function normalize(a: AItem): AItem | null {
-    // A rarity whose caps cannot hold the modifiers every path has is no path at
-    // all: a modifier the item is known to carry rules out Normal.
     const rarities = new Set(
         [...a.rarities].filter((r) => {
             const c = caps(r, a.base);
