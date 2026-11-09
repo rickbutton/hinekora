@@ -307,10 +307,17 @@ hold; inside `else`, its negation. A branch whose condition is impossible here, 
 negation always holds, is reported as never running. After the branch, what both arms
 guarantee is kept, including disjunctions ("one of these three is present").
 
-### 4.3 `restart`
+### 4.3 `restart` and `stop`
 
-Re-enter the innermost enclosing `until` from its start (at top level: end the craft).
-Used in a failure branch, typically after a removal that may have taken a wanted modifier.
+`restart` re-enters the innermost enclosing `until` from its start (at top level: it ends
+the craft). Used in a failure branch, typically after a removal that may have taken a
+wanted modifier, when the loop can try again.
+
+`stop` ends the craft on this path: the item is kept as it is, or is not worth more
+currency, and nothing after it runs on that path. What follows is judged only on the
+paths that continue, so "if the life was removed the item is bricked, start over with a
+new base" is `if not has "maximum life" { stop }`, after which the life is sure. A craft
+whose every path stops has no finished item.
 
 ### 4.4 Definitions
 

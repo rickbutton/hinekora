@@ -458,6 +458,10 @@ class Parser {
             const t = this.advance();
             return { kind: "restart", span: t.span };
         }
+        if (this.atKeyword("stop")) {
+            const t = this.advance();
+            return { kind: "stop", span: t.span };
+        }
         if (this.atKeyword("else")) {
             throw this.error("'else' without a matching 'if'");
         }

@@ -114,7 +114,8 @@ export interface EldritchDecl {
 
 // --- Statements (surface §3–§4) -------------------------------------------
 
-export type Stmt = OperationStmt | RestartStmt | UntilStmt | IfStmt | CallStmt | ParamStmt;
+export type Stmt =
+    OperationStmt | RestartStmt | StopStmt | UntilStmt | IfStmt | CallStmt | ParamStmt;
 
 /**
  * A def parameter in statement position inside an operation function's body:
@@ -159,6 +160,13 @@ export interface CallStmt {
 /** `restart`, re-enter the enclosing craft/loop from its start. */
 export interface RestartStmt {
     readonly kind: "restart";
+    readonly span: SourceSpan;
+}
+
+/** `stop`, end the craft on this path: the item is kept as it is, or is not
+ *  worth more currency. */
+export interface StopStmt {
+    readonly kind: "stop";
     readonly span: SourceSpan;
 }
 

@@ -113,7 +113,12 @@ const WIDEN_AFTER = 3;
  *  handful, so this is a wide safety backstop. */
 const MAX_LOOP_ITERS = 32;
 
-type Flow = { readonly kind: "fall"; readonly state: AItem } | { readonly kind: "restart" };
+/** How a statement leaves: with an item, or ending the path, by re-entering the
+ *  enclosing loop (`restart`) or by ending the craft on this path (`stop`). */
+type Flow =
+    | { readonly kind: "fall"; readonly state: AItem }
+    | { readonly kind: "restart" }
+    | { readonly kind: "stop" };
 
 /** A statement whose words name no method: a currency's name is the common
  *  case, so that is what the message calls it. */
@@ -498,7 +503,7 @@ class Checker {
                     ...(flow.kind === "fall" && { after: flow.state }),
                 });
             }
-            if (flow.kind === "restart") return { kind: "restart" }; // rest is unreachable
+            if (flow.kind !== "fall") return flow; // rest is unreachable
             state = flow.state;
         }
         return { kind: "fall", state };
@@ -518,6 +523,8 @@ class Checker {
                 if (frame !== undefined) frame.push(a);
                 return { kind: "restart" };
             }
+            case "stop":
+                return { kind: "stop" };
             case "until":
                 return this.checkUntil(a, stmt);
             case "if":
@@ -593,22 +600,19 @@ class Checker {
         }
 
         const falls: AItem[] = [];
-        let anyRestart = false;
-
-        if (thenState !== null) {
-            const f = this.checkSeq(thenState, stmt.body);
+        // An arm that ends the path contributes nothing to the join; when no arm
+        // falls through, the statement ends the path as its arms did (a restart
+        // over a stop, since the loop is re-entered on that arm).
+        let ended: Flow | null = null;
+        const arm = (state: AItem, body: readonly Stmt[]): void => {
+            const f = this.checkSeq(state, body);
             if (f.kind === "fall") falls.push(f.state);
-            else anyRestart = true;
-        }
-        if (elseState !== null) {
-            const f = this.checkSeq(elseState, stmt.elseBody ?? []);
-            if (f.kind === "fall") falls.push(f.state);
-            else anyRestart = true;
-        }
+            else if (ended === null || f.kind === "restart") ended = f;
+        };
+        if (thenState !== null) arm(thenState, stmt.body);
+        if (elseState !== null) arm(elseState, stmt.elseBody ?? []);
 
-        if (falls.length === 0) {
-            return anyRestart ? { kind: "restart" } : { kind: "fall", state: a };
-        }
+        if (falls.length === 0) return ended ?? { kind: "fall", state: a };
         return { kind: "fall", state: this.tightenCounts(falls.reduce(join)) };
     }
 
@@ -1074,6 +1078,7 @@ function calledProcs(stmts: readonly Stmt[], out = new Set<string>()): Set<strin
                 break;
             case "operation":
             case "restart":
+            case "stop":
             case "paramStep":
                 break;
         }
@@ -1180,6 +1185,7 @@ function noteArgUses(u: ParamUses, args: readonly Arg[]): void {
 function noteStmtUses(u: ParamUses, s: Stmt): void {
     switch (s.kind) {
         case "restart":
+        case "stop":
             return;
         case "paramStep":
             noteSort(u, { param: s.param, span: s.span }, "block");
@@ -1334,6 +1340,7 @@ function subOperationArg(arg: OperationArg, env: Map<string, Arg>): OperationArg
 function substituteStmt(stmt: Stmt, env: Map<string, Arg>): Stmt {
     switch (stmt.kind) {
         case "restart":
+        case "stop":
         case "paramStep":
             return stmt;
         case "operation":

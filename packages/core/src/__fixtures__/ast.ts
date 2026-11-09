@@ -32,6 +32,7 @@ import type {
     ProcDef,
     RarityPred,
     RestartStmt,
+    StopStmt,
     SourceSpan,
     Stmt,
     UntilStmt,
@@ -165,6 +166,7 @@ export const beast = (action: BeastAction): OperationStmt => {
     }
 };
 export const restart = (): RestartStmt => ({ kind: "restart", span: DS });
+export const stop = (): StopStmt => ({ kind: "stop", span: DS });
 export const until = (pred: Pred, body: readonly Stmt[]): UntilStmt => ({
     kind: "until",
     pred,

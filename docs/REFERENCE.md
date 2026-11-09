@@ -173,7 +173,8 @@ these suffix modifiers }`, `{ 1-3 more modifiers, prefixes and/or suffixes }`,
   text (`flowchart(walkthrough)`): an action node per statement in a class named after
   its method word, a hexagon per loop exit or branch asking "item has …?" with the
   checklist's lines, "yes" and "no" edges, a loop as a `repeat` subgraph whose decision
-  leads back to its first step (a `restart` goes there too), start and end nodes
+  leads back to its first step (a `restart` goes there too; a `stop` is an end node of
+  its own path), start and end nodes
   (`FLOW_START`, `FLOW_END`), and the map from node id to statement for a consumer that
   binds the drawn nodes to the text; the CLI's `hinekora chart <file>` prints the text
   (`chartSource` in `packages/cli/src/check.ts`) for a README or a wiki page to embed. `itemDelta`/`stepDelta` list what a step added and removed, as
@@ -588,7 +589,9 @@ one domain. The sub-domains:
 
 ### `check.ts`: the driver
 
-- `Flow` = a statement either `{ kind: "fall", state }` or `{ kind: "restart" }`
+- `Flow` = a statement either `{ kind: "fall", state }`, `{ kind: "restart" }` or
+  `{ kind: "stop" }` (the path ends and joins nothing; a branch whose arms all end
+  ends the same way, a `restart` over a `stop`)
   (diverges, re-entering the enclosing loop).
 - `if/else`: narrow into each arm, check, **join** the falling states. A branch whose
   condition is impossible (or whose negation always holds) is flagged as never running.

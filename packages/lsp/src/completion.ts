@@ -28,7 +28,7 @@ import { type CompletionItem, CompletionItemKind } from "vscode-languageserver-t
 import { checkCached } from "./analysis.js";
 import { type Atom, methodAt } from "./method-at.js";
 
-const CONTROL_KEYWORDS = ["until", "if", "else", "restart"];
+const CONTROL_KEYWORDS = ["until", "if", "else", "restart", "stop"];
 
 /** The keywords that can START a predicate (after `if` / `until` / `not`). */
 const PREDICATE_KEYWORDS: { label: string; detail: string; kind: CompletionItemKind }[] = [

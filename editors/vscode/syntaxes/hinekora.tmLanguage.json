@@ -32,7 +32,7 @@
         "keywords": {
             "patterns": [
                 {
-                    "match": "\\b(item|until|if|else|restart|restore)\\b",
+                    "match": "\\b(item|until|if|else|restart|stop|restore)\\b",
                     "name": "keyword.control.hinekora"
                 },
                 { "match": "\\b(def)\\b", "name": "storage.type.hinekora" },

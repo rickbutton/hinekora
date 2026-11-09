@@ -153,6 +153,8 @@ function inlineStmt(s: Stmt, source: string, depth: number): string {
             return [...s.words, ...s.args.map(operationArg)].join(" ");
         case "restart":
             return "restart";
+        case "stop":
+            return "stop";
         case "paramStep":
             return s.param;
         case "call":
@@ -242,6 +244,7 @@ class Printer {
         switch (s.kind) {
             case "operation":
             case "restart":
+            case "stop":
             case "paramStep":
                 this.line(depth, inlineStmt(s, this.source, depth), s.span.start.line);
                 return;

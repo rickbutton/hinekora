@@ -54,7 +54,8 @@ export type Step =
           readonly then: readonly Step[];
           readonly else?: readonly Step[];
       })
-    | (StepBase & { readonly kind: "restart" });
+    | (StepBase & { readonly kind: "restart" })
+    | (StepBase & { readonly kind: "stop" });
 
 export interface Walkthrough {
     /** The item block and the item it declares. */
@@ -198,6 +199,8 @@ export function walkthrough(craft: Craft, result: CheckResult, registry: Registr
                 ];
             case "restart":
                 return [{ ...base, kind: "restart" }];
+            case "stop":
+                return [{ ...base, kind: "stop" }];
             case "paramStep":
                 return [];
         }

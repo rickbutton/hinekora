@@ -656,3 +656,18 @@ describe("item block — affix marks", () => {
         expect(formatCraft(text)).toBe(text);
     });
 });
+
+describe("parser — stop", () => {
+    it("parses a stop statement and formats it back", () => {
+        const text = [
+            'item { base: "R" ilvl: 84 rarity: rare }',
+            'if not has "maximum life" {',
+            "    stop",
+            "}",
+            "",
+        ].join("\n");
+        const s = parseOk(text).body[0] as IfStmt;
+        expect(s.body.map((x) => x.kind)).toEqual(["stop"]);
+        expect(formatCraft(text)).toContain('if not has "maximum life" {\n    stop\n}\n');
+    });
+});

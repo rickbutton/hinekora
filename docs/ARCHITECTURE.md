@@ -211,7 +211,9 @@ over one dispatch rather than a case per method.
 ### 4.4 The driver: sequencing, branches, loops
 
 `check.ts` threads a summary through the program. A statement either _falls through_ with a
-new summary or _restarts_ (diverges, re-entering the enclosing loop).
+new summary, _restarts_ (diverges, re-entering the enclosing loop) or _stops_ (the path
+ends; it joins nothing downstream, which is how a guide's "the item is bricked" branch
+leaves the rest of the craft judged on the good paths only).
 
 - **Sequence**: look each statement's words up in the method table and run the sequence
   its entry builds from the arguments.

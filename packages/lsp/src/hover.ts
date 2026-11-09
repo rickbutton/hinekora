@@ -55,6 +55,7 @@ const KEYWORD_DOC: Record<string, string> = {
     if: "`if <pred> { … } else { … }` — branch on the item's state at this point. A branch that can never run is flagged.",
     else: "The alternative branch of an `if`.",
     restart: "`restart` — abandon this attempt and re-run the enclosing loop from the top.",
+    stop: "`stop` — end the craft on this path: keep the item as it is, or spend no more on it.",
     has: '`has "<mod>" [t1]` — true when the item is guaranteed to carry that mod (optionally at that tier; `t1` = best).',
     not: "`not <pred>` — logical negation of a predicate.",
     item: "`item { base: … ilvl: … rarity: … }` — the starting item this craft operates on.",
@@ -214,6 +215,8 @@ function describeStmt(s: Stmt): string {
             return `${s.name}(…)`;
         case "restart":
             return "restart";
+        case "stop":
+            return "stop";
         case "paramStep":
             return s.param;
     }
@@ -512,6 +515,7 @@ function insideStepArgument(stmts: readonly Stmt[], offset: number): boolean {
                 );
             case "operation":
             case "restart":
+            case "stop":
             case "paramStep":
                 return false;
         }

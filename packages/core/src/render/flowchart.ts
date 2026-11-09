@@ -134,6 +134,10 @@ export function flowchart(w: Walkthrough): Flowchart {
                 loop?.push(id);
                 return { entry: id, exits: [] };
             }
+            case "stop": {
+                const id = declare(fresh(), `([${label("stop here")}]):::stop`, node);
+                return { entry: id, exits: [] };
+            }
             case "loop": {
                 const frame: LoopFrame = [];
                 decls.push(`    subgraph ${fresh()} [repeat]`);
