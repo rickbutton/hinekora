@@ -547,23 +547,34 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   with the checklist (the step's `check`) and the item once it is done, always a card;
   a branch is "if the item has" with its checklist and one arm per answer; a `restart`
   is a block pointing back and a `stop` one that keeps the item as it is; the start and
-  the finished item open and close the board;
-  a step never reached is dimmed. The block is the unit of interaction: hovering
+  the finished item open and close the board, the second items (`with <name> { … }`,
+  the walkthrough's `donors`) following the start as their own cards;
+  a step never reached is dimmed. Given the economy snapshot, each block carries the
+  cost layer's line for its statement (`costCached`, matched by statement kind and start
+  offset): what a step is expected to consume and its price in chaos ("expected 8.8
+  Deafening Essence of Greed (about 24 chaos)"), a repeat's rounds and the chance each
+  ends it, how often a branch is taken, how often a `restart` or `stop` is reached, and
+  under the finished item the guide's expected spend in chaos and divine at the
+  snapshot's league and date, with the currencies it could not price; a spread over what
+  the item may hold is the line's tooltip. The block is the unit of interaction: hovering
   anywhere in it highlights its statement in the editor, clicking moves the cursor
   there, and the cursor marks the block it is in (a loop's head and foot together). A
   card has one action of its own, a copy button that puts `renderItemText` on the
   clipboard. While the guide does not parse the last board stays, dimmed.
 - `src/icons/*.png`: the currency icons, copied from the wiki by
   `scripts/fetch-icons.mjs` (one file per method, keyed by its words joined with
-  dashes; the page falls back to the first word, then to a lettered glyph). The game's
+  dashes; the page falls back to the first word, then to a lettered glyph; `aisling`
+  shares the Veiled Exalted Orb's, `recombine` has a Recombinator's). The game's
   CDN serves only the classic orbs under a public path, which is why the wiki's copies
   are the source; `QUESTIONS.md` Q46 holds the ruling.
 - `src/main.ts`: the page: the example guides (`examples/*.craft`, picked from a menu), the
+  catalog and the economy snapshot (`packages/data/data/poe1/economy.json`,
+  `adaptEconomy`) fetched together, the
   storyboard bound to the editor both ways, a problems panel that jumps to a
   finding (and is absent when there is none), a format button, a handle that resizes the sidebar (the width is kept in the
   browser for the next visit), a header that speaks only while the catalog loads or
-  when it cannot, and `window.hinekora` (`editor`, `monaco`, `registry`) for the browser
-  console.
+  when it cannot, and `window.hinekora` (`editor`, `monaco`, `registry`, `prices`) for
+  the browser console.
 
 The package is part of `tsc -b` (declarations only; Vite does the real build), lint and
 the test run (`src/convert.test.ts`). Every push to `main` builds it and publishes it to

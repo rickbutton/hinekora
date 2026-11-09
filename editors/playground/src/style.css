@@ -417,6 +417,41 @@ main {
     font-size: 12px;
 }
 
+/* what a step is expected to cost, under the snapshot */
+
+.cost {
+    color: #c8a35a;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.row .body .cost {
+    margin-top: 1px;
+}
+
+.region-foot .cost,
+.region-head .cost {
+    margin-left: 42px;
+}
+
+.region-head .cost {
+    flex-basis: 100%;
+}
+
+.block.finish .cost {
+    margin: 2px 0 4px 42px;
+}
+
+.cost .unpriced,
+.cost .when {
+    display: block;
+    color: var(--muted);
+}
+
+.block.donor .title {
+    font-weight: 600;
+}
+
 .frame {
     margin: 6px 0 2px 42px;
 }

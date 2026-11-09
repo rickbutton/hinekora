@@ -3,7 +3,14 @@
  * guide, and keep the storyboard and the problems panel in step with the
  * checker.
  */
-import { adaptPoe1, type RawPoe1, registryOf } from "@hinekora/data/browser";
+import {
+    adaptEconomy,
+    adaptPoe1,
+    type RawEconomy,
+    type RawPoe1,
+    registryOf,
+} from "@hinekora/data/browser";
+import economyUrl from "@hinekora/data/data/poe1/economy.json?url";
 import baseItemsUrl from "@hinekora/data/data/poe1/base_items.json?url";
 import benchUrl from "@hinekora/data/data/poe1/bench.json?url";
 import eldritchUrl from "@hinekora/data/data/poe1/eldritch.json?url";
@@ -109,10 +116,13 @@ async function main(): Promise<void> {
         renderWhitespace: "none",
     });
 
-    const registry = await loadRegistry();
+    const [registry, prices] = await Promise.all([
+        loadRegistry(),
+        fetchJson<RawEconomy>(economyUrl).then(adaptEconomy),
+    ]);
     registerProviders(registry);
     // A handle for the browser console: `hinekora.editor`, `hinekora.registry`.
-    Object.assign(window, { hinekora: { editor, monaco, registry } });
+    Object.assign(window, { hinekora: { editor, monaco, registry, prices } });
     // The header speaks only while the catalog loads or when it cannot.
     status.textContent = "";
 
@@ -154,7 +164,7 @@ async function main(): Promise<void> {
     const refresh = (): void => {
         pending = undefined;
         showProblems(editor, publishDiagnostics(model, registry));
-        pane.render(model.getValue(), registry);
+        pane.render(model.getValue(), registry, prices);
         pane.setActive(cursorOffset());
     };
     refresh();

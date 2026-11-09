@@ -7,6 +7,12 @@
  * after every step. A step that only moves the counts or the rarity gets a
  * one-line state; a step that adds or removes something named gets the card.
  *
+ * Under each step the cost layer's line, in the guide's words: what the step
+ * is expected to consume and its price under the economy snapshot, how many
+ * rounds a repeat takes, how often a branch is taken, and at the end what the
+ * whole guide is expected to spend. Second items (`with <name> { … }`) are
+ * drawn after the start, as the guide declares them.
+ *
  * A block is the unit of interaction: hovering anywhere in it highlights its
  * statement in the editor, clicking moves the cursor there, and the cursor
  * marks the block it is in. A card has one action of its own, copying the
@@ -14,20 +20,27 @@
  */
 import {
     type AItem,
+    type Bounds,
+    type CostReport,
     type Criterion,
     groupWords,
+    inChaos,
     type ItemDelta,
     type ItemView,
     itemView,
+    type Price,
+    type Prices,
     type Registry,
     renderItemText,
     type SourceSpan,
     type Step,
+    type StepCost,
     stepDelta,
+    type Stmt,
     type Walkthrough,
     walkthrough,
 } from "@hinekora/core";
-import { checkCached, parseCached } from "@hinekora/lsp";
+import { checkCached, costCached, parseCached } from "@hinekora/lsp";
 import { renderItemCard } from "./item-card.js";
 
 export interface StoryHooks {
@@ -38,8 +51,8 @@ export interface StoryHooks {
 }
 
 export interface Storyboard {
-    /** Rebuild from the source. */
-    render(source: string, registry: Registry): void;
+    /** Rebuild from the source; with prices, each step carries what it costs. */
+    render(source: string, registry: Registry, prices?: Prices): void;
     /** Mark the innermost step containing the offset as the cursor's. */
     setActive(offset: number): void;
 }
@@ -133,6 +146,53 @@ function checklist(c: Criterion): HTMLElement {
 const present = (...nodes: (HTMLElement | undefined)[]): HTMLElement[] =>
     nodes.filter((n): n is HTMLElement => n !== undefined);
 
+/** A figure as a guide quotes it: "0.25", "8.8", "37", "473". */
+export function figure(n: number): string {
+    if (!Number.isFinite(n)) return "∞";
+    if (n >= 100) return String(Math.round(n));
+    if (n >= 10) return n.toFixed(1).replace(/\.0$/, "");
+    return n.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+/** A chance as a guide quotes it: "56%", "4.5%", "0.25%". */
+export function percentage(p: number): string {
+    const v = p * 100;
+    if (v >= 10) return `${Math.round(v)}%`;
+    if (v >= 1) return `${v.toFixed(1)}%`;
+    return `${v.toFixed(2)}%`;
+}
+
+/** "8.8 Deafening Essence of Greed, 2 Chaos Orb (about 24 chaos)". */
+export function moneyText(prices: readonly Price[], snapshot?: Prices): string {
+    const list = prices.map((p) => `${figure(p.amount)} ${p.item}`).join(", ");
+    const chaos = snapshot === undefined ? undefined : inChaos(prices, snapshot);
+    return chaos === undefined ? list : `${list} (about ${figure(chaos)} chaos)`;
+}
+
+/** The spread over the two ends of what the item may hold, as a tooltip. */
+function spreadTitle(b: Bounds | undefined, show: (n: number) => string): string | undefined {
+    return b === undefined
+        ? undefined
+        : `${show(b.low)} to ${show(b.high)} by what the item may hold`;
+}
+
+/** A cost line under a step, with the spread as its tooltip. */
+function costLine(text: string, title?: string): HTMLElement {
+    const el = h("div", "cost", text);
+    if (title !== undefined) el.title = title;
+    return el;
+}
+
+/** The statement kind the cost layer files a step under. */
+const STMT_KIND: Readonly<Record<Step["kind"], Stmt["kind"]>> = {
+    operation: "operation",
+    call: "call",
+    loop: "until",
+    branch: "if",
+    restart: "restart",
+    stop: "stop",
+};
+
 /** "Rare · 2–3 modifiers": the item in a line, when nothing named changed. */
 export function stateLine(v: ItemView): string {
     const rarity = v.rarities.map((r) => r[0]!.toUpperCase() + r.slice(1)).join(" or ");
@@ -183,9 +243,35 @@ interface Anchor {
 export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboard {
     let anchors: Anchor[] = [];
 
-    const build = (w: Walkthrough, registry: Registry): HTMLElement[] => {
+    const build = (
+        w: Walkthrough,
+        registry: Registry,
+        report: CostReport | undefined,
+        prices: Prices | undefined,
+    ): HTMLElement[] => {
         const out: HTMLElement[] = [];
         anchors = [];
+
+        const costs = new Map<string, StepCost>();
+        for (const c of report?.steps ?? []) costs.set(`${c.kind}@${c.span.start.offset}`, c);
+        const costOf = (s: Step): StepCost | undefined =>
+            costs.get(`${STMT_KIND[s.kind]}@${s.span.start.offset}`);
+
+        /** What a step consumes, with the spread of its uses as the tooltip. */
+        const spend = (c: StepCost | undefined): HTMLElement[] => {
+            if (c === undefined) return [];
+            const lines: HTMLElement[] = [];
+            if (c.expected !== undefined && c.expected.length > 0) {
+                lines.push(
+                    costLine(
+                        `expected ${moneyText(c.expected, prices)}`,
+                        spreadTitle(c.runsRange, (n) => `${figure(n)} uses`),
+                    ),
+                );
+            }
+            if (c.note !== undefined) lines.push(h("div", "note", c.note));
+            return lines;
+        };
 
         /** The text of the last item drawn, so an unchanged item is not drawn twice. */
         let last: string | undefined;
@@ -255,6 +341,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                     s.before === undefined
                                         ? h("div", "note", "never reached")
                                         : undefined,
+                                    ...spend(costOf(s)),
                                 ),
                             ),
                         ),
@@ -263,42 +350,35 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                     into.push(anchor(block, s.span));
                     return;
                 }
-                case "restart": {
-                    into.push(
-                        anchor(
-                            h(
-                                "div",
-                                "block restart",
-                                h(
-                                    "div",
-                                    "row",
-                                    glyph("↺"),
-                                    h(
-                                        "div",
-                                        "body",
-                                        h("div", "title", "back to the start of the repeat"),
-                                    ),
-                                ),
-                            ),
-                            s.span,
-                        ),
-                    );
-                    return;
-                }
+                case "restart":
                 case "stop": {
+                    const c = costOf(s);
                     into.push(
                         anchor(
                             h(
                                 "div",
-                                "block stop",
+                                `block ${s.kind}`,
                                 h(
                                     "div",
                                     "row",
-                                    glyph("■"),
+                                    glyph(s.kind === "restart" ? "↺" : "■"),
                                     h(
                                         "div",
                                         "body",
-                                        h("div", "title", "stop here: keep the item as it is"),
+                                        h(
+                                            "div",
+                                            "title",
+                                            s.kind === "restart"
+                                                ? "back to the start of the repeat"
+                                                : "stop here: keep the item as it is",
+                                        ),
+                                        ...present(
+                                            c === undefined
+                                                ? undefined
+                                                : costLine(
+                                                      `reached ${percentage(c.reached)} of the time`,
+                                                  ),
+                                        ),
                                     ),
                                 ),
                             ),
@@ -310,6 +390,14 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                 case "loop": {
                     const body: HTMLElement[] = [];
                     seq(s.body, body);
+                    const c = costOf(s);
+                    const rounds =
+                        c?.attempts === undefined
+                            ? undefined
+                            : costLine(
+                                  `about ${figure(c.attempts.expected)} rounds, ${percentage(c.attempts.chance)} end it each time`,
+                                  spreadTitle(c.attemptsRange, figure),
+                              );
                     const region = h(
                         "div",
                         "region loop",
@@ -325,6 +413,8 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                 h("div", "title", "until the item has"),
                                 h("ul", "checklist", checklist(s.check)),
                                 ...present(
+                                    rounds,
+                                    c?.note === undefined ? undefined : h("div", "note", c.note),
                                     problemList(s.problems),
                                     result(s.after, true, true, "once the repeat is done"),
                                 ),
@@ -336,6 +426,14 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                     return;
                 }
                 case "branch": {
+                    const c = costOf(s);
+                    const taken =
+                        c?.branch === undefined
+                            ? undefined
+                            : costLine(
+                                  `taken ${percentage(c.branch)} of the time`,
+                                  spreadTitle(c.branchRange, percentage),
+                              );
                     const before = last;
                     const yes: HTMLElement[] = [];
                     seq(s.then, yes);
@@ -359,7 +457,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                     glyph("?"),
                                     h("span", "title", "if the item has"),
                                     h("ul", "checklist", checklist(s.check)),
-                                    ...present(problemList(s.problems)),
+                                    ...present(taken, problemList(s.problems)),
                                 ),
                                 s.span,
                             ),
@@ -382,6 +480,27 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                 w.start.span,
             ),
         );
+        // The second items, as the guide declares them; each a fresh item.
+        for (const d of w.donors) {
+            last = undefined;
+            out.push(
+                anchor(
+                    h(
+                        "div",
+                        "block donor",
+                        h(
+                            "div",
+                            "row",
+                            glyph("+"),
+                            h("div", "body", h("div", "title", `with ${d.name}`)),
+                        ),
+                        ...present(result(d.item, true, true)),
+                    ),
+                    d.span,
+                ),
+            );
+        }
+        last = undefined;
         seq(w.steps, out);
         const final = w.steps[w.steps.length - 1]?.after;
         if (final !== undefined) {
@@ -391,15 +510,48 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                     "div",
                     "block finish",
                     h("div", "row", glyph("✓"), h("div", "body", h("div", "title", "done"))),
-                    ...present(result(final, true, true, "the finished item")),
+                    ...present(result(final, true, true, "the finished item"), total()),
                 ),
             );
         }
         return out;
+
+        /** What the whole guide is expected to spend, under the snapshot. */
+        function total(): HTMLElement | undefined {
+            if (report === undefined || report.total.length === 0) return undefined;
+            const el = h("div", "cost");
+            const list = report.total.map((p) => `${figure(p.amount)} ${p.item}`).join(", ");
+            if (report.chaos !== undefined && report.divine !== undefined) {
+                el.append(
+                    `expected spend: about ${figure(report.chaos)} chaos, ${figure(report.divine)} divine`,
+                );
+                el.title = [list, spreadTitle(report.chaosRange, (n) => `${figure(n)} chaos`)]
+                    .filter((s) => s !== undefined)
+                    .join("; ");
+            } else el.append(`expected spend: ${list}`);
+            if (prices !== undefined) {
+                el.append(
+                    h(
+                        "span",
+                        "when",
+                        `at ${prices.league} prices of ${prices.fetchedAt.slice(0, 10)}`,
+                    ),
+                );
+            }
+            if (report.unpriced.length > 0) {
+                el.append(h("span", "unpriced", `no price for ${report.unpriced.join(", ")}`));
+            }
+            if (report.stopped > 0) {
+                el.append(
+                    h("span", "when", `ends on a stop ${percentage(report.stopped)} of the time`),
+                );
+            }
+            return el;
+        }
     };
 
     return {
-        render(source, registry) {
+        render(source, registry, prices) {
             const parsed = parseCached(source);
             const result = checkCached(source, registry);
             if (!parsed.ok || result === undefined) {
@@ -409,7 +561,14 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                 return;
             }
             root.classList.remove("stale");
-            root.replaceChildren(...build(walkthrough(parsed.craft, result, registry), registry));
+            root.replaceChildren(
+                ...build(
+                    walkthrough(parsed.craft, result, registry),
+                    registry,
+                    costCached(source, registry, prices),
+                    prices,
+                ),
+            );
         },
         setActive(offset) {
             if (root.classList.contains("stale")) return;
