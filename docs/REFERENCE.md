@@ -556,7 +556,12 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   ends it, how often a branch is taken, how often a `restart` or `stop` is reached, and
   under the finished item the guide's expected spend in chaos and divine at the
   snapshot's league and date, with the currencies it could not price; a spread over what
-  the item may hold is the line's tooltip. The block is the unit of interaction: hovering
+  the item may hold is the line's tooltip. A repeat also says what getting through it
+  once is expected to take (`passSpend`: its body's spend over the guide divided by the
+  repeat's own runs). Clicking a cost line opens a dialog with the breakdown
+  (`breakdown`): each currency's expected amount, its price and its worth, dearest
+  first and the unpriced last, the sum in chaos and divine, and the snapshot's league,
+  date and divine rate. The block is the unit of interaction: hovering
   anywhere in it highlights its statement in the editor, clicking moves the cursor
   there, and the cursor marks the block it is in (a loop's head and foot together). A
   card has one action of its own, a copy button that puts `renderItemText` on the

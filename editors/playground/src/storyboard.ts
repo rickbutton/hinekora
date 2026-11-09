@@ -24,6 +24,7 @@ import {
     type CostReport,
     type Criterion,
     groupWords,
+    addPrices,
     inChaos,
     type ItemDelta,
     type ItemView,
@@ -176,11 +177,68 @@ function spreadTitle(b: Bounds | undefined, show: (n: number) => string): string
         : `${show(b.low)} to ${show(b.high)} by what the item may hold`;
 }
 
-/** A cost line under a step, with the spread as its tooltip. */
-function costLine(text: string, title?: string): HTMLElement {
-    const el = h("div", "cost", text);
+/** A cost line under a step, with the spread as its tooltip; clicking it opens a breakdown. */
+function costLine(text: string, title?: string, open?: () => void): HTMLElement {
+    const el = h("div", open === undefined ? "cost" : "cost clickable", text);
     if (title !== undefined) el.title = title;
+    if (open !== undefined) {
+        el.addEventListener("click", (e) => {
+            e.stopPropagation();
+            open();
+        });
+    }
     return el;
+}
+
+/** One currency's line in a breakdown: the amount, its price and what that is worth. */
+export interface BreakdownRow {
+    readonly item: string;
+    readonly amount: number;
+    /** The price of one, in chaos; absent when the snapshot does not list it. */
+    readonly each?: number;
+    /** `amount` times `each`. */
+    readonly chaos?: number;
+}
+
+export interface Breakdown {
+    /** Dearest first, the unpriced last. */
+    readonly rows: readonly BreakdownRow[];
+    /** The whole in chaos and in divine, when every currency has a price. */
+    readonly chaos?: number;
+    readonly divine?: number;
+}
+
+/** What a spend comes to, currency by currency, under the snapshot. */
+export function breakdown(spend: readonly Price[], snapshot?: Prices): Breakdown {
+    const rows = spend.map((p): BreakdownRow => {
+        const each = snapshot?.chaos.get(p.item);
+        return each === undefined
+            ? { item: p.item, amount: p.amount }
+            : { item: p.item, amount: p.amount, each, chaos: p.amount * each };
+    });
+    rows.sort((a, b) => (b.chaos ?? -1) - (a.chaos ?? -1));
+    const chaos = snapshot === undefined ? undefined : inChaos(spend, snapshot);
+    return {
+        rows,
+        ...(chaos !== undefined && { chaos }),
+        ...(chaos !== undefined &&
+            snapshot !== undefined && { divine: chaos / snapshot.chaosPerDivine }),
+    };
+}
+
+/**
+ * What one pass through a loop is expected to consume: the body's expected
+ * spend over the whole guide, divided by how often the loop itself runs.
+ */
+export function passSpend(loop: StepCost, steps: readonly StepCost[]): Price[] {
+    const inside = (s: StepCost): boolean =>
+        s !== loop &&
+        s.span.start.offset >= loop.span.start.offset &&
+        s.span.end.offset <= loop.span.end.offset;
+    let sum: Price[] = [];
+    for (const s of steps)
+        if (inside(s) && s.expected !== undefined) sum = addPrices(sum, s.expected);
+    return loop.runs > 0 ? addPrices([], sum, 1 / loop.runs) : sum;
 }
 
 /** The statement kind the cost layer files a step under. */
@@ -243,6 +301,72 @@ interface Anchor {
 export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboard {
     let anchors: Anchor[] = [];
 
+    // One dialog for every breakdown; it closes on its button or a click outside.
+    const dialog = document.createElement("dialog");
+    dialog.className = "breakdown";
+    dialog.addEventListener("click", (e) => {
+        if (e.target === dialog) dialog.close();
+    });
+    document.body.append(dialog);
+
+    /** The dialog filled with a spend's breakdown and shown. */
+    const showBreakdown = (
+        title: string,
+        spend: readonly Price[],
+        snapshot: Prices | undefined,
+        notes: readonly HTMLElement[] = [],
+    ): void => {
+        const b = breakdown(spend, snapshot);
+        const cell = (text: string, className = ""): HTMLElement => h("td", className, text);
+        const rows = b.rows.map((r) =>
+            h(
+                "tr",
+                r.each === undefined ? "unpriced" : "",
+                cell(r.item),
+                cell(figure(r.amount), "num"),
+                cell(r.each === undefined ? "no price" : `${figure(r.each)} chaos`, "num"),
+                cell(r.chaos === undefined ? "" : `${figure(r.chaos)} chaos`, "num"),
+            ),
+        );
+        const close = h("button", "close", "close");
+        close.type = "button";
+        close.addEventListener("click", () => dialog.close());
+        dialog.replaceChildren(
+            h("div", "head", h("h2", "", title), close),
+            h(
+                "table",
+                "",
+                h(
+                    "thead",
+                    "",
+                    h(
+                        "tr",
+                        "",
+                        h("th", "", "currency"),
+                        h("th", "num", "expected"),
+                        h("th", "num", "each"),
+                        h("th", "num", "worth"),
+                    ),
+                ),
+                h("tbody", "", ...rows),
+            ),
+            ...(b.chaos !== undefined && b.divine !== undefined
+                ? [h("div", "sum", `about ${figure(b.chaos)} chaos, ${figure(b.divine)} divine`)]
+                : []),
+            ...notes,
+            ...(snapshot !== undefined
+                ? [
+                      h(
+                          "div",
+                          "when",
+                          `${snapshot.league} prices of ${snapshot.fetchedAt.slice(0, 10)}, ${figure(snapshot.chaosPerDivine)} chaos to the divine`,
+                      ),
+                  ]
+                : []),
+        );
+        dialog.showModal();
+    };
+
     const build = (
         w: Walkthrough,
         registry: Registry,
@@ -258,14 +382,23 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
             costs.get(`${STMT_KIND[s.kind]}@${s.span.start.offset}`);
 
         /** What a step consumes, with the spread of its uses as the tooltip. */
-        const spend = (c: StepCost | undefined): HTMLElement[] => {
+        const spend = (c: StepCost | undefined, label: string): HTMLElement[] => {
             if (c === undefined) return [];
             const lines: HTMLElement[] = [];
             if (c.expected !== undefined && c.expected.length > 0) {
+                const expected = c.expected;
                 lines.push(
                     costLine(
-                        `expected ${moneyText(c.expected, prices)}`,
+                        `expected ${moneyText(expected, prices)}`,
                         spreadTitle(c.runsRange, (n) => `${figure(n)} uses`),
+                        () =>
+                            showBreakdown(`${label}: expected over the guide`, expected, prices, [
+                                h(
+                                    "div",
+                                    "note",
+                                    `about ${figure(c.runs)} uses over the guide${c.runsRange === undefined ? "" : ` (${figure(c.runsRange.low)} to ${figure(c.runsRange.high)} by what the item may hold)`}`,
+                                ),
+                            ]),
                     ),
                 );
             }
@@ -341,7 +474,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                     s.before === undefined
                                         ? h("div", "note", "never reached")
                                         : undefined,
-                                    ...spend(costOf(s)),
+                                    ...spend(costOf(s), s.kind === "operation" ? s.title : s.text),
                                 ),
                             ),
                         ),
@@ -398,6 +531,15 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                   `about ${figure(c.attempts.expected)} rounds, ${percentage(c.attempts.chance)} end it each time`,
                                   spreadTitle(c.attemptsRange, figure),
                               );
+                    // What getting through the repeat once is expected to take.
+                    const pass =
+                        c === undefined || report === undefined ? [] : passSpend(c, report.steps);
+                    const toHit =
+                        pass.length === 0
+                            ? undefined
+                            : costLine(`to get there: ${moneyText(pass, prices)}`, undefined, () =>
+                                  showBreakdown("to get through this repeat once", pass, prices),
+                              );
                     const region = h(
                         "div",
                         "region loop",
@@ -414,6 +556,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                 h("ul", "checklist", checklist(s.check)),
                                 ...present(
                                     rounds,
+                                    toHit,
                                     c?.note === undefined ? undefined : h("div", "note", c.note),
                                     problemList(s.problems),
                                     result(s.after, true, true, "once the repeat is done"),
@@ -519,7 +662,23 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
         /** What the whole guide is expected to spend, under the snapshot. */
         function total(): HTMLElement | undefined {
             if (report === undefined || report.total.length === 0) return undefined;
-            const el = h("div", "cost");
+            const notes = [
+                ...(report.chaosRange === undefined
+                    ? []
+                    : [
+                          h(
+                              "div",
+                              "note",
+                              `${figure(report.chaosRange.low)} to ${figure(report.chaosRange.high)} chaos by what the item may hold`,
+                          ),
+                      ]),
+                ...(report.stopped > 0
+                    ? [h("div", "note", `ends on a stop ${percentage(report.stopped)} of the time`)]
+                    : []),
+            ];
+            const el = costLine("", undefined, () =>
+                showBreakdown("expected spend for the guide", report.total, prices, notes),
+            );
             const list = report.total.map((p) => `${figure(p.amount)} ${p.item}`).join(", ");
             if (report.chaos !== undefined && report.divine !== undefined) {
                 el.append(

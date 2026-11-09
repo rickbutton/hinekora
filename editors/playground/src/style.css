@@ -448,6 +448,101 @@ main {
     color: var(--muted);
 }
 
+.cost.clickable {
+    cursor: pointer;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+}
+
+.cost.clickable:hover {
+    color: #e0bd73;
+}
+
+/* the breakdown of a spend, currency by currency */
+
+dialog.breakdown {
+    background: var(--panel);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px 12px;
+    min-width: 360px;
+    max-width: min(640px, 90vw);
+    font-size: 13px;
+}
+
+dialog.breakdown::backdrop {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+dialog.breakdown .head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+dialog.breakdown h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+dialog.breakdown .close {
+    background: var(--bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 8px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+dialog.breakdown table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+dialog.breakdown th,
+dialog.breakdown td {
+    padding: 3px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+dialog.breakdown th {
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+dialog.breakdown .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+dialog.breakdown tr.unpriced td {
+    color: var(--muted);
+}
+
+dialog.breakdown .sum {
+    margin-top: 8px;
+    font-weight: 600;
+    color: #c8a35a;
+    text-align: right;
+}
+
+dialog.breakdown .note,
+dialog.breakdown .when {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
 .block.donor .title {
     font-weight: 600;
 }

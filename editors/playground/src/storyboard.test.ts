@@ -1,6 +1,95 @@
 import { describe, expect, it } from "vitest";
 import type { ItemView, ModGroup, ModView } from "@hinekora/core";
-import { figure, moneyText, named, percentage, stateLine } from "./storyboard.js";
+import type { StepCost } from "@hinekora/core";
+import {
+    breakdown,
+    figure,
+    moneyText,
+    named,
+    passSpend,
+    percentage,
+    stateLine,
+} from "./storyboard.js";
+
+const snapshot = {
+    league: "Allflame",
+    fetchedAt: "2026-11-09T07:34:02.180Z",
+    chaosPerDivine: 400,
+    chaos: new Map([
+        ["Deafening Essence of Greed", 2.5],
+        ["Chaos Orb", 1],
+    ]),
+};
+
+describe("the storyboard's breakdown", () => {
+    it("prices each currency, dearest first, and sums what it can", () => {
+        const b = breakdown(
+            [
+                { item: "Chaos Orb", amount: 10 },
+                { item: "Deafening Essence of Greed", amount: 8 },
+            ],
+            snapshot,
+        );
+        expect(b.rows.map((r) => r.item)).toEqual(["Deafening Essence of Greed", "Chaos Orb"]);
+        expect(b.rows[0]).toEqual({
+            item: "Deafening Essence of Greed",
+            amount: 8,
+            each: 2.5,
+            chaos: 20,
+        });
+        expect(b.chaos).toBe(30);
+        expect(b.divine).toBe(0.075);
+    });
+
+    it("leaves an unpriced currency last and the sum out", () => {
+        const b = breakdown(
+            [
+                { item: "Vivid Crystallised Lifeforce", amount: 300 },
+                { item: "Chaos Orb", amount: 2 },
+            ],
+            snapshot,
+        );
+        expect(b.rows.map((r) => r.item)).toEqual(["Chaos Orb", "Vivid Crystallised Lifeforce"]);
+        expect(b.chaos).toBeUndefined();
+        expect(breakdown([{ item: "Chaos Orb", amount: 2 }]).chaos).toBeUndefined();
+    });
+
+    it("tells what one pass through a repeat takes from the body's spend over the guide", () => {
+        const span = (a: number, b: number) => ({
+            start: { offset: a, line: 1, column: 1 },
+            end: { offset: b, line: 1, column: 1 },
+        });
+        const loop: StepCost = { kind: "until", span: span(0, 100), reached: 1, runs: 2 };
+        const steps: StepCost[] = [
+            loop,
+            {
+                kind: "operation",
+                span: span(10, 20),
+                reached: 1,
+                runs: 17.6,
+                expected: [{ item: "Deafening Essence of Greed", amount: 17.6 }],
+            },
+            {
+                kind: "operation",
+                span: span(30, 40),
+                reached: 0.5,
+                runs: 4,
+                expected: [{ item: "Chaos Orb", amount: 4 }],
+            },
+            {
+                kind: "operation",
+                span: span(200, 210),
+                reached: 1,
+                runs: 1,
+                expected: [{ item: "Chaos Orb", amount: 1 }],
+            },
+        ];
+        expect(passSpend(loop, steps)).toEqual([
+            { item: "Deafening Essence of Greed", amount: 8.8 },
+            { item: "Chaos Orb", amount: 2 },
+        ]);
+    });
+});
 
 describe("the storyboard's cost wording", () => {
     it("quotes figures and chances as a guide does", () => {
