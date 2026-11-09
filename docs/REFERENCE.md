@@ -426,16 +426,21 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   the modifiers whose identity is unknown, "possibly" marks, and the absent modifiers
   struck through. The affix name and tags are the line's tooltip.
 - `src/storyboard.ts`: `createStoryboard(root, hooks)`, the guide as the item's journey
-  from the core's `walkthrough`: the declared item, then for each step a row with the
-  currency's icon, its display name, the step as written, what it does, what it changed
-  (`stepDelta`) and the checker's findings, followed by the item card after it (a card
-  is drawn only where the item differs from the last one shown; a step never reached is
-  dimmed). A loop is a bracketed "repeat" region closed by "until the item has" and the
-  checklist (the step's `check`), then the item once it is done; a branch is "if the
-  item has" with its checklist and one arm per answer; a `restart` is a row pointing
-  back; the finished item closes the board. Hovering a row highlights its statement in
-  the editor, clicking one moves the cursor there, and the cursor marks the row it is
-  in. While the guide does not parse the last board stays, dimmed.
+  from the core's `walkthrough`, one block per step on a rail of icons: the currency's
+  icon (what it does is the icon's tooltip), its display name, the step as written, the
+  named lines it added or removed (`stepDelta`, less the rarity and the unnamed count)
+  and the checker's findings, then the item after it. The item is a card, drawn at its
+  own width like the game's tooltip, when something named changed; a one-line state
+  ("Rare · 2–3 modifiers") when only the counts or the rarity moved; nothing when it
+  did not change. A loop is a bracketed "repeat" region closed by "until the item has"
+  with the checklist (the step's `check`) and the item once it is done, always a card;
+  a branch is "if the item has" with its checklist and one arm per answer; a `restart`
+  is a block pointing back; the start and the finished item open and close the board;
+  a step never reached is dimmed. The block is the unit of interaction: hovering
+  anywhere in it highlights its statement in the editor, clicking moves the cursor
+  there, and the cursor marks the block it is in (a loop's head and foot together). A
+  card has one action of its own, a copy button that puts `renderItemText` on the
+  clipboard. While the guide does not parse the last board stays, dimmed.
 - `src/icons/*.png`: the currency icons, copied from the wiki by
   `scripts/fetch-icons.mjs` (one file per method, keyed by its words joined with
   dashes; the page falls back to the first word, then to a lettered glyph). The game's

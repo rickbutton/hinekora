@@ -290,7 +290,8 @@ main {
 /* --- the storyboard ------------------------------------------------------------- */
 
 #walkthrough {
-    padding: 10px 12px 14px;
+    --rail: 15px;
+    padding: 10px 12px 14px 10px;
     border-bottom: 1px solid var(--border);
     transition: opacity 0.2s;
 }
@@ -300,16 +301,170 @@ main {
     pointer-events: none;
 }
 
-#walkthrough .frame {
-    margin: 4px 0 4px 36px;
+/* a step and the item it leaves: one block on the rail */
+
+.block {
+    position: relative;
+    padding: 4px 6px 6px 0;
+    border-radius: 6px;
+    cursor: pointer;
 }
 
-#walkthrough .frame .caption {
+.block::before {
+    content: "";
+    position: absolute;
+    left: var(--rail);
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #3c3c3c;
+}
+
+.block.start::before {
+    top: 18px;
+}
+
+.block.finish::before {
+    bottom: auto;
+    height: 18px;
+}
+
+.block:hover {
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.block.active {
+    background: rgba(255, 255, 119, 0.06);
+}
+
+.block.active::before,
+.region-head.active::before {
+    background: #ffff77;
+}
+
+.block.active > .row .title {
+    color: #ffff77;
+}
+
+.block.unreached {
+    opacity: 0.55;
+}
+
+.row {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.icon {
+    position: relative;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    background: var(--panel);
+    border-radius: 50%;
+}
+
+.icon.glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin: 4px;
+    background: #3c3c3c;
+    color: var(--fg);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.row .body {
+    min-width: 0;
+    flex: 1;
+    padding-top: 6px;
+}
+
+.row .title {
+    font-weight: 600;
+    line-height: 20px;
+}
+
+.row .text {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    word-break: break-word;
+}
+
+.row .note {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.block.restart .title,
+.block.finish .title {
+    font-weight: 500;
+    color: var(--muted);
+}
+
+/* the item after a step: a line when only counts moved, a card when something named did */
+
+.state {
+    margin: 2px 0 2px 42px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.frame {
+    margin: 6px 0 2px 42px;
+}
+
+.frame .caption {
     color: var(--muted);
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    margin: 6px 0 3px;
+    margin: 4px 0 4px;
+}
+
+.frame .card {
+    position: relative;
+    width: fit-content;
+    min-width: 240px;
+    max-width: 100%;
+}
+
+.frame .copy {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    padding: 1px 6px;
+    font: inherit;
+    font-size: 11px;
+    color: var(--muted);
+    background: #0c0b0b;
+    border: 1px solid #3a3528;
+    border-radius: 3px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.frame .card:hover .copy,
+.frame .copy:focus-visible {
+    opacity: 1;
+}
+
+.frame .copy:hover {
+    color: var(--fg);
+}
+
+.frame .copy.done {
+    color: #8fd18f;
+    opacity: 1;
 }
 
 #walkthrough .item-card {
@@ -322,94 +477,20 @@ main {
 }
 
 #walkthrough .item-card header {
-    padding: 5px 10px 4px;
+    padding: 5px 28px 4px;
 }
 
 #walkthrough .item-card section {
     padding: 4px 10px;
 }
 
-.step {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 6px 6px 6px 4px;
-    margin: 2px -4px;
-    border-radius: 6px;
-    border: 1px solid transparent;
-    cursor: pointer;
-}
-
-.step:hover {
-    background: rgba(255, 255, 255, 0.04);
-}
-
-.step.active,
-.region-head.active {
-    border-color: #ffff77;
-    background: rgba(255, 255, 119, 0.06);
-}
-
-.step.unreached {
-    opacity: 0.55;
-}
-
-.icon {
-    flex: none;
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
-}
-
-.icon.glyph {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    background: #3c3c3c;
-    color: var(--fg);
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.step .body {
-    min-width: 0;
-    flex: 1;
-}
-
-.step .title {
-    font-weight: 600;
-    line-height: 28px;
-}
-
-.step .text {
-    display: block;
-    color: var(--muted);
-    font-size: 12px;
-    margin-top: -6px;
-    word-break: break-word;
-}
-
-.step .detail,
-.step .note {
-    color: var(--muted);
-    font-size: 12px;
-    margin-top: 2px;
-}
-
-.step.restart .title,
-.step.start .title {
-    font-weight: 500;
-    color: var(--muted);
-}
-
-.step.start .title {
-    color: var(--fg);
+#walkthrough .item-card .mod {
+    gap: 14px;
 }
 
 .delta {
     list-style: none;
-    margin: 4px 0 0;
+    margin: 2px 0 0;
     padding: 0;
     font-size: 12px;
 }
@@ -444,7 +525,9 @@ main {
 /* a loop or a branch: a bracketed region with its question */
 
 .region {
-    margin: 6px 0;
+    position: relative;
+    margin: 4px 0;
+    padding-left: 8px;
     border-left: 2px solid #6b6240;
     border-radius: 6px 0 0 6px;
 }
@@ -453,26 +536,39 @@ main {
     border-left-color: #4e6a8a;
 }
 
-.region-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 6px 6px 6px;
-    margin: 0 -4px 0 -2px;
+.region-head,
+.region-foot {
+    position: relative;
+    padding: 4px 6px 4px 0;
     border-radius: 6px;
-    border: 1px solid transparent;
     cursor: pointer;
 }
 
-.region-head:hover {
-    background: rgba(255, 255, 255, 0.04);
+.region-head:hover,
+.region-foot:hover {
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.region-head.active,
+.region-foot.active {
+    background: rgba(255, 255, 119, 0.06);
+}
+
+.region-head {
+    flex-wrap: wrap;
+    align-items: center;
 }
 
 .region-head .title,
 .region-foot .title {
     font-weight: 600;
     color: #c8a35a;
+    line-height: 32px;
+}
+
+.region-foot .title {
+    line-height: 20px;
+    padding-left: 42px;
 }
 
 .region.branch .region-head .title {
@@ -481,20 +577,19 @@ main {
 
 .region-head .checklist {
     flex-basis: 100%;
-    margin-left: 36px;
+    margin: 0 0 4px 42px;
 }
 
-.region-body {
-    padding-left: 10px;
+.region-foot .checklist {
+    margin-left: 42px;
 }
 
-.region-foot {
-    padding: 4px 6px 6px 12px;
+.region-foot .frame {
+    margin-left: 42px;
 }
 
 .arm {
-    padding-left: 10px;
-    margin-top: 4px;
+    margin-top: 2px;
 }
 
 .arm-label {
@@ -502,13 +597,13 @@ main {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    padding-left: 2px;
+    padding-left: 42px;
 }
 
 .checklist,
 .checklist ul {
     list-style: none;
-    margin: 4px 0 0;
+    margin: 2px 0 0;
     padding: 0;
     font-size: 12px;
 }

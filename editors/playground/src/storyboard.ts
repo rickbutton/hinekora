@@ -1,20 +1,23 @@
 /**
- * The guide as the item's journey: a card for the item at every point where
- * it changes, the step between two cards as its currency's icon and words,
- * a loop as a bracketed "repeat" region closed by the checklist the item must
- * meet, a branch as a question with one arm per answer. It reads top to
- * bottom like the crafting guides players already follow, and shows what
- * those cannot: the item, with certainty, after every step.
+ * The guide as the item's journey: one block per step, the currency's icon
+ * and words over the item that results, a loop as a bracketed "repeat" region
+ * closed by the checklist the item must meet, a branch as a question with one
+ * arm per answer. It reads top to bottom like the crafting guides players
+ * already follow, and shows what those cannot: the item, with certainty,
+ * after every step. A step that only moves the counts or the rarity gets a
+ * one-line state; a step that adds or removes something named gets the card.
  *
- * Every step and region points at its statement: hovering highlights it in
- * the editor, clicking moves the cursor there, and the cursor marks the step
- * it is in. Nothing here keeps a position of its own.
+ * A block is the unit of interaction: hovering anywhere in it highlights its
+ * statement in the editor, clicking moves the cursor there, and the cursor
+ * marks the block it is in. A card has one action of its own, copying the
+ * item's text as the game writes it. Nothing here keeps a position of its own.
  */
 import {
     type AItem,
     type Criterion,
     groupWords,
     type ItemDelta,
+    type ItemView,
     itemView,
     type Registry,
     renderItemText,
@@ -64,32 +67,44 @@ const h = <K extends keyof HTMLElementTagNameMap>(
     return node;
 };
 
+/** A glyph in the icon column, for what has no currency. */
+const glyph = (text: string, title?: string): HTMLElement => {
+    const el = h("span", "icon glyph", text);
+    if (title !== undefined) el.title = title;
+    return el;
+};
+
+/** The step's icon; what the method does is its tooltip. */
 function icon(step: Extract<Step, { kind: "operation" | "call" }>): HTMLElement {
-    if (step.kind === "operation") {
-        const url = iconFor(step.words);
-        if (url !== undefined) {
-            const img = h("img", "icon");
-            img.src = url;
-            img.alt = "";
-            return img;
-        }
-    }
-    return h("span", "icon glyph", step.kind === "call" ? "ƒ" : (step.words[0] ?? "?").slice(0, 2));
+    if (step.kind === "call") return glyph("ƒ", "a local sequence of steps");
+    const url = iconFor(step.words);
+    if (url === undefined) return glyph((step.words[0] ?? "?").slice(0, 2), step.detail);
+    const img = h("img", "icon");
+    img.src = url;
+    img.alt = "";
+    img.title = step.detail;
+    return img;
 }
 
-function deltaList(delta: ItemDelta | undefined): HTMLElement | undefined {
-    if (delta === undefined) return undefined;
-    // The count of unnamed modifiers shifts on nearly every step; listing it
-    // would bury the named changes, and the card under the step shows it.
-    const keep = (l: string): boolean => !/unknown modifier/.test(l);
-    const removed = delta.removed.filter(keep);
-    const added = delta.added.filter(keep);
-    if (removed.length === 0 && added.length === 0) return undefined;
+const RARITY_LINE = /^(Normal|Magic|Rare|Unique)( or (Normal|Magic|Rare|Unique))*$/;
+
+/**
+ * The lines of a delta that name something: a modifier, an implicit, a mark.
+ * The rarity and the count of unnamed modifiers move on nearly every step and
+ * are read off the state line or the card instead.
+ */
+function named(delta: ItemDelta): ItemDelta {
+    const keep = (l: string): boolean => !/unknown modifier/.test(l) && !RARITY_LINE.test(l);
+    return { added: delta.added.filter(keep), removed: delta.removed.filter(keep) };
+}
+
+function deltaList(delta: ItemDelta): HTMLElement | undefined {
+    if (delta.removed.length === 0 && delta.added.length === 0) return undefined;
     return h(
         "ul",
         "delta",
-        ...removed.map((l) => h("li", "removed", l)),
-        ...added.map((l) => h("li", "added", l)),
+        ...delta.removed.map((l) => h("li", "removed", l)),
+        ...delta.added.map((l) => h("li", "added", l)),
     );
 }
 
@@ -118,6 +133,38 @@ function checklist(c: Criterion): HTMLElement {
 const present = (...nodes: (HTMLElement | undefined)[]): HTMLElement[] =>
     nodes.filter((n): n is HTMLElement => n !== undefined);
 
+/** "Rare · 2–3 modifiers": the item in a line, when nothing named changed. */
+function stateLine(v: ItemView): string {
+    const rarity = v.rarities.map((r) => r[0]!.toUpperCase() + r.slice(1)).join(" or ");
+    const shown = v.prefixes.length + v.suffixes.length + v.either.length;
+    const [lo, hi] = v.remainder?.count ?? [0, 0];
+    const [a, b] = [shown + lo, shown + hi];
+    const count = a === b ? `${a}` : `${a}–${b}`;
+    return `${rarity} · ${count} ${b === 1 ? "modifier" : "modifiers"}`;
+}
+
+/** The card with its copy button; the text is what the game writes on Ctrl+C. */
+function frame(view: ItemView, text: string, caption?: string): HTMLElement {
+    const el = h("div", "frame");
+    if (caption !== undefined) el.append(h("div", "caption", caption));
+    const copy = h("button", "copy", "copy");
+    copy.type = "button";
+    copy.title = "Copy the item as the game writes it";
+    copy.addEventListener("click", (e) => {
+        e.stopPropagation();
+        void navigator.clipboard.writeText(text).then(() => {
+            copy.textContent = "copied";
+            copy.classList.add("done");
+            setTimeout(() => {
+                copy.textContent = "copy";
+                copy.classList.remove("done");
+            }, 1200);
+        });
+    });
+    el.append(h("div", "card", renderItemCard(view), copy));
+    return el;
+}
+
 /** An element standing for a statement, for the cursor to find. */
 interface Anchor {
     readonly el: HTMLElement;
@@ -131,18 +178,27 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
         const out: HTMLElement[] = [];
         anchors = [];
 
-        /** The text of the last card shown, so an unchanged item is not drawn twice. */
+        /** The text of the last item drawn, so an unchanged item is not drawn twice. */
         let last: string | undefined;
-        const card = (into: HTMLElement[], state: AItem | undefined, caption?: string): void => {
-            if (state === undefined) return;
+
+        /**
+         * The item after a step, as a card when `full` or when something named
+         * changed, as a state line otherwise, as nothing when it did not change.
+         */
+        const result = (
+            state: AItem | undefined,
+            full: boolean,
+            changed: boolean,
+            caption?: string,
+        ): HTMLElement | undefined => {
+            if (state === undefined) return undefined;
             const view = itemView(state, registry);
             const text = renderItemText(view);
-            if (text === last) return;
+            if (text === last) return undefined;
             last = text;
-            const frame = h("div", "frame");
-            if (caption !== undefined) frame.append(h("div", "caption", caption));
-            frame.append(renderItemCard(view));
-            into.push(frame);
+            return full || changed
+                ? frame(view, text, caption)
+                : h("div", "state", stateLine(view));
         };
 
         const anchor = (el: HTMLElement, span: SourceSpan): HTMLElement => {
@@ -164,31 +220,37 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
             switch (s.kind) {
                 case "operation":
                 case "call": {
-                    const row = h(
+                    const delta = stepDelta(s, registry);
+                    const changes = delta === undefined ? undefined : named(delta);
+                    const changed =
+                        changes !== undefined &&
+                        (changes.added.length > 0 || changes.removed.length > 0);
+                    const block = h(
                         "div",
-                        `step action${s.before === undefined ? " unreached" : ""}`,
-                        icon(s),
+                        `block action${s.before === undefined ? " unreached" : ""}`,
                         h(
                             "div",
-                            "body",
-                            h("div", "title", s.kind === "operation" ? s.title : s.text),
-                            ...present(
-                                s.kind === "operation" && s.text !== s.title
-                                    ? h("code", "text", s.text)
-                                    : undefined,
-                                s.kind === "operation" && s.detail
-                                    ? h("div", "detail", s.detail)
-                                    : undefined,
-                                deltaList(stepDelta(s, registry)),
-                                problemList(s.problems),
-                                s.before === undefined
-                                    ? h("div", "note", "never reached")
-                                    : undefined,
+                            "row",
+                            icon(s),
+                            h(
+                                "div",
+                                "body",
+                                h("div", "title", s.kind === "operation" ? s.title : s.text),
+                                ...present(
+                                    s.kind === "operation" && s.text !== s.title
+                                        ? h("code", "text", s.text)
+                                        : undefined,
+                                    changes === undefined ? undefined : deltaList(changes),
+                                    problemList(s.problems),
+                                    s.before === undefined
+                                        ? h("div", "note", "never reached")
+                                        : undefined,
+                                ),
                             ),
                         ),
+                        ...present(result(s.after, false, changed)),
                     );
-                    into.push(anchor(row, s.span));
-                    card(into, s.after);
+                    into.push(anchor(block, s.span));
                     return;
                 }
                 case "restart": {
@@ -196,12 +258,16 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                         anchor(
                             h(
                                 "div",
-                                "step restart",
-                                h("span", "icon glyph", "↺"),
+                                "block restart",
                                 h(
                                     "div",
-                                    "body",
-                                    h("div", "title", "back to the start of the repeat"),
+                                    "row",
+                                    glyph("↺"),
+                                    h(
+                                        "div",
+                                        "body",
+                                        h("div", "title", "back to the start of the repeat"),
+                                    ),
                                 ),
                             ),
                             s.span,
@@ -216,25 +282,25 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                         "div",
                         "region loop",
                         anchor(
-                            h(
-                                "div",
-                                "region-head",
-                                h("span", "icon glyph", "⟳"),
-                                h("span", "title", "repeat"),
-                            ),
+                            h("div", "region-head row", glyph("⟳"), h("span", "title", "repeat")),
                             s.span,
                         ),
                         h("div", "region-body", ...body),
-                        h(
-                            "div",
-                            "region-foot",
-                            h("div", "title", "until the item has"),
-                            h("ul", "checklist", checklist(s.check)),
-                            ...present(problemList(s.problems)),
+                        anchor(
+                            h(
+                                "div",
+                                "region-foot",
+                                h("div", "title", "until the item has"),
+                                h("ul", "checklist", checklist(s.check)),
+                                ...present(
+                                    problemList(s.problems),
+                                    result(s.after, true, true, "once the repeat is done"),
+                                ),
+                            ),
+                            s.span,
                         ),
                     );
                     into.push(region);
-                    card(into, s.after, "once the repeat is done");
                     return;
                 }
                 case "branch": {
@@ -257,8 +323,8 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                             anchor(
                                 h(
                                     "div",
-                                    "region-head",
-                                    h("span", "icon glyph", "?"),
+                                    "region-head row",
+                                    glyph("?"),
                                     h("span", "title", "if the item has"),
                                     h("ul", "checklist", checklist(s.check)),
                                     ...present(problemList(s.problems)),
@@ -273,19 +339,29 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
             }
         };
 
-        const start = h(
-            "div",
-            "step start",
-            h("span", "icon glyph", "▶"),
-            h("div", "body", h("div", "title", "start with")),
+        out.push(
+            anchor(
+                h(
+                    "div",
+                    "block start",
+                    h("div", "row", glyph("▶"), h("div", "body", h("div", "title", "start with"))),
+                    ...present(result(w.start.item, true, true)),
+                ),
+                w.start.span,
+            ),
         );
-        out.push(anchor(start, w.start.span));
-        card(out, w.start.item);
         seq(w.steps, out);
         const final = w.steps[w.steps.length - 1]?.after;
         if (final !== undefined) {
             last = undefined;
-            card(out, final, "the finished item");
+            out.push(
+                h(
+                    "div",
+                    "block finish",
+                    h("div", "row", glyph("✓"), h("div", "body", h("div", "title", "done"))),
+                    ...present(result(final, true, true, "the finished item")),
+                ),
+            );
         }
         return out;
     };
@@ -295,7 +371,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
             const parsed = parseCached(source);
             const result = checkCached(source, registry);
             if (!parsed.ok || result === undefined) {
-                // The last drawing stays, dimmed: its steps no longer point at
+                // The last board stays, dimmed: its blocks no longer point at
                 // the right places in the text.
                 root.classList.add("stale");
                 return;
@@ -316,10 +392,15 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                     best = a;
             }
             for (const a of anchors) a.el.classList.remove("active");
-            if (best !== undefined) {
-                best.el.classList.add("active");
-                best.el.scrollIntoView({ block: "nearest" });
-            }
+            if (best === undefined) return;
+            // A loop's head and foot stand for the same statement; both light up.
+            const same = anchors.filter(
+                (a) =>
+                    a.span.start.offset === best.span.start.offset &&
+                    a.span.end.offset === best.span.end.offset,
+            );
+            for (const a of same) a.el.classList.add("active");
+            best.el.scrollIntoView({ block: "nearest" });
         },
     };
 }
