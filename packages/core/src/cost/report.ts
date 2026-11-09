@@ -964,14 +964,18 @@ class Walker {
                 note: `in ${Math.round(solved.unresolved * 100)}% of attempts the item fills up before the exit and the loop cannot end as written`,
             }),
         });
-        const scale = frame.scale * mass;
+        // A step inside is reached so often per round, and runs that times the
+        // rounds of the loop, so its `reached` stays a chance.
+        const scale = frame.scale * mass * rounds;
+        const perRound = (n: number | undefined): number =>
+            solved.passes > 0 ? (n ?? 0) / solved.passes : 0;
         const emit = (stmts: readonly Stmt[], steps: readonly ChainStep[]): void => {
             stmts.forEach((s, i) => {
                 const step = steps[i]!;
-                const reached = (solved.reached.get(step.id) ?? 0) * attempts;
+                const reached = perRound(solved.reached.get(step.id));
                 const inner: Frame = { scale, stopped: 0, restarted: 0 };
                 if (s.kind === "if" && step.kind === "branch") {
-                    const taken = (solved.taken.get(step.id) ?? 0) * attempts;
+                    const taken = perRound(solved.taken.get(step.id));
                     this.record(s, reached, inner, { branch: reached > 0 ? taken / reached : 0 });
                     emit(s.body, step.body);
                     if (s.elseBody !== undefined && step.otherwise !== undefined) {
