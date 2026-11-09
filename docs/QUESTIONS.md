@@ -465,9 +465,9 @@ so the guard is one clause, `if not has group "spell damage" { bench "spell dama
 **Recommendation:** (b) first: it is what every "unless you already have one" guard
 means, one clause instead of five, and it needs no new word in the item block; (a) when
 a guide needs one side's version of a shared wording for its own sake.
-**Assumed meanwhile:** neither; the essence wand stays in `examples/future/`
-(`essence-minion-wand.craft`), and the clash message lists the group's modifiers so a
-guard over unambiguous names can be written today.
+**Assumed meanwhile:** (b), built as `has group "<mod>"` (the surface doc §5,
+`check/check.ts` `resolveHas`, `check/astate.ts` `refineHasGroup`); the essence wand
+guide is written with it (`examples/essence-minion-wand.craft`).
 **Answer:**
 
 ---

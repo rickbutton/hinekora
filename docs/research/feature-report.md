@@ -200,7 +200,7 @@ guides treat them as fixed costs and nothing in the modifier logic depends on th
 | `self-fracture`                                                            | R9 fracture, branch on the lock, clear fillers | checks (fixed annuls; the loop form waits on A2)            |
 | `influence-merge`                                                          | R8 Redeemer receiver + Awakener's Orb          | checks (the kept influence mods are not promised, Q28)      |
 | `bench-finish-resists`, `essence-life-boots`, `example`, `phys-dot-weapon` | the earlier examples                           | check                                                       |
-| `future/essence-minion-wand`                                               | R3 essence, make room, multimod                | B12 (a group member's name is ambiguous across the sides)   |
+| `essence-minion-wand`                                                      | R3 essence, make room, multimod                | checks (`has group` guards each bench craft)                |
 | `eldritch-gloves`                                                          | R7 essences, eldritch make-room, implicits     | checks (the Conflict loop to Exquisite waits on Q36)        |
 | `veiled-unveil`                                                            | R6 suffix lock, veiled orb, unveil loop        | checks (`stop` where the orb or the annul bricked the item) |
 | `metamod-harvest-loop`                                                     | R5 lock one side, Harvest reforge the other    | checks (the mana bench guarded by `if not has`)             |
@@ -228,7 +228,8 @@ craft may have placed; a random removal keeps all but one of the named modifiers
 reach, and takes one of them when it could reach nothing else) the veiled unveil loop
 checks as a guide writes it. The rest of A4 is in: a single-tier modifier needs no `t1`
 in the item block, and the words guides use ("es", "spell suppression", "+1 gems") name
-their modifiers. The examples suite stands at twelve checking guides and six waiting;
+their modifiers, and `has group "<mod>"` asks for any modifier of a group, which closes
+B12. The examples suite stands at thirteen checking guides and five waiting;
 the naming fixes of A4 (plurals, joiner words, the natural modifier first) brought the
 eldritch gloves in.
 
