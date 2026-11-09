@@ -232,7 +232,8 @@ their modifiers, and `has group "<mod>"` asks for any modifier of a group, which
 B12. B2 is built: `has "<mod>" <cmp> <int>` compares a modifier's value, pinning the tiers
 that reach it, and `divine` rolls the values again. Of A6, B6 is fixed two ways: a tagged
 Harvest pool counts how many unknown modifiers could block it, and a side whose count the
-named modifiers fill carries no other; the two state-line items of `accuracy.md` 10 remain.
+named modifiers fill carries no other, and the two state-line items of `accuracy.md` 10 are
+fixed with it (a protected or shielded side keeps its count).
 B5 is built: a cluster jewel's `enchant:` field names the stat its passives grant, which
 the checker reads as the tag its notables roll under. B4 is built in its first form: a
 second item (`with <name> { … }`) and `recombine <name>`, the Recombinator's counts as a
