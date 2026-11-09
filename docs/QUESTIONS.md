@@ -419,7 +419,17 @@ method would have left had its checks held, so the steps after the one reported 
 judged against what the guide meant, and a refusal is reported once; (c) the state
 narrowed to where the check holds, then the method's effect, the most precise, but a
 narrowing for every kind of check, and nothing to narrow to when the check holds nowhere.
-**Recommendation:** (b); (c) if a cascade ever matters enough to pay for it.
+**Recommendation:** (b); (c) if a cascade ever matters enough to pay for it. Why (b)
+is sound: (c) is the exact continuation on the paths where the step is legal, and every
+operation's effect is monotone in the state, so applying it to the whole state gives a
+superset of (c); the paths where the game refuses are the ones the reported failure
+covers, so the checker's guarantee holds up to the first reported refusal, after which
+findings are judged against the guide's intent. In a loop's quiet probes the would-be
+state can be narrower than the untouched one (a refused regal leaves Rare, not Magic or
+Rare); that is safe because the reporting pass runs from the final invariant's
+continuing part, a superset of every probe's, and the checks are monotone, so a refusal
+a probe met fires again where it is reported. The trace records the would-be state after
+the refused step, so hover and the walkthrough show the item the guide meant.
 **Assumed meanwhile:** (b) (`check/ops.ts` `runMethod` returns the state with the
 failure, `check/check.ts` continues from it, `operations.md` §2).
 **Answer:**

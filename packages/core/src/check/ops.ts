@@ -930,15 +930,13 @@ function hasRemovable(
 }
 
 /**
- * Could a mod in `mod`'s group already sit on the item? A guaranteed same-group
- * type definitely conflicts. A merely POSSIBLE one conflicts only when its
- * generation still holds an unidentified affix that could be it, a generation
- * whose count is fully accounted for by guaranteed types rules it out (so a
- * proven "2 suffixes, 0 prefixes" item can still take a benched prefix). A
- * conflict hidden behind an anonymous "random" affix is not caught.
+ * The types of `mod`'s group the item may carry; empty when none can be present,
+ * which is what lets the bench add it. A guaranteed same-group type definitely
+ * conflicts and is returned alone. A merely possible one conflicts only when its
+ * generation still holds an unidentified affix that could be it: a generation
+ * whose count is fully accounted for by guaranteed types rules it out, so a
+ * proven "2 suffixes, 0 prefixes" item can still take a benched prefix.
  */
-/** The types of the modifier's group the item may carry, a guaranteed one first;
- *  empty when none can be present, which is what lets the bench add it. */
 function typesSharingFamilyWithPresent(a: AItem, mod: Mod, registry: Registry): TypeId[] {
     const guaranteed = guaranteedTypes(a);
     const shares = (type: TypeId): boolean => {

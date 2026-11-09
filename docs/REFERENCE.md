@@ -550,7 +550,7 @@ one domain. The sub-domains:
   Removals rebuild presence from unit facts, which drops the atoms with the modifier.
 - **`normalize(a)`** runs `CountDomain.normalize` (the total/prefix coupling to a fixpoint,
   BOTH directions: `prefix ∈ [total−sCap, min(pCap, total)]` AND
-  `total ∈ [prefix, min(tCap, prefix+sCap)]`) then re-applies the one cross-domain reduction
+  `total ∈ [prefix, min(tCap, prefix+sCap)]`) then re-applies the cross-domain reductions
   (crafted ≤ total). The second direction is essential: without it, refining
   `prefixCount < 3` tightens prefix but not total, and a guarded exalt spuriously looks
   "possibly full". Returns `null` on an uninhabited (contradictory) state.
@@ -667,7 +667,10 @@ asked), `elevate` (the Orb of Dominance's upgrade: every influenced modifier the
 may have loses its tier and may be its elevated row, a type of its own sharing its
 group and named "Elevated"; one of them remains) and `either(branches)`, the join of running each branch of effects, a branch of
 `end` alone being an outcome that destroys the item and adds nothing; a method is
-all or nothing, so a failed `require` anywhere leaves the state as it was. The metamods
+all or nothing: in the game a failed `require` anywhere leaves the item as it was, and
+the checker reports the first failure and continues from the state the method would have
+left (`operations.md` §2), which is also the state the trace records after the refused
+step, so hover and the walkthrough show the item the guide meant. The metamods
 in force (`Rules`: protected sides, the cannot-roll shield, the crafted cap, whether an
 essence is blocked) are read once when the method is applied and govern every operation
 in it. Notes:

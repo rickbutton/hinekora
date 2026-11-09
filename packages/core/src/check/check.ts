@@ -533,8 +533,8 @@ class Checker {
     // --- operations --------------------------------------------------------
 
     /** Look the method up, bind its arguments, build its operations and run them.
-     *  A refused or unknown method leaves the state as it was, so checking
-     *  continues downstream. */
+     *  An unknown method, or one the catalog cannot build, leaves the state as it
+     *  was; one whose check fails continues from the state it would have left. */
     private checkOperation(a: AItem, stmt: Extract<Stmt, { kind: "operation" }>): Flow {
         const method = findMethod(stmt.words);
         if (method === undefined) {

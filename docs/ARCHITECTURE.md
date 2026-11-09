@@ -190,7 +190,9 @@ to what is kept, `fill` from a pool, `remove` one, set the `rarity`, `lock` one.
 Chaos Orb is `require(rare); strip; fill(natural, reforge 4–6)`; a bench craft is three
 checks and a one-row fill; the Fracturing Orb's `lock` only asserts a fracture fact in
 the presence BDD. A method is all or nothing: a failed check anywhere leaves the item as
-it was, and the metamods in force are read once, when the method is applied.
+it was in the game, and the checker, having reported it, continues from the state the
+method would have left (`operations.md` §2); the metamods in force are read once, when the
+method is applied.
 
 The discipline is the core invariant: an operation _folds_ its effect into the summary;
 it never materialises a list of concrete outcomes. A fill over-approximates "the new mod
