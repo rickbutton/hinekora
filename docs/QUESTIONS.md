@@ -603,7 +603,9 @@ fossil, lifeforce for forty reforges.
 **Steps:** apply each batch; count the modifiers after every use.
 **Record:** how many of each batch left 4, 5 and 6.
 **Assumed meanwhile:** 8:3:1 for all of them, the guaranteed modifier counted among the
-4–6 (`docs/research/cost-model.md` §1.3).
+4–6, and on a base holding four (a jewel) three or four at 65:35, craftofexile's reading
+of [Orb of Alchemy](https://www.poewiki.net/wiki/Orb_of_Alchemy)'s "three to four if used
+on jewels" (`docs/research/cost-model.md` §1.3).
 **Answer:**
 
 ### Q59 · game probe · open
@@ -617,7 +619,9 @@ quantity (life ×10 and elemental ×6 on a base where both tags have rows).
 **Steps:** resonate many times; note how often a life modifier appears beside how often an
 elemental one does, against the single-fossil rates.
 **Record:** the counts.
-**Assumed meanwhile:** additive (`docs/research/cost-model.md` §1.4).
+**Assumed meanwhile:** additive, and when two tags of one fossil match a row the larger
+of its multipliers counts, since the page says only that a fossil affects a modifier
+once (`docs/research/cost-model.md` §1.4).
 **Answer:**
 
 ### Q60 · game probe · open

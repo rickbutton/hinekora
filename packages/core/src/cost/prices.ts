@@ -29,7 +29,8 @@ export interface Prices {
 }
 
 /** The lifeforce a Harvest craft takes, by the tag's craft: the colour and the
- *  amount per use (the grove's option list, Harvest crafting). */
+ *  amount per use, from the wiki's `harvest_crafting_options` table (the grove's
+ *  option list, Harvest crafting). */
 const HARVEST_REFORGE: Readonly<Record<string, Price>> = {
     fire: { item: "Wild Crystallised Lifeforce", amount: 50 },
     cold: { item: "Vivid Crystallised Lifeforce", amount: 50 },
@@ -150,7 +151,12 @@ export function unitCost(
                 return [{ item: "Primal Crystallised Lifeforce", amount: 1000 }];
             }
             if (second === "change") {
-                return [{ item: "Wild Crystallised Lifeforce", amount: 500 }];
+                // Priced by the element the modifier becomes: 500 Wild for fire,
+                // Vivid for cold, Primal for lightning (`harvest_crafting_options`).
+                const target = text(args[1]).toLowerCase();
+                const element = ["fire", "cold", "lightning"].find((e) => target.includes(e));
+                const colour = element === undefined ? undefined : HARVEST_REFORGE[element];
+                return colour === undefined ? undefined : [{ item: colour.item, amount: 500 }];
             }
             const tagName = text(args[0]).trim().toLowerCase();
             if (second === "reforge" && tagName === "influence") {
@@ -177,8 +183,11 @@ export function unitCost(
             ];
         case "unveil":
         case "restore":
-        case "recombine":
             return [];
+        case "recombine":
+            // Gold and Thaumaturgic Dust, by the inputs' level and modifiers
+            // (Recombinator); neither is in the snapshot.
+            return undefined;
         case "foulborn":
             return [
                 {

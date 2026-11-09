@@ -339,14 +339,17 @@ time's density; the prefix/suffix split of m draws is a race between the two sid
 statistics. The dynamic program (`cost/race.ts`) carries a count, never a list of draws:
 this is the core invariant kept on the probability side. It is exact for one group, for
 any set of groups jointly (by inclusion–exclusion), and for the split with depletion,
-which craftofexile's calculator approximates.
+which craftofexile's calculator approximates; the one approximation is that, given the
+split, which groups landed on a side is read from that side's race alone, where the
+true draw couples the two through depletion, a second-order effect the race tests bound.
 
 ### 7.3 From a method to a roll, from a roll to a chance
 
 `cost/roll.ts` reads a method's op sequence into its **roll**: the random `fill` with the
 pool it draws from (built with the checker's own `pool` on the sure facts, re-weighted by
 a resonator's fossils, narrowed to a tag or the top tiers), the count of draws
-(4–6 at 8:3:1 for a rare reforge, one for an add), the modifiers present for certain
+(a rare reforge's [Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Chaos_Orb#Mechanics)
+ratio, one for an add), the modifiers present for certain
 (kept through the reforge, or placed first: an essence's grant, a Harvest tag's row drawn
 by weight among the tag's rows), or else a uniform removal, a fracture, an unveil's three
 weighted options, an ember's weighted implicit, a Divine Orb's reroll.

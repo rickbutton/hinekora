@@ -50,7 +50,8 @@ export interface CostReport {
     /** The total under the snapshot, where every item has a price. */
     readonly chaos?: number;
     readonly divine?: number;
-    /** The items the snapshot could not price, and the steps whose price is unknown. */
+    /** The items the snapshot could not price; a step whose price is unknown says
+     *  so in its own note. */
     readonly unpriced: readonly string[];
     /** The chance the craft ends on a `stop` before its last step. */
     readonly stopped: number;
@@ -122,8 +123,6 @@ export function costOf(
             chaos = undefined;
         } else if (chaos !== undefined) chaos += c;
     }
-    for (const s of steps)
-        if (s.unit === undefined && s.kind === "operation" && s.note) unpriced.add(s.note);
     return {
         steps,
         total,

@@ -14,7 +14,9 @@
  * step is expected to consume and the total at the bundled economy snapshot's
  * prices.
  * Exit codes: 0 = checks pass / formatted / charted / costed, 1 = craft has
- * errors / needs formatting / does not parse, 2 = usage / I/O error.
+ * errors / needs formatting / does not parse, 2 = usage / I/O error. `cost`
+ * exits 0 whenever the guide parses: a guide with check errors is still costed,
+ * as written, and the report's first line says so.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { loadDefaultEconomy, loadDefaultPoe1, registryOf } from "@hinekora/data";

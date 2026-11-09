@@ -251,7 +251,8 @@ resolveEssence / resolveBench / resolveHarvestTag`
   (`guaranteedFacts`, each side's count raised to its proven floor), re-weighted by a
   resonator's fossils (`FossilSpec.weights`, added up across fossils, Q59), narrowed to a
   tag, culled to the Foulborn top tiers, or the influence's rows; the modifiers `present`
-  for certain, kept or placed first; the count cases, a reforge's 4–6 at 8:3:1, a Magic
+  for certain, kept or placed first; the count cases, a reforge's
+  [Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Chaos_Orb#Mechanics) ratio, a Magic
   item's 1–2 at even odds (Q57, Q58), an add's one), a `removal` (uniform over what it
   reaches, the protected sides excluded, Q60), a `lock`, an `unveil` (three weighted
   draws, Q63), an `implicit` (an ember's weighted draw over `EldritchImplicitSpec.weights`)
@@ -452,7 +453,7 @@ Transport-free service functions + a stdio server:
   a function and a parameter a parameter wherever they appear, so a parameter named
   like a currency colours as a parameter inside its def. Returns empty on unlexable
   input.
-- `server.ts`: `createServer(connection, registry)`, capabilities + handlers.
+- `server.ts`: `createServer(connection, registry, prices?)`, capabilities + handlers.
   `triggerCharacters` includes `"` so the mod/base list pops when a string opens. A
   refused rename is returned as an `InvalidRequest` error so the editor shows the reason.
 - `node.ts`: stdio entry (`vscode-languageserver/node.js`, explicit `.js` for NodeNext);

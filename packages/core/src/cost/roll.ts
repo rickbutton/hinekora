@@ -111,14 +111,21 @@ export const NO_ROLL: Roll = { kind: "none" };
 /**
  * How many modifiers a rare reforge lays down: four, five or six at 8:3:1
  * (Chaos Orb § Mechanics), the ratio every rare reforge is taken to share
- * (QUESTIONS.md Q58); a base holding four takes three or four at 65:35 and a
- * Magic item one or two at even odds (Q57), craftofexile's readings where the
- * wiki gives none.
+ * (QUESTIONS.md Q58); a base holding four, a jewel, takes three or four
+ * (Orb of Alchemy) at 65:35 and a Magic item one or two at even odds (Q57),
+ * craftofexile's readings where the wiki gives no ratio.
  */
 function countDistribution(
     range: readonly [number, number],
     maxTotal: number,
 ): Map<number, number> {
+    // The library's rare range clamps to a jewel's four; the game rolls three or four.
+    if (maxTotal < range[1] && maxTotal >= 4 && range[0] >= 4) {
+        return new Map([
+            [maxTotal - 1, 0.65],
+            [maxTotal, 0.35],
+        ]);
+    }
     const hi = Math.min(range[1], maxTotal);
     const lo = Math.min(range[0], hi);
     const out = new Map<number, number>();
@@ -200,9 +207,10 @@ function groupRows(rows: readonly Row[], genOf: (m: Mod) => Gen): Group[] {
     return out;
 }
 
-/** Of a type's `n` eligible tiers a Foulborn orb lets the top half roll
- *  (Foulborn currency § Mechanics). */
-function foulbornCull(rows: readonly Row[]): Row[] {
+/** Of a type's `n` eligible tiers a Foulborn orb lets the top `k` roll, each
+ *  kept row's weight scaled by `n / k` so the type keeps its share against the
+ *  others (Foulborn currency § Mechanics). */
+export function foulbornRows(rows: readonly Row[]): Row[] {
     const byType = new Map<TypeId, Row[]>();
     for (const r of rows) {
         const list = byType.get(r.mod.type);
@@ -214,7 +222,8 @@ function foulbornCull(rows: readonly Row[]): Row[] {
         const sorted = [...list].sort((x, y) => y.mod.minLevel - x.mod.minLevel);
         const n = sorted.length;
         const kept = n <= 6 ? Math.ceil(n / 2) : Math.floor(n / 2) + 1;
-        out.push(...sorted.slice(0, kept));
+        for (const r of sorted.slice(0, kept))
+            out.push({ mod: r.mod, weight: (r.weight * n) / kept });
     }
     return out;
 }
@@ -236,14 +245,15 @@ function poolRows(a: AItem, spec: PoolSpec, registry: Registry): Row[] {
             const rows = natural(spec.level).filter(
                 (r) => r.mod.minLevel <= cap && (spec.gen === undefined || r.mod.gen === spec.gen),
             );
-            return spec.topTiers ? foulbornCull(rows) : rows;
+            return spec.topTiers ? foulbornRows(rows) : rows;
         }
         case "tagged":
             return natural().filter((r) => r.mod.implicitTags.has(spec.tag));
         case "fossil": {
             // A fossil multiplies the weight of the rows carrying its tags, once
-            // per fossil, the fossils' multipliers adding up (Fossil § Fossil
-            // weight multipliers; QUESTIONS.md Q59); the rows it blocks are gone.
+            // per fossil (the larger of its multipliers when two of its tags
+            // match), the fossils' multipliers adding up (Fossil § Fossil weight
+            // multipliers; QUESTIONS.md Q59); the rows it blocks are gone.
             const multiplier = (m: Mod): number => {
                 let sum = 0;
                 for (const f of spec.fossils) {

@@ -11,7 +11,7 @@
  */
 import type { Cmp } from "../ast/ast.js";
 import type { Gen, ModId, TypeId } from "../model/ids.js";
-import { type AItem, guaranteedTypes, type RPred, refine } from "../check/astate.js";
+import { type AItem, guaranteedTypes, type RPred, refine, suffixRange } from "../check/astate.js";
 import type { Range } from "../check/domain.js";
 import { narrowRange } from "../check/values.js";
 import { amongFirstDistribution } from "./race.js";
@@ -234,7 +234,7 @@ function rerollChance(pred: RPred, after: AItem, base: Truth): number | undefine
         );
         needsRow.add(leaf.type);
     }
-    const counts = { prefix: after.counts.prefix[0], suffix: after.counts.prefix[0] };
+    const counts = { prefix: after.counts.prefix[0], suffix: suffixRange(after)[0] };
     return jointChance(
         pred,
         taken,

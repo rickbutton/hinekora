@@ -101,7 +101,7 @@ export function costSource(
     out.push("");
     if (report.total.length === 0) out.push("Expected spend: nothing this report can count.");
     else out.push(`Expected spend: ${priceList(report.total)}.`);
-    if (prices !== undefined) {
+    if (prices !== undefined && report.total.length > 0) {
         const date = prices.fetchedAt.slice(0, 10);
         if (report.chaos !== undefined && report.divine !== undefined) {
             out.push(

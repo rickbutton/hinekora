@@ -291,7 +291,9 @@ groups to fire that the side caps admit**, and every question about it is a ques
 firing times, which are independent. Two consequences carry the whole model:
 
 - **Given the side split**, the modifiers on a side are the first `p` prefix groups to fire
-  in the prefix race alone, independent of the suffix side. The split's own distribution is
+  in the prefix race alone, approximately independent of the suffix side (the split is
+  coupled to which groups fired early through depletion, a second-order effect the race
+  tests bound at two hundredths). The split's own distribution is
   a race between the two sides' order statistics (the `a`-th prefix firing against the
   `(m−a+1)`-th suffix firing), with a side that is full admitting no more.
 - **"Group `g` is among the first `k` to fire"** is "fewer than `k` of the other groups

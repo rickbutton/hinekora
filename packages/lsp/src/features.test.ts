@@ -498,7 +498,7 @@ until has "fire resistance" t1 { essence "greed" t1 }`;
     it("sums the guide on the item block, and prices nothing without a snapshot", () => {
         const total = getHover(src, src.indexOf("item") + 1, registry, prices);
         expect(total!).toMatch(
-            /_Expected spend for the guide:_ about \d+(\.\d+)? chaos, \d+(\.\d+)? divine at Allflame prices of \d{4}-\d{2}-\d{2}\./,
+            /_Expected spend for the guide:_ about \d+(\.\d+)? chaos, \d+(\.\d+)? divine at \S+ prices of \d{4}-\d{2}-\d{2}\./,
         );
         const bare = getHover(src, src.indexOf("essence") + 1, registry);
         expect(bare!).toMatch(/_Cost:_ expected \d+(\.\d+)? Deafening Essence of Greed\./);

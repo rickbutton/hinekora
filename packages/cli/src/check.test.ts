@@ -125,7 +125,7 @@ describe("costSource — what a guide is expected to spend", () => {
         expect(r.output).toMatch(/Deafening Essence of Greed/);
         expect(r.output).toMatch(/Expected spend: .* Deafening Essence of Greed\./);
         expect(r.output).toMatch(
-            /About \d+(\.\d+)? Chaos Orbs \(\d+(\.\d+)? Divine Orbs\) at Allflame prices of \d{4}-\d{2}-\d{2}\./,
+            /About \d+(\.\d+)? Chaos Orbs \(\d+(\.\d+)? Divine Orbs\) at \S+ prices of \d{4}-\d{2}-\d{2}\./,
         );
     });
 
