@@ -48,7 +48,7 @@ import {
     rarityText,
     approx,
     costIsObvious,
-    roundsText,
+    oddsText,
 } from "@hinekora/core";
 import { checkCached, costCached, parseCached } from "@hinekora/lsp";
 import { renderItemCard } from "./item-card.js";
@@ -227,6 +227,37 @@ export function passSpend(loop: StepCost, steps: readonly StepCost[]): Price[] {
     return loop.runs > 0 ? addPrices([], sum, 1 / loop.runs) : sum;
 }
 
+/** One currency of a repeat: what a round spends, what the rounds spend, its worth. */
+export interface RepeatRow {
+    readonly item: string;
+    readonly round: number;
+    readonly total: number;
+    /** `total` in chaos; absent when the snapshot does not price it. */
+    readonly chaos?: number;
+}
+
+/**
+ * A repeat's spend as a table: per currency what one round spends (its
+ * expected spend over the rounds divided by them) and the whole, dearest
+ * first; the sum in chaos when every currency has a price.
+ */
+export function repeatTable(
+    rounds: number,
+    pass: readonly Price[],
+    snapshot?: Prices,
+): { readonly rows: readonly RepeatRow[]; readonly chaos?: number } {
+    const rows = pass.map((p): RepeatRow => {
+        const each = snapshot?.chaos.get(p.item);
+        const round = rounds > 0 ? p.amount / rounds : p.amount;
+        return each === undefined
+            ? { item: p.item, round, total: p.amount }
+            : { item: p.item, round, total: p.amount, chaos: p.amount * each };
+    });
+    rows.sort((a, b) => (b.chaos ?? -1) - (a.chaos ?? -1));
+    const chaos = snapshot === undefined ? undefined : inChaos(pass, snapshot);
+    return { rows, ...(chaos !== undefined && { chaos }) };
+}
+
 /** Whether a step inside the repeat could not be costed, so its spend reads short. */
 export function passIsPartial(loop: StepCost, steps: readonly StepCost[]): boolean {
     return steps.some(
@@ -378,11 +409,87 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
         const costOf = (s: Step): StepCost | undefined =>
             costs.get(`${STMT_KIND[s.kind]}@${s.span.start.offset}`);
 
+        /** How many repeats enclose the step being drawn. */
+        let repeatDepth = 0;
+
+        /** A repeat's odds over a table of what its rounds spend. */
+        const repeatCost = (
+            rounds: number,
+            chance: number,
+            pass: readonly Price[],
+            spread: string | undefined,
+            partial: boolean,
+        ): HTMLElement => {
+            const el = h("div", "repeat-cost");
+            const head = h("div", "cost", oddsText(chance));
+            if (spread !== undefined) head.title = spread;
+            el.append(head);
+            if (pass.length === 0) return el;
+            const t = repeatTable(rounds, pass, prices);
+            const num = (text: string): HTMLElement => h("td", "num", text);
+            el.append(
+                h(
+                    "table",
+                    "",
+                    h(
+                        "thead",
+                        "",
+                        h(
+                            "tr",
+                            "",
+                            h("th", "", ""),
+                            h("th", "num", "per round"),
+                            h("th", "num", "total"),
+                            h("th", "num", "chaos"),
+                        ),
+                    ),
+                    h(
+                        "tbody",
+                        "",
+                        ...t.rows.map((r) =>
+                            h(
+                                "tr",
+                                r.chaos === undefined ? "unpriced" : "",
+                                h("td", "", r.item),
+                                num(figure(r.round)),
+                                num(approx(r.total)),
+                                num(r.chaos === undefined ? "no price" : approx(r.chaos)),
+                            ),
+                        ),
+                    ),
+                    ...(t.chaos === undefined
+                        ? []
+                        : [
+                              h(
+                                  "tfoot",
+                                  "",
+                                  h(
+                                      "tr",
+                                      "",
+                                      h("td", "", ""),
+                                      h("td", "", ""),
+                                      h("td", "", ""),
+                                      num(approx(t.chaos)),
+                                  ),
+                              ),
+                          ]),
+                ),
+            );
+            if (partial) el.append(h("div", "note", "some steps inside could not be costed"));
+            return el;
+        };
+
         /** What a step consumes, with the spread of its uses as the tooltip. */
         const spend = (c: StepCost | undefined, label: string): HTMLElement[] => {
             if (c === undefined) return [];
             const lines: HTMLElement[] = [];
-            if (c.expected !== undefined && c.expected.length > 0 && !costIsObvious(c)) {
+            // Inside a repeat the repeat's own line says what a round spends.
+            if (
+                repeatDepth === 0 &&
+                c.expected !== undefined &&
+                c.expected.length > 0 &&
+                !costIsObvious(c)
+            ) {
                 const expected = c.expected;
                 lines.push(
                     costLine(
@@ -519,36 +626,22 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                 }
                 case "loop": {
                     const body: HTMLElement[] = [];
+                    repeatDepth++;
                     seq(s.body, body);
+                    repeatDepth--;
                     const c = costOf(s);
-                    const rounds =
-                        c?.attempts === undefined
-                            ? undefined
-                            : costLine(
-                                  roundsText(c.attempts.expected, c.attempts.chance),
-                                  spreadTitle(c.attemptsRange, figure),
-                              );
                     // What getting through the repeat once is expected to take.
                     const pass =
                         c === undefined || report === undefined ? [] : passSpend(c, report.steps);
-                    const toHit =
-                        pass.length === 0
+                    const rounds =
+                        c?.attempts === undefined
                             ? undefined
-                            : costLine(
-                                  `to get there: ${priceText(pass, prices)}${
-                                      c !== undefined &&
-                                      report !== undefined &&
-                                      passIsPartial(c, report.steps)
-                                          ? ", and steps that could not be costed"
-                                          : ""
-                                  }`,
-                                  undefined,
-                                  () =>
-                                      showBreakdown(
-                                          "to get through this repeat once",
-                                          pass,
-                                          prices,
-                                      ),
+                            : repeatCost(
+                                  c.attempts.expected,
+                                  c.attempts.chance,
+                                  pass,
+                                  spreadTitle(c.attemptsRange, (n) => `${figure(n)} rounds`),
+                                  report !== undefined && passIsPartial(c, report.steps),
                               );
                     const region = h(
                         "div",
@@ -566,7 +659,6 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                 h("ul", "checklist", checklist(s.check)),
                                 ...present(
                                     rounds,
-                                    toHit,
                                     c?.note === undefined ? undefined : h("div", "note", c.note),
                                     problemList(s.problems),
                                     result(s.after, true, true, "once the repeat is done"),

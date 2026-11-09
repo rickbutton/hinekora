@@ -488,7 +488,7 @@ until has "fire resistance" t1 { essence "greed" t1 }`;
 
     it("tells a loop's rounds and a step's expected spend, priced by the snapshot", () => {
         const loop = getHover(src, src.indexOf("until") + 1, registry, prices);
-        expect(loop!).toMatch(/_Cost:_ ~\d+(\.\d+)? rounds, \d+(\.\d+)?% chance per round\./);
+        expect(loop!).toMatch(/_Cost:_ 1\/\d+ per round\./);
         const step = getHover(src, src.indexOf("essence") + 1, registry, prices);
         expect(step!).toMatch(
             /_Cost:_ expected \d+(\.\d+)? Deafening Essence of Greed \(~\d+(\.\d+)? chaos\)\./,

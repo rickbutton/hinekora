@@ -27,9 +27,15 @@ export function approx(n: number): string {
     return `~${figure(n)}`;
 }
 
-/** "~8.8 rounds, 11% chance per round": what a repeat takes and the chance each round ends it. */
-export function roundsText(expected: number, chance: number): string {
-    return `${approx(expected)} rounds, ${percentage(chance)} chance per round`;
+/**
+ * A repeat's odds as guides quote them: "1/37 per round", the chance one round
+ * ends it; a percentage once it is better than even ("60% per round"). The
+ * expected rounds are the odds' denominator, so they are not said again.
+ */
+export function oddsText(chance: number): string {
+    if (!(chance > 0)) return "never ends";
+    if (chance >= 0.5) return `${percentage(chance)} per round`;
+    return `1/${Math.round(1 / chance)} per round`;
 }
 
 /**

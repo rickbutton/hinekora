@@ -303,8 +303,8 @@ resolveEssence / resolveBench / resolveHarvestTag`
   its `chaosRange`; a step whose figure is an assumption (its `note`) in any reading, and
   the steps inside such a loop or branch, carry none, and the total's spread is left out
   with them. `words.ts` is the figures in the guide's words (`figure`, `percentage`,
-  `priceText`; `approx` marks an estimate "~24", `roundsText` is "~8.8 rounds, 11%
-  chance per round"), the one copy the CLI, the hover and the playground print, and
+  `priceText`; `approx` marks an estimate "~24", `oddsText` is a repeat's odds as guides
+  quote them, "1/37 per round", or a percentage once better than even), the one copy the CLI, the hover and the playground print, and
   `costIsObvious`, the step whose cost says nothing its name does not (it runs once and
   spends one of one currency), whose line the hover and the storyboard leave out. The first step of a loop body is judged on the item the loop finds, not on
   the join over its rounds, so the attempts are taken alike.
@@ -562,13 +562,15 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   a step never reached is dimmed. Given the economy snapshot, each block carries the
   cost layer's line for its statement (`costCached`, matched by statement kind and start
   offset): what a step is expected to consume and its price in chaos ("expected 8.8
-  Deafening Essence of Greed (~24 chaos)"; left out when `costIsObvious`), a repeat's
-  rounds and the chance per round, how often a branch is taken, how often a `restart` or `stop` is reached, and
-  under the finished item the guide's expected spend in chaos and divine at the
-  snapshot's league and date, with the currencies it could not price; a spread over what
-  the item may hold is the line's tooltip. A repeat also says what getting through it
-  once is expected to take (`passSpend`: its body's spend over the guide divided by the
-  repeat's own runs). Clicking a cost line opens a dialog with the breakdown
+  Deafening Essence of Greed (~24 chaos)"; left out when `costIsObvious`, and inside a
+  repeat, whose own table says it), how often a branch is taken, how often a `restart`
+  or `stop` is reached, and under the finished item the guide's expected spend in chaos
+  and divine at the snapshot's league and date, with the currencies it could not price;
+  a spread over what the item may hold is the line's tooltip. A repeat's foot gives its
+  odds as guides quote them ("1/37 per round", `oddsText`) over a small table
+  (`repeatTable`): per currency what one round spends, what all the rounds spend
+  (`passSpend`: the body's spend over the guide divided by the repeat's own runs) and
+  its worth in chaos, dearest first, with the sum. Clicking a cost line opens a dialog with the breakdown
   (`breakdown`): each currency's expected amount, its price and its worth, dearest
   first and the unpriced last, the sum in chaos and divine, and the snapshot's league,
   date and divine rate. The block is the unit of interaction: hovering

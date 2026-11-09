@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Prices } from "./prices.js";
 import type { StepCost } from "./report.js";
-import { approx, costIsObvious, figure, percentage, priceText, roundsText } from "./words.js";
+import { approx, costIsObvious, figure, oddsText, percentage, priceText } from "./words.js";
 
 describe("the cost report's words", () => {
     it("quotes figures and chances as a guide does", () => {
@@ -35,9 +35,12 @@ describe("the cost report's words", () => {
         );
     });
 
-    it("marks an estimate with ~ and words a repeat's rounds with their chance", () => {
+    it("marks an estimate with ~ and words a repeat's odds as guides quote them", () => {
         expect(approx(24.9)).toBe("~24.9");
-        expect(roundsText(8.77, 0.114)).toBe("~8.77 rounds, 11% chance per round");
+        expect(oddsText(0.114)).toBe("1/9 per round");
+        expect(oddsText(1 / 37)).toBe("1/37 per round");
+        expect(oddsText(0.6)).toBe("60% per round");
+        expect(oddsText(0)).toBe("never ends");
     });
 
     it("leaves out the cost of a step that runs once and spends one of one currency", () => {

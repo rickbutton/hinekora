@@ -40,7 +40,7 @@ import {
     rangeText,
     approx,
     costIsObvious,
-    roundsText,
+    oddsText,
 } from "@hinekora/core";
 import { type Token, tokenize } from "@hinekora/parser";
 import { checkCached, costCached, parseCached } from "./analysis.js";
@@ -565,7 +565,7 @@ function costLine(
     const parts: string[] = [];
     if (step.attempts !== undefined) {
         parts.push(
-            `${roundsText(step.attempts.expected, step.attempts.chance)}${spread(step.attemptsRange, figure)}`,
+            `${oddsText(step.attempts.chance)}${spread(step.attemptsRange, (n) => `1/${figure(n)}`)}`,
         );
     }
     if (step.branch !== undefined) {

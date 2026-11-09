@@ -448,6 +448,49 @@ main {
     color: var(--muted);
 }
 
+/* a repeat's odds over what its rounds spend */
+
+.repeat-cost {
+    margin: 4px 0 2px 42px;
+}
+
+.region-foot .repeat-cost .cost {
+    margin-left: 0;
+}
+
+.repeat-cost table {
+    border-collapse: collapse;
+    margin-top: 3px;
+    font-size: 12px;
+}
+
+.repeat-cost th,
+.repeat-cost td {
+    padding: 1px 10px 1px 0;
+    text-align: left;
+}
+
+.repeat-cost th {
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 11px;
+}
+
+.repeat-cost .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.repeat-cost tfoot td {
+    border-top: 1px solid var(--border);
+    color: #c8a35a;
+    font-weight: 600;
+}
+
+.repeat-cost tr.unpriced td {
+    color: var(--muted);
+}
+
 .cost.clickable {
     cursor: pointer;
     text-decoration: underline dotted;

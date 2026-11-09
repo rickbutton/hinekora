@@ -20,7 +20,7 @@ import {
     walkthrough,
     plural,
     approx,
-    roundsText,
+    oddsText,
 } from "@hinekora/core";
 import { parse } from "@hinekora/parser";
 import { formatDiagnostic } from "./format.js";
@@ -145,7 +145,7 @@ function stepFigure(s: StepCost, prices: Prices | undefined): string {
         b === undefined ? "" : ` [${show(b.low)} to ${show(b.high)}]`;
     if (s.attempts !== undefined) {
         parts.push(
-            `${roundsText(s.attempts.expected, s.attempts.chance)}${spread(s.attemptsRange, figure)}`,
+            `${oddsText(s.attempts.chance)}${spread(s.attemptsRange, (n) => `1/${figure(n)}`)}`,
         );
     }
     if (s.branch !== undefined) {

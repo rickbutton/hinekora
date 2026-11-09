@@ -119,9 +119,7 @@ describe("costSource — what a guide is expected to spend", () => {
         );
         const r = costSource(src, "essence-life-boots.craft", registry, prices);
         expect(r.ok).toBe(true);
-        expect(r.output).toMatch(
-            /until anyEleRes\(t1\) \{\s+~\d+(\.\d+)? rounds, \d+% chance per round/,
-        );
+        expect(r.output).toMatch(/until anyEleRes\(t1\) \{\s+1\/\d+ per round/);
         expect(r.output).toMatch(/Deafening Essence of Greed/);
         expect(r.output).toMatch(/Expected spend: .* Deafening Essence of Greed\./);
         expect(r.output).toMatch(
