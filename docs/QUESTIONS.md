@@ -535,7 +535,8 @@ modifier and whether the crafted limit still counts it.
 "remove crafted modifiers".
 **Record:** whether the modifier shows as crafted and whether the recipe removes it.
 **Assumed meanwhile:** it stays crafted, the conservative reading (`check/ops.ts` `fill` on a
-`rows` pool that replaces a crafted type keeps the new rows among `craftedTypes`).
+`rows` pool that replaces a crafted type keeps the new rows among `craftedTypes` and
+restores the crafted count the change began with).
 **Answer:**
 
 ### Q51 · decision · open

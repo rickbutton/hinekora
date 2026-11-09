@@ -198,9 +198,10 @@ Operations that take a name (and an optional `t<n>`):
   a full name (`"Deafening Essence of Greed"`) or a type with a tier (`essence "greed" t1`,
   T1 = Deafening). The tier table of that section decides what it accepts: a Normal item at
   any tier, a Rare item from Screaming up (the four
-  [corrupted essences](https://www.poewiki.net/wiki/Essence#Corrupted_essences) count as
-  the top tier and, being one rung, take `t1` or no tier: `essence "delirium"`), never a
-  Magic item; the base must be one that can be Rare; the essence
+  [corrupted essences](https://www.poewiki.net/wiki/Essence#Corrupted_essences) and the
+  [Essence of Desolation](https://www.poewiki.net/wiki/Essence_of_Desolation) count as the
+  top tier and, being one rung, take `t1` or no tier: `essence "delirium"`), never a Magic
+  item; the base must be one that can be Rare; the essence
   must grant a modifier for the item's class; and no protection or cannot-roll metamod may
   be on the item.
 - `bench "<mod>" [t<n>]` adds a [crafting bench](https://www.poewiki.net/wiki/Crafting_Bench)
