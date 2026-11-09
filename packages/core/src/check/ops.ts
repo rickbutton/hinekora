@@ -1992,10 +1992,10 @@ function subsetMods(a: AItem, registry: Registry, prefixCount: number, suffixCou
  * though the pessimistic pool is empty? That pool takes every possibly present
  * modifier as present, but a path holds at most `k` of them, the affixes no
  * guaranteed type accounts for. Each possibly present type blocks the rows that
- * share a family with it, so when `k` such types cannot cover the family
- * signatures the tagged rows span under the guaranteed facts alone, some row is
- * open on every path: one unknown suffix cannot block both a life leech and a
- * mana leech.
+ * share a family with it, or that a tag it adds zeroes, so when `k` such types
+ * cannot cover the signatures the tagged rows span under the guaranteed facts
+ * alone, some row is open on every path: one unknown suffix cannot block both a
+ * life leech and a mana leech.
  */
 function taggedUnderGuaranteed(
     a: AItem,
@@ -2033,14 +2033,31 @@ function taggedRowSurvives(
     const unnamed = [...a.possible].filter((t) => !isExcluded(a, t) && !guaranteed.has(t));
     const k = prefixCount + suffixCount - guaranteed.size;
     if (k <= 0) return true;
-    const signatures = new Map<string, ReadonlySet<GroupId>>();
-    for (const r of rows) signatures.set([...r.families].sort().join(" "), r.families);
+    // Rows blocked alike share a signature: their families, and the tags a zero
+    // weight of theirs answers to, which a possibly present modifier may add.
+    const signatures = new Map<
+        string,
+        { families: ReadonlySet<GroupId>; zeroTags: ReadonlySet<TagId> }
+    >();
+    for (const r of rows) {
+        const zeroTags = new Set(
+            [...r.spawn, ...r.generation].filter((e) => e.weight === 0).map((e) => e.tag),
+        );
+        const key = `${[...r.families].sort().join(" ")}|${[...zeroTags].sort().join(" ")}`;
+        signatures.set(key, { families: r.families, zeroTags });
+    }
     let widest = 0;
     for (const t of unnamed) {
         const fams = registry.familiesOfType(t);
+        const adds = registry.addsTagsOfType(t);
         let cover = 0;
         for (const sig of signatures.values()) {
-            if ([...sig].some((f) => fams.has(f))) cover++;
+            if (
+                [...sig.families].some((f) => fams.has(f)) ||
+                [...sig.zeroTags].some((g) => adds.has(g))
+            ) {
+                cover++;
+            }
         }
         widest = Math.max(widest, cover);
     }

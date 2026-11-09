@@ -726,6 +726,7 @@ export const SPECIFIC_WEAPON_B: Mod = mkMod({
     minLevel: 1,
     families: ["SpecificWeaponB"],
     spawn: [spawn(TAG_SPECIFIC_WEAPON, 0), spawn(TAG_DEFAULT, 500)],
+    implicitTags: ["attack"],
     text: "specific weapon beta",
 });
 

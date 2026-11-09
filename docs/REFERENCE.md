@@ -917,8 +917,8 @@ in it. Notes:
   counts is still open if the few unnamed modifiers of the path cannot block every tagged
   row the guaranteed facts leave (`taggedRowSurvives`: a path holds at most as many
   possibly present modifiers as affixes no guaranteed type accounts for, each blocking the
-  rows that share a family with it, so one unknown suffix cannot block both a life leech
-  and a mana leech); so a tagged pool that a possibly kept
+  rows that share a family with it or that a tag it adds zeroes, so one unknown suffix
+  cannot block both a life leech and a mana leech); so a tagged pool that a possibly kept
   modifier empties refuses the craft. The counts are read per path: every (prefix,
   suffix) pair the coupled count ranges allow (`sidePairs`) must leave a tagged row
   room, so a full Rare whose removal may take either side still admits a tag with rows

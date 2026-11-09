@@ -15,6 +15,8 @@ import {
     RATCHETING_BASE,
     RING_BASE,
     SIMPLEX_BASE,
+    SPECIFIC_WEAPON_A,
+    SPECIFIC_WEAPON_B,
 } from "../__fixtures__/mods.js";
 import { TypeId } from "../model/ids.js";
 
@@ -34,6 +36,30 @@ const guaranteed = (r: ReturnType<typeof check>): Set<string> =>
     new Set([...guaranteedTypes(r.finalState!)]);
 
 describe("harvest augment against the modifiers the item may carry", () => {
+    it("is blocked when the one unnamed modifier may add a tag that zeroes every tagged row", () => {
+        // The augment removes one modifier first, so of two unnamed prefixes one
+        // remains, and it may be alpha, which adds the tag beta is zero on; beta is
+        // the only attack-tagged row, so on that path the augment has nothing.
+        const tagged = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...CATALOG, SPECIFIC_WEAPON_A, SPECIFIC_WEAPON_B],
+            modAliases: { "T1 Life": "IncreasedLife1" },
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
+        const blocked = check(
+            craft(rareRing(["random", "random"]), [harvest("augment", "attack")]),
+            { registry: tagged },
+        );
+        expect(blocked.diagnostics.length).toBe(1);
+        expect(blocked.diagnostics[0]!.message).toContain("block");
+        // With both prefixes named, nothing left on the item can add the tag.
+        const named = check(
+            craft(rareRing(["T1 Life", INCREASED_MANA.id]), [harvest("augment", "attack")]),
+            { registry: tagged },
+        );
+        expect(named.diagnostics).toEqual([]);
+    });
+
     it("is not blocked by one unknown suffix when its candidates span more groups", () => {
         // The one unnamed suffix may be any resistance, but it is one modifier:
         // of fire, cold and lightning two stay open on every path.
