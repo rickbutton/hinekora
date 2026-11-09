@@ -561,6 +561,137 @@ a guide needs one side's version of a shared wording for its own sake.
 guide is written with it (`examples/essence-minion-wand.craft`).
 **Answer:**
 
+### Q54 · decision · open
+
+**Asked:** 2026-11-09
+**Question:** what a step's probability means when the checker's item is a set of items
+(`docs/research/cost-model.md` §5.2). (a) A point estimate on the paths the guide is on:
+the pool of the modifiers present on every path, a modifier the state holds only as
+possible neither shrinking the pool nor adding its tags, with the report naming the
+assumption where it applies; (b) bounds, the same computation on the checker's superset
+and subset pools, reported as a range; (c) both.
+**Recommendation:** (a): exact for a reforge and for an item whose named modifiers fill
+it, which is where guides quote odds; (b) when a guide needs the range.
+**Assumed meanwhile:** (a).
+**Answer:**
+
+### Q55 · game probe · open
+
+**Asked:** 2026-11-09
+**Goal:** the odds of one against two modifiers from an Orb of Transmutation or an Orb of
+Alteration. [Orb of Transmutation § Spending](https://www.poewiki.net/wiki/Orb_of_Transmutation#Spending)
+says "a prefix, suffix, or both" and no page gives the ratio; craftofexile uses one half
+each.
+**Procure:** a Normal ring, fifty Orbs of Transmutation or a Magic ring and fifty Orbs of
+Alteration.
+**Steps:** apply each; count the results with one modifier and with two.
+**Record:** the two counts.
+**Assumed meanwhile:** one half each, the single modifier's side by the sides' weight
+shares (`docs/research/cost-model.md` §1.3).
+**Answer:**
+
+### Q56 · game probe · open
+
+**Asked:** 2026-11-09
+**Goal:** whether essences, resonators, the Harvest reforges and the Veiled Chaos Orb lay
+down 4, 5 or 6 modifiers at the Chaos Orb's 8:3:1
+([Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Chaos_Orb#Mechanics)). The wiki
+likens each to a Chaos Orb or an Orb of Alchemy without a ratio; craftofexile rolls an
+essence's three to five random modifiers at 8:3:1 beside the guaranteed one.
+**Procure:** a Rare body armour; forty Screaming essences, forty resonators with one
+fossil, lifeforce for forty reforges.
+**Steps:** apply each batch; count the modifiers after every use.
+**Record:** how many of each batch left 4, 5 and 6.
+**Assumed meanwhile:** 8:3:1 for all of them, the guaranteed modifier counted among the
+4–6 (`docs/research/cost-model.md` §1.3).
+**Answer:**
+
+### Q57 · game probe · open
+
+**Asked:** 2026-11-09
+**Goal:** whether the "more" weight multipliers of two fossils add (×10 and ×10 giving
+×20) or multiply (×100). [Fossil](https://www.poewiki.net/wiki/Fossil) records the dispute
+and calls additive the more widely accepted theory.
+**Procure:** a Rare ring, a Potent Chaotic Resonator, Pristine and Prismatic Fossils in
+quantity (life ×10 and elemental ×6 on a base where both tags have rows).
+**Steps:** resonate many times; note how often a life modifier appears beside how often an
+elemental one does, against the single-fossil rates.
+**Record:** the counts.
+**Assumed meanwhile:** additive (`docs/research/cost-model.md` §1.4).
+**Answer:**
+
+### Q58 · game probe · open
+
+**Asked:** 2026-11-09
+**Goal:** whether an Orb of Annulment picks the removed modifier uniformly among those it
+can remove. [Orb of Annulment](https://www.poewiki.net/wiki/Orb_of_Annulment) says only
+"a random modifier"; every calculator takes it as uniform.
+**Procure:** Rare items with one common and one rare modifier (a T1 life beside a T1
+movement speed) and Orbs of Annulment.
+**Steps:** annul many such items; count which modifier went.
+**Record:** the counts per modifier.
+**Assumed meanwhile:** uniform, for every random removal (the Veiled Exalted Orb's, the
+Harvest augment's, the beast recipes', the Orb of Dominance's)
+(`docs/research/cost-model.md` §1.4).
+**Answer:**
+
+### Q59 · decision · open
+
+**Asked:** 2026-11-09
+**Question:** the economy source and its refresh (`docs/research/cost-model.md` §3).
+poe.ninja's documented endpoint is gone; its page reads
+`/poe1/api/economy/exchange/current/overview?league=<League>&type=<Type>`, an internal
+endpoint that may change again. Options: (a) a snapshot committed to the repository with
+its provenance, refreshed by a script making four requests (Currency, Essence, Fossil,
+Resonator), run by hand at least weekly and at a league's start, the report naming the
+snapshot's date; (b) live requests from the CLI at each run; (c) a hand-kept table.
+**Recommendation:** (a): the prices stay reproducible and the site is not polled by every
+check. Which league to track is the current trade league (Allflame until 2026-11-13, the
+3.30 league once poe.ninja lists it); hardcore and Standard are not tracked.
+**Assumed meanwhile:** (a).
+**Answer:**
+
+### Q60 · game probe · open
+
+**Asked:** 2026-11-09
+**Goal:** which tagged row a Harvest "reforge including a <tag> modifier" places, and
+whether the rest of the roll is a plain Chaos Orb roll.
+[Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting) guarantees one tagged
+modifier and says no more.
+**Procure:** a Rare ring, lifeforce for forty "reforge including a Life modifier".
+**Steps:** reforge forty times; note which life modifier appeared and the total count.
+**Record:** the life modifiers' frequencies against their spawn weights.
+**Assumed meanwhile:** one of the tag's rows by spawn weight, placed first, the remaining
+modifiers drawn as a Chaos Orb draws them (`docs/research/cost-model.md` §1.4, §5.4).
+**Answer:**
+
+### Q61 · game probe · open
+
+**Asked:** 2026-11-09
+**Goal:** whether an unveil's three options are drawn by the unveiled rows' spawn weights.
+[Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) says three random
+modifiers are presented and records a rebalance of "the weighting of Veiled modifiers".
+**Procure:** Veiled Chaos Orbs and a Rare body armour.
+**Steps:** veil and unveil many times; note the three options each time.
+**Record:** each option's frequency against its weight in the data.
+**Assumed meanwhile:** three weighted draws without replacement from the unveil pool
+(`docs/research/cost-model.md` §1.4).
+**Answer:**
+
+### Q62 · game probe · open
+
+**Asked:** 2026-11-09
+**Goal:** whether a modifier's value is uniform over its row's range, which decides the
+chance a Divine Orb reaches `has "maximum life" >= 110`.
+[Divine Orb](https://www.poewiki.net/wiki/Divine_Orb) says the values are rolled again
+within the tier and nothing of the distribution.
+**Procure:** a Rare with a T1 life modifier and Divine Orbs.
+**Steps:** divine many times; note each value.
+**Record:** the values.
+**Assumed meanwhile:** uniform over the integers of the range
+(`docs/research/cost-model.md` §1.4).
+**Answer:**
+
 ---
 
 ## Resolved
