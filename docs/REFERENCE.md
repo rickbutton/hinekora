@@ -544,7 +544,7 @@ one domain. The sub-domains:
   out, and the value is unknown while it may be the one present), a join keeps a type only where both
   branches constrain it, and whatever rolls the modifier again drops it: a `fill` of its
   type, a `strip`, a `relax`, a removal, and `reroll`, the Divine Orb, which drops every
-  entry but a fractured modifier's.
+  entry but a fractured modifier's and those of a side a metamod protects.
 - `craftedTypes`: the SET of types a bench craft may have put on the item (the named and
   anonymous `bench` affixes of the item block, then every `bench` step's row and the
   Bestiary's random metamod; a Harvest change of one keeps its replacement among them,

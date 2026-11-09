@@ -529,8 +529,13 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
             return { ...a, eldritch, eldritchTypes };
         }
         case "reroll": {
+            // A Divine Orb leaves a fractured modifier alone and respects a side
+            // that cannot be changed (Metamod § Rules and Exceptions).
             const fractured = fracturedTypes(a);
-            return { ...a, values: keepValues(a.values, (t) => fractured.has(t)) };
+            const untouched = (t: TypeId): boolean =>
+                fractured.has(t) ||
+                [...sidesOf(a, registry, t)].every((g) => rules.protected.has(g));
+            return { ...a, values: keepValues(a.values, untouched) };
         }
         case "relax":
             // A modifier keeps its tier only when it is provably crafted: every

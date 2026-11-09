@@ -21,6 +21,7 @@ import {
     MAXLIFE_T1,
     MAXLIFE_T2,
     MAXLIFE_T3,
+    PROTECT_PREFIXES_CARRIER,
     RING_BASE,
     TIERED_CATALOG,
 } from "../__fixtures__/mods.js";
@@ -138,6 +139,31 @@ describe("has <mod> <cmp> <n>", () => {
         expect(tiers?.has(MAXLIFE_BLANK.id)).toBe(true);
         expect(tiers?.has(MAXLIFE_T1.id)).toBe(false);
         expect(r.finalState!.values.get(LIFE)).toBeUndefined();
+    });
+
+    it("the Divine Orb leaves the values of a side that cannot be changed", () => {
+        const locked = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...TIERED_CATALOG, PROTECT_PREFIXES_CARRIER],
+        });
+        const inRange = (suffixes: string[]) =>
+            check(
+                craft(
+                    item({
+                        base: "IronRing",
+                        ilvl: 100,
+                        rarity: "rare",
+                        prefixes: [{ mod: "maximum life", tier: 1 }],
+                        suffixes,
+                    }),
+                    [iff(notp(hasValue("maximum life", ">=", 125)), [stop()]), op("divine")],
+                ),
+                { registry: locked },
+            );
+        expect(inRange([PROTECT_PREFIXES_CARRIER.id]).finalState!.values.get(LIFE)).toEqual([
+            125, 129,
+        ]);
+        expect(inRange([]).finalState!.values.get(LIFE)).toBeUndefined();
     });
 
     it("the Divine Orb is refused on a Normal item", () => {
