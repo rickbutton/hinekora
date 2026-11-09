@@ -5,6 +5,7 @@ import { narrowRange, rollRange } from "./values.js";
 import {
     bench,
     craft,
+    essence,
     has,
     hasValue,
     iff,
@@ -15,6 +16,7 @@ import {
     until,
 } from "../__fixtures__/ast.js";
 import {
+    AMULET_ES_ROW,
     BENCH_MAXLIFE_ROW,
     CLASS_RING,
     MAXLIFE_ARMOUR_ONLY,
@@ -27,6 +29,7 @@ import {
     TIERED_CATALOG,
 } from "../__fixtures__/mods.js";
 import type { Rarity } from "../model/ids.js";
+import type { EssenceSpec } from "../model/sources.js";
 
 const registry = buildRegistry({ bases: [RING_BASE], mods: TIERED_CATALOG });
 const ctx: CheckContext = { registry };
@@ -149,6 +152,27 @@ describe("has <mod> <cmp> <n>", () => {
         expect(upper?.has(MAXLIFE_T1.id)).toBe(true);
         expect(upper?.has(MAXLIFE_T2.id)).toBe(false);
         expect(above.finalState!.values.get(LIFE)).toBeUndefined();
+    });
+
+    it("reads the row an essence places even where it never rolls", () => {
+        // The grove's and the bench's rows aside, an essence puts its row on the
+        // item whatever the row's weight on the base.
+        const woe: EssenceSpec = {
+            id: "TestWoeShrieking",
+            name: "Shrieking Essence of Woe",
+            tier: 6,
+            grants: new Map([[CLASS_RING, AMULET_ES_ROW.id]]),
+        };
+        const placed = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...TIERED_CATALOG, AMULET_ES_ROW],
+            essences: [woe],
+        });
+        const c = craft(ring(), [
+            essence("Shrieking Essence of Woe"),
+            iff(hasValue("energy shield", ">=", 35), [op("divine")]),
+        ]);
+        expect(check(c, { registry: placed }).diagnostics).toEqual([]);
     });
 
     it("reads only the rows the item may carry, so another base's row is out of reach", () => {

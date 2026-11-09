@@ -31,6 +31,7 @@ import {
     canBeRare,
     cardinalityGuarantees,
     guaranteedTypes,
+    isExcluded,
     suffixRange,
     initialState,
     join,
@@ -1126,10 +1127,18 @@ class Checker {
         const gen = rollableGen(this.registry.catalog, a.base, a.ilvl, type, tags) ?? "prefix";
 
         if (pred.value !== undefined) {
-            // Any row of the type the item may carry may be the one on it: a
-            // natural row that rolls on the base at some level, a bench or essence
-            // row its class takes, an unveiled or otherwise placed row.
+            // Any row of the type the item may carry may be the one on it: a row an
+            // operation has pinned, a row an essence grants its class (whatever its
+            // spawn weight on the base), a natural row that rolls on the base at some
+            // level, under a tag a present modifier may add too, a bench row its
+            // class takes, an unveiled or otherwise placed row.
+            const pinned = a.tiers.get(type);
             const itemTags = new Set([...a.base.tags, ...tags]);
+            const maybeTags = new Set<TagId>();
+            for (const t of a.possible) {
+                if (isExcluded(a, t)) continue;
+                for (const tag of this.registry.addsTagsOfType(t)) maybeTags.add(tag);
+            }
             const benchTypes = this.registry.benchTypesFor(a.base.itemClass);
             const granted = new Set<ModId>();
             for (const e of this.registry.essences) {
@@ -1137,15 +1146,16 @@ class Checker {
                 if (id !== undefined) granted.add(id);
             }
             const mayCarry = (m: Mod): boolean => {
+                if (pinned?.has(m.id) || granted.has(m.id)) return true;
                 switch (m.source) {
                     case "natural": {
-                        const weight = lookupWeight(m, itemTags);
+                        const weight = lookupWeight(m, itemTags, maybeTags);
                         return m.domain === a.base.domain && weight !== null && weight > 0;
                     }
                     case "bench":
                         return benchTypes.has(m.type);
                     case "essence":
-                        return granted.has(m.id);
+                        return false;
                     default:
                         return true;
                 }

@@ -721,6 +721,17 @@ export const MAXLIFE_ARMOUR_ONLY: Mod = mkMod({
     spawn: [spawn(TagId("body_armour"), 1000), spawn(TAG_DEFAULT, 0)],
     text: "+(200-220) to maximum Life",
 });
+/** An energy shield row that rolls on amulets only, which an essence may still
+ *  place on a ring. Not in `CATALOG`. */
+export const AMULET_ES_ROW: Mod = mkMod({
+    id: "AmuletEnergyShield1",
+    type: "LocalEnergyShield",
+    gen: "prefix",
+    minLevel: 1,
+    families: ["LocalEnergyShield"],
+    spawn: [spawn(TAG_AMULET, 1000), spawn(TAG_DEFAULT, 0)],
+    text: "+(30-40) to maximum Energy Shield",
+});
 /** A row of the tiered life type with no number in its text. Not in `TIERED_CATALOG`. */
 export const MAXLIFE_BLANK: Mod = mkMod({
     id: "MaxLifeBlank",
