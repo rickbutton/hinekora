@@ -165,9 +165,16 @@ these suffix modifiers }`, `{ 1-3 more modifiers, prefixes and/or suffixes }`,
   player follows it (`walkthrough(craft, result, registry)`): the declared item, then a
   `Step` per statement with the item before and after it from the trace, matched by
   statement kind and start offset, the checker's findings owned by the innermost
-  statement that contains them, loops as blocks with their exit in words, branches with
-  their arms, and for a method its display name, the step as written and what it does
-  from the method table. `itemDelta`/`stepDelta` list what a step added and removed, as
+  statement that contains them, loops as blocks with their exit both as written and as a
+  checklist in the player's words (`check`, from `criteria`), branches with their arms
+  likewise, and for a method its display name, the step as written and what it does
+  from the method table. `flowchart.ts` turns a walkthrough into Mermaid `flowchart TD`
+  text (`flowchart(walkthrough)`): an action node per statement in a class named after
+  its method word, a hexagon per loop exit or branch asking "item has …?" with the
+  checklist's lines, "yes" and "no" edges, a loop as a `repeat` subgraph whose decision
+  leads back to its first step (a `restart` goes there too), start and end nodes
+  (`FLOW_START`, `FLOW_END`), and the map from node id to statement that lets a page link
+  the drawing to the text. `itemDelta`/`stepDelta` list what a step added and removed, as
   the lines of the item view a player would notice. `conditions.ts` words a guide's
   conditions for the player: `clause` as prose ("+# to maximum Life at T1 and exactly 2
   prefixes", a negated count turned round, "no …" for a negated modifier), `criteria` as
@@ -414,25 +421,21 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   lines in their colours, a bracketed "one of" group for a disjunction, a dashed line for
   the modifiers whose identity is unknown, "possibly" marks, and the absent modifiers
   struck through. The affix name and tags are the line's tooltip.
-- `src/chart.ts`: `createChartPane(root, hooks)`, the guide as a flow chart from the
-  core's `walkthrough`: an action node per statement with the currency's badge and
-  display name (any other method as written), a decision node per loop exit or branch
-  with the condition as the author wrote it, "yes" and "no" arrows, a loop's arrow back
-  up its left lane to above its first step (a `restart` joins that lane), a merge after a
-  branch, start and end nodes. The layout is structured, measured then placed: a sequence
-  stacks downward, a loop is its body over its decision with a lane on the left, a branch
-  is a decision over two columns (or one and a pass-through) that merge below; nodes are
-  HTML positioned over an SVG that draws the arrows. A detail panel under the chart
-  follows the node at the cursor or under the pointer and keeps no position of its own:
-  for an action its words, what it does, what it changed (`stepDelta`), the checker's
-  findings and the item after it; for a decision the condition as a checklist
-  (`criteria`) and, for a loop, the item once it is done; for the start the declared
-  item. Hovering a node highlights its statement in the editor, clicking one moves the
-  cursor, the cursor marks its node, and a node whose item changed since the last edit
-  flashes once.
+- `src/chart.ts`: `createChartPane(root, hooks)`, the guide as a flow chart drawn by
+  Mermaid from the core's `flowchart` text, with `classDef` lines that colour each
+  method's nodes and a dark theme to match the page. Mermaid lays the graph out; the
+  pane binds the drawing to the editor by the node ids in Mermaid's group ids. A detail
+  panel under the chart follows the node at the cursor and keeps no position of its
+  own: for an action its words, what it does, what it changed (`stepDelta`), the
+  checker's findings and the item after it; for a decision the condition as a checklist
+  (the step's `check`) and, for a loop, the item once it is done; for the start the
+  declared item. Hovering a node only highlights its statement in the editor, clicking
+  one moves the cursor, the cursor marks its node, and a node whose item changed since
+  the last edit flashes once. While the guide does not parse the last drawing stays,
+  dimmed.
 - `src/main.ts`: the page: the example guides (`examples/*.craft`, picked from a menu), the
   chart pane bound to the editor both ways, a problems panel that jumps to a
-  finding, a format button, a handle that resizes the sidebar (the width is kept in the
+  finding (and is absent when there is none), a format button, a handle that resizes the sidebar (the width is kept in the
   browser for the next visit), the data provenance in the header, and `window.hinekora`
   (`editor`, `monaco`, `registry`) for the browser console.
 
@@ -615,8 +618,11 @@ body)`, the states that re-enter the loop head after one iteration (fall-off-end
   returns the innermost entry covering an offset; this powers hover.
 - `elaborateItem`: declared mods must **pin a tier** (`[ "maximum life" t1 ]`) via an
   exact id/alias or a description + `t<n>`; a bare description is an error. Placeholders
-  (`"random"`/`"?"`) stay anonymous. Pinned tiers seed the `tiers` overlay, so the
-  starting item is fully concrete.
+  (`"random"`/`"?"`) stay anonymous and widen `possible` to the natural rows of their
+  side (`anonymousTypes`). A `crafted` affix resolves through `resolveBench` for the
+  item's class and counts toward `crafted`; anonymous, it widens `possible` to the
+  bench's rows of its side (`benchTypesFor`). Pinned tiers seed the `tiers` overlay, so
+  the starting item is fully concrete.
 
 ### `methods.ts`: the method table
 
@@ -855,11 +861,12 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/data/src/{load,bundle,adapter}.ts` + `scripts/ingest-poe1.mjs` | data load (disk in `load`, pure in `bundle`) + ingest                                              |
 | `editors/playground/src/{main,monaco,language,providers,convert}.ts`     | the browser playground: Monaco bound to the language service                                       |
 | `editors/playground/src/item-card.ts`                                    | the item drawn in the game's style from `itemView`                                                 |
-| `editors/playground/src/chart.ts`                                        | the flow chart pane: structured layout, nodes over SVG arrows, the detail panel                    |
+| `editors/playground/src/chart.ts`                                        | the flow chart pane: Mermaid draws the core's `flowchart`, bound to the editor, the detail panel   |
 | `packages/core/src/render/item.ts`                                       | `itemView`, `renderItemText`: the item as a player reads it, in the game's copy layout             |
 | `packages/core/src/render/walkthrough.ts`                                | `walkthrough`, `stepDelta`: the guide as steps with the item before and after each                 |
+| `packages/core/src/render/flowchart.ts`                                  | `flowchart`: a walkthrough as Mermaid flowchart text, node ids mapped to statements                |
 | `packages/core/src/render/conditions.ts`                                 | `clause`, `criteria`: a guide's conditions as prose and as a checklist, in the player's words      |
-| `packages/lsp/src/walkthrough.test.ts`                                   | the walkthrough model over real guides                                                             |
+| `packages/lsp/src/{walkthrough,flowchart}.test.ts`                       | the walkthrough model and its flowchart over real guides                                           |
 | `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts`    | LSP features                                                                                       |
 | `packages/lsp/src/analysis.ts`                                           | the parse and check of a document, memoized by text; every feature reads it                        |
 | `packages/lsp/src/navigation.ts`                                         | highlights, definition, references, rename, outline over the bindings                              |

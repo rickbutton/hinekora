@@ -41,7 +41,7 @@
                     "name": "keyword.other.operation.hinekora"
                 },
                 {
-                    "match": "\\b(has|fractured|influenced|dominant|not|and|or)\\b",
+                    "match": "\\b(has|fractured|crafted|influenced|dominant|not|and|or)\\b",
                     "name": "keyword.other.hinekora"
                 },
                 {

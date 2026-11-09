@@ -336,12 +336,38 @@ class Checker {
             return type;
         };
 
+        // A crafted affix is the bench's row for the item's class, named by the
+        // modifier the bench adds; anonymous, it is one of the bench's rows of its
+        // side, counted toward the crafted limit all the same.
+        const pinCrafted = (affix: AffixDecl, gen: Gen): TypeId | undefined => {
+            const res = this.registry.resolveBench(affix.mod, base.itemClass, affix.tier);
+            if (!res.ok) {
+                this.diag(resolveMessage(res.error), item.span);
+                return undefined;
+            }
+            const mod = this.registry.resolveMod(res.value.mod);
+            if (!mod.ok) return undefined;
+            checkGen(affix.mod, mod.value.gen, gen);
+            claim(affix.mod, mod.value.type);
+            pinned.set(mod.value.type, mod.value.id);
+            crafted++;
+            return mod.value.type;
+        };
+
         const anonymousBy = { prefix: 0, suffix: 0 };
+        const craftedAnonymousBy = { prefix: 0, suffix: 0 };
         const countAffixes = (affixes: readonly AffixDecl[], gen: Gen): number => {
             for (const affix of affixes) {
                 const anonymous = PLACEHOLDERS.test(affix.mod.trim().toLowerCase());
-                if (anonymous) anonymousBy[gen]++;
-                const type = anonymous ? undefined : pinAffix(affix, gen);
+                if (anonymous && affix.crafted) {
+                    craftedAnonymousBy[gen]++;
+                    crafted++;
+                } else if (anonymous) anonymousBy[gen]++;
+                const type = anonymous
+                    ? undefined
+                    : affix.crafted
+                      ? pinCrafted(affix, gen)
+                      : pinAffix(affix, gen);
                 if (!affix.fractured) continue;
                 if (type !== undefined) fracturedTypes.push(type);
                 else if (anonymous) fracturedAnonymous++; // a lock on a mod no type is known to carry
@@ -437,11 +463,18 @@ class Checker {
             },
         );
         // An anonymous affix is some modifier of its side the item could roll, so
-        // a `has` may name it and a bench craft of its group may clash with it.
+        // a `has` may name it and a bench craft of its group may clash with it;
+        // an anonymous crafted one is some bench row of its side.
         const possible = new Set(start.possible);
         for (const gen of ["prefix", "suffix"] as const) {
-            if (anonymousBy[gen] === 0) continue;
-            for (const t of anonymousTypes(start, this.registry, gen)) possible.add(t);
+            if (anonymousBy[gen] > 0) {
+                for (const t of anonymousTypes(start, this.registry, gen)) possible.add(t);
+            }
+            if (craftedAnonymousBy[gen] > 0) {
+                for (const t of this.registry.benchTypesFor(base.itemClass)) {
+                    if (this.registry.genOfType(t) === gen) possible.add(t);
+                }
+            }
         }
         return { ...start, possible };
     }

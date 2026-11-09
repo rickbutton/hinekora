@@ -183,6 +183,9 @@ export interface Registry {
      * ambiguity is only across distinct mod families.
      */
     resolveBench(name: string, itemClass?: ClassId, tier?: number): Resolved<BenchCraft>;
+    /** The types the bench can put on an item class: what an anonymous crafted
+     *  affix may be. */
+    benchTypesFor(itemClass: ClassId): ReadonlySet<TypeId>;
     /** Resolve a fossil by name, in full ("Pristine Fossil") or by its first word. */
     resolveFossil(name: string): Resolved<FossilSpec>;
     /** The eldritch implicit rows an ember or ichor of that tier can give a base. */
@@ -670,6 +673,10 @@ export function buildRegistry(data: RegistryData): Registry {
             const sorted = best.sort((a, b) => b.craft.tier - a.craft.tier);
             const pick = tier === undefined ? sorted[0] : sorted[tier - 1];
             return pick ? found(pick.craft) : fail({ kind: "unknownBench", name });
+        },
+
+        benchTypesFor(itemClass) {
+            return benchTypesByClass.get(itemClass) ?? new Set<TypeId>();
         },
 
         genOfType(type) {

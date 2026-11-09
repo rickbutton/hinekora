@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Craft, IfStmt, Stmt, UntilStmt } from "@hinekora/core";
 import { parse } from "./index.js";
+import { formatCraft } from "./format.js";
 import type { SyntaxDiagnostic } from "./errors.js";
 
 function parseOk(src: string): Craft {
@@ -638,5 +639,20 @@ describe("parser — comments and error spans", () => {
         // Missing '{' after the until predicate — the next token is 'exalt' on line 2.
         expect(err.message).toMatch(/expected '\{'/);
         expect(err.span.start.line).toBe(2);
+    });
+});
+
+describe("item block — affix marks", () => {
+    it("parses `crafted` and `fractured` in either order, and the formatter writes them back", () => {
+        const c = parseOk(
+            `item { base: "R" ilvl: 84 rarity: rare prefixes: [ crafted "maximum life" t1, crafted "random", fractured crafted "maximum mana" t1 ] }`,
+        );
+        expect(c.item.prefixes).toEqual([
+            { mod: "maximum life", tier: 1, crafted: true },
+            { mod: "random", crafted: true },
+            { mod: "maximum mana", tier: 1, fractured: true, crafted: true },
+        ]);
+        const text = `item {\n    base:     "R"\n    ilvl:     84\n    rarity:   rare\n    prefixes: [ crafted "maximum life" t1, crafted "random", fractured crafted "maximum mana" t1 ]\n}\n`;
+        expect(formatCraft(text)).toBe(text);
     });
 });

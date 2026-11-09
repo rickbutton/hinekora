@@ -399,22 +399,29 @@ class Parser {
     }
 
     /**
-     * A prefix/suffix affix list: `[ "<mod>" [t1], … ]`. Each entry is a quoted
-     * mod name with an optional `t1` tier (the checker requires a tier for named
-     * mods; a `"random"`/`"?"` placeholder takes none).
+     * A prefix/suffix affix list: `[ [fractured] [crafted] "<mod>" [t1], … ]`. Each
+     * entry is a quoted mod name with an optional `t1` tier (the checker requires
+     * a tier for named mods; a `"random"`/`"?"` placeholder takes none), after
+     * the marks `fractured` and `crafted` in either order.
      */
     private parseAffixList(): readonly AffixDecl[] {
         this.expect("lbracket", "'[' to open a list");
         const items: AffixDecl[] = [];
         while (!this.at("rbracket")) {
-            const fractured = this.atKeyword("fractured");
-            if (fractured) this.advance();
+            let fractured = false;
+            let crafted = false;
+            while (this.atKeyword("fractured") || this.atKeyword("crafted")) {
+                if (this.atKeyword("fractured")) fractured = true;
+                else crafted = true;
+                this.advance();
+            }
             const mod = this.expect("string", "a quoted mod name").text;
             const tier = this.tierShorthand();
             items.push({
                 mod,
                 ...(tier !== undefined && { tier }),
                 ...(fractured && { fractured: true }),
+                ...(crafted && { crafted: true }),
             });
             if (this.at("comma")) {
                 this.advance();
