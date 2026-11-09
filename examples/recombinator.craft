@@ -1,9 +1,8 @@
-# WAITS ON: a second item (feature-report.md B4).
-#
 # The 3.25+ weapon route: two Magic wands, each rolled to one wanted prefix,
-# recombined into one carrying both. The proposed spelling binds the second
-# item to a name and consumes both; the result's prefixes are drawn from the
-# union of the two inputs under the wiki's count and exclusive-modifier rules.
+# recombined into one carrying both. The second item is the kind of wand the
+# guide rolls for each attempt; the result's prefixes are drawn from both under
+# the Recombinator's count and exclusive-modifier rules, so the loop reads as
+# the guide does: recombine until both sit on one wand.
 
 item {
     base:     "Imbued Wand"

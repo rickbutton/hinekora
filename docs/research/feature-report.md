@@ -207,7 +207,7 @@ guides treat them as fixed costs and nothing in the modifier logic depends on th
 | `matron-metamod`                                                           | R17 the Wild Bristle Matron trick              | checks                                                      |
 | `imprint-regal-amulet`                                                     | R2 imprint checkpoint, regal under a lock      | checks (the lock removed once the augment is in)            |
 | `future/lock-regal`                                                        | R11 Hinekora's Lock                            | B3                                                          |
-| `future/recombinator`                                                      | R10 two-item merge                             | B4                                                          |
+| `recombinator`                                                             | R10 two-item merge                             | checks (`with donor { … }` and `recombine donor`)           |
 | `value-threshold`                                                          | R16 "life ≥ 110", divine                       | checks (`has … >= 110` and `divine`)                        |
 | `cluster-harvest`                                                          | R18 reforge a cluster by tag                   | checks (`enchant:` names the notable pool)                  |
 
@@ -234,8 +234,10 @@ that reach it, and `divine` rolls the values again. Of A6, B6 is fixed two ways:
 Harvest pool counts how many unknown modifiers could block it, and a side whose count the
 named modifiers fill carries no other; the two state-line items of `accuracy.md` 10 remain.
 B5 is built: a cluster jewel's `enchant:` field names the stat its passives grant, which
-the checker reads as the tag its notables roll under. The examples suite stands at sixteen
-checking guides and two waiting;
+the checker reads as the tag its notables roll under. B4 is built in its first form: a
+second item (`with <name> { … }`) and `recombine <name>`, the Recombinator's counts as a
+range, one base (`QUESTIONS.md` Q55 for what is left out). The examples suite stands at
+seventeen checking guides and one waiting, the Lock (Q54);
 the naming fixes of A4 (plurals, joiner words, the natural modifier first) brought the
 eldritch gloves in.
 
