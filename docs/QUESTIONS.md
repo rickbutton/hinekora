@@ -561,7 +561,7 @@ a guide needs one side's version of a shared wording for its own sake.
 guide is written with it (`examples/essence-minion-wand.craft`).
 **Answer:**
 
-### Q54 · decision · open
+### Q56 · decision · open
 
 **Asked:** 2026-11-09
 **Question:** what a step's probability means when the checker's item is a set of items
@@ -575,7 +575,7 @@ it, which is where guides quote odds; (b) when a guide needs the range.
 **Assumed meanwhile:** (a).
 **Answer:**
 
-### Q55 · game probe · open
+### Q57 · game probe · open
 
 **Asked:** 2026-11-09
 **Goal:** the odds of one against two modifiers from an Orb of Transmutation or an Orb of
@@ -590,7 +590,7 @@ Alteration.
 shares (`docs/research/cost-model.md` §1.3).
 **Answer:**
 
-### Q56 · game probe · open
+### Q58 · game probe · open
 
 **Asked:** 2026-11-09
 **Goal:** whether essences, resonators, the Harvest reforges and the Veiled Chaos Orb lay
@@ -606,7 +606,7 @@ fossil, lifeforce for forty reforges.
 4–6 (`docs/research/cost-model.md` §1.3).
 **Answer:**
 
-### Q57 · game probe · open
+### Q59 · game probe · open
 
 **Asked:** 2026-11-09
 **Goal:** whether the "more" weight multipliers of two fossils add (×10 and ×10 giving
@@ -620,7 +620,7 @@ elemental one does, against the single-fossil rates.
 **Assumed meanwhile:** additive (`docs/research/cost-model.md` §1.4).
 **Answer:**
 
-### Q58 · game probe · open
+### Q60 · game probe · open
 
 **Asked:** 2026-11-09
 **Goal:** whether an Orb of Annulment picks the removed modifier uniformly among those it
@@ -635,7 +635,7 @@ Harvest augment's, the beast recipes', the Orb of Dominance's)
 (`docs/research/cost-model.md` §1.4).
 **Answer:**
 
-### Q59 · decision · open
+### Q61 · decision · open
 
 **Asked:** 2026-11-09
 **Question:** the economy source and its refresh (`docs/research/cost-model.md` §3).
@@ -651,7 +651,7 @@ check. Which league to track is the current trade league (Allflame until 2026-11
 **Assumed meanwhile:** (a).
 **Answer:**
 
-### Q60 · game probe · open
+### Q62 · game probe · open
 
 **Asked:** 2026-11-09
 **Goal:** which tagged row a Harvest "reforge including a <tag> modifier" places, and
@@ -665,7 +665,7 @@ modifier and says no more.
 modifiers drawn as a Chaos Orb draws them (`docs/research/cost-model.md` §1.4, §5.4).
 **Answer:**
 
-### Q61 · game probe · open
+### Q63 · game probe · open
 
 **Asked:** 2026-11-09
 **Goal:** whether an unveil's three options are drawn by the unveiled rows' spawn weights.
@@ -678,7 +678,7 @@ modifiers are presented and records a rebalance of "the weighting of Veiled modi
 (`docs/research/cost-model.md` §1.4).
 **Answer:**
 
-### Q62 · game probe · open
+### Q64 · game probe · open
 
 **Asked:** 2026-11-09
 **Goal:** whether a modifier's value is uniform over its row's range, which decides the

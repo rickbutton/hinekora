@@ -50,10 +50,10 @@ agrees. Treated as settled.
 | Chaos Orb                                                  | 4, 5, 6 at 8:3:1            | [Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Chaos_Orb#Mechanics) [wiki]                                                                                                                                                                                       |
 | Orb of Alchemy                                             | 4 to 6; 3 to 4 on a jewel   | [Orb of Alchemy](https://www.poewiki.net/wiki/Orb_of_Alchemy) [wiki]; the ratio is not stated; craftofexile uses 8:3:1 for 4-6 and 65:35 for 3-4 (`affNumProbs`) [coe]                                                                                                 |
 | Essence (any tier)                                         | 4 to 6 including the grant  | "similar to an Orb of Alchemy", "like a Chaos Orb" ([Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting)) [wiki]; craftofexile rolls 3, 4, 5 random modifiers at 8:3:1 beside the guaranteed one (`essNumProbs`) [coe]                                  |
-| Resonator                                                  | 4 to 6                      | "similarly to a Chaos Orb" ([Resonator](https://www.poewiki.net/wiki/Resonator)) [wiki]; 8:3:1 [assumed, Q56]                                                                                                                                                          |
-| Harvest reforge                                            | 4 to 6 including the tagged | the option text says only "reforge" ([Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting)) [wiki]; 8:3:1 with the tagged modifier drawn among the tag's rows by weight [assumed, Q56, Q60]                                                                |
-| Veiled Chaos Orb                                           | 4 to 6 including the veiled | as a Chaos Orb ([Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier)) [wiki]; 8:3:1 [assumed, Q56]                                                                                                                                                          |
-| Orb of Transmutation, Orb of Alteration, Harvest randomise | 1 or 2                      | "a prefix, suffix, or both" ([Orb of Transmutation § Spending](https://www.poewiki.net/wiki/Orb_of_Transmutation#Spending)) [wiki]; the odds are not stated; craftofexile uses one half each, the single modifier's side by weight share (`affNumProbs[1]`) [coe]; Q55 |
+| Resonator                                                  | 4 to 6                      | "similarly to a Chaos Orb" ([Resonator](https://www.poewiki.net/wiki/Resonator)) [wiki]; 8:3:1 [assumed, Q58]                                                                                                                                                          |
+| Harvest reforge                                            | 4 to 6 including the tagged | the option text says only "reforge" ([Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting)) [wiki]; 8:3:1 with the tagged modifier drawn among the tag's rows by weight [assumed, Q58, Q62]                                                                |
+| Veiled Chaos Orb                                           | 4 to 6 including the veiled | as a Chaos Orb ([Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier)) [wiki]; 8:3:1 [assumed, Q58]                                                                                                                                                          |
+| Orb of Transmutation, Orb of Alteration, Harvest randomise | 1 or 2                      | "a prefix, suffix, or both" ([Orb of Transmutation § Spending](https://www.poewiki.net/wiki/Orb_of_Transmutation#Spending)) [wiki]; the odds are not stated; craftofexile uses one half each, the single modifier's side by weight share (`affNumProbs[1]`) [coe]; Q57 |
 | Orb of Augmentation, Regal, Exalted, the influence exalts  | exactly 1                   | the orbs' pages [wiki]                                                                                                                                                                                                                                                 |
 | Vaal Orb's reforge, Locus                                  | 6 (the base's cap)          | [Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment) [wiki]                                                                                                                                                                                         |
 
@@ -98,7 +98,7 @@ ignores depletion but is otherwise the same model.
   present ([Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier)) [wiki]; the
   rows carry spawn weights in the export (207 of 258 unveiled rows) [data] and the wiki
   records a rebalance of "the weighting of Veiled modifiers" [wiki], so the three are a
-  weighted draw without replacement [assumed, Q61].
+  weighted draw without replacement [assumed, Q63].
 - **Eldritch** Embers and Ichors set an implicit of their tier; which implicit is a weighted
   draw among the tier's rows for the class (the rows carry `gloves: 1000`-style spawn
   entries) [data]. The Orb of Conflict raises one implicit and lowers the other with a
@@ -107,13 +107,13 @@ ignores depletion but is otherwise the same model.
 - **Removals.** The Orb of Annulment "removes a random modifier"
   ([Orb of Annulment](https://www.poewiki.net/wiki/Orb_of_Annulment)) [wiki]; nothing says
   the choice is weighted, and every calculator takes it as uniform over the removable
-  modifiers [coe] [assumed, Q58]. The same reading serves the Veiled Exalted Orb's removal,
+  modifiers [coe] [assumed, Q60]. The same reading serves the Veiled Exalted Orb's removal,
   the Harvest augment's, the beast recipes' and the Orb of Dominance's.
 - **Values.** A roll's value is uniform over its row's range as far as anyone knows; the
   Divine Orb rolls every unfractured modifier's value again within its tier
   ([Divine Orb](https://www.poewiki.net/wiki/Divine_Orb)) [wiki]. A `has "life" >= 110`
   exit therefore succeeds with the share of the row's integer range at or above 110, per
-  Divine, assuming a uniform roll [assumed, Q62].
+  Divine, assuming a uniform roll [assumed, Q64].
 - **Recombinator.** The wiki gives the output count per pooled count as a table
   ([Recombinator § Unpredictable Recombination](https://www.poewiki.net/wiki/Recombinator#Unpredictable_Recombination):
   one modifier pooled → 41% none / 59% one; two → 66.7% / 33.3%; three → 40/50/10; four →
@@ -231,19 +231,19 @@ and a Sacred for the influence reforge) [data], beasts (unpriced), and the Allfl
 
 ## 4. Open questions, each with a recommendation
 
-Recorded as `../QUESTIONS.md` Q54–Q62 with the assumption the code proceeds under.
+Recorded as `../QUESTIONS.md` Q56–Q64 with the assumption the code proceeds under.
 
 | #   | Question                                                                                               | Recommendation                                                                                                                                                                       |
 | --- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Q54 | What a probability means over an abstract state: a point estimate under stated assumptions, or bounds? | Point estimates, computed on the paths the guide is on (the guaranteed facts), with the assumptions named in the report; bounds later if a guide needs them (§5.2).                  |
-| Q55 | The odds of one versus two modifiers from an Orb of Transmutation or Alteration.                       | One half each, craftofexile's model, until a probe counts them.                                                                                                                      |
-| Q56 | Whether essences, resonators, Harvest reforges and the Veiled Chaos Orb share the Chaos Orb's 8:3:1.   | Yes (craftofexile's model for essences; the wiki likens each to a Chaos Orb).                                                                                                        |
-| Q57 | Whether several fossils' "more" multipliers add or multiply.                                           | Add (the wiki's "more widely accepted theory", craftofexile's default).                                                                                                              |
-| Q58 | Whether a random removal is uniform over the removable modifiers.                                      | Uniform.                                                                                                                                                                             |
-| Q59 | The economy source and its refresh: which league, how often, who runs it.                              | A committed snapshot from poe.ninja's exchange overview, four requests per refresh, refreshed by hand at least weekly and at the league start; the report names the snapshot's date. |
-| Q60 | Which tagged row a Harvest reforge places.                                                             | One of the tag's rows, by spawn weight, the remaining count drawn as a Chaos Orb would.                                                                                              |
-| Q61 | Whether an unveil's three options are a weighted draw.                                                 | Yes, by the unveiled rows' spawn weights, without replacement.                                                                                                                       |
-| Q62 | Whether a modifier's value is uniform over its range.                                                  | Yes.                                                                                                                                                                                 |
+| Q56 | What a probability means over an abstract state: a point estimate under stated assumptions, or bounds? | Point estimates, computed on the paths the guide is on (the guaranteed facts), with the assumptions named in the report; bounds later if a guide needs them (§5.2).                  |
+| Q57 | The odds of one versus two modifiers from an Orb of Transmutation or Alteration.                       | One half each, craftofexile's model, until a probe counts them.                                                                                                                      |
+| Q58 | Whether essences, resonators, Harvest reforges and the Veiled Chaos Orb share the Chaos Orb's 8:3:1.   | Yes (craftofexile's model for essences; the wiki likens each to a Chaos Orb).                                                                                                        |
+| Q59 | Whether several fossils' "more" multipliers add or multiply.                                           | Add (the wiki's "more widely accepted theory", craftofexile's default).                                                                                                              |
+| Q60 | Whether a random removal is uniform over the removable modifiers.                                      | Uniform.                                                                                                                                                                             |
+| Q61 | The economy source and its refresh: which league, how often, who runs it.                              | A committed snapshot from poe.ninja's exchange overview, four requests per refresh, refreshed by hand at least weekly and at the league start; the report names the snapshot's date. |
+| Q62 | Which tagged row a Harvest reforge places.                                                             | One of the tag's rows, by spawn weight, the remaining count drawn as a Chaos Orb would.                                                                                              |
+| Q63 | Whether an unveil's three options are a weighted draw.                                                 | Yes, by the unveiled rows' spawn weights, without replacement.                                                                                                                       |
+| Q64 | Whether a modifier's value is uniform over its range.                                                  | Yes.                                                                                                                                                                                 |
 
 ---
 
@@ -278,7 +278,7 @@ the named modifiers fill the item; it is approximate for an add onto an item wit
 modifiers, where the true pool is smaller by the groups those modifiers occupy. The report
 says so where it applies ("unnamed modifiers may narrow this pool"). Bounds would be the
 same computation on the superset and the subset pools the checker already builds
-(`addableMods`, `subsetMods`); not built until a guide needs them (Q54).
+(`addableMods`, `subsetMods`); not built until a guide needs them (Q56).
 
 ### 5.3 The race: an exact weighted draw without enumeration
 
@@ -405,7 +405,7 @@ expected rounds, craftofexile's "tries" its `ceil(1 / p)`.
 | Pristine Fossil (Primitive resonator) on Stygian Vise until T1 life (R4)                     | 9.038 %, ~12 tries                             | 9.0 %, 11.1 rounds  | the ×10 life weight and the blocked defences read alike                                                                                                                                                                                                       |
 | Chaos Orb on Titan Greaves until T1 life and T1 fire resistance                              | 0.198 %, ~503 tries                            | 0.20 %, 504 rounds  | two atoms, one per side: the split and the per-side races agree                                                                                                                                                                                               |
 | Chaos Orb on Imbued Wand until +1 to all spell gems and T1 spell damage (R2's wand prefixes) | 0.000183 %, ~545,204 tries                     | 0.000168 %, 596,976 | craftofexile's extrapolation regime (23 prefix types): its mean-field depletion is optimistic by a tenth against the exact race                                                                                                                               |
-| Orb of Alteration on Titan Greaves until T1 fire resistance                                  | 1.798 %, ~56 tries (`m=alteration`, mode `aa`) | 1.4 %, 69.8 rounds  | craftofexile's alteration assumes an Orb of Augmentation fills the empty side, so every roll has a suffix; hinekora prices the alteration alone, a one-modifier roll being a prefix alone 20 % of the time (Q55). Written with the augment, the guides agree. |
+| Orb of Alteration on Titan Greaves until T1 fire resistance                                  | 1.798 %, ~56 tries (`m=alteration`, mode `aa`) | 1.4 %, 69.8 rounds  | craftofexile's alteration assumes an Orb of Augmentation fills the empty side, so every roll has a suffix; hinekora prices the alteration alone, a one-modifier roll being a prefix alone 20 % of the time (Q57). Written with the augment, the guides agree. |
 | `m=alt` on a Viridian Jewel until % maximum life (R1)                                        | 3.070 %, ~33 tries                             | 1.3 %, 74.4 rounds  | not a comparison: `alt` is not a method of craftofexile's table and its page fell back to a rare roll of three or four modifiers (its trace says "Max. affixes by type 2", combinations 2/1, 1/2, 2/2)                                                        |
 
 The model agrees with craftofexile wherever craftofexile is exact, to the rounding of its
@@ -413,4 +413,4 @@ display, and the one real difference, the wand, is the regime craftofexile itsel
 an extrapolation. The Orb of Alteration row is a difference of question, not of model.
 Not compared: a Harvest reforge under a lock (craftofexile's `hreroll` needs the metamod
 set through its item panel, not the URL) and the unveil's three options; both rest on the
-same race and on Q60 and Q61.
+same race and on Q62 and Q63.

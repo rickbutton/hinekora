@@ -249,16 +249,16 @@ resolveEssence / resolveBench / resolveHarvestTag`
   op sequence on the checker's item into its `Roll` (`rollOf`): a `draw` (the pool's
   groups per side with their rows and weights, built with `pool` on the item's sure facts
   (`guaranteedFacts`, each side's count raised to its proven floor), re-weighted by a
-  resonator's fossils (`FossilSpec.weights`, added up across fossils, Q57), narrowed to a
+  resonator's fossils (`FossilSpec.weights`, added up across fossils, Q59), narrowed to a
   tag, culled to the Foulborn top tiers, or the influence's rows; the modifiers `present`
   for certain, kept or placed first; the count cases, a reforge's 4–6 at 8:3:1, a Magic
-  item's 1–2 at even odds (Q55, Q56), an add's one), a `removal` (uniform over what it
-  reaches, the protected sides excluded, Q58), a `lock`, an `unveil` (three weighted
-  draws, Q61), an `implicit` (an ember's weighted draw over `EldritchImplicitSpec.weights`)
+  item's 1–2 at even odds (Q57, Q58), an add's one), a `removal` (uniform over what it
+  reaches, the protected sides excluded, Q60), a `lock`, an `unveil` (three weighted
+  draws, Q63), an `implicit` (an ember's weighted draw over `EldritchImplicitSpec.weights`)
   or a `reroll`; `withPresent` folds a bench craft after a roll in. `chance.ts` evaluates a
   resolved predicate (`RPred`, from the checker's `predicateResolver`) against a roll
   (`chance`): the leaves the roll models are enumerated jointly (which named modifiers
-  were drawn, which rows, which part of a value range, Q62), a leaf it does not is read
+  were drawn, which rows, which part of a value range, Q64), a leaf it does not is read
   off the checker's item after the step (`refine` both ways), and a condition neither
   settles is unknown rather than guessed. `countdown.ts` solves a make-room loop (random
   removals until the counts allow, guards that restart or stop on a kept modifier's loss)
@@ -348,7 +348,7 @@ kept for the cost layer alone; the checker reads neither. `economy.ts` adapts th
 snapshot `packages/data/data/poe1/economy.json` (`adaptEconomy` → an `EconomySnapshot`): every currency,
 essence, fossil and resonator priced in Chaos Orbs by poe.ninja for one league on one day,
 with the Divine Orb's rate, written by `scripts/fetch-economy.mjs` (four requests to the
-exchange overview the site's own pages read; `QUESTIONS.md` Q59) and loaded by
+exchange overview the site's own pages read; `QUESTIONS.md` Q61) and loaded by
 `loadDefaultEconomy`. `aliases.ts` holds `COMMUNITY_ALIASES`, the
 words guides use for a modifier where the game's wording differs (surface doc §2), which
 `registryOf` hands the registry as its `wordingAliases`. `load.ts`: `loadDefaultPoe1()` →

@@ -4,7 +4,7 @@
  * needs. The item is the checker's abstract item, so the pool is the pool of
  * the facts it holds on every path (the base, the kept and fractured modifiers,
  * the influence): the item the guide is holding on the path it describes
- * (QUESTIONS.md Q54). Nothing here lists outcomes; a roll is a few weighted
+ * (QUESTIONS.md Q56). Nothing here lists outcomes; a roll is a few weighted
  * rows per side and a distribution of counts.
  */
 import type { Gen, GroupId, TypeId } from "../model/ids.js";
@@ -75,7 +75,7 @@ export type Roll =
     /** A fill: a weighted draw of some modifiers from the pool, possibly a
      *  mixture (a Harvest reforge places one of several tagged rows first). */
     | { readonly kind: "draw"; readonly variants: readonly DrawVariant[] }
-    /** A random removal, uniform over the modifiers it can reach (Q58): the
+    /** A random removal, uniform over the modifiers it can reach (Q60): the
      *  named candidates, and the rest of the reachable count on each side. */
     | {
           readonly kind: "removal";
@@ -94,7 +94,7 @@ export type Roll =
     | { readonly kind: "reroll" }
     /** A fracture, uniform over the modifiers present. */
     | { readonly kind: "lock"; readonly candidates: readonly Candidate[] }
-    /** An unveil: three options drawn by weight without replacement (Q61). */
+    /** An unveil: three options drawn by weight without replacement (Q63). */
     | { readonly kind: "unveil"; readonly options: readonly Group[] }
     /** An ember or ichor: one implicit of the tier, by weight. */
     | {
@@ -111,8 +111,8 @@ export const NO_ROLL: Roll = { kind: "none" };
 /**
  * How many modifiers a rare reforge lays down: four, five or six at 8:3:1
  * (Chaos Orb § Mechanics), the ratio every rare reforge is taken to share
- * (QUESTIONS.md Q56); a base holding four takes three or four at 65:35 and a
- * Magic item one or two at even odds (Q55), craftofexile's readings where the
+ * (QUESTIONS.md Q58); a base holding four takes three or four at 65:35 and a
+ * Magic item one or two at even odds (Q57), craftofexile's readings where the
  * wiki gives none.
  */
 function countDistribution(
@@ -243,7 +243,7 @@ function poolRows(a: AItem, spec: PoolSpec, registry: Registry): Row[] {
         case "fossil": {
             // A fossil multiplies the weight of the rows carrying its tags, once
             // per fossil, the fossils' multipliers adding up (Fossil § Fossil
-            // weight multipliers; QUESTIONS.md Q57); the rows it blocks are gone.
+            // weight multipliers; QUESTIONS.md Q59); the rows it blocks are gone.
             const multiplier = (m: Mod): number => {
                 let sum = 0;
                 for (const f of spec.fossils) {

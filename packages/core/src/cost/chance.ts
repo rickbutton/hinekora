@@ -3,7 +3,7 @@
  * evaluated against the roll (`roll.ts`) through the race (`race.ts`). An atom
  * about a modifier on a side is a question about that side's race given how
  * many it drew; count atoms read the split; a value atom reads the share of the
- * row's range that compares so (QUESTIONS.md Q62); the atoms of one roll are
+ * row's range that compares so (QUESTIONS.md Q64); the atoms of one roll are
  * combined exactly by enumerating which of the few modifiers the condition
  * names were drawn, never which modifiers the item has. A condition the roll
  * says nothing about is settled by the checker's item where it can be, and is
@@ -560,7 +560,7 @@ function compare(n: number, op: Cmp, v: number): boolean {
 /**
  * The ways a modifier of these rows turns out: each row by its weight share,
  * and within a row every part of its range the value atoms tell apart, by the
- * share of the range it is (the value uniform over the range, Q62).
+ * share of the range it is (the value uniform over the range, Q64).
  */
 function outcomesOf(
     rows: readonly RowLike[],
