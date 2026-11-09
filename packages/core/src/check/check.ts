@@ -22,6 +22,7 @@ import type {
 import type { SourceSpan } from "../ast/span.js";
 import { type Gen, type GroupId, type ModId, TagId, type TypeId } from "../model/ids.js";
 import type { Base } from "../model/base.js";
+import type { Mod } from "../model/mod.js";
 import { type EldritchSide, eldritchTierOf } from "../model/marks.js";
 import type { ModTypeContext, Registry } from "../resolve/registry.js";
 import {
@@ -50,6 +51,7 @@ import { rollableGen, rollableTiers, tierMod } from "../resolve/tiers.js";
 import { findMethod, type Literal, type Method, slotAt } from "./methods.js";
 import { anonymousTypes, influenceTagsAny, recombine, recombineRefusal, runMethod } from "./ops.js";
 import { rollRange } from "./values.js";
+import { lookupWeight } from "../pool/pool.js";
 import type { Range } from "./domain.js";
 
 export interface CheckContext {
@@ -1124,12 +1126,34 @@ class Checker {
         const gen = rollableGen(this.registry.catalog, a.base, a.ilvl, type, tags) ?? "prefix";
 
         if (pred.value !== undefined) {
-            // Any row of the type may be the one on the item, a bench, essence or
-            // unveiled row as much as a natural one, so every row's span counts.
+            // Any row of the type the item may carry may be the one on it: a
+            // natural row that rolls on the base at some level, a bench or essence
+            // row its class takes, an unveiled or otherwise placed row.
+            const itemTags = new Set([...a.base.tags, ...tags]);
+            const benchTypes = this.registry.benchTypesFor(a.base.itemClass);
+            const granted = new Set<ModId>();
+            for (const e of this.registry.essences) {
+                const id = e.grants.get(a.base.itemClass);
+                if (id !== undefined) granted.add(id);
+            }
+            const mayCarry = (m: Mod): boolean => {
+                switch (m.source) {
+                    case "natural": {
+                        const weight = lookupWeight(m, itemTags);
+                        return m.domain === a.base.domain && weight !== null && weight > 0;
+                    }
+                    case "bench":
+                        return benchTypes.has(m.type);
+                    case "essence":
+                        return granted.has(m.id);
+                    default:
+                        return true;
+                }
+            };
             const rows = new Map<ModId, Range>();
             const unnumbered = new Set<ModId>();
             for (const m of this.registry.catalog) {
-                if (m.type !== type) continue;
+                if (m.type !== type || !mayCarry(m)) continue;
                 const span = m.text === undefined ? undefined : rollRange(m.text);
                 if (span !== undefined) rows.set(m.id, span);
                 else unnumbered.add(m.id);

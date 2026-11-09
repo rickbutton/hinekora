@@ -703,6 +703,17 @@ export const BENCH_MAXLIFE_ROW: Mod = mkMod({
     spawn: [spawn(TAG_DEFAULT, 0)],
     text: "+(15-25) to maximum Life",
 });
+/** A row of the tiered life type that rolls on body armour only, with the span to
+ *  show for it. Not in `TIERED_CATALOG`. */
+export const MAXLIFE_ARMOUR_ONLY: Mod = mkMod({
+    id: "MaxLifeArmour",
+    type: "MaxLife",
+    gen: "prefix",
+    minLevel: 1,
+    families: ["MaxLife"],
+    spawn: [spawn(TagId("body_armour"), 1000), spawn(TAG_DEFAULT, 0)],
+    text: "+(200-220) to maximum Life",
+});
 /** A row of the tiered life type with no number in its text. Not in `TIERED_CATALOG`. */
 export const MAXLIFE_BLANK: Mod = mkMod({
     id: "MaxLifeBlank",

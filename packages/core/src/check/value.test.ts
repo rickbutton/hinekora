@@ -17,6 +17,7 @@ import {
 import {
     BENCH_MAXLIFE_ROW,
     CLASS_RING,
+    MAXLIFE_ARMOUR_ONLY,
     MAXLIFE_BLANK,
     MAXLIFE_T1,
     MAXLIFE_T2,
@@ -129,16 +130,38 @@ describe("has <mod> <cmp> <n>", () => {
             bases: [RING_BASE],
             mods: [...TIERED_CATALOG, MAXLIFE_BLANK],
         });
-        const c = craft(ring(), [
-            until(has("maximum life"), [op("chaos")]),
-            iff(hasValue("maximum life", ">=", 115), [stop()]),
+        const guarded = (pred: Parameters<typeof iff>[0]) =>
+            check(craft(ring(), [until(has("maximum life"), [op("chaos")]), iff(pred, [stop()])]), {
+                registry: blank,
+            });
+        // What continues past `if has >= 115 { stop }` is the negative branch.
+        const below = guarded(hasValue("maximum life", ">=", 115));
+        expect(below.diagnostics).toEqual([]);
+        const lower = below.finalState!.tiers.get(LIFE);
+        expect(lower?.has(MAXLIFE_BLANK.id)).toBe(true);
+        expect(lower?.has(MAXLIFE_T1.id)).toBe(false);
+        expect(below.finalState!.values.get(LIFE)).toBeUndefined();
+        // And past `if not has >= 115 { stop }`, the positive one.
+        const above = guarded(notp(hasValue("maximum life", ">=", 115)));
+        expect(above.diagnostics).toEqual([]);
+        const upper = above.finalState!.tiers.get(LIFE);
+        expect(upper?.has(MAXLIFE_BLANK.id)).toBe(true);
+        expect(upper?.has(MAXLIFE_T1.id)).toBe(true);
+        expect(upper?.has(MAXLIFE_T2.id)).toBe(false);
+        expect(above.finalState!.values.get(LIFE)).toBeUndefined();
+    });
+
+    it("reads only the rows the item may carry, so another base's row is out of reach", () => {
+        const armour = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...TIERED_CATALOG, MAXLIFE_ARMOUR_ONLY],
+        });
+        const c = craft(ring([{ mod: "maximum life", tier: 1 }]), [
+            iff(hasValue("maximum life", ">=", 200), [op("exalt")]),
         ]);
-        const r = check(c, { registry: blank });
-        expect(r.diagnostics).toEqual([]);
-        const tiers = r.finalState!.tiers.get(LIFE);
-        expect(tiers?.has(MAXLIFE_BLANK.id)).toBe(true);
-        expect(tiers?.has(MAXLIFE_T1.id)).toBe(false);
-        expect(r.finalState!.values.get(LIFE)).toBeUndefined();
+        expect(check(c, { registry: armour }).diagnostics.map((d) => d.message)).toEqual([
+            expect.stringContaining("can never run"),
+        ]);
     });
 
     it("the Divine Orb leaves the values of a side that cannot be changed", () => {
