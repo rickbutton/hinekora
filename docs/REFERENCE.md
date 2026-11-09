@@ -611,8 +611,7 @@ one domain. The sub-domains:
 
 - `Flow` = a statement either `{ kind: "fall", state }`, `{ kind: "restart" }` or
   `{ kind: "stop" }` (the path ends and joins nothing; a branch whose arms all end
-  ends the same way, a `restart` over a `stop`)
-  (diverges, re-entering the enclosing loop).
+  ends the same way, a `restart` over a `stop`).
 - `if/else`: narrow into each arm, check, **join** the falling states. A branch whose
   condition is impossible (or whose negation always holds) is flagged as never running.
 - `until` loops, three steps. (a) **reachability**: if the exit predicate can never be

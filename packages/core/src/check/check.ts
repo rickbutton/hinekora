@@ -322,7 +322,7 @@ class Checker {
                 gen,
             );
             const tiers = rollableTiers(this.registry.catalog, base, item.ilvl, type, tags);
-            if (affix.tier === undefined && tiers.length !== 1) {
+            if (affix.tier === undefined && tiers.length > 1) {
                 this.diag(
                     `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t1\`), a starting item's mods must name a specific tier and ${tiers.length} roll here.`,
                     item.span,
