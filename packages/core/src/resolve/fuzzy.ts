@@ -9,6 +9,12 @@ import type { Mod } from "../model/mod.js";
 
 const STOPWORDS = new Set(["to", "a", "an", "of", "the", "per"]);
 
+/** A crude singular, enough to fold the plural a tier's number brings with it
+ *  ("1 additional nearby Enemy", "2 additional nearby Enemies"). */
+export function singular(w: string): string {
+    return w.endsWith("ies") ? `${w.slice(0, -3)}y` : w.endsWith("s") ? w.slice(0, -1) : w;
+}
+
 /** Lowercase, strip numbers/ranges/punctuation, drop stopwords → token list. */
 export function normalizeText(s: string): string[] {
     return s
@@ -43,9 +49,9 @@ export function buildTypeIndex(mods: readonly Mod[]): Map<TypeId, TypeEntry> {
             counts = new Map();
             byType.set(m.type, counts);
         }
-        // A bench row's wording ranks below the modifier's own, so a type that
-        // also rolls or unveils is shown with its natural numbers.
-        counts.set(m.text, (counts.get(m.text) ?? 0) + (m.source === "bench" ? 0.5 : 1));
+        // A bench row's wording never outranks the modifier's own, so a type
+        // that also rolls or unveils is shown with its natural numbers.
+        counts.set(m.text, (counts.get(m.text) ?? 0) + (m.source === "bench" ? 1 : 1000));
     }
 
     const index = new Map<TypeId, TypeEntry>();
