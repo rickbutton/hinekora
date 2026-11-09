@@ -110,8 +110,6 @@ export function traceAt(trace: readonly TraceEntry[], offset: number): TraceEntr
 /** Item-block affix names that mean "some unspecified affix". */
 const PLACEHOLDERS = /^random\b|^\?$/;
 
-/** Exact join iterations before widening kicks in (`widenPresence`): a small loop
- *  reaches a precise fixpoint first, a tall disjunction then gets over-approximated. */
 /** How many passive skills a cluster jewel of each size adds (Cluster jewel). */
 const CLUSTER_PASSIVES: Readonly<Record<ClusterSize, readonly [number, number]>> = {
     small: [2, 3],
@@ -128,6 +126,8 @@ function clusterSize(base: Base): ClusterSize | undefined {
     return undefined;
 }
 
+/** Exact join iterations before widening kicks in (`widenPresence`): a small loop
+ *  reaches a precise fixpoint first, a tall disjunction then gets over-approximated. */
 const WIDEN_AFTER = 3;
 /** Cap on loop-invariant iterations. With widening every loop converges in a
  *  handful, so this is a wide safety backstop. */
