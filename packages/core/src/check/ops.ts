@@ -161,7 +161,9 @@ export type Check =
     /** Something to strip: not Normal, and not every side protected. */
     | { readonly kind: "strippable" }
     | { readonly kind: "atLeast"; readonly count: number }
-    | { readonly kind: "noFracture" }
+    /** No fractured modifier on any path; `what` says, for a craft that is not
+     *  itself a fracture, why it refuses one. */
+    | { readonly kind: "noFracture"; readonly what?: string }
     /** The item is not corrupted on any path; every method but the Tainted
      *  currency requires it (Corrupted § Modifying corrupted items). */
     | { readonly kind: "notCorrupted" }
@@ -303,7 +305,7 @@ export type PreconditionFailure =
           readonly needed: Rarity;
           readonly actual: ReadonlySet<Rarity>;
       }
-    | { readonly kind: "noOpenSlot"; readonly gen?: Gen }
+    | { readonly kind: "noOpenSlot"; readonly gen?: Gen; readonly normal?: true }
     | { readonly kind: "magicRefused"; readonly actual: ReadonlySet<Rarity> }
     | { readonly kind: "normalRefused"; readonly actual: ReadonlySet<Rarity> }
     | {
@@ -341,7 +343,7 @@ export type PreconditionFailure =
           readonly why: "absent" | "fractured" | "protected";
       }
     | { readonly kind: "tooFewMods"; readonly needed: number }
-    | { readonly kind: "alreadyFractured" }
+    | { readonly kind: "alreadyFractured"; readonly sure: boolean; readonly what?: string }
     | { readonly kind: "corrupted"; readonly sure: boolean }
     | { readonly kind: "notCorruptedItem"; readonly what: string; readonly sure: boolean }
     | { readonly kind: "influenced"; readonly what: string; readonly sure: boolean }
@@ -649,12 +651,16 @@ function failing(
             return a.rarities.has("normal") ? { kind: "normalRefused", actual: a.rarities } : null;
         case "canBeRare":
             return canBeRare(a.base) ? null : { kind: "rarityUnsupported", rarity: "rare" };
-        case "openSlot":
-            return hasOpenSlot(a, check.gen)
-                ? null
-                : check.gen === undefined
-                  ? { kind: "noOpenSlot" }
-                  : { kind: "noOpenSlot", gen: check.gen };
+        case "openSlot": {
+            if (hasOpenSlot(a, check.gen)) return null;
+            // A Normal item has no slot at all, which is worth saying as such.
+            const normal = a.rarities.size === 1 && a.rarities.has("normal");
+            return {
+                kind: "noOpenSlot",
+                ...(check.gen !== undefined && { gen: check.gen }),
+                ...(normal && { normal: true as const }),
+            };
+        }
         case "removable": {
             const allowed = allowedFor(check.selector, rules);
             if (
@@ -709,7 +715,13 @@ function failing(
                 : { kind: "tooFewMods", needed: check.count };
         case "noFracture":
             // A fracture on any path refuses: the orb and the recipes take none.
-            return a.fractures[1] > 0 ? { kind: "alreadyFractured" } : null;
+            return a.fractures[1] > 0
+                ? {
+                      kind: "alreadyFractured",
+                      sure: a.fractures[0] > 0,
+                      ...(check.what !== undefined && { what: check.what }),
+                  }
+                : null;
         case "notCorrupted":
             return a.corrupted.has(true)
                 ? { kind: "corrupted", sure: !a.corrupted.has(false) }

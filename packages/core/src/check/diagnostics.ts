@@ -153,10 +153,16 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return `Requires a Magic or Rare item — this item ${failure.actual.size === 1 ? "is" : "may be"} ${rarityLabel(failure.actual)}.`;
             case "magicRefused":
                 return `Requires a Normal or Rare item — this item ${failure.actual.size === 1 ? "is" : "may be"} ${rarityLabel(failure.actual)}.`;
-            case "noOpenSlot":
+            case "noOpenSlot": {
+                const why = failure.normal
+                    ? "a Normal item has none"
+                    : failure.gen === undefined
+                      ? "the item may be full"
+                      : "none is guaranteed open here";
                 return failure.gen === undefined
-                    ? "Requires an open affix slot — the item may be full."
-                    : `Requires an open ${failure.gen} slot — none is guaranteed open here.`;
+                    ? `Requires an open affix slot — ${why}.`
+                    : `Requires an open ${failure.gen} slot — ${why}.`;
+            }
             case "modConflict":
                 return `The item may already carry a "${failure.group}" modifier${
                     failure.among.length > 0
@@ -216,7 +222,9 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
             case "tooFewMods":
                 return `A Fracturing Orb needs at least ${failure.needed} modifiers on the item.`;
             case "alreadyFractured":
-                return "The item already has a fractured modifier — nothing fractures an item twice.";
+                return failure.what === undefined
+                    ? "The item already has a fractured modifier — nothing fractures an item twice."
+                    : `The item ${failure.sure ? "has" : "may have"} a fractured modifier — ${failure.what}.`;
             case "corrupted":
                 return `The item ${failure.sure ? "is" : "may be"} corrupted — a corrupted item takes no further craft, only the Tainted currency.`;
             case "eldritchPresent":

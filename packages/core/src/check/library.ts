@@ -224,7 +224,10 @@ export function influenceExaltOps(target: Influence): readonly Op[] {
         require({ kind: "noEldritch", what: `A ${INFLUENCE_ORB[target]}` }),
         require({ kind: "influenceable", influence: target, what: INFLUENCE_ORB[target] }),
         noInfluence(INFLUENCE_ORB[target]),
-        require({ kind: "noFracture" }),
+        require({
+            kind: "noFracture",
+            what: `a ${INFLUENCE_ORB[target]} takes no fractured item`,
+        }),
         openSlot(),
         influence({ kind: "set", key: influenceKey([target]) }),
         // The orb needs an influence modifier it can add: on an item whose level
@@ -510,7 +513,7 @@ export function beastAspectOps(row: Mod): readonly Op[] {
 export const BEAST_IMPRINT: readonly Op[] = [
     notCorrupted,
     require({ kind: "imprintable" }),
-    require({ kind: "noFracture" }),
+    require({ kind: "noFracture", what: "an imprint cannot be made of a fractured item" }),
     { kind: "imprint" },
 ];
 
@@ -519,7 +522,7 @@ export const BEAST_IMPRINT: readonly Op[] = [
 export const RESTORE: readonly Op[] = [
     notCorrupted,
     require({ kind: "hasImprint" }),
-    require({ kind: "noFracture" }),
+    require({ kind: "noFracture", what: "a fractured item cannot take the imprint" }),
     { kind: "restore" },
 ];
 

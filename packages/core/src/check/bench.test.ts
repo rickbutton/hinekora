@@ -240,6 +240,13 @@ describe("a bench craft named the way a guide writes it", () => {
         benchCrafts: [benchOf(hybridRow.id)],
     });
 
+    it("says a Normal item has no slot rather than that none is guaranteed", () => {
+        const normal = item({ base: "Iron Ring", ilvl: 100, rarity: "normal" });
+        expect(
+            check(craft(normal, [bench("maximum life")]), ctx).diagnostics[0]!.message,
+        ).toContain("Requires an open prefix slot — a Normal item has none.");
+    });
+
     it("tolerates a singular and an abbreviation", () => {
         for (const name of ["fire and chaos resistance", "fire chaos res"]) {
             const r = check(craft(rareRing(), [bench(name)]), { registry: named });

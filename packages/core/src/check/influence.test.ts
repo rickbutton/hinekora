@@ -80,7 +80,7 @@ describe("the influence exalts", () => {
             suffixes: [{ mod: "cold", fractured: true }],
         });
         expect(messages(craft(fractured, [words("exalt", "hunter")]))).toContain(
-            "already has a fractured modifier",
+            "a Hunter's Exalted Orb takes no fractured item",
         );
     });
 
