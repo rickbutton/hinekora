@@ -947,18 +947,10 @@ function typesSharingFamilyWithPresent(a: AItem, mod: Mod, registry: Registry): 
     };
     for (const type of guaranteed) if (shares(type)) return [type]; // definitely present
 
-    // Affixes in a generation not pinned to a guaranteed type: if none, no
-    // non-guaranteed member of that generation can be present.
-    const unidentifiedIn = (gen: Gen): number => {
-        let named = 0;
-        for (const t of guaranteed) if (genOf(a, registry, t) === gen) named++;
-        const max = gen === "prefix" ? a.counts.prefix[1] : suffixRange(a)[1];
-        return max - named;
-    };
     const clashing: TypeId[] = [];
     for (const type of a.possible) {
         if (guaranteed.has(type) || isExcluded(a, type) || !shares(type)) continue;
-        if (unidentifiedIn(genOf(a, registry, type)) > 0) clashing.push(type);
+        if (mayBePresentUnnamed(a, registry, type)) clashing.push(type);
     }
     return clashing;
 }
@@ -976,14 +968,6 @@ function hasVeiledPlaceholder(a: AItem): boolean {
  *  is enough to refuse. */
 function mayHaveVeiled(a: AItem, registry: Registry, among?: (t: TypeId) => boolean): boolean {
     const guaranteed = guaranteedTypes(a);
-    // Affixes of a side not pinned to a guaranteed type: with none, no other
-    // type can be present on that side, however possible it is otherwise.
-    const unidentifiedIn = (gen: Gen): number => {
-        let named = 0;
-        for (const t of guaranteed) if (sideOf(a, registry, t) === gen) named++;
-        const max = gen === "prefix" ? a.counts.prefix[1] : suffixRange(a)[1];
-        return max - named;
-    };
     for (const t of a.possible) {
         if (isExcluded(a, t)) continue;
         if (among && !among(t)) continue;
@@ -994,7 +978,7 @@ function mayHaveVeiled(a: AItem, registry: Registry, among?: (t: TypeId) => bool
             t === VEILED_SUFFIX ||
             rowsOf(a, t, registry).some((m) => m.source === "veiled");
         if (!veiled) continue;
-        if (guaranteed.has(t) || unidentifiedIn(sideOf(a, registry, t)) > 0) return true;
+        if (guaranteed.has(t) || mayBePresentUnnamed(a, registry, t)) return true;
     }
     return false;
 }
@@ -1004,6 +988,37 @@ function sideOf(a: AItem, registry: Registry, t: TypeId): Gen {
     if (t === VEILED_PREFIX) return "prefix";
     if (t === VEILED_SUFFIX) return "suffix";
     return genOf(a, registry, t);
+}
+
+/** The sides a present type may sit on: those of the rows it may be. Most
+ *  types have one; some (movement speed, spell damage) roll as a prefix on one
+ *  base and a suffix on another, or are unveiled on the other side. */
+function sidesOf(a: AItem, registry: Registry, t: TypeId): ReadonlySet<Gen> {
+    if (t === VEILED_PREFIX || t === VEILED_SUFFIX) return new Set([sideOf(a, registry, t)]);
+    const sides = new Set(rowsOf(a, t, registry).map((m) => m.gen));
+    return sides.size > 0 ? sides : new Set([genOf(a, registry, t)]);
+}
+
+/**
+ * Affixes of a side not pinned to a guaranteed type: with none, no other type
+ * can be present on that side. A guaranteed type counts toward a side only
+ * when every row it may be sits there, and a candidate is ruled out only when
+ * every side it may sit on is fully named, so a type that may be on either
+ * side never ends up excluded by the count of one of them.
+ */
+function mayBePresentUnnamed(a: AItem, registry: Registry, t: TypeId): boolean {
+    const guaranteed = guaranteedTypes(a);
+    const unidentifiedIn = (gen: Gen): number => {
+        let named = 0;
+        for (const g of guaranteed) {
+            const sides = sidesOf(a, registry, g);
+            if (sides.size === 1 && sides.has(gen)) named++;
+        }
+        const max = gen === "prefix" ? a.counts.prefix[1] : suffixRange(a)[1];
+        return max - named;
+    };
+    for (const side of sidesOf(a, registry, t)) if (unidentifiedIn(side) > 0) return true;
+    return false;
 }
 
 /** The rows a present type may be: its tier overlay, else every row of the type. */
@@ -1580,8 +1595,13 @@ function removeOne(
     let reachable = 0;
     for (const gen of allowed)
         reachable += gen === "prefix" ? a.counts.prefix[1] : suffixRange(a)[1];
+    // A kept type counts toward the reachable sides only when every row it
+    // may be sits on one of them.
     let keptThere = 0;
-    for (const t of surviving) if (allowed.has(genOf(a, registry, t))) keptThere++;
+    for (const t of surviving) {
+        const sides = sidesOf(a, registry, t);
+        if ([...sides].every((g) => allowed.has(g))) keptThere++;
+    }
     const presence = assertOneRemovedAmong(
         a.bdd,
         a.bdd.and(presenceFacts(a.bdd, surviving, excludedTypes(a)), fractureProjection(a)),
@@ -1673,7 +1693,7 @@ function removeCrafted(a: AItem, rules: Rules, registry: Registry, replacing: bo
     // A side loses at most one modifier per crafted type it may carry: a
     // metamod prefix that may be present cannot cost the item a suffix.
     const may = { prefix: 0, suffix: 0 };
-    for (const t of forgotten) may[genOf(a, registry, t)]++;
+    for (const t of forgotten) for (const g of sidesOf(a, registry, t)) may[g]++;
     const total: Range = [
         Math.max(0, a.counts.total[0] - removedUpper),
         Math.max(0, a.counts.total[1] - sureRemoved),

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, has, iff, item, notp, op, orp, unveil, veiled } from "../__fixtures__/ast.js";
+import { craft, has, iff, item, notp, op, orp, stop, unveil, veiled } from "../__fixtures__/ast.js";
 import {
     AMULET_BASE,
     CATALOG,
@@ -186,5 +186,34 @@ describe("a veiled orb on an item whose placeholders were proven absent", () => 
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.presence).not.toBe(r.finalState!.bdd.FALSE);
+    });
+});
+
+describe("a veiled orb after an unveiled modifier has provably gone", () => {
+    it("is accepted when every affix of each side is a named one", () => {
+        // Under the suffix lock the orb takes the life or the metamod; a bad
+        // unveil is annulled away, and where the annul took the life or a
+        // resistance the guide stops. What continues has one prefix, the life,
+        // and the three resistances, so no unveiled modifier can remain.
+        const locked = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: ["IncreasedLife1", PROTECT_SUFFIXES_CARRIER.id],
+            suffixes: ["FireResist1", "ColdResist1", "LightningResist1"],
+        });
+        const bricked = orp(
+            orp(notp(has("IncreasedLife1")), notp(has("FireResist1"))),
+            orp(notp(has("ColdResist1")), notp(has("LightningResist1"))),
+        );
+        const c = craft(locked, [
+            veiled("exalt"),
+            iff(notp(has("IncreasedLife1")), [stop()]),
+            unveil(),
+            op("annul"),
+            iff(bricked, [stop()]),
+            veiled("exalt"),
+        ]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 });
