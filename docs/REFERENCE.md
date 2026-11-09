@@ -124,6 +124,12 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
 
 ### 3a. `@hinekora/core`
 
+- **words.ts**: the small pieces of English every message, tooltip and card is built
+  from, so the checker, the cost report, the renderers and the editors write them alike:
+  `capitalise`, `plural` and `pluralRange` (a range is singular only when it is exactly
+  one; "prefix" becomes "prefixes"), `rangeText` ("82", "40-82"), `RARITY_WORD` and
+  `rarityText` ("Magic or Rare", in the game's order). The cost report's own figures are
+  `cost/words.ts`.
 - **model/**: `ItemFacts` (what a roll depends on; the checker projects its state onto
   it, there is no concrete item type), `Mod` (one row per _tier_, i.e. one row of the game's `Mods` table;
   `type` is the ModType bucket, `families` the

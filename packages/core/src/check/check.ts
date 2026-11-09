@@ -62,6 +62,7 @@ import {
 import { rollRange } from "./values.js";
 import { lookupWeight } from "../pool/pool.js";
 import type { Range } from "./domain.js";
+import { plural } from "../words.js";
 
 export interface CheckContext {
     readonly registry: Registry;
@@ -423,9 +424,7 @@ class Checker {
             const mod = tierMod(tiers, tier);
             if (mod === undefined) {
                 this.diag(
-                    `tier ${tier} is out of range for "${affix.mod}" (only ${tiers.length} tier${
-                        tiers.length === 1 ? "" : "s"
-                    } roll here).`,
+                    `tier ${tier} is out of range for "${affix.mod}" (only ${tiers.length} ${plural(tiers.length, "tier")} roll here).`,
                     item.span,
                 );
                 claim(affix.mod, type);
@@ -1017,7 +1016,7 @@ class Checker {
         if (args.length !== params.length) {
             const n = params.length;
             this.diag(
-                `"${callName}" expects ${n} argument${n === 1 ? "" : "s"}, got ${args.length}`,
+                `"${callName}" expects ${n} ${plural(n, "argument")}, got ${args.length}`,
                 span,
             );
             return null;
@@ -1247,9 +1246,7 @@ class Checker {
         const mod = tierMod(tiers, tier);
         if (mod === undefined) {
             this.diag(
-                `tier ${tier} is out of range for "${modName}" (only ${tiers.length} tier${
-                    tiers.length === 1 ? "" : "s"
-                } roll here)`,
+                `tier ${tier} is out of range for "${modName}" (only ${tiers.length} ${plural(tiers.length, "tier")} roll here)`,
                 pred.span,
             );
             return null;

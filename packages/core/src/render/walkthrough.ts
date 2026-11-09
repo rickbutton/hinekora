@@ -15,6 +15,7 @@ import { findMethod } from "../check/methods.js";
 import type { Registry } from "../resolve/registry.js";
 import { criteria, type Criterion, type Wording } from "./conditions.js";
 import { implicitTierText, type ItemView, itemView, type ModGroup, SIDE_SHORT } from "./item.js";
+import { pluralRange, rangeText, rarityText } from "../words.js";
 
 interface StepBase {
     readonly span: SourceSpan;
@@ -245,13 +246,13 @@ export interface ItemDelta {
 /** What changed between two item views, as the lines a player would notice. */
 export function itemDelta(before: ItemView, after: ItemView): ItemDelta {
     const lines = (v: ItemView): string[] => [
-        ...v.rarities.map((r) => `${r[0]!.toUpperCase()}${r.slice(1)}`),
+        ...v.rarities.map((r) => rarityText([r])),
         ...modLines(v),
         ...v.implicits.map((i) => `${implicitTierText(i, "–")} ${SIDE_SHORT[i.side]} implicit`),
         ...v.marks.map((m) => (m.maybe ? `possibly ${m.text}` : m.text)),
         ...(v.remainder !== undefined
             ? [
-                  `${v.remainder.count[0] === v.remainder.count[1] ? v.remainder.count[0] : `${v.remainder.count[0]}–${v.remainder.count[1]}`} unknown ${v.remainder.count[0] === 1 && v.remainder.count[1] === 1 ? "modifier" : "modifiers"}`,
+                  `${rangeText(v.remainder.count, "–")} unknown ${pluralRange(v.remainder.count, "modifier")}`,
               ]
             : []),
     ];

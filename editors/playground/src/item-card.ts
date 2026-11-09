@@ -17,6 +17,7 @@ import {
     remainderText,
     SIDE_NAME,
     SIDE_SHORT,
+    rarityText,
 } from "@hinekora/core";
 
 const h = <K extends keyof HTMLElementTagNameMap>(
@@ -78,13 +79,13 @@ export function renderItemCard(v: ItemView): HTMLElement {
     const rarity = v.rarities[v.rarities.length - 1] ?? "normal";
     const card = h("div", `item-card rarity-${rarity}`);
 
-    const rarityText = v.rarities.map((r) => r[0]!.toUpperCase() + r.slice(1)).join(" or ");
+    const rarities = rarityText(v.rarities);
     card.append(
         h(
             "header",
             "",
             h("div", "base", v.base),
-            h("div", "class", `${rarityText} · ${v.itemClass} · item level ${v.ilvl}`),
+            h("div", "class", `${rarities} · ${v.itemClass} · item level ${v.ilvl}`),
         ),
     );
 

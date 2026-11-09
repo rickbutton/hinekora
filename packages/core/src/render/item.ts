@@ -38,6 +38,7 @@ import type { Mod } from "../model/mod.js";
 import type { Registry } from "../resolve/registry.js";
 import { rollableGen, rollableTiers } from "../resolve/tiers.js";
 import { baseLabel } from "./render.js";
+import { capitalise, pluralRange, rangeText, rarityText } from "../words.js";
 
 export interface ModView {
     readonly gen: Gen;
@@ -145,10 +146,7 @@ export function itemClassLabel(itemClass: string): string {
 
 /** A category tag as the tooltip writes it: `physical_damage` → `Physical Damage`. */
 function tagLabel(tag: string): string {
-    return tag
-        .split("_")
-        .map((w) => w[0]!.toUpperCase() + w.slice(1))
-        .join(" ");
+    return tag.split("_").map(capitalise).join(" ");
 }
 
 const RANGE = /\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)/g;
@@ -346,11 +344,6 @@ export function itemView(a: AItem, registry: Registry): ItemView {
 // --- the text form ------------------------------------------------------------
 
 const SEPARATOR = "--------";
-const RARITY_WORD: Readonly<Record<Rarity, string>> = {
-    normal: "Normal",
-    magic: "Magic",
-    rare: "Rare",
-};
 const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six"];
 /** A small count in words, as the "one of" headers write it. */
 export const numberWord = (n: number): string => NUMBER_WORDS[n] ?? String(n);
@@ -362,7 +355,7 @@ export const SIDE_NAME: Readonly<Record<EldritchSide, string>> = {
 
 /** "82", or "40-82" when some may have been spent: the memory strands in words. */
 export function strandsText(r: Range): string {
-    return r[0] === r[1] ? String(r[0]) : `${r[0]}-${r[1]}`;
+    return rangeText(r);
 }
 
 /** The short name players use for each side ("a Grand Exarch implicit"). */
@@ -381,20 +374,13 @@ export function implicitTierText(i: ImplicitView, dash = " to "): string {
         : `${i.tiers[0]!}${dash}${i.tiers[i.tiers.length - 1]!}`;
 }
 
-function rangeText(r: Range): string {
-    return r[0] === r[1] ? String(r[0]) : `${r[0]}-${r[1]}`;
-}
-
 /**
  * "1-3 additional prefix or suffix modifiers": the unknown modifiers in words.
  * A range is plural, as is any count but one.
  */
 export function remainderText(r: Remainder, dash = "-"): string {
-    const [lo, hi] = r.count;
-    const one = lo === 1 && hi === 1;
     const where = r.where === "either" ? "prefix or suffix" : r.where;
-    const count = lo === hi ? String(lo) : `${lo}${dash}${hi}`;
-    return `${count} additional ${where} ${one ? "modifier" : "modifiers"}`;
+    return `${rangeText(r.count, dash)} additional ${where} ${pluralRange(r.count, "modifier")}`;
 }
 
 /** "at least one of" / "exactly two of": a disjunction group's header words. */
@@ -404,7 +390,7 @@ export function groupLabel(g: Extract<ModGroup, { kind: "oneOf" }>): string {
 
 /** The game's advanced-tooltip header for a modifier: `{ Prefix Modifier "Virile" (Tier: 1) — Life }`. */
 function modHeader(m: ModView): string {
-    const kind = `${m.gen[0]!.toUpperCase()}${m.gen.slice(1)} Modifier`;
+    const kind = `${capitalise(m.gen)} Modifier`;
     const name = m.name !== undefined ? ` "${m.name}"` : "";
     const tier = m.tier !== undefined ? ` (Tier: ${rangeText(m.tier)})` : "";
     const tags = m.tags.length > 0 ? ` — ${m.tags.join(", ")}` : "";
@@ -420,7 +406,7 @@ function groupLines(gen: Gen | undefined, g: ModGroup): string[] {
     if (g.kind === "mod") return modLines(g.mod);
     const kind = gen === undefined ? "modifiers" : `${gen} modifiers`;
     const label = groupLabel(g);
-    const head = `{ ${label[0]!.toUpperCase()}${label.slice(1)} these ${kind} }`;
+    const head = `{ ${capitalise(label)} these ${kind} }`;
     return [head, ...g.members.flatMap((m) => modLines(m).map((l) => `    ${l}`))];
 }
 
@@ -432,11 +418,7 @@ function groupLines(gen: Gen | undefined, g: ModGroup): string[] {
  */
 export function renderItemText(v: ItemView): string {
     const sections: string[][] = [];
-    sections.push([
-        `Item Class: ${v.itemClass}`,
-        `Rarity: ${v.rarities.map((r) => RARITY_WORD[r]).join(" or ")}`,
-        v.base,
-    ]);
+    sections.push([`Item Class: ${v.itemClass}`, `Rarity: ${rarityText(v.rarities)}`, v.base]);
     sections.push([
         `Item Level: ${v.ilvl}`,
         ...(v.strands !== undefined ? [`Memory Strands: ${strandsText(v.strands)}`] : []),

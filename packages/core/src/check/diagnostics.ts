@@ -18,34 +18,22 @@ import type { ResolveError } from "../resolve/registry.js";
 import { baseLabel } from "../render/render.js";
 import { type AItem, type Range, suffixRange } from "./astate.js";
 import type { PreconditionFailure } from "./ops.js";
+import { capitalise, plural, RARITY_WORD, rangeText, rarityText } from "../words.js";
 
 export interface CheckDiagnostic {
     readonly message: string;
     readonly span: SourceSpan;
 }
 
-const RARITY_LABEL: Record<Rarity, string> = {
-    normal: "Normal",
-    magic: "Magic",
-    rare: "Rare",
-};
-
 /** "Magic or Rare": the rarities the item may have, in the game's order. */
 export function rarityLabel(rarities: ReadonlySet<Rarity>): string {
-    return (["normal", "magic", "rare"] as const)
-        .filter((r) => rarities.has(r))
-        .map((r) => RARITY_LABEL[r])
-        .join(" or ");
-}
-
-function plural(noun: string, n: number): string {
-    if (n === 1) return noun;
-    return /(?:s|x|z|ch|sh)$/.test(noun) ? `${noun}es` : `${noun}s`;
+    return rarityText(rarities);
 }
 
 function renderRange(range: Range, noun: string): string {
-    const [min, max] = range;
-    return min === max ? `${min} ${plural(noun, min)}` : `${min}–${max} ${plural(noun, 2)}`;
+    return range[0] === range[1]
+        ? `${range[0]} ${plural(range[0], noun)}`
+        : `${rangeText(range, "–")} ${plural(2, noun)}`;
 }
 
 /**
@@ -148,7 +136,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
     const need = ((): string => {
         switch (failure.kind) {
             case "wrongRarity":
-                return `Requires a ${RARITY_LABEL[failure.needed]} item — this item ${failure.actual.size === 1 ? "is" : "may be"} ${rarityLabel(failure.actual)}.`;
+                return `Requires a ${RARITY_WORD[failure.needed]} item — this item ${failure.actual.size === 1 ? "is" : "may be"} ${rarityLabel(failure.actual)}.`;
             case "normalRefused":
                 return `Requires a Magic or Rare item — this item ${failure.actual.size === 1 ? "is" : "may be"} ${rarityLabel(failure.actual)}.`;
             case "magicRefused":
@@ -178,9 +166,9 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
             case "essenceClass":
                 return `This essence grants no mod for a ${failure.itemClass}, so it cannot be used on this item.`;
             case "rarityUnsupported":
-                return `A ${state.base.name ?? "flask"} cannot be made ${RARITY_LABEL[failure.rarity]} — it can only be Normal or Magic.`;
+                return `A ${state.base.name ?? "flask"} cannot be made ${RARITY_WORD[failure.rarity]} — it can only be Normal or Magic.`;
             case "craftedLimit":
-                return `The item may already have ${failure.cap} crafted modifier${failure.cap === 1 ? "" : "s"} — that is the limit here, so this can't be benched.`;
+                return `The item may already have ${failure.cap} crafted ${plural(failure.cap, "modifier")} — that is the limit here, so this can't be benched.`;
             case "noCraftedToRemove":
                 return "No crafted modifier is guaranteed on the item for the bench to remove.";
             case "craftedFractured":
@@ -291,8 +279,4 @@ export function resolveMessage(error: ResolveError): string {
 
 function withArticle(noun: string): string {
     return `${/^[aeiou]/i.test(noun) ? "an" : "a"} ${noun}`;
-}
-
-function capitalise(s: string): string {
-    return s.charAt(0).toUpperCase() + s.slice(1);
 }

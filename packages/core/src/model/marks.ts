@@ -6,6 +6,7 @@
  */
 import type { Base } from "./base.js";
 import { TagId } from "./ids.js";
+import { capitalise } from "../words.js";
 
 /** The six influences, in the game's order (Influenced item § Mechanics). */
 export const INFLUENCES = ["shaper", "elder", "crusader", "hunter", "redeemer", "warlord"] as const;
@@ -119,7 +120,7 @@ const ELDRITCH_LABEL: Readonly<Record<EldritchSide, string>> = {
 /** An eldritch tier number as the game names it: 3 → "Grand". */
 export function eldritchTierLabel(n: number): string {
     const name = ELDRITCH_TIERS[n - 1];
-    return name === undefined ? "" : name[0]!.toUpperCase() + name.slice(1);
+    return name === undefined ? "" : capitalise(name);
 }
 const tierLabel = eldritchTierLabel;
 

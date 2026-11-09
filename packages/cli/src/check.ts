@@ -18,6 +18,7 @@ import {
     type Bounds,
     type StepCost,
     walkthrough,
+    plural,
 } from "@hinekora/core";
 import { parse } from "@hinekora/parser";
 import { formatDiagnostic } from "./format.js";
@@ -60,7 +61,7 @@ export function checkSource(source: string, file: string, registry: Registry): C
     const n = result.diagnostics.length;
     return {
         ok: false,
-        output: `${blocks.join("\n\n")}\n\n✗ ${n} error${n === 1 ? "" : "s"}`,
+        output: `${blocks.join("\n\n")}\n\n✗ ${n} ${plural(n, "error")}`,
     };
 }
 
@@ -90,10 +91,7 @@ export function costSource(
     const out: string[] = [];
     if (!result.ok) {
         const n = result.diagnostics.length;
-        out.push(
-            `${file}: ${n} error${n === 1 ? "" : "s"}; the costs take the steps as written.`,
-            "",
-        );
+        out.push(`${file}: ${n} ${plural(n, "error")}; the costs take the steps as written.`, "");
     }
     const width = Math.max(...report.steps.map((s) => stepText(lines, s).length), 10);
     for (const s of report.steps) {

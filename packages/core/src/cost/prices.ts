@@ -14,6 +14,7 @@ import {
 import type { Registry } from "../resolve/registry.js";
 import { type AItem, rarityOf } from "../check/astate.js";
 import type { Literal, Method } from "../check/methods.js";
+import { capitalise } from "../words.js";
 
 /** An amount of one currency item, by the item's name. */
 export interface Price {
@@ -146,10 +147,6 @@ function text(l: Literal | undefined): string {
           : String(l.value);
 }
 
-function capital(s: string): string {
-    return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 /**
  * The currency one use of a method consumes, or `undefined` when its price is
  * not known to this table (a Recombinator's gold and dust, a Corruption Altar).
@@ -174,7 +171,7 @@ export function unitCost(
             const tier = text(args[0]);
             if (!(ELDRITCH_TIERS as readonly string[]).includes(tier)) return undefined;
             const kind = first === "ember" ? "Ember" : "Ichor";
-            return [{ item: `${capital(tier)} Eldritch ${kind}`, amount: 1 }];
+            return [{ item: `${capitalise(tier)} Eldritch ${kind}`, amount: 1 }];
         }
         case "eldritch":
             return [

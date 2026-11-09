@@ -43,6 +43,9 @@ import {
     type Stmt,
     type Walkthrough,
     walkthrough,
+    pluralRange,
+    rangeText,
+    rarityText,
 } from "@hinekora/core";
 import { checkCached, costCached, parseCached } from "@hinekora/lsp";
 import { renderItemCard } from "./item-card.js";
@@ -245,7 +248,7 @@ const STMT_KIND: Readonly<Record<Step["kind"], Stmt["kind"]>> = {
 
 /** "Rare · 2–3 modifiers": the item in a line, when nothing named changed. */
 export function stateLine(v: ItemView): string {
-    const rarity = v.rarities.map((r) => r[0]!.toUpperCase() + r.slice(1)).join(" or ");
+    const rarity = rarityText(v.rarities);
     // A group of alternatives stands for as many modifiers as it guarantees.
     const shown = [...v.prefixes, ...v.suffixes, ...v.either].reduce(
         (n, g) => n + (g.kind === "oneOf" ? g.atLeast : 1),
@@ -253,8 +256,7 @@ export function stateLine(v: ItemView): string {
     );
     const [lo, hi] = v.remainder?.count ?? [0, 0];
     const [a, b] = [shown + lo, shown + hi];
-    const count = a === b ? `${a}` : `${a}–${b}`;
-    return `${rarity} · ${count} ${b === 1 ? "modifier" : "modifiers"}`;
+    return `${rarity} · ${rangeText([a, b], "–")} ${pluralRange([a, b], "modifier")}`;
 }
 
 /** The card with its copy button; the text is what the game writes on Ctrl+C. */

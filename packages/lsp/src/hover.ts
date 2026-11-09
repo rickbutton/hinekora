@@ -36,6 +36,8 @@ import {
     veiledPool,
     isCorruptedEssence,
     influenceTagsAny,
+    plural,
+    rangeText,
 } from "@hinekora/core";
 import { type Token, tokenize } from "@hinekora/parser";
 import { checkCached, costCached, parseCached } from "./analysis.js";
@@ -246,10 +248,6 @@ function tierToken(text: string): RegExpExecArray | null {
 
 // --- rendering -------------------------------------------------------------
 
-function fmtRange(r: Range): string {
-    return r[0] === r[1] ? String(r[0]) : `${r[0]}–${r[1]}`;
-}
-
 /** The item at this point, in the game's copy-to-clipboard layout, as a code block. */
 function tooltip(a: AItem, registry: Registry, caption?: string): string {
     const text = renderItemText(itemView(a, registry));
@@ -285,7 +283,7 @@ function signature(
         const proj = PROJECTION[tok.text];
         if (proj) {
             const line = `**${tok.text}** — ${proj.measures}.`;
-            return entry ? `${line}\n\n_here:_ ${fmtRange(proj.of(entry.before))}` : line;
+            return entry ? `${line}\n\n_here:_ ${rangeText(proj.of(entry.before), "–")}` : line;
         }
         const kw = KEYWORD_DOC[tok.text];
         if (kw) return kw;
@@ -399,7 +397,7 @@ function modSignature(
     }
 
     blocks.push(
-        `${tiers.length} tier${tiers.length === 1 ? "" : "s"} on ${baseName} @ ilvl ${ctx.ilvl}:`,
+        `${tiers.length} ${plural(tiers.length, "tier")} on ${baseName} @ ilvl ${ctx.ilvl}:`,
     );
     blocks.push(
         `| tier | id | name | roll | ilvl |\n|---|---|---|---|---|\n${rows.join("\n")}${more}`,
