@@ -9,11 +9,14 @@
  */
 import {
     groupLabel,
+    IMPLICIT_LIST_LIMIT,
+    implicitTierText,
     type ItemView,
     type ModGroup,
     type ModView,
     remainderText,
     SIDE_NAME,
+    SIDE_SHORT,
 } from "@hinekora/core";
 
 const h = <K extends keyof HTMLElementTagNameMap>(
@@ -92,20 +95,31 @@ export function renderItemCard(v: ItemView): HTMLElement {
     section(
         "implicits",
         ...v.implicits.map((i) => {
-            const tier = i.tiers.length === 1 ? i.tiers[0]! : i.tiers.join("–");
-            const who = SIDE_NAME[i.side];
+            const tier = implicitTierText(i, "–");
+            const who = SIDE_SHORT[i.side];
             const row = h("div", `mod implicit ${i.side}${i.maybe ? " maybe" : ""}`);
+            // The wording when known; a few wordings listed; a whole pool
+            // summarised, since nothing in it is worth reading yet.
             const text =
                 i.texts.length === 1
                     ? statText(i.texts[0]!)
                     : i.texts.length === 0
-                      ? [document.createTextNode(`an implicit of that tier`)]
-                      : [document.createTextNode(`one of ${i.texts.length} implicits`)];
+                      ? [document.createTextNode(`any ${tier} ${who} implicit`)]
+                      : i.texts.length > IMPLICIT_LIST_LIMIT
+                        ? [document.createTextNode(`one of ${i.texts.length} ${who} implicits`)]
+                        : [
+                              h("span", "label", "one of"),
+                              ...i.texts.flatMap((t) => [h("br", ""), ...statText(t)]),
+                          ];
             row.append(
                 h("span", "text", ...text),
-                h("span", "meta", h("span", "tier pinned", tier)),
+                h("span", "meta", h("span", "side", who), h("span", "tier pinned", tier)),
             );
-            row.title = `${who} implicit${i.texts.length > 1 ? `: ${i.texts.join(" / ")}` : ""}`;
+            row.title = `${SIDE_NAME[i.side]} implicit, ${tier}${
+                i.texts.length > 1
+                    ? `: ${i.texts.slice(0, 12).join(" / ")}${i.texts.length > 12 ? " / …" : ""}`
+                    : ""
+            }`;
             return row;
         }),
     );

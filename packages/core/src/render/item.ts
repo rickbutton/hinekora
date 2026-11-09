@@ -257,10 +257,26 @@ export function itemView(a: AItem, registry: Registry): ItemView {
         const tiers = [...new Set(all)].filter((n) => n > 0).sort((x, y) => x - y);
         if (tiers.length === 0) continue;
         const types = a.eldritchTypes[side];
+        // The wordings are the rows of the known tiers, since a family's text
+        // changes with the tier; a type with no row at them keeps its wording.
         const texts =
             types === "any"
                 ? []
-                : [...new Set([...types].map((t) => oneLine(registry.eldritchTextOf(t) ?? t)))];
+                : [
+                      ...new Set(
+                          [...types].flatMap((t) => {
+                              const rows = tiers.flatMap((n) =>
+                                  registry
+                                      .eldritchPool(a.base, side, n)
+                                      .filter((e) => e.type === t)
+                                      .map((e) => oneLine(e.text)),
+                              );
+                              return rows.length > 0
+                                  ? rows
+                                  : [oneLine(registry.eldritchTextOf(t) ?? t)];
+                          }),
+                      ),
+                  ];
         implicits.push({
             side,
             tiers: tiers.map(eldritchTierLabel),
@@ -321,6 +337,22 @@ export const SIDE_NAME: Readonly<Record<EldritchSide, string>> = {
     exarch: "Searing Exarch",
     eater: "Eater of Worlds",
 };
+
+/** The short name players use for each side ("a Grand Exarch implicit"). */
+export const SIDE_SHORT: Readonly<Record<EldritchSide, string>> = {
+    exarch: "Exarch",
+    eater: "Eater",
+};
+
+/** Past this many wordings an implicit is summarised as "one of n" rather than listed. */
+export const IMPLICIT_LIST_LIMIT = 6;
+
+/** "Grand", or "Lesser to Grand": the tier names an implicit may be at, in words. */
+export function implicitTierText(i: ImplicitView, dash = " to "): string {
+    return i.tiers.length === 1
+        ? i.tiers[0]!
+        : `${i.tiers[0]!}${dash}${i.tiers[i.tiers.length - 1]!}`;
+}
 
 function rangeText(r: Range): string {
     return r[0] === r[1] ? String(r[0]) : `${r[0]}-${r[1]}`;
@@ -383,12 +415,15 @@ export function renderItemText(v: ItemView): string {
     if (v.implicits.length > 0) {
         sections.push(
             v.implicits.flatMap((i) => {
-                const tier = i.tiers.length === 1 ? i.tiers[0]! : i.tiers.join(" to ");
+                const tier = implicitTierText(i);
                 const maybe = i.maybe ? "Possibly: " : "";
                 const head = `{ ${maybe}${SIDE_NAME[i.side]} Implicit Modifier (Tier: ${tier}) }`;
                 const tag = ` (${i.side} implicit)`;
                 if (i.texts.length === 1) return [head, `${i.texts[0]!}${tag}`];
-                if (i.texts.length === 0) return [head, `an implicit of that tier${tag}`];
+                if (i.texts.length === 0)
+                    return [head, `any ${tier} ${SIDE_NAME[i.side]} implicit${tag}`];
+                if (i.texts.length > IMPLICIT_LIST_LIMIT)
+                    return [head, `one of ${i.texts.length} ${SIDE_NAME[i.side]} implicits${tag}`];
                 return [head, `one of ${i.texts.length}:${tag}`, ...i.texts.map((t) => `    ${t}`)];
             }),
         );

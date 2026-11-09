@@ -14,7 +14,7 @@ import { describePred } from "../check/diagnostics.js";
 import { findMethod } from "../check/methods.js";
 import type { Registry } from "../resolve/registry.js";
 import { criteria, type Criterion, type Wording } from "./conditions.js";
-import { type ItemView, itemView, type ModGroup } from "./item.js";
+import { implicitTierText, type ItemView, itemView, type ModGroup, SIDE_SHORT } from "./item.js";
 
 interface StepBase {
     readonly span: SourceSpan;
@@ -236,7 +236,7 @@ export function itemDelta(before: ItemView, after: ItemView): ItemDelta {
     const lines = (v: ItemView): string[] => [
         ...v.rarities.map((r) => `${r[0]!.toUpperCase()}${r.slice(1)}`),
         ...modLines(v),
-        ...v.implicits.map((i) => `${i.side} implicit (${i.tiers.join("–")})`),
+        ...v.implicits.map((i) => `${implicitTierText(i, "–")} ${SIDE_SHORT[i.side]} implicit`),
         ...v.marks.map((m) => (m.maybe ? `possibly ${m.text}` : m.text)),
         ...(v.remainder !== undefined
             ? [

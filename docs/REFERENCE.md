@@ -146,7 +146,9 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
 - **render/**: the labels diagnostics and hover show (`modLabel`, `baseLabel`), and the
   item as a player reads it (`item.ts`). `itemView(a, registry)` is a view model shaped
   like the game's tooltip: the base, class and level, the rarities, the eldritch
-  implicits, the modifiers by side (each with its stat text, its affix name and tier when
+  implicits (each side's tier names and the wordings of its possible types at those
+  tiers, taken from `eldritchPool`, since a family's text changes with the tier; empty
+  when any implicit of the side may be there), the modifiers by side (each with its stat text, its affix name and tier when
   the row is known, a tier range and a roll span across the rows it may be otherwise, its
   category tags, and whether it is fractured or crafted), "one of" groups for the
   disjunctions (members pinned to their tier when the clause named one, exact when no
@@ -430,7 +432,10 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   and the tier (or tier range) at the right, roll ranges set apart, crafted and fractured
   lines in their colours, a bracketed "one of" group for a disjunction, a dashed line for
   the modifiers whose identity is unknown, "possibly" marks, and the absent modifiers
-  struck through. The affix name and tags are the line's tooltip.
+  struck through. An eldritch implicit line names its side and tier at the right
+  ("Exarch · Grand") and reads its wording, a short "one of" list, "one of n Exarch
+  implicits" past `IMPLICIT_LIST_LIMIT`, or "any Lesser Eater implicit" when nothing
+  narrows it. The affix name and tags are the line's tooltip.
 - `src/storyboard.ts`: `createStoryboard(root, hooks)`, the guide as the item's journey
   from the core's `walkthrough`, one block per step on a rail of icons: the currency's
   icon (what it does is the icon's tooltip), its display name, the step as written, the
