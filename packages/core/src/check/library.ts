@@ -52,6 +52,7 @@ const noInfluence = (what: string): Op => require({ kind: "noInfluence", what })
 const isRare = require({ kind: "rarity", rarity: "rare" });
 const isMagic = require({ kind: "rarity", rarity: "magic" });
 const isNormal = require({ kind: "rarity", rarity: "normal" });
+const notMagic = require({ kind: "notMagic" });
 const canBeRare = require({ kind: "canBeRare" });
 const openSlot = (gen?: Gen): Op =>
     require(gen === undefined ? { kind: "openSlot" } : { kind: "openSlot", gen });
@@ -580,7 +581,10 @@ export function resonatorOps(r: Resonator): readonly Op[] {
     const corrupts = r.fossils.some((f) => f.corrupts);
     return [
         notCorrupted,
-        isRare,
+        // A chaotic resonator takes a Normal item as a Chaos Orb does not
+        // (QUESTIONS.md Q42); only a Magic item is refused.
+        notMagic,
+        canBeRare,
         require({ kind: "noBlockingMetamod" }),
         ...r.fossils.map((fossil) => require({ kind: "fossilAllowed", fossil })),
         ...(fractures ? [require({ kind: "noFracture" })] : []),

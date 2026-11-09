@@ -96,11 +96,17 @@ describe("a resonator", () => {
         expect(locked.diagnostics[0]!.message).toContain("already has a fractured modifier");
     });
 
-    it("needs a Rare item without a blocking metamod, on a base its fossils allow", () => {
+    it("takes a Normal or Rare item without a blocking metamod, on a base its fossils allow", () => {
         const magic = item({ base: "Iron Ring", ilvl: 100, rarity: "magic" });
         expect(check(craft(magic, [fossil("dense")]), ctx).diagnostics[0]!.message).toContain(
-            "Requires a Rare item",
+            "Requires a Normal or Rare item",
         );
+        const normal = check(
+            craft(item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [fossil("dense")]),
+            ctx,
+        );
+        expect(normal.diagnostics).toEqual([]);
+        expect(normal.finalState!.rarities).toEqual(new Set(["rare"]));
         const locked = check(
             craft(rareRing(), [bench("prefixes cannot be changed"), fossil("dense")]),
             ctx,

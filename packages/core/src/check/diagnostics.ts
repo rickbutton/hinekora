@@ -148,6 +148,8 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
         switch (failure.kind) {
             case "wrongRarity":
                 return `Requires a ${RARITY_LABEL[failure.needed]} item — this item ${failure.actual.size === 1 ? "is" : "may be"} ${rarityLabel(failure.actual)}.`;
+            case "magicRefused":
+                return `Requires a Normal or Rare item — this item ${failure.actual.size === 1 ? "is" : "may be"} ${rarityLabel(failure.actual)}.`;
             case "noOpenSlot":
                 return failure.gen === undefined
                     ? "Requires an open affix slot — the item may be full."

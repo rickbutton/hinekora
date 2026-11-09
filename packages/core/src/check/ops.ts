@@ -143,6 +143,7 @@ export type Selector =
 /** A check a `require` must prove on every path. */
 export type Check =
     | { readonly kind: "rarity"; readonly rarity: Rarity }
+    | { readonly kind: "notMagic" }
     | { readonly kind: "canBeRare" }
     | { readonly kind: "openSlot"; readonly gen?: Gen }
     | { readonly kind: "removable"; readonly selector: Selector }
@@ -289,6 +290,7 @@ export type PreconditionFailure =
           readonly actual: ReadonlySet<Rarity>;
       }
     | { readonly kind: "noOpenSlot"; readonly gen?: Gen }
+    | { readonly kind: "magicRefused"; readonly actual: ReadonlySet<Rarity> }
     | { readonly kind: "modConflict"; readonly group: string }
     | { readonly kind: "nothingToRemove" }
     | {
@@ -607,6 +609,8 @@ function failing(
             return rarityOf(a) === check.rarity
                 ? null
                 : { kind: "wrongRarity", needed: check.rarity, actual: a.rarities };
+        case "notMagic":
+            return a.rarities.has("magic") ? { kind: "magicRefused", actual: a.rarities } : null;
         case "canBeRare":
             return canBeRare(a.base) ? null : { kind: "rarityUnsupported", rarity: "rare" };
         case "openSlot":
