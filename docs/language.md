@@ -101,8 +101,9 @@ query word matches an entry word exactly or as a prefix of at least three letter
 are candidates, then those an unveil or the bench puts on its class, which is how a metamod
 is named (`has "suffixes cannot be changed"`). Guide spellings are read as the game's
 first (`"max es"`, `"+1 gems"`, `"flat phys"`); the table is `packages/data/src/aliases.ts`.
-An exact mod id (`IncreasedLife5`) always resolves. A query matching several types is an
-error listing them:
+An exact mod id (`IncreasedLife5`) always resolves. Matches rank by the share of a type's
+wording the query covers, the best taken; a tie at the top is an error listing the tied
+types:
 
 ```
 Ambiguous name "res" — candidates: fire resistance, cold resistance, lightning resistance.
@@ -197,7 +198,9 @@ number `1`).
 
 A step parameter is bound at the call to one statement or a `{ … }` block, which runs where
 the parameter is written, as if pasted there (a `restart` in it re-enters the `until`
-enclosing that point). A parameter shadows a method word of the same name.
+enclosing that point). A parameter shadows a method word of the same name. Hovering a step
+written in a call's argument shows what it does but no item, since it may run many times
+inside the function.
 
 ```
 def anyEleRes(t) = has "fire res" t or has "cold res" t or has "lightning res" t
