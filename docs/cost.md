@@ -27,8 +27,8 @@ reforge rolls a count, then draws modifiers one at a time by weight without repl
 a group closing once one of it is drawn
 ([Modifier § Group/family](https://www.poewiki.net/wiki/Modifier#Group/family)) and a
 side closing when full. The wiki states the group rule but not the order; craftofexile's
-emulator and every community calculator draw this way, and it is taken as settled. The
-prefix/suffix split is not a roll of its own: it falls out of the draw. An unveil's three
+emulator and every community calculator draw this way, and it is taken as settled. An
+unveil's three
 options are drawn the same way
 ([Veiled modifier § Version history](https://www.poewiki.net/wiki/Veiled_modifier#Version_history)),
 and a value is equally likely anywhere in its row's range
@@ -46,6 +46,9 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
   likely" multiplies the rows sharing a type with the item's by ten and a tenth (Q66).
 - **Removals** are uniform over the modifiers they can reach, never a fractured one (Q61).
 - **Veiled Exalted Orb.** Its veiled modifier lands on either side with room alike (Q76).
+- **Unveil.** The options are of the veiled modifier's side where the item says which
+  (Q77); the player takes the guide's target if offered, else a modifier its conditions
+  name, else one no one names (Q78).
 - **Memory strands.** The share used up is not stated; the estimate reads the floor
   (Q68).
 
@@ -56,14 +59,16 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
 The checker's item at a step is a set of items; a probability needs to know how likely
 each member is. The cost layer follows a **distribution over a small state**
 (`cost/track.ts`): the (prefix, suffix) counts and, for each modifier a condition names
-or the checker knows is there (declared, granted, crafted, a protecting metamod), whether
-it is on the item and in which tier class (each tier a condition names on its own, the
-rest of the ladder together); a modifier a condition compares by value is held per tier
+or the checker knows is there (declared, granted, crafted, a protecting metamod, a veiled
+placeholder), whether it is on the item, in which tier class (each tier a condition names
+on its own, the rest of the ladder together) and whether it is fractured (its row marked
+`!`); a modifier a condition compares by value is held per tier
 and value piece, cut at the condition's thresholds. The distribution starts from the item
 block, a `"random"` modifier a natural roll of its side by spawn weight (Q75), and is
 carried through every step. Each method is read on the checker's item **narrowed to each
 state** (its counts exact, each tracked modifier present at its class or absent): a
-random method by its roll, a sure one by the checker's own transfer function, the item
+random method by its roll (an unveil by the option taken, a Fracturing Orb by the
+modifier it locks), a sure one by the checker's own transfer function, the item
 that leaves read back as states. So a Regal Orb after an Orb of Transmutation knows the
 item had one modifier half the time and two the other half, and a Divine Orb rerolls the
 values the item has. A branch splits the distribution by its condition; a loop is solved
@@ -71,9 +76,10 @@ as a chain over it (§6). A guide followed so throughout is walked once.
 
 Two things stay approximate. The modifiers no one names and the checker does not know are
 a count, not identities: when a draw lands beside them each closes a group of average
-weight on its side, as craftofexile's calculator does. And where a step's randomness is
-one the state does not hold (an unveil's choice, a fracture's lock, an ember's implicit)
-or the walk cannot follow a statement (a call), the states are dropped and the roll is
+weight on its side, as craftofexile's calculator does. And a state the narrowed item
+cannot carry through a step exactly is left as it was, which the step notes; where a
+step's randomness is one the state does not hold (an ember's implicit) or the walk cannot
+follow a statement (a call), the states are dropped and the roll is
 read on the checker's item, the facts every path holds: a modifier held only as possible
 neither shrinks the pool nor adds its tags, and every range the checker left open is read
 at its floor and at its ceiling (`Reading`), a **spread** given beside the figure where
@@ -85,8 +91,7 @@ the ends disagree.
 
 The draw has an exact representation as a **race**: give every group an exponential
 clock whose rate is its weight (the code takes a modifier type as a group, §8), read the
-groups off in the order their clocks fire, skip a group whose side is full. Every
-question becomes one about independent firing times.
+groups off in the order their clocks fire, skip a group whose side is full.
 "These groups are all among the first k drawn" is "fewer than k minus their number of
 the other groups fired before the last of them", a Poisson-binomial count at a time,
 integrated against that time's density; the split of m draws is a race between the two
@@ -158,12 +163,8 @@ Prices come from a **snapshot committed with the data**,
 `packages/data/data/poe1/economy.json`, for one league on one day, never from live calls
 in the checker, the CLI or the editor (Q62), so a figure is
 reproducible and dated by the snapshot. `fetch-economy.mjs`
-refreshes it with five requests and nothing else: poe.ninja's exchange overview
-(`/poe1/api/economy/exchange/current/overview`) for `Currency`, `Essence`, `Fossil` and
-`Resonator`, and its stash overview (`/poe1/api/economy/stash/current/item/overview`)
-for `Beast`. Both are the endpoints the site's own pages read, undocumented (the
-documented one answers 404), keyed by the league's display name from
-`/poe1/api/data/index-state`; when they move, the script is what changes.
+refreshes it from the poe.ninja endpoints the site's own pages read, undocumented (the
+documented one answers 404); when they move, the script is what changes.
 
 The snapshot cannot price three things, which the code carries itself: a bench craft's
 cost, read from the catalog; a Harvest craft's lifeforce, a table in `cost/prices.ts`
@@ -178,8 +179,7 @@ craftofexile's calculator and simulator are the yardstick; hinekora agrees with 
 wherever the calculator is exact, to the rounding of its display. Where they differ:
 
 - **Its extrapolation regime** (ten or more eligible types on a side) replaces the
-  unrequired draws by an average depletion, about a tenth optimistic against the race;
-  a difference there is not a defect.
+  unrequired draws by an average depletion, about a tenth optimistic against the race.
 - **Its side split** draws independently at the prefix pool's share, ignoring depletion,
   which the race includes.
 - **Its Orb of Alteration** assumes an Augmentation fills the empty side; hinekora prices

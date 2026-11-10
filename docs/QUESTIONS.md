@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q79.
+keeps it. New entries continue from Q82.
 
 ```
 ### Qn · probe|decision · open — title
@@ -376,7 +376,30 @@ each; record how many veiled prefixes and veiled suffixes come up.
 **Assumed:** the sides with room alike, half each. **Encoded in:** `cost/track.ts`
 `veiledSides`.
 
-### Q77 · probe · open — an essence's item-level requirement
+### Q77 · probe · open — the side of an unveil's options
+
+**Q:** does unveiling a veiled prefix offer only prefixes, and a veiled suffix only
+suffixes? [Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) says the unveil
+"presents three random mods" and lists the results by side, without tying them to the
+placeholder's.
+**Probe:** Veiled Exalted Orbs, a Rare that will take a veiled prefix (suffixes full) and
+one that will take a veiled suffix; veil and unveil each several times; record the sides
+of the options offered.
+**Assumed:** the veiled modifier's own side, where the item says which; the checker still
+offers both sides, the looser reading. **Encoded in:** `model/veiled.ts`, `cost/roll.ts`
+`unveilRoll`.
+
+### Q78 · decision · open — which unveil option the player takes
+
+**Q:** which of the three options does the cost layer take the player to choose?
+**Options:** (a) the guide's target when offered, else a modifier a later condition names,
+else one no one names (recommended: a guide naming no target still unveils for what its
+conditions ask, and a player takes that when offered); (b) only the target, any other pick
+an unnamed modifier; (c) the most valuable, which the cost layer cannot measure.
+**Assumed:** (a), the named modifiers ranked in the order the guide's conditions first
+name them. **Encoded in:** `cost/track.ts` `unveiled`.
+
+### Q79 · probe · open — an essence's item-level requirement
 
 **Q:** [Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting)'s tier table
 has a "Minimum required level of crafted item" column (Whispering 1, Muttering 8, Weeping
@@ -387,7 +410,7 @@ in game, `item-model.md`.)
 refused or applied.
 **Assumed:** no gate. **Encoded in:** `check/library.ts` `essenceOps`.
 
-### Q78 · probe · open — the bench's 3.29 rerolls
+### Q80 · probe · open — the bench's 3.29 rerolls
 
 **Q:** what do "Reroll three random modifiers on a Rare item" and "Reroll a random
 modifier" keep? [Version 3.29.0](https://www.poewiki.net/wiki/Version_3.29.0) says only
