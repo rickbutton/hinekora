@@ -427,6 +427,7 @@ export class Tracker {
                 out = this.outcomes(before, ops, state, reading) ?? [{ state, prob: 1 }];
             }
             if (out.length > MAX_OUTCOMES) throw new TrackerOverflow();
+            out = pruned(out);
             out = this.kept(state, ops, out);
             cache.set(key, out);
             return out;
@@ -1051,6 +1052,15 @@ function removalBeforeFill(ops: readonly Op[]): number {
     const at = ops.findIndex((op) => op.kind === "remove" && op.selector.kind === "random");
     if (at < 0 || ops.slice(0, at).some((op) => op.kind === "fill")) return -1;
     return ops.slice(at + 1).some((op) => op.kind === "fill") ? at : -1;
+}
+
+/** Outcomes without the specks of mass the race's quadrature leaves on
+ *  outcomes that cannot happen, which no later step could read. */
+function pruned(out: readonly Outcome[]): readonly Outcome[] {
+    const kept = out.filter((o) => o.prob > 1e-12);
+    if (kept.length === out.length) return out;
+    const total = kept.reduce((sum, o) => sum + o.prob, 0);
+    return total > 0 ? kept.map((o) => ({ ...o, prob: o.prob / total })) : out;
 }
 
 /** What no step but its own changes: a fractured modifier stays fractured, and
