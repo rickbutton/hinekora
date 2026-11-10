@@ -710,9 +710,9 @@ class Checker {
                     ? `\nThis is so where the item has ${carriers.join(" and ")}, which it may have here — settle it with an 'if has' first.`
                     : "";
             this.diag(preconditionMessage(a, result.failure) + where, stmt.span);
-            return { kind: "fall", state: result.state };
         }
-        return { kind: "fall", state: result.state };
+        // A method that leaves no item on any outcome ends the path, as `stop` does.
+        return result.ended ? { kind: "stop" } : { kind: "fall", state: result.state };
     }
 
     // --- narrowing (if / else) --------------------------------------------

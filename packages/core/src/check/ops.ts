@@ -253,9 +253,9 @@ export type Op =
     | { readonly kind: "eldritch"; readonly change: EldritchChange }
     /** One of several outcomes: the join of running each branch, which holds
      *  effects only (a check or an `unprotect` belongs before it, at method
-     *  level). A branch of `end` alone is an outcome on which the item is gone
-     *  and the craft stops, so it adds nothing to the join; some branch must
-     *  survive, since no method in the library ends on every outcome. */
+     *  level). A branch with an `end` is an outcome on which the item is gone
+     *  and the craft stops, so it adds nothing to the join; where every branch
+     *  ends, so does the method. */
     | { readonly kind: "either"; readonly branches: readonly (readonly Transform[])[] }
     | { readonly kind: "end" }
     | { readonly kind: "corrupt" }
@@ -385,7 +385,7 @@ export type PreconditionFailure =
     | { readonly kind: "unveilNotAvailable"; readonly mod: string }
     | { readonly kind: "unveilNotGuaranteed"; readonly mod: string; readonly options: number };
 
-export type TransferResult =
+export type TransferResult = (
     | { readonly ok: true; readonly state: AItem }
     | {
           readonly ok: false;
@@ -394,7 +394,11 @@ export type TransferResult =
           /** The possibly present metamods the item must carry for the method to
            *  be refused, when it goes through without them. */
           readonly under?: readonly TypeId[];
-      };
+      }
+) & {
+    /** The craft ends here on every outcome: the method left no item. */
+    readonly ended?: true;
+};
 
 /**
  * On a failed `require`, the state returned is the one the method leaves where
@@ -411,17 +415,20 @@ export function runMethod(a0: AItem, ops: readonly Op[], registry: Registry): Tr
     let passed = false;
     for (const c of metamodCases(a0, registry)) {
         const r = runCase(c.state, ops, registry);
-        state = state === undefined ? r.state : join(state, r.state);
+        // A case on which the craft ends leaves no item to join.
+        if (!r.ended) state = state === undefined ? r.state : join(state, r.state);
         if (r.ok) passed = true;
         else failed ??= { failure: r.failure, under: c.present };
     }
+    const ended = state === undefined ? { ended: true as const } : {};
     state ??= a0;
-    if (failed === undefined) return { ok: true, state };
+    if (failed === undefined) return { ok: true, state, ...ended };
     return {
         ok: false,
         failure: failed.failure,
         state,
         ...(passed && failed.under.length > 0 && { under: failed.under }),
+        ...ended,
     };
 }
 
@@ -511,12 +518,19 @@ function runCase(a0: AItem, ops: readonly Op[], registry: Registry): TransferRes
             rules = { ...rules, protected: new Set([op.gen]) };
             continue;
         }
-        a = apply(a, a0, op, rules, registry);
+        const next = apply(a, a0, op, rules, registry);
+        if (next === null) {
+            return failure === null
+                ? { ok: true, state: a, ended: true }
+                : { ok: false, failure, state: a, ended: true };
+        }
+        a = next;
     }
     return failure === null ? { ok: true, state: a } : { ok: false, failure, state: a };
 }
 
-function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Registry): AItem {
+/** The state an operation leaves, or `null` where the craft ends on it. */
+function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Registry): AItem | null {
     switch (op.kind) {
         case "strip":
             return strip(a, rules, registry);
@@ -600,15 +614,17 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
         case "either": {
             const outcomes: AItem[] = [];
             for (const branch of op.branches) {
-                if (branch.some((o) => o.kind === "end")) continue;
-                let s = a;
-                for (const o of branch) s = apply(s, a0, o, rules, registry);
-                outcomes.push(s);
+                let s: AItem | null = a;
+                for (const o of branch) {
+                    s = apply(s, a0, o, rules, registry);
+                    if (s === null) break;
+                }
+                if (s !== null) outcomes.push(s);
             }
-            return outcomes.reduce((x, y) => join(x, y), outcomes[0] ?? a);
+            return outcomes.length === 0 ? null : outcomes.reduce((x, y) => join(x, y));
         }
         case "end":
-            return a;
+            return null;
         case "corrupt":
             return { ...a, corrupted: new Set([true]) };
         case "eldritch": {

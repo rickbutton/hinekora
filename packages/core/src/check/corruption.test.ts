@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
+import { runMethod } from "./ops.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { corruptedP, craft, has, iff, influencedP, item, notp, op } from "../__fixtures__/ast.js";
 import type { OperationStmt } from "../ast/ast.js";
@@ -141,6 +142,27 @@ describe("the Corruption Altar", () => {
         expect(messages(craft(ring(), [op("locus"), iff(influencedP(), [], [])]))).not.toContain(
             "never run",
         );
+    });
+});
+
+describe("a method's outcomes that end the craft", () => {
+    const start = run(craft(ring(), [])).finalState!;
+    const end = [{ kind: "end" }] as const;
+
+    it("add nothing to what the others leave", () => {
+        const r = runMethod(
+            start,
+            [{ kind: "either", branches: [[{ kind: "corrupt" }], end] }],
+            registry,
+        );
+        expect(r.ended).toBeUndefined();
+        expect(r.state.corrupted).toEqual(new Set([true]));
+    });
+
+    it("end it where no other outcome is left", () => {
+        const r = runMethod(start, [{ kind: "either", branches: [end, end] }], registry);
+        expect(r.ok).toBe(true);
+        expect(r.ended).toBe(true);
     });
 });
 
