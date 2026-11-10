@@ -583,6 +583,20 @@ multipliers, a side admitting no more once full (`cost/race.ts` `splitDistributi
 `cost/roll.ts` `countCases`).
 **Answer:**
 
+### Q74 · game probe · open
+
+**Asked:** 2026-11-10
+**Goal:** whether the Harvest damage change takes a penetration modifier, and a check of
+the two refusals only players report: a damage over time multiplier, and a resistance
+shared with chaos (Q18). The wiki names neither.
+**Procure:** a Rare with fire penetration, one with a fire damage over time multiplier and
+one with fire and chaos resistance; the grove's fire-to-cold damage and resistance changes.
+**Steps:** try each change on its item.
+**Record:** which the grove offers.
+**Assumed meanwhile:** penetration is taken; the multiplier and the hybrid are refused
+(`check/methods.ts` `elementalKind`). The refusals only ever make the checker stricter.
+**Answer:**
+
 ---
 
 ## Resolved
@@ -601,8 +615,8 @@ ordinary item-domain rows with no weight, the level-20 bench rows separate.
 **Assumed meanwhile:** not crafted: `beast aspect` leaves the crafted count alone
 (`check/library.ts` `beastAspectOps`) and the removal ignores the row. The level-20 bench
 Aspects have no surface form.
-**Answer:** 2026-11-10, from the game data: not crafted. Every `Grants…AspectCrafted` row
-in the wiki's mods table is an ordinary item modifier (domain 1), where a bench row
+**Answer:** 2026-11-10, from the game data: not crafted. Every Bestiary aspect row
+(`Grants…AspectCrafted`) in the wiki's mods table is an ordinary item modifier (domain 1), where a bench row
 (`EinharMasterIncreasedLife2`) is a crafted one (domain 9), and the trade site's stat list
 offers the aspects as explicit and fractured modifiers, never crafted. The assumption
 above stands.
@@ -697,7 +711,7 @@ within the tier and nothing of the distribution.
 **Assumed meanwhile:** uniform over the integers of the range
 (`docs/research/cost-model.md` §1.4).
 **Answer:** 2026-11-10, from the wiki: [Modifier § Mechanics overview](https://www.poewiki.net/wiki/Modifier#Mechanics_overview)
-says a value is "randomized within with equal chances", each stat of a hybrid on its own.
+says a value is "randomized within with equal chances", within the stat's own range.
 The assumption above stands.
 
 ### Q18 · game probe · resolved
@@ -722,9 +736,12 @@ critical strike multiplier ([Harvest crafting § Version history](https://www.po
 ([forum](https://www.pathofexile.com/forum/view-thread/3923545)) and the resistance change
 refusing a resistance shared with chaos ([forum](https://pathofexile.com/forum/view-thread/3270484));
 [Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting) adds
-that it takes the Incursion resistance modifiers too, and the 3.28.0c fix that increased
-elemental damage changes. `elementalKind` now leaves out rows tagged `critical`,
-`dot_multi`, and resistances tagged `chaos`; penetration stays admitted, unconfirmed.
+that it takes the Incursion resistance modifiers too, and
+[Version 3.28.0c](https://www.poewiki.net/wiki/Version_3.28.0c) fixes it to take increased
+elemental damage. `elementalKind` now leaves out rows tagged `critical` (standing for the
+multiplier, which today is all it catches beside one cluster notable), rows tagged
+`dot_multi`, and resistances tagged `chaos`. Penetration and the two forum-sourced
+refusals are Q74's probe.
 
 ### Q67 · game probe · resolved
 
