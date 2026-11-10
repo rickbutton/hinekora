@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q78.
+keeps it. New entries continue from Q79.
 
 ```
 ### Qn · probe|decision · open — title
@@ -386,3 +386,17 @@ in game, `item-model.md`.)
 **Probe:** a Normal item of item level 40 and a Shrieking essence; apply it; record
 refused or applied.
 **Assumed:** no gate. **Encoded in:** `check/library.ts` `essenceOps`.
+
+### Q78 · probe · open — the bench's 3.29 rerolls
+
+**Q:** what do "Reroll three random modifiers on a Rare item" and "Reroll a random
+modifier" keep? [Version 3.29.0](https://www.poewiki.net/wiki/Version_3.29.0) says only
+"reroll": does the modifier count hold, may a rerolled modifier land on the other side,
+and do the metamods hold?
+**Probe:** a Rare with six modifiers, one with "Prefixes Cannot Be Changed", one with a
+prefix and a suffix; reroll three on the first two and one on the third, several times;
+record the prefix and suffix counts before and after, and whether a protected prefix or
+the metamod changed.
+**Assumed:** not built (deferred, `operations.md` §3.2); when built, `remove(unlocked ∖
+protected, k); fill(natural, k)`: the count kept, the side free, the metamods respected.
+**Encoded in:** nothing yet.
