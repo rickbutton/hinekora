@@ -13,6 +13,7 @@ import type { EldritchSide } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import { lookupWeight, pool } from "../pool/pool.js";
 import { veiledPool } from "../pool/veiled.js";
+import { FOULBORN_AS_STRANDS } from "../model/strands.js";
 import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
 import type { Registry } from "../resolve/registry.js";
 import { rollableGen, rollableTiers } from "../resolve/tiers.js";
@@ -454,18 +455,24 @@ function poolRows(
     stranded = false,
 ): Row[] {
     // Only a method that uses memory strands up has its fill cut by them.
-    const natural = (level?: number, withStrands = false): Row[] =>
-        pool(registry.catalog, sureFacts(a, registry, level, reading, withStrands)).map((c) => ({
-            mod: c.mod,
-            weight: c.weight,
-        }));
+    const natural = (level?: number, withStrands = false, more = 0): Row[] => {
+        const facts = sureFacts(a, registry, level, reading, withStrands);
+        const cut =
+            facts.strands === undefined ? facts : { ...facts, strands: facts.strands + more };
+        return pool(registry.catalog, cut).map((c) => ({ mod: c.mod, weight: c.weight }));
+    };
     switch (spec.kind) {
         case "natural": {
             const cap = spec.maxLevel ?? Infinity;
-            const rows = natural(spec.level, stranded).filter(
+            // On an item holding strands a Foulborn orb is one cut, the
+            // strands' at thirty more, not its own after theirs (Memory strand
+            // § Mechanics), as the checker reads it.
+            const held = stranded ? a.strands[reading === "ceilings" ? 1 : 0] : 0;
+            const asStrands = spec.topTiers === true && held > 0;
+            const rows = natural(spec.level, stranded, asStrands ? FOULBORN_AS_STRANDS : 0).filter(
                 (r) => r.mod.minLevel <= cap && (spec.gen === undefined || r.mod.gen === spec.gen),
             );
-            return spec.topTiers ? foulbornRows(rows) : rows;
+            return spec.topTiers && !asStrands ? foulbornRows(rows) : rows;
         }
         case "tagged":
             return natural().filter((r) => r.mod.implicitTags.has(spec.tag));
