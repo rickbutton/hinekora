@@ -569,7 +569,10 @@ function costLine(
         const total =
             report.chaos !== undefined && report.divine !== undefined
                 ? `${approx(report.chaos)} chaos, ${approx(report.divine)} divine${spread(report.chaosRange, (n) => `${figure(n)} chaos`)}${when}`
-                : report.total.map((x) => `${figure(x.amount)} ${x.item}`).join(", ");
+                : report.total.map((x) => `${figure(x.amount)} ${x.item}`).join(", ") +
+                  (prices !== undefined && report.unpriced.length > 0
+                      ? ` (no ${prices.league} price for ${report.unpriced.join(", ")})`
+                      : "");
         return `_Expected spend for the guide:_ ${total}.`;
     }
     const step = report.steps.find(

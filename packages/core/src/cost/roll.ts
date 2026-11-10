@@ -417,6 +417,28 @@ export function foulbornRows(rows: readonly Row[]): Row[] {
     return out;
 }
 
+/** The two fossils whose effect is not a tag's multiplier, by the game's names. */
+const SANCTIFIED = "Sanctified Fossil";
+const TANGLED = "Tangled Fossil";
+
+/**
+ * Why a method's roll is not read, where a rule of it is not modelled: the
+ * Tangled Fossil gives one category of modifier, picked at random when the
+ * resonator is socketed, far more weight and bars another (Tangled Fossil §
+ * Mechanics), so the pool it rolls from is not one pool.
+ */
+export function unmodelled(ops: readonly Op[]): string | undefined {
+    const tangled = ops.some(
+        (op) =>
+            op.kind === "fill" &&
+            op.pool.kind === "fossil" &&
+            op.pool.fossils.some((f) => f.name === TANGLED),
+    );
+    return tangled
+        ? "a Tangled Fossil makes one kind of modifier, picked at random, far likelier and bars another, which is not modelled, so the chances after it are not known"
+        : undefined;
+}
+
 /**
  * The weighted rows a pool holds on the item as it stands before the fill:
  * the natural pool at the level asked, narrowed or re-weighted as the pool
@@ -446,19 +468,33 @@ function poolRows(
         case "tagged":
             return natural().filter((r) => r.mod.implicitTags.has(spec.tag));
         case "fossil": {
-            // A fossil multiplies the weight of the rows carrying its tags, once
-            // per fossil (the larger of its multipliers when two of its tags
-            // match), the fossils' multipliers adding up (Fossil § Fossil weight
-            // multipliers; QUESTIONS.md Q60); the rows it blocks are gone.
+            // A fossil's "more" multiplies the weight of the rows carrying its
+            // tags, once per fossil (the larger when two of its tags match), the
+            // fossils' "more" multipliers adding up (Fossil § Fossil weight
+            // multipliers; QUESTIONS.md Q60). A "fewer" multiplies what that
+            // leaves, as craftofexile reads it: a sample of a thousand
+            // Sanctified and Pristine reforges from 2020, when the Pristine
+            // Fossil had life at ten times and flat life regeneration at a
+            // tenth, shows the regeneration at its plain rate, ten times a
+            // tenth, where adding the two would give ten times. The rows a
+            // fossil blocks are gone.
+            const sanctified = spec.fossils.some((f) => f.name === SANCTIFIED);
             const multiplier = (m: Mod): number => {
-                let sum = 0;
+                let more = 0;
+                let fewer = 1;
                 for (const f of spec.fossils) {
                     let best = 0;
-                    for (const [tag, w] of f.weights)
-                        if (m.implicitTags.has(tag)) best = Math.max(best, w);
-                    sum += best / 100;
+                    for (const [tag, w] of f.weights) {
+                        if (!m.implicitTags.has(tag)) continue;
+                        if (w >= 100) best = Math.max(best, w);
+                        else fewer *= w / 100;
+                    }
+                    more += best / 100;
                 }
-                return sum > 0 ? sum : 1;
+                // Sanctified Fossil § Further analysis: a hundredth more for each
+                // level a row requires above forty, a hundredth less below.
+                const level = sanctified ? 1 + (m.minLevel - 40) / 100 : 1;
+                return (more > 0 ? more : 1) * fewer * level;
             };
             const untagged = (m: Mod): boolean => spec.noTagless && m.implicitTags.size === 0;
             const blocked = (m: Mod): boolean =>
@@ -590,6 +626,7 @@ export function rollOf(
     registry: Registry,
     reading: Reading = "estimate",
 ): Roll {
+    if (unmodelled(ops) !== undefined) return NO_ROLL;
     let main: FillPlan | undefined;
     const forced: FillPlan[] = [];
     const stranded = ops.some((op) => op.kind === "strands");

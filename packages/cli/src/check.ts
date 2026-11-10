@@ -169,6 +169,10 @@ function stepFigure(s: StepCost, prices: Prices | undefined): string {
             parts.push(`${runs}: ${priceText(s.expected)}`);
             const chaos = prices === undefined ? undefined : inChaos(s.expected, prices);
             if (chaos !== undefined) parts.push(`(${figure(chaos)} chaos)`);
+            else if (prices !== undefined) {
+                const lacking = s.expected.filter((p) => inChaos([p], prices) === undefined);
+                parts.push(`(no price for ${lacking.map((p) => p.item).join(", ")})`);
+            }
         } else if (s.expected !== undefined) {
             parts.push(`${runs}: free`);
         } else if (s.runs !== 1 || s.runsRange !== undefined) {

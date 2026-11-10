@@ -23,7 +23,7 @@ import { chance } from "./chance.js";
 import { advance, chain, type ChainState, type ChainStep } from "./chain.js";
 import { guaranteedTypes, isExcluded, rarityOf, sideCap, suffixRange } from "../check/astate.js";
 import { addPrices, inChaos, type Price, type Prices, unitCost } from "./prices.js";
-import { type Reading, type Roll, rollOf, withPresent } from "./roll.js";
+import { type Reading, type Roll, rollOf, unmodelled, withPresent } from "./roll.js";
 import {
     ASSUMED_ODDS,
     type Carried,
@@ -616,16 +616,17 @@ class Walker {
         // A state the step could not carry is not where the step left it, so
         // the steps after read the checker's item instead.
         const moved = missed ? undefined : carried;
+        const built = method.build(literals, entry.before, this.registry);
+        const cause = "refused" in built ? undefined : unmodelled(built);
         const notes = [
             ...(unit === undefined ? [`${words}: no price is known for this step`] : []),
-            ...(missed ? [MISSED] : []),
+            ...(cause !== undefined ? [cause] : missed ? [MISSED] : []),
             ...(!missed && ASSUMED_ODDS[words] !== undefined ? [ASSUMED_ODDS[words]] : []),
         ];
         this.record(stmt, massOf(branches), frame, {
             ...(unit !== undefined ? { unit } : {}),
             ...(notes.length > 0 && { note: notes.join("; ") }),
         });
-        const built = method.build(literals, entry.before, this.registry);
         if ("refused" in built || entry.after === undefined) return withoutStates(branches);
         const roll = rollOf(entry.before, built, this.registry, this.reading);
         if (roll.kind !== "none") {

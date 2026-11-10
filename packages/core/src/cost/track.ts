@@ -46,6 +46,7 @@ import {
     type Reading,
     type Roll,
     rollOf,
+    unmodelled,
 } from "./roll.js";
 
 /** The states a chain-solved loop's exit leaves the item in, over the
@@ -506,7 +507,7 @@ export class Tracker {
         method: string,
     ): readonly Outcome[] | undefined {
         const item = this.narrow(before, state);
-        if (item === null) return this.counted(undefined);
+        if (item === null || unmodelled(ops) !== undefined) return this.counted(undefined);
         const at = ops.findIndex((op) => op.kind === "either");
         const either = ops[at];
         if (either?.kind !== "either") return this.outcomesOn(item, ops, state, reading);

@@ -39,7 +39,10 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
   base holding four takes three or four at 65:35; a Magic reforge one or two at even odds
   (Q58); a Vaal reforge six. A kept side counts toward the total, the rerolled side
   taking what fits.
-- **Fossils.** Several fossils' "more" multipliers add (Q60).
+- **Fossils.** Several fossils' "more" multipliers add (Q60) and a "fewer" multiplies
+  the result; a Sanctified Fossil scales a row by a hundredth a required level from forty
+  ([Sanctified Fossil § Further analysis](https://www.poewiki.net/wiki/Sanctified_Fossil#Further_analysis)),
+  its lucky values not modelled; a Tangled Fossil's roll is not read.
 - **Harvest.** The tagged row is drawn among the tag's rows by weight (Q63).
 - **Removals** are uniform over the modifiers they can reach, never a fractured one (Q61).
 - **Veiled Exalted Orb.** Its veiled modifier lands on either side with room alike (Q76).
