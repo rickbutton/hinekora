@@ -348,6 +348,20 @@ describe("the cost of a guide", () => {
         expect(r.steps.find((s) => s.kind === "until")!.note).toBeUndefined();
     });
 
+    it("a restore to an imprint whose counts are open keeps the spread of what it may hold", () => {
+        // A Transmutation lays down one modifier or two; the imprint keeps
+        // either, which the walk reads by the reading, so its ends are walked.
+        const c = craft(ring("normal"), [
+            op("transmute"),
+            beast({ kind: "imprint" }),
+            op("restore"),
+            op("regal"),
+            iff(cmp("prefixCount", ">=", 2), [stop()]),
+        ]);
+        const branch = report(c).steps.find((s) => s.kind === "if")!;
+        expect(branch.branchRange).toBeDefined();
+    });
+
     it("a restore inside a loop sets the item back to its imprint each round", () => {
         // A Magic ring holding the life alone, imprinted and regaled; the loop
         // restores it until the Regal Orb lands a suffix. Each round starts

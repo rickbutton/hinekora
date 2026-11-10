@@ -1042,11 +1042,15 @@ class Walker {
             // outcomes are the item restored.
             const back = this.statesOf(entry.after, [{ mass: 1, path: undefined }]);
             if (back === undefined || back.length === 0) return undefined;
-            const total = back.reduce((sum, b) => sum + b.weight, 0);
+            // The imprint's counts, where the checker left them open, are
+            // weighed by the reading, so the walk's ends are walked too.
+            const { total, prefix } = entry.after.counts;
+            if (total[0] !== total[1] || prefix[0] !== prefix[1]) this.lost = true;
+            const mass = back.reduce((sum, b) => sum + b.weight, 0);
             return {
                 id,
                 kind: "reforge",
-                outcomes: back.map((b) => ({ state: b.state, prob: b.weight / total })),
+                outcomes: back.map((b) => ({ state: b.state, prob: b.weight / mass })),
             };
         }
         const next = tracker.transition(entry.before, built, this.reading);
