@@ -50,7 +50,8 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
 - **Fossils.** Several fossils' "more" multipliers add and a "fewer" multiplies the
   result (Q60).
 - **Harvest.** The tagged row is drawn among the tag's rows by weight (Q63).
-- **Removals** are uniform over the modifiers they can reach, never a fractured one (Q61).
+- **Removals** are uniform over the modifiers they can reach, never a fractured one, as
+  is which an Orb of Dominance raises (Q61).
 - **Veiled orbs.** The veiled modifier lands on either side with room alike (Q76); an
   unveil draws its options as a reforge draws modifiers (Q99).
 - **Tainted Exalted Orb.** It adds or removes at even odds, and removes from a full item
@@ -168,8 +169,8 @@ out has no figure, nor have its steps or the guide's total.
 ## 7. The economy
 
 Prices come from a **snapshot committed with the data**,
-`packages/data/data/poe1/economy.json`, for one league on one day, never from live calls, so a figure is reproducible and dated. `fetch-economy.mjs`
-refreshes it from poe.ninja's economy overview endpoints, which its
+`packages/data/data/poe1/economy.json`, for one league on one day, never live, so a figure is reproducible. `fetch-economy.mjs`
+refreshes it from poe.ninja's economy endpoints, which its
 [API reference](https://poe.ninja/docs/api) supports without promising them stable.
 
 What the snapshot cannot price (a bench craft, a Harvest craft's lifeforce, a Bestiary
@@ -179,7 +180,7 @@ recipe's beasts) `cost/prices.ts` carries from the catalog and the wiki's tables
 
 ## 8. Known differences from craftofexile
 
-craftofexile's calculator and simulator are the yardstick, not the truth: where they and
+craftofexile is the yardstick, not the truth: where they and
 hinekora part, the wiki and the game data decide. craftofexile
 differs in that:
 

@@ -17,8 +17,9 @@ waits until a guide calls for it.
 - the **cost layer's** finer points (`cost.md` has what is built): the
   Orb of Unravelling's tier upgrade (its rule is not stated), a loop whose exit rests on a
   value no roll in its body changes. Left unmodelled by choice, their steps read on the
-  checker's item: the Tangled Fossil's random tags, which influenced modifier an Orb of
-  Dominance takes, and a corruption that may replace an eldritch implicit.
+  checker's item: the Tangled Fossil's random tags, an Orb of Dominance
+  on an item that may hold influenced modifiers the guide does not name, and a corruption
+  that may replace an eldritch implicit.
 - **multi-item crafts**, which need a second item named in the guide, a design to be
   worked out first: the Recombinator, whose result pools both items' modifiers (an
   earlier form, and the evidence on how it picks, are in the git history before the

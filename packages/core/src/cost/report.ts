@@ -319,9 +319,11 @@ function withBounds(
 const ESTIMATED =
     "the item drifts between easier and harder states for thousands of rounds; the rounds beyond those followed are estimated";
 
-/** The note on a step where some state of the item could not be followed. */
-const MISSED =
-    "this step can leave the item in more ways than could be followed, so the steps after it are read on every item the check allows at once";
+/** The note on a step where some state of the item could not be followed,
+ *  with the reason where the tracker names one. */
+const missedNote = (
+    why = "this step can leave the item in more ways than could be followed",
+): string => `${why}, so the steps after it are read on every item the check allows at once`;
 
 /** The note on a loop read as independent rounds because a step in it could
  *  not be followed. */
@@ -644,6 +646,7 @@ class Walker {
         // Where each branch's states go: the method read on the item as each
         // state has it.
         const misses = this.tracker?.misses ?? 0;
+        if (this.tracker !== undefined) this.tracker.unfollowed = undefined;
         const carried = this.untilOverflow(() => this.moved(stmt, entry, branches));
         const missed = (this.tracker?.misses ?? 0) > misses;
         // A state the step could not carry is not where the step left it, so
@@ -657,7 +660,11 @@ class Walker {
         const assumed = "refused" in built ? undefined : assumedOdds(words, built);
         const notes = [
             ...(unit === undefined ? [`${words}: no price is known for this step`] : []),
-            ...(cause !== undefined ? [cause] : missed ? [MISSED] : []),
+            ...(cause !== undefined
+                ? [cause]
+                : missed
+                  ? [missedNote(this.tracker?.unfollowed)]
+                  : []),
             ...(!missed && assumed !== undefined ? [assumed] : []),
             ...(end !== undefined ? [`${percentage(end.share)} of the time ${end.note}`] : []),
         ];

@@ -105,7 +105,7 @@ describe("the tracked state", () => {
         expect(tracker.misses).toBe(0);
     });
 
-    it("an Orb of Dominance's random pick among the influenced modifiers is not taken as sure", () => {
+    it("an Orb of Dominance on an elevated modifier and the one it was made of leaves the elevated one", () => {
         const boots = buildRegistry({
             bases: [BOOTS_BASE],
             mods: [
@@ -121,8 +121,6 @@ describe("the tracked state", () => {
                 base: "Iron Greaves",
                 ilvl: 100,
                 rarity: "rare",
-                // Both influenced modifiers on one side, so the counts after
-                // are the same whichever goes.
                 prefixes: [HUNTER_BOOTS_PREFIX.id, ELEVATED_BOOTS_PREFIX.id],
                 suffixes: ["FireResist1"],
                 influences: ["hunter"],
@@ -134,8 +132,17 @@ describe("the tracked state", () => {
         const built = findMethod(["dominance"])!.build([], entry.before, boots);
         if ("refused" in built) throw new Error(built.refused);
         const [start] = tracker.statesIn(entry.before)!;
-        tracker.transition(entry.before, built, "estimate")!(start!.state);
-        expect(tracker.misses).toBe(1);
+        const out = tracker.transition(entry.before, built, "estimate")!(start!.state);
+        // The elevated one is removed and the other elevated, or the other
+        // removed and the elevated one's values rolled again: one state.
+        expect(tracker.misses).toBe(0);
+        expect(out).toHaveLength(1);
+        expect(out[0]!.prob).toBeCloseTo(1, 12);
+        expect(out[0]!.state.prefix).toBe(1);
+        expect(out[0]!.state.rows[tracker.index.get(HUNTER_BOOTS_PREFIX.type)!]).toBeNull();
+        expect(out[0]!.state.rows[tracker.index.get(ELEVATED_BOOTS_PREFIX.type)!]).toBe(
+            ELEVATED_BOOTS_PREFIX.id,
+        );
     });
 });
 

@@ -167,7 +167,9 @@ modifier".
 **Probe:** Rares with a T1 life beside a T1 movement speed, Orbs of Annulment; record which
 modifier went, per try.
 **Assumed:** uniform, for every random removal (Veiled Exalted, Harvest augment, beast
-recipes, Dominance). **Encoded in:** [cost.md §2](cost.md#2-how-the-game-rolls).
+recipes, Dominance), and for which other modifier an Orb of Dominance raises
+([§ Mechanics](https://www.poewiki.net/wiki/Orb_of_Dominance#Mechanics): "randomly").
+**Encoded in:** [cost.md §2](cost.md#2-how-the-game-rolls); `cost/track.ts` `dominated`.
 
 ### Q63 · probe · open — the Harvest tagged reforge's draw
 

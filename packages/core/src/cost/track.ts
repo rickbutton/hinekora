@@ -14,9 +14,11 @@ import {
     dominantOf,
     eldritchKey,
     eldritchOf,
+    influenceOfTag,
     influenceSetsOfSize,
     NO_ELDRITCH,
 } from "../model/marks.js";
+import type { Mod } from "../model/mod.js";
 import type { Range } from "../check/domain.js";
 import { narrowRange } from "../check/values.js";
 import type { Op } from "../check/ops.js";
@@ -32,7 +34,7 @@ import {
     refine,
     type RPred,
 } from "../check/astate.js";
-import { influenceTagsAny, runMethod } from "../check/ops.js";
+import { guaranteedFacts, influenceTagsAny, influenceTagsOf, runMethod } from "../check/ops.js";
 import { lookupWeight } from "../pool/pool.js";
 import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
 import { rollableGen, rollableTiers } from "../resolve/tiers.js";
@@ -167,6 +169,8 @@ const ASSUMED_ODDS: Readonly<Record<string, string>> = {
     "tainted exalt":
         "a Tainted Exalted Orb is taken to add or remove a modifier at even odds, and to remove one from a full item; no source states its odds",
     locus: "the Corruption Altar's reforge is taken to give each of the six influences alike; no source states which it gives",
+    dominance:
+        "an Orb of Dominance is taken to remove each influenced modifier it can reach alike, and to raise each of the others alike; no source states its odds",
 };
 
 /** The note of a step that, as built, rests on odds no source states. */
@@ -339,6 +343,17 @@ export class Tracker {
                 rows = registry.catalog
                     .filter((m) => m.type === type)
                     .map((m) => ({ id: m.id, weight: 1 }));
+            } else {
+                // An elevated row of a type that rolls: an Orb of Dominance
+                // alone makes it, so it is placed, never drawn.
+                for (const m of registry.catalog) {
+                    if (
+                        m.type === type &&
+                        m.source === "elevated" &&
+                        m.domain === first.base.domain
+                    )
+                        rows.push({ id: m.id, weight: 0 });
+                }
             }
             const leaves = this.valueLeaves.get(type);
             const classes: RowClass[] = [];
@@ -388,6 +403,11 @@ export class Tracker {
         // crafted) is followed by name too, so a draw onto the item closes its
         // group for certain rather than on average.
         for (const item of items) for (const t of guaranteedTypes(item)) add(t);
+        // A modifier an Orb of Dominance made of another type stays one the
+        // orb can pick, so it is followed by name.
+        const made = new Set(registry.catalog.map((m) => m.type));
+        for (const m of registry.catalog) if (m.source !== "elevated") made.delete(m.type);
+        for (const item of items) for (const t of item.possible) if (made.has(t)) add(t);
         if (this.implicits) {
             for (const side of ELDRITCH_SIDES) {
                 const type = IMPLICIT_ATOM[side];
@@ -437,17 +457,20 @@ export class Tracker {
         const pinned = item.tiers.get(type);
         const known = item.values.get(type);
         const out: { id: ModId; weight: number }[] = [];
+        // The rows no roll lays down (an elevated row), which count alike
+        // where the item allows no other.
+        const placed: { id: ModId; weight: number }[] = [];
         for (const c of this.classes[i]!) {
             const value = readRow(c.rep).value;
             const part = known === undefined || value === undefined ? 1 : overlap(value, known);
-            const weight =
-                part *
-                c.members
-                    .filter((m) => pinned === undefined || pinned.has(m.id))
-                    .reduce((sum, m) => sum + m.weight, 0);
+            const allowed = c.members.filter((m) => pinned === undefined || pinned.has(m.id));
+            const weight = part * allowed.reduce((sum, m) => sum + m.weight, 0);
             if (weight > 0) out.push({ id: c.rep, weight });
+            if (part * allowed.length > 0)
+                placed.push({ id: c.rep, weight: part * allowed.length });
         }
-        return out.length > 0 ? out : this.atoms[i]!.rows;
+        if (out.length > 0) return out;
+        return placed.length > 0 ? placed : this.atoms[i]!.rows;
     }
 
     /** States over the tracked atoms, as carried states. */
@@ -464,6 +487,8 @@ export class Tracker {
     /** States a method left as they were because the checker's item, narrowed
      *  to them, could not say exactly where the method takes them. */
     misses = 0;
+    /** Why the last such state was left, where the reason can be named. */
+    unfollowed: string | undefined;
     private computed = 0;
 
     private another(): void {
@@ -933,13 +958,13 @@ export class Tracker {
             case "none": {
                 if (ops.some((op) => op.kind === "eldritch" && op.change.kind === "conflict"))
                     return this.counted(this.conflicted(state));
-                // An Orb of Dominance takes one of the influenced modifiers at
-                // random, which the checker reads as a join over which.
-                if (ops.some((op) => op.kind === "remove" && op.selector.kind === "influenced"))
-                    return this.counted(undefined);
                 const ran = runMethod(item, ops, this.registry);
                 // A method this state cannot take leaves it as it was.
                 if (!ran.ok) return [{ state, prob: 1 }];
+                // The checker reads an Orb of Dominance as a join over which
+                // modifier went and which rose; the state says which.
+                if (ops.some((op) => op.kind === "elevate"))
+                    return this.counted(this.dominated(item, state));
                 if (ops.some((op) => op.kind === "fill" && op.pool.kind === "veiledPlaceholder"))
                     return this.counted(this.veiledSides(ran.state, state, reading));
                 return this.counted(this.statesIn(ran.state, reading, state));
@@ -947,6 +972,182 @@ export class Tracker {
             default:
                 return this.counted(undefined);
         }
+    }
+
+    /** The catalog's rows an influence's tag admits, by type. */
+    private influenceRows: Map<TypeId, Mod[]> | undefined;
+
+    private influenceRowsOf(type: TypeId): readonly Mod[] {
+        if (this.influenceRows === undefined) {
+            this.influenceRows = new Map();
+            for (const m of this.registry.catalog) {
+                if (!m.spawn.some((w) => influenceOfTag(w.tag) !== undefined)) continue;
+                const list = this.influenceRows.get(m.type) ?? [];
+                list.push(m);
+                this.influenceRows.set(m.type, list);
+            }
+        }
+        return this.influenceRows.get(type) ?? [];
+    }
+
+    /** The rows a state's row of atom `i` may be on the item, each with its
+     *  share: the rows of its class the item allows, by weight, alike where
+     *  no roll lays any of them down. */
+    private membersOn(i: number, row: ModId, item: AItem): { mod: Mod; share: number }[] {
+        const bare = unlockedRow(row);
+        const members = this.classes[i]!.find((c) => c.rep === bare)?.members ?? [
+            { id: readRow(row).base, weight: 1 },
+        ];
+        const pinned = item.tiers.get(this.types[i]!);
+        const allowed = members.filter((m) => pinned === undefined || pinned.has(m.id));
+        const on = allowed.length > 0 ? allowed : members;
+        const drawn = on.filter((m) => m.weight > 0);
+        const live = drawn.length > 0 ? drawn : on.map((m) => ({ ...m, weight: 1 }));
+        const total = live.reduce((sum, m) => sum + m.weight, 0);
+        return live.flatMap((m) => {
+            const mod = this.registry.resolveMod(m.id);
+            return mod.ok ? [{ mod: mod.value, share: m.weight / total }] : [];
+        });
+    }
+
+    /**
+     * An Orb of Dominance on a state (Orb of Dominance § Mechanics): one of the
+     * influenced modifiers it can reach is removed and another goes a tier up,
+     * a top-tier one becoming its elevated modifier and an elevated one
+     * rolling its values again. A modifier on a side a metamod protects is not
+     * affected, nor is a fractured one. Every pair of removed and raised is
+     * taken as likely as any other (`ASSUMED_ODDS`, QUESTIONS.md Q61). Which
+     * rows are an influence's, and which is the next one up, is read as the
+     * checker reads it (`check/ops.ts`, `upgradedSurvivor`). Undefined, with
+     * the reason, where the state does not say which modifiers are influenced
+     * or no source says what the raised one becomes.
+     */
+    private dominated(item: AItem, state: ChainState): readonly Outcome[] | undefined {
+        const lose = (why: string): undefined => {
+            this.unfollowed = why;
+            return undefined;
+        };
+        const { sure, maybe } = influenceTagsOf(item, this.registry);
+        if (maybe.size > 0)
+            return lose("which influences the item has is not settled at this step");
+        const facts = guaranteedFacts(item, this.registry);
+        const own = new Set([...facts.tags].filter((t) => !sure.has(t)));
+        const isRow = (m: Mod): boolean =>
+            m.domain === item.base.domain && (lookupWeight(m, own) ?? 0) <= 0;
+        const influenced = (type: TypeId): boolean =>
+            this.influenceRowsOf(type).some(
+                (m) => isRow(m) && m.spawn.some((w) => sure.has(w.tag)),
+            );
+        const shut = new Set(
+            this.protections
+                .filter((p) => (state.rows[p.atom] ?? null) !== null)
+                .map((p) => p.side),
+        );
+        const unnamed = { prefix: state.prefix, suffix: state.suffix };
+        const reach: number[] = [];
+        state.rows.forEach((row, i) => {
+            const type = this.types[i]!;
+            if (row === null || implicitSide(type) !== undefined) return;
+            const gen = this.atoms[i]!.gen;
+            unnamed[gen]--;
+            if (influenced(type) && !shut.has(gen) && !readRow(row).locked) reach.push(i);
+        });
+        // The modifiers no one names are a count: which of them are
+        // influenced is known only where none can be.
+        for (const t of item.possible) {
+            if (this.index.has(t) || isExcluded(item, t) || !influenced(t)) continue;
+            const gen = genOfOn(this.registry, item, t);
+            if (unnamed[gen] > 0 && !shut.has(gen))
+                return lose(
+                    "an Orb of Dominance picks among every influenced modifier on the item, and the item may hold some the guide does not name",
+                );
+        }
+        if (reach.length < 2) return undefined;
+
+        const raised = new Map<number, { to: Mod; share: number }[]>();
+        for (const i of reach) {
+            const type = this.types[i]!;
+            const forms: { to: Mod; share: number }[] = [];
+            for (const { mod, share } of this.membersOn(i, state.rows[i]!, item)) {
+                if (mod.source === "elevated") {
+                    forms.push({ to: mod, share });
+                    continue;
+                }
+                const ladder = new Set(
+                    mod.spawn.filter((w) => w.weight > 0 && sure.has(w.tag)).map((w) => w.tag),
+                );
+                const above = this.influenceRowsOf(type)
+                    .filter(
+                        (m) =>
+                            m.source !== "elevated" &&
+                            m.minLevel > mod.minLevel &&
+                            isRow(m) &&
+                            m.spawn.some((w) => ladder.has(w.tag) && w.weight > 0),
+                    )
+                    .sort((a, b) => a.minLevel - b.minLevel);
+                const next = above[0];
+                if (next !== undefined) {
+                    if (next.minLevel > item.ilvl)
+                        return lose(
+                            "whether an Orb of Dominance raises a modifier to a tier above the item's level is not known",
+                        );
+                    if (above[1]?.minLevel === next.minLevel)
+                        return lose(
+                            "which tier an Orb of Dominance raises a modifier to is not settled where two tiers share a level",
+                        );
+                    forms.push({ to: next, share });
+                    continue;
+                }
+                const families = this.registry.familiesOfType(type);
+                const elevated = this.registry.catalog.filter(
+                    (m) =>
+                        m.source === "elevated" &&
+                        [...m.families].some((f) => families.has(f)) &&
+                        m.spawn.some((w) => ladder.has(w.tag)),
+                );
+                const [only] = elevated;
+                if (only === undefined || elevated.length > 1)
+                    return lose(
+                        "the elevated modifier an Orb of Dominance makes of a top-tier modifier here is not known",
+                    );
+                forms.push({ to: only, share });
+            }
+            if (forms.length === 0) return undefined;
+            raised.set(i, forms);
+        }
+
+        const pairs = reach.length * (reach.length - 1);
+        const out = new Map<string, Outcome>();
+        const put = (next: ChainState, prob: number): void => {
+            const key = stateKey(next);
+            out.set(key, { state: next, prob: (out.get(key)?.prob ?? 0) + prob });
+        };
+        for (const gone of reach) {
+            for (const up of reach) {
+                if (up === gone) continue;
+                const rows = [...state.rows];
+                rows[gone] = null;
+                const left = bump(state, this.atoms[gone]!.gen, -1, rows);
+                for (const { to, share } of raised.get(up)!) {
+                    // An elevated modifier of a type of its own takes the place
+                    // of the one it was made of.
+                    const at = to.type === this.types[up] ? up : this.index.get(to.type);
+                    const base = [...rows];
+                    if (at !== up) base[up] = null;
+                    if (at === undefined) {
+                        put({ ...left, rows: base }, share / pairs);
+                        continue;
+                    }
+                    if (at !== up && (base[at] ?? null) !== null) return undefined;
+                    for (const c of this.classesOf(at, to.id)) {
+                        const next = [...base];
+                        next[at] = c.id;
+                        put({ ...left, rows: next }, (share * c.share) / pairs);
+                    }
+                }
+            }
+        }
+        return [...out.values()];
     }
 
     /**
