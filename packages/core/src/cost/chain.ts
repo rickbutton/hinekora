@@ -162,8 +162,10 @@ const SETTLED = 1e-7;
 /** The mass an unsettled tail must carry for the figures to count as estimated. */
 const UNSETTLED_MASS = 0.01;
 const STUCK = 1e-9;
-/** The least chance that counts as a way from one state to another: below it
- *  is what the race's quadrature leaves on outcomes that cannot happen. */
+/** The least chance that shows one state can reach another: below it may be
+ *  what the race's quadrature leaves on outcomes that cannot happen, so it is
+ *  no proof the item leaves, nor, being a chance all the same, that it never
+ *  does. */
 const EDGE = 1e-12;
 /** The states and the ways between them followed to tell which states can
  *  reach the exit, and the states whose rounds are solved for outright. */
@@ -401,7 +403,11 @@ function iterate(
             head = new Map();
         }
     }
-    return { passes, exits, never: massOf(head), undecided: 0, estimated: false };
+    // What is left is under `EPSILON` and still going round: not followed
+    // further, which is not to say it never leaves. As mass that never leaves
+    // it would add up, over the rounds of a loop around this one, to a share
+    // of items stuck inside.
+    return { passes, exits, never: 0, undecided: massOf(head), estimated: false };
 }
 
 /** What one round does to one state: where it may be at the head again, and
@@ -412,7 +418,8 @@ interface Node {
     /** The chance the round does not hand the state back to the head at all. */
     readonly gone: number;
     readonly ends: boolean;
-    /** A loop inside could not say whether the item leaves it. */
+    /** Whether the item leaves from here may not be known: a loop inside
+     *  could not say, or a way on is too faint to count as one. */
     readonly unsure: boolean;
 }
 
@@ -430,7 +437,10 @@ interface Sorted {
  * the exit or a stop; it never does if none can; and where the states were too
  * many to follow to the end, a state that may reach one not followed is left
  * undecided. Rates play no part: a state that leaves once in a million rounds
- * leaves.
+ * leaves. A way on under `EDGE` is not followed and proves nothing, but
+ * "never" is a claim it may belie (a link of 2^-50 is crossed in the end): a
+ * state with one, and no other way to the exit, is undecided. The solve keeps
+ * such ways at their chance: over 10^12 rounds they carry mass.
  */
 function fates(
     body: readonly ChainStep[],
@@ -449,10 +459,15 @@ function fates(
         scratch.work = t.work;
         const point: Dist = new Map([[key(state), { state, prob: 1 }]]);
         const { leaving, next } = oneRound(body, point, exit, input, scratch);
+        const out = massOf(leaving) + scratch.stop;
+        let faint = out > 0 && out <= EDGE;
         const to = new Map<string, number>();
         for (const [k, e] of next) {
-            if (e.prob <= EDGE) continue;
             to.set(k, e.prob);
+            if (e.prob <= EDGE) {
+                faint = true;
+                continue;
+            }
             edges++;
             if (!seen.has(k)) {
                 seen.add(k);
@@ -462,14 +477,15 @@ function fates(
         nodes.set(key(state), {
             state,
             next: to,
-            gone: massOf(leaving) + scratch.stop + scratch.stuck + scratch.undecided,
-            ends: massOf(leaving) + scratch.stop > EDGE,
-            unsure: scratch.undecided > EDGE,
+            gone: out + scratch.stuck + scratch.undecided,
+            ends: out > EDGE,
+            unsure: scratch.undecided > EDGE || faint,
         });
     }
     const into = new Map<string, string[]>();
     for (const [k, n] of nodes) {
-        for (const to of n.next.keys()) {
+        for (const [to, p] of n.next) {
+            if (p <= EDGE) continue;
             const list = into.get(to);
             if (list) list.push(k);
             else into.set(to, [k]);
@@ -545,21 +561,22 @@ function beyond(
         const visits = expectedVisits(system, live);
         const { leaving, next } = oneRound(body, visits, exit, input, t);
         const gone = lost(next);
-        // Every item that set out ends somewhere, a loop inside that could
-        // not say where its own went among them: a solve that lost mass, or
-        // handed some to states not followed, is no answer.
+        // Every item that set out ends somewhere, in a loop inside that
+        // could not say where its own went or on a state that could not be
+        // sorted if nowhere else: a solve that lost mass is no answer.
         const ended =
             massOf(leaving) +
             (t.stop - was.stop) +
             (t.stuck - was.stuck) +
             (t.undecided - was.undecided) +
-            gone.never;
-        if (gone.undecided <= BALANCE * mass && Math.abs(ended - mass) <= BALANCE * mass) {
+            gone.never +
+            gone.undecided;
+        if (Math.abs(ended - mass) <= BALANCE * mass) {
             for (const { state, prob } of leaving.values()) put(exits, state, prob);
             return {
                 passes: massOf(visits),
                 never: never + gone.never,
-                undecided,
+                undecided: undecided + gone.undecided,
                 estimated: false,
                 outright: true,
             };

@@ -886,6 +886,47 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.undecided).toBeLessThanOrEqual(1);
     });
 
+    it("a way on too faint to follow leaves the loop undecided, not stuck", () => {
+        // One round in 2^50 reaches the exit: the loop does end, after more
+        // rounds than are followed, and "never" would be wrong of it.
+        const A = at(1, 0);
+        const out = [
+            { state: at(0, 0), prob: 2 ** -50 },
+            { state: A, prob: 1 - 2 ** -50 },
+        ];
+        const solved = chain({
+            atoms: [],
+            body: [{ id: 0, kind: "transition", next: () => out }],
+            starts: [{ state: A, weight: 1 }],
+            caps: CAPS,
+            exit: (s) => s.prefix === 0,
+        })!;
+        expect(solved.unresolved).toBe(0);
+        expect(solved.undecided).toBeCloseTo(1, 9);
+    });
+
+    it("says the same of such a way out of a loop inside", () => {
+        const solved = ring(1, 1e-2, 1, (_kind, suffix) => [
+            [0, 2 ** -50],
+            [suffix, 1 - 2 ** -50],
+        ]);
+        expect(solved.unresolved).toBe(0);
+        expect(solved.stuckInside).toBe(0);
+        expect(solved.undecided).toBeCloseTo(1, 9);
+    });
+
+    it("the last of the mass, too little to follow further, is not counted as never leaving", () => {
+        // A loop inside too long to solve outright is followed until a
+        // billionth of the items is left in it. Over the outer loop's hundred
+        // thousand rounds that adds up, and none of it is stuck.
+        const solved = ring(1, 1e-5, 401, countdown(0.9));
+        expect(solved.unresolved).toBe(0);
+        expect(solved.stuckInside).toBe(0);
+        expect(solved.undecided).toBeGreaterThan(0);
+        expect(solved.undecided).toBeLessThan(1e-3);
+        expect(solved.passes / 1e5).toBeCloseTo(1, 3);
+    });
+
     it("says when the mass that never leaves is held by a loop inside", () => {
         // Inside: a loop waiting for no prefix while nothing in it removes one.
         const solved = chain({
