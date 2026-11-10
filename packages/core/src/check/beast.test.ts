@@ -363,6 +363,19 @@ describe("beast metamod", () => {
         expect(check(c, ctx).diagnostics[0]!.message).toContain("No metamod fits");
     });
 
+    it("takes a different metamod on each path: whichever side the add left open", () => {
+        // The exalt filled the prefixes or the suffixes; the other side has a
+        // slot either way, and a metamod of that side is free.
+        const c = craft(rareRing(["random", "random"], ["random", "random"]), [
+            op("exalt"),
+            beast({ kind: "metamod" }),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.counts.total).toEqual([6, 6]);
+        expect(r.finalState!.crafted).toEqual([1, 1]);
+    });
+
     it("stays within the crafted limit and needs a metamod that fits", () => {
         const capped = check(
             craft(rareRing([], [PROTECT_PREFIXES_CARRIER.id]), [beast({ kind: "metamod" })]),

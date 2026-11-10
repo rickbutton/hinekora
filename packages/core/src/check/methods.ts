@@ -469,7 +469,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["beast", "metamod"],
         args: [],
-        doc: "beast metamod — craft a random metamod among those that fit under the crafted-modifier limit; one must fit on every path.",
+        doc: "beast metamod — craft a random metamod among those that fit under the crafted-modifier limit; on every path the item needs an open slot that a metamod not yet on it can take.",
         build: () => BEAST_METAMOD,
     },
     {

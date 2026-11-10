@@ -949,14 +949,7 @@ function failing(
                 ? null
                 : { kind: "notImprintable" };
         case "metamodFits":
-            // Some one carrier must fit on every path: its side provably open and
-            // itself not possibly on the item. The fill then draws from the wider
-            // set of carriers that fit on some path.
-            return metamodRows(a, registry).some(
-                (m) => hasOpenSlot(a, m.gen) && !(a.possible.has(m.type) && !isExcluded(a, m.type)),
-            )
-                ? null
-                : { kind: "noMetamodFits" };
+            return metamodFits(a, registry) ? null : { kind: "noMetamodFits" };
         case "baseHasTag":
             return a.base.tags.has(check.tag) ? null : { kind: "wrongBase", needed: check.what };
         case "baseHasAnyTag":
@@ -1591,6 +1584,48 @@ function metamodRows(a: AItem, registry: Registry): Mod[] {
             registry.effectsOfType(m.type).length > 0 &&
             !guaranteed.has(m.type) &&
             mayHaveSlot(a, m.gen),
+    );
+}
+
+/**
+ * Does some metamod fit on every path (Beastcrafting: "Requires an empty affix
+ * slot")? Each pair of side counts the item may have is a path of its own, and
+ * may be served by a different metamod: a full suffix side by the prefix one.
+ * A side with an open slot takes a metamod when one of its carriers is surely
+ * not on the item, or when the side's unnamed modifiers are too few to be
+ * every carrier that may be. The fill then draws from the carriers that fit
+ * on some path.
+ */
+function metamodFits(a: AItem, registry: Registry): boolean {
+    const tight = capsOver(a, Math.min);
+    const guaranteed = guaranteedTypes(a);
+    const carriers = new Map<TypeId, Gen>();
+    for (const m of registry.catalog) {
+        if (m.source === "bench" && registry.effectsOfType(m.type).length > 0) {
+            carriers.set(m.type, m.gen);
+        }
+    }
+    const fitsSide = (gen: Gen, count: number): boolean => {
+        if (count >= tight[gen]) return false;
+        let maybe = 0;
+        for (const [type, side] of carriers) {
+            if (side !== gen || guaranteed.has(type)) continue;
+            if (!a.possible.has(type) || isExcluded(a, type)) return true;
+            maybe++;
+        }
+        let named = 0;
+        for (const t of guaranteed) {
+            const sides = sidesOf(a, registry, t);
+            if (sides.size === 1 && sides.has(gen)) named++;
+        }
+        return count - named < maybe;
+    };
+    const pairs = sidePairs(a);
+    return (
+        pairs.length > 0 &&
+        pairs.every(
+            ([p, s]) => p + s < tight.total && (fitsSide("prefix", p) || fitsSide("suffix", s)),
+        )
     );
 }
 
