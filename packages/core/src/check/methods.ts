@@ -23,7 +23,7 @@ import {
 import type { Mod } from "../model/mod.js";
 import { type FossilSpec, isCorruptedEssence } from "../model/sources.js";
 import { HARVEST_AUGMENT_TAGS, type Registry, STANDARD_CURRENCIES } from "../resolve/registry.js";
-import { rollableTiers, tierLadder } from "../resolve/tiers.js";
+import { rollableTiers, tierLadder, tierLadders } from "../resolve/tiers.js";
 import type { AItem } from "./astate.js";
 import { resolveMessage } from "./diagnostics.js";
 import {
@@ -226,18 +226,13 @@ function harvestChange(
     // another source places and any natural row an essence places on the
     // item's class. The ladders are whole, whatever the item's level: an
     // essence or an earlier change may have left a row above it.
-    const whole = (type: TypeId): readonly Mod[] => tierLadder(catalog, a.base, type, tags);
-    const [wholeFrom, wholeTo] = [whole(from.value), whole(to.value)];
+    const wholeFrom = tierLadder(catalog, a.base, from.value, tags);
+    // An influence's rows are a ladder of their own, numbered apart, and a
+    // modifier is taken to stay within it: the game has not been seen to
+    // change one on an item with two influences (`QUESTIONS.md` Q101).
+    const laddersFrom = tierLadders(catalog, a.base, from.value, tags);
+    const laddersTo = tierLadders(catalog, a.base, to.value, tags);
     const targets = rollableTiers(catalog, a.base, a.ilvl, to.value, tags);
-    // The influence whose tag lets a row roll on the item, none for a row the
-    // base's own tags admit. An influence's rows are a ladder of their own,
-    // and a modifier is taken to stay within it: the game has not been seen
-    // to change one on an item with two influences (`QUESTIONS.md` Q101).
-    const influenceOf = (m: Mod): string => {
-        const tag = m.spawn.find((w) => a.base.tags.has(w.tag) || tags.has(w.tag))?.tag;
-        if (tag === undefined || a.base.tags.has(tag)) return "";
-        return INFLUENCES.find((i) => registry.influenceTags(a.base, i).has(tag)) ?? "";
-    };
     // The rows the essences place on an item of this class. Many are natural
     // rows, some of a modifier the base does not roll (docs/item-model.md §8).
     const essenceRows = new Set(
@@ -304,11 +299,10 @@ function harvestChange(
         // the source's rank on the whole ladder, among the rows of the source's
         // own influence, whatever the item's level. Seen in game: on an item
         // of level 25 the level-24 fire resistance became the level-26 cold.
-        const ladder = (rows: readonly Mod[]): readonly Mod[] =>
-            rows.filter((m) => influenceOf(m) === influenceOf(was));
-        const onBase = wholeFrom.some((m) => m.id === was.id);
+        const own = [...laddersFrom].find(([, ladder]) => ladder.some((m) => m.id === was.id));
+        const onBase = own !== undefined;
         const [ladderFrom, ladderTo] = onBase
-            ? [ladder(wholeFrom), ladder(wholeTo)]
+            ? [own[1], laddersTo.get(own[0]) ?? []]
             : [elsewhere(from.value, was), elsewhere(to.value, was)];
         if (ladderFrom.length === ladderTo.length) {
             const same = ladderTo[ladderFrom.findIndex((m) => m.id === was.id)];

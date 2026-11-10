@@ -58,7 +58,7 @@ import {
     preconditionMessage,
     resolveMessage,
 } from "./diagnostics.js";
-import { rollableGen, tierLadder, tierMod, tierNumber } from "../resolve/tiers.js";
+import { rollableGen, tierCount, tierLadders, tierRows } from "../resolve/tiers.js";
 import { findMethod, type Literal, type Method, slotAt } from "./methods.js";
 import { anonymousRows, influenceTagsAny, influenceTagsOf, runMethod } from "./ops.js";
 import { rollRange } from "./values.js";
@@ -315,6 +315,8 @@ class Checker {
         // Named mods pin an exact tier so the starting item is fully concrete;
         // placeholders (`"random"`) stay anonymous.
         const pinned = new Map<TypeId, ModId>();
+        // A named tier that two rows share, one under each of two influences.
+        const oneOf = new Map<TypeId, Set<ModId>>();
         const fracturedTypes: TypeId[] = [];
         let fracturedAnonymous = 0;
         let crafted = 0;
@@ -421,12 +423,15 @@ class Checker {
             );
             // The number is the game's, counted over the whole ladder; the
             // item's level decides which of its rows the item can have rolled.
-            const ladder = tierLadder(this.registry.catalog, base, type, tags);
-            const reachable = ladder.filter((m) => m.minLevel <= item.ilvl);
+            const ladders = tierLadders(this.registry.catalog, base, type, tags);
+            const count = tierCount(ladders);
+            const reachable: number[] = [];
+            for (let n = 1; n <= count; n++) {
+                if (tierRows(ladders, n).some((m) => m.minLevel <= item.ilvl)) reachable.push(n);
+            }
             if (affix.tier === undefined && reachable.length > 1) {
-                const best = tierNumber(ladder, reachable[0]!.id);
                 this.diag(
-                    `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t${best}\`), a starting item's mods must name a specific tier and ${reachable.length} roll at this item level.`,
+                    `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t${reachable[0]}\`), a starting item's mods must name a specific tier and ${reachable.length} roll at this item level.`,
                     item.span,
                 );
                 claim(affix.mod, type); // still present, just untiered
@@ -434,27 +439,30 @@ class Checker {
             }
             // Unnamed, it is the one tier the item can have rolled, or with none
             // the lowest, which the level check below reports.
-            const tier =
-                affix.tier ??
-                (reachable[0] !== undefined ? tierNumber(ladder, reachable[0].id) : undefined) ??
-                Math.max(1, ladder.length);
-            const mod = tierMod(ladder, tier);
-            if (mod === undefined) {
+            const tier = affix.tier ?? reachable[0] ?? Math.max(1, count);
+            const atTier = tierRows(ladders, tier);
+            if (atTier.length === 0) {
                 this.diag(
-                    `tier ${tier} is out of range for "${affix.mod}" (it has ${ladder.length} ${plural(ladder.length, "tier")} on this base).`,
+                    `tier ${tier} is out of range for "${affix.mod}" (it has ${count} ${plural(count, "tier")} on this base).`,
                     item.span,
                 );
                 claim(affix.mod, type);
                 return type;
             }
-            if (mod.minLevel > item.ilvl) {
+            // Two influences may each have a row at the tier: the item holds
+            // one the level allows, and which is not said.
+            const rolled = atTier.filter((m) => m.minLevel <= item.ilvl);
+            if (rolled.length === 0) {
+                const needs = Math.min(...atTier.map((m) => m.minLevel));
                 this.diag(
-                    `Tier ${tier} "${affix.mod}" needs item level ${mod.minLevel}; this item is level ${item.ilvl}.`,
+                    `Tier ${tier} "${affix.mod}" needs item level ${needs}; this item is level ${item.ilvl}.`,
                     item.span,
                 );
             }
+            const rows = rolled.length > 0 ? rolled : atTier;
             claim(affix.mod, type);
-            pinned.set(type, mod.id);
+            if (rows.length === 1) pinned.set(type, rows[0]!.id);
+            else oneOf.set(type, new Set(rows.map((m) => m.id)));
             return type;
         };
 
@@ -647,7 +655,7 @@ class Checker {
                 else natural.set(m.type, new Set([m.id]));
             }
         }
-        const tiers = new Map(start.tiers);
+        const tiers = new Map<TypeId, ReadonlySet<ModId>>([...start.tiers, ...oneOf]);
         for (const [type, rows] of natural) {
             if (!start.possible.has(type) && !start.craftedTypes.has(type)) tiers.set(type, rows);
         }
@@ -1096,10 +1104,13 @@ class Checker {
 
     /** Note a named tier the item's level stops short of. It is no error: an
      *  essence or a Harvest change places such a row, a currency never rolls it. */
-    private noteLevel(tier: number, name: string, mod: Mod, a: AItem): void {
-        if ((mod.source ?? "natural") === "natural" && mod.minLevel > a.ilvl) {
+    private noteLevel(tier: number, name: string, rows: readonly Mod[], a: AItem): void {
+        const above = (m: Mod): boolean =>
+            (m.source ?? "natural") === "natural" && m.minLevel > a.ilvl;
+        if (rows.length > 0 && rows.every(above)) {
+            const needs = Math.min(...rows.map((m) => m.minLevel));
             this.aboveLevel.push(
-                `Tier ${tier} "${name}" needs item level ${mod.minLevel}; this item is level ${a.ilvl}`,
+                `Tier ${tier} "${name}" needs item level ${needs}; this item is level ${a.ilvl}`,
             );
         }
     }
@@ -1272,17 +1283,18 @@ class Checker {
             if (pred.tier !== undefined) {
                 const tier = this.literalInt(pred.tier, pred.span);
                 if (tier === null) return null;
-                const ladder = tierLadder(this.registry.catalog, a.base, type, tags);
-                const mod = tierMod(ladder, tier);
-                if (mod === undefined || !rows.has(mod.id)) {
+                const ladders = tierLadders(this.registry.catalog, a.base, type, tags);
+                const atTier = tierRows(ladders, tier).filter((m) => rows.has(m.id));
+                if (atTier.length === 0) {
                     this.diag(
                         `tier ${tier} of "${modName}" has no value to compare here`,
                         pred.span,
                     );
                     return null;
                 }
-                this.noteLevel(tier, modName, mod, a);
-                for (const id of [...rows.keys()]) if (id !== mod.id) rows.delete(id);
+                this.noteLevel(tier, modName, atTier, a);
+                const named = new Set(atTier.map((m) => m.id));
+                for (const id of [...rows.keys()]) if (!named.has(id)) rows.delete(id);
                 unnumbered.clear();
             }
             if (rows.size === 0) {
@@ -1308,24 +1320,30 @@ class Checker {
         // The tier is the game's number, counted over the whole ladder: a row
         // above the item's level is one the item may hold, though no currency
         // rolls it, and the state says whether it does.
-        const ladder = tierLadder(this.registry.catalog, a.base, type, tags);
-        const mod = tierMod(ladder, tier);
-        if (mod === undefined) {
+        const ladders = tierLadders(this.registry.catalog, a.base, type, tags);
+        const atTier = tierRows(ladders, tier);
+        if (atTier.length === 0) {
+            const count = tierCount(ladders);
             this.diag(
-                `tier ${tier} is out of range for "${modName}" (it has ${ladder.length} ${plural(ladder.length, "tier")} on this base)`,
+                `tier ${tier} is out of range for "${modName}" (it has ${count} ${plural(count, "tier")} on this base)`,
                 pred.span,
             );
             return null;
         }
-        this.noteLevel(tier, modName, mod, a);
-        const tierSpan = mod.text === undefined ? undefined : rollRange(mod.text);
-        return {
-            kind: "has",
-            type,
-            gen,
-            tierMod: mod.id,
-            ...(tierSpan !== undefined && { tierSpan }),
+        this.noteLevel(tier, modName, atTier, a);
+        // Two influences may each have a row at the tier: the item is at the
+        // tier when it holds either.
+        const at = (mod: Mod): RPred => {
+            const tierSpan = mod.text === undefined ? undefined : rollRange(mod.text);
+            return {
+                kind: "has",
+                type,
+                gen,
+                tierMod: mod.id,
+                ...(tierSpan !== undefined && { tierSpan }),
+            };
         };
+        return atTier.map(at).reduce((left, right) => ({ kind: "or", left, right }));
     }
 
     /** Narrow a value slot to a literal; a leftover ParamRef never got a value. */

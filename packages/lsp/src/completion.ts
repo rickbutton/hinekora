@@ -22,7 +22,9 @@ import {
     rollableTypes,
     slotAt,
     type TagId,
-    tierLadder,
+    tierCount,
+    tierLadders,
+    tierRows,
     traceAt,
     type TypeId,
 } from "@hinekora/core";
@@ -336,15 +338,19 @@ function tierItems(source: string, mod: string, registry: Registry): CompletionI
     if (ctx === undefined) return [];
     const type = registry.resolveModType(mod, ctx);
     if (!type.ok) return [];
-    return tierLadder(registry.catalog, ctx.base, type.value, ctx.tags).map((m, i) => {
-        const roll = (m.text ?? m.id).replace(/\n/g, " / ");
+    const ladders = tierLadders(registry.catalog, ctx.base, type.value, ctx.tags);
+    return Array.from({ length: tierCount(ladders) }, (_, i) => {
+        // Two influences may each have a row at the tier.
+        const rows = tierRows(ladders, i + 1);
+        const rolls = [...new Set(rows.map((m) => (m.text ?? m.id).replace(/\n/g, " / ")))];
+        const needs = Math.min(...rows.map((m) => m.minLevel));
         const reach =
-            m.minLevel > ctx.ilvl
-                ? ` — needs item level ${m.minLevel}; no currency rolls it on this item`
+            needs > ctx.ilvl
+                ? ` — needs item level ${needs}; no currency rolls it on this item`
                 : "";
         return {
             label: `t${i + 1}`,
-            detail: `${roll}${reach}`,
+            detail: `${rolls.join(" or ")}${reach}`,
             kind: CompletionItemKind.Value,
             sortText: String(i + 1).padStart(3, "0"),
         };

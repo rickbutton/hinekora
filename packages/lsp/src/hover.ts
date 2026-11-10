@@ -31,7 +31,9 @@ import {
     type StepCost,
     type Stmt,
     suffixRange,
-    tierLadder,
+    tierCount,
+    tierLadders,
+    tierRows,
     traceAt,
     type TraceEntry,
     type TypeId,
@@ -377,18 +379,23 @@ function modSignature(
         return `${header}\n\n_tiers depend on the item — hover inside a craft to list them._`;
     }
     const baseName = ctx.base.name ?? ctx.base.id;
-    const tiers = tierLadder(registry.catalog, ctx.base, type, ctx.tags);
-    if (tiers.length === 0) {
+    // Two influences may each have a row at a tier, so a number can name two.
+    const ladders = tierLadders(registry.catalog, ctx.base, type, ctx.tags);
+    const count = tierCount(ladders);
+    if (count === 0) {
         return `${header}\n\n_cannot roll on ${baseName}._`;
     }
+    const tiers = Array.from({ length: count }, (_, i) =>
+        tierRows(ladders, i + 1).map((m) => ({ n: i + 1, m })),
+    ).flat();
     const above = (m: { minLevel: number }): boolean => m.minLevel > ctx.ilvl;
 
-    const sources = new Set(tiers.map((m) => m.source ?? "natural"));
+    const sources = new Set(tiers.map(({ m }) => m.source ?? "natural"));
     const srcNote =
         sources.size === 1 && sources.has("natural") ? "" : ` · ${[...sources].join("/")}`;
 
-    const rows = tiers.slice(0, MAX_TIERS).map((m, i) => {
-        const tlabel = i + 1 === tier ? `**T${i + 1}**` : `T${i + 1}`;
+    const rows = tiers.slice(0, MAX_TIERS).map(({ n, m }) => {
+        const tlabel = n === tier ? `**T${n}**` : `T${n}`;
         const level = above(m) ? `${m.minLevel} (above this item's level)` : `${m.minLevel}`;
         return `| ${tlabel} | \`${m.id}\` | ${m.name || "—"} | ${rollText(m)} | ${level} |`;
     });
@@ -398,26 +405,28 @@ function modSignature(
 
     // Spotlight the specific tier a `tier N` predicate resolved with.
     if (tier !== undefined) {
-        const picked = tier >= 1 ? tiers[tier - 1] : undefined;
-        const reach =
-            picked !== undefined && above(picked)
+        const picked = tierRows(ladders, tier);
+        if (picked.length === 0) {
+            blocks.push(`**tier ${tier}** → no such tier (only ${count}).`);
+        }
+        for (const m of picked) {
+            const reach = above(m)
                 ? `; this item is level ${ctx.ilvl}, so no currency rolls it here`
                 : "";
-        blocks.push(
-            picked
-                ? `**tier ${tier}** → \`${picked.id}\`${picked.name ? ` "${picked.name}"` : ""} — ${rollText(picked)} (ilvl ${picked.minLevel})${reach}`
-                : `**tier ${tier}** → no such tier (only ${tiers.length}).`,
-        );
+            blocks.push(
+                `**tier ${tier}** → \`${m.id}\`${m.name ? ` "${m.name}"` : ""} — ${rollText(m)} (ilvl ${m.minLevel})${reach}`,
+            );
+        }
     }
 
-    const best = tiers.findIndex((m) => !above(m)) + 1;
+    const best = tiers.find(({ m }) => !above(m))?.n ?? 0;
     const rolls =
         best === 1
             ? ` @ ilvl ${ctx.ilvl}`
             : best === 0
               ? `; item level ${ctx.ilvl} rolls none of them`
               : `; item level ${ctx.ilvl} rolls T${best} and below`;
-    blocks.push(`${tiers.length} ${plural(tiers.length, "tier")} on ${baseName}${rolls}:`);
+    blocks.push(`${count} ${plural(count, "tier")} on ${baseName}${rolls}:`);
     blocks.push(
         `| tier | id | name | roll | ilvl |\n|---|---|---|---|---|\n${rows.join("\n")}${more}`,
     );

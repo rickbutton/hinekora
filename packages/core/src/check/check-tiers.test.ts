@@ -4,8 +4,17 @@ import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { rollableTiers, tierLadder } from "../resolve/tiers.js";
 import { andp, craft, has, iff, item, notp, op, orp, until } from "../__fixtures__/ast.js";
-import { FIRE_RES_TIERED, MAXLIFE_T1, RING_BASE, TIERED_CATALOG } from "../__fixtures__/mods.js";
-import type { TypeId } from "../model/ids.js";
+import {
+    BOOTS_BASE,
+    CATALOG,
+    FIRE_RES_TIERED,
+    FIRE_RESIST,
+    MAXLIFE_T1,
+    RING_BASE,
+    TIERED_CATALOG,
+} from "../__fixtures__/mods.js";
+import { GroupId, ModId, TagId, TypeId } from "../model/ids.js";
+import type { Mod } from "../model/mod.js";
 
 const registry = buildRegistry({ bases: [RING_BASE], mods: TIERED_CATALOG });
 const ctx: CheckContext = { registry };
@@ -140,6 +149,89 @@ describe("tier numbers, whatever the item's level", () => {
         expect(messages).toHaveLength(1);
         expect(messages[0]).toContain("always holds here");
         expect(messages[0]).not.toContain("item level");
+    });
+});
+
+describe("tier numbers on an item with two influences", () => {
+    // Each influence's rows are numbered apart, so a tier names a row of each.
+    const WARD = TypeId("Ward");
+    const row = (tag: "shaper" | "eyrie", minLevel: number, roll: string): Mod => ({
+        ...FIRE_RESIST,
+        id: ModId(`Ward_${tag}_${minLevel}`),
+        type: WARD,
+        families: new Set([GroupId("Ward")]),
+        minLevel,
+        spawn: [
+            { tag: TagId(`boots_${tag}`), weight: 500 },
+            { tag: TagId("default"), weight: 0 },
+        ],
+        text: `+${roll} to Ward against Ailing Enemies`,
+    });
+    const two = buildRegistry({
+        bases: [BOOTS_BASE],
+        mods: [
+            ...CATALOG,
+            row("shaper", 80, "(41-50)"),
+            row("shaper", 68, "(31-40)"),
+            row("eyrie", 84, "(46-55)"),
+            row("eyrie", 75, "(36-45)"),
+            row("eyrie", 60, "(26-35)"),
+        ],
+    });
+    const boots = (ilvl: number, suffixes: readonly (string | { mod: string; tier?: number })[]) =>
+        item({
+            base: "Iron Greaves",
+            ilvl,
+            rarity: "rare",
+            influences: ["shaper", "redeemer"],
+            suffixes,
+        });
+    const run = (c: ReturnType<typeof craft>) => check(c, { registry: two });
+    const WARD_NAME = "ward against ailing enemies";
+
+    it("reads a declared tier as either influence's row of that number", () => {
+        const r = run(craft(boots(100, [{ mod: WARD_NAME, tier: 2 }]), []));
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(WARD)).toEqual(new Set(["Ward_shaper_68", "Ward_eyrie_75"]));
+        // The third tier is the Redeemer's alone.
+        const third = run(craft(boots(100, [{ mod: WARD_NAME, tier: 3 }]), []));
+        expect(third.finalState!.tiers.get(WARD)).toEqual(new Set(["Ward_eyrie_60"]));
+        const fourth = run(craft(boots(100, [{ mod: WARD_NAME, tier: 4 }]), []));
+        expect(fourth.diagnostics[0]!.message).toContain("it has 3 tiers on this base");
+    });
+
+    it("holds a declared tier to the rows the item's level rolls", () => {
+        // At level 82 the Shaper's first tier rolls and the Redeemer's does not.
+        const r = run(craft(boots(82, [{ mod: WARD_NAME, tier: 1 }]), []));
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(WARD)).toEqual(new Set(["Ward_shaper_80"]));
+        const low = run(craft(boots(70, [{ mod: WARD_NAME, tier: 1 }]), []));
+        expect(low.diagnostics.map((d) => d.message)).toEqual([
+            `Tier 1 "${WARD_NAME}" needs item level 80; this item is level 70.`,
+        ]);
+    });
+
+    it("finds a row at its own influence's number in a condition", () => {
+        // The Redeemer's level-75 row is its second tier, not the fourth of five.
+        const held = (tier: number) =>
+            run(
+                craft(boots(100, ["Ward_eyrie_75"]), [
+                    iff(has(WARD_NAME, tier), [op("annul")], [op("exalt")]),
+                ]),
+            ).diagnostics.map((d) => d.message);
+        expect(held(2)).toHaveLength(1);
+        expect(held(2)[0]).toContain("always holds here");
+        expect(held(1)[0]).toContain("can never run");
+        expect(held(4)[0]).toContain("out of range");
+        // A reroll may leave either influence's first tier.
+        const rolled = run(
+            craft(boots(100, []), [
+                until(has(WARD_NAME, 1), [op("chaos")]),
+                iff(has(WARD_NAME, 1), [], [op("annul")]),
+            ]),
+        );
+        expect(rolled.diagnostics.map((d) => d.message)).toHaveLength(1);
+        expect(rolled.diagnostics[0]!.message).toContain("always holds here");
     });
 });
 

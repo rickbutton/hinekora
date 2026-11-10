@@ -34,6 +34,25 @@ describe("hover", () => {
         expect(md).toContain("(ilvl 86); this item is level 84, so no currency rolls it here");
     });
 
+    it("numbers each influence's rows apart on an item with two influences", () => {
+        // An Elder and a Hunter body armour each roll two tiers of increased
+        // maximum life, of the same levels.
+        const src = `item { base: "Vaal Regalia" ilvl: 86 rarity: rare influences: elder hunter }\nif has "MaximumLifeUber2" t1 { stop }`;
+        const md = getHover(src, src.indexOf("MaximumLifeUber2") + 1, registry)!;
+        expect(md).toContain("2 tiers on Vaal Regalia @ ilvl 86:");
+        expect(md).toMatch(/\| \*\*T1\*\* \| `MaximumLifeUber2` \|/);
+        expect(md).toMatch(/\| \*\*T1\*\* \| `MaximumLifeBodyInfluence2_` \|/);
+        expect(md).toMatch(/\| T2 \| `MaximumLifeUber1` \|/);
+        expect(md).toMatch(/\| T2 \| `MaximumLifeBodyInfluence1` \|/);
+        expect(md).not.toContain("T3");
+        const tiers = `item { base: "Vaal Regalia" ilvl: 86 rarity: rare influences: elder hunter }\nuntil has "MaximumLifeUber2" `;
+        const items = getCompletions(tiers, tiers.length, registry);
+        expect(items.map((c) => [c.label, c.detail])).toEqual([
+            ["t1", "(9-12)% increased maximum Life"],
+            ["t2", "(5-8)% increased maximum Life"],
+        ]);
+    });
+
     it("hovers a fossil line with what each fossil does", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }\nfossil "pristine" "hollow"`;
         const md = getHover(src, src.indexOf("pristine") + 1, registry);

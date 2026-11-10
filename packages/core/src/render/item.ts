@@ -41,7 +41,7 @@ import {
 import type { Mod } from "../model/mod.js";
 import { isUnveiledResult } from "../model/veiled.js";
 import type { Registry } from "../resolve/registry.js";
-import { rollableGen, rollableTiers, tierLadder, tierNumber } from "../resolve/tiers.js";
+import { rollableGen, rollableTiers, tierLadders, tierNumber } from "../resolve/tiers.js";
 import { baseLabel } from "./render.js";
 import { capitalise, pluralRange, rangeText, rarityText } from "../words.js";
 
@@ -217,8 +217,8 @@ function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: Mod
     const known = a.values.get(type);
     const span = texts.length > 0 ? rollSpan(texts) : registry.typeLabel(type);
     const text = known === undefined ? span : withValue(span, known);
-    const ladder = tierLadder(registry.catalog, a.base, type, tags);
-    const numbers = mods.map((m) => tierNumber(ladder, m.id)).filter((n) => n !== undefined);
+    const ladders = tierLadders(registry.catalog, a.base, type, tags);
+    const numbers = mods.map((m) => tierNumber(ladders, m.id)).filter((n) => n !== undefined);
     const tagSet = new Set<string>();
     for (const m of mods) for (const t of m.implicitTags) tagSet.add(tagLabel(t));
     const one = mods.length === 1 ? mods[0]! : undefined;

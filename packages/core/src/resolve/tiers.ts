@@ -1,7 +1,7 @@
 /**
  * Tier resolution. A tier number is the game's: a row's place, best first,
  * among the rows of its ModType that roll on the base, whatever the item's
- * level (`tierLadder`, `tierNumber`); the advanced tooltip shows the same
+ * level (`tierLadders`, `tierNumber`); the advanced tooltip shows the same
  * number on an item whose level stops short of Tier 1. The item's level
  * decides only which of those rows a currency can roll (`rollableTiers`). Both
  * are derived from `pool`, ranked by `minLevel` descending. An influenced
@@ -11,6 +11,7 @@
 import type { Base } from "../model/base.js";
 import type { Gen, ModId, TagId, TypeId } from "../model/ids.js";
 import { emptyItem } from "../model/item.js";
+import { type Influence, influenceOfTag, INFLUENCES } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import { type ModCatalog, pool } from "../pool/pool.js";
 
@@ -20,11 +21,32 @@ const TOP_ITEM_LEVEL = 100;
 const NO_TAGS: ReadonlySet<TagId> = new Set();
 const NO_ROWS: readonly Mod[] = [];
 
+/** Whose rows a ladder is: the base's own, or those one influence adds. */
+export type LadderOwner = Influence | "base";
+
+/** The ladders of one ModType on an item, the base's own first, then each
+ *  influence's in the order of `INFLUENCES`; each best (T1) first. */
+export type TierLadders = ReadonlyMap<LadderOwner, readonly Mod[]>;
+
+const NO_LADDERS: TierLadders = new Map();
+const OWNERS: readonly LadderOwner[] = ["base", ...INFLUENCES];
+
 /** What is derived from one "empty Rare item" pool: the pool, and each type's
  *  rows in it, best first, filled on the first question about a type. */
 interface Ladders {
     readonly pool: ReturnType<typeof pool>;
     tiers?: ReadonlyMap<TypeId, readonly Mod[]>;
+    ladders?: Map<TypeId, TierLadders>;
+}
+
+/**
+ * Best first. Rows of one level are told apart by id, an order the game does
+ * not give: where one ladder holds two such rows (two modifiers sharing a
+ * ModType, each of one tier), which of them a tier number names is arbitrary,
+ * but the same on every run and whatever order the catalog lists them in.
+ */
+function byLevel(a: Mod, b: Mod): number {
+    return b.minLevel - a.minLevel || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 }
 
 /**
@@ -70,7 +92,7 @@ function laddersOf(
 
 /** The rows of `type` a currency can roll on `base` at `ilvl`, best first. A
  *  row's place here is not its tier number, which counts the rows above the
- *  item's level too (`tierLadder`). */
+ *  item's level too and only those of the row's own ladder (`tierLadders`). */
 export function rollableTiers(
     catalog: ModCatalog,
     base: Base,
@@ -88,15 +110,16 @@ export function rollableTiers(
             if (list) list.push(c.mod);
             else rows.set(c.mod.type, [c.mod]);
         }
-        for (const list of rows.values()) list.sort((a, b) => b.minLevel - a.minLevel);
+        for (const list of rows.values()) list.sort(byLevel);
         ladders.tiers = rows;
     }
     return ladders.tiers.get(type) ?? NO_ROWS;
 }
 
-/** The whole ladder of `type` on `base`: every row that rolls on it at some
- *  item level, best (T1) first. A row's id does not give its tier: ids count up
- *  with mod level, T-numbers down from the best, so `IncreasedLife11` can be T1. */
+/** Every row of `type` that rolls on `base` at some item level, best first.
+ *  A row's place here is its tier only where the type has one ladder
+ *  (`tierLadders`). A row's id does not give its tier: ids count up with mod
+ *  level, T-numbers down from the best, so `IncreasedLife11` can be T1. */
 export function tierLadder(
     catalog: ModCatalog,
     base: Base,
@@ -106,10 +129,69 @@ export function tierLadder(
     return rollableTiers(catalog, base, TOP_ITEM_LEVEL, type, tags);
 }
 
-/** The place of a row on a ladder, 1 the best; `undefined` for a row not on it. */
-export function tierNumber(ladder: readonly Mod[], row: ModId): number | undefined {
-    const i = ladder.findIndex((m) => m.id === row);
-    return i < 0 ? undefined : i + 1;
+/**
+ * The ladders of `type` on `base`. A row is ranked among the rows that roll on
+ * the item by the same right as it does: the base's own tags, or the tag of
+ * one influence. So an influence's rows are numbered apart from the base's and
+ * from another influence's, and on an item with two influences a tier number
+ * may name a row of each. This is the reading under which a Harvest change keeps
+ * a modifier within its own influence; how the game numbers a modifier with
+ * rows under two influences, or under an influence and the base, has not been
+ * observed (`QUESTIONS.md` Q101).
+ */
+export function tierLadders(
+    catalog: ModCatalog,
+    base: Base,
+    type: TypeId,
+    tags: ReadonlySet<TagId> = NO_TAGS,
+): TierLadders {
+    const rows = tierLadder(catalog, base, type, tags);
+    if (rows.length === 0) return NO_LADDERS;
+    const cache = (laddersOf(catalog, base, TOP_ITEM_LEVEL, tags).ladders ??= new Map());
+    let ladders = cache.get(type);
+    if (ladders === undefined) {
+        const byOwner = new Map<LadderOwner, Mod[]>();
+        for (const m of rows) {
+            // The first entry the item matches is the one that gives the row
+            // its weight (`lookupWeight`).
+            const tag = m.spawn.find((w) => base.tags.has(w.tag) || tags.has(w.tag))?.tag;
+            const owner =
+                tag === undefined || base.tags.has(tag)
+                    ? "base"
+                    : (influenceOfTag(tag)?.influence ?? "base");
+            const ladder = byOwner.get(owner);
+            if (ladder) ladder.push(m);
+            else byOwner.set(owner, [m]);
+        }
+        ladders = new Map(
+            OWNERS.flatMap((o) => {
+                const ladder = byOwner.get(o);
+                return ladder === undefined ? [] : [[o, ladder] as const];
+            }),
+        );
+        cache.set(type, ladders);
+    }
+    return ladders;
+}
+
+/** The tier of a row, 1 the best of its ladder; `undefined` for a row on none. */
+export function tierNumber(ladders: TierLadders, row: ModId): number | undefined {
+    for (const ladder of ladders.values()) {
+        const i = ladder.findIndex((m) => m.id === row);
+        if (i >= 0) return i + 1;
+    }
+    return undefined;
+}
+
+/** The rows at tier `n` (T1 = best), one of each ladder that reaches it. */
+export function tierRows(ladders: TierLadders, n: number): readonly Mod[] {
+    if (n < 1) return NO_ROWS;
+    return [...ladders.values()].flatMap((ladder) => ladder[n - 1] ?? []);
+}
+
+/** How many tiers the modifier has: the length of its longest ladder. */
+export function tierCount(ladders: TierLadders): number {
+    return Math.max(0, ...[...ladders.values()].map((ladder) => ladder.length));
 }
 
 /** Every ModType that can roll on `base` at `ilvl` — the type-level pool. */
@@ -155,9 +237,4 @@ export function rollableGen(
         tierLadder(catalog, base, type, tags)[0]?.gen ??
         firstGen(catalog, type)
     );
-}
-
-/** The row at tier `n` of a ladder (1-based, T1 = best), or `undefined` if out of range. */
-export function tierMod(ladder: readonly Mod[], n: number): Mod | undefined {
-    return n >= 1 ? ladder[n - 1] : undefined;
 }

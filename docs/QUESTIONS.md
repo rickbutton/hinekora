@@ -330,15 +330,17 @@ own section before `Shaper Item`. Does it come before `Fractured Item` too?
 **Assumed:** `Corrupted`, then the influence, then `Fractured Item`. **Encoded in:**
 `packages/core/src/render/item.ts` `renderItemText`.
 
-### Q101 · probe · open — a Harvest change on an item with two influences
+### Q101 · probe · open — an item with two influences: the Harvest change, and tier numbers
 
 **Q:** [Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting)
-says the change keeps the tier. Where a modifier's type has rows under each of the item's
-two influences, does an influenced modifier become the other element's row of its own
-influence, or may it become the other influence's?
-**Probe:** an item with two influences and an influenced fire, cold or lightning modifier
-(a Shaper and Redeemer wand with the Redeemer's "physical damage as extra cold"); use the
-grove's change on it; record the new modifier's name and values, or that the craft is
-refused.
-**Assumed:** it stays within its own influence's rows, and is refused where that influence
-has no row of the target. **Encoded in:** `check/methods.ts` `harvestChange`.
+says the change keeps the tier. Where a modifier has rows under each of the item's two
+influences, does one become the other element's row of its own influence only? And does
+the advanced tooltip number each influence's rows apart, or all as one ladder?
+**Probe:** a Shaper and Redeemer wand with the Redeemer's "physical damage as extra cold";
+change it; record the new modifier's name and values, or the refusal. An Elder and Hunter
+body armour with "increased maximum Life", and an Elder ring with "Life per Enemy Hit";
+record the tier in each header.
+**Assumed:** it stays within its own influence's rows, refused where that influence has no
+row of the target; a tier counts the rows of the modifier's own influence, or the base's
+own, so a number may name a row of each. **Encoded in:** `check/methods.ts`
+`harvestChange`; `resolve/tiers.ts` `tierLadders`.
