@@ -90,7 +90,7 @@ export class Tracker {
     readonly types: TypeId[] = [];
     readonly index = new Map<TypeId, number>();
     readonly protections: { readonly atom: number; readonly side: Gen }[] = [];
-    private readonly classes: RowClass[][] = [];
+    readonly classes: RowClass[][] = [];
     /** Per atom, each row's classes with the share of the row's weight each holds. */
     private readonly classesOfRow: Map<ModId, { rep: ModId; share: number }[]>[] = [];
     /** The value conditions each type is compared by, which split its rows. */
