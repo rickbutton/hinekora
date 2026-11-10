@@ -253,6 +253,14 @@ describe("a modifier unveiled on the other side from its natural row", () => {
         ).toHaveLength(1);
     });
 
+    it("is not what a branch's added modifier is where the other arm added none", () => {
+        // Only the arm that used the Exalted Orb can hold a suffix, and that
+        // suffix is a natural row; where the arms meet it is still one.
+        const random = item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes: ["random"] });
+        const c = craft(random, [iff(has("IncreasedLife1"), [op("exalt")]), veiled("exalt")]);
+        expect(check(c, { registry: cross }).diagnostics).toEqual([]);
+    });
+
     it("may be the unnamed affix of that side, so a later veiled orb is refused", () => {
         // The suffixes are locked and all named, so the veiled orb's modifier is
         // a prefix and the unveil leaves one of the two cross-side modifiers as a

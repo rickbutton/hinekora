@@ -767,7 +767,9 @@ export const TierDomain = {
  * that pinned it. Without this, "life or mana, one of them" refined into its
  * two arms and joined back forgot both tiers. A branch whose item holds no
  * modifier excludes every type, though its presence names none: the item a
- * repeat starts on, joined with what a round made of it.
+ * repeat starts on, joined with what a round made of it. So does a branch
+ * for a type outside its `possible`: the arm that added no modifier, joined
+ * with the arm that added one.
  */
 function joinKnown<V>(
     a: AItem,
@@ -777,7 +779,8 @@ function joinKnown<V>(
     join: (x: ReadonlyMap<TypeId, V>, y: ReadonlyMap<TypeId, V>) => ReadonlyMap<TypeId, V>,
 ): ReadonlyMap<TypeId, V> {
     const out = new Map(join(oa, ob));
-    const absent = (s: AItem, t: TypeId): boolean => s.counts.total[1] === 0 || isExcluded(s, t);
+    const absent = (s: AItem, t: TypeId): boolean =>
+        s.counts.total[1] === 0 || (!s.possible.has(t) && !isGuaranteed(s, t)) || isExcluded(s, t);
     for (const [t, v] of oa) if (!ob.has(t) && absent(b, t)) out.set(t, v);
     for (const [t, v] of ob) if (!oa.has(t) && absent(a, t)) out.set(t, v);
     return out;
