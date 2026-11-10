@@ -52,7 +52,7 @@
             }
         },
         "harvest_change.json": {
-            "sha256": "8d24abaa043b3a3ff5d4e059a90a22290ac70aec4cd6c822e90d377ad921e8a9",
+            "sha256": "6d2c8e4b044f2222aa7a858dff8e2a16c4f4bccc3c3421426137c0a73f82793f",
             "count": 175,
             "origin": {
                 "table": "HarvestCraftOptions",

@@ -106,8 +106,13 @@ export type RepoeFossils = Readonly<Record<string, RepoeFossil>>;
  *  takes, by what they grant, then the element changed from. Not RePoE's: the
  *  game's `HarvestCraftOptions` table (`scripts/ingest-harvest-change.mjs`). */
 export type RawHarvestChange = Readonly<
-    Record<"resistance" | "damage", Readonly<Record<string, readonly string[]>>>
+    Record<"resistance" | "damage", Readonly<Record<string, readonly RawHarvestPair[]>>>
 >;
+/** A listed type and, per other element, `[counterpart or null, basis]`. */
+export interface RawHarvestPair {
+    readonly from: string;
+    readonly to: Readonly<Record<string, readonly [string | null, string]>>;
+}
 
 /** `cluster_enchants.json`: the enchantment tags a cluster jewel of each size
  *  can have (`scripts/ingest-cluster.mjs`). */

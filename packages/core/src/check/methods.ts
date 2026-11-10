@@ -116,16 +116,6 @@ const text = (l: Literal | undefined): string =>
 const num = (l: Literal | undefined): number | undefined =>
     l === undefined ? undefined : l.kind === "int" || l.kind === "tier" ? l.value : undefined;
 
-const CRITICAL = TagId("critical");
-
-/** The game's list is not the whole filter. The damage change takes no
- *  critical strike multiplier, though the list still names them (Harvest
- *  crafting § Version history, 3.28.0 Hotfix 8). It does take the damage over
- *  time multipliers the list names, fire and cold (seen in game). */
-function listedButRefused(catalog: readonly Mod[], type: TypeId): boolean {
-    return catalog.some((m) => m.type === type && m.implicitTags.has(CRITICAL));
-}
-
 const DEFAULT_TAG = TagId("default");
 
 /** The affix names of the Incursion modifiers: the game names each after the
@@ -211,19 +201,19 @@ function harvestChange(
         source === undefined ||
         target === undefined ||
         source.kind !== target.kind ||
-        source.element === target.element ||
-        (source.kind === "damage" && listedButRefused(catalog, from.value))
+        source.element === target.element
     ) {
         return refuse(
-            `The grove changes a fire, cold or lightning resistance into another of the three, or a fire, cold or lightning damage modifier likewise, and no critical strike multiplier — not "${fromName}" into "${toName}".`,
+            `The grove changes a fire, cold or lightning resistance into another of the three, or a fire, cold or lightning damage modifier likewise — not "${fromName}" into "${toName}".`,
         );
     }
     // The modifier becomes its counterpart of the other element, not any
-    // modifier of that element.
+    // modifier of that element: the data's table pairs them, and leaves out
+    // the pairs the grove refuses.
     const counterpart = registry.harvestChangeTarget(from.value, target.element);
     if (counterpart === undefined) {
         return refuse(
-            `"${fromName}" has no ${target.element} counterpart for the grove to change it into.`,
+            `The grove has no ${target.element} modifier to change "${fromName}" into: it changes no critical strike multiplier, nor a modifier the other element has no form of.`,
         );
     }
     if (counterpart !== to.value) {

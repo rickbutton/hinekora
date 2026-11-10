@@ -35,13 +35,13 @@ import {
     FIRE_RESIST,
     COLD_RES_TIERS,
     FIRE_RES_TIERS,
+    harvestTable,
     PROTECT_SUFFIXES_CARRIER,
     RING_BASE,
     LIGHTNING_RESIST,
 } from "../__fixtures__/mods.js";
 import { BaseId, ClassId, GroupId, ModId, TagId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
-import type { HarvestChangeLists } from "../model/sources.js";
 
 const COLD_DOT_MULTI: Mod = {
     ...FIRE_DOT_MULTI,
@@ -57,20 +57,21 @@ const COLD_CRIT_MULTI: Mod = {
     families: new Set([GroupId("ColdCritMulti")]),
     implicitTags: new Set(["damage", "cold", "critical"].map(TagId)),
 };
-/** The grove's lists in miniature: the critical strike multipliers are named,
- *  as in the game's, and the resistance shared with chaos is not. */
-const HARVEST_CHANGE: HarvestChangeLists = {
-    resistance: {
-        fire: ["FireResist", "FireTiers"].map(TypeId),
-        cold: ["ColdResist", "ColdTiers"].map(TypeId),
-        lightning: ["LightningResist"].map(TypeId),
-    },
-    damage: {
-        fire: ["FireDamage", "FireCritMulti", "FireDotMulti"].map(TypeId),
-        cold: ["ColdDamage", "ColdCritMulti", "ColdDotMulti"].map(TypeId),
-        lightning: [],
-    },
-};
+/** The grove's table in miniature: the critical strike multipliers are listed
+ *  and refused, as in the game's, and the resistance shared with chaos is not
+ *  listed. */
+const RESISTANCES = [
+    ["FireResist", "ColdResist", "LightningResist"],
+    ["FireTiers", "ColdTiers"],
+];
+const DAMAGES = [
+    ["FireDamage", "ColdDamage"],
+    ["FireCritMulti"],
+    ["", "ColdCritMulti"],
+    ["FireDotMulti", "ColdDotMulti"],
+];
+const HARVEST_CHANGE = harvestTable({ resistance: RESISTANCES, damage: DAMAGES });
+const AILMENTS = harvestTable({ resistance: [["FireAilments", "ColdAilments"]], damage: [] });
 
 const registry = buildRegistry({
     bases: [RING_BASE, AMULET_BASE],
@@ -133,10 +134,10 @@ describe("harvest change", () => {
         };
         const withLightning = buildRegistry({
             bases: [RING_BASE],
-            harvestChange: {
-                resistance: HARVEST_CHANGE.resistance,
-                damage: { ...HARVEST_CHANGE.damage, lightning: [lightning.type] },
-            },
+            harvestChange: harvestTable({
+                resistance: RESISTANCES,
+                damage: [...DAMAGES, ["", "", lightning.type]],
+            }),
             mods: [...CATALOG, FIRE_DOT_MULTI, COLD_DOT_MULTI, lightning],
             baseAliases: { "Iron Ring": "IronRing" },
         });
@@ -146,7 +147,7 @@ describe("harvest change", () => {
             ]),
             { registry: withLightning },
         );
-        expect(none.diagnostics[0]!.message).toContain("has no lightning counterpart");
+        expect(none.diagnostics[0]!.message).toContain("has no lightning modifier to change");
     });
 
     it("costs 500 lifeforce of the new element's colour, a damage change a Crystallised Rancour besides", () => {
@@ -175,10 +176,10 @@ describe("harvest change", () => {
         );
         const none = buildRegistry({
             bases: [RING_BASE],
-            harvestChange: {
-                resistance: HARVEST_CHANGE.resistance,
-                damage: { ...HARVEST_CHANGE.damage, cold: [COLD_DOT_MULTI.type] },
-            },
+            harvestChange: harvestTable({
+                resistance: RESISTANCES,
+                damage: [["FireDamage"], ["", COLD_DOT_MULTI.type]],
+            }),
             mods: [...CATALOG, FIRE_DAMAGE, COLD_DOT_MULTI],
             baseAliases: { "Iron Ring": "IronRing" },
         });
@@ -186,7 +187,7 @@ describe("harvest change", () => {
             craft(rareRing([FIRE_DAMAGE.id]), [harvestChange(FIRE_DAMAGE.id, COLD_DOT_MULTI.id)]),
             { registry: none },
         );
-        expect(lone.diagnostics[0]!.message).toContain("has no cold counterpart");
+        expect(lone.diagnostics[0]!.message).toContain("has no cold modifier to change");
     });
 
     it("turns the named modifier into the other, keeping the count", () => {
@@ -273,14 +274,7 @@ describe("harvest change", () => {
         const rows = [placed("Fire", 50), placed("Cold", 50), placed("Cold", 30)];
         const incursion = buildRegistry({
             bases: [RING_BASE],
-            harvestChange: {
-                resistance: {
-                    fire: [TypeId("FireAilments")],
-                    cold: [TypeId("ColdAilments")],
-                    lightning: [],
-                },
-                damage: { fire: [], cold: [], lightning: [] },
-            },
+            harvestChange: AILMENTS,
             mods: [...CATALOG, ...rows],
             baseAliases: { "Iron Ring": "IronRing" },
         });
@@ -627,14 +621,13 @@ describe("a Harvest change into a modifier of the changed one's group", () => {
         );
     const grouped = buildRegistry({
         bases: [base("Pagan Wand", "Wand", "wand"), base("Spirit Shield", "Shield", "shield")],
-        harvestChange: {
-            resistance: HARVEST_CHANGE.resistance,
-            damage: {
-                fire: ["FireSpells", "FireIncreased"].map(TypeId),
-                cold: ["ColdSpells", "ColdIncreased"].map(TypeId),
-                lightning: ["LightningSpells"].map(TypeId),
-            },
-        },
+        harvestChange: harvestTable({
+            resistance: RESISTANCES,
+            damage: [
+                ["FireSpells", "ColdSpells", "LightningSpells"],
+                ["FireIncreased", "ColdIncreased"],
+            ],
+        }),
         mods: [
             ...CATALOG,
             ...["Fire", "Cold", "Lightning"].map(spells),
@@ -677,14 +670,7 @@ describe("a Harvest change into a modifier of the changed one's group", () => {
 });
 
 describe("a Harvest change on an item with two influences", () => {
-    const lists: HarvestChangeLists = {
-        resistance: {
-            fire: [TypeId("FireAilments")],
-            cold: [TypeId("ColdAilments")],
-            lightning: [],
-        },
-        damage: { fire: [], cold: [], lightning: [] },
-    };
+    const lists = AILMENTS;
     /** A row that rolls on boots of one influence alone. */
     const row = (element: "Fire" | "Cold", tag: "shaper" | "eyrie", minLevel: number): Mod => ({
         ...FIRE_RESIST,
@@ -801,18 +787,10 @@ describe("a Harvest change of a natural row an essence placed", () => {
     });
     const essenced = buildRegistry({
         bases: [BOOTS_BASE, AXE_BASE],
-        harvestChange: {
-            resistance: {
-                fire: [TypeId("FireBoots")],
-                cold: [TypeId("ColdBoots")],
-                lightning: [],
-            },
-            damage: {
-                fire: [TypeId("FireSpells")],
-                cold: [TypeId("ColdSpells")],
-                lightning: [TypeId("LightningSpells")],
-            },
-        },
+        harvestChange: harvestTable({
+            resistance: [["FireBoots", "ColdBoots"]],
+            damage: [["FireSpells", "ColdSpells", "LightningSpells"]],
+        }),
         mods: [...CATALOG, ...mods],
         essences: [
             grant("Weeping Essence of Hatred", 3, BOOTS, "ColdBoots3"),
@@ -873,14 +851,7 @@ describe("a Harvest change of a natural row an essence placed", () => {
 });
 
 describe("a Harvest change of a modifier another source placed", () => {
-    const lists: HarvestChangeLists = {
-        resistance: {
-            fire: [TypeId("FireAilments")],
-            cold: [TypeId("ColdAilments")],
-            lightning: [],
-        },
-        damage: { fire: [], cold: [], lightning: [] },
-    };
+    const lists = AILMENTS;
     const unweighted = (...tags: string[]) =>
         [...tags, "default"].map((tag) => ({ tag: TagId(tag), weight: 0 }));
     /** A row of the fire or the cold type that rolls nowhere, at level 50. */

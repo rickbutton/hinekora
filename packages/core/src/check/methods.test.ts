@@ -37,6 +37,7 @@ import {
     COLD_RESIST,
     FIRE_RESIST,
     FOSSILS,
+    harvestTable,
     LIFE_T1,
     RING_BASE,
 } from "../__fixtures__/mods.js";
@@ -57,10 +58,10 @@ const registry = buildRegistry({
     benchCrafts: [{ mod: BENCH_LIFE_ROW.id, tier: 1, itemClasses: new Set([CLASS_RING]) }],
     fossils: FOSSILS,
     aspects: { cat: ASPECT_CAT.id },
-    harvestChange: {
-        resistance: { fire: [FIRE_RESIST.type], cold: [COLD_RESIST.type] },
-        damage: {},
-    },
+    harvestChange: harvestTable({
+        resistance: [[FIRE_RESIST.type, COLD_RESIST.type]],
+        damage: [],
+    }),
 });
 
 /** Every method but an unveil settles corruption first: refused on a corrupted

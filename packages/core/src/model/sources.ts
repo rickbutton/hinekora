@@ -91,13 +91,24 @@ export const ELEMENTS = ["fire", "cold", "lightning"] as const;
 export type Element = (typeof ELEMENTS)[number];
 export type HarvestChangeKind = "resistance" | "damage";
 
+/** A modifier type the grove's change craft takes and, for each other element,
+ *  the type it becomes: `null` where the grove refuses the change. `basis`
+ *  says what the pairing rests on. */
+export interface HarvestChangePair {
+    readonly from: TypeId;
+    readonly to: Readonly<
+        Partial<Record<Element, { readonly type: TypeId | null; readonly basis: string }>>
+    >;
+}
+
 /**
- * The modifier types the grove's "Change a modifier that grants …" crafts
- * take, by what they grant and the element changed from: the game's own lists
- * (`HarvestCraftOptions`, the `convert_mod` rows).
+ * The grove's "Change a modifier that grants …" crafts as a pairing table, by
+ * what the modifier grants and the element changed from. The types are the
+ * game's own lists (`HarvestCraftOptions`, the `convert_mod` rows); the game
+ * does not publish what each becomes, so the data's ingest pairs them.
  */
-export type HarvestChangeLists = Readonly<
-    Record<HarvestChangeKind, Readonly<Partial<Record<Element, readonly TypeId[]>>>>
+export type HarvestChangeTable = Readonly<
+    Record<HarvestChangeKind, Readonly<Partial<Record<Element, readonly HarvestChangePair[]>>>>
 >;
 
 /**

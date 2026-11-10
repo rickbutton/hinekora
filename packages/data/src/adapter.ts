@@ -13,7 +13,7 @@ import {
     ELEMENTS,
     type EssenceSpec,
     type FossilSpec,
-    type HarvestChangeLists,
+    type HarvestChangeTable,
     type Gen,
     GroupId,
     type Mod,
@@ -131,12 +131,23 @@ export function adaptFossil(id: string, f: RepoeFossil): FossilSpec {
     };
 }
 
-export function adaptHarvestChange(raw: RawHarvestChange): HarvestChangeLists {
-    const types = (kind: "resistance" | "damage"): HarvestChangeLists["resistance"] =>
+export function adaptHarvestChange(raw: RawHarvestChange): HarvestChangeTable {
+    const pairs = (kind: "resistance" | "damage"): HarvestChangeTable["resistance"] =>
         Object.fromEntries(
-            ELEMENTS.map((element) => [element, (raw[kind][element] ?? []).map((t) => TypeId(t))]),
+            ELEMENTS.map((element) => [
+                element,
+                (raw[kind][element] ?? []).map((row) => ({
+                    from: TypeId(row.from),
+                    to: Object.fromEntries(
+                        Object.entries(row.to).map(([target, [type, basis]]) => [
+                            target,
+                            { type: type === null ? null : TypeId(type), basis },
+                        ]),
+                    ),
+                })),
+            ]),
         );
-    return { resistance: types("resistance"), damage: types("damage") };
+    return { resistance: pairs("resistance"), damage: pairs("damage") };
 }
 
 export function adaptBench(b: RepoeBench): BenchCraft {

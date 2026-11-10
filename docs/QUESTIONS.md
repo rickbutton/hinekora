@@ -217,14 +217,16 @@ strands at four modifiers and 38 at five where it gives 32 and 34. **Encoded in:
 `check/library.ts` `FOULBORN_STRANDS`, `EXALT_STRANDS`; `pool/pool.ts`
 `topTiersUnderStrands`.
 
-### Q74 · probe · open — a listed Harvest damage modifier with no like-named counterpart
+### Q74 · probe · open — listed Harvest damage modifiers with no counterpart
 
-**Q:** what does a modifier on the game's list become when the other element's list has
-none of its name (increased fire damage with a chance to ignite)?
-**Probe:** a Rare with that modifier; the grove's fire-to-cold damage change; record
-offered or not, and the result.
-**Assumed:** refused. **Encoded in:** `resolve/registry.ts` `harvestChangeTarget`;
-`check/methods.ts` `harvestChange`.
+**Q:** the other element's list has no modifier named like these: a jewel's fire damage
+with bows (to cold or lightning), added cold or lightning damage with bows (to fire),
+cold or lightning damage avoidance (to fire). Does the grove refuse them, or pair them
+some other way?
+**Probe:** an item with one of them; the grove's damage change to that element; record
+the message or the result.
+**Assumed:** refused. **Encoded in:** `packages/data/scripts/ingest-harvest-change.mjs`
+`NO_COUNTERPART`.
 
 ### Q76 · probe · open — the side of a veiled orb's veiled modifier
 

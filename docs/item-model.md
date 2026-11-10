@@ -225,6 +225,8 @@ True of the ingested PoE1 data, and pinned by the catalog-level tests of
   modifier named without a tier resolves to its groups from any row.
 - The facts of §2 and §5: a ModType is not one side, essence-only rows never roll, and the
   five metamods are the only effect carriers.
+- What a Harvest change makes of each modifier is a shipped table, generated from the
+  game's lists (`packages/data/data/poe1/harvest_change.json`).
 
 ---
 

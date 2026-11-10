@@ -29,8 +29,50 @@ import {
     TypeId,
 } from "../model/index.js";
 import { effectsOf } from "../model/effects.js";
-import type { EldritchImplicitSpec, FossilSpec } from "../model/sources.js";
+import {
+    type EldritchImplicitSpec,
+    ELEMENTS,
+    type FossilSpec,
+    type HarvestChangeKind,
+    type HarvestChangeTable,
+} from "../model/sources.js";
 import type { EldritchSide } from "../model/marks.js";
+
+/** A Harvest change table from the types that stand for one another, each set
+ *  `[fire, cold, lightning]` with `""` or nothing where an element has none:
+ *  a type becomes the set's type of the other element, and is refused for an
+ *  element the set leaves out. */
+export function harvestTable(
+    sets: Readonly<Record<HarvestChangeKind, readonly (readonly string[])[]>>,
+): HarvestChangeTable {
+    const pairs = (kind: HarvestChangeKind): HarvestChangeTable[HarvestChangeKind] =>
+        Object.fromEntries(
+            ELEMENTS.map((element, i) => [
+                element,
+                sets[kind]
+                    .filter((set) => set[i])
+                    .map((set) => ({
+                        from: TypeId(set[i]!),
+                        to: Object.fromEntries(
+                            ELEMENTS.flatMap((target, j) =>
+                                target === element
+                                    ? []
+                                    : [
+                                          [
+                                              target,
+                                              {
+                                                  type: set[j] ? TypeId(set[j]) : null,
+                                                  basis: "name",
+                                              },
+                                          ],
+                                      ],
+                            ),
+                        ),
+                    })),
+            ]),
+        );
+    return { resistance: pairs("resistance"), damage: pairs("damage") };
+}
 
 // --- Domains --------------------------------------------------------------
 

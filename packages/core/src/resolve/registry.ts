@@ -23,7 +23,8 @@ import {
     type EssenceSpec,
     type FossilSpec,
     type HarvestChangeKind,
-    type HarvestChangeLists,
+    type HarvestChangePair,
+    type HarvestChangeTable,
 } from "../model/sources.js";
 import {
     buildTypeIndex,
@@ -193,11 +194,6 @@ export interface HarvestChange {
     readonly element: Element;
 }
 
-const capital = (element: Element): string => element[0]!.toUpperCase() + element.slice(1);
-/** The game spells one modifier's types "…Resist" for an element and
- *  "…Resistance" for another; the two are read alike. */
-const alike = (type: string): string => type.replaceAll("Resistance", "Resist");
-
 export type Resolved<T> =
     { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: ResolveError };
 
@@ -261,8 +257,8 @@ export interface Registry {
     /** What the grove's change craft reads a modifier type as: a resistance or
      *  a damage modifier of an element, or nothing it takes. */
     harvestChangeOf(type: TypeId): HarvestChange | undefined;
-    /** The type a Harvest change turns `type` into for that element: the one of
-     *  the element's list named alike. Undefined when the list has none. */
+    /** The type a Harvest change turns `type` into for that element, by the
+     *  data's pairing table. Undefined where the grove refuses the change. */
     harvestChangeTarget(type: TypeId, element: Element): TypeId | undefined;
     /** Resolve an Aspect by its animal ("cat") to the row the Bestiary crafts:
      *  the level-30 skill's, or the level-20 one's of the recipe that takes
@@ -403,7 +399,7 @@ export interface RegistryData {
     readonly benchCrafts?: readonly BenchCraft[];
     readonly fossils?: readonly FossilSpec[];
     readonly eldritch?: readonly EldritchImplicitSpec[];
-    readonly harvestChange?: HarvestChangeLists;
+    readonly harvestChange?: HarvestChangeTable;
     /** The enchantment tags a cluster jewel of each size can have. */
     readonly clusterEnchants?: Readonly<Partial<Record<ClusterSize, readonly string[]>>>;
     /** Aspect name → the row the Bestiary crafts; the game's four by default. */
@@ -488,10 +484,12 @@ export function buildRegistry(data: RegistryData): Registry {
     );
 
     const changeOf = new Map<TypeId, HarvestChange>();
+    const changeTo = new Map<TypeId, HarvestChangePair["to"]>();
     for (const kind of ["resistance", "damage"] as const) {
         for (const element of ELEMENTS) {
-            for (const type of data.harvestChange?.[kind][element] ?? []) {
-                changeOf.set(type, { kind, element });
+            for (const pair of data.harvestChange?.[kind][element] ?? []) {
+                changeOf.set(pair.from, { kind, element });
+                changeTo.set(pair.from, pair.to);
             }
         }
     }
@@ -759,10 +757,7 @@ export function buildRegistry(data: RegistryData): Registry {
         },
 
         harvestChangeTarget(type, element) {
-            const from = changeOf.get(type);
-            if (from === undefined) return undefined;
-            const wanted = alike(type.replaceAll(capital(from.element), capital(element)));
-            return data.harvestChange?.[from.kind][element]?.find((t) => alike(t) === wanted);
+            return changeTo.get(type)?.[element]?.type ?? undefined;
         },
 
         resolveAspect(name, level = 30) {

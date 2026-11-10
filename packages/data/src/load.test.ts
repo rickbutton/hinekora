@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
     type Base,
     ClassId,
+    type Element,
+    ELEMENTS,
     emptyItem,
     type Influence,
     INFLUENCE_STEMS,
@@ -575,11 +577,76 @@ describe("the grove's change lists", () => {
 
     it("name modifier types of the catalog only, as many as the manifest counts", () => {
         const types = new Set(data.mods.map((m) => m.type));
-        const listed = Object.values(data.harvestChange).flatMap((byElement) =>
+        const rows = Object.values(data.harvestChange).flatMap((byElement) =>
             Object.values(byElement).flat(),
         );
-        expect(listed.length).toBe(data.manifest.files["harvest_change.json"]!.count);
-        expect(listed.filter((t) => !types.has(t))).toEqual([]);
+        expect(rows.length).toBe(data.manifest.files["harvest_change.json"]!.count);
+        const named = rows.flatMap((r) => [r.from, ...Object.values(r.to).map((to) => to.type)]);
+        expect(named.filter((t) => t !== null && !types.has(t))).toEqual([]);
+    });
+
+    it("pair every listed modifier with each other element, or refuse the pair", () => {
+        for (const kind of ["resistance", "damage"] as const) {
+            for (const element of ELEMENTS) {
+                for (const row of data.harvestChange[kind][element] ?? []) {
+                    const others = ELEMENTS.filter((e) => e !== element);
+                    expect(Object.keys(row.to).sort()).toEqual([...others].sort());
+                }
+            }
+        }
+    });
+
+    it("hold every pair the element's word alone gives", () => {
+        // What a modifier becomes was once read off its name; the table must
+        // not lose a pair that reading gave, the refused multipliers apart.
+        const capital = (e: string) => e[0]!.toUpperCase() + e.slice(1);
+        const alike = (t: string) => t.replaceAll("Resistance", "Resist");
+        let pairs = 0;
+        for (const kind of ["resistance", "damage"] as const) {
+            for (const element of ELEMENTS) {
+                for (const row of data.harvestChange[kind][element] ?? []) {
+                    for (const target of ELEMENTS) {
+                        const wanted = alike(
+                            row.from.replaceAll(capital(element), capital(target)),
+                        );
+                        const byName = (data.harvestChange[kind][target] ?? []).find(
+                            (r) => alike(r.from) === wanted,
+                        )?.from;
+                        if (target === element || byName === undefined) continue;
+                        if (row.from.includes("CritMultiplier")) continue;
+                        expect(registry.harvestChangeTarget(row.from, target)).toBe(byName);
+                        pairs++;
+                    }
+                }
+            }
+        }
+        expect(pairs).toBeGreaterThan(300);
+    });
+
+    it("pair the ailment modifiers and the multipliers as the game does", () => {
+        const becomes = (from: string, element: Element) =>
+            registry.harvestChangeTarget(type(from), element);
+        expect(becomes("FireDamageAndChanceToIgnite", "cold")).toBe(
+            "ColdDamageAndBaseChanceToFreeze",
+        );
+        expect(becomes("ColdDamageAndBaseChanceToFreeze", "lightning")).toBe(
+            "LightningDamageAndChanceToShock",
+        );
+        expect(becomes("ChanceToShockAddedDamage", "fire")).toBe("ChanceToIgniteAddedDamage");
+        expect(becomes("ChanceToIgniteAddedDamage", "cold")).toBe("ChanceToFreezeAddedDamage");
+        // Listed, and refused since 3.28.0.
+        expect(registry.harvestChangeOf(type("FireCritMultiplierForJewel"))?.kind).toBe("damage");
+        expect(becomes("FireCritMultiplierForJewel", "cold")).toBeUndefined();
+        // No modifier of its name on the other element's list.
+        expect(becomes("ColdDamageAvoidance", "fire")).toBeUndefined();
+        expect(becomes("ColdDamageAvoidance", "lightning")).toBe("LightningDamageAvoidance");
+        const seen = data.harvestChange.damage.fire!.find(
+            (r) => r.from === "FireDamageOverTimeMultiplier",
+        )!;
+        expect(seen.to).toEqual({
+            cold: { type: "ColdDamageOverTimeMultiplier", basis: "seen in game" },
+            lightning: { type: null, basis: "seen in game" },
+        });
     });
 
     it("read a modifier as a resistance or a damage of its element, and find its counterpart", () => {

@@ -10,7 +10,7 @@ import {
     type EldritchImplicitSpec,
     type EssenceSpec,
     type FossilSpec,
-    type HarvestChangeLists,
+    type HarvestChangeTable,
     type Mod,
     type Registry,
 } from "@hinekora/core";
@@ -43,7 +43,7 @@ export interface LoadedData {
     readonly benchCrafts: readonly BenchCraft[];
     readonly fossils: readonly FossilSpec[];
     readonly eldritch: readonly EldritchImplicitSpec[];
-    readonly harvestChange: HarvestChangeLists;
+    readonly harvestChange: HarvestChangeTable;
     readonly clusterEnchants: RawClusterEnchants;
     readonly manifest: DataManifest;
 }

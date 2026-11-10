@@ -5,8 +5,9 @@
  * Each `Change…` row of `HarvestCraftOptions` runs the command `convert_mod`
  * with the list of modifier types the craft accepts, then `CONVERT <from>
  * <to>`. The list depends on the kind (resistance or damage) and the element
- * changed from only, so the file is kind → element → types. Every name must
- * be a `type` of the committed `mods.json`.
+ * changed from only. The file pairs each listed type with what it becomes for
+ * each other element (`pairHarvestChange`), kind → element → rows. Every name
+ * must be a `type` of the committed `mods.json`.
  *
  * The table is read from the compiled `.datc64` (a row count, fixed-width
  * rows, then a data section opened by eight 0xBB bytes; a string column holds
@@ -74,6 +75,104 @@ export function projectHarvestChange(rows) {
     return out;
 }
 
+const ELEMENTS = ["fire", "cold", "lightning"];
+const AILMENT = { fire: "Ignite", cold: "Freeze", lightning: "Shock" };
+const capital = (element) => element[0].toUpperCase() + element.slice(1);
+// The game spells one modifier's types "…Resist" for an element and
+// "…Resistance" for another, and a chance to freeze "BaseChanceToFreeze".
+const alike = (type) =>
+    type.replaceAll("Resistance", "Resist").replaceAll("BaseChanceTo", "ChanceTo");
+
+/** The pairs observed in the game itself (patch 3.29): what a modifier became,
+ *  or null where the grove refused the change. They override no other basis:
+ *  one that disagrees fails the ingest. */
+export const SEEN_IN_GAME = {
+    FireDamageAndChanceToIgnite: { cold: "ColdDamageAndBaseChanceToFreeze" },
+    FireDamageOverTimeMultiplier: { cold: "ColdDamageOverTimeMultiplier", lightning: null },
+};
+
+/** The listed types decided to have no counterpart for an element: the
+ *  other element's list has no modifier of their name. */
+export const NO_COUNTERPART = {
+    FireDamageWithBowsJewel: ["cold", "lightning"],
+    AddedColdDamageWithBows: ["fire"],
+    AddedLightningDamageWithBows: ["fire"],
+    ColdDamageOverTimeMultiplier: ["lightning"],
+    ColdDamageAvoidance: ["fire"],
+    LightningDamageAvoidance: ["fire"],
+};
+
+/**
+ * The pairing table: kind → element changed from → one row per listed type,
+ * `{ from, to: { element: [counterpart | null, basis] } }`, null where the
+ * craft is refused. The lists name what each craft takes, not what a modifier
+ * becomes, and do not align by position, so a counterpart is found by name
+ * (the element's word exchanged) or by ailment (ignite, freeze and shock
+ * exchanged with it), unless the pair was seen in game. A critical strike
+ * multiplier is listed but refused by the damage change since 3.28.0 (Harvest
+ * crafting § Version history, Hotfix 8). Every pair must be decided, and two
+ * bases that disagree fail.
+ */
+export function pairHarvestChange(
+    lists,
+    critical = new Set(),
+    seen = SEEN_IN_GAME,
+    unpaired = NO_COUNTERPART,
+) {
+    const out = {};
+    for (const [kind, byElement] of Object.entries(lists)) {
+        out[kind] = {};
+        for (const from of ELEMENTS) {
+            if (byElement[from] === undefined) continue;
+            out[kind][from] = byElement[from].map((type) => {
+                const to = {};
+                for (const element of ELEMENTS) {
+                    if (element === from || byElement[element] === undefined) continue;
+                    const named = (wanted) =>
+                        byElement[element].find((t) => alike(t) === alike(wanted));
+                    const exchanged = type.replaceAll(capital(from), capital(element));
+                    const byName = named(exchanged);
+                    const byAilment = type.includes(AILMENT[from])
+                        ? named(exchanged.replaceAll(AILMENT[from], AILMENT[element]))
+                        : undefined;
+                    const observed = seen[type]?.[element];
+                    const none = unpaired[type]?.includes(element) ? null : undefined;
+                    const decisions = [
+                        [byName, "name"],
+                        [byAilment, "ailment"],
+                        [observed, "seen in game"],
+                        [none, "no counterpart"],
+                    ].filter(([decided]) => decided !== undefined);
+                    const pair = `${type} to ${element}`;
+                    if (decisions.length === 0) throw new Error(`no decision for ${pair}`);
+                    if (decisions.some(([decided]) => decided !== decisions[0][0])) {
+                        const each = decisions.map(([t, basis]) => `${t} by "${basis}"`);
+                        throw new Error(`the bases disagree for ${pair}: ${each.join(", ")}`);
+                    }
+                    to[element] =
+                        kind === "damage" && critical.has(type)
+                            ? [null, "refused since 3.28.0"]
+                            : decisions[decisions.length - 1];
+                }
+                return { from: type, to };
+            });
+        }
+    }
+    return out;
+}
+
+/** The table as the file's text: one row a line, in the game's list order. */
+export function renderHarvestChange(pairs) {
+    const kinds = Object.entries(pairs).map(([kind, byElement]) => {
+        const elements = Object.entries(byElement).map(
+            ([element, rows]) =>
+                `${JSON.stringify(element)}:[\n${rows.map((r) => JSON.stringify(r)).join(",\n")}\n]`,
+        );
+        return `${JSON.stringify(kind)}:{\n${elements.join(",\n")}\n}`;
+    });
+    return `{\n${kinds.join(",\n")}\n}\n`;
+}
+
 async function main() {
     const lists = projectHarvestChange(readRows(await table()));
     const mods = JSON.parse(readFileSync(`${OUT_DIR}/mods.json`, "utf8"));
@@ -83,8 +182,13 @@ async function main() {
     if (unknown.length > 0) {
         throw new Error(`not modifier types of mods.json: ${unknown.join(", ")}`);
     }
+    const critical = new Set(
+        Object.values(mods)
+            .filter((m) => m.implicit_tags.includes("critical"))
+            .map((m) => m.type),
+    );
 
-    const text = JSON.stringify(lists);
+    const text = renderHarvestChange(pairHarvestChange(lists, critical));
     writeFileSync(`${OUT_DIR}/harvest_change.json`, text);
     const manifestPath = `${OUT_DIR}/manifest.json`;
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
