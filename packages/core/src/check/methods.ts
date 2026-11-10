@@ -49,7 +49,6 @@ import {
     HARVEST_RANDOMISE,
     harvestAugmentOps,
     harvestChangeOps,
-    harvestLikelyOps,
     harvestReforgeOps,
     influenceExaltOps,
     locusOps,
@@ -360,13 +359,10 @@ export const METHODS: readonly Method[] = [
     {
         words: ["harvest", "reforge"],
         args: [name("tag")],
-        doc: 'harvest reforge "<tag>" — reforge a Rare item with a modifier of that type guaranteed, a type some modifier of the base carries; "influence" guarantees one of an influenced item\'s influence modifiers; "more likely" or "less likely" tilts the roll toward or away from the modifier types the item has.',
+        doc: 'harvest reforge "<tag>" — reforge a Rare item with a modifier of that type guaranteed, a type some modifier of the base carries; "influence" guarantees one of an influenced item\'s influence modifiers.',
         build: ([t], _a, registry) => {
             const name = text(t).trim().toLowerCase();
             if (name === "influence") return HARVEST_INFLUENCE_REFORGE;
-            if (name === "more likely" || name === "less likely") {
-                return harvestLikelyOps(name === "more likely" ? "more" : "less");
-            }
             const tag = registry.resolveHarvestTag(text(t));
             return tag.ok ? harvestReforgeOps(tag.value) : refuse(resolveMessage(tag.error));
         },

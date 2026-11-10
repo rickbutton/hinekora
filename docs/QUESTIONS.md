@@ -213,16 +213,6 @@ frequencies against their weights, and the total counts.
 **Assumed:** one tag row by weight, placed first, the rest drawn as a Chaos Orb draws.
 **Encoded in:** [cost.md §2](cost.md#2-how-the-game-rolls), §5.
 
-### Q66 · probe · open — the tilt of the "more / less likely" reforge
-
-**Q:** [Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting) states no
-factor; craftofexile multiplies the rows sharing a type with the item's by ten or a tenth.
-**Probe:** a Rare ring with one life modifier and no other life-typed one, 8000 Wild
-Crystallised Lifeforce; "more likely" forty times; record the share of rolls with a life
-modifier against the plain reforge's.
-**Assumed:** ten and a tenth; the checker reads it as a plain reforge. **Encoded in:**
-`cost/roll.ts` `LIKELY_FACTOR`, `check/library.ts` `harvestLikelyOps`.
-
 ### Q68 · probe · open — the memory strands where the wiki is blank
 
 **Q:** [Memory strand § Crafting methods consuming memory strands](https://www.poewiki.net/wiki/Memory_strand#Crafting_methods_consuming_memory_strands)

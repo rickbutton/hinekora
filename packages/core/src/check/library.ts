@@ -217,21 +217,6 @@ export function harvestReforgeOps(tag: TagId): readonly Op[] {
     ];
 }
 
-/** Harvest "reforge a Rare item, being more / less likely to receive the same
- *  modifier types": a rare reforge whose weights the grove tilts. The checker
- *  reads a plain reforge, since which modifiers can roll does not change; the
- *  cost layer reads the tilt. Metamod § Rules and Exceptions: the protections
- *  are respected and the open slots of a kept side may fill, as for the tagged
- *  reforges. */
-export function harvestLikelyOps(likely: "more" | "less"): readonly Op[] {
-    return [
-        notCorrupted,
-        isRare,
-        strip(),
-        fill({ kind: "natural", likely }, reforge(RARE_REFORGE)),
-    ];
-}
-
 /** Harvest "add a <tag> modifier, remove another random modifier": the tagged
  *  modifier goes on first, so the item as it stands needs an open slot one of
  *  the tag's rows fits (the grove's "There are no valid mods for craft on this

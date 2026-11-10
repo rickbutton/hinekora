@@ -577,23 +577,6 @@ describe("the cost of a guide", () => {
         expect(after(has("IncreasedMana1")).branch).toBeCloseTo(1 / 2, 9);
     });
 
-    it("a more-likely reforge tilts by what each state held before it", () => {
-        const after = (prefixes: string[], suffixes: string[], first: ReturnType<typeof op>[]) =>
-            report(
-                craft(ring("rare", prefixes, suffixes), [
-                    ...first,
-                    harvest("reforge", "more likely"),
-                    iff(has("FireResist1"), [stop()]),
-                ]),
-            ).steps.find((s) => s.kind === "if")!.branch!;
-        // The annul leaves the life alone or the resistance alone, alike.
-        const mixed = after(["IncreasedLife1"], ["FireResist1"], [op("annul")]);
-        const lifeOnly = after(["IncreasedLife1"], [], []);
-        const fireOnly = after([], ["FireResist1"], []);
-        expect(fireOnly).toBeGreaterThan(lifeOnly);
-        expect(mixed).toBeCloseTo((lifeOnly + fireOnly) / 2, 9);
-    });
-
     it("a crafted modifier put on and taken off leaves what the item held as it was", () => {
         // The checker forgets which life the removal took; the state knows it
         // was the crafted one.
@@ -707,13 +690,6 @@ describe("the cost of a guide", () => {
         expect(unitOf(beast({ kind: "aspect", name: "cat" }))).toEqual([
             { item: "Farrul, First of the Plains", amount: 1 },
             { item: "Black Mórrigan", amount: 1 },
-        ]);
-    });
-
-    it("the grove's likely reforges cost 200 Wild lifeforce", () => {
-        const c = craft(ring("rare", ["IncreasedLife1"]), [harvest("reforge", "more likely")]);
-        expect(report(c).steps[0]!.unit).toEqual([
-            { item: "Wild Crystallised Lifeforce", amount: 200 },
         ]);
     });
 });

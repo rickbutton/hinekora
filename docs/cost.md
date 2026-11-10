@@ -42,8 +42,7 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
   base holding four takes three or four at 65:35; a Magic reforge one or two at even odds
   (Q58); a Vaal reforge six.
 - **Fossils.** Several fossils' "more" multipliers add (Q60).
-- **Harvest.** The tagged row is drawn among the tag's rows by weight (Q63); "more / less
-  likely" multiplies the rows sharing a type with the item's by ten and a tenth (Q66).
+- **Harvest.** The tagged row is drawn among the tag's rows by weight (Q63).
 - **Removals** are uniform over the modifiers they can reach, never a fractured one (Q61).
 - **Veiled Exalted Orb.** Its veiled modifier lands on either side with room alike (Q76).
 - **Unveil.** The options are of the veiled modifier's side where the item says which
@@ -111,7 +110,7 @@ tests bound that at two hundredths.
 
 `cost/roll.ts` reads a method's op sequence into its **roll**: the random `fill` with
 the pool it draws from (the checker's own `pool` on the sure facts, cut by the memory
-strands, re-weighted by fossils or the grove's tilt), the count of draws, the modifiers
+strands, re-weighted by fossils), the count of draws, the modifiers
 present for certain (kept, or placed first: an essence's grant, a Harvest tag's row),
 or else a uniform removal, a fracture,
 an unveil's three options, an ember's weighted implicit, or a Divine Orb's reroll.
