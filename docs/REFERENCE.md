@@ -1111,6 +1111,7 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/cost/roll.ts`                                         | `rollOf`: a method's op sequence on the checker's item as the pools, counts and certainties it draws |
 | `packages/core/src/cost/chance.ts`                                       | `chance`: a resolved predicate's probability against a roll                                          |
 | `packages/core/src/cost/chain.ts`                                        | a loop of removals, single draws and bench crafts as a Markov chain over counts and named modifiers  |
+| `packages/core/src/cost/track.ts`                                        | the tracked item's pieces: a condition, a reforge's outcomes and carried states over the chain state |
 | `packages/core/src/cost/prices.ts` / `report.ts`                         | unit costs and the `Prices` snapshot / `costOf`: the walk, one `StepCost` per statement              |
 | `packages/core/src/cost/words.ts`                                        | the report's figures, chances and prices in the guide's words, shared by every surface               |
 | `packages/core/src/cost/{race,chain,report}.test.ts`                     | the race against brute force, the chain by hand, the walk over fixture guides                        |
