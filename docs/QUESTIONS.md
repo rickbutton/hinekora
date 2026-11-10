@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q99.
+keeps it. New entries continue from Q100.
 
 ```
 ### Qn · probe|decision · open — title
