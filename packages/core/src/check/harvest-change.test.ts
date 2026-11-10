@@ -16,6 +16,7 @@ import {
     notp,
     op,
     stop,
+    until,
 } from "../__fixtures__/ast.js";
 import {
     AMULET_BASE,
@@ -214,12 +215,23 @@ describe("harvest change", () => {
         expect(pinned.finalState!.tiers.get(TypeId("ColdTiers"))).toEqual(
             new Set(["ColdTiersMid"]),
         );
-        // After a reforge the life's tier is unknown, so the mana may be any tier.
+        // A fire resistance found after a reforge may be any tier, so the cold
+        // may be any.
         const loose = check(
-            craft(rareRing(), [op("chaos"), harvestChange("FireTiersMid", "ColdTiersLow")]),
+            craft(rareRing(), [
+                op("chaos"),
+                iff(
+                    andp(has("FireTiersLow"), notp(has("ColdTiersLow"))),
+                    [harvestChange("FireTiersLow", "ColdTiersLow")],
+                    [stop()],
+                ),
+            ]),
             ctx,
         );
-        expect(loose.diagnostics[0]!.message).toContain("isn't guaranteed");
+        expect(loose.diagnostics).toEqual([]);
+        expect(loose.finalState!.tiers.get(TypeId("ColdTiers"))).toEqual(
+            new Set(["ColdTiersLow", "ColdTiersMid", "ColdTiersHigh"]),
+        );
     });
 
     it("changes a modifier that rolls nowhere into its counterpart of the same level", () => {
@@ -295,6 +307,49 @@ describe("harvest change", () => {
             new Set([benchCold.id, COLD_RESIST.id]),
         );
         expect(r.finalState!.crafted).toEqual([1, 1]);
+    });
+
+    it("reads a modifier with no tier recorded as any row it may be, a crafted one among them", () => {
+        // An unnamed bench suffix may be the bench's fire resistance or not; a
+        // fire resistance found on the item is then that or the natural row.
+        const benchCold: Mod = {
+            ...BENCH_FIRE_RES_ROW,
+            id: ModId("BenchColdResist1"),
+            type: COLD_RESIST.type,
+            families: COLD_RESIST.families,
+            text: "+(13-18)% to Cold Resistance",
+        };
+        const reg = buildRegistry({
+            bases: [RING_BASE],
+            harvestChange: HARVEST_CHANGE,
+            mods: [...CATALOG, BENCH_FIRE_RES_ROW, benchCold],
+            baseAliases: { "Iron Ring": "IronRing" },
+            benchCrafts: [BENCH_FIRE_RES_ROW, benchCold].map((m) => ({
+                mod: m.id,
+                tier: 1,
+                itemClasses: new Set([CLASS_RING]),
+            })),
+        });
+        const start = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            suffixes: [{ mod: "random", bench: true }],
+        });
+        const r = check(
+            craft(start, [
+                iff(
+                    andp(has("fire resistance"), notp(has("cold resistance"))),
+                    [harvestChange("fire resistance", "cold resistance")],
+                    [stop()],
+                ),
+            ]),
+            { registry: reg },
+        );
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(COLD_RESIST.type)).toEqual(
+            new Set([benchCold.id, COLD_RESIST.id]),
+        );
     });
 
     it("needs the modifier guaranteed, unfractured, on an unprotected side", () => {
@@ -458,6 +513,50 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
         const mid = known(37, "ColdTiersMid", "FireTiersLow");
         expect(mid.diagnostics).toEqual([]);
         expect(mid.finalState!.tiers.get(FIRE)).toEqual(new Set(["FireTiersMid"]));
+    });
+
+    it("is refused where the modifier is a bench craft or a tier that would keep one above the item's level", () => {
+        const benchFire: Mod = {
+            ...BENCH_FIRE_RES_ROW,
+            id: ModId("BenchFireTiers"),
+            type: FIRE,
+            families: FIRE_RES_TIERS[0]!.families,
+        };
+        const benched = buildRegistry({
+            bases: [RING_BASE],
+            harvestChange: HARVEST_CHANGE,
+            mods: [...CATALOG, ...FIRE_RES_TIERS, ...offset, benchFire],
+            baseAliases: { "Iron Ring": "IronRing" },
+            benchCrafts: [{ mod: benchFire.id, tier: 1, itemClasses: new Set([CLASS_RING]) }],
+        });
+        // The fire is the bench's on one path and the second tier on the other.
+        const either = (ilvl: number) =>
+            check(
+                craft(item({ base: "Iron Ring", ilvl, rarity: "rare", prefixes: ["random"] }), [
+                    iff(
+                        has("IncreasedMana1"),
+                        [bench("fire resistance")],
+                        [until(has("FireTiersLow", 1), [op("chaos")])],
+                    ),
+                    iff(
+                        notp(has("ColdTiersLow")),
+                        [harvestChange("FireTiersLow", "ColdTiersLow")],
+                        [stop()],
+                    ),
+                ]),
+                { registry: benched },
+            );
+        const low = either(32);
+        expect(low.finalState!.tiers.get(FIRE)).toEqual(
+            new Set(["BenchFireTiers", "FireTiersMid"]),
+        );
+        expect(low.diagnostics).toHaveLength(1);
+        expect(low.diagnostics[0]!.message).toContain("needs item level 35");
+        // At a level that allows the tier, the bench's fire may be either cold
+        // that rolls, the second tier its own.
+        const high = either(40);
+        expect(high.diagnostics).toEqual([]);
+        expect(high.finalState!.tiers.get(COLD)).toEqual(new Set(["ColdTiersLow", "ColdTiersMid"]));
     });
 
     it("leaves an item above every tier's level as it was", () => {
