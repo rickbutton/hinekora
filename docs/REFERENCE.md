@@ -294,8 +294,8 @@ resolveEssence / resolveBench / resolveHarvestTag`
   `loop` inside the loop that goes round its own body until its exit each time it is
   reached (`Chain.rounds`, `estimatedLoops`), a branch with or without an else arm, a
   reforge whose `Outcome`s the item starts over from (a `restore`, read as the imprint the
-  checker holds over every round), a restart or a stop, beside the older one-modifier
-  steps a removal, a single draw and a bench craft) as a Markov chain from weighted start
+  checker holds over every round), a restart or a stop; the one-modifier steps a removal,
+  a single draw and a bench craft are built only by its tests) as a Markov chain from weighted start
   states to the exit (`exitAtStart` the part that holds before any round), a restart, a
   stop or the mass that never leaves (`iterate` carries the rounds); once a round hands the
   next a distribution of the same shape, or at the last round followed (2000, fewer for a

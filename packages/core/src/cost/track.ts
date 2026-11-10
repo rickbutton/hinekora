@@ -22,7 +22,7 @@ import { influenceTagsAny, runMethod } from "../check/ops.js";
 import { lookupWeight } from "../pool/pool.js";
 import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
 import { rollableGen, rollableTiers } from "../resolve/tiers.js";
-import type { ChainAtom, ChainState, ChainStep, Outcome } from "./chain.js";
+import type { ChainAtom, ChainState, Outcome } from "./chain.js";
 import { pieces } from "./chance.js";
 import { amongFirstDistribution } from "./race.js";
 import { harvestTagsOn, naturalGroups, type Reading, type Roll, rollOf } from "./roll.js";
@@ -31,9 +31,6 @@ import { harvestTagsOn, naturalGroups, type Reading, type Roll, rollOf } from ".
  *  modifiers that loop named; the weights sum to one. */
 export interface Carried {
     readonly types: readonly TypeId[];
-    /** Per type, whether its row is the one on the item or a reforge's
-     *  stand-in for a modifier no condition of that loop tells apart by tier. */
-    readonly rowed: readonly boolean[];
     /** The types whose rows carry the part of the range their value is in. */
     readonly valued?: ReadonlySet<TypeId>;
     readonly dist: readonly { readonly state: ChainState; readonly weight: number }[];
@@ -251,7 +248,6 @@ export class Tracker {
     carried(dist: readonly { readonly state: ChainState; readonly weight: number }[]): Carried {
         return {
             types: this.types,
-            rowed: this.types.map(() => true),
             valued: new Set(this.valueLeaves.keys()),
             dist,
         };
@@ -709,12 +705,7 @@ export function splitCarried(
     c.types.forEach((t, i) => index.set(t, i));
     for (const leaf of predLeaves(pred)) {
         if (leaf.kind === "compare") continue;
-        if (
-            leaf.kind === "has" &&
-            index.has(leaf.type) &&
-            (leaf.tierMod === undefined || c.rowed[index.get(leaf.type)!])
-        )
-            continue;
+        if (leaf.kind === "has" && index.has(leaf.type)) continue;
         if (leaf.kind === "hasGroup" && [...leaf.types].every((t) => index.has(t))) continue;
         if (leaf.kind === "hasValue" && c.valued?.has(leaf.type)) continue;
         return undefined;
@@ -732,20 +723,6 @@ export function splitCarried(
         ...(then !== undefined && { then }),
         ...(otherwise !== undefined && { otherwise }),
     };
-}
-
-/** Whether a chain body reforges the item anywhere. */
-export function reforgesIn(steps: readonly ChainStep[]): boolean {
-    return steps.some(
-        (s) =>
-            s.kind === "reforge" ||
-            (s.kind === "branch" && (reforgesIn(s.body) || reforgesIn(s.otherwise ?? []))),
-    );
-}
-
-/** Whether an op sequence reforges the item: a fill that lays down the reforge's count. */
-export function reforges(ops: readonly Op[]): boolean {
-    return ops.some((op) => op.kind === "fill" && op.count.kind === "reforge");
 }
 
 /**
@@ -868,19 +845,6 @@ export function reforgeOutcomes(
         }
     }
     return [...outcomes.values()];
-}
-
-/** Whether an op sequence is one draw added to the item, nothing stripped or removed. */
-export function singleAdd(ops: readonly Op[]): boolean {
-    let fills = 0;
-    for (const op of ops) {
-        if (op.kind === "strip" || op.kind === "remove") return false;
-        if (op.kind === "fill" && op.pool.kind !== "veiledPlaceholder") {
-            if (op.count.kind !== "add" || op.count.n[0] !== 1 || op.count.n[1] !== 1) return false;
-            fills++;
-        }
-    }
-    return fills === 1;
 }
 
 /** A condition on the chain's state: the counts, the named modifiers' rows,
