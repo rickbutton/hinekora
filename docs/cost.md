@@ -51,7 +51,7 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
   Exalted Orb** adds or removes at even odds, and removes from a full item (Q95).
 - **Unveil.** The options are of the veiled modifier's side where the item says which
   (the placeholder is a prefix or a suffix of its own); the player takes the guide's target if offered, else a modifier its
-  conditions name, else one no one names.
+  conditions ask for, else one no one names.
 - **Orb of Conflict.** Equal tiers rise alike; each tier of lead takes eleven hundredths
   off ([Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)),
   a gap past three extrapolated.
@@ -72,12 +72,13 @@ placeholder; each eldritch implicit's tier, and its type where a condition names
 on its own, the rest of the ladder together) and whether it is fractured (its row marked
 `!`); a modifier a condition compares by value is held per tier
 and value piece, cut at the condition's thresholds. The distribution starts from the item
-block, a `"random"` modifier a natural roll of its side by spawn weight, and is
+block, a `"random"` modifier a natural roll of its side by spawn weight and an eldritch
+implicit declared without a type each type of its tier by an ember's weights (assumed
+for the tiers only an Orb of Conflict reaches too), and is
 carried through every step, a call's body walked in its place. Each method is read on
-the checker's item **narrowed to each state** (its counts exact, each tracked modifier
-present at its class or absent): a random method by its roll, a sure one by the checker's own
+the checker's item **narrowed to each state**: a random method by its roll, a sure one by the checker's own
 transfer function, the item that leaves read back as states. A branch splits the distribution by its condition; a loop is solved
-as a chain over it (§6). A guide followed so throughout is walked once.
+as a chain over it (§6).
 
 What stays approximate: the modifiers no one names are a count, not identities, so a draw
 beside them keeps each unnamed group's weight by its chance of not being among that many
@@ -164,9 +165,7 @@ it) is given none, nor are its steps or the guide's total.
 ## 7. The economy
 
 Prices come from a **snapshot committed with the data**,
-`packages/data/data/poe1/economy.json`, for one league on one day, never from live calls
-in the checker, the CLI or the editor, so a figure is
-reproducible and dated by the snapshot. `fetch-economy.mjs`
+`packages/data/data/poe1/economy.json`, for one league on one day, never from live calls, so a figure is reproducible and dated. `fetch-economy.mjs`
 refreshes it from poe.ninja's economy overview endpoints, which its
 [API reference](https://poe.ninja/docs/api) supports without promising them stable; when they move, the script is what changes.
 
