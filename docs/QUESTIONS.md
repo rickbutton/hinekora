@@ -115,19 +115,21 @@ accepted or not and the modifiers added over several tries.
 **Assumed:** a Rare with an open slot; the whole pool at the beast's level. **Encoded
 in:** `check/library.ts` `beastAddInfluenceOps`.
 
-### Q32 · probe · open — the Corruption Altar's influence and a jewel's corrupted reforge
+### Q32 · probe · open — the counts of a corruption reforge, and the altar on a marked item
 
-**Q:** which influence does the altar's reforge give
+**Q:** how many affixes does the altar's reforge roll
 ([Locus of Corruption § Possible outcomes](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes)
-says only "an influenced rare item"), and how many affixes does a corruption reforge roll
-on a jewel ([Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment) says
-six)?
-**Probe:** an uninfluenced Rare ring and a Rare jewel, altar access, Vaal Orbs; record
-the influences seen and the jewel's affix counts.
-**Assumed:** any one influence or the item's own; a jewel reforged without one, to three
-or four modifiers. An item with an eldritch implicit keeps it beside the new
-influence (the wide reading); a Gilded Fossil's extra implicit is not modelled.
-**Encoded in:** `check/library.ts` `locusOps`, `vaalOps`, `brickBranch`.
+says "random affix modifiers"; only the Vaal Orb's six is stated,
+[Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment)), how many does
+either roll on a jewel, and what does the altar's reforge make of an item that already
+has an influence or an eldritch implicit? (The influence is one of the six: GGG, forum
+thread 2147954.)
+**Probe:** a Rare ring, a Rare jewel, an influenced ring and boots with an eldritch
+implicit, altar access, Vaal Orbs; record each reforge's affix count and marks.
+**Assumed:** the altar four to six, a Vaal Orb six, a jewel three or four without an
+influence; an influenced item any one influence or its own; an eldritch implicit kept
+beside the new influence (the wide reading). **Encoded in:** `check/library.ts`
+`locusOps`, `vaalOps`, `brickBranch`.
 
 ### Q33 · probe · open — the Tainted Chaos Orb under a protection
 

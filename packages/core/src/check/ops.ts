@@ -517,8 +517,8 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
                         }
                         break;
                     case "anyOne":
-                        // Wide while the altar's outcome is a probe: the sets the
-                        // item had stay beside the six.
+                        // What an already influenced item keeps is unsettled, so
+                        // the sets the item had stay beside the six.
                         influences.add(key);
                         for (const k of influenceSetsOfSize(1)) influences.add(k);
                         break;

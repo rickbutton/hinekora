@@ -325,18 +325,21 @@ const either = (...branches: readonly (readonly Transform[])[]): Op => ({
 });
 const corruptedItem = (what: string): Op => require({ kind: "corruptedItem", what });
 
-/** A Vaal Orb's one outcome that touches the modifiers: a Rare with six, the
- *  metamods respected (Vaal Orb § Equipment); the implicit and socket outcomes
- *  and "no effect" leave the modifiers as they are. */
-function brickBranch(base: Base, influenced: boolean): readonly Transform[] {
+/** A corruption's one outcome that touches the modifiers: the item reforged
+ *  Rare, the metamods respected; the implicit and socket outcomes and "no
+ *  effect" leave the modifiers as they are. A Vaal Orb rolls six (Vaal Orb §
+ *  Equipment); the altar's "random affix modifiers" state no count (Locus of
+ *  Corruption § Possible outcomes), so it takes the rare reforge's range
+ *  (`QUESTIONS.md` Q32). */
+function brickBranch(base: Base, altar: boolean): readonly Transform[] {
     if (!canBeRareBase(base)) return [];
-    // A class no influence can mark is reforged without one (`QUESTIONS.md` Q32).
-    const marks = influenced && INFLUENCE_STEMS[base.itemClass] !== undefined;
+    // A class no influence can mark is reforged without one.
+    const marks = altar && INFLUENCE_STEMS[base.itemClass] !== undefined;
     return [
         strip(),
         rarity("rare"),
         ...(marks ? [influence({ kind: "anyOne" })] : []),
-        fill(natural, reforge([6, 6])),
+        fill(natural, reforge(altar ? RARE_REFORGE : [6, 6])),
     ];
 }
 
@@ -365,8 +368,9 @@ const ALTAR_TAGS = ["weapon", "armour", "ring", "amulet", "belt", "quiver", "jew
 
 /** The Corruption Altar (Locus of Corruption § Possible outcomes): as a Vaal
  *  Orb, but the reforge makes an influenced Rare, and one outcome destroys the
- *  item, ending the craft on that path. Which influence is a probe, so the
- *  item may have any one or what it had (`QUESTIONS.md` Q32). */
+ *  item, ending the craft on that path. The influence is any one of the six;
+ *  what an item that already had one keeps is open, so it may also have what
+ *  it had (`QUESTIONS.md` Q32). */
 export function locusOps(base: Base): readonly Op[] {
     const brick = brickBranch(base, true);
     return [

@@ -310,7 +310,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["locus"],
         args: [],
-        doc: "locus — the Corruption Altar: corrupt the item; it may stay as it is, become an influenced Rare with six modifiers, or be destroyed, ending the craft.",
+        doc: "locus — the Corruption Altar: corrupt the item; it may stay as it is, be reforged into a Rare with any one influence and four to six new modifiers, or be destroyed, ending the craft.",
         build: (_args, a) => locusOps(a.base),
     },
     {

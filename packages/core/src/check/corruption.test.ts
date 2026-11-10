@@ -108,6 +108,19 @@ describe("the Corruption Altar", () => {
     });
 });
 
+describe("a corruption's reforge", () => {
+    const full = () => {
+        const three = ["random", "random", "random"];
+        return ring({ prefixes: three, suffixes: three });
+    };
+
+    it("rolls six modifiers from a Vaal Orb, four to six from the altar", () => {
+        // Each item held six, so the lower bound is the reforge's own.
+        expect(run(craft(full(), [op("vaal")])).finalState!.counts.total).toEqual([6, 6]);
+        expect(run(craft(full(), [op("locus")])).finalState!.counts.total).toEqual([4, 6]);
+    });
+});
+
 describe("the Tainted currency", () => {
     const corruptedRing = ring({ corrupted: true, prefixes: ["life"], suffixes: ["cold"] });
 
