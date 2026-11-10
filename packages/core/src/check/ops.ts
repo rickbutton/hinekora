@@ -66,6 +66,7 @@ import {
     type AItem,
     type Range,
 } from "./astate.js";
+import type { Bdd } from "./bdd.js";
 import { CountDomain } from "./counts.js";
 
 // --- the operations --------------------------------------------------------
@@ -571,7 +572,7 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
             }
             break;
         case "elevate":
-            return elevate(a, rules, registry);
+            return elevate(a, a0, rules, registry);
         case "rarity":
             return settled({
                 ...a,
@@ -1814,7 +1815,7 @@ function influenceShield(a: AItem, registry: Registry): Shield {
  * every influenced modifier the item may have loses its tier and may be its
  * elevated row; one of them remains, since only one was removed.
  */
-function elevate(a: AItem, rules: Rules, registry: Registry): AItem {
+function elevate(a: AItem, a0: AItem, rules: Rules, registry: Registry): AItem {
     const { sure, maybe } = influenceTagsOf(a, registry);
     const tags = new Set([...sure, ...maybe]);
     // A modifier on a protected side is not affected (Metamod § Rules and Exceptions).
@@ -1835,6 +1836,8 @@ function elevate(a: AItem, rules: Rules, registry: Registry): AItem {
         );
         if (rows.length > 0) elevated.set(t, rows);
     }
+    const exact = upgradedSurvivor(a, a0, influenced, elevated, tags, registry);
+    if (exact !== null) return exact;
     const s = relaxTiers(a, (t) => influenced.includes(t));
     const possible = new Set(s.possible);
     const tiers = new Map(s.tiers);
@@ -1865,6 +1868,82 @@ function elevate(a: AItem, rules: Rules, registry: Registry): AItem {
         presence = a.bdd.and(presence, clause);
     }
     return settled({ ...s, possible, tiers, presence });
+}
+
+/**
+ * The upgrade where the orb had exactly two influenced modifiers to choose
+ * from, both at a known row: it removed one and upgraded the other, so the
+ * one left is a higher row of its type or, from the top row, its elevated row
+ * ("If it selects a tier 1 mod to upgrade, it will replace it with a new
+ * 'elevated' mod"), and never the row it was. `null` where the item does not
+ * settle that much: more influenced modifiers than two, an unknown row, an
+ * elevated modifier among them, or a higher row above the item's level, which
+ * the page does not say the orb reaches.
+ */
+function upgradedSurvivor(
+    a: AItem,
+    a0: AItem,
+    influenced: readonly TypeId[],
+    elevated: ReadonlyMap<TypeId, readonly Mod[]>,
+    tags: ReadonlySet<TagId>,
+    registry: Registry,
+): AItem | null {
+    if (influenced.length !== 2) return null;
+    const guaranteed = guaranteedTypes(a0);
+    const isRow = influenceRowTest(a0, registry);
+    const forms: (readonly Mod[])[] = [];
+    for (const t of influenced) {
+        const pinned = a0.tiers.get(t);
+        if (!guaranteed.has(t) || pinned?.size !== 1) return null;
+        const was = registry.resolveMod([...pinned][0]!);
+        if (!was.ok || was.value.source === "elevated") return null;
+        const above = registry.catalog.filter(
+            (m) =>
+                m.type === t &&
+                m.domain === a.base.domain &&
+                m.source !== "elevated" &&
+                m.minLevel > was.value.minLevel &&
+                isRow(m) &&
+                m.spawn.some((w) => tags.has(w.tag) && w.weight > 0),
+        );
+        if (above.some((m) => m.minLevel > a.ilvl)) return null;
+        const rows = above.length > 0 ? above : elevated.get(t);
+        if (rows === undefined) return null;
+        forms.push(rows);
+    }
+    const touched = new Set(influenced);
+    for (const rows of forms) for (const m of rows) touched.add(m.type);
+    const possible = new Set(a.possible);
+    const tiers = new Map(a.tiers);
+    for (const t of touched) tiers.delete(t);
+    let presence = forgetTypes(a, touched);
+    const left: Bdd[] = [];
+    forms.forEach((rows, i) => {
+        let some = a.bdd.FALSE;
+        for (const m of rows) {
+            possible.add(m.type);
+            tiers.set(m.type, new Set([...(tiers.get(m.type) ?? []), m.id]));
+            some = a.bdd.or(some, a.bdd.variable(m.type));
+        }
+        left.push(some);
+        // Upgraded into another type, the modifier is no longer its own.
+        const own = influenced[i]!;
+        if (!rows.some((m) => m.type === own)) {
+            presence = a.bdd.and(presence, a.bdd.not(a.bdd.variable(own)));
+        }
+    });
+    const [first, second] = [left[0]!, left[1]!];
+    presence = a.bdd.and(
+        presence,
+        a.bdd.or(a.bdd.and(first, a.bdd.not(second)), a.bdd.and(second, a.bdd.not(first))),
+    );
+    return settled({
+        ...a,
+        possible,
+        tiers,
+        values: dropValues(a.values, touched),
+        presence,
+    });
 }
 
 /** Is a modifier type an influence modifier on this item: some row of it is

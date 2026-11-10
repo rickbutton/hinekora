@@ -39,7 +39,7 @@ hand-written list; the metamods in force and the memory strands' tier cut apply 
 | `lock`      | `n` random present modifiers become fractured; when the guaranteed types account for every modifier, the lock provably landed among them.                                                                                                                                                                       |
 | `relax`     | Forget each present modifier's tier (a provably crafted one keeps it unless `crafted`): the sound summary of a tier shift.                                                                                                                                                                                      |
 | `reroll`    | Every value rolls again within its tier, fractured modifiers and protected sides excepted ([Divine Orb](https://www.poewiki.net/wiki/Divine_Orb)).                                                                                                                                                              |
-| `elevate`   | One influenced modifier on an unprotected side went up a tier or to its elevated row; which is unknown, so each loses its tier.                                                                                                                                                                                 |
+| `elevate`   | One influenced modifier on an unprotected side went up a tier or to its elevated row: of two the one left, else unknown, so each loses its tier.                                                                                                                                                                |
 | `strands`   | The memory strands' floor falls by at most the method's figure; the ceiling stays ([Memory strand § Mechanics](https://www.poewiki.net/wiki/Memory_strand#Mechanics), `QUESTIONS.md` Q68).                                                                                                                      |
 | `corrupt`   | The item is corrupted.                                                                                                                                                                                                                                                                                          |
 | `influence` | Set the influence mark, add an influence, randomise it, or make it any one influence while keeping the sets the item had (the Corruption Altar, `QUESTIONS.md` Q32).                                                                                                                                            |
@@ -60,7 +60,7 @@ on the item on some paths only, the method runs once with it and once without
 **All or nothing.** The game never applies part of a currency, so a failed `require`
 fails the whole method. The checker reports the first failure, and the state `runMethod`
 returns is the one the method leaves where its preconditions hold, not the input: later steps are judged against what the guide meant, so one wrong
-step does not cascade into refusing every step after it, and a loop whose body fills the
+step does not refuse every step after it, and a loop whose body fills the
 item is still seen to reach its exit.
 
 Spawn weights are not carried; they are the cost layer's ([cost.md](cost.md)). Nor is the distribution of values: a value is a span, which a predicate narrows and
