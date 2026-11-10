@@ -25,7 +25,7 @@ import { rollableGen, rollableTiers } from "../resolve/tiers.js";
 import type { ChainAtom, ChainState, ChainStep, Outcome } from "./chain.js";
 import { pieces } from "./chance.js";
 import { amongFirstDistribution } from "./race.js";
-import { naturalGroups, type Reading, type Roll, rollOf } from "./roll.js";
+import { harvestTagsOn, naturalGroups, type Reading, type Roll, rollOf } from "./roll.js";
 
 /** The states a chain-solved loop's exit leaves the item in, over the
  *  modifiers that loop named; the weights sum to one. */
@@ -291,6 +291,12 @@ export class Tracker {
         // states share where a reforge strips what tells them apart.
         const fillAt = ops.findIndex((op) => op.kind === "fill");
         const cut = removalBeforeFill(ops);
+        // A "more likely" reforge tilts by the tags of what it strips, which the
+        // item after the strip no longer shows.
+        const tilted = ops.some(
+            (op) =>
+                op.kind === "fill" && op.pool.kind === "natural" && op.pool.likely !== undefined,
+        );
         const drawn = new Map<string, readonly Outcome[]>();
         return (state) => {
             const key = stateKey(state);
@@ -300,7 +306,9 @@ export class Tracker {
             const item =
                 kind === "draw" && fillAt >= 0 && cut < 0 ? this.narrow(before, state) : null;
             if (item !== null) {
-                const sig = this.signature(this.stripped(item, ops, fillAt));
+                const sig =
+                    this.signature(this.stripped(item, ops, fillAt)) +
+                    (tilted ? [...harvestTagsOn(item, this.registry)].sort().join(",") : "");
                 out = drawn.get(sig);
                 if (out === undefined) {
                     out = this.outcomes(before, ops, state, reading) ?? [{ state, prob: 1 }];

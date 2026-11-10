@@ -278,7 +278,7 @@ const LIKELY_FACTOR = { more: 10, less: 0.1 } as const;
 const HARVEST_TAG_IDS: ReadonlySet<TagId> = new Set(HARVEST_TAGS.values());
 
 /** The harvest types of the modifiers the item holds on every path. */
-function harvestTagsOn(a: AItem, registry: Registry): Set<TagId> {
+export function harvestTagsOn(a: AItem, registry: Registry): Set<TagId> {
     const out = new Set<TagId>();
     const types = guaranteedTypes(a);
     for (const m of registry.catalog) {

@@ -389,6 +389,23 @@ describe("the cost of a guide", () => {
         expect(branch.branch).toBeCloseTo(2 / 3, 9);
     });
 
+    it("a more-likely reforge tilts by what each state held before it", () => {
+        const after = (prefixes: string[], suffixes: string[], first: ReturnType<typeof op>[]) =>
+            report(
+                craft(ring("rare", prefixes, suffixes), [
+                    ...first,
+                    harvest("reforge", "more likely"),
+                    iff(has("FireResist1"), [stop()]),
+                ]),
+            ).steps.find((s) => s.kind === "if")!.branch!;
+        // The annul leaves the life alone or the resistance alone, alike.
+        const mixed = after(["IncreasedLife1"], ["FireResist1"], [op("annul")]);
+        const lifeOnly = after(["IncreasedLife1"], [], []);
+        const fireOnly = after([], ["FireResist1"], []);
+        expect(fireOnly).toBeGreaterThan(lifeOnly);
+        expect(mixed).toBeCloseTo((lifeOnly + fireOnly) / 2, 9);
+    });
+
     it("a Divine Orb reaches a value by the share of the range at or above it", () => {
         // LIFE_T1 rolls 70–84: fifteen values, five of them 80 or more. The
         // ring's own life is one of them a third of the time, and then no
