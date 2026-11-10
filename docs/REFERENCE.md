@@ -284,7 +284,8 @@ resolveEssence / resolveBench / resolveHarvestTag`
   settles is unknown rather than guessed. `chain.ts` solves a loop whose body changes the
   item one modifier at a time (`chain`: `ChainStep`s of a random removal, a single draw, a
   bench craft, a branch over them with or without an else arm, a reforge whose `Outcome`s
-  the item starts over from, a restart or a stop) as a Markov chain over the counts
+  the item starts over from, a `restore` read as a reforge whose outcomes are the item
+  restored, a restart or a stop) as a Markov chain over the counts
   and the named modifiers' rows (`ChainState`, one `ChainAtom` per modifier the loop's
   conditions name), from weighted start states to the exit (`exitAtStart` the part that
   holds before any round), a restart, a stop or the mass that never leaves; once the

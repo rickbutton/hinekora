@@ -171,6 +171,35 @@ describe("the cost of a guide", () => {
         expect(r.steps.find((s) => s.kind === "until")!.note).toBeUndefined();
     });
 
+    it("a restore inside a loop sets the item back to its imprint each round", () => {
+        // A Magic ring holding the life alone, imprinted and regaled; the loop
+        // restores it until the Regal Orb lands a suffix. Each round starts
+        // from the imprint, so the chance per round is the suffix side's share
+        // of the draw, the life's group out of the prefixes.
+        const c = craft(ring("magic", ["IncreasedLife1"]), [
+            beast({ kind: "imprint" }),
+            op("regal"),
+            until(cmp("prefixCount", "==", 1), [
+                op("restore"),
+                beast({ kind: "imprint" }),
+                op("regal"),
+            ]),
+        ]);
+        const r = report(c);
+        const loop = r.steps.find((s) => s.kind === "until")!;
+        const prefixes = side("prefix");
+        const suffixes = side("suffix");
+        const lifeGroup = prefixes.weights[prefixes.types.indexOf("IncreasedLife")]!;
+        const prefixWeight = prefixes.weights.reduce((a, b) => a + b, 0) - lifeGroup;
+        const suffixWeight = suffixes.weights.reduce((a, b) => a + b, 0);
+        const toSuffix = suffixWeight / (prefixWeight + suffixWeight);
+        expect(loop.note).toBeUndefined();
+        expect(loop.attempts!.chance).toBeCloseTo(toSuffix, 6);
+        // Entered with the first Regal's prefix share; each round ends it with
+        // the suffix share.
+        expect(loop.attempts!.expected).toBeCloseTo((1 - toSuffix) / toSuffix, 6);
+    });
+
     it("a Divine Orb reaches a value by the share of the range at or above it", () => {
         // LIFE_T1 rolls 70–84: fifteen values, five of them 80 or more.
         const c = craft(ring("rare", ["IncreasedLife1"]), [

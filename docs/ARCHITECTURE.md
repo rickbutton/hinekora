@@ -396,7 +396,8 @@ craft's listed price).
 - A loop whose body **changes the item one modifier at a time** (random removals, single
   draws such as an Exalted Orb, bench crafts, and branches over them, with or without an
   else arm, that restart, stop or craft; a reforge inside it starts the item over from its
-  roll's outcomes, as an essence spammed again once a kept modifier is lost) is not
+  roll's outcomes, as an essence spammed again once a kept modifier is lost, and a
+  `restore` starts it over as the imprint) is not
   memoryless: each round starts where the last left the item. It is solved
   as a Markov chain (`cost/chain.ts`) over a small state, the (prefix, suffix) counts and,
   for each modifier the loop's conditions name, whether it is on the item and at which

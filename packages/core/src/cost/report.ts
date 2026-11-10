@@ -890,6 +890,22 @@ class Walker {
                 const roll = rollOf(entry.before, built, registry, this.reading);
                 switch (roll.kind) {
                     case "none": {
+                        if (built.some((op) => op.kind === "restore")) {
+                            // The item becomes the imprint, whatever it held: a
+                            // reforge whose one outcome is the item restored.
+                            const back = statesOf(entry.after, [{ mass: 1, path: undefined }]);
+                            if (back === undefined || back.length === 0) return undefined;
+                            const total = back.reduce((sum, s) => sum + s.weight, 0);
+                            out.push({
+                                id,
+                                kind: "reforge",
+                                outcomes: back.map((s) => ({
+                                    state: s.state,
+                                    prob: s.weight / total,
+                                })),
+                            });
+                            break;
+                        }
                         const bench =
                             s.words[0] === "bench"
                                 ? this.benchMod(literals, entry.before)
