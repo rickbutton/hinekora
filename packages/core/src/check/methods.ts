@@ -254,7 +254,7 @@ export const METHODS: readonly Method[] = [
     ...INFLUENCES.map((target): Method => ({
         words: ["exalt", target],
         args: [],
-        doc: `exalt ${target} — ${INFLUENCE_ORB[target]}: add ${influenceSetLabel(influenceKey([target]))} influence and one of its modifiers to a Rare item with an open slot, no influence and no fractured modifier.`,
+        doc: `exalt ${target} — ${INFLUENCE_ORB[target]}: add ${influenceSetLabel(influenceKey([target]))} influence and one of its modifiers to a Rare item with an open slot, no influence, no fractured modifier and no eldritch implicit.`,
         build: () => influenceExaltOps(target),
     })),
     ...ELDRITCH_SIDES.map((side): Method => {
@@ -286,7 +286,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["eldritch", "annul"],
         args: [],
-        doc: "eldritch annul — Eldritch Orb of Annulment: remove a prefix from a Magic or Rare item when the Exarch is dominant, a suffix when the Eater is; needs a removable modifier on that side.",
+        doc: "eldritch annul — Eldritch Orb of Annulment: remove a prefix from a Magic or Rare item when the Exarch is dominant, a suffix when the Eater is; needs a removable modifier on that side, and no metamod keeping that side from changing.",
         build: (_args, a) => dominantSide(a, "Eldritch Orb of Annulment", eldritchAnnulOps),
     },
     {
@@ -343,7 +343,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["bench"],
         args: [name("bench"), { kind: "tier", optional: true }],
-        doc: 'bench "<mod>" [t1] — craft a modifier at the bench. Needs an open slot on its side, no modifier of its group, and room under the crafted-modifier limit (one, three with the multimod); a single crafted modifier is replaced unless it is fractured.',
+        doc: 'bench "<mod>" [t1] — craft a modifier at the bench. Needs an open slot on its side, no modifier of its group, and room under the crafted-modifier limit (one, three with the multimod); under the limit of one, the crafted modifier already there is replaced, and the bench refuses when that one is fractured.',
         build: ([n, t], a, registry) => {
             const craft = registry.resolveBench(text(n), a.base.itemClass, num(t));
             if (!craft.ok) return refuse(resolveMessage(craft.error));
@@ -401,7 +401,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["veiled", "exalt"],
         args: [],
-        doc: "veiled exalt — remove a modifier from a Rare item and add a veiled one, to unveil later; needs a removable modifier.",
+        doc: "veiled exalt — remove a modifier from a Rare item and add a veiled one, to unveil later; needs a removable modifier and no veiled modifier already.",
         build: () => VEILED_EXALT,
     },
     {
@@ -434,7 +434,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["fossil"],
         args: [{ kind: "names", of: "fossil", max: 4 }],
-        doc: 'fossil "<name>" … — socket one to four fossils (each by its first word or full name) in a resonator and reforge a Normal or Rare item, on a base every fossil allows, with no metamod that keeps a side from changing or a modifier from rolling. Weights are not modelled; the Fractured Fossil needs an item with no fractured modifier and no influence, and the Bloodstained Fossil corrupts it.',
+        doc: 'fossil "<name>" … — socket one to four fossils (each by its first word or full name) in a resonator and reforge a Normal or Rare item, on a base every fossil allows, with no metamod that keeps a side from changing or a modifier from rolling. The fossils change the odds, which only the cost estimate reads; the Fractured Fossil needs an item with no fractured modifier and no influence, and the Bloodstained Fossil corrupts it.',
         build: (names, a, registry) =>
             resonator(
                 names.map((n) => text(n)),

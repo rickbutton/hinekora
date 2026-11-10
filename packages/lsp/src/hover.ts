@@ -60,7 +60,7 @@ const REQUIRES: Record<CurrencyKind, string> = {
     chaos: "a Rare item",
     exalt: "a Rare item with an open affix slot",
     annul: "a Magic or Rare item with a removable affix",
-    scour: "a Magic or Rare item with a side no metamod protects",
+    scour: "a Magic or Rare item with a side no metamod protects or a fractured modifier",
     fracture: "a Rare item with at least four modifiers, none of them fractured, and no influence",
     divine: "a Magic or Rare item; every modifier's value is rolled again within its tier, except a fractured one's and those on a side that cannot be changed",
 };
