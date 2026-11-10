@@ -180,17 +180,24 @@ function countCases(
     capPrefix: number,
     capSuffix: number,
 ): CountCase[] {
-    if (m <= 0) return [{ prob: 1, prefix: 0, suffix: 0 }];
+    // A count the open slots cannot take lays down what fits: an Eldritch
+    // Chaos Orb's four to six count the kept side, and the rerolled side
+    // holds three at most.
+    const room =
+        Math.min(Math.max(0, capPrefix), prefix.length) +
+        Math.min(Math.max(0, capSuffix), suffix.length);
+    const draws = Math.min(m, room);
+    if (draws <= 0) return [{ prob: 1, prefix: 0, suffix: 0 }];
     const split = splitOf(
         prefix.map((g) => g.weight),
         suffix.map((g) => g.weight),
-        m,
+        draws,
         capPrefix,
         capSuffix,
     );
     const cases: CountCase[] = [];
     split.forEach((prob, p) => {
-        if (prob > 0) cases.push({ prob, prefix: p, suffix: m - p });
+        if (prob > 0) cases.push({ prob, prefix: p, suffix: draws - p });
     });
     return cases;
 }

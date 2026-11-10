@@ -850,6 +850,37 @@ describe("the eldritch implicits", () => {
         ).toBeCloseTo(0.01, 9);
     });
 
+    it("an Eldritch Chaos Orb fills the rerolled side when its count asks for more", () => {
+        // Four to six modifiers with the kept suffix among them is three to
+        // five prefixes, and the side holds three: every count lands on three.
+        const r = on(
+            { exarch: "lesser", prefixes: ["IncreasedLife1"], suffixes: ["FireResist1"] },
+            [
+                { ...op("eldritch"), words: ["eldritch", "chaos"] },
+                iff(cmp("prefixCount", "==", 3), [stop()]),
+            ],
+        );
+        expect(r.steps.find((s) => s.kind === "if")!.branch).toBeCloseTo(1, 9);
+        // With two suffixes kept the counts are two, three and three again,
+        // and no share of them is lost.
+        const two = on(
+            {
+                exarch: "lesser",
+                prefixes: ["IncreasedLife1"],
+                suffixes: ["FireResist1", "ColdResist1"],
+            },
+            [
+                { ...op("eldritch"), words: ["eldritch", "chaos"] },
+                iff(cmp("prefixCount", "==", 2), [stop()]),
+                iff(cmp("prefixCount", "==", 3), [stop()]),
+            ],
+        );
+        const [low, high] = two.steps.filter((s) => s.kind === "if");
+        expect(low!.branch).toBeCloseTo(8 / 12, 9);
+        expect(high!.branch).toBeCloseTo(1, 9);
+        expect(two.stopped).toBeCloseTo(1, 9);
+    });
+
     it("a method that does not touch the implicits leaves them as they were", () => {
         const r = on({ exarch: "greater" }, [
             op("chaos"),
