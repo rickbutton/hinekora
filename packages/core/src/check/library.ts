@@ -65,7 +65,8 @@ const anyMod: Selector = { kind: "random", honourCannotRoll: false };
 /** The Orb of Annulment's removal, which spares a cannot-roll metamod's tagged mods. */
 const unshielded: Selector = { kind: "random", honourCannotRoll: true };
 
-/** A rare reforge lays down four to six modifiers (Chaos Orb § Mechanics). */
+/** A rare reforge lays down four to six modifiers (Chaos Orb § Mechanics); on
+ *  a base whose Rare holds four the fill reads it as three or four. */
 const RARE_REFORGE: Range = [4, 6];
 const MAGIC_REFORGE: Range = [1, 2];
 

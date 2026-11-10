@@ -51,6 +51,11 @@ const FOUR_AFFIX_CLASSES: ReadonlySet<string> = new Set([
     "HeistEquipmentReward",
 ]);
 
+/** Does a Rare of this base hold four affixes rather than six? */
+export function holdsFour(base: Base): boolean {
+    return FOUR_AFFIX_CLASSES.has(base.itemClass);
+}
+
 /** The per-side affix limit inherent to a rarity + base class, before implicit
  *  deltas: normal 0, magic 1, rare 3 (2 for the four-affix classes). */
 function naturalPerSide(rarity: Rarity, base: Base): number {

@@ -4,6 +4,7 @@
  * in it: a reforge that rerolls the carrier of "prefixes cannot be changed" still
  * keeps the prefixes.
  */
+import { holdsFour } from "../model/capacity.js";
 import { craftedCapOf, type Effect } from "../model/effects.js";
 import { dropValues, keepValues } from "./values.js";
 import {
@@ -126,7 +127,8 @@ export type FillCount =
      *  the rerolled side takes any number up to its cap and open kept-side slots
      *  may fill (Metamod § Rules and Exceptions: "0 to 3 suffixes"). `n` may be
      *  left to the item's rarity: none on Normal, one or two on Magic, four to
-     *  six on Rare, the loosest over the rarities the item may have. */
+     *  six on Rare, the loosest over the rarities the item may have. A rare
+     *  count on a base whose Rare holds four is three or four (`rareCountOn`). */
     | { readonly kind: "reforge"; readonly n: Range | "byRarity" }
     /** One of the modifiers already counted: an essence's grant, a harvest
      *  reforge's tagged modifier, a veiled chaos's placeholder, an unveil. */
@@ -1541,7 +1543,7 @@ function fill(
             break;
         }
         case "reforge": {
-            const n = count.n === "byRarity" ? reforgeCountByRarity(a) : count.n;
+            const n = count.n === "byRarity" ? reforgeCountByRarity(a) : rareCountOn(a, count.n);
             if (rules.protected.size === 0) {
                 const total: Range = [Math.min(n[0], maxT), Math.min(n[1], maxT)];
                 counts = {
@@ -1708,9 +1710,20 @@ function isInfluenceType(a: AItem, type: TypeId, registry: Registry): boolean {
     );
 }
 
+/** A rare reforge's count on this base: a base whose Rare holds four takes
+ *  three or four, not the four its cap would clamp four-to-six down to (Orb of
+ *  Alchemy § Spending: "three to four if used on jewels"). */
+function rareCountOn(a: AItem, n: Range): Range {
+    return holdsFour(a.base) && n[0] >= 4 ? [3, 4] : n;
+}
+
 /** The `byRarity` count (Orb of Transmutation § Spending, Chaos Orb § Mechanics). */
 function reforgeCountByRarity(a: AItem): Range {
-    const byRarity: Record<Rarity, Range> = { normal: [0, 0], magic: [1, 2], rare: [4, 6] };
+    const byRarity: Record<Rarity, Range> = {
+        normal: [0, 0],
+        magic: [1, 2],
+        rare: rareCountOn(a, [4, 6]),
+    };
     const ranges = [...a.rarities].map((r) => byRarity[r]);
     return [Math.min(...ranges.map((r) => r[0])), Math.max(...ranges.map((r) => r[1]))];
 }

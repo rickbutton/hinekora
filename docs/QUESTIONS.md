@@ -124,8 +124,8 @@ on a jewel ([Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipm
 six)?
 **Probe:** an uninfluenced Rare ring and a Rare jewel, altar access, Vaal Orbs; record
 the influences seen and the jewel's affix counts.
-**Assumed:** any one influence or the item's own; a jewel reforged without one; six
-capped by the base's limit. An item with an eldritch implicit keeps it beside the new
+**Assumed:** any one influence or the item's own; a jewel reforged without one, to three
+or four modifiers. An item with an eldritch implicit keeps it beside the new
 influence (the wide reading); a Gilded Fossil's extra implicit is not modelled.
 **Encoded in:** `check/library.ts` `locusOps`, `vaalOps`, `brickBranch`.
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, has, item, op, until } from "../__fixtures__/ast.js";
+import { cmp, craft, has, iff, item, op, until } from "../__fixtures__/ast.js";
 import {
     CATALOG,
     CLUSTER_BASE,
@@ -64,6 +64,41 @@ describe("a cluster jewel's enchant", () => {
         expect(check(craft(ring, []), ctx).diagnostics[0]?.message).toContain(
             "Only a cluster jewel",
         );
+    });
+});
+
+describe("a rare reforge on a jewel", () => {
+    const lightning = { passives: 8, text: "lightning damage" };
+
+    it("leaves three or four modifiers, so an exalt fits where it left three", () => {
+        const r = check(craft(jewel(lightning), [op("chaos")]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.counts.total).toEqual([3, 4]);
+        expect(r.finalState!.counts.prefix).toEqual([1, 2]);
+        const refused = check(craft(jewel(lightning), [op("chaos"), op("exalt")]), ctx);
+        expect(refused.diagnostics[0]?.message).toContain("the item may be full");
+        const narrowed = craft(jewel(lightning), [
+            op("chaos"),
+            iff(cmp("prefixCount", "==", 1), [op("exalt")]),
+        ]);
+        expect(check(narrowed, ctx).diagnostics).toEqual([]);
+    });
+
+    it("holds for an alchemy", () => {
+        const normal = item({
+            base: "Large Cluster Jewel",
+            ilvl: 84,
+            rarity: "normal",
+            enchant: lightning,
+        });
+        const alchemy = check(craft(normal, [op("alchemy")]), ctx);
+        expect(alchemy.diagnostics).toEqual([]);
+        expect(alchemy.finalState!.counts.total).toEqual([3, 4]);
+    });
+
+    it("a ring still takes four to six", () => {
+        const ring = item({ base: "Iron Ring", ilvl: 84, rarity: "rare" });
+        expect(check(craft(ring, [op("chaos")]), ctx).finalState!.counts.total).toEqual([4, 6]);
     });
 });
 
