@@ -270,25 +270,22 @@ influenced modifier of the four classes in the data.
 ### Q33 · game probe · open
 
 **Asked:** 2026-10-29
-**Goal:** how the Tainted currency treats the metamods and the item level. The Metamod
-table has a row for the Tainted Exalted Orb only
+**Goal:** how the Tainted Chaos Orb treats the metamods. The Metamod table has a row for
+the Tainted Exalted Orb only
 ([Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions));
 [Tainted Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Tainted_Chaos_Orb#Mechanics)
 names the fractured modifier as the only survivor of its strip and says nothing of its
-reforge under a protection; and
-[Tainted Divine Teardrop § Mechanics](https://www.poewiki.net/wiki/Tainted_Divine_Teardrop#Mechanics)
-bounds a raised tier by "a tier usually obtainable on that base type", not by the item's
-level.
-**Procure:** a corrupted Rare with "Suffixes Cannot Be Changed" and a corrupted low-level
-Rare with a modifier at its level's top tier; Tainted Chaos Orbs and Teardrops.
-**Steps:** apply the orb to the first until each outcome shows; note whether the suffixes
-survived either; apply Teardrops to the second; note whether a tier above the level's
-cap appears.
-**Record:** the suffixes after each outcome; the highest tier seen.
+reforge under a protection. The Teardrop's half of this entry is settled by the wiki
+([Tainted Divine Teardrop § Mechanics](https://www.poewiki.net/wiki/Tainted_Divine_Teardrop#Mechanics):
+a raised tier is bounded by "a tier usually obtainable on that base type", and the orb
+ignores metamods); the checker forgets the tiers and reads a value against every row the
+base rolls, whatever the item level (`check/value.test.ts`).
+**Procure:** a corrupted Rare with "Suffixes Cannot Be Changed"; Tainted Chaos Orbs.
+**Steps:** apply the orb until each outcome shows; note whether the suffixes survived
+either.
+**Record:** the suffixes after each outcome.
 **Assumed meanwhile:** both halves of the Tainted Chaos Orb ignore the protection
-(`check/library.ts` `TAINTED_CHAOS`, `unprotect`), and a Teardrop's tier stays among
-those the item level allows (`check/astate.ts` `relaxTiers`, the tier resolution in
-`check/check.ts`).
+(`check/library.ts` `TAINTED_CHAOS`, `unprotect`).
 **Answer:**
 
 ### Q41 · game probe · open
