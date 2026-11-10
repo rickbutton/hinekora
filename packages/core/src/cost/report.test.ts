@@ -43,7 +43,11 @@ const registry = buildRegistry({
     bases: [RING_BASE],
     mods: [...CATALOG, BENCH_LIFE_ROW, PROTECT_PREFIXES_CARRIER, ...VEILED_CATALOG],
     baseAliases: { "Iron Ring": "IronRing" },
-    benchCrafts: [{ mod: BENCH_LIFE_ROW.id, tier: 1, itemClasses: new Set([CLASS_RING]) }],
+    benchCrafts: [BENCH_LIFE_ROW.id, PROTECT_PREFIXES_CARRIER.id].map((mod) => ({
+        mod,
+        tier: 1,
+        itemClasses: new Set([CLASS_RING]),
+    })),
 });
 const ring = (
     rarity: "normal" | "magic" | "rare",
@@ -484,6 +488,35 @@ describe("the cost of a guide", () => {
         expect(r.steps[0]!.note).toBeUndefined();
         expect(r.steps[0]!.attempts!.chance).toBeCloseTo(5 / 15, 9);
         expect(r.steps[0]!.attempts!.expected).toBeCloseTo((10 / 15) * 3, 9);
+    });
+
+    it("a Divine Orb leaves a fractured modifier's value as it is", () => {
+        const c = craft(
+            item({
+                base: "Iron Ring",
+                ilvl: 84,
+                rarity: "rare",
+                prefixes: [{ mod: "IncreasedLife1", fractured: true }],
+            }),
+            [until(hasValue("IncreasedLife1", ">=", 80), [op("divine")])],
+        );
+        const loop = report(c).steps[0]!;
+        expect(loop.note).toMatch(/cannot end/);
+    });
+
+    it("a Divine Orb leaves the values on a side a metamod protects", () => {
+        const c = craft(
+            item({
+                base: "Iron Ring",
+                ilvl: 84,
+                rarity: "rare",
+                prefixes: ["IncreasedLife1"],
+                suffixes: [{ mod: "prefixes cannot be changed", bench: true }],
+            }),
+            [until(hasValue("IncreasedLife1", ">=", 80), [op("divine")])],
+        );
+        const loop = report(c).steps[0]!;
+        expect(loop.note).toMatch(/cannot end/);
     });
 
     it("a reforge rolls the value of the modifier it lands within its range", () => {

@@ -613,8 +613,17 @@ export class Tracker {
      *  value lands again in each part of its row's range by its share. */
     private rerolled(state: ChainState): readonly Outcome[] {
         let out: { rows: (ModId | null)[]; prob: number }[] = [{ rows: [...state.rows], prob: 1 }];
+        // A fractured modifier keeps its value, and so does one on a side a
+        // metamod protects (Divine Orb § Mechanics; Metamod § Rules and Exceptions).
+        const shut = new Set(
+            this.protections
+                .filter((p) => (state.rows[p.atom] ?? null) !== null)
+                .map((p) => p.side),
+        );
         state.rows.forEach((row, i) => {
-            if (row === null || readRow(row).value === undefined) return;
+            if (row === null) return;
+            const { value, locked } = readRow(row);
+            if (value === undefined || locked || shut.has(this.atoms[i]!.gen)) return;
             const parts = this.classesOf(i, readRow(row).base);
             out = out.flatMap((st) =>
                 parts.map((c) => {
