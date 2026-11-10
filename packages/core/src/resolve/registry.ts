@@ -510,7 +510,7 @@ export function buildRegistry(data: RegistryData): Registry {
         tag: TagId(tag),
         words: tag.slice("affliction_".length).replace(/_+$/, "").replaceAll("_", " "),
     }));
-    const enchantedBases = new Map<string, Base>();
+    const enchantedBases = new WeakMap<Base, Map<TagId, Base>>();
     const enchantSizes = new Map<TagId, Set<ClusterSize>>();
     for (const [size, tags] of Object.entries(data.clusterEnchants ?? {})) {
         for (const tag of tags) {
@@ -715,11 +715,15 @@ export function buildRegistry(data: RegistryData): Registry {
         },
 
         enchantedBase(base, enchant) {
-            const key = `${base.id}|${enchant}`;
-            let enchanted = enchantedBases.get(key);
+            let byEnchant = enchantedBases.get(base);
+            if (byEnchant === undefined) {
+                byEnchant = new Map<TagId, Base>();
+                enchantedBases.set(base, byEnchant);
+            }
+            let enchanted = byEnchant.get(enchant);
             if (enchanted === undefined) {
                 enchanted = { ...base, tags: new Set([...base.tags, enchant]) };
-                enchantedBases.set(key, enchanted);
+                byEnchant.set(enchant, enchanted);
             }
             return enchanted;
         },

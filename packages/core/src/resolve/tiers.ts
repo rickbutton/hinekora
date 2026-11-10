@@ -11,6 +11,9 @@ import { emptyItem } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
 import { type ModCatalog, pool } from "../pool/pool.js";
 
+/** The item level at which every row of a ladder rolls. */
+export const TOP_ITEM_LEVEL = 100;
+
 const NO_TAGS: ReadonlySet<TagId> = new Set();
 const NO_ROWS: readonly Mod[] = [];
 

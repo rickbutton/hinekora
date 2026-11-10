@@ -41,7 +41,7 @@ import {
 import type { Mod } from "../model/mod.js";
 import { isUnveiledResult } from "../model/veiled.js";
 import type { Registry } from "../resolve/registry.js";
-import { rollableGen, rollableTiers } from "../resolve/tiers.js";
+import { rollableGen, rollableTiers, TOP_ITEM_LEVEL } from "../resolve/tiers.js";
 import { baseLabel } from "./render.js";
 import { capitalise, pluralRange, rangeText, rarityText } from "../words.js";
 
@@ -122,9 +122,6 @@ export interface ItemView {
     /** The modifiers proven absent, by wording. */
     readonly without: readonly string[];
 }
-
-/** The item level at which every row of a ladder rolls. */
-const TOP_ITEM_LEVEL = 100;
 
 const RARITY_ORDER: readonly Rarity[] = ["normal", "magic", "rare"];
 

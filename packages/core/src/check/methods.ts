@@ -23,7 +23,7 @@ import {
 import type { Mod } from "../model/mod.js";
 import { type FossilSpec, isCorruptedEssence } from "../model/sources.js";
 import { HARVEST_AUGMENT_TAGS, type Registry, STANDARD_CURRENCIES } from "../resolve/registry.js";
-import { rollableTiers } from "../resolve/tiers.js";
+import { rollableTiers, TOP_ITEM_LEVEL } from "../resolve/tiers.js";
 import type { AItem } from "./astate.js";
 import { resolveMessage } from "./diagnostics.js";
 import {
@@ -117,8 +117,6 @@ const num = (l: Literal | undefined): number | undefined =>
     l === undefined ? undefined : l.kind === "int" || l.kind === "tier" ? l.value : undefined;
 
 const CRITICAL = TagId("critical");
-/** The item level at which every row of a ladder rolls. */
-const TOP_ITEM_LEVEL = 100;
 
 const DOT_MULTI = TagId("dot_multi");
 
