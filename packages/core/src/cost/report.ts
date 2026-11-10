@@ -660,7 +660,10 @@ class Walker {
                 path: b.path === undefined ? undefined : this.benchOnPath(b.path, literals, after),
             }));
         }
-        return branches.map((b) => ({ mass: b.mass, path: b.path }));
+        // A step that could not be followed changed the item in ways the roll
+        // before it does not show: what that roll left is no longer the item.
+        const stale = missed || cause !== undefined;
+        return branches.map((b) => ({ mass: b.mass, path: stale ? undefined : b.path }));
     }
 
     /** Each branch's states after a method; undefined when a branch has none or

@@ -742,6 +742,23 @@ describe("the cost of a guide", () => {
         expect(value.expected).toBeCloseTo(3 * tier.expected, 6);
     });
 
+    it("a step that cannot be followed ends what the roll before it says of the item", () => {
+        // The Corruption Altar may reforge or destroy the item: the Chaos
+        // Orb's roll no longer says whether it has the life.
+        const after = (...steps: string[]) =>
+            report(
+                craft(ring("rare"), [
+                    ...steps.map((s) => op(s)),
+                    iff(has("maximum life", 1), [stop()]),
+                ]),
+            ).steps.find((s) => s.kind === "if")!;
+        const rolled = after("chaos");
+        expect(rolled.note).toBeUndefined();
+        const altered = after("chaos", "locus");
+        expect(altered.note).toMatch(/not known/);
+        expect(altered.branch).not.toBeCloseTo(rolled.branch!, 6);
+    });
+
     it("a Vaal Orb's four outcomes are each as likely, one of them a reforge", () => {
         // A new implicit, a socket's colour and no effect leave the life; the
         // reforge rolls six modifiers, the life among them now and then.
