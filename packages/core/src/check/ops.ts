@@ -97,6 +97,8 @@ export type PoolSpec =
     | {
           readonly kind: "fossil";
           readonly blocked: ReadonlySet<TagId>;
+          /** Rows with no category tag are out too (the Opulent Fossil). */
+          readonly noTagless: boolean;
           readonly added: readonly Mod[];
           readonly essence: readonly Mod[];
           /** The fossils socketed, for the weights they give the rows (the
@@ -1431,7 +1433,10 @@ function resolvePool(a: AItem, spec: PoolSpec, registry: Registry, strands = fal
                 gen: undefined,
             };
         case "fossil": {
-            const natural = addableMods(a, registry).filter((m) => !carriesAny(m, spec.blocked));
+            const natural = addableMods(a, registry).filter(
+                (m) =>
+                    !carriesAny(m, spec.blocked) && !(spec.noTagless && m.implicitTags.size === 0),
+            );
             // A fossil's own rows are outside the natural pool's domain, so they
             // are admitted by their own weight on the base; an essence's row by
             // the essence's class table, already applied.

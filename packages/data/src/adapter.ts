@@ -124,6 +124,7 @@ export function adaptFossil(id: string, f: RepoeFossil): FossilSpec {
         ...(f.allowed_tags && { allowedTags: new Set(f.allowed_tags.map((t) => TagId(t))) }),
         corruptedEssenceChance: f.corrupted_essence_chance,
         ...(f.random_tags && { randomTags: true as const }),
+        ...(f.blocks_tagless && { blocksTagless: true as const }),
         fractures: f.fractures,
         corrupts: f.corrupts,
     };

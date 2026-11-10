@@ -91,6 +91,8 @@ export interface RepoeFossil {
     readonly corrupted_essence_chance: number;
     /** A random "greatly more" and "no" category, shown once socketed (the Tangled Fossil). */
     readonly random_tags?: boolean;
+    /** Modifiers with no category tag cannot roll (the Opulent Fossil). */
+    readonly blocks_tagless?: boolean;
     /** Fractures one of the modifiers it rolls. */
     readonly fractures: boolean;
     /** Corrupts the item. */

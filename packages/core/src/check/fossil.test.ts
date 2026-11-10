@@ -15,8 +15,9 @@ import {
     PROTECT_PREFIXES_CARRIER,
     RING_BASE,
 } from "../__fixtures__/mods.js";
-import { CORRUPTED_ESSENCE_TIER, type EssenceSpec } from "../model/sources.js";
-import { TypeId } from "../model/ids.js";
+import { CORRUPTED_ESSENCE_TIER, type EssenceSpec, type FossilSpec } from "../model/sources.js";
+import { GroupId, ModId, TypeId } from "../model/ids.js";
+import type { Mod } from "../model/mod.js";
 
 const ESS_CORRUPTED: EssenceSpec = {
     id: "TestCorrupted",
@@ -51,6 +52,36 @@ const rareRing = (prefixes: Affix[] = [], suffixes: Affix[] = []) =>
 const LIFE = TypeId("IncreasedLife");
 
 describe("a resonator", () => {
+    it("rolls no modifier without a tag under the Opulent Fossil", () => {
+        // "More Drop modifiers, No Tagless modifiers": a loop for a tagless
+        // modifier under it never ends in game.
+        const tagless: Mod = {
+            ...INCREASED_MANA,
+            id: ModId("Tagless1"),
+            type: TypeId("Tagless"),
+            families: new Set([GroupId("Tagless")]),
+            implicitTags: new Set(),
+        };
+        const opulent: FossilSpec = {
+            ...FOSSILS[0]!,
+            id: "FossilOpulent",
+            name: "Opulent Fossil",
+            blockedTags: new Set(),
+            blocksTagless: true,
+        };
+        const withTagless = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...CATALOG, tagless],
+            baseAliases: { "Iron Ring": "IronRing" },
+            fossils: [...FOSSILS, opulent],
+        });
+        const under = (name: string) =>
+            check(craft(rareRing(), [fossil(name)]), { registry: withTagless }).finalState!;
+        expect(under("opulent").possible.has(tagless.type)).toBe(false);
+        expect(under("opulent").possible.has(INCREASED_MANA.type)).toBe(true);
+        expect(under("dense").possible.has(tagless.type)).toBe(true);
+    });
+
     it("reforges without the modifiers of a blocked tag", () => {
         const r = check(craft(rareRing(["T1 Life"]), [fossil("dense")]), ctx);
         expect(r.diagnostics).toEqual([]);

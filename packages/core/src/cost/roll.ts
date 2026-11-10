@@ -312,10 +312,11 @@ function poolRows(
                 }
                 return sum > 0 ? sum : 1;
             };
+            const untagged = (m: Mod): boolean => spec.noTagless && m.implicitTags.size === 0;
             const blocked = (m: Mod): boolean =>
                 [...m.implicitTags].some((t) => spec.blocked.has(t));
             const rows = natural()
-                .filter((r) => !blocked(r.mod))
+                .filter((r) => !blocked(r.mod) && !untagged(r.mod))
                 .map((r) => ({ mod: r.mod, weight: r.weight * multiplier(r.mod) }));
             for (const m of spec.added) {
                 if (blocked(m) || m.minLevel > a.ilvl) continue;

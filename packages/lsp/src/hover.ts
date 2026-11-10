@@ -424,6 +424,7 @@ function fossilSignature(names: readonly string[], registry: Registry): string {
         const words = (tags: Iterable<string>): string =>
             [...tags].map((t) => t.replace(/_/g, " ")).join(", ");
         if (f.blockedTags.size > 0) effects.push(`no ${words(f.blockedTags)} modifiers`);
+        if (f.blocksTagless) effects.push("no modifiers without a tag");
         if (f.addedMods.length > 0) effects.push("may roll its own fossil-only modifiers");
         if (f.forcedMods.length > 0) effects.push("guarantees its modifier");
         if (f.corruptedEssenceChance === 100)

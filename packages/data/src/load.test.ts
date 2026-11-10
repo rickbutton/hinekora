@@ -72,6 +72,10 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         expect(registry.resolveFossil("tangled")).toMatchObject({
             value: { corruptedEssenceChance: 0, addedMods: [], randomTags: true },
         });
+        // "More Drop modifiers, No Tagless modifiers" (Opulent Fossil § Mechanics).
+        expect(registry.resolveFossil("opulent")).toMatchObject({
+            value: { blocksTagless: true },
+        });
         const faceted = registry.resolveFossil("faceted");
         expect(faceted.ok && faceted.value.addedMods).toContain("DelveStrengthGemLevel1");
         expect(registry.resolveFossil("fractured")).toMatchObject({ value: { fractures: true } });

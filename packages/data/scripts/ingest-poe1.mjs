@@ -227,6 +227,10 @@ export function projectFossils(raw) {
             ...(f.allowed_tags?.length ? { allowed_tags: f.allowed_tags } : {}),
             corrupted_essence_chance: tangled ? 0 : (f.corrupted_essence_chance ?? 0),
             ...(tangled && { random_tags: true }),
+            // The export has only tag weights, and no tag names a modifier
+            // without tags: "More Drop modifiers, No Tagless modifiers" (Fossil
+            // § Mechanics, Opulent Fossil § Mechanics).
+            ...(f.name === "Opulent Fossil" && { blocks_tagless: true }),
             // The export has no field for either: the Fractured Fossil fractures
             // one of the modifiers it rolls (Fractured Fossil § Mechanics) and the
             // Bloodstained Fossil corrupts the item (Bloodstained Fossil § Mechanics).

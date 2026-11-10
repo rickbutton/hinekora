@@ -664,6 +664,9 @@ export function resonatorOps(r: Resonator): readonly Op[] {
             {
                 kind: "fossil",
                 blocked,
+                // "No Tagless modifiers" (Opulent Fossil § Mechanics) is read of
+                // the base's own modifiers; a fossil's rows are left possible.
+                noTagless: r.fossils.some((f) => f.blocksTagless === true),
                 added: r.added.filter(unblocked),
                 essence,
                 fossils: r.fossils,

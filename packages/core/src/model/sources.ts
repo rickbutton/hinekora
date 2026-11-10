@@ -65,6 +65,9 @@ export interface FossilSpec {
     /** Category tag → weight multiplier in percent ("More Life modifiers" is
      *  1000, ten times); the cost layer reads it, the checker does not. */
     readonly weights: ReadonlyMap<TagId, number>;
+    /** Modifiers with no category tag cannot roll ("No Tagless modifiers", the
+     *  Opulent Fossil). */
+    readonly blocksTagless?: true;
     /** Fossil-only rows that join the pool. */
     readonly addedMods: readonly ModId[];
     /** Rows one of which is guaranteed (the Hollow Fossil's abyssal socket). */
