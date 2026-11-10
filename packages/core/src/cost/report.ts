@@ -932,7 +932,8 @@ class Walker {
                     if (![...leaf.types].every((t) => tracker.index.has(t))) return undefined;
                     break;
                 case "hasValue":
-                    return undefined;
+                    if (!tracker.valued(leaf.type)) return undefined;
+                    break;
                 default: {
                     const c = this.conditionChance(leaf, undefined, item);
                     if (c === undefined) return undefined;

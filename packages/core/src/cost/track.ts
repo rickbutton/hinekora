@@ -5,7 +5,9 @@
  * (`chain.ts`) carries it round by round; these are the pieces that read a
  * step, a condition or a roll in its terms.
  */
-import type { Gen, ModId, TagId, TypeId } from "../model/ids.js";
+import { type Gen, ModId, type TagId, type TypeId } from "../model/ids.js";
+import type { Range } from "../check/domain.js";
+import { narrowRange } from "../check/values.js";
 import type { Op } from "../check/ops.js";
 import type { Registry } from "../resolve/registry.js";
 import {
@@ -20,6 +22,7 @@ import { influenceTagsAny, runMethod } from "../check/ops.js";
 import { lookupWeight } from "../pool/pool.js";
 import { rollableGen, rollableTiers } from "../resolve/tiers.js";
 import type { ChainAtom, ChainState, ChainStep, Outcome } from "./chain.js";
+import { pieces } from "./chance.js";
 import { amongFirstDistribution } from "./race.js";
 import { naturalGroups, type Reading, type Roll, rollOf } from "./roll.js";
 
@@ -30,7 +33,42 @@ export interface Carried {
     /** Per type, whether its row is the one on the item or a reforge's
      *  stand-in for a modifier no condition of that loop tells apart by tier. */
     readonly rowed: readonly boolean[];
+    /** The types whose rows carry the part of the range their value is in. */
+    readonly valued?: ReadonlySet<TypeId>;
     readonly dist: readonly { readonly state: ChainState; readonly weight: number }[];
+}
+
+type ValueLeaf = Extract<RPred, { kind: "hasValue" }>;
+
+/** How much of `part` lies in `span`, as a share of `part`, whole numbers
+ *  counted one by one as the value roll is (Q65). */
+function overlap(part: Range, span: Range): number {
+    const whole = [...part, ...span].every(Number.isInteger);
+    const lo = Math.max(part[0], span[0]);
+    const hi = Math.min(part[1], span[1]);
+    const len = whole ? hi - lo + 1 : hi - lo;
+    const of = whole ? part[1] - part[0] + 1 : part[1] - part[0];
+    if (!(of > 0)) return lo <= hi ? 1 : 0;
+    return Math.max(0, len) / of;
+}
+
+/**
+ * A tracked row of a modifier whose value a condition compares carries the
+ * part of the row's range its value is in, as `row~lo~hi`; any other row is
+ * the row alone.
+ */
+export function readRow(row: ModId): { base: ModId; value?: Range } {
+    const at = row.indexOf("~");
+    if (at < 0) return { base: row };
+    const [lo, hi] = row
+        .slice(at + 1)
+        .split("~")
+        .map(Number) as [number, number];
+    return { base: ModId(row.slice(0, at)), value: [lo, hi] };
+}
+
+function valueRow(base: ModId, value: Range): ModId {
+    return ModId(`${base}~${value[0]}~${value[1]}`);
 }
 
 /** Rows a condition tells apart: one named tier, or the rest of a ladder. */
@@ -55,7 +93,10 @@ export class Tracker {
     readonly index = new Map<TypeId, number>();
     readonly protections: { readonly atom: number; readonly side: Gen }[] = [];
     private readonly classes: RowClass[][] = [];
-    private readonly repOf: Map<ModId, ModId>[] = [];
+    /** Per atom, each row's classes with the share of the row's weight each holds. */
+    private readonly classesOfRow: Map<ModId, { rep: ModId; share: number }[]>[] = [];
+    /** The value conditions each type is compared by, which split its rows. */
+    private readonly valueLeaves = new Map<TypeId, ValueLeaf[]>();
 
     constructor(
         private readonly registry: Registry,
@@ -72,6 +113,12 @@ export class Tracker {
                     wanted.push(leaf.type);
                     if (leaf.tierMod !== undefined) named.add(leaf.tierMod);
                 } else if (leaf.kind === "hasGroup") wanted.push(...leaf.types);
+                else if (leaf.kind === "hasValue") {
+                    wanted.push(leaf.type);
+                    const list = this.valueLeaves.get(leaf.type) ?? [];
+                    list.push(leaf);
+                    this.valueLeaves.set(leaf.type, list);
+                }
             }
         }
         const protecting: { type: TypeId; side: Gen }[] = [];
@@ -104,14 +151,38 @@ export class Tracker {
                     .filter((m) => m.type === type)
                     .map((m) => ({ id: m.id, weight: 1 }));
             }
-            const own = rows.filter((r) => named.has(r.id));
-            const rest = rows.filter((r) => !named.has(r.id));
-            const classes: RowClass[] = own.map((r) => ({ rep: r.id, members: [r] }));
-            if (rest.length > 0) classes.push({ rep: rest[0]!.id, members: rest });
-            const repOf = new Map<ModId, ModId>();
-            for (const c of classes) for (const m of c.members) repOf.set(m.id, c.rep);
+            const leaves = this.valueLeaves.get(type);
+            const classes: RowClass[] = [];
+            const ofRow = new Map<ModId, { rep: ModId; share: number }[]>();
+            const into = (r: { id: ModId; weight: number }, rep: ModId, share: number): void => {
+                const list = ofRow.get(r.id) ?? [];
+                list.push({ rep, share });
+                ofRow.set(r.id, list);
+            };
+            if (leaves !== undefined) {
+                // Compared by value: each row apart, cut where the conditions'
+                // thresholds fall, each part by its share of the range (Q65).
+                for (const r of rows) {
+                    const span = leaves.map((l) => l.rows.get(r.id)).find((s) => s !== undefined);
+                    const parts =
+                        span === undefined
+                            ? [{ range: undefined, share: 1 }]
+                            : pieces(span, leaves);
+                    for (const p of parts) {
+                        const rep = p.range === undefined ? r.id : valueRow(r.id, p.range);
+                        classes.push({ rep, members: [{ id: r.id, weight: r.weight * p.share }] });
+                        into(r, rep, p.share);
+                    }
+                }
+            } else {
+                const own = rows.filter((r) => named.has(r.id));
+                const rest = rows.filter((r) => !named.has(r.id));
+                for (const r of own) classes.push({ rep: r.id, members: [r] });
+                if (rest.length > 0) classes.push({ rep: rest[0]!.id, members: rest });
+                for (const c of classes) for (const m of c.members) into(m, c.rep, 1);
+            }
             this.classes.push(classes);
-            this.repOf.push(repOf);
+            this.classesOfRow.push(ofRow);
             this.atoms.push({
                 gen: genOfOn(registry, first, type),
                 rows: classes.map((c) => ({
@@ -130,19 +201,46 @@ export class Tracker {
         for (const item of items) for (const t of guaranteedTypes(item)) add(t);
     }
 
-    /** The class a row of atom `i` falls in, by the row that stands for it. */
-    classOf(i: number, id: ModId): ModId {
-        return this.repOf[i]?.get(id) ?? id;
+    /**
+     * The classes a row of atom `i` falls in, each with its share of the row:
+     * one, unless the type is compared by value, when a fresh roll lands in
+     * each part of the range by its share and a kept modifier stays in the
+     * part its known span is in.
+     */
+    classesOf(i: number, id: ModId, kept?: Range): readonly { id: ModId; share: number }[] {
+        const list = this.classesOfRow[i]?.get(id);
+        if (list === undefined) return [{ id, share: 1 }];
+        const out = list
+            .map((c) => {
+                const value = readRow(c.rep).value;
+                const share =
+                    kept === undefined || value === undefined ? c.share : overlap(value, kept);
+                return { id: c.rep, share };
+            })
+            .filter((c) => c.share > 0);
+        const total = out.reduce((s, c) => s + c.share, 0);
+        return total > 0 ? out.map((c) => ({ ...c, share: c.share / total })) : [{ id, share: 1 }];
+    }
+
+    /** Whether a condition on the type's value can be read off the state. */
+    valued(type: TypeId): boolean {
+        return this.valueLeaves.has(type);
     }
 
     /** Atom `i`'s classes the item allows, by the weight of their rows it allows. */
     rowsOn(i: number, item: AItem): readonly { id: ModId; weight: number }[] {
-        const pinned = item.tiers.get(this.types[i]!);
+        const type = this.types[i]!;
+        const pinned = item.tiers.get(type);
+        const known = item.values.get(type);
         const out: { id: ModId; weight: number }[] = [];
         for (const c of this.classes[i]!) {
-            const weight = c.members
-                .filter((m) => pinned === undefined || pinned.has(m.id))
-                .reduce((sum, m) => sum + m.weight, 0);
+            const value = readRow(c.rep).value;
+            const part = known === undefined || value === undefined ? 1 : overlap(value, known);
+            const weight =
+                part *
+                c.members
+                    .filter((m) => pinned === undefined || pinned.has(m.id))
+                    .reduce((sum, m) => sum + m.weight, 0);
             if (weight > 0) out.push({ id: c.rep, weight });
         }
         return out.length > 0 ? out : this.atoms[i]!.rows;
@@ -150,7 +248,12 @@ export class Tracker {
 
     /** States over the tracked atoms, as carried states. */
     carried(dist: readonly { readonly state: ChainState; readonly weight: number }[]): Carried {
-        return { types: this.types, rowed: this.types.map(() => true), dist };
+        return {
+            types: this.types,
+            rowed: this.types.map(() => true),
+            valued: new Set(this.valueLeaves.keys()),
+            dist,
+        };
     }
 
     /** States a method left as they were because the checker's item, narrowed
@@ -162,9 +265,10 @@ export class Tracker {
      * the state (its counts, each atom present at its class or absent), the
      * method read on that item, and the item it leaves read back as states. A
      * random method's roll gives the outcomes and their chances; a sure one
-     * gives one state. Undefined for a method whose randomness the state does
-     * not hold (a Divine Orb's values, an unveil's choice, a fracture's lock,
-     * an implicit), which the walk reads off the roll instead.
+     * gives one state; a Divine Orb rolls the value of every modifier a
+     * condition compares again within its tier. Undefined for a method whose
+     * randomness the state does not hold (an unveil's choice, a fracture's
+     * lock, an implicit), which the walk reads off the roll instead.
      */
     transition(
         before: AItem,
@@ -172,8 +276,16 @@ export class Tracker {
         reading: Reading,
     ): ((state: ChainState) => readonly Outcome[]) | undefined {
         const kind = rollOf(before, ops, this.registry, reading).kind;
-        if (kind !== "draw" && kind !== "removal" && kind !== "none") return undefined;
         const cache = new Map<string, readonly Outcome[]>();
+        if (kind === "reroll") {
+            return (state) => {
+                const key = stateKey(state);
+                const out = cache.get(key) ?? this.rerolled(state);
+                cache.set(key, out);
+                return out;
+            };
+        }
+        if (kind !== "draw" && kind !== "removal" && kind !== "none") return undefined;
         // A draw's outcomes rest on the item its fill starts from, which many
         // states share where a reforge strips what tells them apart.
         const fillAt = ops.findIndex((op) => op.kind === "fill");
@@ -185,9 +297,7 @@ export class Tracker {
             let out: readonly Outcome[] | undefined;
             const item = kind === "draw" && fillAt >= 0 ? this.narrow(before, state) : null;
             if (item !== null) {
-                const sig = this.signature(
-                    runMethod(item, ops.slice(0, fillAt), this.registry).state,
-                );
+                const sig = this.signature(this.stripped(item, ops, fillAt));
                 out = drawn.get(sig);
                 if (out === undefined) {
                     out = this.outcomes(before, ops, state, reading) ?? [{ state, prob: 1 }];
@@ -202,10 +312,15 @@ export class Tracker {
     }
 
     /** What a draw reads of an item: its counts, rarity, strands, influences,
-     *  the modifiers it surely holds and the named ones' tiers. */
+     *  the modifiers it surely holds and the named ones' tiers and values. */
     private signature(a: AItem): string {
         const guaranteed = [...guaranteedTypes(a)].sort();
-        const tiers = this.types.map((t) => [...(a.tiers.get(t) ?? [])].sort().join("+"));
+        const tiers = this.types.map(
+            (t) =>
+                [...(a.tiers.get(t) ?? [])].sort().join("+") +
+                "@" +
+                (a.values.get(t) ?? []).join(".."),
+        );
         return JSON.stringify([
             a.counts,
             rarityOf(a) ?? "any",
@@ -226,12 +341,24 @@ export class Tracker {
         if (item === null) return undefined;
         const roll = rollOf(item, ops, this.registry, reading);
         switch (roll.kind) {
-            case "draw":
+            case "draw": {
+                // A modifier the fill keeps keeps its value; a drawn or forced
+                // one rolls it fresh.
+                const fillAt = ops.findIndex((op) => op.kind === "fill");
+                const kept = this.stripped(item, ops, fillAt);
+                const keptTypes = guaranteedTypes(kept);
                 return this.counted(
                     reforgeOutcomes(this.closed(roll), this.atoms, this.index, (i, id) =>
-                        this.classOf(i, id),
+                        this.classesOf(
+                            i,
+                            id,
+                            keptTypes.has(this.types[i]!)
+                                ? kept.values.get(this.types[i]!)
+                                : undefined,
+                        ),
                     ),
                 );
+            }
             case "removal": {
                 const out: Outcome[] = [];
                 for (const c of roll.candidates) {
@@ -286,6 +413,32 @@ export class Tracker {
             return { ...v, prefix: side("prefix", v.prefix), suffix: side("suffix", v.suffix) };
         });
         return { ...roll, variants };
+    }
+
+    /** The item a method's fill starts from: what its steps before the fill
+     *  leave, its requirements, which change nothing, skipped. */
+    private stripped(item: AItem, ops: readonly Op[], fillAt: number): AItem {
+        if (fillAt < 0) return item;
+        const steps = ops.slice(0, fillAt).filter((op) => op.kind !== "require");
+        return runMethod(item, steps, this.registry).state;
+    }
+
+    /** A Divine Orb on a state: each present modifier a condition compares by
+     *  value lands again in each part of its row's range by its share. */
+    private rerolled(state: ChainState): readonly Outcome[] {
+        let out: { rows: (ModId | null)[]; prob: number }[] = [{ rows: [...state.rows], prob: 1 }];
+        state.rows.forEach((row, i) => {
+            if (row === null || readRow(row).value === undefined) return;
+            const parts = this.classesOf(i, readRow(row).base);
+            out = out.flatMap((st) =>
+                parts.map((c) => {
+                    const rows = [...st.rows];
+                    rows[i] = c.id;
+                    return { rows, prob: st.prob * c.share };
+                }),
+            );
+        });
+        return out.map((st) => ({ state: { ...state, rows: st.rows }, prob: st.prob }));
     }
 
     private counted(out: readonly Outcome[] | undefined): readonly Outcome[] | undefined {
@@ -355,8 +508,8 @@ export class Tracker {
                         const i = this.index.get(g.type)!;
                         const byClass = new Map<ModId, number>();
                         for (const r of g.rows) {
-                            const c = this.classOf(i, r.mod.id);
-                            byClass.set(c, (byClass.get(c) ?? 0) + r.weight);
+                            for (const c of this.classesOf(i, r.mod.id))
+                                byClass.set(c.id, (byClass.get(c.id) ?? 0) + r.weight * c.share);
                         }
                         const total = [...byClass.values()].reduce((s, w) => s + w, 0);
                         part = part.flatMap((st) =>
@@ -394,9 +547,18 @@ export class Tracker {
                 return;
             }
             const classes = this.classes[i]!;
+            const { base, value } = readRow(row);
+            const leaf = this.valueLeaves.get(type)?.[0];
+            if (value !== undefined && leaf !== undefined) {
+                // The row, its value in the part of the range the state holds.
+                conds.push({ ...has, tierMod: base });
+                conds.push({ ...leaf, op: ">=", value: value[0] });
+                conds.push({ ...leaf, op: "<=", value: value[1] });
+                return;
+            }
             const own = classes.find((c) => c.rep === row);
             if (own !== undefined && own.members.length === 1) {
-                conds.push({ ...has, tierMod: row });
+                conds.push({ ...has, tierMod: base });
                 return;
             }
             // The rest of the ladder: present, at none of the tiers named apart.
@@ -461,6 +623,7 @@ export function splitCarried(
         )
             continue;
         if (leaf.kind === "hasGroup" && [...leaf.types].every((t) => index.has(t))) continue;
+        if (leaf.kind === "hasValue" && c.valued?.has(leaf.type)) continue;
         return undefined;
     }
     const yes: Carried["dist"][number][] = [];
@@ -504,7 +667,7 @@ export function reforgeOutcomes(
     roll: Extract<Roll, { kind: "draw" }>,
     atoms: readonly ChainAtom[],
     atomIndex: ReadonlyMap<TypeId, number>,
-    classOf: (i: number, id: ModId) => ModId,
+    classesOf: (i: number, id: ModId) => readonly { id: ModId; share: number }[],
 ): Outcome[] | undefined {
     const rowsFor = (
         i: number,
@@ -513,8 +676,8 @@ export function reforgeOutcomes(
         if (rows.length === 0) return [{ id: atoms[i]!.rows[0]!.id, share: 1 }];
         const byClass = new Map<ModId, number>();
         for (const r of rows) {
-            const c = classOf(i, r.id);
-            byClass.set(c, (byClass.get(c) ?? 0) + r.weight);
+            for (const c of classesOf(i, r.id))
+                byClass.set(c.id, (byClass.get(c.id) ?? 0) + r.weight * c.share);
         }
         const total = rows.reduce((s, r) => s + r.weight, 0);
         return [...byClass].map(([id, w]) => ({
@@ -667,7 +830,17 @@ export function holdsOn(
         case "has": {
             const i = atomIndex.get(pred.type);
             const row = i === undefined ? null : (s.rows[i] ?? null);
-            return row !== null && (pred.tierMod === undefined || row === pred.tierMod);
+            return (
+                row !== null && (pred.tierMod === undefined || readRow(row).base === pred.tierMod)
+            );
+        }
+        case "hasValue": {
+            // A row carries the part of its range the value is in, cut where
+            // the conditions' thresholds fall, so it holds wholly or not at all.
+            const i = atomIndex.get(pred.type);
+            const row = i === undefined ? null : (s.rows[i] ?? null);
+            const value = row === null ? undefined : readRow(row).value;
+            return value !== undefined && narrowRange(value, pred.op, pred.value) !== null;
         }
         case "hasGroup":
             return [...pred.types].some((t) => {

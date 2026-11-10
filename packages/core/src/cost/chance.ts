@@ -603,7 +603,7 @@ function outcomesOf(
 }
 
 /** The parts of `span` the value atoms tell apart, each with its share of the span. */
-function pieces(
+export function pieces(
     span: Range,
     valueLeaves: readonly Extract<Leaf, { kind: "hasValue" }>[],
 ): { range: Range; share: number }[] {

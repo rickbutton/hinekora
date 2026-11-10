@@ -331,13 +331,17 @@ function, and the item that leaves read back as states. So a Regal Orb after an 
 Transmutation knows the item had one modifier half the time and two the other half, and
 a reforge under "Suffixes Cannot Be Changed" knows how many suffixes it keeps. A branch
 splits the distribution by its condition; a loop is solved as a chain over it (§7.4).
+A modifier a condition compares by value is held per tier and value piece, cut at the
+condition's thresholds, so a reforge lands a value within its tier's range and a Divine
+Orb rerolls the values the item has. A guide followed this way throughout reads no open
+count, and is walked once.
 
 Two things stay approximate. The modifiers no one names and the checker does not know
 are a count, not identities: when a draw lands beside them each is taken to close a
 modifier group of average weight on its side, as craftofexile's calculator does. And the
 game's rules no source settles are assumptions (Q58–Q66 and Q68). Where a step's randomness is
-one the state does not hold (a Divine Orb's values, an unveil's choice, a fracture's
-lock, an ember's implicit) or the walk cannot follow a statement (a call), the walk falls
+one the state does not hold (an unveil's choice, a fracture's lock, an ember's
+implicit) or the walk cannot follow a statement (a call), the walk falls
 back to reading the roll on the checker's item, the facts every path holds, with every
 range the checker left open read at its floor and at its ceiling (`Reading`) as a spread
 beside the figure.

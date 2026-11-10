@@ -366,13 +366,27 @@ describe("the cost of a guide", () => {
     });
 
     it("a Divine Orb reaches a value by the share of the range at or above it", () => {
-        // LIFE_T1 rolls 70–84: fifteen values, five of them 80 or more.
+        // LIFE_T1 rolls 70–84: fifteen values, five of them 80 or more. The
+        // ring's own life is one of them a third of the time, and then no
+        // Divine Orb is spent: two rounds on average, not three.
         const c = craft(ring("rare", ["IncreasedLife1"]), [
             until(hasValue("IncreasedLife1", ">=", 80), [op("divine")]),
         ]);
         const r = report(c);
+        expect(r.steps[0]!.note).toBeUndefined();
         expect(r.steps[0]!.attempts!.chance).toBeCloseTo(5 / 15, 9);
-        expect(r.steps[0]!.attempts!.expected).toBeCloseTo(3, 9);
+        expect(r.steps[0]!.attempts!.expected).toBeCloseTo((10 / 15) * 3, 9);
+    });
+
+    it("a reforge rolls the value of the modifier it lands within its range", () => {
+        // The top life tier with a value of 80 or more is that tier a third of
+        // the time: three times the rounds.
+        const value = report(
+            craft(ring("rare"), [until(hasValue("IncreasedLife1", ">=", 80), [op("chaos")])]),
+        ).steps[0]!.attempts!;
+        const tier = report(craft(ring("rare"), [until(has("maximum life", 1), [op("chaos")])]))
+            .steps[0]!.attempts!;
+        expect(value.expected).toBeCloseTo(3 * tier.expected, 6);
     });
 
     it("the snapshot prices the total in chaos and divine", () => {
