@@ -35,8 +35,9 @@ function runsAt(file: string, line: number): number {
     return report.steps.find((s) => s.span.start.line === line)!.runs;
 }
 
-// The figures craftofexile's simulator and a brute-force run of the same pool
-// put these guides at (docs/research/cost-model.md §6.2), held to a few per cent.
+// Regression pins on the walk's own figures, held to a few per cent so a change
+// to the cost model that moves them shows. They are not validation: the
+// simulator's figures for these guides are in docs/research/cost-model.md §6.2.
 describe("the example guides' costs", () => {
     it("metamod-harvest-loop.craft: about nine reforges and one and a third annuls", () => {
         expect(runsAt("metamod-harvest-loop.craft", 23)).toBeGreaterThan(8.5);
@@ -46,7 +47,6 @@ describe("the example guides' costs", () => {
     });
 
     it("example.craft: the first loop annuls about thirty-six times", () => {
-        // A brute force of the same pool takes 36.2.
         expect(runsAt("example.craft", 11)).toBeGreaterThan(35.5);
         expect(runsAt("example.craft", 11)).toBeLessThan(37.5);
     });
