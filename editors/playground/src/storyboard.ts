@@ -47,6 +47,7 @@ import {
     rarityText,
     approx,
     costIsObvious,
+    oddsFigure,
     oddsText,
     spreadText,
 } from "@hinekora/core";
@@ -630,7 +631,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                             : repeatCost(
                                   c.attempts.chance,
                                   pass,
-                                  spreadTitle(c.attemptsRange, (n) => `${figure(n)} rounds`),
+                                  spreadTitle(c.chanceRange, oddsFigure),
                                   report !== undefined && passIsPartial(c, report.steps),
                               );
                     // The repeat is one container: what it is for on top, its steps
