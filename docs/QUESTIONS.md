@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q82.
+keeps it. New entries continue from Q84.
 
 ```
 ### Qn · probe|decision · open — title
@@ -423,3 +423,14 @@ the metamod changed.
 **Assumed:** not built (deferred, `operations.md` §3.2); when built, `remove(unlocked ∖
 protected, k); fill(natural, k)`: the count kept, the side free, the metamods respected.
 **Encoded in:** nothing yet.
+
+### Q83 · probe · open — a scour that would remove nothing
+
+**Q:** does the game refuse an Orb of Scouring when every affix is protected? A fractured
+modifier is never removed ([Fractured item](https://www.poewiki.net/wiki/Fractured_item)),
+and both "Cannot Be Changed" metamods are respected by the orb
+([Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions)).
+**Probe:** a Rare with the multimod and both protection metamods, one without and one
+with a fractured modifier; apply a scour to each; record refused or consumed.
+**Assumed:** refused, with a fractured modifier or without. **Encoded in:**
+`check/ops.ts` `strippable`.

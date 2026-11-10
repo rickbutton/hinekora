@@ -49,7 +49,6 @@ import {
     fracturedTypes,
     fractureProjection,
     guaranteedTypes,
-    hasFracture,
     isExcluded,
     join,
     presenceFacts,
@@ -705,12 +704,11 @@ function failing(
         }
         case "strippable": {
             // A Magic base with zero affixes (a magic Simplex) still drops to Normal,
-            // so rarity, not mod count, is the gate; both sides protected and no
-            // fractured mod means nothing would go.
+            // so rarity, not mod count, is the gate. Both sides protected means
+            // nothing would go, a fractured mod or not: a scour never takes one.
+            // Whether the game refuses such a scour is QUESTIONS.md Q83.
             if (a.rarities.has("normal")) return { kind: "nothingToRemove" };
-            if (rules.protected.size === ALL_GENS.length && !hasFracture(a)) {
-                return { kind: "nothingToRemove" };
-            }
+            if (rules.protected.size === ALL_GENS.length) return { kind: "nothingToRemove" };
             return null;
         }
         case "atLeast":

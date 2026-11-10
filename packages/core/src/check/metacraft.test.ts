@@ -149,6 +149,23 @@ describe("scour respects protection", () => {
         expect(r.finalState!.crafted).toEqual([0, 0]);
     });
 
+    it("refuses a scour when both sides are protected, a fractured modifier or not", () => {
+        // A scour never removes a fractured modifier (Fractured item), so the
+        // fracture leaves it nothing to take.
+        const protectedRing = (fractured: boolean) =>
+            item({
+                base: "Iron Ring",
+                ilvl: 100,
+                rarity: "rare",
+                prefixes: [PROTECT_SUFFIXES_CARRIER.id, { mod: "IncreasedLife1", fractured }],
+                suffixes: [PROTECT_PREFIXES_CARRIER.id, MULTIMOD_CARRIER.id],
+            });
+        for (const fractured of [false, true]) {
+            const r = check(craft(protectedRing(fractured), [op("scour")]), ctx);
+            expect(r.diagnostics[0]?.message).toContain("removable affix");
+        }
+    });
+
     it("without a metamod, scour strips to Normal", () => {
         const c = craft(rareRing(["T1 Life"]), [op("scour")]);
         const r = check(c, ctx);
