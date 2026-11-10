@@ -716,6 +716,133 @@ class Walker {
         for (const t of guaranteedTypes(before)) {
             if (!atomIndex.has(t)) known[genOfOn(registry, before, t)]++;
         }
+        const typeOfAtom = (i: number): TypeId => [...atomIndex].find(([, j]) => j === i)![0];
+
+        // The states an item may be in: every count pair it allows and every
+        // way the uncertain named modifiers may be present, weighted by the
+        // chance the paths in give each; equal over the counts when no roll is
+        // on the path.
+        const statesOf = (
+            item: AItem,
+            ins: readonly Branch[],
+        ): { state: ChainState; weight: number }[] | undefined => {
+            const uncertain: number[] = [];
+            const presence: ("yes" | "no" | "maybe")[] = [];
+            atoms.forEach((_atom, i) => {
+                const type = typeOfAtom(i);
+                if (guaranteedTypes(item).has(type)) presence.push("yes");
+                else if (isExcluded(item, type) || !item.possible.has(type)) presence.push("no");
+                else {
+                    presence.push("maybe");
+                    uncertain.push(i);
+                }
+            });
+            if (uncertain.length > 4) return undefined;
+            const itemKnown = { prefix: 0, suffix: 0 };
+            for (const t of guaranteedTypes(item)) {
+                if (!atomIndex.has(t)) itemKnown[genOfOn(registry, item, t)]++;
+            }
+            const rowsAt = (i: number): readonly { id: ModId; weight: number }[] => {
+                const pinned = item.tiers.get(typeOfAtom(i));
+                const rows = atoms[i]!.rows.filter((r) => pinned === undefined || pinned.has(r.id));
+                return rows.length > 0 ? rows : atoms[i]!.rows;
+            };
+            let pairs: [number, number][] = [];
+            const [t0, t1] = item.counts.total;
+            const [p0, p1] = item.counts.prefix;
+            const [s0, s1] = suffixRange(item);
+            for (let p = p0; p <= p1; p++) {
+                for (let t = t0; t <= t1; t++) {
+                    if (t - p >= s0 && t - p <= s1) pairs.push([p, t - p]);
+                }
+            }
+            if (this.reading !== "estimate") {
+                // The item with the fewest or the most modifiers the counts allow.
+                const totals = pairs.map(([p, sfx]) => p + sfx);
+                const pick = this.reading === "floors" ? Math.min(...totals) : Math.max(...totals);
+                pairs = pairs.filter(([p, sfx]) => p + sfx === pick);
+            }
+            if (pairs.length === 0) return undefined;
+            const states: { state: ChainState; weight: number }[] = [];
+            for (let mask = 0; mask < 1 << uncertain.length; mask++) {
+                const present = presence.map((p, i) =>
+                    p === "yes" || (p === "maybe" && mask & (1 << uncertain.indexOf(i)))
+                        ? true
+                        : false,
+                );
+                const named = { prefix: 0, suffix: 0 };
+                atoms.forEach((atom, i) => {
+                    if (present[i]) named[atom.gen]++;
+                });
+                for (const [p, sfx] of pairs) {
+                    if (
+                        p < named.prefix + itemKnown.prefix ||
+                        sfx < named.suffix + itemKnown.suffix
+                    )
+                        continue;
+                    let presenceCond: RPred | undefined;
+                    for (const i of uncertain) {
+                        const has: RPred = { kind: "has", type: typeOfAtom(i), gen: atoms[i]!.gen };
+                        const term: RPred = present[i] ? has : { kind: "not", inner: has };
+                        presenceCond =
+                            presenceCond === undefined
+                                ? term
+                                : { kind: "and", left: presenceCond, right: term };
+                    }
+                    let cond: RPred = {
+                        kind: "and",
+                        left: { kind: "compare", projection: "prefixCount", op: "==", value: p },
+                        right: { kind: "compare", projection: "suffixCount", op: "==", value: sfx },
+                    };
+                    if (presenceCond !== undefined) {
+                        cond = { kind: "and", left: cond, right: presenceCond };
+                    }
+                    let weight = 0;
+                    for (const b of ins) {
+                        const c = this.conditionChance(cond, b.path, item);
+                        if (c !== undefined) {
+                            weight += b.mass * c;
+                            continue;
+                        }
+                        // The path does not know the counts: every pair alike, the
+                        // named modifiers' presence still read off the path.
+                        const alone =
+                            presenceCond === undefined
+                                ? 1
+                                : this.conditionChance(presenceCond, b.path, item);
+                        if (alone === undefined) return undefined;
+                        weight += (b.mass * alone) / pairs.length;
+                    }
+                    if (weight <= 0) continue;
+                    // The rows of the present atoms, each combination by weight share.
+                    let rowed: { rows: (ModId | null)[]; weight: number }[] = [
+                        { rows: atoms.map(() => null), weight },
+                    ];
+                    atoms.forEach((_atom, i) => {
+                        if (!present[i]) return;
+                        const rows = rowsAt(i);
+                        const total = rows.reduce((sum, r) => sum + r.weight, 0);
+                        const next: typeof rowed = [];
+                        for (const st of rowed) {
+                            for (const r of rows) {
+                                const copy = [...st.rows];
+                                copy[i] = r.id;
+                                next.push({ rows: copy, weight: (st.weight * r.weight) / total });
+                            }
+                        }
+                        rowed = next;
+                    });
+                    for (const st of rowed) {
+                        states.push({
+                            state: { prefix: p, suffix: sfx, rows: st.rows },
+                            weight: st.weight,
+                        });
+                    }
+                }
+            }
+            return states;
+        };
+
         const stepOf = new Map<number, Stmt>();
         const mapSteps = (stmts: readonly Stmt[]): ChainStep[] | undefined => {
             const out: ChainStep[] = [];
@@ -824,117 +951,9 @@ class Walker {
         const body = mapSteps(stmt.body);
         if (body === undefined) return undefined;
 
-        // The states the loop enters with: every count pair the item allows
-        // and every way the uncertain named modifiers may be present, weighted
-        // by the chance the path in gives each; equal over the counts when no
-        // roll is on the path.
-        const uncertain: number[] = [];
-        const presence: ("yes" | "no" | "maybe")[] = [];
-        atoms.forEach((_atom, i) => {
-            const type = [...atomIndex].find(([, j]) => j === i)![0];
-            if (guaranteedTypes(before).has(type)) presence.push("yes");
-            else if (isExcluded(before, type) || !before.possible.has(type)) presence.push("no");
-            else {
-                presence.push("maybe");
-                uncertain.push(i);
-            }
-        });
-        if (uncertain.length > 4) return undefined;
-        const rowsAtEntry = (i: number): readonly { id: ModId; weight: number }[] => {
-            const type = [...atomIndex].find(([, j]) => j === i)![0];
-            const pinned = before.tiers.get(type);
-            const rows = atoms[i]!.rows.filter((r) => pinned === undefined || pinned.has(r.id));
-            return rows.length > 0 ? rows : atoms[i]!.rows;
-        };
-        let pairs: [number, number][] = [];
-        const [t0, t1] = before.counts.total;
-        const [p0, p1] = before.counts.prefix;
-        const [s0, s1] = suffixRange(before);
-        for (let p = p0; p <= p1; p++) {
-            for (let t = t0; t <= t1; t++) {
-                if (t - p >= s0 && t - p <= s1) pairs.push([p, t - p]);
-            }
-        }
-        if (this.reading !== "estimate") {
-            // The item with the fewest or the most modifiers the counts allow.
-            const totals = pairs.map(([p, sfx]) => p + sfx);
-            const pick = this.reading === "floors" ? Math.min(...totals) : Math.max(...totals);
-            pairs = pairs.filter(([p, sfx]) => p + sfx === pick);
-        }
-        if (pairs.length === 0) return undefined;
-        const starts: { state: ChainState; weight: number }[] = [];
-        for (let mask = 0; mask < 1 << uncertain.length; mask++) {
-            const present = presence.map((p, i) =>
-                p === "yes" || (p === "maybe" && mask & (1 << uncertain.indexOf(i))) ? true : false,
-            );
-            const named = { prefix: 0, suffix: 0 };
-            atoms.forEach((atom, i) => {
-                if (present[i]) named[atom.gen]++;
-            });
-            for (const [p, sfx] of pairs) {
-                if (p < named.prefix + known.prefix || sfx < named.suffix + known.suffix) continue;
-                let presenceCond: RPred | undefined;
-                for (const i of uncertain) {
-                    const type = [...atomIndex].find(([, j]) => j === i)![0];
-                    const has: RPred = { kind: "has", type, gen: atoms[i]!.gen };
-                    const term: RPred = present[i] ? has : { kind: "not", inner: has };
-                    presenceCond =
-                        presenceCond === undefined
-                            ? term
-                            : { kind: "and", left: presenceCond, right: term };
-                }
-                let cond: RPred = {
-                    kind: "and",
-                    left: { kind: "compare", projection: "prefixCount", op: "==", value: p },
-                    right: { kind: "compare", projection: "suffixCount", op: "==", value: sfx },
-                };
-                if (presenceCond !== undefined) {
-                    cond = { kind: "and", left: cond, right: presenceCond };
-                }
-                let weight = 0;
-                for (const b of branches) {
-                    const c = this.conditionChance(cond, b.path, before);
-                    if (c !== undefined) {
-                        weight += b.mass * c;
-                        continue;
-                    }
-                    // The path does not know the counts: every pair alike, the
-                    // named modifiers' presence still read off the path.
-                    const alone =
-                        presenceCond === undefined
-                            ? 1
-                            : this.conditionChance(presenceCond, b.path, before);
-                    if (alone === undefined) return undefined;
-                    weight += (b.mass * alone) / pairs.length;
-                }
-                if (weight <= 0) continue;
-                // The rows of the present atoms, each combination by weight share.
-                let states: { rows: (ModId | null)[]; weight: number }[] = [
-                    { rows: atoms.map(() => null), weight },
-                ];
-                atoms.forEach((_atom, i) => {
-                    if (!present[i]) return;
-                    const rows = rowsAtEntry(i);
-                    const total = rows.reduce((sum, r) => sum + r.weight, 0);
-                    const next: typeof states = [];
-                    for (const st of states) {
-                        for (const r of rows) {
-                            const copy = [...st.rows];
-                            copy[i] = r.id;
-                            next.push({ rows: copy, weight: (st.weight * r.weight) / total });
-                        }
-                    }
-                    states = next;
-                });
-                for (const st of states) {
-                    starts.push({
-                        state: { prefix: p, suffix: sfx, rows: st.rows },
-                        weight: st.weight,
-                    });
-                }
-            }
-        }
-        if (starts.length === 0) return undefined;
+        // The states the loop enters with.
+        const starts = statesOf(before, branches);
+        if (starts === undefined || starts.length === 0) return undefined;
         const rarity = rarityOf(before) ?? "rare";
         const solved = chain({
             atoms,
