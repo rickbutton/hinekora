@@ -53,7 +53,8 @@ between two such rows the source's tier does not roll for the target.
 **Probe:** a Rare of item level 25 with the level-24 fire resistance, and one of level 13
 with the level-12 tier; open the fire-to-cold resistance change; record whether it is
 offered and, if so, which cold tier results.
-**Assumed:** refused. **Encoded in:** `check/methods.ts` `harvestChange`.
+**Assumed:** refused; an influence's modifier stays within that influence's rows, ranked
+among them. **Encoded in:** `check/methods.ts` `harvestChange`.
 
 ### Q25 · probe · open — when the grove greys a craft out under a metamod
 

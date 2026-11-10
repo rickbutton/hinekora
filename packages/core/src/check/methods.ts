@@ -244,7 +244,14 @@ function harvestChange(
     const [wholeFrom, wholeTo] = [whole(from.value), whole(to.value)];
     const sources = rollableTiers(catalog, a.base, a.ilvl, from.value, tags);
     const targets = rollableTiers(catalog, a.base, a.ilvl, to.value, tags);
-    const alike = wholeFrom.length === wholeTo.length;
+    // The influence whose tag lets a row roll on the item, none for a row the
+    // base's own tags admit. An influence's rows are a ladder of their own: a
+    // modifier is assumed to stay within it (`QUESTIONS.md` Q22).
+    const influenceOf = (m: Mod): string => {
+        const tag = m.spawn.find((w) => a.base.tags.has(w.tag) || tags.has(w.tag))?.tag;
+        if (tag === undefined || a.base.tags.has(tag)) return "";
+        return INFLUENCES.find((i) => registry.influenceTags(a.base, i).has(tag)) ?? "";
+    };
     const pinned = a.tiers.get(from.value);
     const mayBe =
         pinned === undefined
@@ -256,6 +263,8 @@ function harvestChange(
     const rows = new Set<Mod>();
     const changeable: Mod[] = [];
     let tooHigh: Mod | undefined;
+    // A row the modifier may be has no row of the target to become.
+    let stuck = false;
     for (const was of mayBe) {
         if (!isNatural(was)) {
             // A row another source placed becomes that source's counterpart row.
@@ -271,15 +280,25 @@ function harvestChange(
             continue;
         }
         // The tier is kept (Modifier § Harvest Crafting): the target's row at
-        // the source's rank. Where the two ladders differ in length the rank
-        // names no one row, so any of the target's rows that roll here.
-        const rank = alike ? wholeFrom.findIndex((m) => m.id === was.id) : -1;
-        const same = wholeTo[rank];
-        if (same === undefined) for (const m of targets) rows.add(m);
-        else if (same.minLevel <= a.ilvl) {
-            rows.add(same);
-            changeable.push(was);
-        } else tooHigh ??= same;
+        // the source's rank, among the rows of the source's own influence.
+        const ladder = (rows: readonly Mod[]): readonly Mod[] =>
+            rows.filter((m) => influenceOf(m) === influenceOf(was));
+        const [ladderFrom, ladderTo] = [ladder(wholeFrom), ladder(wholeTo)];
+        if (ladderTo.length === 0) {
+            stuck = true;
+        } else if (ladderFrom.length !== ladderTo.length) {
+            // The rank names no one row: any of the ladder's, when all roll here.
+            const above = ladderTo.find((m) => m.minLevel > a.ilvl);
+            if (above !== undefined) tooHigh ??= above;
+            else for (const m of ladderTo) rows.add(m);
+        } else {
+            const same = ladderTo[ladderFrom.findIndex((m) => m.id === was.id)];
+            if (same === undefined) stuck = true;
+            else if (same.minLevel <= a.ilvl) {
+                rows.add(same);
+                changeable.push(was);
+            } else tooHigh ??= same;
+        }
     }
     // The elements' ladders unlock at different levels, so the kept tier may
     // be one the item's level does not allow. Whether the grove offers the
@@ -294,7 +313,7 @@ function harvestChange(
             `The grove keeps a modifier's tier, and the tier of "${toName}" that "${fromName}" would become needs item level ${tooHigh.minLevel}: it cannot appear on this item of level ${a.ilvl}.${settle}`,
         );
     }
-    if (rows.size === 0) return refuse(`"${toName}" cannot roll on this item.`);
+    if (stuck || rows.size === 0) return refuse(`"${toName}" cannot roll on this item.`);
     return harvestChangeOps(from.value, registry.typeLabel(from.value), [...rows]);
 }
 

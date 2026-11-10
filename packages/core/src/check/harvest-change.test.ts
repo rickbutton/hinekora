@@ -466,6 +466,89 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
     });
 });
 
+describe("a Harvest change on an item with two influences", () => {
+    const lists: HarvestChangeLists = {
+        resistance: {
+            fire: [TypeId("FireAilments")],
+            cold: [TypeId("ColdAilments")],
+            lightning: [],
+        },
+        damage: { fire: [], cold: [], lightning: [] },
+    };
+    /** A row that rolls on boots of one influence alone. */
+    const row = (element: "Fire" | "Cold", tag: "shaper" | "eyrie", minLevel: number): Mod => ({
+        ...FIRE_RESIST,
+        id: ModId(`${element}_${tag}_${minLevel}`),
+        type: TypeId(`${element}Ailments`),
+        families: new Set([GroupId(`${element}Ailments`)]),
+        minLevel,
+        spawn: [
+            { tag: TagId(`boots_${tag}`), weight: 500 },
+            { tag: TagId("default"), weight: 0 },
+        ],
+        text: `+(46-48)% to ${element} Resistance against Ailing Enemies`,
+    });
+    const changed = (mods: readonly Mod[], from: string, ilvl = 100) =>
+        check(
+            craft(
+                item({
+                    base: "Iron Greaves",
+                    ilvl,
+                    rarity: "rare",
+                    influences: ["shaper", "redeemer"],
+                    suffixes: [from],
+                }),
+                [harvestChange(from, mods.find((m) => m.type === "ColdAilments")!.id)],
+            ),
+            {
+                registry: buildRegistry({
+                    bases: [BOOTS_BASE],
+                    harvestChange: lists,
+                    mods: [...CATALOG, ...mods],
+                }),
+            },
+        );
+    const cold = (r: ReturnType<typeof check>) => r.finalState!.tiers.get(TypeId("ColdAilments"));
+
+    it("is refused where the other element has rows of the other influence only", () => {
+        // The Shaper's fire rows and the Redeemer's cold rows are ladders of
+        // equal length: the rank alone would pair them.
+        const mods = [
+            row("Fire", "shaper", 80),
+            row("Fire", "shaper", 68),
+            row("Cold", "eyrie", 78),
+            row("Cold", "eyrie", 68),
+        ];
+        const r = changed(mods, "Fire_shaper_80");
+        expect(r.diagnostics[0]!.message).toContain("cannot roll on this item");
+    });
+
+    it("keeps the rank within the modifier's own influence where the ladders differ in length", () => {
+        const mods = [
+            row("Fire", "shaper", 80),
+            row("Fire", "shaper", 68),
+            row("Fire", "eyrie", 78),
+            row("Fire", "eyrie", 68),
+            row("Cold", "eyrie", 78),
+            row("Cold", "eyrie", 68),
+        ];
+        const redeemer = changed(mods, "Fire_eyrie_78");
+        expect(redeemer.diagnostics).toEqual([]);
+        expect(cold(redeemer)).toEqual(new Set(["Cold_eyrie_78"]));
+        const shaper = changed(mods, "Fire_shaper_80");
+        expect(shaper.diagnostics[0]!.message).toContain("cannot roll on this item");
+    });
+
+    it("gives any row of a longer or shorter ladder, and is refused where one is above the item's level", () => {
+        const mods = [row("Fire", "eyrie", 68), row("Cold", "eyrie", 78), row("Cold", "eyrie", 68)];
+        const all = changed(mods, "Fire_eyrie_68");
+        expect(all.diagnostics).toEqual([]);
+        expect(cold(all)).toEqual(new Set(["Cold_eyrie_78", "Cold_eyrie_68"]));
+        const low = changed(mods, "Fire_eyrie_68", 70);
+        expect(low.diagnostics[0]!.message).toContain("needs item level 78");
+    });
+});
+
 describe("a Harvest change of a modifier another source placed", () => {
     const lists: HarvestChangeLists = {
         resistance: {
