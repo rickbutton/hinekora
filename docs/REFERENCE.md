@@ -299,7 +299,7 @@ resolveEssence / resolveBench / resolveHarvestTag`
   states to the exit (`exitAtStart` the part that holds before any round), a restart, a
   stop or the mass that never leaves (`iterate` carries the rounds); once a round hands the
   next a distribution of the same shape, or at the last round followed (2000, fewer for a
-  chain of many states, a bound on the states carried) when a slowly mixing chain has not
+  chain of many states, a bound on the states carried that the loops inside share) when a slowly mixing chain has not
   settled (`Chain.estimated`, which the report notes when more than a hundredth of the
   mass is left), the rounds still to come are added as that round's geometric tail, so a
   rare exit costs its full expected rounds; `advance` takes states through one step

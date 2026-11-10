@@ -160,6 +160,9 @@ interface Totals {
     estimatedLoops: Set<number>;
     /** Mass a loop inside never let go. */
     stuck: number;
+    /** The states carried through rounds so far, by this loop and every loop
+     *  inside it alike, against `MAX_WORK`. */
+    work: number;
 }
 
 const keys = new WeakMap<ChainState, string>();
@@ -252,6 +255,7 @@ function totals(): Totals {
         rounds: new Map(),
         estimatedLoops: new Set(),
         stuck: 0,
+        work: 0,
     };
 }
 
@@ -274,7 +278,6 @@ function iterate(
     const exits: Dist = new Map();
     let passes = 0;
     let estimated = false;
-    let work = 0;
     for (let round = 0; round < MAX_PASSES && massOf(head) > EPSILON; round++) {
         const mass = massOf(head);
         const shapeIn = head;
@@ -289,8 +292,8 @@ function iterate(
         // A chain that mixes slowly may not settle within the rounds followed;
         // its last round's decay is then the best guess at the rest, and the
         // figures are an estimate.
-        work += head.size;
-        const last = round === MAX_PASSES - 1 || work >= MAX_WORK;
+        t.work += head.size;
+        const last = round === MAX_PASSES - 1 || t.work >= MAX_WORK;
         const settled = shapeDistance(shapeIn, mass, head, massOf(head)) < SETTLED;
         const tail = decay < 1 - STUCK && (settled || last);
         const factor = tail ? 1 / (1 - decay) : 1;

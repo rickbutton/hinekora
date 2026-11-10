@@ -433,6 +433,53 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.reached.get(0)).toBeCloseTo(2, 6);
     });
 
+    it("a loop inside a loop shares the outer loop's bound on the work done", () => {
+        // Neither loop settles: the item walks a ring of a hundred states,
+        // leaving it for the inner exit one round in ten thousand and for the
+        // outer one in a thousand. Each inner loop alone would carry its full
+        // bound, once per outer round.
+        let calls = 0;
+        const step = (s: ChainState) => at(s.prefix, (s.suffix % 100) + 1);
+        const solved = chain({
+            atoms: [],
+            body: [
+                {
+                    id: 0,
+                    kind: "loop",
+                    exit: (s) => s.prefix === 2,
+                    body: [
+                        {
+                            id: 1,
+                            kind: "transition",
+                            next: (s) => {
+                                calls++;
+                                const on = step(s);
+                                const p = s.prefix === 0 ? 1e-4 : 1e-3;
+                                return [
+                                    { state: at(s.prefix + 1, on.suffix), prob: p },
+                                    { state: on, prob: 1 - p },
+                                ];
+                            },
+                        },
+                    ],
+                },
+                {
+                    id: 2,
+                    kind: "transition",
+                    next: (s) => [
+                        { state: at(3, s.suffix), prob: 1e-3 },
+                        { state: at(0, s.suffix), prob: 1 - 1e-3 },
+                    ],
+                },
+            ],
+            starts: [{ state: at(0, 1), weight: 1 }],
+            caps: { prefix: 9, suffix: 100 },
+            exit: (s) => s.prefix === 3,
+        })!;
+        expect(calls).toBeLessThan(1_000_000);
+        expect(solved.estimated).toBe(true);
+    });
+
     it("a body that changes nothing is not a chain", () => {
         expect(
             chain({
