@@ -121,6 +121,22 @@ describe("bench remove under an unproven fracture", () => {
     });
 });
 
+describe("bench remove with a fractured crafted modifier", () => {
+    it("leaves it crafted, so a new bench craft needs the multimod again", () => {
+        const c = craft(
+            rareRing(
+                [{ mod: BENCH_LIFE_ROW.id, fractured: true }, INCREASED_MANA.id],
+                [MULTIMOD_CARRIER.id],
+            ),
+            [benchRemove(), bench("prefixes cannot be changed")],
+        );
+        const r = check(c, ctx);
+        expect(r.diagnostics.map((d) => d.message)).toEqual([
+            expect.stringContaining("may be fractured"),
+        ]);
+    });
+});
+
 describe("a bench craft on an item with a crafted modifier", () => {
     it("replaces it, freeing the slot it held", () => {
         const full = rareRing([BENCH_LIFE_ROW.id, INCREASED_MANA.id, INCREASED_ARMOUR.id]);

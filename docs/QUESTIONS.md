@@ -18,23 +18,6 @@ The next session applies it, records the commit, and moves the entry to Resolved
 
 ## Open
 
-### Q16 · game probe · open
-
-**Asked:** 2026-10-28
-**Goal:** whether the bench's "remove crafted modifiers" respects "Prefixes / Suffixes
-Cannot Be Changed". Neither
-[Crafting Bench § Using the crafting bench](https://www.poewiki.net/wiki/Crafting_Bench#Using_the_crafting_bench)
-nor [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions)
-lists the option.
-**Procure:** a Rare with "Can have up to 3 Crafted Modifiers", "Prefixes Cannot Be
-Changed" and a crafted prefix (a bench life).
-**Steps:** use "Remove Crafted Mods" on it.
-**Record:** which of the three crafted modifiers remain.
-**Assumed meanwhile:** protection does not apply; every crafted modifier that is not
-fractured goes, the protecting metamod itself included (`check/ops.ts` `removeCrafted`).
-If protection did apply, the removal would wrongly exclude a surviving modifier.
-**Answer:**
-
 ### Q17 · game probe · open
 
 **Asked:** 2026-10-28
@@ -746,6 +729,27 @@ most tiers; a Recombinator's result may keep either input's strands (`check/ops.
 ---
 
 ## Resolved
+
+### Q16 · game probe · resolved
+
+**Asked:** 2026-10-28
+**Goal:** whether the bench's "remove crafted modifiers" respects "Prefixes / Suffixes
+Cannot Be Changed". Neither
+[Crafting Bench § Using the crafting bench](https://www.poewiki.net/wiki/Crafting_Bench#Using_the_crafting_bench)
+nor [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions)
+lists the option.
+**Procure:** a Rare with "Can have up to 3 Crafted Modifiers", "Prefixes Cannot Be
+Changed" and a crafted prefix (a bench life).
+**Steps:** use "Remove Crafted Mods" on it.
+**Record:** which of the three crafted modifiers remain.
+**Assumed meanwhile:** protection does not apply; every crafted modifier that is not
+fractured goes, the protecting metamod itself included (`check/ops.ts` `removeCrafted`).
+If protection did apply, the removal would wrongly exclude a surviving modifier.
+**Answer:** 2026-11-10, from play: the removal ignores the metamods, which are crafted
+themselves, and takes every crafted modifier, the metamods included. A fractured crafted
+modifier stays and stays crafted, so a further bench craft needs the multimod again. Both
+are the assumption above (`check/bench.test.ts`, bench remove with a fractured crafted
+modifier).
 
 ### Q72 · decision · resolved
 
