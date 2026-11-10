@@ -104,9 +104,18 @@ export function costSource(
         if (s.note !== undefined) out.push(`  ${"".padEnd(width)}  (${s.note})`);
     }
     out.push("");
-    if (report.total.length === 0) out.push("Expected spend: nothing this report can count.");
-    else out.push(`Expected spend: ${priceText(report.total)}.`);
-    if (prices !== undefined && report.total.length > 0) {
+    if (report.unknown) {
+        const rest =
+            report.total.length === 0
+                ? ""
+                : ` The steps outside it come to ${priceText(report.total)}.`;
+        out.push(`Expected spend: not known, for a loop above has no figure.${rest}`);
+    } else if (report.total.length === 0) {
+        out.push("Expected spend: nothing this report can count.");
+    } else out.push(`Expected spend: ${priceText(report.total)}.`);
+    if (report.unknown) {
+        // No total in Chaos Orbs stands for a guide with a loop left open.
+    } else if (prices !== undefined && report.total.length > 0) {
         const date = prices.fetchedAt.slice(0, 10);
         if (report.chaos !== undefined && report.divine !== undefined) {
             const ends = spreadText(report.chaosRange, figure);
@@ -151,7 +160,10 @@ function stepFigure(s: StepCost, prices: Prices | undefined): string {
     if (s.branch !== undefined) {
         parts.push(`taken ${percentage(s.branch)}${spread(s.branchRange, percentage)}`);
     }
-    if (s.kind === "operation") {
+    if (s.unknown) {
+        if (s.kind === "until") parts.push("rounds not known");
+        else if (s.kind === "operation") parts.push("uses not known");
+    } else if (s.kind === "operation") {
         const runs = `×${figure(s.runs)}${spread(s.runsRange, figure)}`;
         if (s.expected !== undefined && s.expected.length > 0) {
             parts.push(`${runs}: ${priceText(s.expected)}`);

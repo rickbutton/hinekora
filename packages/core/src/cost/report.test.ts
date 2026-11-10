@@ -651,6 +651,71 @@ describe("the cost of a guide", () => {
         expect(loop.note).toMatch(/cannot end/);
     });
 
+    it("a loop that cannot end has no figure, nor has the guide", () => {
+        const prices: Prices = {
+            league: "Test",
+            fetchedAt: "2026-11-09T00:00:00Z",
+            chaosPerDivine: 400,
+            chaos: new Map([
+                ["Divine Orb", 400],
+                ["Chaos Orb", 1],
+            ]),
+        };
+        const stuck = (body: Parameters<typeof craft>[1]) =>
+            report(
+                craft(
+                    item({
+                        base: "Iron Ring",
+                        ilvl: 84,
+                        rarity: "rare",
+                        prefixes: [{ mod: "IncreasedLife1", fractured: true }],
+                    }),
+                    body,
+                ),
+                prices,
+            );
+        // The fractured life never rolls again: two times in three the rounds
+        // go on for ever, and the rounds followed before giving up are no figure.
+        const r = stuck([op("chaos"), until(hasValue("IncreasedLife1", ">=", 80), [op("divine")])]);
+        const [chaos, loop, divine] = r.steps;
+        expect(loop!.unknown).toBe(true);
+        expect(loop!.attempts).toBeUndefined();
+        expect(loop!.note).toMatch(/67% of the time .* not known/);
+        expect(divine!.unknown).toBe(true);
+        expect(divine!.expected).toBeUndefined();
+        expect(chaos!.unknown).toBeUndefined();
+        expect(r.unknown).toBe(true);
+        expect(r.chaos).toBeUndefined();
+        expect(r.total).toEqual([{ item: "Chaos Orb", amount: 1 }]);
+        // A loop the check refuses, its body never checked: the same, with
+        // the check's reason and none of a step's own.
+        const refused = report(
+            craft(ring("rare", ["IncreasedLife1"]), [
+                until(andp(has("IncreasedLife1"), cmp("prefixCount", "==", 0)), [op("chaos")]),
+            ]),
+            prices,
+        );
+        expect(refused.steps[0]!.unknown).toBe(true);
+        expect(refused.steps[0]!.note).toMatch(
+            /the check finds this loop can never reach its exit/,
+        );
+        expect(refused.steps[1]!.note).toBeUndefined();
+        expect(refused.unknown).toBe(true);
+        expect(refused.chaos).toBeUndefined();
+    });
+
+    it("a loop whose exit already holds takes no round", () => {
+        const r = report(
+            craft(ring("rare", ["IncreasedLife1"]), [
+                until(has("IncreasedLife1"), [op("chaos")]),
+                op("divine"),
+            ]),
+        );
+        expect(r.steps[0]!.attempts).toEqual({ chance: 1, expected: 0 });
+        expect(r.steps.map((s) => s.kind)).toEqual(["until", "operation"]);
+        expect(r.unknown).toBe(false);
+    });
+
     it("a Divine Orb leaves the values on a side a metamod protects", () => {
         const c = craft(
             item({

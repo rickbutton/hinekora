@@ -253,6 +253,22 @@ until has "maximum life" t1 and prefixCount <= 2 {
         expect(r.output).toContain("Exalted Orb");
     });
 
+    it("gives no figure for a loop that can never exit, nor a total", () => {
+        // A fossil pair that blocks the life it is rolled for.
+        const r = costSource(
+            `item { base: "Stygian Vise" ilvl: 84 rarity: normal }\nuntil has "maximum life" t1 {\n    fossil "pristine" "dense"\n}`,
+            "test.craft",
+            registry,
+            prices,
+        );
+        expect(r.output).toContain("rounds not known");
+        expect(r.output).toContain("the check finds this loop can never reach its exit");
+        expect(r.output).toContain("uses not known");
+        expect(r.output).not.toContain("a parameter stands");
+        expect(r.output).toContain("Expected spend: not known, for a loop above has no figure.");
+        expect(r.output).not.toContain("Chaos Orbs (");
+    });
+
     it("reports a parse error as the check does", () => {
         const r = costSource(`item { base: "Iron Ring"`, "test.craft", registry);
         expect(r.ok).toBe(false);

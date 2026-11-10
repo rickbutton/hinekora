@@ -59,6 +59,9 @@ export interface StepCost {
     readonly branch?: number;
     /** Why a figure is missing or approximate, in the guide's words. */
     readonly note?: string;
+    /** The step has no figure: a loop whose rounds could not be worked out, or
+     *  a step inside one, whose `runs` then count a single round. */
+    readonly unknown?: true;
     /** The spread of `runs`, of a loop's expected rounds and of a branch's
      *  chance over the item's open counts, where they differ. */
     readonly runsRange?: Bounds;
@@ -82,6 +85,9 @@ export interface CostReport {
     readonly unpriced: readonly string[];
     /** The chance the craft ends on a `stop` before its last step. */
     readonly stopped: number;
+    /** Some loop's rounds are not known: `total` leaves its steps out, and no
+     *  figure in Chaos Orbs is given. */
+    readonly unknown: boolean;
 }
 
 /** The conditions passed since the last roll, whose joint chance with the next
@@ -146,6 +152,7 @@ export function costOf(
                   walk(craft, result, registry, snapshot, "floors"),
                   walk(craft, result, registry, snapshot, "ceilings"),
               ];
+    const unknown = estimate.steps.some((s) => s.unknown);
     const unpriced = new Set<string>();
     for (const p of estimate.total) {
         if (snapshot === undefined || inChaos([p], snapshot) === undefined) unpriced.add(p.item);
@@ -155,7 +162,7 @@ export function costOf(
         ends.map((w) => w.steps),
     );
     const chaosRange =
-        estimate.chaos === undefined || !reliable
+        estimate.chaos === undefined || !reliable || unknown
             ? undefined
             : bounds(
                   estimate.chaos,
@@ -165,6 +172,7 @@ export function costOf(
         steps,
         total: estimate.total,
         ...(snapshot !== undefined &&
+            !unknown &&
             estimate.chaos !== undefined && {
                 chaos: estimate.chaos,
                 divine: estimate.chaos / snapshot.chaosPerDivine,
@@ -172,6 +180,7 @@ export function costOf(
         ...(chaosRange !== undefined && { chaosRange }),
         unpriced: [...unpriced],
         stopped: estimate.stopped,
+        unknown,
     };
 }
 
@@ -368,6 +377,18 @@ class Walker {
     readonly tracker: Tracker | undefined;
     /** Some step was read on the checker's item rather than the tracked states. */
     lost = false;
+    /** How many loops whose rounds are not known the walk is inside. */
+    private unknown = 0;
+
+    /** `f` with every step it records marked as having no figure. */
+    private unknowable<T>(f: () => T): T {
+        this.unknown++;
+        try {
+            return f();
+        } finally {
+            this.unknown--;
+        }
+    }
 
     constructor(
         craft: Craft,
@@ -530,17 +551,21 @@ class Walker {
         stmt: Stmt,
         mass: number,
         frame: Frame,
-        extra: Partial<Pick<StepCost, "unit" | "attempts" | "branch" | "note">>,
+        extra: Partial<Pick<StepCost, "unit" | "attempts" | "branch" | "note" | "unknown">>,
     ): void {
         const runs = mass * frame.scale;
+        const unknown = extra.unknown === true || this.unknown > 0;
         this.steps.push({
             span: stmt.span,
             kind: stmt.kind,
             reached: mass,
             runs,
+            ...(unknown && { unknown }),
             ...(extra.unit !== undefined && {
                 unit: extra.unit,
-                expected: extra.unit.map((p) => ({ ...p, amount: p.amount * runs })),
+                ...(!unknown && {
+                    expected: extra.unit.map((p) => ({ ...p, amount: p.amount * runs })),
+                }),
             }),
             ...(extra.attempts !== undefined && { attempts: extra.attempts }),
             ...(extra.branch !== undefined && { branch: extra.branch }),
@@ -564,7 +589,18 @@ class Walker {
             });
             return withoutStates(branches);
         }
-        if (entry === undefined || literals.length !== stmt.args.length) {
+        if (entry === undefined) {
+            // The check stopped short of the step: a loop it refused, whose
+            // own note says so, or a path it never takes.
+            this.record(
+                stmt,
+                massOf(branches),
+                frame,
+                this.unknown > 0 ? {} : { note: `${words}: the check never reaches this step` },
+            );
+            return withoutStates(branches);
+        }
+        if (literals.length !== stmt.args.length) {
             this.record(stmt, massOf(branches), frame, {
                 note: `${words}: a parameter stands where a name is needed`,
             });
@@ -733,6 +769,21 @@ class Walker {
         const mass = massOf(branches);
         const before = entry?.before;
         const rpred = before === undefined ? null : this.resolve(stmt.pred, before);
+        const opening = stmt.body[0];
+        if (before !== undefined && opening !== undefined && this.traced(opening) === undefined) {
+            // The check did not run the body: the exit already holds on every
+            // path, and the loop takes no round, or it can never hold.
+            if (rpred !== null && refine(before, rpred, false) === null) {
+                this.record(stmt, mass, frame, { attempts: { chance: 1, expected: 0 } });
+                return [...branches];
+            }
+            return this.unknownLoop(
+                stmt,
+                branches,
+                frame,
+                "the check finds this loop can never reach its exit, so its rounds and the guide's total are not known",
+            );
+        }
         if (before !== undefined && rpred !== null) {
             const solved = this.untilOverflow(() =>
                 this.chainLoop(stmt, before, rpred, branches, frame),
@@ -781,34 +832,51 @@ class Walker {
             });
         }
         const stop = attempt.stopped;
-        let note: string | undefined;
-        if (exit === undefined) {
-            note =
-                "the chance of this loop's exit per attempt is not known; one attempt is assumed";
-        } else if (exit <= 0) {
-            note =
-                "the exit depends on modifiers already on the item, which this model does not track; one attempt is assumed";
+        if (exit === undefined || exit + stop <= 0) {
+            return this.unknownLoop(
+                stmt,
+                branches,
+                frame,
+                exit === undefined
+                    ? "the chance a round of this loop reaches its exit could not be worked out, so its rounds and the guide's total are not known"
+                    : "no round of this loop reaches its exit as the steps in it are read, so its rounds and the guide's total are not known",
+                head,
+            );
         }
-        const perAttempt = exit === undefined || exit <= 0 ? Math.max(0, 1 - stop) : exit;
-        const ending = perAttempt + stop;
-        const expected = ending > 0 ? 1 / ending : 1;
-        this.record(stmt, mass, frame, {
-            attempts: { chance: perAttempt, expected },
-            ...(note !== undefined && { note }),
-        });
+        const ending = exit + stop;
+        const expected = 1 / ending;
+        this.record(stmt, mass, frame, { attempts: { chance: exit, expected } });
         // The real pass: the body's steps, each run `expected` times per pass of
         // the enclosing frame, from the loop head with mass one.
         const inner: Frame = { scale: frame.scale * mass * expected, stopped: 0, restarted: 0 };
         this.sequence(stmt.body, head, inner);
         // Of all the loop's rounds, the share that ends in a stop ends the craft.
-        const stopShare = ending > 0 ? stop / ending : 0;
+        const stopShare = stop / ending;
         frame.stopped += mass * stopShare;
         const continuing = mass * (1 - stopShare);
-        if (exits.length === 0 || exit === undefined || exit <= 0) {
-            return [{ mass: continuing, path: undefined }];
-        }
+        if (exits.length === 0 || exit <= 0) return [{ mass: continuing, path: undefined }];
         const scale = continuing / exit;
         return exits.map((b) => ({ mass: b.mass * scale, path: b.path }));
+    }
+
+    /**
+     * A loop whose rounds cannot be given: the loop and every step in it are
+     * recorded without a figure, one round's worth, and the walk goes on past
+     * it as if it had ended, so the steps after it still show.
+     */
+    private unknownLoop(
+        stmt: Extract<Stmt, { kind: "until" }>,
+        branches: readonly Branch[],
+        frame: Frame,
+        note: string,
+        head: readonly Branch[] = [{ mass: 1, path: undefined }],
+    ): Branch[] {
+        const mass = massOf(branches);
+        this.lost = true;
+        this.record(stmt, mass, frame, { note, unknown: true });
+        const inner: Frame = { scale: frame.scale * mass, stopped: 0, restarted: 0 };
+        this.unknowable(() => this.sequence(stmt.body, head, inner));
+        return [{ mass, path: undefined }];
     }
 
     /** Where the next attempt starts: the branches that fell off the body, each
@@ -886,26 +954,35 @@ class Walker {
         // Rounds, not attempts: an attempt here is as many rounds as the item
         // takes, and may be none when the loop is entered at its exit.
         const rounds = solved.passes * attempts;
-        const note =
-            solved.unresolved >= 0.005
-                ? `in ${Math.round(solved.unresolved * 100)}% of attempts the item never reaches the exit${solved.stuckInside >= solved.unresolved / 2 ? " of a loop inside" : ""}, so the loop cannot end as written`
-                : solved.estimated
-                  ? ESTIMATED
-                  : undefined;
-        this.record(stmt, mass, frame, {
-            attempts: {
-                // Per round run: the attempts that end on entering take none.
-                chance:
-                    solved.passes > 0
-                        ? Math.min(1, (ending - solved.exitAtStart) / solved.passes)
-                        : 1,
-                expected: rounds,
-            },
-            ...(note !== undefined && { note }),
-        });
+        // Rounds that never end have no expected number: the rounds followed
+        // before giving up are no figure of the craft's.
+        const stuck = solved.unresolved >= 0.005;
+        const note = stuck
+            ? `${Math.round(solved.unresolved * 100)}% of the time the item never reaches the exit${solved.stuckInside >= solved.unresolved / 2 ? " of a loop inside" : ""}, so the loop cannot end as written and its rounds and the guide's total are not known`
+            : solved.estimated
+              ? ESTIMATED
+              : undefined;
+        this.record(
+            stmt,
+            mass,
+            frame,
+            stuck
+                ? { note: note!, unknown: true }
+                : {
+                      attempts: {
+                          // Per round run: the attempts that end on entering take none.
+                          chance:
+                              solved.passes > 0
+                                  ? Math.min(1, (ending - solved.exitAtStart) / solved.passes)
+                                  : 1,
+                          expected: rounds,
+                      },
+                      ...(note !== undefined && { note }),
+                  },
+        );
         // A step inside is reached so often per round, and runs that times the
         // rounds of the loop, so its `reached` stays a chance.
-        const scale = frame.scale * mass * rounds;
+        const scale = frame.scale * mass * (stuck ? 1 : rounds);
         const perRound = (n: number | undefined): number =>
             solved.passes > 0 ? (n ?? 0) / solved.passes : 0;
         const emit = (stmts: readonly Stmt[], steps: readonly ChainStep[]): void => {
@@ -948,7 +1025,8 @@ class Walker {
                 }
             });
         };
-        emit(stmt.body, body);
+        if (stuck) this.unknowable(() => emit(stmt.body, body));
+        else emit(stmt.body, body);
         const stopShare = ending > 0 ? solved.stop / ending : 0;
         frame.stopped += mass * stopShare;
         const leaving = mass * (1 - stopShare);

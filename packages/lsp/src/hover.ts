@@ -559,6 +559,8 @@ function costLine(
         return ends === undefined ? "" : ` (${ends} by what the item may hold)`;
     };
     if (entry.kind === "item") {
+        if (report.unknown)
+            return "_Expected spend for the guide:_ not known, for a loop in it has no figure.";
         if (report.total.length === 0) return undefined;
         const when =
             prices === undefined

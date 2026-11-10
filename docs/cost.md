@@ -155,9 +155,9 @@ unit price (`cost/prices.ts`, in the step's own currency).
   its loop's head with the item as it is, the checker's meaning; a `stop`, or a
   `restart` outside every loop, ends the craft.
 
-Where the model cannot say (a loop whose exit rests on a value no roll in its body
-changes, an item the snapshot does not price), the
-step's note says so and names what the walk assumes there.
+Where the model cannot say, the step's note says why. A loop whose rounds have no
+figure (the check refuses it, no round reaches its exit, or the item sticks short of
+it) is given none, nor are its steps or the guide's total.
 
 ---
 
