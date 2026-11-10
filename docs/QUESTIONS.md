@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q98.
+keeps it. New entries continue from Q99.
 
 ```
 ### Qn · probe|decision · open — title
@@ -383,3 +383,16 @@ wherever such a row may be on the item, so `t1` changes meaning with the state; 
 word for it, `has "<mod>" above`.
 **Assumed:** (a). **Encoded in:** `check/check.ts` `resolveHas`, `render/item.ts`
 `modView`.
+
+### Q98 · probe · open — a cluster jewel's enchantment and its size
+
+**Q:** does each small-passive enchantment belong to cluster jewels of one size?
+[Cluster jewel § Mechanics](https://www.poewiki.net/wiki/Cluster_jewel#Mechanics) does not
+say; RePoE's list of each size's passives puts every enchantment under one size, and a
+[Refracting Fog](https://www.poewiki.net/wiki/Refracting_Fog#Mechanics) rerolls the
+enchantment without saying it keeps to the size.
+**Probe:** a Small and a Large Cluster Jewel, some twenty Refracting Fogs each; record
+whether an enchantment of the other size ever appears.
+**Assumed:** one size each; the item block refuses another size's enchantment, so a jewel
+a Refracting Fog made otherwise cannot be declared. **Encoded in:** `check/check.ts`
+`elaborateItem`; `packages/data/data/poe1/cluster_enchants.json`.

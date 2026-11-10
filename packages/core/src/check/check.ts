@@ -290,10 +290,8 @@ class Checker {
                 if (!tag.ok) this.diag(resolveMessage(tag.error), item.span);
                 else {
                     // An enchantment belongs to the jewels of one size, and so do
-                    // its notables: an assumption read off RePoE's list of each
-                    // size's small passives, which the wiki does not state. A
-                    // Refracting Fog rerolls the enchantment and may not keep
-                    // to the size; a jewel it made so is not modelled.
+                    // its notables: read off the game's list of each size's
+                    // small passives, not stated by the wiki (QUESTIONS.md Q98).
                     const sizes = this.registry.clusterSizesOf(tag.value);
                     if (sizes !== undefined && !sizes.has(size)) {
                         this.diag(
