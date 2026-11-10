@@ -377,7 +377,9 @@ class is not obtainable and is dropped. `adaptEldritch` makes an `EldritchImplic
 wording the query covers best, so "attack speed" is the plain implicit and a "presence"
 variant is reached by its condition's words; a tie is ambiguous),
 `eldritchNames(side)` (one wording per implicit) and `eldritchTextOf(type)`. For a base it also folds the affix-count implicit stats
-(`local_maximum_{prefixes,suffixes}_allowed_+`) into a `capDelta` (absent when zero).
+(`local_maximum_{prefixes,suffixes}_allowed_+`) into a `capDelta` (absent when zero), the
+magnitude stats (`local_{explicit,prefix,suffix}_mod_effect_+%`) into a per-side
+`magnitude` in percent, and `local_item_can_roll_all_influences` into `allInfluences`.
 `adapter.ts` adapts rows into model types and stamps `ModSource` via `classifySource`
 (domain + generation_type + is_essence_only). A fossil's `weights` (category tag → the
 multiplier in percent, "More Life modifiers" being 1000) and a bench craft's `cost`

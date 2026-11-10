@@ -53,6 +53,12 @@ export interface RepoeBase {
     /** Projected at ingest from the base's affix-count implicit stats
      * (`local_maximum_{prefixes,suffixes}_allowed_+`); absent ⇒ no delta. */
     readonly capDelta?: { readonly prefix: number; readonly suffix: number };
+    /** Projected at ingest from the base's magnitude implicit stats
+     * (`local_{explicit,prefix,suffix}_mod_effect_+%`), in percent; absent ⇒ none. */
+    readonly magnitude?: { readonly prefix: number; readonly suffix: number };
+    /** Projected at ingest from `local_item_can_roll_all_influences`: the base
+     * counts as having every influence (the Astrolabe Amulet). */
+    readonly allInfluences?: boolean;
 }
 
 /** `base_items.json`: metadata-path key → base. */

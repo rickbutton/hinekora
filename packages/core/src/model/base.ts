@@ -32,4 +32,13 @@ export interface Base {
      * Applied to the rarity's natural per-side limit, floored at 0. Absent ⇒ 0/0.
      */
     readonly capDelta?: { readonly prefix: number; readonly suffix: number };
+    /**
+     * An experimented base's "increased Explicit / Prefix / Suffix Modifier
+     * magnitudes" implicit, in percent per side (Simplex Amulet: 100/100;
+     * Helical Ring: 0/50): the item shows every value of that side scaled by it.
+     * Absent ⇒ 0/0.
+     */
+    readonly magnitude?: { readonly prefix: number; readonly suffix: number };
+    /** The Astrolabe Amulet's implicit: the item counts as having every influence. */
+    readonly allInfluences?: true;
 }

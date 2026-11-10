@@ -223,6 +223,14 @@ describe("registry resolution against real data", () => {
         expect(base("Ratcheting Ring").capDelta).toEqual({ prefix: -3, suffix: 3 });
         expect(base("Iron Ring").capDelta).toBeUndefined(); // an ordinary base has none
     });
+
+    it("carries the magnitude scaling and the all-influence implicit of experimented bases", () => {
+        expect(base("Simplex Amulet").magnitude).toEqual({ prefix: 100, suffix: 100 });
+        expect(base("Helical Ring").magnitude).toEqual({ prefix: 0, suffix: 50 });
+        expect(base("Ratcheting Ring").magnitude).toBeUndefined();
+        expect(base("Astrolabe Amulet").allInfluences).toBe(true);
+        expect(base("Iron Ring").allInfluences).toBeUndefined();
+    });
 });
 
 describe("influence tags against real data", () => {

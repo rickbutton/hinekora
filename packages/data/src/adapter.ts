@@ -145,5 +145,7 @@ export function adaptBase(key: string, b: RepoeBase): Base {
         domain: Domain(b.domain),
         tags: new Set(b.tags.map((t) => TagId(t))),
         ...(b.capDelta && { capDelta: b.capDelta }),
+        ...(b.magnitude && { magnitude: b.magnitude }),
+        ...(b.allInfluences && { allInfluences: true as const }),
     };
 }

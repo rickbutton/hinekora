@@ -83,6 +83,33 @@ function projectMods(raw) {
 const CAP_PREFIX_STAT = "local_maximum_prefixes_allowed_+";
 const CAP_SUFFIX_STAT = "local_maximum_suffixes_allowed_+";
 
+/** The stats of an experimented base's implicit that scale its explicit modifiers'
+ *  values, in percent: every modifier's, or one side's. */
+const EFFECT_STATS = {
+    "local_explicit_mod_effect_+%": ["prefix", "suffix"],
+    "local_prefix_mod_effect_+%": ["prefix"],
+    "local_suffix_mod_effect_+%": ["suffix"],
+};
+/** The Astrolabe Amulet's implicit: the item counts as having every influence. */
+const ALL_INFLUENCES_STAT = "local_item_can_roll_all_influences";
+
+/** Sum a base's implicit magnitude scaling per side, or `undefined` if it has none. */
+function magnitudeOf(base, mods) {
+    const out = { prefix: 0, suffix: 0 };
+    for (const id of base.implicits ?? []) {
+        for (const s of mods[id]?.stats ?? []) {
+            for (const side of EFFECT_STATS[s.id] ?? []) out[side] += s.min;
+        }
+    }
+    return out.prefix || out.suffix ? out : undefined;
+}
+
+function allInfluencesOf(base, mods) {
+    return (base.implicits ?? []).some((id) =>
+        (mods[id]?.stats ?? []).some((s) => s.id === ALL_INFLUENCES_STAT),
+    );
+}
+
 /** Sum a base's implicit affix-slot deltas, or `undefined` if it has none. */
 function capDeltaOf(base, mods) {
     let prefix = 0;
@@ -101,6 +128,7 @@ function projectBases(raw, mods) {
     for (const [key, b] of Object.entries(raw)) {
         if (b.release_state !== "released" || !b.name) continue; // skip unreleased / nameless internals
         const capDelta = capDeltaOf(b, mods);
+        const magnitude = magnitudeOf(b, mods);
         out[key] = {
             name: b.name,
             item_class: b.item_class,
@@ -108,6 +136,8 @@ function projectBases(raw, mods) {
             tags: b.tags,
             release_state: b.release_state,
             ...(capDelta && { capDelta }),
+            ...(magnitude && { magnitude }),
+            ...(allInfluencesOf(b, mods) && { allInfluences: true }),
         };
     }
     return out;
