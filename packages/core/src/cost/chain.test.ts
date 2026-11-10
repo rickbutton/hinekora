@@ -283,11 +283,11 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.reached.get(0)! / (1 / p)).toBeCloseTo(1, 6);
     });
 
-    it("a chain that has not settled by the last round followed takes that round's decay", () => {
+    it("a chain that has not settled within the rounds followed is solved over its states", () => {
         // From A the item reaches B one round in ten thousand; from B the exit
         // comes one round in a thousand. The decay is still climbing after the
-        // rounds the chain follows, so the rest is that last round's tail: an
-        // estimate, but every attempt ends and the rounds are of the right size.
+        // rounds the chain follows; the rounds to come are then the expected
+        // visits to the two states, solved for outright.
         const A = at(0, 1);
         const B = at(1, 1);
         const solved = chain({
@@ -325,10 +325,129 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         })!;
         expect(solved.unresolved).toBeCloseTo(0, 9);
         expect(solved.exit).toBeCloseTo(1, 9);
-        expect(solved.estimated).toBe(true);
+        expect(solved.estimated).toBe(false);
         // 10 000 rounds in A and 1 000 in B on average.
-        expect(solved.passes).toBeGreaterThan(5000);
-        expect(solved.passes).toBeLessThan(22000);
+        expect(solved.passes / 11000).toBeCloseTo(1, 9);
+        expect(solved.reached.get(1)! / 10000).toBeCloseTo(1, 9);
+        expect(solved.reached.get(2)! / 1000).toBeCloseTo(1, 9);
+    });
+
+    /** Two kinds of item that never turn into one another, each leaving for
+     *  the exit at its own rate. */
+    const twoKinds = (rateA: number, rateB: number, weightA: number, weightB: number) => {
+        const [E, A, B] = [at(0, 0), at(1, 0), at(2, 0)];
+        const from = (s: ChainState, rate: number) =>
+            [
+                { state: E, prob: rate },
+                { state: s, prob: 1 - rate },
+            ].filter((o) => o.prob > 0);
+        const [outA, outB] = [from(A, rateA), from(B, rateB)];
+        return chain({
+            atoms: [],
+            body: [{ id: 0, kind: "transition", next: (s) => (s.prefix === 1 ? outA : outB) }],
+            starts: [
+                { state: A, weight: weightA },
+                { state: B, weight: weightB },
+            ],
+            caps: CAPS,
+            exit: (s) => s.prefix === 0,
+        })!;
+    };
+
+    it("items that leave slowly beside ones that leave slower still all leave", () => {
+        // One round in a thousand and one in twenty thousand, half each: the
+        // shape moves as fast as the mass goes for longer than the rounds
+        // followed, yet every item can reach the exit.
+        const solved = twoKinds(1e-3, 5e-5, 1, 1);
+        expect(solved.exit).toBeCloseTo(1, 9);
+        expect(solved.unresolved).toBeCloseTo(0, 9);
+        expect(solved.undecided).toBe(0);
+        expect(solved.passes / (0.5 * 1000 + 0.5 * 20000)).toBeCloseTo(1, 9);
+        expect(solved.estimated).toBe(false);
+    });
+
+    it("items that never leave are not summed with the ones draining beside them", () => {
+        // A tenth of the items cannot reach the exit; the rest leave one
+        // round in ten thousand.
+        const solved = twoKinds(1e-4, 0, 9, 1);
+        expect(solved.exit).toBeCloseTo(0.9, 9);
+        expect(solved.unresolved).toBeCloseTo(0.1, 9);
+        expect(solved.undecided).toBe(0);
+        // However small the share, and however fast the rest drains.
+        const few = twoKinds(0.5, 0, 996, 4);
+        expect(few.exit).toBeCloseTo(0.996, 9);
+        expect(few.unresolved).toBeCloseTo(0.004, 9);
+    });
+
+    it("an item that may turn into one that never leaves counts by its chance of doing so", () => {
+        // Each round: the exit one time in ten thousand, a dead end as often.
+        const [E, A, dead] = [at(0, 0), at(1, 0), at(2, 0)];
+        const out = [
+            { state: E, prob: 1e-4 },
+            { state: dead, prob: 1e-4 },
+            { state: A, prob: 1 - 2e-4 },
+        ];
+        const solved = chain({
+            atoms: [],
+            body: [
+                {
+                    id: 0,
+                    kind: "transition",
+                    next: (s) => (s.prefix === 1 ? out : [{ state: s, prob: 1 }]),
+                },
+            ],
+            starts: [{ state: A, weight: 1 }],
+            caps: CAPS,
+            exit: (s) => s.prefix === 0,
+        })!;
+        expect(solved.exit).toBeCloseTo(0.5, 9);
+        expect(solved.unresolved).toBeCloseTo(0.5, 9);
+    });
+
+    it("past the states it solves for, the rest is the next round's tail, an estimate", () => {
+        // A ring of six hundred states walked one a round, the exit one round
+        // in ten thousand from any of them: the shape never settles.
+        const ring = 600;
+        const solved = chain({
+            atoms: [],
+            body: [
+                {
+                    id: 0,
+                    kind: "transition",
+                    next: (s) => [
+                        { state: at(0, 0), prob: 1e-4 },
+                        { state: at(1, (s.suffix % ring) + 1), prob: 1 - 1e-4 },
+                    ],
+                },
+            ],
+            starts: [{ state: at(1, 1), weight: 1 }],
+            caps: { prefix: 3, suffix: ring },
+            exit: (s) => s.prefix === 0,
+        })!;
+        expect(solved.estimated).toBe(true);
+        expect(solved.exit).toBeCloseTo(1, 9);
+        expect(solved.undecided).toBe(0);
+        expect(solved.passes / 10000).toBeCloseTo(1, 6);
+    });
+
+    it("says so where the states are too many to tell which can leave", () => {
+        // Every round a state not seen before, none of them the exit.
+        const solved = chain({
+            atoms: [],
+            body: [
+                {
+                    id: 0,
+                    kind: "transition",
+                    next: (s) => [{ state: at(1, s.suffix + 1), prob: 1 }],
+                },
+            ],
+            starts: [{ state: at(1, 0), weight: 1 }],
+            caps: { prefix: 3, suffix: 1e9 },
+            exit: (s) => s.prefix === 0,
+        })!;
+        expect(solved.exit).toBe(0);
+        expect(solved.unresolved).toBe(0);
+        expect(solved.undecided).toBeCloseTo(1, 9);
     });
 
     it("waits for the distribution's shape to settle, not only the share that leaves", () => {
@@ -514,7 +633,7 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
             exit: (s) => s.prefix === 3,
         })!;
         expect(calls).toBeLessThan(1_000_000);
-        expect(solved.estimated).toBe(true);
+        expect(solved.exit).toBeCloseTo(1, 6);
     });
 
     it("says when the mass that never leaves is held by a loop inside", () => {

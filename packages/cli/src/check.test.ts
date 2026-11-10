@@ -216,9 +216,9 @@ until has "maximum life" t1 and prefixCount <= 2 {
         expect(annul).not.toMatch(/×0[:\s]/);
     });
 
-    it("notes a loop whose rounds are estimated past those followed, and gives it no spread", () => {
+    it("gives a loop that drifts for thousands of rounds its figure, with no spread", () => {
         // example.craft's second loop drifts between items of two and three
-        // modifiers for thousands of rounds.
+        // modifiers for longer than its rounds are followed one by one.
         const src = readFileSync(
             fileURLToPath(new URL("../../../examples/example.craft", import.meta.url)),
             "utf8",
@@ -226,8 +226,8 @@ until has "maximum life" t1 and prefixCount <= 2 {
         const r = costSource(src, "example.craft", registry, prices);
         const lines = r.output.split("\n");
         const at = lines.findIndex((l) => l.includes("until hasTwoEleRes()"));
-        expect(lines[at]).not.toMatch(/\[/);
-        expect(lines[at + 1]).toMatch(/estimated/);
+        expect(lines[at]).toMatch(/1\/\d{4} chance$/);
+        expect(lines[at + 1]).toMatch(/^\s*\d+\s+annul/);
         expect(r.output).not.toMatch(/by what the item may hold/);
     });
 

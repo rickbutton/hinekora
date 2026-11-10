@@ -977,19 +977,24 @@ class Walker {
         if (solved === undefined || tracker.misses > misses) return undefined;
         // An attempt that can never end (the item full, nothing removing) is
         // counted as ending, so the figures stay finite; the note says so.
-        const ending = solved.exit + solved.stop + solved.unresolved;
+        const open = solved.unresolved + solved.undecided;
+        const ending = solved.exit + solved.stop + open;
         const attempts = ending > 0 ? 1 / ending : 1;
         // Rounds, not attempts: an attempt here is as many rounds as the item
         // takes, and may be none when the loop is entered at its exit.
         const rounds = solved.passes * attempts;
         // Rounds that never end have no expected number: the rounds followed
         // before giving up are no figure of the craft's.
-        const stuck = solved.unresolved >= 0.005;
-        const note = stuck
-            ? `${Math.round(solved.unresolved * 100)}% of the time the item never reaches the exit${solved.stuckInside >= solved.unresolved / 2 ? " of a loop inside" : ""}, so the loop cannot end as written and its rounds and the guide's total are not known`
-            : solved.estimated
-              ? ESTIMATED
-              : undefined;
+        const stuck = open >= 0.005;
+        const share = (x: number): string => `${Math.max(1, Math.round(x * 100))}%`;
+        // "Never" is said only of items no run of rounds can take to the exit.
+        const note = !stuck
+            ? solved.estimated
+                ? ESTIMATED
+                : undefined
+            : solved.unresolved >= 0.005
+              ? `${share(solved.unresolved)} of the time the item never reaches the exit${solved.stuckInside >= solved.unresolved / 2 ? " of a loop inside" : ""}, so the loop cannot end as written and its rounds and the guide's total are not known`
+              : `${share(open)} of the time whether the item reaches the exit was not worked out within the rounds followed, so the loop's rounds and the guide's total are not known`;
         this.record(
             stmt,
             mass,

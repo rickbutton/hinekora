@@ -142,11 +142,12 @@ unit price (`cost/prices.ts`, in the step's own currency).
   is not memoryless: each round starts where the last left the item.
   It is solved as a Markov chain (`cost/chain.ts`) over the tracked state, from the
   states the loop enters with. The
-  distribution is carried round after round until the mass has left (the exit, a
-  stop, or an item full with nothing removing); once a round hands the next a
-  distribution of the same shape, only smaller, the rest is summed as a geometric series,
-  and a chain that has not settled is noted as an estimate. Where the exit leaves the
-  item is what the next steps see.
+  distribution is carried round after round until the mass has left (the exit or a
+  stop); once a round hands the next a
+  distribution of the same shape, only smaller, the rest is summed as a geometric series.
+  A chain not settled within the rounds followed is solved over its states, or past a
+  few hundred noted as an estimate; the states that cannot reach the exit hold the
+  share that never leaves. Where the exit leaves the item is what the next steps see.
 - Any other `until` is a sequence of independent attempts: the body is walked once to
   find the chance an attempt ends in the exit or a `stop`; the expected rounds is the
   reciprocal, and the share ending in a stop ends the craft.
@@ -165,7 +166,7 @@ it) is given none, nor are its steps or the guide's total.
 Prices come from a **snapshot committed with the data**,
 `packages/data/data/poe1/economy.json`, for one league on one day, never from live calls, so a figure is reproducible and dated. `fetch-economy.mjs`
 refreshes it from poe.ninja's economy overview endpoints, which its
-[API reference](https://poe.ninja/docs/api) supports without promising them stable; when they move, the script is what changes.
+[API reference](https://poe.ninja/docs/api) supports without promising them stable.
 
 What the snapshot cannot price (a bench craft, a Harvest craft's lifeforce, a Bestiary
 recipe's beasts) `cost/prices.ts` carries from the catalog and the wiki's tables.
@@ -189,5 +190,4 @@ differs in that:
   essences;
 - it does not halve attack rows on a **Convoking Wand**, as the data's generation weights
   do;
-- a base of five slots takes four or five modifiers at two to one there, 65:35 here;
-- its **prices** are another snapshot.
+- a base of five slots takes four or five modifiers at two to one there, 65:35 here.
