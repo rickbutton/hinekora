@@ -742,6 +742,24 @@ describe("the cost of a guide", () => {
         expect(value.expected).toBeCloseTo(3 * tier.expected, 6);
     });
 
+    it("a loop with a step that cannot be followed says its rounds are read alike", () => {
+        // The fracture may land on the modifier no one names, which no state
+        // can hold: the loop is read as independent rounds, and says so.
+        const c = craft(
+            item({
+                base: "Iron Ring",
+                ilvl: 84,
+                rarity: "rare",
+                prefixes: ["IncreasedLife1", "IncreasedMana1"],
+                suffixes: ["random", "random"],
+            }),
+            [until(fracturedP("IncreasedLife1"), [op("fracture")])],
+        );
+        const loop = report(c).steps.find((s) => s.kind === "until")!;
+        expect(loop.note).toMatch(/every round is read alike.*not known/);
+        expect(loop.unknown).toBe(true);
+    });
+
     it("a step that cannot be followed ends what the roll before it says of the item", () => {
         // The Corruption Altar may reforge or destroy the item: the Chaos
         // Orb's roll no longer says whether it has the life.

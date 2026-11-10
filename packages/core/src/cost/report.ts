@@ -314,7 +314,12 @@ const ESTIMATED =
 
 /** The note on a step where some state of the item could not be followed. */
 const MISSED =
-    "some of the items this step may meet could not be followed exactly, so the figures after it read every path at once";
+    "this step can leave the item in more ways than could be followed, so the steps after it are read on every item the check allows at once";
+
+/** The note on a loop read as independent rounds because a step in it could
+ *  not be followed. */
+const UNFOLLOWED =
+    "a step in this loop can leave the item in more ways than could be followed, so every round is read alike, on every item the check allows at once";
 
 /** The sides' caps on an item of its rarity. */
 function capsOf(item: AItem): Record<Gen, number> {
@@ -788,12 +793,14 @@ class Walker {
                 "the check finds this loop can never reach its exit, so its rounds and the guide's total are not known",
             );
         }
+        const misses = this.tracker?.misses ?? 0;
         if (before !== undefined && rpred !== null) {
             const solved = this.untilOverflow(() =>
                 this.chainLoop(stmt, before, rpred, branches, frame),
             );
             if (solved !== undefined) return solved;
         }
+        const unfollowed = (this.tracker?.misses ?? 0) > misses;
         this.lost = true;
         // One attempt: the body from the head with mass one, in a frame of its
         // own, its steps discarded. The attempt ends in the exit (its chance
@@ -841,15 +848,19 @@ class Walker {
                 stmt,
                 branches,
                 frame,
-                exit === undefined
-                    ? "the chance a round of this loop reaches its exit could not be worked out, so its rounds and the guide's total are not known"
-                    : "no round of this loop reaches its exit as the steps in it are read, so its rounds and the guide's total are not known",
+                (unfollowed ? `${UNFOLLOWED}; ` : "") +
+                    (exit === undefined
+                        ? "the chance a round of this loop reaches its exit could not be worked out, so its rounds and the guide's total are not known"
+                        : "no round of this loop reaches its exit as the steps in it are read, so its rounds and the guide's total are not known"),
                 head,
             );
         }
         const ending = exit + stop;
         const expected = 1 / ending;
-        this.record(stmt, mass, frame, { attempts: { chance: exit, expected } });
+        this.record(stmt, mass, frame, {
+            attempts: { chance: exit, expected },
+            ...(unfollowed && { note: UNFOLLOWED }),
+        });
         // The real pass: the body's steps, each run `expected` times per pass of
         // the enclosing frame, from the loop head with mass one.
         const inner: Frame = { scale: frame.scale * mass * expected, stopped: 0, restarted: 0 };
