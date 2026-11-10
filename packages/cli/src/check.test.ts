@@ -146,6 +146,31 @@ until has "maximum life" {
         expect(restart).not.toMatch(/%/);
     });
 
+    it("places a Harvest reforge's tagged modifier whatever the item may hold", () => {
+        // The suffixes are kept, so the life lands among the prefixes the
+        // reforge has not yet drawn: no reading of the item finds that side
+        // full, and the branch has one figure, about one life row in eight.
+        const r = costSource(
+            `item {
+    base: "Vermillion Ring"
+    ilvl: 84
+    rarity: rare
+    prefixes: [ "maximum mana" t5 ]
+    suffixes: [ "fire resistance" t1, "cold resistance" t1, "chaos resistance" t2 ]
+}
+bench "suffixes cannot be changed"
+harvest reforge "life"
+if has "maximum life" t1 {
+    stop
+}`,
+            "test.craft",
+            registry,
+            prices,
+        );
+        const branch = r.output.split("\n").find((l) => l.includes("if has"));
+        expect(branch).toMatch(/taken 1[23]%$/);
+    });
+
     it("names what the snapshot cannot price and still sums the rest", () => {
         const r = costSource(
             `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] }\nlocus`,

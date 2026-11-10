@@ -477,7 +477,10 @@ export function rollOf(
                     return unveilRoll(before, op.pool, registry, reading);
                 }
                 if (op.count.kind === "within") {
-                    forced.push({ spec: op.pool, count: op.count, before });
+                    // The forced row goes down before the draws (`drawRoll`), so
+                    // one listed after the main fill reads the item that fill
+                    // starts from: after it, a side the draws may fill reads full.
+                    forced.push({ spec: op.pool, count: op.count, before: main?.before ?? before });
                 } else if (main === undefined) {
                     main = { spec: op.pool, count: op.count, before };
                 } else {
