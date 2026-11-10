@@ -330,7 +330,7 @@ checker left open (a side's count, the item's memory strands) read at its floor 
 its ceiling (`Reading`), the two items at the ends of what the checker allows; where the
 ends disagree, the step's figure is given with them, so an Exalted Orb onto an item with
 unnamed modifiers says what it is worth on the emptiest and on the fullest item it may be.
-The game's rules the estimate rests on and the ones no source settles are Q58–Q68.
+The game's rules the estimate rests on and the ones no source settles are Q58–Q66 and Q68.
 
 ### 7.2 The race: an exact draw without listing outcomes
 

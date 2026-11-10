@@ -36,8 +36,8 @@ of the operations; no divergence is expected.
   worked out first: the Recombinator, whose result pools both items' modifiers (an earlier
   form is in the git history before the commit that removed it; `QUESTIONS.md` Q55, Q67),
   the Awakener's Orb, whose result keeps an influenced modifier of each item (Q28),
-  Reflecting Mist and Kishara's Ducat
-  and **choice over an operation's outcomes** (Hinekora's Lock, Allflame crafting).
+  Reflecting Mist and Kishara's Ducat.
+- **choice over an operation's outcomes** (Hinekora's Lock, Allflame crafting).
 - English negation sugar (`doesn't have` → `not has`); a power-user annotation tier for
   reusable techniques; a way to name an unveiled modifier whose words a natural one
   shares other than by its mod id.

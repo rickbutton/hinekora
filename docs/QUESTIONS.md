@@ -724,7 +724,7 @@ craftofexile's emulator (`poec_simRecombinate`) picks uniformly among the pooled
 modifiers, and its count table differs from the page's (one pooled: keep none a third of
 the time, not 41%; three pooled: 30/50/20, not 40/50/10). The probe above settles the
 direction: if the rarer prefix survives more often than half, the pick leans against
-spawn weight and `pickSide` should weigh by its inverse.
+spawn weight and the pick should weigh by its inverse.
 **Answer:** 2026-11-10: deferred with the Recombinator, which is removed until a second
 item in a guide is designed (`ROADMAP.md`, multi-item crafts); the evidence above stands
 for that design.
