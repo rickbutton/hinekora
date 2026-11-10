@@ -125,6 +125,8 @@ export interface RepoeEldritch {
     readonly classes: readonly string[];
     /** The row's spawn weight per class tag, for the chance an ember or ichor gives it. */
     readonly weights?: Readonly<Record<string, number>>;
+    /** No class rolls the row; `classes` are then the ones its table names. */
+    readonly unrollable?: true;
     readonly implicit_tags: readonly string[];
     readonly text: string;
 }

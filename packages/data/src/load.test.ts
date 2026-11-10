@@ -118,6 +118,24 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         expect(names.length).toBeLessThan(400);
     });
 
+    it("keeps the tiers of a presence implicit no ember gives, out of an ember's pool", () => {
+        // An Orb of Conflict lowers a Greater presence implicit to its Lesser
+        // tier, a row with no spawn weight.
+        const gloves = base("Iron Gauntlets");
+        const id = ModId("IncreasedAttackSpeedEldritchImplicitUniquePresence1");
+        const lesser = data.eldritch.find((e) => e.id === id);
+        expect(lesser).toMatchObject({
+            tier: 1,
+            unrollable: true,
+            text: "While a Unique Enemy is in your Presence, 12% increased Attack Speed",
+        });
+        expect(registry.eldritchPool(gloves, "exarch", 1).some((e) => e.unrollable)).toBe(false);
+        expect(registry.eldritchRows(gloves, "exarch", 1).map((e) => e.id)).toContain(id);
+        // Every such row is a tier of an implicit some ember or ichor gives.
+        const rollable = new Set(data.eldritch.filter((e) => !e.unrollable).map((e) => e.type));
+        expect(data.eldritch.every((e) => rollable.has(e.type))).toBe(true);
+    });
+
     it("resolves the four Aspects the Bestiary crafts to level-30 suffix rows", () => {
         for (const name of ["cat", "avian", "spider", "crab"]) {
             const r = registry.resolveAspect(name);

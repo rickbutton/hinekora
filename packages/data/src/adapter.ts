@@ -104,6 +104,7 @@ export function adaptEldritch(id: string, e: RepoeEldritch): EldritchImplicitSpe
         type: TypeId(e.type),
         classes: new Set(e.classes.map((t) => TagId(t))),
         weights: tagWeights(e.weights),
+        ...(e.unrollable && { unrollable: true as const }),
         implicitTags: new Set(e.implicit_tags.map((t) => TagId(t))),
         text: e.text,
     };

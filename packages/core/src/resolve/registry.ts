@@ -246,6 +246,9 @@ export interface Registry {
     resolveFossil(name: string): Resolved<FossilSpec>;
     /** The eldritch implicit rows an ember or ichor of that tier can give a base. */
     eldritchPool(base: Base, side: EldritchSide, tier: number): readonly EldritchImplicitSpec[];
+    /** The rows an eldritch implicit of that tier on a base may be: the pool's,
+     *  and the tiers only an Orb of Conflict reaches. */
+    eldritchRows(base: Base, side: EldritchSide, tier: number): readonly EldritchImplicitSpec[];
     /** Resolve an eldritch implicit's wording to every type it covers on that side
      *  (the "presence" variants share a wording), narrowed to the base when given. */
     resolveEldritch(name: string, side: EldritchSide, base?: Base): Resolved<readonly TypeId[]>;
@@ -760,6 +763,10 @@ export function buildRegistry(data: RegistryData): Registry {
         },
 
         eldritchPool(base, side, tier) {
+            return this.eldritchRows(base, side, tier).filter((e) => !e.unrollable);
+        },
+
+        eldritchRows(base, side, tier) {
             return eldritch.filter(
                 (e) =>
                     e.side === side &&

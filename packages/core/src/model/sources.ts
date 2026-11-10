@@ -117,6 +117,10 @@ export interface EldritchImplicitSpec {
     readonly classes: ReadonlySet<TagId>;
     /** The row's spawn weight per class tag: its share of an ember's or ichor's draw. */
     readonly weights: ReadonlyMap<TagId, number>;
+    /** No ember or ichor gives the row: it is a tier of its implicit that only
+     *  an Orb of Conflict reaches, by lowering it (the presence implicits'
+     *  lowest tiers). `classes` are then the classes it is a tier on. */
+    readonly unrollable?: true;
     readonly implicitTags: ReadonlySet<TagId>;
     readonly text: string;
 }

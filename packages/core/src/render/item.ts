@@ -300,7 +300,7 @@ export function itemView(a: AItem, registry: Registry): ItemView {
         if (types !== "any") {
             for (const t of types) {
                 const rows = tiers.flatMap((n) =>
-                    registry.eldritchPool(a.base, side, n).filter((e) => e.type === t),
+                    registry.eldritchRows(a.base, side, n).filter((e) => e.type === t),
                 );
                 if (rows.length === 0) texts.add(registry.eldritchTextOf(t) ?? t);
                 for (const e of rows) {

@@ -50,16 +50,25 @@ export function presenceText(id, text) {
     return text;
 }
 
+/** The spawn tags that name no item class. */
+const NOT_A_CLASS = /^(default|no_tier_\d_eldritch_implicit)$/;
+
 export function projectEldritch(raw) {
     const out = {};
     for (const [id, m] of Object.entries(raw)) {
         const side = SIDE_OF[m.generation_type];
         if (side === undefined) continue;
         const tier = tierOf(m);
+        if (tier === 0) continue;
         const admitted = m.spawn_weights.filter((w) => w.weight > 0);
-        const classes = admitted.map((w) => w.tag);
-        // A row no class tag admits, or with no tier, is not obtainable.
-        if (tier === 0 || classes.length === 0) continue;
+        // A row no class rolls is still a tier of its implicit: the presence
+        // implicits have no weight at their lowest tiers, which an Orb of
+        // Conflict reaches by lowering one. It keeps the classes it names.
+        const unrollable = admitted.length === 0;
+        const classes = (
+            unrollable ? m.spawn_weights.filter((w) => !NOT_A_CLASS.test(w.tag)) : admitted
+        ).map((w) => w.tag);
+        if (classes.length === 0) continue;
         const weights = {};
         for (const w of admitted) weights[w.tag] = w.weight;
         out[id] = {
@@ -68,10 +77,18 @@ export function projectEldritch(raw) {
             type: m.type,
             classes,
             weights,
+            ...(unrollable && { unrollable: true }),
             implicit_tags: m.implicit_tags ?? [],
             text: presenceText(id, m.text ?? ""),
         };
     }
+    // An implicit with no rollable tier at all is on no item, whatever is lowered.
+    const rollable = new Set(
+        Object.values(out)
+            .filter((e) => !e.unrollable)
+            .map((e) => e.type),
+    );
+    for (const [id, e] of Object.entries(out)) if (!rollable.has(e.type)) delete out[id];
     return out;
 }
 
