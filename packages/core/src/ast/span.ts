@@ -5,7 +5,8 @@
  * (which consume them), which is why they live in core — the neutral contract.
  */
 
-/** A single position in the source. `line`/`column` are 1-based; `offset` 0-based. */
+/** A single position in the source. `line`/`column` are 1-based; `offset` 0-based,
+ *  in UTF-16 code units (a JS string index, the LSP's own offset convention). */
 export interface Pos {
     readonly offset: number;
     readonly line: number;

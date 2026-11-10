@@ -1268,7 +1268,9 @@ function calledProcs(stmts: readonly Stmt[], out = new Set<string>()): Set<strin
     return out;
 }
 
-/** The procs that can reach themselves through the call graph of their bodies. */
+/** The procs that can reach themselves through the call graph of their bodies.
+ *  Decided on the bodies as written, not while inlining, so steps passed as an
+ *  argument may call the proc they are passed to. */
 function recursiveProcs(procs: ReadonlyMap<string, { proc: ProcDef }>): string[] {
     const calls = new Map<string, Set<string>>();
     for (const [name, { proc }] of procs) calls.set(name, calledProcs(proc.body));

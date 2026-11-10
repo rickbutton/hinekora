@@ -45,7 +45,9 @@ function emptyPool(
     return cached;
 }
 
-/** The rollable tiers of `type` on `base` at `ilvl`, best (T1) first. */
+/** The rollable tiers of `type` on `base` at `ilvl`, best (T1) first. A row's id
+ *  does not give its tier: ids count up with mod level, T-numbers down from the
+ *  best here, so `IncreasedLife11` can be T1. */
 export function rollableTiers(
     catalog: ModCatalog,
     base: Base,

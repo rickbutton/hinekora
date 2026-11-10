@@ -11,6 +11,10 @@
  * the modifiers whose identity is unknown, "possibly" marks, and the modifiers
  * proven absent. The checker's single-line summary for diagnostics stays
  * `renderState`; this is the full view.
+ *
+ * The view reads presence only through the general views (unit facts, prime
+ * implicates, "≥k of n"), never a handler per case: a new readable form is a
+ * new view in `astate.ts`.
  */
 import {
     type AItem,

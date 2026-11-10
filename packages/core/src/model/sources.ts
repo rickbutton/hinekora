@@ -108,6 +108,7 @@ export interface BenchCraft {
     readonly tier: number;
     readonly itemClasses: ReadonlySet<ClassId>;
     readonly master?: string;
-    /** What the craft costs, currency name → amount ("Divine Orb" → 2). */
+    /** What the craft costs, currency name → amount ("Divine Orb" → 2); the cost
+     *  layer reads it, the checker does not. */
     readonly cost?: ReadonlyMap<string, number>;
 }
