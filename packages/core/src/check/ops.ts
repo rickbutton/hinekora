@@ -235,7 +235,13 @@ export type Check =
     | { readonly kind: "craftedReplaceable" }
     /** No modifier of the row's group may be present; `refusal` words what
      *  cannot be done then, for a craft that is not a bench craft. */
-    | { readonly kind: "noGroupConflict"; readonly mod: Mod; readonly refusal?: string }
+    | {
+          readonly kind: "noGroupConflict";
+          readonly mod: Mod;
+          readonly refusal?: string;
+          /** The modifier the step takes away to put `mod` in its place. */
+          readonly replacing?: TypeId;
+      }
     | { readonly kind: "poolNonEmpty"; readonly pool: PoolSpec; readonly tag: TagId }
     | { readonly kind: "unveilTarget"; readonly type: TypeId; readonly name: string };
 
@@ -1004,7 +1010,7 @@ function failing(
                   }
                 : null;
         case "noGroupConflict": {
-            const clashing = typesSharingFamilyWithPresent(a, check.mod, registry);
+            const clashing = typesSharingFamilyWithPresent(a, check.mod, registry, check.replacing);
             return clashing.length > 0
                 ? {
                       kind: "modConflict",
@@ -1181,10 +1187,17 @@ function hasRemovable(
  * generation still holds an unidentified affix that could be it: a generation
  * whose count is fully accounted for by guaranteed types rules it out, so a
  * proven "2 suffixes, 0 prefixes" item can still take a benched prefix.
+ * `replacing`, the modifier `mod` takes the place of, is no conflict.
  */
-function typesSharingFamilyWithPresent(a: AItem, mod: Mod, registry: Registry): TypeId[] {
+function typesSharingFamilyWithPresent(
+    a: AItem,
+    mod: Mod,
+    registry: Registry,
+    replacing?: TypeId,
+): TypeId[] {
     const guaranteed = guaranteedTypes(a);
     const shares = (type: TypeId): boolean => {
+        if (type === replacing) return false;
         const fams = registry.familiesOfType(type);
         for (const f of mod.families) if (fams.has(f)) return true;
         return false;

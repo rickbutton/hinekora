@@ -468,6 +468,92 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
     });
 });
 
+describe("a Harvest change into a modifier of the changed one's group", () => {
+    // The shipped shape: a wand's added damage to spells is one group for the
+    // three elements, a shield's increased elemental damage another.
+    const base = (id: string, cls: string, tag: string) => ({
+        id: BaseId(id),
+        name: id,
+        itemClass: ClassId(cls),
+        domain: RING_BASE.domain,
+        tags: new Set(["default", tag].map(TagId)),
+    });
+    const row = (id: string, tag: string, group: string, text: string): Mod => ({
+        ...FIRE_DAMAGE,
+        id: ModId(`${id}1`),
+        type: TypeId(id),
+        families: new Set([GroupId(group)]),
+        spawn: [
+            { tag: TagId(tag), weight: 1000 },
+            { tag: TagId("default"), weight: 0 },
+        ],
+        text,
+    });
+    const spells = (element: string) =>
+        row(
+            `${element}Spells`,
+            "wand",
+            "SpellAddedElementalDamage",
+            `Adds # to # ${element} Damage to Spells`,
+        );
+    const increased = (element: string) =>
+        row(
+            `${element}Increased`,
+            "shield",
+            "WeaponCasterDamagePrefix",
+            `#% increased ${element} Damage`,
+        );
+    const grouped = buildRegistry({
+        bases: [base("Pagan Wand", "Wand", "wand"), base("Spirit Shield", "Shield", "shield")],
+        harvestChange: {
+            resistance: HARVEST_CHANGE.resistance,
+            damage: {
+                fire: ["FireSpells", "FireIncreased"].map(TypeId),
+                cold: ["ColdSpells", "ColdIncreased"].map(TypeId),
+                lightning: ["LightningSpells"].map(TypeId),
+            },
+        },
+        mods: [
+            ...CATALOG,
+            ...["Fire", "Cold", "Lightning"].map(spells),
+            ...["Fire", "Cold"].map(increased),
+        ],
+    });
+    const changed = (on: string, prefixes: string[], from: string, to: string) =>
+        check(
+            craft(item({ base: on, ilvl: 100, rarity: "rare", prefixes }), [
+                harvestChange(from, to),
+            ]),
+            { registry: grouped },
+        );
+
+    it("is taken, the changed modifier making room for its replacement", () => {
+        const wand = changed("Pagan Wand", ["LightningSpells1"], "LightningSpells1", "FireSpells1");
+        expect(wand.diagnostics).toEqual([]);
+        expect(guaranteedTypes(wand.finalState!).has(TypeId("FireSpells"))).toBe(true);
+        expect(isExcluded(wand.finalState!, TypeId("LightningSpells"))).toBe(true);
+        const shield = changed(
+            "Spirit Shield",
+            ["FireIncreased1"],
+            "FireIncreased1",
+            "ColdIncreased1",
+        );
+        expect(shield.diagnostics).toEqual([]);
+        expect(guaranteedTypes(shield.finalState!).has(TypeId("ColdIncreased"))).toBe(true);
+    });
+
+    it("is refused where another modifier on the item is of the target's group", () => {
+        // A fire resistance beside the fire and chaos resistance, one group.
+        const r = check(
+            craft(rareRing([], [COLD_RESIST.id, FIRE_CHAOS_RESIST.id]), [
+                harvestChange(COLD_RESIST.id, FIRE_RESIST.id),
+            ]),
+            ctx,
+        );
+        expect(r.diagnostics[0]!.message).toContain("at most one per group");
+    });
+});
+
 describe("a Harvest change on an item with two influences", () => {
     const lists: HarvestChangeLists = {
         resistance: {

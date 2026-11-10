@@ -615,7 +615,11 @@ export function beastFractureOps(n: 1 | 2): readonly Op[] {
 /** Harvest "change a modifier into a similar tier modifier of another element"
  *  (Harvest crafting): the named modifier goes and one of the target's rows at
  *  its tier takes the slot; both protections are respected (Metamod § Rules and
- *  Exceptions, "Change Element of Resistance"). */
+ *  Exceptions, "Change Element of Resistance"). The target may share a group
+ *  with the modifier it replaces (seen in game on patch 3.29: added fire damage
+ *  to spells on a wand and a sceptre, increased fire damage on a wand, a shield
+ *  and a jewel, each changed to cold); one of any other modifier's group is
+ *  refused. */
 export function harvestChangeOps(from: TypeId, label: string, to: readonly Mod[]): readonly Op[] {
     return [
         notCorrupted,
@@ -625,6 +629,7 @@ export function harvestChangeOps(from: TypeId, label: string, to: readonly Mod[]
                 kind: "noGroupConflict",
                 mod,
                 refusal: "the grove can't change a modifier into it",
+                replacing: from,
             }),
         ),
         remove({ kind: "type", type: from }),

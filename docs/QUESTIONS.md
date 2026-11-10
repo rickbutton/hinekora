@@ -326,17 +326,6 @@ record refused or applied.
 **Assumed:** applied at any item level, in a step and in the item block. **Encoded in:**
 `check/library.ts` `benchOps` (no level check), `check/check.ts` `elaborateItem`.
 
-### Q88 · probe · open — the Harvest damage change on increased elemental damage
-
-**Q:** players report "There are no valid Mods for this craft on this item" for a listed
-increased elemental damage modifier on a wand, a sceptre, jewels and shields, and others
-the same craft working on a staff and a sceptre (reddit 1romglx, 1rr0jyz; forum thread
-3916613). What beyond the game's list decides it?
-**Probe:** a wand, a sceptre, a jewel and a shield, each with one increased fire damage
-modifier; the grove's fire-to-cold damage change on each; record offered or the message.
-**Assumed:** taken on every base where the counterpart rolls, as listed. **Encoded in:**
-`check/methods.ts` `harvestChange`.
-
 ### Q89 · probe · open — the order of a Harvest augment's add and removal
 
 **Q:** does the grove add the tagged modifier before it removes another, so that the item
