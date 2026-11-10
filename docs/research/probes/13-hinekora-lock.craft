@@ -1,3 +1,0 @@
-item { base: "Hubris Circlet" ilvl: 86 rarity: rare prefixes: [ "maximum life" t1, "maximum energy shield" t1 ] suffixes: [ "fire resistance" t1 ] }
-lock
-exalt

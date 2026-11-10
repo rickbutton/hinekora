@@ -1,2 +1,0 @@
-item { base: "Ashbark Tincture" ilvl: 84 rarity: magic }
-until has "mana burn" { alteration }

@@ -1,3 +1,0 @@
-# The Recombinator was removed on 2026-11-10 (ROADMAP.md, multi-item crafts); this probe no longer parses.
-item { base: "Imbued Wand" ilvl: 84 rarity: rare prefixes: [ "level all spell skill gems" ] }
-recombine { base: "Imbued Wand" ilvl: 84 rarity: rare prefixes: [ "spell damage" t1 ] }

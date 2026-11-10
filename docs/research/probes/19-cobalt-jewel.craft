@@ -1,3 +1,0 @@
-item { base: "Cobalt Jewel" ilvl: 84 rarity: normal }
-alchemy
-until has "maximum life" and has "critical strike multiplier" { chaos }

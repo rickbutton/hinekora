@@ -1,4 +1,0 @@
-
-15-synth-implicit-base.craft:2:65: error: expected ':' after 'synthesised'
-  2 | item { base: "Hubris Circlet" ilvl: 86 rarity: rare synthesised implicit: "maximum life" prefixes: [ "maximum life" t1 ] }
-    |                                                                 ^

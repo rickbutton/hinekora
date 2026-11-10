@@ -1,3 +1,0 @@
-# Starting item with an implicit / enchant / synthesised mark.
-item { base: "Hubris Circlet" ilvl: 86 rarity: rare synthesised implicit: "maximum life" prefixes: [ "maximum life" t1 ] }
-chaos

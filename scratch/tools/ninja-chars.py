@@ -25,4 +25,4 @@ for skill, count in ranked:
         "characters": [{"account": a, "name": n, "url": f"https://poe.ninja/poe1/builds/{league}/character/{urllib.parse.quote(a)}/{urllib.parse.quote(n)}"} for a, n in chars]})
     print(f"{skill:40s} {count:6d} filtered={ftotal} chars={len(chars)}")
     time.sleep(1.5)
-json.dump(out, open(f"docs/research/data/ninja-top-characters-{league}.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+json.dump(out, open(S + f"/ninja/top-characters-{league}.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)

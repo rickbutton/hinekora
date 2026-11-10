@@ -1,2 +1,0 @@
-item { base: "Amethyst Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t2 ] }
-until has "maximum life" >= 70 { divine }

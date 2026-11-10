@@ -1,6 +1,0 @@
-
-07-influence-awakener.craft:9:4: error: the 'if' branch can never run: has "nearby enemies have fire resistance" is impossible here
-  9 | if has "nearby enemies have fire resistance" { bench "maximum life" }
-    |    ^
-
-✗ 1 error

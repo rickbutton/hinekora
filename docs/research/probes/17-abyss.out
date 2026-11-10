@@ -1,6 +1,0 @@
-
-17-abyss.craft:3:7: error: this loop can never exit: (has "maximum life" and has "onslaught") can never become true here
-  3 | until has "maximum life" and has "onslaught" { chaos }
-    |       ^
-
-✗ 1 error

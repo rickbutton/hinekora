@@ -1,2 +1,0 @@
-item { base: "Iron Gauntlets" ilvl: 84 rarity: rare prefixes: [ "random" ] }
-if has "maximum life" { exalt }

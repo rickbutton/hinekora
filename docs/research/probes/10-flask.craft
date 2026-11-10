@@ -1,5 +1,0 @@
-# Magic flask: alteration spam for a prefix + suffix pair.
-item { base: "Divine Life Flask" ilvl: 84 rarity: magic }
-until has "bleeding" and has "recovery rate" {
-    alteration
-}
