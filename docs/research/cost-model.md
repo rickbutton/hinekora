@@ -483,6 +483,7 @@ finished item ± one standard error; hinekora's are its expected runs.
 | Pristine and Metallic, until T1 life                                               | 11.36 ± 0.29                      | 11.5                                        | agree                                                                                                                         |
 | Frigid and Metallic, until T1 cold resistance                                      | 8.98 ± 0.22                       | 9.28                                        | agree                                                                                                                         |
 | Pristine and Frigid, until T1 life and T1 cold resistance                          | 107 ± 4                           | 113                                         | agree                                                                                                                         |
+| Chaos Orb on Imbued Wand until T1 spell damage                                     | 879 ± 52 (300)                    | 766                                         | 13% low, at 2.2 standard errors; any spell damage lands 25.0% of the time against hinekora's 27%                              |
 | Aetheric on Imbued Wand until T1 spell damage                                      | 297 ± 12 (600)                    | 355 (860 before)                            | 20% high; see below                                                                                                           |
 | Harvest reforge life / fire / speed on Titan Greaves until the T1 of that modifier | 14.6 / 7.95 / 5.93 ± 2%           | 14.4 / 8 / 6                                | agree                                                                                                                         |
 
@@ -510,7 +511,10 @@ What remains, all where the item is a set the checker cannot narrow: the estimat
 an open count at its floor and a path keeps only its last roll (Q57 has both cases and a
 fourth option, a distribution carried through every step); the race takes each modifier
 type as its own clock, so two types of one modifier group (the three "Adds # to # Damage
-to Spells" on a wand) may both be drawn, which lowers a fossil's other rows; and how a
+to Spells" on a wand) may both be drawn, and a group's other members (spell damage's
+"increased Fire Damage") never close it, which moves a row's chance both ways: drawn
+group by group, hinekora's own pool gives a Chaos Orb's spell damage 25.7% (the
+simulator 25.0%, the race 27%) and an Aetheric reforge's 77.6% (the race 58%); and how a
 fossil's draws split between the sides is unconfirmed against the simulator, which lands
 some spell damage on an Aetheric reforge 67.5% of the time where hinekora reads 58%.
 
