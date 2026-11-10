@@ -189,6 +189,11 @@ Derived:
   roll matches against.
 - `active_effects`: the effects of the modifiers present, collected.
 
+**Values.** A modifier's value is the first number of its row's text, in the row's span;
+on an experimented base the span is scaled by the base's `magnitude` for that side, as
+the item shows it ([Simplex Amulet](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)
+doubles every value); how the game rounds a scaled value is `QUESTIONS.md` Q69.
+
 **Affix capacity.** [Rarities](https://www.poewiki.net/wiki/Rarity#Rarities) gives the
 per-side limit; an experimented base's stats shift each side; and the two sides together
 never exceed twice the rarity's per-side limit, which is what holds a magic Ratcheting Ring

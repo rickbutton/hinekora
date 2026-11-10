@@ -125,6 +125,17 @@ export const SIMPLEX_BASE: Base = {
     domain: DOMAIN_ITEM,
     tags: new Set([TAG_DEFAULT, TAG_AMULET]),
     capDelta: { prefix: -2, suffix: -1 },
+    magnitude: { prefix: 100, suffix: 100 },
+};
+
+/** The Astrolabe Amulet: every influence at once, by its implicit. */
+export const ASTROLABE_BASE: Base = {
+    id: BaseId("AstrolabeAmulet"),
+    name: "Astrolabe Amulet",
+    itemClass: CLASS_AMULET,
+    domain: DOMAIN_ITEM,
+    tags: new Set([TAG_DEFAULT, TAG_AMULET]),
+    allInfluences: true,
 };
 
 /** Experimented ring base (like the Ratcheting Ring): −3 prefix / +3 suffix, so

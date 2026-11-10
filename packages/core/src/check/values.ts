@@ -5,7 +5,8 @@
  */
 import type { Cmp } from "../ast/ast.js";
 import { type Domain, type Range, RangeDomain } from "./domain.js";
-import type { TypeId } from "../model/ids.js";
+import type { Base } from "../model/base.js";
+import type { Gen, TypeId } from "../model/ids.js";
 
 const RANGE = /\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)/;
 const NUMBER = /(\d+(?:\.\d+)?)/;
@@ -17,6 +18,15 @@ export function rollRange(text: string): Range | undefined {
     if (r) return [Number(r[1]), Number(r[2])];
     const n = NUMBER.exec(text);
     return n ? [Number(n[1]), Number(n[1])] : undefined;
+}
+
+/** A row's span as the item shows it: an experimented base's magnitude implicit
+ *  scales every value of its side (`QUESTIONS.md` Q69 on the rounding). */
+export function spanOn(base: Base, gen: Gen, span: Range): Range {
+    const percent = base.magnitude?.[gen] ?? 0;
+    if (percent === 0) return span;
+    const scale = 1 + percent / 100;
+    return [span[0] * scale, span[1] * scale];
 }
 
 /** The part of `span` whose values compare so, or null when none does. Whole

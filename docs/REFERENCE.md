@@ -653,7 +653,8 @@ product level in `normalize`, never hidden inside one domain. The sub-domains:
   refinement is coupled to `presence` (tier atoms), so that part lives in `refine`, not the
   domain.
 - `values` (`ValueDomain`, in `values.ts`): an overlay `Map<TypeId, Range>` of the span a
-  present modifier's value, the first number of its row's text (`rollRange`), is known to
+  present modifier's value, the first number of its row's text (`rollRange`, scaled by an
+  experimented base's magnitude implicit for the row's side, `spanOn`), is known to
   lie in, narrower than its rows' spans; a `has "X" t<n>` check clips it to that tier's span
   (`tierSpan`) or rules the tier out; a `has "X" >= n` predicate sets it (and pins the
   rows whose spans reach `n`, `refineHasValue`, every row the item may carry: a row the
