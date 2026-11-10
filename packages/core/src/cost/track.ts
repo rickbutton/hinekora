@@ -41,6 +41,7 @@ import { amongFirstDistribution } from "./race.js";
 import {
     type Group,
     holdsNamed,
+    implicitWeights,
     memberCases,
     naturalGroups,
     type Reading,
@@ -603,13 +604,10 @@ export class Tracker {
         if (was !== undefined && (kinds === undefined || kinds.has(was)))
             return [{ id: implicitRow(tier, was), weight: 1 }];
         const byKind = new Map<TypeId, number>();
-        for (const e of this.registry.eldritchPool(item.base, side, tier)) {
+        for (const e of implicitWeights(this.registry, item.base, side, tier)) {
             if (have !== "any" && !have.has(e.type)) continue;
-            let w = 0;
-            for (const [tag, weight] of e.weights)
-                if (item.base.tags.has(tag)) w = Math.max(w, weight);
             const kind = this.kindOf(e.type);
-            if (w > 0) byKind.set(kind, (byKind.get(kind) ?? 0) + w);
+            if (e.weight > 0) byKind.set(kind, (byKind.get(kind) ?? 0) + e.weight);
         }
         if (byKind.size === 0) return [{ id: implicitRow(tier, OTHER_IMPLICIT), weight: 1 }];
         return [...byKind].map(([kind, weight]) => ({ id: implicitRow(tier, kind), weight }));

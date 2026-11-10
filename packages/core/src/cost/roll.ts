@@ -8,6 +8,8 @@
  * rows per side and a distribution of counts.
  */
 import type { Gen, GroupId, TypeId } from "../model/ids.js";
+import type { Base } from "../model/base.js";
+import type { EldritchSide } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import { lookupWeight, pool } from "../pool/pool.js";
 import { veiledPool } from "../pool/veiled.js";
@@ -601,6 +603,21 @@ function presentOn(a: AItem, registry: Registry): Present[] {
     return out;
 }
 
+/** The eldritch implicits of a tier a base can take on one side, each row
+ *  with the weight an ember or ichor of the tier draws it at. */
+export function implicitWeights(
+    registry: Registry,
+    base: Base,
+    side: EldritchSide,
+    tier: number,
+): { readonly type: TypeId; readonly weight: number }[] {
+    return registry.eldritchPool(base, side, tier).map((e) => {
+        let weight = 0;
+        for (const [tag, w] of e.weights) if (base.tags.has(tag)) weight = Math.max(weight, w);
+        return { type: e.type, weight };
+    });
+}
+
 /** The total a reforge may reach on this item, the loosest cap over its rarities. */
 function totalCap(a: AItem): number {
     return capsOver(a, Math.max).total;
@@ -677,20 +694,12 @@ export function rollOf(
             }
             case "eldritch":
                 if (op.change.kind === "set") {
-                    const rows = registry
-                        .eldritchPool(a.base, op.change.side, op.change.tier)
-                        .map((e) => {
-                            let w = 0;
-                            for (const [tag, weight] of e.weights) {
-                                if (a.base.tags.has(tag)) w = Math.max(w, weight);
-                            }
-                            return { type: e.type, w };
-                        });
-                    const total = rows.reduce((s, r) => s + r.w, 0);
+                    const rows = implicitWeights(registry, a.base, op.change.side, op.change.tier);
+                    const total = rows.reduce((s, r) => s + r.weight, 0);
                     if (total <= 0) return NO_ROLL;
                     const byType = new Map<TypeId, number>();
                     for (const r of rows)
-                        byType.set(r.type, (byType.get(r.type) ?? 0) + r.w / total);
+                        byType.set(r.type, (byType.get(r.type) ?? 0) + r.weight / total);
                     return {
                         kind: "implicit",
                         side: op.change.side,
