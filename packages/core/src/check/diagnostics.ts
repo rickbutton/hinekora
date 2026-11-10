@@ -168,7 +168,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
             case "rarityUnsupported":
                 return `A ${state.base.name ?? "flask"} cannot be made ${RARITY_WORD[failure.rarity]} — it can only be Normal or Magic.`;
             case "craftedLimit":
-                return `The item may already have ${failure.cap} crafted ${plural(failure.cap, "modifier")} — that is the limit here, so this can't be benched.`;
+                return `The item may already have ${failure.cap} crafted ${plural(failure.cap, "modifier")} — that is the limit here, so ${failure.refusal ?? "this can't be benched"}.`;
             case "noCraftedToRemove":
                 return "No crafted modifier is guaranteed on the item for the bench to remove.";
             case "craftedFractured":
@@ -183,6 +183,8 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return `${capitalise(withArticle(`${failure.tag} modifier`))} has no slot on some path — the side it would take may be full.`;
             case "harvestBlocked":
                 return `Every ${failure.tag} modifier may be blocked on some path — one of them, or one of its group, may already be on the item, or it needs an influence the item may not have.`;
+            case "harvestCannotRoll":
+                return `No ${failure.tag} modifier can be added while the item ${failure.tag === "attack" || failure.tag === "caster" ? `cannot roll ${failure.tag} modifiers` : "has a modifier that keeps them from rolling"} — remove that crafted modifier first.`;
             case "typeNotRemovable":
                 switch (failure.why) {
                     case "absent":
@@ -210,7 +212,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
             case "metamodBlocks":
                 return "This currency can't be used while a metacraft modifier is on the item — remove it first.";
             case "tooFewMods":
-                return `A Fracturing Orb needs at least ${failure.needed} modifiers on the item.`;
+                return `${failure.what ?? "A Fracturing Orb"} needs at least ${failure.needed} modifiers on the item.`;
             case "alreadyFractured":
                 return failure.what === undefined
                     ? "The item already has a fractured modifier — nothing fractures an item twice."

@@ -587,7 +587,20 @@ describe("a kept cannot-roll metamod restricts a reforge's fresh pool", () => {
 
     it("a harvest reforge for the restricted tag has an empty pool", () => {
         const r = check(craft(lockedSuffixes(), [harvest("reforge", "attack")]), ctx);
-        expect(r.diagnostics[0]?.message).toContain("No attack modifier");
+        expect(r.diagnostics[0]?.message).toContain(
+            "No attack modifier can be added while the item cannot roll attack modifiers",
+        );
+    });
+
+    it("a harvest augment for the restricted tag blames the metamod, not a group", () => {
+        const r = check(
+            craft(rareRing(["T1 Life"], [CANNOT_ROLL_ATTACK_CARRIER.id]), [
+                harvest("augment", "attack"),
+            ]),
+            ctx,
+        );
+        expect(r.diagnostics[0]?.message).toContain("cannot roll attack modifiers");
+        expect(r.diagnostics[0]?.message).not.toContain("group");
     });
 
     it("a chaos keeps the restriction out of the rerolled side's pool", () => {

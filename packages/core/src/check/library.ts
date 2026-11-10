@@ -586,7 +586,7 @@ export const RESTORE: readonly Op[] = [
  *  among those that fit, within the crafted limit (Beastcrafting). */
 export const BEAST_METAMOD: readonly Op[] = [
     notCorrupted,
-    require({ kind: "craftedBelowCap" }),
+    require({ kind: "craftedBelowCap", refusal: "the Bestiary can't craft a metamod onto it" }),
     require({ kind: "metamodFits" }),
     fill({ kind: "metamods" }, add([1, 1])),
 ];
@@ -601,7 +601,11 @@ export function beastFractureOps(n: 1 | 2): readonly Op[] {
         require({ kind: "baseHasTag", tag: TagId("talisman"), what: "talisman" }),
         noInfluence("Bestiary fracture"),
         require({ kind: "noFracture" }),
-        require({ kind: "atLeast", count: n === 2 ? 6 : 4 }),
+        require({
+            kind: "atLeast",
+            count: n === 2 ? 6 : 4,
+            what: n === 2 ? "The Bestiary's fracture of two modifiers" : "The Bestiary's fracture",
+        }),
         lock(n),
     ];
 }

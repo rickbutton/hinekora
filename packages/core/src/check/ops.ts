@@ -171,7 +171,8 @@ export type Check =
     | { readonly kind: "removable"; readonly selector: Selector }
     /** Something to strip: not Normal, and not every side protected. */
     | { readonly kind: "strippable" }
-    | { readonly kind: "atLeast"; readonly count: number }
+    /** `what` names the craft when it is not the Fracturing Orb. */
+    | { readonly kind: "atLeast"; readonly count: number; readonly what?: string }
     /** No fractured modifier on any path; `what` says, for a craft that is not
      *  itself a fracture, why it refuses one. */
     | { readonly kind: "noFracture"; readonly what?: string }
@@ -224,7 +225,8 @@ export type Check =
     | { readonly kind: "fossilAllowed"; readonly fossil: FossilSpec }
     | { readonly kind: "essenceRarity"; readonly tier: number }
     | { readonly kind: "essenceGrant"; readonly spec: EssenceSpec }
-    | { readonly kind: "craftedBelowCap" }
+    /** `refusal` words what cannot be done at the limit, for a craft off the bench. */
+    | { readonly kind: "craftedBelowCap"; readonly refusal?: string }
     /** A crafted modifier the bench can remove is present on every path. */
     | { readonly kind: "craftedRemovable" }
     /** A craft that would replace the crafted modifier can: it is not fractured. */
@@ -334,7 +336,7 @@ export type PreconditionFailure =
       }
     | { readonly kind: "essenceClass"; readonly essence: string; readonly itemClass: ClassId }
     | { readonly kind: "rarityUnsupported"; readonly rarity: Rarity }
-    | { readonly kind: "craftedLimit"; readonly cap: number }
+    | { readonly kind: "craftedLimit"; readonly cap: number; readonly refusal?: string }
     | { readonly kind: "noCraftedToRemove" }
     | { readonly kind: "craftedFractured" }
     | { readonly kind: "craftedMultiple" }
@@ -342,6 +344,8 @@ export type PreconditionFailure =
     | { readonly kind: "harvestEmptyPool"; readonly tag: TagId }
     | { readonly kind: "harvestNoRoom"; readonly tag: TagId }
     | { readonly kind: "harvestBlocked"; readonly tag: TagId }
+    /** Every tagged row is one a cannot-roll metamod on the item bars. */
+    | { readonly kind: "harvestCannotRoll"; readonly tag: TagId }
     | { readonly kind: "metamodBlocks" }
     | { readonly kind: "fossilBaseRestricted"; readonly fossil: string }
     | { readonly kind: "wrongBase"; readonly needed: string }
@@ -354,7 +358,7 @@ export type PreconditionFailure =
           readonly mod: string;
           readonly why: "absent" | "fractured" | "protected";
       }
-    | { readonly kind: "tooFewMods"; readonly needed: number }
+    | { readonly kind: "tooFewMods"; readonly needed: number; readonly what?: string }
     | { readonly kind: "alreadyFractured"; readonly sure: boolean; readonly what?: string }
     | { readonly kind: "corrupted"; readonly sure: boolean }
     | { readonly kind: "notCorruptedItem"; readonly what: string; readonly sure: boolean }
@@ -834,7 +838,11 @@ function failing(
         case "atLeast":
             return a.counts.total[0] >= check.count
                 ? null
-                : { kind: "tooFewMods", needed: check.count };
+                : {
+                      kind: "tooFewMods",
+                      needed: check.count,
+                      ...(check.what !== undefined && { what: check.what }),
+                  };
         case "noFracture":
             // A fracture on any path refuses: the orb and the recipes take none.
             return a.fractures[1] > 0
@@ -976,7 +984,11 @@ function failing(
         case "craftedBelowCap":
             // If that many might already be present, another isn't provably safe.
             return a.crafted[1] >= rules.craftedCap
-                ? { kind: "craftedLimit", cap: rules.craftedCap }
+                ? {
+                      kind: "craftedLimit",
+                      cap: rules.craftedCap,
+                      ...(check.refusal !== undefined && { refusal: check.refusal }),
+                  }
                 : null;
         case "noGroupConflict": {
             const clashing = typesSharingFamilyWithPresent(a, check.mod, registry);
@@ -1034,8 +1046,9 @@ function failing(
                         },
                         influenceTagsOf(path, registry).maybe,
                     );
-                    return bare.some((c) => hasTag(c.mod))
-                        ? { kind: "harvestBlocked", tag }
+                    if (bare.some((c) => hasTag(c.mod))) return { kind: "harvestBlocked", tag };
+                    return cannotRollBars(path, registry, hasTag)
+                        ? { kind: "harvestCannotRoll", tag }
                         : { kind: "harvestEmptyPool", tag };
                 }
                 // Every realisable pair of side counts must leave a tagged row
@@ -1044,8 +1057,9 @@ function failing(
                 // fullest at once.
                 for (const [p, s] of sidePairs(path)) {
                     if (!open(p, s)) {
-                        return plain(p, s).length > 0
-                            ? { kind: "harvestBlocked", tag }
+                        if (plain(p, s).length > 0) return { kind: "harvestBlocked", tag };
+                        return cannotRollBars(path, registry, hasTag)
+                            ? { kind: "harvestCannotRoll", tag }
                             : { kind: "harvestNoRoom", tag };
                     }
                 }
@@ -1064,6 +1078,34 @@ function failing(
             return null;
         }
     }
+}
+
+/** Is it a cannot-roll metamod that leaves no row of the test in the pool: the
+ *  empty item would roll one without the metamods the item carries or may carry. */
+function cannotRollBars(a: AItem, registry: Registry, test: (m: Mod) => boolean): boolean {
+    const carried = [...a.possible].some(
+        (t) =>
+            !isExcluded(a, t) && registry.effectsOfType(t).some((e) => e.kind === "poolRestrict"),
+    );
+    if (!carried) return false;
+    const free = pool(
+        registry.catalog,
+        {
+            ...guaranteedFacts(a, registry),
+            prefixCount: 0,
+            suffixCount: 0,
+            types: new Set(),
+            families: new Set(),
+            effects: [],
+        },
+        influenceTagsOf(a, registry).maybe,
+    );
+    const restrict = [...a.possible]
+        .filter((t) => !isExcluded(a, t))
+        .flatMap((t) => registry.effectsOfType(t))
+        .filter((e) => e.kind === "poolRestrict");
+    const rows = free.map((c) => c.mod).filter(test);
+    return rows.length > 0 && rows.every((m) => restrict.some((e) => !e.allows(m)));
 }
 
 /** How many guaranteed types are crafted for sure: every row they may be is a bench row. */

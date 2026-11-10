@@ -171,7 +171,9 @@ describe("beast fracture", () => {
         );
         expect(ring.diagnostics[0]!.message).toContain("Needs a talisman");
         const few = check(craft(talisman(3), [beast({ kind: "fracture" })]), ctx);
-        expect(few.diagnostics[0]!.message).toContain("at least 4");
+        expect(few.diagnostics[0]!.message).toContain(
+            "The Bestiary's fracture needs at least 4 modifiers",
+        );
         const twice = check(
             craft(talisman(4), [beast({ kind: "fracture" }), beast({ kind: "fracture" })]),
             ctx,
@@ -187,7 +189,9 @@ describe("beast fracture", () => {
         expect(s.counts.total).toEqual([2, 2]);
         expect(s.rarities).toEqual(new Set(["rare"]));
         const few = check(craft(talisman(5), [beast({ kind: "fracture", n: 2 })]), ctx);
-        expect(few.diagnostics[0]!.message).toContain("at least 6");
+        expect(few.diagnostics[0]!.message).toContain(
+            "The Bestiary's fracture of two modifiers needs at least 6",
+        );
         expect(
             check(craft(talisman(6), [beast({ kind: "fracture", n: 3 })]), ctx).diagnostics[0]!
                 .message,
@@ -287,6 +291,16 @@ describe("beast metamod", () => {
         expect(guaranteedTypes(r.finalState!).has(PROTECT_SUFFIXES_CARRIER.type)).toBe(true);
         expect(r.finalState!.crafted).toEqual([1, 1]);
         expect(r.finalState!.counts.prefix).toEqual([1, 1]);
+    });
+
+    it("is refused at the crafted-modifier limit, in the Bestiary's words", () => {
+        const twice = check(
+            craft(rareRing(["T1 Life"]), [beast({ kind: "metamod" }), beast({ kind: "metamod" })]),
+            ctx,
+        );
+        expect(twice.diagnostics[0]!.message).toContain(
+            "the Bestiary can't craft a metamod onto it",
+        );
     });
 
     it("leaves a disjunction over every fitting metamod on an open item", () => {
