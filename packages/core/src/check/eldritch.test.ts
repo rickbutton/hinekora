@@ -278,6 +278,20 @@ describe("the Orb of Conflict", () => {
         );
     });
 
+    it("leaves an item it refuses as it was", () => {
+        // After one orb a Lesser pair keeps a single Greater implicit; a second
+        // orb is refused there and changes neither side.
+        const c = craft(boots({ exarch: "lesser", eater: "lesser" }), [
+            words("conflict"),
+            words("conflict"),
+        ]);
+        const r = run(c);
+        expect(r.diagnostics.map((d) => d.message)).toEqual([
+            expect.stringContaining("this item has Greater Eater or Greater Exarch."),
+        ]);
+        expect(r.finalState!.eldritch).toEqual(new Set([eldritchKey(2, 0), eldritchKey(0, 2)]));
+    });
+
     it("leaves a dominance a branch can pick out", () => {
         const c = craft(boots({ exarch: "grand", eater: "grand" }), [
             words("conflict"),

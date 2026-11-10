@@ -541,8 +541,13 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
                     }
                     continue;
                 }
-                // A lowered Lesser (tier 1) is removed (tier 0); the raised one
-                // tops out at Perfect.
+                // The orb refuses an item without both implicits, so that path
+                // keeps its pair. A lowered Lesser (tier 1) is removed (tier
+                // 0); the raised one tops out at Perfect.
+                if (exarch === 0 || eater === 0) {
+                    eldritch.add(key);
+                    continue;
+                }
                 eldritch.add(eldritchKey(Math.min(exarch + 1, 6), eater - 1));
                 eldritch.add(eldritchKey(exarch - 1, Math.min(eater + 1, 6)));
             }

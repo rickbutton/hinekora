@@ -708,7 +708,8 @@ product level in `normalize`, never hidden inside one domain. The sub-domains:
   item may have. `influenced [x]` refines it; `noInfluence` requires it to be exactly
   `{""}`. `eldritch` is the set of pairs of eldritch implicit tiers (`eldritchKey`,
   `<exarch>/<eater>`, 0 for none): an ember or ichor sets one coordinate, the Orb of
-  Conflict maps each pair to the two it can reach, and `dominantOf` reads which side the
+  Conflict maps each pair to the two it can reach (a pair without both implicits, which
+  it refuses, to itself), and `dominantOf` reads which side the
   Eldritch orbs act on, which the table (`dominantSide`) requires to agree on every
   path; `exarch`/`eater` and `dominant` refine it, `noEldritch` and `bothEldritch`
   require it. `eldritchTypes` is which implicit each side may be (`ImplicitTypes`: a
