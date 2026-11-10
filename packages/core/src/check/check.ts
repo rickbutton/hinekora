@@ -59,7 +59,7 @@ import {
 } from "./diagnostics.js";
 import { rollableGen, rollableTiers, tierMod } from "../resolve/tiers.js";
 import { findMethod, type Literal, type Method, slotAt } from "./methods.js";
-import { anonymousTypes, influenceTagsAny, influenceTagsOf, runMethod } from "./ops.js";
+import { anonymousRows, influenceTagsAny, influenceTagsOf, runMethod } from "./ops.js";
 import { rollRange } from "./values.js";
 import { lookupWeight } from "../pool/pool.js";
 import type { Range } from "./domain.js";
@@ -592,12 +592,24 @@ class Checker {
         // An anonymous affix is some modifier of its side the item could roll, so
         // a `has` may name it and a bench craft of its group may clash with it.
         const possible = new Set([...start.possible, ...start.craftedTypes]);
+        // It is a natural roll, so its type is held to the natural rows: an
+        // unveiled or bench row sharing the type is on the item only when the
+        // block says so. A type an anonymous bench affix may be stays any row.
+        const natural = new Map<TypeId, Set<ModId>>();
         for (const gen of ["prefix", "suffix"] as const) {
-            if (anonymousBy[gen] > 0) {
-                for (const t of anonymousTypes(start, this.registry, gen)) possible.add(t);
+            if (anonymousBy[gen] === 0) continue;
+            for (const m of anonymousRows(start, this.registry, gen)) {
+                possible.add(m.type);
+                const rows = natural.get(m.type);
+                if (rows) rows.add(m.id);
+                else natural.set(m.type, new Set([m.id]));
             }
         }
-        return { ...start, possible };
+        const tiers = new Map(start.tiers);
+        for (const [type, rows] of natural) {
+            if (!start.possible.has(type) && !start.craftedTypes.has(type)) tiers.set(type, rows);
+        }
+        return { ...start, possible, tiers };
     }
 
     // --- statement sequencing ---------------------------------------------

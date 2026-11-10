@@ -214,21 +214,46 @@ describe("a veiled orb on an item whose placeholders were proven absent", () => 
 });
 
 describe("a modifier unveiled on the other side from its natural row", () => {
-    it("may be the unnamed affix of that side, so a later veiled orb is refused", () => {
-        const cross = buildRegistry({
-            bases: [RING_BASE],
-            mods: [
-                ...CATALOG,
-                VEILED_PREFIX_MOD,
-                VEILED_SUFFIX_MOD,
-                PROTECT_SUFFIXES_CARRIER,
-                CROSS_SIDE_A_NATURAL,
-                CROSS_SIDE_A_UNVEILED,
-                CROSS_SIDE_B_NATURAL,
-                CROSS_SIDE_B_UNVEILED,
-            ],
-            baseAliases: { "Iron Ring": "IronRing" },
+    const cross = buildRegistry({
+        bases: [RING_BASE],
+        mods: [
+            ...CATALOG,
+            VEILED_PREFIX_MOD,
+            VEILED_SUFFIX_MOD,
+            PROTECT_SUFFIXES_CARRIER,
+            CROSS_SIDE_A_NATURAL,
+            CROSS_SIDE_A_UNVEILED,
+            CROSS_SIDE_B_NATURAL,
+            CROSS_SIDE_B_UNVEILED,
+        ],
+        baseAliases: { "Iron Ring": "IronRing" },
+    });
+
+    it("is not what a declared random affix is, so a veiled orb takes the item", () => {
+        // The random suffix may be a cross-side modifier's natural row; its
+        // unveiled row is on the item only when the block names it.
+        const random = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: ["random"],
+            suffixes: ["random"],
         });
+        const r = check(craft(random, [veiled("exalt")]), { registry: cross });
+        expect(r.diagnostics).toEqual([]);
+        const named = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: [CROSS_SIDE_A_UNVEILED.id],
+            suffixes: ["random"],
+        });
+        expect(
+            check(craft(named, [veiled("exalt")]), { registry: cross }).diagnostics,
+        ).toHaveLength(1);
+    });
+
+    it("may be the unnamed affix of that side, so a later veiled orb is refused", () => {
         // The suffixes are locked and all named, so the veiled orb's modifier is
         // a prefix and the unveil leaves one of the two cross-side modifiers as a
         // prefix. Read from their natural suffix rows they would be judged

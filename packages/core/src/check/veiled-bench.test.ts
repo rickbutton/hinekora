@@ -75,6 +75,20 @@ describe("a bench-crafted version of a veiled modifier", () => {
         ]);
     });
 
+    it("so does a declared bench affix that may be one", () => {
+        const bought = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: [{ mod: "random", bench: true }],
+            suffixes: ["random"],
+        });
+        const messages = check(craft(bought, [veiled("exalt")]), {
+            registry: withCraftable,
+        }).diagnostics.map((d) => d.message);
+        expect(messages).toEqual([expect.stringContaining("veiled or unveiled modifier")]);
+    });
+
     it("an ordinary bench craft does not", () => {
         expect(run([bench("maximum life"), veiled("exalt")])).toEqual([]);
     });

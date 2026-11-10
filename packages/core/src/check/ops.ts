@@ -1427,11 +1427,11 @@ function scouredRarities(
 
 // --- fill ---------------------------------------------------------------------
 
-/** The types an anonymous affix (a declared `"random"`) on `gen` may be: every
+/** The rows an anonymous affix (a declared `"random"`) on `gen` may be: every
  *  natural modifier that rolls on the item, those a declared modifier's group
  *  rules out excluded. */
-export function anonymousTypes(a: AItem, registry: Registry, gen: Gen): readonly TypeId[] {
-    return resolvePool(a, { kind: "natural", gen }, registry).types;
+export function anonymousRows(a: AItem, registry: Registry, gen: Gen): readonly Mod[] {
+    return resolvePool(a, { kind: "natural", gen }, registry).mods;
 }
 
 interface ResolvedPool {
