@@ -232,7 +232,7 @@ function harvestChange(
     // The influence whose tag lets a row roll on the item, none for a row the
     // base's own tags admit. An influence's rows are a ladder of their own,
     // and a modifier is taken to stay within it: the game has not been seen
-    // to change one on an item with two influences.
+    // to change one on an item with two influences (`QUESTIONS.md` Q101).
     const influenceOf = (m: Mod): string => {
         const tag = m.spawn.find((w) => a.base.tags.has(w.tag) || tags.has(w.tag))?.tag;
         if (tag === undefined || a.base.tags.has(tag)) return "";

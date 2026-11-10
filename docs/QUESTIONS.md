@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q101.
+keeps it. New entries continue from Q102.
 
 ```
 ### Qn · probe|decision · open — title
@@ -327,3 +327,16 @@ own section before `Shaper Item`. Does it come before `Fractured Item` too?
 **Probe:** a corrupted fractured Rare; copy it with Ctrl+Alt+C; paste it verbatim.
 **Assumed:** `Corrupted`, then the influence, then `Fractured Item`. **Encoded in:**
 `packages/core/src/render/item.ts` `renderItemText`.
+
+### Q101 · probe · open — a Harvest change on an item with two influences
+
+**Q:** [Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting)
+says the change keeps the tier. Where a modifier's type has rows under each of the item's
+two influences, does an influenced modifier become the other element's row of its own
+influence, or may it become the other influence's?
+**Probe:** an item with two influences and an influenced fire, cold or lightning modifier
+(a Shaper and Redeemer wand with the Redeemer's "physical damage as extra cold"); use the
+grove's change on it; record the new modifier's name and values, or that the craft is
+refused.
+**Assumed:** it stays within its own influence's rows, and is refused where that influence
+has no row of the target. **Encoded in:** `check/methods.ts` `harvestChange`.
