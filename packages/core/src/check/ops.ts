@@ -758,7 +758,7 @@ function cannotRollShield(a: AItem, effects: readonly Effect[], registry: Regist
     if (restricts.length === 0) return null;
     const types = new Set<TypeId>();
     for (const t of guaranteedTypes(a)) {
-        const rep = registry.catalog.find((m) => m.type === t);
+        const rep = rowsOfType(registry, t)[0];
         if (rep && restricts.some((e) => !e.allows(rep))) types.add(t);
     }
     return { types };
@@ -1282,7 +1282,37 @@ export function rowsOf(a: AItem, type: TypeId, registry: Registry): readonly Mod
     const pinned = a.tiers.get(type);
     return pinned
         ? [...pinned].map((id) => registry.resolveMod(id)).flatMap((r) => (r.ok ? [r.value] : []))
-        : registry.catalog.filter((m) => m.type === type);
+        : rowsOfType(registry, type);
+}
+
+/** The catalog's rows by type, and its elevated rows. The operations ask for
+ *  them per modifier the item may carry, under every case of a possibly
+ *  present metamod and every pass of a loop, so the catalog is indexed once
+ *  rather than scanned each time. */
+interface CatalogIndex {
+    readonly byType: ReadonlyMap<TypeId, readonly Mod[]>;
+    readonly elevated: readonly Mod[];
+}
+const catalogIndexes = new WeakMap<readonly Mod[], CatalogIndex>();
+const NO_ROWS: readonly Mod[] = [];
+
+function catalogIndex(registry: Registry): CatalogIndex {
+    let index = catalogIndexes.get(registry.catalog);
+    if (index === undefined) {
+        const byType = new Map<TypeId, Mod[]>();
+        for (const m of registry.catalog) {
+            const rows = byType.get(m.type);
+            if (rows) rows.push(m);
+            else byType.set(m.type, [m]);
+        }
+        index = { byType, elevated: registry.catalog.filter((m) => m.source === "elevated") };
+        catalogIndexes.set(registry.catalog, index);
+    }
+    return index;
+}
+
+function rowsOfType(registry: Registry, type: TypeId): readonly Mod[] {
+    return catalogIndex(registry).byType.get(type) ?? NO_ROWS;
 }
 
 function essenceGrant(a: AItem, spec: EssenceSpec, registry: Registry): Mod | undefined {
@@ -1849,9 +1879,8 @@ function elevate(a: AItem, a0: AItem, rules: Rules, registry: Registry): AItem {
     const elevated = new Map<TypeId, Mod[]>();
     for (const t of influenced) {
         const families = registry.familiesOfType(t);
-        const rows = registry.catalog.filter(
+        const rows = catalogIndex(registry).elevated.filter(
             (m) =>
-                m.source === "elevated" &&
                 [...m.families].some((f) => families.has(f)) &&
                 m.spawn.some((w) => tags.has(w.tag)),
         );
@@ -1926,9 +1955,8 @@ function upgradedSurvivor(
             was.value.spawn.filter((w) => w.weight > 0 && sure.has(w.tag)).map((w) => w.tag),
         );
         if (own.size === 0) return null;
-        const above = registry.catalog.filter(
+        const above = rowsOfType(registry, t).filter(
             (m) =>
-                m.type === t &&
                 m.domain === a.base.domain &&
                 m.source !== "elevated" &&
                 m.minLevel > was.value.minLevel &&
@@ -1986,12 +2014,8 @@ function isInfluenceType(a: AItem, type: TypeId, registry: Registry): boolean {
     const tags = new Set([...sure, ...maybe]);
     // The row's spawn table naming the influence's tag is what makes it an
     // influence modifier; an elevated row names it with no weight at all.
-    return registry.catalog.some(
-        (m) =>
-            m.type === type &&
-            m.domain === a.base.domain &&
-            isRow(m) &&
-            m.spawn.some((w) => tags.has(w.tag)),
+    return rowsOfType(registry, type).some(
+        (m) => m.domain === a.base.domain && isRow(m) && m.spawn.some((w) => tags.has(w.tag)),
     );
 }
 
