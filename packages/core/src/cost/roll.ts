@@ -124,8 +124,8 @@ export type Roll =
     | { readonly kind: "reroll" }
     /** A fracture, uniform over the modifiers present. */
     | { readonly kind: "lock"; readonly candidates: readonly Candidate[] }
-    /** An unveil: three options drawn by weight without replacement (Veiled
-     *  modifier § Version history) from these modifier types (`unveilOffers`). */
+    /** An unveil: three options (Veiled modifier) from these modifier types,
+     *  drawn as `unveilOffers` takes them to be. */
     | { readonly kind: "unveil"; readonly options: readonly Member[] }
     /** An ember or ichor: one implicit of the tier, by weight. */
     | {
@@ -844,7 +844,7 @@ function unveilRoll(
     return options.length === 0 ? NO_ROLL : { kind: "unveil", options };
 }
 
-/** How many options an unveil offers (Veiled modifier § Version history). */
+/** How many options an unveil offers (Veiled modifier). */
 const UNVEIL_OPTIONS = 3;
 
 /** One way an unveil's options can fall: the named types among them. */
@@ -858,7 +858,9 @@ const offerSets = new WeakMap<readonly Member[], ReadonlyMap<string, number>>();
 /**
  * Every set of options an unveil can offer, with its chance: the three draws
  * played out one after another by weight, a type drawn closing every type that
- * shares a modifier group with it (Modifier § Group/family). The pool is a
+ * shares a modifier group with it. The wiki says only that three random
+ * modifiers are offered; that they are drawn as the modifiers of one item are
+ * is an assumption (QUESTIONS.md Q99). The pool is a
  * few dozen types, so the ordered draws are some thousands: three draws from a
  * short list, not the items a step can leave.
  */

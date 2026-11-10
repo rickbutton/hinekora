@@ -740,8 +740,8 @@ export class Tracker {
     }
 
     /**
-     * An unveil: three options drawn by weight without replacement (Veiled
-     * modifier § Version history), the
+     * An unveil: three options (Veiled modifier), drawn as `unveilOffers`
+     * takes them to be, the
      * veiled modifier becoming the one the player takes: the target when it is
      * offered, else a modifier a condition asks for, the first the guide asks for,
      * else one no one names.

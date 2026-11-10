@@ -396,3 +396,15 @@ whether an enchantment of the other size ever appears.
 **Assumed:** one size each; the item block refuses another size's enchantment, so a jewel
 a Refracting Fog made otherwise cannot be declared. **Encoded in:** `check/check.ts`
 `elaborateItem`; `packages/data/data/poe1/cluster_enchants.json`.
+
+### Q99 · probe · open — how an unveil's three options are drawn
+
+**Q:** [Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) says only that
+unveiling "presents three random mods", and that their weighting was rebalanced in
+3.14.0. Are they drawn by spawn weight without replacement, and may two options share a
+modifier group, as two on one item may not?
+**Probe:** unveil some thirty body armours with a veiled suffix; record the three options
+each time, and whether two of one group (Strength and Dexterity beside Dexterity and
+Intelligence) are ever offered together.
+**Assumed:** by spawn weight, one at a time, an option closing every modifier that shares
+a group with it. **Encoded in:** `cost/roll.ts` `offerSetsOf`.

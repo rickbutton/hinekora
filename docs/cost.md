@@ -24,9 +24,8 @@ reforge rolls a count, then draws modifiers one at a time by weight without repl
 a group closing once one of it is drawn
 ([Modifier § Group/family](https://www.poewiki.net/wiki/Modifier#Group/family)) and a
 side closing when full (the wiki gives the group rule; the order is every calculator's). An
-unveil's three
-options are drawn the same way
-([Veiled modifier § Version history](https://www.poewiki.net/wiki/Veiled_modifier#Version_history)),
+unveil's three options
+([Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier)) are
 of the veiled modifier's side where the item says which; the player takes the guide's
 target if offered, else a modifier its conditions ask for, else one no one names. A
 value falls as
@@ -53,7 +52,8 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
 - **Harvest.** The tagged row is drawn among the tag's rows by weight (Q63); an augment
   adds, then removes another (Q89).
 - **Removals** are uniform over the modifiers they can reach, never a fractured one (Q61).
-- **Veiled orbs.** The veiled modifier lands on either side with room alike (Q76).
+- **Veiled orbs.** The veiled modifier lands on either side with room alike (Q76); an
+  unveil draws its options as a reforge draws modifiers (Q99).
 - **Tainted Exalted Orb.** It adds or removes at even odds, and removes from a full item
   (Q95).
 - **Corruption Altar.** Its reforge gives each of the six influences alike (Q32).
@@ -112,8 +112,7 @@ two hundredths (0.8 low on a wand). A group with rows on both sides (a jewel's) 
 mixture, wholly a prefix or wholly a suffix by weight, and loses a draw the full side
 turns away: up to five hundredths low (2.5 on a Cobalt Jewel, 4 with a count beside it).
 Each bound is a test against the draw played out (`packages/cli/src/race.test.ts`). An
-unveil is not raced: its three draws from a few dozen types are played out
-(`unveilOffers`), exactly.
+unveil's three draws are played out (`unveilOffers`), not raced.
 
 ---
 
