@@ -1,0 +1,79 @@
+/* The site's palette starts from the playground's: its editor greys, and the
+   gold the game uses for rare items and the storyboard uses for cost. */
+
+:root {
+    --hk-font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+    --hk-gold: #8a6416;
+    --hk-gold-soft: rgba(138, 100, 22, 0.12);
+    --hk-rare: #9a7b00;
+
+    --vp-c-brand-1: #8a6416;
+    --vp-c-brand-2: #a37a22;
+    --vp-c-brand-3: #8a6416;
+    --vp-c-brand-soft: rgba(138, 100, 22, 0.14);
+
+    --vp-c-bg: #fbfaf7;
+    --vp-c-bg-alt: #f3f1ea;
+    --vp-c-bg-soft: #efece3;
+
+    --vp-button-brand-text: #ffffff;
+    --vp-button-brand-bg: #8a6416;
+    --vp-button-brand-hover-bg: #a37a22;
+    --vp-button-brand-active-bg: #6f500f;
+    --vp-button-brand-hover-text: #ffffff;
+}
+
+.dark {
+    --hk-gold: #d9b45f;
+    --hk-gold-soft: rgba(217, 180, 95, 0.1);
+    --hk-rare: #ffff77;
+
+    --vp-c-brand-1: #d9b45f;
+    --vp-c-brand-2: #e8c878;
+    --vp-c-brand-3: #c8a35a;
+    --vp-c-brand-soft: rgba(217, 180, 95, 0.14);
+
+    --vp-c-bg: #1e1e1e;
+    --vp-c-bg-alt: #181818;
+    --vp-c-bg-elv: #252526;
+    --vp-c-bg-soft: #252526;
+    --vp-c-divider: #333333;
+    --vp-c-gutter: #141414;
+
+    --vp-code-block-bg: #181818;
+
+    --vp-button-brand-text: #1a1408;
+    --vp-button-brand-bg: #d9b45f;
+    --vp-button-brand-hover-text: #1a1408;
+    --vp-button-brand-hover-bg: #e8c878;
+    --vp-button-brand-active-text: #1a1408;
+    --vp-button-brand-active-bg: #c8a35a;
+}
+
+.VPNavBarTitle .title {
+    font-family: var(--hk-font-display);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: var(--hk-gold);
+}
+
+.vp-doc h1 {
+    font-family: var(--hk-font-display);
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.vp-doc h2 {
+    font-family: var(--hk-font-display);
+    font-size: 29px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.vp-doc h3 {
+    font-family: var(--hk-font-display);
+    font-size: 23px;
+    font-weight: 700;
+}

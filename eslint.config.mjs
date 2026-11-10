@@ -19,6 +19,9 @@ export default tseslint.config(
             // The VSCode extension is a standalone CommonJS app (own tsconfig,
             // `require.resolve`); typechecked separately, not part of this lint.
             "editors/vscode/**",
+            // The site's copy of the playground's build, and VitePress's cache.
+            "site/public/playground/**",
+            "site/.vitepress/cache/**",
         ],
     },
 

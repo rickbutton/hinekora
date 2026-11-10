@@ -9,6 +9,7 @@
         { "path": "packages/data" },
         { "path": "packages/cli" },
         { "path": "packages/lsp" },
-        { "path": "editors/playground" }
+        { "path": "editors/playground" },
+        { "path": "site" }
     ]
 }
