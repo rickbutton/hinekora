@@ -74,8 +74,9 @@ import { CountDomain } from "./counts.js";
 /** A pool: which rows a `fill` draws from, resolved against the state it runs on. */
 export type PoolSpec =
     /** The natural pool of the base at the item's level, or at `level` (a beast's);
-     *  optionally capped lower, limited to one side, or culled to the top half
-     *  of each type's eligible tiers (`topTiers`, Foulborn). */
+     *  optionally capped lower, limited to one side, or culled to the top tiers
+     *  of each type, a little over half of those eligible (`topTiers`,
+     *  Foulborn). */
     | {
           readonly kind: "natural";
           readonly maxLevel?: number;
@@ -1543,7 +1544,10 @@ function resolvePool(a: AItem, spec: PoolSpec, registry: Registry, strands = fal
 }
 
 /** How many of a type's `n` eligible tiers a Foulborn orb lets roll, the top ones
- *  (Foulborn currency § Mechanics). */
+ *  (Foulborn currency § Mechanics). The page's formula and the strands' at
+ *  eleven strands agree up to thirteen tiers and part at fifteen, where this
+ *  keeps one fewer; the longest ladder any base rolls, every influence on it,
+ *  is thirteen, so the narrower of the two is never read. */
 function foulbornKept(n: number): number {
     return n <= 6 ? Math.ceil(n / 2) : Math.floor(n / 2) + 1;
 }
