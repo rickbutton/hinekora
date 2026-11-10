@@ -6,6 +6,7 @@ import { emptyItem } from "../model/item.js";
 import {
     andp,
     beast,
+    callStmt,
     cmp,
     craft,
     donor,
@@ -17,6 +18,7 @@ import {
     notp,
     op,
     orp,
+    procDef,
     recombine,
     restart,
     stop,
@@ -209,8 +211,8 @@ describe("the cost of a guide", () => {
     });
 
     it("a second loop starts from where a solved first loop left the item", () => {
-        // A make-room loop, then a loop that exalts until two suffixes are back:
-        // the second is solved from the first's exits, not from a guess.
+        // A make-room loop, then one that annuls down to a single prefix: the
+        // second is solved from the first's exits, not from a guess.
         const c = craft(
             ring(
                 "rare",
@@ -243,6 +245,26 @@ describe("the cost of a guide", () => {
         const loops = report(c).steps.filter((s) => s.kind === "until");
         expect(loops[1]!.note).toBeUndefined();
         expect(loops[1]!.attempts!.expected).toBeGreaterThan(0);
+    });
+
+    it("a call between a solved loop and a branch hides where the loop left the item", () => {
+        // The call rerolls the ring: the loop's 3/10 for two suffixes no longer holds.
+        const c = craft(
+            ring(
+                "rare",
+                ["IncreasedLife1", "IncreasedMana1", "IncreasedArmour1"],
+                ["FireResist1", "ColdResist1", "LightningResist1"],
+            ),
+            [
+                until(cmp("prefixCount", "<=", 2), [op("annul")]),
+                callStmt("reroll"),
+                iff(cmp("suffixCount", "==", 2), [stop()]),
+            ],
+            [],
+            [procDef("reroll", [], [op("chaos")])],
+        );
+        const branch = report(c).steps.find((s) => s.kind === "if")!;
+        expect(branch.branch).not.toBeCloseTo(3 / 10, 6);
     });
 
     it("a branch on a modifier no solved loop named reads the item, not its states", () => {
