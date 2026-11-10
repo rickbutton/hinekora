@@ -470,7 +470,7 @@ does on the Medium (the size tag matching first).
 `lookupWeight`, `item-model.md` §5).
 **Answer:**
 
-### Q55 · decision · open
+### Q55 · decision · resolved
 
 **Asked:** 2026-11-08
 **Question:** what the Recombinator model leaves out, and whether to carry it. The
@@ -487,9 +487,10 @@ probe on the rarity rule and on which crafted modifiers are exclusive.
 **Recommendation:** (a) now, (c) when an item is at hand; (b) only if a guide needs two
 bases, which none in the research does.
 **Assumed meanwhile:** (a) (`check/ops.ts` `recombine`, `recombineRefusal`).
-**Answer:**
+**Answer:** (a), 2026-11-09: the Recombinator stays as built; two bases, the named
+Awakener donor and Kishara's Ducat stay deferred.
 
-### Q54 · decision · open
+### Q54 · decision · resolved
 
 **Asked:** 2026-11-08
 **Question:** whether to lift Q34's "not for now" on Hinekora's Lock. The research
@@ -505,7 +506,8 @@ on a corrupted item); (c) build the Lock and the Allflame bench together, the be
 same statement with a preview count that changes the cost, not the state.
 **Recommendation:** (b), then (c) when the Allflame bench's rules are in the wiki cache.
 **Assumed meanwhile:** (a), as Q34 ruled; `lock-regal` stays in `examples/future/`.
-**Answer:**
+**Answer:** (a), 2026-11-09: the Lock and the Allflame bench stay deferred; `lock-regal`
+stays in `examples/future/`.
 
 ### Q53 · game probe · open
 
@@ -736,6 +738,42 @@ by weight share, an unnamed modifier at the average weight of its side's pool, t
 exclusive rule as the page states it (`cost/recombine.ts` `pickSide`, `cost/roll.ts`
 `recombineRoll`).
 **Answer:**
+
+### Q70 · decision · open
+
+**Asked:** 2026-11-09
+**Question:** two experimented-base states the model cannot hold. A Magic Simplex or
+Focused Amulet has no affix room, yet a split beast leaves one with a prefix and a suffix
+([Simplex Amulet § Special Crafting Considerations](https://www.poewiki.net/wiki/Simplex_Amulet#Special_Crafting_Considerations)),
+and the split itself is out of the operations ledger (`operations.md` §3.7); the item block
+refuses the state as over the base's limit. And the legacy variants
+([Simplex Amulet § Legacy variants](https://www.poewiki.net/wiki/Simplex_Amulet#Legacy_variants):
+−1/−1 and 25%; [Cogwork Ring § Legacy variants](https://www.poewiki.net/wiki/Cogwork_Ring#Legacy_variants):
+a hidden 0%) have their own caps and magnitudes, which the catalog's one id cannot carry.
+**Options:** (a) keep both out; (b) let the item block declare a Magic experimented base
+with modifiers, the caps read as what a roll may add rather than what the item may hold,
+which every count clamp in the checker would have to learn; (c) a `legacy` field on the
+item block carrying the variant's deltas and magnitudes.
+**Recommendation:** (a): no collected recipe starts from a split or a legacy item.
+**Assumed meanwhile:** (a) (`model/capacity.ts`, the item block's count check).
+**Answer:**
+
+### Q69 · game probe · open
+
+**Asked:** 2026-11-09
+**Goal:** how the game rounds a value an experimented base scales. A Helical Ring's
+"50% increased Suffix Modifier magnitudes" turns a +57 roll into 85.5
+([Helical Ring](https://www.poewiki.net/wiki/Helical_Ring#Mechanics)); the item shows a
+whole number, and whether it is rounded down, up or to nearest decides whether `has "…"
+
+> = 86` holds on that roll.
+**Procure:** a Helical or Cogwork Ring with a suffix whose scaled value is not whole.
+**Steps:** read the shown value; compare with the row's span scaled by hand.
+**Record:** the rounding.
+**Assumed meanwhile:** no rounding (`check/values.ts` `spanOn`): the span keeps its
+fractional ends, which `narrowRange` reads as non-strict, so no whole threshold is wrongly
+> ruled in or out.
+> **Answer:**
 
 ### Q68 · game probe · open
 
