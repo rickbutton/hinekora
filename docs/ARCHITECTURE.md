@@ -406,7 +406,10 @@ craft's listed price).
   restart or a stop, or an item full with nothing removing, which the report names. A
   rare exit would take thousands of rounds to follow; once the share each round keeps
   has settled, the distribution only shrinks, and the rounds left are summed at once as
-  a geometric series. The
+  a geometric series. Where the exit leaves the item, a distribution over the same
+  small state, is what the next steps see until one changes the item: a second such
+  loop ("until one resistance, then until two") starts from it, and a branch on the
+  counts reads it. The
   named modifiers are the only ones tracked; the rest of the item is a count whose draws
   close an average group. The chance of the exit per round, how often each step and
   branch inside runs, and the stop share all fall out exactly.

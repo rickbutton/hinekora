@@ -293,7 +293,10 @@ resolveEssence / resolveBench / resolveHarvestTag`
   slowly mixing chain has not, the rounds still to come are added as that round's
   geometric tail, so a rare exit costs its full expected rounds. The walk
   builds it in `chainLoop` for every `until` whose body and exit fit, the rest taking
-  the independent-attempts path. `prices.ts` holds the unit
+  the independent-attempts path. The states the exit leaves the item in (`Chain.exits`)
+  carry on as the branch's `Carried` states until a step changes the item: a later
+  chain-solved loop starts from them, on the modifiers both loops name, and an `if` whose
+  condition reads only the counts and those modifiers splits them (`splitCarried`). `prices.ts` holds the unit
   cost of a method in its own currency (`unitCost`: the orb's name, the essence, the
   fossils and their resonator, the lifeforce per Harvest craft, a bench craft's
   `BenchCraft.cost`, the beasts a Bestiary recipe takes), the `Prices` snapshot type and

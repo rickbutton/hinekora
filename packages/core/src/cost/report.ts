@@ -101,6 +101,15 @@ interface Path {
 interface Branch {
     readonly mass: number;
     readonly path: Path | undefined;
+    /** Where a loop solved as a chain left the item, until a step changes it. */
+    readonly states?: Carried;
+}
+
+/** The states a chain-solved loop's exit leaves the item in, over the
+ *  modifiers that loop named; the weights sum to one. */
+interface Carried {
+    readonly types: readonly TypeId[];
+    readonly dist: readonly { readonly state: ChainState; readonly weight: number }[];
 }
 
 /** How many branches a sequence keeps apart before the lightest are folded
@@ -314,7 +323,7 @@ function trim(branches: readonly Branch[]): Branch[] {
     const kept = sorted.slice(0, BRANCH_LIMIT - 1);
     const rest = massOf(sorted.slice(BRANCH_LIMIT - 1));
     const heaviest = kept[0]!;
-    kept[0] = { mass: heaviest.mass + rest, path: heaviest.path };
+    kept[0] = { ...heaviest, mass: heaviest.mass + rest };
     return kept;
 }
 
@@ -442,15 +451,15 @@ class Walker {
             const mass = massOf(branches);
             return [{ mass, path: { roll, after: entry.after, conditions: [], base: mass } }];
         }
+        // The step changed the item: where a loop left it is no longer where it is.
         if (stmt.words[0] === "bench") {
             const after = entry.after;
-            return branches.map((b) =>
-                b.path === undefined
-                    ? b
-                    : { mass: b.mass, path: this.benchOnPath(b.path, literals, after) },
-            );
+            return branches.map((b) => ({
+                mass: b.mass,
+                path: b.path === undefined ? undefined : this.benchOnPath(b.path, literals, after),
+            }));
         }
-        return [...branches];
+        return branches.map((b) => ({ mass: b.mass, path: b.path }));
     }
 
     /** A method's roll on the item; the Recombinator's reads its second item. */
@@ -485,6 +494,23 @@ class Walker {
         const otherwise: Branch[] = [];
         let unknown = false;
         for (const b of branches) {
+            // Where a solved loop left the item, its states answer the condition.
+            const split =
+                rpred === null || b.path !== undefined || b.states === undefined
+                    ? undefined
+                    : splitCarried(b.states, rpred);
+            if (split !== undefined) {
+                if (split.then !== undefined)
+                    then.push({ mass: b.mass * split.chance, path: undefined, states: split.then });
+                if (split.otherwise !== undefined) {
+                    otherwise.push({
+                        mass: b.mass * (1 - split.chance),
+                        path: undefined,
+                        states: split.otherwise,
+                    });
+                }
+                continue;
+            }
             const p =
                 rpred === null || before === undefined
                     ? undefined
@@ -750,16 +776,60 @@ class Walker {
                     uncertain.push(i);
                 }
             });
-            if (uncertain.length > 4) return undefined;
-            const itemKnown = { prefix: 0, suffix: 0 };
-            for (const t of guaranteedTypes(item)) {
-                if (!atomIndex.has(t)) itemKnown[genOfOn(registry, item, t)]++;
-            }
             const rowsAt = (i: number): readonly { id: ModId; weight: number }[] => {
                 const pinned = item.tiers.get(typeOfAtom(i));
                 const rows = atoms[i]!.rows.filter((r) => pinned === undefined || pinned.has(r.id));
                 return rows.length > 0 ? rows : atoms[i]!.rows;
             };
+            // Where a solved loop left the item, on the modifiers both loops
+            // name; one only this loop names must be settled by the item.
+            const fromCarried = (
+                c: Carried,
+            ): { state: ChainState; weight: number }[] | undefined => {
+                const at = atoms.map((_atom, i) => c.types.indexOf(typeOfAtom(i)));
+                if (at.some((j, i) => j < 0 && presence[i] === "maybe")) return undefined;
+                const out: { state: ChainState; weight: number }[] = [];
+                for (const { state, weight } of c.dist) {
+                    let rowed: { rows: (ModId | null)[]; weight: number }[] = [
+                        { rows: at.map((j) => (j >= 0 ? (state.rows[j] ?? null) : null)), weight },
+                    ];
+                    at.forEach((j, i) => {
+                        if (j >= 0 || presence[i] !== "yes") return;
+                        const rows = rowsAt(i);
+                        const total = rows.reduce((sum, r) => sum + r.weight, 0);
+                        rowed = rowed.flatMap((st) =>
+                            rows.map((r) => {
+                                const copy = [...st.rows];
+                                copy[i] = r.id;
+                                return { rows: copy, weight: (st.weight * r.weight) / total };
+                            }),
+                        );
+                    });
+                    for (const st of rowed) {
+                        out.push({
+                            state: { prefix: state.prefix, suffix: state.suffix, rows: st.rows },
+                            weight: st.weight,
+                        });
+                    }
+                }
+                return out;
+            };
+            const states: { state: ChainState; weight: number }[] = [];
+            const plain: Branch[] = [];
+            for (const b of ins) {
+                const carried =
+                    b.path === undefined && b.states !== undefined
+                        ? fromCarried(b.states)
+                        : undefined;
+                if (carried === undefined) plain.push(b);
+                else for (const s of carried) states.push({ ...s, weight: b.mass * s.weight });
+            }
+            if (plain.length === 0) return states;
+            if (uncertain.length > 4) return undefined;
+            const itemKnown = { prefix: 0, suffix: 0 };
+            for (const t of guaranteedTypes(item)) {
+                if (!atomIndex.has(t)) itemKnown[genOfOn(registry, item, t)]++;
+            }
             let pairs: [number, number][] = [];
             const [t0, t1] = item.counts.total;
             const [p0, p1] = item.counts.prefix;
@@ -776,7 +846,6 @@ class Walker {
                 pairs = pairs.filter(([p, sfx]) => p + sfx === pick);
             }
             if (pairs.length === 0) return undefined;
-            const states: { state: ChainState; weight: number }[] = [];
             for (let mask = 0; mask < 1 << uncertain.length; mask++) {
                 const present = presence.map((p, i) =>
                     p === "yes" || (p === "maybe" && mask & (1 << uncertain.indexOf(i)))
@@ -811,7 +880,7 @@ class Walker {
                         cond = { kind: "and", left: cond, right: presenceCond };
                     }
                     let weight = 0;
-                    for (const b of ins) {
+                    for (const b of plain) {
                         const c = this.conditionChance(cond, b.path, item);
                         if (c !== undefined) {
                             weight += b.mass * c;
@@ -1037,7 +1106,21 @@ class Walker {
         emit(stmt.body, body);
         const stopShare = ending > 0 ? solved.stop / ending : 0;
         frame.stopped += mass * stopShare;
-        return [{ mass: mass * (1 - stopShare), path: undefined }];
+        const leaving = mass * (1 - stopShare);
+        if (!(solved.exit > 0)) return [{ mass: leaving, path: undefined }];
+        return [
+            {
+                mass: leaving,
+                path: undefined,
+                states: {
+                    types: atoms.map((_atom, i) => typeOfAtom(i)),
+                    dist: solved.exits.map((e) => ({
+                        state: e.state,
+                        weight: e.prob / solved.exit,
+                    })),
+                },
+            },
+        ];
     }
 
     /** The row a bench statement crafts on this item, when it resolves. */
@@ -1121,6 +1204,40 @@ function predLeaves(pred: RPred, out: RPred[] = []): RPred[] {
             out.push(pred);
             return out;
     }
+}
+
+/**
+ * A condition over where a solved loop left the item: the chance it holds and
+ * the states on either side. Undefined when it reads anything but the counts
+ * and the modifiers that loop named.
+ */
+function splitCarried(
+    c: Carried,
+    pred: RPred,
+): { chance: number; then?: Carried; otherwise?: Carried } | undefined {
+    const index = new Map<TypeId, number>();
+    c.types.forEach((t, i) => index.set(t, i));
+    for (const leaf of predLeaves(pred)) {
+        if (leaf.kind === "compare") continue;
+        if (leaf.kind === "has" && index.has(leaf.type)) continue;
+        if (leaf.kind === "hasGroup" && [...leaf.types].every((t) => index.has(t))) continue;
+        return undefined;
+    }
+    const yes: Carried["dist"][number][] = [];
+    const no: Carried["dist"][number][] = [];
+    for (const s of c.dist) (holdsOn(pred, s.state, index, new Map()) ? yes : no).push(s);
+    const chance = yes.reduce((sum, s) => sum + s.weight, 0);
+    const part = (dist: typeof yes, mass: number): Carried | undefined =>
+        mass > 0
+            ? { types: c.types, dist: dist.map((s) => ({ ...s, weight: s.weight / mass })) }
+            : undefined;
+    const then = part(yes, chance);
+    const otherwise = part(no, 1 - chance);
+    return {
+        chance,
+        ...(then !== undefined && { then }),
+        ...(otherwise !== undefined && { otherwise }),
+    };
 }
 
 /** Whether an op sequence reforges the item: a fill that lays down the reforge's count. */

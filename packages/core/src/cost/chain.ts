@@ -100,6 +100,8 @@ export interface Chain {
     /** Mass that never leaves: a loop the chain cannot see ending, the item
      *  full and nothing removing. */
     readonly unresolved: number;
+    /** The states the exit leaves the item in, their probabilities summing to `exit`. */
+    readonly exits: readonly { readonly state: ChainState; readonly prob: number }[];
 }
 
 /** Rounds after which the chain stops following the mass still going round. */
@@ -168,9 +170,12 @@ export function chain(input: ChainInput): Chain | undefined {
         taken: new Map(),
     };
     let head: Dist = new Map();
+    const exits: Dist = new Map();
     for (const { state, weight } of input.starts) {
-        if (input.exit(state)) t.exit += weight / total;
-        else put(head, state, weight / total);
+        if (input.exit(state)) {
+            t.exit += weight / total;
+            put(exits, state, weight / total);
+        } else put(head, state, weight / total);
     }
     const exitAtStart = t.exit;
     // A rare exit leaves mass going round for thousands of rounds. Once the
@@ -184,25 +189,30 @@ export function chain(input: ChainInput): Chain | undefined {
         t.passes += mass;
         const alive = run(input.body, head, input, t);
         head = new Map();
+        const leaving: Dist = new Map();
         for (const { state, prob } of alive.values()) {
-            if (input.exit(state)) t.exit += prob;
-            else put(head, state, prob);
+            if (input.exit(state)) {
+                t.exit += prob;
+                put(leaving, state, prob);
+            } else put(head, state, prob);
         }
         const decay = massOf(head) / mass;
         // A chain that mixes slowly may not settle within the rounds followed;
         // its last round's decay is then the best guess at the rest.
         const last = round === MAX_PASSES - 1;
-        if (
+        const settled =
             decay < 1 - STUCK &&
-            (last || (lastDecay !== undefined && Math.abs(decay - lastDecay) < SETTLED))
-        ) {
+            (last || (lastDecay !== undefined && Math.abs(decay - lastDecay) < SETTLED));
+        const factor = settled ? 1 + decay / (1 - decay) : 1;
+        for (const { state, prob } of leaving.values()) put(exits, state, prob * factor);
+        if (settled) {
             addScaled(t, was, decay / (1 - decay));
             head = new Map();
             break;
         }
         lastDecay = decay;
     }
-    return { ...t, exitAtStart, unresolved: massOf(head) };
+    return { ...t, exitAtStart, unresolved: massOf(head), exits: [...exits.values()] };
 }
 
 function snapshot(t: Totals): Totals {

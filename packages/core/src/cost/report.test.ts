@@ -154,6 +154,46 @@ describe("the cost of a guide", () => {
         expect(guard.branch).toBeLessThan(0.3);
     });
 
+    it("a branch after a solved loop reads where the loop left the item", () => {
+        // Annulling a full ring until a prefix is open takes a suffix on the
+        // way three times in ten and leaves exactly two.
+        const c = craft(
+            ring(
+                "rare",
+                ["IncreasedLife1", "IncreasedMana1", "IncreasedArmour1"],
+                ["FireResist1", "ColdResist1", "LightningResist1"],
+            ),
+            [
+                until(cmp("prefixCount", "<=", 2), [op("annul")]),
+                iff(cmp("suffixCount", "==", 2), [stop()]),
+            ],
+        );
+        const branch = report(c).steps.find((s) => s.kind === "if")!;
+        expect(branch.note).toBeUndefined();
+        expect(branch.branch).toBeCloseTo(3 / 10, 9);
+    });
+
+    it("a second loop starts from where a solved first loop left the item", () => {
+        // A make-room loop, then a loop that exalts until two suffixes are back:
+        // the second is solved from the first's exits, not from a guess.
+        const c = craft(
+            ring(
+                "rare",
+                ["IncreasedLife1", "IncreasedMana1", "IncreasedArmour1"],
+                ["FireResist1", "ColdResist1", "LightningResist1"],
+            ),
+            [
+                until(cmp("prefixCount", "<=", 2), [op("annul")]),
+                until(cmp("suffixCount", ">=", 2), [op("exalt")]),
+            ],
+        );
+        const loops = report(c).steps.filter((s) => s.kind === "until");
+        expect(loops[1]!.note).toBeUndefined();
+        // Entered at its exit when the first loop left two or three suffixes.
+        expect(loops[1]!.attempts!.expected).toBeLessThan(1);
+        expect(loops[1]!.attempts!.expected).toBeGreaterThan(0);
+    });
+
     it("a reforge in a make-room loop's else arm pays for the kept modifier again", () => {
         // Three prefixes with the life among them: an annul takes the life a
         // third of the time and sends the loop back to the Chaos Orb until the

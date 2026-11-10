@@ -202,6 +202,24 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.taken.get(0)).toBeCloseTo(1.5, 3);
     });
 
+    it("says which states the exit leaves the item in", () => {
+        // From 3/3 the first prefix taken ends it: after no suffix (1/2), one
+        // (1/2 · 3/5), two (1/2 · 2/5 · 3/4) or all three.
+        const solved = chain({
+            atoms: [],
+            body: [{ id: 0, kind: "remove" }],
+            starts: [{ state: at(3, 3), weight: 1 }],
+            caps: CAPS,
+            exit: (s) => s.prefix <= 2,
+        })!;
+        const share = (suffix: number): number =>
+            solved.exits.find((e) => e.state.prefix === 2 && e.state.suffix === suffix)?.prob ?? 0;
+        expect(share(3)).toBeCloseTo(1 / 2, 9);
+        expect(share(2)).toBeCloseTo(3 / 10, 9);
+        expect(share(1)).toBeCloseTo(3 / 20, 9);
+        expect(share(0)).toBeCloseTo(1 / 20, 9);
+    });
+
     it("a rare exit is followed to its end, not cut off", () => {
         // A reforge that lands the exit one time in 10 000: 10 000 rounds on
         // average, far more than the rounds the chain follows one by one.
