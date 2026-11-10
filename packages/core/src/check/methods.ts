@@ -434,7 +434,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["fossil"],
         args: [{ kind: "names", of: "fossil", max: 4 }],
-        doc: 'fossil "<name>" … — socket one to four fossils (each by its first word or full name) in a resonator and reforge a Normal or Rare item, on a base every fossil allows, with no metamod that keeps a side from changing or a modifier from rolling. Weights are not modelled; the Fractured Fossil needs an item with no fractured modifier, and the Bloodstained Fossil corrupts it.',
+        doc: 'fossil "<name>" … — socket one to four fossils (each by its first word or full name) in a resonator and reforge a Normal or Rare item, on a base every fossil allows, with no metamod that keeps a side from changing or a modifier from rolling. Weights are not modelled; the Fractured Fossil needs an item with no fractured modifier and no influence, and the Bloodstained Fossil corrupts it.',
         build: (names, a, registry) =>
             resonator(
                 names.map((n) => text(n)),

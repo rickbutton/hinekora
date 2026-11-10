@@ -647,7 +647,7 @@ export function resonatorOps(r: Resonator): readonly Op[] {
         canBeRare,
         require({ kind: "noBlockingMetamod" }),
         ...r.fossils.map((fossil) => require({ kind: "fossilAllowed", fossil })),
-        ...(fractures ? [require({ kind: "noFracture" })] : []),
+        ...(fractures ? [noInfluence("Fractured Fossil"), require({ kind: "noFracture" })] : []),
         strip(),
         rarity("rare"),
         fill(

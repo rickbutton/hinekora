@@ -96,6 +96,19 @@ describe("a resonator", () => {
         expect(locked.diagnostics[0]!.message).toContain("already has a fractured modifier");
     });
 
+    it("refuses the Fractured Fossil on an influenced item", () => {
+        const hunter = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            influences: ["hunter"],
+        });
+        const r = check(craft(hunter, [fossil("fractured")]), ctx);
+        expect(r.diagnostics[0]!.message).toContain(
+            "A Fractured Fossil cannot be used on an influenced item",
+        );
+    });
+
     it("takes a Normal or Rare item without a blocking metamod, on a base its fossils allow", () => {
         const magic = item({ base: "Iron Ring", ilvl: 100, rarity: "magic" });
         expect(check(craft(magic, [fossil("dense")]), ctx).diagnostics[0]!.message).toContain(
