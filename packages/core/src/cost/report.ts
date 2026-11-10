@@ -6,7 +6,7 @@
  * body once over the chance one attempt reaches its exit, judged on the last
  * roll of the body and the conditions passed on the way to it (the attempts
  * taken as independent trials); a branch splits the mass by its condition's
- * chance; a `restart` ends the attempt and a `stop` the craft (docs/cost.md
+ * chance; a `restart` goes back to its loop's head and a `stop` ends the craft (docs/cost.md
  * §3, §6).
  */
 import type { Craft, Pred, Stmt } from "../ast/ast.js";
@@ -114,7 +114,7 @@ interface Frame {
     readonly scale: number;
     /** Mass ending the craft (`stop`), per pass. */
     stopped: number;
-    /** Mass leaving the pass early (`restart`). */
+    /** Mass a `restart` sent back to the head of the loop around it. */
     restarted: number;
 }
 
@@ -185,20 +185,7 @@ function walk(
     const walker = new Walker(craft, result, registry, reading);
     const top: Frame = { scale: 1, stopped: 0, restarted: 0 };
     walker.sequence(craft.body, [walker.start()], top);
-    // A restart at the top level starts the guide over: every step runs once
-    // more per restart, a geometric number of passes.
-    const passes = top.restarted < 1 ? 1 / (1 - top.restarted) : 1;
-    const steps = walker.steps.map((s) =>
-        passes === 1
-            ? s
-            : {
-                  ...s,
-                  runs: s.runs * passes,
-                  ...(s.expected && {
-                      expected: s.expected.map((p) => ({ ...p, amount: p.amount * passes })),
-                  }),
-              },
-    );
+    const steps = walker.steps;
     let total: Price[] = [];
     for (const s of steps) if (s.expected) total = addPrices(total, s.expected);
     let chaos: number | undefined = 0;
@@ -211,7 +198,8 @@ function walk(
         steps,
         total,
         ...(chaos !== undefined && { chaos }),
-        stopped: Math.min(1, top.stopped * passes),
+        // A restart outside every loop has no head to go back to: the craft ends.
+        stopped: Math.min(1, top.stopped + top.restarted),
         followed: !walker.lost && (walker.tracker?.misses ?? 1) === 0,
     };
 }
@@ -858,14 +846,13 @@ class Walker {
         if (exit === undefined) return undefined;
         // Every branch's guard and inner loop's exit, read on the item there.
         const guards = new Map<Stmt, (s: ChainState) => boolean>();
-        const collect = (stmts: readonly Stmt[], nested: boolean): boolean => {
+        const collect = (stmts: readonly Stmt[]): boolean => {
             for (const s of stmts) {
-                if (s.kind === "restart" && nested) return false;
                 if (s.kind === "call") {
                     const e = this.traced(s);
                     const inlined = e?.inlined;
                     if (e === undefined || inlined === undefined) return false;
-                    if (!this.within(e, () => collect(inlined.body, nested))) return false;
+                    if (!this.within(e, () => collect(inlined.body))) return false;
                     continue;
                 }
                 if (s.kind !== "if" && s.kind !== "until") continue;
@@ -874,18 +861,13 @@ class Walker {
                 const holds = guard === null ? undefined : this.compiled(guard, at);
                 if (holds === undefined) return false;
                 guards.set(s, holds);
-                if (s.kind === "until") {
-                    // A restart in an inner loop goes back to that loop's
-                    // entry, which this chain does not keep.
-                    if (!collect(s.body, true)) return false;
-                    continue;
-                }
-                if (!collect(s.body, nested)) return false;
-                if (s.elseBody !== undefined && !collect(s.elseBody, nested)) return false;
+                if (!collect(s.body)) return false;
+                if (s.kind === "if" && s.elseBody !== undefined && !collect(s.elseBody))
+                    return false;
             }
             return true;
         };
-        if (!collect(stmt.body, false)) return undefined;
+        if (!collect(stmt.body)) return undefined;
         const body = this.chainSteps(stmt.body, guards, new Map());
         if (body === undefined) return undefined;
 

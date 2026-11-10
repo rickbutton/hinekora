@@ -191,30 +191,60 @@ describe("the cost of a guide", () => {
         expect(exalt.runs).toBeCloseTo(1 - r.stopped, 9);
     });
 
-    it("a make-room loop annuls until a slot is open, restarting when the kept modifier goes", () => {
-        const c = craft(
-            ring(
-                "rare",
-                ["IncreasedLife1", "IncreasedMana1", "IncreasedArmour1"],
-                ["FireResist1", "ColdResist1", "LightningResist1"],
-            ),
-            [
-                until(cmp("prefixCount", "<=", 2), [
-                    op("annul"),
-                    iff(notp(has("IncreasedLife1")), [restart()]),
-                ]),
-            ],
+    it("a restart goes back to the loop's head with the item as it is", () => {
+        const full = ring(
+            "rare",
+            ["IncreasedLife1", "IncreasedMana1", "IncreasedArmour1"],
+            ["FireResist1", "ColdResist1", "LightningResist1"],
         );
-        const r = report(c);
+        const loopOf = (body: Parameters<typeof until>[1]) =>
+            craft(full, [
+                until(cmp("prefixCount", "<=", 2), body),
+                iff(has("IncreasedLife1"), [op("divine")]),
+            ]);
+        const r = report(loopOf([op("annul"), iff(notp(has("IncreasedLife1")), [restart()])]));
+        const plain = report(loopOf([op("annul")]));
+        const rounds = (x: typeof r): number => x.steps.find((s) => s.kind === "until")!.runs;
+        const kept = (x: typeof r): number =>
+            x.steps.filter((s) => s.kind === "if").at(-1)!.branch!;
+        // The head finds a prefix open after the life went and leaves without
+        // it: the rounds and the item are those of the loop with no restart,
+        // the first prefix taken being the life one time in three.
         const loop = r.steps.find((s) => s.kind === "until")!;
-        const annul = r.steps.find((s) => s.kind === "operation")!;
-        const guard = r.steps.find((s) => s.kind === "if")!;
-        // Each round takes a prefix with chance one half, the life among them
-        // one in six: more than one round, a restart now and then.
-        expect(loop.attempts!.expected).toBeGreaterThan(1);
-        expect(annul.runs).toBeCloseTo(loop.attempts!.expected, 9);
-        expect(guard.branch).toBeGreaterThan(0.1);
-        expect(guard.branch).toBeLessThan(0.3);
+        expect(loop.attempts!.expected).toBeCloseTo(1 + 1 / 2 + 1 / 5 + 1 / 20, 9);
+        expect(rounds(r)).toBeCloseTo(rounds(plain), 9);
+        expect(kept(r)).toBeCloseTo(2 / 3, 9);
+        expect(kept(plain)).toBeCloseTo(2 / 3, 9);
+        expect(r.stopped).toBe(0);
+        // In a loop inside another it goes back to the inner loop's head.
+        const nested = report(
+            craft(full, [
+                until(cmp("suffixCount", "<=", 2), [
+                    until(cmp("prefixCount", "<=", 2), [
+                        op("annul"),
+                        iff(notp(has("IncreasedLife1")), [restart()]),
+                    ]),
+                    op("annul"),
+                ]),
+            ]),
+        );
+        const inner = nested.steps.filter((s) => s.kind === "until")[1]!;
+        expect(inner.note).toBeUndefined();
+        expect(inner.attempts!.expected).toBeGreaterThan(1);
+        expect(nested.steps.every((s) => s.note === undefined)).toBe(true);
+    });
+
+    it("a restart outside every loop ends the craft", () => {
+        const c = craft(ring("rare", ["IncreasedLife1"], ["FireResist1"]), [
+            op("annul"),
+            iff(notp(has("IncreasedLife1")), [restart()]),
+            op("exalt"),
+        ]);
+        const r = report(c);
+        expect(r.stopped).toBeCloseTo(1 / 2, 9);
+        const steps = r.steps.filter((s) => s.kind === "operation");
+        expect(steps[0]!.runs).toBeCloseTo(1, 9);
+        expect(steps[1]!.runs).toBeCloseTo(1 / 2, 9);
     });
 
     it("a branch after a solved loop reads where the loop left the item", () => {

@@ -278,20 +278,6 @@ with a fractured modifier; apply a scour to each; record refused or consumed.
 **Assumed:** refused, with a fractured modifier or without. **Encoded in:**
 `check/ops.ts` `strippable`.
 
-### Q84 · decision · open — what a `restart` leaves the item as
-
-**Q:** the checker takes a `restart` back to its loop's head with the item as it is, like
-`continue`; the cost layer takes it as a new attempt from the item the loop was entered
-with. They differ wherever the restarted item is not the entry item: in
-`until prefixCount <= 2 { annul; if not has "maximum life" { restart } }`, the item as it
-is leaves the loop without the life.
-**Options:** (a) the item as it is in both, a guide writing `stop` for a lost modifier
-(recommended: one meaning, the checker's, which the language doc states); (b) a new
-attempt from the loop's entry in both, the checker joining that item into the head.
-**Assumed:** the split above; the cost layer cannot follow a `restart` in a loop nested in
-another until this is settled. **Encoded in:** `check/check.ts` `restartHeads`,
-`cost/chain.ts` `restart`, `cost/report.ts` `chainLoop`.
-
 ### Q85 · probe · open — a bench craft on a Normal item
 
 **Q:** does the bench craft a modifier onto a Normal item, making it Magic?

@@ -144,16 +144,16 @@ unit price (`cost/prices.ts`, in the step's own currency).
   states the loop enters with, each method a transition read on the narrowed item and a
   loop inside going round its own body until its exit each time it is reached. The
   distribution is carried round after round until the mass has left (the exit, a
-  restart, a stop, or an item full with nothing removing); once a round hands the next a
+  stop, or an item full with nothing removing); once a round hands the next a
   distribution of the same shape, only smaller, the rest is summed as a geometric series,
   and a chain that has not settled is noted as an estimate. Where the exit leaves the
   item is what the next steps see.
 - Any other `until` is a sequence of independent attempts: the body is walked once to
   find the chance an attempt ends in the exit or a `stop`; the expected rounds is the
   reciprocal, and the share ending in a stop ends the craft.
-- An **`if`** splits each branch by its condition's chance; a `restart` ends the
-  attempt; a `stop` ends the craft; a top-level `restart` makes the guide one attempt of
-  an outer loop.
+- An **`if`** splits each branch by its condition's chance; a `restart` is back at
+  its loop's head with the item as it is, the checker's meaning; a `stop`, or a
+  `restart` outside every loop, ends the craft.
 
 Where the model cannot say (a loop whose exit rests on a value no roll in its body
 changes, an item the snapshot does not price), the

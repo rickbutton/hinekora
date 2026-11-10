@@ -27,10 +27,11 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.reached.get(0)).toBeCloseTo(solved.passes, 9);
     });
 
-    it("a kept modifier caught by a branch restarts the attempt", () => {
+    it("a restart goes back to the loop's head with the item as it is", () => {
         // 2/3 with one kept suffix; exit when a suffix is gone. The first annul
         // takes a suffix with chance 3/5 and the kept one with chance 1/5: the
-        // branch fires then, the exit is reached with 2/5 by the first round.
+        // branch restarts then, and the head finds a suffix open and leaves,
+        // the kept modifier gone.
         const kept: ChainAtom = { gen: "suffix", rows: [{ id: ModId("K"), weight: 1 }], weight: 1 };
         const solved = chain({
             atoms: [kept],
@@ -47,11 +48,47 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
             caps: CAPS,
             exit: (s) => s.suffix <= 2,
         })!;
-        expect(solved.exit + solved.restart).toBeCloseTo(1, 9);
+        expect(solved.exit).toBeCloseTo(1, 9);
         expect(solved.taken.get(1)).toBeCloseTo(solved.restart, 9);
         expect(solved.reached.get(2)).toBeCloseTo(solved.restart, 9);
         expect(solved.restart).toBeGreaterThan(0.2);
-        expect(solved.exit).toBeGreaterThan(0.5);
+        const lost = solved.exits.filter((e) => e.state.rows[0] === null);
+        expect(lost.reduce((sum, e) => sum + e.prob, 0)).toBeCloseTo(solved.restart, 9);
+    });
+
+    it("a restart in a loop inside another goes back to the inner loop's head", () => {
+        // The inner loop annuls a full item until a suffix is open; each round
+        // restarts, so the bench step after the branch never runs, and the
+        // rounds are those of the same loop without the restart.
+        const inner = (restarts: boolean) =>
+            chain({
+                atoms: [],
+                body: [
+                    {
+                        id: 0,
+                        kind: "loop",
+                        exit: (s) => s.suffix <= 2,
+                        body: [
+                            { id: 1, kind: "remove" },
+                            ...(restarts
+                                ? ([
+                                      { id: 2, kind: "restart" },
+                                      { id: 3, kind: "bench", gen: "prefix" },
+                                  ] as const)
+                                : []),
+                        ],
+                    },
+                    { id: 4, kind: "remove", gen: "prefix" },
+                ],
+                starts: [{ state: at(3, 3), weight: 1 }],
+                caps: CAPS,
+                exit: (s) => s.prefix <= 1,
+            })!;
+        const solved = inner(true);
+        expect(solved.exit).toBeCloseTo(1, 9);
+        expect(solved.reached.get(3) ?? 0).toBe(0);
+        expect(solved.rounds.get(0)).toBeCloseTo(inner(false).rounds.get(0)!, 9);
+        expect(solved.passes).toBeCloseTo(inner(false).passes, 9);
     });
 
     it("a removal limited to one side leaves the other alone", () => {

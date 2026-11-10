@@ -68,7 +68,7 @@ export type ChainStep =
     /** A reforge: the item starts over as one of the roll's outcomes, whatever
      *  it held, each outcome the counts and the atoms' rows it leaves. */
     | { readonly id: number; readonly kind: "reforge"; readonly outcomes: readonly Outcome[] }
-    /** The attempt ends; the craft ends. */
+    /** Back to the head of the loop around it, the item as it is; the craft ends. */
     | { readonly id: number; readonly kind: "restart" }
     | { readonly id: number; readonly kind: "stop" }
     /** A method read on the item as each state has it: where it takes the
@@ -105,10 +105,11 @@ export interface ChainInput {
 }
 
 export interface Chain {
-    /** How one attempt ends: in the exit, a restart or a stop. */
+    /** How the loop ends: in its exit or a stop. */
     readonly exit: number;
     /** The part of `exit` that holds before the first round. */
     readonly exitAtStart: number;
+    /** The mass a `restart` sent back to a loop's head, over all rounds. */
     readonly restart: number;
     readonly stop: number;
     /** Expected passes through the body in one attempt. */
@@ -163,6 +164,8 @@ interface Totals {
     /** The states carried through rounds so far, by this loop and every loop
      *  inside it alike, against `MAX_WORK`. */
     work: number;
+    /** The states a `restart` sent back to the head of the loop being run. */
+    again: Dist;
 }
 
 const keys = new WeakMap<ChainState, string>();
@@ -257,6 +260,7 @@ function totals(): Totals {
         estimatedLoops: new Set(),
         stuck: 0,
         work: 0,
+        again: new Map(),
     };
 }
 
@@ -284,10 +288,16 @@ function iterate(
         const shapeIn = head;
         const was = snapshot(t);
         passes += mass;
+        // A restart inside the body is back at this loop's head, as the states
+        // that fall off the body's end are.
+        const outer = t.again;
+        t.again = new Map();
         const alive = run(body, head, input, t);
+        const back = t.again;
+        t.again = outer;
         head = new Map();
         const leaving: Dist = new Map();
-        for (const { state, prob } of alive.values())
+        for (const { state, prob } of [...alive.values(), ...back.values()])
             put(exit(state) ? leaving : head, state, prob);
         const decay = massOf(head) / mass;
         // A chain that mixes slowly may not settle within the rounds followed;
@@ -382,6 +392,7 @@ function apply(step: ChainStep, alive: Dist, input: ChainInput, t: Totals): Dist
             return alive;
         case "restart":
             t.restart += massOf(alive);
+            for (const { state, prob } of alive.values()) put(t.again, state, prob);
             return new Map();
         case "stop":
             t.stop += massOf(alive);
