@@ -10,9 +10,10 @@
  * time's density. The dynamic program carries a count, never a list of draws.
  */
 
-/** A composite Gauss–Legendre rule over log-time: a few panels per decade of a
- *  dozen and a half nodes each are accurate to about seven digits, more than a
- *  cost estimate can use, whatever the spread of the clocks' rates. */
+/** A composite Gauss–Legendre rule over log-time: sixteen nodes a panel, four
+ *  panels a decade where the clocks fire and one a decade before the fastest
+ *  can, where the integrand is a smooth power of t; accurate to about ten
+ *  digits whatever the spread of the clocks' rates. */
 const NODES = 16;
 const PANELS_PER_DECADE = 4;
 /** The window followed, in units of the fastest and the slowest clock's time:
@@ -72,14 +73,22 @@ function integrate(rates: readonly number[], f: (t: number) => number): number {
     }
     if (!(slow < Infinity)) return 0;
     const lo = Math.log(EARLY / fast);
+    const mid = Math.log(1 / fast);
     const hi = Math.log(LATE / slow);
-    const panels = Math.max(4, Math.ceil(((hi - lo) / Math.LN10) * PANELS_PER_DECADE));
+    const decades = (a: number, b: number): number => (b - a) / Math.LN10;
+    return (
+        panelled(f, lo, mid, Math.max(1, Math.ceil(decades(lo, mid)))) +
+        panelled(f, mid, hi, Math.max(4, Math.ceil(decades(mid, hi) * PANELS_PER_DECADE)))
+    );
+}
+
+/** ∫ f(t) dt for t = eˢ, s from `lo` to `hi`, in `panels` equal panels. */
+function panelled(f: (t: number) => number, lo: number, hi: number, panels: number): number {
     const width = (hi - lo) / panels;
     let sum = 0;
     for (let panel = 0; panel < panels; panel++) {
         for (let i = 0; i < NODES; i++) {
-            const s = lo + (panel + RULE.x[i]!) * width;
-            const t = Math.exp(s);
+            const t = Math.exp(lo + (panel + RULE.x[i]!) * width);
             sum += RULE.w[i]! * width * f(t) * t;
         }
     }

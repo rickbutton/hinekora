@@ -331,18 +331,20 @@ firing times, which are independent. Two consequences carry the whole model:
   independently (each with probability `1 − e^(−w·t)`), so their count is a Poisson-binomial
   distribution computed by a dynamic program over the groups in `O(groups × k)`, and the
   condition is removed by integrating `t` against `g`'s exponential density, a
-  one-dimensional integral a Gauss–Legendre rule evaluates to machine precision. Each
-  clock changes the integrand around `t ≈ 1/w`, so the rule runs over `log t` with the
-  same number of points in every decade between the fastest clock and the slowest: a
-  substitution on one rate alone leaves the faster clocks as spikes it steps over, which
-  read a T1 spell damage under an Aetheric Fossil at a third of its chance. The same program with two conditioned clocks gives the exact joint for a
+  one-dimensional integral a Gauss–Legendre rule evaluates to about ten digits. Each
+  clock changes the integrand around `t ≈ 1/w`, so the rule runs over `log t` with four
+  panels in every decade between the fastest clock and the slowest (one a decade before
+  the fastest, where the integrand is a smooth power of `t`): a substitution on one rate
+  alone leaves the faster clocks as spikes it steps over, which read any spell damage on
+  an Aetheric reforge 24% of the time where the pool gives 62%. The same program with two conditioned clocks gives the exact joint for a
   pair of groups ("life T1 and fire resistance T1"), a two-dimensional integral; three or
   more wanted groups are combined by inclusion–exclusion with the pairwise joints exact and
   the higher-order terms taken independent.
 
 This is an intensional computation (the state of the dynamic program is a count, never a
 list of outcomes), it is exact where craftofexile is exact and exact where craftofexile
-extrapolates, and its cost is a few thousand multiplications per atom. The depletion the
+extrapolates, and its cost is some hundreds of quadrature points per atom, each a
+dynamic program over the groups. The depletion the
 split model ignores in craftofexile is included.
 
 ### 5.4 From a roll to a predicate
