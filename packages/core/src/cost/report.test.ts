@@ -22,14 +22,20 @@ import {
     stop,
     until,
 } from "../__fixtures__/ast.js";
-import { BENCH_LIFE_ROW, CATALOG, LIFE_T1, RING_BASE } from "../__fixtures__/mods.js";
+import {
+    BENCH_LIFE_ROW,
+    CATALOG,
+    LIFE_T1,
+    PROTECT_PREFIXES_CARRIER,
+    RING_BASE,
+} from "../__fixtures__/mods.js";
 import { allAmongFirst } from "./race.js";
 import { costOf } from "./report.js";
 import type { Prices } from "./prices.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE],
-    mods: [...CATALOG, BENCH_LIFE_ROW],
+    mods: [...CATALOG, BENCH_LIFE_ROW, PROTECT_PREFIXES_CARRIER],
     baseAliases: { "Iron Ring": "IronRing" },
 });
 const ring = (
@@ -173,6 +179,18 @@ describe("the cost of a guide", () => {
         expect(branch.branch).toBeCloseTo(3 / 10, 9);
     });
 
+    it("a tier a solved loop never told apart is not read off its states", () => {
+        // The Chaos Orb loop asks for the life at any tier, so its states hold
+        // the life by a stand-in row; a branch on the top tier cannot read it.
+        const c = craft(ring("rare"), [
+            until(has("maximum life"), [op("chaos")]),
+            iff(has("maximum life", 1), [stop()]),
+        ]);
+        const branch = report(c).steps.find((s) => s.kind === "if")!;
+        expect(branch.branch).toBeGreaterThan(0);
+        expect(branch.branch).toBeLessThan(1);
+    });
+
     it("a second loop starts from where a solved first loop left the item", () => {
         // A make-room loop, then a loop that exalts until two suffixes are back:
         // the second is solved from the first's exits, not from a guess.
@@ -184,14 +202,44 @@ describe("the cost of a guide", () => {
             ),
             [
                 until(cmp("prefixCount", "<=", 2), [op("annul")]),
-                until(cmp("suffixCount", ">=", 2), [op("exalt")]),
+                until(cmp("prefixCount", "<=", 1), [op("annul")]),
             ],
         );
         const loops = report(c).steps.filter((s) => s.kind === "until");
         expect(loops[1]!.note).toBeUndefined();
-        // Entered at its exit when the first loop left two or three suffixes.
-        expect(loops[1]!.attempts!.expected).toBeLessThan(1);
+        // The first loop leaves two prefixes and three, two, one or no suffixes
+        // (1/2, 3/10, 3/20, 1/20); from two prefixes and s suffixes the second
+        // takes 2, 5/3, 4/3 or 1 annuls.
+        expect(loops[1]!.attempts!.expected).toBeCloseTo(
+            (1 / 2) * 2 + (3 / 10) * (5 / 3) + (3 / 20) * (4 / 3) + 1 / 20,
+            9,
+        );
+    });
+
+    it("a second loop may name a modifier the first did not, when the item settles it", () => {
+        // The exalts never remove the life, so the second loop knows it is
+        // there and starts from the first loop's states.
+        const c = craft(ring("rare", ["IncreasedLife1"]), [
+            until(cmp("suffixCount", ">=", 1), [op("exalt")]),
+            until(andp(has("maximum life"), cmp("prefixCount", ">=", 2)), [op("exalt")]),
+        ]);
+        const loops = report(c).steps.filter((s) => s.kind === "until");
+        expect(loops[1]!.note).toBeUndefined();
         expect(loops[1]!.attempts!.expected).toBeGreaterThan(0);
+    });
+
+    it("a branch on a modifier no solved loop named reads the item, not its states", () => {
+        const c = craft(
+            ring(
+                "rare",
+                ["IncreasedLife1", "IncreasedMana1", "IncreasedArmour1"],
+                ["FireResist1", "ColdResist1", "LightningResist1"],
+            ),
+            [until(cmp("prefixCount", "<=", 2), [op("annul")]), iff(has("maximum life"), [stop()])],
+        );
+        // The annuls may have taken the life; the walk cannot say how likely.
+        const branch = report(c).steps.find((s) => s.kind === "if")!;
+        expect(branch.note).toBeDefined();
     });
 
     it("a reforge in a make-room loop's else arm pays for the kept modifier again", () => {

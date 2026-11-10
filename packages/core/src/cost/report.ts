@@ -109,6 +109,9 @@ interface Branch {
  *  modifiers that loop named; the weights sum to one. */
 interface Carried {
     readonly types: readonly TypeId[];
+    /** Per type, whether its row is the one on the item or a reforge's
+     *  stand-in for a modifier no condition of that loop tells apart by tier. */
+    readonly rowed: readonly boolean[];
     readonly dist: readonly { readonly state: ChainState; readonly weight: number }[];
 }
 
@@ -323,8 +326,16 @@ function trim(branches: readonly Branch[]): Branch[] {
     const kept = sorted.slice(0, BRANCH_LIMIT - 1);
     const rest = massOf(sorted.slice(BRANCH_LIMIT - 1));
     const heaviest = kept[0]!;
-    kept[0] = { ...heaviest, mass: heaviest.mass + rest };
+    // The folded mass may have come from elsewhere: its states are not the heaviest's.
+    const mixed = sorted.slice(BRANCH_LIMIT - 1).some((b) => b.states !== heaviest.states);
+    const mass = heaviest.mass + rest;
+    kept[0] = mixed ? { mass, path: heaviest.path } : { ...heaviest, mass };
     return kept;
+}
+
+/** The branches with what a solved loop said about the item forgotten. */
+function withoutStates(branches: readonly Branch[]): Branch[] {
+    return branches.map((b) => ({ mass: b.mass, path: b.path }));
 }
 
 class Walker {
@@ -350,9 +361,14 @@ class Walker {
     }
 
     private entry(s: Stmt): TraceEntry | undefined {
-        const e = this.byStart.get(`${s.kind}@${s.span.start.offset}`);
+        const e = this.traced(s);
         const before = this.firstSteps.get(s);
         return e === undefined || before === undefined ? e : { ...e, before };
+    }
+
+    /** The checker's entry for a statement: inside a loop, the join over its rounds. */
+    private traced(s: Stmt): TraceEntry | undefined {
+        return this.byStart.get(`${s.kind}@${s.span.start.offset}`);
     }
 
     /** Walk a sequence; the branches that fall off its end come back. */
@@ -375,7 +391,8 @@ class Walker {
                 this.record(stmt, mass, frame, {
                     note: `${stmt.name}: the steps inside a call are not costed`,
                 });
-                return [...branches];
+                // A call may change the item in ways this walk does not follow.
+                return withoutStates(branches);
             case "restart":
                 frame.restarted += mass;
                 this.record(stmt, mass, frame, {});
@@ -385,7 +402,7 @@ class Walker {
                 this.record(stmt, mass, frame, {});
                 return [];
             case "paramStep":
-                return [...branches];
+                return withoutStates(branches);
             case "if":
                 return this.branchStmt(stmt, entry, branches, frame);
             case "until":
@@ -429,13 +446,13 @@ class Walker {
             this.record(stmt, massOf(branches), frame, {
                 note: `${words}: not a step this report knows`,
             });
-            return [...branches];
+            return withoutStates(branches);
         }
         if (entry === undefined || literals.length !== stmt.args.length) {
             this.record(stmt, massOf(branches), frame, {
                 note: `${words}: a parameter stands where a name is needed`,
             });
-            return [...branches];
+            return withoutStates(branches);
         }
         const unit = unitCost(method, literals, entry.before, this.registry);
         this.record(stmt, massOf(branches), frame, {
@@ -444,7 +461,7 @@ class Walker {
                 : { note: `${words}: no price is known for this step` }),
         });
         const built = method.build(literals, entry.before, this.registry);
-        if ("refused" in built || entry.after === undefined) return [...branches];
+        if ("refused" in built || entry.after === undefined) return withoutStates(branches);
         const roll = this.rollFor(stmt, literals, built, entry.before);
         if (roll.kind !== "none") {
             // A new roll: every way of getting here is one way of being after it.
@@ -659,9 +676,9 @@ class Walker {
      * A loop whose body changes the item one modifier at a time (`chain.ts`):
      * random removals, single draws, bench crafts, and branches over them that
      * restart, stop or craft, exiting on the counts and the named modifiers.
-     * Solved as a chain from the states the loop may enter with, exactly,
-     * including how often each step inside runs; undefined for any other body,
-     * which takes the general path.
+     * Solved as a chain from the states the loop may enter with, including how
+     * often each step inside runs; undefined for any other body, which takes
+     * the general path.
      */
     private chainLoop(
         stmt: Extract<Stmt, { kind: "until" }>,
@@ -794,7 +811,11 @@ class Walker {
                         { rows: at.map((j) => (j >= 0 ? (state.rows[j] ?? null) : null)), weight },
                     ];
                     at.forEach((j, i) => {
-                        if (j >= 0 || presence[i] !== "yes") return;
+                        // A row to choose: a settled modifier the carried
+                        // states do not name, or one they hold by a stand-in.
+                        const choose =
+                            j >= 0 ? state.rows[j] !== null && !c.rowed[j] : presence[i] === "yes";
+                        if (!choose) return;
                         const rows = rowsAt(i);
                         const total = rows.reduce((sum, r) => sum + r.weight, 0);
                         rowed = rowed.flatMap((st) =>
@@ -999,11 +1020,11 @@ class Walker {
                         // The chain tracks the counts itself: the side comes from
                         // what the removal reaches, never from a count the
                         // reading took at nought.
-                        out.push(
-                            roll.gen === undefined
-                                ? { id, kind: "remove" }
-                                : { id, kind: "remove", gen: roll.gen },
-                        );
+                        out.push({
+                            id,
+                            kind: "remove",
+                            ...(roll.gen !== undefined && { gen: roll.gen }),
+                        });
                         break;
                     }
                     case "draw": {
@@ -1114,6 +1135,10 @@ class Walker {
                 path: undefined,
                 states: {
                     types: atoms.map((_atom, i) => typeOfAtom(i)),
+                    // A reforge stands in its first row for an atom no condition pins.
+                    rowed: atoms.map(
+                        (_atom, i) => !reforgesIn(body) || needsRow.has(typeOfAtom(i)),
+                    ),
                     dist: solved.exits.map((e) => ({
                         state: e.state,
                         weight: e.prob / solved.exit,
@@ -1219,7 +1244,12 @@ function splitCarried(
     c.types.forEach((t, i) => index.set(t, i));
     for (const leaf of predLeaves(pred)) {
         if (leaf.kind === "compare") continue;
-        if (leaf.kind === "has" && index.has(leaf.type)) continue;
+        if (
+            leaf.kind === "has" &&
+            index.has(leaf.type) &&
+            (leaf.tierMod === undefined || c.rowed[index.get(leaf.type)!])
+        )
+            continue;
         if (leaf.kind === "hasGroup" && [...leaf.types].every((t) => index.has(t))) continue;
         return undefined;
     }
@@ -1228,9 +1258,7 @@ function splitCarried(
     for (const s of c.dist) (holdsOn(pred, s.state, index, new Map()) ? yes : no).push(s);
     const chance = yes.reduce((sum, s) => sum + s.weight, 0);
     const part = (dist: typeof yes, mass: number): Carried | undefined =>
-        mass > 0
-            ? { types: c.types, dist: dist.map((s) => ({ ...s, weight: s.weight / mass })) }
-            : undefined;
+        mass > 0 ? { ...c, dist: dist.map((s) => ({ ...s, weight: s.weight / mass })) } : undefined;
     const then = part(yes, chance);
     const otherwise = part(no, 1 - chance);
     return {
@@ -1238,6 +1266,15 @@ function splitCarried(
         ...(then !== undefined && { then }),
         ...(otherwise !== undefined && { otherwise }),
     };
+}
+
+/** Whether a chain body reforges the item anywhere. */
+function reforgesIn(steps: readonly ChainStep[]): boolean {
+    return steps.some(
+        (s) =>
+            s.kind === "reforge" ||
+            (s.kind === "branch" && (reforgesIn(s.body) || reforgesIn(s.otherwise ?? []))),
+    );
 }
 
 /** Whether an op sequence reforges the item: a fill that lays down the reforge's count. */
