@@ -1,12 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "../check/check.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { bench, craft, has, iff, item, notp, op, orp, until } from "../__fixtures__/ast.js";
+import {
+    bench,
+    craft,
+    has,
+    hasValue,
+    iff,
+    item,
+    notp,
+    op,
+    orp,
+    stop,
+    until,
+} from "../__fixtures__/ast.js";
 import {
     BENCH_LIFE_ROW,
     CATALOG,
     CLASS_RING,
     RING_BASE,
+    SIMPLEX_BASE,
     TIERED_CATALOG,
 } from "../__fixtures__/mods.js";
 import type { BenchCraft } from "../model/sources.js";
@@ -44,6 +57,26 @@ describe("the item in the game's copy layout", () => {
         const text = after(craft(ring(), [op("exalt"), until(has("maximum life"), [op("chaos")])]));
         expect(text).toContain("{ Prefix Modifier (Tier: 1-3) }");
         expect(text).toMatch(/\+\(\d+-\d+\) to maximum Life\n/);
+    });
+
+    it("shows an experimented base's rows scaled, beside a value proven on the scaled span", () => {
+        // A Simplex Amulet doubles its modifiers' values, so T1 life reads 230 to 258.
+        const simplex = buildRegistry({ bases: [SIMPLEX_BASE], mods: TIERED_CATALOG });
+        const amulet = item({
+            base: "SimplexAmulet",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: [{ mod: "maximum life", tier: 1 }],
+        });
+        const text = (steps: Parameters<typeof craft>[1]): string => {
+            const r = check(craft(amulet, steps), { registry: simplex });
+            expect(r.diagnostics).toEqual([]);
+            return renderItemText(itemView(r.finalState!, simplex));
+        };
+        expect(text([])).toContain("+(230-258) to maximum Life");
+        expect(text([iff(notp(hasValue("maximum life", ">=", 240)), [stop()])])).toContain(
+            "+(240-258) to maximum Life",
+        );
     });
 
     it("groups a disjunction and pins each member's tier", () => {

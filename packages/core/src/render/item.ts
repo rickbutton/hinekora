@@ -23,6 +23,8 @@ import {
 } from "../check/astate.js";
 import type { Range } from "../check/domain.js";
 import { influenceTagsAny } from "../check/ops.js";
+import { spanOn } from "../check/values.js";
+import type { Base } from "../model/base.js";
 import type { Gen, ModId, Rarity, TypeId } from "../model/ids.js";
 import {
     ELDRITCH_SIDES,
@@ -171,6 +173,21 @@ export function rollSpan(texts: readonly string[]): string {
 
 const oneLine = (text: string): string => text.replace(/\n/g, " / ");
 
+const NUMBERS = /\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)|(\d+(?:\.\d+)?)/g;
+// The scale's float noise ("1.1 * 3") stays off the card.
+const shown = (n: number): string => String(Number(n.toFixed(2)));
+
+/** The text's numbers as the base shows them, an experimented base's magnitude
+ *  implicit scaling every value of the side. */
+function scaledText(text: string, base: Base, gen: Gen): string {
+    if ((base.magnitude?.[gen] ?? 0) === 0) return text;
+    return text.replace(NUMBERS, (_m, lo?: string, hi?: string, n?: string) => {
+        if (n !== undefined) return shown(spanOn(base, gen, [Number(n), Number(n)])[0]);
+        const [a, b] = spanOn(base, gen, [Number(lo), Number(hi)]);
+        return `(${shown(a)}-${shown(b)})`;
+    });
+}
+
 /**
  * The text with its first span narrowed to `value`: "+(70-84)" at [75, 90] is
  * "+(75-84)". The value is cut to the span shown, since the tiers can narrow
@@ -201,7 +218,10 @@ function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: Mod
     const texts = mods.map((m) => m.text).filter((t): t is string => t !== undefined);
     // A value the guide has proven ("life 110 or more") narrows the first span.
     const known = a.values.get(type);
-    const span = texts.length > 0 ? oneLine(rollSpan(texts)) : registry.typeLabel(type);
+    const span =
+        texts.length > 0
+            ? oneLine(scaledText(rollSpan(texts), a.base, gen))
+            : registry.typeLabel(type);
     const text = known === undefined ? span : withValue(span, known);
     const numbers = mods
         .map((m) => rollable.findIndex((r) => r.id === m.id) + 1)
