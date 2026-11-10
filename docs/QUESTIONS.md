@@ -150,14 +150,20 @@ influence section on an item with both? No real paste seen has both.
 **Assumed:** `Corrupted` in its own section, last. **Encoded in:**
 `packages/core/src/render/item.ts` `renderItemText`.
 
-### Q52 · probe · open — does a Harvest-changed crafted modifier stay crafted?
+### Q52 · probe · open — what a Harvest-changed crafted modifier becomes
 
-**Q:** [Harvest crafting § Mechanics](https://www.poewiki.net/wiki/Harvest_crafting#Mechanics)
-does not say; it decides whether "remove crafted modifiers" and the crafted limit reach it.
+**Q:** does it stay crafted, and which row is it?
+[Harvest crafting § Mechanics](https://www.poewiki.net/wiki/Harvest_crafting#Mechanics)
+does not say; it decides whether "remove crafted modifiers" and the crafted limit reach
+it. [Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting)
+has an Incursion resistance become the other element's Incursion row, and says nothing of
+a bench, essence, fossil or unveiled row.
 **Probe:** a Rare with a bench fire resistance and no other crafted modifier; change it
-to cold; record whether it shows as crafted and whether the removal takes it.
-**Assumed:** it stays crafted. **Encoded in:** `check/ops.ts` `fill` on a `rows` pool
-keeps the new rows among `craftedTypes`.
+to cold; record the cold's values, whether it shows as crafted and whether the removal
+takes it.
+**Assumed:** it stays crafted; it is the same source's counterpart row or any natural row
+of the target. **Encoded in:** `check/ops.ts` `fill` on a `rows` pool keeps the new rows
+among `craftedTypes`; `check/methods.ts` `harvestChange`.
 
 ### Q58 · probe · open — one or two modifiers from a transmute or an alteration
 

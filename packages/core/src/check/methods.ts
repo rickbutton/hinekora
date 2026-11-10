@@ -180,9 +180,12 @@ function harvestChange(
     const whole = (type: TypeId): readonly Mod[] =>
         rollableTiers(catalog, a.base, TOP_ITEM_LEVEL, type, tags);
     const pinned = a.tiers.get(from.value);
-    // A modifier another source placed (an Incursion architect's resistance,
-    // which the page's own example changes) is no row of the ladder that rolls
-    // here: it becomes the counterpart's row of that source and level.
+    const targets = rollableTiers(catalog, a.base, a.ilvl, to.value, tags);
+    // A modifier another source placed is no row of the ladder that rolls
+    // here. An Incursion architect's resistance becomes the counterpart's row
+    // of that source and level, the page's own example. For a bench, essence,
+    // fossil or unveiled row the page says nothing, so the result is that
+    // counterpart row or any of the target's natural rows (`QUESTIONS.md` Q52).
     const was = pinned?.size === 1 ? registry.resolveMod([...pinned][0]!) : undefined;
     if (was?.ok && (was.value.source ?? "natural") !== "natural") {
         const twins = catalog.filter(
@@ -194,10 +197,10 @@ function harvestChange(
                 m.gen === was.value.gen,
         );
         if (twins.length > 0) {
-            return harvestChangeOps(from.value, registry.typeLabel(from.value), twins);
+            const rows = was.value.source === "other" ? twins : [...twins, ...targets];
+            return harvestChangeOps(from.value, registry.typeLabel(from.value), rows);
         }
     }
-    const targets = rollableTiers(catalog, a.base, a.ilvl, to.value, tags);
     if (targets.length === 0) return refuse(`"${toName}" cannot roll on this item.`);
     // The tier is kept (Modifier § Harvest Crafting): the target's row at the
     // source's rank, where the two ladders have as many rows at the item's

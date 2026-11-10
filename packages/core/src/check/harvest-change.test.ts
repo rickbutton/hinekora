@@ -296,6 +296,41 @@ describe("harvest change", () => {
         expect(r.finalState!.tiers.get(TypeId("ColdAilments"))).toEqual(new Set(["ColdLevel50"]));
     });
 
+    it("changes a benched modifier into the bench's counterpart or a natural row", () => {
+        // The page speaks of the Incursion rows only; for a crafted modifier
+        // both readings stand until it is probed.
+        const benchCold: Mod = {
+            ...BENCH_FIRE_RES_ROW,
+            id: ModId("BenchColdResist1"),
+            type: COLD_RESIST.type,
+            families: COLD_RESIST.families,
+            text: "+(13-18)% to Cold Resistance",
+        };
+        const withTwin = buildRegistry({
+            bases: [RING_BASE],
+            harvestChange: HARVEST_CHANGE,
+            mods: [...CATALOG, BENCH_FIRE_RES_ROW, benchCold],
+            baseAliases: { "Iron Ring": "IronRing" },
+            benchCrafts: [BENCH_FIRE_RES_ROW, benchCold].map((m) => ({
+                mod: m.id,
+                tier: 1,
+                itemClasses: new Set([CLASS_RING]),
+            })),
+        });
+        const r = check(
+            craft(rareRing(), [
+                bench("fire resistance"),
+                harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
+            ]),
+            { registry: withTwin },
+        );
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(COLD_RESIST.type)).toEqual(
+            new Set([benchCold.id, COLD_RESIST.id]),
+        );
+        expect(r.finalState!.crafted).toEqual([1, 1]);
+    });
+
     it("needs the modifier guaranteed, unfractured, on an unprotected side", () => {
         const absent = check(
             craft(rareRing(), [harvestChange(FIRE_RESIST.id, COLD_RESIST.id)]),
