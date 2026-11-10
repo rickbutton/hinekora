@@ -79,7 +79,7 @@ The user is not always present. Work runs autonomously and the repo carries the 
   settle goes into `docs/QUESTIONS.md`: the question, the options with a recommendation,
   the assumption the code proceeds under, and the files that encode it. Then continue
   under that assumption. On resuming, read that file first and apply every `answered`
-  entry before new work. Never leave work undone because a question is open unless no
+  entry, then delete it, before new work. Never leave work undone because a question is open unless no
   assumption is reversible.
 - **Docs change in the same commit as the behaviour.** `REFERENCE.md` names what exists,
   `ARCHITECTURE.md` the shape, `language.md` the syntax, `item-model.md` the model,

@@ -36,8 +36,8 @@ export interface Base {
      * An experimented base's "increased Explicit / Prefix / Suffix Modifier
      * magnitudes" implicit, in percent per side (Simplex Amulet: 100/100;
      * Helical Ring: 0/50): the game shows every value of that side scaled by it.
-     * Carried, not applied: a value compares on its row's own span (`QUESTIONS.md`
-     * Q72). Absent ⇒ 0/0.
+     * Carried, not applied: a value compares on its row's own span until the
+     * scaling's rounding is known. Absent ⇒ 0/0.
      */
     readonly magnitude?: { readonly prefix: number; readonly suffix: number };
     /** The Astrolabe Amulet's implicit: the item counts as having every influence. */

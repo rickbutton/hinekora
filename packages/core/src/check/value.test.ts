@@ -175,7 +175,7 @@ describe("has <mod> <cmp> <n>", () => {
         });
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.values.get(LIFE)).toEqual([120, 129]);
-        // What the item shows (twice the row) is beyond the row's span (Q72).
+        // What the item shows (twice the row) is beyond the row's span: the implicit is not applied.
         const shown = check(
             craft(amulet, [iff(hasValue("maximum life", ">=", 240), [op("divine")])]),
             { registry: simplex },

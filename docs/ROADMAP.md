@@ -32,9 +32,13 @@ waits until a guide calls for it.
 - **experimented bases' magnitude implicits** ("100% increased Explicit Modifier
   magnitudes" on a Simplex Amulet, a side's on the rings): the data carries them as
   `Base.magnitude`, but neither the checker nor the item card scales a value by them; with
-  them come the rounding of a scaled value (`QUESTIONS.md` Q69), whether a granted skill's
-  level scales (Q71), and catalyst quality, which adds to the same percentage; Q72 records
-  why the implicit is a no-op meanwhile and what that costs.
+  them come the rounding of a scaled value (down, up or to nearest decides whether
+  `has "…" >= 86` holds on a Helical Ring's 85.5), whether a granted skill's level scales
+  ([Simplex Amulet § Mechanics](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)
+  names only "+1 gem" modifiers), and catalyst quality, which adds to the same percentage.
+  Meanwhile a value compares on its row's own span, so on a Simplex Amulet
+  `has "maximum life" >= 240` reads as a branch that can never run though the item shows
+  twice the row.
 - **legacy base-implicit variants** of the experimented bases (`QUESTIONS.md` Q70); a Magic
   Simplex Amulet with modifiers no longer exists since 3.27.0
   ([Simplex Amulet § Version history](https://www.poewiki.net/wiki/Simplex_Amulet#Version_history)).
