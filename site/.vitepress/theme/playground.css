@@ -1,0 +1,4 @@
+/* The playground fills the window under the header; a footer would push it. */
+.playground-page .VPFooter {
+    display: none;
+}

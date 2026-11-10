@@ -1,9 +1,11 @@
 import { type Theme, withBase } from "vitepress";
 import DefaultTheme from "vitepress/theme";
 import ItemCard from "./ItemCard.vue";
+import PlaygroundFrame from "./PlaygroundFrame.vue";
 import "./style.css";
 import "./landing.css";
 import "./reference.css";
+import "./playground.css";
 
 declare module "vue" {
     interface ComponentCustomProperties {
@@ -17,5 +19,6 @@ export default {
     enhanceApp({ app }) {
         app.config.globalProperties.$withBase = withBase;
         app.component("ItemCard", ItemCard);
+        app.component("PlaygroundFrame", PlaygroundFrame);
     },
 } satisfies Theme;
