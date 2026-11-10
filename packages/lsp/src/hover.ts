@@ -55,14 +55,14 @@ const REQUIRES: Record<CurrencyKind, string> = {
     transmute: "a Normal item",
     augment: "a Magic item with an open affix slot",
     alteration: "a Magic item",
-    regal: "a Magic item",
-    alchemy: "a Normal item",
+    regal: "a Magic item on a base that can be Rare",
+    alchemy: "a Normal item on a base that can be Rare",
     chaos: "a Rare item",
     exalt: "a Rare item with an open affix slot",
     annul: "a Magic or Rare item with a removable affix",
-    scour: "a Magic or Rare item",
-    fracture: "a Rare item with at least four modifiers",
-    divine: "a Magic or Rare item; every modifier's value is rolled again within its tier",
+    scour: "a Magic or Rare item with a side no metamod protects",
+    fracture: "a Rare item with at least four modifiers, none of them fractured, and no influence",
+    divine: "a Magic or Rare item; every modifier's value is rolled again within its tier, except a fractured one's and those on a side that cannot be changed",
 };
 
 const KEYWORD_DOC: Record<string, string> = {

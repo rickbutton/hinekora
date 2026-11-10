@@ -254,7 +254,7 @@ export const METHODS: readonly Method[] = [
     ...INFLUENCES.map((target): Method => ({
         words: ["exalt", target],
         args: [],
-        doc: `exalt ${target} — ${INFLUENCE_ORB[target]}: add ${influenceSetLabel(influenceKey([target]))} influence and one of its modifiers to a Rare item with no influence.`,
+        doc: `exalt ${target} — ${INFLUENCE_ORB[target]}: add ${influenceSetLabel(influenceKey([target]))} influence and one of its modifiers to a Rare item with an open slot, no influence and no fractured modifier.`,
         build: () => influenceExaltOps(target),
     })),
     ...ELDRITCH_SIDES.map((side): Method => {
@@ -263,7 +263,7 @@ export const METHODS: readonly Method[] = [
         return {
             words: [item],
             args: [word(...ELDRITCH_TIERS.slice(0, 4))],
-            doc: `${item} <tier> — an Eldritch ${side === "exarch" ? "Ember" : "Ichor"}: set the ${what} implicit of an armour piece to that tier (lesser to exceptional).`,
+            doc: `${item} <tier> — an Eldritch ${side === "exarch" ? "Ember" : "Ichor"}: set the ${what} implicit of a body armour, boots, gloves or helmet to that tier (lesser to exceptional); needs item level 75 or more and no influence.`,
             build: ([tier], a, registry) => {
                 const t = eldritchTierOf(text(tier) as EldritchTierName);
                 const types = registry.eldritchPool(a.base, side, t).map((e) => e.type);
@@ -274,31 +274,31 @@ export const METHODS: readonly Method[] = [
     {
         words: ["eldritch", "chaos"],
         args: [],
-        doc: "eldritch chaos — Eldritch Chaos Orb: reroll the prefixes when the Exarch is dominant, the suffixes when the Eater is.",
+        doc: "eldritch chaos — Eldritch Chaos Orb: reroll a Rare item's prefixes when the Exarch is dominant, its suffixes when the Eater is, keeping the other side.",
         build: (_args, a) => dominantSide(a, "Eldritch Chaos Orb", eldritchChaosOps),
     },
     {
         words: ["eldritch", "exalt"],
         args: [],
-        doc: "eldritch exalt — Eldritch Exalted Orb: add a prefix when the Exarch is dominant, a suffix when the Eater is.",
+        doc: "eldritch exalt — Eldritch Exalted Orb: add a prefix to a Rare item when the Exarch is dominant, a suffix when the Eater is; needs an open slot on that side.",
         build: (_args, a) => dominantSide(a, "Eldritch Exalted Orb", eldritchExaltOps),
     },
     {
         words: ["eldritch", "annul"],
         args: [],
-        doc: "eldritch annul — Eldritch Orb of Annulment: remove a prefix when the Exarch is dominant, a suffix when the Eater is.",
+        doc: "eldritch annul — Eldritch Orb of Annulment: remove a prefix from a Magic or Rare item when the Exarch is dominant, a suffix when the Eater is; needs a removable modifier on that side.",
         build: (_args, a) => dominantSide(a, "Eldritch Orb of Annulment", eldritchAnnulOps),
     },
     {
         words: ["dominance"],
         args: [],
-        doc: "dominance — Orb of Dominance: on an armour piece with two influenced modifiers, remove one and raise another a tier, to its elevated form at the top.",
+        doc: "dominance — Orb of Dominance: on a body armour, boots, gloves or helmet with two influenced modifiers on sides no metamod protects, remove one and raise another a tier, to its elevated form at the top.",
         build: () => DOMINANCE,
     },
     {
         words: ["conflict"],
         args: [],
-        doc: "conflict — Orb of Conflict: raise one eldritch implicit a tier and lower the other; a lowered Lesser is removed.",
+        doc: "conflict — Orb of Conflict: on an item with both eldritch implicits, raise one a tier and lower the other; a lowered Lesser is removed, and which is dominant may differ between paths.",
         build: () => CONFLICT,
     },
     {
@@ -334,7 +334,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["essence"],
         args: [name("essence"), { kind: "tier", optional: true }],
-        doc: 'essence "<name>" [t1] — reforge with a guaranteed modifier: a full essence name, or a type with its tier (t1 = Deafening).',
+        doc: 'essence "<name>" [t1] — reforge with a guaranteed modifier: a full essence name, or a type with its tier (t1 = Deafening; a corrupted essence takes t1 or none). Needs a Normal item, or a Rare one from Screaming up, on a base that can be Rare, an essence with a modifier for the item\'s class, and no metamod that keeps a side from changing or a modifier from rolling.',
         build: ([n, t], a, registry) => {
             const spec = registry.resolveEssence(text(n), num(t));
             return spec.ok ? essenceOps(spec.value, a.ilvl) : refuse(resolveMessage(spec.error));
@@ -343,7 +343,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["bench"],
         args: [name("bench"), { kind: "tier", optional: true }],
-        doc: 'bench "<mod>" [t1] — craft a modifier at the bench, replacing the item\'s single crafted one.',
+        doc: 'bench "<mod>" [t1] — craft a modifier at the bench. Needs an open slot on its side, no modifier of its group, and room under the crafted-modifier limit (one, three with the multimod); a single crafted modifier is replaced unless it is fractured.',
         build: ([n, t], a, registry) => {
             const craft = registry.resolveBench(text(n), a.base.itemClass, num(t));
             if (!craft.ok) return refuse(resolveMessage(craft.error));
@@ -354,13 +354,13 @@ export const METHODS: readonly Method[] = [
     {
         words: ["bench", "remove"],
         args: [],
-        doc: "bench remove — clear the item's crafted modifiers at the bench (a fractured one stays).",
+        doc: "bench remove — clear the item's crafted modifiers at the bench (a fractured one stays); needs one on the item.",
         build: () => BENCH_REMOVE,
     },
     {
         words: ["harvest", "reforge"],
         args: [name("tag")],
-        doc: 'harvest reforge "<tag>" — reforge a Rare item with a modifier of that type guaranteed; "influence" guarantees one of the item\'s influence modifiers; "more likely" or "less likely" tilts the roll toward or away from the modifier types the item has.',
+        doc: 'harvest reforge "<tag>" — reforge a Rare item with a modifier of that type guaranteed, a type some modifier of the base carries; "influence" guarantees one of an influenced item\'s influence modifiers; "more likely" or "less likely" tilts the roll toward or away from the modifier types the item has.',
         build: ([t], _a, registry) => {
             const name = text(t).trim().toLowerCase();
             if (name === "influence") return HARVEST_INFLUENCE_REFORGE;
@@ -380,7 +380,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["harvest", "augment"],
         args: [name("tag")],
-        doc: 'harvest augment "<tag>" — add a modifier of that type and remove another at random.',
+        doc: 'harvest augment "<tag>" — add a modifier of that type to a Rare item with no influence and remove another at random; needs a removable modifier.',
         build: ([t], _a, registry) => {
             const tag = registry.resolveHarvestTag(text(t));
             return tag.ok ? harvestAugmentOps(tag.value) : refuse(resolveMessage(tag.error));
@@ -389,7 +389,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["harvest", "change"],
         args: [name("mod"), name("mod")],
-        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier into another element at a similar tier.',
+        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier into another element at a similar tier. The first must be on the item, not fractured, on a side no metamod protects; the second must roll on the base and share no group with a present modifier.',
         build: ([from, to], a, registry) => harvestChange(text(from), text(to), a, registry),
     },
     {
@@ -401,7 +401,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["veiled", "exalt"],
         args: [],
-        doc: "veiled exalt — remove a modifier and add a veiled one, to unveil later.",
+        doc: "veiled exalt — remove a modifier from a Rare item and add a veiled one, to unveil later; needs a removable modifier.",
         build: () => VEILED_EXALT,
     },
     {
@@ -413,7 +413,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["unveil"],
         args: [name("mod", true)],
-        doc: 'unveil ["<mod>"] — reveal the veiled modifier; with a name, that option, guaranteed only when three or fewer are offered.',
+        doc: 'unveil ["<mod>"] — reveal the veiled modifier; with a name, that option, guaranteed only when three or fewer are offered (bench a modifier of an option\'s group to block it).',
         build: ([n], a, registry) => {
             if (n === undefined) return unveilOps(undefined);
             const type = registry.resolveModType(text(n), {
@@ -434,7 +434,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["fossil"],
         args: [{ kind: "names", of: "fossil", max: 4 }],
-        doc: 'fossil "<name>" … — socket one to four fossils in a resonator and reforge a Rare item.',
+        doc: 'fossil "<name>" … — socket one to four fossils (each by its first word or full name) in a resonator and reforge a Normal or Rare item, on a base every fossil allows, with no metamod that keeps a side from changing or a modifier from rolling. Weights are not modelled; the Fractured Fossil needs an item with no fractured modifier, and the Bloodstained Fossil corrupts it.',
         build: (names, a, registry) =>
             resonator(
                 names.map((n) => text(n)),
@@ -445,7 +445,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["beast", "add"],
         args: [word("prefix", "suffix", ...INFLUENCES), { kind: "int", optional: true }],
-        doc: "beast add prefix|suffix [<level>] — add a modifier of that side, drawn at the beast's level, and remove a random one of the other; beast add <influence> [<level>] — add a modifier to a Rare item with that influence.",
+        doc: "beast add prefix|suffix [<level>] — add a modifier of that side, drawn at the beast's level, and remove a random one of the other (none when that side cannot be changed); needs a Rare item with an open slot on the added side. beast add <influence> [<level>] — add a modifier to an open slot of a Rare item with that influence.",
         build: ([side, level]) => {
             const what = text(side);
             const beastLevel = num(level) ?? ANY_BEAST_LEVEL;
@@ -457,7 +457,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["beast", "fracture"],
         args: [{ kind: "int", optional: true }],
-        doc: "beast fracture [2] — fracture one modifier of a Rare talisman with at least four, or two of one with at least six.",
+        doc: "beast fracture [2] — fracture one modifier of a Rare talisman with at least four, or two of one with at least six; needs no fractured modifier and no influence.",
         build: ([n]) => {
             const count = num(n) ?? 1;
             if (count !== 1 && count !== 2) {
@@ -469,13 +469,13 @@ export const METHODS: readonly Method[] = [
     {
         words: ["beast", "metamod"],
         args: [],
-        doc: "beast metamod — craft a random metamod among those that fit.",
+        doc: "beast metamod — craft a random metamod among those that fit under the crafted-modifier limit; one must fit on every path.",
         build: () => BEAST_METAMOD,
     },
     {
         words: ["beast", "aspect"],
         args: [name("aspect")],
-        doc: 'beast aspect "<animal>" — craft that Aspect skill\'s modifier: cat, avian, spider or crab.',
+        doc: 'beast aspect "<animal>" — craft that level-30 Aspect skill\'s suffix: cat, avian, spider or crab. Needs an open suffix slot and no other skill-granting modifier; it does not count as a crafted modifier.',
         build: ([n], _a, registry) => {
             const row = registry.resolveAspect(text(n));
             return row.ok ? beastAspectOps(row.value) : refuse(resolveMessage(row.error));
@@ -484,13 +484,13 @@ export const METHODS: readonly Method[] = [
     {
         words: ["beast", "imprint"],
         args: [],
-        doc: "beast imprint — hold an imprint of a Magic item or a Rare talisman, for restore.",
+        doc: "beast imprint — hold an imprint of a Magic item or a Rare talisman, not fractured, for restore; one imprint is held at a time.",
         build: () => BEAST_IMPRINT,
     },
     {
         words: ["restore"],
         args: [],
-        doc: "restore — apply the held imprint: the item becomes what it was at beast imprint.",
+        doc: "restore — apply the held imprint: the item becomes what it was at beast imprint, and the imprint is used up.",
         build: () => RESTORE,
     },
 ];
