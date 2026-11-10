@@ -120,10 +120,17 @@ const CRITICAL = TagId("critical");
 /** The item level at which every row of a ladder rolls. */
 const TOP_ITEM_LEVEL = 100;
 
-/** The damage change takes no critical strike multiplier, though the game's
- *  list still names them (Harvest crafting § Version history, 3.28.0 Hotfix 8). */
-function isCritical(catalog: readonly Mod[], type: TypeId): boolean {
-    return catalog.some((m) => m.type === type && m.implicitTags.has(CRITICAL));
+const DOT_MULTI = TagId("dot_multi");
+
+/** The game's list is not the whole filter. The damage change takes no
+ *  critical strike multiplier, though the list still names them (Harvest
+ *  crafting § Version history, 3.28.0 Hotfix 8); and players disagree on
+ *  whether it takes a damage over time multiplier, also listed, so that is
+ *  refused until it is probed (`QUESTIONS.md` Q74). */
+function listedButRefused(catalog: readonly Mod[], type: TypeId): boolean {
+    return catalog.some(
+        (m) => m.type === type && (m.implicitTags.has(CRITICAL) || m.implicitTags.has(DOT_MULTI)),
+    );
 }
 
 /** The Harvest change: both names resolved, the pair one the grove offers. */
@@ -151,10 +158,10 @@ function harvestChange(
         target === undefined ||
         source.kind !== target.kind ||
         source.element === target.element ||
-        (source.kind === "damage" && isCritical(catalog, from.value))
+        (source.kind === "damage" && listedButRefused(catalog, from.value))
     ) {
         return refuse(
-            `The grove changes a fire, cold or lightning resistance into another of the three, or a fire, cold or lightning damage modifier likewise, and no critical strike multiplier — not "${fromName}" into "${toName}".`,
+            `The grove changes a fire, cold or lightning resistance into another of the three, or a fire, cold or lightning damage modifier likewise, and no critical strike multiplier or damage over time multiplier — not "${fromName}" into "${toName}".`,
         );
     }
     // The modifier becomes its counterpart of the other element, not any
@@ -392,7 +399,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["harvest", "change"],
         args: [name("mod"), name("mod")],
-        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier into the same modifier of another element, at the same tier (any of its tiers at an item level where fewer or more of them roll than of the first). It takes penetration and damage over time multipliers as damage modifiers, and no critical strike multiplier nor a resistance shared with chaos. The first must be on an item of any rarity, not fractured, on a side no metamod protects; the second must roll on the base and share no group with a present modifier.',
+        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier into the same modifier of another element, at the same tier (any of its tiers at an item level where fewer or more of them roll than of the first). It takes a penetration as a damage modifier, and no critical strike multiplier, damage over time multiplier or resistance shared with chaos. The first must be on an item of any rarity, not fractured, on a side no metamod protects; the second must roll on the base and share no group with a present modifier.',
         build: ([from, to], a, registry) => harvestChange(text(from), text(to), a, registry),
     },
     {

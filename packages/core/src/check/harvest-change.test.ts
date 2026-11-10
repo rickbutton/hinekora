@@ -100,15 +100,15 @@ describe("harvest change", () => {
         expect(check(hybrid, ctx).diagnostics[0]!.message).toContain("The grove changes");
     });
 
-    it("takes a damage over time multiplier, which the game's list names", () => {
+    it("refuses a damage over time multiplier, listed but reported both ways in play", () => {
         const dot = check(
             craft(rareRing([], [FIRE_DOT_MULTI.id]), [
                 harvestChange(FIRE_DOT_MULTI.id, COLD_DOT_MULTI.id),
             ]),
             ctx,
         );
-        expect(dot.diagnostics).toEqual([]);
-        expect(guaranteedTypes(dot.finalState!).has(COLD_DOT_MULTI.type)).toBe(true);
+        expect(dot.diagnostics[0]!.message).toContain("damage over time multiplier");
+        expect(guaranteedTypes(dot.finalState!).has(FIRE_DOT_MULTI.type)).toBe(true);
     });
 
     it("costs 500 lifeforce of the new element's colour, a damage change a Crystallised Rancour besides", () => {
@@ -139,15 +139,13 @@ describe("harvest change", () => {
             bases: [RING_BASE],
             harvestChange: {
                 resistance: HARVEST_CHANGE.resistance,
-                damage: { ...HARVEST_CHANGE.damage, cold: [COLD_DAMAGE.type] },
+                damage: { ...HARVEST_CHANGE.damage, cold: [COLD_DOT_MULTI.type] },
             },
-            mods: [...CATALOG, FIRE_DOT_MULTI, COLD_DAMAGE],
+            mods: [...CATALOG, FIRE_DAMAGE, COLD_DOT_MULTI],
             baseAliases: { "Iron Ring": "IronRing" },
         });
         const lone = check(
-            craft(rareRing([], [FIRE_DOT_MULTI.id]), [
-                harvestChange(FIRE_DOT_MULTI.id, COLD_DAMAGE.id),
-            ]),
+            craft(rareRing([FIRE_DAMAGE.id]), [harvestChange(FIRE_DAMAGE.id, COLD_DOT_MULTI.id)]),
             { registry: none },
         );
         expect(lone.diagnostics[0]!.message).toContain("has no cold counterpart");

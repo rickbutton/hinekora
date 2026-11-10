@@ -221,18 +221,20 @@ the lowest resistance tier seen.
 `check/library.ts` `FOULBORN_STRANDS`, `EXALT_STRANDS`; `pool/pool.ts`
 `topTiersUnderStrands`.
 
-### Q74 · probe · open — the Harvest change on a damage over time multiplier
+### Q74 · probe · open — which listed modifiers the Harvest damage change takes
 
-**Q:** the game's list for the damage change names the fire and cold damage over time
-multipliers; one player reports the grove taking one, another refusing it. And what does
-a listed modifier with no like-named counterpart become (increased fire damage with a
-chance to ignite)?
+**Q:** the game's list for the damage change is not the whole filter: it names the
+critical strike multipliers, which the grove refuses. It names the fire and cold damage
+over time multipliers too; one player reports the grove taking one, another refusing it.
+And what does a listed modifier with no like-named counterpart become (increased fire
+damage with a chance to ignite)?
 **Probe:** Rares with a fire damage over time multiplier and with the fire damage and
 ignite chance hybrid; the grove's fire-to-cold damage change; record offered or not, and
 the result.
-**Assumed:** the multiplier taken, as listed; a modifier with no counterpart refused.
-**Encoded in:** `check/methods.ts` `harvestChange`, `resolve/registry.ts`
-`harvestChangeTarget`, `packages/data/data/poe1/harvest_change.json`.
+**Assumed:** the multipliers refused, the safe side; a modifier with no counterpart
+refused. **Encoded in:** `check/methods.ts` `harvestChange`, `listedButRefused`;
+`resolve/registry.ts` `harvestChangeTarget`;
+`packages/data/data/poe1/harvest_change.json`.
 
 ### Q76 · probe · open — the side of a veiled orb's veiled modifier
 
@@ -301,6 +303,17 @@ crafted rows carry a level in the game's data (the top life craft's is 80).
 record refused or applied.
 **Assumed:** applied at any item level, in a step and in the item block. **Encoded in:**
 `check/library.ts` `benchOps` (no level check), `check/check.ts` `elaborateItem`.
+
+### Q88 · probe · open — the Harvest damage change on increased elemental damage
+
+**Q:** players report "There are no valid Mods for this craft on this item" for a listed
+increased elemental damage modifier on a wand, a sceptre, jewels and shields, and others
+the same craft working on a staff and a sceptre (reddit 1romglx, 1rr0jyz; forum thread
+3916613). What beyond the game's list decides it?
+**Probe:** a wand, a sceptre, a jewel and a shield, each with one increased fire damage
+modifier; the grove's fire-to-cold damage change on each; record offered or the message.
+**Assumed:** taken on every base where the counterpart rolls, as listed. **Encoded in:**
+`check/methods.ts` `harvestChange`.
 
 ### Q95 · probe · open — a Tainted Exalted Orb's odds
 
