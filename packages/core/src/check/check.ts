@@ -69,7 +69,7 @@ import { plural } from "../words.js";
 export interface CheckContext {
     readonly registry: Registry;
     /** The loop round from which the numeric ranges are widened; a test sets
-     *  it low to drive the widening no real loop reaches. */
+     *  it low to drive the widening. */
     readonly widenRangesAfter?: number;
 }
 
@@ -147,9 +147,9 @@ function clusterSize(base: Base): ClusterSize | undefined {
  *  reaches a precise fixpoint first, a tall disjunction then gets over-approximated. */
 const WIDEN_AFTER = 3;
 /** Exact iterations of the numeric ranges before they are widened too
- *  (`widenRanges`). A loop converges in a handful, and widening the counts
- *  costs the after-state its totals, so this is a backstop set well past any
- *  loop seen: it is what makes the fixpoint terminate rather than stop short. */
+ *  (`widenRanges`). Widening the counts costs the after-state its totals, so
+ *  it comes late: it is what makes the fixpoint terminate rather than stop
+ *  short, not what a loop is meant to converge by. */
 const WIDEN_RANGES_AFTER = 32;
 
 /** How a statement leaves: with an item, or ending the path, by re-entering the

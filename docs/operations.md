@@ -33,7 +33,7 @@ hand-written list; the metamods in force and the memory strands' tier cut apply 
 | `strip`     | Every modifier but the protected sides' and the fractured ones goes: counts fall to the kept range; guarantees, tier pins and `possible` survive for kept types only; exclusions and fracture facts survive; the crafted range keeps what the kept sides hold.                                                  |
 | `unprotect` | The metamods no longer govern the rest of the method.                                                                                                                                                                                                                                                           |
 | `keep`      | That side alone is protected for the rest of the method, in place of the item's own protections.                                                                                                                                                                                                                |
-| `fill`      | Lay down a count from a pool: counts rise, clamped to the caps and the pool's side; its types join `possible`, its rows the tier overlay; exclusions on them relax; a pool narrow enough to name asserts one of its types present.                                                                              |
+| `fill`      | Lay down a count from a pool: counts rise, clamped to the caps and the pool's side; its types join `possible`, its rows the tier overlay unless the type may already be on the item at any row; exclusions on them relax; a pool narrow enough to name asserts one of its types present.                        |
 | `remove`    | Remove one modifier the selector reaches (the crafted ones: all). A guarantee survives only if unreachable, and of the reachable ones all but one remain; a side-limited removal on a protected side does nothing, and a bench craft's replacing removal does nothing under the three-crafted-modifier metamod. |
 | `rarity`    | Set the rarity; caps follow. `survivors` is the rarity a scour leaves, by what its strip kept of the item the method started on, never above the rarity it had; `lowest` also admits Magic for one survivor a side (`QUESTIONS.md` Q33).                                                                        |
 | `lock`      | `n` random present modifiers become fractured; when the guaranteed types account for every modifier, the lock provably landed among them.                                                                                                                                                                       |
@@ -60,8 +60,7 @@ on the item on some paths only, the method runs once with it and once without
 **All or nothing.** The game never applies part of a currency, so a failed `require`
 fails the whole method. The checker reports the first failure, and the state `runMethod`
 returns is the one the method leaves where its preconditions hold, not the input: later steps are judged against what the guide meant, so one wrong
-step does not refuse every step after it, and a loop whose body fills the
-item is still seen to reach its exit.
+step does not refuse every step after it.
 
 Spawn weights are not carried; they are the cost layer's ([cost.md](cost.md)). Nor is the distribution of values: a value is a span, which a predicate narrows and
 `reroll` resets.
