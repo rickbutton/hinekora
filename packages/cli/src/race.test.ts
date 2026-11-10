@@ -104,15 +104,14 @@ function judged(
     const ops = findMethod(stmt.words)!.build(literals, entry.before, registry);
     if ("refused" in ops) throw new Error(ops.refused);
     const roll = rollOf(entry.before, ops, registry);
-    const groups =
+    const rows =
         roll.kind === "draw"
-            ? [...roll.variants[0]!.prefix, ...roll.variants[0]!.suffix]
+            ? [...roll.variants[0]!.prefix, ...roll.variants[0]!.suffix].flatMap((g) =>
+                  g.members.flatMap((m) => m.rows.map((r) => ({ ...r, gen: g.gen }))),
+              )
             : roll.kind === "unveil"
-              ? roll.options
+              ? roll.options.flatMap((m) => m.rows.map((r) => ({ ...r, gen: r.mod.gen })))
               : [];
-    const rows = groups.flatMap((g) =>
-        g.members.flatMap((m) => m.rows.map((r) => ({ ...r, gen: g.gen }))),
-    );
     const branch = costOf(parsed.craft, result, registry).steps.find((s) => s.kind === "if")!;
     return { rows, chance: branch.branch! };
 }
@@ -208,12 +207,12 @@ describe("the race against the draw played out", () => {
         );
         expect(exact).toBeGreaterThan(0.13);
         expect(exact).toBeLessThan(0.155);
-        expect(Math.abs(chance / exact - 1)).toBeLessThan(0.03);
+        expect(Math.abs(chance / exact - 1)).toBeLessThan(0.02);
     });
 
-    it("an unveil's attribute hybrids, which list two groups each, within a fifth", () => {
-        // Strength and Dexterity excludes Strength and Avoid Ignite but shares
-        // a clock only with the two other attribute pairs, so it reads high.
+    it("an unveil's attribute hybrids, which list two groups each", () => {
+        // Strength and Dexterity excludes Strength and Avoid Ignite as well as
+        // the two other attribute pairs: no one clock holds what it closes.
         const { rows, chance } = unveiled(
             "Astral Plate",
             'prefixes: [ "maximum life" t2, "increased armour" t2, "armour" t2 ]',
@@ -225,8 +224,23 @@ describe("the race against the draw played out", () => {
             three,
             3,
             has("StrengthAndDexterity"),
+            200_000,
         );
-        expect(chance).toBeGreaterThan(exact);
-        expect(chance / exact - 1).toBeLessThan(0.2);
+        expect(Math.abs(chance / exact - 1)).toBeLessThan(0.02);
+        // A type of one group beside them, which the hybrids' clock read low.
+        const single = unveiled(
+            "Astral Plate",
+            'prefixes: [ "maximum life" t2, "increased armour" t2, "armour" t2 ]',
+            "prefixes cannot be changed",
+            'has "fire and chaos resistance"',
+        );
+        const singleExact = played(
+            single.rows.filter((c) => c.gen === "suffix"),
+            three,
+            3,
+            has("FireAndChaosDamageResistance"),
+            200_000,
+        );
+        expect(Math.abs(single.chance / singleExact - 1)).toBeLessThan(0.02);
     });
 });

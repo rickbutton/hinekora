@@ -150,6 +150,6 @@ describe("an unveil", () => {
         const a = check(c, { registry: veiled }).trace[0]!.before;
         const roll = rollOf(a, unveilOps(undefined), veiled);
         if (roll.kind !== "unveil") throw new Error("not an unveil");
-        expect(roll.options.map((g) => g.gen)).toEqual(["suffix", "suffix"]);
+        expect(roll.options.map((m) => m.rows[0]!.mod.gen)).toEqual(["suffix", "suffix"]);
     });
 });

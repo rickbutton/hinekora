@@ -123,8 +123,8 @@ export type Roll =
     /** A fracture, uniform over the modifiers present. */
     | { readonly kind: "lock"; readonly candidates: readonly Candidate[] }
     /** An unveil: three options drawn by weight without replacement (Veiled
-     *  modifier § Version history). */
-    | { readonly kind: "unveil"; readonly options: readonly Group[] }
+     *  modifier § Version history) from these modifier types (`unveilOffers`). */
+    | { readonly kind: "unveil"; readonly options: readonly Member[] }
     /** An ember or ichor: one implicit of the tier, by weight. */
     | {
           readonly kind: "implicit";
@@ -254,24 +254,34 @@ function sureFacts(
     };
 }
 
-/**
- * The rows as the race's clocks: the types of a side that share a modifier
- * group are one clock. A type listing several groups (an unveil's attribute
- * hybrids) joins a clock only where it excludes every type already in it, so
- * a clock never closes two types the game would draw together; the exclusions
- * that leaves out are missed, the draw a little too generous to those types.
- */
-function groupRows(rows: readonly Row[], genOf: (m: Mod) => Gen): Group[] {
-    const byType = new Map<TypeId, { gen: Gen; families: ReadonlySet<GroupId>; rows: Row[] }>();
+/** The rows a draw can land, by modifier type. */
+function membersOf(rows: readonly Row[]): Member[] {
+    const byType = new Map<TypeId, Row[]>();
     for (const r of rows) {
         if (!(r.weight > 0)) continue;
         const known = byType.get(r.mod.type);
-        if (known) known.rows.push(r);
-        else byType.set(r.mod.type, { gen: genOf(r.mod), families: r.mod.families, rows: [r] });
+        if (known) known.push(r);
+        else byType.set(r.mod.type, [r]);
     }
+    return [...byType].map(([type, list]) => ({
+        type,
+        weight: list.reduce((s, r) => s + r.weight, 0),
+        rows: list,
+    }));
+}
+
+/**
+ * The rows as the race's clocks: the types of a side that share a modifier
+ * group are one clock. A type listing several groups joins a clock only where
+ * it excludes every type already in it, so a clock never closes two types the
+ * game would draw together; the exclusions that leaves out are missed, the
+ * draw a little too generous to those types.
+ */
+function groupRows(rows: readonly Row[], genOf: (m: Mod) => Gen): Group[] {
     const clocks: { gen: Gen; families: ReadonlySet<GroupId>[]; members: Member[] }[] = [];
-    for (const [type, { gen, families, rows: list }] of byType) {
-        const member = { type, weight: list.reduce((s, r) => s + r.weight, 0), rows: list };
+    for (const member of membersOf(rows)) {
+        const { families } = member.rows[0]!.mod;
+        const gen = genOf(member.rows[0]!.mod);
         const home = clocks.find(
             (c) =>
                 c.gen === gen &&
@@ -826,8 +836,81 @@ function unveilRoll(
     const rows = poolRows(before, spec, registry, reading).filter(
         (r) => side === undefined || r.mod.gen === side,
     );
-    const options = groupRows(rows, (m) => m.gen);
+    const options = membersOf(rows);
     return options.length === 0 ? NO_ROLL : { kind: "unveil", options };
+}
+
+/** How many options an unveil offers (Veiled modifier § Version history). */
+const UNVEIL_OPTIONS = 3;
+
+/** One way an unveil's options can fall: the named types among them. */
+export interface Offer {
+    readonly prob: number;
+    readonly members: readonly Member[];
+}
+
+const offerSets = new WeakMap<readonly Member[], ReadonlyMap<string, number>>();
+
+/**
+ * Every set of options an unveil can offer, with its chance: the three draws
+ * played out one after another by weight, a type drawn closing every type that
+ * shares a modifier group with it (Modifier § Group/family). The pool is a
+ * few dozen types, so the ordered draws are some thousands: three draws from a
+ * short list, not the items a step can leave.
+ */
+function offerSetsOf(options: readonly Member[]): ReadonlyMap<string, number> {
+    const known = offerSets.get(options);
+    if (known !== undefined) return known;
+    const families = options.map((m) => m.rows[0]!.mod.families);
+    const closes = options.map((_m, i) =>
+        options.map((_o, j) => i === j || [...families[i]!].some((f) => families[j]!.has(f))),
+    );
+    const sets = new Map<string, number>();
+    const walk = (chosen: readonly number[], open: readonly boolean[], prob: number): void => {
+        let total = 0;
+        options.forEach((m, i) => {
+            if (open[i]) total += m.weight;
+        });
+        if (chosen.length === UNVEIL_OPTIONS || !(total > 0)) {
+            const key = [...chosen].sort((a, b) => a - b).join(",");
+            sets.set(key, (sets.get(key) ?? 0) + prob);
+            return;
+        }
+        options.forEach((m, i) => {
+            if (!open[i]) return;
+            walk(
+                [...chosen, i],
+                open.map((o, j) => o && !closes[i]![j]),
+                (prob * m.weight) / total,
+            );
+        });
+    };
+    walk(
+        [],
+        options.map(() => true),
+        1,
+    );
+    offerSets.set(options, sets);
+    return sets;
+}
+
+/** The ways an unveil's options can fall as far as anyone asks: which of the
+ *  types a condition names are offered, each such set with its chance. */
+export function unveilOffers(
+    options: readonly Member[],
+    named: (type: TypeId) => boolean,
+): Offer[] {
+    const out = new Map<string, { prob: number; members: Member[] }>();
+    for (const [set, prob] of offerSetsOf(options)) {
+        const members = (set === "" ? [] : set.split(",").map((i) => options[Number(i)]!)).filter(
+            (m) => named(m.type),
+        );
+        const key = members.map((m) => m.type).join(",");
+        const hit = out.get(key);
+        if (hit) hit.prob += prob;
+        else out.set(key, { prob, members });
+    }
+    return [...out.values()];
 }
 
 function drawRoll(

@@ -39,15 +39,16 @@ import type { ChainAtom, ChainState, Outcome } from "./chain.js";
 import { pieces } from "./chance.js";
 import { amongFirstDistribution } from "./race.js";
 import {
-    type Group,
     holdsNamed,
     implicitWeights,
+    type Member,
     memberCases,
     naturalGroups,
     type Reading,
     type Roll,
     rollOf,
     unmodelled,
+    unveilOffers,
 } from "./roll.js";
 
 /** The states a chain-solved loop's exit leaves the item in, over the
@@ -672,7 +673,7 @@ export class Tracker {
      */
     private unveiled(
         state: ChainState,
-        options: readonly Group[],
+        options: readonly Member[],
         target: TypeId | undefined,
     ): readonly Outcome[] | undefined {
         const veiled = [VEILED_PREFIX, VEILED_SUFFIX]
@@ -681,45 +682,30 @@ export class Tracker {
         if (veiled === undefined) return undefined;
         const wanted = (t: TypeId): boolean =>
             t === target || (this.index.has(t) && this.asked.includes(t));
-        const special: number[] = [];
-        options.forEach((g, gi) => {
-            if (holdsNamed(g, wanted)) special.push(gi);
-        });
-        if (special.length > 12) return undefined;
         const rank = (t: TypeId): number => (t === target ? -1 : this.asked.indexOf(t));
-        const dist = amongFirstDistribution(
-            options.map((g) => g.weight),
-            special,
-            3,
-        );
         const out: Outcome[] = [];
-        for (let mask = 0; mask < dist.length; mask++) {
-            if (dist[mask] === 0) continue;
-            const drawn = special.filter((_gi, b) => mask & (1 << b)).map((gi) => options[gi]!);
-            for (const offer of memberCases(drawn, wanted)) {
-                const prob = dist[mask]! * offer.prob;
-                const rows = [...state.rows];
-                rows[veiled] = null;
-                if (offer.members.length === 0) {
-                    out.push({ state: { ...state, rows }, prob });
-                    continue;
-                }
-                const taken = offer.members.reduce((a, b) => (rank(b.type) < rank(a.type) ? b : a));
-                const i = this.index.get(taken.type);
-                if (i === undefined) {
-                    // A target no condition names: a modifier the state does not hold.
-                    out.push({ state: { ...state, rows }, prob });
-                    continue;
-                }
-                for (const r of taken.rows) {
-                    for (const c of this.classesOf(i, r.mod.id)) {
-                        const placed = [...rows];
-                        placed[i] = c.id;
-                        out.push({
-                            state: { ...state, rows: placed },
-                            prob: (prob * r.weight * c.share) / taken.weight,
-                        });
-                    }
+        for (const { prob, members } of unveilOffers(options, wanted)) {
+            const rows = [...state.rows];
+            rows[veiled] = null;
+            if (members.length === 0) {
+                out.push({ state: { ...state, rows }, prob });
+                continue;
+            }
+            const taken = members.reduce((a, b) => (rank(b.type) < rank(a.type) ? b : a));
+            const i = this.index.get(taken.type);
+            if (i === undefined) {
+                // A target no condition names: a modifier the state does not hold.
+                out.push({ state: { ...state, rows }, prob });
+                continue;
+            }
+            for (const r of taken.rows) {
+                for (const c of this.classesOf(i, r.mod.id)) {
+                    const placed = [...rows];
+                    placed[i] = c.id;
+                    out.push({
+                        state: { ...state, rows: placed },
+                        prob: (prob * r.weight * c.share) / taken.weight,
+                    });
                 }
             }
         }

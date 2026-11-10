@@ -25,6 +25,7 @@ import {
     memberCases,
     type Present,
     type Roll,
+    unveilOffers,
 } from "./roll.js";
 
 /** How many joint outcomes an exact enumeration may visit before the atoms are
@@ -290,29 +291,14 @@ function pickChance(
 
 /** Three options drawn by weight without replacement; the player takes the
  *  one the condition wants, so a modifier offered counts as present. */
-function unveilChance(pred: RPred, options: readonly Group[], base: Truth): number | undefined {
+function unveilChance(pred: RPred, options: readonly Member[], base: Truth): number | undefined {
     const types = typesOfInterest(pred);
-    const named = (t: TypeId): boolean => types.has(t);
-    const special: number[] = [];
-    options.forEach((g, i) => {
-        if (holdsNamed(g, named)) special.push(i);
-    });
-    const dist = amongFirstDistribution(
-        options.map((g) => g.weight),
-        special,
-        3,
-    );
     let total = 0;
-    for (let mask = 0; mask < dist.length; mask++) {
-        const prob = dist[mask]!;
-        if (prob === 0) continue;
-        const drawn = special.filter((_i, b) => mask & (1 << b)).map((i) => options[i]!);
-        for (const c of memberCases(drawn, named)) {
-            const offered = new Map(c.members.map((m) => [m.type, m]));
-            const t = holds(pred, (leaf) => base(leaf) ?? offeredTruth(leaf, offered));
-            if (t === undefined) return undefined;
-            if (t) total += prob * c.prob;
-        }
+    for (const offer of unveilOffers(options, (t) => types.has(t))) {
+        const offered = new Map(offer.members.map((m) => [m.type, m]));
+        const t = holds(pred, (leaf) => base(leaf) ?? offeredTruth(leaf, offered));
+        if (t === undefined) return undefined;
+        if (t) total += offer.prob;
     }
     return total;
 }

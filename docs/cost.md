@@ -104,11 +104,11 @@ sides' order statistics. The dynamic program (`cost/race.ts`) carries a count, n
 It is exact for one group, for any set jointly (by inclusion–exclusion), and for the
 split with depletion. Given the split, which groups landed on a side is read from that
 side's race alone, where the true draw couples the two through depletion; the race
-tests bound that at two hundredths. Two groups fit a clock loosely, each bounded by a
-test against the draw played out (`packages/cli/src/race.test.ts`): one with rows on both sides (a
-jewel's) is a mixture, wholly a prefix or wholly a suffix by weight, and a type listing
-several groups (an unveil's attribute hybrids) shares a clock only with types it all
-excludes, which reads it up to a fifth high.
+tests bound that at two hundredths. A group with rows on both sides (a
+jewel's) fits a clock loosely, as a mixture, wholly a prefix or wholly a suffix by weight,
+bounded by a test against the draw played out (`packages/cli/src/race.test.ts`). An
+unveil is not raced: its three draws from a few dozen types are played out one by one
+(`unveilOffers`), exactly, a type that lists several groups closing them all.
 
 ---
 
