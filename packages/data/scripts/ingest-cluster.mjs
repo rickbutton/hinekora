@@ -48,6 +48,18 @@ async function resolveCommit() {
     }
 }
 
+/** The patch the export states in its `version.txt` when it is read. */
+async function resolveGameVersion() {
+    if (process.env.REPOE_GAME_VERSION) return process.env.REPOE_GAME_VERSION;
+    try {
+        const res = await fetch("https://repoe-fork.github.io/version.txt");
+        const text = res.ok ? (await res.text()).trim() : "";
+        return /^\d+(\.\d+)+$/.test(text) ? text : "unknown";
+    } catch {
+        return "unknown";
+    }
+}
+
 async function main() {
     const source = await getSource();
     const commit = await resolveCommit();
@@ -65,6 +77,7 @@ async function main() {
             commit: commit.sha,
             commitDate: commit.date,
             publishedAt: process.env.REPOE_PUBLISHED_AT ?? source.lastModified ?? "unknown",
+            gameVersion: await resolveGameVersion(),
         },
     };
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 4) + "\n");

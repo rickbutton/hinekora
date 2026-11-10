@@ -28,6 +28,8 @@ export interface ManifestFile {
         readonly commit: string;
         readonly commitDate: string;
         readonly publishedAt: string;
+        /** The patch that dump was exported from. */
+        readonly gameVersion?: string;
     };
     /** Set when the file does not come from the RePoE dump: the game table it
      *  was read from, where, and at which patch. */

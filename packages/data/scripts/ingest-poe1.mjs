@@ -330,7 +330,7 @@ async function main() {
         },
         gameVersion: await resolveGameVersion(),
         gameVersionNote:
-            "The patch the repoe-fork export states in its version.txt, read when the catalog was ingested; the precise dump is source.commit + publishedAt.",
+            "The patch the repoe-fork export stated in its version.txt when the dump at source.publishedAt was published; source.commit is the exporter's code, not the game data.",
         retrievedAt: new Date().toISOString().slice(0, 10),
         extent: {
             description:

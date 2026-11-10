@@ -8,8 +8,8 @@
         "commitDate": "2026-10-25T03:48:01Z",
         "publishedAt": "Fri, 06 Nov 2026 16:49:17 GMT"
     },
-    "gameVersion": "3.29.3.5",
-    "gameVersionNote": "The patch the repoe-fork export states in its version.txt, read when the catalog was ingested; the precise dump is source.commit + publishedAt.",
+    "gameVersion": "3.29.3.4",
+    "gameVersionNote": "The patch the repoe-fork export stated in its version.txt when the dump at source.publishedAt was published; source.commit is the exporter's code, not the game data.",
     "retrievedAt": "2026-11-10",
     "extent": {
         "description": "Full PoE1 catalog projected to the fields the core model uses: all prefix/suffix mods, all released named bases, plus the essence, bench (mod-adding) and fossil catalogs.",
@@ -47,7 +47,8 @@
             "provenance": {
                 "commit": "aa9fa7c394b18a7a89f913f86703112b3f9d20f1",
                 "commitDate": "2026-10-25T03:48:01Z",
-                "publishedAt": "Mon, 09 Nov 2026 07:43:39 GMT"
+                "publishedAt": "Mon, 09 Nov 2026 07:43:39 GMT",
+                "gameVersion": "3.29.3.5"
             }
         },
         "harvest_change.json": {
@@ -65,7 +66,8 @@
             "provenance": {
                 "commit": "aa9fa7c394b18a7a89f913f86703112b3f9d20f1",
                 "commitDate": "2026-10-25T03:48:01Z",
-                "publishedAt": "Mon, 09 Nov 2026 07:47:13 GMT"
+                "publishedAt": "Mon, 09 Nov 2026 07:47:13 GMT",
+                "gameVersion": "3.29.3.5"
             }
         }
     }
