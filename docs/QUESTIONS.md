@@ -31,16 +31,6 @@ each case.
 every row some count between the sure and the tag-enabled total would keep. **Encoded
 in:** `check/ops.ts` `foulbornTiers`.
 
-### Q19 · probe · open — how a fossil's own modifiers are admitted
-
-**Q:** do fossil-exclusive rows (the Faceted Fossil's gem levels) join the pool by base
-tag like any row? [Fossil § Mechanics](https://www.poewiki.net/wiki/Fossil#Mechanics)
-says only that some fossils roll them; the data weighs them by base tag.
-**Probe:** a Faceted Fossil and resonators, a weapon and a body armour; resonate each
-several times; record the gem-level modifiers seen per base.
-**Assumed:** a fossil's row joins when its weight on the base's tags is positive and its
-level is within the item's. **Encoded in:** `check/ops.ts`, the `fossil` pool.
-
 ### Q20 · probe · open — a fossil's guarantee when another fossil blocks it
 
 **Q:** what does a resonator do when another fossil blocks every row a fossil would force
@@ -151,38 +141,6 @@ until each outcome shows; record whether the suffixes survived either.
 **Assumed:** both halves of the orb ignore the protection. **Encoded in:**
 `check/library.ts` `TAINTED_CHAOS`, `unprotect`.
 
-### Q35 · decision · open — the eldritch implicits' words
-
-**Q:** the surface for eldritch implicits: item block `exarch: grand`, `eater: lesser`;
-statements `ember <tier>`, `ichor <tier>`, `eldritch chaos|exalt|annul`, `conflict`;
-predicates `exarch [<tier>]`, `eater [<tier>]`, `dominant exarch|eater`; tier words the
-game's (`lesser` … `perfect`).
-**Options:** (a) as above (recommended); (b) the in-game item names (`lesser ember`);
-(c) one `eldritch` family for everything.
-**Assumed:** (a). **Encoded in:** `check/methods.ts`, `parser/src/parser.ts`,
-`docs/language.md` §1, §3, §5.
-
-### Q37 · probe · open — an Orb of Conflict past a presence implicit's top tier
-
-**Q:** the "presence" implicits have fewer tiers (Unique-presence stops at Exquisite,
-Pinnacle-presence at Exceptional); what does raising one at its top give?
-[Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)
-says only that it raises a tier.
-**Probe:** gloves with a Pinnacle-presence Exceptional Exarch and a Greater Eater
-implicit, Orbs of Conflict; apply until the Exarch rises; record the plain variant,
-another Exquisite, or a refusal.
-**Assumed:** the implicit keeps its type. **Encoded in:** `check/ops.ts`, the `conflict`
-change leaves `eldritchTypes` alone.
-
-### Q40 · decision · open — the formatter's style
-
-**Q:** width 100; item-block fields in a fixed order (`base`, `ilvl`, `rarity`,
-`prefixes`, `suffixes`, `influences`, `exarch`, `eater`, `corrupted`) with aligned
-values; an `and` under an `or` parenthesised; a body on one line only when written so;
-the source's line ending kept. Each is a one-line change.
-**Options:** (a) as above (recommended); (b) name the changes.
-**Assumed:** (a). **Encoded in:** `packages/parser/src/format.ts`.
-
 ### Q41 · probe · open — the text of a copied item
 
 **Q:** the game's Ctrl+Alt+C text, which the wiki does not record: a bench modifier's
@@ -196,28 +154,6 @@ Implicit Modifier (Tier: Grand) }` and `(exarch implicit)`, `CLASS_LABEL` with a
 camel-case split and an `s`. **Encoded in:** `packages/core/src/render/item.ts`
 `renderItemText`.
 
-### Q50 · decision · open — the item after a refused step
-
-**Q:** the game applies none of a refused currency; what state do the later steps see?
-**Options:** (a) the untouched item, which cascades (a refused `regal` refuses every
-Rare-only step after it, and a loop whose refused `exalt` changes nothing looks endless);
-(b) the state the method would have left had its checks held, so a refusal is reported
-once (recommended); (c) the state narrowed to where the check holds, then the effect:
-most precise, but a narrowing per check kind. (b) is sound up to the first reported
-refusal: every effect is monotone, so (b) over-approximates (c).
-**Assumed:** (b); the trace shows the item the guide meant. **Encoded in:**
-`check/ops.ts` `runMethod`, `check/check.ts`, `operations.md` §2.
-
-### Q51 · decision · open — naming one side's modifier of a shared wording
-
-**Q:** on a wand "increased fire damage" is a caster prefix and a suffix of another
-group, and the clash message names it by that wording, so "bench spell damage unless a
-caster prefix is there" cannot be written with `has`.
-**Options:** (a) a side on the predicate, `has prefix "fire damage"`; (b) a group
-predicate, `has group "spell damage"`, exactly the bench's check (recommended); (c) both.
-**Assumed:** (b). **Encoded in:** `check/check.ts` `resolveHas`, `check/astate.ts`
-`refineHasGroup`, `check/group.test.ts`, `docs/language.md` §5.
-
 ### Q52 · probe · open — does a Harvest-changed crafted modifier stay crafted?
 
 **Q:** [Harvest crafting § Mechanics](https://www.poewiki.net/wiki/Harvest_crafting#Mechanics)
@@ -226,17 +162,6 @@ does not say; it decides whether "remove crafted modifiers" and the crafted limi
 to cold; record whether it shows as crafted and whether the removal takes it.
 **Assumed:** it stays crafted. **Encoded in:** `check/ops.ts` `fill` on a `rows` pool
 keeps the new rows among `craftedTypes`.
-
-### Q56 · probe · open — how the game reads a generation table
-
-**Q:** the data's `generation_weights` beside each spawn table is read like it: first
-matching tag decides, scaling in percent, zero disabling. The only zero in play caps a
-Small Cluster Jewel at one notable
-([Cluster jewel § Mechanics](https://www.poewiki.net/wiki/Cluster_jewel#Mechanics)).
-**Probe:** a Small and a Medium Rare cluster jewel, each with one notable and an open
-prefix; exalt until full; record whether a second notable lands on either.
-**Assumed:** as above. **Encoded in:** `pool/pool.ts` `lookupWeight`, `Mod.generation`,
-`item-model.md` §5.
 
 ### Q58 · probe · open — one or two modifiers from a transmute or an alteration
 
@@ -277,15 +202,6 @@ modifier went, per try.
 **Assumed:** uniform, for every random removal (Veiled Exalted, Harvest augment, beast
 recipes, Dominance). **Encoded in:** [cost.md §2](cost.md#2-how-the-game-rolls).
 
-### Q62 · decision · open — the economy source
-
-**Q:** poe.ninja's documented endpoint is gone; its pages read an internal one that may
-change.
-**Options:** (a) a committed snapshot with provenance, refreshed by hand at least weekly
-and at a league's start (recommended); (b) live requests from the CLI; (c) a hand-kept
-table. Track the current trade league only (Allflame until 2026-11-13, then 3.30).
-**Assumed:** (a). **Encoded in:** [cost.md §7](cost.md#7-the-economy).
-
 ### Q63 · probe · open — the Harvest tagged reforge's draw
 
 **Q:** which tagged row does "reforge including a <tag> modifier" place, and is the rest
@@ -320,28 +236,6 @@ tier the third gets.
 whole ladder. **Encoded in:** `check/library.ts` `FOULBORN_STRANDS`, `EXALT_STRANDS`;
 `check/ops.ts` `foulbornTiers`, `Rules.strands`; `pool/pool.ts`.
 
-### Q70 · decision · open — legacy experimented-base variants
-
-**Q:** the legacy variants ([Simplex Amulet § Legacy variants](https://www.poewiki.net/wiki/Simplex_Amulet#Legacy_variants),
-[Cogwork Ring § Legacy variants](https://www.poewiki.net/wiki/Cogwork_Ring#Legacy_variants))
-have their own caps and magnitudes, which one catalog id cannot carry.
-**Options:** (a) keep them out (recommended: no collected recipe starts from one); (b) a
-`legacy` item-block field carrying the deltas.
-**Assumed:** (a). **Encoded in:** `model/capacity.ts`, one base per id.
-
-### Q73 · probe · open — a fossil reforge's prefix/suffix split
-
-**Q:** how do a reforge's modifiers split when fossils weigh one side far more?
-[Fossil](https://www.poewiki.net/wiki/Fossil) gives multipliers, not the split. On an
-Imbued Wand with an Aetheric Fossil hinekora reads "increased Spell Damage" on 58% of
-reforges, craftofexile's simulator 67.5% ([cost.md §8](cost.md#8-known-differences-from-craftofexile)).
-**Probe:** an Imbued Wand of item level 84+, thirty Aetheric Fossils and Primitive
-Chaotic Resonators; reforge thirty times; record each result's prefix and suffix count
-and whether it has increased Spell Damage.
-**Assumed:** the Chaos Orb's 8:3:1, each modifier drawn from both sides' pools at once by
-weight after the multipliers, a full side admitting no more. **Encoded in:**
-`cost/race.ts` `splitDistribution`, `cost/roll.ts` `countCases`.
-
 ### Q74 · probe · open — penetration and the reported refusals of the Harvest change
 
 **Q:** does the damage change take a penetration modifier, and does the grove refuse a
@@ -353,18 +247,6 @@ offers.
 **Assumed:** penetration taken; the multiplier and the hybrid refused (a refusal only
 makes the checker stricter). **Encoded in:** `check/methods.ts` `elementalKind`.
 
-### Q75 · decision · open — what a declared "random" modifier is to the cost layer
-
-**Q:** the item block's `"random"` says only that a modifier is there; which one changes
-the odds of every draw beside it, and whether it may be one a condition names.
-**Options:** (a) a natural roll of its side by spawn weight, the item's other modifiers
-closing their groups, several random slots of a side drawn without replacement
-(recommended: what a reforge most likely left, and the guide's conditions see the chance
-it is theirs); (b) none of the named modifiers, one of average weight; (c) the item read
-at the floor and ceiling of what the checker allows.
-**Assumed:** (a). **Encoded in:** `cost/track.ts` `statesIn`, `cost/roll.ts`
-`naturalGroups`.
-
 ### Q76 · probe · open — the side of a Veiled Exalted Orb's veiled modifier
 
 **Q:** which side does it land on when both have room?
@@ -375,41 +257,6 @@ data.
 each; record how many veiled prefixes and veiled suffixes come up.
 **Assumed:** the sides with room alike, half each. **Encoded in:** `cost/track.ts`
 `veiledSides`.
-
-### Q77 · probe · open — the side of an unveil's options
-
-**Q:** does unveiling a veiled prefix offer only prefixes, and a veiled suffix only
-suffixes? [Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) says the unveil
-"presents three random mods" and lists the results by side, without tying them to the
-placeholder's.
-**Probe:** Veiled Exalted Orbs, a Rare that will take a veiled prefix (suffixes full) and
-one that will take a veiled suffix; veil and unveil each several times; record the sides
-of the options offered.
-**Assumed:** the veiled modifier's own side, where the item says which; the checker still
-offers both sides, the looser reading. **Encoded in:** `model/veiled.ts`, `cost/roll.ts`
-`unveilRoll`.
-
-### Q78 · decision · open — which unveil option the player takes
-
-**Q:** which of the three options does the cost layer take the player to choose?
-**Options:** (a) the guide's target when offered, else a modifier a later condition names,
-else one no one names (recommended: a guide naming no target still unveils for what its
-conditions ask, and a player takes that when offered); (b) only the target, any other pick
-an unnamed modifier; (c) the most valuable, which the cost layer cannot measure.
-**Assumed:** (a), counting a modifier a condition asks to be present (not one under a
-`not`), ranked by where the guide first asks for it. **Encoded in:** `cost/track.ts`
-`unveiled`, `askedFor`.
-
-### Q79 · probe · open — an essence's item-level requirement
-
-**Q:** [Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting)'s tier table
-has a "Minimum required level of crafted item" column (Whispering 1, Muttering 8, Weeping
-20, Wailing 33, Screaming 46, Shrieking 59, Deafening 65). Does using an essence below
-that item level fail? (Its guaranteed row ignoring the item level otherwise is confirmed
-in game, `item-model.md`.)
-**Probe:** a Normal item of item level 40 and a Shrieking essence; apply it; record
-refused or applied.
-**Assumed:** no gate. **Encoded in:** `check/library.ts` `essenceOps`.
 
 ### Q80 · probe · open — the bench's 3.29 rerolls
 

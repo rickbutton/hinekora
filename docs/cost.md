@@ -47,8 +47,9 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
 - **Removals** are uniform over the modifiers they can reach, never a fractured one (Q61).
 - **Veiled Exalted Orb.** Its veiled modifier lands on either side with room alike (Q76).
 - **Unveil.** The options are of the veiled modifier's side where the item says which
-  (Q77); the player takes the guide's target if offered, else a modifier its conditions
-  name, else one no one names (Q78).
+  (the placeholder is a prefix or a suffix of its own, and the data keeps the unveiled
+  rows by side); the player takes the guide's target if offered, else a modifier its
+  conditions name, else one no one names.
 - **Orb of Conflict.** Either implicit rises alike (Q81).
 - **Harvest augment** removes before it adds (Q82).
 - **Memory strands.** The share used up is not stated; the estimate reads the floor
@@ -66,7 +67,7 @@ placeholder; each eldritch implicit's tier, and its type where a condition names
 on its own, the rest of the ladder together) and whether it is fractured (its row marked
 `!`); a modifier a condition compares by value is held per tier
 and value piece, cut at the condition's thresholds. The distribution starts from the item
-block, a `"random"` modifier a natural roll of its side by spawn weight (Q75), and is
+block, a `"random"` modifier a natural roll of its side by spawn weight, and is
 carried through every step, a call's body walked in its place. Each method is read on
 the checker's item **narrowed to each state** (its counts exact, each tracked modifier
 present at its class or absent): a random method by its roll (an unveil by the option
@@ -161,9 +162,10 @@ step's note says so and names what the walk assumes there.
 
 Prices come from a **snapshot committed with the data**,
 `packages/data/data/poe1/economy.json`, for one league on one day, never from live calls
-in the checker, the CLI or the editor (Q62), so a figure is
+in the checker, the CLI or the editor, so a figure is
 reproducible and dated by the snapshot. `fetch-economy.mjs`
-refreshes it from the poe.ninja endpoints the site's own pages read, undocumented; when they move, the script is what changes.
+refreshes it from poe.ninja's economy overview endpoints, which its
+[API reference](https://poe.ninja/docs/api) supports without promising them stable; when they move, the script is what changes.
 
 The snapshot cannot price three things, which the code carries itself: a bench craft's
 cost, read from the catalog; a Harvest craft's lifeforce, a table in `cost/prices.ts`
@@ -185,4 +187,4 @@ wherever the calculator is exact, to the rounding of its display. Where they dif
   the alteration alone (Q58).
 - **The race's clocks are modifier types**, not groups, so two types of one group may both
   be drawn and a group's other members never close it; on a wand's spell damage this
-  moves the figure by up to a fifth either way (Q73).
+  moves the figure by up to a fifth either way.

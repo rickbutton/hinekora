@@ -162,7 +162,7 @@ describe("the groups an unnamed modifier closes", () => {
         )!.branch!;
 
         // Exactly: the two random prefixes are two draws by weight without
-        // replacement among the prefix groups (Q75), the life's among them; the
+        // replacement among the prefix groups, the life's among them; the
         // exalt then draws from every group still open on either side.
         const groups = [life, ...prefixes];
         const total = groups.reduce((sum, g) => sum + weight(g), 0);

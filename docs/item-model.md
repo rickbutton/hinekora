@@ -103,9 +103,11 @@ Three readings matter to the model:
   staff modifier on a Strength jewel lets the others roll, within one Chaos Orb too:
   confirmed in game); the checker admits such rows for a possibly present adder.
 - **Generation table**, the data's `generation_weights`, read as the spawn table is, the
-  matching entry scaling the weight in percent (the wiki does not describe them,
-  `QUESTIONS.md` Q56); they hold a
-  [cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel#Mechanics)'s notable cap.
+  matching entry scaling the weight in percent
+  ([RePoE's mod reference](https://github.com/brather1ng/RePoE/blob/master/RePoE/docs/mods.md);
+  only this reading gives the data's two tables their known results). They hold a Small
+  [cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel#Mechanics) to one notable
+  and halve a caster weapon's attack rows.
 
 A row's **effects** are the rule changes it carries while on the item (§6), empty for every
 row but the five metamods. A row is **essence-only** when the data says so

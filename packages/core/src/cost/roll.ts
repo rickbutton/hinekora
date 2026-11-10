@@ -633,8 +633,8 @@ function unveilRoll(
     registry: Registry,
     reading: Reading,
 ): Roll {
-    // The veiled modifier becomes one of its own side (QUESTIONS.md Q77), where
-    // the item says which side that is.
+    // The veiled modifier becomes one of its own side, where the item says
+    // which side that is.
     const held = guaranteedTypes(before);
     const side =
         held.has(VEILED_PREFIX) === held.has(VEILED_SUFFIX)

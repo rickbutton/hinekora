@@ -39,6 +39,7 @@ waits until a guide calls for it.
   Meanwhile a value compares on its row's own span, so on a Simplex Amulet
   `has "maximum life" >= 240` reads as a branch that can never run though the item shows
   twice the row.
-- **legacy base-implicit variants** of the experimented bases (`QUESTIONS.md` Q70); a Magic
+- **legacy base-implicit variants** of the experimented bases, whose own caps and magnitudes one catalog id cannot carry and
+  no collected recipe starts from; a Magic
   Simplex Amulet with modifiers no longer exists since 3.27.0
   ([Simplex Amulet § Version history](https://www.poewiki.net/wiki/Simplex_Amulet#Version_history)).

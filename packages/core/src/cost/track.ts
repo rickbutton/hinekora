@@ -600,7 +600,7 @@ export class Tracker {
      * modifier § Version history), the
      * veiled modifier becoming the one the player takes: the target when it is
      * offered, else a modifier a condition asks for, the first the guide asks for,
-     * else one no one names (QUESTIONS.md Q78).
+     * else one no one names.
      */
     private unveiled(
         state: ChainState,
@@ -938,7 +938,7 @@ export class Tracker {
         }
         if (maybe.length > 0) {
             // The modifiers the item holds that no one names are taken as its
-            // own natural rolls (QUESTIONS.md Q75): drawn by spawn weight from
+            // own natural rolls: drawn by spawn weight from
             // its pool, what it surely holds closing its groups, so a named
             // modifier among them comes up by its share of the race.
             const known = { prefix: 0, suffix: 0 };

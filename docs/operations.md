@@ -55,8 +55,7 @@ only `unprotect` and `keep` change that.
 
 **All or nothing.** The game never applies part of a currency, so a failed `require`
 fails the whole method. The checker reports the first failure, and the state `runMethod`
-returns is the one the method leaves where its preconditions hold, not the input
-(`QUESTIONS.md` Q50): later steps are judged against what the guide meant, so one wrong
+returns is the one the method leaves where its preconditions hold, not the input: later steps are judged against what the guide meant, so one wrong
 step does not cascade into refusing every step after it, and a loop whose body fills the
 item is still seen to reach its exit.
 
