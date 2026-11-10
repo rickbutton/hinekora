@@ -164,10 +164,8 @@ Build/test/lint/format commands: the gate in `../CLAUDE.md`.
   implicits (each side's tier names and the wordings of its possible types at those
   tiers, taken from `eldritchPool`, since a family's text changes with the tier; empty
   when any implicit of the side may be there), the modifiers by side (each with its stat text, its affix name and tier when
-  the row is known, a tier range and a roll span across the rows it may be otherwise,
-  each value scaled by an experimented base's magnitude for the side as the game shows it
-  (`scaledText`, through `spanOn`; a "per 15 Strength" is wording and stays), the span
-  narrowed to the value a `has "<mod>" >= n` proved (`AItem.values`), its
+  the row is known, a tier range and a roll span across the rows it may be otherwise, the
+  span narrowed to the value a `has "<mod>" >= n` proved (`AItem.values`), its
   category tags, and whether it is fractured or crafted), "one of" groups for the
   disjunctions (members pinned to their tier when the clause named one, exact when no
   more could fit), one remainder line for the modifiers whose identity is unknown

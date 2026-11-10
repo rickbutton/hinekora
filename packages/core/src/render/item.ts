@@ -23,8 +23,6 @@ import {
 } from "../check/astate.js";
 import type { Range } from "../check/domain.js";
 import { influenceTagsAny } from "../check/ops.js";
-import { spanOn } from "../check/values.js";
-import type { Base } from "../model/base.js";
 import type { Gen, ModId, Rarity, TypeId } from "../model/ids.js";
 import {
     ELDRITCH_SIDES,
@@ -173,24 +171,6 @@ export function rollSpan(texts: readonly string[]): string {
 
 const oneLine = (text: string): string => text.replace(/\n/g, " / ");
 
-// A number after "per" is the stat's wording, not its value: a Simplex Amulet
-// shows "2% increased Damage per 15 Strength".
-const NUMBERS = /(per )?(?:\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)|(\d+(?:\.\d+)?))/g;
-// A fractional roll scales with float noise (0.3 × 1.5 is 0.44999…).
-const shown = (n: number): string => String(Number(n.toFixed(2)));
-
-/** The text's values as the base shows them, an experimented base's magnitude
- *  implicit scaling every value of the side. */
-export function scaledText(text: string, base: Base, gen: Gen): string {
-    if ((base.magnitude?.[gen] ?? 0) === 0) return text;
-    return text.replace(NUMBERS, (m, per?: string, lo?: string, hi?: string, n?: string) => {
-        if (per !== undefined) return m;
-        if (n !== undefined) return shown(spanOn(base, gen, [Number(n), Number(n)])[0]);
-        const [a, b] = spanOn(base, gen, [Number(lo), Number(hi)]);
-        return `(${shown(a)}-${shown(b)})`;
-    });
-}
-
 /**
  * The text with its first span narrowed to `value`: "+(70-84)" at [75, 90] is
  * "+(75-84)". The value is cut to the span shown, since the tiers can narrow
@@ -203,7 +183,7 @@ function withValue(text: string, value: Range): string {
     const lo = Math.max(value[0], Number(m[1]));
     const hi = Math.min(value[1], Number(m[2]));
     if (lo > hi) return text;
-    return text.replace(re, lo === hi ? shown(lo) : `(${shown(lo)}-${shown(hi)})`);
+    return text.replace(re, lo === hi ? String(lo) : `(${lo}-${hi})`);
 }
 
 /** The modifier view for a present type, pinned to `pin` when a disjunction names its tier. */
@@ -221,10 +201,7 @@ function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: Mod
     const texts = mods.map((m) => m.text).filter((t): t is string => t !== undefined);
     // A value the guide has proven ("life 110 or more") narrows the first span.
     const known = a.values.get(type);
-    const span =
-        texts.length > 0
-            ? oneLine(scaledText(rollSpan(texts), a.base, gen))
-            : registry.typeLabel(type);
+    const span = texts.length > 0 ? oneLine(rollSpan(texts)) : registry.typeLabel(type);
     const text = known === undefined ? span : withValue(span, known);
     const numbers = mods
         .map((m) => rollable.findIndex((r) => r.id === m.id) + 1)

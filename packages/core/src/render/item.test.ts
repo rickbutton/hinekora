@@ -1,36 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "../check/check.js";
 import { buildRegistry } from "../resolve/registry.js";
-import {
-    bench,
-    craft,
-    has,
-    hasValue,
-    iff,
-    item,
-    notp,
-    op,
-    orp,
-    stop,
-    until,
-} from "../__fixtures__/ast.js";
+import { bench, craft, has, iff, item, notp, op, orp, until } from "../__fixtures__/ast.js";
 import {
     BENCH_LIFE_ROW,
     CATALOG,
     CLASS_RING,
     RING_BASE,
-    SIMPLEX_BASE,
     TIERED_CATALOG,
 } from "../__fixtures__/mods.js";
 import type { BenchCraft } from "../model/sources.js";
-import {
-    itemClassLabel,
-    itemView,
-    remainderText,
-    renderItemText,
-    rollSpan,
-    scaledText,
-} from "./item.js";
+import { itemClassLabel, itemView, remainderText, renderItemText, rollSpan } from "./item.js";
 
 const registry = buildRegistry({ bases: [RING_BASE], mods: TIERED_CATALOG });
 const ctx: CheckContext = { registry };
@@ -64,46 +44,6 @@ describe("the item in the game's copy layout", () => {
         const text = after(craft(ring(), [op("exalt"), until(has("maximum life"), [op("chaos")])]));
         expect(text).toContain("{ Prefix Modifier (Tier: 1-3) }");
         expect(text).toMatch(/\+\(\d+-\d+\) to maximum Life\n/);
-    });
-
-    it("shows an experimented base's rows scaled, beside a value proven on the scaled span", () => {
-        // A Simplex Amulet doubles its modifiers' values, so T1 life reads 230 to 258.
-        const simplex = buildRegistry({ bases: [SIMPLEX_BASE], mods: TIERED_CATALOG });
-        const amulet = item({
-            base: "SimplexAmulet",
-            ilvl: 100,
-            rarity: "rare",
-            prefixes: [{ mod: "maximum life", tier: 1 }],
-        });
-        const text = (steps: Parameters<typeof craft>[1]): string => {
-            const r = check(craft(amulet, steps), { registry: simplex });
-            expect(r.diagnostics).toEqual([]);
-            return renderItemText(itemView(r.finalState!, simplex));
-        };
-        expect(text([])).toContain("+(230-258) to maximum Life");
-        expect(text([iff(notp(hasValue("maximum life", ">=", 240)), [stop()])])).toContain(
-            "+(240-258) to maximum Life",
-        );
-    });
-
-    it("scales a side's values by its magnitude, but not a number the wording carries", () => {
-        const helical = { ...RING_BASE, magnitude: { prefix: 0, suffix: 50 } };
-        expect(scaledText("+(57-62) to Strength", helical, "suffix")).toBe(
-            "+(85.5-93) to Strength",
-        );
-        expect(scaledText("+(57-62) to Strength", helical, "prefix")).toBe("+(57-62) to Strength");
-        expect(scaledText("+(0.3-0.4)% of Life Regenerated", helical, "suffix")).toBe(
-            "+(0.45-0.6)% of Life Regenerated",
-        );
-        expect(scaledText("+1 to Level of all Skill Gems", SIMPLEX_BASE, "prefix")).toBe(
-            "+2 to Level of all Skill Gems",
-        );
-        expect(scaledText("1% increased Damage per 15 Strength", SIMPLEX_BASE, "prefix")).toBe(
-            "2% increased Damage per 15 Strength",
-        );
-        expect(scaledText("Adds (1-2) to (3-4) Damage", SIMPLEX_BASE, "prefix")).toBe(
-            "Adds (2-4) to (6-8) Damage",
-        );
     });
 
     it("groups a disjunction and pins each member's tier", () => {
