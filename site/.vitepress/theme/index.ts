@@ -3,6 +3,7 @@ import DefaultTheme from "vitepress/theme";
 import ItemCard from "./ItemCard.vue";
 import "./style.css";
 import "./landing.css";
+import "./reference.css";
 
 declare module "vue" {
     interface ComponentCustomProperties {

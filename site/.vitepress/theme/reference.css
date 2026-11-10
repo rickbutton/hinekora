@@ -1,0 +1,48 @@
+/* An operation is a word of the language: its title is set as code. */
+.vp-doc .op-head h1 {
+    font-family: var(--vp-font-family-mono);
+    font-size: 32px;
+    font-weight: 600;
+}
+
+.op-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.op-head img {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    flex: none;
+    padding: 6px;
+    border-radius: 50%;
+    background: radial-gradient(#2c2a24, #141310);
+    border: 1px solid #3a3528;
+}
+
+.op-head h1 {
+    margin: 0 !important;
+}
+
+.op-signature {
+    font-family: var(--vp-font-family-mono);
+    font-size: 15px;
+    padding: 10px 14px;
+    border-left: 3px solid var(--hk-gold);
+    background: var(--hk-gold-soft);
+    border-radius: 0 6px 6px 0;
+    overflow-x: auto;
+    white-space: pre;
+}
+
+.vp-doc td:first-child code {
+    white-space: nowrap;
+}
+
+.op-generated {
+    font-size: 13px;
+    color: var(--vp-c-text-3);
+}

@@ -5,8 +5,9 @@
     "description": "The hinekora website: landing page, documentation and the playground, as static pages.",
     "type": "module",
     "scripts": {
-        "dev": "vitepress dev",
-        "build": "vitepress build",
+        "prepare-content": "node scripts/prepare.mjs",
+        "dev": "node scripts/prepare.mjs && vitepress dev",
+        "build": "node scripts/prepare.mjs && vitepress build",
         "preview": "vitepress preview",
         "typecheck": "tsc -b"
     },
