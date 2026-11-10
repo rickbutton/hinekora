@@ -338,8 +338,12 @@ function iterate(
     let head = start;
     const exits: Dist = new Map();
     let passes = 0;
+    let still = false;
     for (let round = 0; massOf(head) > EPSILON; round++) {
-        if (round >= MAX_PASSES || t.work >= MAX_WORK) {
+        // A round that lost nothing and moved nothing is every round to
+        // come: following more of them would only count rounds the items that
+        // never leave spend going round.
+        if (round >= MAX_PASSES || t.work >= MAX_WORK || still) {
             const tail = true;
             const rest = beyond(body, head, exit, input, t, exits, tail);
             return { ...rest, passes: passes + rest.passes, exits };
@@ -351,6 +355,7 @@ function iterate(
         const decay = massOf(next) / mass;
         t.work += next.size;
         const distance = shapeDistance(head, mass, next, massOf(next));
+        still = decay >= 1 - STUCK && distance < SETTLED;
         // Items that never leave, beside a few still draining, hand on almost
         // the same shape too, but there the shape moves as fast as the mass
         // goes: only a shape that has stopped moving against it is a tail.

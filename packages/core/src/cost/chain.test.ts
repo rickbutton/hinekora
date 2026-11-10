@@ -377,6 +377,10 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         const few = twoKinds(0.5, 0, 996, 4);
         expect(few.exit).toBeCloseTo(0.996, 9);
         expect(few.unresolved).toBeCloseTo(0.004, 9);
+        // The rounds are the two the leaving items take, not the rounds the
+        // stuck ones were followed for.
+        expect(few.passes).toBeGreaterThan(1.99);
+        expect(few.passes).toBeLessThan(2.3);
     });
 
     it("items that drift away from the exit for longer than any count of rounds are solved all the same", () => {
