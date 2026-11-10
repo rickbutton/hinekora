@@ -12,9 +12,7 @@
 The cost layer reads the same method table and op sequences the checker runs, and
 consumes the checker's output, the trace with the item before every statement, without
 touching a transfer function. Nothing it computes can make the checker accept or refuse
-a step, which keeps the checker a pure soundness tool. Its surfaces are `hinekora cost`,
-the hover footer and the storyboard.
-
+a step, which keeps the checker a pure soundness tool.
 ---
 
 ## 2. How the game rolls
@@ -45,6 +43,9 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
 - **Harvest.** The tagged row is drawn among the tag's rows by weight (Q63).
 - **Removals** are uniform over the modifiers they can reach, never a fractured one (Q61).
 - **Veiled Exalted Orb.** Its veiled modifier lands on either side with room alike (Q76).
+- **Vaal Orb.** Its four outcomes are each as likely
+  ([Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment)); a **Tainted
+  Exalted Orb** adds or removes at even odds, and removes from a full item (Q95).
 - **Unveil.** The options are of the veiled modifier's side where the item says which
   (the placeholder is a prefix or a suffix of its own); the player takes the guide's target if offered, else a modifier its
   conditions name, else one no one names.
@@ -71,8 +72,7 @@ and value piece, cut at the condition's thresholds. The distribution starts from
 block, a `"random"` modifier a natural roll of its side by spawn weight, and is
 carried through every step, a call's body walked in its place. Each method is read on
 the checker's item **narrowed to each state** (its counts exact, each tracked modifier
-present at its class or absent): a random method by its roll (an unveil by the option
-taken, a Fracturing Orb by the modifier it locks), a sure one by the checker's own
+present at its class or absent): a random method by its roll, a sure one by the checker's own
 transfer function, the item that leaves read back as states. A branch splits the distribution by its condition; a loop is solved
 as a chain over it (§6). A guide followed so throughout is walked once.
 
@@ -112,11 +112,9 @@ excludes, which reads it up to a fifth high.
 ## 5. From a method to a roll, from a roll to a chance
 
 `cost/roll.ts` reads a method's op sequence into its **roll**: the random `fill` with
-the pool it draws from (the checker's own `pool` on the sure facts, cut by the memory
-strands, re-weighted by fossils), the count of draws, the modifiers
-present for certain (kept, or placed first: an essence's grant, a Harvest tag's row),
-or else a uniform removal, a fracture,
-an unveil's three options, an ember's weighted implicit, or a Divine Orb's reroll.
+the pool it draws from (the checker's own `pool` on the sure facts), the count of draws
+and the modifiers present for certain (kept, or placed first), or else a removal, a
+fracture, an unveil, an implicit or a reroll.
 
 `cost/chance.ts` evaluates the checker's resolved predicate against the roll. A `has`
 atom on a side is "its group among the first p of that side's race", the type and row by weight
@@ -138,11 +136,10 @@ fire together over one reforge, not a product). Expected cost is linear: a state
 expected runs is the mass reaching it times the rounds of every loop around it, times its
 unit price (`cost/prices.ts`, in the step's own currency).
 
-- An **`until`** whose body the tracker can follow (methods, branches, loops inside it,
-  restarts and stops) is not memoryless: each round starts where the last left the item.
+- An **`until`** whose body the tracker can follow
+  is not memoryless: each round starts where the last left the item.
   It is solved as a Markov chain (`cost/chain.ts`) over the tracked state, from the
-  states the loop enters with, each method a transition read on the narrowed item and a
-  loop inside going round its own body until its exit each time it is reached. The
+  states the loop enters with. The
   distribution is carried round after round until the mass has left (the exit, a
   stop, or an item full with nothing removing); once a round hands the next a
   distribution of the same shape, only smaller, the rest is summed as a geometric series,

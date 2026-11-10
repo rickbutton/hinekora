@@ -22,6 +22,7 @@ import type { Op } from "../check/ops.js";
 import type { Registry } from "../resolve/registry.js";
 import {
     type AItem,
+    capsOver,
     guaranteedTypes,
     isExcluded,
     isFractured,
@@ -126,6 +127,39 @@ function readImplicit(row: ModId): { tier: number; type?: TypeId } {
  *  of Conflict, and the least chance either side is given. */
 const CONFLICT_STEP = 0.11;
 const CONFLICT_FLOOR = 0.01;
+
+type Outcomes = readonly (readonly Op[])[];
+
+/**
+ * How likely each outcome of a method with several is, by the method's words,
+ * as weights over its `either` branches on the item it is used on; undefined
+ * where the odds are not known or an outcome ends the craft, which the tracker
+ * does not hold.
+ */
+const OUTCOME_ODDS: Readonly<
+    Record<string, (branches: Outcomes, item: AItem) => readonly number[] | undefined>
+> = {
+    // Four outcomes, each as likely (Vaal Orb § Equipment, § Jewels): a new
+    // implicit, the reforge, and two that change nothing the item block
+    // names, a socket's colour and no effect. An outcome the base cannot take
+    // (a reforge of a base that cannot be Rare) is no effect too.
+    vaal: (branches) =>
+        branches.some((b) => b.some((op) => op.kind === "end"))
+            ? undefined
+            : branches.map((b) => (b.length === 0 ? 4 - (branches.length - 1) : 1)),
+    // No source gives the odds: adding and removing are taken alike, and a
+    // full item, with nothing to add, as losing a modifier (`ASSUMED_ODDS`).
+    "tainted exalt": (branches, item) => {
+        const full = item.counts.total[0] >= capsOver(item, Math.max).total;
+        return branches.map((b) => (full && b.some((op) => op.kind === "fill") ? 0 : 1));
+    },
+};
+
+/** What a step whose odds no source states is taken to do, for its note. */
+export const ASSUMED_ODDS: Readonly<Record<string, string>> = {
+    "tainted exalt":
+        "a Tainted Exalted Orb is taken to add or remove a modifier at even odds, and to remove one from a full item; no source states its odds",
+};
 
 /** Rows a condition tells apart: one named tier, or the rest of a ladder. */
 interface RowClass {
@@ -385,6 +419,7 @@ export class Tracker {
         before: AItem,
         ops: readonly Op[],
         reading: Reading,
+        method = "",
     ): ((state: ChainState) => readonly Outcome[]) | undefined {
         const kind = rollOf(before, ops, this.registry, reading).kind;
         const cache = new Map<string, readonly Outcome[]>();
@@ -427,11 +462,13 @@ export class Tracker {
                 const sig = this.signature(this.stripped(item, ops, fillAt));
                 out = drawn.get(sig);
                 if (out === undefined) {
-                    out = this.outcomes(before, ops, state, reading) ?? [{ state, prob: 1 }];
+                    out = this.outcomes(before, ops, state, reading, method) ?? [
+                        { state, prob: 1 },
+                    ];
                     drawn.set(sig, out);
                 }
             } else {
-                out = this.outcomes(before, ops, state, reading) ?? [{ state, prob: 1 }];
+                out = this.outcomes(before, ops, state, reading, method) ?? [{ state, prob: 1 }];
             }
             if (out.length > MAX_OUTCOMES) throw new TrackerOverflow();
             out = pruned(out);
@@ -466,10 +503,27 @@ export class Tracker {
         ops: readonly Op[],
         state: ChainState,
         reading: Reading,
+        method: string,
     ): readonly Outcome[] | undefined {
         const item = this.narrow(before, state);
         if (item === null) return this.counted(undefined);
-        return this.outcomesOn(item, ops, state, reading);
+        const at = ops.findIndex((op) => op.kind === "either");
+        const either = ops[at];
+        if (either?.kind !== "either") return this.outcomesOn(item, ops, state, reading);
+        // A method of several outcomes whose odds are known: each outcome's
+        // steps read in the method's place, by its share.
+        const odds = OUTCOME_ODDS[method]?.(either.branches, item);
+        if (odds === undefined) return this.counted(undefined);
+        const total = odds.reduce((sum, w) => sum + w, 0);
+        const out: Outcome[] = [];
+        for (let b = 0; b < either.branches.length; b++) {
+            if (!(odds[b]! > 0)) continue;
+            const taken = [...ops.slice(0, at), ...either.branches[b]!, ...ops.slice(at + 1)];
+            const next = this.outcomesOn(item, taken, state, reading);
+            if (next === undefined) return undefined;
+            for (const o of next) out.push({ state: o.state, prob: (o.prob * odds[b]!) / total });
+        }
+        return out;
     }
 
     private kept(

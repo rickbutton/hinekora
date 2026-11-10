@@ -289,3 +289,13 @@ names one; every implicit row's required level in the data is 75.
 applied.
 **Assumed:** refused below item level 75, in a step and in the item block. **Encoded in:**
 `model/marks.ts` `ELDRITCH_ITEM_LEVEL`.
+
+### Q95 · probe · open — a Tainted Exalted Orb's odds
+
+**Q:** how often does a Tainted Exalted Orb add, and what does it do to a full item?
+[Tainted Exalted Orb](https://www.poewiki.net/wiki/Tainted_Exalted_Orb) says only that it
+"unpredictably adds or removes a modifier".
+**Probe:** corrupted Rares with four modifiers and with six, Tainted Exalted Orbs; apply
+one to each; record added or removed, and whether a full item ever comes back unchanged.
+**Assumed:** even odds; a full item loses a modifier. **Encoded in:** `cost/track.ts`
+`OUTCOME_ODDS`, `ASSUMED_ODDS`.

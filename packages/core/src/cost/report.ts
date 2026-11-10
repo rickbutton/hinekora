@@ -25,6 +25,7 @@ import { guaranteedTypes, isExcluded, rarityOf, sideCap, suffixRange } from "../
 import { addPrices, inChaos, type Price, type Prices, unitCost } from "./prices.js";
 import { type Reading, type Roll, rollOf, withPresent } from "./roll.js";
 import {
+    ASSUMED_ODDS,
     type Carried,
     genOfOn,
     holdsOn,
@@ -615,15 +616,14 @@ class Walker {
         // A state the step could not carry is not where the step left it, so
         // the steps after read the checker's item instead.
         const moved = missed ? undefined : carried;
+        const notes = [
+            ...(unit === undefined ? [`${words}: no price is known for this step`] : []),
+            ...(missed ? [MISSED] : []),
+            ...(!missed && ASSUMED_ODDS[words] !== undefined ? [ASSUMED_ODDS[words]] : []),
+        ];
         this.record(stmt, massOf(branches), frame, {
             ...(unit !== undefined ? { unit } : {}),
-            ...(unit === undefined
-                ? {
-                      note: `${words}: no price is known for this step${missed ? `; ${MISSED}` : ""}`,
-                  }
-                : missed
-                  ? { note: MISSED }
-                  : {}),
+            ...(notes.length > 0 && { note: notes.join("; ") }),
         });
         const built = method.build(literals, entry.before, this.registry);
         if ("refused" in built || entry.after === undefined) return withoutStates(branches);
@@ -1173,7 +1173,7 @@ class Walker {
                 outcomes: back.map((b) => ({ state: b.state, prob: b.weight / mass })),
             };
         }
-        const next = tracker.transition(entry.before, built, this.reading);
+        const next = tracker.transition(entry.before, built, this.reading, s.words.join(" "));
         return next === undefined ? undefined : { id, kind: "transition", next };
     }
 
