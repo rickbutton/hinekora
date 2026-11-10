@@ -672,6 +672,20 @@ describe("the cost of a guide", () => {
         expect(r.steps[0]!.note).toContain("no price");
     });
 
+    it("a Harvest reforge is priced in lifeforce, five of them with Crystallised Rancour", () => {
+        const unitOf = (tag: string) =>
+            report(craft(ring("rare"), [harvest("reforge", tag)])).steps[0]!.unit;
+        expect(unitOf("life")).toEqual([{ item: "Wild Crystallised Lifeforce", amount: 75 }]);
+        expect(unitOf("mana")).toEqual([
+            { item: "Primal Crystallised Lifeforce", amount: 200 },
+            { item: "Crystallised Rancour", amount: 2 },
+        ]);
+        expect(unitOf("drop")).toEqual([
+            { item: "Vivid Crystallised Lifeforce", amount: 200 },
+            { item: "Crystallised Rancour", amount: 1 },
+        ]);
+    });
+
     it("a Bestiary recipe is priced by its beasts", () => {
         const c = craft(ring("magic", ["IncreasedLife1"]), [beast({ kind: "imprint" })]);
         expect(report(c).steps[0]!.unit).toEqual([{ item: "Craicic Croaker", amount: 1 }]);

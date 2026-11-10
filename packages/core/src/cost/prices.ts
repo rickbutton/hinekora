@@ -54,7 +54,18 @@ const HARVEST_REFORGE: Readonly<Record<string, Price>> = {
     elemental: { item: "Wild Crystallised Lifeforce", amount: 200 },
     attribute: { item: "Vivid Crystallised Lifeforce", amount: 200 },
     mana: { item: "Primal Crystallised Lifeforce", amount: 200 },
+    drop: { item: "Vivid Crystallised Lifeforce", amount: 200 },
 };
+
+/** The Crystallised Rancour five of the reforges take besides (the same table). */
+const HARVEST_REFORGE_RANCOUR: Readonly<Record<string, number>> = {
+    minion: 3,
+    elemental: 1,
+    attribute: 2,
+    mana: 2,
+    drop: 1,
+};
+const rancour = (amount: number): Price => ({ item: "Crystallised Rancour", amount });
 
 /** The augment crafts: the same colours, a Sacred Crystallised Lifeforce besides. */
 const HARVEST_AUGMENT: Readonly<Record<string, number>> = {
@@ -232,7 +243,9 @@ export function unitCost(
             const key: string = tag.value;
             if (second === "reforge") {
                 const price = HARVEST_REFORGE[key];
-                return price === undefined ? undefined : [price];
+                const extra = HARVEST_REFORGE_RANCOUR[key];
+                if (price === undefined) return undefined;
+                return extra === undefined ? [price] : [price, rancour(extra)];
             }
             if (second === "augment") {
                 const amount = HARVEST_AUGMENT[key];

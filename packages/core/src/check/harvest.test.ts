@@ -19,7 +19,8 @@ import {
     SPECIFIC_WEAPON_A,
     SPECIFIC_WEAPON_B,
 } from "../__fixtures__/mods.js";
-import { TypeId } from "../model/ids.js";
+import { GroupId, ModId, TagId, TypeId } from "../model/ids.js";
+import type { Mod } from "../model/mod.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE, AMULET_BASE, SIMPLEX_BASE, RATCHETING_BASE, FLASK_BASE],
@@ -199,6 +200,27 @@ describe("harvest reforge", () => {
         expect(r.diagnostics[0]!.message).toContain("minion");
     });
 
+    it('takes the drop tag: "including a Drop modifier"', () => {
+        const rarity: Mod = {
+            ...INCREASED_MANA,
+            id: ModId("ItemRarity1"),
+            type: TypeId("ItemRarity"),
+            families: new Set([GroupId("ItemRarity")]),
+            implicitTags: new Set([TagId("drop")]),
+        };
+        const drops = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...CATALOG, rarity],
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
+        const r = check(craft(rareRing(), [harvest("reforge", "drop")]), { registry: drops });
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteed(r)).toContain("ItemRarity");
+        // The grove has no augment for it.
+        const augment = check(craft(rareRing(["T1 Life"]), [harvest("augment", "drop")]), ctx);
+        expect(augment.diagnostics[0]!.message).toContain("The grove has no craft that adds");
+    });
+
     it("requires a Rare item", () => {
         const magic = item({ base: "Iron Ring", ilvl: 100, rarity: "magic" });
         const r = check(craft(magic, [harvest("reforge", "fire")]), ctx);
@@ -267,7 +289,7 @@ describe("harvest augment (add tagged, remove a random other)", () => {
     });
 
     it("has the grove's eleven augments only", () => {
-        for (const tag of ["mana", "attribute", "elemental", "minion"]) {
+        for (const tag of ["mana", "attribute", "elemental", "minion", "drop"]) {
             const r = check(craft(rareRing(["T1 Life"]), [harvest("augment", tag)]), ctx);
             expect(r.diagnostics.map((d) => d.message).join()).toContain(
                 `The grove has no craft that adds a "${tag}" modifier`,

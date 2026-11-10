@@ -151,9 +151,9 @@ A statement opens with its words and takes its arguments after them:
 - A harvest tag: `harvest reforge "<tag>"` and `harvest augment "<tag>"`, the
   [Harvest crafts](https://www.poewiki.net/wiki/Harvest_crafting#Modifier_groups) that
   target a modifier group. The tags are `attack`, `attribute`, `caster`, `chaos`, `cold`,
-  `critical`, `defence` (or `defences`), `elemental`, `fire`, `life`, `lightning`, `mana`,
+  `critical`, `defence` (or `defences`), `drop`, `elemental`, `fire`, `life`, `lightning`, `mana`,
   `minion`, `physical` and `speed`; `harvest reforge` also takes `"influence"`, and
-  the grove has no augment for `attribute`, `elemental`, `mana` or `minion`.
+  the grove has no augment for `attribute`, `drop`, `elemental`, `mana` or `minion`.
 - Two mod names: `harvest change "fire resistance" "cold resistance"`.
 - One to four fossils: `fossil "pristine" "dense"`.
 - A side or an influence, then an optional beast level: `beast add prefix 84`,
