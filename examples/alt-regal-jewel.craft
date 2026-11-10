@@ -14,7 +14,6 @@ item {
 
 def usefulSuffix() =
     has "fire damage over time multiplier"
-    or has "attack speed with bows"
     or has "global critical strike multiplier"
 
 transmute
