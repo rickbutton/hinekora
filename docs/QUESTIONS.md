@@ -161,7 +161,8 @@ a bench, essence, fossil, unveiled, elevated or retired row.
 to cold; record the cold's values, whether it shows as crafted and whether the removal
 takes it.
 **Assumed:** it stays crafted; it is the same source's counterpart row or any natural row
-of the target. **Encoded in:** `check/ops.ts` `fill` on a `rows` pool keeps the new rows
+of the target; a natural row an essence placed above the item's level becomes the row of
+its rank, when an essence places that one on the class. **Encoded in:** `check/ops.ts` `fill` on a `rows` pool keeps the new rows
 among `craftedTypes`; `check/methods.ts` `harvestChange`.
 
 ### Q58 · probe · open — one or two modifiers from a transmute or an alteration

@@ -8,12 +8,14 @@ import {
     andp,
     bench,
     craft,
+    essence,
     harvestChange,
     has,
     iff,
     item,
     notp,
     op,
+    stop,
 } from "../__fixtures__/ast.js";
 import {
     AMULET_BASE,
@@ -36,7 +38,7 @@ import {
     RING_BASE,
     LIGHTNING_RESIST,
 } from "../__fixtures__/mods.js";
-import { GroupId, ModId, TagId, TypeId } from "../model/ids.js";
+import { BaseId, ClassId, GroupId, ModId, TagId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import type { HarvestChangeLists } from "../model/sources.js";
 
@@ -546,6 +548,119 @@ describe("a Harvest change on an item with two influences", () => {
         expect(cold(all)).toEqual(new Set(["Cold_eyrie_78", "Cold_eyrie_68"]));
         const low = changed(mods, "Fire_eyrie_68", 70);
         expect(low.diagnostics[0]!.message).toContain("needs item level 78");
+    });
+});
+
+describe("a Harvest change of a natural row an essence placed", () => {
+    // The shipped shape: the essences of Hatred and Anger place rows of the
+    // resistances' own ladders on boots, at levels a low item does not roll;
+    // the essences of Torment and Anguish place spell damage rows on an axe,
+    // which rolls none.
+    const AXE_BASE = {
+        id: BaseId("VaalHatchet"),
+        name: "Vaal Hatchet",
+        itemClass: ClassId("One Hand Axe"),
+        domain: BOOTS_BASE.domain,
+        tags: new Set(["default", "axe", "one_hand_weapon"].map(TagId)),
+    };
+    const ladder = (name: string, on: string, gen: "prefix" | "suffix", levels: number[]): Mod[] =>
+        levels.map((minLevel, i) => ({
+            ...FIRE_RESIST,
+            id: ModId(`${name}${i + 1}`),
+            type: TypeId(name),
+            gen,
+            families: new Set([GroupId(name)]),
+            minLevel,
+            spawn: [
+                { tag: TagId(on), weight: 1000 },
+                { tag: TagId("default"), weight: 0 },
+            ],
+            text: `+# to ${name}`,
+        }));
+    const mods = [
+        ...ladder("ColdBoots", "armour", "suffix", [1, 14, 26, 38, 50, 60, 72, 84]),
+        ...ladder("FireBoots", "armour", "suffix", [1, 12, 24, 36, 48, 60, 72, 84]),
+        ...ladder("LightningSpells", "wand", "prefix", [1, 30, 74]),
+        ...ladder("FireSpells", "wand", "prefix", [1, 30, 74]),
+        ...ladder("ColdSpells", "wand", "prefix", [1, 30, 74]),
+    ];
+    const BOOTS = ClassId("Boots");
+    const grant = (name: string, tier: number, cls: ClassId, mod: string) => ({
+        id: name,
+        name,
+        tier,
+        grants: new Map([[cls, ModId(mod)]]),
+    });
+    const essenced = buildRegistry({
+        bases: [BOOTS_BASE, AXE_BASE],
+        harvestChange: {
+            resistance: {
+                fire: [TypeId("FireBoots")],
+                cold: [TypeId("ColdBoots")],
+                lightning: [],
+            },
+            damage: {
+                fire: [TypeId("FireSpells")],
+                cold: [TypeId("ColdSpells")],
+                lightning: [TypeId("LightningSpells")],
+            },
+        },
+        mods: [...CATALOG, ...mods],
+        essences: [
+            grant("Weeping Essence of Hatred", 3, BOOTS, "ColdBoots3"),
+            grant("Screaming Essence of Hatred", 5, BOOTS, "ColdBoots6"),
+            grant("Deafening Essence of Hatred", 7, BOOTS, "ColdBoots8"),
+            grant("Screaming Essence of Anger", 5, BOOTS, "FireBoots6"),
+            grant("Deafening Essence of Anger", 7, BOOTS, "FireBoots8"),
+            grant("Deafening Essence of Torment", 7, AXE_BASE.itemClass, "LightningSpells3"),
+            grant("Deafening Essence of Anguish", 7, AXE_BASE.itemClass, "FireSpells3"),
+        ],
+    });
+    /** The rows `to` may be after the essence and the change of its modifier. */
+    const after = (base: string, ilvl: number, name: string, from: string, to: string) => {
+        // The essence's reforge may roll the target on boots, never on the axe.
+        const change = harvestChange(from, to);
+        const r = check(
+            craft(item({ base, ilvl, rarity: "normal" }), [
+                essence(name),
+                base === "Vaal Hatchet" ? change : iff(notp(has(to)), [change], [stop()]),
+            ]),
+            { registry: essenced },
+        );
+        return r.diagnostics.length > 0
+            ? r.diagnostics[0]!.message
+            : r.finalState!.tiers.get(TypeId(to.slice(0, -1)));
+    };
+
+    it("becomes the row of its rank that an essence places, above the item's level too", () => {
+        const change = (ilvl: number) =>
+            after("Iron Greaves", ilvl, "Deafening Essence of Hatred", "ColdBoots1", "FireBoots1");
+        expect(change(83)).toEqual(new Set(["FireBoots8"]));
+        expect(change(20)).toEqual(new Set(["FireBoots8"]));
+        expect(change(84)).toEqual(new Set(["FireBoots8"]));
+        // Both rows need level 60: the essence placed the one, and its
+        // counterpart's essence would have placed the other.
+        expect(
+            after("Iron Greaves", 59, "Screaming Essence of Hatred", "ColdBoots1", "FireBoots1"),
+        ).toEqual(new Set(["FireBoots6"]));
+    });
+
+    it("is refused where no essence places the row of its rank and the item's level does not allow it", () => {
+        const change = (ilvl: number) =>
+            after("Iron Greaves", ilvl, "Weeping Essence of Hatred", "ColdBoots1", "FireBoots1");
+        expect(change(20)).toContain(
+            "needs item level 24: it cannot appear on this item of level 20",
+        );
+        // The cold row needs level 26, the fire row of its rank 24.
+        expect(change(25)).toEqual(new Set(["FireBoots3"]));
+    });
+
+    it("is ranked on the ladder it has elsewhere when the base rolls no such modifier", () => {
+        const change = (to: string) =>
+            after("Vaal Hatchet", 84, "Deafening Essence of Torment", "LightningSpells1", to);
+        expect(change("FireSpells1")).toEqual(new Set(["FireSpells3"]));
+        // No essence places a cold row on an axe.
+        expect(change("ColdSpells1")).toContain("cannot roll on this item");
     });
 });
 

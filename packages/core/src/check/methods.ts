@@ -238,7 +238,8 @@ function harvestChange(
     }
     // The result is what each row the source may be would become, together:
     // its recorded rows, or with none recorded any row of its ladder that
-    // rolls at the item's level and any row another source places.
+    // rolls at the item's level, any row another source places and any
+    // natural row an essence places on the item's class.
     const whole = (type: TypeId): readonly Mod[] =>
         rollableTiers(catalog, a.base, TOP_ITEM_LEVEL, type, tags);
     const [wholeFrom, wholeTo] = [whole(from.value), whole(to.value)];
@@ -252,10 +253,45 @@ function harvestChange(
         if (tag === undefined || a.base.tags.has(tag)) return "";
         return INFLUENCES.find((i) => registry.influenceTags(a.base, i).has(tag)) ?? "";
     };
+    // The rows the essences place on an item of this class. Many are natural
+    // rows, and an essence places its row whatever the item's level, so a
+    // natural row above that level, or one the base does not roll, is an
+    // essence's (docs/item-model.md §8).
+    const essenceRows = new Set(
+        registry.essences.flatMap((e) => e.grants.get(a.base.itemClass) ?? []),
+    );
+    // The ladder of a row the base does not roll: the natural rows of `type`
+    // that roll on the items `row` rolls on, best first.
+    const elsewhere = (type: TypeId, row: Mod): readonly Mod[] => {
+        const rollsOn = (m: Mod): string =>
+            m.spawn
+                .filter((w) => w.weight > 0)
+                .map((w) => w.tag)
+                .sort()
+                .join();
+        return catalog
+            .filter(
+                (m) =>
+                    m.type === type &&
+                    isNatural(m) &&
+                    m.gen === row.gen &&
+                    m.domain === row.domain &&
+                    rollsOn(m) === rollsOn(row),
+            )
+            .sort((x, y) => y.minLevel - x.minLevel);
+    };
     const pinned = a.tiers.get(from.value);
     const mayBe =
         pinned === undefined
-            ? [...sources, ...catalog.filter((m) => m.type === from.value && !isNatural(m))]
+            ? [
+                  ...sources,
+                  ...catalog.filter(
+                      (m) =>
+                          m.type === from.value &&
+                          !sources.includes(m) &&
+                          (!isNatural(m) || essenceRows.has(m.id)),
+                  ),
+              ]
             : [...pinned].flatMap((id) => {
                   const row = registry.resolveMod(id);
                   return row.ok ? [row.value] : [];
@@ -283,21 +319,31 @@ function harvestChange(
         // the source's rank, among the rows of the source's own influence.
         const ladder = (rows: readonly Mod[]): readonly Mod[] =>
             rows.filter((m) => influenceOf(m) === influenceOf(was));
-        const [ladderFrom, ladderTo] = [ladder(wholeFrom), ladder(wholeTo)];
-        if (ladderTo.length === 0) {
+        const onBase = wholeFrom.some((m) => m.id === was.id);
+        const [ladderFrom, ladderTo] = onBase
+            ? [ladder(wholeFrom), ladder(wholeTo)]
+            : [elsewhere(from.value, was), elsewhere(to.value, was)];
+        const same =
+            ladderFrom.length === ladderTo.length
+                ? ladderTo[ladderFrom.findIndex((m) => m.id === was.id)]
+                : undefined;
+        if (same !== undefined) {
+            // An essence's row becomes the row of its rank that an essence
+            // places on this class, whatever its level, as that row's own
+            // essence would have placed it.
+            const placed = !onBase || was.minLevel > a.ilvl;
+            if ((onBase && same.minLevel <= a.ilvl) || (placed && essenceRows.has(same.id))) {
+                rows.add(same);
+                changeable.push(was);
+            } else if (onBase) tooHigh ??= same;
+            else stuck = true;
+        } else if (!onBase || ladderTo.length === 0) {
             stuck = true;
-        } else if (ladderFrom.length !== ladderTo.length) {
+        } else {
             // The rank names no one row: any of the ladder's, when all roll here.
             const above = ladderTo.find((m) => m.minLevel > a.ilvl);
             if (above !== undefined) tooHigh ??= above;
             else for (const m of ladderTo) rows.add(m);
-        } else {
-            const same = ladderTo[ladderFrom.findIndex((m) => m.id === was.id)];
-            if (same === undefined) stuck = true;
-            else if (same.minLevel <= a.ilvl) {
-                rows.add(same);
-                changeable.push(was);
-            } else tooHigh ??= same;
         }
     }
     // The elements' ladders unlock at different levels, so the kept tier may
