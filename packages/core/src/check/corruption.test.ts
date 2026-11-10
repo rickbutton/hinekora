@@ -160,6 +160,23 @@ describe("the Tainted currency", () => {
         expect(f.finalState!.rarities).toEqual(new Set(["magic", "rare"]));
     });
 
+    it("chaos: a fractured prefix beside a fractured suffix may leave Magic, which a second refuses", () => {
+        const locked = ring({
+            corrupted: true,
+            prefixes: [{ mod: "life", fractured: true }],
+            suffixes: [{ mod: "cold", fractured: true }],
+        });
+        const r = run(craft(locked, [words("tainted", "chaos")]));
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.rarities).toEqual(new Set(["magic", "rare"]));
+        expect(
+            messages(craft(locked, [words("tainted", "chaos"), words("tainted", "chaos")])),
+        ).toContain("Requires a Rare item — this item may be");
+        // The plain scour keeps the survivor-count rule: two survivors stay Rare.
+        const scoured = run(craft(ring({ ...locked, corrupted: false }), [op("scour")]));
+        expect(scoured.finalState!.rarities).toEqual(new Set(["rare"]));
+    });
+
     it("needs the corruption on every path", () => {
         // Whether the reforge rolled T1 life is unknown, so only one path corrupts.
         const c = craft(ring(), [

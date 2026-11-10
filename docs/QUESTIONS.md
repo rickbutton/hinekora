@@ -135,8 +135,9 @@ Rare.
 **Probe:** a corrupted Rare with "Suffixes Cannot Be Changed", and one with a fractured
 prefix and a fractured suffix; Tainted Chaos Orbs; apply until each outcome shows; record
 whether the suffixes survived, and the second item's rarity when stripped.
-**Assumed:** both halves ignore the protection; the strip leaves a scour's rarity, Rare
-with two survivors. **Encoded in:** `check/library.ts` `TAINTED_CHAOS`, `unprotect`;
+**Assumed:** both halves ignore the protection; the strip leaves a scour's rarity, and
+with a fractured prefix beside a fractured suffix Magic or Rare, so a second orb is
+refused. **Encoded in:** `check/library.ts` `TAINTED_CHAOS`, `unprotect`;
 `check/ops.ts` `scouredRarities`.
 
 ### Q41 · probe · open — where a copied item's `Corrupted` goes

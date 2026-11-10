@@ -272,8 +272,10 @@ export type Op =
     | { readonly kind: "influence"; readonly change: InfluenceChange }
     | { readonly kind: "fill"; readonly pool: PoolSpec; readonly count: FillCount }
     | { readonly kind: "remove"; readonly selector: Selector }
-    /** `survivors`: the rarity a scour leaves, by how many modifiers remain. */
-    | { readonly kind: "rarity"; readonly rarity: Rarity | "survivors" }
+    /** `survivors`: the rarity a scour leaves, by how many modifiers remain.
+     *  `lowest`: that, or the lowest rarity that holds them (a Tainted Chaos
+     *  Orb's strip, `QUESTIONS.md` Q33). */
+    | { readonly kind: "rarity"; readonly rarity: Rarity | "survivors" | "lowest" }
     /** `n` random present modifiers become fractured. */
     | { readonly kind: "lock"; readonly n: number }
     /** A list `consume` is indexed by the modifier count before the method, its
@@ -574,8 +576,8 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
             return settled({
                 ...a,
                 rarities:
-                    op.rarity === "survivors"
-                        ? scouredRarities(a0, rules, registry)
+                    op.rarity === "survivors" || op.rarity === "lowest"
+                        ? scouredRarities(a0, rules, registry, op.rarity === "lowest")
                         : new Set([op.rarity]),
             });
         case "lock":
@@ -1399,14 +1401,25 @@ function rarityForSurvivors(n: number): Rarity {
 const RARITY_RANK: Readonly<Record<Rarity, number>> = { normal: 0, magic: 1, rare: 2 };
 
 /** A scour only ever lowers the rarity: a Magic item keeping two fractured
- *  modifiers, one a side, stays Magic. */
-function scouredRarities(a0: AItem, rules: Rules, registry: Registry): ReadonlySet<Rarity> {
+ *  modifiers, one a side, stays Magic. With `lowest`, two survivors that may
+ *  sit one a side may also leave Magic, "the lowest eligible rarity" (Tainted
+ *  Chaos Orb § Mechanics), where the Orb of Scouring's page has Rare. */
+function scouredRarities(
+    a0: AItem,
+    rules: Rules,
+    registry: Registry,
+    lowest = false,
+): ReadonlySet<Rarity> {
     const [lo, hi] = survivorsOf(a0, rules, registry);
+    const kept = keptBounds(a0, rules, registry);
+    const oneASide = kept.prefix[0] <= 1 && kept.suffix[0] <= 1;
     const out = new Set<Rarity>();
     for (const had of a0.rarities) {
+        const lowered = (left: Rarity): Rarity =>
+            RARITY_RANK[left] < RARITY_RANK[had] ? left : had;
         for (let n = lo; n <= hi; n++) {
-            const left = rarityForSurvivors(n);
-            out.add(RARITY_RANK[left] < RARITY_RANK[had] ? left : had);
+            out.add(lowered(rarityForSurvivors(n)));
+            if (lowest && n === 2 && oneASide) out.add(lowered("magic"));
         }
     }
     return out;

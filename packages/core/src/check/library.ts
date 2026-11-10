@@ -31,7 +31,7 @@ import type {
 } from "./ops.js";
 
 const require = (check: Check): Op => ({ kind: "require", check });
-const rarity = (rarity: Rarity | "survivors"): Transform => ({ kind: "rarity", rarity });
+const rarity = (rarity: Rarity | "survivors" | "lowest"): Transform => ({ kind: "rarity", rarity });
 const strip = (): Transform => ({ kind: "strip" });
 const fill = (pool: PoolSpec, count: FillCount): Transform => ({ kind: "fill", pool, count });
 const remove = (selector: Selector): Transform => ({ kind: "remove", selector });
@@ -388,12 +388,14 @@ export function locusOps(base: Base): readonly Op[] {
 /** A Tainted Chaos Orb: a corrupted Rare is reforged, or stripped to the
  *  rarity its survivors allow; a protected side is not kept, since the wiki
  *  names the fractured modifier as the one survivor (Tainted Chaos Orb §
- *  Mechanics; the reforge half is `QUESTIONS.md` Q33). */
+ *  Mechanics; the reforge half is `QUESTIONS.md` Q33). A fractured prefix
+ *  beside a fractured suffix is Magic by that page and Rare by the Orb of
+ *  Scouring's, so the strip leaves either. */
 export const TAINTED_CHAOS: readonly Op[] = [
     corruptedItem("A Tainted Chaos Orb"),
     isRare,
     { kind: "unprotect" },
-    either([strip(), fill(natural, reforge(RARE_REFORGE))], [strip(), rarity("survivors")]),
+    either([strip(), fill(natural, reforge(RARE_REFORGE))], [strip(), rarity("lowest")]),
     strands(60),
 ];
 
