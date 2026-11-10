@@ -494,6 +494,14 @@ describe("the cost of a guide", () => {
         expect(branch.branch).toBeCloseTo(1 / 2, 9);
     });
 
+    it("an unveil does not take a modifier a condition asks to be absent", () => {
+        const c = craft(
+            ring("rare", ["IncreasedMana1", "IncreasedArmour1"], ["FireResist1", "ColdResist1"]),
+            [veiled("exalt"), unveil(), iff(notp(has("veiled double damage")), [stop()])],
+        );
+        expect(report(c).steps.find((s) => s.kind === "if")!.branch).toBeCloseTo(1, 9);
+    });
+
     it("an unveil with a target takes the target over a modifier a later condition names", () => {
         const c = craft(
             ring("rare", ["IncreasedMana1", "IncreasedArmour1"], ["FireResist1", "ColdResist1"]),

@@ -163,6 +163,9 @@ export class Tracker {
      *  and its type when a condition names one. */
     readonly implicits: boolean;
     private readonly implicitTypes: ReadonlySet<TypeId>;
+    /** The modifier types the guide's conditions ask to be present, in the
+     *  order they first do: what a player takes when an unveil offers one. */
+    private readonly asked: TypeId[] = [];
     readonly classes: RowClass[][] = [];
     /** Per atom, each row's classes with the share of the row's weight each holds. */
     private readonly classesOfRow: Map<ModId, { rep: ModId; share: number }[]>[] = [];
@@ -183,6 +186,8 @@ export class Tracker {
             for (const l of predLeaves(p))
                 if (l.kind === "eldritch") for (const t of l.types ?? []) implicitTypes.add(t);
         this.implicitTypes = implicitTypes;
+        for (const pred of preds)
+            for (const t of askedFor(pred)) if (!this.asked.includes(t)) this.asked.push(t);
         const named = new Set<ModId>();
         const wanted: TypeId[] = [];
         for (const pred of preds) {
@@ -594,7 +599,7 @@ export class Tracker {
      * An unveil: three options drawn by weight without replacement (Veiled
      * modifier § Version history), the
      * veiled modifier becoming the one the player takes: the target when it is
-     * offered, else a modifier the guide names, the first the tracker follows,
+     * offered, else a modifier a condition asks for, the first the guide asks for,
      * else one no one names (QUESTIONS.md Q78).
      */
     private unveiled(
@@ -608,11 +613,12 @@ export class Tracker {
         if (veiled === undefined) return undefined;
         const special: number[] = [];
         options.forEach((g, gi) => {
-            if (this.index.has(g.type)) special.push(gi);
+            if (g.type === target || (this.index.has(g.type) && this.asked.includes(g.type)))
+                special.push(gi);
         });
         if (special.length > 12) return undefined;
         const rank = (gi: number): number =>
-            options[gi]!.type === target ? -1 : this.index.get(options[gi]!.type)!;
+            options[gi]!.type === target ? -1 : this.asked.indexOf(options[gi]!.type);
         const dist = amongFirstDistribution(
             options.map((g) => g.weight),
             special,
@@ -630,7 +636,12 @@ export class Tracker {
                 continue;
             }
             const taken = options[offered.reduce((a, b) => (rank(b) < rank(a) ? b : a))]!;
-            const i = this.index.get(taken.type)!;
+            const i = this.index.get(taken.type);
+            if (i === undefined) {
+                // A target no condition names: a modifier the state does not hold.
+                out.push({ state: { ...state, rows }, prob });
+                continue;
+            }
             const total = taken.rows.reduce((sum, r) => sum + r.weight, 0);
             for (const r of taken.rows) {
                 for (const c of this.classesOf(i, r.mod.id)) {
@@ -1052,6 +1063,25 @@ function removalBeforeFill(ops: readonly Op[]): number {
     const at = ops.findIndex((op) => op.kind === "remove" && op.selector.kind === "random");
     if (at < 0 || ops.slice(0, at).some((op) => op.kind === "fill")) return -1;
     return ops.slice(at + 1).some((op) => op.kind === "fill") ? at : -1;
+}
+
+/** The types a condition asks to be present: those under an even number of
+ *  negations. */
+function askedFor(pred: RPred, negated = false): TypeId[] {
+    switch (pred.kind) {
+        case "not":
+            return askedFor(pred.inner, !negated);
+        case "and":
+        case "or":
+            return [...askedFor(pred.left, negated), ...askedFor(pred.right, negated)];
+        case "has":
+        case "hasValue":
+            return negated ? [] : [pred.type];
+        case "hasGroup":
+            return negated ? [] : [...pred.types];
+        default:
+            return [];
+    }
 }
 
 /** Outcomes without the specks of mass the race's quadrature leaves on

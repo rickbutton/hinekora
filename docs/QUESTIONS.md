@@ -396,8 +396,9 @@ offers both sides, the looser reading. **Encoded in:** `model/veiled.ts`, `cost/
 else one no one names (recommended: a guide naming no target still unveils for what its
 conditions ask, and a player takes that when offered); (b) only the target, any other pick
 an unnamed modifier; (c) the most valuable, which the cost layer cannot measure.
-**Assumed:** (a), the named modifiers ranked in the order the guide's conditions first
-name them. **Encoded in:** `cost/track.ts` `unveiled`.
+**Assumed:** (a), counting a modifier a condition asks to be present (not one under a
+`not`), ranked by where the guide first asks for it. **Encoded in:** `cost/track.ts`
+`unveiled`, `askedFor`.
 
 ### Q79 · probe · open — an essence's item-level requirement
 
