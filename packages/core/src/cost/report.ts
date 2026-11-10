@@ -1034,7 +1034,7 @@ class Walker {
         // The share of attempts that never reach the exit is counted as ending,
         // so the figures stay finite: under half a hundredth it moves them
         // little and passes unremarked, above it the loop has no figure.
-        const open = solved.unresolved + solved.undecided;
+        const open = Math.min(1, solved.unresolved + solved.undecided);
         const ending = solved.exit + solved.stop + open;
         const attempts = ending > 0 ? 1 / ending : 1;
         // Rounds, not attempts: an attempt here is as many rounds as the item
@@ -1043,7 +1043,7 @@ class Walker {
         // Rounds that never end have no expected number: the rounds followed
         // before giving up are no figure of the craft's.
         const stuck = open >= 0.005;
-        const share = (x: number): string => `${Math.max(1, Math.round(x * 100))}%`;
+        const share = (x: number): string => `${Math.min(100, Math.max(1, Math.round(x * 100)))}%`;
         // "Never" is said only of items no run of rounds can take to the exit.
         const note = !stuck
             ? solved.estimated

@@ -379,6 +379,31 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(few.unresolved).toBeCloseTo(0.004, 9);
     });
 
+    it("items that drift away from the exit for longer than any count of rounds are solved all the same", () => {
+        // A walk on eighteen states, a step away from the exit nine times in
+        // ten and a wall at the far end: every item comes back, after some
+        // 10^17 rounds. Taking each state's chance of moving on as one less
+        // its chance of staying loses it to rounding here.
+        const n = 18;
+        const states = Array.from({ length: n + 1 }, (_x, i) => at(i, 0));
+        const next = states.map((s, i) => [
+            { state: states[i - 1] ?? s, prob: 0.1 },
+            { state: states[i + 1] ?? s, prob: 0.9 },
+        ]);
+        const solved = chain({
+            atoms: [],
+            body: [{ id: 0, kind: "transition", next: (s) => next[s.prefix]! }],
+            starts: [{ state: states[1]!, weight: 1 }],
+            caps: CAPS,
+            exit: (s) => s.prefix === 0,
+        })!;
+        let truth = 0;
+        for (let k = 1; k <= n; k++) truth += 10 * 9 ** (k - 1);
+        expect(solved.exit).toBeCloseTo(1, 9);
+        expect(solved.undecided).toBe(0);
+        expect(solved.passes / truth).toBeCloseTo(1, 9);
+    });
+
     it("an item that may turn into one that never leaves counts by its chance of doing so", () => {
         // Each round: the exit one time in ten thousand, a dead end as often.
         const [E, A, dead] = [at(0, 0), at(1, 0), at(2, 0)];
@@ -634,6 +659,65 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         })!;
         expect(calls).toBeLessThan(1_000_000);
         expect(solved.exit).toBeCloseTo(1, 6);
+    });
+
+    it("a loop inside that cannot say where its items go leaves the outer loop undecided, as a share", () => {
+        // Thirty kinds of item, each round into a loop inside that walks three
+        // hundred states: followed one kind at a time the inner loop is small,
+        // but from every kind at once it outgrows what is followed.
+        const [kinds, far] = [30, 300];
+        const cache = new Map<string, ChainState>();
+        const st = (p: number, s: number): ChainState => {
+            const k = `${p}/${s}`;
+            const hit = cache.get(k) ?? at(p, s);
+            cache.set(k, hit);
+            return hit;
+        };
+        const inner = new Map<ChainState, { state: ChainState; prob: number }[]>();
+        const walk = (s: ChainState) => {
+            let out = inner.get(s);
+            if (out === undefined) {
+                out =
+                    s.suffix >= far
+                        ? [
+                              { state: st(s.prefix, s.suffix - 1), prob: 0.5 },
+                              { state: s, prob: 0.5 },
+                          ]
+                        : [
+                              { state: st(s.prefix, s.suffix - 1), prob: 0.3 },
+                              { state: st(s.prefix, s.suffix + 1), prob: 0.3 },
+                              { state: s, prob: 0.4 },
+                          ];
+                inner.set(s, out);
+            }
+            return out;
+        };
+        const solved = chain({
+            atoms: [],
+            body: [
+                {
+                    id: 1,
+                    kind: "loop",
+                    exit: (s) => s.suffix === 0,
+                    body: [{ id: 2, kind: "transition", next: walk }],
+                },
+                {
+                    id: 3,
+                    kind: "transition",
+                    next: (s) => [
+                        { state: st(0, 0), prob: 1e-5 },
+                        { state: st((s.prefix % kinds) + 1, 5), prob: 0.5 },
+                        { state: st(s.prefix, 3), prob: 0.5 - 1e-5 },
+                    ],
+                },
+            ],
+            starts: [{ state: st(1, 3), weight: 1 }],
+            caps: CAPS,
+            exit: (s) => s.prefix === 0,
+        })!;
+        expect(solved.undecided).toBeGreaterThan(0.5);
+        expect(solved.undecided).toBeLessThanOrEqual(1);
+        expect(solved.exit + solved.stop + solved.unresolved + solved.undecided).toBeCloseTo(1, 6);
     });
 
     it("says when the mass that never leaves is held by a loop inside", () => {
