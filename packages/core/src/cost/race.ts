@@ -198,19 +198,30 @@ function popcount(n: number): number {
 }
 
 /**
- * The density of the `b`-th clock among `rates` to fire: some clock fires at
- * `t` while exactly b − 1 of the others fired before.
+ * The density of the `b`-th clock among `rates` to fire: the time derivative of
+ * "at least b have fired by t". The count's dynamic program carries each
+ * cell's derivative beside it, so this costs one pass over the clocks.
  */
 function nthDensity(rates: readonly number[], b: number, t: number): number {
-    let sum = 0;
-    for (let i = 0; i < rates.length; i++) {
-        const r = rates[i]!;
+    const dist = new Array<number>(b + 1).fill(0);
+    const slope = new Array<number>(b + 1).fill(0);
+    dist[0] = 1;
+    for (const r of rates) {
         if (!(r > 0)) continue;
-        const others = rates.filter((_, j) => j !== i);
-        const dist = firedBy(others, t, b);
-        sum += r * Math.exp(-r * t) * (dist[b - 1] ?? 0);
+        const p = -Math.expm1(-r * t);
+        const dp = r * Math.exp(-r * t);
+        for (let c = b; c >= 1; c--) {
+            const stay = c === b ? 1 : 1 - p;
+            const staySlope = c === b ? 0 : -dp;
+            slope[c] =
+                slope[c]! * stay + dist[c]! * staySlope + slope[c - 1]! * p + dist[c - 1]! * dp;
+            dist[c] = dist[c]! * stay + dist[c - 1]! * p;
+        }
+        slope[0] = slope[0]! * (1 - p) - dist[0] * dp;
+        dist[0] = dist[0] * (1 - p);
     }
-    return sum;
+    // P(at least b) is the last cell; its derivative is the density.
+    return slope[b]!;
 }
 
 /**
