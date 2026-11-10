@@ -892,7 +892,7 @@ function failing(
         case "veiledPresent":
             return hasVeiledPlaceholder(a) ? null : { kind: "noVeiledMod" };
         case "noVeiled":
-            return mayHaveVeiled(a, registry) ? { kind: "alreadyVeiled" } : null;
+            return mayHaveVeiled(a, registry, undefined, true) ? { kind: "alreadyVeiled" } : null;
         case "noVeiledKept": {
             const fractured = fracturedTypes(a);
             const unprovenLock = unprovenFractures(a)[1] > 0;
@@ -1119,12 +1119,22 @@ function hasVeiledPlaceholder(a: AItem): boolean {
     return a.bdd.entails(a.presence, clause);
 }
 
+/** The category tag of a bench row that is the craftable version of a veiled
+ *  modifier (the data's; every such row is one of Jun's crafts). */
+const UNVEILED_CRAFT = TagId("unveiled_mod");
+
 /** Might the item carry a veiled placeholder or an unveiled result mod? A veiled
- *  orb refuses both ("an item with a veiled modifier or its craftable versions",
- *  Veiled Exalted Orb; "cannot be used to obtain multiple veiled modifiers",
+ *  orb refuses both ("cannot be used to obtain multiple veiled modifiers",
  *  Crafting), and the precondition must hold on every path, so a possible one
- *  is enough to refuse. */
-function mayHaveVeiled(a: AItem, registry: Registry, among?: (t: TypeId) => boolean): boolean {
+ *  is enough to refuse. With `craftable`, a bench-crafted version counts too
+ *  ("an item with a veiled modifier or its craftable versions", Veiled Exalted
+ *  Orb § Mechanics). */
+function mayHaveVeiled(
+    a: AItem,
+    registry: Registry,
+    among?: (t: TypeId) => boolean,
+    craftable = false,
+): boolean {
     const guaranteed = guaranteedTypes(a);
     for (const t of a.possible) {
         if (isExcluded(a, t)) continue;
@@ -1134,7 +1144,11 @@ function mayHaveVeiled(a: AItem, registry: Registry, among?: (t: TypeId) => bool
         const veiled =
             t === VEILED_PREFIX ||
             t === VEILED_SUFFIX ||
-            rowsOf(a, t, registry).some((m) => m.source === "veiled");
+            rowsOf(a, t, registry).some(
+                (m) =>
+                    m.source === "veiled" ||
+                    (craftable && m.source === "bench" && m.implicitTags.has(UNVEILED_CRAFT)),
+            );
         if (!veiled) continue;
         if (guaranteed.has(t) || mayBePresentUnnamed(a, registry, t)) return true;
     }
