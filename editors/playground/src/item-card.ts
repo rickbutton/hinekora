@@ -31,8 +31,14 @@ const h = <K extends keyof HTMLElementTagNameMap>(
     return node;
 };
 
-/** A stat text with its roll ranges set apart, as the game's Alt view does. */
+/** A stat text with its roll ranges set apart, as the game's Alt view does, one line per stat. */
 function statText(text: string): Node[] {
+    return text
+        .split("\n")
+        .flatMap((line, i) => [...(i > 0 ? [h("br", "")] : []), ...statLine(line)]);
+}
+
+function statLine(text: string): Node[] {
     const out: Node[] = [];
     const re = /\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)/g;
     let last = 0;
@@ -118,7 +124,10 @@ export function renderItemCard(v: ItemView): HTMLElement {
             );
             row.title = `${SIDE_NAME[i.side]} implicit, ${tier}${
                 i.texts.length > 1
-                    ? `: ${i.texts.slice(0, 12).join(" / ")}${i.texts.length > 12 ? " / …" : ""}`
+                    ? `: ${i.texts
+                          .slice(0, 12)
+                          .map((t) => t.replace(/\n/g, ", "))
+                          .join(" / ")}${i.texts.length > 12 ? " / …" : ""}`
                     : ""
             }`;
             return row;
@@ -134,7 +143,7 @@ export function renderItemCard(v: ItemView): HTMLElement {
     section(
         "marks",
         ...v.marks.map((m) => {
-            const kind = m.text === "Corrupted" ? "corrupted" : "mark";
+            const kind = m.kind === "corrupted" ? "corrupted" : "mark";
             return h(
                 "div",
                 `${kind}${m.maybe ? " maybe" : ""}`,

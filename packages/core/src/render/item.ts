@@ -1,9 +1,9 @@
 /**
  * The abstract item as a player reads an item: a view model shaped like the
- * game's item tooltip, and its text form in the game's copy-to-clipboard
- * layout (`Item Class:` / `Rarity:` / the base / `--------` sections). Each
- * modifier line carries what the game's advanced tooltip shows, the affix
- * name, the tier and the tags, when the state knows them.
+ * game's item tooltip, and its text form in the game's advanced
+ * copy-to-clipboard layout (`Item Class:` / `Rarity:` / the base / `--------`
+ * sections). Each modifier carries the header the advanced copy gives it, the
+ * affix name, the tier or bench rank and the tags, when the state knows them.
  *
  * Where a state is less than concrete the view extends the layout rather than
  * hiding the uncertainty: a tier range instead of a tier, a roll span across
@@ -39,6 +39,7 @@ import {
     NO_INFLUENCE,
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
+import { isUnveiledResult } from "../model/veiled.js";
 import type { Registry } from "../resolve/registry.js";
 import { rollableGen, rollableTiers } from "../resolve/tiers.js";
 import { baseLabel } from "./render.js";
@@ -55,8 +56,13 @@ export interface ModView {
     /** The modifier's category tags, as the advanced tooltip shows them. */
     readonly tags: readonly string[];
     readonly fractured: boolean;
-    /** Every row it may be is a bench row. */
+    /**
+     * Every row it may be is one the game shows as master crafted: a bench row,
+     * or an unveiled row (which does not count against the crafted limit).
+     */
     readonly crafted: boolean;
+    /** The bench rank, when the modifier is one ranked bench craft. */
+    readonly rank?: number;
 }
 
 export type ModGroup =
@@ -75,11 +81,17 @@ export interface ImplicitView {
     readonly tiers: readonly string[];
     /** The wordings it may be; one when known, empty when any. */
     readonly texts: readonly string[];
+    /** The category tags, when the wording is known. */
+    readonly tags: readonly string[];
     /** On some path only. */
     readonly maybe: boolean;
 }
 
+/** Which line of the item's marks: the copy text places each kind in its own spot. */
+export type MarkKind = "influence" | "eldritch" | "fractured" | "corrupted";
+
 export interface Mark {
+    readonly kind: MarkKind;
     readonly text: string;
     /** On some path only. */
     readonly maybe: boolean;
@@ -124,8 +136,7 @@ const INFLUENCE_NAME: Readonly<Record<Influence, string>> = {
  * The game's class label for a data class id, written in the plural as the
  * `Item Class:` line is. The ids the game spells differently are listed; the
  * rest split their camel case and take an `s`. The spellings are what the
- * game shows for the craftable classes (`docs/QUESTIONS.md` Q41 probes the full
- * list).
+ * game shows for the craftable classes.
  */
 const CLASS_LABEL: Readonly<Record<string, string>> = {
     Staff: "Staves",
@@ -173,8 +184,6 @@ export function rollSpan(texts: readonly string[]): string {
     return texts[0]!.replace(RANGE, () => `(${lo[i]}-${hi[i++]})`);
 }
 
-const oneLine = (text: string): string => text.replace(/\n/g, " / ");
-
 /**
  * The text with its first span narrowed to `value`: "+(70-84)" at [75, 90] is
  * "+(75-84)". The value is cut to the span shown, since the tiers can narrow
@@ -205,13 +214,16 @@ function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: Mod
     const texts = mods.map((m) => m.text).filter((t): t is string => t !== undefined);
     // A value the guide has proven ("life 110 or more") narrows the first span.
     const known = a.values.get(type);
-    const span = texts.length > 0 ? oneLine(rollSpan(texts)) : registry.typeLabel(type);
+    const span = texts.length > 0 ? rollSpan(texts) : registry.typeLabel(type);
     const text = known === undefined ? span : withValue(span, known);
     const numbers = mods
         .map((m) => rollable.findIndex((r) => r.id === m.id) + 1)
         .filter((n) => n > 0);
     const tagSet = new Set<string>();
     for (const m of mods) for (const t of m.implicitTags) tagSet.add(tagLabel(t));
+    const one = mods.length === 1 ? mods[0]! : undefined;
+    // A bench craft of one rank (0) shows none, as does an unveiled row.
+    const rank = one?.source === "bench" ? (registry.benchTierOf(one.id) ?? 0) : 0;
     return {
         gen,
         text,
@@ -221,7 +233,8 @@ function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: Mod
         }),
         tags: [...tagSet],
         fractured: isFractured(a, type),
-        crafted: mods.length > 0 && mods.every((m) => m.source === "bench"),
+        crafted: mods.length > 0 && mods.every((m) => m.source === "bench" || isUnveiledResult(m)),
+        ...(rank > 0 && { rank }),
     };
 }
 
@@ -282,28 +295,26 @@ export function itemView(a: AItem, registry: Registry): ItemView {
         const types = a.eldritchTypes[side];
         // The wordings are the rows of the known tiers, since a family's text
         // changes with the tier; a type with no row at them keeps its wording.
-        const texts =
-            types === "any"
-                ? []
-                : [
-                      ...new Set(
-                          [...types].flatMap((t) => {
-                              const rows = tiers.flatMap((n) =>
-                                  registry
-                                      .eldritchPool(a.base, side, n)
-                                      .filter((e) => e.type === t)
-                                      .map((e) => oneLine(e.text)),
-                              );
-                              return rows.length > 0
-                                  ? rows
-                                  : [oneLine(registry.eldritchTextOf(t) ?? t)];
-                          }),
-                      ),
-                  ];
+        const texts = new Set<string>();
+        const tagSet = new Set<string>();
+        if (types !== "any") {
+            for (const t of types) {
+                const rows = tiers.flatMap((n) =>
+                    registry.eldritchPool(a.base, side, n).filter((e) => e.type === t),
+                );
+                if (rows.length === 0) texts.add(registry.eldritchTextOf(t) ?? t);
+                for (const e of rows) {
+                    texts.add(e.text);
+                    for (const tag of e.implicitTags) tagSet.add(tagLabel(tag));
+                }
+            }
+        }
         implicits.push({
             side,
             tiers: tiers.map(eldritchTierLabel),
-            texts,
+            texts: [...texts],
+            // Several wordings' tags together would describe no implicit.
+            tags: texts.size === 1 ? [...tagSet] : [],
             maybe: all.some((n) => n === 0),
         });
     }
@@ -313,20 +324,26 @@ export function itemView(a: AItem, registry: Registry): ItemView {
     const mayLackInfluence = a.influences.has(NO_INFLUENCE);
     if (influenceSets.length === 1 && !mayLackInfluence) {
         for (const i of influencesOf(influenceSets[0]!)) {
-            marks.push({ text: `${INFLUENCE_NAME[i]} Item`, maybe: false });
+            marks.push({ kind: "influence", text: `${INFLUENCE_NAME[i]} Item`, maybe: false });
         }
     } else if (influenceSets.length > 0) {
         const named = influenceSets.map((k) => `${influenceSetLabel(k)} Item`).join(", or ");
-        marks.push({ text: `${named}${mayLackInfluence ? ", or no influence" : ""}`, maybe: true });
+        const text = `${named}${mayLackInfluence ? ", or no influence" : ""}`;
+        marks.push({ kind: "influence", text, maybe: true });
     }
     for (const side of ELDRITCH_SIDES) {
         const all = sideTiers(side);
         if (all.some((n) => n > 0)) {
-            marks.push({ text: `${SIDE_NAME[side]} Item`, maybe: all.some((n) => n === 0) });
+            const maybe = all.some((n) => n === 0);
+            marks.push({ kind: "eldritch", text: `${SIDE_NAME[side]} Item`, maybe });
         }
     }
-    if (a.fractures[1] > 0) marks.push({ text: "Fractured Item", maybe: a.fractures[0] === 0 });
-    if (a.corrupted.has(true)) marks.push({ text: "Corrupted", maybe: a.corrupted.has(false) });
+    if (a.fractures[1] > 0) {
+        marks.push({ kind: "fractured", text: "Fractured Item", maybe: a.fractures[0] === 0 });
+    }
+    if (a.corrupted.has(true)) {
+        marks.push({ kind: "corrupted", text: "Corrupted", maybe: a.corrupted.has(false) });
+    }
 
     return {
         base: baseLabel(a.base),
@@ -390,18 +407,32 @@ export function groupLabel(g: Extract<ModGroup, { kind: "oneOf" }>): string {
     return `${g.exact ? "exactly" : "at least"} ${numberWord(g.atLeast)} of`;
 }
 
-/** The game's advanced-tooltip header for a modifier: `{ Prefix Modifier "Virile" (Tier: 1) — Life }`. */
+const tagsText = (tags: readonly string[]): string =>
+    tags.length > 0 ? ` — ${tags.join(", ")}` : "";
+
+/**
+ * The game's advanced-copy header for a modifier: `{ Prefix Modifier "Virile"
+ * (Tier: 1) — Life }`, `{ Fractured Prefix Modifier … }`, or `{ Master Crafted
+ * Suffix Modifier "of Craft" (Rank: 2) — … }`.
+ */
 function modHeader(m: ModView): string {
-    const kind = `${capitalise(m.gen)} Modifier`;
+    const marker = m.fractured ? "Fractured " : m.crafted ? "Master Crafted " : "";
+    const kind = `${marker}${capitalise(m.gen)} Modifier`;
     const name = m.name !== undefined ? ` "${m.name}"` : "";
-    const tier = m.tier !== undefined ? ` (Tier: ${rangeText(m.tier)})` : "";
-    const tags = m.tags.length > 0 ? ` — ${m.tags.join(", ")}` : "";
-    return `{ ${kind}${name}${tier}${tags} }`;
+    const tier =
+        m.rank !== undefined
+            ? ` (Rank: ${m.rank})`
+            : m.tier !== undefined
+              ? ` (Tier: ${rangeText(m.tier)})`
+              : "";
+    return `{ ${kind}${name}${tier}${tagsText(m.tags)} }`;
 }
 
+const lines = (text: string): string[] => text.split("\n");
+const indent = (l: string): string => `    ${l}`;
+
 function modLines(m: ModView): string[] {
-    const suffix = m.fractured ? " (fractured)" : m.crafted ? " (crafted)" : "";
-    return [modHeader(m), `${m.text}${suffix}`];
+    return [modHeader(m), ...lines(m.text)];
 }
 
 function groupLines(gen: Gen | undefined, g: ModGroup): string[] {
@@ -409,51 +440,52 @@ function groupLines(gen: Gen | undefined, g: ModGroup): string[] {
     const kind = gen === undefined ? "modifiers" : `${gen} modifiers`;
     const label = groupLabel(g);
     const head = `{ ${capitalise(label)} these ${kind} }`;
-    return [head, ...g.members.flatMap((m) => modLines(m).map((l) => `    ${l}`))];
+    return [head, ...g.members.flatMap((m) => modLines(m).map(indent))];
+}
+
+function implicitLines(i: ImplicitView): string[] {
+    const tier = implicitTierText(i);
+    const maybe = i.maybe ? "Possibly: " : "";
+    const name = SIDE_NAME[i.side];
+    const head = `{ ${maybe}${name} Implicit Modifier (${tier})${tagsText(i.tags)} }`;
+    if (i.texts.length === 1) return [head, ...lines(i.texts[0]!)];
+    if (i.texts.length === 0) return [head, `any ${tier} ${name} implicit`];
+    if (i.texts.length > IMPLICIT_LIST_LIMIT) {
+        return [head, `one of ${i.texts.length} ${name} implicits`];
+    }
+    return [head, `one of ${i.texts.length}:`, ...i.texts.flatMap(lines).map(indent)];
 }
 
 /**
- * The item as the game's copy-to-clipboard text lays it out, with this
- * project's extensions where the state is not concrete. Modelled on the
- * in-game copy and its advanced form; `docs/QUESTIONS.md` Q41 probes the
- * details the wiki does not record.
+ * The item as the game's advanced copy (Ctrl+Alt+C) lays it out, in the
+ * format since 3.28, with this project's extensions where the state is not
+ * concrete. The name, properties, requirements and sockets are left out, as
+ * the state does not hold them. `docs/QUESTIONS.md` Q41 probes what no real
+ * paste shows.
  */
 export function renderItemText(v: ItemView): string {
     const sections: string[][] = [];
     sections.push([`Item Class: ${v.itemClass}`, `Rarity: ${rarityText(v.rarities)}`, v.base]);
-    sections.push([
-        `Item Level: ${v.ilvl}`,
-        ...(v.strands !== undefined ? [`Memory Strands: ${strandsText(v.strands)}`] : []),
-    ]);
+    // The strands are the last of the properties, which come before the item level.
+    if (v.strands !== undefined) sections.push([`Memory Strands: ${strandsText(v.strands)}`]);
+    sections.push([`Item Level: ${v.ilvl}`]);
 
-    if (v.implicits.length > 0) {
-        sections.push(
-            v.implicits.flatMap((i) => {
-                const tier = implicitTierText(i);
-                const maybe = i.maybe ? "Possibly: " : "";
-                const head = `{ ${maybe}${SIDE_NAME[i.side]} Implicit Modifier (Tier: ${tier}) }`;
-                const tag = ` (${i.side} implicit)`;
-                if (i.texts.length === 1) return [head, `${i.texts[0]!}${tag}`];
-                if (i.texts.length === 0)
-                    return [head, `any ${tier} ${SIDE_NAME[i.side]} implicit${tag}`];
-                if (i.texts.length > IMPLICIT_LIST_LIMIT)
-                    return [head, `one of ${i.texts.length} ${SIDE_NAME[i.side]} implicits${tag}`];
-                return [head, `one of ${i.texts.length}:${tag}`, ...i.texts.map((t) => `    ${t}`)];
-            }),
-        );
-    }
+    if (v.implicits.length > 0) sections.push(v.implicits.flatMap(implicitLines));
 
+    const markLines = (kind: MarkKind): string[] =>
+        v.marks
+            .filter((m) => m.kind === kind)
+            .map((m) => (m.maybe ? `Possibly: ${m.text}` : m.text));
     const mods = [
         ...v.prefixes.flatMap((g) => groupLines("prefix", g)),
         ...v.suffixes.flatMap((g) => groupLines("suffix", g)),
         ...v.either.flatMap((g) => groupLines(undefined, g)),
     ];
     if (v.remainder !== undefined) mods.push(`{ ${remainderText(v.remainder)} }`);
-    if (mods.length > 0) sections.push(mods);
-
-    if (v.marks.length > 0) {
-        sections.push(v.marks.map((m) => (m.maybe ? `Possibly: ${m.text}` : m.text)));
-    }
+    // The eldritch marks close the modifier section, with no separator.
+    mods.push(...markLines("eldritch"));
+    const rest = [markLines("influence"), markLines("fractured"), markLines("corrupted")];
+    for (const s of [mods, ...rest]) if (s.length > 0) sections.push(s);
     if (v.without.length > 0) {
         sections.push([`Without: ${v.without.join(", ")}`]);
     }

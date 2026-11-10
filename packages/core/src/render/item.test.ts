@@ -1,16 +1,26 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "../check/check.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { bench, craft, has, iff, item, notp, op, orp, until } from "../__fixtures__/ast.js";
+import { bench, craft, has, iff, item, notp, op, orp, unveil, until } from "../__fixtures__/ast.js";
 import {
     BENCH_LIFE_ROW,
     CATALOG,
     CLASS_RING,
     RING_BASE,
     TIERED_CATALOG,
+    VEILED_A,
+    VEILED_SUFFIX_MOD,
 } from "../__fixtures__/mods.js";
 import type { BenchCraft } from "../model/sources.js";
-import { itemClassLabel, itemView, remainderText, renderItemText, rollSpan } from "./item.js";
+import {
+    type ItemView,
+    itemClassLabel,
+    itemView,
+    type ModView,
+    remainderText,
+    renderItemText,
+    rollSpan,
+} from "./item.js";
 
 const registry = buildRegistry({ bases: [RING_BASE], mods: TIERED_CATALOG });
 const ctx: CheckContext = { registry };
@@ -145,12 +155,116 @@ describe("the marks and the crafted flag", () => {
     });
     const benchCtx: CheckContext = { registry: benchRegistry };
 
-    it("flags a bench modifier as crafted, with no tier since it does not roll", () => {
+    it("heads a bench modifier as master crafted with its rank, not a tier", () => {
         const c = craft(ring(), [bench("maximum life")]);
         const r = check(c, benchCtx);
         expect(r.diagnostics).toEqual([]);
         const text = renderItemText(itemView(r.finalState!, benchRegistry));
-        expect(text).toMatch(/\{ Prefix Modifier[^\n]*\}\n[^\n]* \(crafted\)(\n|$)/);
-        expect(text).not.toMatch(/Prefix Modifier[^\n]*Tier/);
+        expect(text).toContain(
+            "{ Master Crafted Prefix Modifier (Rank: 1) — Life }\n+(15-25) to maximum Life",
+        );
+        expect(text).not.toContain("(crafted)");
+        expect(text).not.toContain("Tier");
+    });
+
+    it("heads an unveiled modifier as master crafted, with no rank", () => {
+        const veiledRegistry = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...CATALOG, VEILED_SUFFIX_MOD, VEILED_A],
+        });
+        const veiledRing = item({
+            base: "IronRing",
+            ilvl: 100,
+            rarity: "rare",
+            suffixes: ["VeiledSuffix"],
+        });
+        const r = check(craft(veiledRing, [unveil("veiled double damage")]), {
+            registry: veiledRegistry,
+        });
+        expect(r.diagnostics).toEqual([]);
+        const text = renderItemText(itemView(r.finalState!, veiledRegistry));
+        expect(text).toContain("{ Master Crafted Suffix Modifier }\nveiled double damage");
+    });
+
+    it("lays out the 3.28 advanced copy's headers and marks", () => {
+        const mod = (over: Partial<ModView>): ModView => ({
+            gen: "prefix",
+            text: "+(115-129) to maximum Life",
+            tags: ["Life"],
+            fractured: false,
+            crafted: false,
+            ...over,
+        });
+        const view: ItemView = {
+            base: "Iron Gauntlets",
+            itemClass: "Gloves",
+            ilvl: 84,
+            strands: [40, 82],
+            rarities: ["rare"],
+            implicits: [
+                {
+                    side: "exarch",
+                    tiers: ["Grand"],
+                    texts: ["10% increased Attack Speed"],
+                    tags: ["Attack", "Speed"],
+                    maybe: false,
+                },
+            ],
+            prefixes: [
+                {
+                    kind: "mod",
+                    mod: mod({ name: "Encased", tier: [2, 2], fractured: true, tags: ["Armour"] }),
+                },
+                {
+                    kind: "mod",
+                    mod: mod({
+                        name: "Prior's",
+                        tier: [1, 1],
+                        text: "+(11-15) to maximum Energy Shield\n+(24-28) to maximum Life",
+                    }),
+                },
+                { kind: "mod", mod: mod({ name: "Upgraded", crafted: true, rank: 3 }) },
+            ],
+            suffixes: [{ kind: "mod", mod: mod({ gen: "suffix", crafted: true, tags: [] }) }],
+            either: [],
+            marks: [
+                { kind: "influence", text: "Hunter Item", maybe: false },
+                { kind: "eldritch", text: "Searing Exarch Item", maybe: false },
+                { kind: "fractured", text: "Fractured Item", maybe: false },
+                { kind: "corrupted", text: "Corrupted", maybe: true },
+            ],
+            without: [],
+        };
+        expect(renderItemText(view)).toBe(
+            [
+                "Item Class: Gloves",
+                "Rarity: Rare",
+                "Iron Gauntlets",
+                "--------",
+                "Memory Strands: 40-82",
+                "--------",
+                "Item Level: 84",
+                "--------",
+                "{ Searing Exarch Implicit Modifier (Grand) — Attack, Speed }",
+                "10% increased Attack Speed",
+                "--------",
+                '{ Fractured Prefix Modifier "Encased" (Tier: 2) — Armour }',
+                "+(115-129) to maximum Life",
+                '{ Prefix Modifier "Prior\'s" (Tier: 1) — Life }',
+                "+(11-15) to maximum Energy Shield",
+                "+(24-28) to maximum Life",
+                '{ Master Crafted Prefix Modifier "Upgraded" (Rank: 3) — Life }',
+                "+(115-129) to maximum Life",
+                "{ Master Crafted Suffix Modifier }",
+                "+(115-129) to maximum Life",
+                "Searing Exarch Item",
+                "--------",
+                "Hunter Item",
+                "--------",
+                "Fractured Item",
+                "--------",
+                "Possibly: Corrupted",
+            ].join("\n"),
+        );
     });
 });

@@ -48,7 +48,11 @@ describe("hover", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ fractured "maximum life" t1 ] }\nchaos`;
         const md = getHover(src, src.indexOf("chaos") + 1, registry);
         expect(md).not.toBeNull();
-        expect(md!).toContain("to maximum Life (fractured)"); // the locked mod survives the chaos, flagged
+        // The locked mod survives the chaos, flagged in its header as the game's copy does.
+        expect(md!).toMatch(
+            /\{ Fractured Prefix Modifier [^\n]*\}\n\+\(\d+-\d+\) to maximum Life\n/,
+        );
+        expect(md!).not.toContain("(fractured)");
     });
 
     it("hovers a bench mod with what it adds and its generation", () => {
@@ -78,9 +82,9 @@ describe("hover", () => {
     it("names the eldritch implicit the item has", () => {
         const src = `item { base: "Iron Gauntlets" ilvl: 84 rarity: rare exarch: grand "increased attack speed" }\nexalt`;
         const h = getHover(src, src.indexOf("exalt"), registry)!;
-        expect(h).toContain("{ Searing Exarch Implicit Modifier (Tier: Grand) }");
+        expect(h).toMatch(/\{ Searing Exarch Implicit Modifier \(Grand\) — [^\n]*Speed[^\n]* \}\n/);
         expect(h).toContain("Attack Speed");
-        expect(h).toContain("(exarch implicit)");
+        expect(h).not.toContain("(exarch implicit)");
         expect(h).toContain("Searing Exarch Item");
     });
 
@@ -103,7 +107,7 @@ chaos
 if has "maximum life" { ember grand }
 annul`;
         const h = getHover(src, src.indexOf("annul"), registry)!;
-        expect(h).toContain("{ Possibly: Searing Exarch Implicit Modifier (Tier: Grand) }");
+        expect(h).toContain("{ Possibly: Searing Exarch Implicit Modifier (Grand) }");
         expect(h).toContain("Possibly: Searing Exarch Item");
     });
 

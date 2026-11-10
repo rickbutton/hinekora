@@ -141,18 +141,13 @@ until each outcome shows; record whether the suffixes survived either.
 **Assumed:** both halves of the orb ignore the protection. **Encoded in:**
 `check/library.ts` `TAINTED_CHAOS`, `unprotect`.
 
-### Q41 · probe · open — the text of a copied item
+### Q41 · probe · open — where a copied item's `Corrupted` goes
 
-**Q:** the game's Ctrl+Alt+C text, which the wiki does not record: a bench modifier's
-header (`{ Master Crafted Prefix Modifier … }` or a plain header with `(crafted)`);
-whether `Corrupted` and the influence lines share a section; an eldritch implicit's
-header and suffix; the plural `Item Class:` names.
-**Probe:** a Rare with a bench, a fractured and an influenced modifier, corrupted; an
-armour piece with an Exarch implicit; one item per class; paste each copy verbatim.
-**Assumed:** plain headers with `(crafted)`, one marks section, `{ Searing Exarch
-Implicit Modifier (Tier: Grand) }` and `(exarch implicit)`, `CLASS_LABEL` with a
-camel-case split and an `s`. **Encoded in:** `packages/core/src/render/item.ts`
-`renderItemText`.
+**Q:** in the advanced copy (Ctrl+Alt+C), does `Corrupted` come before or after the
+influence section on an item with both? No real paste seen has both.
+**Probe:** an influenced, corrupted Rare; copy it with Ctrl+Alt+C; paste it verbatim.
+**Assumed:** `Corrupted` in its own section, last. **Encoded in:**
+`packages/core/src/render/item.ts` `renderItemText`.
 
 ### Q52 · probe · open — does a Harvest-changed crafted modifier stay crafted?
 

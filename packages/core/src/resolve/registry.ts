@@ -6,7 +6,7 @@
  */
 import type { Base } from "../model/base.js";
 import type { Effect } from "../model/effects.js";
-import type { ClassId, Gen, GroupId, TypeId } from "../model/ids.js";
+import type { ClassId, Gen, GroupId, ModId, TypeId } from "../model/ids.js";
 import { Domain, TagId } from "../model/ids.js";
 import { type EldritchSide, type Influence, influenceTags } from "../model/marks.js";
 import { withMetamodEffects } from "../model/metamods.js";
@@ -201,6 +201,8 @@ export interface Registry {
     /** The types the bench can put on an item class: what an anonymous crafted
      *  affix may be. */
     benchTypesFor(itemClass: ClassId): ReadonlySet<TypeId>;
+    /** The bench tier of the craft that adds this mod row, if the bench adds it. */
+    benchTierOf(mod: ModId): number | undefined;
     /** Resolve a fossil by name, in full ("Pristine Fossil") or by its first word. */
     resolveFossil(name: string): Resolved<FossilSpec>;
     /** The eldritch implicit rows an ember or ichor of that tier can give a base. */
@@ -401,9 +403,12 @@ export function buildRegistry(data: RegistryData): Registry {
     // The bench's types per item class: a name may mean a modifier only the
     // bench puts on this class (a metamod), which no spawn table admits.
     const benchTypesByClass = new Map<ClassId, Set<TypeId>>();
+    const benchTierByMod = new Map<ModId, number>();
     for (const craft of benchCrafts) {
-        const type = modById.get(norm(craft.mod))?.type;
-        if (!type) continue;
+        const mod = modById.get(norm(craft.mod));
+        if (!mod) continue;
+        const type = mod.type;
+        benchTierByMod.set(mod.id, craft.tier);
         for (const cls of craft.itemClasses) {
             let types = benchTypesByClass.get(cls);
             if (!types) benchTypesByClass.set(cls, (types = new Set()));
@@ -771,6 +776,10 @@ export function buildRegistry(data: RegistryData): Registry {
 
         benchTypesFor(itemClass) {
             return benchTypesByClass.get(itemClass) ?? new Set<TypeId>();
+        },
+
+        benchTierOf(mod) {
+            return benchTierByMod.get(mod);
         },
 
         genOfType(type) {

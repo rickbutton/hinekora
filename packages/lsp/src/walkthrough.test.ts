@@ -100,7 +100,10 @@ if has "maximum life" t1 { chaos }`);
 chaos`);
         const view = itemView(w.start.item!, registry);
         expect(view.strands).toEqual([82, 82]);
-        expect(renderItemText(view)).toContain("Item Level: 86\nMemory Strands: 82");
+        // A property, so ahead of the item level in a section of its own.
+        expect(renderItemText(view)).toContain(
+            "Vaal Regalia\n--------\nMemory Strands: 82\n--------\nItem Level: 86",
+        );
     });
 
     it("reads an earlier item the same whatever a later step does", () => {
@@ -149,7 +152,7 @@ exalt`,
         const view = itemView(drawn.steps[0]!.after!, registry);
         expect(view.implicits[0]!.texts.length).toBeGreaterThan(6);
         expect(renderItemText(view)).toMatch(
-            /\{ Searing Exarch Implicit Modifier \(Tier: Grand\) \}\none of \d+ Searing Exarch implicits \(exarch implicit\)/,
+            /\{ Searing Exarch Implicit Modifier \(Grand\) \}\none of \d+ Searing Exarch implicits\n/,
         );
     });
 

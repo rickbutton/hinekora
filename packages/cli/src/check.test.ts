@@ -102,9 +102,9 @@ if has "maximum life" { exalt }`);
         );
         const r = run(src);
         expect(r.ok).toBe(true);
-        // The advanced tooltip's headers, the fractured flag on its line, and the mark.
+        // The advanced copy's headers, the fractured one flagged in its header, and the mark.
         expect(r.output).toContain('{ Prefix Modifier "Magister\'s" (Tier: 1) — Caster, Gem }');
-        expect(r.output).toContain("to Damage over Time Multiplier (fractured)");
+        expect(r.output).toMatch(/\{ Fractured [^\n]*\}\n *[^\n]*to Damage over Time Multiplier\n/);
         expect(r.output).toContain("  --------\n  Fractured Item");
     });
 });

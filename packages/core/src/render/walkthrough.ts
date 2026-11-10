@@ -14,7 +14,14 @@ import { describePred } from "../check/diagnostics.js";
 import { findMethod } from "../check/methods.js";
 import type { Registry } from "../resolve/registry.js";
 import { criteria, type Criterion, type Wording } from "./conditions.js";
-import { implicitTierText, type ItemView, itemView, type ModGroup, SIDE_SHORT } from "./item.js";
+import {
+    implicitTierText,
+    type ItemView,
+    itemView,
+    type ModGroup,
+    type ModView,
+    SIDE_SHORT,
+} from "./item.js";
 import { pluralRange, rangeText, rarityText } from "../words.js";
 
 interface StepBase {
@@ -218,10 +225,11 @@ export function walkthrough(craft: Craft, result: CheckResult, registry: Registr
 
 /** The lines an item view shows for its modifiers, for comparing two views. */
 function modLines(v: ItemView): string[] {
+    const text = (m: ModView): string => m.text.replace(/\n/g, " / ");
     const one = (g: ModGroup): string =>
         g.kind === "mod"
-            ? `${g.mod.text}${g.mod.fractured ? " (fractured)" : g.mod.crafted ? " (crafted)" : ""}`
-            : `one of: ${g.members.map((m) => m.text).join(" | ")}`;
+            ? `${text(g.mod)}${g.mod.fractured ? " (fractured)" : g.mod.crafted ? " (crafted)" : ""}`
+            : `one of: ${g.members.map(text).join(" | ")}`;
     return [...v.prefixes, ...v.suffixes, ...v.either].map(one);
 }
 
