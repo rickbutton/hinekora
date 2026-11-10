@@ -316,7 +316,9 @@ Sequential weighted sampling without replacement has a well-known exact represen
 give every row an exponential clock with rate equal to its weight and read the rows off in
 the order their clocks fire. A group's clock is its rows' sum, the row that represents the
 group is drawn with probability weight over group weight, and a group whose side is full,
-or that fires after a group of its own, is skipped. The draw is then **the first `m`
+or that fires after a group of its own, is skipped. (The code takes a modifier type as a
+group, so two types of one modifier group may both be drawn; §6.2 measures what that
+costs.) The draw is then **the first `m`
 groups to fire that the side caps admit**, and every question about it is a question about
 firing times, which are independent. Two consequences carry the whole model:
 
@@ -493,7 +495,7 @@ Two guides the checker rejects were rejected by the simulator's data too: a Dens
 blocks life modifiers, and a Frigid Fossil blocks fire ones, so a loop that needs them
 never ends in either.
 
-What the comparison found and fixed (each its own commit, with a test):
+What the comparison found and fixed (each with a test):
 
 - A chain-solved loop was cut off after 2000 rounds, so an exit rarer than about one
   round in a thousand was underpriced up to fourfold, the rest read as "the item fills
@@ -518,7 +520,8 @@ to Spells" on a wand) may both be drawn, and a group's other members (spell dama
 group by group, hinekora's own pool gives a Chaos Orb's spell damage 25.7% (the
 simulator 25.0%, the race 27%) and an Aetheric reforge's 77.6% (the race 58%); and how a
 fossil's draws split between the sides is unconfirmed against the simulator, which lands
-some spell damage on an Aetheric reforge 67.5% of the time where hinekora reads 58%.
+some spell damage on an Aetheric reforge 67.5% of the time where hinekora reads 58%
+(Q73).
 
 The Recombinator was not run: the simulator picks the surviving modifiers uniformly and
 keeps them by a count table that differs from the wiki's, which hinekora follows (Q67).

@@ -28,8 +28,8 @@ of the operations; no divergence is expected.
   Orb of Unravelling's tier upgrade (its rule is not stated), a loop whose exit rests on a
   value no roll in its body changes, and the chance a modifier the checker holds only as
   possible is there when a later roll is judged (the walk keeps the last roll alone, Q57;
-  a distribution carried through every step, as a solved loop now hands its exit on,
-  would replace both that and the estimate's floor); the race's clocks are modifier
+  a distribution carried through every step, extending what `ARCHITECTURE.md` §7 says a
+  solved loop hands on, would replace both that and the estimate's floor); the race's clocks are modifier
   types, so two types of one modifier group may both be drawn (`research/cost-model.md`
   §6.2, the Aetheric row).
 - **multi-item crafts** beyond the Recombinator (the Awakener's Orb, whose result keeps

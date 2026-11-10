@@ -327,9 +327,10 @@ resolveEssence / resolveBench / resolveHarvestTag`
   they print alike), the one copy the CLI, the hover and the playground print, and
   `costIsObvious`, the step whose cost says nothing its name does not (it runs once and
   spends one of one currency), whose line the hover and the storyboard leave out. A
-  method first in a loop body is judged on the item the loop finds, not on the join
-  over its rounds, so the attempts are taken alike; a loop or branch first in the body
-  reads the join, weighed by the path the round before left.
+  method first in the body of a loop taken as independent attempts is judged on the item
+  the loop finds, not on the join over its rounds, so the attempts are taken alike; a
+  loop or branch first in the body reads the join, weighed by the path the round before
+  left. A chain-solved loop reads every step on the join.
 
 ### 3b. `@hinekora/parser`
 

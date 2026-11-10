@@ -649,13 +649,16 @@ by weight share, an unnamed modifier at the average weight of its side's pool, t
 exclusive rule as the page states it (`cost/recombine.ts` `pickSide`, `cost/roll.ts`
 `recombineRoll`).
 **Evidence since (2026-11-10):** the same page's history row for
-[Version 3.25.1](https://www.poewiki.net/wiki/Version_3.25.1) says the opposite direction:
-"rarer Modifiers now have a much higher chance to be selected". craftofexile's emulator
-(`poec_simRecombinate`) picks uniformly among the pooled modifiers, and its count table
-differs from the page's (one pooled: keep none a third of the time, not 41%; three
-pooled: 30/50/20, not 40/50/10). The probe above settles the direction: if the rarer
-prefix survives more often than half, the pick leans against spawn weight and
-`pickSide` should weigh by its inverse.
+[Version 3.25.1](https://www.poewiki.net/wiki/Version_3.25.1) says the opposite direction,
+"rarer Modifiers now have a much higher chance to be selected", but it belongs to the
+Settlers league, when a Kingsmarch upgrade made "Rarer Modifiers … more likely to be
+retained"; the page's history says that upgrade was likely removed when the Recombinator
+went core in 3.26.0, so the note probably describes that upgrade, not today's pick.
+craftofexile's emulator (`poec_simRecombinate`) picks uniformly among the pooled
+modifiers, and its count table differs from the page's (one pooled: keep none a third of
+the time, not 41%; three pooled: 30/50/20, not 40/50/10). The probe above settles the
+direction: if the rarer prefix survives more often than half, the pick leans against
+spawn weight and `pickSide` should weigh by its inverse.
 **Answer:**
 
 ### Q70 · decision · open
@@ -699,6 +702,27 @@ both cuts apply, each keeping the top tiers it allows (`pool/pool.ts`, `check/op
 in `check/ops.ts`); `tiers` is the whole ladder on the base, the reading that keeps the
 most tiers; a Recombinator's result may keep either input's strands (`check/ops.ts`
 `recombine`).
+**Answer:**
+
+### Q73 · game probe · open
+
+**Asked:** 2026-11-10
+**Goal:** how a fossil reforge's modifiers split between prefixes and suffixes when the
+fossils weigh one side far more than the other.
+[Fossil](https://www.poewiki.net/wiki/Fossil) gives the multipliers but not the split.
+On an Imbued Wand an Aetheric Fossil (caster rows ten times, attack rows at 0.15) leaves
+the prefix pool about twice the suffix pool; hinekora then lays three prefixes on seven
+reforges in eight, and craftofexile's simulator lands some "increased Spell Damage" on
+67.5% of reforges where hinekora reads 58% (`docs/research/cost-model.md` §6.2).
+**Procure:** an Imbued Wand of item level 84 or more, thirty Aetheric Fossils and
+Primitive Chaotic Resonators.
+**Steps:** reforge it thirty times.
+**Record:** the prefix and suffix count of each result, and whether it has increased
+Spell Damage.
+**Assumed meanwhile:** the count is the Chaos Orb's 8:3:1, split by drawing each modifier
+from both sides' pools at once in proportion to their weights after the fossils'
+multipliers, a side admitting no more once full (`cost/race.ts` `splitDistribution`,
+`cost/roll.ts` `countCases`).
 **Answer:**
 
 ---
