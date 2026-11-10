@@ -218,7 +218,9 @@ whole ladder or the rows the item level allows.
 **Probe:** two empty Rare rings with 100 strands, a Foulborn Exalted and an Exalted Orb;
 record strands used per orb. A Rare of item level 30 with 82 strands, Chaos Orbs; record
 the lowest resistance tier seen.
-**Assumed:** 62 and 16; the whole ladder, which keeps the most tiers. **Encoded in:**
+**Assumed:** 62 and 16; the whole ladder, which keeps the most tiers; the page's Exalted
+Orb rows read one modifier count lower than printed, since recorded orbs used up 33
+strands at four modifiers and 38 at five where it gives 32 and 34. **Encoded in:**
 `check/library.ts` `FOULBORN_STRANDS`, `EXALT_STRANDS`; `pool/pool.ts`
 `topTiersUnderStrands`.
 
