@@ -741,24 +741,36 @@ export class Tracker {
 
     /**
      * A draw onto an item that holds modifiers no condition names: which ones
-     * they are is not tracked, so each is taken to close a group of its side
-     * of average weight among the groups no condition names, as craftofexile's
-     * calculator does. The unnamed groups' weights shrink by that much
-     * together; the named ones keep theirs.
+     * they are is not tracked, so each group no condition names keeps its
+     * weight by its chance of not being among that many draws by weight from
+     * those groups. The named groups keep theirs.
      */
+    private readonly openShares = new Map<string, number[]>();
+
     private closed(roll: Extract<Roll, { kind: "draw" }>): Extract<Roll, { kind: "draw" }> {
         const variants = roll.variants.map((v) => {
             const side = (gen: Gen, groups: typeof v.prefix): typeof v.prefix => {
                 const unnamed = v.before[gen] ?? 0;
                 if (unnamed <= 0) return groups;
                 const others = groups.filter((g) => !this.index.has(g.type));
-                const total = others.reduce((s, g) => s + g.weight, 0);
-                if (!(total > 0)) return groups;
-                const closedWeight = Math.min(total, (unnamed * total) / others.length);
-                const factor = (total - closedWeight) / total;
-                return groups.map((g) =>
-                    this.index.has(g.type) ? g : { ...g, weight: g.weight * factor },
-                );
+                if (others.length === 0) return groups;
+                if (unnamed >= others.length) return groups.filter((g) => this.index.has(g.type));
+                // Each unnamed modifier came from a draw by weight, so a group is
+                // closed by its chance of being among that many draws.
+                const weights = others.map((g) => g.weight);
+                const key = `${unnamed}:${weights.join(",")}`;
+                let open = this.openShares.get(key);
+                if (open === undefined) {
+                    open = weights.map(
+                        (_w, i) => amongFirstDistribution(weights, [i], unnamed)[0]!,
+                    );
+                    this.openShares.set(key, open);
+                }
+                const share = new Map(others.map((g, i) => [g, open[i]!]));
+                return groups.map((g) => {
+                    const s = share.get(g);
+                    return s === undefined ? g : { ...g, weight: g.weight * s };
+                });
             };
             return { ...v, prefix: side("prefix", v.prefix), suffix: side("suffix", v.suffix) };
         });

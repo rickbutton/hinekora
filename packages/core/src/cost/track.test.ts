@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { check } from "../check/check.js";
 import type { RPred } from "../check/astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, item, op } from "../__fixtures__/ast.js";
+import { craft, has, iff, item, op, stop } from "../__fixtures__/ast.js";
 import {
     BOOTS_BASE,
     CATALOG,
@@ -10,11 +10,14 @@ import {
     ELEVATED_BOOTS_SUFFIX,
     HUNTER_BOOTS_PREFIX,
     HUNTER_BOOTS_SUFFIX,
+    FIRE_RESIST,
     LIFE_T1,
     LIFE_T2,
     RING_BASE,
 } from "../__fixtures__/mods.js";
-import { ModId } from "../model/ids.js";
+import { GroupId, ModId, TypeId } from "../model/ids.js";
+import type { Mod } from "../model/mod.js";
+import { costOf } from "./report.js";
 import { findMethod } from "../check/methods.js";
 import { Tracker } from "./track.js";
 
@@ -118,5 +121,67 @@ describe("the tracked state", () => {
         const [start] = tracker.statesIn(entry.before)!;
         tracker.transition(entry.before, built, "estimate")!(start!.state);
         expect(tracker.misses).toBe(1);
+    });
+});
+
+describe("the average group an unnamed modifier closes", () => {
+    // Five prefix groups no condition names, of very different weights, beside
+    // the named life; three suffix groups. A Rare holding two random prefixes
+    // and one suffix takes an Exalted Orb.
+    const row = (base: Mod, id: string, weight: number): Mod => ({
+        ...base,
+        id: ModId(id),
+        type: TypeId(id),
+        families: new Set([GroupId(id)]),
+        spawn: [{ tag: base.spawn[0]!.tag, weight }],
+        implicitTags: new Set(),
+    });
+    const prefixes = [100, 300, 600, 1500, 3000].map((w, i) => row(LIFE_T1, `P${i}`, w));
+    const suffixes = [800, 400, 200].map((w, i) => row(FIRE_RESIST, `S${i}`, w));
+    const life = { ...LIFE_T1, minLevel: 1 };
+    const reg = buildRegistry({
+        bases: [RING_BASE],
+        mods: [life, ...prefixes, ...suffixes],
+        baseAliases: { "Iron Ring": "IronRing" },
+    });
+    const weight = (m: Mod): number => m.spawn[0]!.weight;
+
+    it("is within two and a half per cent of drawing which groups they close", () => {
+        const c = craft(
+            item({
+                base: "Iron Ring",
+                ilvl: 84,
+                rarity: "rare",
+                prefixes: ["random", "random"],
+                suffixes: ["S0"],
+            }),
+            [op("exalt"), iff(has("IncreasedLife1"), [stop()])],
+        );
+        const walked = costOf(c, check(c, { registry: reg }), reg).steps.find(
+            (s) => s.kind === "if",
+        )!.branch!;
+
+        // Exactly: the two random prefixes are two draws by weight without
+        // replacement among the prefix groups (Q75), the life's among them; the
+        // exalt then draws from every group still open on either side.
+        const groups = [life, ...prefixes];
+        const total = groups.reduce((sum, g) => sum + weight(g), 0);
+        const suffixOpen = suffixes.slice(1).reduce((sum, g) => sum + weight(g), 0);
+        let exact = 0;
+        for (const a of groups) {
+            for (const b of groups) {
+                if (a === b) continue;
+                const pair = (weight(a) / total) * (weight(b) / (total - weight(a)));
+                if (a === life || b === life) {
+                    exact += pair;
+                    continue;
+                }
+                const open = total - weight(a) - weight(b) + suffixOpen;
+                exact += pair * (weight(life) / open);
+            }
+        }
+        // Measured at +1.9%; a group of average weight was -12% here, since
+        // the heavy groups are the likely ones.
+        expect(Math.abs(walked - exact) / exact).toBeLessThan(0.025);
     });
 });
