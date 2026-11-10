@@ -7,6 +7,7 @@ import {
     AMULET_BASE,
     ATTACK_PREFIX,
     ATTACK_SPEED,
+    BOOTS_BASE,
     CATALOG,
     INCREASED_ARMOUR,
     INCREASED_MANA,
@@ -141,6 +142,43 @@ describe("harvest reforge", () => {
         // Nothing kept: the reforge clears the armour, so the pool is whole.
         const cleared = craft(rareRing(), [op("chaos"), harvest("reforge", "defence")]);
         expect(check(cleared, ctx).diagnostics).toEqual([]);
+    });
+
+    it("rejects a tag whose only modifier is already among the protected prefixes", () => {
+        // Seen in game: boots roll one speed modifier, movement speed; with it
+        // a protected prefix the speed reforge has "no valid mods", though a
+        // prefix slot is open.
+        const speed: Mod = {
+            ...INCREASED_MANA,
+            id: ModId("MovementVelocity1"),
+            type: TypeId("MovementVelocity"),
+            families: new Set([GroupId("MovementVelocity")]),
+            spawn: [
+                { tag: TagId("boots"), weight: 1000 },
+                { tag: TagId("default"), weight: 0 },
+            ],
+            implicitTags: new Set([TagId("speed")]),
+            text: "#% increased Movement Speed",
+        };
+        const boots = buildRegistry({
+            bases: [BOOTS_BASE],
+            mods: [...CATALOG, PROTECT_PREFIXES_CARRIER, speed],
+        });
+        const r = check(
+            craft(
+                item({
+                    base: "Iron Greaves",
+                    ilvl: 100,
+                    rarity: "rare",
+                    prefixes: [speed.id],
+                    suffixes: [PROTECT_PREFIXES_CARRIER.id],
+                }),
+                [harvest("reforge", "speed")],
+            ),
+            { registry: boots },
+        );
+        expect(r.diagnostics).toHaveLength(1);
+        expect(r.diagnostics[0]!.message).toContain("Every speed modifier may be blocked");
     });
 
     it("rejects a side-only tag when that side may be full after the strip", () => {

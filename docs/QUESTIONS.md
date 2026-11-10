@@ -56,19 +56,6 @@ offered and, if so, which cold tier results.
 **Assumed:** refused; an influence's modifier stays within that influence's rows, ranked
 among them. **Encoded in:** `check/methods.ts` `harvestChange`.
 
-### Q25 · probe · open — when the grove greys a craft out under a metamod
-
-**Q:** [Harvest crafting § Mechanics](https://www.poewiki.net/wiki/Harvest_crafting#Mechanics)
-says only that the added modifier obeys the "Cannot Be Changed" metamods. On a Rare with
-"Prefixes Cannot Be Changed", is a tagged reforge offered when no tagged modifier can
-land: its only life modifier among the protected prefixes, or a prefix-only tag beside
-three protected prefixes?
-**Probe:** those two items; open "Reforge … including a Life modifier" on each; record
-offered or greyed out, and the outcome.
-**Assumed:** refused unless a tagged row can roll on every path after the
-protection-respecting strip. **Encoded in:** `check/library.ts` `harvestReforgeOps`;
-`check/ops.ts` `poolNonEmpty`, `sidePairs`, `subsetMods`.
-
 ### Q27 · probe · open — what the grove's influence randomise leaves
 
 **Q:** is a two-influence item rerolled to any pair, and may an influence it had come

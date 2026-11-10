@@ -208,7 +208,8 @@ export const BENCH_REMOVE: readonly Op[] = [
 ];
 
 /** Harvest "reforge including a <tag> modifier": a rare reforge, one of whose
- *  modifiers carries the tag; greyed out when none can roll here. */
+ *  modifiers carries the tag; refused when none can land after the strip, one
+ *  a protected side keeps being no room for another (seen in game). */
 export function harvestReforgeOps(tag: TagId): readonly Op[] {
     return [
         notCorrupted,
