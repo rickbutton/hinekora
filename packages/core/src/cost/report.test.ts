@@ -834,15 +834,20 @@ describe("the eldritch implicits", () => {
         ) =>
             on(decl, [op("conflict"), iff(pred, [stop()])]).steps.find((s) => s.kind === "if")!
                 .branch!;
-        // Lesser Exarch, Grand Eater: half the time the Exarch is lowered off.
+        // Lesser Exarch, Grand Eater: two tiers behind, the Exarch is lowered
+        // off 28 times in a hundred.
         expect(branch({ exarch: "lesser", eater: "grand" }, eldritchP("exarch"))).toBeCloseTo(
-            1 / 2,
+            0.72,
             9,
         );
         // Perfect Exarch: raised it stays Perfect, lowered it is Exquisite.
         expect(
             branch({ exarch: "perfect", eater: "grand" }, eldritchP("exarch", "perfect")),
-        ).toBeCloseTo(1 / 2, 9);
+        ).toBeCloseTo(0.17, 9);
+        // Five tiers ahead the line would go below nothing: the floor holds.
+        expect(
+            branch({ exarch: "perfect", eater: "lesser" }, eldritchP("exarch", "perfect")),
+        ).toBeCloseTo(0.01, 9);
     });
 
     it("a method that does not touch the implicits leaves them as they were", () => {
@@ -855,19 +860,25 @@ describe("the eldritch implicits", () => {
         expect(branch.branch).toBeCloseTo(1, 9);
     });
 
-    it("an Orb of Conflict raises either implicit alike and lowers the other", () => {
-        // Greater Exarch, Grand Eater: the Exarch rises to Grand half the
-        // time, and the Eater rises to Exceptional, dominant, the other half.
+    it("an Orb of Conflict favours the implicit that is behind, eleven hundredths a tier", () => {
+        // Equal tiers rise alike (Orb of Conflict § Mechanics).
+        const even = on({ exarch: "grand", eater: "grand" }, [
+            op("conflict"),
+            iff(eldritchP("exarch", "exceptional"), [stop()]),
+        ]);
+        expect(even.steps.find((s) => s.kind === "if")!.branch).toBeCloseTo(1 / 2, 9);
+        // Greater Exarch, Grand Eater: the Exarch, a tier behind, rises to
+        // Grand 61 times in a hundred; else the Eater rises, dominant.
         const r = on({ exarch: "greater", eater: "grand" }, [
             op("conflict"),
             iff(eldritchP("exarch", "grand"), [op("conflict")]),
             iff(dominantP("eater"), [stop()]),
         ]);
         const [raised, dominant] = r.steps.filter((s) => s.kind === "if");
-        expect(raised!.branch).toBeCloseTo(1 / 2, 9);
-        // From Grand Exarch, Greater Eater, a second Conflict that raises the
-        // Eater leaves Greater against Grand: dominant again, a quarter more.
+        expect(raised!.branch).toBeCloseTo(0.61, 9);
+        // From Grand Exarch, Greater Eater, a second Conflict raises the
+        // Eater, now behind, 61 times in a hundred: dominant again.
         expect(dominant!.note).toBeUndefined();
-        expect(dominant!.branch).toBeCloseTo(1 / 2 + 1 / 4, 9);
+        expect(dominant!.branch).toBeCloseTo(0.39 + 0.61 * 0.61, 9);
     });
 });

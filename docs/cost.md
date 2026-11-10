@@ -45,10 +45,11 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
 - **Removals** are uniform over the modifiers they can reach, never a fractured one (Q61).
 - **Veiled Exalted Orb.** Its veiled modifier lands on either side with room alike (Q76).
 - **Unveil.** The options are of the veiled modifier's side where the item says which
-  (the placeholder is a prefix or a suffix of its own, and the data keeps the unveiled
-  rows by side); the player takes the guide's target if offered, else a modifier its
+  (the placeholder is a prefix or a suffix of its own); the player takes the guide's target if offered, else a modifier its
   conditions name, else one no one names.
-- **Orb of Conflict.** Either implicit rises alike (Q81).
+- **Orb of Conflict.** Equal tiers rise alike; each tier of lead takes eleven hundredths
+  off ([Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)),
+  a gap past three extrapolated.
 - **Harvest augment** adds, then removes another
   ([Maxroll](https://maxroll.gg/poe/crafting/harvest-crafting-guide)).
 - **Memory strands.** The share used up is not stated; the estimate reads the floor
@@ -71,9 +72,7 @@ carried through every step, a call's body walked in its place. Each method is re
 the checker's item **narrowed to each state** (its counts exact, each tracked modifier
 present at its class or absent): a random method by its roll (an unveil by the option
 taken, a Fracturing Orb by the modifier it locks), a sure one by the checker's own
-transfer function, the item that leaves read back as states. So a Regal Orb after an Orb of Transmutation knows the
-item had one modifier half the time and two the other half, and a Divine Orb rerolls the
-values neither fractured nor protected. A branch splits the distribution by its condition; a loop is solved
+transfer function, the item that leaves read back as states. A branch splits the distribution by its condition; a loop is solved
 as a chain over it (§6). A guide followed so throughout is walked once.
 
 What stays approximate: the modifiers no one names are a count, not identities, so a draw

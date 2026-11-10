@@ -258,15 +258,6 @@ the metamod changed.
 protected, k); fill(natural, k)`: the count kept, the side free, the metamods respected.
 **Encoded in:** nothing yet.
 
-### Q81 · probe · open — which implicit an Orb of Conflict raises
-
-**Q:** with both eldritch implicits below Perfect, is each as likely to rise?
-[Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)
-says one rises and the other falls, and play has seen either side picked, not the odds.
-**Probe:** gloves with a Greater Exarch and a Greater Eater implicit, Orbs of Conflict,
-Lesser embers and ichors to restore them; apply many; record which side rose each time.
-**Assumed:** each side alike, half and half. **Encoded in:** `cost/track.ts` `conflicted`.
-
 ### Q83 · probe · open — a scour that would remove nothing
 
 **Q:** does the game refuse an Orb of Scouring when every affix is protected? A fractured

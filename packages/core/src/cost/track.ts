@@ -122,6 +122,11 @@ function readImplicit(row: ModId): { tier: number; type?: TypeId } {
     return { tier: Number(row.slice(0, at)), type: TypeId(row.slice(at + 1)) };
 }
 
+/** What each tier of lead takes off an implicit's chance to rise under an Orb
+ *  of Conflict, and the least chance either side is given. */
+const CONFLICT_STEP = 0.11;
+const CONFLICT_FLOOR = 0.01;
+
 /** Rows a condition tells apart: one named tier, or the rest of a ladder. */
 interface RowClass {
     /** The row that stands for the class on the state: a named tier is itself. */
@@ -483,8 +488,11 @@ export class Tracker {
 
     /**
      * An Orb of Conflict on a state with both implicits: one side up a tier, to
-     * Perfect at most, the other down, a Lesser one lowered gone (seen in play),
-     * each side as likely to rise (QUESTIONS.md Q81). Each keeps its type.
+     * Perfect at most, the other down, a Lesser one lowered gone (seen in play).
+     * Equal tiers rise alike and each tier a side is ahead takes about eleven
+     * hundredths off its chance (Orb of Conflict § Mechanics, a measurement of
+     * some five hundred orbs over gaps up to three; a wider gap is that line
+     * carried on, held above `CONFLICT_FLOOR`). Each keeps its type.
      */
     private conflicted(state: ChainState): readonly Outcome[] | undefined {
         const at = ELDRITCH_SIDES.map((side) => this.index.get(IMPLICIT_ATOM[side]));
@@ -499,13 +507,22 @@ export class Tracker {
             implicitRow(Math.min(up.tier + 1, 6), up.type),
             down.tier > 1 ? implicitRow(down.tier - 1, down.type) : null,
         ];
-        const rise = (raised: number, lowered: number, rows: [ModId, ModId | null]): Outcome => {
+        const rise = (
+            raised: number,
+            lowered: number,
+            rows: [ModId, ModId | null],
+            prob: number,
+        ): Outcome => {
             const next = [...state.rows];
             next[raised] = rows[0];
             next[lowered] = rows[1];
-            return { state: { ...state, rows: next }, prob: 1 / 2 };
+            return { state: { ...state, rows: next }, prob };
         };
-        return [rise(ex, eat, moved(a, b)), rise(eat, ex, moved(b, a))];
+        const exarchUp = Math.min(
+            1 - CONFLICT_FLOOR,
+            Math.max(CONFLICT_FLOOR, 1 / 2 - CONFLICT_STEP * (a.tier - b.tier)),
+        );
+        return [rise(ex, eat, moved(a, b), exarchUp), rise(eat, ex, moved(b, a), 1 - exarchUp)];
     }
 
     /** The eldritch implicit on one side of an item the checker settles, as
