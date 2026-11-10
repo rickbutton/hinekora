@@ -198,7 +198,7 @@ guides treat them as fixed costs and nothing in the modifier logic depends on th
 | `alt-regal-jewel`                                                          | R1 alt–aug–regal on a jewel                    | checks                                                      |
 | `flask-alt-aug`                                                            | R20 magic flask                                | checks                                                      |
 | `self-fracture`                                                            | R9 fracture, branch on the lock, clear fillers | checks (fixed annuls; the loop form waits on A2)            |
-| `influence-merge`                                                          | R8 Redeemer receiver + Awakener's Orb          | checks (the kept influence mods are not promised, Q28)      |
+| `future/influence-merge`                                                   | R8 Redeemer receiver + Awakener's Orb          | the Awakener's Orb is deferred until its donor is modelled  |
 | `bench-finish-resists`, `essence-life-boots`, `example`, `phys-dot-weapon` | the earlier examples                           | check                                                       |
 | `essence-minion-wand`                                                      | R3 essence, make room, multimod                | checks (`has group` guards each bench craft)                |
 | `eldritch-gloves`                                                          | R7 essences, eldritch make-room, implicits     | checks (the Conflict loop to Exquisite included)            |

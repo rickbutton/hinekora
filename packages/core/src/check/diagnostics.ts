@@ -235,8 +235,6 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return `A ${failure.what} cannot be used on ${withArticle(state.base.name ?? "base like this")} — its class cannot be influenced.`;
             case "influencedOnProtected":
                 return `${failure.what} is not offered while the ${failure.gen}es cannot be changed and one of them may be an influence modifier.`;
-            case "awakenerTarget":
-                return `An Awakener's Orb needs an item with exactly one influence other than the donor's ${influenceSetLabel(influenceKey([failure.donor]))} — this item ${failure.sure ? "has" : "may have"} ${influenceLabel(state.influences)}.`;
             case "noVeiledMod":
                 return "There is no veiled modifier on the item to unveil.";
             case "alreadyVeiled":

@@ -309,7 +309,7 @@ describe("parser — operation statements, shaped by the method table", () => {
         expect(() => bodyOf("beast add 3")).toThrow(/or 'warlord' after 'beast add', not '3'/);
         expect(opOf("exalt hunter")).toEqual({ words: "exalt hunter", args: [] });
         expect(opOf("exalt regal")).toEqual({ words: "exalt", args: [] });
-        expect(opOf("awakener elder")).toEqual({ words: "awakener", args: ["elder"] });
+        expect(opOf("beast add elder")).toEqual({ words: "beast add", args: ["elder"] });
         expect(() => bodyOf("beast")).toThrow(/after 'beast' expected one of 'add'.*'imprint'$/);
         expect(opOf("unveil")).toEqual({ words: "unveil", args: [] });
         expect(opOf('unveil "double damage"')).toEqual({

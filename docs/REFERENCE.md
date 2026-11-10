@@ -82,7 +82,6 @@ examples/                    - the guide suite; every file here checks clean (`p
   alt-regal-jewel.craft      - alt–aug–regal on a jewel (the cheap small-pool opener).
   flask-alt-aug.craft        - a Magic flask: one prefix, one suffix.
   self-fracture.craft        - a Fracturing Orb, the `fractured` branch, the fillers annulled.
-  influence-merge.craft      - a Redeemer receiver merged with an Awakener's Orb.
   matron-metamod.craft       - the Wild Bristle Matron's random metamod made deterministic.
   eldritch-gloves.craft      - a fractured base, essences, an eldritch annul to make room, embers for the implicit.
   metamod-harvest-loop.craft - "Suffixes Cannot Be Changed" and a Harvest reforge, round until the life is T1.
@@ -872,7 +871,7 @@ operations are `require(check)`, `strip`,
 `imprint`/`restore`, `influence(change)` (set the mark, add an influence to every
 possible set, or randomise to every set of the same size), `eldritch(change)` (set an
 implicit's tier, or the Orb of Conflict's raise and lower), `unprotect` (the metamods
-no longer govern the rest of the method, the Awakener's Orb), `keep(gen)` (that side is
+no longer govern the rest of the method, the Tainted Chaos Orb), `keep(gen)` (that side is
 kept through the rest of the method, the Eldritch Chaos Orb), `corrupt`, `relax`
 (forget the present modifiers' tiers, `relaxTiers`, the crafted ones excepted when
 asked), `elevate` (the Orb of Dominance's upgrade: every influenced modifier the item

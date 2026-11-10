@@ -276,39 +276,6 @@ describe("the grove's influence crafts", () => {
     });
 });
 
-describe("the Awakener's Orb", () => {
-    it("adds the donor's influence to an item with one other, reforged Rare", () => {
-        const r = run(craft(ring(["hunter"]), [wordArg(["awakener"], "shaper")]));
-        expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.influences).toEqual(new Set([influenceKey(["shaper", "hunter"])]));
-        expect(r.finalState!.counts.total).toEqual([4, 6]);
-    });
-
-    it("ignores the metamods: a protected side is reforged with the rest", () => {
-        const guarded = item({
-            base: "Iron Ring",
-            ilvl: 100,
-            rarity: "rare",
-            prefixes: [PROTECT_SUFFIXES_CARRIER.id],
-            suffixes: ["cold"],
-            influences: ["hunter"],
-        });
-        const r = run(craft(guarded, [wordArg(["awakener"], "shaper")]));
-        expect(r.diagnostics).toEqual([]);
-        const s = r.finalState!;
-        expect(s.counts.total).toEqual([4, 6]);
-        expect(guaranteedTypes(s).has(PROTECT_SUFFIXES_CARRIER.type)).toBe(false);
-    });
-
-    it("refuses an item with no, two, or the donor's influence", () => {
-        for (const start of [ring(), ring(["shaper", "elder"]), ring(["shaper"])]) {
-            expect(messages(craft(start, [wordArg(["awakener"], "shaper")]))).toContain(
-                "exactly one influence other than the donor's Shaper",
-            );
-        }
-    });
-});
-
 describe("the Bestiary's add-to-an-influenced-item recipe", () => {
     it("needs that influence and adds into an open slot", () => {
         const r = run(craft(ring(["hunter"]), [wordArg(["beast", "add"], "hunter")]));

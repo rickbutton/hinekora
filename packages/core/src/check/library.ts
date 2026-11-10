@@ -296,24 +296,6 @@ export function influenceExaltOps(target: Influence): readonly Op[] {
     ];
 }
 
-/** An Awakener's Orb, the donor's influence given: the item, which has one
- *  other influence, is reforged Rare with both, the metamods ignored
- *  (Awakener's Orb § Mechanics). The influenced modifier the orb tries to keep
- *  from each item is not guaranteed. */
-export function awakenerOps(donor: Influence): readonly Op[] {
-    return [
-        notCorrupted,
-        require({ kind: "awakenerTarget", donor }),
-        canBeRare,
-        { kind: "unprotect" },
-        strip(),
-        rarity("rare"),
-        influence({ kind: "add", influence: donor }),
-        fill(natural, reforge(RARE_REFORGE)),
-        strands(100),
-    ];
-}
-
 /** Beastcraft "add a mod to a <influence> item" (Beastcrafting): a modifier
  *  into an open slot of a Rare item with that influence, drawn at the beast's
  *  level, the influence's rows among them. */

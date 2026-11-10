@@ -164,8 +164,6 @@ export function unitCost(
                 return [{ item: INFLUENCE_ORB[second], amount: 1 }];
             }
             break;
-        case "awakener":
-            return [{ item: "Awakener's Orb", amount: 1 }];
         case "ember":
         case "ichor": {
             const tier = text(args[0]);

@@ -192,9 +192,6 @@ export type Check =
     | { readonly kind: "influencedAtLeast"; readonly count: number }
     /** The item is influenced on every path, with that influence when one is named. */
     | { readonly kind: "influenced"; readonly what: string; readonly influence?: Influence }
-    /** The item has exactly one influence, other than the donor's, on every path
-     *  (Awakener's Orb § Mechanics). */
-    | { readonly kind: "awakenerTarget"; readonly donor: Influence }
     /** The item's class can carry that influence (a jewel or a flask cannot). */
     | { readonly kind: "influenceable"; readonly influence: Influence; readonly what: string }
     /** No modifier that may sit on a protected side is an influence modifier
@@ -238,8 +235,8 @@ export type Op =
     | { readonly kind: "require"; readonly check: Check }
     /** Every modifier goes but the protected sides' and the fractured one. */
     | { readonly kind: "strip" }
-    /** The metamods no longer govern the rest of the method (an Awakener's Orb
-     *  ignores them, Metamod § Rules and Exceptions). */
+    /** The metamods no longer govern the rest of the method (a Tainted Chaos
+     *  Orb ignores them, `QUESTIONS.md` Q33). */
     | { readonly kind: "unprotect" }
     /** That side alone is kept through the rest of the method, in place of
      *  the item's own protections (an Eldritch Chaos Orb rerolls the other). */
@@ -366,7 +363,6 @@ export type PreconditionFailure =
           readonly influence?: Influence;
           readonly sure: boolean;
       }
-    | { readonly kind: "awakenerTarget"; readonly donor: Influence; readonly sure: boolean }
     | { readonly kind: "notInfluenceable"; readonly influence: Influence; readonly what: string }
     | { readonly kind: "eldritchPresent"; readonly what: string; readonly sure: boolean }
     | { readonly kind: "notDominant"; readonly side: EldritchSide; readonly what: string }
@@ -776,15 +772,6 @@ function failing(
                 ...(wanted !== undefined && { influence: wanted }),
                 sure: !keys.some(holds),
             };
-        }
-        case "awakenerTarget": {
-            const fits = (key: InfluenceKey): boolean => {
-                const set = influencesOf(key);
-                return set.length === 1 && set[0] !== check.donor;
-            };
-            const keys = [...a.influences];
-            if (keys.every(fits)) return null;
-            return { kind: "awakenerTarget", donor: check.donor, sure: !keys.some(fits) };
         }
         case "influenceable":
             return registry.influenceTags(a.base, check.influence).size > 0

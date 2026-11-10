@@ -28,9 +28,10 @@ of the operations; no divergence is expected.
   Orb of Unravelling's tier upgrade (its rule is not stated), a loop whose exit rests on a
   value no roll in its body changes, and the chance a modifier the checker holds only as
   possible is there when a later roll is judged (the walk keeps the last roll alone, Q57).
-- **multi-item crafts** beyond the Recombinator (Reflecting Mist, Kishara's Ducat; the
-  Awakener's Orb is built with the donor reduced to its influence, the Recombinator with
-  two items of one base, `QUESTIONS.md` Q55)
+- **multi-item crafts** beyond the Recombinator (the Awakener's Orb, whose result keeps
+  an influenced modifier of its donor's and so needs the donor as a second item, Q28;
+  Reflecting Mist, Kishara's Ducat; the Recombinator is built with two items of one base,
+  `QUESTIONS.md` Q55)
   and **choice over an operation's outcomes** (Hinekora's Lock, Allflame crafting).
 - English negation sugar (`doesn't have` → `not has`); a power-user annotation tier for
   reusable techniques; a way to name an unveiled modifier whose words a natural one

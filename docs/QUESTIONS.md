@@ -190,25 +190,6 @@ one included (`check/library.ts` `HARVEST_RANDOMISE`, `check/ops.ts` the `random
 change).
 **Answer:**
 
-### Q28 · game probe · open
-
-**Asked:** 2026-10-29
-**Goal:** what an Awakener's Orb needs of the target item and what it keeps.
-[Awakener's Orb § Mechanics](https://www.poewiki.net/wiki/Awakener%27s_Orb#Mechanics)
-says each item must have exactly one influence, that the target is reforged as a Rare
-ignoring metamods, and that the result "will attempt to retain one influenced modifier
-from each item if possible"; it does not say whether a Normal or Magic target is
-accepted, nor when the retention succeeds.
-**Procure:** a Magic one-influence item and a Rare one-influence donor of the same class;
-an Awakener's Orb.
-**Steps:** apply the orb to the Magic target; note whether it is accepted and which
-influenced modifiers the result carries.
-**Record:** accepted or not; the influenced modifiers kept from each item.
-**Assumed meanwhile:** any rarity is accepted, and no modifier is guaranteed kept
-(`check/library.ts` `awakenerOps`); the section also says a transferred modifier keeps
-its tier, so note whether a kept donor modifier obeys the target's item level.
-**Answer:**
-
 ### Q29 · game probe · open
 
 **Asked:** 2026-10-29
@@ -702,6 +683,26 @@ most tiers; a Recombinator's result may keep either input's strands (`check/ops.
 ---
 
 ## Resolved
+
+### Q28 · game probe · resolved
+
+**Asked:** 2026-10-29
+**Goal:** what an Awakener's Orb needs of the target item and what it keeps.
+[Awakener's Orb § Mechanics](https://www.poewiki.net/wiki/Awakener%27s_Orb#Mechanics)
+says each item must have exactly one influence, that the target is reforged as a Rare
+ignoring metamods, and that the result "will attempt to retain one influenced modifier
+from each item if possible"; it does not say whether a Normal or Magic target is
+accepted, nor when the retention succeeds.
+**Procure:** a Magic one-influence item and a Rare one-influence donor of the same class;
+an Awakener's Orb.
+**Steps:** apply the orb to the Magic target; note whether it is accepted and which
+influenced modifiers the result carries.
+**Record:** accepted or not; the influenced modifiers kept from each item.
+**Assumed meanwhile:** any rarity is accepted, and no modifier is guaranteed kept; the section also says a transferred modifier keeps
+its tier, so note whether a kept donor modifier obeys the target's item level.
+**Answer:** 2026-11-10: deferred. The donor's and the target's modifiers both decide the
+result, so the orb waits until a guide can name the donor as a second item; it is removed
+until then (`ROADMAP.md`, multi-item crafts), and the probe goes with it.
 
 ### Q38 · game probe · resolved
 

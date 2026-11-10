@@ -14,7 +14,6 @@ import {
     type EldritchTierName,
     eldritchLabel,
     eldritchTierOf,
-    type Influence,
     INFLUENCE_ORB,
     influenceKey,
     INFLUENCES,
@@ -29,7 +28,6 @@ import type { AItem } from "./astate.js";
 import { resolveMessage } from "./diagnostics.js";
 import {
     ANY_BEAST_LEVEL,
-    awakenerOps,
     beastFractureOps,
     BEAST_IMPRINT,
     BEAST_METAMOD,
@@ -327,12 +325,6 @@ export const METHODS: readonly Method[] = [
         // The checker runs this one itself, since it needs the second item's
         // state; the table's sequence holds only the check every method opens with.
         build: () => [{ kind: "require", check: { kind: "notCorrupted" } }],
-    },
-    {
-        words: ["awakener"],
-        args: [word(...INFLUENCES)],
-        doc: "awakener <influence> — Awakener's Orb, the donor item's influence given: reforge the item Rare with both influences.",
-        build: ([donor]) => awakenerOps(text(donor) as Influence),
     },
     {
         words: ["essence"],
