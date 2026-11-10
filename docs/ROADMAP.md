@@ -35,6 +35,11 @@ of the operations; no divergence is expected.
 - English negation sugar (`doesn't have` → `not has`); a power-user annotation tier for
   reusable techniques; a way to name an unveiled modifier whose words a natural one
   shares other than by its mod id.
+- **experimented bases' magnitude implicits** ("100% increased Explicit Modifier
+  magnitudes" on a Simplex Amulet, a side's on the rings): the data carries them as
+  `Base.magnitude`, but neither the checker nor the item card scales a value by them; with
+  them come the rounding of a scaled value, whether a granted skill's level scales, and
+  catalyst quality, which adds to the same percentage.
 - **reduced-cap base edge cases:** the split-beast, Awakener's Orb and Harvest routes
   that put modifiers on a magic Simplex Amulet, which no ordinary currency can
   ([Simplex Amulet § Special Crafting Considerations](https://www.poewiki.net/wiki/Simplex_Amulet#Special_Crafting_Considerations)),

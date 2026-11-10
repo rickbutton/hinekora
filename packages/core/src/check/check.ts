@@ -59,7 +59,7 @@ import {
     recombineRefusal,
     runMethod,
 } from "./ops.js";
-import { rollRange, spanOn } from "./values.js";
+import { rollRange } from "./values.js";
 import { lookupWeight } from "../pool/pool.js";
 import type { Range } from "./domain.js";
 import { plural } from "../words.js";
@@ -1210,7 +1210,7 @@ class Checker {
             for (const m of this.registry.catalog) {
                 if (m.type !== type || !mayCarry(m)) continue;
                 const span = m.text === undefined ? undefined : rollRange(m.text);
-                if (span !== undefined) rows.set(m.id, spanOn(a.base, m.gen, span));
+                if (span !== undefined) rows.set(m.id, span);
                 else unnumbered.add(m.id);
             }
             if (pred.tier !== undefined) {
@@ -1258,8 +1258,7 @@ class Checker {
             );
             return null;
         }
-        const raw = mod.text === undefined ? undefined : rollRange(mod.text);
-        const tierSpan = raw === undefined ? undefined : spanOn(a.base, mod.gen, raw);
+        const tierSpan = mod.text === undefined ? undefined : rollRange(mod.text);
         return {
             kind: "has",
             type,

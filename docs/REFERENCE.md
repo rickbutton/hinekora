@@ -379,7 +379,7 @@ variant is reached by its condition's words; a tie is ambiguous),
 `eldritchNames(side)` (one wording per implicit) and `eldritchTextOf(type)`. For a base it also folds the affix-count implicit stats
 (`local_maximum_{prefixes,suffixes}_allowed_+`) into a `capDelta` (absent when zero), the
 magnitude stats (`local_{explicit,prefix,suffix}_mod_effect_+%`) into a per-side
-`magnitude` in percent, and `local_item_can_roll_all_influences` into `allInfluences`.
+`magnitude` in percent (carried, not yet applied), and `local_item_can_roll_all_influences` into `allInfluences`.
 `adapter.ts` adapts rows into model types and stamps `ModSource` via `classifySource`
 (domain + generation_type + is_essence_only). A fossil's `weights` (category tag → the
 multiplier in percent, "More Life modifiers" being 1000) and a bench craft's `cost`
@@ -653,8 +653,8 @@ product level in `normalize`, never hidden inside one domain. The sub-domains:
   refinement is coupled to `presence` (tier atoms), so that part lives in `refine`, not the
   domain.
 - `values` (`ValueDomain`, in `values.ts`): an overlay `Map<TypeId, Range>` of the span a
-  present modifier's value, the first number of its row's text (`rollRange`, scaled by an
-  experimented base's magnitude implicit for the row's side, `spanOn`), is known to
+  present modifier's value, the first number of its row's text (`rollRange`; an
+  experimented base's `magnitude` is not applied), is known to
   lie in, narrower than its rows' spans; a `has "X" t<n>` check clips it to that tier's span
   (`tierSpan`) or rules the tier out; a `has "X" >= n` predicate sets it (and pins the
   rows whose spans reach `n`, `refineHasValue`, every row the item may carry: a row the

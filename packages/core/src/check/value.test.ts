@@ -159,9 +159,9 @@ describe("has <mod> <cmp> <n>", () => {
         expect(above.finalState!.values.get(LIFE)).toBeUndefined();
     });
 
-    it("compares as an experimented base shows it, scaled by its magnitude implicit", () => {
-        // A Simplex Amulet doubles its modifiers' values: the top life row reads
-        // 230 to 258 on it, so 240 is reachable and 260 is not.
+    it("compares a row's own span on an experimented base, its magnitude implicit unread", () => {
+        // A Simplex Amulet's "increased Explicit Modifier magnitudes" is not applied
+        // yet, so its top life row compares as 115 to 129, as on any amulet.
         const simplex = buildRegistry({ bases: [SIMPLEX_BASE], mods: TIERED_CATALOG });
         const amulet = item({
             base: "SimplexAmulet",
@@ -169,18 +169,11 @@ describe("has <mod> <cmp> <n>", () => {
             rarity: "rare",
             prefixes: [{ mod: "maximum life", tier: 1 }],
         });
-        const r = check(craft(amulet, [iff(notp(hasValue("maximum life", ">=", 240)), [stop()])]), {
+        const r = check(craft(amulet, [iff(notp(hasValue("maximum life", ">=", 120)), [stop()])]), {
             registry: simplex,
         });
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.values.get(LIFE)).toEqual([240, 258]);
-        const beyond = check(
-            craft(amulet, [iff(hasValue("maximum life", ">=", 260), [op("divine")])]),
-            { registry: simplex },
-        );
-        expect(beyond.diagnostics.map((d) => d.message)).toEqual([
-            expect.stringContaining("can never run"),
-        ]);
+        expect(r.finalState!.values.get(LIFE)).toEqual([120, 129]);
     });
 
     it("is clipped to the tier a later check names", () => {

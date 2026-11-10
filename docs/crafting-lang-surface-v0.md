@@ -417,8 +417,8 @@ maximum Life" is 100 to 114; a hybrid compares its first number): it holds where
 reaches the comparison, whichever row placed the modifier, rolled, benched or unveiled, so
 the rows that cannot are ruled out, and afterwards the value is
 known to lie in the part of the span that does until something rolls the modifier again,
-a reforge or a `divine`; on an experimented base the span is the row's scaled by the base's
-magnitude implicit, as the item shows it (a Simplex Amulet's life reads twice a row's).
+a reforge or a `divine`. An experimented base's "increased modifier magnitudes" implicit
+is not applied: a value compares on its row's own span.
 `until has "maximum life" >= 110 { divine }` is a guide's "divine
 the life into range"; a threshold no tier reaches is impossible, a branch on it dead. `has group
 "X"` asks for any modifier of X's [group](https://www.poewiki.net/wiki/Modifier#Group/family),
