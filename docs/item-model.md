@@ -1,12 +1,10 @@
 # hinekora: Item Model
 
-> Purpose: the item and modifier vocabulary hinekora models, for Path of Exile 1. What an
-> item is made of, what a modifier is, and which combinations of modifiers may sit on an
-> item. This is what the code is audited against.
->
-> Game rules are not restated here. Each rule links the section of the Path of Exile wiki
-> (poewiki.net) that defines it and the text says only how hinekora models it; where
-> hinekora narrows a rule the text says so. The wiki is cached locally (`tools/poewiki`).
+> The item and modifier model hinekora audits its code against, for Path of Exile 1: what
+> an item and a modifier are, and which modifiers may sit together. Each game rule links
+> its wiki section (cached in `tools/poewiki`) and the text says only how hinekora models
+> it, or narrows it. The fields are the types in `packages/core/src/model/`; this doc
+> gives their meaning.
 
 ---
 
@@ -26,124 +24,100 @@ unique items ([Rarity § Unique](https://www.poewiki.net/wiki/Rarity#Unique)).
 
 ## 2. Identifiers
 
-The game keys its data by several families of identifier. They are distinct types in the
-code (`model/ids.ts`) because confusing one for another is a category error. Spelling is
-read only where this doc says so.
+The game keys its data by several families of identifier, distinct types in `model/ids.ts`
+because confusing one for another is a category error. Two carry meaning beyond their name:
 
-| Type        | What it names                                                                                                                                                                                                                                                                                                                           | Wiki                                                               |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `ModType`   | The tier bucket of a row of the `Mods` table. Rows of one ModType never share an item and share exclusion groups, but a ModType is **not** one ladder: many ModTypes have both prefix and suffix rows, rolling on different base classes. The ladder a player sees is the ModType's rows that roll on one base, which the pool defines. | [Mod Level](https://www.poewiki.net/wiki/Modifier#Mod_Level)       |
-| `ModFamily` | A mutual-exclusion group.                                                                                                                                                                                                                                                                                                               | [Group/family](https://www.poewiki.net/wiki/Modifier#Group/family) |
-| `Tag`       | One type, three roles: a base's tags, the tags a modifier adds to its item, a modifier's own category tags.                                                                                                                                                                                                                             | [Tags](https://www.poewiki.net/wiki/Modifier#Tags)                 |
-| `ItemClass` | Spelling read in two places: the four-affix classes and the never-Rare classes (§4).                                                                                                                                                                                                                                                    | [Item class](https://www.poewiki.net/wiki/Item_class)              |
-| `ModDomain` | The partition a row or base belongs to (§3).                                                                                                                                                                                                                                                                                            | [Domain](https://www.poewiki.net/wiki/Modifier#Domain)             |
+- A **mod type** is the tier bucket of a row of the `Mods` table
+  ([Mod Level](https://www.poewiki.net/wiki/Modifier#Mod_Level)). Rows of one type never
+  share an item and share exclusion groups, but a type is **not** one ladder: many types have
+  both prefix and suffix rows, rolling on different base classes. The ladder a player sees is
+  the type's rows that roll on one base, which the pool defines.
+- A **tag** plays three roles under one type: a base's tags, the tags a modifier adds to its
+  item, and a modifier's own category tags ([Tags](https://www.poewiki.net/wiki/Modifier#Tags)).
 
-A spawn weight is a number the data ships for every row. `can_roll` is `weight > 0`: zero
-discards the modifier.
+A mod family is an [exclusion group](https://www.poewiki.net/wiki/Modifier#Group/family). A
+spawn weight of zero discards the modifier.
 
 ---
 
 ## 3. Enumerations
 
-**Generation**: `prefix | suffix`. Only generation types 1 and 2 occupy affix slots;
-intrinsic, corrupted, enchantment and the rest are the implicit layer
-([Generation type](https://www.poewiki.net/wiki/Modifier#Generation_type)).
+**Generation**: prefix or suffix. Only generation types 1 and 2 occupy affix slots; the rest
+are the implicit layer ([Generation type](https://www.poewiki.net/wiki/Modifier#Generation_type)).
 
-**Rarity**: `normal | magic | rare` ([Rarities](https://www.poewiki.net/wiki/Rarity#Rarities)).
+**Rarity**: normal, magic, rare ([Rarities](https://www.poewiki.net/wiki/Rarity#Rarities)).
 
-**ModDomain**: by the wiki's numbering, spelled as the data spells them
-([Domain](https://www.poewiki.net/wiki/Modifier#Domain)):
+**Domain**: the data's partitions, as the data spells them
+([Domain](https://www.poewiki.net/wiki/Modifier#Domain); `misc` is the wiki's "Jewel",
+`affliction_jewel` the cluster jewels). Bench, fossil-only, veiled and unveiled rows live in
+partitions no base has (`crafted`, `delve`, `veiled`, `unveiled`) and are placed directly.
 
-| Value              | Wiki # | Carried by                                            |
-| ------------------ | ------ | ----------------------------------------------------- |
-| `item`             | 1      | ordinary equipment bases and their modifiers          |
-| `flask`            | 2      | flasks                                                |
-| `crafted`          | 9      | bench crafts (no base)                                |
-| `misc`             | 10     | the wiki's "Jewel": ordinary jewels                   |
-| `abyss_jewel`      | 13     | abyss jewels                                          |
-| `delve`            | 16     | fossil-only modifiers (no base)                       |
-| `affliction_jewel` | 21     | cluster jewels                                        |
-| `veiled`           | 26     | veiled placeholders (no base)                         |
-| `unveiled`         | 28     | unveil results (no base)                              |
-| `tincture`         | 34     | tinctures                                             |
-| `other`            |        | partitions the ingest keeps but no craftable base has |
-
-**ModSource**: which mechanic places a modifier: `natural | essence | bench | veiled |
-fossil | elevated | other`. Only `natural` modifiers roll from ordinary currency
+**Source**: which mechanic places a modifier (`ModSource` in `model/sources.ts`), a reading
+of the row (§5), never independent data. Only natural modifiers roll from ordinary currency
 ([Reforging modifiers](https://www.poewiki.net/wiki/Crafting#Reforging_modifiers)); the rest
-arrive through their own mechanic and are exempt from the natural-roll rules in §8. `other`
-is a row nothing places: no partition of its own and no weight anywhere. The source is a
-reading of the row (§5), never independent data.
+arrive through their own mechanic and are exempt from the natural-roll rules in §8.
 
-**Influence**: `shaper | elder | crusader | hunter | redeemer | warlord`
-([Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics)). The data spells
-the Conqueror tags by their creatures: hunter = `basilisk`, redeemer = `eyrie`, warlord =
-`adjudicator`.
+**Influence**: the six of
+[Influenced item § Mechanics](https://www.poewiki.net/wiki/Influenced_item#Mechanics); the
+data spells the Conqueror tags by their creatures (`model/marks.ts`).
 
 ---
 
 ## 4. Base
 
-[Rarity § Normal](https://www.poewiki.net/wiki/Rarity#Normal): the item before any affix.
-Identity is the game's metadata id; display names collide across hundreds of bases, so a
-name resolves a base only when it is unique.
+[Rarity § Normal](https://www.poewiki.net/wiki/Rarity#Normal): the item before any affix
+(`model/base.ts`), identified by its metadata id since display names collide. Beyond its
+class, domain and tags, a base carries three implicits that change crafting:
 
-| Field                                            | Meaning                                                                                                                                                                                                                                                                                                                                                                                       |
-| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name?`                                          | display name                                                                                                                                                                                                                                                                                                                                                                                  |
-| `item_class`                                     | the class id                                                                                                                                                                                                                                                                                                                                                                                  |
-| `domain`                                         | one of `item`, `flask`, `misc`, `abyss_jewel`, `affliction_jewel`, `tincture` for a craftable base                                                                                                                                                                                                                                                                                            |
-| `tags`                                           | matched against each modifier's spawn table ([spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag))                                                                                                                                                                                                                                                                      |
-| `prefix_capacity_delta`, `suffix_capacity_delta` | the experimented bases' "maximum prefixes/suffixes allowed" stats, which shift the rarity's per-side limit ([Simplex Amulet](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics) −2/−1, [Ratcheting Ring](https://www.poewiki.net/wiki/Ratcheting_Ring#Mechanics) −3/+3); zero for every other base                                                                                        |
-| `magnitude`                                      | the experimented bases' "increased Explicit / Prefix / Suffix Modifier magnitudes" implicit, in percent per side (`local_{explicit,prefix,suffix}_mod_effect_+%`: Simplex and Focused Amulet 100 on both, Helical Ring 50 and Cogwork Ring 25 on suffixes, Geodesic Ring 25 and Manifold Ring 50 on prefixes); carried but not applied: a value compares on its row's own span (`ROADMAP.md`) |
-| `all_influences`                                 | the Astrolabe Amulet's implicit (`local_item_can_roll_all_influences`): the item counts as having every influence ([Influenced item § Mechanics](https://www.poewiki.net/wiki/Influenced_item#Mechanics)), so every influence row rolls on it and no influence orb takes it                                                                                                                   |
+- a per-side **capacity delta**, the "maximum prefixes/suffixes allowed" stats, which shift
+  the rarity's per-side limit (§7; [Simplex Amulet](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics),
+  [Ratcheting Ring](https://www.poewiki.net/wiki/Ratcheting_Ring#Mechanics));
+- a per-side **magnitude**, the "increased … Modifier magnitudes" implicit, carried but not
+  applied: a value compares on its row's own span;
+- **all influences**, the Astrolabe Amulet's: the item counts as having every influence
+  ([Influenced item § Mechanics](https://www.poewiki.net/wiki/Influenced_item#Mechanics)),
+  so every influence row rolls on it and no influence orb takes it.
 
-Derived, per [Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare):
-
-- `holds_four`: class in `Jewel`, `AbyssJewel`, `HeistEquipmentWeapon`, `HeistEquipmentTool`,
-  `HeistEquipmentUtility`, `HeistEquipmentReward` (jewels, abyss jewels, Rogue's equipment;
-  cluster jewels share the `Jewel` class). A cluster jewel's modifiers roll under the
-  spawn tag of its enchantment ([Cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel):
-  the enchantment "determines what kind of mods the Cluster Jewel can roll"), which the
-  checker reads as a tag of the base.
-- `rare_capable`: class not in `LifeFlask`, `ManaFlask`, `HybridFlask`, `UtilityFlask`,
-  `UtilityFlaskCritical`, `Tincture`, `Relic`, `SanctumSpecialRelic`, `AtlasRelic`,
-  `AnimalCharm` (flasks, tinctures, relics and charms are never Rare).
+Derived, per [Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare), from the class lists
+in `model/capacity.ts`: whether a Rare **holds four** affixes and whether the base **can be
+Rare** at all. A cluster jewel's modifiers roll under the
+spawn tag of its enchantment ([Cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel)),
+which the checker reads as a tag of the base.
 
 ---
 
 ## 5. Mod
 
 One tier of one modifier: one row of the `Mods` table
-([Conditions](https://www.poewiki.net/wiki/Modifier#Conditions)). Identity is the row id.
+([Conditions](https://www.poewiki.net/wiki/Modifier#Conditions)), identified by its row id
+(`model/mod.ts`). Most fields are the data's own (type, groups, side, domain, the
+[mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level), category tags, display text).
+Three readings matter to the model:
 
-| Field                 | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mod_type`            | the tier bucket (§2)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `families`            | its exclusion groups                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `generation`          | prefix or suffix                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `domain`              | its partition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `min_level`           | the item level the row needs ([Mod Level](https://www.poewiki.net/wiki/Modifier#Mod_Level))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `adds_tags`           | tags the item gains while this row is on it, the data's `adds_tags` (the wiki does not describe them). The data relies on them: a weapon-specific jewel modifier adds `specific_weapon`, which zeroes every other such modifier's weight. An added tag can also enable a row: the staff jewel modifiers carry a positive weight on `staff` ahead of the zero on `not_int`, so one staff modifier on a Strength jewel lets the others roll, and one Chaos Orb can roll both (confirmed in game); the checker admits such rows for a possibly present adder                                                                                                                                                                    |
-| `category_tags`       | the row's own categories (attack, caster, life...), which fossils, harvest and the cannot-roll metamods select on ([Mod tag](https://www.poewiki.net/wiki/Modifier#Mod_tag)); `implicitTags` in the code                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `spawn`               | the spawn table in table order: the first entry whose tag the item carries decides, so an early zero disables the row for that tag ([spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `generation`          | the generation table, read as the spawn table is, the matching entry scaling the weight in percent, so a zero disables the row for an item carrying that tag unless an earlier entry matched (the data's `generation_weights`; the wiki does not describe them, `QUESTIONS.md` Q56). The data relies on them for the notable cap of a [cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel#Mechanics): every notable adds `has_affliction_notable` and its table reads the Large and Medium size tags at full weight before a zero on that tag, so a Small Cluster Jewel takes one notable, a prefix, while a Medium's two and a Large's two prefixes are the side's cap and the Large suffix notables share one group |
-| `allowed_classes?`    | absent means unrestricted, which is every ingested row today                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `effects`             | the rule changes this row carries while on the item (§6); empty for every row but the five metamods                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `source`              | the placing mechanic (§3)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `essence_only`        | a row only an essence can place, the data's `is_essence_only` ([Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `name?`, `stat_text?` | display text; absent for internal rows                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+- **Spawn table**, in table order: the first entry whose tag the item carries decides, so an
+  early zero disables the row for that tag
+  ([spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag)).
+- **Added tags**, the data's `adds_tags`, which the item gains while the row is on it (the
+  wiki does not describe them). An added tag can disable rows (a weapon-specific jewel
+  modifier adds `specific_weapon`, zeroing every other such modifier) or enable them (one
+  staff modifier on a Strength jewel lets the others roll, within one Chaos Orb too:
+  confirmed in game); the checker admits such rows for a possibly present adder.
+- **Generation table**, the data's `generation_weights`, read as the spawn table is, the
+  matching entry scaling the weight in percent (the wiki does not describe them,
+  `QUESTIONS.md` Q56); they hold a
+  [cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel#Mechanics)'s notable cap.
 
-Derived: `is_carrier` (has effects); `is_veiled_placeholder` (domain `veiled`) and
-`is_unveiled_result` (domain `unveiled`), since the veiled roles are the partitions.
+A row's **effects** are the rule changes it carries while on the item (§6), empty for every
+row but the five metamods. A row is **essence-only** when the data says so
+([Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting)).
 
 Rules every row satisfies:
 
-- **Source follows the row.** `essence_only` ⇒ `essence`; else a name with "Elevated"
-  ⇒ `elevated` (an [elevated modifier](https://www.poewiki.net/wiki/Elevated_modifier),
-  which rolls nowhere and only an Orb of Dominance makes); else domain `crafted` ⇒
-  `bench`, `veiled`/`unveiled` ⇒ `veiled`, `delve` ⇒ `fossil`; else any positive spawn
-  weight ⇒ `natural`, none ⇒ `other`. (This is the adapter's `classifySource`.)
+- **Source follows the row.** Essence-only ⇒ essence; else a name with "Elevated" ⇒ elevated
+  (an [elevated modifier](https://www.poewiki.net/wiki/Elevated_modifier), which rolls
+  nowhere and only an Orb of Dominance makes); else domain `crafted` ⇒ bench,
+  `veiled`/`unveiled` ⇒ veiled, `delve` ⇒ fossil; else any positive spawn weight ⇒ natural,
+  none ⇒ other. (This is the adapter's `classifySource`.)
 - **Essence-only rows never roll**: every spawn weight is zero.
 - **Carriers are bench metamods**: in PoE1 every row with effects is a bench craft.
 
@@ -157,42 +131,44 @@ withdraws its effect with no bookkeeping. Which currency honours which effect is
 in [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions).
 Three kinds cover the five real metamods ([Metamod](https://www.poewiki.net/wiki/Metamod)):
 
-| Kind                            | Metamod                               | Effect                                                                                             |
-| ------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `PoolRestrict(category)`        | Cannot roll Attack / Caster Modifiers | bars rows carrying the category from being added and shields present rows carrying it from removal |
-| `ProtectGeneration(generation)` | Prefixes / Suffixes Cannot Be Changed | whatever occupies that side at the time is shielded from removal and reroll                        |
-| `CraftedCap(cap)`               | Can have up to 3 Crafted Modifiers    | raises the crafted-mod limit; the highest cap carried wins, never below one                        |
+- `PoolRestrict(category)`, "Cannot roll Attack / Caster Modifiers": bars rows of the
+  category from being added and shields present ones from removal.
+- `ProtectGeneration(generation)`, "Prefixes / Suffixes Cannot Be Changed": shields whatever
+  occupies that side from removal and reroll.
+- `CraftedCap(cap)`, "Can have up to 3 Crafted Modifiers": raises the crafted-mod limit; the
+  highest cap carried wins, never below one.
 
 ---
 
 ## 7. Item
 
-| Field                  | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `base`                 | §4                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `ilvl`                 | fixed when the item is created ([Item level](https://www.poewiki.net/wiki/Item_level))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `strands`              | the memory strands the item holds, 0 to 100, used up by the currencies that add or reroll modifiers, at most so many per use ([Memory strand § Crafting methods consuming memory strands](https://www.poewiki.net/wiki/Memory_strand#Crafting_methods_consuming_memory_strands)); while any remain such a currency rolls only a modifier's top `floor((100 / (2.5 × strands + 147.5)) × (tiers − 1)) + 1` tiers, `tiers` counted over its whole ladder on the base ([Memory strand § Mechanics](https://www.poewiki.net/wiki/Memory_strand#Mechanics))                                                                                                |
-| `rarity`               | operations move it; this doc states the limits                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `influences`           | one normally, two via Awakener's Orb ([Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics)); an influence adds its `<class>_<influence>` tag, which is how influence-exclusive rows join the natural pool                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `prefixes`, `suffixes` | the affixes; order within a side carries no meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `fractured`            | affixes locked against removal and reroll ([Fractured item](https://www.poewiki.net/wiki/Fractured_item#Mechanics)); never beside an influence ([Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics))                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `corrupted`            | set by a Vaal Orb and never cleared ([Corrupted](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `eldritch`             | the Searing Exarch and Eater of Worlds implicits, each a tier and which implicit it is, drawn by an ember or ichor from the class's pool at that tier ([List of Searing Exarch implicit modifiers](https://www.poewiki.net/wiki/List_of_Searing_Exarch_implicit_modifiers), [List of Eater of Worlds implicit modifiers](https://www.poewiki.net/wiki/List_of_Eater_of_Worlds_implicit_modifiers)); on helmets, gloves, boots and body armours, the higher tier dominant, never beside an influence ([Eldritch implicit modifier](https://www.poewiki.net/wiki/Eldritch_implicit_modifier)), on an item of item level 75 or more (`QUESTIONS.md` Q38) |
+An item is a base and its item level
+([Item level](https://www.poewiki.net/wiki/Item_level), fixed at creation), a rarity, the
+affixes of each side (order within a side carries no meaning), and its marks:
 
-Derived:
+- **Memory strands**, 0 to 100, which cut the tiers an adding or rerolling currency can roll
+  and are used up by it ([Memory strand § Mechanics](https://www.poewiki.net/wiki/Memory_strand#Mechanics),
+  [§ Crafting methods consuming memory strands](https://www.poewiki.net/wiki/Memory_strand#Crafting_methods_consuming_memory_strands));
+  `model/strands.ts` counts the tiers over the modifier's whole ladder on the base.
+- **Influences**, one or two
+  ([Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics)); an influence
+  adds its `<class>_<influence>` tag, which is how influence-exclusive rows join the natural
+  pool.
+- **Fractured** affixes, locked against removal and reroll
+  ([Fractured item](https://www.poewiki.net/wiki/Fractured_item#Mechanics)).
+- **Corrupted**, never cleared
+  ([Corrupted](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items)).
+- **Eldritch implicits**, the Searing Exarch's and the Eater of Worlds', each a tier and which
+  implicit it is ([Eldritch implicit modifier](https://www.poewiki.net/wiki/Eldritch_implicit_modifier)).
 
-- `affixes`, the counts, `natural_affixes` (source `natural`), `crafted_mods` (source
-  `bench`), `veiled_placeholders`.
-- `present_types` and `present_families`: the coexistence facts.
-- `tags` = `base.tags` ∪ the influence tags ∪ `adds_tags` of every present affix: the set a
-  roll matches against.
-- `active_effects`: the effects of the modifiers present, collected.
+Derived: the affix counts by side and by source; the present types and families (the
+coexistence facts); the tags a roll matches, the base's ∪ the influence tags ∪ every present
+affix's added tags; and the active effects of the modifiers present.
 
 **Affix capacity.** [Rarities](https://www.poewiki.net/wiki/Rarity#Rarities) gives the
-per-side limit; an experimented base's stats shift each side; and the two sides together
+per-side limit; an experimented base's delta shifts each side; and the two sides together
 never exceed twice the rarity's per-side limit, which is what holds a magic Ratcheting Ring
-to two suffixes ([Ratcheting Ring](https://www.poewiki.net/wiki/Ratcheting_Ring#Mechanics))
-and a magic Simplex Amulet to none ([Simplex Amulet](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)).
+to two suffixes and a magic Simplex Amulet to none (`model/capacity.ts`).
 
 ```
 natural_per_side  = normal 0 | magic 1 | rare (holds_four ? 2 : 3)
@@ -215,22 +191,23 @@ What every item satisfies at every point of a craft; an operation whose result w
 one of these is not a legal operation. Tags appear nowhere here: they decide what can roll,
 not what can coexist.
 
-| Rule                                  | Statement                                                                                                                                                                                                                                                           | Source                                                                                                                            |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Affix side matches generation         | every prefix is a prefix row, every suffix a suffix row                                                                                                                                                                                                             |                                                                                                                                   |
-| Rarity within class ceiling           | Rare ⇒ `base.rare_capable`                                                                                                                                                                                                                                          | [Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare)                                                                         |
-| Prefixes / suffixes within capacity   | `prefix_count ≤ prefix_capacity`, `suffix_count ≤ suffix_capacity`                                                                                                                                                                                                  | §7                                                                                                                                |
-| Affixes within combined capacity      | `affix_count ≤ max_affixes`                                                                                                                                                                                                                                         | §7                                                                                                                                |
-| Distinct mod types                    | two rows of one tier bucket never share an item                                                                                                                                                                                                                     |                                                                                                                                   |
-| Disjoint families                     | no exclusion group is claimed twice                                                                                                                                                                                                                                 | [Group/family](https://www.poewiki.net/wiki/Modifier#Group/family)                                                                |
-| Natural affix tiers within item level | every `natural` affix has `min_level ≤ ilvl`. Essences and the bench place their rows regardless of item level (an essence's guaranteed row at its fixed tier: confirmed in game, not on the wiki; the essence's own use is gated by item level, an operation rule) | [Mod Level](https://www.poewiki.net/wiki/Modifier#Mod_Level), [Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting) |
-| Natural affix domain matches base     | every `natural` affix shares the base's domain; bench, unveiled and fossil rows live in partitions no base has and are placed directly                                                                                                                              | [Domain](https://www.poewiki.net/wiki/Modifier#Domain)                                                                            |
-| Crafted mods within limit             | `crafted_count ≤ crafted_limit`                                                                                                                                                                                                                                     | [Crafting Bench](https://www.poewiki.net/wiki/Crafting_Bench)                                                                     |
-| Fractured affixes present             | `fractured ⊆ affixes`                                                                                                                                                                                                                                               | [Fractured item](https://www.poewiki.net/wiki/Fractured_item#Mechanics)                                                           |
-| Fractures                             | one per [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics), which refuses a fractured item; the Bestiary recipes likewise, by their own note ([Beastcrafting](https://www.poewiki.net/wiki/Beastcrafting)), the talisman one locking two       | [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)                                                           |
-| At most one veiled placeholder        | Hinekora's restriction: Aisling's two-veiled drops are not modelled                                                                                                                                                                                                 | [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb) ("cannot be used on an item with a veiled modifier")        |
-| Influence limit                       | `influences.count ≤ 2`                                                                                                                                                                                                                                              | [Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics)                                                         |
-| Influence excludes fracture           | influenced ⇒ not fractured                                                                                                                                                                                                                                          | [Fractured item](https://www.poewiki.net/wiki/Fractured_item#Mechanics)                                                           |
+| Rule                                  | Statement                                                                                                                                                                                                                                                     | Source                                                                                                                            |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Affix side matches generation         | every prefix is a prefix row, every suffix a suffix row                                                                                                                                                                                                       |                                                                                                                                   |
+| Rarity within class ceiling           | Rare ⇒ `base.rare_capable`                                                                                                                                                                                                                                    | [Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare)                                                                         |
+| Prefixes / suffixes within capacity   | `prefix_count ≤ prefix_capacity`, `suffix_count ≤ suffix_capacity`                                                                                                                                                                                            | §7                                                                                                                                |
+| Affixes within combined capacity      | `affix_count ≤ max_affixes`                                                                                                                                                                                                                                   | §7                                                                                                                                |
+| Distinct mod types                    | two rows of one tier bucket never share an item                                                                                                                                                                                                               |                                                                                                                                   |
+| Disjoint families                     | no exclusion group is claimed twice                                                                                                                                                                                                                           | [Group/family](https://www.poewiki.net/wiki/Modifier#Group/family)                                                                |
+| Natural affix tiers within item level | every `natural` affix has `min_level ≤ ilvl`; essences and the bench place their rows regardless (an essence's row at its fixed tier: confirmed in game, not on the wiki)                                                                                     | [Mod Level](https://www.poewiki.net/wiki/Modifier#Mod_Level), [Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting) |
+| Natural affix domain matches base     | every `natural` affix shares the base's domain (§3)                                                                                                                                                                                                           | [Domain](https://www.poewiki.net/wiki/Modifier#Domain)                                                                            |
+| Crafted mods within limit             | `crafted_count ≤ crafted_limit`                                                                                                                                                                                                                               | [Crafting Bench](https://www.poewiki.net/wiki/Crafting_Bench)                                                                     |
+| Fractured affixes present             | `fractured ⊆ affixes`                                                                                                                                                                                                                                         | [Fractured item](https://www.poewiki.net/wiki/Fractured_item#Mechanics)                                                           |
+| Fractures                             | one per [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics), which refuses a fractured item; the Bestiary recipes likewise, by their own note ([Beastcrafting](https://www.poewiki.net/wiki/Beastcrafting)), the talisman one locking two | [Fracturing Orb](https://www.poewiki.net/wiki/Fracturing_Orb#Mechanics)                                                           |
+| At most one veiled placeholder        | Hinekora's restriction: Aisling's two-veiled drops are not modelled                                                                                                                                                                                           | [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb) ("cannot be used on an item with a veiled modifier")        |
+| Influence limit                       | `influences.count ≤ 2`                                                                                                                                                                                                                                        | [Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics)                                                         |
+| Influence excludes fracture           | influenced ⇒ not fractured                                                                                                                                                                                                                                    | [Fractured item](https://www.poewiki.net/wiki/Fractured_item#Mechanics)                                                           |
+| Eldritch implicits                    | only on helmets, gloves, boots and body armours, never beside an influence; the higher tier is dominant                                                                                                                                                       | [Eldritch implicit modifier](https://www.poewiki.net/wiki/Eldritch_implicit_modifier)                                             |
 
 ---
 
@@ -241,10 +218,8 @@ True of the ingested PoE1 data, and pinned by the catalog-level tests of
 
 - **A ladder shares its families.** Every row of a ModType claims the same groups, so a
   modifier named without a tier resolves to its groups from any row.
-- **A ModType is not one side.** Many ModTypes have both prefix and suffix rows; a row's side
-  is only defined relative to the base it rolls on.
-- **Essence-only rows carry zero weight everywhere.**
-- **The five metamods are the only effect carriers**, all in domain `crafted`.
+- The facts of §2 and §5: a ModType is not one side, essence-only rows never roll, and the
+  five metamods are the only effect carriers.
 
 ---
 
