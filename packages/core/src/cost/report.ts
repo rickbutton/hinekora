@@ -116,6 +116,8 @@ interface Walk {
     readonly total: readonly Price[];
     readonly chaos?: number;
     readonly stopped: number;
+    /** Every step was read on the tracker's states, none on the checker's item alone. */
+    readonly followed: boolean;
 }
 
 export function costOf(
@@ -125,11 +127,17 @@ export function costOf(
     snapshot?: Prices,
 ): CostReport {
     const estimate = walk(craft, result, registry, snapshot, "estimate");
-    // The two ends of what the checker allows, for the spread beside the estimate.
-    const ends = [
-        walk(craft, result, registry, snapshot, "floors"),
-        walk(craft, result, registry, snapshot, "ceilings"),
-    ];
+    // The two ends of what the checker allows, for the spread beside the
+    // estimate. A walk the tracker followed throughout reads no open range but
+    // the memory strands; with those settled the ends are the estimate.
+    const strandsOpen = result.trace.some((e) => e.before.strands[0] !== e.before.strands[1]);
+    const ends =
+        estimate.followed && !strandsOpen
+            ? [estimate, estimate]
+            : [
+                  walk(craft, result, registry, snapshot, "floors"),
+                  walk(craft, result, registry, snapshot, "ceilings"),
+              ];
     const unpriced = new Set<string>();
     for (const p of estimate.total) {
         if (snapshot === undefined || inChaos([p], snapshot) === undefined) unpriced.add(p.item);
@@ -196,6 +204,7 @@ function walk(
         total,
         ...(chaos !== undefined && { chaos }),
         stopped: Math.min(1, top.stopped * passes),
+        followed: !walker.lost && (walker.tracker?.misses ?? 1) === 0,
     };
 }
 
@@ -360,6 +369,8 @@ class Walker {
     private readonly resolve: (pred: Pred, a: AItem) => RPred | null;
     /** The guide's named modifiers, tracked from the item block on. */
     readonly tracker: Tracker | undefined;
+    /** Some step was read on the checker's item rather than the tracked states. */
+    lost = false;
 
     constructor(
         craft: Craft,
@@ -442,6 +453,7 @@ class Walker {
         let current = trim(branches);
         for (const stmt of stmts) {
             if (current.length === 0) break;
+            if (current.some((b) => b.states === undefined)) this.lost = true;
             current = trim(this.statement(stmt, current, frame));
         }
         return current;
@@ -682,6 +694,7 @@ class Walker {
             const solved = this.chainLoop(stmt, before, rpred, branches, frame);
             if (solved !== undefined) return solved;
         }
+        this.lost = true;
         // One attempt: the body from the head with mass one, in a frame of its
         // own, its steps discarded. The attempt ends in the exit (its chance
         // judged on each falling branch's path), in a stop, or in another round.

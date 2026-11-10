@@ -162,8 +162,15 @@ interface Totals {
     stuck: number;
 }
 
+const keys = new WeakMap<ChainState, string>();
+
 function key(s: ChainState): string {
-    return `${s.prefix}/${s.suffix}/${s.rows.map((r) => r ?? "-").join(",")}`;
+    let k = keys.get(s);
+    if (k === undefined) {
+        k = `${s.prefix}/${s.suffix}/${s.rows.map((r) => r ?? "-").join(",")}`;
+        keys.set(s, k);
+    }
+    return k;
 }
 
 function put(d: Dist, state: ChainState, prob: number): void {
@@ -403,9 +410,16 @@ function apply(step: ChainStep, alive: Dist, input: ChainInput, t: Totals): Dist
             return done;
         }
         case "transition": {
-            const next: Dist = new Map();
+            // States that lead to the same outcomes (a reforge's, shared by
+            // every state it strips alike) are spread once, their mass summed.
+            const byOutcomes = new Map<readonly Outcome[], number>();
             for (const { state, prob } of alive.values()) {
-                for (const o of step.next(state)) put(next, o.state, prob * o.prob);
+                const out = step.next(state);
+                byOutcomes.set(out, (byOutcomes.get(out) ?? 0) + prob);
+            }
+            const next: Dist = new Map();
+            for (const [out, mass] of byOutcomes) {
+                for (const o of out) put(next, o.state, mass * o.prob);
             }
             return next;
         }
