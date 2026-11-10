@@ -141,6 +141,16 @@ if has "maximum life" { exalt }`);
         }
     });
 
+    it("puts that item's Corrupted section before its influence, as its copy has them", () => {
+        const r = run(
+            shield(
+                85,
+                `"maximum lightning resistance" t3, "intelligence" t1, "fire resistance" t8`,
+            ),
+        );
+        expect(r.output).toMatch(/ {2}--------\n {2}Corrupted\n {2}--------\n {2}Shaper Item$/m);
+    });
+
     it("keeps those numbers on an item whose level stops short of the best tiers", () => {
         // At item level 68 no currency rolls the mana or life above 60 and 64,
         // nor the level-82 Intelligence; the rows below keep their numbers.

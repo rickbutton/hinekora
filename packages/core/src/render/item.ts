@@ -460,8 +460,9 @@ function implicitLines(i: ImplicitView): string[] {
  * The item as the game's advanced copy (Ctrl+Alt+C) lays it out, in the
  * format since 3.28, with this project's extensions where the state is not
  * concrete. The name, properties, requirements and sockets are left out, as
- * the state does not hold them. `docs/QUESTIONS.md` Q41 probes what no real
- * paste shows.
+ * the state does not hold them. `Corrupted` comes before the influence
+ * section, as a pasted corrupted Shaper shield has them; where it stands beside
+ * `Fractured Item` no paste shows (`docs/QUESTIONS.md` Q100).
  */
 export function renderItemText(v: ItemView): string {
     const sections: string[][] = [];
@@ -484,7 +485,7 @@ export function renderItemText(v: ItemView): string {
     if (v.remainder !== undefined) mods.push(`{ ${remainderText(v.remainder)} }`);
     // The eldritch marks close the modifier section, with no separator.
     mods.push(...markLines("eldritch"));
-    const rest = [markLines("influence"), markLines("fractured"), markLines("corrupted")];
+    const rest = [markLines("corrupted"), markLines("influence"), markLines("fractured")];
     for (const s of [mods, ...rest]) if (s.length > 0) sections.push(s);
     if (v.without.length > 0) {
         sections.push([`Without: ${v.without.join(", ")}`]);

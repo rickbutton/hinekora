@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q100.
+keeps it. New entries continue from Q101.
 
 ```
 ### Qn · probe|decision · open — title
@@ -102,14 +102,6 @@ whether the suffixes survived, and the second item's rarity when stripped.
 with a fractured prefix beside a fractured suffix Magic or Rare, so a second orb is
 refused. **Encoded in:** `check/library.ts` `TAINTED_CHAOS`, `unprotect`;
 `check/ops.ts` `scouredRarities`.
-
-### Q41 · probe · open — where a copied item's `Corrupted` goes
-
-**Q:** in the advanced copy (Ctrl+Alt+C), does `Corrupted` come before or after the
-influence section on an item with both? No real paste seen has both.
-**Probe:** an influenced, corrupted Rare; copy it with Ctrl+Alt+C; paste it verbatim.
-**Assumed:** `Corrupted` in its own section, last. **Encoded in:**
-`packages/core/src/render/item.ts` `renderItemText`.
 
 ### Q52 · probe · open — what a Harvest-changed essence, fossil or unveiled modifier becomes
 
@@ -327,3 +319,11 @@ each time, and whether two of one group (Strength and Dexterity beside Dexterity
 Intelligence) are ever offered together.
 **Assumed:** by spawn weight, one at a time, an option closing every modifier that shares
 a group with it. **Encoded in:** `cost/roll.ts` `offerSetsOf`.
+
+### Q100 · probe · open — where a copied item's `Corrupted` goes beside `Fractured Item`
+
+**Q:** the advanced copy (Ctrl+Alt+C) of a corrupted Shaper shield has `Corrupted` in its
+own section before `Shaper Item`. Does it come before `Fractured Item` too?
+**Probe:** a corrupted fractured Rare; copy it with Ctrl+Alt+C; paste it verbatim.
+**Assumed:** `Corrupted`, then the influence, then `Fractured Item`. **Encoded in:**
+`packages/core/src/render/item.ts` `renderItemText`.

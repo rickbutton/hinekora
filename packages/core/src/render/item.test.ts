@@ -272,11 +272,11 @@ describe("the marks and the crafted flag", () => {
                 "+(115-129) to maximum Life",
                 "Searing Exarch Item",
                 "--------",
+                "Possibly: Corrupted",
+                "--------",
                 "Hunter Item",
                 "--------",
                 "Fractured Item",
-                "--------",
-                "Possibly: Corrupted",
             ].join("\n"),
         );
     });
