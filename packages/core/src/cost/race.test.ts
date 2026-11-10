@@ -82,6 +82,22 @@ describe("the race against brute force", () => {
         expect(allAmongFirst([1000, 400, 50], [1], 1)).toBeCloseTo(400 / 1450, 12);
     });
 
+    it("stays exact when the weights span orders of magnitude", () => {
+        // A fossil's multipliers leave weights of tens beside tens of
+        // thousands: a rare row among them is drawn first by its share, and
+        // among the first two by that share again after each other first draw.
+        const rates = [20, 81900, 59100, 59000, 45000, 19];
+        const total = rates.reduce((a, b) => a + b, 0);
+        expect(allAmongFirst(rates, [0], 1)).toBeCloseTo(20 / total, 9);
+        let two = 20 / total;
+        rates.forEach((r, j) => {
+            if (j !== 0) two += (r / total) * (20 / (total - r));
+        });
+        expect(allAmongFirst(rates, [0], 2)).toBeCloseTo(two, 9);
+        // The other way about: a heavy row among light ones.
+        expect(allAmongFirst(rates, [1], 1)).toBeCloseTo(81900 / total, 9);
+    });
+
     it("one side: the exact distribution over which special groups are taken", () => {
         const side = POOL.filter((g) => g.side === "suffix");
         const rates = side.map((g) => g.weight);

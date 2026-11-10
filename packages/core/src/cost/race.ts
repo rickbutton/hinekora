@@ -10,12 +10,15 @@
  * time's density. The dynamic program carries a count, never a list of draws.
  */
 
-/** A composite Gauss–Legendre rule on (0, 1): after the substitution below the
- *  integrand is a polynomial-like function of the node, so a few panels of a
- *  few dozen nodes each are accurate to about seven digits, more than a cost
- *  estimate can use. */
-const NODES = 32;
-const PANELS = 4;
+/** A composite Gauss–Legendre rule over log-time: a few panels per decade of a
+ *  dozen and a half nodes each are accurate to about seven digits, more than a
+ *  cost estimate can use, whatever the spread of the clocks' rates. */
+const NODES = 16;
+const PANELS_PER_DECADE = 4;
+/** The window followed, in units of the fastest and the slowest clock's time:
+ *  before it hardly any clock has fired, after it every one has. */
+const EARLY = 1e-15;
+const LATE = 100;
 
 interface Rule {
     readonly x: readonly number[];
@@ -52,21 +55,32 @@ function legendre(n: number): Rule {
 const RULE = legendre(NODES);
 
 /**
- * ∫₀^∞ f(t) dt by the substitution u = 1 − e^(−λt), which maps the half-line to
- * (0, 1). With λ the slowest clock in play every factor e^(−rt) becomes
- * (1 − u)^(r/λ) with r/λ ≥ 1, a smooth function the rule integrates well; a
- * faster λ would leave a singularity at u = 1 the rule cannot see.
+ * ∫₀^∞ f(t) dt by the substitution t = eˢ. A clock of rate r changes the
+ * integrand around t ≈ 1/r, and a fossil's weights can span four orders of
+ * magnitude, so every timescale between the fastest clock's and the slowest's
+ * needs its share of nodes: equal panels in log-time give each decade the
+ * same. A substitution on one rate alone leaves the faster clocks as spikes
+ * the rule steps over.
  */
 function integrate(rates: readonly number[], f: (t: number) => number): number {
-    let lambda = Infinity;
-    for (const r of rates) if (r > 0 && r < lambda) lambda = r;
-    if (!(lambda < Infinity)) return 0;
+    let slow = Infinity;
+    let fast = 0;
+    for (const r of rates) {
+        if (!(r > 0)) continue;
+        slow = Math.min(slow, r);
+        fast = Math.max(fast, r);
+    }
+    if (!(slow < Infinity)) return 0;
+    const lo = Math.log(EARLY / fast);
+    const hi = Math.log(LATE / slow);
+    const panels = Math.max(4, Math.ceil(((hi - lo) / Math.LN10) * PANELS_PER_DECADE));
+    const width = (hi - lo) / panels;
     let sum = 0;
-    for (let panel = 0; panel < PANELS; panel++) {
+    for (let panel = 0; panel < panels; panel++) {
         for (let i = 0; i < NODES; i++) {
-            const u = (panel + RULE.x[i]!) / PANELS;
-            const t = -Math.log1p(-u) / lambda;
-            sum += (RULE.w[i]! * f(t)) / (PANELS * lambda * (1 - u));
+            const s = lo + (panel + RULE.x[i]!) * width;
+            const t = Math.exp(s);
+            sum += RULE.w[i]! * width * f(t) * t;
         }
     }
     return sum;

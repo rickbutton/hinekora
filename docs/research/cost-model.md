@@ -330,9 +330,12 @@ firing times, which are independent. Two consequences carry the whole model:
   fired before `g`'s clock". Conditioned on `g`'s firing time `t`, the others fire before `t`
   independently (each with probability `1 − e^(−w·t)`), so their count is a Poisson-binomial
   distribution computed by a dynamic program over the groups in `O(groups × k)`, and the
-  condition is removed by integrating `t` against `g`'s exponential density, a smooth
-  one-dimensional integral a Gauss–Legendre rule evaluates to machine precision in a few
-  dozen points. The same program with two conditioned clocks gives the exact joint for a
+  condition is removed by integrating `t` against `g`'s exponential density, a
+  one-dimensional integral a Gauss–Legendre rule evaluates to machine precision. Each
+  clock changes the integrand around `t ≈ 1/w`, so the rule runs over `log t` with the
+  same number of points in every decade between the fastest clock and the slowest: a
+  substitution on one rate alone leaves the faster clocks as spikes it steps over, which
+  read a T1 spell damage under an Aetheric Fossil at a third of its chance. The same program with two conditioned clocks gives the exact joint for a
   pair of groups ("life T1 and fire resistance T1"), a two-dimensional integral; three or
   more wanted groups are combined by inclusion–exclusion with the pairwise joints exact and
   the higher-order terms taken independent.

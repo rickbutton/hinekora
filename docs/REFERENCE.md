@@ -254,8 +254,10 @@ resolveEssence / resolveBench / resolveHarvestTag`
   (the chance a set of groups is among the first `k` drawn), `amongFirstDistribution` (the
   exact distribution over which of some groups are drawn, by inclusion–exclusion) and
   `splitDistribution` (how `m` draws split between the sides, with the side caps and
-  depletion), each a Poisson-binomial dynamic program under a Gauss–Legendre quadrature,
-  checked against brute-force enumeration in `race.test.ts`. `roll.ts` reads a method's
+  depletion), each a Poisson-binomial dynamic program under a Gauss–Legendre quadrature
+  over log-time (equal panels per decade between the fastest clock's and the slowest's,
+  so a fossil's weights four orders of magnitude apart stay exact), checked against
+  brute-force enumeration in `race.test.ts`. `roll.ts` reads a method's
   op sequence on the checker's item into its `Roll` (`rollOf(a, ops, registry, reading?)`,
   the `Reading` saying which end of each range the checker left open the roll reads:
   `estimate`, `floors` or `ceilings`): a `draw` (the pool's
