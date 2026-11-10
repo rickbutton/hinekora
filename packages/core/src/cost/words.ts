@@ -38,6 +38,17 @@ export function oddsText(chance: number): string {
     return `1/${Math.round(1 / chance)} chance`;
 }
 
+/** A spread's two ends, "36.5 to 37.3"; nothing when they print alike. */
+export function spreadText(
+    b: { readonly low: number; readonly high: number } | undefined,
+    show: (n: number) => string,
+): string | undefined {
+    if (b === undefined) return undefined;
+    const low = show(b.low);
+    const high = show(b.high);
+    return low === high ? undefined : `${low} to ${high}`;
+}
+
 /** A chance as the end of a spread: "1/36.5", "62%". */
 export function oddsFigure(chance: number): string {
     if (!(chance > 0)) return "never";

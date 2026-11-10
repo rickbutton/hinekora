@@ -42,6 +42,7 @@ import {
     costIsObvious,
     oddsFigure,
     oddsText,
+    spreadText,
 } from "@hinekora/core";
 import { type Token, tokenize } from "@hinekora/parser";
 import { checkCached, costCached, parseCached } from "./analysis.js";
@@ -545,8 +546,10 @@ function costLine(
     prices: Prices | undefined,
 ): string | undefined {
     // The spread over the two ends of what the checker allows the item to hold.
-    const spread = (b: Bounds | undefined, show: (n: number) => string): string =>
-        b === undefined ? "" : ` (${show(b.low)} to ${show(b.high)} by what the item may hold)`;
+    const spread = (b: Bounds | undefined, show: (n: number) => string): string => {
+        const ends = spreadText(b, show);
+        return ends === undefined ? "" : ` (${ends} by what the item may hold)`;
+    };
     if (entry.kind === "item") {
         if (report.total.length === 0) return undefined;
         const when =

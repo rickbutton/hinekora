@@ -11,4 +11,5 @@ export {
     priceText,
     oddsFigure,
     oddsText,
+    spreadText,
 } from "./words.js";

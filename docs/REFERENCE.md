@@ -313,7 +313,8 @@ resolveEssence / resolveBench / resolveHarvestTag`
   with them. `words.ts` is the figures in the guide's words (`figure`, `percentage`,
   `priceText`; `approx` marks an estimate "~24", `oddsText` is a repeat's odds as guides
   quote them, "1/37 chance", or a percentage once better than even, `oddsFigure` the
-  same as the end of a spread, "1/36.5"), the one copy the CLI, the hover and the playground print, and
+  same as the end of a spread, "1/36.5", `spreadText` a spread's two ends, nothing when
+  they print alike), the one copy the CLI, the hover and the playground print, and
   `costIsObvious`, the step whose cost says nothing its name does not (it runs once and
   spends one of one currency), whose line the hover and the storyboard leave out. A
   method first in a loop body is judged on the item the loop finds, not on the join

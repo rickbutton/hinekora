@@ -22,6 +22,7 @@ import {
     approx,
     oddsFigure,
     oddsText,
+    spreadText,
 } from "@hinekora/core";
 import { parse } from "@hinekora/parser";
 import { formatDiagnostic } from "./format.js";
@@ -108,10 +109,8 @@ export function costSource(
     if (prices !== undefined && report.total.length > 0) {
         const date = prices.fetchedAt.slice(0, 10);
         if (report.chaos !== undefined && report.divine !== undefined) {
-            const spread =
-                report.chaosRange === undefined
-                    ? ""
-                    : `, ${figure(report.chaosRange.low)} to ${figure(report.chaosRange.high)} by what the item may hold,`;
+            const ends = spreadText(report.chaosRange, figure);
+            const spread = ends === undefined ? "" : `, ${ends} by what the item may hold,`;
             out.push(
                 `${approx(report.chaos)} Chaos Orbs (${approx(report.divine)} Divine Orbs)${spread} at ${prices.league} prices of ${date}.`,
             );
@@ -142,8 +141,10 @@ function stepText(lines: readonly string[], s: StepCost): string {
  */
 function stepFigure(s: StepCost, prices: Prices | undefined): string {
     const parts: string[] = [];
-    const spread = (b: Bounds | undefined, show: (n: number) => string): string =>
-        b === undefined ? "" : ` [${show(b.low)} to ${show(b.high)}]`;
+    const spread = (b: Bounds | undefined, show: (n: number) => string): string => {
+        const ends = spreadText(b, show);
+        return ends === undefined ? "" : ` [${ends}]`;
+    };
     if (s.attempts !== undefined) {
         parts.push(`${oddsText(s.attempts.chance)}${spread(s.chanceRange, oddsFigure)}`);
     }

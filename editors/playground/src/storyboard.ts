@@ -49,6 +49,7 @@ import {
     approx,
     costIsObvious,
     oddsText,
+    spreadText,
 } from "@hinekora/core";
 import { checkCached, costCached, parseCached } from "@hinekora/lsp";
 import { renderItemCard } from "./item-card.js";
@@ -158,9 +159,14 @@ const present = (...nodes: (HTMLElement | undefined)[]): HTMLElement[] =>
 
 /** The spread over the two ends of what the item may hold, as a tooltip. */
 function spreadTitle(b: Bounds | undefined, show: (n: number) => string): string | undefined {
-    return b === undefined
-        ? undefined
-        : `${show(b.low)} to ${show(b.high)} by what the item may hold`;
+    const ends = spreadText(b, show);
+    return ends === undefined ? undefined : `${ends} by what the item may hold`;
+}
+
+/** The same, in brackets after a figure. */
+function spreadNote(b: Bounds | undefined): string {
+    const ends = spreadText(b, figure);
+    return ends === undefined ? "" : ` (${ends} by what the item may hold)`;
 }
 
 /** A cost line under a step, with the spread as its tooltip; clicking it opens a breakdown. */
@@ -492,7 +498,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                 h(
                                     "div",
                                     "note",
-                                    `${approx(c.runs)} uses over the guide${c.runsRange === undefined ? "" : ` (${figure(c.runsRange.low)} to ${figure(c.runsRange.high)} by what the item may hold)`}`,
+                                    `${approx(c.runs)} uses over the guide${spreadNote(c.runsRange)}`,
                                 ),
                             ]),
                     ),
@@ -762,16 +768,11 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
         /** What the whole guide is expected to spend, under the snapshot. */
         function total(): HTMLElement | undefined {
             if (report === undefined || report.total.length === 0) return undefined;
+            const chaosEnds = spreadText(report.chaosRange, figure);
             const notes = [
-                ...(report.chaosRange === undefined
+                ...(chaosEnds === undefined
                     ? []
-                    : [
-                          h(
-                              "div",
-                              "note",
-                              `${figure(report.chaosRange.low)} to ${figure(report.chaosRange.high)} chaos by what the item may hold`,
-                          ),
-                      ]),
+                    : [h("div", "note", `${chaosEnds} chaos by what the item may hold`)]),
                 ...(report.stopped > 0
                     ? [h("div", "note", `ends on a stop ${percentage(report.stopped)} of the time`)]
                     : []),
