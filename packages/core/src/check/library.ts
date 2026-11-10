@@ -242,7 +242,9 @@ export function harvestAugmentOps(tag: TagId): readonly Op[] {
 
 /** Harvest "reforge an Influenced Rare item with random modifiers, including an
  *  Influence modifier" (Harvest crafting): a rare reforge with one of the
- *  influence's rows guaranteed. */
+ *  influence's rows guaranteed. The grove offers it beside an influenced
+ *  modifier on a protected side and under a cannot-roll metamod (seen in
+ *  game; the Metamod page has no row for it). */
 export const HARVEST_INFLUENCE_REFORGE: readonly Op[] = [
     notCorrupted,
     isRare,
@@ -261,7 +263,9 @@ export const HARVEST_RANDOMISE: readonly Op[] = [
     notCorrupted,
     require({ kind: "influenced", what: "The grove's randomise craft" }),
     // "usage is prevented if any prefix is influenced" under a prefix protection,
-    // and likewise for suffixes (Metamod § Rules and Exceptions).
+    // and likewise for suffixes (Metamod § Rules and Exceptions; seen in game).
+    // A cannot-roll metamod does not prevent it: the page says "Unknown", and
+    // the grove offers the craft under "Cannot roll Attack Modifiers".
     require({ kind: "noInfluencedOnProtected", what: "The grove's randomise craft" }),
     strip(),
     influence({ kind: "randomise" }),

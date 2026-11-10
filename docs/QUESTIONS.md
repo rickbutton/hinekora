@@ -82,19 +82,6 @@ wider than the report, so nothing reachable is ruled out.
 **Encoded in:** `check/library.ts` `HARVEST_RANDOMISE`, `check/ops.ts` the `randomise`
 change.
 
-### Q29 · probe · open — the grove's influence crafts under the metamods
-
-**Q:** [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions)
-says the randomise is prevented when a protected side holds an influenced modifier, marks
-it "Unknown" under the cannot-roll metamods, and has no row for the influence reforge.
-**Probe:** an influenced Rare with "Prefixes Cannot Be Changed" and an influenced prefix,
-one with "Cannot roll Attack Modifiers"; open both crafts on each; record offered or
-greyed out, and what survives.
-**Assumed:** the randomise is refused when a protected side may hold an influence
-modifier, and the cannot-roll metamods do not touch it; the influence reforge behaves as
-the tagged reforges. **Encoded in:** `check/ops.ts` `noInfluencedOnProtected`,
-`check/library.ts` `HARVEST_INFLUENCE_REFORGE`.
-
 ### Q30 · probe · open — the Bestiary's "Add a Mod to a Hunter Item"
 
 **Q:** does it (and its five siblings) take a Magic item?
