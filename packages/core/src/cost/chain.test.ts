@@ -338,8 +338,9 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
             exit: (s) => s.prefix === 2,
         })!;
         expect(solved.estimated).toBe(false);
-        expect(solved.passes * p).toBeCloseTo(1, 6);
-        expect(solved.taken.get(0)! * (p + q)).toBeCloseTo(1, 6);
+        // Taken from the first round's mix these would be off by a tenth.
+        expect(solved.passes * p).toBeCloseTo(1, 3);
+        expect(solved.taken.get(0)! * (p + q)).toBeCloseTo(1, 3);
     });
 
     it("a loop that cannot end is left unresolved", () => {

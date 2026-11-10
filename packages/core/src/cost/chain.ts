@@ -114,12 +114,17 @@ export interface Chain {
     readonly estimated: boolean;
 }
 
-/** Rounds after which the chain stops following the mass still going round. */
+/** Rounds after which the chain stops following the mass still going round,
+ *  and the states it carries through rounds before then, so a chain of many
+ *  states stops sooner: a hover cannot wait on thousands of rounds of them. */
 const MAX_PASSES = 2000;
+const MAX_WORK = 200_000;
 const EPSILON = 1e-9;
 /** How close in shape two rounds' distributions must be for the rest to be
  *  taken as a geometric tail, and how close to one a decay counts as none. */
-const SETTLED = 1e-10;
+const SETTLED = 1e-7;
+/** The mass an unsettled tail must carry for the figures to count as estimated. */
+const UNSETTLED_MASS = 0.01;
 const STUCK = 1e-9;
 
 type Dist = Map<string, { state: ChainState; prob: number }>;
@@ -193,6 +198,7 @@ export function chain(input: ChainInput): Chain | undefined {
     // later round is this one scaled by the share it keeps: the rest is a
     // geometric tail, added at once.
     let estimated = false;
+    let work = 0;
     for (let round = 0; round < MAX_PASSES && massOf(head) > EPSILON; round++) {
         const mass = massOf(head);
         const shapeIn = head;
@@ -211,13 +217,15 @@ export function chain(input: ChainInput): Chain | undefined {
         // A chain that mixes slowly may not settle within the rounds followed;
         // its last round's decay is then the best guess at the rest, and the
         // figures are an estimate.
-        const last = round === MAX_PASSES - 1;
+        work += head.size;
+        const last = round === MAX_PASSES - 1 || work >= MAX_WORK;
         const settled = shapeDistance(shapeIn, mass, head, massOf(head)) < SETTLED;
         const tail = decay < 1 - STUCK && (settled || last);
         const factor = tail ? 1 + decay / (1 - decay) : 1;
         for (const { state, prob } of leaving.values()) put(exits, state, prob * factor);
         if (tail) {
-            estimated = !settled;
+            // A tail over little mass moves the figures little, settled or not.
+            estimated = !settled && massOf(head) > UNSETTLED_MASS;
             addScaled(t, was, decay / (1 - decay));
             head = new Map();
             break;

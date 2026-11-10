@@ -294,8 +294,9 @@ resolveEssence / resolveBench / resolveHarvestTag`
   read: the side is out of reach while it is there), from weighted start states to the
   exit (`exitAtStart` the part that holds before any round), a restart, a stop or the
   mass that never leaves; once a round hands the next a distribution of the same shape,
-  or at the last round followed when a slowly mixing chain has not settled
-  (`Chain.estimated`, which the report notes), the rounds still to come are added as
+  or at the last round followed (2000, fewer for a chain of many states, a bound on the
+  states carried) when a slowly mixing chain has not settled (`Chain.estimated`, which
+  the report notes when more than a hundredth of the mass is left), the rounds still to come are added as
   that round's geometric tail, so a rare exit costs its full expected rounds. The walk
   builds it in `chainLoop` for every `until` whose body and exit fit, reading each step
   on the checker's item over the rounds, the rest taking the independent-attempts path.

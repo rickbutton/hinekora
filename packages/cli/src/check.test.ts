@@ -199,6 +199,21 @@ until has "maximum life" t1 and prefixCount <= 2 {
         expect(annul).not.toMatch(/×0[:\s]/);
     });
 
+    it("notes a loop whose rounds are estimated past those followed, and gives it no spread", () => {
+        // example.craft's second loop drifts between items of two and three
+        // modifiers for thousands of rounds.
+        const src = readFileSync(
+            fileURLToPath(new URL("../../../examples/example.craft", import.meta.url)),
+            "utf8",
+        );
+        const r = costSource(src, "example.craft", registry, prices);
+        const lines = r.output.split("\n");
+        const at = lines.findIndex((l) => l.includes("until hasTwoEleRes()"));
+        expect(lines[at]).not.toMatch(/\[/);
+        expect(lines[at + 1]).toMatch(/estimated/);
+        expect(r.output).not.toMatch(/by what the item may hold/);
+    });
+
     it("names what the snapshot cannot price and still sums the rest", () => {
         const r = costSource(
             `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] }\nlocus`,
