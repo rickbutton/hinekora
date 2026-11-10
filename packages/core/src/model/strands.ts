@@ -9,6 +9,10 @@
 
 export const MAX_STRANDS = 100;
 
+/** On an item holding strands a Foulborn orb "counts as the equivalent of +30
+ *  Memory Strands" (§ Mechanics), past the hundred an item can hold. */
+export const FOULBORN_AS_STRANDS = 30;
+
 /** How many of a modifier's `tiers` can roll on an item holding `strands`. */
 export function tiersWithStrands(strands: number, tiers: number): number {
     if (tiers <= 0) return 0;

@@ -34,7 +34,7 @@ const rowsOf = (r: ReturnType<typeof check>, type: string): Set<string> =>
     new Set(r.finalState!.tiers.get(TypeId(type)) ?? []);
 
 describe("foulborn orbs", () => {
-    it("a foulborn exalt draws only the top half of each type's tiers", () => {
+    it("a foulborn exalt draws only the top tiers of each type", () => {
         // MaxLife has three eligible tiers at ilvl 100, so two can roll; the
         // plain exalt allows all three.
         const r = check(craft(ring("rare"), [foulborn("exalt")]), ctx);
@@ -71,6 +71,26 @@ describe("foulborn orbs", () => {
         // high one. The cull must keep both.
         const r = check(craft(ring("rare"), [op("chaos"), foulborn("exalt")]), ctx);
         expect(rowsOf(r, "StaffyTier")).toEqual(new Set(["StaffyTierSure1", "StaffyTierHigh1"]));
+    });
+
+    it("on an item with memory strands is one cut at thirty more strands, not two cuts", () => {
+        const stranded = (strands: number) =>
+            item({ base: "Iron Ring", ilvl: 100, rarity: "rare", strands });
+        // Seven tiers at 13 strands: the strands alone keep four, of which a
+        // second Foulborn cut would keep two; 43 strands keep three, and
+        // recorded Foulborn rolls land on that third tier.
+        const r = check(craft(stranded(13), [foulborn("exalt")]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(rowsOf(r, "SevenTier")).toEqual(new Set(["SevenTier7", "SevenTier6", "SevenTier5"]));
+        const plain = check(craft(stranded(13), [op("exalt")]), ctx);
+        expect(rowsOf(plain, "SevenTier")).toEqual(
+            new Set(["SevenTier7", "SevenTier6", "SevenTier5", "SevenTier4"]),
+        );
+        // Once the strands may be used up, the orb's own cut is the wider one.
+        const spent = check(craft(stranded(13), [op("exalt"), foulborn("exalt")]), ctx);
+        expect(rowsOf(spent, "SevenTier")).toEqual(
+            new Set(["SevenTier7", "SevenTier6", "SevenTier5", "SevenTier4"]),
+        );
     });
 
     it("has the plain orb's needs and counts", () => {

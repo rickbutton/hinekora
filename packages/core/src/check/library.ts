@@ -510,8 +510,9 @@ export const CONFLICT: readonly Op[] = [
     { kind: "eldritch", change: { kind: "conflict" } },
 ];
 
-/** A Foulborn orb is its plain counterpart drawing from the top half of each
- *  type's tiers (Foulborn currency § Mechanics). */
+/** A Foulborn orb is its plain counterpart drawing from the top tiers of each
+ *  type, a little over half of them (Foulborn currency § Mechanics); on an
+ *  item with memory strands it deepens their cut instead. */
 export function foulbornOps(verb: "augment" | "regal" | "exalt"): readonly Op[] {
     return currencyOps(verb).map((op) =>
         op.kind === "fill" && op.pool.kind === "natural"

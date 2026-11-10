@@ -37,6 +37,7 @@ import {
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import type { EssenceSpec, FossilSpec } from "../model/sources.js";
+import { FOULBORN_AS_STRANDS } from "../model/strands.js";
 import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
 import { lookupWeight, pool } from "../pool/pool.js";
 import { veiledPool } from "../pool/veiled.js";
@@ -692,8 +693,9 @@ interface Rules {
     /** Protection and cannot-roll prevent an essence or a fossil; multimod does not. */
     readonly blocksSourced: boolean;
     /** The method uses memory strands up (a currency orb, an essence), so its
-     *  fills lay down only the tiers the strands allow; the wiki names the cut
-     *  for those and not for Harvest, the Bestiary or a resonator (Q68). */
+     *  fills lay down only the tiers the strands allow; Harvest, the Bestiary
+     *  and a resonator use none and are not cut (Memory strand § Crafting
+     *  methods consuming memory strands). */
     readonly strands: boolean;
 }
 
@@ -1388,10 +1390,20 @@ function resolvePool(a: AItem, spec: PoolSpec, registry: Registry, strands = fal
     switch (spec.kind) {
         case "natural": {
             const cap = spec.maxLevel ?? Infinity;
-            const eligible = addableMods(a, registry, spec.level, strands).filter(
-                (m) => m.minLevel <= cap && (spec.gen === undefined || m.gen === spec.gen),
-            );
-            const mods = spec.topTiers ? foulbornTiers(eligible, a, registry) : eligible;
+            // On an item holding strands a Foulborn orb is one cut, the strands'
+            // at thirty more, not its own cut after theirs (Memory strand §
+            // Mechanics). Where the item may hold none, its own cut is read:
+            // it is the wider of the two.
+            const asStrands = spec.topTiers && strands && a.strands[0] > 0;
+            const eligible = addableMods(
+                a,
+                registry,
+                spec.level,
+                strands,
+                asStrands ? FOULBORN_AS_STRANDS : 0,
+            ).filter((m) => m.minLevel <= cap && (spec.gen === undefined || m.gen === spec.gen));
+            const mods =
+                spec.topTiers && !asStrands ? foulbornTiers(eligible, a, registry) : eligible;
             return { mods, types: typesOf(mods), assert: [], gen: spec.gen };
         }
         case "tagged": {
@@ -2010,8 +2022,14 @@ function lock(a: AItem, n: number): AItem {
  * superset of every arm's real pool). Returns mods, not just types, so the tier
  * overlay can record which tiers.
  */
-function addableMods(a: AItem, registry: Registry, level = a.ilvl, strands = false): Mod[] {
-    const facts = guaranteedFacts(a, registry, level, strands);
+function addableMods(
+    a: AItem,
+    registry: Registry,
+    level = a.ilvl,
+    strands = false,
+    moreStrands = 0,
+): Mod[] {
+    const facts = guaranteedFacts(a, registry, level, strands, moreStrands);
     // Tags a possibly present mod would add may enable a row (the staff jewel mods
     // on a Strength jewel), so the pool admits what they would: the tags of the
     // state's possible mods, then, to a fixpoint, the tags of every row the pool
@@ -2190,12 +2208,14 @@ export function influenceTagsAny(a: AItem, registry: Registry): ReadonlySet<TagI
 
 /** The state's guaranteed mods as the facts the pool reads, at rare caps.
  *  `strands`: the facts carry the item's memory strands, for the fill of a
- *  method that uses them up; other pools are not cut by them. */
+ *  method that uses them up, `moreStrands` on top for a Foulborn orb; other
+ *  pools are not cut by them. */
 export function guaranteedFacts(
     a: AItem,
     registry: Registry,
     level = a.ilvl,
     strands = false,
+    moreStrands = 0,
 ): ItemFacts {
     const types = guaranteedTypes(a);
     const families = new Set<GroupId>();
@@ -2218,6 +2238,6 @@ export function guaranteedFacts(
         families,
         tags,
         effects: activeEffects(a, registry),
-        ...(strands && a.strands[0] > 0 && { strands: a.strands[0] }),
+        ...(strands && a.strands[0] > 0 && { strands: a.strands[0] + moreStrands }),
     };
 }

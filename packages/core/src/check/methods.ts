@@ -425,7 +425,7 @@ export const METHODS: readonly Method[] = [
     ...(["augment", "regal", "exalt"] as const).map((verb): Method => ({
         words: ["foulborn", verb],
         args: [],
-        doc: `foulborn ${verb} — the plain orb, but only the top half of each modifier's tiers can roll.`,
+        doc: `foulborn ${verb} — the plain orb, but only the top tiers of each modifier can roll: of two one, of four two, of six three, of eight five. On an item with memory strands it counts as thirty more strands instead.`,
         build: () => foulbornOps(verb),
     })),
     {

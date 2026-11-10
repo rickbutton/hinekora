@@ -216,15 +216,14 @@ frequencies against their weights, and the total counts.
 
 **Q:** [Memory strand § Crafting methods consuming memory strands](https://www.poewiki.net/wiki/Memory_strand#Crafting_methods_consuming_memory_strands)
 leaves the Foulborn Exalted Orb below five modifiers ("0-?") and an Exalted Orb on an
-empty item ("likely 0-10") open; nor does it say whether the Foulborn cut and the strand
-cut apply together, whether a strandless fill (Harvest, Bestiary, resonator) is cut, or
-whether `tiers` counts the whole ladder or the item level's.
+empty item ("likely 0-10") open; nor does it say whether `tiers` counts a modifier's
+whole ladder or the rows the item level allows.
 **Probe:** two empty Rare rings with 100 strands, a Foulborn Exalted and an Exalted Orb;
-a third with 82 strands and a Foulborn Exalted Orb; record strands used per orb and the
-tier the third gets.
-**Assumed:** 62 and 10; both cuts apply; only strand-using fills are cut; `tiers` is the
-whole ladder. **Encoded in:** `check/library.ts` `FOULBORN_STRANDS`, `EXALT_STRANDS`;
-`check/ops.ts` `foulbornTiers`, `Rules.strands`; `pool/pool.ts`.
+record strands used per orb. A Rare of item level 30 with 82 strands, Chaos Orbs; record
+the lowest resistance tier seen.
+**Assumed:** 62 and 10; the whole ladder, which keeps the most tiers. **Encoded in:**
+`check/library.ts` `FOULBORN_STRANDS`, `EXALT_STRANDS`; `pool/pool.ts`
+`topTiersUnderStrands`.
 
 ### Q74 · probe · open — the Harvest change on a damage over time multiplier
 
