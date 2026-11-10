@@ -961,6 +961,10 @@ class Walker {
                 case "fractured":
                     if (!tracker.locks || !tracker.index.has(leaf.type)) return undefined;
                     break;
+                case "eldritch":
+                case "dominant":
+                    if (!tracker.implicits) return undefined;
+                    break;
                 default: {
                     const c = this.conditionChance(leaf, undefined, item);
                     if (c === undefined) return undefined;

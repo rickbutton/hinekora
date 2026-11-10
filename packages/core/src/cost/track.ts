@@ -5,7 +5,15 @@
  * (`chain.ts`) carries it round by round; these are the pieces that read a
  * step, a condition or a roll in its terms.
  */
-import { type Gen, ModId, type TagId, type TypeId } from "../model/ids.js";
+import { type Gen, ModId, type TagId, TypeId } from "../model/ids.js";
+import {
+    ELDRITCH_SIDES,
+    type EldritchSide,
+    dominantOf,
+    eldritchKey,
+    eldritchOf,
+    NO_ELDRITCH,
+} from "../model/marks.js";
 import type { Range } from "../check/domain.js";
 import { narrowRange } from "../check/values.js";
 import type { Op } from "../check/ops.js";
@@ -43,6 +51,8 @@ export interface Carried {
     readonly valued?: ReadonlySet<TypeId>;
     /** The rows say which modifier is fractured. */
     readonly locks?: boolean;
+    /** The rows say which eldritch implicits the item carries. */
+    readonly implicits?: boolean;
     readonly dist: readonly { readonly state: ChainState; readonly weight: number }[];
 }
 
@@ -88,6 +98,26 @@ function unlockedRow(row: ModId): ModId {
     return row.endsWith("!") ? ModId(row.slice(0, -1)) : row;
 }
 
+/** The atom that holds an eldritch implicit: its row is the tier, and the
+ *  implicit's type after a colon where a condition names types. */
+const IMPLICIT_ATOM: Readonly<Record<EldritchSide, TypeId>> = {
+    exarch: TypeId("~exarch"),
+    eater: TypeId("~eater"),
+};
+
+/** The implicit types no condition names, held as one. */
+const OTHER_IMPLICIT = TypeId("*");
+
+function implicitRow(tier: number, type: TypeId | undefined): ModId {
+    return ModId(type === undefined ? `${tier}` : `${tier}:${type}`);
+}
+
+function readImplicit(row: ModId): { tier: number; type?: TypeId } {
+    const at = row.indexOf(":");
+    if (at < 0) return { tier: Number(row) };
+    return { tier: Number(row.slice(0, at)), type: TypeId(row.slice(at + 1)) };
+}
+
 /** Rows a condition tells apart: one named tier, or the rest of a ladder. */
 interface RowClass {
     /** The row that stands for the class on the state: a named tier is itself. */
@@ -126,6 +156,10 @@ export class Tracker {
     readonly protections: { readonly atom: number; readonly side: Gen }[] = [];
     /** Some step's item may carry a fractured modifier, so a state says which. */
     readonly locks: boolean;
+    /** Some step's item may carry an eldritch implicit, so a state says which,
+     *  and its type when a condition names one. */
+    readonly implicits: boolean;
+    private readonly implicitTypes: ReadonlySet<TypeId>;
     readonly classes: RowClass[][] = [];
     /** Per atom, each row's classes with the share of the row's weight each holds. */
     private readonly classesOfRow: Map<ModId, { rep: ModId; share: number }[]>[] = [];
@@ -140,6 +174,12 @@ export class Tracker {
         crafted: readonly TypeId[],
     ) {
         this.locks = items.some((a) => a.fractures[1] > 0);
+        this.implicits = items.some((a) => [...a.eldritch].some((k) => k !== NO_ELDRITCH));
+        const implicitTypes = new Set<TypeId>();
+        for (const p of preds)
+            for (const l of predLeaves(p))
+                if (l.kind === "eldritch") for (const t of l.types ?? []) implicitTypes.add(t);
+        this.implicitTypes = implicitTypes;
         const named = new Set<ModId>();
         const wanted: TypeId[] = [];
         for (const pred of preds) {
@@ -235,6 +275,16 @@ export class Tracker {
         // crafted) is followed by name too, so a draw onto the item closes its
         // group for certain rather than on average.
         for (const item of items) for (const t of guaranteedTypes(item)) add(t);
+        if (this.implicits) {
+            for (const side of ELDRITCH_SIDES) {
+                const type = IMPLICIT_ATOM[side];
+                this.index.set(type, this.atoms.length);
+                this.types.push(type);
+                this.classes.push([]);
+                this.classesOfRow.push(new Map());
+                this.atoms.push({ gen: "prefix", rows: [], weight: 0 });
+            }
+        }
         // A veiled modifier's side decides which side its unveil fills.
         if (items.some((a) => a.possible.has(VEILED_PREFIX) || a.possible.has(VEILED_SUFFIX))) {
             add(VEILED_PREFIX);
@@ -293,6 +343,7 @@ export class Tracker {
             types: this.types,
             valued: new Set(this.valueLeaves.keys()),
             locks: this.locks,
+            implicits: this.implicits,
             dist,
         };
     }
@@ -327,7 +378,7 @@ export class Tracker {
             return (state) => {
                 const key = stateKey(state);
                 if (!cache.has(key)) this.another();
-                const out = cache.get(key) ?? keepLocks(state, this.rerolled(state));
+                const out = cache.get(key) ?? this.kept(state, ops, this.rerolled(state));
                 cache.set(key, out);
                 return out;
             };
@@ -337,7 +388,8 @@ export class Tracker {
             kind !== "removal" &&
             kind !== "none" &&
             kind !== "unveil" &&
-            kind !== "lock"
+            kind !== "lock" &&
+            kind !== "implicit"
         )
             return undefined;
         // A draw's outcomes rest on the item its fill starts from, which many
@@ -372,7 +424,7 @@ export class Tracker {
                 out = this.outcomes(before, ops, state, reading) ?? [{ state, prob: 1 }];
             }
             if (out.length > MAX_OUTCOMES) throw new TrackerOverflow();
-            out = keepLocks(state, out);
+            out = this.kept(state, ops, out);
             cache.set(key, out);
             return out;
         };
@@ -407,6 +459,76 @@ export class Tracker {
         const item = this.narrow(before, state);
         if (item === null) return undefined;
         return this.outcomesOn(item, ops, state, reading);
+    }
+
+    private kept(
+        state: ChainState,
+        ops: readonly Op[],
+        out: readonly Outcome[],
+    ): readonly Outcome[] {
+        const touched = ops.some((op) => op.kind === "eldritch");
+        const implicitAtoms = touched
+            ? []
+            : ELDRITCH_SIDES.map((side) => this.index.get(IMPLICIT_ATOM[side])).filter(
+                  (i) => i !== undefined,
+              );
+        return keepAcross(state, out, implicitAtoms);
+    }
+
+    /**
+     * An Orb of Conflict on a state with both implicits: one side up a tier, to
+     * Perfect at most, the other down, a Lesser one lowered gone (QUESTIONS.md
+     * Q36), each side as likely to rise (Q81). Each keeps its type.
+     */
+    private conflicted(state: ChainState): readonly Outcome[] | undefined {
+        const at = ELDRITCH_SIDES.map((side) => this.index.get(IMPLICIT_ATOM[side]));
+        const [ex, eat] = at;
+        if (ex === undefined || eat === undefined) return undefined;
+        const rowEx = state.rows[ex] ?? null;
+        const rowEat = state.rows[eat] ?? null;
+        if (rowEx === null || rowEat === null) return [{ state, prob: 1 }];
+        const a = readImplicit(rowEx);
+        const b = readImplicit(rowEat);
+        const moved = (up: typeof a, down: typeof a): [ModId, ModId | null] => [
+            implicitRow(Math.min(up.tier + 1, 6), up.type),
+            down.tier > 1 ? implicitRow(down.tier - 1, down.type) : null,
+        ];
+        const rise = (raised: number, lowered: number, rows: [ModId, ModId | null]): Outcome => {
+            const next = [...state.rows];
+            next[raised] = rows[0];
+            next[lowered] = rows[1];
+            return { state: { ...state, rows: next }, prob: 1 / 2 };
+        };
+        return [rise(ex, eat, moved(a, b)), rise(eat, ex, moved(b, a))];
+    }
+
+    /** The eldritch implicit on one side of an item the checker settles: null
+     *  for none, undefined where the item leaves its tier, or a type a
+     *  condition names, open. */
+    private implicitIn(
+        item: AItem,
+        side: EldritchSide,
+        from: ChainState | undefined,
+    ): ModId | null | undefined {
+        const tiers = new Set([...item.eldritch].map((k) => eldritchOf(k)[side]));
+        if (tiers.size !== 1) return undefined;
+        const tier = [...tiers][0]!;
+        if (tier === 0) return null;
+        if (this.implicitTypes.size === 0) return implicitRow(tier, undefined);
+        const have = item.eldritchTypes[side];
+        const kinds = have === "any" ? undefined : new Set([...have].map((t) => this.kindOf(t)));
+        if (kinds?.size === 1) return implicitRow(tier, [...kinds][0]);
+        const fromRow = from?.rows[this.index.get(IMPLICIT_ATOM[side])!] ?? null;
+        const was = fromRow === null ? undefined : readImplicit(fromRow).type;
+        if (was !== undefined && (kinds === undefined || kinds.has(was)))
+            return implicitRow(tier, was);
+        return undefined;
+    }
+
+    /** An implicit's type as a state holds it: a type a condition names, or
+     *  any other alike. */
+    private kindOf(type: TypeId): TypeId {
+        return this.implicitTypes.has(type) ? type : OTHER_IMPLICIT;
     }
 
     private crafted(row: ModId): boolean {
@@ -562,6 +684,20 @@ export class Tracker {
                     ? out.map((o) => ({ ...o, prob: o.prob / total }))
                     : [{ state, prob: 1 }];
             }
+            case "implicit": {
+                const i = this.index.get(IMPLICIT_ATOM[roll.side]);
+                if (i === undefined) return this.counted(undefined);
+                const byKind = new Map<TypeId | undefined, number>();
+                for (const o of roll.options) {
+                    const kind = this.implicitTypes.size > 0 ? this.kindOf(o.type) : undefined;
+                    byKind.set(kind, (byKind.get(kind) ?? 0) + o.prob);
+                }
+                return [...byKind].map(([kind, prob]) => {
+                    const rows = [...state.rows];
+                    rows[i] = implicitRow(roll.tier, kind);
+                    return { state: { ...state, rows }, prob };
+                });
+            }
             case "lock": {
                 // A lock that may land on a modifier no one names leaves a state
                 // that cannot say which side keeps it.
@@ -585,6 +721,8 @@ export class Tracker {
                 return this.counted(this.unveiled(state, roll.options, target));
             }
             case "none": {
+                if (ops.some((op) => op.kind === "eldritch" && op.change.kind === "conflict"))
+                    return this.counted(this.conflicted(state));
                 // An Orb of Dominance takes one of the influenced modifiers at
                 // random, which the checker reads as a join over which.
                 if (ops.some((op) => op.kind === "remove" && op.selector.kind === "influenced"))
@@ -698,6 +836,13 @@ export class Tracker {
         const maybe: number[] = [];
         for (let i = 0; i < this.atoms.length; i++) {
             const type = this.types[i]!;
+            const side = implicitSide(type);
+            if (side !== undefined) {
+                const row = this.implicitIn(item, side, from);
+                if (row === undefined) return undefined;
+                if (row !== null) choose(i, [{ id: row, weight: 1 }]);
+                continue;
+            }
             if (guaranteed.has(type)) {
                 const fromRow = from?.rows[i] ?? null;
                 const locked =
@@ -780,6 +925,21 @@ export class Tracker {
             const type = this.types[i]!;
             const has: RPred = { kind: "has", type, gen: atom.gen };
             const row = state.rows[i] ?? null;
+            const side = implicitSide(type);
+            if (side !== undefined) {
+                if (row === null) {
+                    conds.push({ kind: "not", inner: { kind: "eldritch", side } });
+                    return;
+                }
+                const { tier, type: of } = readImplicit(row);
+                conds.push({
+                    kind: "eldritch",
+                    side,
+                    tier,
+                    ...(of !== undefined && of !== OTHER_IMPLICIT && { types: new Set([of]) }),
+                });
+                return;
+            }
             if (row === null) {
                 conds.push({ kind: "not", inner: has });
                 return;
@@ -827,21 +987,32 @@ function removalBeforeFill(ops: readonly Op[]): number {
     return ops.slice(at + 1).some((op) => op.kind === "fill") ? at : -1;
 }
 
-/** A fractured modifier stays fractured whatever a step does around it. */
-function keepLocks(from: ChainState, out: readonly Outcome[]): readonly Outcome[] {
+/** What no step but its own changes: a fractured modifier stays fractured, and
+ *  the eldritch implicits stay as they were through a method that does not
+ *  touch them. */
+function keepAcross(
+    from: ChainState,
+    out: readonly Outcome[],
+    implicitAtoms: readonly number[],
+): readonly Outcome[] {
     const locked: number[] = [];
     from.rows.forEach((r, i) => {
         if (r !== null && readRow(r).locked) locked.push(i);
     });
-    if (locked.length === 0) return out;
+    if (locked.length === 0 && implicitAtoms.length === 0) return out;
     return out.map((o) => {
         const rows = [...o.state.rows];
         for (const i of locked) {
             const r = rows[i] ?? null;
             if (r !== null) rows[i] = lockedRow(r);
         }
+        for (const i of implicitAtoms) rows[i] = from.rows[i] ?? null;
         return { state: { ...o.state, rows }, prob: o.prob };
     });
+}
+
+function implicitSide(type: TypeId): EldritchSide | undefined {
+    return ELDRITCH_SIDES.find((side) => IMPLICIT_ATOM[side] === type);
 }
 
 function stateKey(s: ChainState): string {
@@ -888,6 +1059,7 @@ export function splitCarried(
         if (leaf.kind === "hasGroup" && [...leaf.types].every((t) => index.has(t))) continue;
         if (leaf.kind === "hasValue" && c.valued?.has(leaf.type)) continue;
         if (leaf.kind === "fractured" && c.locks && index.has(leaf.type)) continue;
+        if ((leaf.kind === "eldritch" || leaf.kind === "dominant") && c.implicits) continue;
         return undefined;
     }
     const yes: Carried["dist"][number][] = [];
@@ -1084,6 +1256,24 @@ export function holdsOn(
                 const i = atomIndex.get(t);
                 return i !== undefined && s.rows[i] !== null;
             });
+        case "eldritch": {
+            const i = atomIndex.get(IMPLICIT_ATOM[pred.side]);
+            const row = i === undefined ? null : (s.rows[i] ?? null);
+            if (row === null) return false;
+            const { tier, type } = readImplicit(row);
+            return (
+                (pred.tier === undefined || tier === pred.tier) &&
+                (pred.types === undefined || (type !== undefined && pred.types.has(type)))
+            );
+        }
+        case "dominant": {
+            const tierOf = (side: EldritchSide): number => {
+                const i = atomIndex.get(IMPLICIT_ATOM[side]);
+                const row = i === undefined ? null : (s.rows[i] ?? null);
+                return row === null ? 0 : readImplicit(row).tier;
+            };
+            return dominantOf(eldritchKey(tierOf("exarch"), tierOf("eater"))) === pred.side;
+        }
         case "fractured": {
             const i = atomIndex.get(pred.type);
             const row = i === undefined ? null : (s.rows[i] ?? null);

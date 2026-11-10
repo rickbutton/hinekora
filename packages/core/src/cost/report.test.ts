@@ -11,6 +11,8 @@ import {
     callStmt,
     cmp,
     craft,
+    dominantP,
+    eldritchP,
     fracturedP,
     harvest,
     has,
@@ -29,7 +31,9 @@ import {
 } from "../__fixtures__/ast.js";
 import {
     BENCH_LIFE_ROW,
+    BOOTS_BASE,
     CATALOG,
+    ELDRITCH_ROWS,
     CLASS_RING,
     LIFE_T1,
     PROTECT_PREFIXES_CARRIER,
@@ -631,5 +635,48 @@ describe("the counts the checker leaves open", () => {
         const { chance, expected } = loop.attempts!;
         expect(chance * expected).toBeLessThan(1);
         expect(chance * expected).toBeGreaterThan(0);
+    });
+});
+
+describe("the eldritch implicits", () => {
+    const boots = buildRegistry({
+        bases: [BOOTS_BASE],
+        mods: [...CATALOG],
+        eldritch: ELDRITCH_ROWS,
+    });
+    const at = (words: string[], tier: string) => {
+        const o = op(words[0]!);
+        return { ...o, words, args: [{ kind: "word" as const, value: tier, span: o.span }] };
+    };
+    const on = (decl: Partial<Parameters<typeof item>[0]>, body: Parameters<typeof craft>[1]) => {
+        const c = craft(item({ base: "Iron Greaves", ilvl: 100, rarity: "rare", ...decl }), body);
+        return costOf(c, check(c, { registry: boots }), boots);
+    };
+
+    it("an ember sets the implicit to each of its pool's types by weight", () => {
+        // Three Grand Exarch rows of equal weight, one of them life regeneration.
+        const r = on({}, [
+            at(["ember"], "grand"),
+            iff(eldritchP("exarch", "grand", "regenerate"), [stop()]),
+        ]);
+        const branch = r.steps.find((s) => s.kind === "if")!;
+        expect(branch.note).toBeUndefined();
+        expect(branch.branch).toBeCloseTo(1 / 3, 9);
+    });
+
+    it("an Orb of Conflict raises either implicit alike and lowers the other", () => {
+        // Greater Exarch, Grand Eater: the Exarch rises to Grand half the
+        // time, and the Eater rises to Exceptional, dominant, the other half.
+        const r = on({ exarch: "greater", eater: "grand" }, [
+            op("conflict"),
+            iff(eldritchP("exarch", "grand"), [op("conflict")]),
+            iff(dominantP("eater"), [stop()]),
+        ]);
+        const [raised, dominant] = r.steps.filter((s) => s.kind === "if");
+        expect(raised!.branch).toBeCloseTo(1 / 2, 9);
+        // From Grand Exarch, Greater Eater, a second Conflict that raises the
+        // Eater leaves Greater against Grand: dominant again, a quarter more.
+        expect(dominant!.note).toBeUndefined();
+        expect(dominant!.branch).toBeCloseTo(1 / 2 + 1 / 4, 9);
     });
 });
