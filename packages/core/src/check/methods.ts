@@ -118,17 +118,12 @@ const num = (l: Literal | undefined): number | undefined =>
 
 const CRITICAL = TagId("critical");
 
-const DOT_MULTI = TagId("dot_multi");
-
 /** The game's list is not the whole filter. The damage change takes no
  *  critical strike multiplier, though the list still names them (Harvest
- *  crafting § Version history, 3.28.0 Hotfix 8); and players disagree on
- *  whether it takes a damage over time multiplier, also listed, so that is
- *  refused until it is probed (`QUESTIONS.md` Q74). */
+ *  crafting § Version history, 3.28.0 Hotfix 8). It does take the damage over
+ *  time multipliers the list names, fire and cold (seen in game). */
 function listedButRefused(catalog: readonly Mod[], type: TypeId): boolean {
-    return catalog.some(
-        (m) => m.type === type && (m.implicitTags.has(CRITICAL) || m.implicitTags.has(DOT_MULTI)),
-    );
+    return catalog.some((m) => m.type === type && m.implicitTags.has(CRITICAL));
 }
 
 const DEFAULT_TAG = TagId("default");
@@ -220,7 +215,7 @@ function harvestChange(
         (source.kind === "damage" && listedButRefused(catalog, from.value))
     ) {
         return refuse(
-            `The grove changes a fire, cold or lightning resistance into another of the three, or a fire, cold or lightning damage modifier likewise, and no critical strike multiplier or damage over time multiplier — not "${fromName}" into "${toName}".`,
+            `The grove changes a fire, cold or lightning resistance into another of the three, or a fire, cold or lightning damage modifier likewise, and no critical strike multiplier — not "${fromName}" into "${toName}".`,
         );
     }
     // The modifier becomes its counterpart of the other element, not any
@@ -568,7 +563,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["harvest", "change"],
         args: [name("mod"), name("mod")],
-        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier (a penetration too) into the same modifier of another element, at the same tier. Refused for a critical strike or damage over time multiplier, for a fractured modifier or one on a side a metamod protects, where another modifier of the new one\'s group is on the item, and where the item level does not allow that tier, unless an essence, the bench or another such source placed the modifier.',
+        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier (a penetration or a damage over time multiplier too) into the same modifier of another element, at the same tier. Refused for a critical strike multiplier, for a modifier the other element has no form of, for a fractured modifier or one on a side a metamod protects, where another modifier of the new one\'s group is on the item, and where the item level does not allow that tier, unless an essence, the bench or another such source placed the modifier.',
         build: ([from, to], a, registry) => harvestChange(text(from), text(to), a, registry),
     },
     {

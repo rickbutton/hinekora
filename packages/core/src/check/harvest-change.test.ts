@@ -115,15 +115,38 @@ describe("harvest change", () => {
         expect(check(hybrid, ctx).diagnostics[0]!.message).toContain("The grove changes");
     });
 
-    it("refuses a damage over time multiplier, listed but reported both ways in play", () => {
+    it("takes a damage over time multiplier, and refuses it for lightning, which has none", () => {
         const dot = check(
             craft(rareRing([], [FIRE_DOT_MULTI.id]), [
                 harvestChange(FIRE_DOT_MULTI.id, COLD_DOT_MULTI.id),
             ]),
             ctx,
         );
-        expect(dot.diagnostics[0]!.message).toContain("damage over time multiplier");
-        expect(guaranteedTypes(dot.finalState!).has(FIRE_DOT_MULTI.type)).toBe(true);
+        expect(dot.diagnostics).toEqual([]);
+        expect(guaranteedTypes(dot.finalState!).has(COLD_DOT_MULTI.type)).toBe(true);
+        expect(isExcluded(dot.finalState!, FIRE_DOT_MULTI.type)).toBe(true);
+        const lightning: Mod = {
+            ...FIRE_DAMAGE,
+            id: ModId("LightningDamage1"),
+            type: TypeId("LightningDamage"),
+            families: new Set([GroupId("LightningDamage")]),
+        };
+        const withLightning = buildRegistry({
+            bases: [RING_BASE],
+            harvestChange: {
+                resistance: HARVEST_CHANGE.resistance,
+                damage: { ...HARVEST_CHANGE.damage, lightning: [lightning.type] },
+            },
+            mods: [...CATALOG, FIRE_DOT_MULTI, COLD_DOT_MULTI, lightning],
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
+        const none = check(
+            craft(rareRing([], [FIRE_DOT_MULTI.id]), [
+                harvestChange(FIRE_DOT_MULTI.id, lightning.id),
+            ]),
+            { registry: withLightning },
+        );
+        expect(none.diagnostics[0]!.message).toContain("has no lightning counterpart");
     });
 
     it("costs 500 lifeforce of the new element's colour, a damage change a Crystallised Rancour besides", () => {

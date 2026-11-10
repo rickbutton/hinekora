@@ -217,20 +217,14 @@ strands at four modifiers and 38 at five where it gives 32 and 34. **Encoded in:
 `check/library.ts` `FOULBORN_STRANDS`, `EXALT_STRANDS`; `pool/pool.ts`
 `topTiersUnderStrands`.
 
-### Q74 · probe · open — which listed modifiers the Harvest damage change takes
+### Q74 · probe · open — a listed Harvest damage modifier with no like-named counterpart
 
-**Q:** the game's list for the damage change is not the whole filter: it names the
-critical strike multipliers, which the grove refuses. It names the fire and cold damage
-over time multipliers too; one player reports the grove taking one, another refusing it.
-And what does a listed modifier with no like-named counterpart become (increased fire
-damage with a chance to ignite)?
-**Probe:** Rares with a fire damage over time multiplier and with the fire damage and
-ignite chance hybrid; the grove's fire-to-cold damage change; record offered or not, and
-the result.
-**Assumed:** the multipliers refused, the safe side; a modifier with no counterpart
-refused. **Encoded in:** `check/methods.ts` `harvestChange`, `listedButRefused`;
-`resolve/registry.ts` `harvestChangeTarget`;
-`packages/data/data/poe1/harvest_change.json`.
+**Q:** what does a modifier on the game's list become when the other element's list has
+none of its name (increased fire damage with a chance to ignite)?
+**Probe:** a Rare with that modifier; the grove's fire-to-cold damage change; record
+offered or not, and the result.
+**Assumed:** refused. **Encoded in:** `resolve/registry.ts` `harvestChangeTarget`;
+`check/methods.ts` `harvestChange`.
 
 ### Q76 · probe · open — the side of a veiled orb's veiled modifier
 
