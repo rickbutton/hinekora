@@ -51,7 +51,8 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
   rows by side); the player takes the guide's target if offered, else a modifier its
   conditions name, else one no one names.
 - **Orb of Conflict.** Either implicit rises alike (Q81).
-- **Harvest augment** removes before it adds (Q82).
+- **Harvest augment** adds, then removes another
+  ([Maxroll](https://maxroll.gg/poe/crafting/harvest-crafting-guide)).
 - **Memory strands.** The share used up is not stated; the estimate reads the floor
   (Q68).
 

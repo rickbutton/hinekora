@@ -11,6 +11,7 @@ import {
     INCREASED_ARMOUR,
     INCREASED_MANA,
     PROTECT_PREFIXES_CARRIER,
+    PROTECT_SUFFIXES_CARRIER,
     FLASK_BASE,
     RATCHETING_BASE,
     RING_BASE,
@@ -22,7 +23,13 @@ import { TypeId } from "../model/ids.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE, AMULET_BASE, SIMPLEX_BASE, RATCHETING_BASE, FLASK_BASE],
-    mods: [...CATALOG, PROTECT_PREFIXES_CARRIER, ATTACK_PREFIX, ATTACK_SPEED],
+    mods: [
+        ...CATALOG,
+        PROTECT_PREFIXES_CARRIER,
+        PROTECT_SUFFIXES_CARRIER,
+        ATTACK_PREFIX,
+        ATTACK_SPEED,
+    ],
     modAliases: { "T1 Life": "IncreasedLife1" },
     baseAliases: { "Iron Ring": "IronRing" },
 });
@@ -37,9 +44,9 @@ const guaranteed = (r: ReturnType<typeof check>): Set<string> =>
 
 describe("harvest augment against the modifiers the item may carry", () => {
     it("is blocked when the one unnamed modifier may add a tag that zeroes every tagged row", () => {
-        // The augment removes one modifier first, so of two unnamed prefixes one
-        // remains, and it may be alpha, which adds the tag beta is zero on; beta is
-        // the only attack-tagged row, so on that path the augment has nothing.
+        // Either unnamed prefix may be alpha, which adds the tag beta is zero on;
+        // beta is the only attack-tagged row, so on that path the augment has
+        // nothing to add.
         const tagged = buildRegistry({
             bases: [RING_BASE],
             mods: [...CATALOG, SPECIFIC_WEAPON_A, SPECIFIC_WEAPON_B],
@@ -63,7 +70,9 @@ describe("harvest augment against the modifiers the item may carry", () => {
     it("is not blocked by one unknown suffix when its candidates span more groups", () => {
         // The one unnamed suffix may be any resistance, but it is one modifier:
         // of fire, cold and lightning two stay open on every path.
-        const c = craft(rareRing(["T1 Life"], ["random"]), [harvest("augment", "elemental")]);
+        const c = craft(rareRing([PROTECT_SUFFIXES_CARRIER.id], ["random"]), [
+            harvest("reforge", "elemental"),
+        ]);
         expect(check(c, ctx).diagnostics).toEqual([]);
     });
 
@@ -139,7 +148,7 @@ describe("harvest reforge", () => {
         expect(check(anonymous, ctx).diagnostics[0]!.message).toContain(
             "life modifier has no slot on some path",
         );
-        // The augment: the removal may take a suffix and leave the prefixes full.
+        // The augment adds before it removes, so a full item has no slot for it.
         const full = craft(
             rareRing(
                 ["T1 Life", "IncreasedMana1", ATTACK_PREFIX.id],
@@ -152,15 +161,35 @@ describe("harvest reforge", () => {
         );
     });
 
-    it("a tag with rows on both sides fits whichever side the removal opened", () => {
-        const either = craft(
+    it("an augment needs its slot before the removal: a full side refuses a tag of that side", () => {
+        // The shape of the refusal reported in game: every fire modifier is a
+        // suffix and the suffixes are full, so the grove has "no valid mods"
+        // though a prefix is open and the removal would free a suffix.
+        const fullSuffixes = craft(
+            rareRing(["T1 Life"], ["ColdResist1", "LightningResist1", ATTACK_SPEED.id]),
+            [harvest("augment", "fire")],
+        );
+        expect(check(fullSuffixes, ctx).diagnostics[0]!.message).toContain(
+            "fire modifier has no slot on some path",
+        );
+        // A tag with rows on both sides still has none on a full item.
+        const full = craft(
             rareRing(
                 ["T1 Life", INCREASED_MANA.id, INCREASED_ARMOUR.id],
                 ["FireResist1", "ColdResist1", "LightningResist1"],
             ),
             [harvest("augment", "attack")],
         );
-        expect(check(either, ctx).diagnostics).toEqual([]);
+        expect(check(full, ctx).diagnostics[0]!.message).toContain(
+            "attack modifier has no slot on some path",
+        );
+        // With a suffix open the fire modifier lands, and one of the others goes.
+        const open = craft(rareRing(["T1 Life"], ["ColdResist1", "LightningResist1"]), [
+            harvest("augment", "fire"),
+        ]);
+        const r = check(open, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.counts.total).toEqual([3, 3]);
     });
 
     it("rejects a tag no mod can roll here (the grayed-out case)", () => {
@@ -212,10 +241,42 @@ describe("harvest augment (add tagged, remove a random other)", () => {
     });
 
     it("rejects a tag no mod can roll here", () => {
-        const c = craft(rareRing(["T1 Life"]), [harvest("augment", "minion")]);
+        const c = craft(rareRing(["T1 Life"]), [harvest("augment", "caster")]);
         const r = check(c, ctx);
         expect(r.diagnostics).toHaveLength(1);
-        expect(r.diagnostics[0]!.message).toContain("minion");
+        expect(r.diagnostics[0]!.message).toContain("No caster modifier can appear");
+    });
+
+    it("keeps the added modifier through the removal, and closes its group by what the item held", () => {
+        // Life is the one life modifier: the removal cannot take what was
+        // just added, so it is on the item afterwards.
+        const added = check(
+            craft(rareRing([INCREASED_MANA.id], ["FireResist1"]), [harvest("augment", "life")]),
+            ctx,
+        );
+        expect(added.diagnostics).toEqual([]);
+        expect(guaranteed(added)).toContain("IncreasedLife");
+        expect(added.finalState!.counts.total).toEqual([2, 2]);
+        // The fire resistance is still on the item when the fire modifier is
+        // added, and every fire modifier shares its group.
+        const closed = check(
+            craft(rareRing(["T1 Life"], ["FireResist1"]), [harvest("augment", "fire")]),
+            ctx,
+        );
+        expect(closed.diagnostics[0]!.message).toContain("Every fire modifier may be blocked");
+    });
+
+    it("has the grove's eleven augments only", () => {
+        for (const tag of ["mana", "attribute", "elemental", "minion"]) {
+            const r = check(craft(rareRing(["T1 Life"]), [harvest("augment", tag)]), ctx);
+            expect(r.diagnostics.map((d) => d.message).join()).toContain(
+                `The grove has no craft that adds a "${tag}" modifier`,
+            );
+        }
+        for (const tag of ["fire", "defence", "defences"]) {
+            const r = check(craft(rareRing(["T1 Life"]), [harvest("augment", tag)]), ctx);
+            expect(r.diagnostics).toEqual([]);
+        }
     });
 });
 

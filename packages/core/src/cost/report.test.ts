@@ -565,6 +565,18 @@ describe("the cost of a guide", () => {
         expect(branch.branch).toBeCloseTo(2 / 3, 9);
     });
 
+    it("a Harvest augment's removal takes one of the others, never what it added", () => {
+        const after = (pred: ReturnType<typeof has>) =>
+            report(
+                craft(ring("rare", ["IncreasedMana1"], ["FireResist1"]), [
+                    harvest("augment", "life"),
+                    iff(pred, [stop()]),
+                ]),
+            ).steps.find((s) => s.kind === "if")!;
+        expect(after(has("IncreasedLife1")).branch).toBeCloseTo(1, 9);
+        expect(after(has("IncreasedMana1")).branch).toBeCloseTo(1 / 2, 9);
+    });
+
     it("a more-likely reforge tilts by what each state held before it", () => {
         const after = (prefixes: string[], suffixes: string[], first: ReturnType<typeof op>[]) =>
             report(

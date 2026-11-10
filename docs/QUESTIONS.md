@@ -70,16 +70,15 @@ level at the item's level, any of its rows where they do not; any rarity. **Enco
 ### Q25 · probe · open — when the grove greys a craft out under a metamod
 
 **Q:** [Harvest crafting § Mechanics](https://www.poewiki.net/wiki/Harvest_crafting#Mechanics)
-says only that the added modifier obeys the "Cannot Be Changed" metamods. Three cases on
-a Rare with "Prefixes Cannot Be Changed": (a) a life reforge whose only life modifier is
-among the protected prefixes; (b) a reforge for a prefix-only tag with three protected
-prefixes; (c) an augment whose removal may take a suffix while the prefixes are full.
-**Probe:** those three items; open "Reforge … including a Life modifier" for (a) and
-(b), "Add a new Defence modifier and remove another random modifier" for (c); record
+says only that the added modifier obeys the "Cannot Be Changed" metamods. On a Rare with
+"Prefixes Cannot Be Changed", is a tagged reforge offered when no tagged modifier can
+land: its only life modifier among the protected prefixes, or a prefix-only tag beside
+three protected prefixes?
+**Probe:** those two items; open "Reforge … including a Life modifier" on each; record
 offered or greyed out, and the outcome.
-**Assumed:** refused unless a tagged row can roll on every path after the lock-respecting
-strip or the removal. **Encoded in:** `check/library.ts` `harvestReforgeOps`,
-`harvestAugmentOps`; `check/ops.ts` `poolNonEmpty`, `sidePairs`, `subsetMods`.
+**Assumed:** refused unless a tagged row can roll on every path after the
+protection-respecting strip. **Encoded in:** `check/library.ts` `harvestReforgeOps`;
+`check/ops.ts` `poolNonEmpty`, `sidePairs`, `subsetMods`.
 
 ### Q27 · probe · open — what the grove's influence randomise leaves
 
@@ -282,17 +281,6 @@ says one rises and the other falls, and play has seen either side picked, not th
 **Probe:** gloves with a Greater Exarch and a Greater Eater implicit, Orbs of Conflict,
 Lesser embers and ichors to restore them; apply many; record which side rose each time.
 **Assumed:** each side alike, half and half. **Encoded in:** `cost/track.ts` `conflicted`.
-
-### Q82 · probe · open — the order of a Harvest augment
-
-**Q:** does a Harvest augment remove before it adds, or add first?
-[Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting) words it "Add a new
-Chaos modifier and remove another random modifier". The order decides the added
-modifier's pool: a group the removal frees may be drawn again only if it goes first.
-**Probe:** a Rare holding the only prefix group with the augment's tag; augment it many
-times; record whether one craft ever removes that modifier and adds a new one of its group.
-**Assumed:** removal first. **Encoded in:** `check/library.ts` `harvestAugmentOps`,
-`cost/track.ts` `outcomesOn`.
 
 ### Q83 · probe · open — a scour that would remove nothing
 

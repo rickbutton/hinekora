@@ -143,6 +143,24 @@ export const HARVEST_TAGS: ReadonlyMap<string, TagId> = new Map(
     ).map(([surface, tag]) => [surface, TagId(tag)] as const),
 );
 
+/** The eleven tags the grove has an augment for (List of harvest crafting
+ *  options); the other reforge tags have none. */
+export const HARVEST_AUGMENT_TAGS: ReadonlySet<TagId> = new Set(
+    [
+        "fire",
+        "cold",
+        "lightning",
+        "physical",
+        "life",
+        "defences",
+        "chaos",
+        "attack",
+        "caster",
+        "speed",
+        "critical",
+    ].map(TagId),
+);
+
 /** One surface label per category, for completion (drops the "defences" alias). */
 const HARVEST_TAG_LABELS: readonly string[] = [
     "attack",

@@ -417,8 +417,12 @@ export class Tracker {
             if (hit !== undefined) return hit;
             this.another();
             let out: readonly Outcome[] | undefined;
+            // A removal after the fill reads the whole state, so its outcomes
+            // are not shared by the fill's item.
             const item =
-                kind === "draw" && fillAt >= 0 && cut < 0 ? this.narrow(before, state) : null;
+                kind === "draw" && fillAt >= 0 && cut < 0 && removalAfterFill(ops) < 0
+                    ? this.narrow(before, state)
+                    : null;
             if (item !== null) {
                 const sig =
                     this.signature(this.stripped(item, ops, fillAt)) +
@@ -711,6 +715,20 @@ export class Tracker {
             }
             return out;
         }
+        const spared = removalAfterFill(ops);
+        if (spared >= 0) {
+            // A Harvest augment: the add is read on the item as it stands, the
+            // removal on what the item held before it.
+            const added = this.outcomesOn(item, ops.slice(0, spared), state, reading);
+            return added?.flatMap((o) =>
+                o.state.prefix + o.state.suffix > state.prefix + state.suffix
+                    ? this.otherRemoved(state, o.state).map((r) => ({
+                          state: r.state,
+                          prob: o.prob * r.prob,
+                      }))
+                    : [o],
+            );
+        }
         const roll = rollOf(item, ops, this.registry, reading);
         switch (roll.kind) {
             case "draw": {
@@ -803,6 +821,37 @@ export class Tracker {
             default:
                 return this.counted(undefined);
         }
+    }
+
+    /**
+     * The removal that follows an add and spares what it added: one of the
+     * modifiers `from` held, each as likely (QUESTIONS.md Q61), a fractured one
+     * and a protected side's excepted, taken out of `added`.
+     */
+    private otherRemoved(from: ChainState, added: ChainState): readonly Outcome[] {
+        const shut = new Set(
+            this.protections.filter((p) => (from.rows[p.atom] ?? null) !== null).map((p) => p.side),
+        );
+        const unnamed = { prefix: from.prefix, suffix: from.suffix };
+        const named: number[] = [];
+        from.rows.forEach((row, i) => {
+            if (row === null || implicitSide(this.types[i]!) !== undefined) return;
+            const gen = this.atoms[i]!.gen;
+            unnamed[gen]--;
+            if (!shut.has(gen) && !readRow(row).locked) named.push(i);
+        });
+        const sides = (["prefix", "suffix"] as const).filter((g) => !shut.has(g) && unnamed[g] > 0);
+        const reach = named.length + sides.reduce((n, g) => n + unnamed[g], 0);
+        if (reach === 0) return [{ state: added, prob: 1 }];
+        const out: Outcome[] = named.map((i) => {
+            const rows = [...added.rows];
+            rows[i] = null;
+            return { state: bump(added, this.atoms[i]!.gen, -1, rows), prob: 1 / reach };
+        });
+        for (const g of sides) {
+            out.push({ state: bump(added, g, -1, added.rows), prob: unnamed[g] / reach });
+        }
+        return out;
     }
 
     /**
@@ -1063,6 +1112,17 @@ function removalBeforeFill(ops: readonly Op[]): number {
     const at = ops.findIndex((op) => op.kind === "remove" && op.selector.kind === "random");
     if (at < 0 || ops.slice(0, at).some((op) => op.kind === "fill")) return -1;
     return ops.slice(at + 1).some((op) => op.kind === "fill") ? at : -1;
+}
+
+/** Where a method fills and then removes a random modifier other than the one
+ *  it added: the removal's index, or -1. */
+function removalAfterFill(ops: readonly Op[]): number {
+    return ops.findIndex(
+        (op) =>
+            op.kind === "remove" &&
+            op.selector.kind === "random" &&
+            op.selector.sparing !== undefined,
+    );
 }
 
 /** The types a condition asks to be present: those under an even number of

@@ -63,7 +63,7 @@ const openSlot = (gen?: Gen): Op =>
 const removable = (selector: Selector): Op => require({ kind: "removable", selector });
 
 /** A random removal that ignores a cannot-roll metamod (every one but the Orb of Annulment). */
-const anyMod: Selector = { kind: "random", honourCannotRoll: false };
+const anyMod: Selector & { kind: "random" } = { kind: "random", honourCannotRoll: false };
 /** The Orb of Annulment's removal, which spares a cannot-roll metamod's tagged mods. */
 const unshielded: Selector = { kind: "random", honourCannotRoll: true };
 
@@ -232,18 +232,23 @@ export function harvestLikelyOps(likely: "more" | "less"): readonly Op[] {
     ];
 }
 
-/** Harvest "add a <tag> modifier, remove another random modifier": the removal
- *  first, then a tagged modifier into the freed slot. */
+/** Harvest "add a <tag> modifier, remove another random modifier": the tagged
+ *  modifier goes on first, so the item as it stands needs an open slot one of
+ *  the tag's rows fits (the grove's "There are no valid mods for craft on this
+ *  item" otherwise), and the removal then takes one of the others. The add
+ *  obeys a cannot-roll metamod, the removal ignores it, and both respect a
+ *  protected side (Harvest crafting § Mechanics). */
 export function harvestAugmentOps(tag: TagId): readonly Op[] {
+    const pool = tagged(tag);
     return [
         notCorrupted,
         isRare,
         // The grove offers each of these "from a non-Influenced item" only.
         noInfluence("harvest augment craft"),
+        require({ kind: "poolNonEmpty", pool, tag }),
         removable(anyMod),
-        remove(anyMod),
-        require({ kind: "poolNonEmpty", pool: tagged(tag), tag }),
-        fill(tagged(tag), add([1, 1])),
+        fill(pool, add([1, 1])),
+        remove({ ...anyMod, sparing: pool }),
     ];
 }
 

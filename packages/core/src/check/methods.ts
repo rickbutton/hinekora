@@ -22,7 +22,7 @@ import {
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import { type FossilSpec, isCorruptedEssence } from "../model/sources.js";
-import { type Registry, STANDARD_CURRENCIES } from "../resolve/registry.js";
+import { HARVEST_AUGMENT_TAGS, type Registry, STANDARD_CURRENCIES } from "../resolve/registry.js";
 import { rollableTiers } from "../resolve/tiers.js";
 import type { AItem } from "./astate.js";
 import { resolveMessage } from "./diagnostics.js";
@@ -380,10 +380,16 @@ export const METHODS: readonly Method[] = [
     {
         words: ["harvest", "augment"],
         args: [name("tag")],
-        doc: 'harvest augment "<tag>" — add a modifier of that type to a Rare item with no influence and remove another at random; needs a removable modifier.',
+        doc: 'harvest augment "<tag>" — add a fire, cold, lightning, physical, life, defence, chaos, attack, caster, speed or critical modifier to a Rare item with no influence, then remove another at random. The modifier is added first, so the item needs an open slot one of that type fits, and another modifier the removal can take.',
         build: ([t], _a, registry) => {
             const tag = registry.resolveHarvestTag(text(t));
-            return tag.ok ? harvestAugmentOps(tag.value) : refuse(resolveMessage(tag.error));
+            if (!tag.ok) return refuse(resolveMessage(tag.error));
+            if (!HARVEST_AUGMENT_TAGS.has(tag.value)) {
+                return refuse(
+                    `The grove has no craft that adds a "${text(t)}" modifier — it adds a fire, cold, lightning, physical, life, defence, chaos, attack, caster, speed or critical modifier.`,
+                );
+            }
+            return harvestAugmentOps(tag.value);
         },
     },
     {

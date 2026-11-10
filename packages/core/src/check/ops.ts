@@ -143,7 +143,14 @@ export type Selector =
      *  Annulment honours a cannot-roll metamod's shield. A side-limited removal
      *  whose side is protected is skipped rather than refused (Metamod § Rules
      *  and Exceptions: "will add without removing"). */
-    | { readonly kind: "random"; readonly honourCannotRoll: boolean; readonly gen?: Gen }
+    | {
+          readonly kind: "random";
+          readonly honourCannotRoll: boolean;
+          readonly gen?: Gen;
+          /** The pool the method filled from just before: the modifier that fill
+           *  laid down is out of the removal's reach ("remove another"). */
+          readonly sparing?: PoolSpec;
+      }
     /** The crafted modifiers the bench can clear; a fractured one stays. When
      *  `replacing`, only under a limit of one: a craft replaces the single crafted
      *  modifier, while under the multimod it adds beside them (Crafting Bench §
@@ -540,7 +547,10 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
                 case "random": {
                     const allowed = allowedFor(op.selector, rules);
                     if (allowed.size === 0 && op.selector.gen !== undefined) return a;
-                    return removeOne(a, allowed, shieldFor(op.selector, rules), registry);
+                    const shield = shieldFor(op.selector, rules);
+                    return op.selector.sparing === undefined
+                        ? removeOne(a, allowed, shield, registry)
+                        : removeAnother(a, a0, op.selector.sparing, allowed, shield, registry);
                 }
                 case "influenced":
                     return removeOne(
@@ -1005,9 +1015,21 @@ function failing(
                     subsetMods(path, registry, p, s).some(hasTag) ||
                     taggedRowSurvives(path, registry, p, s, plain(p, s));
                 if (!open(0, 0)) {
-                    // Either no tagged row rolls here at all, or one does but a
-                    // modifier the item may carry blocks it (its type, its group).
-                    return resolvePool(path, check.pool, registry).mods.some(hasTag)
+                    // Either no tagged row rolls on the base at all, or one does
+                    // but a modifier the item carries or may carry blocks it
+                    // (its type, its group).
+                    const bare = pool(
+                        registry.catalog,
+                        {
+                            ...guaranteedFacts(path, registry),
+                            prefixCount: 0,
+                            suffixCount: 0,
+                            types: new Set(),
+                            families: new Set(),
+                        },
+                        influenceTagsOf(path, registry).maybe,
+                    );
+                    return bare.some((c) => hasTag(c.mod))
                         ? { kind: "harvestBlocked", tag }
                         : { kind: "harvestEmptyPool", tag };
                 }
@@ -1832,6 +1854,27 @@ function removeOne(
     // The removed affix might have been the crafted mod, so the lower bound drops.
     const crafted: Range = [Math.max(0, a.crafted[0] - 1), a.crafted[1]];
     return settled({ ...a, counts: { total, prefix, suffix }, presence, crafted });
+}
+
+/** A removal after a fill that cannot take the modifier the fill added: what
+ *  the fill asserted of its pool, read on the item the method started on,
+ *  holds after the removal as before it. */
+function removeAnother(
+    a: AItem,
+    a0: AItem,
+    sparing: PoolSpec,
+    allowed: ReadonlySet<Gen>,
+    shield: Shield | null,
+    registry: Registry,
+): AItem {
+    const added = resolvePool(a0, sparing, registry).assert;
+    const spared = new Set(shield?.types);
+    if (added.length === 1) spared.add(added[0]!);
+    const s = removeOne(a, allowed, { types: spared }, registry);
+    if (added.length === 0) return s;
+    let clause = a.bdd.FALSE;
+    for (const t of added) clause = a.bdd.or(clause, a.bdd.variable(t));
+    return settled({ ...s, presence: a.bdd.and(s.presence, clause) });
 }
 
 /** Remove one named, guaranteed modifier: it is gone, everything else stays. */
