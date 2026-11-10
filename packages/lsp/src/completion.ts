@@ -11,6 +11,7 @@ import {
     type EldritchSide,
     excludedTypes,
     findMethod,
+    HARVEST_AUGMENT_TAGS,
     isEldritchSide,
     isEldritchTier,
     isInfluence,
@@ -102,7 +103,9 @@ type Context =
     /** After a family's first word: its second words, and the next statement
      *  too when the first word is a method on its own (`exalt`, `bench`). */
     | { readonly kind: "secondWord"; readonly first: string; readonly alone: boolean }
-    | { readonly kind: "name"; readonly of: NameKind }
+    /** `augment`: the tag of a Harvest augment, which the grove has for fewer
+     *  types than its reforge. */
+    | { readonly kind: "name"; readonly of: NameKind; readonly augment?: true }
     | { readonly kind: "eldritchName"; readonly side: EldritchSide }
     | { readonly kind: "word"; readonly oneOf: readonly string[] };
 
@@ -137,8 +140,10 @@ function contextAt(source: string, offset: number): Context {
         const found = methodAt(closed.map(atomOf), closed.length);
         if (found) {
             const slot = slotAt(found.method, closed.length - found.start - found.words);
-            if (slot?.kind === "name" || slot?.kind === "names")
-                return { kind: "name", of: slot.of };
+            if (slot?.kind === "name" || slot?.kind === "names") {
+                const augment = found.method.words.join(" ") === "harvest augment";
+                return { kind: "name", of: slot.of, ...(augment && { augment }) };
+            }
         }
         return { kind: "mod" }; // after `has`, or inside an affix list
     }
@@ -204,7 +209,7 @@ function excludedAt(source: string, offset: number, registry: Registry): Readonl
 }
 
 /** The catalog names a slot offers. */
-function namesOf(of: NameKind, registry: Registry): readonly string[] {
+function namesOf(of: NameKind, registry: Registry, augment = false): readonly string[] {
     switch (of) {
         case "essence":
             return registry.essenceNames;
@@ -215,7 +220,11 @@ function namesOf(of: NameKind, registry: Registry): readonly string[] {
         case "aspect":
             return registry.aspectNames;
         case "tag":
-            return [...registry.harvestTags, "influence"];
+            if (!augment) return [...registry.harvestTags, "influence"];
+            return registry.harvestTags.filter((label) => {
+                const tag = registry.resolveHarvestTag(label);
+                return tag.ok && HARVEST_AUGMENT_TAGS.has(tag.value);
+            });
         case "mod":
             return [];
     }
@@ -288,7 +297,7 @@ export function getCompletions(
         case "name":
             return ctx.of === "mod"
                 ? modItems(source, offset, registry)
-                : namesOf(ctx.of, registry).map(value);
+                : namesOf(ctx.of, registry, ctx.augment).map(value);
         case "mod":
             return modItems(source, offset, registry);
         case "eldritchName":

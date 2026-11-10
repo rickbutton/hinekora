@@ -360,6 +360,25 @@ def noted(m) # a step
         const tags = getCompletions(tagSrc, tagSrc.length, registry).map((c) => c.label);
         expect(tags).toEqual(expect.arrayContaining(["fire", "caster", "life"]));
         expect(tags).not.toContain("maximum life"); // tags, not mods
+        expect(tags).toEqual(expect.arrayContaining(["mana", "influence"]));
+
+        // The grove adds a modifier of eleven types only.
+        const augmentSrc = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
+harvest augment "`;
+        const augment = getCompletions(augmentSrc, augmentSrc.length, registry).map((c) => c.label);
+        expect(augment.sort()).toEqual([
+            "attack",
+            "caster",
+            "chaos",
+            "cold",
+            "critical",
+            "defence",
+            "fire",
+            "life",
+            "lightning",
+            "physical",
+            "speed",
+        ]);
     });
 
     it("offers a word slot's choices, and a statement once a method's slots are spent", () => {
