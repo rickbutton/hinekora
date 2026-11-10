@@ -400,10 +400,14 @@ class Walker {
         const first = result.trace[0]?.before;
         if (first === undefined) return undefined;
         const items: AItem[] = [];
-        for (const e of result.trace) {
-            items.push(e.before);
-            if (e.after !== undefined) items.push(e.after);
-        }
+        const collect = (trace: readonly TraceEntry[]): void => {
+            for (const e of trace) {
+                items.push(e.before);
+                if (e.after !== undefined) items.push(e.after);
+                if (e.inlined !== undefined) collect(e.inlined.trace);
+            }
+        };
+        collect(result.trace);
         const preds: RPred[] = [];
         const crafted: TypeId[] = [];
         const visit = (stmts: readonly Stmt[]): void => {
@@ -414,6 +418,9 @@ class Walker {
                     if (r !== null) preds.push(r);
                     visit(s.body);
                     if (s.kind === "if") visit(s.elseBody ?? []);
+                } else if (s.kind === "call" && e?.inlined !== undefined) {
+                    const body = e.inlined.body;
+                    this.within(e, () => visit(body));
                 } else if (s.kind === "operation" && s.words[0] === "bench" && e !== undefined) {
                     const literals: Literal[] = [];
                     for (const arg of s.args) if (arg.kind !== "param") literals.push(arg);
@@ -467,6 +474,24 @@ class Walker {
         return this.byStart.get(`${s.kind}@${s.span.start.offset}`);
     }
 
+    /** `f` with a call's body read against the call's own trace. */
+    private within<T>(call: TraceEntry, f: () => T): T {
+        const saved = new Map<string, TraceEntry | undefined>();
+        for (const e of call.inlined?.trace ?? []) {
+            const key = `${e.kind}@${e.span.start.offset}`;
+            if (!saved.has(key)) saved.set(key, this.byStart.get(key));
+            this.byStart.set(key, e);
+        }
+        try {
+            return f();
+        } finally {
+            for (const [key, e] of saved) {
+                if (e === undefined) this.byStart.delete(key);
+                else this.byStart.set(key, e);
+            }
+        }
+    }
+
     sequence(stmts: readonly Stmt[], branches: readonly Branch[], frame: Frame): Branch[] {
         let current = trim(branches);
         for (const stmt of stmts) {
@@ -483,12 +508,18 @@ class Walker {
         switch (stmt.kind) {
             case "operation":
                 return this.operation(stmt, entry, branches, frame);
-            case "call":
-                this.record(stmt, mass, frame, {
-                    note: `${stmt.name}: the steps inside a call are not costed`,
-                });
-                // A call may change the item in ways this walk does not follow.
-                return withoutStates(branches);
+            case "call": {
+                const inlined = entry?.inlined;
+                if (entry === undefined || inlined === undefined) {
+                    this.record(stmt, mass, frame, {
+                        note: `${stmt.name}: the steps inside a call are not costed`,
+                    });
+                    // A call may change the item in ways this walk does not follow.
+                    return withoutStates(branches);
+                }
+                this.record(stmt, mass, frame, {});
+                return this.within(entry, () => this.sequence(inlined.body, branches, frame));
+            }
             case "restart":
                 frame.restarted += mass;
                 this.record(stmt, mass, frame, {});
@@ -826,6 +857,13 @@ class Walker {
         const collect = (stmts: readonly Stmt[], nested: boolean): boolean => {
             for (const s of stmts) {
                 if (s.kind === "restart" && nested) return false;
+                if (s.kind === "call") {
+                    const e = this.traced(s);
+                    const inlined = e?.inlined;
+                    if (e === undefined || inlined === undefined) return false;
+                    if (!this.within(e, () => collect(inlined.body, nested))) return false;
+                    continue;
+                }
                 if (s.kind !== "if" && s.kind !== "until") continue;
                 const at = this.traced(s)?.before ?? before;
                 const guard = this.resolve(s.pred, at);
@@ -910,6 +948,13 @@ class Walker {
                     emit(s.body, step.body);
                     if (s.elseBody !== undefined && step.otherwise !== undefined) {
                         emit(s.elseBody, step.otherwise);
+                    }
+                } else if (s.kind === "call" && step.kind === "branch") {
+                    this.record(s, reached, inner, {});
+                    const e = this.traced(s);
+                    if (e?.inlined !== undefined) {
+                        const body = e.inlined.body;
+                        this.within(e, () => emit(body, step.body));
                     }
                 } else if (s.kind === "restart" || s.kind === "stop") {
                     this.record(s, reached, inner, {});
@@ -1016,6 +1061,15 @@ class Walker {
                     body,
                     ...(otherwise !== undefined && { otherwise }),
                 });
+                continue;
+            }
+            if (s.kind === "call") {
+                const e = this.traced(s);
+                const inlined = e?.inlined;
+                if (e === undefined || inlined === undefined) return undefined;
+                const body = this.within(e, () => this.chainSteps(inlined.body, guards, stepOf));
+                if (body === undefined) return undefined;
+                out.push({ id, kind: "branch", holds: () => true, body });
                 continue;
             }
             if (s.kind !== "operation") return undefined;

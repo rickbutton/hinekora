@@ -299,24 +299,41 @@ describe("the cost of a guide", () => {
         expect(loops[1]!.attempts!.expected).toBeGreaterThan(0);
     });
 
-    it("a call between a solved loop and a branch hides where the loop left the item", () => {
-        // The call rerolls the ring: the loop's 3/10 for two suffixes no longer holds.
-        const c = craft(
-            ring(
-                "rare",
-                ["IncreasedLife1", "IncreasedMana1", "IncreasedArmour1"],
-                ["FireResist1", "ColdResist1", "LightningResist1"],
-            ),
-            [
-                until(cmp("prefixCount", "<=", 2), [op("annul")]),
-                callStmt("reroll"),
-                iff(cmp("suffixCount", "==", 2), [stop()]),
-            ],
-            [],
-            [procDef("reroll", [], [op("chaos")])],
-        );
-        const branch = report(c).steps.find((s) => s.kind === "if")!;
-        expect(branch.branch).not.toBeCloseTo(3 / 10, 6);
+    it("a call is walked as its steps written in its place", () => {
+        const guide = (
+            step: Parameters<typeof craft>[1][number],
+            procs: ReturnType<typeof procDef>[],
+        ) =>
+            craft(
+                ring(
+                    "rare",
+                    ["IncreasedLife1", "IncreasedMana1", "IncreasedArmour1"],
+                    ["FireResist1", "ColdResist1", "LightningResist1"],
+                ),
+                [
+                    until(cmp("prefixCount", "<=", 2), [op("annul")]),
+                    step,
+                    iff(cmp("suffixCount", "==", 2), [stop()]),
+                ],
+                [],
+                procs,
+            );
+        const called = report(guide(callStmt("reroll"), [procDef("reroll", [], [op("chaos")])]));
+        const inline = report(guide(op("chaos"), []));
+        const branch = (r: typeof called) => r.steps.find((s) => s.kind === "if")!;
+        expect(called.steps.every((s) => s.note === undefined)).toBe(true);
+        expect(called.total).toEqual(inline.total);
+        expect(branch(called).branch).toBeCloseTo(branch(inline).branch!, 12);
+    });
+
+    it("a call inside a loop is followed round by round", () => {
+        const guide = (body: Parameters<typeof craft>[1], procs: ReturnType<typeof procDef>[]) =>
+            craft(ring("rare"), [until(has("IncreasedLife1"), body)], [], procs);
+        const called = report(guide([callStmt("reroll")], [procDef("reroll", [], [op("chaos")])]))
+            .steps[0]!;
+        const inline = report(guide([op("chaos")], [])).steps[0]!;
+        expect(called.note).toBeUndefined();
+        expect(called.attempts!.expected).toBeCloseTo(inline.attempts!.expected, 9);
     });
 
     it("a branch after a solved loop reads the modifier the loop did not name", () => {

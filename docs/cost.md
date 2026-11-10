@@ -67,11 +67,11 @@ on its own, the rest of the ladder together) and whether it is fractured (its ro
 `!`); a modifier a condition compares by value is held per tier
 and value piece, cut at the condition's thresholds. The distribution starts from the item
 block, a `"random"` modifier a natural roll of its side by spawn weight (Q75), and is
-carried through every step. Each method is read on the checker's item **narrowed to each
-state** (its counts exact, each tracked modifier present at its class or absent): a
-random method by its roll (an unveil by the option taken, a Fracturing Orb by the
-modifier it locks), a sure one by the checker's own transfer function, the item
-that leaves read back as states. So a Regal Orb after an Orb of Transmutation knows the
+carried through every step, a call's body walked in its place. Each method is read on
+the checker's item **narrowed to each state** (its counts exact, each tracked modifier
+present at its class or absent): a random method by its roll (an unveil by the option
+taken, a Fracturing Orb by the modifier it locks), a sure one by the checker's own
+transfer function, the item that leaves read back as states. So a Regal Orb after an Orb of Transmutation knows the
 item had one modifier half the time and two the other half, and a Divine Orb rerolls the
 values neither fractured nor protected. A branch splits the distribution by its condition; a loop is solved
 as a chain over it (§6). A guide followed so throughout is walked once.
@@ -80,9 +80,9 @@ What stays approximate: the modifiers no one names are a count, not identities, 
 beside them keeps each unnamed group's weight by its chance of not being among that many
 draws by weight (within 2.5% of a brute force, where craftofexile's average group is 12%
 off). A state the narrowed item cannot carry exactly is left as it was, which the step
-notes. Where the walk cannot follow a statement (a call) or its states outgrow 5000
-(`TrackerOverflow`), they are dropped and the roll is read on the checker's item, the facts every path holds: a modifier held only as possible
-neither shrinks the pool nor adds its tags, and every range the checker left open is read
+notes. Where its states outgrow 5000 (`TrackerOverflow`), they are dropped and the roll
+is read on the checker's item, the facts every path holds: a modifier held only as
+possible neither shrinks the pool nor adds its tags, and every range the checker left open is read
 at its floor and at its ceiling (`Reading`), a **spread** given beside the figure where
 the ends disagree.
 
