@@ -109,6 +109,12 @@ export type RawHarvestChange = Readonly<
     Record<"resistance" | "damage", Readonly<Record<string, readonly string[]>>>
 >;
 
+/** `cluster_enchants.json`: the enchantment tags a cluster jewel of each size
+ *  can have (`scripts/ingest-cluster.mjs`). */
+export type RawClusterEnchants = Readonly<
+    Partial<Record<"small" | "medium" | "large", readonly string[]>>
+>;
+
 /** `eldritch.json` entry (projected): one eldritch implicit row. */
 export interface RepoeEldritch {
     readonly side: "exarch" | "eater";

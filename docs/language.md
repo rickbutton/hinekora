@@ -85,7 +85,7 @@ item {
   [cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel#Mechanics)'s two enchantments:
   how many passives it adds and the stat its small passives grant, which decides the
   notables it can roll (`enchant: 8 "lightning damage"` makes `has "sadist"` possible). A
-  cluster jewel without it is an error.
+  cluster jewel without it, or with another size's, is an error.
 - `corrupted` marks a
   [corrupted item](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items), which
   takes no craft but the Tainted currency and an `unveil`

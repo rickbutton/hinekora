@@ -33,7 +33,7 @@ import {
     INFLUENCES,
 } from "../model/marks.js";
 import { MAX_STRANDS } from "../model/strands.js";
-import type { ModTypeContext, Registry } from "../resolve/registry.js";
+import type { ClusterSize, ModTypeContext, Registry } from "../resolve/registry.js";
 import {
     type AItem,
     type RPred,
@@ -131,7 +131,6 @@ const CLUSTER_PASSIVES: Readonly<Record<ClusterSize, readonly [number, number]>>
     medium: [4, 6],
     large: [8, 12],
 };
-type ClusterSize = "small" | "medium" | "large";
 
 /** The size of a cluster jewel base, from the tag that marks it; undefined for any other base. */
 function clusterSize(base: Base): ClusterSize | undefined {
@@ -279,7 +278,18 @@ class Checker {
                 }
                 const tag = this.registry.resolveClusterEnchant(item.enchant.text);
                 if (!tag.ok) this.diag(resolveMessage(tag.error), item.span);
-                else base = { ...base, tags: new Set([...base.tags, tag.value]) };
+                else {
+                    // An enchantment belongs to the jewels of one size (the game's
+                    // list of each size's small passives), and so do its notables.
+                    const sizes = this.registry.clusterSizesOf(tag.value);
+                    if (sizes !== undefined && !sizes.has(size)) {
+                        this.diag(
+                            `A ${size} cluster jewel cannot have the "${item.enchant.text}" enchant — it is a ${[...sizes].join(" or ")} cluster jewel's.`,
+                            item.span,
+                        );
+                    }
+                    base = { ...base, tags: new Set([...base.tags, tag.value]) };
+                }
             }
         } else if (size !== undefined) {
             this.diag(

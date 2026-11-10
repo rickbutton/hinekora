@@ -13,6 +13,7 @@ import {
 import economyUrl from "@hinekora/data/data/poe1/economy.json?url";
 import baseItemsUrl from "@hinekora/data/data/poe1/base_items.json?url";
 import benchUrl from "@hinekora/data/data/poe1/bench.json?url";
+import clusterEnchantsUrl from "@hinekora/data/data/poe1/cluster_enchants.json?url";
 import eldritchUrl from "@hinekora/data/data/poe1/eldritch.json?url";
 import harvestChangeUrl from "@hinekora/data/data/poe1/harvest_change.json?url";
 import essencesUrl from "@hinekora/data/data/poe1/essences.json?url";
@@ -41,6 +42,7 @@ const DATA_URLS: Readonly<Record<keyof RawPoe1, string>> = {
     fossils: fossilsUrl,
     eldritch: eldritchUrl,
     harvestChange: harvestChangeUrl,
+    clusterEnchants: clusterEnchantsUrl,
 };
 
 /** The example guides checked into the repo, by file name. */

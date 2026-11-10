@@ -67,6 +67,23 @@ describe("a cluster jewel's enchant", () => {
     });
 });
 
+describe("a cluster jewel's enchant and its size", () => {
+    const sized = buildRegistry({
+        bases: [CLUSTER_BASE, SMALL_CLUSTER_BASE],
+        mods: [...CATALOG, NOTABLE_SADIST, NOTABLE_OVERSHOCK, CLUSTER_EFFECT],
+        clusterEnchants: { large: ["affliction_lightning_damage"] },
+    });
+
+    it("refuses an enchantment of another size's jewels", () => {
+        const small = jewel({ passives: 2, text: "lightning damage" }, [], "Small Cluster Jewel");
+        expect(check(craft(small, []), { registry: sized }).diagnostics[0]?.message).toContain(
+            'A small cluster jewel cannot have the "lightning damage" enchant — it is a large cluster jewel\'s',
+        );
+        const large = jewel({ passives: 8, text: "lightning damage" });
+        expect(check(craft(large, []), { registry: sized }).diagnostics).toEqual([]);
+    });
+});
+
 describe("a rare reforge on a jewel", () => {
     const lightning = { passives: 8, text: "lightning damage" };
 

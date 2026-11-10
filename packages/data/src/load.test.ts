@@ -272,6 +272,22 @@ describe("registry resolution against real data", () => {
         expect(!vague.ok && vague.error.kind).toBe("ambiguous");
     });
 
+    it("knows which size of cluster jewel each enchantment belongs to", () => {
+        const sizes = (words: string) => {
+            const tag = registry.resolveClusterEnchant(words);
+            return tag.ok ? registry.clusterSizesOf(tag.value) : undefined;
+        };
+        expect(sizes("lightning damage")).toEqual(new Set(["large"]));
+        expect(sizes("minion life")).toEqual(new Set(["medium"]));
+        expect(sizes("maximum life")).toEqual(new Set(["small"]));
+        const listed = Object.values(data.clusterEnchants).flat();
+        expect(listed.length).toBe(data.manifest.files["cluster_enchants.json"]!.count);
+        // Every enchantment the notables roll under has a size.
+        for (const e of registry.clusterEnchants()) {
+            expect(registry.clusterSizesOf(e.tag), e.words).toBeDefined();
+        }
+    });
+
     it("carries affix-cap deltas from experimented-base implicits", () => {
         // Simplex: −2 prefix / −1 suffix (rare 1p/2s); Ratcheting: −3 / +3.
         expect(base("Simplex Amulet").capDelta).toEqual({ prefix: -2, suffix: -1 });

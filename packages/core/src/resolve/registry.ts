@@ -46,6 +46,8 @@ const EMPTY_SIDES: ReadonlySet<Gen> = new Set();
 const EMPTY_FAMILIES: ReadonlySet<GroupId> = new Set();
 const EMPTY_EFFECTS: readonly Effect[] = [];
 
+export type ClusterSize = "small" | "medium" | "large";
+
 /** A cluster jewel enchantment: the notables' spawn tag and the words of its stat. */
 export interface ClusterEnchant {
     readonly tag: TagId;
@@ -268,6 +270,9 @@ export interface Registry {
      *  catalog knows it as the spawn tag the notables roll under. */
     resolveClusterEnchant(name: string): Resolved<TagId>;
     clusterEnchants(): readonly ClusterEnchant[];
+    /** The cluster jewel sizes an enchantment appears on; undefined where the
+     *  data does not say. */
+    clusterSizesOf(enchant: TagId): ReadonlySet<ClusterSize> | undefined;
     /** The sides the type's rows sit on across the catalog: one for most types,
      *  both for a type that is a prefix on one base and a suffix on another. */
     sidesOfType(type: TypeId): ReadonlySet<Gen>;
@@ -391,6 +396,8 @@ export interface RegistryData {
     readonly fossils?: readonly FossilSpec[];
     readonly eldritch?: readonly EldritchImplicitSpec[];
     readonly harvestChange?: HarvestChangeLists;
+    /** The enchantment tags a cluster jewel of each size can have. */
+    readonly clusterEnchants?: Readonly<Partial<Record<ClusterSize, readonly string[]>>>;
     /** Aspect name → the row the Bestiary crafts; the game's four by default. */
     readonly aspects?: Readonly<Record<string, string>>;
 }
@@ -491,6 +498,14 @@ export function buildRegistry(data: RegistryData): Registry {
         tag: TagId(tag),
         words: tag.slice("affliction_".length).replace(/_+$/, "").replaceAll("_", " "),
     }));
+    const enchantSizes = new Map<TagId, Set<ClusterSize>>();
+    for (const [size, tags] of Object.entries(data.clusterEnchants ?? {})) {
+        for (const tag of tags) {
+            const sizes = enchantSizes.get(TagId(tag));
+            if (sizes) sizes.add(size as ClusterSize);
+            else enchantSizes.set(TagId(tag), new Set([size as ClusterSize]));
+        }
+    }
     const typeSides = new Map<TypeId, Set<Gen>>();
     for (const m of catalog) {
         let sides = typeSides.get(m.type);
@@ -680,6 +695,10 @@ export function buildRegistry(data: RegistryData): Registry {
 
         clusterEnchants() {
             return enchants;
+        },
+
+        clusterSizesOf(enchant) {
+            return enchantSizes.get(enchant);
         },
 
         resolveEssence(name, tier) {

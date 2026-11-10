@@ -26,6 +26,7 @@ import {
 import type { DataManifest } from "./manifest.js";
 import { COMMUNITY_ALIASES } from "./aliases.js";
 import type {
+    RawClusterEnchants,
     RepoeBases,
     RepoeBenches,
     RepoeEldritchRows,
@@ -43,10 +44,11 @@ export interface LoadedData {
     readonly fossils: readonly FossilSpec[];
     readonly eldritch: readonly EldritchImplicitSpec[];
     readonly harvestChange: HarvestChangeLists;
+    readonly clusterEnchants: RawClusterEnchants;
     readonly manifest: DataManifest;
 }
 
-/** The eight files of a PoE1 data directory, parsed but not yet adapted. */
+/** The nine files of a PoE1 data directory, parsed but not yet adapted. */
 export interface RawPoe1 {
     readonly manifest: DataManifest;
     readonly mods: RepoeMods;
@@ -56,9 +58,10 @@ export interface RawPoe1 {
     readonly fossils: RepoeFossils;
     readonly eldritch: RepoeEldritchRows;
     readonly harvestChange: RawHarvestChange;
+    readonly clusterEnchants: RawClusterEnchants;
 }
 
-/** The names of the eight files, by `RawPoe1` field. */
+/** The names of the nine files, by `RawPoe1` field. */
 export const POE1_FILES: Readonly<Record<keyof RawPoe1, string>> = {
     manifest: "manifest.json",
     mods: "mods.json",
@@ -68,6 +71,7 @@ export const POE1_FILES: Readonly<Record<keyof RawPoe1, string>> = {
     fossils: "fossils.json",
     eldritch: "eldritch.json",
     harvestChange: "harvest_change.json",
+    clusterEnchants: "cluster_enchants.json",
 };
 
 /** Normalize raw PoE1 (RePoE-shaped) data. */
@@ -89,6 +93,7 @@ export function adaptPoe1(raw: RawPoe1): LoadedData {
         fossils,
         eldritch,
         harvestChange,
+        clusterEnchants: raw.clusterEnchants,
         manifest: raw.manifest,
     };
 }
@@ -105,5 +110,6 @@ export function registryOf(data: LoadedData): Registry {
         fossils: data.fossils,
         eldritch: data.eldritch,
         harvestChange: data.harvestChange,
+        clusterEnchants: data.clusterEnchants,
     });
 }

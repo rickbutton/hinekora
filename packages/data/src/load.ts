@@ -10,6 +10,7 @@ import { adaptPoe1, type LoadedData, POE1_FILES, type RawPoe1 } from "./bundle.j
 import { adaptEconomy, type EconomySnapshot, type RawEconomy } from "./economy.js";
 import type { DataManifest } from "./manifest.js";
 import type {
+    RawClusterEnchants,
     RepoeBases,
     RepoeBenches,
     RepoeEldritchRows,
@@ -34,6 +35,7 @@ export function loadPoe1(dir: string): LoadedData {
         fossils: readJson<RepoeFossils>(`${dir}/${POE1_FILES.fossils}`),
         eldritch: readJson<RepoeEldritchRows>(`${dir}/${POE1_FILES.eldritch}`),
         harvestChange: readJson<RawHarvestChange>(`${dir}/${POE1_FILES.harvestChange}`),
+        clusterEnchants: readJson<RawClusterEnchants>(`${dir}/${POE1_FILES.clusterEnchants}`),
     };
     return adaptPoe1(raw);
 }

@@ -58,6 +58,15 @@
                 "url": "https://ggpk.exposed/poe1/data/harvestcraftoptions.datc64",
                 "gameVersion": "3.29.3.5"
             }
+        },
+        "cluster_enchants.json": {
+            "sha256": "5e502bbf6fcf13cc403331cfe6e99939053ba615bceab89660de5593cfd797c3",
+            "count": 54,
+            "provenance": {
+                "commit": "aa9fa7c394b18a7a89f913f86703112b3f9d20f1",
+                "commitDate": "2026-10-25T03:48:01Z",
+                "publishedAt": "Mon, 09 Nov 2026 07:47:13 GMT"
+            }
         }
     }
 }
