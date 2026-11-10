@@ -479,8 +479,8 @@ export class Tracker {
 
     /**
      * An Orb of Conflict on a state with both implicits: one side up a tier, to
-     * Perfect at most, the other down, a Lesser one lowered gone (QUESTIONS.md
-     * Q36), each side as likely to rise (Q81). Each keeps its type.
+     * Perfect at most, the other down, a Lesser one lowered gone (seen in play),
+     * each side as likely to rise (QUESTIONS.md Q81). Each keeps its type.
      */
     private conflicted(state: ChainState): readonly Outcome[] | undefined {
         const at = ELDRITCH_SIDES.map((side) => this.index.get(IMPLICIT_ATOM[side]));
@@ -539,7 +539,8 @@ export class Tracker {
     }
 
     /**
-     * An unveil: three options drawn by weight without replacement (Q64), the
+     * An unveil: three options drawn by weight without replacement (Veiled
+     * modifier § Version history), the
      * veiled modifier becoming the one the player takes: the target when it is
      * offered, else a modifier the guide names, the first the tracker follows,
      * else one no one names (QUESTIONS.md Q78).

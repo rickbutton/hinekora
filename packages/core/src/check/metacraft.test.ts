@@ -151,7 +151,7 @@ describe("scour respects protection", () => {
 
     it("refuses a scour when both sides are protected, a fractured modifier or not", () => {
         // A scour never removes a fractured modifier (Fractured item), so the
-        // fracture leaves it nothing to take.
+        // fractured prefix gives it nothing to remove.
         const protectedRing = (fractured: boolean) =>
             item({
                 base: "Iron Ring",
