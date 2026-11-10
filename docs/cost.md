@@ -19,8 +19,7 @@ a step, which keeps the checker a pure soundness tool.
 
 A row's weight is its first spawn-weight tag the item carries
 ([Modifier § Spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag)),
-scaled by its generation weight; the item's tags are the base's, those its present
-modifiers add, and its influence's. A
+scaled by its generation weight. A
 reforge rolls a count, then draws modifiers one at a time by weight without replacement,
 a group closing once one of it is drawn
 ([Modifier § Group/family](https://www.poewiki.net/wiki/Modifier#Group/family)) and a
@@ -99,8 +98,7 @@ groups off in the order their clocks fire, skip a group whose side is full.
 "These groups are all among the first k drawn" is "fewer than k minus their number of
 the other groups fired before the last of them", a Poisson-binomial count at a time,
 integrated against that time's density; the split of m draws is a race between the two
-sides' order statistics. The dynamic program (`cost/race.ts`) carries a count, never a
-list of draws: the core invariant on the probability side.
+sides' order statistics. The dynamic program (`cost/race.ts`) carries a count, never a list of draws.
 
 It is exact for one group, for any set jointly (by inclusion–exclusion), and for the
 split with depletion. Given the split, which groups landed on a side is read from that
@@ -169,21 +167,27 @@ Prices come from a **snapshot committed with the data**,
 refreshes it from poe.ninja's economy overview endpoints, which its
 [API reference](https://poe.ninja/docs/api) supports without promising them stable; when they move, the script is what changes.
 
-The snapshot cannot price three things, which the code carries itself: a bench craft's
-cost, read from the catalog; a Harvest craft's lifeforce, a table in `cost/prices.ts`
-from the wiki's `harvest_crafting_options`; and the beasts a Bestiary recipe takes, a
-table there from `bestiary_recipes`, each beast then priced by the snapshot.
+What the snapshot cannot price (a bench craft, a Harvest craft's lifeforce, a Bestiary
+recipe's beasts) `cost/prices.ts` carries from the catalog and the wiki's tables.
 
 ---
 
 ## 8. Known differences from craftofexile
 
-craftofexile's calculator and simulator are the yardstick; hinekora agrees with them
-wherever the calculator is exact, to the rounding of its display. Where they differ:
+craftofexile's calculator and simulator are the yardstick, not the truth: where they and
+hinekora part, the wiki and the game data decide. craftofexile
+differs in that:
 
-- **Its extrapolation regime** (ten or more eligible types on a side) replaces the
-  unrequired draws by an average depletion, about a tenth optimistic against the race.
-- **Its side split** draws independently at the prefix pool's share, ignoring depletion,
-  which the race includes.
-- **Its Orb of Alteration** assumes an Augmentation fills the empty side; hinekora prices
-  the alteration alone (Q58).
+- its calculator **extrapolates** at ten or more eligible types on a side, an average
+  depletion standing for the draws not asked for, a few per cent optimistic;
+- its **side split** depletes crudely, by the heaviest modifier a draw;
+- its Orb of Alteration defaults to **Alt + Augment**, where hinekora prices the
+  alteration alone (Q58);
+- it weighs a **Foulborn** orb's pool as a Sanctified Fossil's, where hinekora culls tiers
+  as the wiki has it, and it has no **memory strands**;
+- it ignores **metamods** on essences and fossils, and the level caps of low-tier
+  essences;
+- it does not halve attack rows on a **Convoking Wand**, as the data's generation weights
+  do;
+- a base of five slots takes four or five modifiers at two to one there, 65:35 here;
+- its **prices** are another snapshot.
