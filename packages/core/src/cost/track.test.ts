@@ -116,8 +116,7 @@ describe("the tracked state", () => {
         const built = findMethod(["dominance"])!.build([], entry.before, boots);
         if ("refused" in built) throw new Error(built.refused);
         const [start] = tracker.statesIn(entry.before)!;
-        const outx = tracker.transition(entry.before, built, "estimate")!(start!.state);
-        console.log("DBGD", JSON.stringify(start), JSON.stringify(outx), tracker.types);
+        tracker.transition(entry.before, built, "estimate")!(start!.state);
         expect(tracker.misses).toBe(1);
     });
 });
