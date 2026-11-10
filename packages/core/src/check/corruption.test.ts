@@ -202,7 +202,7 @@ describe("the Tainted currency", () => {
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(false);
     });
 
-    it("exalt: on a full item it can only have removed one", () => {
+    it("exalt: a full item takes it, and is left full or one modifier short", () => {
         const three = ["random", "random", "random"];
         const full = ring({ corrupted: true, prefixes: three, suffixes: three });
         const r = run(craft(full, [words("tainted", "exalt")]));
