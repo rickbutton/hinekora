@@ -16,7 +16,9 @@ interpretation) before real currency is spent.
 - `docs/crafting-lang-surface-v0.md`: the surface language design (syntax, predicates,
   errors).
 - `docs/operations.md`: the operations model (primitive effects, the library of every
-  crafting method with its composition and status).
+  crafting method and its status).
+- `docs/cost.md`: the cost layer (how a roll's chance and a guide's expected spend are
+  computed, the game readings they rest on, the economy snapshot).
 - `docs/QUESTIONS.md`: open questions for the user and the assumptions made meanwhile.
 
 ## The core invariant

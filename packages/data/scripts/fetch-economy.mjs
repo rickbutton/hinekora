@@ -4,7 +4,7 @@
  * price of every currency, essence, fossil, resonator and beast in Chaos Orbs,
  * and the Divine Orb's, for one league on one day. Five requests, one per type,
  * with a user agent that says who is asking; nothing is crawled. The endpoints
- * are the ones the site's own pages read (docs/research/cost-model.md §3); they
+ * are the ones the site's own pages read (docs/cost.md §7); they
  * are not documented and may move, in which case this script is what changes.
  *
  * Usage: node packages/data/scripts/fetch-economy.mjs [league]

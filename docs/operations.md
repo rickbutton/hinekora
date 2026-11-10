@@ -60,8 +60,7 @@ returns is the one the method leaves where its preconditions hold, not the input
 step does not cascade into refusing every step after it, and a loop whose body fills the
 item is still seen to reach its exit.
 
-Spawn weights are not carried; they are the cost layer's ([ARCHITECTURE.md](ARCHITECTURE.md)
-§7). Nor is the distribution of values: a value is a span, which a predicate narrows and
+Spawn weights are not carried; they are the cost layer's ([cost.md](cost.md)). Nor is the distribution of values: a value is a span, which a predicate narrows and
 `reroll` resets.
 
 ---

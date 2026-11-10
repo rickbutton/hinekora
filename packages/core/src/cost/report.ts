@@ -6,7 +6,7 @@
  * attempts taken as independent trials); a branch splits the mass by its
  * condition's chance; a `restart` ends the attempt and a `stop` the craft. The
  * item before a step is the checker's, so the pools are the item's on the path
- * the guide describes (docs/research/cost-model.md §5.5).
+ * the guide describes (docs/cost.md §3, §6).
  */
 import type { Craft, Pred, Stmt } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";

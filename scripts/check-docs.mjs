@@ -45,6 +45,7 @@ const SYMBOL_DOCS = new Set([
     "docs/ARCHITECTURE.md",
     "docs/ROADMAP.md",
     "docs/operations.md",
+    "docs/cost.md",
 ]);
 const SURFACE = "docs/crafting-lang-surface-v0.md";
 const REFERENCE = "docs/REFERENCE.md";

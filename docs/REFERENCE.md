@@ -6,7 +6,7 @@
 > the checker's abstract state in one table, the gotchas that bite across files, and the
 > standing design note on relational precision. The shape of the implementation and the
 > theory behind the checker are `ARCHITECTURE.md`; the item model is `item-model.md`; the
-> operations model is `operations.md`; conventions and the gate are `../CLAUDE.md`.
+> operations model is `operations.md`; the cost layer is `cost.md`; conventions and the gate are `../CLAUDE.md`.
 > Game rules are linked to their poewiki.net section, never restated.
 
 ---
