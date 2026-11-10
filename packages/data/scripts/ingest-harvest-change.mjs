@@ -19,7 +19,7 @@
  */
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const OUT_DIR = fileURLToPath(new URL("../data/poe1", import.meta.url));
 const DAT_URL =
@@ -74,25 +74,32 @@ export function projectHarvestChange(rows) {
     return out;
 }
 
-const lists = projectHarvestChange(readRows(await table()));
-const mods = JSON.parse(readFileSync(`${OUT_DIR}/mods.json`, "utf8"));
-const known = new Set(Object.values(mods).map((m) => m.type));
-const names = Object.values(lists).flatMap((byElement) => Object.values(byElement).flat());
-const unknown = names.filter((n) => !known.has(n));
-if (unknown.length > 0) throw new Error(`not modifier types of mods.json: ${unknown.join(", ")}`);
+async function main() {
+    const lists = projectHarvestChange(readRows(await table()));
+    const mods = JSON.parse(readFileSync(`${OUT_DIR}/mods.json`, "utf8"));
+    const known = new Set(Object.values(mods).map((m) => m.type));
+    const names = Object.values(lists).flatMap((byElement) => Object.values(byElement).flat());
+    const unknown = names.filter((n) => !known.has(n));
+    if (unknown.length > 0) {
+        throw new Error(`not modifier types of mods.json: ${unknown.join(", ")}`);
+    }
 
-const text = JSON.stringify(lists);
-writeFileSync(`${OUT_DIR}/harvest_change.json`, text);
-const manifestPath = `${OUT_DIR}/manifest.json`;
-const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-manifest.files["harvest_change.json"] = {
-    sha256: createHash("sha256").update(text).digest("hex"),
-    count: names.length,
-    origin: {
-        table: "HarvestCraftOptions",
-        url: DAT_URL,
-        gameVersion: process.env.HARVEST_GAME_VERSION ?? "unknown",
-    },
-};
-writeFileSync(manifestPath, JSON.stringify(manifest, null, 4) + "\n");
-console.log(`harvest_change.json: ${names.length} modifier types`);
+    const text = JSON.stringify(lists);
+    writeFileSync(`${OUT_DIR}/harvest_change.json`, text);
+    const manifestPath = `${OUT_DIR}/manifest.json`;
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    manifest.files["harvest_change.json"] = {
+        sha256: createHash("sha256").update(text).digest("hex"),
+        count: names.length,
+        origin: {
+            table: "HarvestCraftOptions",
+            url: DAT_URL,
+            gameVersion: process.env.HARVEST_GAME_VERSION ?? "unknown",
+        },
+    };
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 4) + "\n");
+    console.log(`harvest_change.json: ${names.length} modifier types`);
+}
+
+// Importable for its projection; runs only as a script.
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) await main();
