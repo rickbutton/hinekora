@@ -43,7 +43,7 @@ import {
     RING_BASE,
     VEILED_CATALOG,
 } from "../__fixtures__/mods.js";
-import { costOf } from "./report.js";
+import { costOf, openNote } from "./report.js";
 import type { Prices } from "./prices.js";
 
 const registry = buildRegistry({
@@ -930,6 +930,31 @@ describe("the cost of a guide", () => {
             { item: "Farrul, First of the Plains", amount: 1 },
             { item: "Black Mórrigan", amount: 1 },
         ]);
+    });
+});
+
+describe("the note on a loop too many of whose attempts have no end", () => {
+    const of = (unresolved: number, undecided: number, stuckInside = 0) =>
+        openNote({ unresolved, undecided, stuckInside });
+
+    it("says never only of items that cannot reach the exit", () => {
+        expect(of(0.1, 0)).toMatch(/^10% of the time the item never reaches the exit, so/);
+        expect(of(0.1, 0, 0.1)).toMatch(/never reaches the exit of a loop inside, so/);
+        expect(of(0.1, 0.3)).toMatch(/^10% of the time the item never reaches the exit/);
+    });
+
+    it("says the rounds followed did not work it out of the ones it could not sort", () => {
+        const note = of(0.001, 0.4);
+        expect(note).toMatch(
+            /^40% of the time whether the item reaches the exit was not worked out within the rounds followed/,
+        );
+        expect(note).not.toMatch(/never/);
+    });
+
+    it("keeps the share a share, and leaves a small one unremarked", () => {
+        expect(of(0, 99998.9)).toMatch(/^100% of the time whether/);
+        expect(of(0.004, 0)).toBeUndefined();
+        expect(of(0.003, 0.003)).toMatch(/^1% of the time whether/);
     });
 });
 

@@ -20,7 +20,7 @@ import { findMethod, type Literal } from "../check/methods.js";
 import { rollableGen } from "../resolve/tiers.js";
 import { influenceTagsAny } from "../check/ops.js";
 import { chance } from "./chance.js";
-import { advance, chain, type ChainState, type ChainStep } from "./chain.js";
+import { advance, type Chain, chain, type ChainState, type ChainStep } from "./chain.js";
 import { guaranteedTypes, isExcluded, rarityOf, sideCap, suffixRange } from "../check/astate.js";
 import { addPrices, inChaos, type Price, type Prices, unitCost } from "./prices.js";
 import { type Reading, type Roll, rollOf, unmodelled, withPresent } from "./roll.js";
@@ -327,6 +327,26 @@ const MISSED =
  *  not be followed. */
 const UNFOLLOWED =
     "a step in this loop can leave the item in more ways than could be followed, so every round is read alike, on every item the check allows at once";
+
+/** The least share of a loop's attempts without an end that leaves it no figure. */
+const OPEN_SHARE = 0.005;
+
+/**
+ * The note on a chain-solved loop too many of whose attempts have no end, or
+ * undefined where it has its figure. "Never" is said only of items no run of
+ * rounds can take to the exit; of the ones the chain could not sort it says
+ * the rounds followed did not work it out.
+ */
+export function openNote(
+    solved: Pick<Chain, "unresolved" | "undecided" | "stuckInside">,
+): string | undefined {
+    const open = Math.min(1, solved.unresolved + solved.undecided);
+    if (open < OPEN_SHARE) return undefined;
+    const share = (x: number): string => `${Math.min(100, Math.max(1, Math.round(x * 100)))}%`;
+    return solved.unresolved >= OPEN_SHARE
+        ? `${share(solved.unresolved)} of the time the item never reaches the exit${solved.stuckInside >= solved.unresolved / 2 ? " of a loop inside" : ""}, so the loop cannot end as written and its rounds and the guide's total are not known`
+        : `${share(open)} of the time whether the item reaches the exit was not worked out within the rounds followed, so the loop's rounds and the guide's total are not known`;
+}
 
 /** The sides' caps on an item of its rarity. */
 function capsOf(item: AItem): Record<Gen, number> {
@@ -1034,24 +1054,17 @@ class Walker {
         // The share of attempts that never reach the exit is counted as ending,
         // so the figures stay finite: under half a hundredth it moves them
         // little and passes unremarked, above it the loop has no figure.
-        const open = Math.min(1, solved.unresolved + solved.undecided);
-        const ending = solved.exit + solved.stop + open;
+        const ending =
+            solved.exit + solved.stop + Math.min(1, solved.unresolved + solved.undecided);
         const attempts = ending > 0 ? 1 / ending : 1;
         // Rounds, not attempts: an attempt here is as many rounds as the item
         // takes, and may be none when the loop is entered at its exit.
         const rounds = solved.passes * attempts;
         // Rounds that never end have no expected number: the rounds followed
         // before giving up are no figure of the craft's.
-        const stuck = open >= 0.005;
-        const share = (x: number): string => `${Math.min(100, Math.max(1, Math.round(x * 100)))}%`;
-        // "Never" is said only of items no run of rounds can take to the exit.
-        const note = !stuck
-            ? solved.estimated
-                ? ESTIMATED
-                : undefined
-            : solved.unresolved >= 0.005
-              ? `${share(solved.unresolved)} of the time the item never reaches the exit${solved.stuckInside >= solved.unresolved / 2 ? " of a loop inside" : ""}, so the loop cannot end as written and its rounds and the guide's total are not known`
-              : `${share(open)} of the time whether the item reaches the exit was not worked out within the rounds followed, so the loop's rounds and the guide's total are not known`;
+        const open = openNote(solved);
+        const stuck = open !== undefined;
+        const note = open ?? (solved.estimated ? ESTIMATED : undefined);
         this.record(
             stmt,
             mass,
