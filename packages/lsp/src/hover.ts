@@ -1,7 +1,7 @@
 /**
  * Hover: the signature of the token under the cursor (currency op, mod, base,
  * essence/bench, def, projection, keyword), plus a PoE-style item tooltip of
- * the checker's state at that point (see docs/REFERENCE.md §3d).
+ * the checker's state at that point.
  */
 import {
     type AItem,

@@ -3,8 +3,8 @@
 > This doc explains the **shape** of the implementation: the layers, how they compose,
 > and the theory behind the checker. It is the mental model, not the map.
 >
-> - **What exists and where** (files, key symbols, gotchas) →
->   [REFERENCE.md](REFERENCE.md). Read it alongside this.
+> - **The abstract state's fields, the gotchas, why a BDD** →
+>   [REFERENCE.md](REFERENCE.md). What exists and where is the code itself.
 > - **Forward-looking work** → [ROADMAP.md](ROADMAP.md).
 > - **The surface language** (syntax, predicates, error style) →
 >   [crafting-lang-surface-v0.md](crafting-lang-surface-v0.md).
@@ -18,7 +18,7 @@
 >   `tools/poewiki` (the `poewiki-render` skill).
 >
 > Each detail lives in exactly one place. Where this doc names a symbol, it is to locate a
-> concept; the symbol-level reference is REFERENCE §3–§5.
+> concept; the symbol-level detail is the code and its comments.
 
 ---
 
@@ -56,7 +56,7 @@ analysis is testable with no editor and no disk.
 
 ## 2. Layer 1: surface syntax (text → AST)
 
-A hand-written lexer turns text into trivia-free tokens carrying byte-offset spans; a
+A hand-written lexer turns text into trivia-free tokens carrying source spans; a
 recursive-descent parser turns tokens into a `Craft` AST. Three decisions shape everything
 downstream:
 
@@ -108,7 +108,7 @@ This layer is pure data → structures. It never analyses; it answers questions.
 ## 4. Layer 3: the checker (abstract interpretation)
 
 The heart of the system. The rest of this section is the theory and the architecture; the
-symbol-level detail is [REFERENCE §4](REFERENCE.md).
+abstract state's fields are tabled in [REFERENCE §4](REFERENCE.md).
 
 ### 4.1 The problem, and the idea
 
@@ -165,7 +165,7 @@ independently testable; the reductions are the named seams where they exchange i
 The relational BDD is the one deliberately clever part. A purely per-type set of
 guaranteed/excluded facts would intersect a disjunction away at a join and forget it, so a
 later "if neither A nor B" could not be flagged dead. The BDD keeps it. (Why not hand the
-whole thing to an SMT solver, per [REFERENCE §7](REFERENCE.md): worse diagnostics, a heavy
+whole thing to an SMT solver, per [REFERENCE §6](REFERENCE.md): worse diagnostics, a heavy
 async dependency, and you would still need the loop fixpoint yourself.)
 
 ### 4.3 Operations: methods as sequences of state transformers

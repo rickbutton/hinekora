@@ -1,7 +1,7 @@
 # hinekora — Roadmap
 
 > Forward-looking work only. Completed work is not tracked here; that is what
-> `git log` is for, and the design that resulted lives in `REFERENCE.md`,
+> `git log` is for, and the design that resulted lives in the code,
 > `ARCHITECTURE.md` and `operations.md`. The order below is the plan; each step is one
 > or more commits that pass the gate, reviewed by the `reviewer` agent, with any decision
 > or in-game probe it needs recorded in `QUESTIONS.md` rather than waited on.

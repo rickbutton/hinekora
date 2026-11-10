@@ -36,8 +36,8 @@ self-explanatory.
    from a narrower state than the op draws from, count ranges that do not cover every
    arm, loop invariants that miss a back-edge. The core invariant: never enumerate
    outcome unions.
-3. **Docs agree with the code.** `docs/REFERENCE.md` §3–§5 names files, symbols and
-   behaviours; `docs/ARCHITECTURE.md` the shape; the surface doc the syntax;
+3. **Docs agree with the code.** `docs/REFERENCE.md` tables the abstract state's fields
+   and holds the gotchas no single comment can; `docs/ARCHITECTURE.md` the shape; the surface doc the syntax;
    `docs/item-model.md` the model; `docs/ROADMAP.md` only future work. A behaviour change
    without its doc change in the same commit is a finding, as is a doc that now
    describes something the code does not do. Run `pnpm docs:check`.
