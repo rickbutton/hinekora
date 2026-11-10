@@ -123,6 +123,8 @@ export interface Chain {
     /** Mass that never leaves: a loop the chain cannot see ending, the item
      *  full and nothing removing. */
     readonly unresolved: number;
+    /** The part of `unresolved` a loop inside never let go. */
+    readonly stuckInside: number;
     /** The states the exit leaves the item in, their probabilities summing to `exit`. */
     readonly exits: readonly { readonly state: ChainState; readonly prob: number }[];
     /** The rounds were cut off before the distribution settled, and the rest
@@ -239,6 +241,7 @@ export function chain(input: ChainInput): Chain | undefined {
         estimatedLoops: t.estimatedLoops,
         exitAtStart,
         unresolved: massOf(r.left) + t.stuck,
+        stuckInside: t.stuck,
         exits: [...exits.values()],
         estimated: r.estimated,
     };

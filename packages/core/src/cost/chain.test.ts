@@ -480,6 +480,27 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.estimated).toBe(true);
     });
 
+    it("says when the mass that never leaves is held by a loop inside", () => {
+        // Inside: a loop waiting for no prefix while nothing in it removes one.
+        const solved = chain({
+            atoms: [],
+            body: [
+                {
+                    id: 0,
+                    kind: "loop",
+                    exit: (s) => s.prefix === 0,
+                    body: [{ id: 1, kind: "transition", next: (s) => [{ state: s, prob: 1 }] }],
+                },
+                { id: 2, kind: "remove", gen: "prefix" },
+            ],
+            starts: [{ state: at(1, 0), weight: 1 }],
+            caps: CAPS,
+            exit: (s) => s.suffix === 1,
+        })!;
+        expect(solved.unresolved).toBeCloseTo(1, 6);
+        expect(solved.stuckInside).toBeCloseTo(1, 6);
+    });
+
     it("a body that changes nothing is not a chain", () => {
         expect(
             chain({
