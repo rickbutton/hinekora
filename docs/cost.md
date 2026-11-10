@@ -47,7 +47,8 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
   rerolled side taking what fits.
 - **Fossils.** Several fossils' "more" multipliers add and a "fewer" multiplies the
   result (Q60).
-- **Harvest.** The tagged row is drawn among the tag's rows by weight (Q63).
+- **Harvest.** The tagged row is drawn among the tag's rows by weight (Q63); an augment
+  adds, then removes another (Q89).
 - **Removals** are uniform over the modifiers they can reach, never a fractured one (Q61).
 - **Veiled orbs.** The veiled modifier lands on either side with room alike (Q76).
 - **Tainted Exalted Orb.** It adds or removes at even odds, and removes from a full item
@@ -55,8 +56,6 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
 - **Orb of Conflict.** The line of
   [Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)
   is carried past the gap it states, neither side below one in a hundred (Q96).
-- **Harvest augment** adds, then removes another
-  ([Maxroll](https://maxroll.gg/poe/crafting/harvest-crafting-guide)).
 - **Memory strands.** The share used up is not stated; the estimate reads the floor
   (Q68).
 
