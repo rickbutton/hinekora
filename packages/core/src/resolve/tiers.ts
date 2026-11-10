@@ -74,8 +74,7 @@ export function rollableTiers(
 ): readonly Mod[] {
     const ladders = laddersOf(catalog, base, ilvl, tags);
     // Every type's rows are sorted at once: a strip asks the side of each
-    // modifier the item may carry, hundreds of types a call, and filtering the
-    // pool per type made a guide of nested loops take tens of seconds.
+    // modifier the item may carry, hundreds of types a call.
     if (ladders.tiers === undefined) {
         const rows = new Map<TypeId, Mod[]>();
         for (const c of ladders.pool) {

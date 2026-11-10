@@ -43,7 +43,7 @@ describe("widening the numeric ranges of a loop's invariant", () => {
     it("driven from the first round, ends, and allows every item the exact invariant does", () => {
         const loop = craft(ring, [until(cmp("prefixCount", ">=", 3), [op("exalt")])]);
         const exact = check(loop, ctx);
-        const wide = check(loop, { ...ctx, widenRangesAfter: 0 });
+        const wide = check(loop, ctx, { widenRangesAfter: 0 });
         const [e, w] = [exact.finalState!, wide.finalState!];
         const pairs = [
             [e.counts.total, w.counts.total],
@@ -64,7 +64,7 @@ describe("widening the numeric ranges of a loop's invariant", () => {
 
     it("driven from the first round, still refuses the step a later round refuses", () => {
         const fills = craft(ring, [until(cmp("prefixCount", ">=", 4), [op("exalt")])]);
-        const messages = check(fills, { ...ctx, widenRangesAfter: 0 }).diagnostics.map(
+        const messages = check(fills, ctx, { widenRangesAfter: 0 }).diagnostics.map(
             (d) => d.message,
         );
         expect(messages.length).toBeGreaterThan(0);

@@ -11,6 +11,7 @@ import {
     NOTABLE_SADIST,
     RING_BASE,
     SMALL_CLUSTER_BASE,
+    TAG_ENCHANT_LIGHTNING,
 } from "../__fixtures__/mods.js";
 
 const registry = buildRegistry({
@@ -47,6 +48,14 @@ describe("a cluster jewel's enchant", () => {
             until(has("sadist"), [op("chaos")]),
         ]);
         expect(check(c, ctx).diagnostics).toEqual([]);
+    });
+
+    it("makes one base of the jewel and its enchantment, shared between checks", () => {
+        // What is cached by the base (its pool) is then found again.
+        const once = check(craft(jewel({ passives: 8, text: "lightning damage" }), []), ctx);
+        const again = check(craft(jewel({ passives: 9, text: "lightning damage" }), []), ctx);
+        expect(once.finalState!.base).toBe(again.finalState!.base);
+        expect(once.finalState!.base.tags.has(TAG_ENCHANT_LIGHTNING)).toBe(true);
     });
 
     it("is required, and its passive count must fit the size", () => {

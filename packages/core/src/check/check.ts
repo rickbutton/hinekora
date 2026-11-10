@@ -68,6 +68,10 @@ import { plural } from "../words.js";
 
 export interface CheckContext {
     readonly registry: Registry;
+}
+
+/** How the analysis is run, apart from what it is run on. */
+export interface CheckTuning {
     /** The loop round from which the numeric ranges are widened; a test sets
      *  it low to drive the widening. */
     readonly widenRangesAfter?: number;
@@ -173,8 +177,8 @@ function foldJoin(states: readonly AItem[]): AItem | null {
 
 const isLive = (s: AItem | null): s is AItem => s !== null;
 
-export function check(craft: Craft, ctx: CheckContext): CheckResult {
-    return new Checker(ctx.registry, ctx.widenRangesAfter).run(craft);
+export function check(craft: Craft, ctx: CheckContext, tuning: CheckTuning = {}): CheckResult {
+    return new Checker(ctx.registry, tuning.widenRangesAfter).run(craft);
 }
 
 class Checker {
@@ -297,7 +301,7 @@ class Checker {
                             item.span,
                         );
                     }
-                    base = { ...base, tags: new Set([...base.tags, tag.value]) };
+                    base = this.registry.enchantedBase(base, tag.value);
                 }
             }
         } else if (size !== undefined) {

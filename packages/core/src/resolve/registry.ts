@@ -278,6 +278,9 @@ export interface Registry {
     /** The cluster jewel sizes an enchantment appears on; undefined where the
      *  data does not say. */
     clusterSizesOf(enchant: TagId): ReadonlySet<ClusterSize> | undefined;
+    /** A cluster jewel base with its enchantment's tag: one object per base and
+     *  enchantment, so what is cached by the base is shared between checks. */
+    enchantedBase(base: Base, enchant: TagId): Base;
     /** The sides the type's rows sit on across the catalog: one for most types,
      *  both for a type that is a prefix on one base and a suffix on another. */
     sidesOfType(type: TypeId): ReadonlySet<Gen>;
@@ -507,6 +510,7 @@ export function buildRegistry(data: RegistryData): Registry {
         tag: TagId(tag),
         words: tag.slice("affliction_".length).replace(/_+$/, "").replaceAll("_", " "),
     }));
+    const enchantedBases = new Map<string, Base>();
     const enchantSizes = new Map<TagId, Set<ClusterSize>>();
     for (const [size, tags] of Object.entries(data.clusterEnchants ?? {})) {
         for (const tag of tags) {
@@ -708,6 +712,16 @@ export function buildRegistry(data: RegistryData): Registry {
 
         clusterSizesOf(enchant) {
             return enchantSizes.get(enchant);
+        },
+
+        enchantedBase(base, enchant) {
+            const key = `${base.id}|${enchant}`;
+            let enchanted = enchantedBases.get(key);
+            if (enchanted === undefined) {
+                enchanted = { ...base, tags: new Set([...base.tags, enchant]) };
+                enchantedBases.set(key, enchanted);
+            }
+            return enchanted;
         },
 
         resolveEssence(name, tier) {
