@@ -690,6 +690,23 @@ describe("a Harvest change into a modifier of the changed one's group", () => {
         expect(guaranteedTypes(shield.finalState!).has(TypeId("ColdIncreased"))).toBe(true);
     });
 
+    it("is taken beside unknown modifiers, none of which can be of the changed one's group", () => {
+        // After a reforge a cold damage to spells could be on a wand, but not
+        // beside the lightning one the branch found.
+        const r = check(
+            craft(item({ base: "Pagan Wand", ilvl: 100, rarity: "rare" }), [
+                op("chaos"),
+                iff(
+                    andp(has("LightningSpells1"), notp(has("FireSpells1"))),
+                    [harvestChange("LightningSpells1", "FireSpells1")],
+                    [stop()],
+                ),
+            ]),
+            { registry: grouped },
+        );
+        expect(r.diagnostics).toEqual([]);
+    });
+
     it("is refused where another modifier on the item is of the target's group", () => {
         // A fire resistance beside the fire and chaos resistance, one group.
         const r = check(

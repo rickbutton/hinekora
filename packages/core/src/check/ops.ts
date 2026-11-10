@@ -1205,9 +1205,14 @@ function typesSharingFamilyWithPresent(
     };
     for (const type of guaranteed) if (shares(type)) return [type];
 
+    // The replaced modifier is on the item, so no other of its group is.
+    const replaced = replacing === undefined ? undefined : registry.familiesOfType(replacing);
+    const besideReplaced = (type: TypeId): boolean =>
+        replaced !== undefined && [...registry.familiesOfType(type)].some((f) => replaced.has(f));
     const clashing: TypeId[] = [];
     for (const type of a.possible) {
         if (guaranteed.has(type) || isExcluded(a, type) || !shares(type)) continue;
+        if (besideReplaced(type)) continue;
         if (mayBePresentUnnamed(a, registry, type)) clashing.push(type);
     }
     return clashing;
