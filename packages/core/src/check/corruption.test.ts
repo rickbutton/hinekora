@@ -63,6 +63,42 @@ describe("the Vaal Orb", () => {
         );
     });
 
+    it("takes a Normal item, which stays Normal or becomes the Rare", () => {
+        const normal = item({ base: "Iron Ring", ilvl: 100, rarity: "normal" });
+        const r = run(craft(normal, [op("vaal")]));
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.rarities).toEqual(new Set(["normal", "rare"]));
+        expect(r.finalState!.counts.total).toEqual([0, 6]);
+        expect(r.finalState!.corrupted).toEqual(new Set([true]));
+    });
+
+    it("keeps a side a metamod protects through its reforge", () => {
+        const guarded = ring({ prefixes: [PROTECT_SUFFIXES_CARRIER.id], suffixes: ["cold"] });
+        const r = run(craft(guarded, [op("vaal")]));
+        expect(r.diagnostics).toEqual([]);
+        const s = r.finalState!;
+        expect(guaranteedTypes(s).has(COLD_RESIST.type)).toBe(true);
+        // The metamod itself is a prefix, and the reforge takes it.
+        expect(guaranteedTypes(s).has(PROTECT_SUFFIXES_CARRIER.type)).toBe(false);
+        expect(s.counts.suffix[0]).toBe(1);
+        const open = run(craft(ring({ prefixes: ["life"], suffixes: ["cold"] }), [op("vaal")]));
+        expect(guaranteedTypes(open.finalState!).has(COLD_RESIST.type)).toBe(false);
+    });
+
+    it("reforges a jewel into three or four modifiers, not six", () => {
+        const two = ["random", "random"];
+        const jewel = item({
+            base: "Cobalt Jewel",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: two,
+            suffixes: two,
+        });
+        const r = run(craft(jewel, [op("vaal")]));
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.counts.total).toEqual([3, 4]);
+    });
+
     it("may turn a basic jewel into a unique, on which the craft ends", () => {
         const jewel = item({ base: "Cobalt Jewel", ilvl: 100, rarity: "rare" });
         const r = run(craft(jewel, [op("vaal")]));
@@ -142,6 +178,14 @@ describe("the Tainted currency", () => {
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.counts.total).toEqual([1, 3]);
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(false);
+    });
+
+    it("exalt: on a full item it can only have removed one", () => {
+        const three = ["random", "random", "random"];
+        const full = ring({ corrupted: true, prefixes: three, suffixes: three });
+        const r = run(craft(full, [words("tainted", "exalt")]));
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.counts.total).toEqual([5, 6]);
     });
 
     it("chaos: a protected side is not kept, and a fractured modifier leaves a Magic item", () => {

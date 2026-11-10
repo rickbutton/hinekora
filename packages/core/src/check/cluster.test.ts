@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { cmp, craft, has, iff, item, op, until } from "../__fixtures__/ast.js";
+import { cmp, craft, harvest, has, iff, item, op, until } from "../__fixtures__/ast.js";
 import {
     CATALOG,
     CLUSTER_BASE,
@@ -111,6 +111,12 @@ describe("a rare reforge on a jewel", () => {
         const alchemy = check(craft(normal, [op("alchemy")]), ctx);
         expect(alchemy.diagnostics).toEqual([]);
         expect(alchemy.finalState!.counts.total).toEqual([3, 4]);
+    });
+
+    it("holds for a Harvest reforge", () => {
+        const r = check(craft(jewel(lightning), [harvest("reforge", "lightning")]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.counts.total).toEqual([3, 4]);
     });
 
     it("a ring still takes four to six", () => {
