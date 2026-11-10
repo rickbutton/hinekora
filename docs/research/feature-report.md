@@ -152,9 +152,9 @@ item, `lock-regal` in `examples/future/`. _Size:_ two days with the Lock's own r
 bench, Harvest, beasts or the Recombinator; the beast-applied Lock on a Magic item).
 
 **B4. A second item: the Recombinator, named Awakener donors, Kishara's Ducat.** G4, G5,
-G15. Since 3.25 every endgame weapon and amulet route merges two half-finished items; the
-Awakener's Orb already exists but reduces its donor to an influence, so "the donor's only
-Hunter mod is Spell Crit" cannot be stated. _Shape:_ a second item block bound to a name
+G15. Since 3.25 every endgame weapon and amulet route merges two half-finished items, and
+an Awakener's Orb keeps an influenced modifier of each of its two items, so "the donor's
+only Hunter mod is Spell Crit" needs the donor stated. _Shape:_ a second item block bound to a name
 (`with donor { … }` or a `def item`) and a `recombine donor` operation; the abstract result
 is one item whose candidate modifiers are the union of both inputs' guaranteed and possible
 sets, per side, with the count distribution and the exclusive-modifier rule the wiki gives
@@ -207,7 +207,6 @@ guides treat them as fixed costs and nothing in the modifier logic depends on th
 | `matron-metamod`                                                           | R17 the Wild Bristle Matron trick              | checks                                                      |
 | `imprint-regal-amulet`                                                     | R2 imprint checkpoint, regal under a lock      | checks (the lock removed once the augment is in)            |
 | `future/lock-regal`                                                        | R11 Hinekora's Lock                            | B3                                                          |
-| `recombinator`                                                             | R10 two-item merge                             | checks (`with donor { … }` and `recombine donor`)           |
 | `value-threshold`                                                          | R16 "life ≥ 110", divine                       | checks (`has … >= 110` and `divine`)                        |
 | `cluster-harvest`                                                          | R18 reforge a cluster by tag                   | checks (`enchant:` names the notable pool)                  |
 
@@ -235,9 +234,9 @@ Harvest pool counts how many unknown modifiers could block it, and a side whose 
 named modifiers fill carries no other, and the two state-line items of `accuracy.md` 10 are
 fixed with it (a protected or shielded side keeps its count).
 B5 is built: a cluster jewel's `enchant:` field names the stat its passives grant, which
-the checker reads as the tag its notables roll under. B4 is built in its first form: a
-second item (`with <name> { … }`) and `recombine <name>`, the Recombinator's counts as a
-range, one base (`QUESTIONS.md` Q55 for what is left out). The examples suite stands at
+the checker reads as the tag its notables roll under. B4 was built in a first form and
+removed on 2026-11-10, with the Awakener's Orb, until the second item is designed afresh
+(`ROADMAP.md`, multi-item crafts). The examples suite stood at
 seventeen checking guides and one waiting, the Lock (Q54);
 the naming fixes of A4 (plurals, joiner words, the natural modifier first) brought the
 eldritch gloves in. Of Band C, C1 (fossils on a Normal item, Q42), C3 (the probes) and C4

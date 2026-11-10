@@ -50,7 +50,6 @@ const ICONS = {
     "tainted-chaos": "Tainted Chaos Orb",
     "tainted-exalt": "Tainted Exalted Orb",
     "tainted-divine": "Tainted Divine Teardrop",
-    awakener: "Awakener's Orb",
     essence: "Deafening Essence of Greed",
     bench: "Crafting Bench",
     "harvest-reforge": "Wild Crystallised Lifeforce",
@@ -66,7 +65,6 @@ const ICONS = {
     fossil: "Potent Chaotic Resonator",
     beast: "Bestiary Orb",
     restore: "Imprinted Bestiary Orb",
-    recombine: "Weapon Recombinator",
     aisling: "Veiled Exalted Orb",
 };
 

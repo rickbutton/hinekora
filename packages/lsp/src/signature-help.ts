@@ -80,8 +80,6 @@ function callSignature(
 /** How a slot is written, for the signature's label. */
 function slotLabel(slot: Slot): string {
     switch (slot.kind) {
-        case "donor":
-            return "<name>";
         case "name":
             return slot.optional ? `["${slot.of}"]` : `"${slot.of}"`;
         case "names":

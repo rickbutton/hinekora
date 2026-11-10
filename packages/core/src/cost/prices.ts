@@ -149,7 +149,7 @@ function text(l: Literal | undefined): string {
 
 /**
  * The currency one use of a method consumes, or `undefined` when its price is
- * not known to this table (a Recombinator's gold and dust, a Corruption Altar).
+ * not known to this table (a Corruption Altar).
  */
 export function unitCost(
     method: Method,
@@ -252,10 +252,6 @@ export function unitCost(
         case "unveil":
         case "restore":
             return [];
-        case "recombine":
-            // Gold and Thaumaturgic Dust, by the inputs' level and modifiers
-            // (Recombinator); neither is in the snapshot.
-            return undefined;
         case "foulborn":
             return [
                 {

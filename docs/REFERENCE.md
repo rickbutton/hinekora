@@ -90,7 +90,6 @@ examples/                    - the guide suite; every file here checks clean (`p
   value-threshold.craft      - a finished ring divined until the life roll is 110 or more.
   imprint-regal-amulet.craft - an imprint as the checkpoint, a regal under a prefix lock, Harvest and the bench to finish.
   cluster-harvest.craft      - a Large Cluster Jewel reforged by tag until two notables sit, its enchant naming the pool.
-  recombinator.craft         - two Magic wands, one wanted prefix each, recombined until one carries both.
   future/                    - recipes that wait on a feature, each headed by which; not tested.
 docs/
   REFERENCE.md, ARCHITECTURE.md, ROADMAP.md, item-model.md, QUESTIONS.md + the two design docs
@@ -181,8 +180,7 @@ these suffix modifiers }`, `{ 1-3 additional prefix or suffix modifiers }`,
   `Possibly: Corrupted`, `Without: …`). The hover, the CLI and the playground's card all
   read the view, so they cannot disagree; `renderState` stays the one-line summary for
   diagnostics. `walkthrough.ts` turns a craft and its check result into the guide as a
-  player follows it (`walkthrough(craft, result, registry)`): the declared item and the
-  second items (`donors`, from `donorItems`), then a
+  player follows it (`walkthrough(craft, result, registry)`): the declared item, then a
   `Step` per statement with the item before and after it from the trace, matched by
   statement kind and start offset, the checker's findings owned by the innermost
   statement that contains them, loops as blocks with their exit both as written and as a
@@ -273,11 +271,7 @@ resolveEssence / resolveBench / resolveHarvestTag`
   item's 1–2 at even odds (Q58, Q59), an add's one), a `removal` (uniform over what it
   reaches, the protected sides excluded, Q61), a `lock`, an `unveil` (three weighted
   draws, Q64), an `implicit` (an ember's weighted draw over `EldritchImplicitSpec.weights`),
-  a `reroll`, or a `recombine` (`recombineRoll(a, b, registry)` on the item and the second
-  item the checker lends through `donorItems`: per side the pooled types with their rows,
-  weights and exclusivity (`exclusiveTypes`, `rowsOf`) and the kept count by the page's
-  table, `recombine.ts` `keptDistribution`; `pickSide` is the weighted pick without
-  replacement under the exclusive rule, Q67); `withPresent` folds a bench craft after a
+  or a `reroll`; `withPresent` folds a bench craft after a
   roll in. `chance.ts` evaluates a
   resolved predicate (`RPred`, from the checker's `predicateResolver`) against a roll
   (`chance`): the leaves the roll models are enumerated jointly (which named modifiers
@@ -342,9 +336,7 @@ method table (`check/methods.ts`), which completion, hover and the docs check re
 A statement that is not control flow or a call is an `OperationStmt`: `parseOperation`
 takes its opening word, a second word when `methodsAfter` says the family has one, and
 then one argument per slot of the method's `args` (`parseSlot`: a quoted name or a
-parameter, a word from a fixed set, a number, a tier, the name of a second item; optional
-slots may be left off). A file may declare second items, `with <name> { … }` (`parseDonor`,
-`Craft.donors`), described as the item block is.
+parameter, a word from a fixed set, a number, a tier; optional slots may be left off).
 A missing argument's error says what the slot wants in the guide's words (`QUOTED`)
 after the statement as written so far.
 An unknown opening word still parses as an operation, so the checker names it. `parse(source)` returns `{ ok, craft }` or
@@ -581,11 +573,10 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
   panel with a line joining them to it. A loop is one container: "repeat until the item
   has" with the checklist (the step's `check`) on top, its steps in an inner panel, its
   odds and cost table as a footer, and its result, the item once it is done, always a
-  card, closing the container; every other top-level block (the start, the second items, each step, the finished item) stands in a box of its own
+  card, closing the container; every other top-level block (the start, each step, the finished item) stands in a box of its own
   too, so nothing reads as hung off the step before it; a branch is a container with "if the item has" and its checklist on top and one panel per answer; a `restart`
   is a block pointing back and a `stop` one that keeps the item as it is; the start and
-  the finished item open and close the board, the second items (`with <name> { … }`,
-  the walkthrough's `donors`) following the start as their own cards;
+  the finished item open and close the board;
   a step never reached is dimmed. Given the economy snapshot, each block carries the
   cost layer's line for its statement (`costCached`, matched by statement kind and start
   offset): what a step is expected to consume and its price in chaos ("expected 8.8
@@ -607,7 +598,7 @@ the data package's `./data/*` export) and adapted with `adaptPoe1` from
 - `src/icons/*.png`: the currency icons, copied from the wiki by
   `scripts/fetch-icons.mjs` (one file per method, keyed by its words joined with
   dashes; the page falls back to the first word, then to a lettered glyph; `aisling`
-  shares the Veiled Exalted Orb's, `recombine` has a Recombinator's). The game's
+  shares the Veiled Exalted Orb's). The game's
   CDN serves only the classic orbs under a public path, which is why the wiki's copies
   are the source; `QUESTIONS.md` Q46 holds the ruling.
 - `src/main.ts`: the page: the example guides (`examples/*.craft`, picked from a menu), the
@@ -703,8 +694,7 @@ product level in `normalize`, never hidden inside one domain. The sub-domains:
   the floor: `pool` keeps only the top `tiersWithStrands` tiers of each modifier
   (`model/strands.ts`), counted over the modifier's whole ladder on the base, the fewest
   strands admitting the most tiers, so the pool stays an over-approximation; a Harvest,
-  Bestiary or resonator fill is not cut (Q68); the Recombinator's result may hold either
-  input's.
+  Bestiary or resonator fill is not cut (Q68).
 - `crafted`: a RANGE, how many [bench-crafted](https://www.poewiki.net/wiki/Crafting_Bench)
   mods are present. `bench` requires it provably below the crafted cap (one, or three under
   the multimod [metamod](https://www.poewiki.net/wiki/Metamod)); a pure reforge or a plain
@@ -840,16 +830,6 @@ product level in `normalize`, never hidden inside one domain. The sub-domains:
   call the proc they are passed to. The inlined body is a trace black box
   (`suppressTrace`), and so are the steps written in a block argument: hover gives them
   a signature but no tooltip (`insideStepArgument`).
-- **`recombine <name>`** (`checkRecombine`, before the method table's sequence): the
-  item and the named second item (`donors`, elaborated as the item block is; a kind of
-  item made for each attempt, never consumed) go through `recombine` in `ops.ts`, the
-  Recombinator's own transfer: pooled sides, the page's count table as a range, at least
-  the floor of the pooled types present (`assertAtLeast`), tiers kept where known on
-  either, one exclusive at most, the base's marks from either, values and the imprint
-  gone; `recombineRefusal` names why two items cannot go in (rarity, corruption, class,
-  and here a differing base). `donorItems(craft, registry)` lends the elaborated second
-  items to the cost layer, `exclusiveTypes` the modifiers the Recombinator treats as
-  exclusive.
 - **Operation statements** (`checkOperation`): look the statement's words up in the
   method table (`findMethod`; an unknown word is "Unknown currency" or "Unknown
   operation"), bind its arguments to the method's slots as `Literal`s (a parameter left
@@ -1130,11 +1110,10 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 | `packages/core/src/cost/race.ts`                                         | the weighted draw as an exponential race: top-`k` membership, its joint distribution, the split      |
 | `packages/core/src/cost/roll.ts`                                         | `rollOf`: a method's op sequence on the checker's item as the pools, counts and certainties it draws |
 | `packages/core/src/cost/chance.ts`                                       | `chance`: a resolved predicate's probability against a roll                                          |
-| `packages/core/src/cost/recombine.ts`                                    | the Recombinator's count table and weighted pick under the exclusive rule                            |
 | `packages/core/src/cost/chain.ts`                                        | a loop of removals, single draws and bench crafts as a Markov chain over counts and named modifiers  |
 | `packages/core/src/cost/prices.ts` / `report.ts`                         | unit costs and the `Prices` snapshot / `costOf`: the walk, one `StepCost` per statement              |
 | `packages/core/src/cost/words.ts`                                        | the report's figures, chances and prices in the guide's words, shared by every surface               |
-| `packages/core/src/cost/{race,chain,recombine,report}.test.ts`           | the race against brute force, the chain and the pick by hand, the walk over fixture guides           |
+| `packages/core/src/cost/{race,chain,report}.test.ts`                     | the race against brute force, the chain by hand, the walk over fixture guides                        |
 | `packages/data/scripts/fetch-economy.mjs`                                | refreshes `packages/data/data/poe1/economy.json` from poe.ninja                                      |
 | `packages/cli/src/check.ts`                                              | `checkSource`, `chartSource`, `costSource`: the CLI's check, chart and cost report, pure             |
 | `packages/lsp/src/{walkthrough,flowchart}.test.ts`                       | the walkthrough model and its flowchart over real guides                                             |

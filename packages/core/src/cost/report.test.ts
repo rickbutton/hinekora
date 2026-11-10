@@ -9,7 +9,6 @@ import {
     callStmt,
     cmp,
     craft,
-    donor,
     harvest,
     has,
     hasValue,
@@ -19,7 +18,6 @@ import {
     op,
     orp,
     procDef,
-    recombine,
     restart,
     stop,
     until,
@@ -436,41 +434,5 @@ describe("the spread over the item's unnamed modifiers", () => {
         expect(loop.chanceRange).toBeDefined();
         expect(chance).toBeGreaterThanOrEqual(loop.chanceRange!.low - 1e-12);
         expect(chance).toBeLessThanOrEqual(loop.chanceRange!.high + 1e-12);
-    });
-});
-
-describe("the Recombinator", () => {
-    it("keeps a named prefix by the count table and the weighted pick", () => {
-        // Two prefixes pooled, one from each item: the result keeps one (66.7%)
-        // or both (33.3%); with one kept, the life is picked by weight share.
-        const c = craft(
-            ring("rare", ["IncreasedLife1"]),
-            [recombine("d"), iff(has("IncreasedLife1"), [stop()])],
-            [],
-            [],
-            [donor("d", ring("rare", ["IncreasedMana1"]))],
-        );
-        const r = report(c);
-        const branch = r.steps.find((s) => s.kind === "if")!;
-        const prefixes = side("prefix");
-        const w = (type: string) => prefixes.weights[prefixes.types.indexOf(type)]!;
-        const share = w(LIFE_T1.type) / (w(LIFE_T1.type) + w("IncreasedMana"));
-        expect(branch.branch).toBeCloseTo(0.333 + 0.667 * share, 6);
-        // The Recombinator's gold and dust are not in the snapshot.
-        expect(r.steps[0]!.unit).toBeUndefined();
-    });
-
-    it("recombining until both modifiers sit on one item is judged on the item as found", () => {
-        // Each attempt pools the two prefixes; both survive when two are kept.
-        const c = craft(
-            ring("rare", ["IncreasedLife1"]),
-            [until(andp(has("IncreasedLife1"), has("IncreasedMana1")), [recombine("d")])],
-            [],
-            [],
-            [donor("d", ring("rare", ["IncreasedMana1"]))],
-        );
-        const loop = report(c).steps.find((s) => s.kind === "until")!;
-        expect(loop.attempts!.chance).toBeCloseTo(0.333, 6);
-        expect(loop.note).toBeUndefined();
     });
 });

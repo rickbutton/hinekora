@@ -630,37 +630,6 @@ the checker reads the craft as a plain reforge either way, since the same modifi
 roll (`check/library.ts` `harvestLikelyOps`).
 **Answer:**
 
-### Q67 · game probe · open
-
-**Asked:** 2026-11-09
-**Goal:** how the Recombinator picks which pooled modifiers survive.
-[Recombinator § Unpredictable Recombination](https://www.poewiki.net/wiki/Recombinator#Unpredictable_Recombination)
-gives the count per pooled count as a table and says "higher weight modifiers are more
-likely to be selected, although the exact formula is unknown"; it does not say whether a
-modifier both items carry is twice as likely, nor which of its two tiers the result takes.
-**Procure:** two Rare rings of one base, each with one prefix and nothing else, one
-prefix's spawn weight about three times the other's; Recombinators and gold for forty.
-**Steps:** recombine forty pairs; note which prefix survived when one did, and the tier
-when both items carried the same modifier at different tiers.
-**Record:** the survivors' frequencies against their spawn weights.
-**Assumed meanwhile:** a pick proportional to spawn weight on the result's base, without
-replacement, a modifier on both items at twice its weight and its tier one of either's
-by weight share, an unnamed modifier at the average weight of its side's pool, the
-exclusive rule as the page states it (`cost/recombine.ts` `pickSide`, `cost/roll.ts`
-`recombineRoll`).
-**Evidence since (2026-11-10):** the same page's history row for
-[Version 3.25.1](https://www.poewiki.net/wiki/Version_3.25.1) says the opposite direction,
-"rarer Modifiers now have a much higher chance to be selected", but it belongs to the
-Settlers league, when a Kingsmarch upgrade made "Rarer Modifiers … more likely to be
-retained"; the page's history says that upgrade was likely removed when the Recombinator
-went core in 3.26.0, so the note probably describes that upgrade, not today's pick.
-craftofexile's emulator (`poec_simRecombinate`) picks uniformly among the pooled
-modifiers, and its count table differs from the page's (one pooled: keep none a third of
-the time, not 41%; three pooled: 30/50/20, not 40/50/10). The probe above settles the
-direction: if the rarer prefix survives more often than half, the pick leans against
-spawn weight and `pickSide` should weigh by its inverse.
-**Answer:**
-
 ### Q70 · decision · open
 
 **Asked:** 2026-11-09
@@ -689,7 +658,7 @@ up to 9"). The page does not say whether the Foulborn cut of the lower tiers and
 strands' cut apply together; whether a Harvest, Bestiary or resonator fill, which uses no
 strands, is cut all the same (it names "currency orbs"); whether the formula's `tiers`
 counts the modifier's whole ladder or only the tiers the item level admits (its example
-has every tier eligible); nor what strands a Recombinator's result keeps.
+has every tier eligible).
 **Procure:** two Rare rings with 100 memory strands and no modifiers, Foulborn Exalted
 Orbs and Exalted Orbs; a third with 82 strands and a Foulborn Exalted Orb.
 **Steps:** use one orb on each empty ring and note the strands used; on the third, note
@@ -700,8 +669,7 @@ Exalted Orb on an empty item (`check/library.ts` `FOULBORN_STRANDS`, `EXALT_STRA
 both cuts apply, each keeping the top tiers it allows (`pool/pool.ts`, `check/ops.ts`
 `foulbornTiers`); only the fills of a method that uses strands up are cut (`Rules.strands`
 in `check/ops.ts`); `tiers` is the whole ladder on the base, the reading that keeps the
-most tiers; a Recombinator's result may keep either input's strands (`check/ops.ts`
-`recombine`).
+most tiers.
 **Answer:**
 
 ### Q73 · game probe · open
@@ -728,6 +696,38 @@ multipliers, a side admitting no more once full (`cost/race.ts` `splitDistributi
 ---
 
 ## Resolved
+
+### Q67 · game probe · resolved
+
+**Asked:** 2026-11-09
+**Goal:** how the Recombinator picks which pooled modifiers survive.
+[Recombinator § Unpredictable Recombination](https://www.poewiki.net/wiki/Recombinator#Unpredictable_Recombination)
+gives the count per pooled count as a table and says "higher weight modifiers are more
+likely to be selected, although the exact formula is unknown"; it does not say whether a
+modifier both items carry is twice as likely, nor which of its two tiers the result takes.
+**Procure:** two Rare rings of one base, each with one prefix and nothing else, one
+prefix's spawn weight about three times the other's; Recombinators and gold for forty.
+**Steps:** recombine forty pairs; note which prefix survived when one did, and the tier
+when both items carried the same modifier at different tiers.
+**Record:** the survivors' frequencies against their spawn weights.
+**Assumed meanwhile:** a pick proportional to spawn weight on the result's base, without
+replacement, a modifier on both items at twice its weight and its tier one of either's
+by weight share, an unnamed modifier at the average weight of its side's pool, the
+exclusive rule as the page states it.
+**Evidence since (2026-11-10):** the same page's history row for
+[Version 3.25.1](https://www.poewiki.net/wiki/Version_3.25.1) says the opposite direction,
+"rarer Modifiers now have a much higher chance to be selected", but it belongs to the
+Settlers league, when a Kingsmarch upgrade made "Rarer Modifiers … more likely to be
+retained"; the page's history says that upgrade was likely removed when the Recombinator
+went core in 3.26.0, so the note probably describes that upgrade, not today's pick.
+craftofexile's emulator (`poec_simRecombinate`) picks uniformly among the pooled
+modifiers, and its count table differs from the page's (one pooled: keep none a third of
+the time, not 41%; three pooled: 30/50/20, not 40/50/10). The probe above settles the
+direction: if the rarer prefix survives more often than half, the pick leans against
+spawn weight and `pickSide` should weigh by its inverse.
+**Answer:** 2026-11-10: deferred with the Recombinator, which is removed until a second
+item in a guide is designed (`ROADMAP.md`, multi-item crafts); the evidence above stands
+for that design.
 
 ### Q28 · game probe · resolved
 
@@ -851,9 +851,10 @@ every pool and cap a join), which the whole abstract item would have to learn; (
 probe on the rarity rule and on which crafted modifiers are exclusive.
 **Recommendation:** (a) now, (c) when an item is at hand; (b) only if a guide needs two
 bases, which none in the research does.
-**Assumed meanwhile:** (a) (`check/ops.ts` `recombine`, `recombineRefusal`).
+**Assumed meanwhile:** (a).
 **Answer:** (a), 2026-11-09: the Recombinator stays as built; two bases, the named
-Awakener donor and Kishara's Ducat stay deferred.
+Awakener donor and Kishara's Ducat stay deferred. Superseded 2026-11-10: the Recombinator
+is removed until a second item in a guide is designed (`ROADMAP.md`, multi-item crafts).
 
 ### Q69 · game probe · resolved
 

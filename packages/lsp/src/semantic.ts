@@ -56,7 +56,6 @@ const KEYWORDS = new Set([
     "restart",
     "stop",
     "def",
-    "with",
     "has",
     "group",
     "fractured",

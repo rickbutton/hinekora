@@ -22,16 +22,8 @@ import {
     sideCap,
 } from "../check/astate.js";
 import type { FillCount, Op, PoolSpec } from "../check/ops.js";
-import {
-    exclusiveTypes,
-    guaranteedFacts,
-    influenceTagsAny,
-    rowsOf,
-    runMethod,
-} from "../check/ops.js";
-import { emptyItem } from "../model/item.js";
+import { guaranteedFacts, influenceTagsAny, runMethod } from "../check/ops.js";
 import { splitDistribution } from "./race.js";
-import { keptDistribution, type Pooled, type PooledSide } from "./recombine.js";
 
 /**
  * How the item's open ranges are read where the checker leaves them open, its
@@ -126,8 +118,6 @@ export type Roll =
           readonly tier: number;
           readonly options: readonly Candidate[];
       }
-    /** A Recombinator: each side's pooled modifiers and how many it keeps (`recombine.ts`). */
-    | { readonly kind: "recombine"; readonly sides: Readonly<Record<Gen, PooledSide>> }
     /** Nothing this model reads: a deterministic step, or one it does not model. */
     | { readonly kind: "none" };
 
@@ -739,80 +729,6 @@ function countTotals(count: FillCount, a: AItem, reading: Reading): Map<number, 
         case "within":
             return new Map([[present, 1]]);
     }
-}
-
-/**
- * The Recombinator's roll on `a` and the second item `b`: per side, the
- * modifiers both items hold on every path with the rows they may be, each at
- * its spawn weight on the base (an unnamed one at the side's average), doubled
- * when both items carry it, the exclusive ones marked; and the count the
- * result keeps by the page's table over the pooled count, the item's unnamed
- * modifiers counted at their proven floors.
- */
-export function recombineRoll(
-    a: AItem,
-    b: AItem,
-    registry: Registry,
-    reading: Reading = "estimate",
-): Roll {
-    const tags = influenceTagsAny(a, registry);
-    const baseTags = new Set([...a.base.tags, ...tags]);
-    const exclusive = new Set([...exclusiveTypes(a, registry), ...exclusiveTypes(b, registry)]);
-    const natural = groupRows(
-        pool(registry.catalog, emptyItem(a.base, a.ilvl, "rare")).map((c) => ({
-            mod: c.mod,
-            weight: c.weight,
-        })),
-        (m) => genOfType(a, registry, m.type, m),
-    );
-    const sides = {} as Record<Gen, PooledSide>;
-    for (const gen of ["prefix", "suffix"] as const) {
-        const groups = natural.filter((g) => g.gen === gen);
-        const mean =
-            groups.length === 0 ? 1 : groups.reduce((s, g) => s + g.weight, 0) / groups.length;
-        const weightOf = (type: TypeId): number => {
-            const w = rollableTiers(registry.catalog, a.base, a.ilvl, type, tags).reduce(
-                (s, m) => s + (lookupWeight(m, baseTags) ?? 0),
-                0,
-            );
-            return w > 0 ? w : mean;
-        };
-        const named = new Map<TypeId, { rows: Map<string, Row>; copies: number }>();
-        let unnamed = 0;
-        for (const x of [a, b]) {
-            let onSide = 0;
-            for (const type of guaranteedTypes(x)) {
-                if (genOfType(a, registry, type) !== gen) continue;
-                onSide++;
-                const entry = named.get(type) ?? { rows: new Map<string, Row>(), copies: 0 };
-                entry.copies++;
-                for (const m of rowsOf(x, type, registry)) {
-                    entry.rows.set(m.id, { mod: m, weight: lookupWeight(m, baseTags) ?? 1 });
-                }
-                named.set(type, entry);
-            }
-            unnamed += Math.max(0, countsAt(x, reading)[gen] - onSide);
-        }
-        let pooled = unnamed;
-        const list: Pooled[] = [];
-        for (const [type, { rows, copies }] of named) {
-            pooled += copies;
-            list.push({
-                type,
-                rows: [...rows.values()],
-                weight: weightOf(type) * copies,
-                exclusive: exclusive.has(type),
-                groups: registry.familiesOfType(type),
-            });
-        }
-        sides[gen] = {
-            named: list,
-            unnamed,
-            unnamedWeight: mean,
-            keeps: keptDistribution(pooled, sideCap(gen, "rare", a.base)),
-        };
-    }
-    return { kind: "recombine", sides };
 }
 
 /** A roll with one more modifier present for certain: a bench craft after it. */

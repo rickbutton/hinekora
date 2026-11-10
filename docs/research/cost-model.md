@@ -135,6 +135,7 @@ ignores depletion but is otherwise the same model.
   pools, the second side's count still enforced [wiki]. The count table is read as it
   stands; the pick is taken proportional to spawn weight without replacement, a modifier
   on both items at twice its weight, an unnamed one at its side's average [assumed, Q67].
+  The cost layer carried this pick until the Recombinator was removed on 2026-11-10.
 
 ### 1.5 What the abstract item contributes
 

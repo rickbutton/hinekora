@@ -95,16 +95,12 @@ if has "maximum life" t1 { chaos }`);
         expect(strandsText([40, 82])).toBe("40-82");
     });
 
-    it("carries the memory strands and the second items the guide declares", () => {
+    it("carries the memory strands", () => {
         const w = walk(`item { base: "Vaal Regalia" ilvl: 86 rarity: rare strands: 82 }
-with donor { base: "Vaal Regalia" ilvl: 86 rarity: rare }
 chaos`);
         const view = itemView(w.start.item!, registry);
         expect(view.strands).toEqual([82, 82]);
         expect(renderItemText(view)).toContain("Item Level: 86\nMemory Strands: 82");
-        expect(w.donors.map((d) => d.name)).toEqual(["donor"]);
-        expect(w.donors[0]!.item).toBeDefined();
-        expect(w.donors[0]!.span.start.line).toBe(2);
     });
 
     it("reads an earlier item the same whatever a later step does", () => {

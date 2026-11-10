@@ -32,10 +32,11 @@ of the operations; no divergence is expected.
   solved loop hands on, would replace both that and the estimate's floor); the race's clocks are modifier
   types, so two types of one modifier group may both be drawn (`research/cost-model.md`
   §6.2, the Aetheric row).
-- **multi-item crafts** beyond the Recombinator (the Awakener's Orb, whose result keeps
-  an influenced modifier of its donor's and so needs the donor as a second item, Q28;
-  Reflecting Mist, Kishara's Ducat; the Recombinator is built with two items of one base,
-  `QUESTIONS.md` Q55)
+- **multi-item crafts**, which need a second item named in the guide, a design to be
+  worked out first: the Recombinator, whose result pools both items' modifiers (an earlier
+  form is in the git history before the commit that removed it; `QUESTIONS.md` Q55, Q67),
+  the Awakener's Orb, whose result keeps an influenced modifier of each item (Q28),
+  Reflecting Mist and Kishara's Ducat
   and **choice over an operation's outcomes** (Hinekora's Lock, Allflame crafting).
 - English negation sugar (`doesn't have` → `not has`); a power-user annotation tier for
   reusable techniques; a way to name an unveiled modifier whose words a natural one

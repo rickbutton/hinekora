@@ -360,11 +360,7 @@ tiers), the count of draws
 ratio, one for an add), the modifiers present for certain
 (kept through the reforge, or placed first: an essence's grant, a Harvest tag's row drawn
 by weight among the tag's rows), or else a uniform removal, a fracture, an unveil's three
-weighted options, an ember's weighted implicit, a Divine Orb's reroll, or the
-Recombinator's pick (`cost/recombine.ts`: each side pools both items' modifiers, keeps as
-many as the page's count table says, and picks them by weight without replacement, one
-side first at even odds, an exclusive modifier once picked barring the rest; a dynamic
-program over which of the few named modifiers were taken).
+weighted options, an ember's weighted implicit, or a Divine Orb's reroll.
 
 `cost/chance.ts` evaluates the checker's resolved predicate against the roll. A `has`
 atom on a side is "its group among the first p of that side's race", the row within the
@@ -422,7 +418,7 @@ craft's listed price).
   outer loop.
 
 Where the model cannot say (a loop whose exit rests on a value no roll in its body
-changes, a Recombinator's gold and dust, an item the snapshot does not price), the report
+changes, an item the snapshot does not price), the report
 says so in the step's note rather than invent a figure; the walk assumes one round or an
 even branch there, and names the assumption.
 

@@ -33,7 +33,6 @@ import type {
     RarityPred,
     RestartStmt,
     StopStmt,
-    DonorBlock,
     SourceSpan,
     Stmt,
     UntilStmt,
@@ -75,24 +74,14 @@ const eldritchDecl = (d: EldritchTierName | EldritchDecl): EldritchDecl =>
 
 const affix = (a: AffixSpec): AffixDecl => (typeof a === "string" ? { mod: a } : a);
 
-export const donor = (name: string, item: ItemBlock): DonorBlock => ({
-    kind: "donor",
-    name,
-    item,
-    span: ds(),
-});
-export const recombine = (name: string): OperationStmt =>
-    operation(["recombine"], [{ kind: "word", value: name, span: ds() }]);
 export const craft = (
     item: ItemBlock,
     body: readonly Stmt[],
     defs: readonly Def[] = [],
     procs: readonly ProcDef[] = [],
-    donors: readonly DonorBlock[] = [],
 ): Craft => ({
     kind: "craft",
     item,
-    donors,
     defs,
     procs,
     body,

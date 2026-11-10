@@ -10,8 +10,7 @@
  * Under each step the cost layer's line, in the guide's words: what the step
  * is expected to consume and its price under the economy snapshot, how many
  * rounds a repeat takes, how often a branch is taken, and at the end what the
- * whole guide is expected to spend. Second items (`with <name> { … }`) are
- * drawn after the start, as the guide declares them.
+ * whole guide is expected to spend.
  *
  * A block is the unit of interaction: hovering anywhere in it highlights its
  * statement in the editor, clicking moves the cursor there, and the cursor
@@ -729,26 +728,6 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                 w.start.span,
             ),
         );
-        // The second items, as the guide declares them; each a fresh item.
-        for (const d of w.donors) {
-            last = undefined;
-            out.push(
-                anchor(
-                    h(
-                        "div",
-                        "block donor",
-                        h(
-                            "div",
-                            "row",
-                            glyph("+"),
-                            h("div", "body", h("div", "title", `with ${d.name}`)),
-                        ),
-                        ...present(result(d.item, true, true)),
-                    ),
-                    d.span,
-                ),
-            );
-        }
         last = undefined;
         seq(w.steps, out);
         const final = w.steps[w.steps.length - 1]?.after;

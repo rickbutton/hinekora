@@ -348,7 +348,7 @@ main {
     opacity: 0.55;
 }
 
-/* a top-level block (the start, a second item, a step, the finished item)
+/* a top-level block (the start, a step, the finished item)
    stands in a box of its own, as a repeat or a branch does, so nothing after it
    looks hung off it */
 #walkthrough > .block {
@@ -624,10 +624,6 @@ dialog.breakdown .when {
     margin-top: 6px;
     color: var(--muted);
     font-size: 12px;
-}
-
-.block.donor .title {
-    font-weight: 600;
 }
 
 .frame {

@@ -15,12 +15,7 @@ import type { Mod } from "../model/mod.js";
 import type { Op } from "../check/ops.js";
 import type { Registry } from "../resolve/registry.js";
 import { type AItem, type RPred, refine } from "../check/astate.js";
-import {
-    type CheckResult,
-    donorItems,
-    predicateResolver,
-    type TraceEntry,
-} from "../check/check.js";
+import { type CheckResult, predicateResolver, type TraceEntry } from "../check/check.js";
 import { findMethod, type Literal } from "../check/methods.js";
 import { rollableGen } from "../resolve/tiers.js";
 import { influenceTagsAny } from "../check/ops.js";
@@ -31,7 +26,7 @@ import { guaranteedTypes, isExcluded, rarityOf, sideCap, suffixRange } from "../
 import { lookupWeight } from "../pool/pool.js";
 import { rollableTiers } from "../resolve/tiers.js";
 import { addPrices, inChaos, type Price, type Prices, unitCost } from "./prices.js";
-import { NO_ROLL, type Reading, recombineRoll, type Roll, rollOf, withPresent } from "./roll.js";
+import { type Reading, type Roll, rollOf, withPresent } from "./roll.js";
 
 /** The ends of a figure over the two items at the ends of what the checker
  *  allows at the step (`Reading`), given only where they differ. */
@@ -346,8 +341,6 @@ class Walker {
      *  over every round, so the attempts are taken alike. */
     private readonly firstSteps = new Map<Stmt, AItem>();
     private readonly resolve: (pred: Pred, a: AItem) => RPred | null;
-    /** The second items a `recombine` merges in, by name. */
-    private readonly donors: ReadonlyMap<string, AItem>;
 
     constructor(
         craft: Craft,
@@ -357,7 +350,6 @@ class Walker {
     ) {
         for (const e of result.trace) this.byStart.set(`${e.kind}@${e.span.start.offset}`, e);
         this.resolve = predicateResolver(craft, registry);
-        this.donors = donorItems(craft, registry);
     }
 
     private entry(s: Stmt): TraceEntry | undefined {
@@ -462,7 +454,7 @@ class Walker {
         });
         const built = method.build(literals, entry.before, this.registry);
         if ("refused" in built || entry.after === undefined) return withoutStates(branches);
-        const roll = this.rollFor(stmt, literals, built, entry.before);
+        const roll = this.rollFor(built, entry.before);
         if (roll.kind !== "none") {
             // A new roll: every way of getting here is one way of being after it.
             const mass = massOf(branches);
@@ -479,23 +471,8 @@ class Walker {
         return branches.map((b) => ({ mass: b.mass, path: b.path }));
     }
 
-    /** A method's roll on the item; the Recombinator's reads its second item. */
-    private rollFor(
-        stmt: Extract<Stmt, { kind: "operation" }>,
-        literals: readonly Literal[],
-        built: readonly Op[],
-        before: AItem,
-    ): Roll {
-        if (stmt.words[0] === "recombine") {
-            const name = literals[0];
-            const donor =
-                name !== undefined && (name.kind === "word" || name.kind === "string")
-                    ? this.donors.get(name.value)
-                    : undefined;
-            return donor === undefined
-                ? NO_ROLL
-                : recombineRoll(before, donor, this.registry, this.reading);
-        }
+    /** A method's roll on the item. */
+    private rollFor(built: readonly Op[], before: AItem): Roll {
         return rollOf(before, built, this.registry, this.reading);
     }
 

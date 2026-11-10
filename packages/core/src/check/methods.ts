@@ -74,8 +74,6 @@ export type NameKind = "mod" | "essence" | "bench" | "fossil" | "aspect" | "tag"
  * takes every remaining argument).
  */
 export type Slot =
-    /** The name of a second item (`with <name> { … }`), read by the checker. */
-    | { readonly kind: "donor" }
     | { readonly kind: "name"; readonly of: NameKind; readonly optional?: true }
     | { readonly kind: "names"; readonly of: NameKind; readonly max: number }
     | { readonly kind: "word"; readonly oneOf: readonly string[] }
@@ -317,14 +315,6 @@ export const METHODS: readonly Method[] = [
         args: [],
         doc: "tainted divine — Tainted Divine Teardrop: each modifier of a corrupted Rare may move a tier either way, the crafted ones excepted.",
         build: () => TAINTED_DIVINE,
-    },
-    {
-        words: ["recombine"],
-        args: [{ kind: "donor" }],
-        doc: "recombine <name> — Recombinator: merge this item with the second item of that name (`with <name> { … }`), both consumed; the result draws its modifiers from both, by the Recombinator's counts.",
-        // The checker runs this one itself, since it needs the second item's
-        // state; the table's sequence holds only the check every method opens with.
-        build: () => [{ kind: "require", check: { kind: "notCorrupted" } }],
     },
     {
         words: ["essence"],

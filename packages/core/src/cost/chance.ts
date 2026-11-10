@@ -15,7 +15,6 @@ import { type AItem, guaranteedTypes, type RPred, refine, suffixRange } from "..
 import type { Range } from "../check/domain.js";
 import { narrowRange } from "../check/values.js";
 import { amongFirstDistribution } from "./race.js";
-import { type Picked, pickSide } from "./recombine.js";
 import type { Candidate, DrawVariant, Group, Present, Roll } from "./roll.js";
 
 /** How many joint outcomes an exact enumeration may visit before the atoms are
@@ -109,8 +108,6 @@ export function chance(pred: RPred, roll: Roll, after: AItem): number | undefine
             });
         case "unveil":
             return unveilChance(pred, roll.options, base);
-        case "recombine":
-            return recombineChance(pred, roll, base);
     }
 }
 
@@ -134,9 +131,6 @@ function modelled(leaf: Leaf, roll: Roll): boolean {
                 leaf.kind === "hasGroup" ||
                 leaf.kind === "compare"
             );
-        case "recombine":
-            // Values do not survive a new item; a value atom is read off it.
-            return leaf.kind === "has" || leaf.kind === "hasGroup" || leaf.kind === "compare";
         case "reroll":
             return leaf.kind === "hasValue";
         case "lock":
@@ -331,59 +325,6 @@ function offeredTruth(
         default:
             return undefined;
     }
-}
-
-/**
- * The Recombinator: one side picked first at even odds, then the other given
- * whether an exclusive modifier went; each pair of picks says which named
- * modifiers the result holds and how many of each side.
- */
-function recombineChance(
-    pred: RPred,
-    roll: Extract<Roll, { kind: "recombine" }>,
-    base: Truth,
-): number | undefined {
-    const needsRow = new Set<TypeId>();
-    for (const leaf of leaves(pred)) {
-        if (leaf.kind === "has" && leaf.tierMod !== undefined) needsRow.add(leaf.type);
-    }
-    const rowsOf = (side: Gen, picked: Picked, into: Map<TypeId, readonly RowLike[]>): void => {
-        roll.sides[side].named.forEach((m, i) => {
-            if (picked.mask & (1 << i)) {
-                into.set(
-                    m.type,
-                    m.rows.map((r) => ({ id: r.mod.id, weight: r.weight })),
-                );
-            }
-        });
-    };
-    let total = 0;
-    for (const [first, second] of [
-        ["prefix", "suffix"],
-        ["suffix", "prefix"],
-    ] as const) {
-        const seconds = new Map<boolean, Picked[]>();
-        for (const p1 of pickSide(roll.sides[first], false)) {
-            let after = seconds.get(p1.exclusive);
-            if (after === undefined) {
-                after = pickSide(roll.sides[second], p1.exclusive);
-                seconds.set(p1.exclusive, after);
-            }
-            for (const p2 of after) {
-                const taken = new Map<TypeId, readonly RowLike[]>();
-                rowsOf(first, p1, taken);
-                rowsOf(second, p2, taken);
-                const counts = {
-                    prefix: first === "prefix" ? p1.count : p2.count,
-                    suffix: first === "suffix" ? p1.count : p2.count,
-                };
-                const r = jointChance(pred, taken, needsRow, [], counts, base);
-                if (r === undefined) return undefined;
-                total += 0.5 * p1.prob * p2.prob * r;
-            }
-        }
-    }
-    return Math.min(1, total);
 }
 
 function typesOfInterest(pred: RPred): Set<TypeId> {

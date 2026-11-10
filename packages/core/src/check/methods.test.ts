@@ -129,8 +129,6 @@ describe("every method refuses a corrupted item first", () => {
                     }
                     case "word":
                         return [{ kind: "word", value: slot.oneOf[0]! }];
-                    case "donor":
-                        return [{ kind: "word", value: "donor" }];
                     case "int":
                         return [{ kind: "int", value: 2 }];
                     case "tier":
