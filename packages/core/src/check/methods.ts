@@ -183,14 +183,26 @@ function harvestChange(
     // source's rank, where the two ladders have as many rows at the item's
     // level and as many in all, so the rank is the same tier however it is
     // counted. Which row the game picks otherwise is unknown (`QUESTIONS.md`
-    // Q22), so any of the target's rows.
+    // Q22), so any of the target's rows that roll here, and the row at the
+    // source's rank in the whole ladder, which "preserves the tier" read
+    // literally, though the item's level is below it.
     const pinned = a.tiers.get(from.value);
     const sources = rollableTiers(catalog, a.base, a.ilvl, from.value, tags);
-    const ladder = (type: TypeId): number =>
-        rollableTiers(catalog, a.base, TOP_ITEM_LEVEL, type, tags).length;
-    const parallel = sources.length === targets.length && ladder(from.value) === ladder(to.value);
+    const whole = (type: TypeId): readonly Mod[] =>
+        rollableTiers(catalog, a.base, TOP_ITEM_LEVEL, type, tags);
+    const [wholeFrom, wholeTo] = [whole(from.value), whole(to.value)];
+    const alike = wholeFrom.length === wholeTo.length;
+    const parallel = sources.length === targets.length && alike;
     const rank = parallel && pinned?.size === 1 ? sources.findIndex((m) => pinned.has(m.id)) : -1;
-    const rows = rank >= 0 ? [targets[rank]!] : targets;
+    if (rank >= 0) {
+        return harvestChangeOps(from.value, registry.typeLabel(from.value), [targets[rank]!]);
+    }
+    const sameRank =
+        alike && pinned?.size === 1
+            ? wholeTo[wholeFrom.findIndex((m) => pinned.has(m.id))]
+            : undefined;
+    const rows =
+        sameRank === undefined || targets.includes(sameRank) ? targets : [...targets, sameRank];
     return harvestChangeOps(from.value, registry.typeLabel(from.value), rows);
 }
 

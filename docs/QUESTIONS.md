@@ -53,7 +53,8 @@ between two such rows the source's tier does not roll for the target.
 **Probe:** a Rare of item level 13 with the level-12 fire resistance; change it to cold;
 record the cold row, or a refusal.
 **Assumed:** the target's row at the source's rank where as many rows of each roll at the
-item's level; any of the target's rows in the window between. **Encoded in:**
+item's level; in the window between, any of the target's rows that roll or its row at
+the source's rank in the whole ladder. **Encoded in:**
 `check/methods.ts` `harvestChange`.
 
 ### Q25 · probe · open — when the grove greys a craft out under a metamod

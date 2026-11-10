@@ -228,11 +228,12 @@ describe("harvest change", () => {
         expect(level.diagnostics).toEqual([]);
         expect(level.finalState!.tiers.get(TypeId("ColdTiers"))).toEqual(new Set(["ColdTiersMid"]));
         // At item level 32 two fire tiers roll and one cold: which cold row the
-        // fire's second tier becomes is not known, so any that rolls.
+        // fire's second tier becomes is not known, so any that rolls, or the
+        // cold's second tier, the same tier though above the item's level.
         const between = change(32);
         expect(between.diagnostics).toEqual([]);
         expect(between.finalState!.tiers.get(TypeId("ColdTiers"))).toEqual(
-            new Set(["ColdTiersLow"]),
+            new Set(["ColdTiersLow", "ColdTiersMid"]),
         );
     });
 
