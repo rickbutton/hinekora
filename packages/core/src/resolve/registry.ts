@@ -1,5 +1,5 @@
 /**
- * Name resolution (surface doc §2): raw strings from the parser → internal
+ * Name resolution (language.md §2): raw strings from the parser → internal
  * entities, in tiers, (1) exact id, (2) curated alias, (3) fuzzy text match.
  * Mods also resolve fuzzily to a ModTYPE (`resolveModType`, see `fuzzy.ts`),
  * since a human writes a stat description, not a tier id.

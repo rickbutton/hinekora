@@ -1,5 +1,5 @@
 /**
- * Checker diagnostics. Precondition messages follow the surface doc's §6
+ * Checker diagnostics. Precondition messages follow language.md's §6
  * stance: render the item's state at that point, then what the op needed,
  * no lecturing.
  */

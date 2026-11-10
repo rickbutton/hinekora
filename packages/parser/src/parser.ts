@@ -1,6 +1,6 @@
 /**
  * A hand-written recursive-descent parser; each grammar production is one
- * method, mirroring the surface doc's grammar. All vocabulary lives here (the
+ * method, mirroring language.md's grammar. All vocabulary lives here (the
  * lexer emits only idents). Errors are thrown as `CraftSyntaxError` and turned
  * into a `ParseResult` at the `parse` boundary.
  */

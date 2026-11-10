@@ -13,8 +13,8 @@ interpretation) before real currency is spent.
 - `docs/ROADMAP.md`: forward-looking work (pending, deferred, future). Not history.
 - `docs/item-model.md`: the item and modifier model the code is audited against, each rule
   linked to its wiki section.
-- `docs/crafting-lang-surface-v0.md`: the surface language design (syntax, predicates,
-  errors).
+- `docs/language.md`: the guide author's language reference (syntax, the item block,
+  names, control, predicates, errors); each operation's own help is its hover text.
 - `docs/operations.md`: the operations model (primitive effects, the library of every
   crafting method and its status).
 - `docs/cost.md`: the cost layer (how a roll's chance and a guide's expected spend are
@@ -82,7 +82,7 @@ The user is not always present. Work runs autonomously and the repo carries the 
   entry before new work. Never leave work undone because a question is open unless no
   assumption is reversible.
 - **Docs change in the same commit as the behaviour.** `REFERENCE.md` names what exists,
-  `ARCHITECTURE.md` the shape, the surface doc the syntax, `item-model.md` the model,
+  `ARCHITECTURE.md` the shape, `language.md` the syntax, `item-model.md` the model,
   `ROADMAP.md` only what is not built. Nothing in the docs may describe code that does
   not exist; nothing user-visible may exist undocumented.
 - **Commits.** One logical change per commit; a refactor and a behaviour change are

@@ -6,14 +6,13 @@
  *     paths relative to a package's src resolve by suffix);
  *   - names a code symbol in backticks (camelCase / PascalCase, optionally dotted or
  *     called) that no source file defines or mentions outside a comment;
- *   - names, in the surface doc, a lowercase word in backticks that is not a word of
- *     the language (the parser's vocabulary, a method table word, a currency, a harvest
- *     tag);
- *   - omits a word of the language: every word of the parser's vocabulary and of the
- *     method table, every currency name and every harvest tag must be documented in
- *     the surface doc, the vocabulary and the method words must be coloured by the
- *     VSCode grammar, and every field of the checker's abstract state must be named in
- *     REFERENCE.md §4;
+ *   - names, in language.md, a lowercase word in backticks that is not a word of the
+ *     language (the parser's vocabulary, a method table word, a currency, a harvest tag);
+ *   - omits a word of the language: every word of the parser's vocabulary and every
+ *     harvest tag must be documented in language.md (a method or currency carries its
+ *     own help in the code, which its type requires), the vocabulary and the method
+ *     words must be coloured by the VSCode grammar, and every field of the checker's
+ *     abstract state must be named in REFERENCE.md §4;
  *   - lets operations.md §2's primitives table drift from the `Op` union: each first
  *     column names a kind of `Op`, and every kind has a row;
  *   - links a poewiki.net page or section that the local wiki cache does not hold
@@ -37,7 +36,7 @@ const DOCS = ["CLAUDE.md", ...readdirSync(join(root, "docs")).map((f) => `docs/$
     f.endsWith(".md"),
 );
 /** Docs whose backticked identifiers must exist in the code. The item model uses its own
- *  spec vocabulary on purpose and is exempt; the surface doc is held to the language's
+ *  spec vocabulary on purpose and is exempt; language.md is held to the language's
  *  vocabulary instead. */
 const SYMBOL_DOCS = new Set([
     "CLAUDE.md",
@@ -47,7 +46,7 @@ const SYMBOL_DOCS = new Set([
     "docs/operations.md",
     "docs/cost.md",
 ]);
-const SURFACE = "docs/crafting-lang-surface-v0.md";
+const LANGUAGE = "docs/language.md";
 const REFERENCE = "docs/REFERENCE.md";
 const GRAMMAR = "editors/vscode/syntaxes/hinekora.tmLanguage.json";
 const VOCABULARY_FILE = "packages/parser/src/vocabulary.ts";
@@ -170,7 +169,7 @@ for (const doc of DOCS) {
                 if (!pathExists(tok)) fail(doc, i + 1, `path does not exist: \`${tok}\``);
                 continue;
             }
-            if (doc === SURFACE) {
+            if (doc === LANGUAGE) {
                 if (/^[a-z][a-zA-Z]*$/.test(tok) && !languageWords.has(tok))
                     fail(doc, i + 1, `\`${tok}\` is not a word of the language`);
                 continue;
@@ -193,17 +192,14 @@ for (const doc of DOCS) {
 
 // --- 2. the language is fully documented and highlighted ---------------------------
 
-const surface = read(SURFACE);
-/** Is `word` written inside backticks (inline code or a fence) somewhere in the surface doc? */
-const documented = (word) => new RegExp(`\`[^\`]*(?<![\w])${word}(?![\w])[^\`]*\``).test(surface);
-for (const w of [...vocabulary, ...methodWords]) {
-    if (!documented(w)) fail(SURFACE, 1, `the word \`${w}\` is not documented`);
-}
-for (const c of currencies) {
-    if (!documented(c)) fail(SURFACE, 1, `the currency \`${c}\` is not documented`);
+const language = read(LANGUAGE);
+/** Is `word` written inside backticks (inline code or a fence) somewhere in language.md? */
+const documented = (word) => new RegExp(`\`[^\`]*(?<![\w])${word}(?![\w])[^\`]*\``).test(language);
+for (const w of vocabulary) {
+    if (!documented(w)) fail(LANGUAGE, 1, `the word \`${w}\` is not documented`);
 }
 for (const t of harvestTags) {
-    if (!documented(t)) fail(SURFACE, 1, `the harvest tag \`${t}\` is not documented`);
+    if (!documented(t)) fail(LANGUAGE, 1, `the harvest tag \`${t}\` is not documented`);
 }
 const grammar = read(GRAMMAR);
 for (const w of [...vocabulary, ...methodWords]) {
