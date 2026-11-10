@@ -18,6 +18,7 @@
  *   - links a poewiki.net page or section that the local wiki cache does not hold
  *     (skipped with a notice when the cache is absent, e.g. in CI);
  *   - outgrows its word budget, or is a file under docs/ that has no budget;
+ *   - cites a question that QUESTIONS.md no longer holds (so does a source file);
  *   - keeps a question in QUESTIONS.md that is neither open nor answered, one longer
  *     than an entry's budget, or two under one number.
  *
@@ -349,6 +350,24 @@ questionLines.forEach((text, i) => {
     if (words > QUESTION_BUDGET)
         fail(QUESTIONS, i + 1, `${m[1]} is ${words} words, over ${QUESTION_BUDGET}`);
 });
+// A question cited anywhere must still be in the ledger: a deleted one leaves the
+// citation pointing at nothing, so the citing text should state the rule instead.
+const citing = [
+    ...DOCS.map((d) => join(root, d)),
+    ...sourceFiles.filter((p) => /\.(ts|mjs|craft)$/.test(p)),
+];
+for (const p of citing) {
+    const rel = relative(root, p).replaceAll("\\", "/");
+    readFileSync(p, "utf8")
+        .split(/\r?\n/)
+        .forEach((text, i) => {
+            if (rel === QUESTIONS && /^### Q\d+|continue from Q\d+/.test(text)) return;
+            for (const m of text.matchAll(/\bQ(\d{1,3})\b/g)) {
+                if (!questionAt.has(`Q${m[1]}`))
+                    fail(rel, i + 1, `cites Q${m[1]}, which QUESTIONS.md no longer holds`);
+            }
+        });
+}
 
 // --- report --------------------------------------------------------------------
 
