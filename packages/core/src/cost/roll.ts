@@ -11,6 +11,7 @@ import type { Gen, GroupId, TagId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import { lookupWeight, pool } from "../pool/pool.js";
 import { veiledPool } from "../pool/veiled.js";
+import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
 import { HARVEST_TAGS, type Registry } from "../resolve/registry.js";
 import { rollableGen, rollableTiers } from "../resolve/tiers.js";
 import {
@@ -634,7 +635,18 @@ function unveilRoll(
     registry: Registry,
     reading: Reading,
 ): Roll {
-    const rows = poolRows(before, spec, registry, before, reading);
+    // The veiled modifier becomes one of its own side (QUESTIONS.md Q77), where
+    // the item says which side that is.
+    const held = guaranteedTypes(before);
+    const side =
+        held.has(VEILED_PREFIX) === held.has(VEILED_SUFFIX)
+            ? undefined
+            : held.has(VEILED_PREFIX)
+              ? "prefix"
+              : "suffix";
+    const rows = poolRows(before, spec, registry, before, reading).filter(
+        (r) => side === undefined || r.mod.gen === side,
+    );
     const options = groupRows(rows, (m) => m.gen);
     return options.length === 0 ? NO_ROLL : { kind: "unveil", options };
 }

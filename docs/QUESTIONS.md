@@ -596,6 +596,22 @@ no spawn weight in the wiki's data.
 (`cost/track.ts` `veiledSides`).
 **Answer:**
 
+### Q77 · game probe · open
+
+**Asked:** 2026-11-10
+**Goal:** whether unveiling a veiled prefix offers only prefixes, and a veiled suffix only
+suffixes. [Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) says the unveil
+"presents three random mods"; the wiki lists the results by side but does not tie them to
+the placeholder's.
+**Procure:** Veiled Exalted Orbs and a Rare that will take a veiled prefix (suffixes full)
+and one that will take a veiled suffix.
+**Steps:** veil and unveil each several times.
+**Record:** the sides of the options offered.
+**Assumed meanwhile:** the veiled modifier's own side, as `model/veiled.ts` states, where
+the item says which side that is (`cost/roll.ts` `unveilRoll`). The checker still offers
+both sides, the looser reading.
+**Answer:**
+
 ---
 
 ## Resolved

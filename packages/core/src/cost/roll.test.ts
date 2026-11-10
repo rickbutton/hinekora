@@ -7,10 +7,11 @@ import {
     MAXLIFE_T3,
     PROTECT_PREFIXES_CARRIER,
     RING_BASE,
+    VEILED_CATALOG,
 } from "../__fixtures__/mods.js";
-import { craft, item, op } from "../__fixtures__/ast.js";
+import { craft, item, op, unveil } from "../__fixtures__/ast.js";
 import { check } from "../check/check.js";
-import { currencyOps, harvestLikelyOps } from "../check/library.js";
+import { currencyOps, harvestLikelyOps, unveilOps } from "../check/library.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { foulbornRows, rollOf } from "./roll.js";
 
@@ -152,5 +153,29 @@ describe("memory strands in the pool", () => {
         expect(rowsOf(rollOf(a, currencyOps("chaos"), registry, "ceilings"))).toEqual([
             "IncreasedLife1",
         ]);
+    });
+});
+
+describe("an unveil", () => {
+    it("offers the modifiers of the veiled modifier's own side", () => {
+        const veiled = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...CATALOG, ...VEILED_CATALOG],
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
+        const c = craft(
+            item({
+                base: "Iron Ring",
+                ilvl: 84,
+                rarity: "rare",
+                prefixes: ["IncreasedMana1"],
+                suffixes: ["VeiledSuffix", "FireResist1"],
+            }),
+            [unveil()],
+        );
+        const a = check(c, { registry: veiled }).trace[0]!.before;
+        const roll = rollOf(a, unveilOps(undefined), veiled);
+        if (roll.kind !== "unveil") throw new Error("not an unveil");
+        expect(roll.options.map((g) => g.gen)).toEqual(["suffix", "suffix"]);
     });
 });
