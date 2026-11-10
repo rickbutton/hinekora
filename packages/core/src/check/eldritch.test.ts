@@ -113,6 +113,19 @@ describe("the Eldritch orbs act on the dominant implicit's side", () => {
         expect(guaranteedTypes(s).has(LIFE_T1.type)).toBe(false);
         expect(s.counts.prefix).toEqual([0, 3]);
         expect(guaranteedTypes(s).size).toBe(1); // the cold suffix stayed
+        // The orb rolls no suffix, so the suffix count stands and the total
+        // is that one suffix plus the new prefixes.
+        expect(s.counts.suffix).toEqual([1, 1]);
+        expect(s.counts.total).toEqual([1, 4]);
+    });
+
+    it("chaos leaves the other side's open slots open", () => {
+        const start = boots({ exarch: "grand", prefixes: ["life", "random"], suffixes: ["cold"] });
+        const r = run(craft(start, [words("eldritch", "chaos"), words("eldritch", "exalt")]));
+        // Three prefixes may have rolled, so the Exarch's exalt is refused; the
+        // two open suffix slots are still open.
+        expect(r.diagnostics[0]?.message).toContain("Requires an open prefix slot");
+        expect(r.finalState!.counts.suffix).toEqual([1, 1]);
     });
 
     it("chaos ignores the item's own protection of the rerolled side", () => {

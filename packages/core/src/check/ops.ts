@@ -1552,10 +1552,17 @@ function fill(
                     suffix: [Math.max(0, total[0] - pCap), Math.min(sCap, total[1])],
                 };
             } else {
+                // A pool of one side cannot fill the other: the kept side holds
+                // exactly what the strip left it (an Eldritch Chaos Orb).
+                const rolls = (gen: Gen): boolean => drawn.gen === undefined || drawn.gen === gen;
+                const prefix: Range = rolls("prefix")
+                    ? [a.counts.prefix[0], pCap]
+                    : a.counts.prefix;
+                const suffix: Range = rolls("suffix") ? [a.counts.suffix[0], sCap] : suffixRange(a);
                 counts = {
-                    total: [a.counts.total[0], maxT],
-                    prefix: [a.counts.prefix[0], pCap],
-                    suffix: [a.counts.suffix[0], sCap],
+                    total: [a.counts.total[0], Math.min(maxT, prefix[1] + suffix[1])],
+                    prefix,
+                    suffix,
                 };
             }
             break;
