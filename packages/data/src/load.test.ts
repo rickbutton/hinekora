@@ -29,6 +29,29 @@ function base(name: string): Base {
     return r.value;
 }
 
+describe("the longest ladder a base rolls", () => {
+    it("is thirteen tiers, every influence on it: where the Foulborn cull's formula still agrees with the strands'", () => {
+        // `foulbornKept` (core, check/ops.ts) follows the Foulborn page's formula,
+        // which keeps one tier fewer than the memory strands' from fifteen up.
+        let longest = 0;
+        const seen = new Set<string>();
+        for (const b of data.bases) {
+            const key = `${b.domain}|${b.itemClass}|${[...b.tags].sort().join(",")}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            const tags = new Set<TagId>();
+            for (const i of INFLUENCES) for (const t of registry.influenceTags(b, i)) tags.add(t);
+            const types = new Set(
+                pool(data.mods, emptyItem(b, 100, "rare")).map((c) => c.mod.type),
+            );
+            for (const type of types) {
+                longest = Math.max(longest, rollableTiers(data.mods, b, 100, type, tags).length);
+            }
+        }
+        expect(longest).toBe(13);
+    });
+});
+
 describe("loadPoe1 — the full committed PoE1 catalog", () => {
     it("loads thousands of bases and mods, matching the manifest counts", () => {
         expect(data.bases.length).toBe(data.manifest.extent.bases);
