@@ -461,7 +461,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["harvest", "change"],
         args: [name("mod"), name("mod")],
-        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier into the same modifier of another element, at the same tier (any of its tiers at an item level where fewer or more of them roll than of the first). It takes a penetration as a damage modifier, and no critical strike multiplier, damage over time multiplier or resistance shared with chaos. The first must be on an item of any rarity, not fractured, on a side no metamod protects; the second must roll on the base and share no group with a present modifier.',
+        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier into the same modifier of another element, at the same tier (any of its tiers that roll, or the same tier above the item level, where fewer or more of them roll than of the first). It takes a penetration as a damage modifier, and no critical strike multiplier, damage over time multiplier or resistance shared with chaos. The first must be on an item of any rarity, not fractured, on a side no metamod protects; the second must roll on the base, unless the first is a modifier no currency rolls (an Incursion or a crafted one) with a counterpart of its own kind, and share no group with a present modifier.',
         build: ([from, to], a, registry) => harvestChange(text(from), text(to), a, registry),
     },
     {

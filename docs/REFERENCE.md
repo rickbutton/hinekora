@@ -91,7 +91,7 @@ to the whole craft.
 - **Loop widening over-approximates PRESENCE only** (the held imprint's included).
   Counts, `possible` and tiers converge on their own, so they are left exact;
   interval-widening the counts as well corrupts the after-state total. Widen presence,
-  leave the rest.
+  leave the rest (the one exception is [ARCHITECTURE §4.4](ARCHITECTURE.md), Termination).
 - **Rarities are a set.** Paths that meet at different rarities keep both; an operation
   that needs one rarity is refused until an `if` on `isRare`, `isMagic` or `isNormal`
   narrows the set, and the counts' caps are the loosest over it.
