@@ -65,7 +65,6 @@ const ICONS = {
     fossil: "Potent Chaotic Resonator",
     beast: "Bestiary Orb",
     restore: "Imprinted Bestiary Orb",
-    aisling: "Veiled Exalted Orb",
 };
 
 const UA = "hinekora-playground/0.1 (crafting-guide checker; github.com/rickbutton/hinekora)";
