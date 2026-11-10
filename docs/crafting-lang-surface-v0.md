@@ -67,7 +67,7 @@ item {
   item; a bare name is accepted only where a single tier of the modifier rolls, and is an
   error otherwise. `"random"` (or `"?"`) is an anonymous affix: counted,
   not named, and any natural modifier of its side the item could roll (never a bench craft
-  or another unrollable row, `QUESTIONS.md` Q49), so a `has` may be it and a bench craft of
+  or another unrollable row), so a `has` may be it and a bench craft of
   its group may clash with it. A count over the base's limit for the rarity is an error; a named mod listed
   under the wrong side is an error.
 - `fractured "<mod>" t<n>` (or `fractured "random"`, when the locked modifier is not
@@ -78,7 +78,7 @@ item {
   modifier, named as the `bench` operation names it (§3) with the bench's tier when it
   has several; `bench "random"` is an unnamed one, some bench modifier of its side. Either
   counts toward the crafted-modifier limit, so a bought item's craft is declared rather
-  than mistaken for a natural modifier (`QUESTIONS.md` Q49). The two marks combine
+  than mistaken for a natural modifier. The two marks combine
   (`fractured bench "maximum life"`).
 - `influences: hunter` (or two of them, `influences: shaper elder`) marks an
   [influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics); the six are
@@ -97,7 +97,7 @@ item {
   winning and a tie ambiguous as in §2; an implicit's "presence" variant ("While a
   Unique Enemy is in your Presence, …") is a wording of its own, named by the words of
   its condition. An influenced item cannot carry one, so declaring both is an error, nor
-  an item below item level 75 (`QUESTIONS.md` Q38).
+  an item below item level 75 (the level the data gives every eldritch implicit row).
 - `enchant: <passives> "<stat>"` is a [cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel)'s
   two enchantments: how many passive skills it adds (2 to 3 on a Small, 4 to 6 on a Medium,
   8 to 12 on a Large) and the stat its small passives grant, which decides the notables it

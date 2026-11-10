@@ -57,7 +57,7 @@ analysis is testable with no editor and no disk.
 ## 2. Layer 1: surface syntax (text → AST)
 
 A hand-written lexer turns text into trivia-free tokens carrying byte-offset spans; a
-recursive-descent parser turns tokens into a `Craft` AST. Two decisions shape everything
+recursive-descent parser turns tokens into a `Craft` AST. Three decisions shape everything
 downstream:
 
 - **No keyword token kind.** Every word lexes as an `ident`; the parser decides meaning by
@@ -144,36 +144,17 @@ do; a _disjunction_ means every item has at least one of a group.
 `AItem` is not one blob. It is a **reduced product** of small, independent domains, each
 tracking one kind of fact. `check/domain.ts` declares the shared contract `Domain<T>`: the
 two operations the merge/fixpoint machinery needs from _every_ piece, `join` (least upper
-bound, to merge branches) and `equal` (to detect a fixpoint). The pieces:
-
-- **Counts** (`CountDomain`, `check/counts.ts`): how many prefixes / suffixes / affixes,
-  as three integer ranges kept consistent under `prefix + suffix = total` by its
-  `normalize` (two independent side-ranges would lose the correlation; a derived suffix
-  would lose any bound on the suffix side alone). Owns the affix caps.
-- **Presence**: which mod _types_ are on the item. This is the one **relational** domain:
-  a BDD (a compact canonical boolean function) over "type X is present" variables. Its
-  payoff is that a _disjunction_ ("at least one of these three resistances") survives a
-  branch merge, because merging presence is boolean OR. Guaranteed / excluded / "≥k of n"
-  are all _views_ of this single function.
-- **Tiers** (`TierDomain`): which specific tier a present type could be. A per-type overlay;
-  non-relational.
-- **Possible** (`SetDomain`): the pool whitelist: types that _could_ still roll.
-- **Values** (`ValueDomain`): for a present type, the span its value is known to lie in
-  when a predicate has narrowed it below its rows' spans; dropped by whatever rolls the
-  modifier again, the Divine Orb included.
-- **Crafted**: how many bench-crafted mods are present (a range).
-- **Rarities** (`SetDomain`): which rarities the item may have; the caps of the counts
-  follow the loosest of them, and a rarity whose caps cannot hold the fewest modifiers the
-  counts allow is dropped (a known modifier rules out Normal).
-- **Imprint**: the item an imprint would restore, a nested abstract item; present only when
-  every path holds one.
-- **Marks** (`SetDomain`): the influence sets the item may have, whether it may be
-  corrupted, and the pairs of eldritch implicit tiers it may have (a pair, because which
-  implicit is dominant is a relation between the two tiers that two independent sets
-  would lose). Each is a set of the concrete values the paths reaching this point allow,
-  so a join is a union and a branch on `influenced` or `corrupted` picks the paths back
-  out. Influence reaches the pool as tags, the same way a present modifier's added tags
-  do.
+bound, to merge branches) and `equal` (to detect a fixpoint). Each field and the domain
+it is lives in the `AItem` table of [REFERENCE §4](REFERENCE.md). Most pieces are
+non-relational: a range per count, a set of the concrete values the paths reaching a
+point allow (so a join is a union), a per-type overlay. The one **relational** piece is
+presence: a BDD (a compact canonical boolean function) over "type X is present"
+variables, whose payoff is that a _disjunction_ ("at least one of these three
+resistances") survives a branch merge, because merging presence is boolean OR.
+Guaranteed / excluded / "≥k of n" are all _views_ of this single function. Where two
+facts must be kept together, a domain carries them as one value (the affix counts as
+three ranges normalized under `prefix + suffix = total`, an eldritch implicit pair as a
+pair) rather than as two independent ones that a join would decorrelate.
 
 Why "reduced product": the domains are independent, but a few facts couple them, e.g.
 crafted mods are a subset of all affixes, so `crafted ≤ total`. Such a cross-domain fact is
@@ -192,8 +173,8 @@ async dependency, and you would still need the loop fixpoint yourself.)
 Each primitive operation is a function `AItem → AItem`, and a crafting method is an
 ordered sequence of them ([operations.md](operations.md)): `require` a check, `strip`
 to what is kept, `fill` from a pool, `remove` one, set the `rarity`, `lock` one. A
-Chaos Orb is `require(rare); strip; fill(natural, reforge 4–6)`; a bench craft is three
-checks and a one-row fill; the Fracturing Orb's `lock` only asserts a fracture fact in
+Chaos Orb is `require(rare); strip; fill(natural, reforge 4–6)`; a bench craft is a run
+of checks, the removal of the crafted modifier it replaces, and a one-row fill; the Fracturing Orb's `lock` only asserts a fracture fact in
 the presence BDD. A method is all or nothing: a failed check anywhere leaves the item as
 it was in the game, and the checker, having reported it, continues from the state the
 method would have left (`operations.md` §2); the metamods in force are read once, when the

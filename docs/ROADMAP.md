@@ -8,19 +8,9 @@
 
 ## The goal
 
-Cover the whole PoE1 crafting surface: every method in `operations.md` §3 that is not
-marked **out** becomes a library entry the checker interprets, with the preconditions
-and the metamod rules the wiki states, and the surface language names it. Coverage is
-measured against that ledger.
-
-## Step 1. The item model agrees with the code
-
-The audit of the code against `item-model.md` is applied: its decisions are resolved in
-`QUESTIONS.md`, its bugs fixed, the §8 rules the checker can express are enforced by its
-item block and transfer functions and the §9 facts are data tests. What remains is a
-re-audit of the code against
-`item-model.md` §§4–9, rule by rule, now that the operations model has settled the shape
-of the operations; no divergence is expected.
+Cover the whole PoE1 crafting surface. Every method in `operations.md` §3 not marked
+**out** is a library entry the checker interprets; what is left is the work below, which
+waits until a guide calls for it.
 
 ## Deferred by design (don't build until called for)
 

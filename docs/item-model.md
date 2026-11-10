@@ -2,8 +2,7 @@
 
 > Purpose: the item and modifier vocabulary hinekora models, for Path of Exile 1. What an
 > item is made of, what a modifier is, and which combinations of modifiers may sit on an
-> item. This is what the code is audited against; the open decisions are `QUESTIONS.md` Q1–Q4
-> and the remaining work is `ROADMAP.md` Step 1.
+> item. This is what the code is audited against.
 >
 > Game rules are not restated here. Each rule links the section of the Path of Exile wiki
 > (poewiki.net) that defines it and the text says only how hinekora models it; where
@@ -31,13 +30,13 @@ The game keys its data by several families of identifier. They are distinct type
 code (`model/ids.ts`) because confusing one for another is a category error. Spelling is
 read only where this doc says so.
 
-| Type        | What it names                                                                                                                                                                                                                                                                                                                          | Wiki                                                               |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `ModType`   | The tier bucket of a row of the `Mods` table. Rows of one ModType never share an item and share exclusion groups, but a ModType is **not** one ladder: 130 ModTypes have both prefix and suffix rows, rolling on different base classes. The ladder a player sees is the ModType's rows that roll on one base, which the pool defines. | [Mod Level](https://www.poewiki.net/wiki/Modifier#Mod_Level)       |
-| `ModFamily` | A mutual-exclusion group.                                                                                                                                                                                                                                                                                                              | [Group/family](https://www.poewiki.net/wiki/Modifier#Group/family) |
-| `Tag`       | One type, three roles: a base's tags, the tags a modifier adds to its item, a modifier's own category tags.                                                                                                                                                                                                                            | [Tags](https://www.poewiki.net/wiki/Modifier#Tags)                 |
-| `ItemClass` | Spelling read in two places: the four-affix classes and the never-Rare classes (§4).                                                                                                                                                                                                                                                   | [Item class](https://www.poewiki.net/wiki/Item_class)              |
-| `ModDomain` | The partition a row or base belongs to (§3).                                                                                                                                                                                                                                                                                           | [Domain](https://www.poewiki.net/wiki/Modifier#Domain)             |
+| Type        | What it names                                                                                                                                                                                                                                                                                                                           | Wiki                                                               |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `ModType`   | The tier bucket of a row of the `Mods` table. Rows of one ModType never share an item and share exclusion groups, but a ModType is **not** one ladder: many ModTypes have both prefix and suffix rows, rolling on different base classes. The ladder a player sees is the ModType's rows that roll on one base, which the pool defines. | [Mod Level](https://www.poewiki.net/wiki/Modifier#Mod_Level)       |
+| `ModFamily` | A mutual-exclusion group.                                                                                                                                                                                                                                                                                                               | [Group/family](https://www.poewiki.net/wiki/Modifier#Group/family) |
+| `Tag`       | One type, three roles: a base's tags, the tags a modifier adds to its item, a modifier's own category tags.                                                                                                                                                                                                                             | [Tags](https://www.poewiki.net/wiki/Modifier#Tags)                 |
+| `ItemClass` | Spelling read in two places: the four-affix classes and the never-Rare classes (§4).                                                                                                                                                                                                                                                    | [Item class](https://www.poewiki.net/wiki/Item_class)              |
+| `ModDomain` | The partition a row or base belongs to (§3).                                                                                                                                                                                                                                                                                            | [Domain](https://www.poewiki.net/wiki/Modifier#Domain)             |
 
 A spawn weight is a number the data ships for every row. `can_roll` is `weight > 0`: zero
 discards the modifier.
@@ -70,7 +69,7 @@ intrinsic, corrupted, enchantment and the rest are the implicit layer
 | `other`            |        | partitions the ingest keeps but no craftable base has |
 
 **ModSource**: which mechanic places a modifier: `natural | essence | bench | veiled |
-fossil | other`. Only `natural` modifiers roll from ordinary currency
+fossil | elevated | other`. Only `natural` modifiers roll from ordinary currency
 ([Reforging modifiers](https://www.poewiki.net/wiki/Crafting#Reforging_modifiers)); the rest
 arrive through their own mechanic and are exempt from the natural-roll rules in §8. `other`
 is a row nothing places: no partition of its own and no weight anywhere. The source is a
@@ -125,7 +124,7 @@ One tier of one modifier: one row of the `Mods` table
 | `generation`          | prefix or suffix                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `domain`              | its partition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `min_level`           | the item level the row needs ([Mod Level](https://www.poewiki.net/wiki/Modifier#Mod_Level))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `adds_tags`           | tags the item gains while this row is on it, the data's `adds_tags` (the wiki does not describe them). The data relies on them: a weapon-specific jewel modifier adds `specific_weapon`, which zeroes every other such modifier's weight. An added tag can also enable a row: the staff jewel modifiers carry a positive weight on `staff` ahead of the zero on `not_int`, so one staff modifier on a Strength jewel lets the others roll, and one Chaos Orb can roll both (confirmed in game; `QUESTIONS.md` Q13); the checker admits such rows for a possibly present adder                                                                                                                                                |
+| `adds_tags`           | tags the item gains while this row is on it, the data's `adds_tags` (the wiki does not describe them). The data relies on them: a weapon-specific jewel modifier adds `specific_weapon`, which zeroes every other such modifier's weight. An added tag can also enable a row: the staff jewel modifiers carry a positive weight on `staff` ahead of the zero on `not_int`, so one staff modifier on a Strength jewel lets the others roll, and one Chaos Orb can roll both (confirmed in game); the checker admits such rows for a possibly present adder                                                                                                                                                                    |
 | `category_tags`       | the row's own categories (attack, caster, life...), which fossils, harvest and the cannot-roll metamods select on ([Mod tag](https://www.poewiki.net/wiki/Modifier#Mod_tag)); `implicitTags` in the code                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `spawn`               | the spawn table in table order: the first entry whose tag the item carries decides, so an early zero disables the row for that tag ([spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `generation`          | the generation table, read as the spawn table is, the matching entry scaling the weight in percent, so a zero disables the row for an item carrying that tag unless an earlier entry matched (the data's `generation_weights`; the wiki does not describe them, `QUESTIONS.md` Q56). The data relies on them for the notable cap of a [cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel#Mechanics): every notable adds `has_affliction_notable` and its table reads the Large and Medium size tags at full weight before a zero on that tag, so a Small Cluster Jewel takes one notable, a prefix, while a Medium's two and a Large's two prefixes are the side's cap and the Large suffix notables share one group |
@@ -237,13 +236,14 @@ not what can coexist.
 
 ## 9. Catalog-level facts
 
-Checked against the ingested PoE1 data (12,643 affix rows, 4,561 bases):
+True of the ingested PoE1 data, and pinned by the catalog-level tests of
+`packages/data/src/load.test.ts`:
 
-- **A ladder shares its families.** Every row of a ModType claims the same groups (true of
-  all 4,374 ModTypes), so a modifier named without a tier resolves to its groups from any row.
-- **A ModType is not one side.** 130 ModTypes have both prefix and suffix rows; a row's side
+- **A ladder shares its families.** Every row of a ModType claims the same groups, so a
+  modifier named without a tier resolves to its groups from any row.
+- **A ModType is not one side.** Many ModTypes have both prefix and suffix rows; a row's side
   is only defined relative to the base it rolls on.
-- **Essence-only rows carry zero weight everywhere** (457 rows).
+- **Essence-only rows carry zero weight everywhere.**
 - **The five metamods are the only effect carriers**, all in domain `crafted`.
 
 ---
@@ -256,4 +256,4 @@ state with no uncertainty beyond its `"random"` affixes, and the marks of §7 li
 the currencies that set them).
 The pool reads a projection of it, the facts of §7 a roll depends on: base, level, rarity,
 counts, present types and families, tags, active effects (`ItemFacts` in
-`packages/core/src/model/item.ts`). There is no concrete item type (`QUESTIONS.md` Q3).
+`packages/core/src/model/item.ts`). There is no concrete item type.
