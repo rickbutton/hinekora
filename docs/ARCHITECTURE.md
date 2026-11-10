@@ -179,9 +179,9 @@ leaves the rest of the craft judged on the good paths only).
   they need nothing new in the domain or driver; state threading, nested loops, and
   `restart` back-edges compose for free across a call.
 
-Two suppression modes are worth naming because they recur: `quietly` (a probe or fixpoint
-pass, no diagnostics, no trace) and `untraced` (an inlined proc body: trace off, but its
-precondition failures still matter). They are scoped helpers, not raw counters.
+A probe or fixpoint pass runs `quietly` (no diagnostics, no trace). An inlined proc body
+records into its own trace (`TraceEntry.inlined`, each entry naming its statement), so the
+top-level trace holds the call as one step while the cost layer can walk the body in place.
 
 ---
 

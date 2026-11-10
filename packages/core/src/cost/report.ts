@@ -369,6 +369,8 @@ function withoutStates(branches: readonly Branch[]): Branch[] {
 class Walker {
     readonly steps: StepCost[] = [];
     private readonly byStart = new Map<string, TraceEntry>();
+    /** The traces of the calls being walked, innermost last. */
+    private readonly calls: Map<Stmt, TraceEntry>[] = [];
     /** The item a statement is judged on where the trace's is not it: the
      *  first step of a loop body reads the item the loop finds, not the join
      *  over every round, so the attempts are taken alike. */
@@ -471,24 +473,23 @@ class Walker {
 
     /** The checker's entry for a statement: inside a loop, the join over its rounds. */
     private traced(s: Stmt): TraceEntry | undefined {
+        for (let i = this.calls.length - 1; i >= 0; i--) {
+            const e = this.calls[i]!.get(s);
+            if (e !== undefined) return e;
+        }
         return this.byStart.get(`${s.kind}@${s.span.start.offset}`);
     }
 
-    /** `f` with a call's body read against the call's own trace. */
+    /** `f` with a call's body read against the call's own trace, statement by
+     *  statement, since one written statement may run there more than once. */
     private within<T>(call: TraceEntry, f: () => T): T {
-        const saved = new Map<string, TraceEntry | undefined>();
-        for (const e of call.inlined?.trace ?? []) {
-            const key = `${e.kind}@${e.span.start.offset}`;
-            if (!saved.has(key)) saved.set(key, this.byStart.get(key));
-            this.byStart.set(key, e);
-        }
+        const scope = new Map<Stmt, TraceEntry>();
+        for (const e of call.inlined?.trace ?? []) if (e.stmt !== undefined) scope.set(e.stmt, e);
+        this.calls.push(scope);
         try {
             return f();
         } finally {
-            for (const [key, e] of saved) {
-                if (e === undefined) this.byStart.delete(key);
-                else this.byStart.set(key, e);
-            }
+            this.calls.pop();
         }
     }
 

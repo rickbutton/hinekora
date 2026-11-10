@@ -6,6 +6,7 @@ import { emptyItem } from "../model/item.js";
 import {
     andp,
     beast,
+    blockArg,
     bench,
     benchRemove,
     callStmt,
@@ -22,6 +23,7 @@ import {
     notp,
     op,
     orp,
+    paramStep,
     procDef,
     restart,
     stop,
@@ -324,6 +326,61 @@ describe("the cost of a guide", () => {
         expect(called.steps.every((s) => s.note === undefined)).toBe(true);
         expect(called.total).toEqual(inline.total);
         expect(branch(called).branch).toBeCloseTo(branch(inline).branch!, 12);
+    });
+
+    it("a step parameter used twice runs as two steps, each on its own item", () => {
+        const twice = procDef("twice", ["s"], [paramStep("s"), paramStep("s")]);
+        const guide = (steps: Parameters<typeof craft>[1], procs: ReturnType<typeof procDef>[]) =>
+            craft(
+                ring("rare", ["IncreasedMana1"], ["FireResist1"]),
+                [...steps, iff(has("IncreasedLife1"), [stop()])],
+                [],
+                procs,
+            );
+        const branch = (c: ReturnType<typeof craft>) =>
+            report(c).steps.find((s) => s.kind === "if")!.branch!;
+        const inline = branch(guide([op("exalt"), op("exalt")], []));
+        expect(branch(guide([callStmt("twice", [blockArg([op("exalt")])])], [twice]))).toBeCloseTo(
+            inline,
+            9,
+        );
+        // A call as the argument of a call: four exalts would not fit, so two
+        // calls of one exalt each, nested.
+        const once = procDef("once", ["s"], [paramStep("s")]);
+        const nested = guide(
+            [callStmt("twice", [blockArg([callStmt("once", [blockArg([op("exalt")])])])])],
+            [twice, once],
+        );
+        expect(branch(nested)).toBeCloseTo(inline, 9);
+        expect(
+            branch(guide([callStmt("one"), callStmt("one")], [procDef("one", [], [op("exalt")])])),
+        ).toBeCloseTo(inline, 9);
+    });
+
+    it("a step parameter used twice inside a solved loop is two steps of each round", () => {
+        const guide = (steps: Parameters<typeof craft>[1], procs: ReturnType<typeof procDef>[]) =>
+            craft(
+                ring("rare", ["IncreasedMana1"], ["FireResist1"]),
+                [
+                    until(has("IncreasedLife1"), [
+                        op("scour"),
+                        op("transmute"),
+                        op("regal"),
+                        ...steps,
+                    ]),
+                ],
+                [],
+                procs,
+            );
+        const called = report(
+            guide(
+                [callStmt("twice", [blockArg([op("exalt")])])],
+                [procDef("twice", ["s"], [paramStep("s"), paramStep("s")])],
+            ),
+        ).steps[0]!;
+        const inline = report(guide([op("exalt"), op("exalt")], [])).steps[0]!;
+        expect(called.note).toBeUndefined();
+        expect(called.attempts!.expected).toBeCloseTo(inline.attempts!.expected, 6);
     });
 
     it("a call inside a loop is followed round by round", () => {

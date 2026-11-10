@@ -79,6 +79,9 @@ export interface TraceEntry {
     readonly before: AItem;
     /** State after it completes; absent if that path diverges (via restart). */
     readonly after?: AItem;
+    /** The statement, inside a call's body, where one written statement may
+     *  run as several (a step parameter used twice). */
+    readonly stmt?: Stmt;
     /** A call's body with its arguments bound, and its own trace. */
     readonly inlined?: { readonly body: readonly Stmt[]; readonly trace: readonly TraceEntry[] };
 }
@@ -576,6 +579,7 @@ class Checker {
                 this.sink.push({
                     span: stmt.span,
                     kind: stmt.kind,
+                    ...(this.sink !== this.trace && { stmt }),
                     before,
                     ...(flow.kind === "fall" && { after: flow.state }),
                     ...(inlined !== undefined && { inlined }),
@@ -912,8 +916,8 @@ class Checker {
     }
 
     /** Inlining lets a `restart` inside the body re-enter the caller's enclosing
-     *  loop, so the body composes exactly as if written in place. Only the call
-     *  site is traced, not the inlined body. */
+     *  loop, so the body composes exactly as if written in place. The call site
+     *  is traced as one step; the body's own trace hangs off it. */
     private checkCall(a: AItem, stmt: Extract<Stmt, { kind: "call" }>): Flow {
         const entry = this.procs.get(stmt.name);
         if (!entry) {
@@ -1509,7 +1513,9 @@ function substituteStmts(stmts: readonly Stmt[], env: Map<string, Arg>): Stmt[] 
     return stmts.flatMap((s) => {
         if (s.kind !== "paramStep") return [substituteStmt(s, env)];
         const bound = env.get(s.param);
-        return bound?.kind === "block" ? [...bound.body] : [s];
+        // Each use is a statement of its own, so a consumer telling statements
+        // apart by identity sees two uses as two.
+        return bound?.kind === "block" ? bound.body.map(copyStmt) : [s];
     });
 }
 
@@ -1522,12 +1528,27 @@ function subOperationArg(arg: OperationArg, env: Map<string, Arg>): OperationArg
     return bound === undefined || bound.kind === "block" ? arg : bound;
 }
 
+function copyStmt(stmt: Stmt): Stmt {
+    switch (stmt.kind) {
+        case "until":
+            return { ...stmt, body: stmt.body.map(copyStmt) };
+        case "if":
+            return {
+                ...stmt,
+                body: stmt.body.map(copyStmt),
+                ...(stmt.elseBody !== undefined && { elseBody: stmt.elseBody.map(copyStmt) }),
+            };
+        default:
+            return { ...stmt };
+    }
+}
+
 function substituteStmt(stmt: Stmt, env: Map<string, Arg>): Stmt {
     switch (stmt.kind) {
         case "restart":
         case "stop":
         case "paramStep":
-            return stmt;
+            return { ...stmt };
         case "operation":
             return { ...stmt, args: stmt.args.map((arg) => subOperationArg(arg, env)) };
         case "until":
