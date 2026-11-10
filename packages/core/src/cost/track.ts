@@ -37,7 +37,15 @@ import { rollableGen, rollableTiers } from "../resolve/tiers.js";
 import type { ChainAtom, ChainState, Outcome } from "./chain.js";
 import { pieces } from "./chance.js";
 import { amongFirstDistribution } from "./race.js";
-import { type Group, naturalGroups, type Reading, type Roll, rollOf } from "./roll.js";
+import {
+    type Group,
+    holdsNamed,
+    memberCases,
+    naturalGroups,
+    type Reading,
+    type Roll,
+    rollOf,
+} from "./roll.js";
 
 /** The states a chain-solved loop's exit leaves the item in, over the
  *  modifiers that loop named; the weights sum to one. */
@@ -600,14 +608,14 @@ export class Tracker {
             .map((t) => this.index.get(t))
             .find((i) => i !== undefined && state.rows[i] !== null);
         if (veiled === undefined) return undefined;
+        const wanted = (t: TypeId): boolean =>
+            t === target || (this.index.has(t) && this.asked.includes(t));
         const special: number[] = [];
         options.forEach((g, gi) => {
-            if (g.type === target || (this.index.has(g.type) && this.asked.includes(g.type)))
-                special.push(gi);
+            if (holdsNamed(g, wanted)) special.push(gi);
         });
         if (special.length > 12) return undefined;
-        const rank = (gi: number): number =>
-            options[gi]!.type === target ? -1 : this.asked.indexOf(options[gi]!.type);
+        const rank = (t: TypeId): number => (t === target ? -1 : this.asked.indexOf(t));
         const dist = amongFirstDistribution(
             options.map((g) => g.weight),
             special,
@@ -615,31 +623,32 @@ export class Tracker {
         );
         const out: Outcome[] = [];
         for (let mask = 0; mask < dist.length; mask++) {
-            const prob = dist[mask]!;
-            if (prob === 0) continue;
-            const rows = [...state.rows];
-            rows[veiled] = null;
-            const offered = special.filter((_gi, b) => mask & (1 << b));
-            if (offered.length === 0) {
-                out.push({ state: { ...state, rows }, prob });
-                continue;
-            }
-            const taken = options[offered.reduce((a, b) => (rank(b) < rank(a) ? b : a))]!;
-            const i = this.index.get(taken.type);
-            if (i === undefined) {
-                // A target no condition names: a modifier the state does not hold.
-                out.push({ state: { ...state, rows }, prob });
-                continue;
-            }
-            const total = taken.rows.reduce((sum, r) => sum + r.weight, 0);
-            for (const r of taken.rows) {
-                for (const c of this.classesOf(i, r.mod.id)) {
-                    const placed = [...rows];
-                    placed[i] = c.id;
-                    out.push({
-                        state: { ...state, rows: placed },
-                        prob: (prob * r.weight * c.share) / total,
-                    });
+            if (dist[mask] === 0) continue;
+            const drawn = special.filter((_gi, b) => mask & (1 << b)).map((gi) => options[gi]!);
+            for (const offer of memberCases(drawn, wanted)) {
+                const prob = dist[mask]! * offer.prob;
+                const rows = [...state.rows];
+                rows[veiled] = null;
+                if (offer.members.length === 0) {
+                    out.push({ state: { ...state, rows }, prob });
+                    continue;
+                }
+                const taken = offer.members.reduce((a, b) => (rank(b.type) < rank(a.type) ? b : a));
+                const i = this.index.get(taken.type);
+                if (i === undefined) {
+                    // A target no condition names: a modifier the state does not hold.
+                    out.push({ state: { ...state, rows }, prob });
+                    continue;
+                }
+                for (const r of taken.rows) {
+                    for (const c of this.classesOf(i, r.mod.id)) {
+                        const placed = [...rows];
+                        placed[i] = c.id;
+                        out.push({
+                            state: { ...state, rows: placed },
+                            prob: (prob * r.weight * c.share) / taken.weight,
+                        });
+                    }
                 }
             }
         }
@@ -841,9 +850,9 @@ export class Tracker {
 
     /**
      * A draw onto an item that holds modifiers no condition names: which ones
-     * they are is not tracked, so each group no condition names keeps its
-     * weight by its chance of not being among that many draws by weight from
-     * those groups. The named groups keep theirs.
+     * they are is not tracked, so each group keeps its weight by the chance
+     * that none of its types no condition names is among that many draws by
+     * weight from those types. A group of named types only keeps its whole.
      */
     private readonly openShares = new Map<string, number[]>();
 
@@ -852,12 +861,16 @@ export class Tracker {
             const side = (gen: Gen, groups: typeof v.prefix): typeof v.prefix => {
                 const unnamed = v.before[gen] ?? 0;
                 if (unnamed <= 0) return groups;
-                const others = groups.filter((g) => !this.index.has(g.type));
+                // The part of each group an unnamed modifier may be.
+                const part = groups.map((g) =>
+                    g.members.reduce((s, m) => s + (this.index.has(m.type) ? 0 : m.weight), 0),
+                );
+                const others = groups.filter((_g, i) => part[i]! > 0);
                 if (others.length === 0) return groups;
-                if (unnamed >= others.length) return groups.filter((g) => this.index.has(g.type));
+                if (unnamed >= others.length) return groups.filter((_g, i) => !(part[i]! > 0));
                 // Each unnamed modifier came from a draw by weight, so a group is
                 // closed by its chance of being among that many draws.
-                const weights = others.map((g) => g.weight);
+                const weights = part.filter((w) => w > 0);
                 const key = `${unnamed}:${weights.join(",")}`;
                 let open = this.openShares.get(key);
                 if (open === undefined) {
@@ -869,7 +882,13 @@ export class Tracker {
                 const share = new Map(others.map((g, i) => [g, open[i]!]));
                 return groups.map((g) => {
                     const s = share.get(g);
-                    return s === undefined ? g : { ...g, weight: g.weight * s };
+                    return s === undefined
+                        ? g
+                        : {
+                              ...g,
+                              weight: g.weight * s,
+                              members: g.members.map((m) => ({ ...m, weight: m.weight * s })),
+                          };
                 });
             };
             return { ...v, prefix: side("prefix", v.prefix), suffix: side("suffix", v.suffix) };
@@ -981,8 +1000,9 @@ export class Tracker {
             for (const gen of ["prefix", "suffix"] as const) {
                 const slots = counts[gen] - known[gen];
                 const side = groups[gen];
+                const open = (t: TypeId): boolean => maybe.includes(this.index.get(t) ?? -1);
                 const special = side
-                    .map((g, gi) => (maybe.includes(this.index.get(g.type) ?? -1) ? gi : -1))
+                    .map((g, gi) => (holdsNamed(g, open) ? gi : -1))
                     .filter((gi) => gi >= 0);
                 if (special.length === 0 || slots <= 0) continue;
                 if (special.length > 12) return undefined;
@@ -993,28 +1013,34 @@ export class Tracker {
                 );
                 const next: typeof states = [];
                 for (let mask = 0; mask < dist.length; mask++) {
-                    const p = dist[mask]!;
-                    if (p === 0) continue;
-                    let part = states.map((st) => ({ rows: [...st.rows], prob: st.prob * p }));
-                    special.forEach((gi, b) => {
-                        if (!(mask & (1 << b))) return;
-                        const g = side[gi]!;
-                        const i = this.index.get(g.type)!;
-                        const byClass = new Map<ModId, number>();
-                        for (const r of g.rows) {
-                            for (const c of this.classesOf(i, r.mod.id))
-                                byClass.set(c.id, (byClass.get(c.id) ?? 0) + r.weight * c.share);
+                    if (dist[mask] === 0) continue;
+                    const drawn = special
+                        .filter((_gi, b) => mask & (1 << b))
+                        .map((gi) => side[gi]!);
+                    for (const held of memberCases(drawn, open)) {
+                        const p = dist[mask]! * held.prob;
+                        let part = states.map((st) => ({ rows: [...st.rows], prob: st.prob * p }));
+                        for (const m of held.members) {
+                            const i = this.index.get(m.type)!;
+                            const byClass = new Map<ModId, number>();
+                            for (const r of m.rows) {
+                                for (const c of this.classesOf(i, r.mod.id))
+                                    byClass.set(
+                                        c.id,
+                                        (byClass.get(c.id) ?? 0) + r.weight * c.share,
+                                    );
+                            }
+                            const total = [...byClass.values()].reduce((s, w) => s + w, 0);
+                            part = part.flatMap((st) =>
+                                [...byClass].map(([id, w]) => {
+                                    const copy = [...st.rows];
+                                    copy[i] = id;
+                                    return { rows: copy, prob: (st.prob * w) / total };
+                                }),
+                            );
                         }
-                        const total = [...byClass.values()].reduce((s, w) => s + w, 0);
-                        part = part.flatMap((st) =>
-                            [...byClass].map(([id, w]) => {
-                                const copy = [...st.rows];
-                                copy[i] = id;
-                                return { rows: copy, prob: (st.prob * w) / total };
-                            }),
-                        );
-                    });
-                    next.push(...part);
+                        next.push(...part);
+                    }
                 }
                 states = next;
             }
@@ -1267,6 +1293,7 @@ export function reforgeOutcomes(
             share: total > 0 ? w / total : 1 / byClass.size,
         }));
     };
+    const tracked = (t: TypeId): boolean => atomIndex.has(t);
     const outcomes = new Map<string, Outcome>();
     const put = (state: ChainState, prob: number): void => {
         if (prob <= 0) return;
@@ -1295,7 +1322,7 @@ export function reforgeOutcomes(
             const groups = gen === "prefix" ? v.prefix : v.suffix;
             const special: number[] = [];
             groups.forEach((g, gi) => {
-                if (atomIndex.has(g.type)) special.push(gi);
+                if (holdsNamed(g, tracked)) special.push(gi);
             });
             return { gen, groups, special };
         });
@@ -1316,42 +1343,45 @@ export function reforgeOutcomes(
             for (let pm = 0; pm < pd.length; pm++) {
                 if (pd[pm] === 0) continue;
                 for (let sm = 0; sm < sd.length; sm++) {
-                    const prob = v.prob * c.prob * pd[pm]! * sd[sm]!;
-                    if (prob === 0) continue;
-                    // Every atom drawn or placed in this outcome, with its row choices.
-                    const drawn: { i: number; rows: { id: ModId; share: number }[] }[] = [
-                        ...placed,
-                    ];
-                    sides.forEach((s, si) => {
+                    const mass = v.prob * c.prob * pd[pm]! * sd[sm]!;
+                    if (mass === 0) continue;
+                    const groups = sides.flatMap((s, si) => {
                         const mask = si === 0 ? pm : sm;
-                        s.special.forEach((gi, b) => {
-                            if (!(mask & (1 << b))) return;
-                            const g = s.groups[gi]!;
-                            const i = atomIndex.get(g.type)!;
+                        return s.special
+                            .filter((_gi, b) => mask & (1 << b))
+                            .map((gi) => s.groups[gi]!);
+                    });
+                    for (const held of memberCases(groups, tracked)) {
+                        // Every atom drawn or placed in this outcome, with its row choices.
+                        const drawn: { i: number; rows: { id: ModId; share: number }[] }[] = [
+                            ...placed,
+                        ];
+                        for (const m of held.members) {
+                            const i = atomIndex.get(m.type)!;
                             drawn.push({
                                 i,
                                 rows: rowsFor(
                                     i,
-                                    g.rows.map((r) => ({ id: r.mod.id, weight: r.weight })),
+                                    m.rows.map((r) => ({ id: r.mod.id, weight: r.weight })),
                                 ),
                             });
-                        });
-                    });
-                    let states: { rows: (ModId | null)[]; prob: number }[] = [
-                        { rows: atoms.map(() => null), prob },
-                    ];
-                    for (const d of drawn) {
-                        const next: typeof states = [];
-                        for (const st of states) {
-                            for (const r of d.rows) {
-                                const rows = [...st.rows];
-                                rows[d.i] = r.id;
-                                next.push({ rows, prob: st.prob * r.share });
-                            }
                         }
-                        states = next;
+                        let states: { rows: (ModId | null)[]; prob: number }[] = [
+                            { rows: atoms.map(() => null), prob: mass * held.prob },
+                        ];
+                        for (const d of drawn) {
+                            const next: typeof states = [];
+                            for (const st of states) {
+                                for (const r of d.rows) {
+                                    const rows = [...st.rows];
+                                    rows[d.i] = r.id;
+                                    next.push({ rows, prob: st.prob * r.share });
+                                }
+                            }
+                            states = next;
+                        }
+                        for (const st of states) put({ ...counts, rows: st.rows }, st.prob);
                     }
-                    for (const st of states) put({ ...counts, rows: st.rows }, st.prob);
                 }
             }
         }

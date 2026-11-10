@@ -26,8 +26,7 @@ modifiers add, and its influence's. A
 reforge rolls a count, then draws modifiers one at a time by weight without replacement,
 a group closing once one of it is drawn
 ([Modifier § Group/family](https://www.poewiki.net/wiki/Modifier#Group/family)) and a
-side closing when full. The wiki gives the group rule, not the order; every calculator draws
-this way, and it is taken as settled. An
+side closing when full (the wiki gives the group rule; the order is every calculator's). An
 unveil's three
 options are drawn the same way
 ([Veiled modifier § Version history](https://www.poewiki.net/wiki/Veiled_modifier#Version_history)),
@@ -90,8 +89,8 @@ the ends disagree.
 
 ## 4. The race: an exact draw without listing outcomes
 
-The draw has an exact representation as a **race**: give every group an exponential
-clock whose rate is its weight (the code takes a modifier type as a group, §8), read the
+The draw has an exact representation as a **race**: give every modifier group an
+exponential clock whose rate is its types' weights together, read the
 groups off in the order their clocks fire, skip a group whose side is full.
 "These groups are all among the first k drawn" is "fewer than k minus their number of
 the other groups fired before the last of them", a Poisson-binomial count at a time,
@@ -102,7 +101,11 @@ list of draws: the core invariant on the probability side.
 It is exact for one group, for any set jointly (by inclusion–exclusion), and for the
 split with depletion. Given the split, which groups landed on a side is read from that
 side's race alone, where the true draw couples the two through depletion; the race
-tests bound that at two hundredths.
+tests bound that at two hundredths. Two groups fit a clock loosely, each bounded by a
+test against the draw played out (`packages/cli/src/race.test.ts`): one with rows on both sides (a
+jewel's) is a mixture, wholly a prefix or wholly a suffix by weight, and a type listing
+several groups (an unveil's attribute hybrids) shares a clock only with types it all
+excludes, which reads it up to a fifth high.
 
 ---
 
@@ -116,7 +119,7 @@ or else a uniform removal, a fracture,
 an unveil's three options, an ember's weighted implicit, or a Divine Orb's reroll.
 
 `cost/chance.ts` evaluates the checker's resolved predicate against the roll. A `has`
-atom on a side is "its group among the first p of that side's race", the row by weight
+atom on a side is "its group among the first p of that side's race", the type and row by weight
 share within the group, the value by its share of the row's range; count atoms read the
 split; `and`, `or` and `not` are combined exactly by enumerating which of the few named
 modifiers were drawn and which rows they are, a few dozen cases, never the item's
@@ -185,6 +188,3 @@ wherever the calculator is exact, to the rounding of its display. Where they dif
   which the race includes.
 - **Its Orb of Alteration** assumes an Augmentation fills the empty side; hinekora prices
   the alteration alone (Q58).
-- **The race's clocks are modifier types**, not groups, so two types of one group may both
-  be drawn and a group's other members never close it; on a wand's spell damage this
-  moves the figure by up to a fifth either way.

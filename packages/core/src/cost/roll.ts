@@ -41,11 +41,22 @@ export interface Row {
     readonly weight: number;
 }
 
-export interface Group {
+/** One modifier type of a group: its rows and their weight together. */
+export interface Member {
     readonly type: TypeId;
-    readonly gen: Gen;
     readonly weight: number;
     readonly rows: readonly Row[];
+}
+
+/**
+ * What one clock of the race stands for: the modifier types of one side that
+ * exclude each other (Modifier § Group/family), so drawing one closes them
+ * all. Which type the draw was is read off the members by weight share.
+ */
+export interface Group {
+    readonly gen: Gen;
+    readonly weight: number;
+    readonly members: readonly Member[];
 }
 
 /** A modifier that is on the item after the roll for certain: kept through the
@@ -233,19 +244,149 @@ function sureFacts(
     };
 }
 
+/**
+ * The rows as the race's clocks: the types of a side that share a modifier
+ * group are one clock. A type listing several groups (an unveil's attribute
+ * hybrids) joins a clock only where it excludes every type already in it, so
+ * a clock never closes two types the game would draw together; the exclusions
+ * that leaves out are missed, the draw a little too generous to those types.
+ */
 function groupRows(rows: readonly Row[], genOf: (m: Mod) => Gen): Group[] {
-    const byType = new Map<TypeId, Row[]>();
+    const byType = new Map<TypeId, { gen: Gen; families: ReadonlySet<GroupId>; rows: Row[] }>();
     for (const r of rows) {
-        const list = byType.get(r.mod.type);
-        if (list) list.push(r);
-        else byType.set(r.mod.type, [r]);
+        if (!(r.weight > 0)) continue;
+        const known = byType.get(r.mod.type);
+        if (known) known.rows.push(r);
+        else byType.set(r.mod.type, { gen: genOf(r.mod), families: r.mod.families, rows: [r] });
     }
-    const out: Group[] = [];
-    for (const [type, list] of byType) {
-        const weight = list.reduce((s, r) => s + r.weight, 0);
-        if (weight > 0) out.push({ type, gen: genOf(list[0]!.mod), weight, rows: list });
+    const clocks: { gen: Gen; families: ReadonlySet<GroupId>[]; members: Member[] }[] = [];
+    for (const [type, { gen, families, rows: list }] of byType) {
+        const member = { type, weight: list.reduce((s, r) => s + r.weight, 0), rows: list };
+        const home = clocks.find(
+            (c) =>
+                c.gen === gen &&
+                c.families.every((other) => [...families].some((f) => other.has(f))),
+        );
+        if (home === undefined) clocks.push({ gen, families: [families], members: [member] });
+        else {
+            home.families.push(families);
+            home.members.push(member);
+        }
+    }
+    return clocks.map((c) => ({
+        gen: c.gen,
+        weight: c.members.reduce((s, m) => s + m.weight, 0),
+        members: c.members,
+    }));
+}
+
+/** How many groups with rows on both sides a draw follows exactly. */
+const MAX_CROSSING = 3;
+
+/**
+ * A modifier group with rows on both sides (a jewel's damage group) is one
+ * clock whose draw lands on a side by that side's share of its weight: the
+ * roll becomes a mixture, the group wholly a prefix in one part and wholly a
+ * suffix in the other. Exact but for a draw the full side turns away, after
+ * which the game could still draw the group's other side. Past `MAX_CROSSING`
+ * such groups the lighter ones stay a clock on each side.
+ */
+function crossings(
+    prefix: readonly Group[],
+    suffix: readonly Group[],
+): { prob: number; prefix: readonly Group[]; suffix: readonly Group[] }[] {
+    const familiesOf = (g: Group): Set<GroupId> =>
+        new Set(g.members.flatMap((m) => [...m.rows[0]!.mod.families]));
+    const suffixFamilies = suffix.map(familiesOf);
+    const pairs: { p: Group; s: Group }[] = [];
+    const used = new Set<Group>();
+    for (const p of prefix) {
+        const own = familiesOf(p);
+        const s = suffix.find(
+            (g, i) => !used.has(g) && [...suffixFamilies[i]!].some((f) => own.has(f)),
+        );
+        if (s === undefined) continue;
+        used.add(s);
+        pairs.push({ p, s });
+    }
+    pairs.sort((x, y) => Math.min(y.p.weight, y.s.weight) - Math.min(x.p.weight, x.s.weight));
+    let out = [{ prob: 1, prefix, suffix }];
+    for (const { p, s } of pairs.slice(0, MAX_CROSSING)) {
+        const total = p.weight + s.weight;
+        const whole = (g: Group): Group => ({
+            ...g,
+            weight: total,
+            members: g.members.map((m) => ({ ...m, weight: (m.weight * total) / g.weight })),
+        });
+        out = out.flatMap((v) => [
+            {
+                prob: (v.prob * p.weight) / total,
+                prefix: v.prefix.map((g) => (g === p ? whole(p) : g)),
+                suffix: v.suffix.filter((g) => g !== s),
+            },
+            {
+                prob: (v.prob * s.weight) / total,
+                prefix: v.prefix.filter((g) => g !== p),
+                suffix: v.suffix.map((g) => (g === s ? whole(s) : g)),
+            },
+        ]);
     }
     return out;
+}
+
+/** The groups without the types a modifier now on the item excludes: its own
+ *  type and every type sharing a modifier group with it. */
+export function withoutClosed(
+    groups: readonly Group[],
+    type: TypeId,
+    mod: Mod | undefined,
+): Group[] {
+    const out: Group[] = [];
+    for (const g of groups) {
+        const members = g.members.filter(
+            (m) =>
+                m.type !== type &&
+                !(
+                    mod !== undefined &&
+                    [...m.rows[0]!.mod.families].some((f) => mod.families.has(f))
+                ),
+        );
+        if (members.length === g.members.length) out.push(g);
+        else if (members.length > 0)
+            out.push({ ...g, members, weight: members.reduce((s, m) => s + m.weight, 0) });
+    }
+    return out;
+}
+
+/**
+ * Which modifier each drawn group turned out to be, as far as anyone asks:
+ * one of its members a condition names, by its share of the group's weight,
+ * or some other member. Each case lists the named members drawn.
+ */
+export function memberCases(
+    drawn: readonly Group[],
+    named: (type: TypeId) => boolean,
+): { readonly prob: number; readonly members: readonly Member[] }[] {
+    let cases: { prob: number; members: readonly Member[] }[] = [{ prob: 1, members: [] }];
+    for (const g of drawn) {
+        const own = g.members.filter((m) => named(m.type));
+        const rest = g.weight - own.reduce((s, m) => s + m.weight, 0);
+        const next: typeof cases = [];
+        for (const c of cases) {
+            for (const m of own) {
+                next.push({ prob: (c.prob * m.weight) / g.weight, members: [...c.members, m] });
+            }
+            if (rest > 1e-12 * g.weight)
+                next.push({ prob: (c.prob * rest) / g.weight, members: c.members });
+        }
+        cases = next;
+    }
+    return cases;
+}
+
+/** Whether a group holds a type someone names. */
+export function holdsNamed(g: Group, named: (type: TypeId) => boolean): boolean {
+    return g.members.some((m) => named(m.type));
 }
 
 /** Of a type's `n` eligible tiers a Foulborn orb lets the top `k` roll, each
@@ -372,8 +513,9 @@ export function naturalGroups(
 ): { readonly prefix: readonly Group[]; readonly suffix: readonly Group[] } {
     const rows = poolRows(a, { kind: "natural" }, registry, reading);
     const taken = guaranteedTypes(a);
-    const groups = groupRows(rows, (m) => genOfType(a, registry, m.type, m)).filter(
-        (g) => !taken.has(g.type),
+    const groups = groupRows(
+        rows.filter((r) => !taken.has(r.mod.type)),
+        (m) => genOfType(a, registry, m.type, m),
     );
     return {
         prefix: groups.filter((g) => g.gen === "prefix"),
@@ -644,11 +786,13 @@ function drawRoll(
         const next: { prob: number; present: Present[] }[] = [];
         for (const v of variants) {
             for (const g of fgroups) {
-                if (v.present.some((p) => p.type === g.type)) continue;
-                next.push({
-                    prob: v.prob * (g.weight / total),
-                    present: [...v.present, { type: g.type, gen: g.gen, rows: g.rows }],
-                });
+                for (const m of g.members) {
+                    if (v.present.some((p) => p.type === m.type)) continue;
+                    next.push({
+                        prob: v.prob * (m.weight / total),
+                        present: [...v.present, { type: m.type, gen: g.gen, rows: m.rows }],
+                    });
+                }
             }
         }
         if (next.length > 0) variants = next;
@@ -667,9 +811,9 @@ function drawRoll(
         reading !== "estimate" || r[0] === r[1];
     const out: DrawVariant[] = [];
     for (const v of variants) {
-        const taken = new Set(v.present.map((p) => p.type));
-        const prefix = groups.filter((g) => g.gen === "prefix" && !taken.has(g.type));
-        const suffix = groups.filter((g) => g.gen === "suffix" && !taken.has(g.type));
+        // A modifier placed first closes its group to the draws after it.
+        let left: Group[] = groups;
+        for (const p of v.present) left = withoutClosed(left, p.type, p.rows[0]?.mod);
         const presentP = v.present.filter((p) => p.gen === "prefix").length;
         const presentS = v.present.length - presentP;
         const unnamedP = Math.max(0, facts.prefixCount - presentP);
@@ -678,28 +822,34 @@ function drawRoll(
             prefix: settled(ranges.prefix) ? unnamedP : undefined,
             suffix: settled(ranges.suffix) ? unnamedS : undefined,
         };
-        const counts = new Map<string, CountCase>();
-        for (const [m, prob] of totals) {
-            const draws = Math.max(0, m - v.present.length - unnamedP - unnamedS);
-            const open = [capP - presentP - unnamedP, capS - presentS - unnamedS] as const;
-            for (const c of countCases(prefix, suffix, draws, open[0], open[1])) {
-                const key = `${c.prefix}/${c.suffix}`;
-                const seen = counts.get(key);
-                counts.set(key, {
-                    prob: (seen?.prob ?? 0) + prob * c.prob,
-                    prefix: c.prefix,
-                    suffix: c.suffix,
-                });
+        const sides = crossings(
+            left.filter((g) => g.gen === "prefix"),
+            left.filter((g) => g.gen === "suffix"),
+        );
+        for (const { prob: share, prefix, suffix } of sides) {
+            const counts = new Map<string, CountCase>();
+            for (const [m, prob] of totals) {
+                const draws = Math.max(0, m - v.present.length - unnamedP - unnamedS);
+                const open = [capP - presentP - unnamedP, capS - presentS - unnamedS] as const;
+                for (const c of countCases(prefix, suffix, draws, open[0], open[1])) {
+                    const key = `${c.prefix}/${c.suffix}`;
+                    const seen = counts.get(key);
+                    counts.set(key, {
+                        prob: (seen?.prob ?? 0) + prob * c.prob,
+                        prefix: c.prefix,
+                        suffix: c.suffix,
+                    });
+                }
             }
+            out.push({
+                prob: v.prob * share,
+                present: v.present,
+                prefix,
+                suffix,
+                counts: [...counts.values()],
+                before,
+            });
         }
-        out.push({
-            prob: v.prob,
-            present: v.present,
-            prefix,
-            suffix,
-            counts: [...counts.values()],
-            before,
-        });
     }
     return { kind: "draw", variants: out };
 }
@@ -745,8 +895,8 @@ export function withPresent(roll: Roll, type: TypeId, gen: Gen, mod: Mod): Roll 
         variants: roll.variants.map((v) => ({
             ...v,
             present: v.present.some((p) => p.type === type) ? v.present : [...v.present, added],
-            prefix: v.prefix.filter((g) => g.type !== type),
-            suffix: v.suffix.filter((g) => g.type !== type),
+            prefix: withoutClosed(v.prefix, type, mod),
+            suffix: withoutClosed(v.suffix, type, mod),
         })),
     };
 }

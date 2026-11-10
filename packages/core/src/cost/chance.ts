@@ -16,7 +16,16 @@ import { type AItem, guaranteedTypes, type RPred, refine, suffixRange } from "..
 import type { Range } from "../check/domain.js";
 import { narrowRange } from "../check/values.js";
 import { amongFirstDistribution } from "./race.js";
-import type { Candidate, DrawVariant, Group, Present, Roll } from "./roll.js";
+import {
+    type Candidate,
+    type DrawVariant,
+    type Group,
+    holdsNamed,
+    type Member,
+    memberCases,
+    type Present,
+    type Roll,
+} from "./roll.js";
 
 /** How many joint outcomes an exact enumeration may visit before the atoms are
  *  taken as independent instead. */
@@ -283,9 +292,10 @@ function pickChance(
  *  one the condition wants, so a modifier offered counts as present. */
 function unveilChance(pred: RPred, options: readonly Group[], base: Truth): number | undefined {
     const types = typesOfInterest(pred);
+    const named = (t: TypeId): boolean => types.has(t);
     const special: number[] = [];
     options.forEach((g, i) => {
-        if (types.has(g.type)) special.push(i);
+        if (holdsNamed(g, named)) special.push(i);
     });
     const dist = amongFirstDistribution(
         options.map((g) => g.weight),
@@ -296,29 +306,25 @@ function unveilChance(pred: RPred, options: readonly Group[], base: Truth): numb
     for (let mask = 0; mask < dist.length; mask++) {
         const prob = dist[mask]!;
         if (prob === 0) continue;
-        const offered = new Set<TypeId>();
-        special.forEach((i, b) => {
-            if (mask & (1 << b)) offered.add(options[i]!.type);
-        });
-        const t = holds(pred, (leaf) => base(leaf) ?? offeredTruth(leaf, offered, options));
-        if (t === undefined) return undefined;
-        if (t) total += prob;
+        const drawn = special.filter((_i, b) => mask & (1 << b)).map((i) => options[i]!);
+        for (const c of memberCases(drawn, named)) {
+            const offered = new Map(c.members.map((m) => [m.type, m]));
+            const t = holds(pred, (leaf) => base(leaf) ?? offeredTruth(leaf, offered));
+            if (t === undefined) return undefined;
+            if (t) total += prob * c.prob;
+        }
     }
     return total;
 }
 
-function offeredTruth(
-    leaf: Leaf,
-    offered: ReadonlySet<TypeId>,
-    options: readonly Group[],
-): boolean | undefined {
+function offeredTruth(leaf: Leaf, offered: ReadonlyMap<TypeId, Member>): boolean | undefined {
     switch (leaf.kind) {
-        case "has":
-            if (!offered.has(leaf.type)) return false;
+        case "has": {
+            const member = offered.get(leaf.type);
+            if (member === undefined) return false;
             if (leaf.tierMod === undefined) return true;
-            return options.some(
-                (g) => g.type === leaf.type && g.rows.some((r) => r.mod.id === leaf.tierMod),
-            );
+            return member.rows.some((r) => r.mod.id === leaf.tierMod);
+        }
         case "hasGroup":
             return [...leaf.types].some((t) => offered.has(t));
         case "hasValue":
@@ -377,10 +383,11 @@ function drawChance(
     for (const v of variants) {
         const presentOf = new Map<TypeId, Present>();
         for (const p of v.present) presentOf.set(p.type, p);
+        const named = (t: TypeId): boolean => interest.has(t);
         const sideSpecials = (groups: readonly Group[]): number[] => {
             const out: number[] = [];
             groups.forEach((g, i) => {
-                if (interest.has(g.type)) out.push(i);
+                if (holdsNamed(g, named)) out.push(i);
             });
             return out;
         };
@@ -416,32 +423,33 @@ function drawChance(
                 for (let sm = 0; sm < sd.length; sm++) {
                     const prob = v.prob * c.prob * pd[pm]! * sd[sm]!;
                     if (prob === 0) continue;
-                    // The modifiers of interest that are on the item in this outcome.
-                    const taken = new Map<TypeId, readonly RowLike[]>();
                     const rowsOf = (
                         rows: readonly { mod: { id: ModId }; weight: number }[],
                     ): RowLike[] => rows.map((r) => ({ id: r.mod.id, weight: r.weight }));
-                    for (const p of v.present) {
-                        if (interest.has(p.type)) taken.set(p.type, rowsOf(p.rows));
+                    const drawn = [
+                        ...prefixSpecial.filter((_i, b) => pm & (1 << b)).map((i) => v.prefix[i]!),
+                        ...suffixSpecial.filter((_i, b) => sm & (1 << b)).map((i) => v.suffix[i]!),
+                    ];
+                    for (const c of memberCases(drawn, named)) {
+                        // The modifiers of interest that are on the item in this outcome.
+                        const taken = new Map<TypeId, readonly RowLike[]>();
+                        for (const p of v.present) {
+                            if (interest.has(p.type)) taken.set(p.type, rowsOf(p.rows));
+                        }
+                        for (const m of c.members) taken.set(m.type, rowsOf(m.rows));
+                        const r = jointChance(
+                            pred,
+                            taken,
+                            needsRow,
+                            valueLeaves,
+                            counts,
+                            (leaf) =>
+                                base(leaf) ??
+                                (leaf.kind === "compare" ? certainty(leaf, after) : undefined),
+                        );
+                        if (r === undefined) return undefined;
+                        total += prob * c.prob * r;
                     }
-                    prefixSpecial.forEach((i, b) => {
-                        if (pm & (1 << b)) taken.set(v.prefix[i]!.type, rowsOf(v.prefix[i]!.rows));
-                    });
-                    suffixSpecial.forEach((i, b) => {
-                        if (sm & (1 << b)) taken.set(v.suffix[i]!.type, rowsOf(v.suffix[i]!.rows));
-                    });
-                    const r = jointChance(
-                        pred,
-                        taken,
-                        needsRow,
-                        valueLeaves,
-                        counts,
-                        (leaf) =>
-                            base(leaf) ??
-                            (leaf.kind === "compare" ? certainty(leaf, after) : undefined),
-                    );
-                    if (r === undefined) return undefined;
-                    total += prob * r;
                 }
             }
         }

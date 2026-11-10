@@ -116,7 +116,8 @@ describe("memory strands in the pool", () => {
         const a = check(c, { registry }).finalState!;
         const rowsOf = (roll: ReturnType<typeof rollOf>): string[] => {
             if (roll.kind !== "draw") throw new Error("not a draw");
-            const life = roll.variants[0]!.prefix.find((g) => g.type === "IncreasedLife");
+            const members = roll.variants[0]!.prefix.flatMap((g) => g.members);
+            const life = members.find((m) => m.type === "IncreasedLife");
             return (life?.rows ?? []).map((r) => r.mod.id).sort();
         };
         expect(rowsOf(rollOf(a, currencyOps("chaos"), registry))).toEqual([

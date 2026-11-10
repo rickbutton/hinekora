@@ -16,9 +16,7 @@ waits until a guide calls for it.
 
 - the **cost layer's** finer points (`cost.md` has what is built): the
   Orb of Unravelling's tier upgrade (its rule is not stated), a loop whose exit rests on a
-  value no roll in its body changes, a `restart` in a loop nested in another (Q84); the
-  race's clocks are modifier types, so two types of one modifier group
-  may both be drawn (`cost.md` §8).
+  value no roll in its body changes, a `restart` in a loop nested in another (Q84).
 - **multi-item crafts**, which need a second item named in the guide, a design to be
   worked out first: the Recombinator, whose result pools both items' modifiers (an
   earlier form, and the evidence on how it picks, are in the git history before the
