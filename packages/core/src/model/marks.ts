@@ -78,6 +78,19 @@ export type EldritchTierName = (typeof ELDRITCH_TIERS)[number];
  *  item level the implicit needs; the item pages name no level. */
 export const ELDRITCH_ITEM_LEVEL = 75;
 
+/** The four armour classes an ember or ichor marks and an Orb of Dominance
+ *  takes, by base tag (Eldritch implicit modifier). */
+export const ELDRITCH_TAGS: readonly TagId[] = ["body_armour", "boots", "gloves", "helmet"].map(
+    TagId,
+);
+
+/** Can an item of this base carry an eldritch implicit at all: the four armour
+ *  classes, and an amulet, which no ember or ichor marks but Allflame crafting
+ *  does (Eldritch implicit modifier). */
+export function canHaveEldritch(base: Base): boolean {
+    return base.itemClass === "Amulet" || ELDRITCH_TAGS.some((t) => base.tags.has(t));
+}
+
 export function isEldritchSide(word: string): word is EldritchSide {
     return (ELDRITCH_SIDES as readonly string[]).includes(word);
 }

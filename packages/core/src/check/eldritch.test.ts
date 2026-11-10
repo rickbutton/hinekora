@@ -86,6 +86,14 @@ describe("embers and ichors", () => {
         ).toContain("An Eldritch Ichor cannot be used on an influenced item");
     });
 
+    it("cannot be declared on a ring", () => {
+        const ring = item({ base: "Iron Ring", ilvl: 100, rarity: "rare", exarch: "grand" });
+        expect(messages(craft(ring, []))).toContain(
+            "Only a body armour, boots, gloves, a helmet or an amulet can have an eldritch implicit",
+        );
+        expect(messages(craft(boots({ exarch: "grand" }), []))).toBe("");
+    });
+
     it("cannot be declared beside an influence", () => {
         expect(messages(craft(boots({ exarch: "lesser", influences: ["hunter"] }), []))).toContain(
             "An influenced item cannot have an eldritch implicit",

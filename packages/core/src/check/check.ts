@@ -22,9 +22,11 @@ import { type Gen, type GroupId, type ModId, TagId, type TypeId } from "../model
 import type { Base } from "../model/base.js";
 import type { Mod } from "../model/mod.js";
 import {
+    canHaveEldritch,
     ELDRITCH_ITEM_LEVEL,
     type EldritchSide,
     eldritchTierOf,
+    INFLUENCE_STEMS,
     INFLUENCES,
 } from "../model/marks.js";
 import { MAX_STRANDS } from "../model/strands.js";
@@ -295,6 +297,13 @@ class Checker {
             );
         }
         const influences = base.allInfluences ? [...INFLUENCES] : item.influences;
+        // The class must be one an influence can mark (a jewel or a flask is not).
+        if (item.influences.length > 0 && INFLUENCE_STEMS[base.itemClass] === undefined) {
+            this.diag(
+                `${base.name ?? "This base"} is of a class that cannot be influenced — leave \`influences:\` out.`,
+                item.span,
+            );
+        }
         // A declared influence's rows roll on the item, so they resolve and tier here.
         const tags = new Set(influences.flatMap((i) => [...this.registry.influenceTags(base, i)]));
         const ctx = { base, ilvl: item.ilvl, tags };
@@ -508,6 +517,12 @@ class Checker {
         // nor carry an eldritch implicit (Eldritch implicit modifier).
         if (influences.length > 0 && (item.exarch !== undefined || item.eater !== undefined)) {
             this.diag("An influenced item cannot have an eldritch implicit.", item.span);
+        }
+        if ((item.exarch !== undefined || item.eater !== undefined) && !canHaveEldritch(base)) {
+            this.diag(
+                "Only a body armour, boots, gloves, a helmet or an amulet can have an eldritch implicit.",
+                item.span,
+            );
         }
         if (
             (item.exarch !== undefined || item.eater !== undefined) &&

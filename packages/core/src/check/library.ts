@@ -12,6 +12,7 @@ import type { EssenceSpec, FossilSpec } from "../model/sources.js";
 import type { CurrencyKind } from "../resolve/registry.js";
 import {
     ELDRITCH_ITEM_LEVEL,
+    ELDRITCH_TAGS,
     type EldritchSide,
     type Influence,
     INFLUENCE_ORB,
@@ -414,8 +415,6 @@ export const TAINTED_DIVINE: readonly Op[] = [
     { kind: "relax", crafted: false },
 ];
 
-/** The four armour classes an ember or ichor marks and an Orb of Dominance takes. */
-const ELDRITCH_TAGS = ["body_armour", "boots", "gloves", "helmet"].map(TagId);
 const ELDRITCH_NAME: Readonly<Record<EldritchSide, string>> = {
     exarch: "Eldritch Ember",
     eater: "Eldritch Ichor",

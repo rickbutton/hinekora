@@ -41,7 +41,10 @@ item {
 ```
 
 - `base` resolves by display name; where several bases share it, the id
-  (`Metadata/Items/...`) picks one.
+  (`Metadata/Items/...`) picks one. It is an item a craft is modelled on: a weapon, a
+  piece of armour or jewellery, a quiver, a jewel (abyss and cluster jewels too), a flask,
+  a tincture, a charm, a relic, an idol, a Thief's Trinket or a piece of Rogue's
+  equipment. Currency, gems, maps and the rest are refused.
 - `ilvl` is the [item level](https://www.poewiki.net/wiki/Item_level); it never changes.
 - `rarity` is `normal`, `magic` or `rare`. A base that can never be Rare (flasks, tinctures)
   is rejected at `rare` ([Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare)).
@@ -67,14 +70,16 @@ item {
 - `influences: hunter` (or two, `influences: shaper elder`) marks an
   [influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics); the six are
   `shaper`, `elder`, `crusader`, `hunter`, `redeemer` and `warlord`; its influence
-  modifiers roll and are named like any other. An influence with a fracture is an error. The
+  modifiers roll and are named like any other. An influence with a fracture is an error,
+  and so is one on a class no influence marks (a jewel, a flask). The
   [Astrolabe Amulet](https://www.poewiki.net/wiki/Astrolabe_Amulet) counts as having every
   influence, so its block lists none.
 - `exarch: grand` and `eater: lesser` give the tiers of the item's
   [eldritch implicits](https://www.poewiki.net/wiki/Eldritch_implicit_modifier): `lesser`,
   `greater`, `grand`, `exceptional`, `exquisite`, `perfect`. A wording after the tier names
   which implicit it is (`exarch: grand "increased movement speed"`), matched as a mod name is
-  (§2). An influenced item cannot carry one, nor an item below item level 75.
+  (§2). An influenced item cannot carry one, nor an item below item level 75, nor any
+  class but body armours, boots, gloves, helmets and amulets.
 - `enchant: <passives> "<stat>"` is a
   [cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel#Mechanics)'s two enchantments:
   how many passives it adds and the stat its small passives grant, which decides the

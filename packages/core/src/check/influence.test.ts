@@ -110,6 +110,18 @@ describe("the influence exalts", () => {
             "A Hunter's Exalted Orb cannot be used on a Cobalt Jewel — its class cannot be influenced",
         );
     });
+
+    it("an item block cannot declare an influence on such a base", () => {
+        const jewel = item({
+            base: "Cobalt Jewel",
+            ilvl: 100,
+            rarity: "rare",
+            influences: ["hunter"],
+        });
+        expect(messages(craft(jewel, []))).toContain(
+            "Cobalt Jewel is of a class that cannot be influenced",
+        );
+    });
 });
 
 describe("an influence the item may have", () => {

@@ -41,15 +41,55 @@ export function canBeRare(base: Base): boolean {
 }
 
 /** The classes whose Rare holds four affixes (2 per side): jewels, abyss jewels
- *  and Rogue's equipment (Rarity § Rare). */
+ *  and Rogue's equipment (Rarity § Rare), and the Thief's Trinket (Thief's
+ *  Trinket: "a maximum of 4 affixes; 2 prefixes, and 2 suffixes"). */
 const FOUR_AFFIX_CLASSES: ReadonlySet<string> = new Set([
     "Jewel",
     "AbyssJewel",
+    "Trinket",
     "HeistEquipmentWeapon",
     "HeistEquipmentTool",
     "HeistEquipmentUtility",
     "HeistEquipmentReward",
 ]);
+
+/** The classes that hold six affixes when Rare: weapons, armour, jewellery and
+ *  quivers (Rarity § Rare). */
+const SIX_AFFIX_CLASSES: ReadonlySet<string> = new Set([
+    "Wand",
+    "Dagger",
+    "Rune Dagger",
+    "Claw",
+    "One Hand Axe",
+    "One Hand Sword",
+    "Thrusting One Hand Sword",
+    "One Hand Mace",
+    "Sceptre",
+    "Bow",
+    "Staff",
+    "Warstaff",
+    "Two Hand Axe",
+    "Two Hand Sword",
+    "Two Hand Mace",
+    "FishingRod",
+    "Shield",
+    "Helmet",
+    "Body Armour",
+    "Boots",
+    "Gloves",
+    "Ring",
+    "Amulet",
+    "Belt",
+    "Quiver",
+]);
+
+/** Is this a base hinekora models crafting on: one whose class has a stated
+ *  affix capacity above? Currency, gems, maps and the like carry an item
+ *  class too, and the rules here say nothing true of them. */
+export function isCraftedOn(base: Base): boolean {
+    const cls = base.itemClass;
+    return SIX_AFFIX_CLASSES.has(cls) || FOUR_AFFIX_CLASSES.has(cls) || NO_RARE_CLASSES.has(cls);
+}
 
 /** Does a Rare of this base hold four affixes rather than six? */
 export function holdsFour(base: Base): boolean {

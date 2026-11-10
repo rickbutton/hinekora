@@ -79,8 +79,9 @@ class, domain and tags, a base carries three implicits that change crafting:
   so every influence row rolls on it and no influence orb takes it.
 
 Derived, per [Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare), from the class lists
-in `model/capacity.ts`: whether a Rare **holds four** affixes and whether the base **can be
-Rare** at all. A cluster jewel's modifiers roll under the
+in `model/capacity.ts`: whether a Rare **holds four** affixes (a
+[Thief's Trinket](https://www.poewiki.net/wiki/Thief%27s_Trinket) too), whether the base
+**can be Rare** at all, and whether a craft is modelled on the base's class at all. A cluster jewel's modifiers roll under the
 spawn tag of its enchantment ([Cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel)),
 which the checker reads as a tag of the base.
 
@@ -209,7 +210,7 @@ not what can coexist.
 | At most one veiled placeholder        | Hinekora's restriction: Aisling's two-veiled drops are not modelled                                                                                                                                                                                           | [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb) ("cannot be used on an item with a veiled modifier")        |
 | Influence limit                       | `influences.count ≤ 2`                                                                                                                                                                                                                                        | [Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics)                                                         |
 | Influence excludes fracture           | influenced ⇒ not fractured                                                                                                                                                                                                                                    | [Fractured item](https://www.poewiki.net/wiki/Fractured_item#Mechanics)                                                           |
-| Eldritch implicits                    | only on helmets, gloves, boots and body armours of item level 75 or more (the data's level, which the wiki does not name), never beside an influence; the higher tier is dominant                                                                             | [Eldritch implicit modifier](https://www.poewiki.net/wiki/Eldritch_implicit_modifier)                                             |
+| Eldritch implicits                    | only on helmets, gloves, boots and body armours (an ember or ichor marks no other; an amulet's come from Allflame crafting) of item level 75 or more (the data's level, which the wiki does not name), never beside an influence; the higher tier is dominant | [Eldritch implicit modifier](https://www.poewiki.net/wiki/Eldritch_implicit_modifier)                                             |
 
 ---
 

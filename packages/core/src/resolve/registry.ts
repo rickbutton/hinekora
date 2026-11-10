@@ -5,6 +5,7 @@
  * since a human writes a stat description, not a tier id.
  */
 import type { Base } from "../model/base.js";
+import { isCraftedOn } from "../model/capacity.js";
 import type { Effect } from "../model/effects.js";
 import type { ClassId, Gen, GroupId, ModId, TypeId } from "../model/ids.js";
 import { Domain, TagId } from "../model/ids.js";
@@ -89,6 +90,8 @@ export interface CurrencySpec {
 
 export type ResolveError =
     | { readonly kind: "unknownBase"; readonly name: string }
+    /** A base of a class no craft is modelled on: currency, a gem, a map. */
+    | { readonly kind: "uncraftedBase"; readonly name: string }
     | { readonly kind: "unknownMod"; readonly name: string }
     | { readonly kind: "unknownCurrency"; readonly name: string }
     | { readonly kind: "unknownEssence"; readonly name: string }
@@ -480,14 +483,13 @@ export function buildRegistry(data: RegistryData): Registry {
     // --- precompute completion lists ---
     const currencies = [...new Set(currencyByName.values())];
     const currencyNames = currencies.map((c) => c.name);
-    // A base is worth offering when its class takes modifiers at all: a class
-    // is kept once any base of it has a modifier pool (at the loosest gate,
-    // ilvl 100 and rare), which keeps gems, currency and cards out of the list
-    // without a hand-kept class table. A name shared by several bases cannot be
-    // written in `base:` and is left out too.
+    // A base is worth offering when `base:` takes it and its class takes
+    // modifiers at all: a class is kept once any base of it has a modifier
+    // pool (at the loosest gate, ilvl 100 and rare). A name shared by several
+    // bases cannot be written in `base:` and is left out too.
     const craftableClasses = new Set<ClassId>();
     for (const b of data.bases) {
-        if (craftableClasses.has(b.itemClass)) continue;
+        if (craftableClasses.has(b.itemClass) || !isCraftedOn(b)) continue;
         if (pool(catalog, emptyItem(b, 100, "rare")).length > 0) craftableClasses.add(b.itemClass);
     }
     const baseNames = [
@@ -533,19 +535,26 @@ export function buildRegistry(data: RegistryData): Registry {
 
         resolveBase(name) {
             const key = norm(name);
+            const admit = (b: Base): Resolved<Base> =>
+                isCraftedOn(b) ? found(b) : fail({ kind: "uncraftedBase", name });
             const direct = baseById.get(key);
-            if (direct) return found(direct);
+            if (direct) return admit(direct);
             const aliased = baseAlias.get(key);
             const viaAlias = aliased ? baseById.get(aliased) : undefined;
-            if (viaAlias) return found(viaAlias);
-            const byName = baseByName.get(key);
-            if (byName && byName.length === 1) return found(byName[0]!);
-            if (byName && byName.length > 1) {
+            if (viaAlias) return admit(viaAlias);
+            const named = baseByName.get(key) ?? [];
+            // A name shared with a base no craft is modelled on means the other.
+            const crafted = named.filter(isCraftedOn);
+            const byName = crafted.length > 0 ? crafted : named;
+            if (byName.length === 1) return admit(byName[0]!);
+            if (byName.length > 1) {
                 // Variants that share a name and everything the model reads are one
                 // base to the checker, so any of them serves: a talisman's implicit
                 // variants, a tincture's old and new id.
                 const [first, ...rest] = byName;
-                if (rest.every((b) => sameToTheModel(first!, b))) return found(first!);
+                if (crafted.length === 0 || rest.every((b) => sameToTheModel(first!, b))) {
+                    return admit(first!);
+                }
                 return fail({ kind: "ambiguous", name, candidates: byName.map((b) => b.id) });
             }
             return fail({ kind: "unknownBase", name });

@@ -18,8 +18,14 @@ const SIMPLEX: Caps = { prefix: 1, suffix: 2, total: 3 };
 const open: Counts = { total: [0, 6], prefix: [0, 3], suffix: [0, 3] };
 
 describe("caps", () => {
-    it("a Rare holds four affixes on jewels, abyss jewels and Rogue's equipment", () => {
-        for (const cls of ["Jewel", "AbyssJewel", "HeistEquipmentWeapon", "HeistEquipmentReward"]) {
+    it("a Rare holds four affixes on jewels, abyss jewels, Rogue's equipment and a trinket", () => {
+        for (const cls of [
+            "Jewel",
+            "AbyssJewel",
+            "Trinket",
+            "HeistEquipmentWeapon",
+            "HeistEquipmentReward",
+        ]) {
             expect(caps("rare", baseOfClass(cls))).toEqual({ prefix: 2, suffix: 2, total: 4 });
         }
         expect(caps("rare", baseOfClass("Ring"))).toEqual({ prefix: 3, suffix: 3, total: 6 });

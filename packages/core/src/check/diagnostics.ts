@@ -254,6 +254,8 @@ export function resolveMessage(error: ResolveError): string {
     switch (error.kind) {
         case "unknownBase":
             return `Unknown base "${error.name}".`;
+        case "uncraftedBase":
+            return `"${error.name}" is not an item a guide crafts on here — a base is a weapon, a piece of armour or jewellery, a quiver, a jewel, a flask, a tincture, a charm, a relic, an idol, a Thief's Trinket or a piece of Rogue's equipment.`;
         case "unknownMod":
             return `Unknown mod "${error.name}".`;
         case "unknownCurrency":

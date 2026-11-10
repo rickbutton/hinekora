@@ -180,12 +180,37 @@ describe("registry resolution against real data", () => {
     });
 
     it("reports a colliding base name as ambiguous, with candidates", () => {
-        // Several bases share the name "Academy Map", with different tags.
-        const r = registry.resolveBase("Academy Map");
+        // Several bases share the name "Two-Toned Boots", with different tags.
+        const r = registry.resolveBase("Two-Toned Boots");
         expect(r.ok).toBe(false);
         if (!r.ok) {
             expect(r.error.kind).toBe("ambiguous");
             if (r.error.kind === "ambiguous") expect(r.error.candidates.length).toBeGreaterThan(1);
+        }
+    });
+
+    it("refuses a base no craft is modelled on: currency, a gem, a map, a card", () => {
+        for (const name of ["Chaos Orb", "Fireball", "Academy Map", "The Doctor"]) {
+            const r = registry.resolveBase(name);
+            expect(r.ok ? "resolved" : r.error.kind, name).toBe("uncraftedBase");
+        }
+        expect(registry.baseNames).not.toContain("Chaos Orb");
+    });
+
+    it("takes every class of equipment, the jewels, flasks, tinctures and a trinket", () => {
+        for (const name of [
+            "Vaal Axe",
+            "Astral Plate",
+            "Iron Ring",
+            "Serrated Arrow Quiver",
+            "Murderous Eye Jewel",
+            "Large Cluster Jewel",
+            "Divine Life Flask",
+            "Ashbark Tincture",
+            "Thief's Trinket",
+        ]) {
+            const r = registry.resolveBase(name);
+            expect(r.ok || r.error.kind === "ambiguous", name).toBe(true);
         }
     });
 
