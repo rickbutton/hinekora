@@ -451,3 +451,68 @@ an extrapolation. The Orb of Alteration row is a difference of question, not of 
 Not compared: a Harvest reforge under a lock (craftofexile's `hreroll` needs the metamod
 set through its item panel, not the URL) and the unveil's three options; both rest on the
 same race and on Q63 and Q64.
+
+### 6.2 Against the simulator, whole guides (2026-11-10)
+
+craftofexile's simulator runs a sequence of steps, each a method with a condition on the
+item and a route on success and on failure (next, step n, restart, end), until a number
+of items are finished, counting each step's uses. That is a hinekora guide, so the
+examples and a set of probes were written for both and the simulator run to a few
+hundred to a few thousand finished items per guide, driven in the page through its own
+step function (`poec_simExecuteAction`) rather than its timer, which a background tab
+slows to a step a second. Its conditions read a tier as a number from the top of the
+base's whole ladder, as hinekora's `t1` does, and it counts a modifier by its tier
+index, so `t1` was written as craftofexile's threshold 1. Figures are mean uses per
+finished item ± one standard error; hinekora's are its expected runs.
+
+| Guide (item level 84 unless said)                                                  | Simulator                         | hinekora                                    | Verdict                                                                                                                       |
+| ---------------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `essence-life-boots`: Deafening Greed on Titan Greaves until any T1 resistance     | 8.78 essences (3000 items)        | 8.77                                        | agree                                                                                                                         |
+| `flask-alt-aug`: alterations until Instant Recovery alone                          | 44.7 alterations (3000)           | 44.2 [43.2 to 45.2]                         | agree                                                                                                                         |
+| `alt-regal-jewel`, first loop: alterations until % life with no suffix             | 219 ± 6 (1500)                    | 221                                         | agree; the simulator also splits one and two modifiers evenly (Q58)                                                           |
+| `alt-regal-jewel`, second loop                                                     | 2571 ± 107 alt., 11.6 ± 0.5 aug.  | 2545, 11.4 (1359 before the fixes)          | agree                                                                                                                         |
+| `imprint-regal-amulet`, first loop: alterations until +1 to all skill gems alone   | 7522 ± 636 (134)                  | 8430 (1751 before)                          | agree within 1.4 standard errors; 8430 is the hand figure 2 × 210 750 / 50                                                    |
+| `imprint-regal-amulet`, restore loop                                               | 0.69 ± 0.09 rounds                | 0.71, 59% a round (828 rounds before)       | agree                                                                                                                         |
+| `essence-minion-wand`: Fear essences and annuls until the keepers fit              | 275 ± 13 ess., 2.14 ± 0.11 annuls | 272, 2.28                                   | agree                                                                                                                         |
+| `example`, first loop: annul and exalt until any T1 resistance                     | 33.2 ± 2.1 (300)                  | 36.8                                        | 11% high: the Regal Orb's path forgets the transmute's modifiers, so the loop is entered at its exit 3% of the time, not 9.7% |
+| `example`, second loop: until two T1 resistances                                   | 1306 ± 81                         | 1626, noted as estimated (2051 before)      | 25% high; the spread before the note was 1084 to 2111                                                                         |
+| `metamod-harvest-loop` with its random prefix a T5 mana                            | 9.35 ± 0.44 reforges, 1.48 annuls | 23.1 [8.73 to 23.1], 10.6 annuls (0 before) | the spread holds the simulator's figure; the estimate reads the loop's join, which lost the kept suffixes (Q57)               |
+| Amethyst Ring, fractured T1 life, Greed until T1 fire and T1 cold                  | 7389 ± 613 (150)                  | 7838                                        | agree                                                                                                                         |
+| Vaal Regalia (Redeemer, 86), alterations until T1 aura effect alone                | 1014 ± 50 (400)                   | 1001                                        | agree                                                                                                                         |
+| Pristine on Stygian Vise until T1 life                                             | 10.17 ± 0.24 (1500)               | 11.1                                        | 9% low against the simulator; craftofexile's calculator gives 11.1 (§6), so its two tools differ                              |
+| Pristine and Metallic, until T1 life                                               | 11.36 ± 0.29                      | 11.5                                        | agree                                                                                                                         |
+| Frigid and Metallic, until T1 cold resistance                                      | 8.98 ± 0.22                       | 9.28                                        | agree                                                                                                                         |
+| Pristine and Frigid, until T1 life and T1 cold resistance                          | 107 ± 4                           | 113                                         | agree                                                                                                                         |
+| Aetheric on Imbued Wand until T1 spell damage                                      | 297 ± 12 (600)                    | 355 (860 before)                            | 20% high; see below                                                                                                           |
+| Harvest reforge life / fire / speed on Titan Greaves until the T1 of that modifier | 14.6 / 7.95 / 5.93 ± 2%           | 14.4 / 8 / 6                                | agree                                                                                                                         |
+
+Two guides the checker rejects were rejected by the simulator's data too: a Dense Fossil
+blocks life modifiers, and a Frigid Fossil blocks fire ones, so a loop that needs them
+never ends in either.
+
+What the comparison found and fixed (each its own commit, with a test):
+
+- A chain-solved loop was cut off after 2000 rounds, so an exit rarer than about one
+  round in a thousand was underpriced up to fourfold, the rest read as "the item fills
+  up"; the rounds left are now a geometric tail once the distribution settles in shape.
+- The race's integral substituted on the slowest clock alone, so in a pool whose weights
+  span orders of magnitude (a fossil's multipliers, a rare gem-level row) the faster
+  clocks were stepped over: Aetheric read any spell damage 24% of the time where its own
+  pool gives 62%. It now integrates over log-time.
+- A Bestiary `restore` inside a loop changed nothing; a forced row (an essence's, a
+  Harvest tag's) read the item after the draws, so the fullest reading placed none; a
+  loop at the head of a loop body read the item as first found; a chain's removal took a
+  side as unreachable from a count read at nought, and a protecting metamod as fixed
+  though the annul may take it; a chain-solved loop's exit was forgotten by the next
+  loop; a loop's chance counted the attempts entered at its exit.
+
+What remains, all where the item is a set the checker cannot narrow: the estimate reads
+an open count at its floor and a path keeps only its last roll (Q57 has both cases and a
+fourth option, a distribution carried through every step); the race takes each modifier
+type as its own clock, so two types of one modifier group (the three "Adds # to # Damage
+to Spells" on a wand) may both be drawn, which lowers a fossil's other rows; and how a
+fossil's draws split between the sides is unconfirmed against the simulator, which lands
+some spell damage on an Aetheric reforge 67.5% of the time where hinekora reads 58%.
+
+The Recombinator was not run: the simulator picks the surviving modifiers uniformly and
+keeps them by a count table that differs from the wiki's, which hinekora follows (Q67).
