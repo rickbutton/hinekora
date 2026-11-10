@@ -30,7 +30,8 @@ export function approx(n: number): string {
 /**
  * A repeat's odds as guides quote them: "1/37 chance", the chance one round
  * ends it; a percentage once it is better than even ("60% chance"). The
- * expected rounds are the odds' denominator, so they are not said again.
+ * rounds a guide expects show in its steps' runs, fewer than the odds'
+ * denominator where the loop is often entered at its exit.
  */
 export function oddsText(chance: number): string {
     if (!(chance > 0)) return "never ends";
