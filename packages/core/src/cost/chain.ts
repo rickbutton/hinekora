@@ -70,8 +70,9 @@ export type ChainStep =
     /** A reforge: the item starts over as one of the roll's outcomes, whatever
      *  it held, each outcome the counts and the atoms' rows it leaves. */
     | { readonly id: number; readonly kind: "reforge"; readonly outcomes: readonly Outcome[] }
-    /** Back to the head of the loop around it, the item as it is; the craft ends. */
+    /** Back to the head of the loop around it, the item as it is. */
     | { readonly id: number; readonly kind: "restart" }
+    /** The craft ends. */
     | { readonly id: number; readonly kind: "stop" }
     /** A method read on the item as each state has it: where it takes the
      *  state, with each outcome's chance (`track.ts` asks the checker). */

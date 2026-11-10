@@ -996,8 +996,9 @@ class Walker {
         // A state the body could not carry is not where the rounds left it, so
         // the loop is read the general way instead.
         if (solved === undefined || tracker.misses > misses) return undefined;
-        // An attempt that can never end (the item full, nothing removing) is
-        // counted as ending, so the figures stay finite; the note says so.
+        // The share of attempts that never reach the exit is counted as ending,
+        // so the figures stay finite: under half a hundredth it moves them
+        // little and passes unremarked, above it the loop has no figure.
         const open = solved.unresolved + solved.undecided;
         const ending = solved.exit + solved.stop + open;
         const attempts = ending > 0 ? 1 / ending : 1;
@@ -1212,8 +1213,7 @@ class Walker {
         const built = method.build(literals, entry.before, this.registry);
         if ("refused" in built) return undefined;
         if (built.some((op) => op.kind === "restore")) {
-            // The item becomes the imprint, whatever it held: a reforge whose
-            // outcomes are the item restored.
+            // The item becomes the imprint, whatever it held.
             const back = this.statesOf(entry.after, [{ mass: 1, path: undefined }]);
             if (back === undefined || back.length === 0) return undefined;
             // The imprint's counts, where the checker left them open, are
