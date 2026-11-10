@@ -83,33 +83,17 @@ every fossil-only row under it and a one-in-ten corrupted-essence chance.
 chance.
 **Answer:**
 
-### Q23 · game probe · open
-
-**Asked:** 2026-10-28
-**Goal:** whether a beastcrafted Aspect counts as a crafted modifier: toward the bench's
-limit, and for "remove crafted modifiers". [Aspect of the Cat](https://www.poewiki.net/wiki/Aspect_of_the_Cat)
-says only that it is beastcrafted onto gear as a suffix; the data's level-30 rows are
-ordinary item-domain rows with no weight, the level-20 bench rows separate.
-**Procure:** a Rare with a beastcrafted Aspect and a bench.
-**Steps:** bench a modifier (does the Aspect count as the one crafted modifier?); use
-"remove crafted modifiers" (does the Aspect go?).
-**Record:** both outcomes.
-**Assumed meanwhile:** not crafted: `beast aspect` leaves the crafted count alone
-(`check/library.ts` `beastAspectOps`) and the removal ignores the row. The level-20 bench
-Aspects have no surface form.
-**Answer:**
-
 ### Q22 · game probe · open
 
 **Asked:** 2026-10-28
-**Goal:** what "similar-tier" means for the Harvest change, and whether it works on a
-Magic item. The option text says "similar-tier"; the checker takes the target's row of
-the same rank among its tiers when the source's tier is known (`check/methods.ts`
-`harvestChange`) and sets no rarity gate.
-**Procure:** a Rare and a Magic item each with a T3 fire resistance; the change to cold.
-**Steps:** apply it; note the cold resistance's tier and whether the Magic item took it.
-**Record:** the resulting tier on each.
-**Assumed meanwhile:** the same rank; any rarity with the modifier present.
+**Goal:** whether the Harvest change works on a Magic item. The tier half is settled:
+[Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting)
+says the craft "preserves the tier, but not the roll within that tier", which is the
+checker's same rank (`check/methods.ts` `harvestChange`). It sets no rarity gate.
+**Procure:** a Magic item with a fire resistance; the change to cold.
+**Steps:** apply it; note whether the Magic item took it.
+**Record:** accepted or not.
+**Assumed meanwhile:** any rarity with the modifier present.
 **Answer:**
 
 ### Q25 · game probe · open
@@ -133,26 +117,6 @@ after the lock-respecting strip or the removal (`check/library.ts`
 `harvestReforgeOps` and `harvestAugmentOps`, `check/ops.ts` `poolNonEmpty` reading, per
 pair of side counts (`sidePairs`),
 `subsetMods`).
-**Answer:**
-
-### Q26 · game probe · open
-
-**Asked:** 2026-10-29
-**Goal:** which influence tag each item class carries. The data keys an influence's rows
-by class (`2h_sword_shaper`, `rune_dagger_shaper`, `warstaff_shaper`), not by the tags a
-base has (a two-handed sword carries `sword`, not `2h_sword`), and the wiki states no
-class table; the stems are read off the spawn tables
-([Modifier § Spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag)
-gives only the matching rule). Two classes are in doubt: a warstaff (the data has six
-`staff_*`-only rows beside its own `warstaff_*` rows) and a thrusting sword (mapped to
-`sword` with the one-handed swords).
-**Procure:** a Warlord warstaff and a Shaper rapier; a Chaos Orb each.
-**Steps:** reforge each several times; note any modifier the influence's table lists
-for staves but not warstaves, and any one-handed-sword-only modifier on the rapier.
-**Record:** the modifiers seen.
-**Assumed meanwhile:** one stem per class, the table in `packages/core/src/model/marks.ts`
-`INFLUENCE_STEMS`, checked against the spawn tags by the data tests; a warstaff sees
-only its `warstaff_*` rows and a thrusting sword the `sword_*` rows.
 **Answer:**
 
 ### Q27 · game probe · open
@@ -247,24 +211,6 @@ Eater one; Orbs of Conflict.
 **Assumed meanwhile:** the implicit keeps its type when raised (`check/ops.ts`, the
 `conflict` change leaves `eldritchTypes` alone), which is exact while a wording never
 separates a variant from its plain sibling.
-**Answer:**
-
-### Q39 · game probe · open
-
-**Asked:** 2026-10-30
-**Goal:** whether an Orb of Dominance takes a Magic item.
-[Orb of Dominance § Mechanics](https://www.poewiki.net/wiki/Orb_of_Dominance#Mechanics)
-says "Magic and Rare items that have two or more Influenced modifiers", while
-[Elevated modifier](https://www.poewiki.net/wiki/Elevated_modifier) says elevated
-modifiers "can only be crafted onto Rare Influenced items".
-**Procure:** a Magic pair of gloves with a Hunter prefix and a Hunter suffix at tier 1;
-an Orb of Dominance.
-**Steps:** apply it; note whether it is accepted and what the result is.
-**Record:** accepted or not; the modifiers after.
-**Assumed meanwhile:** the orb's own page, a Magic item accepted (`check/library.ts`
-`DOMINANCE` has no rarity gate); the elevated row is the one sharing the modifier's
-group under the item's influence tag (`check/ops.ts` `elevate`), which pairs every
-influenced modifier of the four classes in the data.
 **Answer:**
 
 ### Q33 · game probe · open
@@ -384,21 +330,6 @@ open prefix.
 does on the Medium (the size tag matching first).
 **Assumed meanwhile:** first match wins, percent scale, zero disables (`Mod.generation`,
 `lookupWeight`, `item-model.md` §5).
-**Answer:**
-
-### Q53 · game probe · open
-
-**Asked:** 2026-11-08
-**Goal:** whether a Divine Orb rolls a bench-crafted modifier's value again.
-[Divine Orb](https://www.poewiki.net/wiki/Divine_Orb) says it rerolls "the values of the
-random modifiers" and that a fractured modifier's are not rerolled; it does not name the
-crafted ones. It decides whether a value a guide has pinned on a crafted modifier
-survives a `divine`.
-**Procure:** a Rare with a bench-crafted modifier whose value is not at its maximum.
-**Steps:** use a Divine Orb; compare the crafted modifier's value before and after.
-**Record:** whether it changed.
-**Assumed meanwhile:** it is rerolled, the conservative reading (`check/ops.ts` `reroll`
-keeps only a fractured modifier's value and those of a side a metamod protects).
 **Answer:**
 
 ### Q52 · game probe · open
@@ -564,33 +495,6 @@ modifier and says no more.
 modifiers drawn as a Chaos Orb draws them (`docs/research/cost-model.md` §1.4, §5.4).
 **Answer:**
 
-### Q64 · game probe · open
-
-**Asked:** 2026-11-09
-**Goal:** whether an unveil's three options are drawn by the unveiled rows' spawn weights.
-[Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) says three random
-modifiers are presented and records a rebalance of "the weighting of Veiled modifiers".
-**Procure:** Veiled Chaos Orbs and a Rare body armour.
-**Steps:** veil and unveil many times; note the three options each time.
-**Record:** each option's frequency against its weight in the data.
-**Assumed meanwhile:** three weighted draws without replacement from the unveil pool
-(`docs/research/cost-model.md` §1.4).
-**Answer:**
-
-### Q65 · game probe · open
-
-**Asked:** 2026-11-09
-**Goal:** whether a modifier's value is uniform over its row's range, which decides the
-chance a Divine Orb reaches `has "maximum life" >= 110`.
-[Divine Orb](https://www.poewiki.net/wiki/Divine_Orb) says the values are rolled again
-within the tier and nothing of the distribution.
-**Procure:** a Rare with a T1 life modifier and Divine Orbs.
-**Steps:** divine many times; note each value.
-**Record:** the values.
-**Assumed meanwhile:** uniform over the integers of the range
-(`docs/research/cost-model.md` §1.4).
-**Answer:**
-
 ### Q66 · game probe · open
 
 **Asked:** 2026-11-09
@@ -675,6 +579,119 @@ multipliers, a side admitting no more once full (`cost/race.ts` `splitDistributi
 ---
 
 ## Resolved
+
+### Q23 · game probe · resolved
+
+**Asked:** 2026-10-28
+**Goal:** whether a beastcrafted Aspect counts as a crafted modifier: toward the bench's
+limit, and for "remove crafted modifiers". [Aspect of the Cat](https://www.poewiki.net/wiki/Aspect_of_the_Cat)
+says only that it is beastcrafted onto gear as a suffix; the data's level-30 rows are
+ordinary item-domain rows with no weight, the level-20 bench rows separate.
+**Procure:** a Rare with a beastcrafted Aspect and a bench.
+**Steps:** bench a modifier (does the Aspect count as the one crafted modifier?); use
+"remove crafted modifiers" (does the Aspect go?).
+**Record:** both outcomes.
+**Assumed meanwhile:** not crafted: `beast aspect` leaves the crafted count alone
+(`check/library.ts` `beastAspectOps`) and the removal ignores the row. The level-20 bench
+Aspects have no surface form.
+**Answer:** 2026-11-10, from the game data: not crafted. Every `Grants…AspectCrafted` row
+in the wiki's mods table is an ordinary item modifier (domain 1), where a bench row
+(`EinharMasterIncreasedLife2`) is a crafted one (domain 9), and the trade site's stat list
+offers the aspects as explicit and fractured modifiers, never crafted. The assumption
+above stands.
+
+### Q26 · game probe · resolved
+
+**Asked:** 2026-10-29
+**Goal:** which influence tag each item class carries. The data keys an influence's rows
+by class (`2h_sword_shaper`, `rune_dagger_shaper`, `warstaff_shaper`), not by the tags a
+base has (a two-handed sword carries `sword`, not `2h_sword`), and the wiki states no
+class table; the stems are read off the spawn tables
+([Modifier § Spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag)
+gives only the matching rule). Two classes are in doubt: a warstaff (the data has six
+`staff_*`-only rows beside its own `warstaff_*` rows) and a thrusting sword (mapped to
+`sword` with the one-handed swords).
+**Procure:** a Warlord warstaff and a Shaper rapier; a Chaos Orb each.
+**Steps:** reforge each several times; note any modifier the influence's table lists
+for staves but not warstaves, and any one-handed-sword-only modifier on the rapier.
+**Record:** the modifiers seen.
+**Assumed meanwhile:** one stem per class, the table in `packages/core/src/model/marks.ts`
+`INFLUENCE_STEMS`, checked against the spawn tags by the data tests; a warstaff sees
+only its `warstaff_*` rows and a thrusting sword the `sword_*` rows.
+**Answer:** 2026-11-10, from the game data: RePoE's item classes export, read from the
+game's own influence-tag table, gives every class's `influence_tags`; all 24 classes match
+`INFLUENCE_STEMS`, a warstaff seeing only `warstaff_*` rows and a thrusting sword the
+`sword_*` rows. The assumption above stands.
+
+### Q39 · game probe · resolved
+
+**Asked:** 2026-10-30
+**Goal:** whether an Orb of Dominance takes a Magic item.
+[Orb of Dominance § Mechanics](https://www.poewiki.net/wiki/Orb_of_Dominance#Mechanics)
+says "Magic and Rare items that have two or more Influenced modifiers", while
+[Elevated modifier](https://www.poewiki.net/wiki/Elevated_modifier) says elevated
+modifiers "can only be crafted onto Rare Influenced items".
+**Procure:** a Magic pair of gloves with a Hunter prefix and a Hunter suffix at tier 1;
+an Orb of Dominance.
+**Steps:** apply it; note whether it is accepted and what the result is.
+**Record:** accepted or not; the modifiers after.
+**Assumed meanwhile:** the orb's own page, a Magic item accepted (`check/library.ts`
+`DOMINANCE` has no rarity gate); the elevated row is the one sharing the modifier's
+group under the item's influence tag (`check/ops.ts` `elevate`), which pairs every
+influenced modifier of the four classes in the data.
+**Answer:** 2026-11-10, from the wiki: [Orb of Dominance § Mechanics](https://www.poewiki.net/wiki/Orb_of_Dominance#Mechanics)
+takes "Magic and Rare items", a reading the page's editors set deliberately in 2022
+over the older "Rare only"; the Elevated modifier page's wording is the older one. The
+assumption above stands.
+
+### Q53 · game probe · resolved
+
+**Asked:** 2026-11-08
+**Goal:** whether a Divine Orb rolls a bench-crafted modifier's value again.
+[Divine Orb](https://www.poewiki.net/wiki/Divine_Orb) says it rerolls "the values of the
+random modifiers" and that a fractured modifier's are not rerolled; it does not name the
+crafted ones. It decides whether a value a guide has pinned on a crafted modifier
+survives a `divine`.
+**Procure:** a Rare with a bench-crafted modifier whose value is not at its maximum.
+**Steps:** use a Divine Orb; compare the crafted modifier's value before and after.
+**Record:** whether it changed.
+**Assumed meanwhile:** it is rerolled, the conservative reading (`check/ops.ts` `reroll`
+keeps only a fractured modifier's value and those of a side a metamod protects).
+**Answer:** 2026-11-10, from players' reports: a Divine Orb rerolls a bench-crafted
+modifier's value within its rank ([forum](https://www.pathofexile.com/forum/view-thread/1826750),
+[forum](https://www.pathofexile.com/forum/view-thread/1629903)). The assumption above stands.
+
+### Q64 · game probe · resolved
+
+**Asked:** 2026-11-09
+**Goal:** whether an unveil's three options are drawn by the unveiled rows' spawn weights.
+[Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) says three random
+modifiers are presented and records a rebalance of "the weighting of Veiled modifiers".
+**Procure:** Veiled Chaos Orbs and a Rare body armour.
+**Steps:** veil and unveil many times; note the three options each time.
+**Record:** each option's frequency against its weight in the data.
+**Assumed meanwhile:** three weighted draws without replacement from the unveil pool
+(`docs/research/cost-model.md` §1.4).
+**Answer:** 2026-11-10, from the wiki: the options are drawn by weight;
+[Veiled modifier § Version history](https://www.poewiki.net/wiki/Veiled_modifier#Version_history)
+rebalances "the weighting of Veiled modifiers" and makes rarer ones more likely to show.
+Drawing without replacement fits the three distinct options. The assumption above stands.
+
+### Q65 · game probe · resolved
+
+**Asked:** 2026-11-09
+**Goal:** whether a modifier's value is uniform over its row's range, which decides the
+chance a Divine Orb reaches `has "maximum life" >= 110`.
+[Divine Orb](https://www.poewiki.net/wiki/Divine_Orb) says the values are rolled again
+within the tier and nothing of the distribution.
+**Procure:** a Rare with a T1 life modifier and Divine Orbs.
+**Steps:** divine many times; note each value.
+**Record:** the values.
+**Assumed meanwhile:** uniform over the integers of the range
+(`docs/research/cost-model.md` §1.4).
+**Answer:** 2026-11-10, from the wiki: [Modifier § Mechanics overview](https://www.poewiki.net/wiki/Modifier#Mechanics_overview)
+says a value is "randomized within with equal chances", each stat of a hybrid on its own.
+The assumption above stands.
 
 ### Q18 · game probe · resolved
 
