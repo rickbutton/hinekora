@@ -145,7 +145,7 @@ function wordExists(word) {
 }
 
 /** Does a backticked path refer to something on disk? A bare name or a path relative
- *  to a package's src (`check/transfer.ts`) resolves by suffix. */
+ *  to a package's src (`check/ops.ts`) resolves by suffix. */
 function pathExists(p) {
     if (existsSync(join(root, p)) || existsSync(join(root, "docs", p))) return true;
     const rel = p.replace(/^\.\//, "");

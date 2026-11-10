@@ -27,8 +27,8 @@ import { type Domain, type Range, RangeDomain, SetDomain } from "./domain.js";
 import { type Caps, type Counts, CountDomain, caps } from "./counts.js";
 import { narrowRange, NEGATED_CMP, ValueDomain, type Values } from "./values.js";
 
-// The sub-domains live in their own modules (`domain.ts`, `counts.ts`); re-export
-// the surface existing importers reach through `astate` (the caps + `Range`).
+// `astate` is the checker's state module, so the caps and `Range` its callers
+// need are reachable here rather than from each sub-domain module.
 export type { Range } from "./domain.js";
 export { hardTotalCap, maxTotal, sideCap } from "./counts.js";
 export { canBeRare } from "../model/capacity.js";

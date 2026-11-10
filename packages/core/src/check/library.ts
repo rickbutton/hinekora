@@ -642,8 +642,8 @@ export function resonatorOps(r: Resonator): readonly Op[] {
     const corrupts = r.fossils.some((f) => f.corrupts);
     return [
         notCorrupted,
-        // A chaotic resonator takes a Normal item as a Chaos Orb does not
-        // (QUESTIONS.md Q42); only a Magic item is refused.
+        // A chaotic resonator takes a Normal item, as a Chaos Orb does not; only
+        // a Magic item is refused (ruled from play, the Resonator page is silent).
         notMagic,
         canBeRare,
         require({ kind: "noBlockingMetamod" }),

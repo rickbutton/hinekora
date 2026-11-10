@@ -60,8 +60,8 @@ export function refineRange(range: Range, op: Cmp, value: number): Range | null 
 }
 
 /** A range as a bare lattice element — join widens, equal is exact. The crafted
- *  count is one (its transfer arithmetic and the `≤ total` reduction live where
- *  they belong: transfer functions and `normalize`). */
+ *  count is one (its arithmetic and the `≤ total` reduction live in the ops of
+ *  `ops.ts` and in `normalize`). */
 export const RangeDomain = {
     join: rJoin,
     equal: rEqual,

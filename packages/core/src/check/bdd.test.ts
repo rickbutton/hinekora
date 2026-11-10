@@ -66,10 +66,9 @@ describe("BddManager — a reduced, ordered BDD", () => {
     });
 
     it("keeps a disjunction across an OR-join, so `not(all)` is unsatisfiable", () => {
-        // This is the checker's Q2 case: after `has fire or has cold or has
-        // lightning`, refining by `not fire and not cold and not lightning` must
-        // collapse to FALSE (the branch is dead) — the thing the three-set domain
-        // could not see.
+        // After `has fire or has cold or has lightning`, refining by `not fire
+        // and not cold and not lightning` must collapse to FALSE (the branch is
+        // dead), which a per-mod present/absent/unknown domain cannot see.
         const m = new BddManager();
         const fire = m.variable("fire");
         const cold = m.variable("cold");

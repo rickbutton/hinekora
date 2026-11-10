@@ -61,7 +61,7 @@ export interface StatSuggestion {
     readonly type: TypeId;
 }
 
-/** A currency operation, identified by which transfer-function semantics it has. */
+/** A currency operation, identified by the op sequence it runs (`currencyOps`). */
 export type CurrencyKind =
     | "transmute"
     | "augment"
@@ -76,14 +76,14 @@ export type CurrencyKind =
     | "divine";
 
 /**
- * A currency in the catalog. `name`/`kind` drive the language (alias + which
- * transfer function governs it); `displayName`/`description` are display-only
- * metadata for hover/completion, curated here because RePoE ships neither.
+ * A currency in the catalog. `name`/`kind` drive the language (the alias, and
+ * the op sequence the currency runs); `displayName`/`description` are
+ * display-only metadata for hover/completion, curated here because RePoE ships
+ * neither.
  */
 export interface CurrencySpec {
     /** The alias written in a craft, e.g. "exalt". */
     readonly name: string;
-    /** Which transfer function's semantics this currency has. */
     readonly kind: CurrencyKind;
     /** The real in-game item name, e.g. "Exalted Orb". */
     readonly displayName: string;
@@ -105,12 +105,6 @@ export type ResolveError =
     | { readonly kind: "ambiguous"; readonly name: string; readonly candidates: readonly string[] };
 
 /**
- * The harvest modifier categories a craft can target, mapping the surface name a
- * user writes to the canonical category tag (`Mod.implicitTags`). Curated: the
- * game groups harvest crafts by these categories, and a couple of surface
- * spellings ("defence") normalize to the data's tag ("defences").
- */
-/**
  * The Aspect skills the Bestiary crafts (Beastcrafting, "Craft an Aspect Skill
  * onto an Item"), by the beast's animal, each the level-30 row the recipe places.
  */
@@ -121,6 +115,12 @@ export const ASPECTS: Readonly<Record<string, string>> = {
     crab: "GrantsCrabAspectCrafted30",
 };
 
+/**
+ * The harvest modifier categories a craft can target, mapping the surface name a
+ * user writes to the canonical category tag (`Mod.implicitTags`). Curated: the
+ * game groups harvest crafts by these categories, and a couple of surface
+ * spellings ("defence") normalize to the data's tag ("defences").
+ */
 export const HARVEST_TAGS: ReadonlyMap<string, TagId> = new Map(
     (
         [

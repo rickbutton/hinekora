@@ -74,7 +74,7 @@ export const ELDRITCH_TIERS = [
 export type EldritchTierName = (typeof ELDRITCH_TIERS)[number];
 
 /** Every eldritch implicit row requires level 75 in the game data, read as the
- *  item level the implicit needs (`QUESTIONS.md` Q38). */
+ *  item level the implicit needs; the item pages name no level. */
 export const ELDRITCH_ITEM_LEVEL = 75;
 
 export function isEldritchSide(word: string): word is EldritchSide {

@@ -5,7 +5,7 @@
 # is either the metamod or the life roll. Unveiling offers three of the
 # possible prefixes; the guide takes the % life one when it is offered and
 # otherwise annuls the unveiled mod away and tries again. An unveiled mod is
-# not a crafted mod (QUESTIONS.md Q45), so the bench cannot take it, and an
+# not a crafted mod, so the bench's removal cannot take it, and an
 # annul may hit the life or a suffix instead: on those paths the item is
 # bricked and the guide stops, so what follows is judged on the paths where
 # the item is still worth the next orb.

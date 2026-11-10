@@ -50,7 +50,7 @@ import { atomOf, type MethodAt, methodAt } from "./method-at.js";
 
 // --- doc tables ------------------------------------------------------------
 
-/** What each currency requires, mirrors the preconditions in `transfer.ts`. */
+/** What each currency requires, mirrors the `require` ops of `currencyOps` in `library.ts`. */
 const REQUIRES: Record<CurrencyKind, string> = {
     transmute: "a Normal item",
     augment: "a Magic item with an open affix slot",
