@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q85.
+keeps it. New entries continue from Q96.
 
 ```
 ### Qn · probe|decision · open — title
@@ -290,6 +290,17 @@ names one; every implicit row's required level in the data is 75.
 applied.
 **Assumed:** refused below item level 75, in a step and in the item block. **Encoded in:**
 `model/marks.ts` `ELDRITCH_ITEM_LEVEL`.
+
+### Q87 · probe · open — the item level a bench craft needs
+
+**Q:** does the bench refuse a craft on an item below the crafted modifier's level?
+[Crafting Bench](https://www.poewiki.net/wiki/Crafting_Bench) names no item level, and
+the wiki's table of bench options gives a required level to the map crafts only; the
+crafted rows carry a level in the game's data (the top life craft's is 80).
+**Probe:** a ring of item level 10, the bench with its top life craft unlocked; craft it;
+record refused or applied.
+**Assumed:** applied at any item level, in a step and in the item block. **Encoded in:**
+`check/library.ts` `benchOps` (no level check), `check/check.ts` `elaborateItem`.
 
 ### Q95 · probe · open — a Tainted Exalted Orb's odds
 
