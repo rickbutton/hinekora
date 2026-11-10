@@ -123,6 +123,10 @@ interface Frame {
     stopped: number;
     /** Mass a `restart` sent back to the head of the loop around it. */
     restarted: number;
+    /** The ways of being at each `restart`, with the item the check has
+     *  there, where the loop around it reads its rounds as independent: a
+     *  restart is at the loop's head, so its exit is asked of them too. */
+    again?: { readonly branch: Branch; readonly at: AItem | undefined }[];
 }
 
 /** One walk's figures under one reading of the item's open counts. */
@@ -538,6 +542,7 @@ class Walker {
             }
             case "restart":
                 frame.restarted += mass;
+                for (const branch of branches) frame.again?.push({ branch, at: entry?.before });
                 this.record(stmt, mass, frame, {});
                 return [];
             case "stop":
@@ -803,24 +808,32 @@ class Walker {
         const unfollowed = (this.tracker?.misses ?? 0) > misses;
         this.lost = true;
         // One attempt: the body from the head with mass one, in a frame of its
-        // own, its steps discarded. The attempt ends in the exit (its chance
-        // judged on each falling branch's path), in a stop, or in another round.
+        // own, its steps discarded. A round ends where the body does or at a
+        // restart, and the attempt ends there in the exit (its chance judged on
+        // each such branch's path), or in a stop, or goes another round.
         // The head of a later attempt is where the one before left off, short of
         // the exit, so a condition at the top of the body reads the last roll.
-        const attempt: Frame = { scale: 1, stopped: 0, restarted: 0 };
-        const saved = this.steps.length;
-        const first = this.sequence(stmt.body, [{ mass: 1, path: undefined }], attempt);
-        const head = this.headAfter(first, rpred);
-        const fell = this.sequence(stmt.body, head, attempt);
-        this.steps.length = saved;
-        attempt.stopped = 0;
-        attempt.restarted = 0;
-        this.sequence(stmt.body, head, attempt);
-        this.steps.length = saved;
-        const exitAfter = this.lastAfter(stmt.body) ?? entry?.after;
+        const round = (from: readonly Branch[]) => {
+            const own: Frame = { scale: 1, stopped: 0, restarted: 0, again: [] };
+            const saved = this.steps.length;
+            const fell = this.sequence(stmt.body, from, own);
+            this.steps.length = saved;
+            const exitAfter = this.lastAfter(stmt.body) ?? entry?.after;
+            const ends = [
+                ...fell.map((branch) => ({ branch, at: exitAfter })),
+                ...(own.again ?? []),
+            ];
+            return { ends, stopped: own.stopped };
+        };
+        const first = round([{ mass: 1, path: undefined }]);
+        const head = this.headAfter(
+            first.ends.map((e) => e.branch),
+            rpred,
+        );
+        const attempt = round(head);
         let exit: number | undefined = 0;
         const exits: Branch[] = [];
-        for (const b of fell) {
+        for (const { branch: b, at } of attempt.ends) {
             let p: number | undefined;
             if (rpred === null) p = undefined;
             else if (b.path !== undefined) {
@@ -828,8 +841,8 @@ class Walker {
                 // branch's roll times the chance of its conditions and the exit.
                 const joint = this.jointChance(b.path, rpred, b.path.after);
                 p = joint === undefined ? undefined : joint * b.path.base;
-            } else if (exitAfter !== undefined) {
-                const c = this.conditionChance(rpred, undefined, exitAfter);
+            } else if (at !== undefined) {
+                const c = this.conditionChance(rpred, undefined, at);
                 p = c === undefined ? undefined : c * b.mass;
             }
             if (p === undefined) {
@@ -894,7 +907,7 @@ class Walker {
         return [{ mass, path: undefined }];
     }
 
-    /** Where the next attempt starts: the branches that fell off the body, each
+    /** Where the next attempt starts: the branches a round ended on, each
      *  short of the exit, with their masses summing to one; the head alone when
      *  nothing fell or the exit did not resolve. */
     private headAfter(fell: readonly Branch[], rpred: RPred | null): Branch[] {

@@ -231,6 +231,32 @@ until has "maximum life" t1 and prefixCount <= 2 {
         expect(r.output).not.toMatch(/by what the item may hold/);
     });
 
+    it("asks the exit of a restart's item in a loop read round by round alike", () => {
+        // The Tangled Fossil's roll is not followed, so the rounds are read as
+        // independent; a restart is still at the loop's head with the item as
+        // it is, so the loop ends on the life whether the fire came with it or
+        // not, as it does without the branch.
+        const rounds = (branch: string): string | undefined =>
+            costSource(
+                `item { base: "Vaal Regalia" ilvl: 86 rarity: rare }
+until has "maximum life" {
+    fossil "tangled"
+    chaos${branch}
+}`,
+                "test.craft",
+                registry,
+                prices,
+            ).output.match(/chaos\s+×(\d+(\.\d+)?)/)?.[1];
+        const plain = rounds("");
+        expect(plain).toBeDefined();
+        expect(
+            rounds(`
+    if has "fire resistance" {
+        restart
+    }`),
+        ).toBe(plain);
+    });
+
     it("names what the snapshot cannot price and still sums the rest", () => {
         const r = costSource(
             `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] }\nlocus`,
