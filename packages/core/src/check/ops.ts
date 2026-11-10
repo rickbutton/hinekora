@@ -2004,6 +2004,8 @@ function removeOne(
     allowed: ReadonlySet<Gen>,
     shield: Shield | null,
     registry: Registry,
+    /** Modifiers of no known type that the removal cannot take. */
+    sparedUnnamed = 0,
 ): AItem {
     // A guarantee survives only if the removed affix could not have been it: one
     // in a generation the removal cannot reach (protected), one the shield covers,
@@ -2046,6 +2048,8 @@ function removeOne(
     let reachable = 0;
     for (const gen of allowed)
         reachable += gen === "prefix" ? a.counts.prefix[1] : suffixRange(a)[1];
+    // Both sides together hold no more than the item does.
+    if (allowed.size === ALL_GENS.length) reachable = Math.min(reachable, a.counts.total[1]);
     // A kept type counts toward the reachable sides only when every row it
     // may be sits on one of them.
     let keptThere = 0;
@@ -2057,7 +2061,7 @@ function removeOne(
         a.bdd,
         a.bdd.and(presenceFacts(a.bdd, surviving, excludedTypes(a)), fractureProjection(a)),
         atRisk,
-        reachable - keptThere <= atRisk.length,
+        reachable - keptThere - sparedUnnamed <= atRisk.length,
     );
     // The removed affix might have been the crafted mod, so the lower bound drops.
     const crafted: Range = [Math.max(0, a.crafted[0] - 1), a.crafted[1]];
@@ -2078,7 +2082,11 @@ function removeAnother(
     const added = resolvePool(a0, sparing, registry).assert;
     const spared = new Set(shield?.types);
     if (added.length === 1) spared.add(added[0]!);
-    const s = removeOne(a, allowed, { types: spared }, registry);
+    // Of several types the added modifier is one, which is unknown: it still
+    // is a modifier the removal cannot take. Counted only where the removal
+    // reaches both sides, so it is surely among those it could have reached.
+    const unnamed = added.length > 1 && allowed.size === ALL_GENS.length ? 1 : 0;
+    const s = removeOne(a, allowed, { types: spared }, registry, unnamed);
     if (added.length === 0) return s;
     let clause = a.bdd.FALSE;
     for (const t of added) clause = a.bdd.or(clause, a.bdd.variable(t));

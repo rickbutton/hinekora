@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
-import { disjunctiveGuarantees, guaranteedTypes } from "./astate.js";
+import { disjunctiveGuarantees, guaranteedTypes, isExcluded } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, harvest, item, op } from "../__fixtures__/ast.js";
 import {
@@ -75,6 +75,21 @@ describe("harvest augment against the modifiers the item may carry", () => {
             harvest("reforge", "elemental"),
         ]);
         expect(check(c, ctx).diagnostics).toEqual([]);
+    });
+
+    it("takes the one other modifier, whichever of the tag's modifiers it added", () => {
+        // Fire resistance or the fire and chaos one goes on; the removal takes
+        // "another" modifier, and the mana is the only other.
+        const r = check(craft(rareRing([INCREASED_MANA.id]), [harvest("augment", "fire")]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(isExcluded(r.finalState!, INCREASED_MANA.type)).toBe(true);
+        expect(r.finalState!.counts.total).toEqual([1, 1]);
+        // With two others, either may be the one taken.
+        const two = check(
+            craft(rareRing(["T1 Life", INCREASED_MANA.id]), [harvest("augment", "fire")]),
+            ctx,
+        );
+        expect(isExcluded(two.finalState!, INCREASED_MANA.type)).toBe(false);
     });
 
     it("is blocked when one unknown suffix can cover every candidate's group", () => {
