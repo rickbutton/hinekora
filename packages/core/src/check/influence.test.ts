@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, harvest, has as hasT, iff, influencedP, item } from "../__fixtures__/ast.js";
+import { craft, harvest, has as hasT, iff, influencedP, item, until } from "../__fixtures__/ast.js";
 import type { OperationStmt } from "../ast/ast.js";
 import {
     ASTROLABE_BASE,
@@ -369,5 +369,28 @@ describe("the Astrolabe Amulet", () => {
         expect(
             check(craft(declared, []), { registry: astrolabe }).diagnostics[0]!.message,
         ).toContain("leave `influences:` out");
+    });
+
+    it("rolls every influence's rows and takes no fractured modifier", () => {
+        const astrolabe = buildRegistry({
+            bases: [ASTROLABE_BASE],
+            mods: [...CATALOG, HUNTER_AMULET_SUFFIX],
+        });
+        const amulet = item({ base: "Astrolabe Amulet", ilvl: 100, rarity: "rare" });
+        // The Hunter row spawns only on an influenced amulet's tag, so a loop on it
+        // can exit only if the item's influences reach the pool.
+        const r = check(craft(amulet, [until(hasT(HUNTER_AMULET_SUFFIX.id), [words("chaos")])]), {
+            registry: astrolabe,
+        });
+        expect(r.diagnostics).toEqual([]);
+        const fractured = item({
+            base: "Astrolabe Amulet",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: [{ mod: "IncreasedLife1", fractured: true }],
+        });
+        expect(
+            check(craft(fractured, []), { registry: astrolabe }).diagnostics[0]!.message,
+        ).toContain("An influenced item cannot have a fractured modifier");
     });
 });

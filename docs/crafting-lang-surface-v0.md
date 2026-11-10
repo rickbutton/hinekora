@@ -85,8 +85,9 @@ item {
   `shaper`, `elder`, `crusader`, `hunter`, `redeemer` and `warlord`. Every method in §3
   leaves the mark as it is; the influence rows roll in every pool and resolve and tier
   like the base's own. An influenced item cannot be fractured, so declaring both is an
-  error. The [Astrolabe Amulet](https://www.poewiki.net/wiki/Astrolabe_Amulet) has every
-  influence by its implicit, so its item block lists none and no influence orb takes it.
+  error. The [Astrolabe Amulet](https://www.poewiki.net/wiki/Astrolabe_Amulet) counts as
+  having every influence (the same section), so its item block lists none, every influence's
+  rows roll on it, and it takes no influence orb, eldritch implicit or fracture.
 - `exarch: grand` and `eater: lesser` give the tiers of the item's
   [eldritch implicits](https://www.poewiki.net/wiki/Eldritch_implicit_modifier), the
   Searing Exarch's and the Eater of Worlds'; the six tiers are `lesser`, `greater`,

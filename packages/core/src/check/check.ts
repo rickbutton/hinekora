@@ -324,8 +324,8 @@ class Checker {
         const fracturedTypes: TypeId[] = [];
         let fracturedAnonymous = 0;
         let crafted = 0;
-        // An Astrolabe Amulet counts as having every influence by its implicit
-        // (Astrolabe Amulet), so none is declared and all six are read.
+        // An Astrolabe Amulet counts as having every influence (Influenced item §
+        // Mechanics), so none is declared and all six are read.
         if (base.allInfluences && item.influences.length > 0) {
             this.diag(
                 "This base has every influence by its implicit; leave `influences:` out.",
@@ -546,10 +546,10 @@ class Checker {
 
         // An influenced item cannot be fractured (Influenced item § Mechanics)
         // nor carry an eldritch implicit (Eldritch implicit modifier).
-        if (item.influences.length > 0 && (item.exarch !== undefined || item.eater !== undefined)) {
+        if (influences.length > 0 && (item.exarch !== undefined || item.eater !== undefined)) {
             this.diag("An influenced item cannot have an eldritch implicit.", item.span);
         }
-        if (item.influences.length > 0 && fracturedTypes.length + fracturedAnonymous > 0) {
+        if (influences.length > 0 && fracturedTypes.length + fracturedAnonymous > 0) {
             this.diag("An influenced item cannot have a fractured modifier.", item.span);
         }
         // An anonymous bench affix is some bench row of its side.
