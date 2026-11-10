@@ -89,6 +89,8 @@ export interface RepoeFossil {
     readonly allowed_tags?: readonly string[];
     /** Percent chance that one rolled modifier is a corrupted essence's. */
     readonly corrupted_essence_chance: number;
+    /** A random "greatly more" and "no" category, shown once socketed (the Tangled Fossil). */
+    readonly random_tags?: boolean;
     /** Fractures one of the modifiers it rolls. */
     readonly fractures: boolean;
     /** Corrupts the item. */

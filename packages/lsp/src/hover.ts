@@ -430,6 +430,10 @@ function fossilSignature(names: readonly string[], registry: Registry): string {
             effects.push("guarantees a corrupted-essence modifier");
         else if (f.corruptedEssenceChance > 0)
             effects.push("may roll a corrupted-essence modifier");
+        if (f.randomTags)
+            effects.push(
+                "makes one random modifier type much more likely and blocks another, shown once the resonator is full; any modifier is read as possible",
+            );
         if (f.fractures) effects.push("fractures one of the rolled modifiers");
         if (f.corrupts) effects.push("corrupts the item (not supported)");
         if (f.allowedTags) effects.push(`only on: ${words(f.allowedTags)}`);

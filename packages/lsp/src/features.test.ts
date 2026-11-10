@@ -33,6 +33,11 @@ describe("hover", () => {
         expect(md!).toContain("no defences modifiers");
         expect(md!).toContain("Hollow Fossil");
         expect(md!).toContain("only on: weapon, helmet, boots, gloves, body armour");
+        const tangled = `item { base: "Iron Ring" ilvl: 84 rarity: rare }\nfossil "tangled"`;
+        const line = getHover(tangled, tangled.indexOf("tangled") + 1, registry)!;
+        expect(line).toContain("one random modifier type much more likely and blocks another");
+        expect(line).not.toContain("corrupted-essence");
+        expect(line).not.toContain("fossil-only");
     });
 
     it("hovers an essence name with its tier and the mod it guarantees here", () => {

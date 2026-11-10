@@ -67,13 +67,16 @@ describe("a resonator", () => {
         expect(r.finalState!.counts.total).toEqual([4, 6]);
     });
 
-    it("guarantees a corrupted essence's modifier for the Glyphic, allows it for the Tangled", () => {
+    it("guarantees a corrupted essence's modifier for the Glyphic; the Tangled rolls none", () => {
         const glyphic = check(craft(rareRing(), [fossil("glyphic")]), ctx);
         expect(glyphic.diagnostics).toEqual([]);
         expect(guaranteedTypes(glyphic.finalState!).has(CORRUPTED_ESSENCE_ROW.type)).toBe(true);
+        // Since 3.16.0 the Tangled Fossil gives no fossil's own modifiers and no
+        // corrupted essence's: a reforge the checker reads whole.
         const tangled = check(craft(rareRing(), [fossil("tangled")]), ctx);
-        expect(tangled.finalState!.possible.has(CORRUPTED_ESSENCE_ROW.type)).toBe(true);
-        expect(guaranteedTypes(tangled.finalState!).has(CORRUPTED_ESSENCE_ROW.type)).toBe(false);
+        expect(tangled.diagnostics).toEqual([]);
+        expect(tangled.finalState!.possible.has(CORRUPTED_ESSENCE_ROW.type)).toBe(false);
+        expect(tangled.finalState!.possible.has(DELVE_RING_ROW.type)).toBe(false);
         const plain = check(craft(rareRing(), [fossil("dense")]), ctx);
         expect(plain.finalState!.possible.has(CORRUPTED_ESSENCE_ROW.type)).toBe(false);
     });

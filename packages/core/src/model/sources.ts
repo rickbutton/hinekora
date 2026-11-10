@@ -72,8 +72,12 @@ export interface FossilSpec {
     /** Base tags one of which the item must carry, when the fossil limits its targets. */
     readonly allowedTags?: ReadonlySet<TagId>;
     /** Percent chance that one rolled modifier is a corrupted essence's: the
-     *  Glyphic Fossil's certainty, the Tangled Fossil's one in ten. */
+     *  Glyphic Fossil's certainty. */
     readonly corruptedEssenceChance: number;
+    /** Makes one random category much more likely and blocks another, shown
+     *  only once the resonator is full (the Tangled Fossil): which rows can
+     *  roll is not known beforehand, so the pool is read whole. */
+    readonly randomTags?: true;
     /** Fractures one of the modifiers it rolls (the Fractured Fossil). */
     readonly fractures: boolean;
     /** Corrupts the item (the Bloodstained Fossil). */

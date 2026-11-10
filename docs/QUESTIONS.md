@@ -43,16 +43,6 @@ refused, or the item rolls without one.
 **Assumed:** the guarantee lapses and no such row rolls. **Encoded in:**
 `check/library.ts` `resonatorOps`.
 
-### Q21 · probe · open — the Tangled Fossil's fossil-only and essence rows
-
-**Q:** does the Tangled Fossil still roll fossil-only or corrupted-essence modifiers?
-[Fossil § Mechanics](https://www.poewiki.net/wiki/Fossil#Mechanics) describes it as a
-random "greatly more" and "no" tag since 3.16; the data still lists both.
-**Probe:** Tangled Fossils and resonators, any rare base; resonate many times; record
-whether either kind ever appears.
-**Assumed:** the data's reading, which only widens what may appear; the hover says "may
-roll". **Encoded in:** `packages/data/data/poe1/fossils.json`, `resonatorOps`.
-
 ### Q22 · probe · open — the Harvest change's tier where the ladders differ
 
 **Q:** [Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting)

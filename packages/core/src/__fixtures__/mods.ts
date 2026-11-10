@@ -978,8 +978,9 @@ export const FOSSIL_HOLLOW = fossilSpec("FossilHollow", "Hollow Fossil", {
 export const FOSSIL_GLYPHIC = fossilSpec("FossilGlyphic", "Glyphic Fossil", {
     corruptedEssenceChance: 100,
 });
+/** The Tangled Fossil: a random "greatly more" and "no" tag, nothing the pool reads. */
 export const FOSSIL_TANGLED = fossilSpec("FossilTangled", "Tangled Fossil", {
-    corruptedEssenceChance: 10,
+    randomTags: true,
 });
 export const FOSSIL_FRACTURED = fossilSpec("FossilFractured", "Fractured Fossil", {
     fractures: true,

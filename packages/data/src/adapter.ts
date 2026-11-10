@@ -123,6 +123,7 @@ export function adaptFossil(id: string, f: RepoeFossil): FossilSpec {
         forcedMods: f.forced_mods.map((m) => ModId(m)),
         ...(f.allowed_tags && { allowedTags: new Set(f.allowed_tags.map((t) => TagId(t))) }),
         corruptedEssenceChance: f.corrupted_essence_chance,
+        ...(f.random_tags && { randomTags: true as const }),
         fractures: f.fractures,
         corrupts: f.corrupts,
     };

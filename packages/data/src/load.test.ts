@@ -67,9 +67,13 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         expect(registry.resolveFossil("glyphic")).toMatchObject({
             value: { corruptedEssenceChance: 100 },
         });
+        // Since 3.16.0 the Tangled Fossil gives no fossil's own modifiers and
+        // no corrupted essence's (Version 3.16.0); the export's row is older.
         expect(registry.resolveFossil("tangled")).toMatchObject({
-            value: { corruptedEssenceChance: 10 },
+            value: { corruptedEssenceChance: 0, addedMods: [], randomTags: true },
         });
+        const faceted = registry.resolveFossil("faceted");
+        expect(faceted.ok && faceted.value.addedMods).toContain("DelveStrengthGemLevel1");
         expect(registry.resolveFossil("fractured")).toMatchObject({ value: { fractures: true } });
         expect(registry.resolveFossil("bloodstained")).toMatchObject({ value: { corrupts: true } });
         expect(registry.resolveFossil("fossil").ok).toBe(false); // every fossil matches

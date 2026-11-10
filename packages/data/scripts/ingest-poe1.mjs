@@ -210,16 +210,23 @@ export function projectFossils(raw) {
         const weights = {};
         for (const w of f.positive_mod_weights ?? []) weights[w.tag] = w.weight;
         for (const w of f.negative_mod_weights ?? []) if (w.weight > 0) weights[w.tag] = w.weight;
+        // The export's Tangled Fossil is the one before 3.16.0, with every
+        // fossil's own modifiers and a chance of a corrupted essence's. Since
+        // then it "makes a random Modifier type much more likely, and prevents
+        // another random modifier type (previously granted any Fossil
+        // modifiers)" (Version 3.16.0), and rolls none of those rows.
+        const tangled = f.name === "Tangled Fossil";
         out[id] = {
             name: f.name,
             blocked_tags: (f.negative_mod_weights ?? [])
                 .filter((w) => w.weight === 0)
                 .map((w) => w.tag),
             ...(Object.keys(weights).length > 0 && { weights }),
-            added_mods: f.added_mods ?? [],
+            added_mods: tangled ? [] : (f.added_mods ?? []),
             forced_mods: f.forced_mods ?? [],
             ...(f.allowed_tags?.length ? { allowed_tags: f.allowed_tags } : {}),
-            corrupted_essence_chance: f.corrupted_essence_chance ?? 0,
+            corrupted_essence_chance: tangled ? 0 : (f.corrupted_essence_chance ?? 0),
+            ...(tangled && { random_tags: true }),
             // The export has no field for either: the Fractured Fossil fractures
             // one of the modifiers it rolls (Fractured Fossil § Mechanics) and the
             // Bloodstained Fossil corrupts the item (Bloodstained Fossil § Mechanics).
