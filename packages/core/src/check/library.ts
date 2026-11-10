@@ -223,7 +223,8 @@ export function harvestReforgeOps(tag: TagId): readonly Op[] {
 /** Harvest "add a <tag> modifier, remove another random modifier": the tagged
  *  modifier goes on first, so the item as it stands needs an open slot one of
  *  the tag's rows fits (the grove's "There are no valid mods for craft on this
- *  item" otherwise), and the removal then takes one of the others. The add
+ *  item" otherwise), and the removal then takes one of the others: seen in
+ *  game, the page being silent on the order. The add
  *  obeys a cannot-roll metamod, the removal ignores it, and both respect a
  *  protected side (Harvest crafting § Mechanics). */
 export function harvestAugmentOps(tag: TagId): readonly Op[] {

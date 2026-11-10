@@ -37,7 +37,7 @@ has it, a corruption's outcomes as
 the craft ending where the item is destroyed or becomes a unique, a Sanctified
 Fossil's weights as
 [Sanctified Fossil § Further analysis](https://www.poewiki.net/wiki/Sanctified_Fossil#Further_analysis),
-its lucky values not modelled.
+its lucky values not modelled. A Harvest augment adds, then removes.
 
 Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entry):
 
@@ -49,8 +49,7 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
   rerolled side taking what fits.
 - **Fossils.** Several fossils' "more" multipliers add and a "fewer" multiplies the
   result (Q60).
-- **Harvest.** The tagged row is drawn among the tag's rows by weight (Q63); an augment
-  adds, then removes another (Q89).
+- **Harvest.** The tagged row is drawn among the tag's rows by weight (Q63).
 - **Removals** are uniform over the modifiers they can reach, never a fractured one (Q61).
 - **Veiled orbs.** The veiled modifier lands on either side with room alike (Q76); an
   unveil draws its options as a reforge draws modifiers (Q99).

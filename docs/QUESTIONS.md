@@ -313,18 +313,6 @@ record refused or applied.
 **Assumed:** applied at any item level, in a step and in the item block. **Encoded in:**
 `check/library.ts` `benchOps` (no level check), `check/check.ts` `elaborateItem`.
 
-### Q89 · probe · open — the order of a Harvest augment's add and removal
-
-**Q:** does the grove add the tagged modifier before it removes another, so that the item
-as it stands needs a slot the modifier fits?
-[Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting) does not say; the order
-rests on a refusal seen in game on an amulet with full suffixes (reddit 1chjx6g) and on
-[Maxroll's Harvest guide](https://maxroll.gg/poe/crafting/harvest-crafting-guide).
-**Probe:** a Rare with three prefixes whose only modifiers of some tag are prefixes; open
-that tag's augment in the grove; record offered or greyed out (a refusal costs nothing).
-**Assumed:** added first: refused without an open slot one of the tag's rows fits.
-**Encoded in:** `check/library.ts` `harvestAugmentOps`.
-
 ### Q95 · probe · open — a Tainted Exalted Orb's odds
 
 **Q:** how often does a Tainted Exalted Orb add, and what does it do to a full item?
