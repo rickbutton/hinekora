@@ -74,11 +74,14 @@ const MAGIC_REFORGE: Range = [1, 2];
 
 /** The most memory strands one use may use up (Memory strand § Crafting
  *  methods consuming memory strands). An Exalted Orb's depends on the modifiers
- *  on the item, the empty item's "likely 0-10"; the Foulborn Exalted Orb's is
- *  known at five modifiers only and taken the same below (QUESTIONS.md Q68). */
+ *  on the item. The page's rows are read one count lower than it prints them:
+ *  recorded orbs used up 33 strands at four modifiers and 38 at five, where
+ *  it gives 32 and 34, and 38 for the Tainted orb's six; a ceiling too high is
+ *  the safe side. The Foulborn Exalted Orb's is known at five modifiers only
+ *  and taken the same below (QUESTIONS.md Q68). */
 const strands = (consume: number | readonly number[]): Op => ({ kind: "strands", consume });
-const EXALT_STRANDS: readonly number[] = [10, 16, 22, 26, 32, 34];
-const TAINTED_EXALT_STRANDS: readonly number[] = [10, 16, 22, 26, 32, 34, 38];
+const EXALT_STRANDS: readonly number[] = [16, 22, 26, 32, 34, 38];
+const TAINTED_EXALT_STRANDS = EXALT_STRANDS;
 const FOULBORN_STRANDS = { augment: 32, regal: 48, exalt: 62 } as const;
 
 /** The currencies by name (Crafting § Currency). */

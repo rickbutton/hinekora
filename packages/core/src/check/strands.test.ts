@@ -49,9 +49,9 @@ describe("memory strands", () => {
         // A removal and the bench take none.
         const annul = check(craft(ring(82), [op("chaos"), op("annul")]), ctx);
         expect(annul.finalState!.strands).toEqual([32, 82]);
-        // An Exalted Orb on a one-modifier Rare takes up to sixteen.
+        // An Exalted Orb on a one-modifier Rare takes up to twenty-two.
         const exalted = check(craft(ring(82, "rare", ["IncreasedLife1"]), [op("exalt")]), ctx);
-        expect(exalted.finalState!.strands).toEqual([66, 82]);
+        expect(exalted.finalState!.strands).toEqual([60, 82]);
     });
 
     it("leave a Harvest reforge's tiers alone, since the page names the currency orbs", () => {
