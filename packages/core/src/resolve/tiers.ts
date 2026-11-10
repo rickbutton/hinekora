@@ -12,34 +12,51 @@ import type { Mod } from "../model/mod.js";
 import { type ModCatalog, pool } from "../pool/pool.js";
 
 const NO_TAGS: ReadonlySet<TagId> = new Set();
+const NO_ROWS: readonly Mod[] = [];
+
+/** What is derived from one "empty Rare item" pool: the pool, and each type's
+ *  rows in it, best first, filled on the first question about a type. */
+interface Ladders {
+    readonly pool: ReturnType<typeof pool>;
+    tiers?: ReadonlyMap<TypeId, readonly Mod[]>;
+}
 
 /**
  * The "empty Rare item" pool per (base, ilvl, extra tags), memoized — this
  * catalog scan is repeated per predicate, per fixpoint pass, per hover, so
- * caching it is the single biggest checker/LSP speedup. Keyed by catalog
- * identity (a WeakMap) so different registries never share a cache.
+ * caching it is the single biggest checker/LSP speedup. Keyed by the catalog
+ * and the base themselves (WeakMaps), so different registries never share a
+ * cache, nor do two cluster jewels of one base with different enchantments,
+ * whose bases differ only in their tags.
  */
-const emptyPoolCache = new WeakMap<ModCatalog, Map<string, ReturnType<typeof pool>>>();
+const laddersCache = new WeakMap<ModCatalog, WeakMap<Base, Map<string, Ladders>>>();
 
-function emptyPool(
+function laddersOf(
     catalog: ModCatalog,
     base: Base,
     ilvl: number,
     tags: ReadonlySet<TagId>,
-): ReturnType<typeof pool> {
-    let byKey = emptyPoolCache.get(catalog);
-    if (byKey === undefined) {
-        byKey = new Map();
-        emptyPoolCache.set(catalog, byKey);
+): Ladders {
+    let byBase = laddersCache.get(catalog);
+    if (byBase === undefined) {
+        byBase = new WeakMap<Base, Map<string, Ladders>>();
+        laddersCache.set(catalog, byBase);
     }
-    const key = `${base.id}:${ilvl}:${[...tags].sort().join(",")}`;
+    let byKey = byBase.get(base);
+    if (byKey === undefined) {
+        byKey = new Map<string, Ladders>();
+        byBase.set(base, byKey);
+    }
+    const key = tags.size === 0 ? `${ilvl}` : `${ilvl}:${[...tags].sort().join(",")}`;
     let cached = byKey.get(key);
     if (cached === undefined) {
         const empty = emptyItem(base, ilvl, "rare");
-        cached = pool(
-            catalog,
-            tags.size === 0 ? empty : { ...empty, tags: new Set([...empty.tags, ...tags]) },
-        );
+        cached = {
+            pool: pool(
+                catalog,
+                tags.size === 0 ? empty : { ...empty, tags: new Set([...empty.tags, ...tags]) },
+            ),
+        };
         byKey.set(key, cached);
     }
     return cached;
@@ -55,10 +72,21 @@ export function rollableTiers(
     type: TypeId,
     tags: ReadonlySet<TagId> = NO_TAGS,
 ): readonly Mod[] {
-    return emptyPool(catalog, base, ilvl, tags)
-        .map((c) => c.mod)
-        .filter((m) => m.type === type)
-        .sort((a, b) => b.minLevel - a.minLevel);
+    const ladders = laddersOf(catalog, base, ilvl, tags);
+    // Every type's rows are sorted at once: a strip asks the side of each
+    // modifier the item may carry, hundreds of types a call, and filtering the
+    // pool per type made a guide of nested loops take tens of seconds.
+    if (ladders.tiers === undefined) {
+        const rows = new Map<TypeId, Mod[]>();
+        for (const c of ladders.pool) {
+            const list = rows.get(c.mod.type);
+            if (list) list.push(c.mod);
+            else rows.set(c.mod.type, [c.mod]);
+        }
+        for (const list of rows.values()) list.sort((a, b) => b.minLevel - a.minLevel);
+        ladders.tiers = rows;
+    }
+    return ladders.tiers.get(type) ?? NO_ROWS;
 }
 
 /** Every ModType that can roll on `base` at `ilvl` — the type-level pool. */
@@ -69,8 +97,21 @@ export function rollableTypes(
     tags: ReadonlySet<TagId> = NO_TAGS,
 ): Set<TypeId> {
     const out = new Set<TypeId>();
-    for (const c of emptyPool(catalog, base, ilvl, tags)) out.add(c.mod.type);
+    for (const c of laddersOf(catalog, base, ilvl, tags).pool) out.add(c.mod.type);
     return out;
+}
+
+/** The side of each type's first row in the catalog. */
+const firstGenCache = new WeakMap<ModCatalog, Map<TypeId, Gen>>();
+
+function firstGen(catalog: ModCatalog, type: TypeId): Gen | undefined {
+    let gens = firstGenCache.get(catalog);
+    if (gens === undefined) {
+        gens = new Map<TypeId, Gen>();
+        for (const m of catalog) if (!gens.has(m.type)) gens.set(m.type, m.gen);
+        firstGenCache.set(catalog, gens);
+    }
+    return gens.get(type);
 }
 
 /**
@@ -86,9 +127,7 @@ export function rollableGen(
     type: TypeId,
     tags: ReadonlySet<TagId> = NO_TAGS,
 ): Gen | undefined {
-    const here = rollableTiers(catalog, base, ilvl, type, tags)[0];
-    if (here) return here.gen;
-    return catalog.find((m) => m.type === type)?.gen;
+    return rollableTiers(catalog, base, ilvl, type, tags)[0]?.gen ?? firstGen(catalog, type);
 }
 
 /** The mod at tier `n` (1-based, T1 = best), or `undefined` if out of range. */
