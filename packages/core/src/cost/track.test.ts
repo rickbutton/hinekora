@@ -124,7 +124,7 @@ describe("the tracked state", () => {
     });
 });
 
-describe("the average group an unnamed modifier closes", () => {
+describe("the groups an unnamed modifier closes", () => {
     // Five prefix groups no condition names, of very different weights, beside
     // the named life; three suffix groups. A Rare holding two random prefixes
     // and one suffix takes an Exalted Orb.

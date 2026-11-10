@@ -435,8 +435,6 @@ class Walker {
         return new Tracker(this.registry, first, items, preds, crafted);
     }
 
-    /** Where the guide starts: the item block as the tracker's states, when it
-     *  settles them. */
     /** What `f` reads off the tracked states, or undefined once they are too
      *  many to follow, the walk then read on the checker's item. */
     private untilOverflow<T>(f: () => T): T | undefined {
@@ -449,6 +447,8 @@ class Walker {
         }
     }
 
+    /** Where the guide starts: the item block as the tracker's states, when it
+     *  settles them. */
     start(): Branch {
         const states =
             this.tracker === undefined || this.first === undefined

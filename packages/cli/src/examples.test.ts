@@ -37,7 +37,8 @@ function runsAt(file: string, line: number): number {
 
 // Regression pins on the walk's own figures, held to a few per cent so a change
 // to the cost model that moves them shows. They are not validation: the
-// simulator's figures for these guides are in docs/research/cost-model.md §6.2.
+// simulator's figures for these guides are in docs/research/cost-model.md §6.2 at the
+// tag research-3.30.
 describe("the example guides' costs", () => {
     it("metamod-harvest-loop.craft: about nine reforges and one and a third annuls", () => {
         expect(runsAt("metamod-harvest-loop.craft", 23)).toBeGreaterThan(8.5);
