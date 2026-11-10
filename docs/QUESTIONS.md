@@ -86,14 +86,21 @@ chance.
 ### Q22 · game probe · open
 
 **Asked:** 2026-10-28
-**Goal:** whether the Harvest change works on a Magic item. The tier half is settled:
+**Goal:** which tier the Harvest change lands on when the two elements' tiers differ, and
+whether it works on a Magic item.
 [Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting)
-says the craft "preserves the tier, but not the roll within that tier", which is the
-checker's same rank (`check/methods.ts` `harvestChange`). It sets no rarity gate.
-**Procure:** a Magic item with a fire resistance; the change to cold.
-**Steps:** apply it; note whether the Magic item took it.
-**Record:** accepted or not.
-**Assumed meanwhile:** any rarity with the modifier present.
+says the craft "preserves the tier, but not the roll within that tier"; but the elements'
+ladders are not parallel (fire resistance's rows at levels 1, 12, 24, …, cold's at 1, 14,
+26, …), so "the same tier" may be counted over the base's whole ladder or over the rows
+the item level allows, and the two disagree on a low item.
+**Procure:** a Rare of item level 13 with the level-12 fire resistance; a Magic item with a
+fire resistance; the change to cold.
+**Steps:** apply it to each; note the cold resistance's value and whether the Magic item
+took it.
+**Record:** the cold row on the Rare; accepted or not on the Magic item.
+**Assumed meanwhile:** the target's row at the source's rank where the two ladders match
+level for level at the item's level, any of the target's rows where they do not
+(`check/methods.ts` `harvestChange`); any rarity with the modifier present.
 **Answer:**
 
 ### Q25 · game probe · open

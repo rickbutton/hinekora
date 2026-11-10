@@ -169,17 +169,21 @@ function harvestChange(
         source.element === target.element
     ) {
         return refuse(
-            `The grove changes a fire, cold or lightning resistance into another of the three, or a fire, cold or lightning damage modifier likewise — not "${fromName}" into "${toName}".`,
+            `The grove changes a fire, cold or lightning resistance into another of the three, or a fire, cold or lightning damage modifier likewise, not a critical strike or damage over time multiplier nor a resistance shared with chaos — not "${fromName}" into "${toName}".`,
         );
     }
     const targets = rollableTiers(catalog, a.base, a.ilvl, to.value, tags);
     if (targets.length === 0) return refuse(`"${toName}" cannot roll on this item.`);
-    // A similar tier: the target's row at the source's rank when the source is
-    // pinned to one row, else any of the target's rows.
+    // A similar tier: the target's row at the source's rank, but only where the
+    // two ladders match level for level; which row the game picks when they do
+    // not is unknown (`QUESTIONS.md` Q22), so any of the target's rows.
     const pinned = a.tiers.get(from.value);
     const sources = rollableTiers(catalog, a.base, a.ilvl, from.value, tags);
-    const rank = pinned?.size === 1 ? sources.findIndex((m) => pinned.has(m.id)) : -1;
-    const rows = rank >= 0 && rank < targets.length ? [targets[rank]!] : targets;
+    const parallel =
+        sources.length === targets.length &&
+        sources.every((m, i) => m.minLevel === targets[i]!.minLevel);
+    const rank = parallel && pinned?.size === 1 ? sources.findIndex((m) => pinned.has(m.id)) : -1;
+    const rows = rank >= 0 ? [targets[rank]!] : targets;
     return harvestChangeOps(from.value, registry.typeLabel(from.value), rows);
 }
 

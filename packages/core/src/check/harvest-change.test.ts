@@ -119,6 +119,23 @@ describe("harvest change", () => {
         expect(loose.diagnostics[0]!.message).toContain("isn't guaranteed");
     });
 
+    it("lands at any tier when the two elements' tiers sit at different levels", () => {
+        const offset = COLD_RES_TIERS.map((m, i) => (i === 1 ? { ...m, minLevel: 35 } : m));
+        const skewed = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...CATALOG, ...FIRE_RES_TIERS, ...offset],
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
+        const r = check(
+            craft(rareRing([], ["FireTiersMid"]), [harvestChange("FireTiersMid", "ColdTiersLow")]),
+            { registry: skewed },
+        );
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(TypeId("ColdTiers"))).toEqual(
+            new Set(["ColdTiersLow", "ColdTiersMid", "ColdTiersHigh"]),
+        );
+    });
+
     it("needs the modifier guaranteed, unfractured, on an unprotected side", () => {
         const absent = check(
             craft(rareRing(), [harvestChange(FIRE_RESIST.id, COLD_RESIST.id)]),
