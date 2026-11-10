@@ -476,6 +476,19 @@ it, which is where guides quote odds; (b) when a guide needs the range.
 again with every range the checker left open (a side's count, the memory strands) at its
 floor and at its ceiling, and a step whose ends differ shows them (`cost/roll.ts`
 `Reading`, `cost/report.ts` `Bounds`).
+**Evidence since (2026-11-10):** craftofexile's simulator, run to a few hundred items per
+guide (`docs/research/cost-model.md` §6), puts the figure inside the spread wherever the
+two differ, but the estimate falls well off it where the checker's item is a join over a
+loop's rounds. On `examples/metamod-harvest-loop.craft` (its random prefix made a T5
+mana) the simulator takes 9.35 Harvest reforges; the spread is 8.73 to 23.1 and the
+estimate 23.1, because an annul inside the loop may take a kept suffix, so the join no
+longer guarantees the three suffixes and the estimate reads the open count at its floor.
+On `examples/example.craft`'s second loop the simulator takes 1306 rounds, the spread is
+1084 to 2111, the estimate 1626: the Regal Orb's path forgets how many modifiers the
+Orb of Transmutation laid down. A fourth option follows: (d) carry a distribution over
+the counts and the named modifiers forward through every step, as a chain-solved loop
+already does for its rounds and now hands to the steps after it, so neither a floor nor
+the last roll alone stands in for what came before.
 **Answer:**
 
 ### Q58 · game probe · open
@@ -635,6 +648,14 @@ replacement, a modifier on both items at twice its weight and its tier one of ei
 by weight share, an unnamed modifier at the average weight of its side's pool, the
 exclusive rule as the page states it (`cost/recombine.ts` `pickSide`, `cost/roll.ts`
 `recombineRoll`).
+**Evidence since (2026-11-10):** the same page's history row for
+[Version 3.25.1](https://www.poewiki.net/wiki/Version_3.25.1) says the opposite direction:
+"rarer Modifiers now have a much higher chance to be selected". craftofexile's emulator
+(`poec_simRecombinate`) picks uniformly among the pooled modifiers, and its count table
+differs from the page's (one pooled: keep none a third of the time, not 41%; three
+pooled: 30/50/20, not 40/50/10). The probe above settles the direction: if the rarer
+prefix survives more often than half, the pick leans against spawn weight and
+`pickSide` should weigh by its inverse.
 **Answer:**
 
 ### Q70 · decision · open
