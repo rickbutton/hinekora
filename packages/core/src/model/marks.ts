@@ -27,7 +27,8 @@ const TAG_SUFFIX: Readonly<Record<Influence, string>> = {
  * not by the base's own tags: a two-handed sword carries `sword` but its
  * influence rows spawn on `2h_sword_shaper`. One stem per class, as the game's
  * influence tag table has it; a class absent here cannot be influenced.
- * Curated from the stems the spawn tables name (`QUESTIONS.md` Q26).
+ * Curated from the stems the spawn tables name; every class matches that
+ * table as RePoE's item classes export reads it.
  */
 export const INFLUENCE_STEMS: Readonly<Record<string, string>> = {
     Amulet: "amulet",

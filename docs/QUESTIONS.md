@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q76.
+keeps it. New entries continue from Q78.
 
 ```
 ### Qn · probe|decision · open — title
@@ -30,18 +30,6 @@ each case.
 **Assumed:** the count is what can roll on the item now, tags included; the cull keeps
 every row some count between the sure and the tag-enabled total would keep. **Encoded
 in:** `check/ops.ts` `foulbornTiers`.
-
-### Q18 · probe · open — what the Harvest element change accepts
-
-**Q:** does "change a modifier that grants Fire Damage" cover only flat added damage, or
-also increased damage, penetration and the hybrids? The grove's option table names the
-twelve crafts and no more.
-**Probe:** Rares with flat added fire, increased fire and fire penetration; the grove's
-"Fire Damage into Cold Damage"; record which modifiers it changed.
-**Assumed:** any type whose rows carry the element's tag and the damage tag (for
-resistances, the element's and the resistance tag, which admits fire-and-chaos); a type
-naming two of the three elements is refused. **Encoded in:** `check/methods.ts`
-`elementalKind`.
 
 ### Q19 · probe · open — how a fossil's own modifiers are admitted
 
@@ -75,23 +63,19 @@ whether either kind ever appears.
 **Assumed:** the data's reading, which only widens what may appear; the hover says "may
 roll". **Encoded in:** `packages/data/data/poe1/fossils.json`, `resonatorOps`.
 
-### Q22 · probe · open — "similar-tier" in the Harvest change
+### Q22 · probe · open — the Harvest change's tier where the ladders differ
 
-**Q:** what tier does the Harvest change give, and does it work on a Magic item?
-**Probe:** a Rare and a Magic item each with T3 fire resistance; change to cold; record
-the cold tier on each and whether the Magic item took it.
-**Assumed:** the target's row of the same rank; any rarity with the modifier present.
-**Encoded in:** `check/methods.ts` `harvestChange`.
-
-### Q23 · probe · open — is a beastcrafted Aspect a crafted modifier?
-
-**Q:** does it count toward the bench's limit, and does "remove crafted modifiers" take
-it? [Aspect of the Cat](https://www.poewiki.net/wiki/Aspect_of_the_Cat) says only that it
-is a beastcrafted suffix.
-**Probe:** a Rare with a beastcrafted Aspect and a bench; bench a modifier, then use
-"remove crafted modifiers"; record both outcomes.
-**Assumed:** not crafted; the removal ignores it. The level-20 bench Aspects have no
-surface form. **Encoded in:** `check/library.ts` `beastAspectOps`.
+**Q:** [Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting)
+says the craft "preserves the tier", but the elements' ladders are not parallel (fire
+resistance's rows at levels 1, 12, 24, …, cold's at 1, 14, 26, …), so "the same tier"
+may count the base's whole ladder or the rows the item level allows. And does it take a
+Magic item?
+**Probe:** a Rare of item level 13 with the level-12 fire resistance, a Magic item with a
+fire resistance; change each to cold; record the cold row, and whether the Magic item
+took it.
+**Assumed:** the target's row at the source's rank where the two ladders match level for
+level at the item's level, any of its rows where they do not; any rarity. **Encoded in:**
+`check/methods.ts` `harvestChange`.
 
 ### Q25 · probe · open — when the grove greys a craft out under a metamod
 
@@ -106,18 +90,6 @@ offered or greyed out, and the outcome.
 **Assumed:** refused unless a tagged row can roll on every path after the lock-respecting
 strip or the removal. **Encoded in:** `check/library.ts` `harvestReforgeOps`,
 `harvestAugmentOps`; `check/ops.ts` `poolNonEmpty`, `sidePairs`, `subsetMods`.
-
-### Q26 · probe · open — the influence tag of a warstaff and a thrusting sword
-
-**Q:** the data keys influence rows by class stem (`warstaff_shaper`), and the wiki has
-no class table ([Modifier § Spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag)
-gives only the matching rule). Does a warstaff also see the six `staff_*`-only rows, and
-does a thrusting sword use `sword` with the one-handed swords?
-**Probe:** a Warlord warstaff and a Shaper rapier, Chaos Orbs; reforge each several
-times; record any staff-only modifier on the warstaff, any one-handed-sword-only one on
-the rapier.
-**Assumed:** one stem per class; a warstaff sees only `warstaff_*`, a thrusting sword the
-`sword_*` rows. **Encoded in:** `packages/core/src/model/marks.ts` `INFLUENCE_STEMS`.
 
 ### Q27 · probe · open — what the grove's influence randomise leaves
 
@@ -167,21 +139,17 @@ capped by the base's limit. An item with an eldritch implicit keeps it beside th
 influence (the wide reading); a Gilded Fossil's extra implicit is not modelled.
 **Encoded in:** `check/library.ts` `locusOps`, `vaalOps`, `brickBranch`.
 
-### Q33 · probe · open — the Tainted currency, the metamods and the item level
+### Q33 · probe · open — the Tainted Chaos Orb under a protection
 
-**Q:** does the Tainted Chaos Orb's reforge respect a protection
-([Tainted Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Tainted_Chaos_Orb#Mechanics)
+**Q:** does its reforge respect a protection?
+[Tainted Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Tainted_Chaos_Orb#Mechanics)
 names only the fractured modifier as surviving; the
-[Metamod table](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions) has no row),
-and can a Tainted Divine Teardrop raise past the item level's cap
-([Tainted Divine Teardrop § Mechanics](https://www.poewiki.net/wiki/Tainted_Divine_Teardrop#Mechanics)
-bounds it by the base type)?
-**Probe:** a corrupted Rare with "Suffixes Cannot Be Changed", a corrupted low-level Rare
-with a modifier at its level's top tier; Tainted Chaos Orbs and Teardrops; record the
-suffixes after each orb outcome and the highest tier seen.
-**Assumed:** both halves of the orb ignore the protection; a Teardrop stays within the
-item level. **Encoded in:** `check/library.ts` `TAINTED_CHAOS`, `unprotect`;
-`check/astate.ts` `relaxTiers`.
+[Metamod table](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions) has a row for
+the Tainted Exalted Orb only.
+**Probe:** a corrupted Rare with "Suffixes Cannot Be Changed", Tainted Chaos Orbs; apply
+until each outcome shows; record whether the suffixes survived either.
+**Assumed:** both halves of the orb ignore the protection. **Encoded in:**
+`check/library.ts` `TAINTED_CHAOS`, `unprotect`.
 
 ### Q35 · decision · open — the eldritch implicits' words
 
@@ -205,17 +173,6 @@ implicit, Orbs of Conflict; apply until the Exarch rises; record the plain varia
 another Exquisite, or a refusal.
 **Assumed:** the implicit keeps its type. **Encoded in:** `check/ops.ts`, the `conflict`
 change leaves `eldritchTypes` alone.
-
-### Q39 · probe · open — does an Orb of Dominance take a Magic item?
-
-**Q:** [Orb of Dominance § Mechanics](https://www.poewiki.net/wiki/Orb_of_Dominance#Mechanics)
-says Magic and Rare; [Elevated modifier](https://www.poewiki.net/wiki/Elevated_modifier)
-says Rare only.
-**Probe:** Magic gloves with a T1 Hunter prefix and suffix, an Orb of Dominance; record
-accepted or not, and the modifiers after.
-**Assumed:** accepted; the elevated row is the one sharing the modifier's group under the
-item's influence tag. **Encoded in:** `check/library.ts` `DOMINANCE`, `check/ops.ts`
-`elevate`.
 
 ### Q40 · decision · open — the formatter's style
 
@@ -270,15 +227,6 @@ to cold; record whether it shows as crafted and whether the removal takes it.
 **Assumed:** it stays crafted. **Encoded in:** `check/ops.ts` `fill` on a `rows` pool
 keeps the new rows among `craftedTypes`.
 
-### Q53 · probe · open — does a Divine Orb reroll a crafted value?
-
-**Q:** [Divine Orb](https://www.poewiki.net/wiki/Divine_Orb) rerolls "the random
-modifiers" and spares a fractured one; it does not name crafted ones.
-**Probe:** a Rare with a bench modifier not at its maximum; divine; record whether its
-value changed.
-**Assumed:** rerolled. **Encoded in:** `check/ops.ts` `reroll` keeps only a fractured
-modifier's value and a protected side's.
-
 ### Q56 · probe · open — how the game reads a generation table
 
 **Q:** the data's `generation_weights` beside each spawn table is read like it: first
@@ -289,19 +237,6 @@ Small Cluster Jewel at one notable
 prefix; exalt until full; record whether a second notable lands on either.
 **Assumed:** as above. **Encoded in:** `pool/pool.ts` `lookupWeight`, `Mod.generation`,
 `item-model.md` §5.
-
-### Q57 · decision · open — a step's probability on a set of items
-
-**Q:** what figure does a step get when the item is a set of items?
-**Options:** (a) a point estimate on the paths the guide is on (recommended); (b) bounds
-from the superset and subset pools; (c) both; (d) carry a distribution over the counts
-and named modifiers through every step. craftofexile's simulator puts the estimate
-inside the spread except over a loop's join: `examples/metamod-harvest-loop.craft` 9.35
-reforges simulated against an estimate of 23.1 (spread 8.73–23.1);
-`examples/example.craft`'s second loop 1306 rounds against 1626 (spread 1084–2111).
-(d) would close both.
-**Assumed:** (a) with the spread of (b) beside it ([cost.md §3](cost.md#3-probabilities-over-a-set-of-items),
-§8). **Encoded in:** `cost/roll.ts` `Reading`, `cost/report.ts` `Bounds`.
 
 ### Q58 · probe · open — one or two modifiers from a transmute or an alteration
 
@@ -361,23 +296,6 @@ frequencies against their weights, and the total counts.
 **Assumed:** one tag row by weight, placed first, the rest drawn as a Chaos Orb draws.
 **Encoded in:** [cost.md §2](cost.md#2-how-the-game-rolls), §5.
 
-### Q64 · probe · open — an unveil's three options
-
-**Q:** are they drawn by spawn weight? [Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier)
-says three random modifiers and records a reweighting.
-**Probe:** Veiled Chaos Orbs, a Rare body armour; veil and unveil many times; record each
-option's frequency against its weight.
-**Assumed:** three weighted draws without replacement. **Encoded in:**
-[cost.md §2](cost.md#2-how-the-game-rolls).
-
-### Q65 · probe · open — is a value uniform over its range?
-
-**Q:** [Divine Orb](https://www.poewiki.net/wiki/Divine_Orb) says nothing of the
-distribution; it decides the chance a divine reaches `has "maximum life" >= 110`.
-**Probe:** a Rare with T1 life, Divine Orbs; record each value.
-**Assumed:** uniform over the range's integers. **Encoded in:**
-[cost.md §2](cost.md#2-how-the-game-rolls).
-
 ### Q66 · probe · open — the tilt of the "more / less likely" reforge
 
 **Q:** [Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting) states no
@@ -393,15 +311,14 @@ modifier against the plain reforge's.
 **Q:** [Memory strand § Crafting methods consuming memory strands](https://www.poewiki.net/wiki/Memory_strand#Crafting_methods_consuming_memory_strands)
 leaves the Foulborn Exalted Orb below five modifiers ("0-?") and an Exalted Orb on an
 empty item ("likely 0-10") open; nor does it say whether the Foulborn cut and the strand
-cut apply together, whether a strandless fill (Harvest, Bestiary, resonator) is cut, whether
-`tiers` counts the whole ladder or the item level's, or what strands a Recombinator keeps.
+cut apply together, whether a strandless fill (Harvest, Bestiary, resonator) is cut, or
+whether `tiers` counts the whole ladder or the item level's.
 **Probe:** two empty Rare rings with 100 strands, a Foulborn Exalted and an Exalted Orb;
 a third with 82 strands and a Foulborn Exalted Orb; record strands used per orb and the
 tier the third gets.
 **Assumed:** 62 and 10; both cuts apply; only strand-using fills are cut; `tiers` is the
-whole ladder; a Recombinator keeps either input's strands. **Encoded in:**
-`check/library.ts` `FOULBORN_STRANDS`, `EXALT_STRANDS`; `check/ops.ts` `foulbornTiers`,
-`Rules.strands`, `recombine`; `pool/pool.ts`.
+whole ladder. **Encoded in:** `check/library.ts` `FOULBORN_STRANDS`, `EXALT_STRANDS`;
+`check/ops.ts` `foulbornTiers`, `Rules.strands`; `pool/pool.ts`.
 
 ### Q70 · decision · open — legacy experimented-base variants
 
@@ -425,7 +342,41 @@ and whether it has increased Spell Damage.
 weight after the multipliers, a full side admitting no more. **Encoded in:**
 `cost/race.ts` `splitDistribution`, `cost/roll.ts` `countCases`.
 
-### Q75 · probe · open — an essence's item-level requirement
+### Q74 · probe · open — penetration and the reported refusals of the Harvest change
+
+**Q:** does the damage change take a penetration modifier, and does the grove refuse a
+damage over time multiplier and, for the resistance change, a resistance shared with
+chaos, as players report? The wiki names neither.
+**Probe:** Rares with fire penetration, a fire damage over time multiplier, and fire and
+chaos resistance; the grove's fire-to-cold damage and resistance changes; record which it
+offers.
+**Assumed:** penetration taken; the multiplier and the hybrid refused (a refusal only
+makes the checker stricter). **Encoded in:** `check/methods.ts` `elementalKind`.
+
+### Q75 · decision · open — what a declared "random" modifier is to the cost layer
+
+**Q:** the item block's `"random"` says only that a modifier is there; which one changes
+the odds of every draw beside it, and whether it may be one a condition names.
+**Options:** (a) a natural roll of its side by spawn weight, the item's other modifiers
+closing their groups, several random slots of a side drawn without replacement
+(recommended: what a reforge most likely left, and the guide's conditions see the chance
+it is theirs); (b) none of the named modifiers, one of average weight; (c) the item read
+at the floor and ceiling of what the checker allows.
+**Assumed:** (a). **Encoded in:** `cost/track.ts` `statesIn`, `cost/roll.ts`
+`naturalGroups`.
+
+### Q76 · probe · open — the side of a Veiled Exalted Orb's veiled modifier
+
+**Q:** which side does it land on when both have room?
+[Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb) says only "adds a
+random veiled modifier", and the two placeholders carry no spawn weight in the wiki's
+data.
+**Probe:** Veiled Exalted Orbs, Rares with two prefixes and two suffixes; apply one to
+each; record how many veiled prefixes and veiled suffixes come up.
+**Assumed:** the sides with room alike, half each. **Encoded in:** `cost/track.ts`
+`veiledSides`.
+
+### Q77 · probe · open — an essence's item-level requirement
 
 **Q:** [Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting)'s tier table
 has a "Minimum required level of crafted item" column (Whispering 1, Muttering 8, Weeping

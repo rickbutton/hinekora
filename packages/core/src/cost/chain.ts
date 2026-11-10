@@ -1,16 +1,14 @@
 /**
- * A loop whose rounds change the item one modifier at a time: random removals
- * (an Orb of Annulment, an Eldritch Orb of Annulment), single draws (an Exalted
- * Orb, an Orb of Augmentation), bench crafts, and the branches that catch a
- * kept modifier's loss or fill a gap, repeated until the counts and the named
- * modifiers allow; a reforge inside the body (an essence spammed again once a
- * kept modifier is lost) starts the item over from its roll's outcomes. Such a loop is not a sequence of independent attempts: each
- * round starts from where the last one left the item. It is a Markov chain
- * over a small state, the (prefix, suffix) counts and, for each modifier the
- * loop's conditions name, whether it is on the item and at which row, solved by
+ * A loop whose body the cost walk can follow (methods read as transitions of
+ * the tracked state, branches, loops nested inside, restarts and stops) is not
+ * a sequence of independent attempts: each round starts from where the last
+ * one left the item, and a reforge inside the body (an essence spammed again
+ * once a kept modifier is lost) starts it over from its roll's outcomes. It is
+ * a Markov chain over a small state, the (prefix, suffix) counts and, for each
+ * tracked modifier, whether it is on the item and at which row, solved by
  * carrying the distribution over that state through the body round after round
- * until the mass has left. The named modifiers are the only ones tracked; the
- * rest of the item is counted, never listed.
+ * until the mass has left. The modifiers no one tracks are counted, never
+ * listed.
  */
 import type { Gen, ModId } from "../model/ids.js";
 

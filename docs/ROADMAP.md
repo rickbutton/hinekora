@@ -16,16 +16,17 @@ waits until a guide calls for it.
 
 - the **cost layer's** finer points (`cost.md` has what is built): the
   Orb of Unravelling's tier upgrade (its rule is not stated), a loop whose exit rests on a
-  value no roll in its body changes, and the chance a modifier the checker holds only as
-  possible is there when a later roll is judged (the walk keeps the last roll alone, Q57;
-  a distribution carried through every step, extending what `cost.md` §6 says a
-  solved loop hands on, would replace both that and the estimate's floor); the race's clocks are modifier
-  types, so two types of one modifier group may both be drawn (`cost.md` §8).
-- **multi-item crafts** beyond the Recombinator (the Awakener's Orb, whose result keeps
-  an influenced modifier of its donor's and so needs the donor as a second item;
-  Reflecting Mist, Kishara's Ducat; the Recombinator is built with two items of one base,
-  since the state carries one base and the result keeps one of the two at random)
-  and **choice over an operation's outcomes** (Hinekora's Lock, Allflame crafting).
+  value no roll in its body changes, and tracking the steps the walk still reads on the
+  checker's item (an unveil's choice, a fracture's lock, an ember's implicit, a call;
+  `cost.md` §3); the race's clocks are modifier types, so two types of one modifier group
+  may both be drawn (`cost.md` §8).
+- **multi-item crafts**, which need a second item named in the guide, a design to be
+  worked out first: the Recombinator, whose result pools both items' modifiers (an
+  earlier form, and the evidence on how it picks, are in the git history before the
+  commit that removed it), the Awakener's
+  Orb, whose result keeps an influenced modifier of each item, Reflecting Mist and
+  Kishara's Ducat.
+- **choice over an operation's outcomes** (Hinekora's Lock, Allflame crafting).
 - English negation sugar (`doesn't have` → `not has`); a power-user annotation tier for
   reusable techniques; a way to name an unveiled modifier whose words a natural one
   shares other than by its mod id.

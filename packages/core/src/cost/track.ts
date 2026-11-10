@@ -1,9 +1,11 @@
 /**
  * The item as the cost layer tracks it: a distribution over a small state,
  * the (prefix, suffix) counts and, for each modifier the guide names or the
- * checker knows, whether it is on the item and at which row (`ChainState`). A loop solved as a chain
- * (`chain.ts`) carries it round by round; these are the pieces that read a
- * step, a condition or a roll in its terms.
+ * checker knows is there (declared, granted, crafted, a protecting metamod),
+ * whether it is on the item and at which row (`ChainState`). The walk carries
+ * it from the item block through every step it can read, and a loop solved as
+ * a chain (`chain.ts`) round by round; these are the pieces that read a step, a
+ * condition or a roll in its terms.
  */
 import { type Gen, ModId, type TagId, TypeId } from "../model/ids.js";
 import {
@@ -59,7 +61,7 @@ export interface Carried {
 type ValueLeaf = Extract<RPred, { kind: "hasValue" }>;
 
 /** How much of `part` lies in `span`, as a share of `part`, whole numbers
- *  counted one by one as the value roll is (Q65). */
+ *  counted one by one as the value roll is. */
 function overlap(part: Range, span: Range): number {
     const whole = [...part, ...span].every(Number.isInteger);
     const lo = Math.max(part[0], span[0]);
@@ -237,7 +239,7 @@ export class Tracker {
             };
             if (leaves !== undefined) {
                 // Compared by value: each row apart, cut where the conditions'
-                // thresholds fall, each part by its share of the range (Q65).
+                // thresholds fall, each part by its share of the range.
                 for (const r of rows) {
                     const span = leaves.map((l) => l.rows.get(r.id)).find((s) => s !== undefined);
                     const parts =

@@ -1,10 +1,10 @@
 /**
  * A method's roll: what one use of it draws, read off its operation sequence
  * and the item it is used on, as the pools and counts the race (`race.ts`)
- * needs. The item is the checker's abstract item, so the pool is the pool of
+ * needs. The item is a checker's abstract item, the trace's or one narrowed to
+ * a state the cost walk tracks (docs/cost.md §3), so the pool is the pool of
  * the facts it holds on every path (the base, the kept and fractured modifiers,
- * the influence): the item the guide is holding on the path it describes
- * (QUESTIONS.md Q57). Nothing here lists outcomes; a roll is a few weighted
+ * the influence). Nothing here lists outcomes; a roll is a few weighted
  * rows per side and a distribution of counts.
  */
 import type { Gen, GroupId, TagId, TypeId } from "../model/ids.js";
@@ -32,7 +32,7 @@ import { splitDistribution } from "./race.js";
  * strands at their floors (exact for a reforge and for an item whose named
  * modifiers fill it) and a removal's count at the middle; `floors` and
  * `ceilings` take every range at that end, the two items at the ends of what
- * the checker allows, whose figures bracket the estimate (QUESTIONS.md Q57).
+ * the checker allows, whose figures bracket the estimate.
  */
 export type Reading = "estimate" | "floors" | "ceilings";
 
@@ -108,7 +108,8 @@ export type Roll =
     | { readonly kind: "reroll" }
     /** A fracture, uniform over the modifiers present. */
     | { readonly kind: "lock"; readonly candidates: readonly Candidate[] }
-    /** An unveil: three options drawn by weight without replacement (Q64). */
+    /** An unveil: three options drawn by weight without replacement (Veiled
+     *  modifier § Version history). */
     | { readonly kind: "unveil"; readonly options: readonly Group[] }
     /** An ember or ichor: one implicit of the tier, by weight. */
     | {

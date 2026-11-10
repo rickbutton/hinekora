@@ -1,12 +1,13 @@
 /**
  * The expected cost of a guide: one walk over the syntax tree beside the
- * checker's trace, carrying the probability of reaching each step. A loop runs
- * its body once over the chance one attempt reaches its exit, judged on the
- * last roll of the body and the conditions passed on the way to it (the
- * attempts taken as independent trials); a branch splits the mass by its
- * condition's chance; a `restart` ends the attempt and a `stop` the craft. The
- * item before a step is the checker's, so the pools are the item's on the path
- * the guide describes (docs/cost.md §3, §6).
+ * checker's trace, carrying the probability of reaching each step and, while
+ * the tracker can follow the item, a distribution over it (`track.ts`). A loop
+ * the tracker follows is solved as a chain (`chain.ts`); any other runs its
+ * body once over the chance one attempt reaches its exit, judged on the last
+ * roll of the body and the conditions passed on the way to it (the attempts
+ * taken as independent trials); a branch splits the mass by its condition's
+ * chance; a `restart` ends the attempt and a `stop` the craft (docs/cost.md
+ * §3, §6).
  */
 import type { Craft, Pred, Stmt } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";

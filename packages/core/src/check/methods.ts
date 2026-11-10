@@ -123,7 +123,7 @@ const ELEMENTS = ["fire", "cold", "lightning"] as const;
  * Which elemental resistance or damage a modifier type grants, by its rows'
  * tags. The grove refuses a critical strike multiplier (Harvest crafting §
  * Version history, 3.28.0 Hotfix 8), and players report it refusing a damage
- * over time multiplier and a resistance shared with chaos (`QUESTIONS.md` Q18).
+ * over time multiplier and a resistance shared with chaos (`QUESTIONS.md` Q74).
  */
 function elementalKind(
     catalog: readonly Mod[],
@@ -389,7 +389,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["harvest", "change"],
         args: [name("mod"), name("mod")],
-        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier into another element at a similar tier. The first must be on the item, not fractured, on a side no metamod protects; the second must roll on the base and share no group with a present modifier.',
+        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier into another element at a similar tier (any of its tiers when the tiers of the two elements sit at different item levels), not a critical strike or damage over time multiplier nor a resistance shared with chaos. The first must be on the item, not fractured, on a side no metamod protects; the second must roll on the base and share no group with a present modifier.',
         build: ([from, to], a, registry) => harvestChange(text(from), text(to), a, registry),
     },
     {

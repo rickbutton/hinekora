@@ -28,7 +28,11 @@ a group closing once one of it is drawn
 ([Modifier § Group/family](https://www.poewiki.net/wiki/Modifier#Group/family)) and a
 side closing when full. The wiki states the group rule but not the order; craftofexile's
 emulator and every community calculator draw this way, and it is taken as settled. The
-prefix/suffix split is not a roll of its own: it falls out of the draw.
+prefix/suffix split is not a roll of its own: it falls out of the draw. An unveil's three
+options are drawn the same way
+([Veiled modifier § Version history](https://www.poewiki.net/wiki/Veiled_modifier#Version_history)),
+and a value is equally likely anywhere in its row's range
+([Modifier § Mechanics overview](https://www.poewiki.net/wiki/Modifier#Mechanics_overview)).
 
 Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entry):
 
@@ -40,28 +44,40 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
 - **Fossils.** Several fossils' "more" multipliers add (Q60).
 - **Harvest.** The tagged row is drawn among the tag's rows by weight (Q63); "more / less
   likely" multiplies the rows sharing a type with the item's by ten and a tenth (Q66).
-- **Removals** are uniform over the modifiers they can reach (Q61).
-- **Unveil.** The three options are drawn by weight without replacement (Q64).
-- **Values** are uniform over their row's range (Q65).
+- **Removals** are uniform over the modifiers they can reach, never a fractured one (Q61).
+- **Veiled Exalted Orb.** Its veiled modifier lands on either side with room alike (Q76).
 - **Memory strands.** The share used up is not stated; the estimate reads the floor
   (Q68).
 
 ---
 
-## 3. Probabilities over a set of items
+## 3. The item the cost layer follows
 
-The item at a step is a set of items, so a probability needs a stated reading of it. The
-cost layer takes a **point estimate on the path the guide describes**: a draw sees the
-pool of the facts the item holds on every path (the base at its level, the influence,
-the modifiers present on every path with their groups and tags), the item the player is
-holding when the guide's step is right. A modifier held only as possible neither shrinks
-the pool nor adds its tags. This is exact for a reforge, which strips the uncertain
-modifiers away, and for an item its named modifiers fill; it is approximate for an add
-onto an item with unnamed modifiers (Q57).
+The checker's item at a step is a set of items; a probability needs to know how likely
+each member is. The cost layer follows a **distribution over a small state**
+(`cost/track.ts`): the (prefix, suffix) counts and, for each modifier a condition names
+or the checker knows is there (declared, granted, crafted, a protecting metamod), whether
+it is on the item and in which tier class (each tier a condition names on its own, the
+rest of the ladder together); a modifier a condition compares by value is held per tier
+and value piece, cut at the condition's thresholds. The distribution starts from the item
+block, a `"random"` modifier a natural roll of its side by spawn weight (Q75), and is
+carried through every step. Each method is read on the checker's item **narrowed to each
+state** (its counts exact, each tracked modifier present at its class or absent): a
+random method by its roll, a sure one by the checker's own transfer function, the item
+that leaves read back as states. So a Regal Orb after an Orb of Transmutation knows the
+item had one modifier half the time and two the other half, and a Divine Orb rerolls the
+values the item has. A branch splits the distribution by its condition; a loop is solved
+as a chain over it (§6). A guide followed so throughout is walked once.
 
-Beside the estimate the report carries a **spread**: the same walk with every range the
-checker left open (a side's count, the memory strands) read at its floor and at its
-ceiling (`Reading`); where the ends disagree the step's figure is given with them.
+Two things stay approximate. The modifiers no one names and the checker does not know are
+a count, not identities: when a draw lands beside them each closes a group of average
+weight on its side, as craftofexile's calculator does. And where a step's randomness is
+one the state does not hold (an unveil's choice, a fracture's lock, an ember's implicit)
+or the walk cannot follow a statement (a call), the states are dropped and the roll is
+read on the checker's item, the facts every path holds: a modifier held only as possible
+neither shrinks the pool nor adds its tags, and every range the checker left open is read
+at its floor and at its ceiling (`Reading`), a **spread** given beside the figure where
+the ends disagree.
 
 ---
 
@@ -80,10 +96,7 @@ list of draws: the core invariant on the probability side.
 It is exact for one group, for any set jointly (by inclusion–exclusion), and for the
 split with depletion. Given the split, which groups landed on a side is read from that
 side's race alone, where the true draw couples the two through depletion; the race
-tests bound that at two hundredths. The integral runs over log-time with panels in every
-decade between the fastest clock and the slowest: a substitution on one rate alone steps
-over the faster clocks in a pool whose weights span orders of magnitude (a fossil's
-multipliers).
+tests bound that at two hundredths.
 
 ---
 
@@ -116,21 +129,19 @@ fire together over one reforge, not a product). Expected cost is linear: a state
 expected runs is the mass reaching it times the rounds of every loop around it, times its
 unit price (`cost/prices.ts`, in the step's own currency).
 
-- An **`until`** is a sequence of independent attempts: the body is walked once to find
-  the chance an attempt ends in the exit or a `stop`; the expected rounds is the
-  reciprocal, and the share ending in a stop ends the craft. The next attempt starts
-  where the last left off short of the exit.
-- A loop whose body **changes the item one modifier at a time** (random removals, single
-  draws, bench crafts, branches over them; a reforge or a `restore` inside starts the
-  item over) is not memoryless. It is solved as a Markov chain (`cost/chain.ts`) over a
-  small state, the (prefix, suffix) counts and, for each modifier the loop's conditions
-  name, whether it is present and at which row, plus a protecting metamod a removal may
-  take; the rest of the item is a count whose draws close an average group. The
+- An **`until`** whose body the tracker can follow (methods, branches, loops inside it,
+  restarts and stops) is not memoryless: each round starts where the last left the item.
+  It is solved as a Markov chain (`cost/chain.ts`) over the tracked state, from the
+  states the loop enters with, each method a transition read on the narrowed item and a
+  loop inside going round its own body until its exit each time it is reached. The
   distribution is carried round after round until the mass has left (the exit, a
   restart, a stop, or an item full with nothing removing); once a round hands the next a
   distribution of the same shape, only smaller, the rest is summed as a geometric series,
   and a chain that has not settled is noted as an estimate. Where the exit leaves the
-  item is what the next steps see: a second such loop starts from it.
+  item is what the next steps see.
+- Any other `until` is a sequence of independent attempts: the body is walked once to
+  find the chance an attempt ends in the exit or a `stop`; the expected rounds is the
+  reciprocal, and the share ending in a stop ends the craft.
 - An **`if`** splits each branch by its condition's chance; a `restart` ends the
   attempt; a `stop` ends the craft; a top-level `restart` makes the guide one attempt of
   an outer loop.
@@ -176,5 +187,5 @@ wherever the calculator is exact, to the rounding of its display. Where they dif
 - **The race's clocks are modifier types**, not groups, so two types of one group may both
   be drawn and a group's other members never close it; on a wand's spell damage this
   moves the figure by up to a fifth either way (Q73).
-- **An item the checker cannot narrow** reads an open count at its floor and keeps only
-  a path's last roll, where the game's item remembers every roll (Q57).
+- **A step the tracker cannot follow** reads the checker's item, an open count at its
+  floor, where the game's item remembers every roll.
