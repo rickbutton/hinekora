@@ -378,36 +378,6 @@ a guide needs one side's version of a shared wording for its own sake.
 `check/group.test.ts`.
 **Answer:**
 
-### Q57 · decision · answered
-
-**Asked:** 2026-11-09
-**Question:** what a step's probability means when the checker's item is a set of items
-(`docs/research/cost-model.md` §5.2). (a) A point estimate on the paths the guide is on:
-the pool of the modifiers present on every path, a modifier the state holds only as
-possible neither shrinking the pool nor adding its tags, with the report naming the
-assumption where it applies; (b) bounds, the same computation on the checker's superset
-and subset pools, reported as a range; (c) both.
-**Recommendation:** (a): exact for a reforge and for an item whose named modifiers fill
-it, which is where guides quote odds; (b) when a guide needs the range.
-**Assumed meanwhile:** (a) for the figure, with (b) beside it as a spread: the walk is run
-again with every range the checker left open (a side's count, the memory strands) at its
-floor and at its ceiling, and a step whose ends differ shows them (`cost/roll.ts`
-`Reading`, `cost/report.ts` `Bounds`).
-**Evidence since (2026-11-10):** craftofexile's simulator, run to a few hundred items per
-guide (`docs/research/cost-model.md` §6), puts the figure inside the spread wherever the
-two differ, but the estimate falls well off it where the checker's item is a join over a
-loop's rounds. On `examples/metamod-harvest-loop.craft` (its random prefix made a T5
-mana) the simulator takes 9.35 Harvest reforges; the spread is 8.73 to 23.1 and the
-estimate 23.1, because an annul inside the loop may take a kept suffix, so the join no
-longer guarantees the three suffixes and the estimate reads the open count at its floor.
-On `examples/example.craft`'s second loop the simulator takes 1306 rounds, the spread is
-1084 to 2111, the estimate 1626: the Regal Orb's path forgets how many modifiers the
-Orb of Transmutation laid down. A fourth option follows: (d) carry a distribution over
-the counts and the named modifiers forward through every step, as a chain-solved loop
-already does for its rounds and now hands to the steps after it, so neither a floor nor
-the last roll alone stands in for what came before.
-**Answer:** (d), Rick, 2026-11-10: "it's the only way to be accurate."
-
 ### Q58 · game probe · open
 
 **Asked:** 2026-11-09
@@ -615,6 +585,41 @@ reforge, and it lets the guide's own conditions see the chance the slot is one o
 ---
 
 ## Resolved
+
+### Q57 · decision · resolved
+
+**Asked:** 2026-11-09
+**Question:** what a step's probability means when the checker's item is a set of items
+(`docs/research/cost-model.md` §5.2). (a) A point estimate on the paths the guide is on:
+the pool of the modifiers present on every path, a modifier the state holds only as
+possible neither shrinking the pool nor adding its tags, with the report naming the
+assumption where it applies; (b) bounds, the same computation on the checker's superset
+and subset pools, reported as a range; (c) both.
+**Recommendation:** (a): exact for a reforge and for an item whose named modifiers fill
+it, which is where guides quote odds; (b) when a guide needs the range.
+**Assumed meanwhile:** (a) for the figure, with (b) beside it as a spread: the walk is run
+again with every range the checker left open (a side's count, the memory strands) at its
+floor and at its ceiling, and a step whose ends differ shows them (`cost/roll.ts`
+`Reading`, `cost/report.ts` `Bounds`).
+**Evidence since (2026-11-10):** craftofexile's simulator, run to a few hundred items per
+guide (`docs/research/cost-model.md` §6), puts the figure inside the spread wherever the
+two differ, but the estimate falls well off it where the checker's item is a join over a
+loop's rounds. On `examples/metamod-harvest-loop.craft` (its random prefix made a T5
+mana) the simulator takes 9.35 Harvest reforges; the spread is 8.73 to 23.1 and the
+estimate 23.1, because an annul inside the loop may take a kept suffix, so the join no
+longer guarantees the three suffixes and the estimate reads the open count at its floor.
+On `examples/example.craft`'s second loop the simulator takes 1306 rounds, the spread is
+1084 to 2111, the estimate 1626: the Regal Orb's path forgets how many modifiers the
+Orb of Transmutation laid down. A fourth option follows: (d) carry a distribution over
+the counts and the named modifiers forward through every step, as a chain-solved loop
+already does for its rounds and now hands to the steps after it, so neither a floor nor
+the last roll alone stands in for what came before.
+**Answer:** (d), Rick, 2026-11-10: "it's the only way to be accurate." Applied in e9d523d:
+the walk carries a distribution over the counts and every named or known modifier
+(`cost/track.ts`); the modifiers no one names stay a count, each closing a group of
+average weight when a draw lands beside them, which Rick accepted as the one
+approximation that tracking every modifier's identity cannot avoid without
+enumerating outcomes.
 
 ### Q23 · game probe · resolved
 
