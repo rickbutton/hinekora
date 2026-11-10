@@ -442,13 +442,16 @@ export const METHODS: readonly Method[] = [
     {
         words: ["beast", "add"],
         args: [word("prefix", "suffix", ...INFLUENCES), { kind: "int", optional: true }],
-        doc: "beast add prefix|suffix [<level>] — add a modifier of that side, drawn at the beast's level, and remove a random one of the other (none when that side cannot be changed); needs a Rare item with an open slot on the added side. beast add <influence> [<level>] — add a modifier to an open slot of a Rare item with that influence.",
+        doc: "beast add prefix|suffix [<level>] — add a modifier of that side, drawn at the beast's level, and remove a random one of the other (none when that side cannot be changed); needs a Rare item with an open slot on the added side. beast add <influence> — add a modifier, drawn at the item's level, to an open slot of a Rare item with that influence.",
         build: ([side, level]) => {
             const what = text(side);
-            const beastLevel = num(level) ?? ANY_BEAST_LEVEL;
-            return isInfluence(what)
-                ? beastAddInfluenceOps(what, beastLevel)
-                : beastAddOps(what as Gen, beastLevel);
+            if (!isInfluence(what)) return beastAddOps(what as Gen, num(level) ?? ANY_BEAST_LEVEL);
+            // Only the add-a-prefix and add-a-suffix recipes read the beast's level.
+            return level === undefined
+                ? beastAddInfluenceOps(what)
+                : refuse(
+                      `The Bestiary's recipe that adds a modifier to an influenced item draws at the item's level, whatever the beast's — write 'beast add ${what}' with no level.`,
+                  );
         },
     },
     {

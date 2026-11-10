@@ -104,13 +104,14 @@ the tagged reforges. **Encoded in:** `check/ops.ts` `noInfluencedOnProtected`,
 
 ### Q30 · probe · open — the Bestiary's "Add a Mod to a Hunter Item"
 
-**Q:** does it (and its five siblings) take a Magic item, and does it draw from the whole
-pool or the influence's rows only? [Beastcrafting](https://www.poewiki.net/wiki/Beastcrafting)
-does not say.
-**Probe:** a Magic and a Rare Hunter item with an open slot, the recipe's beasts; record
-accepted or not and the modifiers added over several tries.
-**Assumed:** a Rare with an open slot; the whole pool at the beast's level. **Encoded
-in:** `check/library.ts` `beastAddInfluenceOps`.
+**Q:** does it (and its five siblings) take a Magic item?
+[Beastcrafting](https://www.poewiki.net/wiki/Beastcrafting) does not say;
+[Maxroll](https://maxroll.gg/poe/crafting/beastcrafting) calls it "functionally the same
+as an Exalted Orb", which takes a Rare only.
+**Probe:** a Magic Hunter item with an open slot, the recipe's beasts; record accepted or
+not.
+**Assumed:** a Rare with an open slot. **Encoded in:** `check/library.ts`
+`beastAddInfluenceOps`.
 
 ### Q32 · probe · open — the counts of a corruption reforge, and the altar on a marked item
 

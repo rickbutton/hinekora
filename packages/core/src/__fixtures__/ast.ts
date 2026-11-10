@@ -148,7 +148,11 @@ export const unveil = (mod?: string | ParamRef): OperationStmt =>
 
 /** A Bestiary recipe: `beast add prefix 84`, `beast fracture`, `beast aspect "cat"`, … */
 type BeastAction =
-    | { readonly kind: "add"; readonly side: "prefix" | "suffix"; readonly level?: number }
+    | {
+          readonly kind: "add";
+          readonly side: "prefix" | "suffix" | Influence;
+          readonly level?: number;
+      }
     | { readonly kind: "fracture"; readonly n?: number }
     | { readonly kind: "metamod" }
     | { readonly kind: "aspect"; readonly name: string | ParamRef }

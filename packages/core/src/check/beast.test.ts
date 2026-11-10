@@ -107,6 +107,28 @@ describe("beast add", () => {
         expect(any.finalState!.tiers.get(LIFE)).toEqual(new Set([LIFE_T1.id, "IncreasedLife2"]));
     });
 
+    it("adds to an influenced item at the item's level, and takes no beast level there", () => {
+        const hunter = (ilvl: number) =>
+            item({
+                base: "Iron Ring",
+                ilvl,
+                rarity: "rare",
+                influences: ["hunter"],
+                suffixes: [FIRE_RESIST.id],
+            });
+        // T1 life needs item level 60, whatever the beast's level.
+        const low = check(craft(hunter(20), [beast({ kind: "add", side: "hunter" })]), ctx);
+        expect(low.diagnostics).toEqual([]);
+        expect(low.finalState!.tiers.get(LIFE)?.has(LIFE_T1.id) ?? false).toBe(false);
+        const high = check(craft(hunter(100), [beast({ kind: "add", side: "hunter" })]), ctx);
+        expect(high.finalState!.tiers.get(LIFE)?.has(LIFE_T1.id)).toBe(true);
+        const levelled = check(
+            craft(hunter(100), [beast({ kind: "add", side: "hunter", level: 68 })]),
+            ctx,
+        );
+        expect(levelled.diagnostics[0]!.message).toContain("draws at the item's level");
+    });
+
     it("needs an open slot on the added side and a modifier to remove", () => {
         const full = check(
             craft(rareRing(["T1 Life", "random", "random"], [FIRE_RESIST.id]), [

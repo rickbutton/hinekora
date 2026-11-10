@@ -291,9 +291,10 @@ export function influenceExaltOps(target: Influence): readonly Op[] {
 }
 
 /** Beastcraft "add a mod to a <influence> item" (Beastcrafting): a modifier
- *  into an open slot of a Rare item with that influence, drawn at the beast's
- *  level, the influence's rows among them. */
-export function beastAddInfluenceOps(target: Influence, level: number): readonly Op[] {
+ *  into an open slot of a Rare item with that influence, the influence's rows
+ *  among them. Only the add-a-prefix and add-a-suffix recipes draw at the
+ *  beast's level; this one uses "the item's item level as usual". */
+export function beastAddInfluenceOps(target: Influence): readonly Op[] {
     return [
         notCorrupted,
         isRare,
@@ -303,7 +304,7 @@ export function beastAddInfluenceOps(target: Influence, level: number): readonly
             influence: target,
         }),
         openSlot(),
-        fill({ kind: "natural", level }, add([1, 1])),
+        fill(natural, add([1, 1])),
     ];
 }
 

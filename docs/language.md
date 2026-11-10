@@ -156,8 +156,8 @@ A statement opens with its words and takes its arguments after them:
   the grove has no augment for `attribute`, `drop`, `elemental`, `mana` or `minion`.
 - Two mod names: `harvest change "fire resistance" "cold resistance"`.
 - One to four fossils: `fossil "pristine" "dense"`.
-- A side or an influence, then an optional beast level: `beast add prefix 84`,
-  `beast add hunter`; without a level, any beast's.
+- A side with an optional beast level, or an influence: `beast add prefix 84`,
+  `beast add hunter`; a side without a level reads a beast of any level.
 
 A step with several possible outcomes (`unveil`, `beast metamod`, `conflict`) leaves the
 item as any of them; a following `if` (§4.2) narrows it.
