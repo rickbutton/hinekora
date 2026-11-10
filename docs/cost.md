@@ -78,11 +78,10 @@ as a chain over it (§6). A guide followed so throughout is walked once.
 
 What stays approximate: the modifiers no one names are a count, not identities, so a draw
 beside them keeps each unnamed group's weight by its chance of not being among that many
-draws by weight (within 2.5% of a brute force, where craftofexile's average group is 12%
-off). A step that cannot carry a state exactly says so, and the walk reads on from the
-checker's item. Where its states outgrow 5000 (`TrackerOverflow`), they are dropped and the roll
-is read on the checker's item, the facts every path holds: a modifier held only as
-possible neither shrinks the pool nor adds its tags, and every range the checker left open is read
+draws by weight. A step that cannot carry a state exactly says so, and the walk reads on
+from the checker's item, as it does once it has read 5000 states (`TrackerOverflow`).
+There a roll is read on the facts every path holds: a modifier held only as possible
+neither shrinks the pool nor adds its tags, and every range the checker left open is read
 at its floor and at its ceiling (`Reading`), a **spread** given beside the figure where
 the ends disagree.
 
