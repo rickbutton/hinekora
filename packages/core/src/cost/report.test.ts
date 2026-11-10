@@ -552,6 +552,19 @@ describe("the cost of a guide", () => {
         expect(branch.branch).toBeCloseTo(1 / 2, 9);
     });
 
+    it("a Veiled Chaos Orb's veiled modifier is a prefix or a suffix alike, and its unveil is followed", () => {
+        const c = craft(ring("rare", ["IncreasedMana1"], ["FireResist1"]), [
+            veiled("chaos"),
+            unveil(),
+            iff(has("veiled double damage"), [stop()]),
+        ]);
+        const steps = report(c).steps;
+        expect(steps.every((s) => s.note === undefined)).toBe(true);
+        // A veiled suffix half the time, and then both of a ring's two veiled
+        // suffixes are offered.
+        expect(steps.find((s) => s.kind === "if")!.branch).toBeCloseTo(1 / 2, 9);
+    });
+
     it("an unveil does not take a modifier a condition asks to be absent", () => {
         const c = craft(
             ring("rare", ["IncreasedMana1", "IncreasedArmour1"], ["FireResist1", "ColdResist1"]),

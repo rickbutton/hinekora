@@ -45,7 +45,7 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
   its lucky values not modelled; a Tangled Fossil's roll is not read.
 - **Harvest.** The tagged row is drawn among the tag's rows by weight (Q63).
 - **Removals** are uniform over the modifiers they can reach, never a fractured one (Q61).
-- **Veiled Exalted Orb.** Its veiled modifier lands on either side with room alike (Q76).
+- **Veiled orbs.** The veiled modifier lands on either side with room alike (Q76).
 - **Vaal Orb.** Its four outcomes are each as likely
   ([Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment)); a **Tainted
   Exalted Orb** adds or removes at even odds, and removes from a full item (Q95).

@@ -550,7 +550,15 @@ function poolRows(
         }
         case "rows":
             return spec.mods.map((mod) => ({ mod, weight: 1 }));
-        case "veiledPlaceholder":
+        case "veiledPlaceholder": {
+            // A veiled prefix or a veiled suffix, alike: the placeholders carry
+            // no spawn weight to say otherwise.
+            const rows = registry.catalog.filter(
+                (m) => m.type === VEILED_PREFIX || m.type === VEILED_SUFFIX,
+            );
+            const of = (gen: Gen): number => rows.filter((m) => m.gen === gen).length;
+            return rows.map((mod) => ({ mod, weight: 1 / of(mod.gen) }));
+        }
         case "metamods":
             return [];
     }
@@ -658,8 +666,9 @@ export function rollOf(
         const op = ops[i]!;
         switch (op.kind) {
             case "fill": {
-                // The veiled placeholder is a modifier no condition names.
-                if (op.pool.kind === "veiledPlaceholder") break;
+                // A veiled modifier added on its own is the tracker's to place
+                // (`veiledSides`); one a reforge lays down is placed first here.
+                if (op.pool.kind === "veiledPlaceholder" && op.count.kind !== "within") break;
                 const before = runMethod(a, ops.slice(0, i), registry).state;
                 if (op.pool.kind === "unveil") {
                     return unveilRoll(before, op.pool, registry, reading);

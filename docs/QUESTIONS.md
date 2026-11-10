@@ -233,7 +233,7 @@ the result.
 **Encoded in:** `check/methods.ts` `harvestChange`, `resolve/registry.ts`
 `harvestChangeTarget`, `packages/data/data/poe1/harvest_change.json`.
 
-### Q76 · probe · open — the side of a Veiled Exalted Orb's veiled modifier
+### Q76 · probe · open — the side of a veiled orb's veiled modifier
 
 **Q:** which side does it land on when both have room?
 [Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb) says only "adds a
@@ -241,8 +241,8 @@ random veiled modifier", and the two placeholders carry no spawn weight in the w
 data.
 **Probe:** Veiled Exalted Orbs, Rares with two prefixes and two suffixes; apply one to
 each; record how many veiled prefixes and veiled suffixes come up.
-**Assumed:** the sides with room alike, half each. **Encoded in:** `cost/track.ts`
-`veiledSides`.
+**Assumed:** the sides with room alike, half each, for a Veiled Chaos Orb's too.
+**Encoded in:** `cost/track.ts` `veiledSides`, `cost/roll.ts` `poolRows`.
 
 ### Q80 · probe · open — the bench's 3.29 rerolls
 
