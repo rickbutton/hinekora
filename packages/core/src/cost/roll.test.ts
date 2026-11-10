@@ -5,6 +5,7 @@ import {
     MAXLIFE_T1,
     MAXLIFE_T2,
     MAXLIFE_T3,
+    PROTECT_PREFIXES_CARRIER,
     RING_BASE,
 } from "../__fixtures__/mods.js";
 import { craft, item, op } from "../__fixtures__/ast.js";
@@ -17,6 +18,11 @@ const registry = buildRegistry({
     bases: [RING_BASE],
     mods: [...CATALOG],
     modAliases: { "T1 Life": "IncreasedLife1" },
+    baseAliases: { "Iron Ring": "IronRing" },
+});
+const protecting = buildRegistry({
+    bases: [RING_BASE],
+    mods: [...CATALOG, PROTECT_PREFIXES_CARRIER],
     baseAliases: { "Iron Ring": "IronRing" },
 });
 
@@ -44,6 +50,43 @@ describe("the grove's more and less likely reforges", () => {
         expect(mana(rollOf(a, harvestLikelyOps("more"), registry))).toBe(
             mana(rollOf(a, currencyOps("chaos"), registry)),
         );
+    });
+});
+
+describe("a random removal's reach", () => {
+    it("is limited to one side by a protecting metamod, not by a side that is empty", () => {
+        // No prefixes now, but the Orb of Annulment reaches both sides: a loop
+        // that exalts a prefix back on can annul it again.
+        const open = craft(
+            item({
+                base: "Iron Ring",
+                ilvl: 84,
+                rarity: "rare",
+                suffixes: ["FireResist1", "ColdResist1"],
+            }),
+            [],
+        );
+        const a = check(open, { registry }).finalState!;
+        for (const reading of ["estimate", "floors", "ceilings"] as const) {
+            const roll = rollOf(a, currencyOps("annul"), registry, reading);
+            if (roll.kind !== "removal") throw new Error("not a removal");
+            expect(roll.gen).toBeUndefined();
+        }
+        // "Prefixes Cannot Be Changed" leaves the suffixes alone in reach.
+        const kept = craft(
+            item({
+                base: "Iron Ring",
+                ilvl: 84,
+                rarity: "rare",
+                prefixes: ["IncreasedLife1"],
+                suffixes: ["FireResist1", PROTECT_PREFIXES_CARRIER.id],
+            }),
+            [],
+        );
+        const b = check(kept, { registry: protecting }).finalState!;
+        const roll = rollOf(b, currencyOps("annul"), protecting);
+        if (roll.kind !== "removal") throw new Error("not a removal");
+        expect(roll.gen).toBe("suffix");
     });
 });
 

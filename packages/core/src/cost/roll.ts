@@ -109,7 +109,8 @@ export type Roll =
           readonly sides: Readonly<
               Record<Gen, { readonly count: number; readonly unnamed: number }>
           >;
-          /** The one side the removal reaches, when it is limited to one. */
+          /** The one side the removal reaches, when the method or a
+           *  protecting metamod limits it to one. */
           readonly gen?: Gen;
       }
     /** A Divine Orb: every value rolled again within its tier. */
@@ -592,9 +593,15 @@ function removalRoll(
             unnamed: Math.max(0, count.suffix - named.suffix) / total,
         },
     };
+    const only: Gen | undefined =
+        reaches("prefix") && !reaches("suffix")
+            ? "prefix"
+            : reaches("suffix") && !reaches("prefix")
+              ? "suffix"
+              : undefined;
     return {
         kind: "removal",
-        ...(gen !== undefined && { gen }),
+        ...(only !== undefined && { gen: only }),
         candidates: reachable.map((type) => ({
             type,
             prob: 1 / total,

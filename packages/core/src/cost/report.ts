@@ -927,18 +927,13 @@ class Walker {
                         break;
                     }
                     case "removal": {
-                        // A side the removal cannot reach counts nothing; one it
-                        // alone reaches is the side it takes from.
-                        const gen: Gen | undefined =
-                            roll.sides.suffix.count === 0 && roll.sides.prefix.count > 0
-                                ? "prefix"
-                                : roll.sides.prefix.count === 0 && roll.sides.suffix.count > 0
-                                  ? "suffix"
-                                  : roll.gen;
+                        // The chain tracks the counts itself: the side comes from
+                        // what the removal reaches, never from a count the
+                        // reading took at nought.
                         out.push(
-                            gen === undefined
+                            roll.gen === undefined
                                 ? { id, kind: "remove" }
-                                : { id, kind: "remove", gen },
+                                : { id, kind: "remove", gen: roll.gen },
                         );
                         break;
                     }
