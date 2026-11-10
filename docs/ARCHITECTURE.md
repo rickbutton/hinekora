@@ -339,7 +339,7 @@ count, and is walked once.
 Two things stay approximate. The modifiers no one names and the checker does not know
 are a count, not identities: when a draw lands beside them each is taken to close a
 modifier group of average weight on its side, as craftofexile's calculator does. And the
-game's rules no source settles are assumptions (Q58–Q66 and Q68). Where a step's randomness is
+game's rules no source settles are assumptions (Q58–Q66, Q68 and Q76). Where a step's randomness is
 one the state does not hold (an unveil's choice, a fracture's lock, an ember's
 implicit) or the walk cannot follow a statement (a call), the walk falls
 back to reading the roll on the checker's item, the facts every path holds, with every

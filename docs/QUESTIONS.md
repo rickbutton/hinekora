@@ -582,6 +582,20 @@ reforge, and it lets the guide's own conditions see the chance the slot is one o
 **Assumed meanwhile:** (a) (`cost/track.ts` `statesIn`, `cost/roll.ts` `naturalGroups`).
 **Answer:**
 
+### Q76 · game probe · open
+
+**Asked:** 2026-11-10
+**Goal:** which side a Veiled Exalted Orb's veiled modifier lands on when both have room.
+[Veiled Exalted Orb](https://www.poewiki.net/wiki/Veiled_Exalted_Orb) says only "adds a
+random veiled modifier", and the two placeholders (`VeiledPrefix`, `VeiledSuffix`) carry
+no spawn weight in the wiki's data.
+**Procure:** Veiled Exalted Orbs and Rares with two prefixes and two suffixes.
+**Steps:** apply one to each Rare.
+**Record:** how many veiled prefixes and veiled suffixes come up.
+**Assumed meanwhile:** the sides with room alike, half each when both have room
+(`cost/track.ts` `veiledSides`).
+**Answer:**
+
 ---
 
 ## Resolved

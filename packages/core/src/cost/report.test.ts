@@ -21,6 +21,7 @@ import {
     restart,
     stop,
     until,
+    veiled,
 } from "../__fixtures__/ast.js";
 import {
     BENCH_LIFE_ROW,
@@ -363,6 +364,29 @@ describe("the cost of a guide", () => {
         // Entered with the first Regal's prefix share; each round ends it with
         // the suffix share.
         expect(loop.attempts!.expected).toBeCloseTo((1 - toSuffix) / toSuffix, 6);
+    });
+
+    it("a Veiled Exalted Orb takes a modifier and puts a veiled one on either side with room", () => {
+        // A prefix goes half the time; the veiled modifier is a prefix half
+        // the time either way (Q76), so one prefix is left a quarter of the time.
+        const c = craft(
+            ring("rare", ["IncreasedMana1", "IncreasedArmour1"], ["FireResist1", "ColdResist1"]),
+            [veiled("exalt"), iff(cmp("prefixCount", "==", 1), [stop()])],
+        );
+        const branch = report(c).steps.find((s) => s.kind === "if")!;
+        expect(branch.note).toBeUndefined();
+        expect(branch.branch).toBeCloseTo(1 / 4, 9);
+    });
+
+    it("a Harvest augment keeps what its removal did not take", () => {
+        // The removal takes one of three; life stays two times in three.
+        const c = craft(ring("rare", ["IncreasedMana1", "IncreasedLife1"], ["FireResist1"]), [
+            harvest("augment", "lightning"),
+            iff(has("IncreasedLife1"), [stop()]),
+        ]);
+        const branch = report(c).steps.find((s) => s.kind === "if")!;
+        expect(branch.note).toBeUndefined();
+        expect(branch.branch).toBeCloseTo(2 / 3, 9);
     });
 
     it("a Divine Orb reaches a value by the share of the range at or above it", () => {

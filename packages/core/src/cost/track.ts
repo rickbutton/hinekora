@@ -20,6 +20,7 @@ import {
 } from "../check/astate.js";
 import { influenceTagsAny, runMethod } from "../check/ops.js";
 import { lookupWeight } from "../pool/pool.js";
+import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
 import { rollableGen, rollableTiers } from "../resolve/tiers.js";
 import type { ChainAtom, ChainState, ChainStep, Outcome } from "./chain.js";
 import { pieces } from "./chance.js";
@@ -289,13 +290,15 @@ export class Tracker {
         // A draw's outcomes rest on the item its fill starts from, which many
         // states share where a reforge strips what tells them apart.
         const fillAt = ops.findIndex((op) => op.kind === "fill");
+        const cut = removalBeforeFill(ops);
         const drawn = new Map<string, readonly Outcome[]>();
         return (state) => {
             const key = stateKey(state);
             const hit = cache.get(key);
             if (hit !== undefined) return hit;
             let out: readonly Outcome[] | undefined;
-            const item = kind === "draw" && fillAt >= 0 ? this.narrow(before, state) : null;
+            const item =
+                kind === "draw" && fillAt >= 0 && cut < 0 ? this.narrow(before, state) : null;
             if (item !== null) {
                 const sig = this.signature(this.stripped(item, ops, fillAt));
                 out = drawn.get(sig);
@@ -339,6 +342,63 @@ export class Tracker {
     ): readonly Outcome[] | undefined {
         const item = this.narrow(before, state);
         if (item === null) return undefined;
+        return this.outcomesOn(item, ops, state, reading);
+    }
+
+    /** The item a veiled placeholder went onto, read on each side it may be
+     *  on, the sides with room alike (QUESTIONS.md Q76). */
+    private veiledSides(
+        a: AItem,
+        from: ChainState,
+        reading: Reading,
+    ): readonly Outcome[] | undefined {
+        const sides: (readonly Outcome[])[] = [];
+        for (const [type, gen] of [
+            [VEILED_PREFIX, "prefix"],
+            [VEILED_SUFFIX, "suffix"],
+        ] as const) {
+            const to = bump(from, gen, 1, from.rows);
+            let side: AItem | null = a;
+            for (const c of [
+                { kind: "compare", projection: "prefixCount", op: "==", value: to.prefix },
+                { kind: "compare", projection: "suffixCount", op: "==", value: to.suffix },
+                { kind: "has", type, gen },
+            ] as const) {
+                side = side === null ? null : refine(side, c, true);
+            }
+            if (side === null) continue;
+            const states = this.statesIn(side, reading);
+            if (states === undefined) return undefined;
+            sides.push(states);
+        }
+        return sides.flatMap((out) => out.map((o) => ({ ...o, prob: o.prob / sides.length })));
+    }
+
+    /** `outcomes` on the checker's item already narrowed to `state`. */
+    private outcomesOn(
+        item: AItem,
+        ops: readonly Op[],
+        state: ChainState,
+        reading: Reading,
+    ): readonly Outcome[] | undefined {
+        const cut = removalBeforeFill(ops);
+        if (cut >= 0) {
+            // What the fill finds rests on what the removal took: each removal
+            // outcome is read on its own before the rest of the method runs.
+            const head = ops.slice(0, cut + 1);
+            const removed = this.outcomesOn(item, head, state, reading);
+            if (removed === undefined) return undefined;
+            const mid = runMethod(item, head, this.registry).state;
+            const tail = ops.slice(cut + 1);
+            const out: Outcome[] = [];
+            for (const r of removed) {
+                const at = this.narrow(mid, r.state);
+                const next = at === null ? undefined : this.outcomesOn(at, tail, r.state, reading);
+                if (next === undefined) return this.counted(undefined);
+                for (const o of next) out.push({ state: o.state, prob: r.prob * o.prob });
+            }
+            return out;
+        }
         const roll = rollOf(item, ops, this.registry, reading);
         switch (roll.kind) {
             case "draw": {
@@ -382,6 +442,8 @@ export class Tracker {
                 const ran = runMethod(item, ops, this.registry);
                 // A method this state cannot take leaves it as it was.
                 if (!ran.ok) return [{ state, prob: 1 }];
+                if (ops.some((op) => op.kind === "fill" && op.pool.kind === "veiledPlaceholder"))
+                    return this.counted(this.veiledSides(ran.state, state, reading));
                 return this.counted(this.statesIn(ran.state, reading));
             }
             default:
@@ -574,6 +636,14 @@ export class Tracker {
         }
         return a;
     }
+}
+
+/** Where a method removes a random modifier and then fills: the removal's
+ *  index, or -1. */
+function removalBeforeFill(ops: readonly Op[]): number {
+    const at = ops.findIndex((op) => op.kind === "remove" && op.selector.kind === "random");
+    if (at < 0 || ops.slice(0, at).some((op) => op.kind === "fill")) return -1;
+    return ops.slice(at + 1).some((op) => op.kind === "fill") ? at : -1;
 }
 
 function stateKey(s: ChainState): string {
