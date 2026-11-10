@@ -1535,6 +1535,12 @@ function fill(
 
     const drawn = resolvePool(a, spec, registry, rules.strands);
     const one = drawn.mods.length === 1 ? drawn.mods[0] : undefined;
+    // Likewise when the pool's one side is full on every path: the step was
+    // refused, and adding past the cap would leave counts no item has.
+    if (count.kind === "add" && drawn.gen !== undefined) {
+        const held = drawn.gen === "prefix" ? a.counts.prefix[0] : suffixRange(a)[0];
+        if (held >= (drawn.gen === "prefix" ? pCap : sCap)) return settled(a);
+    }
 
     let counts = a.counts;
     switch (count.kind) {

@@ -41,6 +41,22 @@ const rareRing = (prefixes: Affix[] = [], suffixes: Affix[] = []) =>
 
 const LIFE = TypeId("IncreasedLife");
 
+describe("a bench craft refused for want of a slot", () => {
+    it("is reported once: the item stays as it was for the steps after it", () => {
+        // The three suffixes are full, so the metamod (a suffix) has no slot.
+        const c = craft(rareRing(["T1 Life"], ["FireResist1", "ColdResist1", "random"]), [
+            bench("prefixes cannot be changed"),
+            op("annul"),
+            op("exalt"),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics.map((d) => d.message)).toEqual([
+            expect.stringContaining("Requires an open suffix slot"),
+        ]);
+        expect(r.finalState!.counts.total).toEqual([4, 4]);
+    });
+});
+
 describe("bench remove", () => {
     it("clears the crafted modifier and nothing else", () => {
         const c = craft(rareRing([BENCH_LIFE_ROW.id, INCREASED_MANA.id], ["FireResist1"]), [
