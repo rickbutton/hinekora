@@ -41,7 +41,7 @@ import {
 import type { Mod } from "../model/mod.js";
 import { isUnveiledResult } from "../model/veiled.js";
 import type { Registry } from "../resolve/registry.js";
-import { rollableGen, rollableTiers, TOP_ITEM_LEVEL } from "../resolve/tiers.js";
+import { rollableGen, rollableTiers } from "../resolve/tiers.js";
 import { baseLabel } from "./render.js";
 import { capitalise, pluralRange, rangeText, rarityText } from "../words.js";
 
@@ -53,9 +53,6 @@ export interface ModView {
     readonly name?: string;
     /** The tier numbers the modifier may be, T1 the best, when it rolls here. */
     readonly tier?: Range;
-    /** A row it may be is a tier of its ladder that rolls only above the item's
-     *  level, which has no number here (a Harvest change that kept the tier). */
-    readonly aboveLevel?: true;
     /** The modifier's category tags, as the advanced tooltip shows them. */
     readonly tags: readonly string[];
     readonly fractured: boolean;
@@ -222,8 +219,6 @@ function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: Mod
     const numbers = mods
         .map((m) => rollable.findIndex((r) => r.id === m.id) + 1)
         .filter((n) => n > 0);
-    const whole = rollableTiers(registry.catalog, a.base, TOP_ITEM_LEVEL, type, tags);
-    const aboveLevel = mods.some((m) => m.minLevel > a.ilvl && whole.some((r) => r.id === m.id));
     const tagSet = new Set<string>();
     for (const m of mods) for (const t of m.implicitTags) tagSet.add(tagLabel(t));
     const one = mods.length === 1 ? mods[0]! : undefined;
@@ -236,7 +231,6 @@ function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: Mod
         ...(numbers.length > 0 && {
             tier: [Math.min(...numbers), Math.max(...numbers)] as Range,
         }),
-        ...(aboveLevel && { aboveLevel }),
         tags: [...tagSet],
         fractured: isFractured(a, type),
         crafted: mods.length > 0 && mods.every((m) => m.source === "bench" || isUnveiledResult(m)),
@@ -425,15 +419,12 @@ function modHeader(m: ModView): string {
     const marker = m.fractured ? "Fractured " : m.crafted ? "Master Crafted " : "";
     const kind = `${marker}${capitalise(m.gen)} Modifier`;
     const name = m.name !== undefined ? ` "${m.name}"` : "";
-    const above = "above the item's level";
     const tier =
         m.rank !== undefined
             ? ` (Rank: ${m.rank})`
             : m.tier !== undefined
-              ? ` (Tier: ${rangeText(m.tier)}${m.aboveLevel ? ` or ${above}` : ""})`
-              : m.aboveLevel
-                ? ` (Tier: ${above})`
-                : "";
+              ? ` (Tier: ${rangeText(m.tier)})`
+              : "";
     return `{ ${kind}${name}${tier}${tagsText(m.tags)} }`;
 }
 

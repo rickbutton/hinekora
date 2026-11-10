@@ -50,12 +50,10 @@ refused, or the item rolls without one.
 says the craft "preserves the tier", but the elements' ladders are offset (fire
 resistance's rows at levels 1, 12, 24, …, cold's at 1, 14, 26, …): at an item level
 between two such rows the source's tier does not roll for the target.
-**Probe:** a Rare of item level 13 with the level-12 fire resistance; change it to cold;
-record the cold row, or a refusal.
-**Assumed:** the target's row at the source's rank where as many rows of each roll at the
-item's level; in the window between, any of the target's rows that roll or its row at
-the source's rank in the whole ladder. **Encoded in:**
-`check/methods.ts` `harvestChange`.
+**Probe:** a Rare of item level 25 with the level-24 fire resistance, and one of level 13
+with the level-12 tier; open the fire-to-cold resistance change; record whether it is
+offered and, if so, which cold tier results.
+**Assumed:** refused. **Encoded in:** `check/methods.ts` `harvestChange`.
 
 ### Q25 · probe · open — when the grove greys a craft out under a metamod
 
@@ -370,19 +368,6 @@ Lesser one, an imprint of each, some fifty Orbs of Conflict a pair; record how o
 higher implicit rises.
 **Assumed:** the line carried on, neither side below one in a hundred. **Encoded in:**
 `cost/track.ts` `CONFLICT_STEP`, `CONFLICT_FLOOR`, `conflicted`.
-
-### Q97 · decision · open — naming a tier above the item's level
-
-**Q:** a Harvest change that keeps the tier may leave a row that does not roll at the
-item's level (Q22). `t<n>` numbers the rows that roll at the item's level, so no `t<n>`
-names that row: a guide reaches it only as "none of the tiers that roll".
-**Options:** (a) leave it: the item card says "above the item's level", and a guide
-branches by negation or by value (`has "cold resistance" >= 18`) (recommended: the case
-is rare and the numbering keeps one meaning); (b) number tiers over the whole ladder
-wherever such a row may be on the item, so `t1` changes meaning with the state; (c) a
-word for it, `has "<mod>" above`.
-**Assumed:** (a). **Encoded in:** `check/check.ts` `resolveHas`, `render/item.ts`
-`modView`.
 
 ### Q98 · probe · open — a cluster jewel's enchantment and its size
 

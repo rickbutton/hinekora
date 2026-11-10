@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+    BENCH_LIFE_ROW,
     CATALOG,
     FIRE_RES_TIERED,
     MAXLIFE_T1,
@@ -132,26 +133,34 @@ describe("memory strands in the pool", () => {
 });
 
 describe("a modifier the item keeps through a roll", () => {
-    it("may be a row above the item's level, which its ladder there lacks", () => {
-        // A Harvest change can leave such a row; the item may hold either tier.
+    it("may be a bench row beside a row of its ladder", () => {
+        // A Harvest change of a crafted modifier leaves the bench's
+        // counterpart or a natural row; the item may hold either.
+        const benched = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...CATALOG, BENCH_LIFE_ROW],
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
         const c = craft(
             item({ base: "Iron Ring", ilvl: 40, rarity: "rare", prefixes: ["IncreasedLife2"] }),
             [],
         );
-        const checked = check(c, { registry }).finalState!;
+        const checked = check(c, { registry: benched }).finalState!;
         const a = {
             ...checked,
             tiers: new Map([...checked.tiers]).set(
                 TypeId("IncreasedLife"),
-                new Set([ModId("IncreasedLife1"), ModId("IncreasedLife2")]),
+                new Set([BENCH_LIFE_ROW.id, ModId("IncreasedLife2")]),
             ),
         };
-        const roll = rollOf(a, currencyOps("exalt"), registry);
+        const roll = rollOf(a, currencyOps("exalt"), benched);
         if (roll.kind !== "draw") throw new Error("not a draw");
         const life = roll.variants[0]!.present.find((p) => p.type === "IncreasedLife")!;
-        expect(life.rows.map((r) => r.mod.id).sort()).toEqual(["IncreasedLife1", "IncreasedLife2"]);
-        // Each by its spawn weight, the row above the level beside the one within it.
-        expect(life.rows.map((r) => r.weight).sort()).toEqual([1000, 2000]);
+        // The ladder's row by its spawn weight, the bench's, which never spawns, at one.
+        expect(Object.fromEntries(life.rows.map((r) => [r.mod.id, r.weight]))).toEqual({
+            IncreasedLife2: 2000,
+            BenchLife1: 1,
+        });
     });
 });
 

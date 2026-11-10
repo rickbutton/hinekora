@@ -237,30 +237,33 @@ function harvestChange(
         );
     }
     // The result is what each row the source may be would become, together:
-    // its recorded rows, or with none recorded any row of its ladder and any
-    // row another source places.
+    // its recorded rows, or with none recorded any row of its ladder that
+    // rolls at the item's level and any row another source places.
     const whole = (type: TypeId): readonly Mod[] =>
         rollableTiers(catalog, a.base, TOP_ITEM_LEVEL, type, tags);
     const [wholeFrom, wholeTo] = [whole(from.value), whole(to.value)];
     const sources = rollableTiers(catalog, a.base, a.ilvl, from.value, tags);
     const targets = rollableTiers(catalog, a.base, a.ilvl, to.value, tags);
     const alike = wholeFrom.length === wholeTo.length;
-    const parallel = alike && sources.length === targets.length;
     const pinned = a.tiers.get(from.value);
     const mayBe =
         pinned === undefined
-            ? [...wholeFrom, ...catalog.filter((m) => m.type === from.value && !isNatural(m))]
+            ? [...sources, ...catalog.filter((m) => m.type === from.value && !isNatural(m))]
             : [...pinned].flatMap((id) => {
                   const row = registry.resolveMod(id);
                   return row.ok ? [row.value] : [];
               });
     const rows = new Set<Mod>();
+    const changeable: Mod[] = [];
+    let tooHigh: Mod | undefined;
     for (const was of mayBe) {
         if (!isNatural(was)) {
             // A row another source placed becomes that source's counterpart row.
             // The page says so of the Incursion modifiers alone (Modifier §
             // Harvest Crafting); of any other the natural rows stay possible
-            // beside it (`QUESTIONS.md` Q52), as they do where it has none.
+            // beside it (`QUESTIONS.md` Q52), as they do where it has none. Such
+            // a source places its rows whatever the item's level, so a
+            // counterpart above it is still a result.
             const twins = twinRows(was, to.value, a, tags, registry);
             for (const m of twins) rows.add(m);
             const incursion = was.name !== undefined && INCURSION_AFFIXES.has(was.name);
@@ -268,20 +271,28 @@ function harvestChange(
             continue;
         }
         // The tier is kept (Modifier § Harvest Crafting): the target's row at
-        // the source's rank, where the two ladders have as many rows at the
-        // item's level and as many in all, so the rank is the same tier
-        // however it is counted. Which row the game picks otherwise is unknown
-        // (`QUESTIONS.md` Q22), so any of the target's rows that roll here, and
-        // the row at the source's rank in the whole ladder, which "preserves
-        // the tier" read literally, though the item's level is below it.
-        const here = sources.findIndex((m) => m.id === was.id);
-        if (parallel && here >= 0) {
-            rows.add(targets[here]!);
-            continue;
-        }
-        for (const m of targets) rows.add(m);
+        // the source's rank. Where the two ladders differ in length the rank
+        // names no one row, so any of the target's rows that roll here.
         const rank = alike ? wholeFrom.findIndex((m) => m.id === was.id) : -1;
-        if (rank >= 0) rows.add(wholeTo[rank]!);
+        const same = wholeTo[rank];
+        if (same === undefined) for (const m of targets) rows.add(m);
+        else if (same.minLevel <= a.ilvl) {
+            rows.add(same);
+            changeable.push(was);
+        } else tooHigh ??= same;
+    }
+    // The elements' ladders unlock at different levels, so the kept tier may
+    // be one the item's level does not allow. Whether the grove offers the
+    // craft then is unknown (`QUESTIONS.md` Q22), so no guide may rest on it.
+    if (tooHigh !== undefined) {
+        const tier = sources.findIndex((r) => changeable.includes(r)) + 1;
+        const settle =
+            tier === 0
+                ? ""
+                : ` Settle the tier first: under 'if has "${fromName}" t${tier}' the grove can change it.`;
+        return refuse(
+            `The grove keeps a modifier's tier, and the tier of "${toName}" that "${fromName}" would become needs item level ${tooHigh.minLevel}: it cannot appear on this item of level ${a.ilvl}.${settle}`,
+        );
     }
     if (rows.size === 0) return refuse(`"${toName}" cannot roll on this item.`);
     return harvestChangeOps(from.value, registry.typeLabel(from.value), [...rows]);
@@ -492,7 +503,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["harvest", "change"],
         args: [name("mod"), name("mod")],
-        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier into the same modifier of another element, at the same tier (any of its tiers that roll, or the same tier above the item level, where fewer or more of them roll than of the first). It takes a penetration as a damage modifier, and no critical strike multiplier, damage over time multiplier or resistance shared with chaos. The first must be on an item of any rarity, not fractured, on a side no metamod protects; the second must roll on the base, unless the first is a modifier no currency rolls (an Incursion or a crafted one) with a counterpart of its own kind, and share no group with a present modifier.',
+        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier into the same modifier of another element, at the same tier; where the item level does not allow that tier of the second, the change is refused until the guide settles the first at a tier it does allow. It takes a penetration as a damage modifier, and no critical strike multiplier, damage over time multiplier or resistance shared with chaos. The first must be on an item of any rarity, not fractured, on a side no metamod protects; the second must roll on the base, unless the first is a modifier no currency rolls (an Incursion or a crafted one) with a counterpart of its own kind, and share no group with a present modifier.',
         build: ([from, to], a, registry) => harvestChange(text(from), text(to), a, registry),
     },
     {

@@ -220,51 +220,6 @@ describe("harvest change", () => {
         expect(loose.diagnostics[0]!.message).toContain("isn't guaranteed");
     });
 
-    it("keeps the tier where the two elements' tiers sit at different levels, while as many of each roll", () => {
-        // The game's ladders are offset by a level or two (fire resistance at
-        // 12, cold at 14), which leaves the rank the same tier.
-        const offset = COLD_RES_TIERS.map((m, i) => (i === 1 ? { ...m, minLevel: 35 } : m));
-        const skewed = buildRegistry({
-            bases: [RING_BASE],
-            harvestChange: HARVEST_CHANGE,
-            mods: [...CATALOG, ...FIRE_RES_TIERS, ...offset],
-            baseAliases: { "Iron Ring": "IronRing" },
-        });
-        const change = (ilvl: number) =>
-            check(
-                craft(
-                    item({ base: "Iron Ring", ilvl, rarity: "rare", suffixes: ["FireTiersMid"] }),
-                    [harvestChange("FireTiersMid", "ColdTiersLow")],
-                ),
-                { registry: skewed },
-            );
-        const level = change(100);
-        expect(level.diagnostics).toEqual([]);
-        expect(level.finalState!.tiers.get(TypeId("ColdTiers"))).toEqual(new Set(["ColdTiersMid"]));
-        // At item level 32 two fire tiers roll and one cold: which cold row the
-        // fire's second tier becomes is not known, so any that rolls, or the
-        // cold's second tier, the same tier though above the item's level.
-        const between = change(32);
-        expect(between.diagnostics).toEqual([]);
-        expect(between.finalState!.tiers.get(TypeId("ColdTiers"))).toEqual(
-            new Set(["ColdTiersLow", "ColdTiersMid"]),
-        );
-        // A fire resistance a branch found after a reforge is at no known row:
-        // it may be the second tier too, so the cold may be more than its
-        // lowest row and the inner branch runs.
-        const rolled = check(
-            craft(item({ base: "Iron Ring", ilvl: 32, rarity: "rare" }), [
-                op("chaos"),
-                iff(andp(has("FireTiersLow"), notp(has("ColdTiersLow"))), [
-                    harvestChange("FireTiersLow", "ColdTiersLow"),
-                    iff(notp(has("ColdTiersLow", 1)), []),
-                ]),
-            ]),
-            { registry: skewed },
-        );
-        expect(rolled.diagnostics).toEqual([]);
-    });
-
     it("changes a modifier that rolls nowhere into its counterpart of the same level", () => {
         // The target has no row that rolls here, and a counterpart at another
         // level is not it.
@@ -411,6 +366,106 @@ describe("harvest change", () => {
     });
 });
 
+describe("a Harvest change where the elements' tiers unlock at different levels", () => {
+    // The game's ladders are offset by a level or two (fire resistance at 12,
+    // cold at 14). Here fire's tiers unlock at 1, 30 and 60, cold's at 1, 35
+    // and 65: between 30 and 34 the second fire tier rolls and the second cold
+    // does not.
+    const offset = COLD_RES_TIERS.map((m) =>
+        m.minLevel > 1 ? { ...m, minLevel: m.minLevel + 5 } : m,
+    );
+    const skewed = buildRegistry({
+        bases: [RING_BASE],
+        harvestChange: HARVEST_CHANGE,
+        mods: [...CATALOG, ...FIRE_RES_TIERS, ...offset],
+        baseAliases: { "Iron Ring": "IronRing" },
+    });
+    const COLD = TypeId("ColdTiers");
+    const FIRE = TypeId("FireTiers");
+    /** The change of a modifier the item starts with at a known tier. */
+    const known = (ilvl: number, from: string, to: string) =>
+        check(
+            craft(item({ base: "Iron Ring", ilvl, rarity: "rare", suffixes: [from] }), [
+                harvestChange(from, to),
+            ]),
+            { registry: skewed },
+        );
+    /** The change of a modifier a branch found after a reforge, at no known
+     *  tier, or at tier `t` of those that roll. */
+    const found = (ilvl: number, from: string, to: string, t?: number) =>
+        check(
+            craft(item({ base: "Iron Ring", ilvl, rarity: "rare" }), [
+                op("chaos"),
+                iff(andp(has(from, t), notp(has(to))), [harvestChange(from, to)]),
+            ]),
+            { registry: skewed },
+        );
+
+    it("gives the same tier of the other element where the item's level allows it", () => {
+        const r = known(32, "FireTiersLow", "ColdTiersLow");
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(COLD)).toEqual(new Set(["ColdTiersLow"]));
+    });
+
+    it("is refused where the tier the modifier would keep is above the item's level", () => {
+        const r = known(32, "FireTiersMid", "ColdTiersLow");
+        const message = r.diagnostics[0]!.message;
+        expect(message).toContain(
+            'the tier of "ColdTiersLow" that "FireTiersMid" would become needs item level 35: it cannot appear on this item of level 32.',
+        );
+        // The one tier it may be is the one refused: no other to settle on.
+        expect(message).not.toContain("Settle the tier");
+        expect(guaranteedTypes(r.finalState!).has(FIRE)).toBe(true);
+    });
+
+    it("is refused where one tier the modifier may be would keep a tier above the item's level", () => {
+        const r = found(32, "FireTiersLow", "ColdTiersLow");
+        expect(r.diagnostics).toHaveLength(1);
+        expect(r.diagnostics[0]!.message).toContain("needs item level 35");
+        expect(r.diagnostics[0]!.message).toContain(
+            `Settle the tier first: under 'if has "FireTiersLow" t2' the grove can change it.`,
+        );
+        // The tier the message names is one the change takes.
+        expect(found(32, "FireTiersLow", "ColdTiersLow", 2).diagnostics).toEqual([]);
+        // Three fire tiers roll at 62 and two cold.
+        expect(found(62, "FireTiersLow", "ColdTiersLow").diagnostics[0]!.message).toContain(
+            "needs item level 65",
+        );
+    });
+
+    it("gives each tier's own where every tier the modifier may be keeps one that rolls", () => {
+        const r = check(
+            craft(item({ base: "Iron Ring", ilvl: 40, rarity: "rare" }), [
+                op("chaos"),
+                iff(andp(has("FireTiersLow"), notp(has("ColdTiersLow"))), [
+                    harvestChange("FireTiersLow", "ColdTiersLow"),
+                    iff(has("ColdTiersLow", 1), []),
+                    iff(has("ColdTiersLow", 2), []),
+                ]),
+            ]),
+            { registry: skewed },
+        );
+        expect(r.diagnostics).toEqual([]);
+    });
+
+    it("takes the other direction in the same window, the kept tier unlocking earlier", () => {
+        const low = known(32, "ColdTiersLow", "FireTiersLow");
+        expect(low.diagnostics).toEqual([]);
+        expect(low.finalState!.tiers.get(FIRE)).toEqual(new Set(["FireTiersLow"]));
+        expect(found(32, "ColdTiersLow", "FireTiersLow").diagnostics).toEqual([]);
+        const mid = known(37, "ColdTiersMid", "FireTiersLow");
+        expect(mid.diagnostics).toEqual([]);
+        expect(mid.finalState!.tiers.get(FIRE)).toEqual(new Set(["FireTiersMid"]));
+    });
+
+    it("leaves an item above every tier's level as it was", () => {
+        const top = known(100, "FireTiersHigh", "ColdTiersLow");
+        expect(top.diagnostics).toEqual([]);
+        expect(top.finalState!.tiers.get(COLD)).toEqual(new Set(["ColdTiersHigh"]));
+        expect(found(100, "FireTiersLow", "ColdTiersLow").diagnostics).toEqual([]);
+    });
+});
+
 describe("a Harvest change of a modifier another source placed", () => {
     const lists: HarvestChangeLists = {
         resistance: {
@@ -477,6 +532,12 @@ describe("a Harvest change of a modifier another source placed", () => {
         const name = "of the Retired";
         const rows = [row("Fire", "FireSource", { name }), row("Cold", "ColdTwin", { name })];
         expect(changed(rows)).toEqual(new Set(["ColdTwin", "ColdNatural"]));
+    });
+
+    it("keeps a counterpart above the item's level, which its source places at any level", () => {
+        const name = "of the Retired";
+        const rows = [row("Fire", "FireSource", { name }), row("Cold", "ColdTwin", { name })];
+        expect(changed(rows, {}, { ilvl: 40 })).toEqual(new Set(["ColdTwin", "ColdNatural"]));
     });
 
     it("takes a counterpart whose spawn table names a tag of the base, not another base's", () => {
