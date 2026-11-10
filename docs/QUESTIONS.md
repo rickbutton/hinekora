@@ -612,6 +612,20 @@ the item says which side that is (`cost/roll.ts` `unveilRoll`). The checker stil
 both sides, the looser reading.
 **Answer:**
 
+### Q78 · decision · open
+
+**Asked:** 2026-11-10
+**Question:** which of the three options the cost layer takes the player to choose at an
+unveil. (a) The target the guide names when it is offered, else a modifier a later
+condition of the guide names, else one no one names; (b) only the target, any other pick
+counted as a modifier no one names; (c) the most valuable, which the cost layer has no
+measure of.
+**Recommendation:** (a): a guide that names no target still unveils for the modifiers its
+conditions ask for, and a player takes those when offered.
+**Assumed meanwhile:** (a), the named modifiers ranked in the order the guide's conditions
+first name them (`cost/track.ts` `unveiled`).
+**Answer:**
+
 ---
 
 ## Resolved

@@ -25,7 +25,14 @@ import { rollableGen, rollableTiers } from "../resolve/tiers.js";
 import type { ChainAtom, ChainState, Outcome } from "./chain.js";
 import { pieces } from "./chance.js";
 import { amongFirstDistribution } from "./race.js";
-import { harvestTagsOn, naturalGroups, type Reading, type Roll, rollOf } from "./roll.js";
+import {
+    type Group,
+    harvestTagsOn,
+    naturalGroups,
+    type Reading,
+    type Roll,
+    rollOf,
+} from "./roll.js";
 
 /** The states a chain-solved loop's exit leaves the item in, over the
  *  modifiers that loop named; the weights sum to one. */
@@ -198,6 +205,11 @@ export class Tracker {
         // crafted) is followed by name too, so a draw onto the item closes its
         // group for certain rather than on average.
         for (const item of items) for (const t of guaranteedTypes(item)) add(t);
+        // A veiled modifier's side decides which side its unveil fills.
+        if (items.some((a) => a.possible.has(VEILED_PREFIX) || a.possible.has(VEILED_SUFFIX))) {
+            add(VEILED_PREFIX);
+            add(VEILED_SUFFIX);
+        }
     }
 
     /**
@@ -265,8 +277,8 @@ export class Tracker {
      * random method's roll gives the outcomes and their chances; a sure one
      * gives one state; a Divine Orb rolls the value of every modifier a
      * condition compares again within its tier. Undefined for a method whose
-     * randomness the state does not hold (an unveil's choice, a fracture's
-     * lock, an implicit), which the walk reads off the roll instead.
+     * randomness the state does not hold (a fracture's lock, an implicit),
+     * which the walk reads off the roll instead.
      */
     transition(
         before: AItem,
@@ -283,7 +295,8 @@ export class Tracker {
                 return out;
             };
         }
-        if (kind !== "draw" && kind !== "removal" && kind !== "none") return undefined;
+        if (kind !== "draw" && kind !== "removal" && kind !== "none" && kind !== "unveil")
+            return undefined;
         // A draw's outcomes rest on the item its fill starts from, which many
         // states share where a reforge strips what tells them apart.
         const fillAt = ops.findIndex((op) => op.kind === "fill");
@@ -353,6 +366,61 @@ export class Tracker {
     private crafted(row: ModId): boolean {
         const mod = this.registry.resolveMod(readRow(row).base);
         return mod.ok && mod.value.source === "bench";
+    }
+
+    /**
+     * An unveil: three options drawn by weight without replacement (Q64), the
+     * veiled modifier becoming the one the player takes: the target when it is
+     * offered, else a modifier the guide names, the first the tracker follows,
+     * else one no one names (QUESTIONS.md Q78).
+     */
+    private unveiled(
+        state: ChainState,
+        options: readonly Group[],
+        target: TypeId | undefined,
+    ): readonly Outcome[] | undefined {
+        const veiled = [VEILED_PREFIX, VEILED_SUFFIX]
+            .map((t) => this.index.get(t))
+            .find((i) => i !== undefined && state.rows[i] !== null);
+        if (veiled === undefined) return undefined;
+        const special: number[] = [];
+        options.forEach((g, gi) => {
+            if (this.index.has(g.type)) special.push(gi);
+        });
+        if (special.length > 12) return undefined;
+        const rank = (gi: number): number =>
+            options[gi]!.type === target ? -1 : this.index.get(options[gi]!.type)!;
+        const dist = amongFirstDistribution(
+            options.map((g) => g.weight),
+            special,
+            3,
+        );
+        const out: Outcome[] = [];
+        for (let mask = 0; mask < dist.length; mask++) {
+            const prob = dist[mask]!;
+            if (prob === 0) continue;
+            const rows = [...state.rows];
+            rows[veiled] = null;
+            const offered = special.filter((_gi, b) => mask & (1 << b));
+            if (offered.length === 0) {
+                out.push({ state: { ...state, rows }, prob });
+                continue;
+            }
+            const taken = options[offered.reduce((a, b) => (rank(b) < rank(a) ? b : a))]!;
+            const i = this.index.get(taken.type)!;
+            const total = taken.rows.reduce((sum, r) => sum + r.weight, 0);
+            for (const r of taken.rows) {
+                for (const c of this.classesOf(i, r.mod.id)) {
+                    const placed = [...rows];
+                    placed[i] = c.id;
+                    out.push({
+                        state: { ...state, rows: placed },
+                        prob: (prob * r.weight * c.share) / total,
+                    });
+                }
+            }
+        }
+        return out;
     }
 
     /** The item a veiled placeholder went onto, read on each side it may be
@@ -447,6 +515,12 @@ export class Tracker {
                 return total > 0
                     ? out.map((o) => ({ ...o, prob: o.prob / total }))
                     : [{ state, prob: 1 }];
+            }
+            case "unveil": {
+                let target: TypeId | undefined;
+                for (const op of ops)
+                    if (op.kind === "fill" && op.pool.kind === "unveil") target = op.pool.target;
+                return this.counted(this.unveiled(state, roll.options, target));
             }
             case "none": {
                 const ran = runMethod(item, ops, this.registry);

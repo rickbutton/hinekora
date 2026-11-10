@@ -23,6 +23,7 @@ import {
     restart,
     stop,
     until,
+    unveil,
     veiled,
 } from "../__fixtures__/ast.js";
 import {
@@ -32,13 +33,14 @@ import {
     LIFE_T1,
     PROTECT_PREFIXES_CARRIER,
     RING_BASE,
+    VEILED_CATALOG,
 } from "../__fixtures__/mods.js";
 import { costOf } from "./report.js";
 import type { Prices } from "./prices.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE],
-    mods: [...CATALOG, BENCH_LIFE_ROW, PROTECT_PREFIXES_CARRIER],
+    mods: [...CATALOG, BENCH_LIFE_ROW, PROTECT_PREFIXES_CARRIER, ...VEILED_CATALOG],
     baseAliases: { "Iron Ring": "IronRing" },
     benchCrafts: [{ mod: BENCH_LIFE_ROW.id, tier: 1, itemClasses: new Set([CLASS_RING]) }],
 });
@@ -380,6 +382,31 @@ describe("the cost of a guide", () => {
         const branch = report(c).steps.find((s) => s.kind === "if")!;
         expect(branch.note).toBeUndefined();
         expect(branch.branch).toBeCloseTo(1 / 4, 9);
+    });
+
+    it("an unveil takes the modifier the guide names when it is offered", () => {
+        // The veiled modifier is a suffix half the time, and a ring's veiled
+        // suffixes are two, both offered: the named one is taken.
+        const c = craft(
+            ring("rare", ["IncreasedMana1", "IncreasedArmour1"], ["FireResist1", "ColdResist1"]),
+            [veiled("exalt"), unveil(), iff(has("veiled double damage"), [stop()])],
+        );
+        const branch = report(c).steps.find((s) => s.kind === "if")!;
+        expect(branch.note).toBeUndefined();
+        expect(branch.branch).toBeCloseTo(1 / 2, 9);
+    });
+
+    it("an unveil with a target takes the target over a modifier a later condition names", () => {
+        const c = craft(
+            ring("rare", ["IncreasedMana1", "IncreasedArmour1"], ["FireResist1", "ColdResist1"]),
+            [
+                veiled("exalt"),
+                unveil("veiled cast speed"),
+                iff(has("veiled double damage"), [stop()]),
+            ],
+        );
+        const branch = report(c).steps.find((s) => s.kind === "if")!;
+        expect(branch.branch).toBeCloseTo(0, 9);
     });
 
     it("a Harvest augment keeps what its removal did not take", () => {
