@@ -95,14 +95,18 @@ export interface Chain {
      *  how often its body is entered. */
     readonly reached: ReadonlyMap<number, number>;
     readonly taken: ReadonlyMap<number, number>;
-    /** Mass still going round when the rounds were cut off: a loop the chain
-     *  cannot see ending, the item full and nothing removing. */
+    /** Mass that never leaves: a loop the chain cannot see ending, the item
+     *  full and nothing removing. */
     readonly unresolved: number;
 }
 
 /** Rounds after which the chain stops following the mass still going round. */
 const MAX_PASSES = 2000;
 const EPSILON = 1e-9;
+/** How close two rounds' decay must be for the rest to be taken as their
+ *  geometric tail, and how close to one a decay counts as none. */
+const SETTLED = 1e-10;
+const STUCK = 1e-9;
 
 type Dist = Map<string, { state: ChainState; prob: number }>;
 
@@ -166,16 +170,48 @@ export function chain(input: ChainInput): Chain | undefined {
         if (input.exit(state)) t.exit += weight / total;
         else put(head, state, weight / total);
     }
+    // A rare exit leaves mass going round for thousands of rounds. Once the
+    // share each round keeps has settled, the distribution keeps its shape and
+    // only shrinks, so every later round is this one scaled by that share: the
+    // rest is a geometric tail, added at once.
+    let lastDecay: number | undefined;
     for (let round = 0; round < MAX_PASSES && massOf(head) > EPSILON; round++) {
-        t.passes += massOf(head);
+        const mass = massOf(head);
+        const was = snapshot(t);
+        t.passes += mass;
         const alive = run(input.body, head, input, t);
         head = new Map();
         for (const { state, prob } of alive.values()) {
             if (input.exit(state)) t.exit += prob;
             else put(head, state, prob);
         }
+        const decay = massOf(head) / mass;
+        if (lastDecay !== undefined && Math.abs(decay - lastDecay) < SETTLED && decay < 1 - STUCK) {
+            addScaled(t, was, decay / (1 - decay));
+            head = new Map();
+            break;
+        }
+        lastDecay = decay;
     }
     return { ...t, unresolved: massOf(head) };
+}
+
+function snapshot(t: Totals): Totals {
+    return { ...t, reached: new Map(t.reached), taken: new Map(t.taken) };
+}
+
+/** Add `factor` times what the totals gained since `was`. */
+function addScaled(t: Totals, was: Totals, factor: number): void {
+    t.exit += (t.exit - was.exit) * factor;
+    t.restart += (t.restart - was.restart) * factor;
+    t.stop += (t.stop - was.stop) * factor;
+    t.passes += (t.passes - was.passes) * factor;
+    for (const [m, before] of [
+        [t.reached, was.reached],
+        [t.taken, was.taken],
+    ] as const) {
+        for (const [id, n] of m) m.set(id, n + (n - (before.get(id) ?? 0)) * factor);
+    }
 }
 
 function run(steps: readonly ChainStep[], alive: Dist, input: ChainInput, t: Totals): Dist {

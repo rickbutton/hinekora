@@ -287,8 +287,11 @@ resolveEssence / resolveBench / resolveHarvestTag`
   the item starts over from, a restart or a stop) as a Markov chain over the counts
   and the named modifiers' rows (`ChainState`, one `ChainAtom` per modifier the loop's
   conditions name), from weighted start states to the exit, a restart, a stop or the
-  mass it cannot resolve; the walk builds it in `chainLoop` for every `until` whose body
-  and exit fit, the rest taking the independent-attempts path. `prices.ts` holds the unit
+  mass that never leaves; once the
+  share of mass each round keeps has settled, the rounds still to come are added as
+  that round's geometric tail, so a rare exit costs its full expected rounds. The walk
+  builds it in `chainLoop` for every `until` whose body and exit fit, the rest taking
+  the independent-attempts path. `prices.ts` holds the unit
   cost of a method in its own currency (`unitCost`: the orb's name, the essence, the
   fossils and their resonator, the lifeforce per Harvest craft, a bench craft's
   `BenchCraft.cost`, the beasts a Bestiary recipe takes), the `Prices` snapshot type and

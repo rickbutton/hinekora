@@ -202,6 +202,53 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.taken.get(0)).toBeCloseTo(1.5, 3);
     });
 
+    it("a rare exit is followed to its end, not cut off", () => {
+        // A reforge that lands the exit one time in 10 000: 10 000 rounds on
+        // average, far more than the rounds the chain follows one by one.
+        const p = 1e-4;
+        const solved = chain({
+            atoms: [],
+            body: [
+                {
+                    id: 0,
+                    kind: "reforge",
+                    outcomes: [
+                        { state: at(1, 0), prob: p },
+                        { state: at(0, 1), prob: 1 - p },
+                    ],
+                },
+            ],
+            starts: [{ state: at(0, 1), weight: 1 }],
+            caps: CAPS,
+            exit: (s) => s.prefix === 1,
+        })!;
+        expect(solved.unresolved).toBeCloseTo(0, 9);
+        expect(solved.exit).toBeCloseTo(1, 9);
+        expect(solved.passes / (1 / p)).toBeCloseTo(1, 6);
+        expect(solved.reached.get(0)! / (1 / p)).toBeCloseTo(1, 6);
+    });
+
+    it("a loop that cannot end is left unresolved", () => {
+        // Exalts on a 3/3 item: nothing ever changes, the exit never comes.
+        const solved = chain({
+            atoms: [],
+            body: [
+                {
+                    id: 0,
+                    kind: "add",
+                    weight: { prefix: 100, suffix: 100 },
+                    known: NONE,
+                    mean: { prefix: 1, suffix: 1 },
+                },
+            ],
+            starts: [{ state: at(3, 3), weight: 1 }],
+            caps: CAPS,
+            exit: (s) => s.prefix === 4,
+        })!;
+        expect(solved.unresolved).toBeCloseTo(1, 9);
+        expect(solved.exit).toBeCloseTo(0, 9);
+    });
+
     it("a body that changes nothing is not a chain", () => {
         expect(
             chain({

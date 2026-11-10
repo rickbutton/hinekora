@@ -402,7 +402,10 @@ craft's listed price).
   for each modifier the loop's conditions name, whether it is on the item and at which
   row, from the states the loop may enter with (weighted by the path in), carrying the
   distribution through the body round after round until the mass has left: the exit, a
-  restart or a stop, or an item full with nothing removing, which the report names. The
+  restart or a stop, or an item full with nothing removing, which the report names. A
+  rare exit would take thousands of rounds to follow; once the share each round keeps
+  has settled, the distribution only shrinks, and the rounds left are summed at once as
+  a geometric series. The
   named modifiers are the only ones tracked; the rest of the item is a count whose draws
   close an average group. The chance of the exit per round, how often each step and
   branch inside runs, and the stop share all fall out exactly.
