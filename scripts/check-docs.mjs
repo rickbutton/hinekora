@@ -14,6 +14,8 @@
  *     the surface doc, the vocabulary and the method words must be coloured by the
  *     VSCode grammar, and every field of the checker's abstract state must be named in
  *     REFERENCE.md §4;
+ *   - lets operations.md §2's primitives table drift from the `Op` union: each first
+ *     column names a kind of `Op`, and every kind has a row;
  *   - links a poewiki.net page or section that the local wiki cache does not hold
  *     (skipped with a notice when the cache is absent, e.g. in CI).
  *
@@ -42,12 +44,15 @@ const SYMBOL_DOCS = new Set([
     "docs/REFERENCE.md",
     "docs/ARCHITECTURE.md",
     "docs/ROADMAP.md",
+    "docs/operations.md",
 ]);
 const SURFACE = "docs/crafting-lang-surface-v0.md";
 const REFERENCE = "docs/REFERENCE.md";
 const GRAMMAR = "editors/vscode/syntaxes/hinekora.tmLanguage.json";
 const VOCABULARY_FILE = "packages/parser/src/vocabulary.ts";
 const METHODS_FILE = "packages/core/src/check/methods.ts";
+const OPERATIONS = "docs/operations.md";
+const OPS_FILE = "packages/core/src/check/ops.ts";
 
 function walk(dir, pred, out = []) {
     for (const name of readdirSync(dir)) {
@@ -209,6 +214,29 @@ const checkerSection = block(read(REFERENCE), "\n## 4.", "\n## 5.");
 for (const f of aitemFields) {
     if (!new RegExp(`\`[^\`]*(?<![\w])${f}(?![\w])[^\`]*\``).test(checkerSection))
         fail(REFERENCE, 1, `AItem field \`${f}\` is not described in §4`);
+}
+
+// The primitives table of operations.md §2 names exactly the kinds of the `Op` union.
+const opKinds = new Set(
+    [...block(read(OPS_FILE), "export type Op =", ";\n").matchAll(/kind: "(\w+)"/g)].map(
+        (m) => m[1],
+    ),
+);
+const primitivesLines = lines(OPERATIONS);
+const primitivesStart = primitivesLines.findIndex((l) => l.startsWith("## 2."));
+const primitivesEnd = primitivesLines.findIndex(
+    (l, i) => i > primitivesStart && l.startsWith("## "),
+);
+const tabled = new Set();
+primitivesLines.slice(primitivesStart, primitivesEnd).forEach((text, i) => {
+    const first = /^\|\s*`([a-z]\w*)`\s*\|/.exec(text);
+    if (!first) return;
+    tabled.add(first[1]);
+    if (!opKinds.has(first[1]))
+        fail(OPERATIONS, primitivesStart + i + 1, `\`${first[1]}\` is not a kind of \`Op\``);
+});
+for (const k of opKinds) {
+    if (!tabled.has(k)) fail(OPERATIONS, primitivesStart + 1, `the op \`${k}\` is not in §2`);
 }
 
 // --- 3. wiki links resolve in the local cache ----------------------------------
