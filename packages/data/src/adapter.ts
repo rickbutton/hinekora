@@ -10,8 +10,10 @@ import {
     ClassId,
     Domain,
     type EldritchImplicitSpec,
+    ELEMENTS,
     type EssenceSpec,
     type FossilSpec,
+    type HarvestChangeLists,
     type Gen,
     GroupId,
     type Mod,
@@ -21,6 +23,7 @@ import {
     TypeId,
 } from "@hinekora/core";
 import type {
+    RawHarvestChange,
     RepoeBase,
     RepoeBench,
     RepoeEldritch,
@@ -123,6 +126,14 @@ export function adaptFossil(id: string, f: RepoeFossil): FossilSpec {
         fractures: f.fractures,
         corrupts: f.corrupts,
     };
+}
+
+export function adaptHarvestChange(raw: RawHarvestChange): HarvestChangeLists {
+    const types = (kind: "resistance" | "damage"): HarvestChangeLists["resistance"] =>
+        Object.fromEntries(
+            ELEMENTS.map((element) => [element, (raw[kind][element] ?? []).map((t) => TypeId(t))]),
+        );
+    return { resistance: types("resistance"), damage: types("damage") };
 }
 
 export function adaptBench(b: RepoeBench): BenchCraft {

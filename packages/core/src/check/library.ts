@@ -549,7 +549,11 @@ export function beastAspectOps(row: Mod): readonly Op[] {
     return [
         notCorrupted,
         openSlot(row.gen),
-        require({ kind: "noGroupConflict", mod: row }),
+        require({
+            kind: "noGroupConflict",
+            mod: row,
+            refusal: "the Aspect can't be crafted",
+        }),
         fill({ kind: "rows", mods: [row] }, add([1, 1])),
     ];
 }
@@ -605,7 +609,13 @@ export function harvestChangeOps(from: TypeId, label: string, to: readonly Mod[]
     return [
         notCorrupted,
         require({ kind: "typeRemovable", type: from, label }),
-        ...to.slice(0, 1).map((mod) => require({ kind: "noGroupConflict", mod })),
+        ...to.slice(0, 1).map((mod) =>
+            require({
+                kind: "noGroupConflict",
+                mod,
+                refusal: "the grove can't change a modifier into it",
+            }),
+        ),
         remove({ kind: "type", type: from }),
         fill({ kind: "rows", mods: to, replacing: from }, add([1, 1])),
     ];

@@ -14,6 +14,7 @@ import {
     rollableTiers,
     TagId,
     ModId,
+    TypeId,
 } from "@hinekora/core";
 import { registryOf } from "./bundle.js";
 import { loadDefaultEconomy, loadDefaultPoe1 } from "./load.js";
@@ -473,6 +474,44 @@ describe("real pool — a Cobalt Jewel draws its jewel mods", () => {
             families: new Set(mods.flatMap((m) => [...m.families])),
         };
         expect(pool(data.mods, full)).toHaveLength(0);
+    });
+});
+
+describe("the grove's change lists", () => {
+    const type = (id: string) => TypeId(id);
+
+    it("name modifier types of the catalog only, as many as the manifest counts", () => {
+        const types = new Set(data.mods.map((m) => m.type));
+        const listed = Object.values(data.harvestChange).flatMap((byElement) =>
+            Object.values(byElement).flat(),
+        );
+        expect(listed.length).toBe(data.manifest.files["harvest_change.json"]!.count);
+        expect(listed.filter((t) => !types.has(t))).toEqual([]);
+    });
+
+    it("read a modifier as a resistance or a damage of its element, and find its counterpart", () => {
+        expect(registry.harvestChangeOf(type("FireResistance"))).toEqual({
+            kind: "resistance",
+            element: "fire",
+        });
+        expect(registry.harvestChangeTarget(type("FireResistance"), "cold")).toBe("ColdResistance");
+        // The game spells the maximum resistances "…Resist" and "…Resistance".
+        expect(registry.harvestChangeTarget(type("MaximumFireResist"), "lightning")).toBe(
+            "MaximumLightningResistance",
+        );
+        // Penetration and the damage over time multipliers are damage modifiers
+        // to the grove; lightning has no such multiplier.
+        expect(registry.harvestChangeTarget(type("FireResistancePenetration"), "cold")).toBe(
+            "ColdResistancePenetration",
+        );
+        expect(registry.harvestChangeTarget(type("FireDamageOverTimeMultiplier"), "cold")).toBe(
+            "ColdDamageOverTimeMultiplier",
+        );
+        expect(
+            registry.harvestChangeTarget(type("FireDamageOverTimeMultiplier"), "lightning"),
+        ).toBeUndefined();
+        // A resistance shared with chaos is on no list.
+        expect(registry.harvestChangeOf(type("FireAndChaosDamageResistance"))).toBeUndefined();
     });
 });
 

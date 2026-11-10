@@ -5,7 +5,7 @@
  * dispatch read this table and know no method themselves; adding a method is
  * an entry here on top of its sequence in `library.ts`.
  */
-import type { Gen, ModId, TypeId } from "../model/ids.js";
+import { type Gen, type ModId, TagId, type TypeId } from "../model/ids.js";
 import {
     dominantOf,
     ELDRITCH_SIDES,
@@ -116,30 +116,14 @@ const text = (l: Literal | undefined): string =>
 const num = (l: Literal | undefined): number | undefined =>
     l === undefined ? undefined : l.kind === "int" || l.kind === "tier" ? l.value : undefined;
 
-const ELEMENTS = ["fire", "cold", "lightning"] as const;
+const CRITICAL = TagId("critical");
+/** The item level at which every row of a ladder rolls. */
+const TOP_ITEM_LEVEL = 100;
 
-/**
- * Which elemental resistance or damage a modifier type grants, by its rows'
- * tags. The grove refuses a critical strike multiplier (Harvest crafting §
- * Version history, 3.28.0 Hotfix 8), and players report it refusing a damage
- * over time multiplier and a resistance shared with chaos (`QUESTIONS.md` Q74).
- */
-function elementalKind(
-    catalog: readonly Mod[],
-    type: TypeId,
-): { element: string; kind: "resistance" | "damage" } | null {
-    const tags = new Set<string>();
-    for (const m of catalog) if (m.type === type) for (const t of m.implicitTags) tags.add(t);
-    const elements = ELEMENTS.filter((e) => tags.has(e));
-    if (elements.length !== 1) return null;
-    if (tags.has("resistance")) {
-        return tags.has("chaos") ? null : { element: elements[0]!, kind: "resistance" };
-    }
-    if (tags.has("damage")) {
-        if (tags.has("critical") || tags.has("dot_multi")) return null;
-        return { element: elements[0]!, kind: "damage" };
-    }
-    return null;
+/** The damage change takes no critical strike multiplier, though the game's
+ *  list still names them (Harvest crafting § Version history, 3.28.0 Hotfix 8). */
+function isCritical(catalog: readonly Mod[], type: TypeId): boolean {
+    return catalog.some((m) => m.type === type && m.implicitTags.has(CRITICAL));
 }
 
 /** The Harvest change: both names resolved, the pair one the grove offers. */
@@ -158,29 +142,46 @@ function harvestChange(
     const catalog = registry.catalog;
     // The grove offers the craft for the three elemental resistances among
     // themselves and the three elemental damages among themselves (the Sacred
-    // Grove's twelve "Change a modifier that grants …" options).
-    const source = elementalKind(catalog, from.value);
-    const target = elementalKind(catalog, to.value);
+    // Grove's twelve "Change a modifier that grants …" options), each for the
+    // modifier types its own list names.
+    const source = registry.harvestChangeOf(from.value);
+    const target = registry.harvestChangeOf(to.value);
     if (
-        source === null ||
-        target === null ||
+        source === undefined ||
+        target === undefined ||
         source.kind !== target.kind ||
-        source.element === target.element
+        source.element === target.element ||
+        (source.kind === "damage" && isCritical(catalog, from.value))
     ) {
         return refuse(
-            `The grove changes a fire, cold or lightning resistance into another of the three, or a fire, cold or lightning damage modifier likewise, not a critical strike or damage over time multiplier nor a resistance shared with chaos — not "${fromName}" into "${toName}".`,
+            `The grove changes a fire, cold or lightning resistance into another of the three, or a fire, cold or lightning damage modifier likewise, and no critical strike multiplier — not "${fromName}" into "${toName}".`,
+        );
+    }
+    // The modifier becomes its counterpart of the other element, not any
+    // modifier of that element.
+    const counterpart = registry.harvestChangeTarget(from.value, target.element);
+    if (counterpart === undefined) {
+        return refuse(
+            `"${fromName}" has no ${target.element} counterpart for the grove to change it into.`,
+        );
+    }
+    if (counterpart !== to.value) {
+        return refuse(
+            `The grove changes "${fromName}" into "${registry.typeLabel(counterpart)}", not "${toName}".`,
         );
     }
     const targets = rollableTiers(catalog, a.base, a.ilvl, to.value, tags);
     if (targets.length === 0) return refuse(`"${toName}" cannot roll on this item.`);
-    // A similar tier: the target's row at the source's rank, but only where the
-    // two ladders match level for level; which row the game picks when they do
-    // not is unknown (`QUESTIONS.md` Q22), so any of the target's rows.
+    // The tier is kept (Modifier § Harvest Crafting): the target's row at the
+    // source's rank, where the two ladders have as many rows at the item's
+    // level and as many in all, so the rank is the same tier however it is
+    // counted. Which row the game picks otherwise is unknown (`QUESTIONS.md`
+    // Q22), so any of the target's rows.
     const pinned = a.tiers.get(from.value);
     const sources = rollableTiers(catalog, a.base, a.ilvl, from.value, tags);
-    const parallel =
-        sources.length === targets.length &&
-        sources.every((m, i) => m.minLevel === targets[i]!.minLevel);
+    const ladder = (type: TypeId): number =>
+        rollableTiers(catalog, a.base, TOP_ITEM_LEVEL, type, tags).length;
+    const parallel = sources.length === targets.length && ladder(from.value) === ladder(to.value);
     const rank = parallel && pinned?.size === 1 ? sources.findIndex((m) => pinned.has(m.id)) : -1;
     const rows = rank >= 0 ? [targets[rank]!] : targets;
     return harvestChangeOps(from.value, registry.typeLabel(from.value), rows);
@@ -391,7 +392,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["harvest", "change"],
         args: [name("mod"), name("mod")],
-        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier into another element at a similar tier (any of its tiers when the tiers of the two elements sit at different item levels), not a critical strike or damage over time multiplier nor a resistance shared with chaos. The first must be on the item, not fractured, on a side no metamod protects; the second must roll on the base and share no group with a present modifier.',
+        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier into the same modifier of another element, at the same tier (any of its tiers at an item level where fewer or more of them roll than of the first). It takes penetration and damage over time multipliers as damage modifiers, and no critical strike multiplier nor a resistance shared with chaos. The first must be on an item of any rarity, not fractured, on a side no metamod protects; the second must roll on the base and share no group with a present modifier.',
         build: ([from, to], a, registry) => harvestChange(text(from), text(to), a, registry),
     },
     {

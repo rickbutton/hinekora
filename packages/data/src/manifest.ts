@@ -29,6 +29,13 @@ export interface ManifestFile {
         readonly commitDate: string;
         readonly publishedAt: string;
     };
+    /** Set when the file does not come from the RePoE dump: the game table it
+     *  was read from, where, and at which patch. */
+    readonly origin?: {
+        readonly table: string;
+        readonly url: string;
+        readonly gameVersion: string;
+    };
 }
 
 export interface ManifestExtent {

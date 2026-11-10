@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes, isExcluded } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
+import { unitCost } from "../cost/prices.js";
+import { findMethod } from "./methods.js";
 import { bench, craft, harvestChange, item, op } from "../__fixtures__/ast.js";
 import {
     AMULET_BASE,
@@ -22,10 +24,42 @@ import {
     RING_BASE,
     LIGHTNING_RESIST,
 } from "../__fixtures__/mods.js";
-import { TypeId } from "../model/ids.js";
+import { GroupId, ModId, TagId, TypeId } from "../model/ids.js";
+import type { Mod } from "../model/mod.js";
+import type { HarvestChangeLists } from "../model/sources.js";
+
+const COLD_DOT_MULTI: Mod = {
+    ...FIRE_DOT_MULTI,
+    id: ModId("ColdDotMulti1"),
+    type: TypeId("ColdDotMulti"),
+    families: new Set([GroupId("ColdDotMulti")]),
+    implicitTags: new Set(["dot_multi", "damage", "cold"].map(TagId)),
+};
+const COLD_CRIT_MULTI: Mod = {
+    ...FIRE_CRIT_MULTI,
+    id: ModId("ColdCritMulti1"),
+    type: TypeId("ColdCritMulti"),
+    families: new Set([GroupId("ColdCritMulti")]),
+    implicitTags: new Set(["damage", "cold", "critical"].map(TagId)),
+};
+/** The grove's lists in miniature: the critical strike multipliers are named,
+ *  as in the game's, and the resistance shared with chaos is not. */
+const HARVEST_CHANGE: HarvestChangeLists = {
+    resistance: {
+        fire: ["FireResist", "FireTiers"].map(TypeId),
+        cold: ["ColdResist", "ColdTiers"].map(TypeId),
+        lightning: ["LightningResist"].map(TypeId),
+    },
+    damage: {
+        fire: ["FireDamage", "FireCritMulti", "FireDotMulti"].map(TypeId),
+        cold: ["ColdDamage", "ColdCritMulti", "ColdDotMulti"].map(TypeId),
+        lightning: [],
+    },
+};
 
 const registry = buildRegistry({
     bases: [RING_BASE, AMULET_BASE],
+    harvestChange: HARVEST_CHANGE,
     mods: [
         ...CATALOG,
         ...FIRE_RES_TIERS,
@@ -33,7 +67,9 @@ const registry = buildRegistry({
         FIRE_DAMAGE,
         COLD_DAMAGE,
         FIRE_CRIT_MULTI,
+        COLD_CRIT_MULTI,
         FIRE_DOT_MULTI,
+        COLD_DOT_MULTI,
         PROTECT_SUFFIXES_CARRIER,
         BENCH_FIRE_RES_ROW,
         BENCH_LIFE_ROW,
@@ -53,15 +89,68 @@ const rareRing = (prefixes: Affix[] = [], suffixes: Affix[] = []) =>
     item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes, suffixes });
 
 describe("harvest change", () => {
-    it("refuses a critical or damage over time multiplier, and a resistance shared with chaos", () => {
-        for (const from of [FIRE_CRIT_MULTI, FIRE_DOT_MULTI]) {
-            const c = craft(rareRing([], [from.id]), [harvestChange(from.id, COLD_DAMAGE.id)]);
-            expect(check(c, ctx).diagnostics[0]!.message).toContain("The grove changes");
-        }
+    it("refuses a critical strike multiplier though the list names it, and a type it does not name", () => {
+        const crit = craft(rareRing([], [FIRE_CRIT_MULTI.id]), [
+            harvestChange(FIRE_CRIT_MULTI.id, COLD_CRIT_MULTI.id),
+        ]);
+        expect(check(crit, ctx).diagnostics[0]!.message).toContain("no critical strike multiplier");
         const hybrid = craft(rareRing([], [FIRE_CHAOS_RESIST.id]), [
             harvestChange(FIRE_CHAOS_RESIST.id, COLD_RESIST.id),
         ]);
         expect(check(hybrid, ctx).diagnostics[0]!.message).toContain("The grove changes");
+    });
+
+    it("takes a damage over time multiplier, which the game's list names", () => {
+        const dot = check(
+            craft(rareRing([], [FIRE_DOT_MULTI.id]), [
+                harvestChange(FIRE_DOT_MULTI.id, COLD_DOT_MULTI.id),
+            ]),
+            ctx,
+        );
+        expect(dot.diagnostics).toEqual([]);
+        expect(guaranteedTypes(dot.finalState!).has(COLD_DOT_MULTI.type)).toBe(true);
+    });
+
+    it("costs 500 lifeforce of the new element's colour, a damage change a Crystallised Rancour besides", () => {
+        const unit = (from: string, to: string) => {
+            const before = check(craft(rareRing([FIRE_DAMAGE.id], [FIRE_RESIST.id]), []), ctx);
+            const args = [from, to].map((value) => ({ kind: "string" as const, value }));
+            return unitCost(findMethod(["harvest", "change"])!, args, before.finalState!, registry);
+        };
+        expect(unit(FIRE_RESIST.id, "cold resistance")).toEqual([
+            { item: "Vivid Crystallised Lifeforce", amount: 500 },
+        ]);
+        expect(unit(FIRE_DAMAGE.id, "adds cold damage")).toEqual([
+            { item: "Vivid Crystallised Lifeforce", amount: 500 },
+            { item: "Crystallised Rancour", amount: 1 },
+        ]);
+    });
+
+    it("changes a modifier into its counterpart only, and refuses one with none", () => {
+        // Both are fire and cold damage modifiers; they are not the same modifier.
+        const other = check(
+            craft(rareRing([FIRE_DAMAGE.id]), [harvestChange(FIRE_DAMAGE.id, COLD_DOT_MULTI.id)]),
+            ctx,
+        );
+        expect(other.diagnostics[0]!.message).toContain(
+            'The grove changes "FireDamage1" into "adds cold damage"',
+        );
+        const none = buildRegistry({
+            bases: [RING_BASE],
+            harvestChange: {
+                resistance: HARVEST_CHANGE.resistance,
+                damage: { ...HARVEST_CHANGE.damage, cold: [COLD_DAMAGE.type] },
+            },
+            mods: [...CATALOG, FIRE_DOT_MULTI, COLD_DAMAGE],
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
+        const lone = check(
+            craft(rareRing([], [FIRE_DOT_MULTI.id]), [
+                harvestChange(FIRE_DOT_MULTI.id, COLD_DAMAGE.id),
+            ]),
+            { registry: none },
+        );
+        expect(lone.diagnostics[0]!.message).toContain("has no cold counterpart");
     });
 
     it("turns the named modifier into the other, keeping the count", () => {
@@ -119,20 +208,33 @@ describe("harvest change", () => {
         expect(loose.diagnostics[0]!.message).toContain("isn't guaranteed");
     });
 
-    it("lands at any tier when the two elements' tiers sit at different levels", () => {
+    it("keeps the tier where the two elements' tiers sit at different levels, while as many of each roll", () => {
+        // The game's ladders are offset by a level or two (fire resistance at
+        // 12, cold at 14), which leaves the rank the same tier.
         const offset = COLD_RES_TIERS.map((m, i) => (i === 1 ? { ...m, minLevel: 35 } : m));
         const skewed = buildRegistry({
             bases: [RING_BASE],
+            harvestChange: HARVEST_CHANGE,
             mods: [...CATALOG, ...FIRE_RES_TIERS, ...offset],
             baseAliases: { "Iron Ring": "IronRing" },
         });
-        const r = check(
-            craft(rareRing([], ["FireTiersMid"]), [harvestChange("FireTiersMid", "ColdTiersLow")]),
-            { registry: skewed },
-        );
-        expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.tiers.get(TypeId("ColdTiers"))).toEqual(
-            new Set(["ColdTiersLow", "ColdTiersMid", "ColdTiersHigh"]),
+        const change = (ilvl: number) =>
+            check(
+                craft(
+                    item({ base: "Iron Ring", ilvl, rarity: "rare", suffixes: ["FireTiersMid"] }),
+                    [harvestChange("FireTiersMid", "ColdTiersLow")],
+                ),
+                { registry: skewed },
+            );
+        const level = change(100);
+        expect(level.diagnostics).toEqual([]);
+        expect(level.finalState!.tiers.get(TypeId("ColdTiers"))).toEqual(new Set(["ColdTiersMid"]));
+        // At item level 32 two fire tiers roll and one cold: which cold row the
+        // fire's second tier becomes is not known, so any that rolls.
+        const between = change(32);
+        expect(between.diagnostics).toEqual([]);
+        expect(between.finalState!.tiers.get(TypeId("ColdTiers"))).toEqual(
+            new Set(["ColdTiersLow"]),
         );
     });
 
@@ -190,15 +292,16 @@ describe("harvest change", () => {
             ctx,
         );
         expect(dup.diagnostics[0]!.message).toContain("at most one per group");
+        expect(dup.diagnostics[0]!.message).toContain("the grove can't change a modifier into it");
         const nowhere = check(
             craft(
                 item({
                     base: "Coral Amulet",
                     ilvl: 100,
                     rarity: "rare",
-                    suffixes: [FIRE_RESIST.id],
+                    suffixes: ["FireTiersLow"],
                 }),
-                [harvestChange(FIRE_RESIST.id, "ColdTiersLow")],
+                [harvestChange("FireTiersLow", "ColdTiersLow")],
             ),
             ctx,
         );

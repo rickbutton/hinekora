@@ -156,7 +156,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                     failure.among.length > 0
                         ? ` or one of its group (${failure.among.map((n) => `"${n}"`).join(", ")})`
                         : ""
-                } — an item holds at most one per group, so this can't be benched.`;
+                } — an item holds at most one per group, so ${failure.refusal ?? "this can't be benched"}.`;
             case "nothingToRemove":
                 return "Requires a removable affix — the item may have none.";
             case "essenceRarity":

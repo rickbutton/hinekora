@@ -1075,7 +1075,8 @@ const damageRow = (element: string, family: string): Mod =>
 export const FIRE_DAMAGE = damageRow("fire", "Fire");
 export const COLD_DAMAGE = damageRow("cold", "Cold");
 
-/** Fire damage rows the grove's change refuses (`check/methods.ts` `elementalKind`). */
+/** Fire damage rows the grove's change treats apart: it refuses a critical strike
+ *  multiplier though its list names one. */
 export const FIRE_CRIT_MULTI: Mod = mkMod({
     id: "FireCritMulti1",
     type: "FireCritMulti",

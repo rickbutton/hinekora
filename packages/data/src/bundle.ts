@@ -10,6 +10,7 @@ import {
     type EldritchImplicitSpec,
     type EssenceSpec,
     type FossilSpec,
+    type HarvestChangeLists,
     type Mod,
     type Registry,
 } from "@hinekora/core";
@@ -19,6 +20,7 @@ import {
     adaptEldritch,
     adaptEssence,
     adaptFossil,
+    adaptHarvestChange,
     adaptMod,
 } from "./adapter.js";
 import type { DataManifest } from "./manifest.js";
@@ -28,6 +30,7 @@ import type {
     RepoeBenches,
     RepoeEldritchRows,
     RepoeEssences,
+    RawHarvestChange,
     RepoeFossils,
     RepoeMods,
 } from "./repoe/schema.js";
@@ -39,10 +42,11 @@ export interface LoadedData {
     readonly benchCrafts: readonly BenchCraft[];
     readonly fossils: readonly FossilSpec[];
     readonly eldritch: readonly EldritchImplicitSpec[];
+    readonly harvestChange: HarvestChangeLists;
     readonly manifest: DataManifest;
 }
 
-/** The seven files of a PoE1 data directory, parsed but not yet adapted. */
+/** The eight files of a PoE1 data directory, parsed but not yet adapted. */
 export interface RawPoe1 {
     readonly manifest: DataManifest;
     readonly mods: RepoeMods;
@@ -51,9 +55,10 @@ export interface RawPoe1 {
     readonly bench: RepoeBenches;
     readonly fossils: RepoeFossils;
     readonly eldritch: RepoeEldritchRows;
+    readonly harvestChange: RawHarvestChange;
 }
 
-/** The names of the seven files, by `RawPoe1` field. */
+/** The names of the eight files, by `RawPoe1` field. */
 export const POE1_FILES: Readonly<Record<keyof RawPoe1, string>> = {
     manifest: "manifest.json",
     mods: "mods.json",
@@ -62,6 +67,7 @@ export const POE1_FILES: Readonly<Record<keyof RawPoe1, string>> = {
     bench: "bench.json",
     fossils: "fossils.json",
     eldritch: "eldritch.json",
+    harvestChange: "harvest_change.json",
 };
 
 /** Normalize raw PoE1 (RePoE-shaped) data. */
@@ -74,7 +80,17 @@ export function adaptPoe1(raw: RawPoe1): LoadedData {
     const benchCrafts = raw.bench.map(adaptBench);
     const fossils = Object.entries(raw.fossils).map(([id, f]) => adaptFossil(id, f));
     const eldritch = Object.entries(raw.eldritch).map(([id, e]) => adaptEldritch(id, e));
-    return { mods, bases, essences, benchCrafts, fossils, eldritch, manifest: raw.manifest };
+    const harvestChange = adaptHarvestChange(raw.harvestChange);
+    return {
+        mods,
+        bases,
+        essences,
+        benchCrafts,
+        fossils,
+        eldritch,
+        harvestChange,
+        manifest: raw.manifest,
+    };
 }
 
 /** Build a core `Registry` (with the standard currencies and the community
@@ -88,5 +104,6 @@ export function registryOf(data: LoadedData): Registry {
         benchCrafts: data.benchCrafts,
         fossils: data.fossils,
         eldritch: data.eldritch,
+        harvestChange: data.harvestChange,
     });
 }

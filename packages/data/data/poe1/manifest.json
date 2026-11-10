@@ -49,6 +49,15 @@
                 "commitDate": "2026-10-25T03:48:01Z",
                 "publishedAt": "Fri, 06 Nov 2026 16:49:17 GMT"
             }
+        },
+        "harvest_change.json": {
+            "sha256": "8d24abaa043b3a3ff5d4e059a90a22290ac70aec4cd6c822e90d377ad921e8a9",
+            "count": 175,
+            "origin": {
+                "table": "HarvestCraftOptions",
+                "url": "https://ggpk.exposed/poe1/data/harvestcraftoptions.datc64",
+                "gameVersion": "3.29.3.5"
+            }
         }
     }
 }

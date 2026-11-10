@@ -18,8 +18,12 @@ import {
     type BenchCraft,
     CORRUPTED_ESSENCE_TIER,
     type EldritchImplicitSpec,
+    type Element,
+    ELEMENTS,
     type EssenceSpec,
     type FossilSpec,
+    type HarvestChangeKind,
+    type HarvestChangeLists,
 } from "../model/sources.js";
 import {
     buildTypeIndex,
@@ -182,6 +186,16 @@ const HARVEST_TAG_LABELS: readonly string[] = [
     "speed",
 ];
 
+export interface HarvestChange {
+    readonly kind: HarvestChangeKind;
+    readonly element: Element;
+}
+
+const capital = (element: Element): string => element[0]!.toUpperCase() + element.slice(1);
+/** The game spells one modifier's types "…Resist" for an element and
+ *  "…Resistance" for another; the two are read alike. */
+const alike = (type: string): string => type.replaceAll("Resistance", "Resist");
+
 export type Resolved<T> =
     { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: ResolveError };
 
@@ -237,6 +251,12 @@ export interface Registry {
     eldritchNames(side: EldritchSide): readonly string[];
     /** The wording of an eldritch implicit type, the most common text among its rows. */
     eldritchTextOf(type: TypeId): string | undefined;
+    /** What the grove's change craft reads a modifier type as: a resistance or
+     *  a damage modifier of an element, or nothing it takes. */
+    harvestChangeOf(type: TypeId): HarvestChange | undefined;
+    /** The type a Harvest change turns `type` into for that element: the one of
+     *  the element's list named alike. Undefined when the list has none. */
+    harvestChangeTarget(type: TypeId, element: Element): TypeId | undefined;
     /** Resolve an Aspect by its animal ("cat") to the row the Bestiary crafts. */
     resolveAspect(name: string): Resolved<Mod>;
     /** The generation (prefix/suffix) a ModType always occupies, if known. */
@@ -368,6 +388,7 @@ export interface RegistryData {
     readonly benchCrafts?: readonly BenchCraft[];
     readonly fossils?: readonly FossilSpec[];
     readonly eldritch?: readonly EldritchImplicitSpec[];
+    readonly harvestChange?: HarvestChangeLists;
     /** Aspect name → the row the Bestiary crafts; the game's four by default. */
     readonly aspects?: Readonly<Record<string, string>>;
 }
@@ -444,6 +465,15 @@ export function buildRegistry(data: RegistryData): Registry {
             ([name, id]) => [norm(name), norm(id)] as const,
         ),
     );
+
+    const changeOf = new Map<TypeId, HarvestChange>();
+    for (const kind of ["resistance", "damage"] as const) {
+        for (const element of ELEMENTS) {
+            for (const type of data.harvestChange?.[kind][element] ?? []) {
+                changeOf.set(type, { kind, element });
+            }
+        }
+    }
 
     const typeGen = new Map<TypeId, Gen>();
     for (const m of catalog) if (!typeGen.has(m.type)) typeGen.set(m.type, m.gen);
@@ -674,6 +704,17 @@ export function buildRegistry(data: RegistryData): Registry {
             }
             if (matches.length === 0) return fail({ kind: "unknownEssence", name });
             return fail({ kind: "ambiguous", name, candidates: matches.map((e) => e.name) });
+        },
+
+        harvestChangeOf(type) {
+            return changeOf.get(type);
+        },
+
+        harvestChangeTarget(type, element) {
+            const from = changeOf.get(type);
+            if (from === undefined) return undefined;
+            const wanted = alike(type.replaceAll(capital(from.element), capital(element)));
+            return data.harvestChange?.[from.kind][element]?.find((t) => alike(t) === wanted);
         },
 
         resolveAspect(name) {

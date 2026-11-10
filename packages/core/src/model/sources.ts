@@ -80,6 +80,19 @@ export interface FossilSpec {
     readonly corrupts: boolean;
 }
 
+export const ELEMENTS = ["fire", "cold", "lightning"] as const;
+export type Element = (typeof ELEMENTS)[number];
+export type HarvestChangeKind = "resistance" | "damage";
+
+/**
+ * The modifier types the grove's "Change a modifier that grants …" crafts
+ * take, by what they grant and the element changed from: the game's own lists
+ * (`HarvestCraftOptions`, the `convert_mod` rows).
+ */
+export type HarvestChangeLists = Readonly<
+    Record<HarvestChangeKind, Readonly<Partial<Record<Element, readonly TypeId[]>>>>
+>;
+
 /**
  * One eldritch implicit row (Eldritch implicit modifier): which implicit, at
  * which tier, on which classes, with the text a guide names it by. Rows of one

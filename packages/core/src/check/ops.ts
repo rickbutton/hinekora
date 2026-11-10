@@ -226,7 +226,9 @@ export type Check =
     | { readonly kind: "craftedRemovable" }
     /** A craft that would replace the crafted modifier can: it is not fractured. */
     | { readonly kind: "craftedReplaceable" }
-    | { readonly kind: "noGroupConflict"; readonly mod: Mod }
+    /** No modifier of the row's group may be present; `refusal` words what
+     *  cannot be done then, for a craft that is not a bench craft. */
+    | { readonly kind: "noGroupConflict"; readonly mod: Mod; readonly refusal?: string }
     | { readonly kind: "poolNonEmpty"; readonly pool: PoolSpec; readonly tag: TagId }
     | { readonly kind: "unveilTarget"; readonly type: TypeId; readonly name: string };
 
@@ -318,6 +320,8 @@ export type PreconditionFailure =
           /** The other modifiers of the group the item may carry, named so a guide
            *  can rule them out one by one. */
           readonly among: readonly string[];
+          /** What cannot be done then, when it is not a bench craft. */
+          readonly refusal?: string;
       }
     | { readonly kind: "nothingToRemove" }
     | {
@@ -979,6 +983,7 @@ function failing(
                       among: clashing
                           .filter((t) => t !== check.mod.type)
                           .map((t) => registry.typeLabel(t)),
+                      ...(check.refusal !== undefined && { refusal: check.refusal }),
                   }
                 : null;
         }

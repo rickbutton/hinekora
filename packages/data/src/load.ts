@@ -14,6 +14,7 @@ import type {
     RepoeBenches,
     RepoeEldritchRows,
     RepoeEssences,
+    RawHarvestChange,
     RepoeFossils,
     RepoeMods,
 } from "./repoe/schema.js";
@@ -32,6 +33,7 @@ export function loadPoe1(dir: string): LoadedData {
         bench: readJson<RepoeBenches>(`${dir}/${POE1_FILES.bench}`),
         fossils: readJson<RepoeFossils>(`${dir}/${POE1_FILES.fossils}`),
         eldritch: readJson<RepoeEldritchRows>(`${dir}/${POE1_FILES.eldritch}`),
+        harvestChange: readJson<RawHarvestChange>(`${dir}/${POE1_FILES.harvestChange}`),
     };
     return adaptPoe1(raw);
 }

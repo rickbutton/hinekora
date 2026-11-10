@@ -98,6 +98,13 @@ export interface RepoeFossil {
 }
 export type RepoeFossils = Readonly<Record<string, RepoeFossil>>;
 
+/** `harvest_change.json`: the modifier types each of the grove's change crafts
+ *  takes, by what they grant, then the element changed from. Not RePoE's: the
+ *  game's `HarvestCraftOptions` table (`scripts/ingest-harvest-change.mjs`). */
+export type RawHarvestChange = Readonly<
+    Record<"resistance" | "damage", Readonly<Record<string, readonly string[]>>>
+>;
+
 /** `eldritch.json` entry (projected): one eldritch implicit row. */
 export interface RepoeEldritch {
     readonly side: "exarch" | "eater";

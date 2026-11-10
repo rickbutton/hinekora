@@ -232,7 +232,12 @@ export function unitCost(
                 const target = text(args[1]).toLowerCase();
                 const element = ["fire", "cold", "lightning"].find((e) => target.includes(e));
                 const colour = element === undefined ? undefined : HARVEST_REFORGE[element];
-                return colour === undefined ? undefined : [{ item: colour.item, amount: 500 }];
+                if (colour === undefined) return undefined;
+                // A damage change takes a Crystallised Rancour besides.
+                const from = registry.resolveModType(text(args[0]), { base: a.base, ilvl: a.ilvl });
+                const damage = from.ok && registry.harvestChangeOf(from.value)?.kind === "damage";
+                const lifeforce = { item: colour.item, amount: 500 };
+                return damage ? [lifeforce, rancour(1)] : [lifeforce];
             }
             const tagName = text(args[0]).trim().toLowerCase();
             if (second === "reforge" && tagName === "influence") {

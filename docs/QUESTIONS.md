@@ -56,15 +56,13 @@ roll". **Encoded in:** `packages/data/data/poe1/fossils.json`, `resonatorOps`.
 ### Q22 · probe · open — the Harvest change's tier where the ladders differ
 
 **Q:** [Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting)
-says the craft "preserves the tier", but the elements' ladders are not parallel (fire
-resistance's rows at levels 1, 12, 24, …, cold's at 1, 14, 26, …), so "the same tier"
-may count the base's whole ladder or the rows the item level allows. And does it take a
-Magic item?
-**Probe:** a Rare of item level 13 with the level-12 fire resistance, a Magic item with a
-fire resistance; change each to cold; record the cold row, and whether the Magic item
-took it.
-**Assumed:** the target's row at the source's rank where the two ladders match level for
-level at the item's level, any of its rows where they do not; any rarity. **Encoded in:**
+says the craft "preserves the tier", but the elements' ladders are offset (fire
+resistance's rows at levels 1, 12, 24, …, cold's at 1, 14, 26, …): at an item level
+between two such rows the source's tier does not roll for the target.
+**Probe:** a Rare of item level 13 with the level-12 fire resistance; change it to cold;
+record the cold row, or a refusal.
+**Assumed:** the target's row at the source's rank where as many rows of each roll at the
+item's level; any of the target's rows in the window between. **Encoded in:**
 `check/methods.ts` `harvestChange`.
 
 ### Q25 · probe · open — when the grove greys a craft out under a metamod
@@ -227,16 +225,18 @@ tier the third gets.
 whole ladder. **Encoded in:** `check/library.ts` `FOULBORN_STRANDS`, `EXALT_STRANDS`;
 `check/ops.ts` `foulbornTiers`, `Rules.strands`; `pool/pool.ts`.
 
-### Q74 · probe · open — penetration and the reported refusals of the Harvest change
+### Q74 · probe · open — the Harvest change on a damage over time multiplier
 
-**Q:** does the damage change take a penetration modifier, and does the grove refuse a
-damage over time multiplier and, for the resistance change, a resistance shared with
-chaos, as players report? The wiki names neither.
-**Probe:** Rares with fire penetration, a fire damage over time multiplier, and fire and
-chaos resistance; the grove's fire-to-cold damage and resistance changes; record which it
-offers.
-**Assumed:** penetration taken; the multiplier and the hybrid refused (a refusal only
-makes the checker stricter). **Encoded in:** `check/methods.ts` `elementalKind`.
+**Q:** the game's list for the damage change names the fire and cold damage over time
+multipliers; one player reports the grove taking one, another refusing it. And what does
+a listed modifier with no like-named counterpart become (increased fire damage with a
+chance to ignite)?
+**Probe:** Rares with a fire damage over time multiplier and with the fire damage and
+ignite chance hybrid; the grove's fire-to-cold damage change; record offered or not, and
+the result.
+**Assumed:** the multiplier taken, as listed; a modifier with no counterpart refused.
+**Encoded in:** `check/methods.ts` `harvestChange`, `resolve/registry.ts`
+`harvestChangeTarget`, `packages/data/data/poe1/harvest_change.json`.
 
 ### Q76 · probe · open — the side of a Veiled Exalted Orb's veiled modifier
 
