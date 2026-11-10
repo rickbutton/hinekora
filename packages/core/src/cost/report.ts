@@ -316,7 +316,7 @@ const ESTIMATED =
 
 /** The note on a step where some state of the item could not be followed. */
 const MISSED =
-    "some of the items this step may meet could not be followed exactly and were left as they were";
+    "some of the items this step may meet could not be followed exactly, so the figures after it read every path at once";
 
 /** The sides' caps on an item of its rarity. */
 function capsOf(item: AItem): Record<Gen, number> {
@@ -586,8 +586,11 @@ class Walker {
         // Where each branch's states go: the method read on the item as each
         // state has it.
         const misses = this.tracker?.misses ?? 0;
-        const moved = this.untilOverflow(() => this.moved(stmt, entry, branches));
+        const carried = this.untilOverflow(() => this.moved(stmt, entry, branches));
         const missed = (this.tracker?.misses ?? 0) > misses;
+        // A state the step could not carry is not where the step left it, so
+        // the steps after read the checker's item instead.
+        const moved = missed ? undefined : carried;
         this.record(stmt, massOf(branches), frame, {
             ...(unit !== undefined ? { unit } : {}),
             ...(unit === undefined
@@ -891,8 +894,9 @@ class Walker {
         if (starts === undefined || starts.length === 0) return undefined;
         const misses = tracker.misses;
         const solved = chain({ atoms: tracker.atoms, body, starts, caps: capsOf(before), exit });
-        if (solved === undefined) return undefined;
-        const missed = tracker.misses > misses;
+        // A state the body could not carry is not where the rounds left it, so
+        // the loop is read the general way instead.
+        if (solved === undefined || tracker.misses > misses) return undefined;
         // An attempt that can never end (the item full, nothing removing) is
         // counted as ending, so the figures stay finite; the note says so.
         const ending = solved.exit + solved.stop + solved.unresolved;
@@ -905,9 +909,7 @@ class Walker {
                 ? `in ${Math.round(solved.unresolved * 100)}% of attempts the item never reaches the exit${solved.stuckInside >= solved.unresolved / 2 ? " of a loop inside" : ""}, so the loop cannot end as written`
                 : solved.estimated
                   ? ESTIMATED
-                  : missed
-                    ? MISSED
-                    : undefined;
+                  : undefined;
         this.record(stmt, mass, frame, {
             attempts: {
                 // Per round run: the attempts that end on entering take none.

@@ -782,6 +782,11 @@ describe("the eldritch implicits", () => {
         expect(loop.attempts!.chance).toBeCloseTo(1 / 3, 9);
     });
 
+    it("an implicit a Vaal Orb may replace is not taken as kept", () => {
+        const r = on({ exarch: "greater" }, [op("vaal"), iff(eldritchP("exarch"), [stop()])]);
+        expect(r.steps.find((s) => s.kind === "if")!.branch).toBeLessThan(1);
+    });
+
     it("an Orb of Conflict raises either implicit alike and lowers the other", () => {
         // Greater Exarch, Grand Eater: the Exarch rises to Grand half the
         // time, and the Eater rises to Exceptional, dominant, the other half.

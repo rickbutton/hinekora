@@ -470,7 +470,7 @@ export class Tracker {
         ops: readonly Op[],
         out: readonly Outcome[],
     ): readonly Outcome[] {
-        const touched = ops.some((op) => op.kind === "eldritch");
+        const touched = touchesImplicits(ops);
         const implicitAtoms = touched
             ? []
             : ELDRITCH_SIDES.map((side) => this.index.get(IMPLICIT_ATOM[side])).filter(
@@ -1085,6 +1085,15 @@ function keepAcross(
         for (const i of implicitAtoms) rows[i] = from.rows[i] ?? null;
         return { state: { ...o.state, rows }, prob: o.prob };
     });
+}
+
+/** Whether a method may change an eldritch implicit, in any of its outcomes. */
+function touchesImplicits(ops: readonly Op[]): boolean {
+    return ops.some(
+        (op) =>
+            op.kind === "eldritch" ||
+            (op.kind === "either" && op.branches.some((b) => touchesImplicits(b))),
+    );
 }
 
 function implicitSide(type: TypeId): EldritchSide | undefined {
