@@ -611,18 +611,20 @@ function presentOn(a: AItem, registry: Registry): Present[] {
     const out: Present[] = [];
     for (const type of guaranteedTypes(a)) {
         const pinned = a.tiers.get(type);
-        let rows: Row[] = rollableTiers(registry.catalog, a.base, a.ilvl, type, tags).map((m) => ({
+        const weigh = (m: Mod): Row => ({
             mod: m,
-            weight: lookupWeight(m, new Set([...a.base.tags, ...tags])) ?? 1,
-        }));
+            weight: lookupWeight(m, new Set([...a.base.tags, ...tags])) || 1,
+        });
+        let rows = rollableTiers(registry.catalog, a.base, a.ilvl, type, tags).map(weigh);
         if (pinned !== undefined) {
-            const kept = rows.filter((r) => pinned.has(r.mod.id));
-            if (kept.length > 0) rows = kept;
-            else {
-                // A row the natural ladder lacks (a bench, essence or unveiled row).
-                rows = registry.catalog
-                    .filter((m) => pinned.has(m.id))
-                    .map((m) => ({ mod: m, weight: 1 }));
+            rows = rows.filter((r) => pinned.has(r.mod.id));
+            if (rows.length < pinned.size) {
+                // A row the ladder at the item's level lacks: a bench, essence
+                // or unveiled row, or one a Harvest change left above the
+                // item's level.
+                const held = new Set(rows.map((r) => r.mod.id));
+                for (const m of registry.catalog)
+                    if (pinned.has(m.id) && !held.has(m.id)) rows.push(weigh(m));
             }
         }
         out.push({ type, gen: genOfType(a, registry, type, rows[0]?.mod), rows });

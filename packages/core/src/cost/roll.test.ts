@@ -12,6 +12,7 @@ import {
 import { craft, item, op, unveil } from "../__fixtures__/ast.js";
 import { check } from "../check/check.js";
 import { currencyOps, unveilOps } from "../check/library.js";
+import { ModId, TypeId } from "../model/ids.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { foulbornRows, rollOf } from "./roll.js";
 
@@ -127,6 +128,28 @@ describe("memory strands in the pool", () => {
         expect(rowsOf(rollOf(a, currencyOps("chaos"), registry, "ceilings"))).toEqual([
             "IncreasedLife1",
         ]);
+    });
+});
+
+describe("a modifier the item keeps through a roll", () => {
+    it("may be a row above the item's level, which its ladder there lacks", () => {
+        // A Harvest change can leave such a row; the item may hold either tier.
+        const c = craft(
+            item({ base: "Iron Ring", ilvl: 40, rarity: "rare", prefixes: ["IncreasedLife2"] }),
+            [],
+        );
+        const checked = check(c, { registry }).finalState!;
+        const a = {
+            ...checked,
+            tiers: new Map([...checked.tiers]).set(
+                TypeId("IncreasedLife"),
+                new Set([ModId("IncreasedLife1"), ModId("IncreasedLife2")]),
+            ),
+        };
+        const roll = rollOf(a, currencyOps("exalt"), registry);
+        if (roll.kind !== "draw") throw new Error("not a draw");
+        const life = roll.variants[0]!.present.find((p) => p.type === "IncreasedLife")!;
+        expect(life.rows.map((r) => r.mod.id).sort()).toEqual(["IncreasedLife1", "IncreasedLife2"]);
     });
 });
 
