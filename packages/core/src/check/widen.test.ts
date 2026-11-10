@@ -40,6 +40,36 @@ describe("widening the numeric ranges of a loop's invariant", () => {
         expect(stateEqual(again, wide)).toBe(true);
     });
 
+    it("driven from the first round, ends, and allows every item the exact invariant does", () => {
+        const loop = craft(ring, [until(cmp("prefixCount", ">=", 3), [op("exalt")])]);
+        const exact = check(loop, ctx);
+        const wide = check(loop, { ...ctx, widenRangesAfter: 0 });
+        const [e, w] = [exact.finalState!, wide.finalState!];
+        const pairs = [
+            [e.counts.total, w.counts.total],
+            [e.counts.prefix, w.counts.prefix],
+            [e.counts.suffix, w.counts.suffix],
+            [e.strands, w.strands],
+            [e.crafted, w.crafted],
+        ] as const;
+        for (const [narrow, broad] of pairs) {
+            expect(broad[0]).toBeLessThanOrEqual(narrow[0]);
+            expect(broad[1]).toBeGreaterThanOrEqual(narrow[1]);
+        }
+        for (const t of e.possible) expect(w.possible.has(t)).toBe(true);
+        expect(wide.diagnostics.map((d) => d.message)).toEqual(
+            exact.diagnostics.map((d) => d.message),
+        );
+    });
+
+    it("driven from the first round, still refuses the step a later round refuses", () => {
+        const fills = craft(ring, [until(cmp("prefixCount", ">=", 4), [op("exalt")])]);
+        const messages = check(fills, { ...ctx, widenRangesAfter: 0 }).diagnostics.map(
+            (d) => d.message,
+        );
+        expect(messages.length).toBeGreaterThan(0);
+    });
+
     it("leaves a loop that converges on its own exact", () => {
         const r = check(craft(ring, [until(cmp("prefixCount", ">=", 3), [op("exalt")])]), ctx);
         expect(r.finalState!.counts.prefix).toEqual([3, 3]);

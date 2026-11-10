@@ -68,6 +68,9 @@ import { plural } from "../words.js";
 
 export interface CheckContext {
     readonly registry: Registry;
+    /** The loop round from which the numeric ranges are widened; a test sets
+     *  it low to drive the widening no real loop reaches. */
+    readonly widenRangesAfter?: number;
 }
 
 const cmpAtLeast = (projection: "prefixCount" | "suffixCount", value: number): RPred => ({
@@ -171,7 +174,7 @@ function foldJoin(states: readonly AItem[]): AItem | null {
 const isLive = (s: AItem | null): s is AItem => s !== null;
 
 export function check(craft: Craft, ctx: CheckContext): CheckResult {
-    return new Checker(ctx.registry).run(craft);
+    return new Checker(ctx.registry, ctx.widenRangesAfter).run(craft);
 }
 
 class Checker {
@@ -206,7 +209,10 @@ class Checker {
      *  that must join into that loop's invariant. */
     private readonly restartHeads: AItem[][] = [];
 
-    constructor(private readonly registry: Registry) {}
+    constructor(
+        private readonly registry: Registry,
+        private readonly widenRangesAfter = WIDEN_RANGES_AFTER,
+    ) {}
 
     run(craft: Craft): CheckResult {
         this.collectDefs(craft.defs);
@@ -920,7 +926,7 @@ class Checker {
                 if (continues.length === 0) break;
                 const joined = [invariant, ...continues].reduce(join);
                 const widened = i >= WIDEN_AFTER ? widenPresence(joined) : joined;
-                const next = i >= WIDEN_RANGES_AFTER ? widenRanges(invariant, widened) : widened;
+                const next = i >= this.widenRangesAfter ? widenRanges(invariant, widened) : widened;
                 if (stateEqual(next, invariant)) break;
                 invariant = next;
             }
