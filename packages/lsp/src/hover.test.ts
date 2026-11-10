@@ -5,6 +5,15 @@ import { getHover } from "./hover.js";
 const registry = registryOf(loadDefaultPoe1());
 const snapshot = loadDefaultEconomy();
 
+describe("hover: a Tangled Fossil", () => {
+    it("says its two modifier types are not known beforehand, in the game's words", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: normal }\nfossil "tangled"`;
+        const h = getHover(src, src.indexOf("tangled") + 1, registry)!;
+        expect(h).toContain("which two is not known beforehand, so the roll may land any modifier");
+        expect(h).not.toContain("read as possible");
+    });
+});
+
 describe("hover: the cost line where a figure is missing", () => {
     it("names the currency the snapshot has no price for", () => {
         const chaos = new Map(snapshot.chaos);

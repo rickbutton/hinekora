@@ -433,7 +433,7 @@ function fossilSignature(names: readonly string[], registry: Registry): string {
             effects.push("may roll a corrupted-essence modifier");
         if (f.randomTags)
             effects.push(
-                "makes one random modifier type much more likely and blocks another, shown once the resonator is full; any modifier is read as possible",
+                "makes one random modifier type much more likely and blocks another, shown once the resonator is full; which two is not known beforehand, so the roll may land any modifier",
             );
         if (f.fractures) effects.push("fractures one of the rolled modifiers");
         if (f.corrupts)
