@@ -31,6 +31,17 @@ describe("a random removal and the modifiers it could reach", () => {
         );
     });
 
+    it("may have taken an unnamed modifier, so a named one beside it is neither sure nor gone", () => {
+        // The Exalted Orb's modifier is of either side: the sides' most together
+        // exceed what the item holds, which is what the removal counts by.
+        const r = check(craft(ring([LIFE_T1.id]), [op("exalt"), op("annul")]), ctx);
+        expect(r.diagnostics).toEqual([]);
+        const s = r.finalState!;
+        expect(s.counts.total).toEqual([1, 1]);
+        expect(guaranteedTypes(s).has(LIFE_T1.type)).toBe(false);
+        expect(isExcluded(s, LIFE_T1.type)).toBe(false);
+    });
+
     it("took one of them when it could reach nothing else", () => {
         // Two modifiers, both named: the one still there says which one went.
         const c = craft(ring([LIFE_T1.id], [FIRE_RESIST.id]), [
