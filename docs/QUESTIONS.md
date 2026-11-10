@@ -33,12 +33,13 @@ in:** `check/ops.ts` `foulbornTiers`.
 
 ### Q20 · probe · open — a fossil's guarantee when another fossil blocks it
 
-**Q:** what does a resonator do when another fossil blocks every row a fossil would force
-(a Glyphic beside a Jagged on a base whose corrupted-essence rows are all chaos-tagged)?
-[Glyphic Fossil § Mechanics](https://www.poewiki.net/wiki/Glyphic_Fossil#Mechanics) says
-the Jagged blocks them, not what happens when none is left.
-**Probe:** Glyphic and Jagged Fossils, a Potent Chaotic Resonator, such a base (check the
-ring's four); resonate; record whether an essence modifier appears, the resonator is
+**Q:** what does a resonator do when the other fossils block every row a fossil would
+force? [Glyphic Fossil § Mechanics](https://www.poewiki.net/wiki/Glyphic_Fossil#Mechanics)
+says a Jagged Fossil blocks the chaos-tagged essence modifiers, not what happens when
+none is left. No one fossil blocks all four on any base; on boots Corroded, Shuddering
+and Jagged together do.
+**Probe:** boots, a Prime Chaotic Resonator with Glyphic, Corroded, Shuddering and
+Jagged Fossils; resonate; record whether an essence modifier appears, the resonator is
 refused, or the item rolls without one.
 **Assumed:** the guarantee lapses and no such row rolls. **Encoded in:**
 `check/library.ts` `resonatorOps`.
@@ -70,12 +71,14 @@ protection-respecting strip. **Encoded in:** `check/library.ts` `harvestReforgeO
 
 ### Q27 · probe · open — what the grove's influence randomise leaves
 
-**Q:** does "Randomise the Influence types" keep the count, can the same influence come
-back, and is a two-influence item rerolled to any pair?
-([Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting) says only "randomise".)
-**Probe:** a one- and a two-influence Rare, lifeforce; randomise each several times;
-record the influence sets seen.
-**Assumed:** the count is kept and any set of that size results, the same one included.
+**Q:** is a two-influence item rerolled to any pair, and may an influence it had come
+back? ([Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting) says only
+"randomise".) One player's long run on one-influence items never saw the same influence
+return ([forum thread 3158689](https://www.pathofexile.com/forum/view-thread/3158689)).
+**Probe:** a two-influence Rare, lifeforce; randomise it several times; record the
+influence sets seen.
+**Assumed:** the count is kept and any set of that size results, the same one included:
+wider than the report, so nothing reachable is ruled out.
 **Encoded in:** `check/library.ts` `HARVEST_RANDOMISE`, `check/ops.ts` the `randomise`
 change.
 
@@ -177,9 +180,11 @@ jewel) three or four at 65:35, craftofexile's reading of
 
 **Q:** [Fossil](https://www.poewiki.net/wiki/Fossil) records the dispute and calls
 additive the more accepted theory.
-**Probe:** a Rare ring, a Potent Chaotic Resonator, Pristine and Prismatic Fossils;
-resonate many times; record life and elemental modifier counts against the single-fossil
-rates.
+A row must carry both fossils' tags to tell the readings apart: a lightning modifier
+under Metallic (lightning) and Prismatic (elemental).
+**Probe:** an Iron Ring of item level 84 or more, a Potent Chaotic Resonator, Metallic and
+Prismatic Fossils; resonate forty times; record how many results hold a lightning
+modifier.
 **Assumed:** additive; when two tags of one fossil match a row, the larger multiplier.
 **Encoded in:** [cost.md §2](cost.md#2-how-the-game-rolls).
 
