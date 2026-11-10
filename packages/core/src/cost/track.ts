@@ -575,6 +575,10 @@ export class Tracker {
         const at = ops.findIndex((op) => op.kind === "either");
         const either = ops[at];
         if (either?.kind !== "either") return this.outcomesOn(item, ops, state, reading);
+        // A method whose every outcome ends the craft (`runMethod`'s `ended`)
+        // ends it, whatever its odds.
+        if (either.branches.length > 0 && either.branches.every(endsCraft))
+            return [{ state, prob: 1, ends: true }];
         // A method of several outcomes whose odds are known: each outcome's
         // steps read in the method's place, by its share.
         const odds = OUTCOME_ODDS[method]?.(either.branches, item);

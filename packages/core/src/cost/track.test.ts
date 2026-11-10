@@ -32,6 +32,20 @@ const registry = buildRegistry({
 });
 
 describe("the tracked state", () => {
+    it("a method whose every outcome ends the craft ends it", () => {
+        const c = craft(item({ base: "Iron Ring", ilvl: 84, rarity: "rare" }), []);
+        const before = check(c, { registry }).finalState!;
+        const tracker = new Tracker(registry, before, [before], [], []);
+        const ends = tracker.transition(
+            before,
+            [{ kind: "either", branches: [[{ kind: "end" }], [{ kind: "end" }]] }],
+            "estimate",
+        )!;
+        const state = { prefix: 0, suffix: 0, rows: tracker.atoms.map(() => null) };
+        expect(ends(state)).toEqual([{ state, prob: 1, ends: true }]);
+        expect(tracker.misses).toBe(0);
+    });
+
     it("a modifier held at a tier no condition names is not read back at a named one", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 84, rarity: "rare" }), [op("chaos")]);
         const after = check(c, { registry }).trace.at(-1)!.after!;
