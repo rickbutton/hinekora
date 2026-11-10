@@ -1324,10 +1324,19 @@ function rarityForSurvivors(n: number): Rarity {
     return "rare";
 }
 
+const RARITY_RANK: Readonly<Record<Rarity, number>> = { normal: 0, magic: 1, rare: 2 };
+
+/** A scour only ever lowers the rarity: a Magic item keeping two fractured
+ *  modifiers, one a side, stays Magic. */
 function scouredRarities(a0: AItem, rules: Rules, registry: Registry): ReadonlySet<Rarity> {
     const [lo, hi] = survivorsOf(a0, rules, registry);
     const out = new Set<Rarity>();
-    for (let n = lo; n <= hi; n++) out.add(rarityForSurvivors(n));
+    for (const had of a0.rarities) {
+        for (let n = lo; n <= hi; n++) {
+            const left = rarityForSurvivors(n);
+            out.add(RARITY_RANK[left] < RARITY_RANK[had] ? left : had);
+        }
+    }
     return out;
 }
 

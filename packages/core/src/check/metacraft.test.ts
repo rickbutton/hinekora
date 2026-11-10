@@ -400,6 +400,20 @@ describe("a scour that keeps a side sets the rarity by survivor count", () => {
         expect(r.diagnostics[0]?.message).toContain("Requires a Magic item");
     });
 
+    it("never raises the rarity: a Magic item keeping two fractured modifiers stays Magic", () => {
+        const start = () =>
+            item({
+                base: "Iron Ring",
+                ilvl: 100,
+                rarity: "magic",
+                prefixes: [{ mod: "T1 Life", fractured: true }],
+                suffixes: [{ mod: "FireResist1", fractured: true }],
+            });
+        const r = check(craft(start(), [op("scour")]), ctx);
+        expect(r.finalState!.rarities).toEqual(new Set(["magic"]));
+        expect(check(craft(start(), [op("scour"), op("regal")]), ctx).diagnostics).toEqual([]);
+    });
+
     it("a kept prefix and an unproven lock may leave one or two survivors: Magic or Rare", () => {
         // The lock may sit on the kept prefix (one survivor, Magic) or on a
         // stripped suffix (two, Rare); a regal afterwards is refused since the
