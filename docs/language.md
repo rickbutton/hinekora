@@ -129,7 +129,9 @@ once rather than at every step after it.
 "Open slot" and "removable" hold on every path: a slot is open only if it is open on every
 path the craft can have taken, and a modifier is removable only if one is present on every
 path and not locked (fractured, or shielded by a
-[metamod](https://www.poewiki.net/wiki/Metamod)). `fracture` locks a random modifier; no
+[metamod](https://www.poewiki.net/wiki/Metamod)). A metamod the item has on some paths
+only is read both ways: a step must fit with it and without it, and leaves what either
+would. `fracture` locks a random modifier; no
 specific one is known to be locked until a `fractured "<mod>"` branch (§5) narrows it.
 
 A statement opens with its words and takes its arguments after them:

@@ -645,7 +645,12 @@ class Checker {
         }
         const result = runMethod(a, built, this.registry);
         if (!result.ok) {
-            this.diag(preconditionMessage(a, result.failure), stmt.span);
+            const carriers = (result.under ?? []).map((t) => `"${this.registry.typeLabel(t)}"`);
+            const where =
+                carriers.length > 0
+                    ? `\nThis is so where the item has ${carriers.join(" and ")}, which it may have here — settle it with an 'if has' first.`
+                    : "";
+            this.diag(preconditionMessage(a, result.failure) + where, stmt.span);
             return { kind: "fall", state: result.state };
         }
         return { kind: "fall", state: result.state };

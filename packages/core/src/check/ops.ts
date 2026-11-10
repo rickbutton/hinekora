@@ -53,6 +53,7 @@ import {
     join,
     presenceFacts,
     rarityOf,
+    refine,
     relaxTiers,
     settled,
     suffixRange,
@@ -364,11 +365,111 @@ export type PreconditionFailure =
 
 export type TransferResult =
     | { readonly ok: true; readonly state: AItem }
-    | { readonly ok: false; readonly failure: PreconditionFailure; readonly state: AItem };
+    | {
+          readonly ok: false;
+          readonly failure: PreconditionFailure;
+          readonly state: AItem;
+          /** The possibly present metamods the item must carry for the method to
+           *  be refused, when it goes through without them. */
+          readonly under?: readonly TypeId[];
+      };
 
-/** On a failed `require`, the state returned is the one the method leaves where
- *  its preconditions hold, not the input (operations.md §2). */
+/**
+ * On a failed `require`, the state returned is the one the method leaves where
+ * its preconditions hold, not the input (operations.md §2).
+ *
+ * A metamod that may or may not be on the item changes what the method does,
+ * so the method runs once per case (`metamodCases`) and the results are
+ * joined: a check must hold in every case, and the state is what any of them
+ * leaves.
+ */
 export function runMethod(a0: AItem, ops: readonly Op[], registry: Registry): TransferResult {
+    let state: AItem | undefined;
+    let failed: { failure: PreconditionFailure; under: readonly TypeId[] } | undefined;
+    let passed = false;
+    for (const c of metamodCases(a0, registry)) {
+        const r = runCase(c.state, ops, registry);
+        state = state === undefined ? r.state : join(state, r.state);
+        if (r.ok) passed = true;
+        else failed ??= { failure: r.failure, under: c.present };
+    }
+    state ??= a0;
+    if (failed === undefined) return { ok: true, state };
+    return {
+        ok: false,
+        failure: failed.failure,
+        state,
+        ...(passed && failed.under.length > 0 && { under: failed.under }),
+    };
+}
+
+interface MetamodCase {
+    readonly state: AItem;
+    /** The possibly present carriers this case takes as present. */
+    readonly present: readonly TypeId[];
+}
+
+/**
+ * The item split by which of its possibly present protecting and cannot-roll
+ * metamods it carries: in each case every such carrier is guaranteed or
+ * excluded, so the rules read off the guaranteed types are that case's rules.
+ * The case with none of them comes first. At most four carriers split (the
+ * multimod's limit is read where the bench needs it, `mayCarryCraftedCap`),
+ * and a case holding more crafted modifiers than the item can is dropped.
+ */
+function metamodCases(a: AItem, registry: Registry): readonly MetamodCase[] {
+    const guaranteed = guaranteedTypes(a);
+    const uncertain = [...a.possible].filter(
+        (t) =>
+            !guaranteed.has(t) &&
+            registry.effectsOfType(t).some((e) => e.kind !== "craftedCap") &&
+            !isExcluded(a, t) &&
+            mayBePresentUnnamed(a, registry, t),
+    );
+    let cases: MetamodCase[] = [{ state: a, present: [] }];
+    for (const type of uncertain) {
+        const has = { kind: "has", type, gen: genOf(a, registry, type) } as const;
+        const next: MetamodCase[] = [];
+        for (const c of cases) {
+            const without = refine(c.state, has, false);
+            if (without !== null) next.push({ state: without, present: c.present });
+        }
+        for (const c of cases) {
+            const present = refine(c.state, has, true);
+            const withIt = present === null ? null : holdingItsNamed(present, registry);
+            if (withIt !== null && sureCrafted(withIt, registry) <= withIt.crafted[1]) {
+                next.push({ state: withIt, present: [...c.present, type] });
+            }
+        }
+        cases = next;
+    }
+    // No case left means the state itself is contradictory; run it as it is.
+    return cases.length > 0 ? cases : [{ state: a, present: [] }];
+}
+
+/** The state with each side holding at least the guaranteed modifiers that sit
+ *  only there, or null when the counts cannot: a carrier taken as present
+ *  fills a slot of its side, which decides what a kept side holds. */
+function holdingItsNamed(a: AItem, registry: Registry): AItem | null {
+    let s: AItem | null = a;
+    for (const gen of ALL_GENS) {
+        let named = 0;
+        for (const t of guaranteedTypes(a)) {
+            const sides = sidesOf(a, registry, t);
+            if (sides.size === 1 && sides.has(gen)) named++;
+        }
+        if (s === null || named === 0) continue;
+        s = refine(s, {
+            kind: "compare",
+            projection: gen === "prefix" ? "prefixCount" : "suffixCount",
+            op: ">=",
+            value: named,
+        });
+    }
+    return s;
+}
+
+function runCase(a0: AItem, ops: readonly Op[], registry: Registry): TransferResult {
     let rules = rulesInForce(a0, registry, ops);
     let a = a0;
     let failure: PreconditionFailure | null = null;
@@ -555,11 +656,11 @@ function apply(a: AItem, a0: AItem, op: Transform, rules: Rules, registry: Regis
 
 // --- the metamods in force ---------------------------------------------------
 //
-// A metamod's effect is active iff its carrier type is GUARANTEED present
-// (item-model.md §6): a merely-possible carrier is treated as absent, which is
-// sound in every direction — protection that preserves guarantees, and
-// restrictions that would constrain or reject a method, all require the carrier
-// to be provably there.
+// A metamod's effect is active iff its carrier is on the item (item-model.md
+// §6). The rules are read off the guaranteed types, which is exact because
+// `runMethod` has split the item on every protecting or cannot-roll carrier
+// that is only possibly present; reading such a carrier as absent would accept
+// a reforge that the game answers by keeping a side.
 
 const ALL_GENS: readonly Gen[] = ["prefix", "suffix"];
 /** The base tag of a talisman, the one Rare the Bestiary imprints. */

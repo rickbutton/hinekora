@@ -51,7 +51,9 @@ hand-written list; the metamods in force and the memory strands' tier cut apply 
 
 The metamods in force are read once, when the method is applied, and govern every
 operation in it ([Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions));
-only `unprotect` and `keep` change that.
+only `unprotect` and `keep` change that. Where a protecting or cannot-roll metamod is
+on the item on some paths only, the method runs once with it and once without
+(`metamodCases`) and the results join: its checks must hold both ways.
 
 **All or nothing.** The game never applies part of a currency, so a failed `require`
 fails the whole method. The checker reports the first failure, and the state `runMethod`
