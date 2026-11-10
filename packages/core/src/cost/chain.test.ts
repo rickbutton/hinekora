@@ -665,11 +665,161 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.exit).toBeCloseTo(1, 6);
     });
 
+    /**
+     * Kinds of item on a ring, each round opening with a loop inside. The
+     * round ends the outer loop with chance `leave`; otherwise the item is
+     * the next kind half the time, and either way back at suffix `from`,
+     * short of the inner exit at suffix zero. `inner` is one inner round:
+     * the suffixes it may leave and their chances.
+     */
+    const ring = (
+        kinds: number,
+        leave: number,
+        from: number,
+        inner: (kind: number, suffix: number) => [suffix: number, prob: number][],
+    ) => {
+        const states = new Map<string, ChainState>();
+        const st = (p: number, s: number): ChainState => {
+            const k = `${p}/${s}`;
+            const hit = states.get(k) ?? at(p, s);
+            states.set(k, hit);
+            return hit;
+        };
+        const outs = new Map<ChainState, { state: ChainState; prob: number }[]>();
+        const memo = (s: ChainState, make: () => { state: ChainState; prob: number }[]) => {
+            const out = outs.get(s) ?? make();
+            outs.set(s, out);
+            return out;
+        };
+        return chain({
+            atoms: [],
+            body: [
+                {
+                    id: 1,
+                    kind: "loop",
+                    exit: (s) => s.suffix === 0,
+                    body: [
+                        {
+                            id: 2,
+                            kind: "transition",
+                            next: (s) =>
+                                memo(s, () =>
+                                    inner(s.prefix, s.suffix).map(([suffix, prob]) => ({
+                                        state: st(s.prefix, suffix),
+                                        prob,
+                                    })),
+                                ),
+                        },
+                    ],
+                },
+                {
+                    id: 3,
+                    kind: "transition",
+                    next: (s) =>
+                        memo(s, () => [
+                            { state: st(0, 0), prob: leave },
+                            { state: st((s.prefix % kinds) + 1, from), prob: 0.5 },
+                            { state: st(s.prefix, from), prob: 0.5 - leave },
+                        ]),
+                },
+            ],
+            starts: [{ state: st(1, from), weight: 1 }],
+            caps: CAPS,
+            exit: (s) => s.prefix === 0,
+        })!;
+    };
+
+    /**
+     * How often each kind of a ring is at the outer head, from kind one. A
+     * kind keeps the item with chance 1/2 - leave and gets the one before
+     * it with chance 1/2, so each is visited r = (1/2) / (1/2 + leave) times
+     * as often as the one before, and kind one once more than the last kind
+     * hands it: v1 (1/2 + leave) = 1 + v1 r^(kinds - 1) / 2.
+     */
+    const ringVisits = (kinds: number, leave: number): ((kind: number) => number) => {
+        const r = 0.5 / (0.5 + leave);
+        const first = 1 / ((0.5 + leave) * (1 - r ** kinds));
+        return (kind) => first * r ** (kind - 1);
+    };
+
+    /** The inner rounds of a ring whose kind k takes `perEntry(k)` each time. */
+    const ringRounds = (kinds: number, leave: number, perEntry: (kind: number) => number) => {
+        const visits = ringVisits(kinds, leave);
+        let rounds = 0;
+        for (let kind = 1; kind <= kinds; kind++) rounds += visits(kind) * perEntry(kind);
+        return rounds;
+    };
+
+    /** Odd kinds leave their inner loop one round in four, even ones one in
+     *  two thousand, both hopping between `states` inner states meanwhile. */
+    const quick = (kind: number) => (kind % 2 === 1 ? 0.5 : 1e-3);
+    const hopping =
+        (states: number) =>
+        (kind: number, suffix: number): [number, number][] => [
+            [0, quick(kind) / 2],
+            [(suffix % states) + 1, quick(kind) / 2],
+            [suffix, 1 - quick(kind)],
+        ];
+    const countdown =
+        (step: number) =>
+        (_kind: number, suffix: number): [number, number][] => [
+            [suffix - 1, step],
+            [suffix, 1 - step],
+        ];
+
+    it.each([1e-2, 1e-4])(
+        "a loop inside is solved for each kind of item entering it, not for every kind at once (outer exit %f)",
+        (leave) => {
+            // Three hundred kinds, two inner states each. The kinds never
+            // mix inside, so what all of them together lose in a round says
+            // nothing of the rounds to come: the quick kinds are gone at once
+            // and the slow ones stay two thousand rounds.
+            const solved = ring(300, leave, 1, hopping(2));
+            const rounds = ringRounds(300, leave, (kind) => 2 / quick(kind));
+            expect(solved.rounds.get(1)! / rounds).toBeCloseTo(1, 6);
+            expect(solved.passes * leave).toBeCloseTo(1, 6);
+            expect(solved.exit).toBeCloseTo(1, 6);
+            expect(solved.undecided).toBeCloseTo(0, 6);
+            expect(solved.estimated).toBe(false);
+            expect(solved.estimatedLoops.size).toBe(0);
+        },
+    );
+
+    it("kinds with a single inner state each are solved the same way", () => {
+        const solved = ring(450, 1e-2, 1, hopping(1));
+        const rounds = ringRounds(450, 1e-2, (kind) => 2 / quick(kind));
+        expect(solved.rounds.get(1)! / rounds).toBeCloseTo(1, 6);
+        expect(solved.passes / 100).toBeCloseTo(1, 6);
+        expect(solved.undecided).toBeCloseTo(0, 6);
+        expect(solved.estimated).toBe(false);
+    });
+
+    it("an inner countdown entered from a hundred kinds is five states for each, not five hundred", () => {
+        // Five steps down at one round in two: ten inner rounds each time.
+        const solved = ring(100, 1e-2, 5, countdown(0.5));
+        expect(solved.rounds.get(1)! / ringRounds(100, 1e-2, () => 5 / 0.5)).toBeCloseTo(1, 6);
+        expect(solved.passes / 100).toBeCloseTo(1, 6);
+        expect(solved.undecided).toBeCloseTo(0, 6);
+        expect(solved.estimated).toBe(false);
+    });
+
+    it("an outer loop over more kinds than are solved outright is estimated from its own rounds", () => {
+        // A thousand kinds: the loops inside are solved kind by kind and
+        // leave the outer loop the work to follow its own rounds, whose decay
+        // then stands for the rest.
+        const solved = ring(1000, 1e-5, 5, countdown(0.01));
+        expect(solved.rounds.get(1)! / ringRounds(1000, 1e-5, () => 5 / 0.01)).toBeCloseTo(1, 6);
+        expect(solved.passes / 1e5).toBeCloseTo(1, 6);
+        expect(solved.undecided).toBeCloseTo(0, 6);
+        expect(solved.estimated).toBe(true);
+        expect(solved.estimatedLoops.size).toBe(0);
+    });
+
     it("a loop inside that cannot say where its items go leaves the outer loop undecided, as a share", () => {
-        // Thirty kinds of item, each round into a loop inside that walks three
-        // hundred states: followed one kind at a time the inner loop is small,
-        // but from every kind at once it outgrows what is followed.
-        const [kinds, far] = [30, 300];
+        // Each kind's loop inside walks five hundred states, more than are
+        // solved outright; followed round by round instead, the first one
+        // takes the work and the rest are not followed at all.
+        const [kinds, far] = [30, 500];
         const cache = new Map<string, ChainState>();
         const st = (p: number, s: number): ChainState => {
             const k = `${p}/${s}`;
@@ -724,70 +874,13 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.exit + solved.stop + solved.unresolved + solved.undecided).toBeCloseTo(1, 6);
     });
 
-    it("a loop cut short by the work of a loop inside is left undecided, not estimated", () => {
-        // A thousand kinds of item, each round through a slow loop inside:
-        // the work runs out after a few outer rounds, the items hardly spread
-        // over the kinds, and those rounds' decay says nothing of the rest
-        // (about ten thousand rounds in truth).
-        const kinds = 1000;
-        const cache = new Map<string, ChainState>();
-        const st = (p: number, s: number): ChainState => {
-            const k = `${p}/${s}`;
-            const hit = cache.get(k) ?? at(p, s);
-            cache.set(k, hit);
-            return hit;
-        };
-        const outs = new Map<ChainState, { state: ChainState; prob: number }[]>();
-        const memo = (s: ChainState, make: () => { state: ChainState; prob: number }[]) => {
-            const out = outs.get(s) ?? make();
-            outs.set(s, out);
-            return out;
-        };
-        const solved = chain({
-            atoms: [],
-            body: [
-                {
-                    id: 1,
-                    kind: "loop",
-                    exit: (s) => s.suffix === 1,
-                    body: [
-                        {
-                            id: 2,
-                            kind: "transition",
-                            next: (s) =>
-                                memo(s, () =>
-                                    s.suffix === 2
-                                        ? [
-                                              { state: st(s.prefix, 1), prob: 1e-4 },
-                                              { state: st(s.prefix, 3), prob: 1e-4 },
-                                              { state: s, prob: 1 - 2e-4 },
-                                          ]
-                                        : [
-                                              { state: st(s.prefix, 1), prob: 2e-5 },
-                                              { state: s, prob: 1 - 2e-5 },
-                                          ],
-                                ),
-                        },
-                    ],
-                },
-                {
-                    id: 3,
-                    kind: "transition",
-                    next: (s) =>
-                        memo(s, () => {
-                            const leaves = s.prefix % 10 === 0 ? 1e-3 : 0;
-                            return [
-                                { state: st(0, 0), prob: leaves },
-                                { state: st((s.prefix % kinds) + 1, 2), prob: 0.3 },
-                                { state: st(s.prefix, 2), prob: 0.7 - leaves },
-                            ].filter((o) => o.prob > 0);
-                        }),
-                },
-            ],
-            starts: [{ state: st(1, 2), weight: 1 }],
-            caps: CAPS,
-            exit: (s) => s.prefix === 0,
-        })!;
+    it("a loop cut short by the work of the loops inside is left undecided, not estimated", () => {
+        // Each kind's loop inside is a sure countdown one state longer than
+        // is solved outright, so it is followed round by round and takes its
+        // length in work. That runs out with the outer loop a few hundred
+        // rounds in and the items on the first kinds only: those rounds'
+        // decay says nothing of the rest.
+        const solved = ring(450, 1e-5, 401, (_kind, suffix) => [[suffix - 1, 1]]);
         expect(solved.estimated).toBe(false);
         expect(solved.undecided).toBeGreaterThan(0.99);
         expect(solved.undecided).toBeLessThanOrEqual(1);

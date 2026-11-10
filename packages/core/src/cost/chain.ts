@@ -136,7 +136,8 @@ export interface Chain {
     /** The states the exit leaves the item in, their probabilities summing to `exit`. */
     readonly exits: readonly { readonly state: ChainState; readonly prob: number }[];
     /** The rounds were cut off before the distribution settled, and the rest
-     *  was taken as the last round's tail: the figures are an estimate. */
+     *  was taken as the last round's tail, here or in a loop inside: the
+     *  figures are an estimate. */
     readonly estimated: boolean;
     /** Per loop inside, its rounds over one attempt of this one, and the
      *  loops whose rounds were estimated. */
@@ -149,6 +150,9 @@ export interface Chain {
  *  states stops sooner: a hover cannot wait on thousands of rounds of them. */
 const MAX_PASSES = 2000;
 const MAX_WORK = 200_000;
+/** The part of that work a loop's own rounds must have taken for their decay
+ *  to stand for the rounds to come. */
+const OWN_WORK = MAX_WORK / 2;
 const EPSILON = 1e-9;
 /** How close in shape two rounds' distributions must be, against the share of
  *  the mass a round loses, for the rest to be taken as a geometric tail (the
@@ -184,10 +188,32 @@ interface Totals {
     stuck: number;
     undecided: number;
     /** The states carried through rounds so far, by this loop and every loop
-     *  inside it alike, against `MAX_WORK`. */
+     *  inside it that was followed round by round, against `MAX_WORK`. */
     work: number;
     /** The states a `restart` sent back to the head of the loop being run. */
     again: Dist;
+    /** What each loop inside does to each state that has entered it. */
+    readonly inside: Map<ChainStep, Inside>;
+}
+
+/** A loop inside, as the states that enter it find it. */
+interface Inside {
+    readonly entered: Map<string, Entered>;
+    /** Per state, the states it may go round as, sorted and taken out once
+     *  for every state among them. */
+    readonly closed: Map<string, Closed>;
+}
+
+/** What a loop inside does to one item entering it short of its exit: where
+ *  it leaves the item, and what its body counts on the way. */
+interface Entered {
+    readonly exits: Dist;
+    readonly counts: Totals;
+}
+
+interface Closed {
+    readonly sorted: Sorted;
+    readonly system: System | undefined;
 }
 
 const keys = new WeakMap<ChainState, string>();
@@ -218,14 +244,6 @@ function massOf(d: Dist): number {
 
 function add(m: Map<number, number>, id: number, by: number): void {
     m.set(id, (m.get(id) ?? 0) + by);
-}
-
-function hasLoop(steps: readonly ChainStep[]): boolean {
-    return steps.some(
-        (s) =>
-            s.kind === "loop" ||
-            (s.kind === "branch" && (hasLoop(s.body) || hasLoop(s.otherwise ?? []))),
-    );
 }
 
 function changes(steps: readonly ChainStep[]): boolean {
@@ -276,11 +294,11 @@ export function chain(input: ChainInput): Chain | undefined {
         stuckInside: t.stuck,
         undecided: r.undecided + t.undecided,
         exits: [...exits.values()],
-        estimated: r.estimated,
+        estimated: r.estimated || t.estimatedLoops.size > 0,
     };
 }
 
-function totals(): Totals {
+function totals(inside = new Map<ChainStep, Inside>()): Totals {
     return {
         exit: 0,
         restart: 0,
@@ -294,6 +312,7 @@ function totals(): Totals {
         undecided: 0,
         work: 0,
         again: new Map(),
+        inside,
     };
 }
 
@@ -347,14 +366,16 @@ function iterate(
     const exits: Dist = new Map();
     let passes = 0;
     let still = false;
+    let own = 0;
     for (let round = 0; massOf(head) > EPSILON; round++) {
         // A round that lost nothing and moved nothing is every round to
         // come: following more of them would only count rounds the items that
         // never leave spend going round.
         if (round >= MAX_PASSES || t.work >= MAX_WORK || still) {
-            // With the work spent in loops inside, the rounds followed may be
-            // too few for their decay to say anything of the rest.
-            const tail = round >= MAX_PASSES || !hasLoop(body);
+            // With the work spent elsewhere (in loops inside, or before this
+            // loop was entered), the rounds followed here may be too few for
+            // their decay to say anything of the rest.
+            const tail = round >= MAX_PASSES || still || own >= OWN_WORK;
             const rest = beyond(body, head, exit, input, t, exits, tail);
             return { ...rest, passes: passes + rest.passes, exits };
         }
@@ -364,6 +385,7 @@ function iterate(
         const { leaving, next } = oneRound(body, head, exit, input, t);
         const decay = massOf(next) / mass;
         t.work += next.size;
+        own += next.size;
         const distance = shapeDistance(head, mass, next, massOf(next));
         still = decay >= 1 - STUCK && distance < SETTLED;
         // Items that never leave, beside a few still draining, hand on almost
@@ -396,6 +418,11 @@ interface Node {
 
 type Fate = "leaves" | "never" | "undecided";
 
+interface Sorted {
+    readonly nodes: ReadonlyMap<string, Node>;
+    readonly fate: (key: string) => Fate;
+}
+
 /**
  * Which of the states going round can reach the exit at all: each is followed
  * one round on its own, and the states that round may hand on likewise, until
@@ -410,16 +437,16 @@ function fates(
     head: Dist,
     exit: (s: ChainState) => boolean,
     input: ChainInput,
-    work: number,
-): { nodes: Map<string, Node>; fate: (key: string) => Fate } {
+    t: Totals,
+): Sorted {
     const nodes = new Map<string, Node>();
     const queue = [...head.values()].map((e) => e.state);
     const seen = new Set(queue.map(key));
     let edges = 0;
     for (let i = 0; i < queue.length && i < MAX_EXPLORED && edges < MAX_EDGES; i++) {
         const state = queue[i]!;
-        const scratch = totals();
-        scratch.work = work;
+        const scratch = totals(t.inside);
+        scratch.work = t.work;
         const point: Dist = new Map([[key(state), { state, prob: 1 }]]);
         const { leaving, next } = oneRound(body, point, exit, input, scratch);
         const to = new Map<string, number>();
@@ -478,6 +505,8 @@ function fates(
  * to come, and is kept only if it accounts for all the mass that set out.
  * Otherwise, where `tail` allows it, the next round's decay stands for the
  * rest and the figures are an estimate; failing both, the mass is undecided.
+ * `outright` says the figures rest on neither. `known` is the head's states
+ * sorted and taken out already.
  */
 function beyond(
     body: readonly ChainStep[],
@@ -487,8 +516,9 @@ function beyond(
     t: Totals,
     exits: Dist,
     tail: boolean,
-): Omit<Rounds, "exits"> {
-    const { nodes, fate } = fates(body, head, exit, input, t.work);
+    known?: Closed,
+): Omit<Rounds, "exits"> & { readonly outright: boolean } {
+    const { nodes, fate } = known?.sorted ?? fates(body, head, exit, input, t);
     let never = 0;
     let undecided = 0;
     const live: Dist = new Map();
@@ -499,7 +529,7 @@ function beyond(
         else undecided += e.prob;
     }
     const mass = massOf(live);
-    if (!(mass > 0)) return { passes: 0, never, undecided, estimated: false };
+    if (!(mass > 0)) return { passes: 0, never, undecided, estimated: false, outright: true };
     // What a round from the states that leave hands to ones that do not.
     const lost = (next: Dist): { never: number; undecided: number } => {
         const out = { never: 0, undecided: 0 };
@@ -510,27 +540,34 @@ function beyond(
         return out;
     };
     const was = snapshot(t);
-    const visits = expectedVisits(nodes, live, fate);
-    if (visits !== undefined) {
+    const system = known === undefined ? reduce(nodes, live.keys(), fate) : known.system;
+    if (system !== undefined) {
+        const visits = expectedVisits(system, live);
         const { leaving, next } = oneRound(body, visits, exit, input, t);
         const gone = lost(next);
-        // Every item that set out ends somewhere. A solve that lost mass, or
-        // a loop inside that could not say where its own went (its share is
-        // then weighted by visits, not by chance), is no answer.
-        const ended = massOf(leaving) + (t.stop - was.stop) + (t.stuck - was.stuck) + gone.never;
-        const unsure = t.undecided - was.undecided + gone.undecided;
-        if (unsure <= BALANCE * mass && Math.abs(ended - mass) <= BALANCE * mass) {
+        // Every item that set out ends somewhere, a loop inside that could
+        // not say where its own went among them: a solve that lost mass, or
+        // handed some to states not followed, is no answer.
+        const ended =
+            massOf(leaving) +
+            (t.stop - was.stop) +
+            (t.stuck - was.stuck) +
+            (t.undecided - was.undecided) +
+            gone.never;
+        if (gone.undecided <= BALANCE * mass && Math.abs(ended - mass) <= BALANCE * mass) {
             for (const { state, prob } of leaving.values()) put(exits, state, prob);
             return {
                 passes: massOf(visits),
                 never: never + gone.never,
                 undecided,
                 estimated: false,
+                outright: true,
             };
         }
         Object.assign(t, was);
     }
-    if (!tail) return { passes: 0, never, undecided: undecided + mass, estimated: false };
+    const open = { passes: 0, never, undecided: undecided + mass, estimated: false };
+    if (!tail) return { ...open, outright: false };
     const { leaving, next } = oneRound(body, live, exit, input, t);
     let kept = 0;
     for (const [k, e] of next) if (fate(k) === "leaves") kept += e.prob;
@@ -538,7 +575,7 @@ function beyond(
     if (!(decay < 1 - STUCK)) {
         // Hardly any of it left in a round: there is no tail to speak of.
         Object.assign(t, was);
-        return { passes: 0, never, undecided: undecided + mass, estimated: false };
+        return { ...open, outright: false };
     }
     const factor = 1 / (1 - decay);
     for (const { state, prob } of leaving.values()) put(exits, state, prob * factor);
@@ -550,29 +587,44 @@ function beyond(
         undecided: undecided + gone.undecided * factor,
         // A tail over little mass moves the figures little.
         estimated: mass > UNSETTLED_MASS,
+        outright: false,
     };
+}
+
+/** The states that can leave, taken out one at a time: what is left of the
+ *  chances between them answers for any mass at the head. */
+interface System {
+    readonly order: readonly string[];
+    readonly at: ReadonlyMap<string, number>;
+    readonly states: readonly ChainState[];
+    /** Row k left of the diagonal and column k above it, as they stood when
+     *  state k was taken out. */
+    readonly q: Float64Array;
+    /** The chance state k, once the states after it are gone, moves on
+     *  rather than stays. */
+    readonly out: Float64Array;
 }
 
 /**
  * How often each state that can leave is expected at the head over every round
- * to come, as a distribution whose weights are those visits: v = h + vQ for
- * the head's mass h and the chances Q of one such state handing on to another.
- * Solved by taking the states out one at a time (state reduction, as Grassmann,
- * Taksar and Heyman do for a chain's stationary law): with a state gone, the
- * others hand on to each other through it as well, and what a state does not
- * keep is summed from where it goes, never taken as one less what it keeps.
- * No step subtracts, so a chain whose items drift away from the exit for
- * 10^17 rounds is solved as closely as one that leaves at once. Undefined past
- * `MAX_SOLVED` states, or where one of them was not followed.
+ * to come is v = h + vQ, for the head's mass h and the chances Q of one such
+ * state handing on to another. It is solved by taking the states out one at a
+ * time (state reduction, as Grassmann, Taksar and Heyman do for a chain's
+ * stationary law): with a state gone, the others hand on to each other through
+ * it as well, and what a state does not keep is summed from where it goes,
+ * never taken as one less what it keeps. No step subtracts, so a chain whose
+ * items drift away from the exit for 10^17 rounds is solved as closely as one
+ * that leaves at once. Undefined past `MAX_SOLVED` states, or where one of
+ * them was not followed.
  */
-function expectedVisits(
+function reduce(
     nodes: ReadonlyMap<string, Node>,
-    head: Dist,
+    from: Iterable<string>,
     fate: (key: string) => Fate,
-): Dist | undefined {
+): System | undefined {
     const order: string[] = [];
     const at = new Map<string, number>();
-    const stack = [...head.keys()];
+    const stack = [...from];
     for (let k = stack.pop(); k !== undefined; k = stack.pop()) {
         if (at.has(k)) continue;
         const node = nodes.get(k);
@@ -586,10 +638,8 @@ function expectedVisits(
     // staying left out; away[i]: the chance it goes anywhere else for good.
     const q = new Float64Array(n * n);
     const away = new Float64Array(n);
-    const h = new Float64Array(n);
     order.forEach((k, i) => {
         const node = nodes.get(k)!;
-        h[i] = head.get(k)?.prob ?? 0;
         away[i] = node.gone;
         for (const [to, p] of node.next) {
             const j = at.get(to);
@@ -597,15 +647,12 @@ function expectedVisits(
             else if (j !== i) q[i * n + j] = p;
         }
     });
-    // out[k]: the chance state k, once the states after it are gone, moves on
-    // rather than stays.
     const out = new Float64Array(n);
     for (let k = n - 1; k >= 0; k--) {
         let s = away[k]!;
         for (let j = 0; j < k; j++) s += q[k * n + j]!;
         out[k] = s;
         if (!(s > 0)) return undefined;
-        for (let j = 0; j < k; j++) h[j] = h[j]! + (h[k]! * q[k * n + j]!) / s;
         for (let i = 0; i < k; i++) {
             const through = q[i * n + k]! / s;
             if (through === 0) continue;
@@ -615,15 +662,94 @@ function expectedVisits(
             }
         }
     }
+    return { order, at, states: order.map((k) => nodes.get(k)!.state), q, out };
+}
+
+/** The visits to a system's states from the mass `head` has on them, as a
+ *  distribution whose weights are those visits. */
+function expectedVisits({ order, at, states, q, out }: System, head: Dist): Dist {
+    const n = order.length;
+    const h = new Float64Array(n);
+    for (const [k, e] of head) h[at.get(k)!] = e.prob;
+    for (let k = n - 1; k >= 0; k--) {
+        for (let j = 0; j < k; j++) h[j] = h[j]! + (h[k]! * q[k * n + j]!) / out[k]!;
+    }
     const visits: Dist = new Map();
     const v = new Float64Array(n);
     for (let k = 0; k < n; k++) {
         let arrivals = h[k]!;
         for (let i = 0; i < k; i++) arrivals += v[i]! * q[i * n + k]!;
         v[k] = arrivals / out[k]!;
-        if (v[k]! > 0) visits.set(order[k]!, { state: nodes.get(order[k]!)!.state, prob: v[k]! });
+        if (v[k]! > 0) visits.set(order[k]!, { state: states[k]!, prob: v[k]! });
     }
     return visits;
+}
+
+/**
+ * What a loop inside does to one state entering it short of its exit, worked
+ * out once and for that state alone. The states of every item at once need
+ * not mix (a guide's kinds of item each go round their own few states): their
+ * rounds' decay then says little, and together they are too many to solve
+ * where one state's own are few. Those are solved outright; failing that the
+ * state is followed round by round, on what is left of the work.
+ */
+function enter(
+    step: Extract<ChainStep, { kind: "loop" }>,
+    state: ChainState,
+    input: ChainInput,
+    t: Totals,
+): Entered {
+    let inside = t.inside.get(step);
+    if (inside === undefined) {
+        inside = { entered: new Map(), closed: new Map() };
+        t.inside.set(step, inside);
+    }
+    const k = key(state);
+    const hit = inside.entered.get(k);
+    if (hit !== undefined) return hit;
+    const point: Dist = new Map([[k, { state, prob: 1 }]]);
+    let closed = inside.closed.get(k);
+    if (closed === undefined) {
+        const sorted = fates(step.body, point, step.exit, input, t);
+        const system =
+            sorted.fate(k) === "leaves" ? reduce(sorted.nodes, [k], sorted.fate) : undefined;
+        closed = { sorted, system };
+        for (const other of system?.order ?? []) inside.closed.set(other, closed);
+    }
+    let counts = totals(t.inside);
+    let exits: Dist = new Map();
+    let r: Omit<Rounds, "exits"> | undefined;
+    if (closed.sorted.fate(k) !== "undecided") {
+        const direct = beyond(step.body, point, step.exit, input, counts, exits, false, closed);
+        if (direct.outright) r = direct;
+    }
+    if (r === undefined) {
+        counts = totals(t.inside);
+        counts.work = t.work;
+        const followed = iterate(step.body, point, step.exit, input, counts);
+        t.work = counts.work;
+        exits = followed.exits;
+        r = followed;
+    }
+    add(counts.rounds, step.id, r.passes);
+    counts.stuck += r.never;
+    counts.undecided += r.undecided;
+    if (r.estimated || counts.estimatedLoops.size > 0) counts.estimatedLoops.add(step.id);
+    const entered = { exits, counts };
+    inside.entered.set(k, entered);
+    return entered;
+}
+
+/** Add `by` times what a loop inside counted for one item entering it. */
+function addEntered(t: Totals, from: Totals, by: number): void {
+    t.restart += from.restart * by;
+    t.stop += from.stop * by;
+    t.stuck += from.stuck * by;
+    t.undecided += from.undecided * by;
+    for (const [id, n] of from.reached) add(t.reached, id, n * by);
+    for (const [id, n] of from.taken) add(t.taken, id, n * by);
+    for (const [id, n] of from.rounds) add(t.rounds, id, n * by);
+    for (const id of from.estimatedLoops) t.estimatedLoops.add(id);
 }
 
 /** How far apart two distributions are in shape: the summed difference of
@@ -720,17 +846,19 @@ function apply(step: ChainStep, alive: Dist, input: ChainInput, t: Totals): Dist
         }
         case "loop": {
             const done: Dist = new Map();
-            const head: Dist = new Map();
-            for (const { state, prob } of alive.values())
-                put(step.exit(state) ? done : head, state, prob);
+            let atExit = 0;
+            for (const { state, prob } of alive.values()) {
+                if (step.exit(state)) {
+                    atExit += prob;
+                    put(done, state, prob);
+                    continue;
+                }
+                const { exits, counts } = enter(step, state, input, t);
+                addEntered(t, counts, prob);
+                for (const e of exits.values()) put(done, e.state, e.prob * prob);
+            }
             // A loop entered at its exit takes no round: `taken` counts it.
-            add(t.taken, step.id, massOf(done));
-            const r = iterate(step.body, head, step.exit, input, t);
-            add(t.rounds, step.id, r.passes);
-            if (r.estimated) t.estimatedLoops.add(step.id);
-            t.stuck += r.never;
-            t.undecided += r.undecided;
-            for (const { state, prob } of r.exits.values()) put(done, state, prob);
+            add(t.taken, step.id, atExit);
             return done;
         }
         case "transition": {

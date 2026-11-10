@@ -145,10 +145,11 @@ unit price (`cost/prices.ts`, in the step's own currency).
 
 - An **`until`** whose body the tracker can follow
   is not memoryless: each round starts where the last left the item.
-  It is solved as a Markov chain (`cost/chain.ts`) over the tracked state. The
+  It is a Markov chain (`cost/chain.ts`) over the tracked state, a loop inside it
+  solved once per state entering it. The
   distribution is carried round after round until the mass has left (the exit or a
-  stop); once a round hands the next a
-  distribution of the same shape, only smaller, the rest is summed as a geometric series.
+  stop); once a round hands on the same shape, only smaller, the rest is a geometric
+  series.
   A chain not settled within the rounds followed is solved over its states, or past a
   few hundred noted as an estimate; the states that cannot reach the exit hold the
   share that never leaves. Where the exit leaves the item is what the next steps see.
