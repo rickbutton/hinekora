@@ -237,6 +237,41 @@ describe("harvest change", () => {
         );
     });
 
+    it("changes a modifier another source placed into its counterpart of that source and level", () => {
+        // The Incursion resistances roll nowhere; the grove still changes one
+        // into the other (Modifier § Harvest Crafting).
+        const placed = (name: string, minLevel: number): Mod => ({
+            ...FIRE_RESIST,
+            id: ModId(`${name}Level${minLevel}`),
+            type: TypeId(`${name}Ailments`),
+            families: new Set([GroupId(name)]),
+            minLevel,
+            spawn: [{ tag: TagId("default"), weight: 0 }],
+            source: "other",
+            text: `+(46-48)% to ${name} Resistance against Ailing Enemies`,
+        });
+        const rows = [placed("Fire", 50), placed("Cold", 50), placed("Cold", 30)];
+        const incursion = buildRegistry({
+            bases: [RING_BASE],
+            harvestChange: {
+                resistance: {
+                    fire: [TypeId("FireAilments")],
+                    cold: [TypeId("ColdAilments")],
+                    lightning: [],
+                },
+                damage: { fire: [], cold: [], lightning: [] },
+            },
+            mods: [...CATALOG, ...rows],
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
+        const r = check(
+            craft(rareRing([], ["FireLevel50"]), [harvestChange("FireLevel50", "ColdLevel50")]),
+            { registry: incursion },
+        );
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(TypeId("ColdAilments"))).toEqual(new Set(["ColdLevel50"]));
+    });
+
     it("needs the modifier guaranteed, unfractured, on an unprotected side", () => {
         const absent = check(
             craft(rareRing(), [harvestChange(FIRE_RESIST.id, COLD_RESIST.id)]),

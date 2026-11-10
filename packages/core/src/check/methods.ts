@@ -177,6 +177,26 @@ function harvestChange(
             `The grove changes "${fromName}" into "${registry.typeLabel(counterpart)}", not "${toName}".`,
         );
     }
+    const whole = (type: TypeId): readonly Mod[] =>
+        rollableTiers(catalog, a.base, TOP_ITEM_LEVEL, type, tags);
+    const pinned = a.tiers.get(from.value);
+    // A modifier another source placed (an Incursion architect's resistance,
+    // which the page's own example changes) is no row of the ladder that rolls
+    // here: it becomes the counterpart's row of that source and level.
+    const was = pinned?.size === 1 ? registry.resolveMod([...pinned][0]!) : undefined;
+    if (was?.ok && (was.value.source ?? "natural") !== "natural") {
+        const twins = catalog.filter(
+            (m) =>
+                m.type === to.value &&
+                m.source === was.value.source &&
+                m.minLevel === was.value.minLevel &&
+                m.domain === was.value.domain &&
+                m.gen === was.value.gen,
+        );
+        if (twins.length > 0) {
+            return harvestChangeOps(from.value, registry.typeLabel(from.value), twins);
+        }
+    }
     const targets = rollableTiers(catalog, a.base, a.ilvl, to.value, tags);
     if (targets.length === 0) return refuse(`"${toName}" cannot roll on this item.`);
     // The tier is kept (Modifier § Harvest Crafting): the target's row at the
@@ -186,10 +206,7 @@ function harvestChange(
     // Q22), so any of the target's rows that roll here, and the row at the
     // source's rank in the whole ladder, which "preserves the tier" read
     // literally, though the item's level is below it.
-    const pinned = a.tiers.get(from.value);
     const sources = rollableTiers(catalog, a.base, a.ilvl, from.value, tags);
-    const whole = (type: TypeId): readonly Mod[] =>
-        rollableTiers(catalog, a.base, TOP_ITEM_LEVEL, type, tags);
     const [wholeFrom, wholeTo] = [whole(from.value), whole(to.value)];
     const alike = wholeFrom.length === wholeTo.length;
     const parallel = sources.length === targets.length && alike;
