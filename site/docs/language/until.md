@@ -13,7 +13,7 @@ until <condition> {
 ```
 
 The steps run, then the condition is asked; the loop goes round again until it is true. After
-the loop, hinekora knows the condition holds, so the steps after it can rely on it.
+the loop, hinekora knows the condition is true, so the steps after it can rely on it.
 
 ```hinekora
 item {
@@ -33,7 +33,7 @@ every step after the loop is checked against that item.
 ### Every round, not just the first
 
 Each step in the loop has to work on every round, with the item as any earlier round could have
-left it. This loop is reported, because after a few exalts the item can be full before the life
+left it. On Rare boots with no modifiers yet, this loop is reported, because after a few exalts the item can be full before the life
 has rolled:
 
 ```hinekora
@@ -52,7 +52,7 @@ prefix is free before it benches.
 
 ### Loops that cannot work
 
-hinekora reports a loop that can never finish, and one whose steps never run:
+Hinekora reports a loop that can never finish, and one whose steps never run:
 
 ```txt
 this loop can never exit: has "fire resistance" can never become true here

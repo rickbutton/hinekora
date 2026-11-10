@@ -1,7 +1,7 @@
 # Introduction
 
 A crafting guide is a list of steps: start from this base, spam this essence until a
-resistance rolls, lock the suffixes, reforge. hinekora is that list written so a program can
+resistance rolls, lock the suffixes, reforge. Hinekora is that list written so a program can
 read it. Every step is checked against every outcome the steps before it could have had, so a
 guide that works only when you are lucky is caught before you follow it.
 

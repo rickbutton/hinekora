@@ -47,7 +47,7 @@ Modifiers are written as their text, in quotes, and shortened words are fine: `"
 finds "+# to maximum Life". A name that matches several modifiers equally well is an error
 that lists them.
 
-`t1` names a tier, `t1` the best. Tiers are counted among the rows that can roll on this base
+`t<n>` names a tier, `t1` the best. Tiers are counted among the rows that can roll on this base
 at this item level, so `t1` on a ring and `t1` on body armour can be different rows.
 
 ## Steps
@@ -82,7 +82,7 @@ if not has "maximum mana" {                  # branch on the item as it is now
 }
 ```
 
-After `until`, its condition is known to be true. Inside `if` the condition holds, inside
+After `until`, its condition is known to be true. Inside `if` the condition is true, inside
 `else` it does not. `restart` goes back to the start of the loop it is in, and `stop` ends the
 craft on this path. See [Loops: until, restart, stop](./language/until).
 

@@ -4,8 +4,10 @@
  * table the parser, completion, hover and the checker all read
  * (`METHODS` in @hinekora/core): each page's syntax, argument list and
  * description are the table's, its example a line of a guide in examples/,
- * its wiki link the one docs/operations.md gives the method. Nothing here is
- * written by hand, so a page cannot say what the language does not do.
+ * its wiki link the one docs/operations.md gives the method. What a page
+ * says of an operation comes from the table, so it changes with it; only the
+ * grouping (FAMILIES, where a new first word lands in "Other") and the
+ * wording around the table's text are kept here.
  *
  * Only the operations in PAGES get a page of their own for now; the index
  * lists them all.
@@ -204,7 +206,7 @@ function page(m, links) {
                           `- ${escape(s.replace(/^Needs /, "").replace(/^./, (c) => c.toUpperCase()))}`,
                   )
                   .join("\n")
-            : "What the description names. The checker proves it on every path the craft can take before it accepts the step.",
+            : "What the description above names: the item must be so on every path the craft can take, or the step is flagged.",
         "",
     ];
     if (example !== undefined) {
