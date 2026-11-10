@@ -284,6 +284,22 @@ until has "maximum life" {
         expect(vaal("Ghastly Eye Jewel")).not.toContain("The craft ends");
     });
 
+    it("names the currency the snapshot has no price for, on its step and under the total", () => {
+        const chaos = new Map(prices.chaos);
+        chaos.delete("Regal Orb");
+        const r = costSource(
+            `item { base: "Iron Ring" ilvl: 84 rarity: normal }\ntransmute\nregal`,
+            "test.craft",
+            registry,
+            { ...prices, chaos },
+        );
+        expect(r.output).toMatch(/regal\s+×1: 1 Regal Orb {2}\(no price for Regal Orb\)/);
+        expect(r.output).toContain("Expected spend: 1 Orb of Transmutation, 1 Regal Orb.");
+        expect(r.output).toContain(
+            `No total in Chaos Orbs: ${prices.league} prices of ${prices.fetchedAt.slice(0, 10)} lack Regal Orb.`,
+        );
+    });
+
     it("costs a guide with errors as written, and says so", () => {
         const r = costSource(
             `item { base: "Iron Ring" ilvl: 84 rarity: magic }\nexalt`,
