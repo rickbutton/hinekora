@@ -547,9 +547,9 @@ export class Tracker {
      * Perfect at most, the other down, a Lesser one lowered gone (the orb's
      * text: "Lesser modifiers that have their strength lowered will be removed").
      * Equal tiers rise alike and each tier a side is ahead takes about eleven
-     * hundredths off its chance (Orb of Conflict § Mechanics, a measurement of
-     * some five hundred orbs over gaps up to three; a wider gap is that line
-     * carried on, held above `CONFLICT_FLOOR`). Each keeps its type.
+     * hundredths off its chance (Orb of Conflict § Mechanics); a gap wider than
+     * the page's example is that line carried on, held above `CONFLICT_FLOOR`
+     * (QUESTIONS.md Q96). Each keeps its type.
      */
     private conflicted(state: ChainState): readonly Outcome[] | undefined {
         const at = ELDRITCH_SIDES.map((side) => this.index.get(IMPLICIT_ATOM[side]));

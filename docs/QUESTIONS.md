@@ -171,24 +171,36 @@ ring; record the counts with one modifier and with two.
 
 **Q:** do essences, resonators, Harvest reforges and the Veiled Chaos Orb lay down 4, 5 or
 6 modifiers at the [Chaos Orb's](https://www.poewiki.net/wiki/Chaos_Orb#Mechanics) 8:3:1?
+Does the count of an [Eldritch Chaos Orb](https://www.poewiki.net/wiki/Eldritch_Chaos_Orb),
+which its page does not give, include the side it keeps? What does a base holding five
+roll?
 **Probe:** a Rare body armour; forty Screaming essences, forty resonators with one fossil,
-lifeforce for forty reforges; record how many of each batch left 4, 5 and 6.
-**Assumed:** 8:3:1 for all, the guaranteed modifier among them; a base holding four (a
-jewel) three or four at 65:35, craftofexile's reading of
-[Orb of Alchemy](https://www.poewiki.net/wiki/Orb_of_Alchemy). **Encoded in:**
-[cost.md §2](cost.md#2-how-the-game-rolls).
+lifeforce for forty reforges; record how many of each batch left 4, 5 and 6. Boots with
+both implicits and three modifiers on the kept side, forty Eldritch Chaos Orbs; record
+the rerolled side's counts.
+**Assumed:** 8:3:1 for all, the guaranteed modifier and an Eldritch Chaos Orb's kept side
+among them (craftofexile's reading); a base holding four (a jewel) or five one fewer or
+all at 65:35, craftofexile's reading of
+[Orb of Alchemy](https://www.poewiki.net/wiki/Orb_of_Alchemy) for four. **Encoded in:**
+[cost.md §2](cost.md#2-how-the-game-rolls); `cost/roll.ts` `countDistribution`,
+`countCases`.
 
 ### Q60 · probe · open — do two fossils' multipliers add or multiply?
 
 **Q:** [Fossil](https://www.poewiki.net/wiki/Fossil) records the dispute and calls
-additive the more accepted theory.
+additive the more accepted theory; how a "fewer" multiplier meets another fossil's
+"more" it does not say.
 A row must carry both fossils' tags to tell the readings apart: a lightning modifier
-under Metallic (lightning) and Prismatic (elemental).
+under Metallic (lightning) and Prismatic (elemental), a caster one under Aetheric (more)
+and Serrated (fewer).
 **Probe:** an Iron Ring of item level 84 or more, a Potent Chaotic Resonator, Metallic and
 Prismatic Fossils; resonate forty times; record how many results hold a lightning
-modifier.
-**Assumed:** additive; when two tags of one fossil match a row, the larger multiplier.
-**Encoded in:** [cost.md §2](cost.md#2-how-the-game-rolls).
+modifier. A wand, Aetheric and Serrated Fossils, forty times; record how many hold a
+caster modifier.
+**Assumed:** "more" additive; when two tags of one fossil match a row, the larger "more"
+(the page's "each fossil only affects a modifier once", kept for "more" only); every
+"fewer" that matches multiplies that sum, craftofexile's reading.
+**Encoded in:** [cost.md §2](cost.md#2-how-the-game-rolls); `cost/roll.ts` `poolRows`.
 
 ### Q61 · probe · open — is an annulment uniform?
 
@@ -339,3 +351,15 @@ that tag's augment in the grove; record offered or greyed out (a refusal costs n
 one to each; record added or removed, and whether a full item ever comes back unchanged.
 **Assumed:** even odds; a full item loses a modifier. **Encoded in:** `cost/track.ts`
 `OUTCOME_ODDS`, `ASSUMED_ODDS`.
+
+### Q96 · probe · open — an Orb of Conflict over a wide gap
+
+**Q:** [Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)
+gives one half at equal tiers, "approximately ±11%" for each tier of difference and one
+example, two tiers apart. Does that line hold three and more tiers apart, where five
+would leave the side ahead no chance at all?
+**Probe:** boots with a Perfect and a Lesser implicit, and with an Exceptional and a
+Lesser one, an imprint of each, some fifty Orbs of Conflict a pair; record how often the
+higher implicit rises.
+**Assumed:** the line carried on, neither side below one in a hundred. **Encoded in:**
+`cost/track.ts` `CONFLICT_STEP`, `CONFLICT_FLOOR`, `conflicted`.

@@ -27,33 +27,34 @@ side closing when full (the wiki gives the group rule; the order is every calcul
 unveil's three
 options are drawn the same way
 ([Veiled modifier § Version history](https://www.poewiki.net/wiki/Veiled_modifier#Version_history)),
-and a value is equally likely anywhere in its row's range
-([Modifier § Mechanics overview](https://www.poewiki.net/wiki/Modifier#Mechanics_overview)).
+of the veiled modifier's side where the item says which; the player takes the guide's
+target if offered, else a modifier its conditions ask for, else one no one names. A
+value falls as
+[Modifier § Mechanics overview](https://www.poewiki.net/wiki/Modifier#Mechanics_overview)
+has it, a Vaal Orb's outcomes as
+[Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment), a Sanctified
+Fossil's weights as
+[Sanctified Fossil § Further analysis](https://www.poewiki.net/wiki/Sanctified_Fossil#Further_analysis),
+its lucky values not modelled; a Tangled Fossil's roll is not read.
 
 Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entry):
 
 - **Counts.** A Rare reforge (Chaos Orb, Alchemy, essence, resonator, Harvest reforge,
   Veiled Chaos) is 4, 5 or 6 at 8:3:1, the forced row within it
   ([Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Chaos_Orb#Mechanics), Q59); a
-  base holding four takes three or four at 65:35; a Magic reforge one or two at even odds
-  (Q58); a Vaal reforge six. A kept side counts toward the total, the rerolled side
-  taking what fits.
-- **Fossils.** Several fossils' "more" multipliers add (Q60) and a "fewer" multiplies
-  the result; a Sanctified Fossil scales a row by a hundredth a required level from forty
-  ([Sanctified Fossil § Further analysis](https://www.poewiki.net/wiki/Sanctified_Fossil#Further_analysis)),
-  its lucky values not modelled; a Tangled Fossil's roll is not read.
+  base holding four or five takes one fewer or all at 65:35; a Magic reforge one or two at
+  even odds (Q58). An Eldritch Chaos Orb's kept side counts toward the total, the
+  rerolled side taking what fits.
+- **Fossils.** Several fossils' "more" multipliers add and a "fewer" multiplies the
+  result (Q60).
 - **Harvest.** The tagged row is drawn among the tag's rows by weight (Q63).
 - **Removals** are uniform over the modifiers they can reach, never a fractured one (Q61).
 - **Veiled orbs.** The veiled modifier lands on either side with room alike (Q76).
-- **Vaal Orb.** Its four outcomes are each as likely
-  ([Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment)); a **Tainted
-  Exalted Orb** adds or removes at even odds, and removes from a full item (Q95).
-- **Unveil.** The options are of the veiled modifier's side where the item says which
-  (the placeholder is a prefix or a suffix of its own); the player takes the guide's target if offered, else a modifier its
-  conditions ask for, else one no one names.
-- **Orb of Conflict.** Equal tiers rise alike; each tier of lead takes eleven hundredths
-  off ([Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)),
-  a gap past three extrapolated.
+- **Tainted Exalted Orb.** It adds or removes at even odds, and removes from a full item
+  (Q95).
+- **Orb of Conflict.** The line of
+  [Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)
+  is carried past the gap it states, neither side below one in a hundred (Q96).
 - **Harvest augment** adds, then removes another
   ([Maxroll](https://maxroll.gg/poe/crafting/harvest-crafting-guide)).
 - **Memory strands.** The share used up is not stated; the estimate reads the floor
