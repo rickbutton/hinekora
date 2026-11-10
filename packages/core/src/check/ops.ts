@@ -1775,8 +1775,9 @@ function fill(
     const anyRow = (t: TypeId): boolean =>
         !a.tiers.has(t) && a.counts.total[1] > 0 && a.possible.has(t) && !isExcluded(a, t);
     for (const m of drawn.mods) {
+        if (anyRow(m.type)) continue;
         if (one) tiers.set(m.type, new Set([m.id]));
-        else if (!anyRow(m.type)) tiers.set(m.type, new Set([...(tiers.get(m.type) ?? []), m.id]));
+        else tiers.set(m.type, new Set([...(tiers.get(m.type) ?? []), m.id]));
     }
     // The draw may be any of the pool's types, rows or not (the veiled
     // placeholders have no row), so an exclusion on any of them is relaxed.

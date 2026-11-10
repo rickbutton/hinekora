@@ -3,7 +3,7 @@ import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { benchRemove, craft, has, iff, item, notp, op } from "../__fixtures__/ast.js";
-import { BENCH_LIFE_ROW, CATALOG, CLASS_RING, RING_BASE } from "../__fixtures__/mods.js";
+import { BENCH_LIFE_ROW, CATALOG, CLASS_RING, LIFE_T1, RING_BASE } from "../__fixtures__/mods.js";
 
 // A `bench` affix in the item block is the bench's row: it counts toward the
 // crafted limit, named or not.
@@ -74,5 +74,27 @@ describe("a bench affix in the item block", () => {
             ]),
         ]);
         expect(check(c, ctx).diagnostics).toEqual([]);
+    });
+
+    it("anonymous, may still be the bench's row after an add that could draw one row only", () => {
+        // The one natural row the Exalted Orb can add is the top life; the
+        // crafted prefix may be the bench's life, which is not that tier.
+        const narrow = buildRegistry({
+            bases: [RING_BASE],
+            mods: [LIFE_T1, BENCH_LIFE_ROW],
+            baseAliases: { "Iron Ring": "IronRing" },
+            benchCrafts: [{ mod: BENCH_LIFE_ROW.id, tier: 1, itemClasses: new Set([CLASS_RING]) }],
+        });
+        const start = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: [{ mod: "random", bench: true }],
+        });
+        const c = craft(start, [
+            op("exalt"),
+            iff(has("maximum life"), [iff(notp(has("maximum life", 1)), [])]),
+        ]);
+        expect(check(c, { registry: narrow }).diagnostics).toEqual([]);
     });
 });
