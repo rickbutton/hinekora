@@ -49,9 +49,11 @@ hand-written list; the metamods in force and the memory strands' tier cut apply 
 | `either`    | The join of each branch's effects; a branch of `end` adds nothing, and some branch survives.                                                                                                                                                                                                                    |
 | `end`       | The item is destroyed or unmodifiable on this path; the craft ends here.                                                                                                                                                                                                                                        |
 
-The metamods in force are read once, when the method is applied, and govern every
+The protections in force are read once, when the method is applied, and govern every
 operation in it ([Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions));
-only `unprotect` and `keep` change that. Where a protecting or cannot-roll metamod is
+only `unprotect` and `keep` change that. A cannot-roll metamod restricts a pool only
+while it is still on the item when the `fill` draws: a reforge that strips it rolls
+freely, as the table's Chaos Orb row has it. Where a protecting or cannot-roll metamod is
 on the item on some paths only, the method runs once with it and once without
 (`metamodCases`) and the results join: its checks must hold both ways.
 

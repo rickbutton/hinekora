@@ -1,8 +1,11 @@
 /**
- * The primitive operations (operations.md §2) and their interpreter. The metamods
- * in force are read once, when the method is applied, and govern every operation
- * in it: a reforge that rerolls the carrier of "prefixes cannot be changed" still
- * keeps the prefixes.
+ * The primitive operations (operations.md §2) and their interpreter. The
+ * protections in force are read once, when the method is applied, and govern
+ * every operation in it: a reforge that rerolls the carrier of "prefixes cannot
+ * be changed" still keeps the prefixes. A cannot-roll metamod restricts a pool
+ * only while its carrier is on the item the fill draws for, so one the strip
+ * removed restricts nothing (Metamod § Rules and Exceptions, the Chaos Orb's
+ * "when used with Suffixes Cannot Be Changed").
  */
 import { holdsFour } from "../model/capacity.js";
 import { craftedCapOf, type Effect } from "../model/effects.js";
