@@ -541,7 +541,9 @@ class Walker {
         this.record(stmt, massOf(branches), frame, {
             ...(unit !== undefined ? { unit } : {}),
             ...(unit === undefined
-                ? { note: `${words}: no price is known for this step` }
+                ? {
+                      note: `${words}: no price is known for this step${missed ? `; ${MISSED}` : ""}`,
+                  }
                 : missed
                   ? { note: MISSED }
                   : {}),

@@ -633,7 +633,9 @@ the walk carries a distribution over the counts and every named or known modifie
 (`cost/track.ts`); the modifiers no one names stay a count, each closing a group of
 average weight when a draw lands beside them, which Rick accepted as the one
 approximation that tracking every modifier's identity cannot avoid without
-enumerating outcomes.
+enumerating outcomes. The spread of the meanwhile assumption remains only for a guide the
+walk cannot follow throughout (`docs/ARCHITECTURE.md` §7.1), and a state a step cannot
+carry exactly is left as it was, with a note.
 
 ### Q23 · game probe · resolved
 
