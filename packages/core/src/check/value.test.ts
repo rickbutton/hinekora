@@ -53,6 +53,21 @@ describe("a modifier's value", () => {
         expect(rollRange("cannot roll Attack Modifiers")).toBeUndefined();
     });
 
+    it("is a fixed first number even where a rolled one follows", () => {
+        expect(rollRange("Adds 3 to (46-53) Lightning Damage")).toEqual([3, 3]);
+        expect(rollRange("30% increased Movement Speed\n(6-9)% chance to Avoid Bleeding")).toEqual([
+            30, 30,
+        ]);
+    });
+
+    it("reads a span written high to low in order, so a comparison can hold", () => {
+        const span = rollRange(
+            "Instant Recovery when on Low Life\n(30-27)% reduced Amount Recovered",
+        );
+        expect(span).toEqual([27, 30]);
+        expect(narrowRange(span!, "<=", 28)).toEqual([27, 28]);
+    });
+
     it("narrows a span by a comparison, exactly on whole numbers", () => {
         expect(narrowRange([70, 84], ">=", 75)).toEqual([75, 84]);
         expect(narrowRange([70, 84], "<", 75)).toEqual([70, 74]);

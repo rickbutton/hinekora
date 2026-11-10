@@ -7,16 +7,20 @@ import type { Cmp } from "../ast/ast.js";
 import { type Domain, type Range, RangeDomain } from "./domain.js";
 import type { TypeId } from "../model/ids.js";
 
-const RANGE = /\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)/;
-const NUMBER = /(\d+(?:\.\d+)?)/;
+/** The first number of a text: a rolled span "(70-84)" or a fixed "3". */
+const FIRST_NUMBER = /\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)|(\d+(?:\.\d+)?)/;
 
 /** The span of a row's first number: "+(70-84) to maximum Life" is [70, 84],
- *  "+1 to Level of all Skill Gems" is [1, 1]; a text with no number has none. */
+ *  "+1 to Level of all Skill Gems" is [1, 1] and so is the fixed 3 of "Adds 3
+ *  to (46-53) Lightning Damage"; a text with no number has none. A "reduced"
+ *  row writes its span high to low, "(30-27)% reduced", which reads [27, 30]. */
 export function rollRange(text: string): Range | undefined {
-    const r = RANGE.exec(text);
-    if (r) return [Number(r[1]), Number(r[2])];
-    const n = NUMBER.exec(text);
-    return n ? [Number(n[1]), Number(n[1])] : undefined;
+    const m = FIRST_NUMBER.exec(text);
+    if (m === null) return undefined;
+    if (m[3] !== undefined) return [Number(m[3]), Number(m[3])];
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    return [Math.min(a, b), Math.max(a, b)];
 }
 
 /** The part of `span` whose values compare so, or null when none does. Whole
