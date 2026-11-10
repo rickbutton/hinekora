@@ -197,6 +197,13 @@ describe("the race against brute force", () => {
         const given = amongSplitDistribution(sides.prefix, sides.suffix, [2], 1, 4, 3, 3);
         expect(given[1]).toBeCloseTo(light / one, 7);
         expect(given[0]! + given[1]!).toBeCloseTo(1, 9);
+        // One draw in all: the side's own race, as the joint has it.
+        const single = amongSplitDistribution(sides.prefix, sides.suffix, [2], 1, 1, 3, 3);
+        expect(single[1]).toBeCloseTo(
+            allAmongSplit(sides.prefix, sides.suffix, [2], 1, 1, 3, 3) /
+                allAmongSplit(sides.prefix, sides.suffix, [], 1, 1, 3, 3),
+            9,
+        );
         const alone = allAmongFirst(sides.prefix, [2], 1);
         expect(Math.abs(alone / (light / one) - 1)).toBeGreaterThan(0.01);
     });

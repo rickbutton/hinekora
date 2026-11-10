@@ -303,8 +303,14 @@ export function amongSplitDistribution(
     capOwn: number,
     capOther: number,
 ): Float64Array {
+    // Nothing couples where the other side takes no draw, or the one draw
+    // there is has its side given: which clock of a side fires first does not
+    // depend on when.
+    const otherOpen = Math.min(capOther, other.filter((r) => r > 0).length);
+    if (special.length === 0 || k === 0 || m === 1 || otherOpen === 0)
+        return amongFirstDistribution(own, special, k);
     const split = allAmongSplit(own, other, [], k, m, capOwn, capOther);
-    if (special.length === 0 || !(split > 0)) return amongFirstDistribution(own, special, k);
+    if (!(split > 0)) return amongFirstDistribution(own, special, k);
     const joint = exactly(special, (members) =>
         members.length === 0 ? split : allAmongSplit(own, other, members, k, m, capOwn, capOther),
     );
