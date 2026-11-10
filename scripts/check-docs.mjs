@@ -16,7 +16,13 @@
  *   - lets operations.md §2's primitives table drift from the `Op` union: each first
  *     column names a kind of `Op`, and every kind has a row;
  *   - links a poewiki.net page or section that the local wiki cache does not hold
- *     (skipped with a notice when the cache is absent, e.g. in CI).
+ *     (skipped with a notice when the cache is absent, e.g. in CI);
+ *   - outgrows its word budget, or is a file under docs/ that has no budget;
+ *   - keeps a question in QUESTIONS.md that is neither open nor answered, or one
+ *     longer than an entry's budget.
+ *
+ * Every doc is read by agents whose context it fills, and prose that restates the
+ * code drifts from it; the budgets make growth a decision someone sees in a diff.
  *
  * Run as `pnpm docs:check`; part of the gate.
  */
@@ -31,6 +37,22 @@ let wikiLinks = 0;
 const fail = (file, line, msg) => problems.push(`${file}:${line}: ${msg}`);
 
 // --- the corpus ------------------------------------------------------------
+
+/** The word budget of every doc (whitespace-separated words, as `wc -w` counts). A new
+ *  doc, or a raised budget, is a change to this table. */
+const BUDGETS = {
+    "CLAUDE.md": 1100,
+    "docs/ARCHITECTURE.md": 2200,
+    "docs/QUESTIONS.md": 4500,
+    "docs/REFERENCE.md": 1300,
+    "docs/ROADMAP.md": 600,
+    "docs/cost.md": 1900,
+    "docs/item-model.md": 1900,
+    "docs/language.md": 2500,
+    "docs/operations.md": 1400,
+};
+const QUESTION_BUDGET = 150;
+const QUESTIONS = "docs/QUESTIONS.md";
 
 const DOCS = ["CLAUDE.md", ...readdirSync(join(root, "docs")).map((f) => `docs/${f}`)].filter((f) =>
     f.endsWith(".md"),
@@ -291,9 +313,42 @@ if (!existsSync(cacheDir)) {
     }
 }
 
+// --- 4. size: the doc budgets and the questions ledger --------------------------
+
+const wordCount = (text) => text.split(/\s+/).filter(Boolean).length;
+const sizes = [];
+for (const p of walk(join(root, "docs"), () => true)) {
+    const rel = relative(root, p).replaceAll("\\", "/");
+    if (!(rel in BUDGETS))
+        fail(rel, 1, "no word budget for this file; docs/ holds only the docs in BUDGETS");
+}
+for (const [doc, budget] of Object.entries(BUDGETS)) {
+    if (!existsSync(join(root, doc))) {
+        fail(doc, 1, "has a budget but does not exist");
+        continue;
+    }
+    const words = wordCount(read(doc));
+    sizes.push(`${doc.replace(/^docs\//, "")} ${words}/${budget}`);
+    if (words > budget)
+        fail(doc, 1, `${words} words, over its budget of ${budget}: cut before adding`);
+}
+// An entry runs from its heading to the next heading of any level.
+const questionLines = lines(QUESTIONS);
+questionLines.forEach((text, i) => {
+    const m = /^### (Q\d+) · \w+ · (\w+)/.exec(text);
+    if (m === null) return;
+    if (m[2] !== "open" && m[2] !== "answered")
+        fail(QUESTIONS, i + 1, `${m[1]} is ${m[2]}; an applied answer is deleted, not kept`);
+    const end = questionLines.findIndex((t, j) => j > i && /^#{1,3} /.test(t));
+    const words = wordCount(questionLines.slice(i + 1, end === -1 ? undefined : end).join(" "));
+    if (words > QUESTION_BUDGET)
+        fail(QUESTIONS, i + 1, `${m[1]} is ${words} words, over ${QUESTION_BUDGET}`);
+});
+
 // --- report --------------------------------------------------------------------
 
 for (const n of notes) console.log(`note: ${n}`);
+console.log(`doc words: ${sizes.join(", ")}`);
 if (problems.length > 0) {
     for (const p of problems) console.log(p.replace(/\\/g, "/"));
     console.log(
