@@ -76,6 +76,9 @@ export function projectHarvestChange(rows) {
 }
 
 const ELEMENTS = ["fire", "cold", "lightning"];
+// An element's ailment is exchanged with it. One such pair was seen in game
+// (`SEEN_IN_GAME`); the rest, the added damage against ailing enemies among
+// them, are assumed (`docs/QUESTIONS.md` Q74).
 const AILMENT = { fire: "Ignite", cold: "Freeze", lightning: "Shock" };
 const capital = (element) => element[0].toUpperCase() + element.slice(1);
 // The game spells one modifier's types "…Resist" for an element and

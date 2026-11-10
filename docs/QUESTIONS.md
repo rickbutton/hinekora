@@ -196,16 +196,19 @@ strands at four modifiers and 38 at five where it gives 32 and 34. **Encoded in:
 `check/library.ts` `FOULBORN_STRANDS`, `EXALT_STRANDS`; `pool/pool.ts`
 `topTiersUnderStrands`.
 
-### Q74 · probe · open — listed Harvest damage modifiers with no counterpart
+### Q74 · probe · open — Harvest damage modifiers paired by ailment, or with no counterpart
 
 **Q:** the other element's list has no modifier named like these: a jewel's fire damage
 with bows (to cold or lightning), added cold or lightning damage with bows (to fire),
-cold or lightning damage avoidance (to fire). Does the grove refuse them, or pair them
-some other way?
-**Probe:** an item with one of them; the grove's damage change to that element; record
-the message or the result.
-**Assumed:** refused. **Encoded in:** `packages/data/scripts/ingest-harvest-change.mjs`
-`NO_COUNTERPART`.
+cold or lightning damage avoidance (to fire). Does the grove refuse them? And does a modifier that names an ailment become the other element's with
+its own ailment? Only "fire damage and chance to ignite" to cold was seen.
+**Probe:** an item with one of the first; the grove's damage change to that element; record
+the message or the result. A Shaper ring with "adds cold damage against chilled or frozen
+enemies"; change it to lightning; record the result.
+**Assumed:** the first refused; ignite, freeze and shock exchanged with the element, for
+the other five pairs of damage with an ailment's chance and the six of added damage
+against ailing enemies, all unobserved. **Encoded in:**
+`packages/data/scripts/ingest-harvest-change.mjs` `NO_COUNTERPART`, `AILMENT`.
 
 ### Q76 · probe · open — the side of a veiled orb's veiled modifier
 
