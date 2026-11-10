@@ -119,7 +119,10 @@ export interface EldritchImplicitSpec {
     readonly weights: ReadonlyMap<TagId, number>;
     /** No ember or ichor gives the row: it is a tier of its implicit that only
      *  an Orb of Conflict reaches, by lowering it (the presence implicits'
-     *  lowest tiers). `classes` are then the classes it is a tier on. */
+     *  lowest tiers). That a lowered implicit lands on this row is read off the
+     *  game's data, which has the row with no weight; Orb of Conflict §
+     *  Mechanics says only that the tier decreases. `classes` are then the
+     *  classes it is a tier on. */
     readonly unrollable?: true;
     readonly implicitTags: ReadonlySet<TagId>;
     readonly text: string;
