@@ -23,7 +23,7 @@ import type { SourceSpan } from "../ast/span.js";
 import { type Gen, type GroupId, type ModId, TagId, type TypeId } from "../model/ids.js";
 import type { Base } from "../model/base.js";
 import type { Mod } from "../model/mod.js";
-import { type EldritchSide, eldritchTierOf } from "../model/marks.js";
+import { type EldritchSide, eldritchTierOf, INFLUENCES } from "../model/marks.js";
 import { MAX_STRANDS } from "../model/strands.js";
 import type { ModTypeContext, Registry } from "../resolve/registry.js";
 import {
@@ -324,10 +324,17 @@ class Checker {
         const fracturedTypes: TypeId[] = [];
         let fracturedAnonymous = 0;
         let crafted = 0;
+        // An Astrolabe Amulet counts as having every influence by its implicit
+        // (Astrolabe Amulet), so none is declared and all six are read.
+        if (base.allInfluences && item.influences.length > 0) {
+            this.diag(
+                "This base has every influence by its implicit; leave `influences:` out.",
+                item.span,
+            );
+        }
+        const influences = base.allInfluences ? [...INFLUENCES] : item.influences;
         // A declared influence's rows roll on the item, so they resolve and tier here.
-        const tags = new Set(
-            item.influences.flatMap((i) => [...this.registry.influenceTags(base, i)]),
-        );
+        const tags = new Set(influences.flatMap((i) => [...this.registry.influenceTags(base, i)]));
         const ctx = { base, ilvl: item.ilvl, tags };
 
         const checkGen = (name: string, modGen: Gen | undefined, gen: Gen): void => {
@@ -568,7 +575,7 @@ class Checker {
                 ...(fracturedAnonymous > 0 && { fracturedAnonymous }),
             },
             {
-                influences: item.influences,
+                influences,
                 corrupted: item.corrupted,
                 ...(item.exarch !== undefined && { exarch: eldritchTierOf(item.exarch.tier) }),
                 ...(item.eater !== undefined && { eater: eldritchTierOf(item.eater.tier) }),

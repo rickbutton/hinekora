@@ -451,6 +451,18 @@ export const HUNTER_RING_SUFFIX: Mod = mkMod({
     text: "Hunter ring suffix",
 });
 
+/** The same for amulets: the `amulet_basilisk` tag a Hunter amulet carries. */
+export const HUNTER_AMULET_SUFFIX: Mod = mkMod({
+    id: "HunterAmulet1",
+    type: "HunterAmuletSuffix",
+    gen: "suffix",
+    minLevel: 1,
+    families: ["HunterAmulet"],
+    spawn: [spawn(TagId("amulet_basilisk"), 500), spawn(TAG_DEFAULT, 0)],
+    implicitTags: ["chaos", "influence_only"],
+    text: "Hunter amulet suffix",
+});
+
 /** Flask-domain prefix whose weight WOULD match any base (default tag), so the
  * domain gate is the sole reason it is excluded from item-domain bases. */
 export const FLASK_MOD: Mod = mkMod({

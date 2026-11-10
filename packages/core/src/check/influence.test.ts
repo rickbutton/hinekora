@@ -5,8 +5,10 @@ import { buildRegistry } from "../resolve/registry.js";
 import { craft, harvest, has as hasT, iff, influencedP, item } from "../__fixtures__/ast.js";
 import type { OperationStmt } from "../ast/ast.js";
 import {
+    ASTROLABE_BASE,
     CATALOG,
     CLASS_RING,
+    HUNTER_AMULET_SUFFIX,
     HUNTER_RING_SUFFIX,
     JEWEL_BASE,
     PROTECT_SUFFIXES_CARRIER,
@@ -342,5 +344,30 @@ describe("an influence exalt on an item too low-level for any influence modifier
         expect(
             check(craft(fine, [words("exalt", "hunter")]), { registry: high }).diagnostics,
         ).toEqual([]);
+    });
+});
+
+describe("the Astrolabe Amulet", () => {
+    it("has every influence by its implicit, so no influence orb takes it", () => {
+        const astrolabe = buildRegistry({
+            bases: [ASTROLABE_BASE],
+            mods: [...CATALOG, PROTECT_SUFFIXES_CARRIER, HUNTER_AMULET_SUFFIX],
+        });
+        const amulet = item({ base: "Astrolabe Amulet", ilvl: 100, rarity: "rare" });
+        const r = check(craft(amulet, [words("exalt", "hunter")]), { registry: astrolabe });
+        expect(r.diagnostics[0]!.message).toContain("cannot be used on an influenced item");
+        const plain = check(craft(amulet, []), { registry: astrolabe });
+        expect([...plain.finalState!.influences]).toEqual([
+            "shaper+elder+crusader+hunter+redeemer+warlord",
+        ]);
+        const declared = item({
+            base: "Astrolabe Amulet",
+            ilvl: 100,
+            rarity: "rare",
+            influences: ["hunter"],
+        });
+        expect(
+            check(craft(declared, []), { registry: astrolabe }).diagnostics[0]!.message,
+        ).toContain("leave `influences:` out");
     });
 });
