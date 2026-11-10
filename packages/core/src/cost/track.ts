@@ -1,7 +1,7 @@
 /**
  * The item as the cost layer tracks it: a distribution over a small state,
- * the (prefix, suffix) counts and, for each modifier a condition names, whether
- * it is on the item and at which row (`ChainState`). A loop solved as a chain
+ * the (prefix, suffix) counts and, for each modifier the guide names or the
+ * checker knows, whether it is on the item and at which row (`ChainState`). A loop solved as a chain
  * (`chain.ts`) carries it round by round; these are the pieces that read a
  * step, a condition or a roll in its terms.
  */
@@ -77,13 +77,14 @@ interface RowClass {
 }
 
 /**
- * The modifiers the guide's conditions name, tracked through it: one atom per
+ * The modifiers the guide's conditions name, the ones any step's item surely
+ * holds, and the metamods that protect a side, tracked through it: one atom per
  * type, whatever loop or branch names it, so a distribution means the same
  * thing from the item block to the last step. A type's rows are grouped into
  * the classes the conditions tell apart (each tier a condition names on its
  * own, the rest together), so a type no condition tiers is one class, not a
- * dozen rows. A metamod that protects a side is an atom too: a removal may
- * take it, and its side is out of reach while it is there.
+ * dozen rows. A protecting metamod is an atom because a removal may take it,
+ * and its side is out of reach while it is there.
  */
 export class Tracker {
     readonly atoms: ChainAtom[] = [];
