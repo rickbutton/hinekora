@@ -122,7 +122,7 @@ describe("bench remove under an unproven fracture", () => {
 });
 
 describe("bench remove with a fractured crafted modifier", () => {
-    it("leaves it crafted, so a new bench craft needs the multimod again", () => {
+    it("keeps it crafted, so the next bench craft would replace it, and cannot", () => {
         const c = craft(
             rareRing(
                 [{ mod: BENCH_LIFE_ROW.id, fractured: true }, INCREASED_MANA.id],

@@ -529,7 +529,7 @@ class Checker {
             item.ilvl < ELDRITCH_ITEM_LEVEL
         ) {
             this.diag(
-                `An eldritch implicit needs item level ${ELDRITCH_ITEM_LEVEL}; this item is level ${item.ilvl}.`,
+                `An eldritch implicit needs item level ${ELDRITCH_ITEM_LEVEL} or more — this item is item level ${item.ilvl}.`,
                 item.span,
             );
         }

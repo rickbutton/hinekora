@@ -276,10 +276,14 @@ describe("an Eldritch Ember on a low item level", () => {
     });
 
     it("cannot be on an item block below it", () => {
-        const declared = item({ base: "Iron Greaves", ilvl: 74, rarity: "rare", eater: "grand" });
-        expect(messages(craft(declared, []))).toBe(
-            "An eldritch implicit needs item level 75; this item is level 74.",
-        );
+        for (const side of [{ eater: "grand" }, { exarch: "lesser" }] as const) {
+            const below = item({ base: "Iron Greaves", ilvl: 74, rarity: "rare", ...side });
+            expect(messages(craft(below, []))).toBe(
+                "An eldritch implicit needs item level 75 or more — this item is item level 74.",
+            );
+            const at = item({ base: "Iron Greaves", ilvl: 75, rarity: "rare", ...side });
+            expect(messages(craft(at, []))).toBe("");
+        }
     });
 });
 
