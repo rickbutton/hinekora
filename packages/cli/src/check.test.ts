@@ -249,6 +249,18 @@ until has "maximum life" {
             ).output.match(/chaos\s+×(\d+(\.\d+)?)/)?.[1];
         const plain = rounds("");
         expect(plain).toBeDefined();
+        // The loop's note gives the fossil as the cause, and no other.
+        const loop = costSource(
+            `item { base: "Vaal Regalia" ilvl: 86 rarity: rare }
+until has "maximum life" {
+    fossil "tangled"
+}`,
+            "test.craft",
+            registry,
+            prices,
+        ).output.split("\n")[1];
+        expect(loop).toMatch(/\(a Tangled Fossil makes .* every round of this loop is read alike/);
+        expect(loop).not.toContain("more ways than could be followed");
         expect(
             rounds(`
     if has "fire resistance" {

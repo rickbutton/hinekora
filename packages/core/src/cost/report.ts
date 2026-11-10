@@ -826,7 +826,15 @@ class Walker {
             );
             if (solved !== undefined) return solved;
         }
-        const unfollowed = (this.tracker?.misses ?? 0) > misses;
+        // Why the rounds are read alike: the step whose rule is not modelled,
+        // where there is one, not the states it left unfollowed.
+        const cause = this.unmodelledIn(stmt.body);
+        const alike =
+            cause !== undefined
+                ? `${cause}; every round of this loop is read alike, on every item the check allows at once`
+                : (this.tracker?.misses ?? 0) > misses
+                  ? UNFOLLOWED
+                  : undefined;
         this.lost = true;
         // One attempt: the body from the head with mass one, in a frame of its
         // own, its steps discarded. A round ends where the body does or at a
@@ -882,7 +890,7 @@ class Walker {
                 stmt,
                 branches,
                 frame,
-                (unfollowed ? `${UNFOLLOWED}; ` : "") +
+                (alike !== undefined ? `${alike}; ` : "") +
                     (exit === undefined
                         ? "the chance a round of this loop reaches its exit could not be worked out, so its rounds and the guide's total are not known"
                         : "no round of this loop reaches its exit as the steps in it are read, so its rounds and the guide's total are not known"),
@@ -893,7 +901,7 @@ class Walker {
         const expected = 1 / ending;
         this.record(stmt, mass, frame, {
             attempts: { chance: exit, expected },
-            ...(unfollowed && { note: UNFOLLOWED }),
+            ...(alike !== undefined && { note: alike }),
         });
         // The real pass: the body's steps, each run `expected` times per pass of
         // the enclosing frame, from the loop head with mass one.
@@ -906,6 +914,33 @@ class Walker {
         if (exits.length === 0 || exit <= 0) return [{ mass: continuing, path: undefined }];
         const scale = continuing / exit;
         return exits.map((b) => ({ mass: b.mass * scale, path: b.path }));
+    }
+
+    /** Why a step among these is not modelled (`unmodelled`), if one is not. */
+    private unmodelledIn(stmts: readonly Stmt[]): string | undefined {
+        for (const s of stmts) {
+            let cause: string | undefined;
+            if (s.kind === "until") cause = this.unmodelledIn(s.body);
+            else if (s.kind === "if")
+                cause = this.unmodelledIn(s.body) ?? this.unmodelledIn(s.elseBody ?? []);
+            else if (s.kind === "call") {
+                const e = this.traced(s);
+                const body = e?.inlined?.body;
+                if (e !== undefined && body !== undefined)
+                    cause = this.within(e, () => this.unmodelledIn(body));
+            } else if (s.kind === "operation") {
+                const e = this.traced(s);
+                const method = findMethod(s.words);
+                const literals: Literal[] = [];
+                for (const arg of s.args) if (arg.kind !== "param") literals.push(arg);
+                if (e !== undefined && method !== undefined && literals.length === s.args.length) {
+                    const built = method.build(literals, e.before, this.registry);
+                    if (!("refused" in built)) cause = unmodelled(built);
+                }
+            }
+            if (cause !== undefined) return cause;
+        }
+        return undefined;
     }
 
     /**
