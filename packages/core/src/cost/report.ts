@@ -1230,10 +1230,14 @@ class Walker {
                     );
                 });
                 for (const st of rowed) {
-                    states.push({
-                        state: { prefix: p, suffix: sfx, rows: st.rows },
-                        weight: st.weight,
-                    });
+                    const marked = tracker.marked(item, st.rows);
+                    if (marked === undefined) return undefined;
+                    for (const m of marked) {
+                        states.push({
+                            state: { prefix: p, suffix: sfx, rows: m.rows },
+                            weight: st.weight * m.share,
+                        });
+                    }
                 }
             }
         }

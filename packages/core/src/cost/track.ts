@@ -25,6 +25,7 @@ import {
     guaranteedTypes,
     isExcluded,
     isFractured,
+    unprovenFractures,
     rarityOf,
     refine,
     type RPred,
@@ -459,7 +460,7 @@ export class Tracker {
         reading: Reading,
     ): readonly Outcome[] | undefined {
         const item = this.narrow(before, state);
-        if (item === null) return undefined;
+        if (item === null) return this.counted(undefined);
         return this.outcomesOn(item, ops, state, reading);
     }
 
@@ -504,27 +505,77 @@ export class Tracker {
         return [rise(ex, eat, moved(a, b)), rise(eat, ex, moved(b, a))];
     }
 
-    /** The eldritch implicit on one side of an item the checker settles: null
-     *  for none, undefined where the item leaves its tier, or a type a
-     *  condition names, open. */
+    /** The eldritch implicit on one side of an item the checker settles, as
+     *  rows by weight: none for no implicit, undefined where the item leaves
+     *  its tier open. A type a condition names that the item leaves open is the
+     *  state's own, or else each type the item allows by its weight in the
+     *  ember pool of that tier. */
     private implicitIn(
         item: AItem,
         side: EldritchSide,
         from: ChainState | undefined,
-    ): ModId | null | undefined {
+    ): readonly { id: ModId; weight: number }[] | undefined {
         const tiers = new Set([...item.eldritch].map((k) => eldritchOf(k)[side]));
         if (tiers.size !== 1) return undefined;
         const tier = [...tiers][0]!;
-        if (tier === 0) return null;
-        if (this.implicitTypes.size === 0) return implicitRow(tier, undefined);
+        if (tier === 0) return [];
+        if (this.implicitTypes.size === 0) return [{ id: implicitRow(tier, undefined), weight: 1 }];
         const have = item.eldritchTypes[side];
         const kinds = have === "any" ? undefined : new Set([...have].map((t) => this.kindOf(t)));
-        if (kinds?.size === 1) return implicitRow(tier, [...kinds][0]);
+        if (kinds?.size === 1) return [{ id: implicitRow(tier, [...kinds][0]), weight: 1 }];
         const fromRow = from?.rows[this.index.get(IMPLICIT_ATOM[side])!] ?? null;
         const was = fromRow === null ? undefined : readImplicit(fromRow).type;
         if (was !== undefined && (kinds === undefined || kinds.has(was)))
-            return implicitRow(tier, was);
-        return undefined;
+            return [{ id: implicitRow(tier, was), weight: 1 }];
+        const byKind = new Map<TypeId, number>();
+        for (const e of this.registry.eldritchPool(item.base, side, tier)) {
+            if (have !== "any" && !have.has(e.type)) continue;
+            let w = 0;
+            for (const [tag, weight] of e.weights)
+                if (item.base.tags.has(tag)) w = Math.max(w, weight);
+            const kind = this.kindOf(e.type);
+            if (w > 0) byKind.set(kind, (byKind.get(kind) ?? 0) + w);
+        }
+        if (byKind.size === 0) return [{ id: implicitRow(tier, OTHER_IMPLICIT), weight: 1 }];
+        return [...byKind].map(([kind, weight]) => ({ id: implicitRow(tier, kind), weight }));
+    }
+
+    /**
+     * Rows read off an item without the tracker (a loop's plain start) marked
+     * as the item settles them: a modifier the checker proves fractured locked,
+     * and the eldritch implicits by `implicitIn`. Undefined where the item
+     * leaves either open.
+     */
+    marked(
+        item: AItem,
+        rows: readonly (ModId | null)[],
+    ): { rows: (ModId | null)[]; share: number }[] | undefined {
+        let out = [{ rows: [...rows], share: 1 }];
+        if (this.locks) {
+            if (unprovenFractures(item)[1] > 0) return undefined;
+            for (const st of out) {
+                st.rows.forEach((r, i) => {
+                    if (r !== null && isFractured(item, this.types[i]!)) st.rows[i] = lockedRow(r);
+                });
+            }
+        }
+        if (this.implicits) {
+            for (const side of ELDRITCH_SIDES) {
+                const i = this.index.get(IMPLICIT_ATOM[side])!;
+                const options = this.implicitIn(item, side, undefined);
+                if (options === undefined) return undefined;
+                if (options.length === 0) continue;
+                const total = options.reduce((sum, o) => sum + o.weight, 0);
+                out = out.flatMap((st) =>
+                    options.map((o) => {
+                        const copy = [...st.rows];
+                        copy[i] = o.id;
+                        return { rows: copy, share: (st.share * o.weight) / total };
+                    }),
+                );
+            }
+        }
+        return out;
     }
 
     /** An implicit's type as a state holds it: a type a condition names, or
@@ -853,9 +904,9 @@ export class Tracker {
             const type = this.types[i]!;
             const side = implicitSide(type);
             if (side !== undefined) {
-                const row = this.implicitIn(item, side, from);
-                if (row === undefined) return undefined;
-                if (row !== null) choose(i, [{ id: row, weight: 1 }]);
+                const rows = this.implicitIn(item, side, from);
+                if (rows === undefined) return undefined;
+                if (rows.length > 0) choose(i, rows);
                 continue;
             }
             if (guaranteed.has(type)) {

@@ -19,6 +19,7 @@ import {
     has,
     hasValue,
     iff,
+    isRarity,
     item,
     notp,
     op,
@@ -524,6 +525,27 @@ describe("the cost of a guide", () => {
         expect(steps[1]!.branch).toBeCloseTo(1 / 4 + (3 / 4) * (2 / 3), 9);
     });
 
+    it("a loop entered from a branch the states cannot read keeps the fracture", () => {
+        // A rarity condition drops the tracked states; the loop's start then
+        // reads the item, which still says the life is fractured.
+        const guide = (pre: Parameters<typeof craft>[1]) =>
+            report(
+                craft(
+                    item({
+                        base: "Iron Ring",
+                        ilvl: 84,
+                        rarity: "rare",
+                        prefixes: [{ mod: "IncreasedLife1", fractured: true }, "IncreasedMana1"],
+                    }),
+                    [...pre, until(has("IncreasedArmour1"), [op("chaos")])],
+                ),
+            ).steps.find((s) => s.kind === "until")!;
+        const plain = guide([]);
+        const after = guide([iff(isRarity("rare"), [])]);
+        expect(after.note).toBeUndefined();
+        expect(after.attempts!.expected).toBeCloseTo(plain.attempts!.expected, 9);
+    });
+
     it("a Harvest augment keeps what its removal did not take", () => {
         // The removal takes one of three; life stays two times in three.
         const c = craft(ring("rare", ["IncreasedMana1", "IncreasedLife1"], ["FireResist1"]), [
@@ -736,6 +758,28 @@ describe("the eldritch implicits", () => {
         const branch = r.steps.find((s) => s.kind === "if")!;
         expect(branch.note).toBeUndefined();
         expect(branch.branch).toBeCloseTo(1 / 3, 9);
+    });
+
+    it("a loop entered from a branch the states cannot read keeps the implicits", () => {
+        const loop = (pre: Parameters<typeof craft>[1]) =>
+            on({ exarch: "greater", eater: "grand" }, [
+                ...pre,
+                until(eldritchP("exarch", "grand"), [op("conflict")]),
+            ]).steps.find((s) => s.kind === "until")!;
+        const after = loop([iff(isRarity("rare"), [])]);
+        expect(after.note).toBeUndefined();
+        expect(after.attempts!.expected).toBeCloseTo(loop([]).attempts!.expected, 9);
+    });
+
+    it("an implicit the item block declares without a type is any of its tier's", () => {
+        // A condition names an Exarch type; the declared Eater has none.
+        const r = on({ eater: "greater" }, [
+            at(["ember"], "grand"),
+            until(eldritchP("exarch", "grand", "regenerate"), [at(["ember"], "grand")]),
+        ]);
+        const loop = r.steps.find((s) => s.kind === "until")!;
+        expect(loop.note).toBeUndefined();
+        expect(loop.attempts!.chance).toBeCloseTo(1 / 3, 9);
     });
 
     it("an Orb of Conflict raises either implicit alike and lowers the other", () => {
