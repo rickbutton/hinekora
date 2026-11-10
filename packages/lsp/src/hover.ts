@@ -436,7 +436,10 @@ function fossilSignature(names: readonly string[], registry: Registry): string {
                 "makes one random modifier type much more likely and blocks another, shown once the resonator is full; any modifier is read as possible",
             );
         if (f.fractures) effects.push("fractures one of the rolled modifiers");
-        if (f.corrupts) effects.push("corrupts the item (not supported)");
+        if (f.corrupts)
+            effects.push(
+                "corrupts the item and may put a corruption implicit in place of one of its implicits",
+            );
         if (f.allowedTags) effects.push(`only on: ${words(f.allowedTags)}`);
         const effect =
             effects.length > 0

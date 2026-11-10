@@ -6,6 +6,7 @@ import {
     craft,
     dominantP,
     eldritchP,
+    fossil,
     hasP,
     iff,
     item,
@@ -18,6 +19,7 @@ import { TypeId } from "../model/ids.js";
 import {
     ATTACK_PREFIX,
     ELDRITCH_ROWS,
+    FOSSIL_BLOODSTAINED,
     BOOTS_BASE,
     CANNOT_ROLL_ATTACK_CARRIER,
     CATALOG,
@@ -40,6 +42,7 @@ const registry = buildRegistry({
     modAliases: { life: "IncreasedLife1", cold: "ColdResist1", mana: "IncreasedMana1" },
     baseAliases: { "Iron Ring": "IronRing" },
     eldritch: ELDRITCH_ROWS,
+    fossils: [FOSSIL_BLOODSTAINED],
 });
 const ctx: CheckContext = { registry };
 
@@ -283,6 +286,15 @@ describe("corruption may replace an eldritch implicit", () => {
         ).not.toContain("never run");
         const l = run(craft(start, [op("locus")]));
         expect(l.finalState!.eldritch).toEqual(new Set([eldritchKey(3, 1), eldritchKey(0, 0)]));
+    });
+
+    it("a Bloodstained Fossil one of them, as a Vaal Orb's implicit does", () => {
+        const r = run(craft(boots({ exarch: "grand", eater: "lesser" }), [fossil("bloodstained")]));
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.corrupted).toEqual(new Set([true]));
+        expect(r.finalState!.eldritch).toEqual(
+            new Set([eldritchKey(3, 1), eldritchKey(0, 1), eldritchKey(3, 0)]),
+        );
     });
 });
 

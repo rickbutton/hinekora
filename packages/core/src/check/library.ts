@@ -637,6 +637,13 @@ export interface Resonator {
     readonly corrupted: readonly Mod[];
 }
 
+/** A corruption implicit takes the place of one of the item's implicits, an
+ *  eldritch one among them, as a Vaal Orb's implicit outcome does. */
+const corruptionImplicit: Transform = {
+    kind: "eldritch",
+    change: { kind: "replaced", count: 1 },
+};
+
 /** A resonator: a rare reforge shaped by its fossils (Fossil § Mechanics,
  *  Resonator § Mechanics): blocked category tags leave the pool, the fossils'
  *  rows join it, a forced row or a corrupted-essence modifier is guaranteed,
@@ -676,8 +683,10 @@ export function resonatorOps(r: Resonator): readonly Op[] {
         ...r.forced.filter(unblocked).map((mod) => fill({ kind: "rows", mods: [mod] }, within)),
         ...(essenceChance === 100 ? [fill({ kind: "rows", mods: essence }, within)] : []),
         ...(fractures ? [lock()] : []),
-        // The Bloodstained Fossil corrupts the item (Fossil § Version history 3.16.0).
-        ...(corrupts ? [corrupt] : []),
+        // The Bloodstained Fossil corrupts the item and "will also attempt to add
+        // a corrupted implicit modifier similar to the outcome of using a Vaal
+        // Orb" (Bloodstained Fossil § Mechanics), which may replace an eldritch one.
+        ...(corrupts ? [corrupt, corruptionImplicit] : []),
     ];
 }
 
