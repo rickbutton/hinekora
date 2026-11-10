@@ -6,11 +6,14 @@ import {
     BENCH_LIFE_ROW,
     CATALOG,
     CLASS_RING,
+    MAXLIFE_T1,
+    MAXLIFE_T3,
     RING_BASE,
     TIERED_CATALOG,
     VEILED_A,
     VEILED_SUFFIX_MOD,
 } from "../__fixtures__/mods.js";
+import type { Mod } from "../model/mod.js";
 import type { BenchCraft } from "../model/sources.js";
 import {
     type ItemView,
@@ -266,5 +269,27 @@ describe("the marks and the crafted flag", () => {
                 "Possibly: Corrupted",
             ].join("\n"),
         );
+    });
+});
+
+describe("a modifier at a tier above the item's level", () => {
+    // A Harvest change that kept the tier may leave such a row; the tiers are
+    // numbered among the rows that roll at the item's level, so it has none.
+    const low = check(
+        craft(item({ base: "IronRing", ilvl: 1, rarity: "rare", prefixes: [MAXLIFE_T3.id] }), []),
+        ctx,
+    ).finalState!;
+    const at = (rows: readonly Mod[]): string =>
+        renderItemText(
+            itemView(
+                { ...low, tiers: new Map([[MAXLIFE_T3.type, new Set(rows.map((m) => m.id))]]) },
+                registry,
+            ),
+        );
+
+    it("is said to be so, alone or beside the tiers that roll", () => {
+        expect(at([MAXLIFE_T1])).toContain("(Tier: above the item's level)");
+        expect(at([MAXLIFE_T3, MAXLIFE_T1])).toContain("(Tier: 1 or above the item's level)");
+        expect(at([MAXLIFE_T3])).toContain("(Tier: 1)");
     });
 });

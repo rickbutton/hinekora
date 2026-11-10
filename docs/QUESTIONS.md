@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q96.
+keeps it. New entries continue from Q98.
 
 ```
 ### Qn · probe|decision · open — title
@@ -370,3 +370,16 @@ Lesser one, an imprint of each, some fifty Orbs of Conflict a pair; record how o
 higher implicit rises.
 **Assumed:** the line carried on, neither side below one in a hundred. **Encoded in:**
 `cost/track.ts` `CONFLICT_STEP`, `CONFLICT_FLOOR`, `conflicted`.
+
+### Q97 · decision · open — naming a tier above the item's level
+
+**Q:** a Harvest change that keeps the tier may leave a row that does not roll at the
+item's level (Q22). `t<n>` numbers the rows that roll at the item's level, so no `t<n>`
+names that row: a guide reaches it only as "none of the tiers that roll".
+**Options:** (a) leave it: the item card says "above the item's level", and a guide
+branches by negation or by value (`has "cold resistance" >= 18`) (recommended: the case
+is rare and the numbering keeps one meaning); (b) number tiers over the whole ladder
+wherever such a row may be on the item, so `t1` changes meaning with the state; (c) a
+word for it, `has "<mod>" above`.
+**Assumed:** (a). **Encoded in:** `check/check.ts` `resolveHas`, `render/item.ts`
+`modView`.
