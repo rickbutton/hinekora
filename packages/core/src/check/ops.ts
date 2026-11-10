@@ -1856,7 +1856,7 @@ function elevate(a: AItem, a0: AItem, rules: Rules, registry: Registry): AItem {
         );
         if (rows.length > 0) elevated.set(t, rows);
     }
-    const exact = upgradedSurvivor(a, a0, influenced, elevated, tags, registry);
+    const exact = upgradedSurvivor(a, a0, influenced, elevated, registry);
     if (exact !== null) return exact;
     const s = relaxTiers(a, (t) => influenced.includes(t));
     const possible = new Set(s.possible);
@@ -1897,18 +1897,22 @@ function elevate(a: AItem, a0: AItem, rules: Rules, registry: Registry): AItem {
  * ("If it selects a tier 1 mod to upgrade, it will replace it with a new
  * 'elevated' mod"), and never the row it was. `null` where the item does not
  * settle that much: more influenced modifiers than two, an unknown row, an
- * elevated modifier among them, or a higher row above the item's level, which
- * the page does not say the orb reaches.
+ * elevated modifier among them, an influence the item has on some paths only,
+ * or a higher row above the item's level, which the page does not say the orb
+ * reaches. A modifier's ladder is its own influence's: the rows a tag that
+ * admits the row it was also admits, so on an item with two influences a
+ * Warlord modifier never becomes the Elder row of its type.
  */
 function upgradedSurvivor(
     a: AItem,
     a0: AItem,
     influenced: readonly TypeId[],
     elevated: ReadonlyMap<TypeId, readonly Mod[]>,
-    tags: ReadonlySet<TagId>,
     registry: Registry,
 ): AItem | null {
     if (influenced.length !== 2) return null;
+    const { sure, maybe } = influenceTagsOf(a0, registry);
+    if (maybe.size > 0) return null;
     const guaranteed = guaranteedTypes(a0);
     const isRow = influenceRowTest(a0, registry);
     const forms: (readonly Mod[])[] = [];
@@ -1917,6 +1921,10 @@ function upgradedSurvivor(
         if (!guaranteed.has(t) || pinned?.size !== 1) return null;
         const was = registry.resolveMod([...pinned][0]!);
         if (!was.ok || was.value.source === "elevated") return null;
+        const own = new Set(
+            was.value.spawn.filter((w) => w.weight > 0 && sure.has(w.tag)).map((w) => w.tag),
+        );
+        if (own.size === 0) return null;
         const above = registry.catalog.filter(
             (m) =>
                 m.type === t &&
@@ -1924,11 +1932,14 @@ function upgradedSurvivor(
                 m.source !== "elevated" &&
                 m.minLevel > was.value.minLevel &&
                 isRow(m) &&
-                m.spawn.some((w) => tags.has(w.tag) && w.weight > 0),
+                m.spawn.some((w) => own.has(w.tag) && w.weight > 0),
         );
         if (above.some((m) => m.minLevel > a.ilvl)) return null;
-        const rows = above.length > 0 ? above : elevated.get(t);
-        if (rows === undefined) return null;
+        const rows =
+            above.length > 0
+                ? above
+                : (elevated.get(t) ?? []).filter((m) => m.spawn.some((w) => own.has(w.tag)));
+        if (rows.length === 0) return null;
         forms.push(rows);
     }
     const touched = new Set(influenced);

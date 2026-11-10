@@ -14,7 +14,7 @@ import {
     PROTECT_SUFFIXES_CARRIER,
     RING_BASE,
 } from "../__fixtures__/mods.js";
-import { GroupId, ModId, TypeId } from "../model/ids.js";
+import { GroupId, ModId, TagId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 
 const registry = buildRegistry({
@@ -135,6 +135,35 @@ describe("the Orb of Dominance", () => {
         expect(low.diagnostics).toEqual([]);
         expect(low.finalState!.tiers.has(HUNTER_BOOTS_SUFFIX.type)).toBe(false);
         expect(low.finalState!.possible.has(HUNTER_BOOTS_PREFIX.type)).toBe(true);
+    });
+
+    it("raises a modifier within its own influence's rows on an item with two influences", () => {
+        // The Elder's row of the suffix's type sits at a higher level; the
+        // Hunter suffix is at the top of the Hunter's rows, so it is elevated,
+        // not turned into the Elder's.
+        const elder: Mod = {
+            ...HUNTER_BOOTS_SUFFIX,
+            id: ModId("ElderBootsSuffix1"),
+            minLevel: 60,
+            spawn: [
+                { tag: TagId("boots_elder"), weight: 500 },
+                { tag: TagId("default"), weight: 0 },
+            ],
+        };
+        const dual = buildRegistry({ bases: [BOOTS_BASE], mods: [...registry.catalog, elder] });
+        const start = item({
+            base: "Iron Greaves",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: [HUNTER_BOOTS_PREFIX.id],
+            suffixes: [HUNTER_BOOTS_SUFFIX.id],
+            influences: ["elder", "hunter"],
+        });
+        const r = check(craft(start, [op("dominance")]), { registry: dual });
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(HUNTER_BOOTS_SUFFIX.type)).toEqual(
+            new Set([ELEVATED_BOOTS_SUFFIX.id]),
+        );
     });
 
     it("leaves an influenced modifier on a protected side alone, and takes a Magic item", () => {
