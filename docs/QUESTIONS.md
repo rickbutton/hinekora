@@ -470,45 +470,6 @@ does on the Medium (the size tag matching first).
 `lookupWeight`, `item-model.md` §5).
 **Answer:**
 
-### Q55 · decision · resolved
-
-**Asked:** 2026-11-08
-**Question:** what the Recombinator model leaves out, and whether to carry it. The
-result keeps one of the two inputs' bases at random
-([Recombinator § Unpredictable Recombination](https://www.poewiki.net/wiki/Recombinator#Unpredictable_Recombination)),
-and the state carries one base, so `recombine` refuses two bases that differ; the
-result's rarity is read from its modifier count, since the page states no rule; the
-count table is read as a range, the weights dropped with the rest of the probability
-layer; and every non-natural row (crafted, veiled, essence-only, elevated) counts as an
-exclusive modifier, the page's list being "non-exhaustive".
-**Options:** (a) as built; (b) a base disjunction on the state (two bases on an item,
-every pool and cap a join), which the whole abstract item would have to learn; (c) a
-probe on the rarity rule and on which crafted modifiers are exclusive.
-**Recommendation:** (a) now, (c) when an item is at hand; (b) only if a guide needs two
-bases, which none in the research does.
-**Assumed meanwhile:** (a) (`check/ops.ts` `recombine`, `recombineRefusal`).
-**Answer:** (a), 2026-11-09: the Recombinator stays as built; two bases, the named
-Awakener donor and Kishara's Ducat stay deferred.
-
-### Q54 · decision · resolved
-
-**Asked:** 2026-11-08
-**Question:** whether to lift Q34's "not for now" on Hinekora's Lock. The research
-report ranks the Lock and the Allflame bench third of the constructs guides use and the
-language lacks (`docs/research/feature-report.md` B3): every advanced 3.29 route previews
-its risky step and keeps the outcome only on a condition. The model is one mechanism, a
-filtered transfer: run the operation, keep the outcomes that satisfy a predicate, join
-with the unchanged item for the rest, and report a condition the operation can never
-produce; a spelling such as `lock regal keep suffixCount == 1` (`examples/future/lock-regal.craft`).
-**Options:** (a) keep Q34 as ruled and leave the Lock to a later league; (b) build the
-Lock now, with its own rules (not after a bench, Harvest, beast or Recombinator step; not
-on a corrupted item); (c) build the Lock and the Allflame bench together, the bench as the
-same statement with a preview count that changes the cost, not the state.
-**Recommendation:** (b), then (c) when the Allflame bench's rules are in the wiki cache.
-**Assumed meanwhile:** (a), as Q34 ruled; `lock-regal` stays in `examples/future/`.
-**Answer:** (a), 2026-11-09: the Lock and the Allflame bench stay deferred; `lock-regal`
-stays in `examples/future/`.
-
 ### Q53 · game probe · open
 
 **Asked:** 2026-11-08
@@ -742,53 +703,18 @@ exclusive rule as the page states it (`cost/recombine.ts` `pickSide`, `cost/roll
 ### Q70 · decision · open
 
 **Asked:** 2026-11-09
-**Question:** two experimented-base states the model cannot hold. A Magic Simplex or
-Focused Amulet has no affix room, yet a split beast leaves one with a prefix and a suffix
-([Simplex Amulet § Special Crafting Considerations](https://www.poewiki.net/wiki/Simplex_Amulet#Special_Crafting_Considerations)),
-and the split itself is out of the operations ledger (`operations.md` §3.7); the item block
-refuses the state as over the base's limit. And the legacy variants
+**Question:** an experimented-base state the model cannot hold. The legacy variants
 ([Simplex Amulet § Legacy variants](https://www.poewiki.net/wiki/Simplex_Amulet#Legacy_variants):
 −1/−1 and 25%; [Cogwork Ring § Legacy variants](https://www.poewiki.net/wiki/Cogwork_Ring#Legacy_variants):
 a hidden 0%) have their own caps and magnitudes, which the catalog's one id cannot carry.
-**Options:** (a) keep both out; (b) let the item block declare a Magic experimented base
-with modifiers, the caps read as what a roll may add rather than what the item may hold,
-which every count clamp in the checker would have to learn; (c) a `legacy` field on the
-item block carrying the variant's deltas and magnitudes.
-**Recommendation:** (a): no collected recipe starts from a split or a legacy item.
-**Assumed meanwhile:** (a) (`model/capacity.ts`, the item block's count check).
-**Answer:**
-
-### Q71 · game probe · open
-
-**Asked:** 2026-11-09
-**Goal:** whether an experimented base's magnitude implicit scales a granted skill's
-level. [Simplex Amulet § Mechanics](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)
-says the 100% doubles "+1 gem" modifiers, but not whether "Grants Level 22 Wrath Skill"
-(the Awakener's Orb aura suffixes) reads Level 44.
-**Procure:** a Simplex or Focused Amulet with a "Grants Level N … Skill" suffix (an
-Awakener's Orb onto one).
-**Steps:** read the granted level on the item and on the skill.
-**Record:** whether the level is scaled.
-**Assumed meanwhile:** scaled, like every value of the side: the checker reads it scaled
-(`check/values.ts` `spanOn`) and the item card prints it scaled (`render/item.ts`
-`scaledText`).
-**Answer:**
-
-### Q69 · game probe · open
-
-**Asked:** 2026-11-09
-**Goal:** how the game rounds a value an experimented base scales. A Helical Ring's
-"50% increased Suffix Modifier magnitudes" turns a +57 roll into 85.5
-([Helical Ring](https://www.poewiki.net/wiki/Helical_Ring#Mechanics)); the item shows a
-whole number, and whether it is rounded down, up or to nearest decides whether
-`has "…" >= 86` holds on that roll.
-**Procure:** a Helical or Cogwork Ring with a suffix whose scaled value is not whole.
-**Steps:** read the shown value; compare with the row's span scaled by hand.
-**Record:** the rounding.
-**Assumed meanwhile:** no rounding (`check/values.ts` `spanOn`): the span keeps its
-fractional ends, which `narrowRange` reads as non-strict, so no whole threshold is wrongly
-ruled in or out. The item card prints the same fractional ends (`render/item.ts`
-`scaledText`, "+(85.5-93) to Strength" on a Helical Ring).
+A Magic Simplex Amulet with modifiers is no longer a state to hold:
+[Simplex Amulet § Version history](https://www.poewiki.net/wiki/Simplex_Amulet#Version_history)
+3.27.0 fixed the bug that let it and similar bases be Magic with modifiers, though the
+page's crafting notes still describe a split beast making one.
+**Options:** (a) keep legacy variants out; (b) a `legacy` field on the item block carrying
+the variant's deltas.
+**Recommendation:** (a): no collected recipe starts from a legacy item.
+**Assumed meanwhile:** (a) (`model/capacity.ts`, one base per id).
 **Answer:**
 
 ### Q68 · game probe · open
@@ -820,6 +746,73 @@ most tiers; a Recombinator's result may keep either input's strands (`check/ops.
 ---
 
 ## Resolved
+
+### Q54 · decision · resolved
+
+**Asked:** 2026-11-08
+**Question:** whether to lift Q34's "not for now" on Hinekora's Lock. The research
+report ranks the Lock and the Allflame bench third of the constructs guides use and the
+language lacks (`docs/research/feature-report.md` B3): every advanced 3.29 route previews
+its risky step and keeps the outcome only on a condition. The model is one mechanism, a
+filtered transfer: run the operation, keep the outcomes that satisfy a predicate, join
+with the unchanged item for the rest, and report a condition the operation can never
+produce; a spelling such as `lock regal keep suffixCount == 1` (`examples/future/lock-regal.craft`).
+**Options:** (a) keep Q34 as ruled and leave the Lock to a later league; (b) build the
+Lock now, with its own rules (not after a bench, Harvest, beast or Recombinator step; not
+on a corrupted item); (c) build the Lock and the Allflame bench together, the bench as the
+same statement with a preview count that changes the cost, not the state.
+**Recommendation:** (b), then (c) when the Allflame bench's rules are in the wiki cache.
+**Assumed meanwhile:** (a), as Q34 ruled; `lock-regal` stays in `examples/future/`.
+**Answer:** (a), 2026-11-09: the Lock and the Allflame bench stay deferred; `lock-regal`
+stays in `examples/future/`.
+
+### Q55 · decision · resolved
+
+**Asked:** 2026-11-08
+**Question:** what the Recombinator model leaves out, and whether to carry it. The
+result keeps one of the two inputs' bases at random
+([Recombinator § Unpredictable Recombination](https://www.poewiki.net/wiki/Recombinator#Unpredictable_Recombination)),
+and the state carries one base, so `recombine` refuses two bases that differ; the
+result's rarity is read from its modifier count, since the page states no rule; the
+count table is read as a range, the weights dropped with the rest of the probability
+layer; and every non-natural row (crafted, veiled, essence-only, elevated) counts as an
+exclusive modifier, the page's list being "non-exhaustive".
+**Options:** (a) as built; (b) a base disjunction on the state (two bases on an item,
+every pool and cap a join), which the whole abstract item would have to learn; (c) a
+probe on the rarity rule and on which crafted modifiers are exclusive.
+**Recommendation:** (a) now, (c) when an item is at hand; (b) only if a guide needs two
+bases, which none in the research does.
+**Assumed meanwhile:** (a) (`check/ops.ts` `recombine`, `recombineRefusal`).
+**Answer:** (a), 2026-11-09: the Recombinator stays as built; two bases, the named
+Awakener donor and Kishara's Ducat stay deferred.
+
+### Q69 · game probe · resolved
+
+**Asked:** 2026-11-09
+**Goal:** how the game rounds a value an experimented base scales. A Helical Ring's
+"50% increased Suffix Modifier magnitudes" turns a +57 roll into 85.5
+([Helical Ring](https://www.poewiki.net/wiki/Helical_Ring#Mechanics)); the item shows a
+whole number, and whether it is rounded down, up or to nearest decides whether
+`has "…" >= 86` holds on that roll.
+**Procure:** a Helical or Cogwork Ring with a suffix whose scaled value is not whole.
+**Steps:** read the shown value; compare with the row's span scaled by hand.
+**Record:** the rounding.
+**Assumed meanwhile:** no value is scaled (the implicit is not applied).
+**Answer:** moot, 2026-11-09: an experimented base's magnitude implicit is not applied for now (`ROADMAP.md`), so no value is scaled.
+
+### Q71 · game probe · resolved
+
+**Asked:** 2026-11-09
+**Goal:** whether an experimented base's magnitude implicit scales a granted skill's
+level. [Simplex Amulet § Mechanics](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)
+says the 100% doubles "+1 gem" modifiers, but not whether "Grants Level 22 Wrath Skill"
+(the Awakener's Orb aura suffixes) reads Level 44.
+**Procure:** a Simplex or Focused Amulet with a "Grants Level N … Skill" suffix (an
+Awakener's Orb onto one).
+**Steps:** read the granted level on the item and on the skill.
+**Record:** whether the level is scaled.
+**Assumed meanwhile:** no value is scaled (the implicit is not applied).
+**Answer:** moot, 2026-11-09: an experimented base's magnitude implicit is not applied for now (`ROADMAP.md`), so no value is scaled.
 
 ### Q46 · decision · resolved
 
