@@ -304,7 +304,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["vaal"],
         args: [],
-        doc: "vaal — Vaal Orb: corrupt the item; it may stay as it is or become a Rare with six modifiers, and takes no craft but the Tainted currency afterwards.",
+        doc: "vaal — Vaal Orb: corrupt the item; it may stay as it is or become a Rare with six modifiers, and takes no craft but the Tainted currency and an unveil afterwards.",
         build: (_args, a) => vaalOps(a.base),
     },
     {

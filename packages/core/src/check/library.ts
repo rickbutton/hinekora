@@ -46,7 +46,8 @@ const influencePool: PoolSpec = { kind: "influence" };
 const influence = (change: InfluenceChange): Transform => ({ kind: "influence", change });
 
 /** A corrupted item takes no craft but the Tainted currency (Corrupted §
- *  Modifying corrupted items), so every other method opens with this. */
+ *  Modifying corrupted items), so every other method but an unveil opens with
+ *  this. */
 const notCorrupted = require({ kind: "notCorrupted" });
 /** An influenced item cannot be fractured (Influenced item § Mechanics). */
 const noInfluence = (what: string): Op => require({ kind: "noInfluence", what });
@@ -695,7 +696,9 @@ export const VEILED_EXALT: readonly Op[] = [
 export function unveilOps(
     target: { readonly type: TypeId; readonly name: string } | undefined,
 ): readonly Op[] {
-    const ops: Op[] = [notCorrupted, require({ kind: "veiledPresent" })];
+    // No corruption check: a corrupted item can be unveiled (Veiled modifier §
+    // Version history, 3.25.0).
+    const ops: Op[] = [require({ kind: "veiledPresent" })];
     if (target) ops.push(require({ kind: "unveilTarget", type: target.type, name: target.name }));
     ops.push(fill(target ? { kind: "unveil", target: target.type } : { kind: "unveil" }, within));
     return ops;

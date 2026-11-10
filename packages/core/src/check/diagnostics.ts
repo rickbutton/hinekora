@@ -216,7 +216,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                     ? "The item already has a fractured modifier — nothing fractures an item twice."
                     : `The item ${failure.sure ? "has" : "may have"} a fractured modifier — ${failure.what}.`;
             case "corrupted":
-                return `The item ${failure.sure ? "is" : "may be"} corrupted — a corrupted item takes no further craft, only the Tainted currency.`;
+                return `The item ${failure.sure ? "is" : "may be"} corrupted — a corrupted item takes only the Tainted currency and an unveil.`;
             case "eldritchPresent":
                 return `${failure.what} cannot be used on an item with an eldritch implicit — this item ${failure.sure ? "has" : "may have"} ${eldritchLabel(state.eldritch)}.`;
             case "notDominant":

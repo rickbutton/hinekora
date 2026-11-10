@@ -59,8 +59,8 @@ const registry = buildRegistry({
     aspects: { cat: ASPECT_CAT.id },
 });
 
-/** Every method settles corruption first: refused on a corrupted item, or, for
- *  the Tainted currency, required. */
+/** Every method but an unveil settles corruption first: refused on a corrupted
+ *  item, or, for the Tainted currency, required. */
 const opensWithCorruptionCheck = (ops: readonly Op[]): boolean =>
     ops[0]?.kind === "require" &&
     (ops[0].check.kind === "notCorrupted" || ops[0].check.kind === "corruptedItem");
@@ -86,7 +86,6 @@ describe("every method refuses a corrupted item first", () => {
             resonator: resonatorOps({ fossils: [], added: [], forced: [], corrupted: [] }),
             veiledChaos: VEILED_CHAOS,
             veiledExalt: VEILED_EXALT,
-            unveil: unveilOps(undefined),
             vaal: vaalOps(RING_BASE),
             locus: locusOps(RING_BASE),
             taintedChaos: TAINTED_CHAOS,
@@ -96,6 +95,8 @@ describe("every method refuses a corrupted item first", () => {
         for (const [name, ops] of Object.entries(sequences)) {
             expect(opensWithCorruptionCheck(ops), name).toBe(true);
         }
+        // The one exception: a corrupted item can be unveiled.
+        expect(opensWithCorruptionCheck(unveilOps(undefined))).toBe(false);
     });
 
     it("holds for each entry of the method table, built with a sample argument per slot", () => {
@@ -138,7 +139,8 @@ describe("every method refuses a corrupted item first", () => {
             const built = method.build(args, a, registry);
             const label = method.words.join(" ");
             expect("refused" in built ? built.refused : "", label).toBe("");
-            if (!("refused" in built)) expect(opensWithCorruptionCheck(built), label).toBe(true);
+            if ("refused" in built || label === "unveil") continue;
+            expect(opensWithCorruptionCheck(built), label).toBe(true);
         }
     });
 });

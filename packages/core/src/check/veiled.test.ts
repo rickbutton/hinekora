@@ -64,6 +64,19 @@ describe("veiled orbs", () => {
         expect(r.diagnostics[0]!.message).toContain("veiled modifier");
     });
 
+    it("a corrupted item can still be unveiled, and takes no veiled orb", () => {
+        const corrupted = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: ["VeiledPrefix"],
+            corrupted: true,
+        });
+        expect(check(craft(corrupted, [unveil()]), ctx).diagnostics).toEqual([]);
+        const again = check(craft(corrupted, [unveil(), veiled("exalt")]), ctx);
+        expect(again.diagnostics[0]?.message).toContain("The item is corrupted");
+    });
+
     it("a veiled orb is refused while a veiled modifier is pending", () => {
         const r = check(craft(rareRing(), [veiled("chaos"), veiled("exalt")]), ctx);
         expect(r.diagnostics).toHaveLength(1);

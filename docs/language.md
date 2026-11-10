@@ -82,7 +82,9 @@ item {
   cluster jewel without it is an error.
 - `corrupted` marks a
   [corrupted item](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items), which
-  takes no craft but the Tainted currency. After a step that may corrupt the item (`vaal`,
+  takes no craft but the Tainted currency and an `unveil`
+  ([Veiled modifier § Version history](https://www.poewiki.net/wiki/Veiled_modifier#Version_history)).
+  After a step that may corrupt the item (`vaal`,
   `locus`), the craft continues under every outcome at once (§5); one that destroys the
   item ends the craft on that path.
 

@@ -167,7 +167,7 @@ export type Check =
      *  itself a fracture, why it refuses one. */
     | { readonly kind: "noFracture"; readonly what?: string }
     /** The item is not corrupted on any path; every method but the Tainted
-     *  currency requires it (Corrupted § Modifying corrupted items). */
+     *  currency and an unveil requires it (Corrupted § Modifying corrupted items). */
     | { readonly kind: "notCorrupted" }
     /** The item is corrupted on every path (the Tainted currency). */
     | { readonly kind: "corruptedItem"; readonly what: string }
