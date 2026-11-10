@@ -4,7 +4,17 @@ import { guaranteedTypes, isExcluded } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { unitCost } from "../cost/prices.js";
 import { findMethod } from "./methods.js";
-import { bench, craft, harvestChange, item, op } from "../__fixtures__/ast.js";
+import {
+    andp,
+    bench,
+    craft,
+    harvestChange,
+    has,
+    iff,
+    item,
+    notp,
+    op,
+} from "../__fixtures__/ast.js";
 import {
     AMULET_BASE,
     BENCH_FIRE_RES_ROW,
@@ -235,6 +245,20 @@ describe("harvest change", () => {
         expect(between.finalState!.tiers.get(TypeId("ColdTiers"))).toEqual(
             new Set(["ColdTiersLow", "ColdTiersMid"]),
         );
+        // A fire resistance a branch found after a reforge is at no known row:
+        // it may be the second tier too, so the cold may be more than its
+        // lowest row and the inner branch runs.
+        const rolled = check(
+            craft(item({ base: "Iron Ring", ilvl: 32, rarity: "rare" }), [
+                op("chaos"),
+                iff(andp(has("FireTiersLow"), notp(has("ColdTiersLow"))), [
+                    harvestChange("FireTiersLow", "ColdTiersLow"),
+                    iff(notp(has("ColdTiersLow", 1)), []),
+                ]),
+            ]),
+            { registry: skewed },
+        );
+        expect(rolled.diagnostics).toEqual([]);
     });
 
     it("changes a modifier another source placed into its counterpart of that source and level", () => {

@@ -214,13 +214,15 @@ function harvestChange(
     if (rank >= 0) {
         return harvestChangeOps(from.value, registry.typeLabel(from.value), [targets[rank]!]);
     }
-    const sameRank =
-        alike && pinned?.size === 1
-            ? wholeTo[wholeFrom.findIndex((m) => pinned.has(m.id))]
-            : undefined;
-    const rows =
-        sameRank === undefined || targets.includes(sameRank) ? targets : [...targets, sameRank];
-    return harvestChangeOps(from.value, registry.typeLabel(from.value), rows);
+    // The source may be any of its recorded rows, or with none recorded any
+    // row of its ladder; each brings the target's row at its own rank.
+    const rows = new Set(targets);
+    if (alike) {
+        wholeFrom.forEach((m, i) => {
+            if (pinned === undefined || pinned.has(m.id)) rows.add(wholeTo[i]!);
+        });
+    }
+    return harvestChangeOps(from.value, registry.typeLabel(from.value), [...rows]);
 }
 
 /** A resonator: the fossils resolved, distinct, at most four, their rows looked up. */
