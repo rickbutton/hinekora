@@ -72,6 +72,9 @@ export interface StepCost {
     /** The spread of a loop's chance per round. */
     readonly chanceRange?: Bounds;
     readonly branchRange?: Bounds;
+    /** A call: how many of the steps after it in `steps` are the ones it runs
+     *  at this site, a call inside it and that call's own among them. */
+    readonly inside?: number;
 }
 
 export interface CostReport {
@@ -563,7 +566,9 @@ class Walker {
                     return withoutStates(branches);
                 }
                 this.record(stmt, mass, frame, {});
-                return this.within(entry, () => this.sequence(inlined.body, branches, frame));
+                return this.calling(() =>
+                    this.within(entry, () => this.sequence(inlined.body, branches, frame)),
+                );
             }
             case "restart":
                 frame.restarted += mass;
@@ -581,6 +586,14 @@ class Walker {
             case "until":
                 return this.loop(stmt, entry, branches, frame);
         }
+    }
+
+    /** `f` records the steps of the call whose own step was the last recorded. */
+    private calling<T>(f: () => T): T {
+        const at = this.steps.length - 1;
+        const out = f();
+        this.steps[at] = { ...this.steps[at]!, inside: this.steps.length - 1 - at };
+        return out;
     }
 
     private record(
@@ -1126,7 +1139,7 @@ class Walker {
                     const e = this.traced(s);
                     if (e?.inlined !== undefined) {
                         const body = e.inlined.body;
-                        this.within(e, () => emit(body, step.body));
+                        this.calling(() => this.within(e, () => emit(body, step.body)));
                     }
                 } else if (s.kind === "restart" || s.kind === "stop") {
                     this.record(s, reached, inner, {});

@@ -414,6 +414,48 @@ describe("the cost of a guide", () => {
         expect(called.attempts!.expected).toBeCloseTo(inline.attempts!.expected, 6);
     });
 
+    it("a call's step counts the steps it runs at its site, a call inside it among them", () => {
+        const twice = procDef("twice", ["s"], [paramStep("s"), paramStep("s")]);
+        const once = procDef("once", ["s"], [paramStep("s")]);
+        const nested = [
+            callStmt("twice", [blockArg([callStmt("once", [blockArg([op("exalt")])])])]),
+        ];
+        const kinds = (r: ReturnType<typeof report>, from: number) => {
+            const call = r.steps[from]!;
+            return r.steps.slice(from + 1, from + 1 + call.inside!).map((s) => s.kind);
+        };
+        const plain = report(
+            craft(
+                ring("rare", ["IncreasedMana1"], ["FireResist1"]),
+                [...nested, op("exalt")],
+                [],
+                [twice, once],
+            ),
+        );
+        expect(kinds(plain, 0)).toEqual(["call", "operation", "call", "operation"]);
+        expect(kinds(plain, 1)).toEqual(["operation"]);
+        expect(plain.steps.at(-1)!.inside).toBeUndefined();
+        // Inside a loop solved round by round, the same.
+        const looped = report(
+            craft(
+                ring("rare", ["IncreasedMana1"], ["FireResist1"]),
+                [
+                    until(has("IncreasedLife1"), [
+                        op("scour"),
+                        op("transmute"),
+                        op("regal"),
+                        callStmt("twice", [blockArg([op("exalt")])]),
+                    ]),
+                ],
+                [],
+                [twice],
+            ),
+        );
+        const at = looped.steps.findIndex((s) => s.kind === "call");
+        expect(looped.steps[0]!.note).toBeUndefined();
+        expect(kinds(looped, at)).toEqual(["operation", "operation"]);
+    });
+
     it("a call inside a loop is followed round by round", () => {
         const guide = (body: Parameters<typeof craft>[1], procs: ReturnType<typeof procDef>[]) =>
             craft(ring("rare"), [until(has("IncreasedLife1"), body)], [], procs);

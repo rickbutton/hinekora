@@ -4,6 +4,7 @@
  * the checker's state at that point.
  */
 import {
+    addPrices,
     type AItem,
     bindingAt,
     bindingsOf,
@@ -20,6 +21,7 @@ import {
     guaranteedTypes,
     itemView,
     type Method,
+    type Price,
     type Prices,
     type ProcDef,
     type Range,
@@ -555,15 +557,62 @@ function insideStepArgument(stmts: readonly Stmt[], offset: number): boolean {
     return false;
 }
 
+/** How many of a call's steps its cost line lists before it counts the rest. */
+const MAX_CALL_STEPS = 6;
+
+/**
+ * What a call is expected to spend where it is written: the steps it runs at
+ * this site together, each priced step under them when there are several.
+ * The same procedure called elsewhere has its own figure there.
+ */
+function callCostLine(
+    report: CostReport,
+    at: number,
+    source: string,
+    prices: Prices | undefined,
+): string | undefined {
+    const call = report.steps[at]!;
+    // Inside a loop with no figure the call has none, as a step there has none.
+    if (call.unknown) return undefined;
+    const steps = report.steps.slice(at + 1, at + 1 + (call.inside ?? 0));
+    const notes = [...new Set(steps.flatMap((s) => (s.note === undefined ? [] : [s.note])))];
+    if (steps.some((s) => s.unknown)) {
+        return `_Cost:_ ${["not known, for a loop in this call has no figure", ...notes].join("; ")}.`;
+    }
+    // One written step may run at several points of the call: a line each.
+    const priced = new Map<number, { name: string; expected: readonly Price[] }>();
+    let total: readonly Price[] = [];
+    for (const s of steps) {
+        if (s.kind !== "operation" || s.expected === undefined || s.expected.length === 0) continue;
+        total = addPrices(total, s.expected);
+        const start = s.span.start.offset;
+        const line = priced.get(start);
+        priced.set(start, {
+            name: source.slice(start, s.span.end.offset).replace(/\s+/g, " "),
+            expected: line === undefined ? s.expected : addPrices(line.expected, s.expected),
+        });
+    }
+    if (priced.size === 0) return notes.length === 0 ? undefined : `_Cost:_ ${notes.join("; ")}.`;
+    const head = `_Cost:_ ${[`expected ${priceText(total, prices)}`, ...notes].join("; ")}.`;
+    if (priced.size === 1) return head;
+    const lines = [...priced.values()]
+        .slice(0, MAX_CALL_STEPS)
+        .map((l) => `- \`${l.name}\`: ${priceText(l.expected, prices)}`);
+    if (priced.size > MAX_CALL_STEPS) lines.push(`- …and ${priced.size - MAX_CALL_STEPS} more.`);
+    return `${head}\n\n${lines.join("\n")}`;
+}
+
 /**
  * What the step costs, in the guide's words: a loop's rounds and the chance each
  * ends it, a branch's chance, what an operation is expected to consume and its
- * price under the snapshot; on the item block, the whole guide's total.
+ * price under the snapshot; on a call, what the steps it runs there are expected
+ * to consume together; on the item block, the whole guide's total.
  */
 function costLine(
     entry: TraceEntry,
     report: CostReport,
     prices: Prices | undefined,
+    source: string,
 ): string | undefined {
     // The spread over the two ends of what the checker allows the item to hold.
     const spread = (b: Bounds | undefined, show: (n: number) => string): string => {
@@ -587,10 +636,12 @@ function costLine(
                       : "");
         return `_Expected spend for the guide:_ ${total}.`;
     }
-    const step = report.steps.find(
+    const at = report.steps.findIndex(
         (s: StepCost) => s.kind === entry.kind && s.span.start.offset === entry.span.start.offset,
     );
+    const step = report.steps[at];
     if (step === undefined) return undefined;
+    if (step.kind === "call") return callCostLine(report, at, source, prices);
     const parts: string[] = [];
     if (step.attempts !== undefined) {
         parts.push(`${oddsText(step.attempts.chance)}${spread(step.chanceRange, oddsFigure)}`);
@@ -642,7 +693,7 @@ export function getHover(
         const caption = entry.kind === "until" && entry.after ? "after the loop" : undefined;
         blocks.push(tooltip(entry.after ?? entry.before, registry, caption));
         const report = costCached(source, registry, prices);
-        const cost = report === undefined ? undefined : costLine(entry, report, prices);
+        const cost = report === undefined ? undefined : costLine(entry, report, prices, source);
         if (cost !== undefined) blocks.push(cost);
     }
     if (blocks.length === 0) return null;
