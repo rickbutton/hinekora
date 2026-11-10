@@ -1,25 +1,8 @@
 # hinekora: Implementation Architecture
 
-> This doc explains the **shape** of the implementation: the layers, how they compose,
-> and the theory behind the checker. It is the mental model, not the map.
->
-> - **The abstract state's fields, the gotchas, why a BDD** →
->   [REFERENCE.md](REFERENCE.md). What exists and where is the code itself.
-> - **Forward-looking work** → [ROADMAP.md](ROADMAP.md).
-> - **The surface language** (syntax, predicates, error style) →
->   [crafting-lang-surface-v0.md](crafting-lang-surface-v0.md).
-> - **The operations model** (primitive effects and the library of crafting methods) →
->   [operations.md](operations.md).
-> - **The cost layer** (chances, expected spend, the economy) → [cost.md](cost.md).
-> - **The item model** (what hinekora models of items and modifiers, each rule linked to its
->   wiki section) → [item-model.md](item-model.md).
-> - **Conventions, the build gate, working style** → [../CLAUDE.md](../CLAUDE.md).
-> - **The game's rules** → the Path of Exile wiki, linked by section wherever a doc rests on
->   one; the docs say how hinekora models a rule, never restate it. Cached locally via
->   `tools/poewiki` (the `poewiki-render` skill).
->
-> Each detail lives in exactly one place. Where this doc names a symbol, it is to locate a
-> concept; the symbol-level detail is the code and its comments.
+> The **shape** of the implementation: the layers, how they compose, and the theory
+> behind the checker. The other docs are listed in [../CLAUDE.md](../CLAUDE.md); where
+> this doc names a symbol, it is to locate a concept, and the detail is the code.
 
 ---
 
@@ -108,45 +91,30 @@ This layer is pure data → structures. It never analyses; it answers questions.
 
 ## 4. Layer 3: the checker (abstract interpretation)
 
-The heart of the system. The rest of this section is the theory and the architecture; the
-abstract state's fields are tabled in [REFERENCE §4](REFERENCE.md).
+The abstract state's fields are tabled in [REFERENCE §4](REFERENCE.md).
 
-### 4.1 The problem, and the idea
+### 4.1 The idea
 
-A craft _is_ a program (a sequence of currency operations over an item, with loops and
-branches), and we want to prove every operation's precondition holds on **every path**
-before real currency is spent.
+A craft is a program over an item, with loops and branches, and every operation's
+precondition must hold on every path. Simulating is hopeless (the
+[core invariant](../CLAUDE.md)), so the checker uses **abstract interpretation**: it
+tracks one summary, an `AItem`, standing for the whole set of items possible at a program
+point. Each operation has a **transfer function** from summary to summary; where control
+flow merges, a `join` covers both summaries; a loop iterates to a fixpoint.
 
-Simulating is hopeless. A single currency op has hundreds of possible concrete results, so
-chaining `n` of them fans out ~`200^n` ways. We cannot enumerate outcomes (this is the
-[core invariant](../CLAUDE.md)).
-
-**Abstract interpretation** is the escape. Instead of tracking concrete items, track one
-**symbolic summary**, an `AItem`, that stands for the _entire set_ of concrete items
-possible at a program point. Each operation gets an abstract counterpart, a **transfer
-function** that maps a summary to a summary, folding in the op's effect without ever
-listing outcomes. Where control flow merges, `join` two summaries into one that covers
-both. Loops iterate to a fixpoint.
-
-The summary always describes a **superset** of what could really occur, an
-_over-approximation_. That is the source of soundness: if the abstract run finds no
-precondition failure, there is none in reality. The price is paid the other way: a summary
-too coarse yields _false positives_ (flagging a craft that would in fact be fine), never
-false negatives. Most of the domain's cleverness exists to keep the summary precise enough
-that false positives are rare.
-
-Two maps make this precise (lightly): an **abstraction** takes a set of real items to the
-summary that covers them; a **concretization** takes a summary back to the set of items it
-allows. "X is guaranteed" means _every_ item in that set has X; "X is excluded" means none
-do; a _disjunction_ means every item has at least one of a group.
+In plain terms: the summary always allows at least every item the game could produce, so
+if no check fails on the summary, none fails in reality (**soundness**). A summary too
+loose only costs _false positives_, a fine craft flagged. "X is guaranteed" means every
+item in the set has X; "excluded", none does; a _disjunction_, each has one of a group.
+Background: [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation),
+[lattices](https://en.wikipedia.org/wiki/Lattice_%28order%29).
 
 ### 4.2 The abstract domain: a reduced product
 
 `AItem` is not one blob. It is a **reduced product** of small, independent domains, each
 tracking one kind of fact. `check/domain.ts` declares the shared contract `Domain<T>`: the
 two operations the merge/fixpoint machinery needs from _every_ piece, `join` (least upper
-bound, to merge branches) and `equal` (to detect a fixpoint). Each field and the domain
-it is lives in the `AItem` table of [REFERENCE §4](REFERENCE.md). Most pieces are
+bound, to merge branches) and `equal` (to detect a fixpoint). Most pieces are
 non-relational: a range per count, a set of the concrete values the paths reaching a
 point allow (so a join is a union), a per-type overlay. The one **relational** piece is
 presence: a BDD (a compact canonical boolean function) over "type X is present"
@@ -171,29 +139,13 @@ async dependency, and you would still need the loop fixpoint yourself.)
 
 ### 4.3 Operations: methods as sequences of state transformers
 
-Each primitive operation is a function `AItem → AItem`, and a crafting method is an
-ordered sequence of them ([operations.md](operations.md)): `require` a check, `strip`
-to what is kept, `fill` from a pool, `remove` one, set the `rarity`, `lock` one. A
-Chaos Orb is `require(rare); strip; fill(natural, reforge 4–6)`; a bench craft is a run
-of checks, the removal of the crafted modifier it replaces, and a one-row fill; the Fracturing Orb's `lock` only asserts a fracture fact in
-the presence BDD. A method is all or nothing: a failed check anywhere leaves the item as
-it was in the game, and the checker, having reported it, continues from the state the
-method would have left (`operations.md` §2); the metamods in force are read once, when the
-method is applied.
-
-The discipline is the core invariant: an operation _folds_ its effect into the summary;
-it never materialises a list of concrete outcomes. A fill over-approximates "the new mod
-could be any of the pool" by relaxing exactly those types' facts. A strip forgets the
-stripped types' facts and a fill from the natural pool makes the pool `possible`. That
-is what keeps chaining cheap.
-
-The operations are _transformers_, not part of any domain, which is why they live in
-their own file (`check/ops.ts`, with the library of methods in `check/library.ts`) and
-do not shrink when the domains are refactored. This split is standard for abstract
-interpretation: the domains supply the lattice; the transformers supply the abstract
-semantics of the operations. The method table (`check/methods.ts`) sits on top: it maps
-a statement's words and arguments to a library sequence, so the surface is a library
-over one dispatch rather than a case per method.
+A crafting method is a sequence of primitive transfer functions `AItem → AItem`, whose
+semantics and all-or-nothing rule are [operations.md](operations.md) §2. The operations
+are _transformers_, not part of any domain, so they live apart (`check/ops.ts`, the
+sequences in `check/library.ts`) and do not change when a domain is refactored: the
+domains supply the lattice, the transformers the semantics. The method table
+(`check/methods.ts`) maps a statement's words to a sequence, one dispatch rather than a
+case per method.
 
 ### 4.4 The driver: sequencing, branches, loops
 
@@ -230,18 +182,6 @@ leaves the rest of the craft judged on the good paths only).
 Two suppression modes are worth naming because they recur: `quietly` (a probe or fixpoint
 pass, no diagnostics, no trace) and `untraced` (an inlined proc body: trace off, but its
 precondition failures still matter). They are scoped helpers, not raw counters.
-
-### 4.5 The rules of the game
-
-Two disciplines keep the whole thing sound:
-
-1. **Never enumerate outcomes** ([../CLAUDE.md](../CLAUDE.md)): the summary is intensional.
-   If you are building a list of concrete items in the checker, the design is broken.
-2. **Over-approximate, always**: every abstract operation must describe a _superset_ of
-   reality. Hence the **soundness principle**: tightening the domain only ever _removes_
-   false positives, never _adds_ false negatives, so a change that keeps every green test
-   green is evidence it stayed sound. This is why the test suite is the safety net for
-   domain and driver refactors.
 
 ---
 
