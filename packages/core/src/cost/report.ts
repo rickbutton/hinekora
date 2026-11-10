@@ -865,7 +865,7 @@ class Walker {
         const rounds = solved.passes * attempts;
         const note =
             solved.unresolved >= 0.005
-                ? `in ${Math.round(solved.unresolved * 100)}% of attempts the item fills up before the exit${solved.stuckInside >= solved.unresolved / 2 ? " of a loop inside" : ""} and the loop cannot end as written`
+                ? `in ${Math.round(solved.unresolved * 100)}% of attempts the item never reaches the exit${solved.stuckInside >= solved.unresolved / 2 ? " of a loop inside" : ""}, so the loop cannot end as written`
                 : solved.estimated
                   ? ESTIMATED
                   : missed
