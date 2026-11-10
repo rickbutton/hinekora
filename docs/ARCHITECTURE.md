@@ -173,7 +173,8 @@ leaves the rest of the craft judged on the good paths only).
   relational presence part is tall (~2^atoms), so past a few exact iterations the driver
   **widens**: it over-approximates presence to its unit facts, guaranteeing quick
   convergence. Widening trades a little precision for termination; the loop's exit refine
-  re-establishes what was dropped.
+  re-establishes what was dropped. The iteration ends only at a fixpoint: a numeric range
+  still moving after many more rounds jumps to the end of its domain, so one is reached.
 - **Defs & procs**: predicate defs (`def f(p) = <pred>`) and operation functions
   (`def f(p) { <stmts> }`) are _inlined_: arguments substituted, body checked in place. So
   they need nothing new in the domain or driver; state threading, nested loops, and

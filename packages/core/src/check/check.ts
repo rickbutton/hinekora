@@ -49,6 +49,7 @@ import {
     sideCap,
     stateEqual,
     widenPresence,
+    widenRanges,
 } from "./astate.js";
 import { BddManager } from "./bdd.js";
 import {
@@ -143,9 +144,11 @@ function clusterSize(base: Base): ClusterSize | undefined {
 /** Exact join iterations before widening kicks in (`widenPresence`): a small loop
  *  reaches a precise fixpoint first, a tall disjunction then gets over-approximated. */
 const WIDEN_AFTER = 3;
-/** Cap on loop-invariant iterations. With widening every loop converges in a
- *  handful, so this is a wide safety backstop. */
-const MAX_LOOP_ITERS = 32;
+/** Exact iterations of the numeric ranges before they are widened too
+ *  (`widenRanges`). A loop converges in a handful, and widening the counts
+ *  costs the after-state its totals, so this is a backstop set well past any
+ *  loop seen: it is what makes the fixpoint terminate rather than stop short. */
+const WIDEN_RANGES_AFTER = 32;
 
 /** How a statement leaves: with an item, or ending the path, by re-entering the
  *  enclosing loop (`restart`) or by ending the craft on this path (`stop`). */
@@ -891,17 +894,23 @@ class Checker {
      * "continue" state (a back-edge whose exit predicate is still false). The
      * lattice is finite and the iteration monotone, so this converges quickly;
      * widening past a few exact iterations bounds the tall disjunctive part.
+     * The loop ends only at a fixpoint, never at a round count: an invariant
+     * short of it would leave later rounds of the body unchecked. Each join
+     * only grows the state, the sets it grows are finite, and past
+     * `WIDEN_RANGES_AFTER` a range that still moves jumps to its bound, so a
+     * fixpoint is always reached.
      */
     private loopInvariant(entry: AItem, body: readonly Stmt[], rpred: RPred | null): AItem {
         return this.quietly(() => {
             let invariant = entry;
-            for (let i = 0; i < MAX_LOOP_ITERS; i++) {
+            for (let i = 0; ; i++) {
                 const entering = this.continuing(invariant, rpred);
                 if (entering === null) break; // every head state leaves at once
                 const continues = this.refineHeads(this.headStates(entering, body), rpred, false);
                 if (continues.length === 0) break;
                 const joined = [invariant, ...continues].reduce(join);
-                const next = i >= WIDEN_AFTER ? widenPresence(joined) : joined;
+                const widened = i >= WIDEN_AFTER ? widenPresence(joined) : joined;
+                const next = i >= WIDEN_RANGES_AFTER ? widenRanges(invariant, widened) : widened;
                 if (stateEqual(next, invariant)) break;
                 invariant = next;
             }

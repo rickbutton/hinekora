@@ -25,6 +25,7 @@ import {
 import { type Bdd, BddManager } from "./bdd.js";
 import { type Domain, type Range, RangeDomain, SetDomain } from "./domain.js";
 import { type Caps, type Counts, CountDomain, caps } from "./counts.js";
+import { MAX_STRANDS } from "../model/strands.js";
 import { narrowRange, NEGATED_CMP, ValueDomain, type Values } from "./values.js";
 
 // `astate` is the checker's state module, so the caps and `Range` its callers
@@ -649,8 +650,8 @@ export function settled(a: AItem): AItem {
  * unsound non-fixpoint). Over-approximate the invariant's presence to its UNIT
  * facts (guarantees + exclusions), dropping that tall part, sound (it only
  * forgets), and the loop's after-state re-establishes the disjunction via the
- * exit-predicate refine. Counts/`possible`/tiers converge on their own (bounded),
- * so they are left exact.
+ * exit-predicate refine. `possible` and the tiers are finite sets that only
+ * grow; the numeric ranges have `widenRanges`.
  */
 export function widenPresence(a: AItem): AItem {
     return {
@@ -658,6 +659,41 @@ export function widenPresence(a: AItem): AItem {
         presence: presenceFacts(a.bdd, guaranteedTypes(a), excludedTypes(a)),
         ...(a.imprint && { imprint: widenPresence(a.imprint) }),
     };
+}
+
+/**
+ * Widening for the numeric parts: `next` is the invariant one round after
+ * `prev`, and each range bound that moved between them jumps to the end of its
+ * domain (a count to zero or its cap, the strands to none or all), where it
+ * cannot move again; a value span that moved is dropped, which reads as the
+ * modifier's whole roll. Every item `next` allowed is still allowed, so it is
+ * sound, and a bound moves at most once more, so the fixpoint is reached.
+ */
+export function widenRanges(prev: AItem, next: AItem): AItem {
+    const cap = capsOf(next);
+    const jump = (p: Range, n: Range, hi: number): Range => [
+        n[0] < p[0] ? 0 : n[0],
+        n[1] > p[1] ? Math.max(hi, n[1]) : n[1],
+    ];
+    const values = new Map(
+        [...next.values].filter(([t, span]) => {
+            const before = prev.values.get(t);
+            return before !== undefined && RangeDomain.equal(before, span);
+        }),
+    );
+    return settled({
+        ...next,
+        counts: {
+            total: jump(prev.counts.total, next.counts.total, cap.total),
+            prefix: jump(prev.counts.prefix, next.counts.prefix, cap.prefix),
+            suffix: jump(prev.counts.suffix, next.counts.suffix, cap.suffix),
+        },
+        crafted: jump(prev.crafted, next.crafted, cap.total),
+        fractures: jump(prev.fractures, next.fractures, cap.total),
+        strands: jump(prev.strands, next.strands, MAX_STRANDS),
+        values,
+        ...(prev.imprint && next.imprint && { imprint: widenRanges(prev.imprint, next.imprint) }),
+    });
 }
 
 // --- construction ---------------------------------------------------------
