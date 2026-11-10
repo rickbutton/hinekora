@@ -23,7 +23,7 @@ import {
 import type { Mod } from "../model/mod.js";
 import { type FossilSpec, isCorruptedEssence } from "../model/sources.js";
 import { HARVEST_AUGMENT_TAGS, type Registry, STANDARD_CURRENCIES } from "../resolve/registry.js";
-import { rollableTiers, tierLadder, tierLadders } from "../resolve/tiers.js";
+import { tierLadder, tierLadders } from "../resolve/tiers.js";
 import type { AItem } from "./astate.js";
 import { resolveMessage } from "./diagnostics.js";
 import {
@@ -232,7 +232,9 @@ function harvestChange(
     // change one on an item with two influences (`QUESTIONS.md` Q101).
     const laddersFrom = tierLadders(catalog, a.base, from.value, tags);
     const laddersTo = tierLadders(catalog, a.base, to.value, tags);
-    const targets = rollableTiers(catalog, a.base, a.ilvl, to.value, tags);
+    // The natural rows a row of another source may become: any of them, since
+    // a changed modifier is not held to the item's level.
+    const targets = tierLadder(catalog, a.base, to.value, tags);
     // The rows the essences place on an item of this class. Many are natural
     // rows, some of a modifier the base does not roll (docs/item-model.md §8).
     const essenceRows = new Set(
@@ -286,7 +288,8 @@ function harvestChange(
             // stay possible beside it (`QUESTIONS.md` Q52). Where the source
             // has no counterpart for the item the natural rows are the result,
             // which no one has observed. Such a source places its rows whatever
-            // the item's level, so a counterpart above it is still a result.
+            // the item's level, so a counterpart above it is still a result,
+            // and so is a natural row above it.
             const twins = twinRows(was, to.value, a, tags, registry);
             for (const m of twins) rows.add(m);
             const alone =

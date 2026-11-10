@@ -112,7 +112,8 @@ becomes the bench's (seen in game); nothing says it of an essence-only, fossil, 
 elevated or retired row.
 **Probe:** a Rare with an unveiled or essence-only fire modifier; change it to cold;
 record the cold's values and name.
-**Assumed:** the same source's counterpart row or any natural row of the target; a
+**Assumed:** the same source's counterpart row or any natural row of the target, above the
+item's level too; a
 natural row an essence placed on a base that rolls no such modifier becomes the row of its
 rank, when an essence places that one on the class. **Encoded in:** `check/methods.ts` `harvestChange`.
 

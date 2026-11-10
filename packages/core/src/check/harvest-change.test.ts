@@ -600,7 +600,7 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
         );
     });
 
-    it("gives a bench craft the tiers that roll and a recorded tier its own", () => {
+    it("gives a bench craft with no counterpart any tier and a recorded tier its own", () => {
         const benchFire: Mod = {
             ...BENCH_FIRE_RES_ROW,
             id: ModId("BenchFireTiers"),
@@ -620,8 +620,9 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
             benchCrafts: [{ mod: benchFire.id, tier: 1, itemClasses: new Set([CLASS_RING]) }],
         });
         // The fire is the bench's on one path and the best tier that rolls, the
-        // ladder's second, on the other. The bench has no cold craft here, so its fire becomes a
-        // cold that rolls; the tier becomes the cold of its rank.
+        // ladder's second, on the other. The bench has no cold craft here, so its
+        // fire becomes a cold of any tier, the one above the item's level too;
+        // the tier becomes the cold of its rank.
         const r = check(
             craft(item({ base: "Iron Ring", ilvl: 25, rarity: "rare", prefixes: ["random"] }), [
                 iff(
@@ -635,7 +636,7 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
         );
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.tiers.get(COLD)).toEqual(
-            new Set(["ColdTiers1", "ColdTiers14", "ColdTiers26"]),
+            new Set(["ColdTiers1", "ColdTiers14", "ColdTiers26", "ColdTiers38"]),
         );
     });
 });
@@ -980,6 +981,20 @@ describe("a Harvest change of a modifier another source placed", () => {
         const name = "of the Retired";
         const rows = [row("Fire", "FireSource", { name }), row("Cold", "ColdTwin", { name })];
         expect(changed(rows, {}, { ilvl: 40 })).toEqual(new Set(["ColdTwin", "ColdNatural"]));
+    });
+
+    it("leaves the natural rows above the item's level possible too", () => {
+        // A changed modifier keeps its tier whatever the item's level, so the
+        // natural row it may have become is not held to that level either.
+        const high = row("Cold", "ColdHigh", {
+            minLevel: 80,
+            spawn: [{ tag: TagId("default"), weight: 500 }],
+            source: "natural",
+        });
+        for (const source of ["essence", "fossil", "veiled", "elevated"] as const) {
+            const rows = [row("Fire", "FireSource", { source }), high];
+            expect(changed(rows, {}, { ilvl: 40 })).toEqual(new Set(["ColdHigh", "ColdNatural"]));
+        }
     });
 
     it("takes a counterpart whose spawn table names a tag of the base, not another base's", () => {
