@@ -20,6 +20,7 @@ import {
     BENCH_FIRE_RES_ROW,
     BENCH_LIFE_ROW,
     CATALOG,
+    CLASS_AMULET,
     CLASS_RING,
     COLD_DAMAGE,
     COLD_RESIST,
@@ -182,6 +183,8 @@ describe("harvest change", () => {
             ctx,
         );
         expect(changed.diagnostics).toEqual([]);
+        // The bench has no cold row here, so the cold is a natural row.
+        expect(changed.finalState!.tiers.get(COLD_RESIST.type)).toEqual(new Set([COLD_RESIST.id]));
         expect(changed.finalState!.crafted).toEqual([1, 1]);
         expect(changed.finalState!.craftedTypes.has(COLD_RESIST.type)).toBe(true);
         const again = check(
@@ -306,16 +309,21 @@ describe("harvest change", () => {
             families: COLD_RESIST.families,
             text: "+(13-18)% to Cold Resistance",
         };
+        // The bench's cold row for another class is not this ring's.
+        const amuletCold: Mod = { ...benchCold, id: ModId("BenchColdResistAmulet1") };
         const withTwin = buildRegistry({
             bases: [RING_BASE],
             harvestChange: HARVEST_CHANGE,
-            mods: [...CATALOG, BENCH_FIRE_RES_ROW, benchCold],
+            mods: [...CATALOG, BENCH_FIRE_RES_ROW, benchCold, amuletCold],
             baseAliases: { "Iron Ring": "IronRing" },
-            benchCrafts: [BENCH_FIRE_RES_ROW, benchCold].map((m) => ({
-                mod: m.id,
-                tier: 1,
-                itemClasses: new Set([CLASS_RING]),
-            })),
+            benchCrafts: [
+                ...[BENCH_FIRE_RES_ROW, benchCold].map((m) => ({
+                    mod: m.id,
+                    tier: 1,
+                    itemClasses: new Set([CLASS_RING]),
+                })),
+                { mod: amuletCold.id, tier: 1, itemClasses: new Set([CLASS_AMULET]) },
+            ],
         });
         const r = check(
             craft(rareRing(), [

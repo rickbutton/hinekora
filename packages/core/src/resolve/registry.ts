@@ -242,6 +242,8 @@ export interface Registry {
     benchTypesFor(itemClass: ClassId): ReadonlySet<TypeId>;
     /** The bench tier of the craft that adds this mod row, if the bench adds it. */
     benchTierOf(mod: ModId): number | undefined;
+    /** The rows the bench crafts onto an item class. */
+    benchModsFor(itemClass: ClassId): ReadonlySet<ModId>;
     /** Resolve a fossil by name, in full ("Pristine Fossil") or by its first word. */
     resolveFossil(name: string): Resolved<FossilSpec>;
     /** The eldritch implicit rows an ember or ichor of that tier can give a base. */
@@ -460,6 +462,7 @@ export function buildRegistry(data: RegistryData): Registry {
     // bench puts on this class (a metamod), which no spawn table admits.
     const benchTypesByClass = new Map<ClassId, Set<TypeId>>();
     const benchTierByMod = new Map<ModId, number>();
+    const benchModsByClass = new Map<ClassId, Set<ModId>>();
     for (const craft of benchCrafts) {
         const mod = modById.get(norm(craft.mod));
         if (!mod) continue;
@@ -469,6 +472,9 @@ export function buildRegistry(data: RegistryData): Registry {
             let types = benchTypesByClass.get(cls);
             if (!types) benchTypesByClass.set(cls, (types = new Set()));
             types.add(type);
+            let rows = benchModsByClass.get(cls);
+            if (!rows) benchModsByClass.set(cls, (rows = new Set()));
+            rows.add(mod.id);
         }
     }
     const eldritch = data.eldritch ?? [];
@@ -881,6 +887,10 @@ export function buildRegistry(data: RegistryData): Registry {
 
         benchTierOf(mod) {
             return benchTierByMod.get(mod);
+        },
+
+        benchModsFor(itemClass) {
+            return benchModsByClass.get(itemClass) ?? new Set<ModId>();
         },
 
         genOfType(type) {

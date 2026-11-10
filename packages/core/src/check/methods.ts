@@ -133,6 +133,41 @@ function listedButRefused(catalog: readonly Mod[], type: TypeId): boolean {
     );
 }
 
+const DEFAULT_TAG = TagId("default");
+
+/**
+ * The rows of `type` that stand to a placed row as its counterpart: the same
+ * source, level, side and domain, and a row that source puts on this item.
+ * The bench and the essences say which classes take a row; any other row says
+ * it by the tags of its spawn table, a row that names only other bases' tags
+ * being theirs.
+ */
+function twinRows(was: Mod, type: TypeId, a: AItem, registry: Registry): readonly Mod[] {
+    const cls = a.base.itemClass;
+    const onThisItem = (m: Mod): boolean => {
+        switch (was.source) {
+            case "bench":
+                return registry.benchModsFor(cls).has(m.id);
+            case "essence":
+                return registry.essences.some((e) => e.grants.get(cls) === m.id);
+            default:
+                return (
+                    m.spawn.every((w) => w.tag === DEFAULT_TAG) ||
+                    m.spawn.some((w) => w.tag !== DEFAULT_TAG && a.base.tags.has(w.tag))
+                );
+        }
+    };
+    return registry.catalog.filter(
+        (m) =>
+            m.type === type &&
+            m.source === was.source &&
+            m.minLevel === was.minLevel &&
+            m.domain === was.domain &&
+            m.gen === was.gen &&
+            onThisItem(m),
+    );
+}
+
 /** The Harvest change: both names resolved, the pair one the grove offers. */
 function harvestChange(
     fromName: string,
@@ -188,14 +223,7 @@ function harvestChange(
     // counterpart row or any of the target's natural rows (`QUESTIONS.md` Q52).
     const was = pinned?.size === 1 ? registry.resolveMod([...pinned][0]!) : undefined;
     if (was?.ok && (was.value.source ?? "natural") !== "natural") {
-        const twins = catalog.filter(
-            (m) =>
-                m.type === to.value &&
-                m.source === was.value.source &&
-                m.minLevel === was.value.minLevel &&
-                m.domain === was.value.domain &&
-                m.gen === was.value.gen,
-        );
+        const twins = twinRows(was.value, to.value, a, registry);
         if (twins.length > 0) {
             const rows = was.value.source === "other" ? twins : [...twins, ...targets];
             return harvestChangeOps(from.value, registry.typeLabel(from.value), rows);
