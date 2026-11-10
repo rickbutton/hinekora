@@ -392,5 +392,16 @@ describe("the Astrolabe Amulet", () => {
         expect(
             check(craft(fractured, []), { registry: astrolabe }).diagnostics[0]!.message,
         ).toContain("An influenced item cannot have a fractured modifier");
+        const eldritch = item({
+            base: "Astrolabe Amulet",
+            ilvl: 100,
+            rarity: "rare",
+            exarch: "lesser",
+        });
+        expect(
+            check(craft(eldritch, []), { registry: astrolabe })
+                .diagnostics.map((d) => d.message)
+                .join("\n"),
+        ).toContain("An influenced item cannot have an eldritch implicit");
     });
 });

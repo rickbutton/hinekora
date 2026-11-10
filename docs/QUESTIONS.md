@@ -747,6 +747,21 @@ most tiers; a Recombinator's result may keep either input's strands (`check/ops.
 
 ## Resolved
 
+### Q72 · decision · resolved
+
+**Asked:** 2026-11-09
+**Question:** whether a value comparison on an experimented base reads the row's own span
+or the span the item shows, scaled by the base's magnitude implicit (a Simplex Amulet's
+top life row shows 230 to 258, its row 115 to 129). Reading the row's span only is unsound
+against what a player reads: `if has "maximum life" <= 129 { … }` is taken as always true
+there, and a branch on `>= 240` is reported as one that can never run. Scaling needs the
+rounding (Q69), the granted-skill rule (Q71) and catalyst quality; a span widened to cover
+both readings and every rounding would be sound meanwhile.
+**Options:** (a) the row's own span, the implicit a no-op; (b) scale with the span
+widened outward to whole numbers; (c) the hull of both readings.
+**Answer:** (a), 2026-11-09: the implicit is a no-op for now, and its scaling waits on the
+roadmap (`check/check.ts` value rows and tier spans read `rollRange` unscaled).
+
 ### Q54 · decision · resolved
 
 **Asked:** 2026-11-08
