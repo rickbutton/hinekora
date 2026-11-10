@@ -189,7 +189,13 @@ export function chain(input: ChainInput): Chain | undefined {
             else put(head, state, prob);
         }
         const decay = massOf(head) / mass;
-        if (lastDecay !== undefined && Math.abs(decay - lastDecay) < SETTLED && decay < 1 - STUCK) {
+        // A chain that mixes slowly may not settle within the rounds followed;
+        // its last round's decay is then the best guess at the rest.
+        const last = round === MAX_PASSES - 1;
+        if (
+            decay < 1 - STUCK &&
+            (last || (lastDecay !== undefined && Math.abs(decay - lastDecay) < SETTLED))
+        ) {
             addScaled(t, was, decay / (1 - decay));
             head = new Map();
             break;

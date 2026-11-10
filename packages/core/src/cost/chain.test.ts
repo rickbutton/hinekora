@@ -228,6 +228,53 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.reached.get(0)! / (1 / p)).toBeCloseTo(1, 6);
     });
 
+    it("a chain that has not settled by the last round followed takes that round's decay", () => {
+        // From A the item reaches B one round in ten thousand; from B the exit
+        // comes one round in a thousand. The decay is still climbing after the
+        // rounds the chain follows, so the rest is that last round's tail: an
+        // estimate, but every attempt ends and the rounds are of the right size.
+        const A = at(0, 1);
+        const B = at(1, 1);
+        const solved = chain({
+            atoms: [],
+            body: [
+                {
+                    id: 0,
+                    kind: "branch",
+                    holds: (s) => s.prefix === 0,
+                    body: [
+                        {
+                            id: 1,
+                            kind: "reforge",
+                            outcomes: [
+                                { state: B, prob: 1e-4 },
+                                { state: A, prob: 1 - 1e-4 },
+                            ],
+                        },
+                    ],
+                    otherwise: [
+                        {
+                            id: 2,
+                            kind: "reforge",
+                            outcomes: [
+                                { state: at(2, 1), prob: 1e-3 },
+                                { state: B, prob: 1 - 1e-3 },
+                            ],
+                        },
+                    ],
+                },
+            ],
+            starts: [{ state: A, weight: 1 }],
+            caps: CAPS,
+            exit: (s) => s.prefix === 2,
+        })!;
+        expect(solved.unresolved).toBeCloseTo(0, 9);
+        expect(solved.exit).toBeCloseTo(1, 9);
+        // 10 000 rounds in A and 1 000 in B on average.
+        expect(solved.passes).toBeGreaterThan(5000);
+        expect(solved.passes).toBeLessThan(22000);
+    });
+
     it("a loop that cannot end is left unresolved", () => {
         // Exalts on a 3/3 item: nothing ever changes, the exit never comes.
         const solved = chain({

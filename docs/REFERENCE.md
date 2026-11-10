@@ -289,8 +289,9 @@ resolveEssence / resolveBench / resolveHarvestTag`
   and the named modifiers' rows (`ChainState`, one `ChainAtom` per modifier the loop's
   conditions name), from weighted start states to the exit (`exitAtStart` the part that
   holds before any round), a restart, a stop or the mass that never leaves; once the
-  share of mass each round keeps has settled, the rounds still to come are added as
-  that round's geometric tail, so a rare exit costs its full expected rounds. The walk
+  share of mass each round keeps has settled, or at the last round followed when a
+  slowly mixing chain has not, the rounds still to come are added as that round's
+  geometric tail, so a rare exit costs its full expected rounds. The walk
   builds it in `chainLoop` for every `until` whose body and exit fit, the rest taking
   the independent-attempts path. `prices.ts` holds the unit
   cost of a method in its own currency (`unitCost`: the orb's name, the essence, the
