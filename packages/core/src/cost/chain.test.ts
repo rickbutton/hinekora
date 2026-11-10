@@ -724,6 +724,75 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.exit + solved.stop + solved.unresolved + solved.undecided).toBeCloseTo(1, 6);
     });
 
+    it("a loop cut short by the work of a loop inside is left undecided, not estimated", () => {
+        // A thousand kinds of item, each round through a slow loop inside:
+        // the work runs out after a few outer rounds, the items hardly spread
+        // over the kinds, and those rounds' decay says nothing of the rest
+        // (about ten thousand rounds in truth).
+        const kinds = 1000;
+        const cache = new Map<string, ChainState>();
+        const st = (p: number, s: number): ChainState => {
+            const k = `${p}/${s}`;
+            const hit = cache.get(k) ?? at(p, s);
+            cache.set(k, hit);
+            return hit;
+        };
+        const outs = new Map<ChainState, { state: ChainState; prob: number }[]>();
+        const memo = (s: ChainState, make: () => { state: ChainState; prob: number }[]) => {
+            const out = outs.get(s) ?? make();
+            outs.set(s, out);
+            return out;
+        };
+        const solved = chain({
+            atoms: [],
+            body: [
+                {
+                    id: 1,
+                    kind: "loop",
+                    exit: (s) => s.suffix === 1,
+                    body: [
+                        {
+                            id: 2,
+                            kind: "transition",
+                            next: (s) =>
+                                memo(s, () =>
+                                    s.suffix === 2
+                                        ? [
+                                              { state: st(s.prefix, 1), prob: 1e-4 },
+                                              { state: st(s.prefix, 3), prob: 1e-4 },
+                                              { state: s, prob: 1 - 2e-4 },
+                                          ]
+                                        : [
+                                              { state: st(s.prefix, 1), prob: 2e-5 },
+                                              { state: s, prob: 1 - 2e-5 },
+                                          ],
+                                ),
+                        },
+                    ],
+                },
+                {
+                    id: 3,
+                    kind: "transition",
+                    next: (s) =>
+                        memo(s, () => {
+                            const leaves = s.prefix % 10 === 0 ? 1e-3 : 0;
+                            return [
+                                { state: st(0, 0), prob: leaves },
+                                { state: st((s.prefix % kinds) + 1, 2), prob: 0.3 },
+                                { state: st(s.prefix, 2), prob: 0.7 - leaves },
+                            ].filter((o) => o.prob > 0);
+                        }),
+                },
+            ],
+            starts: [{ state: st(1, 2), weight: 1 }],
+            caps: CAPS,
+            exit: (s) => s.prefix === 0,
+        })!;
+        expect(solved.estimated).toBe(false);
+        expect(solved.undecided).toBeGreaterThan(0.99);
+        expect(solved.undecided).toBeLessThanOrEqual(1);
+    });
+
     it("says when the mass that never leaves is held by a loop inside", () => {
         // Inside: a loop waiting for no prefix while nothing in it removes one.
         const solved = chain({

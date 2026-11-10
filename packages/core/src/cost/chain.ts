@@ -220,6 +220,14 @@ function add(m: Map<number, number>, id: number, by: number): void {
     m.set(id, (m.get(id) ?? 0) + by);
 }
 
+function hasLoop(steps: readonly ChainStep[]): boolean {
+    return steps.some(
+        (s) =>
+            s.kind === "loop" ||
+            (s.kind === "branch" && (hasLoop(s.body) || hasLoop(s.otherwise ?? []))),
+    );
+}
+
 function changes(steps: readonly ChainStep[]): boolean {
     return steps.some(
         (s) =>
@@ -344,7 +352,9 @@ function iterate(
         // come: following more of them would only count rounds the items that
         // never leave spend going round.
         if (round >= MAX_PASSES || t.work >= MAX_WORK || still) {
-            const tail = true;
+            // With the work spent in loops inside, the rounds followed may be
+            // too few for their decay to say anything of the rest.
+            const tail = round >= MAX_PASSES || !hasLoop(body);
             const rest = beyond(body, head, exit, input, t, exits, tail);
             return { ...rest, passes: passes + rest.passes, exits };
         }
