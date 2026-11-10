@@ -267,20 +267,6 @@ influence, the wide reading. A Gilded Fossil's extra implicit, which the altar's
 replacements could spare an eldritch one beside, is not modelled.
 **Answer:**
 
-### Q36 · game probe · open
-
-**Asked:** 2026-10-30
-**Goal:** what an Orb of Conflict does when the implicit it would raise is already
-Perfect. [Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)
-says the orb raises one and lowers the other and is the only way to the top two tiers,
-not whether a Perfect stays while the other still drops or only the other can rise.
-**Procure:** an item with a Perfect Exarch and a Grand Eater implicit; Orbs of Conflict.
-**Steps:** apply several; note each result.
-**Record:** the pairs seen.
-**Assumed meanwhile:** both readings, the raised one capped at Perfect with the other
-lowered either way (`check/ops.ts`, the `conflict` change).
-**Answer:**
-
 ### Q37 · game probe · open
 
 **Asked:** 2026-10-30
@@ -729,6 +715,23 @@ most tiers; a Recombinator's result may keep either input's strands (`check/ops.
 ---
 
 ## Resolved
+
+### Q36 · game probe · resolved
+
+**Asked:** 2026-10-30
+**Goal:** what an Orb of Conflict does when the implicit it would raise is already
+Perfect. [Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)
+says the orb raises one and lowers the other and is the only way to the top two tiers,
+not whether a Perfect stays while the other still drops or only the other can rise.
+**Procure:** an item with a Perfect Exarch and a Grand Eater implicit; Orbs of Conflict.
+**Steps:** apply several; note each result.
+**Record:** the pairs seen.
+**Assumed meanwhile:** both readings, the raised one capped at Perfect with the other
+lowered either way (`check/ops.ts`, the `conflict` change).
+**Answer:** 2026-11-10, from play: the orb picks either side. Picked, a Perfect implicit
+stays Perfect and the other drops a tier; otherwise the Perfect drops as usual. That is
+the assumption above, so the model is unchanged; `examples/eldritch-gloves.craft` now
+raises its Exarch implicit to Exquisite with the Conflict loop.
 
 ### Q16 · game probe · resolved
 

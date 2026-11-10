@@ -5,9 +5,10 @@
 # only ever removes a suffix, which is how the guide opens a suffix slot
 # without risking the life roll; losing the resistance sends the craft back to
 # the essences. The implicits come last: embers until the Exarch one is the
-# strike one. (The guide then raises it to Exquisite with Orbs of Conflict,
-# refreshing the Eater side with an ichor whenever it drops; that loop is
-# left out until the Conflict model's question, QUESTIONS.md Q36, is settled.)
+# strike one, then Orbs of Conflict until it is Exquisite. A Conflict may
+# raise either side and lowers the other, and a lowered Lesser implicit drops
+# off: the Lesser Eater an ichor puts back goes each time the Exarch rises, and
+# the Exarch itself can fall away, when the embers start again.
 
 item {
     base:     "Dragonscale Gauntlets"
@@ -37,7 +38,13 @@ if suffixCount == 3 {
 
 bench "fire and chaos resistance"
 
-# Implicits: embers until the Exarch implicit is the strike one.
-until exarch "strike skills target" {
-    ember grand
+# Implicits: the strike Exarch implicit, raised to Exquisite.
+until exarch exquisite "strike skills target" {
+    until exarch "strike skills target" {
+        ember grand
+    }
+    if not eater {
+        ichor lesser
+    }
+    conflict
 }

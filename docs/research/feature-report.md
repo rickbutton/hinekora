@@ -201,7 +201,7 @@ guides treat them as fixed costs and nothing in the modifier logic depends on th
 | `influence-merge`                                                          | R8 Redeemer receiver + Awakener's Orb          | checks (the kept influence mods are not promised, Q28)      |
 | `bench-finish-resists`, `essence-life-boots`, `example`, `phys-dot-weapon` | the earlier examples                           | check                                                       |
 | `essence-minion-wand`                                                      | R3 essence, make room, multimod                | checks (`has group` guards each bench craft)                |
-| `eldritch-gloves`                                                          | R7 essences, eldritch make-room, implicits     | checks (the Conflict loop to Exquisite waits on Q36)        |
+| `eldritch-gloves`                                                          | R7 essences, eldritch make-room, implicits     | checks (the Conflict loop to Exquisite included)            |
 | `veiled-unveil`                                                            | R6 suffix lock, veiled orb, unveil loop        | checks (`stop` where the orb or the annul bricked the item) |
 | `metamod-harvest-loop`                                                     | R5 lock one side, Harvest reforge the other    | checks (the mana bench guarded by `if not has`)             |
 | `matron-metamod`                                                           | R17 the Wild Bristle Matron trick              | checks                                                      |
