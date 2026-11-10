@@ -19,7 +19,8 @@ import { GroupId, ModId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import { costOf } from "./report.js";
 import { findMethod } from "../check/methods.js";
-import { Tracker } from "./track.js";
+import type { ChainState } from "./chain.js";
+import { pruned, Tracker } from "./track.js";
 
 // A third life tier, so the rows a condition naming the top one leaves
 // together are more than one.
@@ -120,6 +121,47 @@ describe("the tracked state", () => {
         if ("refused" in built) throw new Error(built.refused);
         const [start] = tracker.statesIn(entry.before)!;
         tracker.transition(entry.before, built, "estimate")!(start!.state);
+        expect(tracker.misses).toBe(1);
+    });
+});
+
+describe("a step's outcomes", () => {
+    const at = (prefix: number): ChainState => ({ prefix, suffix: 0, rows: [] });
+
+    it("drop the specks of mass no draw could give, and sum to one again", () => {
+        const out = pruned([
+            { state: at(1), prob: 0.75 },
+            { state: at(2), prob: 0.25 - 1e-14 },
+            { state: at(3), prob: 1e-14 },
+        ]);
+        expect(out.map((o) => o.state.prefix)).toEqual([1, 2]);
+        expect(out.reduce((sum, o) => sum + o.prob, 0)).toBeCloseTo(1, 15);
+        // Nothing to drop: the outcomes come back as they were.
+        const whole = [{ state: at(1), prob: 1 }];
+        expect(pruned(whole)).toBe(whole);
+    });
+
+    it("count a state the item at the step cannot be as one the step could not follow", () => {
+        // The check's item holds the life for certain; a state without it has
+        // no item to be read on.
+        const c = craft(
+            item({ base: "Iron Ring", ilvl: 84, rarity: "rare", prefixes: ["IncreasedLife1"] }),
+            [op("annul")],
+        );
+        const entry = check(c, { registry }).trace.at(-1)!;
+        const tracker = new Tracker(registry, entry.before, [entry.before], [], []);
+        const built = findMethod(["annul"])!.build([], entry.before, registry);
+        if ("refused" in built) throw new Error(built.refused);
+        const next = tracker.transition(entry.before, built, "estimate")!;
+        const [start] = tracker.statesIn(entry.before)!;
+        const absent: ChainState = {
+            ...start!.state,
+            prefix: 0,
+            rows: start!.state.rows.map(() => null),
+        };
+        expect(next(absent)).toEqual([{ state: absent, prob: 1 }]);
+        expect(tracker.misses).toBe(1);
+        next(start!.state);
         expect(tracker.misses).toBe(1);
     });
 });

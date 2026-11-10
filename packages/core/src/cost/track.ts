@@ -544,7 +544,8 @@ export class Tracker {
 
     /**
      * An Orb of Conflict on a state with both implicits: one side up a tier, to
-     * Perfect at most, the other down, a Lesser one lowered gone (seen in play).
+     * Perfect at most, the other down, a Lesser one lowered gone (the orb's
+     * text: "Lesser modifiers that have their strength lowered will be removed").
      * Equal tiers rise alike and each tier a side is ahead takes about eleven
      * hundredths off its chance (Orb of Conflict § Mechanics, a measurement of
      * some five hundred orbs over gaps up to three; a wider gap is that line
@@ -1227,7 +1228,7 @@ function askedFor(pred: RPred, negated = false): TypeId[] {
 
 /** Outcomes without the specks of mass the race's quadrature leaves on
  *  outcomes that cannot happen, which no later step could read. */
-function pruned(out: readonly Outcome[]): readonly Outcome[] {
+export function pruned(out: readonly Outcome[]): readonly Outcome[] {
     const kept = out.filter((o) => o.prob > 1e-12);
     if (kept.length === out.length) return out;
     const total = kept.reduce((sum, o) => sum + o.prob, 0);
@@ -1258,13 +1259,11 @@ function keepAcross(
     });
 }
 
-/** Whether a method may change an eldritch implicit, in any of its outcomes. */
+/** Whether a method changes an eldritch implicit. One that may in only some
+ *  of its outcomes (a Vaal Orb) is not asked: with an implicit on the item
+ *  that outcome cannot be read back as a state, and the step is not followed. */
 function touchesImplicits(ops: readonly Op[]): boolean {
-    return ops.some(
-        (op) =>
-            op.kind === "eldritch" ||
-            (op.kind === "either" && op.branches.some((b) => touchesImplicits(b))),
-    );
+    return ops.some((op) => op.kind === "eldritch");
 }
 
 function implicitSide(type: TypeId): EldritchSide | undefined {
