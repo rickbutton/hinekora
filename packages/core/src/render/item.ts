@@ -41,7 +41,7 @@ import {
 import type { Mod } from "../model/mod.js";
 import { isUnveiledResult } from "../model/veiled.js";
 import type { Registry } from "../resolve/registry.js";
-import { rollableGen, rollableTiers } from "../resolve/tiers.js";
+import { rollableGen, rollableTiers, TOP_ITEM_LEVEL } from "../resolve/tiers.js";
 import { baseLabel } from "./render.js";
 import { capitalise, pluralRange, rangeText, rarityText } from "../words.js";
 
@@ -51,7 +51,8 @@ export interface ModView {
     readonly text: string;
     /** The affix name ("Virile"), when the tier is known. */
     readonly name?: string;
-    /** The tier numbers the modifier may be, T1 the best, when it rolls here. */
+    /** The tier numbers the modifier may be, T1 the best that rolls here; a row
+     *  an essence placed above the item's level is numbered on the whole ladder. */
     readonly tier?: Range;
     /** The modifier's category tags, as the advanced tooltip shows them. */
     readonly tags: readonly string[];
@@ -216,8 +217,14 @@ function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: Mod
     const known = a.values.get(type);
     const span = texts.length > 0 ? rollSpan(texts) : registry.typeLabel(type);
     const text = known === undefined ? span : withValue(span, known);
+    // A natural row above the item's level is an essence's: no row that rolls
+    // here ranks it, so it takes its number on the modifier's whole ladder.
+    const whole = rollableTiers(registry.catalog, a.base, TOP_ITEM_LEVEL, type, tags);
     const numbers = mods
-        .map((m) => rollable.findIndex((r) => r.id === m.id) + 1)
+        .map((m) => {
+            const n = rollable.findIndex((r) => r.id === m.id) + 1;
+            return n > 0 ? n : whole.findIndex((r) => r.id === m.id) + 1;
+        })
         .filter((n) => n > 0);
     const tagSet = new Set<string>();
     for (const m of mods) for (const t of m.implicitTags) tagSet.add(tagLabel(t));

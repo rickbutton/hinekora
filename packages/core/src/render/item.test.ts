@@ -1,11 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "../check/check.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { bench, craft, has, iff, item, notp, op, orp, unveil, until } from "../__fixtures__/ast.js";
+import {
+    bench,
+    craft,
+    essence,
+    has,
+    iff,
+    item,
+    notp,
+    op,
+    orp,
+    unveil,
+    until,
+} from "../__fixtures__/ast.js";
 import {
     BENCH_LIFE_ROW,
     CATALOG,
     CLASS_RING,
+    MAXLIFE_T2,
     RING_BASE,
     TIERED_CATALOG,
     VEILED_A,
@@ -265,6 +278,36 @@ describe("the marks and the crafted flag", () => {
                 "--------",
                 "Possibly: Corrupted",
             ].join("\n"),
+        );
+    });
+});
+
+describe("a modifier an essence placed above the item's level", () => {
+    // No tier that rolls on the item ranks it, and the game's own copy of
+    // such an item has not been seen: it is numbered on the whole ladder.
+    const essenced = buildRegistry({
+        bases: [RING_BASE],
+        mods: TIERED_CATALOG,
+        essences: [
+            {
+                id: "TestGreed",
+                name: "Deafening Essence of Greed",
+                tier: 7,
+                grants: new Map([[CLASS_RING, MAXLIFE_T2.id]]),
+            },
+        ],
+    });
+
+    it("shows its tier counted on the modifier's whole ladder", () => {
+        const r = check(
+            craft(item({ base: "IronRing", ilvl: 1, rarity: "normal" }), [
+                essence("Deafening Essence of Greed"),
+            ]),
+            { registry: essenced },
+        );
+        expect(r.diagnostics).toEqual([]);
+        expect(renderItemText(itemView(r.finalState!, essenced))).toContain(
+            '{ Prefix Modifier "Robust" (Tier: 2) }',
         );
     });
 });
