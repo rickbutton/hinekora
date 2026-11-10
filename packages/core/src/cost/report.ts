@@ -454,7 +454,7 @@ class Walker {
         });
         const built = method.build(literals, entry.before, this.registry);
         if ("refused" in built || entry.after === undefined) return withoutStates(branches);
-        const roll = this.rollFor(built, entry.before);
+        const roll = rollOf(entry.before, built, this.registry, this.reading);
         if (roll.kind !== "none") {
             // A new roll: every way of getting here is one way of being after it.
             const mass = massOf(branches);
@@ -469,11 +469,6 @@ class Walker {
             }));
         }
         return branches.map((b) => ({ mass: b.mass, path: b.path }));
-    }
-
-    /** A method's roll on the item. */
-    private rollFor(built: readonly Op[], before: AItem): Roll {
-        return rollOf(before, built, this.registry, this.reading);
     }
 
     private branchStmt(

@@ -121,7 +121,7 @@ export type Roll =
     /** Nothing this model reads: a deterministic step, or one it does not model. */
     | { readonly kind: "none" };
 
-export const NO_ROLL: Roll = { kind: "none" };
+const NO_ROLL: Roll = { kind: "none" };
 
 /**
  * How many modifiers a rare reforge lays down: four, five or six at 8:3:1
