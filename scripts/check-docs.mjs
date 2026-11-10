@@ -18,8 +18,8 @@
  *   - links a poewiki.net page or section that the local wiki cache does not hold
  *     (skipped with a notice when the cache is absent, e.g. in CI);
  *   - outgrows its word budget, or is a file under docs/ that has no budget;
- *   - keeps a question in QUESTIONS.md that is neither open nor answered, or one
- *     longer than an entry's budget.
+ *   - keeps a question in QUESTIONS.md that is neither open nor answered, one longer
+ *     than an entry's budget, or two under one number.
  *
  * Every doc is read by agents whose context it fills, and prose that restates the
  * code drifts from it; the budgets make growth a decision someone sees in a diff.
@@ -334,9 +334,14 @@ for (const [doc, budget] of Object.entries(BUDGETS)) {
 }
 // An entry runs from its heading to the next heading of any level.
 const questionLines = lines(QUESTIONS);
+const questionAt = new Map();
 questionLines.forEach((text, i) => {
     const m = /^### (Q\d+) · \w+ · (\w+)/.exec(text);
     if (m === null) return;
+    const first = questionAt.get(m[1]);
+    if (first !== undefined)
+        fail(QUESTIONS, i + 1, `${m[1]} is also the number of the entry at line ${first}`);
+    else questionAt.set(m[1], i + 1);
     if (m[2] !== "open" && m[2] !== "answered")
         fail(QUESTIONS, i + 1, `${m[1]} is ${m[2]}; an applied answer is deleted, not kept`);
     const end = questionLines.findIndex((t, j) => j > i && /^#{1,3} /.test(t));
