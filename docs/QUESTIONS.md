@@ -743,8 +743,9 @@ an Awakener's Orb.
 **Steps:** apply the orb to the Magic target; note whether it is accepted and which
 influenced modifiers the result carries.
 **Record:** accepted or not; the influenced modifiers kept from each item.
-**Assumed meanwhile:** any rarity is accepted, and no modifier is guaranteed kept; the section also says a transferred modifier keeps
-its tier, so note whether a kept donor modifier obeys the target's item level.
+**Assumed meanwhile:** any rarity is accepted, and no modifier is guaranteed kept; the
+section also says a transferred modifier keeps its tier, so note whether a kept donor
+modifier obeys the target's item level.
 **Answer:** 2026-11-10: deferred. The donor's and the target's modifiers both decide the
 result, so the orb waits until a guide can name the donor as a second item; it is removed
 until then (`ROADMAP.md`, multi-item crafts), and the probe goes with it.
@@ -758,8 +759,8 @@ item" ([Lesser Eldritch Ember](https://www.poewiki.net/wiki/Lesser_Eldritch_Embe
 **Procure:** a pair of gloves of item level 20; a Lesser Eldritch Ember.
 **Steps:** apply it; note whether it is refused.
 **Record:** refused or applied.
-**Assumed meanwhile:** any item level (`check/library.ts` `eldritchImplicitOps` has no
-level gate; `packages/data/scripts/ingest-eldritch.mjs` drops the row's level).
+**Assumed meanwhile (until the answer):** any item level, the row's level dropped by
+`packages/data/scripts/ingest-eldritch.mjs`.
 **Answer:** 2026-11-10: not seen in play; assume the data's level 75 as an item level until
 a game shows otherwise (`model/marks.ts` `ELDRITCH_ITEM_LEVEL`, required by an ember, an ichor and the item block).
 

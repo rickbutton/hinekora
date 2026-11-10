@@ -515,11 +515,11 @@ Elder RF helmet: Elder's Exalted Orb, Harvest reforge Fire until level 20 Burnin
 
 **Harvest "reforge keep prefixes"** on influenced items: not offered (see R5).
 
-**Hinekora.** Expressible: `exalt redeemer`, `awakener hunter`, `dominance`, `harvest
-reforge "attack"`, `harvest reforge "influence"`, `harvest randomise`, `beast imprint /
-restore`. The donor is reduced to its influence (`ROADMAP.md`), so "the donor's only
-influence mod is Spell Crit" is not stated; the checker knows "one Hunter mod" without
-which. The Dominance result "one elevated, tiers forgotten" matches the guide's
+**Hinekora.** Expressible: `exalt redeemer`, `dominance`, `harvest reforge "attack"`,
+`harvest reforge "influence"`, `harvest randomise`, `beast imprint / restore`. The
+Awakener's Orb was written `awakener hunter` with the donor reduced to its influence, and
+was removed on 2026-11-10 until the donor can be named as a second item (`QUESTIONS.md`
+Q28). The Dominance result "one elevated, tiers forgotten" matches the guide's
 "50% the wrong one" branch, written `if has "spell crit elevated" {…} else { restore
 restart }`. Elevated wording resolution depends on the data having a separate wording.
 
@@ -840,7 +840,7 @@ catalog lacks, or a deliberate scope decision.
 | G12 | Harvest "reforge, more/less likely"                                                                                                       | no      | The two rows of the ledger marked deferred; guides use them rarely (Maxroll lists them, none of the collected recipes uses them).                                                                                                                                                      | deferred (rarely needed)          |
 | G13 | Aisling's "add a veiled modifier, remove a random modifier" bench (R6)                                                                    | partial | A name for the Betrayal bench; `veiled exalt` has the same effect shape. Cosmetic unless the bench's rules differ (it is not a currency, so Hinekora's Lock does not preview it).                                                                                                      | naming / data                     |
 | G14 | "Buy a rare with +1 gems, Annul to three mods, Fenumal split to Magic" (R2, old ring guides)                                              | no      | The split recipe was removed in 3.29; nothing to build. Guides written before 3.29 need the step rewritten.                                                                                                                                                                            | retired from the game             |
-| G15 | Awakener's Orb "donor's only influence mod is Spell Crit" (R8)                                                                            | partial | The donor is reduced to its influence, so the guaranteed carried mod is "one Hunter mod", not the named one; a donor item block (or a `donor { … }` clause) would make the named mod provable.                                                                                         | deferred (multi-item)             |
+| G15 | Awakener's Orb "donor's only influence mod is Spell Crit" (R8)                                                                            | no      | The Awakener's Orb is removed until the donor can be named as a second item (Q28); a donor item block would make the named mod provable.                                                                                                                                               | deferred (multi-item)             |
 | G16 | Rog crafts as a base source; Rog bases as recombinator donors (R14)                                                                       | no      | Out by decision; only matters as the origin of an item block's starting mods, which the item block already states.                                                                                                                                                                     | out of scope                      |
 | G17 | Orb of Chance / "reroll the rarity" openers, Ancient Orb                                                                                  | no      | Out by decision (Q15).                                                                                                                                                                                                                                                                 | out of scope                      |
 | G18 | "Any of fire/cold/lightning res" then "Harvest-swap to fire later" (R7, Pohx)                                                             | yes     | `def anyEleRes(t) = …` plus `harvest change "cold res" "fire res"`; the surface covers it.                                                                                                                                                                                             | —                                 |

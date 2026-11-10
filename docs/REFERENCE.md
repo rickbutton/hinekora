@@ -83,7 +83,7 @@ examples/                    - the guide suite; every file here checks clean (`p
   flask-alt-aug.craft        - a Magic flask: one prefix, one suffix.
   self-fracture.craft        - a Fracturing Orb, the `fractured` branch, the fillers annulled.
   matron-metamod.craft       - the Wild Bristle Matron's random metamod made deterministic.
-  eldritch-gloves.craft      - a fractured base, essences, an eldritch annul to make room, embers for the implicit.
+  eldritch-gloves.craft      - a fractured base, essences, an eldritch annul to make room, embers for the implicit, then Orbs of Conflict to Exquisite.
   metamod-harvest-loop.craft - "Suffixes Cannot Be Changed" and a Harvest reforge, round until the life is T1.
   veiled-unveil.craft        - a veiled orb under a suffix lock, unveiled until the right option shows; `stop` on a bricked item.
   essence-minion-wand.craft  - one repeat of essence spam and annuls (back to the essences when an annul takes a kept modifier), a prefix lock and a scour, multimod and bench crafts.

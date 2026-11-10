@@ -1,3 +1,4 @@
+# The Awakener's Orb was removed on 2026-11-10 (QUESTIONS.md Q28); this probe no longer parses.
 # Hunter exalt a rare, then merge with an elder item via awakener's orb.
 item {
     base: "Hubris Circlet" ilvl: 86 rarity: rare
