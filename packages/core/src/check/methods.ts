@@ -135,14 +135,38 @@ function listedButRefused(catalog: readonly Mod[], type: TypeId): boolean {
 
 const DEFAULT_TAG = TagId("default");
 
+/** The affix names of the Incursion modifiers: the game names each after the
+ *  architect whose room makes it, and no other modifier carries those names. */
+const INCURSION_AFFIXES = new Set([
+    "Citaqualotl's",
+    "Guatelitzi's",
+    "Matatl's",
+    "Tacati's",
+    "Topotante's",
+    "Xopec's",
+    "of Citaqualotl",
+    "of Guatelitzi",
+    "of Matatl",
+    "of Puhuarte",
+    "of Tacati",
+]);
+
+const isNatural = (m: Mod): boolean => (m.source ?? "natural") === "natural";
+
 /**
  * The rows of `type` that stand to a placed row as its counterpart: the same
  * source, level, side and domain, and a row that source puts on this item.
  * The bench and the essences say which classes take a row; any other row says
- * it by the tags of its spawn table, a row that names only other bases' tags
- * being theirs.
+ * it by the tags of its spawn table, the base's and its influences', a row
+ * that names only other items' tags being theirs.
  */
-function twinRows(was: Mod, type: TypeId, a: AItem, registry: Registry): readonly Mod[] {
+function twinRows(
+    was: Mod,
+    type: TypeId,
+    a: AItem,
+    tags: ReadonlySet<TagId>,
+    registry: Registry,
+): readonly Mod[] {
     const cls = a.base.itemClass;
     const onThisItem = (m: Mod): boolean => {
         switch (was.source) {
@@ -153,7 +177,9 @@ function twinRows(was: Mod, type: TypeId, a: AItem, registry: Registry): readonl
             default:
                 return (
                     m.spawn.every((w) => w.tag === DEFAULT_TAG) ||
-                    m.spawn.some((w) => w.tag !== DEFAULT_TAG && a.base.tags.has(w.tag))
+                    m.spawn.some(
+                        (w) => w.tag !== DEFAULT_TAG && (a.base.tags.has(w.tag) || tags.has(w.tag)),
+                    )
                 );
         }
     };
@@ -212,47 +238,54 @@ function harvestChange(
             `The grove changes "${fromName}" into "${registry.typeLabel(counterpart)}", not "${toName}".`,
         );
     }
+    // The result is what each row the source may be would become, together:
+    // its recorded rows, or with none recorded any row of its ladder and any
+    // row another source places.
     const whole = (type: TypeId): readonly Mod[] =>
         rollableTiers(catalog, a.base, TOP_ITEM_LEVEL, type, tags);
-    const pinned = a.tiers.get(from.value);
-    const targets = rollableTiers(catalog, a.base, a.ilvl, to.value, tags);
-    // A modifier another source placed is no row of the ladder that rolls
-    // here. An Incursion architect's resistance becomes the counterpart's row
-    // of that source and level, the page's own example. For a bench, essence,
-    // fossil or unveiled row the page says nothing, so the result is that
-    // counterpart row or any of the target's natural rows (`QUESTIONS.md` Q52).
-    const was = pinned?.size === 1 ? registry.resolveMod([...pinned][0]!) : undefined;
-    if (was?.ok && (was.value.source ?? "natural") !== "natural") {
-        const twins = twinRows(was.value, to.value, a, registry);
-        if (twins.length > 0) {
-            const rows = was.value.source === "other" ? twins : [...twins, ...targets];
-            return harvestChangeOps(from.value, registry.typeLabel(from.value), rows);
-        }
-    }
-    if (targets.length === 0) return refuse(`"${toName}" cannot roll on this item.`);
-    // The tier is kept (Modifier § Harvest Crafting): the target's row at the
-    // source's rank, where the two ladders have as many rows at the item's
-    // level and as many in all, so the rank is the same tier however it is
-    // counted. Which row the game picks otherwise is unknown (`QUESTIONS.md`
-    // Q22), so any of the target's rows that roll here, and the row at the
-    // source's rank in the whole ladder, which "preserves the tier" read
-    // literally, though the item's level is below it.
-    const sources = rollableTiers(catalog, a.base, a.ilvl, from.value, tags);
     const [wholeFrom, wholeTo] = [whole(from.value), whole(to.value)];
+    const sources = rollableTiers(catalog, a.base, a.ilvl, from.value, tags);
+    const targets = rollableTiers(catalog, a.base, a.ilvl, to.value, tags);
     const alike = wholeFrom.length === wholeTo.length;
-    const parallel = sources.length === targets.length && alike;
-    const rank = parallel && pinned?.size === 1 ? sources.findIndex((m) => pinned.has(m.id)) : -1;
-    if (rank >= 0) {
-        return harvestChangeOps(from.value, registry.typeLabel(from.value), [targets[rank]!]);
+    const parallel = alike && sources.length === targets.length;
+    const pinned = a.tiers.get(from.value);
+    const mayBe =
+        pinned === undefined
+            ? [...wholeFrom, ...catalog.filter((m) => m.type === from.value && !isNatural(m))]
+            : [...pinned].flatMap((id) => {
+                  const row = registry.resolveMod(id);
+                  return row.ok ? [row.value] : [];
+              });
+    const rows = new Set<Mod>();
+    for (const was of mayBe) {
+        if (!isNatural(was)) {
+            // A row another source placed becomes that source's counterpart row.
+            // The page says so of the Incursion modifiers alone (Modifier §
+            // Harvest Crafting); of any other the natural rows stay possible
+            // beside it (`QUESTIONS.md` Q52), as they do where it has none.
+            const twins = twinRows(was, to.value, a, tags, registry);
+            for (const m of twins) rows.add(m);
+            const incursion = was.name !== undefined && INCURSION_AFFIXES.has(was.name);
+            if (twins.length === 0 || !incursion) for (const m of targets) rows.add(m);
+            continue;
+        }
+        // The tier is kept (Modifier § Harvest Crafting): the target's row at
+        // the source's rank, where the two ladders have as many rows at the
+        // item's level and as many in all, so the rank is the same tier
+        // however it is counted. Which row the game picks otherwise is unknown
+        // (`QUESTIONS.md` Q22), so any of the target's rows that roll here, and
+        // the row at the source's rank in the whole ladder, which "preserves
+        // the tier" read literally, though the item's level is below it.
+        const here = sources.findIndex((m) => m.id === was.id);
+        if (parallel && here >= 0) {
+            rows.add(targets[here]!);
+            continue;
+        }
+        for (const m of targets) rows.add(m);
+        const rank = alike ? wholeFrom.findIndex((m) => m.id === was.id) : -1;
+        if (rank >= 0) rows.add(wholeTo[rank]!);
     }
-    // The source may be any of its recorded rows, or with none recorded any
-    // row of its ladder; each brings the target's row at its own rank.
-    const rows = new Set(targets);
-    if (alike) {
-        wholeFrom.forEach((m, i) => {
-            if (pinned === undefined || pinned.has(m.id)) rows.add(wholeTo[i]!);
-        });
-    }
+    if (rows.size === 0) return refuse(`"${toName}" cannot roll on this item.`);
     return harvestChangeOps(from.value, registry.typeLabel(from.value), [...rows]);
 }
 

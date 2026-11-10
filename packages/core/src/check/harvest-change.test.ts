@@ -19,6 +19,7 @@ import {
     AMULET_BASE,
     BENCH_FIRE_RES_ROW,
     BENCH_LIFE_ROW,
+    BOOTS_BASE,
     CATALOG,
     CLASS_AMULET,
     CLASS_RING,
@@ -264,9 +265,9 @@ describe("harvest change", () => {
         expect(rolled.diagnostics).toEqual([]);
     });
 
-    it("changes a modifier another source placed into its counterpart of that source and level", () => {
-        // The Incursion resistances roll nowhere; the grove still changes one
-        // into the other (Modifier § Harvest Crafting).
+    it("changes a modifier that rolls nowhere into its counterpart of the same level", () => {
+        // The target has no row that rolls here, and a counterpart at another
+        // level is not it.
         const placed = (name: string, minLevel: number): Mod => ({
             ...FIRE_RESIST,
             id: ModId(`${name}Level${minLevel}`),
@@ -407,5 +408,164 @@ describe("harvest change", () => {
             ctx,
         );
         expect(nowhere.diagnostics[0]!.message).toContain("cannot roll on this item");
+    });
+});
+
+describe("a Harvest change of a modifier another source placed", () => {
+    const lists: HarvestChangeLists = {
+        resistance: {
+            fire: [TypeId("FireAilments")],
+            cold: [TypeId("ColdAilments")],
+            lightning: [],
+        },
+        damage: { fire: [], cold: [], lightning: [] },
+    };
+    const unweighted = (...tags: string[]) =>
+        [...tags, "default"].map((tag) => ({ tag: TagId(tag), weight: 0 }));
+    /** A row of the fire or the cold type that rolls nowhere, at level 50. */
+    const row = (element: "Fire" | "Cold", id: string, over: Partial<Mod> = {}): Mod => ({
+        ...FIRE_RESIST,
+        id: ModId(id),
+        type: TypeId(`${element}Ailments`),
+        families: new Set([GroupId(`${element}Ailments`)]),
+        minLevel: 50,
+        spawn: unweighted(),
+        source: "other",
+        text: `+(46-48)% to ${element} Resistance against Ailing Enemies`,
+        ...over,
+    });
+    /** The cold type's one row that rolls. */
+    const natural = row("Cold", "ColdNatural", {
+        minLevel: 1,
+        spawn: [{ tag: TagId("default"), weight: 500 }],
+        source: "natural",
+    });
+    /** The rows the cold may be after the change of the item's "FireSource". */
+    const changed = (
+        mods: readonly Mod[],
+        extra: Partial<Parameters<typeof buildRegistry>[0]> = {},
+        on: Partial<Parameters<typeof item>[0]> = {},
+    ) => {
+        const reg = buildRegistry({
+            bases: [RING_BASE, BOOTS_BASE],
+            harvestChange: lists,
+            mods: [...CATALOG, natural, ...mods],
+            baseAliases: { "Iron Ring": "IronRing" },
+            ...extra,
+        });
+        const start = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            suffixes: ["FireSource"],
+            ...on,
+        });
+        const r = check(craft(start, [harvestChange("FireSource", "ColdNatural")]), {
+            registry: reg,
+        });
+        expect(r.diagnostics).toEqual([]);
+        return r.finalState!.tiers.get(TypeId("ColdAilments"));
+    };
+
+    it("is the counterpart alone for an Incursion modifier, named after its architect", () => {
+        const name = "of Puhuarte";
+        const rows = [row("Fire", "FireSource", { name }), row("Cold", "ColdTwin", { name })];
+        expect(changed(rows)).toEqual(new Set(["ColdTwin"]));
+    });
+
+    it("is the counterpart or a natural row for any other modifier that rolls nowhere", () => {
+        const name = "of the Retired";
+        const rows = [row("Fire", "FireSource", { name }), row("Cold", "ColdTwin", { name })];
+        expect(changed(rows)).toEqual(new Set(["ColdTwin", "ColdNatural"]));
+    });
+
+    it("takes a counterpart whose spawn table names a tag of the base, not another base's", () => {
+        const fossil = { source: "fossil" } as const;
+        const rows = [
+            row("Fire", "FireSource", fossil),
+            row("Cold", "ColdTwin", { ...fossil, spawn: unweighted("ring") }),
+            row("Cold", "ColdAmulet", { ...fossil, spawn: unweighted("amulet") }),
+        ];
+        expect(changed(rows)).toEqual(new Set(["ColdTwin", "ColdNatural"]));
+    });
+
+    it("takes a counterpart whose spawn table names an influence the item has", () => {
+        const elevated = { source: "elevated" } as const;
+        const rows = [
+            row("Fire", "FireSource", { ...elevated, spawn: unweighted("boots_basilisk") }),
+            row("Cold", "ColdTwin", { ...elevated, spawn: unweighted("boots_basilisk") }),
+            row("Cold", "ColdElder", { ...elevated, spawn: unweighted("boots_elder") }),
+            // A row that rolls under the influence, so the influence's tag exists.
+            row("Cold", "ColdHunter", {
+                minLevel: 1,
+                source: "natural",
+                spawn: [{ tag: TagId("boots_basilisk"), weight: 500 }, ...unweighted()],
+            }),
+        ];
+        const cold = changed(rows, {}, { base: "Iron Greaves", influences: ["hunter"] });
+        expect(cold?.has(ModId("ColdTwin"))).toBe(true);
+        expect(cold?.has(ModId("ColdElder"))).toBe(false);
+    });
+
+    it("takes the essence's counterpart that an essence grants the item's class", () => {
+        const essence = { source: "essence" } as const;
+        const rows = [
+            row("Fire", "FireSource", essence),
+            row("Cold", "ColdTwin", essence),
+            row("Cold", "ColdAmulet", essence),
+        ];
+        const grant = (id: string, cls: typeof CLASS_RING, mod: string) => ({
+            id,
+            name: `Essence of ${id}`,
+            tier: 7,
+            grants: new Map([[cls, ModId(mod)]]),
+        });
+        const essences = [
+            grant("Rings", CLASS_RING, "ColdTwin"),
+            grant("Amulets", CLASS_AMULET, "ColdAmulet"),
+        ];
+        expect(changed(rows, { essences })).toEqual(new Set(["ColdTwin", "ColdNatural"]));
+    });
+
+    it("gives each counterpart where the modifier may be either of two crafted rows", () => {
+        // The fire is the bench's lower craft, or after the branch its higher:
+        // the cold may be the bench's row of either rank, or a natural one.
+        const bench2: Mod = { ...BENCH_FIRE_RES_ROW, id: ModId("BenchFireResist2"), minLevel: 30 };
+        const cold = (m: Mod, id: string): Mod => ({
+            ...m,
+            id: ModId(id),
+            type: COLD_RESIST.type,
+            families: COLD_RESIST.families,
+            text: "+(13-18)% to Cold Resistance",
+        });
+        const crafts = [
+            BENCH_FIRE_RES_ROW,
+            bench2,
+            cold(BENCH_FIRE_RES_ROW, "BenchCold1"),
+            cold(bench2, "BenchCold2"),
+        ];
+        const reg = buildRegistry({
+            bases: [RING_BASE],
+            harvestChange: HARVEST_CHANGE,
+            mods: [...CATALOG, ...crafts],
+            baseAliases: { "Iron Ring": "IronRing" },
+            benchCrafts: crafts.map((m) => ({
+                mod: m.id,
+                tier: m.minLevel === 30 ? 2 : 1,
+                itemClasses: new Set([CLASS_RING]),
+            })),
+        });
+        const r = check(
+            craft(rareRing(["random"]), [
+                bench("fire resistance", 2),
+                iff(has("IncreasedMana1"), [bench("fire resistance", 1)]),
+                harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
+            ]),
+            { registry: reg },
+        );
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(COLD_RESIST.type)).toEqual(
+            new Set(["BenchCold1", "BenchCold2", COLD_RESIST.id]),
+        );
     });
 });

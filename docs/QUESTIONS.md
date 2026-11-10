@@ -157,7 +157,7 @@ influence section on an item with both? No real paste seen has both.
 does not say; it decides whether "remove crafted modifiers" and the crafted limit reach
 it. [Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting)
 has an Incursion resistance become the other element's Incursion row, and says nothing of
-a bench, essence, fossil or unveiled row.
+a bench, essence, fossil, unveiled, elevated or retired row.
 **Probe:** a Rare with a bench fire resistance and no other crafted modifier; change it
 to cold; record the cold's values, whether it shows as crafted and whether the removal
 takes it.
