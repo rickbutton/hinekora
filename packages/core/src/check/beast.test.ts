@@ -376,6 +376,46 @@ describe("beast metamod", () => {
         expect(r.finalState!.crafted).toEqual([1, 1]);
     });
 
+    it("counts the unnamed crafted modifiers against the metamods they may be", () => {
+        // The prefixes are full, so only a suffix metamod fits. One crafted
+        // suffix is unnamed: it may be one of the suffix metamods, not two.
+        const bought = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: ["T1 Life", "mana", "armour"],
+            suffixes: [MULTIMOD_CARRIER.id, { mod: "random", bench: true }],
+        });
+        const benched = (carriers: readonly Mod[]) =>
+            buildRegistry({
+                bases: [RING_BASE],
+                mods: [...CATALOG, ...carriers],
+                benchCrafts: carriers.map((m) => ({
+                    mod: m.id,
+                    tier: 1,
+                    itemClasses: new Set([CLASS_RING]),
+                })),
+                modAliases: {
+                    "T1 Life": "IncreasedLife1",
+                    mana: "IncreasedMana1",
+                    armour: "IncreasedArmour1",
+                },
+                baseAliases: { "Iron Ring": "IronRing" },
+            });
+        const run = (carriers: readonly Mod[]) =>
+            check(craft(bought, [beast({ kind: "metamod" })]), {
+                registry: benched(carriers),
+            }).diagnostics.map((d) => d.message);
+        // Two suffix metamods it may be: one of them is free.
+        expect(
+            run([MULTIMOD_CARRIER, PROTECT_PREFIXES_CARRIER, CANNOT_ROLL_ATTACK_CARRIER]),
+        ).toEqual([]);
+        // One only: the unnamed suffix may be it, and then nothing fits.
+        expect(run([MULTIMOD_CARRIER, PROTECT_PREFIXES_CARRIER])).toEqual([
+            expect.stringContaining("No metamod fits"),
+        ]);
+    });
+
     it("stays within the crafted limit and needs a metamod that fits", () => {
         const capped = check(
             craft(rareRing([], [PROTECT_PREFIXES_CARRIER.id]), [beast({ kind: "metamod" })]),
