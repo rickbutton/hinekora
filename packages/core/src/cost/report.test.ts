@@ -191,6 +191,23 @@ describe("the cost of a guide", () => {
         expect(branch.branch).toBeLessThan(1);
     });
 
+    it("an annul that may take a protecting metamod reaches the side it protected after", () => {
+        // The metamod is the only suffix, so the first annul takes it; from
+        // then on the prefixes are in reach and the loop ends.
+        const c = craft(
+            ring(
+                "rare",
+                ["IncreasedLife1", "IncreasedMana1", "IncreasedArmour1"],
+                [PROTECT_PREFIXES_CARRIER.id],
+            ),
+            [until(cmp("prefixCount", "<=", 1), [op("annul")])],
+        );
+        const loop = report(c).steps.find((s) => s.kind === "until")!;
+        expect(loop.note).toBeUndefined();
+        // One annul for the metamod, then two for the prefixes.
+        expect(loop.attempts!.expected).toBeCloseTo(3, 6);
+    });
+
     it("a second loop starts from where a solved first loop left the item", () => {
         // A make-room loop, then a loop that exalts until two suffixes are back:
         // the second is solved from the first's exits, not from a guess.

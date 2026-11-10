@@ -285,22 +285,25 @@ resolveEssence / resolveBench / resolveHarvestTag`
   item one modifier at a time (`chain`: `ChainStep`s of a random removal, a single draw, a
   bench craft, a branch over them with or without an else arm, a reforge whose `Outcome`s
   the item starts over from, a `restore` read as a reforge whose outcomes are the item
-  restored, a restart or a stop) as a Markov chain over the counts
+  restored, the imprint the checker holds over every round with its counts spread evenly,
+  a restart or a stop) as a Markov chain over the counts
   and the named modifiers' rows (`ChainState`, one `ChainAtom` per modifier the loop's
-  conditions name), from weighted start states to the exit (`exitAtStart` the part that
-  holds before any round), a restart, a stop or the mass that never leaves; once a round
-  hands the next a distribution of the same shape, or at the last round followed when a
-  slowly mixing chain has not settled (`Chain.estimated`, which the report notes), the
-  rounds still to come are added as that round's geometric tail, so a rare exit costs
-  its full expected rounds. The walk
-  builds it in `chainLoop` for every `until` whose body and exit fit, the rest taking
-  the independent-attempts path. The states the exit leaves the item in (`Chain.exits`)
-  carry on as the branch's `Carried` states until a step changes the item or might (a
-  call, a parameter step, a method the walk cannot read): a later chain-solved loop
-  starts from them, on the modifiers both loops name, and an `if` whose condition reads
-  only the counts and those modifiers splits them (`splitCarried`); a modifier a reforge
-  in that loop held by a stand-in row (`Carried.rowed` false, no condition told its tiers
-  apart) is not read for its tier. `prices.ts` holds the unit
+  conditions name, and one per metamod that protects a side, which a removal's `guards`
+  read: the side is out of reach while it is there), from weighted start states to the
+  exit (`exitAtStart` the part that holds before any round), a restart, a stop or the
+  mass that never leaves; once a round hands the next a distribution of the same shape,
+  or at the last round followed when a slowly mixing chain has not settled
+  (`Chain.estimated`, which the report notes), the rounds still to come are added as
+  that round's geometric tail, so a rare exit costs its full expected rounds. The walk
+  builds it in `chainLoop` for every `until` whose body and exit fit, reading each step
+  on the checker's item over the rounds, the rest taking the independent-attempts path.
+  The states the exit leaves the item in (`Chain.exits`) carry on as the branch's
+  `Carried` states until a step changes the item or might (a call, a parameter step, a
+  method the walk cannot read): a later chain-solved loop starts from them, on the
+  modifiers both loops name, and an `if` whose condition reads only the counts and those
+  modifiers splits them (`splitCarried`); a modifier a reforge in that loop held by a
+  stand-in row (`Carried.rowed` false, no condition told its tiers apart) is not read for
+  its tier. `prices.ts` holds the unit
   cost of a method in its own currency (`unitCost`: the orb's name, the essence, the
   fossils and their resonator, the lifeforce per Harvest craft, a bench craft's
   `BenchCraft.cost`, the beasts a Bestiary recipe takes), the `Prices` snapshot type and

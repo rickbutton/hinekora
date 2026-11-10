@@ -31,8 +31,15 @@ export interface ChainState {
 }
 
 export type ChainStep =
-    /** A random removal from one side, or from either in proportion to its count. */
-    | { readonly id: number; readonly kind: "remove"; readonly gen?: Gen }
+    /** A random removal from one side, or from either in proportion to its
+     *  count; a side is out of reach while a guarding atom (a metamod that
+     *  protects it) is on the item. */
+    | {
+          readonly id: number;
+          readonly kind: "remove";
+          readonly gen?: Gen;
+          readonly guards?: readonly { readonly atom: number; readonly side: Gen }[];
+      }
     /** One draw into an open side. `weight` is each side's whole pool weight
      *  with every atom's group open; `known` how many modifiers of the side are
      *  on the item throughout and already out of that weight; `mean` the weight
@@ -312,7 +319,7 @@ function apply(step: ChainStep, alive: Dist, input: ChainInput, t: Totals): Dist
             return next;
         }
         case "remove":
-            return removeStep(step.gen, alive, input);
+            return removeStep(step, alive, input);
         case "add":
             return addStep(step, alive, input);
     }
@@ -328,10 +335,17 @@ function bump(s: ChainState, gen: Gen, by: number, rows: readonly (ModId | null)
 
 /** A removal takes one of the modifiers on the sides it reaches, each equally
  *  likely: a named one goes, or one of the unnamed count. */
-function removeStep(gen: Gen | undefined, alive: Dist, input: ChainInput): Dist {
+function removeStep(
+    step: Extract<ChainStep, { kind: "remove" }>,
+    alive: Dist,
+    input: ChainInput,
+): Dist {
     const next: Dist = new Map();
-    const sides: readonly Gen[] = gen === undefined ? ["prefix", "suffix"] : [gen];
+    const reach: readonly Gen[] = step.gen === undefined ? ["prefix", "suffix"] : [step.gen];
     for (const { state, prob } of alive.values()) {
+        const sides = reach.filter(
+            (g) => !(step.guards ?? []).some((x) => x.side === g && state.rows[x.atom] !== null),
+        );
         let n = 0;
         for (const g of sides) n += state[g];
         if (n <= 0) {

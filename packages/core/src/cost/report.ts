@@ -767,6 +767,13 @@ class Walker {
             if (g !== null) pinRows(g);
         }
         if (!collect(stmt.body)) return undefined;
+        // A metamod that protects a side is tracked: a removal may take it.
+        const protections: { atom: number; side: Gen }[] = [];
+        for (const t of new Set([...guaranteedTypes(before), ...before.possible])) {
+            for (const e of registry.effectsOfType(t)) {
+                if (e.kind === "protect") protections.push({ atom: atomOf(t), side: e.gen });
+            }
+        }
 
         const known = { prefix: 0, suffix: 0 };
         for (const t of guaranteedTypes(before)) {
@@ -971,7 +978,9 @@ class Walker {
                     continue;
                 }
                 if (s.kind !== "operation") return undefined;
-                const entry = this.entry(s);
+                // A step runs on every round's item: the join over the rounds,
+                // which drops a protecting metamod a removal may take.
+                const entry = this.traced(s);
                 const method = findMethod(s.words);
                 if (entry === undefined || method === undefined || entry.after === undefined)
                     return undefined;
@@ -1024,6 +1033,7 @@ class Walker {
                             id,
                             kind: "remove",
                             ...(roll.gen !== undefined && { gen: roll.gen }),
+                            ...(protections.length > 0 && { guards: protections }),
                         });
                         break;
                     }

@@ -411,7 +411,8 @@ craft's listed price).
   and the report notes the figure as an estimate. Where the exit leaves the item, a
   distribution over the same small state, is what the next steps see until one changes
   the item: a second such loop ("until one resistance, then until two") starts from it,
-  and a branch on the counts reads it. The
+  and a branch on the counts reads it. A metamod that protects a side is tracked too,
+  since a removal may take it and open its side. The
   named modifiers are the only ones tracked; the rest of the item is a count whose draws
   close an average group. The chance of the exit per round, how often each step and
   branch inside runs, and the stop share fall out of the chain, exact up to that
