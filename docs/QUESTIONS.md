@@ -44,18 +44,6 @@ refused, or the item rolls without one.
 **Assumed:** the guarantee lapses and no such row rolls. **Encoded in:**
 `check/library.ts` `resonatorOps`.
 
-### Q22 · probe · open — the Harvest change's tier where the ladders differ
-
-**Q:** [Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting)
-says the craft "preserves the tier", but the elements' ladders are offset (fire
-resistance's rows at levels 1, 12, 24, …, cold's at 1, 14, 26, …): at an item level
-between two such rows the source's tier does not roll for the target.
-**Probe:** a Rare of item level 25 with the level-24 fire resistance, and one of level 13
-with the level-12 tier; open the fire-to-cold resistance change; record whether it is
-offered and, if so, which cold tier results.
-**Assumed:** refused; an influence's modifier stays within that influence's rows, ranked
-among them. **Encoded in:** `check/methods.ts` `harvestChange`.
-
 ### Q27 · probe · open — what the grove's influence randomise leaves
 
 **Q:** is a two-influence item rerolled to any pair, and may an influence it had come
@@ -133,8 +121,8 @@ elevated or retired row.
 **Probe:** a Rare with an unveiled or essence-only fire modifier; change it to cold;
 record the cold's values and name.
 **Assumed:** the same source's counterpart row or any natural row of the target; a
-natural row an essence placed above the item's level becomes the row of its rank, when an
-essence places that one on the class. **Encoded in:** `check/methods.ts` `harvestChange`.
+natural row an essence placed on a base that rolls no such modifier becomes the row of its
+rank, when an essence places that one on the class. **Encoded in:** `check/methods.ts` `harvestChange`.
 
 ### Q58 · probe · open — one or two modifiers from a transmute or an alteration
 

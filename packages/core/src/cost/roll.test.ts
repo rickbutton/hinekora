@@ -134,8 +134,8 @@ describe("memory strands in the pool", () => {
 
 describe("a modifier the item keeps through a roll", () => {
     it("may be a bench row beside a row of its ladder", () => {
-        // A Harvest change of a crafted modifier leaves the bench's
-        // counterpart or a natural row; the item may hold either.
+        // Where a path that benched the modifier meets one that rolled it,
+        // the item may hold either.
         const benched = buildRegistry({
             bases: [RING_BASE],
             mods: [...CATALOG, BENCH_LIFE_ROW],

@@ -12,6 +12,7 @@ import {
     essence,
     harvestChange,
     has,
+    hasValue,
     iff,
     item,
     notp,
@@ -42,6 +43,7 @@ import {
     LIGHTNING_RESIST,
 } from "../__fixtures__/mods.js";
 import { BaseId, ClassId, GroupId, ModId, TagId, TypeId } from "../model/ids.js";
+import type { Stmt } from "../ast/ast.js";
 import type { Mod } from "../model/mod.js";
 
 const COLD_DOT_MULTI: Mod = {
@@ -450,146 +452,168 @@ describe("harvest change", () => {
 });
 
 describe("a Harvest change where the elements' tiers unlock at different levels", () => {
-    // The game's ladders are offset by a level or two (fire resistance at 12,
-    // cold at 14). Here fire's tiers unlock at 1, 30 and 60, cold's at 1, 35
-    // and 65: between 30 and 34 the second fire tier rolls and the second cold
-    // does not.
-    const offset = COLD_RES_TIERS.map((m) =>
-        m.minLevel > 1 ? { ...m, minLevel: m.minLevel + 5 } : m,
-    );
-    const skewed = buildRegistry({
+    // The game's resistance ladders: fire's tiers unlock at levels 1, 12, 24
+    // and 36, cold's at 1, 14, 26 and 38, with the same values at each rank.
+    const SPANS = ["(6-11)", "(12-17)", "(18-23)", "(24-29)"];
+    const ladder = (element: "Fire" | "Cold", levels: number[]): Mod[] =>
+        levels.map((minLevel, i) => ({
+            ...FIRE_RES_TIERS[0]!,
+            id: ModId(`${element}Tiers${minLevel}`),
+            type: TypeId(`${element}Tiers`),
+            families: new Set([GroupId(`Resist${element}T`)]),
+            minLevel,
+            text: `+${SPANS[i]!}% to ${element} Resistance`,
+        }));
+    const offset = buildRegistry({
         bases: [RING_BASE],
         harvestChange: HARVEST_CHANGE,
-        mods: [...CATALOG, ...FIRE_RES_TIERS, ...offset],
+        mods: [...CATALOG, ...ladder("Fire", [1, 12, 24, 36]), ...ladder("Cold", [1, 14, 26, 38])],
         baseAliases: { "Iron Ring": "IronRing" },
     });
     const COLD = TypeId("ColdTiers");
     const FIRE = TypeId("FireTiers");
     /** The change of a modifier the item starts with at a known tier. */
-    const known = (ilvl: number, from: string, to: string) =>
+    const known = (ilvl: number, from: string, to: string, after: Stmt[] = []) =>
         check(
             craft(item({ base: "Iron Ring", ilvl, rarity: "rare", suffixes: [from] }), [
                 harvestChange(from, to),
+                ...after,
             ]),
-            { registry: skewed },
-        );
-    /** The change of a modifier a branch found after a reforge, at no known
-     *  tier, or at tier `t` of those that roll. */
-    const found = (ilvl: number, from: string, to: string, t?: number) =>
-        check(
-            craft(item({ base: "Iron Ring", ilvl, rarity: "rare" }), [
-                op("chaos"),
-                iff(andp(has(from, t), notp(has(to))), [harvestChange(from, to)]),
-            ]),
-            { registry: skewed },
+            { registry: offset },
         );
 
-    it("gives the same tier of the other element where the item's level allows it", () => {
-        const r = known(32, "FireTiersLow", "ColdTiersLow");
+    it("keeps the tier, though the item's level does not roll that tier of the other element", () => {
+        // Seen in game: an item of level 25 with the level-24 fire resistance
+        // has the level-26 cold resistance after the change.
+        const r = known(25, "FireTiers24", "ColdTiers1");
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.tiers.get(COLD)).toEqual(new Set(["ColdTiersLow"]));
+        expect(r.finalState!.tiers.get(COLD)).toEqual(new Set(["ColdTiers26"]));
+        expect(isExcluded(r.finalState!, FIRE)).toBe(true);
     });
 
-    it("is refused where the tier the modifier would keep is above the item's level", () => {
-        const r = known(32, "FireTiersMid", "ColdTiersLow");
-        const message = r.diagnostics[0]!.message;
-        expect(message).toContain(
-            'the tier of "ColdTiersLow" that "FireTiersMid" would become needs item level 35: it cannot appear on this item of level 32.',
-        );
-        // The one tier it may be is the one refused: no other to settle on.
-        expect(message).not.toContain("Settle the tier");
-        expect(guaranteedTypes(r.finalState!).has(FIRE)).toBe(true);
-    });
-
-    it("is refused where one tier the modifier may be would keep a tier above the item's level", () => {
-        const r = found(32, "FireTiersLow", "ColdTiersLow");
+    it("leaves a modifier whose value a guide can test, its tier having no number", () => {
+        // The cold resistance is +(18-23)%: at least 18 on every path.
+        const r = known(25, "FireTiers24", "ColdTiers1", [
+            iff(hasValue("ColdTiers1", ">=", 18), [], [stop()]),
+        ]);
         expect(r.diagnostics).toHaveLength(1);
-        expect(r.diagnostics[0]!.message).toContain("needs item level 35");
-        expect(r.diagnostics[0]!.message).toContain(
-            `Settle the tier first: under 'if has "FireTiersLow" t2' the grove can change it.`,
-        );
-        // The tier the message names is one the change takes.
-        expect(found(32, "FireTiersLow", "ColdTiersLow", 2).diagnostics).toEqual([]);
-        // Three fire tiers roll at 62 and two cold.
-        expect(found(62, "FireTiersLow", "ColdTiersLow").diagnostics[0]!.message).toContain(
-            "needs item level 65",
-        );
+        expect(r.diagnostics[0]!.message).toContain("always holds here");
     });
 
-    it("gives each tier's own where every tier the modifier may be keeps one that rolls", () => {
+    it("takes a tier above the item's level back to the one it came from", () => {
+        const r = known(25, "FireTiers24", "ColdTiers1", [
+            harvestChange("ColdTiers1", "FireTiers1"),
+        ]);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(FIRE)).toEqual(new Set(["FireTiers24"]));
+        const down = known(27, "ColdTiers26", "FireTiers1");
+        expect(down.diagnostics).toEqual([]);
+        expect(down.finalState!.tiers.get(FIRE)).toEqual(new Set(["FireTiers24"]));
+    });
+
+    it("gives each tier's own where the modifier may be any of several", () => {
+        // Three fire tiers roll at level 25; the cold of the third does not.
         const r = check(
-            craft(item({ base: "Iron Ring", ilvl: 40, rarity: "rare" }), [
+            craft(item({ base: "Iron Ring", ilvl: 25, rarity: "rare" }), [
                 op("chaos"),
-                iff(andp(has("FireTiersLow"), notp(has("ColdTiersLow"))), [
-                    harvestChange("FireTiersLow", "ColdTiersLow"),
-                    iff(has("ColdTiersLow", 1), []),
-                    iff(has("ColdTiersLow", 2), []),
-                ]),
+                iff(
+                    andp(has("FireTiers1"), notp(has("ColdTiers1"))),
+                    [harvestChange("FireTiers1", "ColdTiers1")],
+                    [stop()],
+                ),
             ]),
-            { registry: skewed },
+            { registry: offset },
         );
         expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(COLD)).toEqual(
+            new Set(["ColdTiers1", "ColdTiers14", "ColdTiers26"]),
+        );
     });
 
-    it("takes the other direction in the same window, the kept tier unlocking earlier", () => {
-        const low = known(32, "ColdTiersLow", "FireTiersLow");
-        expect(low.diagnostics).toEqual([]);
-        expect(low.finalState!.tiers.get(FIRE)).toEqual(new Set(["FireTiersLow"]));
-        expect(found(32, "ColdTiersLow", "FireTiersLow").diagnostics).toEqual([]);
-        const mid = known(37, "ColdTiersMid", "FireTiersLow");
-        expect(mid.diagnostics).toEqual([]);
-        expect(mid.finalState!.tiers.get(FIRE)).toEqual(new Set(["FireTiersMid"]));
+    it("gives every tier of the ladder for a modifier with no tier recorded", () => {
+        // An unnamed bench suffix leaves the fire resistance any row: a tier
+        // above the item's level among them, which an earlier change may leave.
+        const start = item({
+            base: "Iron Ring",
+            ilvl: 25,
+            rarity: "rare",
+            suffixes: [{ mod: "random", bench: true }],
+        });
+        const benched = buildRegistry({
+            bases: [RING_BASE],
+            harvestChange: harvestTable({
+                resistance: [["FireResist", "ColdTiers"]],
+                damage: [],
+            }),
+            mods: [
+                ...CATALOG,
+                // The bench's fire resistance is of the natural ladder's type.
+                ...ladder("Fire", [1, 12, 24, 36]).map((m) => ({
+                    ...m,
+                    type: FIRE_RESIST.type,
+                    families: FIRE_RESIST.families,
+                })),
+                ...ladder("Cold", [1, 14, 26, 38]),
+                BENCH_FIRE_RES_ROW,
+            ].filter((m) => m.id !== FIRE_RESIST.id),
+            baseAliases: { "Iron Ring": "IronRing" },
+            benchCrafts: [
+                { mod: BENCH_FIRE_RES_ROW.id, tier: 1, itemClasses: new Set([CLASS_RING]) },
+            ],
+        });
+        const r = check(
+            craft(start, [
+                iff(
+                    andp(has("fire resistance"), notp(has("ColdTiers1"))),
+                    [harvestChange("fire resistance", "ColdTiers1")],
+                    [stop()],
+                ),
+            ]),
+            { registry: benched },
+        );
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(COLD)).toEqual(
+            new Set(["ColdTiers1", "ColdTiers14", "ColdTiers26", "ColdTiers38"]),
+        );
     });
 
-    it("is refused where the modifier is a bench craft or a tier that would keep one above the item's level", () => {
+    it("gives a bench craft the tiers that roll and a recorded tier its own", () => {
         const benchFire: Mod = {
             ...BENCH_FIRE_RES_ROW,
             id: ModId("BenchFireTiers"),
             type: FIRE,
-            families: FIRE_RES_TIERS[0]!.families,
+            families: new Set([GroupId("ResistFireT")]),
         };
         const benched = buildRegistry({
             bases: [RING_BASE],
             harvestChange: HARVEST_CHANGE,
-            mods: [...CATALOG, ...FIRE_RES_TIERS, ...offset, benchFire],
+            mods: [
+                ...CATALOG,
+                ...ladder("Fire", [1, 12, 24, 36]),
+                ...ladder("Cold", [1, 14, 26, 38]),
+                benchFire,
+            ],
             baseAliases: { "Iron Ring": "IronRing" },
             benchCrafts: [{ mod: benchFire.id, tier: 1, itemClasses: new Set([CLASS_RING]) }],
         });
-        // The fire is the bench's on one path and the second tier on the other.
-        const either = (ilvl: number) =>
-            check(
-                craft(item({ base: "Iron Ring", ilvl, rarity: "rare", prefixes: ["random"] }), [
-                    iff(
-                        has("IncreasedMana1"),
-                        [bench("fire resistance")],
-                        [until(has("FireTiersLow", 1), [op("chaos")])],
-                    ),
-                    iff(
-                        notp(has("ColdTiersLow")),
-                        [harvestChange("FireTiersLow", "ColdTiersLow")],
-                        [stop()],
-                    ),
-                ]),
-                { registry: benched },
-            );
-        const low = either(32);
-        expect(low.finalState!.tiers.get(FIRE)).toEqual(
-            new Set(["BenchFireTiers", "FireTiersMid"]),
+        // The fire is the bench's on one path and the best tier that rolls on
+        // the other. The bench has no cold craft here, so its fire becomes a
+        // cold that rolls; the tier becomes the cold of its rank.
+        const r = check(
+            craft(item({ base: "Iron Ring", ilvl: 25, rarity: "rare", prefixes: ["random"] }), [
+                iff(
+                    has("IncreasedMana1"),
+                    [bench("fire resistance")],
+                    [until(has("FireTiers1", 1), [op("chaos")])],
+                ),
+                iff(notp(has("ColdTiers1")), [harvestChange("FireTiers1", "ColdTiers1")], [stop()]),
+            ]),
+            { registry: benched },
         );
-        expect(low.diagnostics).toHaveLength(1);
-        expect(low.diagnostics[0]!.message).toContain("needs item level 35");
-        // At a level that allows the tier, the bench's fire may be either cold
-        // that rolls, the second tier its own.
-        const high = either(40);
-        expect(high.diagnostics).toEqual([]);
-        expect(high.finalState!.tiers.get(COLD)).toEqual(new Set(["ColdTiersLow", "ColdTiersMid"]));
-    });
-
-    it("leaves an item above every tier's level as it was", () => {
-        const top = known(100, "FireTiersHigh", "ColdTiersLow");
-        expect(top.diagnostics).toEqual([]);
-        expect(top.finalState!.tiers.get(COLD)).toEqual(new Set(["ColdTiersHigh"]));
-        expect(found(100, "FireTiersLow", "ColdTiersLow").diagnostics).toEqual([]);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(COLD)).toEqual(
+            new Set(["ColdTiers1", "ColdTiers14", "ColdTiers26"]),
+        );
     });
 });
 
@@ -744,13 +768,13 @@ describe("a Harvest change on an item with two influences", () => {
         expect(shaper.diagnostics[0]!.message).toContain("cannot roll on this item");
     });
 
-    it("gives any row of a longer or shorter ladder, and is refused where one is above the item's level", () => {
+    it("gives any row of a longer or shorter ladder, whose rank names no one row", () => {
         const mods = [row("Fire", "eyrie", 68), row("Cold", "eyrie", 78), row("Cold", "eyrie", 68)];
-        const all = changed(mods, "Fire_eyrie_68");
-        expect(all.diagnostics).toEqual([]);
-        expect(cold(all)).toEqual(new Set(["Cold_eyrie_78", "Cold_eyrie_68"]));
-        const low = changed(mods, "Fire_eyrie_68", 70);
-        expect(low.diagnostics[0]!.message).toContain("needs item level 78");
+        for (const ilvl of [100, 70]) {
+            const all = changed(mods, "Fire_eyrie_68", ilvl);
+            expect(all.diagnostics).toEqual([]);
+            expect(cold(all)).toEqual(new Set(["Cold_eyrie_78", "Cold_eyrie_68"]));
+        }
     });
 });
 
@@ -827,27 +851,19 @@ describe("a Harvest change of a natural row an essence placed", () => {
             : r.finalState!.tiers.get(TypeId(to.slice(0, -1)));
     };
 
-    it("becomes the row of its rank that an essence places, above the item's level too", () => {
+    it("becomes the row of its rank, above the item's level too", () => {
         const change = (ilvl: number) =>
             after("Iron Greaves", ilvl, "Deafening Essence of Hatred", "ColdBoots1", "FireBoots1");
         expect(change(83)).toEqual(new Set(["FireBoots8"]));
         expect(change(20)).toEqual(new Set(["FireBoots8"]));
         expect(change(84)).toEqual(new Set(["FireBoots8"]));
-        // Both rows need level 60: the essence placed the one, and its
-        // counterpart's essence would have placed the other.
         expect(
             after("Iron Greaves", 59, "Screaming Essence of Hatred", "ColdBoots1", "FireBoots1"),
         ).toEqual(new Set(["FireBoots6"]));
-    });
-
-    it("is refused where no essence places the row of its rank and the item's level does not allow it", () => {
-        const change = (ilvl: number) =>
-            after("Iron Greaves", ilvl, "Weeping Essence of Hatred", "ColdBoots1", "FireBoots1");
-        expect(change(20)).toContain(
-            "needs item level 24: it cannot appear on this item of level 20",
-        );
-        // The cold row needs level 26, the fire row of its rank 24.
-        expect(change(25)).toEqual(new Set(["FireBoots3"]));
+        // No essence places the third fire tier: the rank alone decides.
+        expect(
+            after("Iron Greaves", 20, "Weeping Essence of Hatred", "ColdBoots1", "FireBoots1"),
+        ).toEqual(new Set(["FireBoots3"]));
     });
 
     it("is ranked on the ladder it has elsewhere when the base rolls no such modifier", () => {

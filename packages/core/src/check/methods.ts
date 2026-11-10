@@ -222,26 +222,25 @@ function harvestChange(
         );
     }
     // The result is what each row the source may be would become, together:
-    // its recorded rows, or with none recorded any row of its ladder that
-    // rolls at the item's level, any row another source places and any
-    // natural row an essence places on the item's class.
+    // its recorded rows, or with none recorded any row of its ladder, any row
+    // another source places and any natural row an essence places on the
+    // item's class. The ladders are whole, whatever the item's level: an
+    // essence or an earlier change may have left a row above it.
     const whole = (type: TypeId): readonly Mod[] =>
         rollableTiers(catalog, a.base, TOP_ITEM_LEVEL, type, tags);
     const [wholeFrom, wholeTo] = [whole(from.value), whole(to.value)];
-    const sources = rollableTiers(catalog, a.base, a.ilvl, from.value, tags);
     const targets = rollableTiers(catalog, a.base, a.ilvl, to.value, tags);
     // The influence whose tag lets a row roll on the item, none for a row the
-    // base's own tags admit. An influence's rows are a ladder of their own: a
-    // modifier is assumed to stay within it (`QUESTIONS.md` Q22).
+    // base's own tags admit. An influence's rows are a ladder of their own,
+    // and a modifier is taken to stay within it: the game has not been seen
+    // to change one on an item with two influences.
     const influenceOf = (m: Mod): string => {
         const tag = m.spawn.find((w) => a.base.tags.has(w.tag) || tags.has(w.tag))?.tag;
         if (tag === undefined || a.base.tags.has(tag)) return "";
         return INFLUENCES.find((i) => registry.influenceTags(a.base, i).has(tag)) ?? "";
     };
     // The rows the essences place on an item of this class. Many are natural
-    // rows, and an essence places its row whatever the item's level, so a
-    // natural row above that level, or one the base does not roll, is an
-    // essence's (docs/item-model.md §8).
+    // rows, some of a modifier the base does not roll (docs/item-model.md §8).
     const essenceRows = new Set(
         registry.essences.flatMap((e) => e.grants.get(a.base.itemClass) ?? []),
     );
@@ -269,11 +268,11 @@ function harvestChange(
     const mayBe =
         pinned === undefined
             ? [
-                  ...sources,
+                  ...wholeFrom,
                   ...catalog.filter(
                       (m) =>
                           m.type === from.value &&
-                          !sources.includes(m) &&
+                          !wholeFrom.includes(m) &&
                           (!isNatural(m) || essenceRows.has(m.id)),
                   ),
               ]
@@ -282,8 +281,6 @@ function harvestChange(
                   return row.ok ? [row.value] : [];
               });
     const rows = new Set<Mod>();
-    const changeable: Mod[] = [];
-    let tooHigh: Mod | undefined;
     // A row the modifier may be has no row of the target to become.
     let stuck = false;
     for (const was of mayBe) {
@@ -305,48 +302,27 @@ function harvestChange(
             continue;
         }
         // The tier is kept (Modifier § Harvest Crafting): the target's row at
-        // the source's rank, among the rows of the source's own influence.
+        // the source's rank on the whole ladder, among the rows of the source's
+        // own influence, whatever the item's level. Seen in game: on an item
+        // of level 25 the level-24 fire resistance became the level-26 cold.
         const ladder = (rows: readonly Mod[]): readonly Mod[] =>
             rows.filter((m) => influenceOf(m) === influenceOf(was));
         const onBase = wholeFrom.some((m) => m.id === was.id);
         const [ladderFrom, ladderTo] = onBase
             ? [ladder(wholeFrom), ladder(wholeTo)]
             : [elsewhere(from.value, was), elsewhere(to.value, was)];
-        const same =
-            ladderFrom.length === ladderTo.length
-                ? ladderTo[ladderFrom.findIndex((m) => m.id === was.id)]
-                : undefined;
-        if (same !== undefined) {
-            // An essence's row becomes the row of its rank that an essence
-            // places on this class, whatever its level, as that row's own
-            // essence would have placed it.
-            const placed = !onBase || was.minLevel > a.ilvl;
-            if ((onBase && same.minLevel <= a.ilvl) || (placed && essenceRows.has(same.id))) {
-                rows.add(same);
-                changeable.push(was);
-            } else if (onBase) tooHigh ??= same;
-            else stuck = true;
+        if (ladderFrom.length === ladderTo.length) {
+            const same = ladderTo[ladderFrom.findIndex((m) => m.id === was.id)];
+            // A row the base does not roll is an essence's, and becomes one
+            // an essence places on the item's class.
+            if (same === undefined || (!onBase && !essenceRows.has(same.id))) stuck = true;
+            else rows.add(same);
         } else if (!onBase || ladderTo.length === 0) {
             stuck = true;
         } else {
-            // The rank names no one row: any of the ladder's, when all roll here.
-            const above = ladderTo.find((m) => m.minLevel > a.ilvl);
-            if (above !== undefined) tooHigh ??= above;
-            else for (const m of ladderTo) rows.add(m);
+            // The rank names no one row: any of the ladder's.
+            for (const m of ladderTo) rows.add(m);
         }
-    }
-    // The elements' ladders unlock at different levels, so the kept tier may
-    // be one the item's level does not allow. Whether the grove offers the
-    // craft then is unknown (`QUESTIONS.md` Q22), so no guide may rest on it.
-    if (tooHigh !== undefined) {
-        const tier = sources.findIndex((r) => changeable.includes(r)) + 1;
-        const settle =
-            tier === 0
-                ? ""
-                : ` Settle the tier first: under 'if has "${fromName}" t${tier}' the grove can change it.`;
-        return refuse(
-            `The grove keeps a modifier's tier, and the tier of "${toName}" that "${fromName}" would become needs item level ${tooHigh.minLevel}: it cannot appear on this item of level ${a.ilvl}.${settle}`,
-        );
     }
     if (stuck || rows.size === 0) return refuse(`"${toName}" cannot roll on this item.`);
     return harvestChangeOps(from.value, registry.typeLabel(from.value), [...rows]);
@@ -557,7 +533,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["harvest", "change"],
         args: [name("mod"), name("mod")],
-        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier (a penetration or a damage over time multiplier too) into the same modifier of another element, at the same tier. Refused for a critical strike multiplier, for a modifier the other element has no form of, for a fractured modifier or one on a side a metamod protects, where another modifier of the new one\'s group is on the item, and where the item level does not allow that tier, unless an essence, the bench or another such source placed the modifier.',
+        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier (a penetration or a damage over time multiplier too) into the same modifier of another element, at the same tier, even one the item\'s level does not roll: no t<n> names that tier, so test its value. Refused for a critical strike multiplier, for a modifier the other element has no form of, for a fractured modifier or one on a side a metamod protects, and where another modifier of the new one\'s group is on the item.',
         build: ([from, to], a, registry) => harvestChange(text(from), text(to), a, registry),
     },
     {

@@ -622,9 +622,10 @@ function presentOn(a: AItem, registry: Registry): Present[] {
             if (rows.length < pinned.size) {
                 // A row the ladder at the item's level lacks: a bench, essence
                 // or unveiled row, or a natural row above that level, which an
-                // essence places. It may stand beside rows of the ladder: a
-                // Harvest change of a crafted modifier leaves either. It weighs
-                // by its spawn weight as they do, and one where it never spawns.
+                // essence places and a Harvest change leaves (it keeps the
+                // tier). It may stand beside rows of the ladder where paths
+                // meet. It weighs by its spawn weight as they do, and one
+                // where it never spawns.
                 const held = new Set(rows.map((r) => r.mod.id));
                 for (const m of registry.catalog) {
                     if (pinned.has(m.id) && !held.has(m.id))

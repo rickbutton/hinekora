@@ -52,7 +52,8 @@ export interface ModView {
     /** The affix name ("Virile"), when the tier is known. */
     readonly name?: string;
     /** The tier numbers the modifier may be, T1 the best that rolls here; a row
-     *  an essence placed above the item's level is numbered on the whole ladder. */
+     *  above the item's level (an essence's, a Harvest change's) is numbered
+     *  on the whole ladder. */
     readonly tier?: Range;
     /** The modifier's category tags, as the advanced tooltip shows them. */
     readonly tags: readonly string[];
@@ -217,8 +218,9 @@ function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: Mod
     const known = a.values.get(type);
     const span = texts.length > 0 ? rollSpan(texts) : registry.typeLabel(type);
     const text = known === undefined ? span : withValue(span, known);
-    // A natural row above the item's level is an essence's: no row that rolls
-    // here ranks it, so it takes its number on the modifier's whole ladder.
+    // A natural row above the item's level is an essence's or a Harvest
+    // change's: no row that rolls here ranks it, so it takes its number on the
+    // modifier's whole ladder.
     const whole = rollableTiers(registry.catalog, a.base, TOP_ITEM_LEVEL, type, tags);
     const numbers = mods
         .map((m) => {
