@@ -71,7 +71,7 @@ or the checker knows is there (declared, granted, crafted, a protecting metamod,
 placeholder; each eldritch implicit's tier, and its type where a condition names one), whether it is on the item, in which tier class (each tier a condition names
 on its own, the rest of the ladder together) and whether it is fractured (its row marked
 `!`); a modifier a condition compares by value is held per tier
-and value piece, cut at the condition's thresholds. The distribution starts from the item
+and value piece, cut at the condition's thresholds, and an imprint holds the state it was taken of. The distribution starts from the item
 block, a `"random"` modifier a natural roll of its side by spawn weight and an eldritch
 implicit declared without a type each type of its tier by an ember's weights (assumed
 for the tiers only an Orb of Conflict reaches too), and is

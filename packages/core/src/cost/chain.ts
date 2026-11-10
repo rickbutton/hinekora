@@ -26,6 +26,8 @@ export interface ChainState {
     readonly prefix: number;
     readonly suffix: number;
     readonly rows: readonly (ModId | null)[];
+    /** The item an imprint holds, as it was when the imprint was taken. */
+    readonly held?: ChainState;
 }
 
 export type ChainStep =
@@ -146,6 +148,9 @@ const EPSILON = 1e-9;
 const SETTLED = 1e-7;
 /** The mass an unsettled tail must carry for the figures to count as estimated. */
 const UNSETTLED_MASS = 0.01;
+/** How fast a round's shape may still move, against the share of the mass it
+ *  loses, for the rounds after it to be taken as a tail. */
+const DRAINING = 0.5;
 const STUCK = 1e-9;
 
 type Dist = Map<string, { state: ChainState; prob: number }>;
@@ -174,6 +179,7 @@ function key(s: ChainState): string {
     let k = keys.get(s);
     if (k === undefined) {
         k = `${s.prefix}/${s.suffix}/${s.rows.map((r) => r ?? "-").join(",")}`;
+        if (s.held !== undefined) k += `|${key(s.held)}`;
         keys.set(s, k);
     }
     return k;
@@ -305,8 +311,14 @@ function iterate(
         // figures are an estimate.
         t.work += head.size;
         const last = round === MAX_PASSES - 1 || t.work >= MAX_WORK;
-        const settled = shapeDistance(shapeIn, mass, head, massOf(head)) < SETTLED;
-        const tail = decay < 1 - STUCK && (settled || last);
+        const distance = shapeDistance(shapeIn, mass, head, massOf(head));
+        // States that never leave, beside a few still draining, hand on almost
+        // the same shape too; but there the shape moves as fast as the mass
+        // goes, where a true tail's shape has stopped moving. Their mass is
+        // left going round, not summed as a tail.
+        const draining = distance > DRAINING * (1 - decay);
+        const settled = distance < SETTLED && !draining;
+        const tail = decay < 1 - STUCK && (settled || (last && !draining));
         const factor = tail ? 1 / (1 - decay) : 1;
         for (const { state, prob } of leaving.values()) put(exits, state, prob * factor);
         if (tail) {

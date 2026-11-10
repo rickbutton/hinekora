@@ -457,18 +457,46 @@ describe("the cost of a guide", () => {
         expect(r.steps.find((s) => s.kind === "until")!.note).toBeUndefined();
     });
 
-    it("a restore to an imprint whose counts are open keeps the spread of what it may hold", () => {
-        // A Transmutation lays down one modifier or two; the imprint keeps
-        // either, which the walk reads by the reading, so its ends are walked.
-        const c = craft(ring("normal"), [
-            op("transmute"),
-            beast({ kind: "imprint" }),
-            op("restore"),
-            op("regal"),
-            iff(cmp("prefixCount", ">=", 2), [stop()]),
-        ]);
-        const branch = report(c).steps.find((s) => s.kind === "if")!;
-        expect(branch.branchRange).toBeDefined();
+    it("a restore sets the item back to the one its imprint was taken of", () => {
+        // A Transmutation lays down one modifier or two and the imprint keeps
+        // whichever it was: restoring it after an Orb of Alteration leaves the
+        // Regal Orb the item the Transmutation made, not any the check allows.
+        const steps = (...between: string[]) =>
+            report(
+                craft(ring("normal"), [
+                    op("transmute"),
+                    beast({ kind: "imprint" }),
+                    ...between.map((s) => op(s)),
+                    op("regal"),
+                    iff(cmp("prefixCount", ">=", 2), [stop()]),
+                ]),
+            ).steps.find((s) => s.kind === "if")!;
+        const restored = steps("alteration", "restore");
+        expect(restored.note).toBeUndefined();
+        expect(restored.branchRange).toBeUndefined();
+        expect(restored.branch).toBeCloseTo(steps().branch!, 9);
+    });
+
+    it("a restore in a loop goes back to the item imprinted, whichever it was", () => {
+        // The Transmutation leaves a prefix, a suffix or both, and the imprint
+        // is of that ring. One imprinted with a prefix alone never holds two
+        // suffixes after a Regal Orb, however often it is restored: were each
+        // restore any ring the check allows, the loop would always end.
+        const r = report(
+            craft(ring("normal"), [
+                op("transmute"),
+                beast({ kind: "imprint" }),
+                op("regal"),
+                until(cmp("suffixCount", "==", 2), [
+                    op("restore"),
+                    beast({ kind: "imprint" }),
+                    op("regal"),
+                ]),
+            ]),
+        );
+        const loop = r.steps.find((s) => s.kind === "until")!;
+        expect(loop.unknown).toBe(true);
+        expect(loop.note).toMatch(/never reaches the exit/);
     });
 
     it("a restore inside a loop sets the item back to its imprint each round", () => {
@@ -953,11 +981,27 @@ describe("the eldritch implicits", () => {
         const loop = (pre: Parameters<typeof craft>[1]) =>
             on({ exarch: "greater", eater: "grand" }, [
                 ...pre,
-                until(eldritchP("exarch", "grand"), [op("conflict")]),
+                // Until the Exarch is Grand, or lowered off the item.
+                until(orp(eldritchP("exarch", "grand"), notp(eldritchP("exarch"))), [
+                    op("conflict"),
+                ]),
             ]).steps.find((s) => s.kind === "until")!;
         const after = loop([iff(isRarity("rare"), [])]);
         expect(after.note).toBeUndefined();
         expect(after.attempts!.expected).toBeCloseTo(loop([]).attempts!.expected, 9);
+    });
+
+    it("a loop some items never leave has no figure, however slowly the others drain", () => {
+        // Orbs of Conflict until the Exarch is Grand: lowered off the item,
+        // it never is, and the orb cannot be used again. That share stays for
+        // ever beside the items still going up and down.
+        const r = on({ exarch: "greater", eater: "grand" }, [
+            until(eldritchP("exarch", "grand"), [op("conflict")]),
+        ]);
+        const loop = r.steps.find((s) => s.kind === "until")!;
+        expect(loop.unknown).toBe(true);
+        expect(loop.note).toMatch(/of the time the item never reaches the exit/);
+        expect(r.unknown).toBe(true);
     });
 
     it("an implicit the item block declares without a type is any of its tier's", () => {

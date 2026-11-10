@@ -1182,14 +1182,40 @@ class Walker {
             const { total, prefix } = entry.after.counts;
             if (total[0] !== total[1] || prefix[0] !== prefix[1]) this.lost = true;
             const mass = back.reduce((sum, b) => sum + b.weight, 0);
+            const read = back.map((b) => ({ state: b.state, prob: b.weight / mass }));
+            // A state that saw its imprint taken goes back to that very item;
+            // one that did not, to the imprint as the check knows it.
             return {
                 id,
-                kind: "reforge",
-                outcomes: back.map((b) => ({ state: b.state, prob: b.weight / mass })),
+                kind: "transition",
+                next: (state) =>
+                    state.held === undefined ? read : [{ state: state.held, prob: 1 }],
             };
         }
         const next = tracker.transition(entry.before, built, this.reading, s.words.join(" "));
-        return next === undefined ? undefined : { id, kind: "transition", next };
+        if (next === undefined) return undefined;
+        if (!built.some((op) => op.kind === "imprint")) return { id, kind: "transition", next };
+        // The imprint keeps the item as the state has it.
+        const kept = new Map<ChainState, readonly { state: ChainState; prob: number }[]>();
+        return {
+            id,
+            kind: "transition",
+            next: (state) => {
+                let out = kept.get(state);
+                if (out === undefined) {
+                    out = next(state).map((o) => {
+                        const held = {
+                            prefix: o.state.prefix,
+                            suffix: o.state.suffix,
+                            rows: o.state.rows,
+                        };
+                        return { prob: o.prob, state: { ...held, held } };
+                    });
+                    kept.set(state, out);
+                }
+                return out;
+            },
+        };
     }
 
     /**

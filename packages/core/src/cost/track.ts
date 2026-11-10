@@ -426,13 +426,13 @@ export class Tracker {
         const kind = rollOf(before, ops, this.registry, reading).kind;
         const cache = new Map<string, readonly Outcome[]>();
         if (kind === "reroll") {
-            return (state) => {
+            return besideImprint((state) => {
                 const key = stateKey(state);
                 if (!cache.has(key)) this.another();
                 const out = cache.get(key) ?? this.kept(state, ops, this.rerolled(state));
                 cache.set(key, out);
                 return out;
-            };
+            });
         }
         if (
             kind !== "draw" &&
@@ -448,7 +448,7 @@ export class Tracker {
         const fillAt = ops.findIndex((op) => op.kind === "fill");
         const cut = removalBeforeFill(ops);
         const drawn = new Map<string, readonly Outcome[]>();
-        return (state) => {
+        return besideImprint((state) => {
             const key = stateKey(state);
             const hit = cache.get(key);
             if (hit !== undefined) return hit;
@@ -477,7 +477,7 @@ export class Tracker {
             out = this.kept(state, ops, out);
             cache.set(key, out);
             return out;
-        };
+        });
     }
 
     /** What a draw reads of an item: its counts, rarity, strands, influences,
@@ -1272,6 +1272,32 @@ function implicitSide(type: TypeId): EldritchSide | undefined {
 
 function stateKey(s: ChainState): string {
     return `${s.prefix}/${s.suffix}/${s.rows.map((r) => r ?? "-").join(",")}`;
+}
+
+/** A step read on a state without the imprint it holds, which no method but
+ *  the imprint's own and its restore touches, and handed back with it. */
+function besideImprint(
+    next: (state: ChainState) => readonly Outcome[],
+): (state: ChainState) => readonly Outcome[] {
+    const cache = new Map<ChainState, Map<readonly Outcome[], readonly Outcome[]>>();
+    return (state) => {
+        const held = state.held;
+        if (held === undefined) return next(state);
+        const out = next({ prefix: state.prefix, suffix: state.suffix, rows: state.rows });
+        // One array for one imprint and one set of outcomes, so the chain
+        // can spread the states that share them together.
+        let byOut = cache.get(held);
+        if (byOut === undefined) {
+            byOut = new Map<readonly Outcome[], readonly Outcome[]>();
+            cache.set(held, byOut);
+        }
+        let withHeld = byOut.get(out);
+        if (withHeld === undefined) {
+            withHeld = out.map((o) => ({ prob: o.prob, state: { ...o.state, held } }));
+            byOut.set(out, withHeld);
+        }
+        return withHeld;
+    };
 }
 
 function bump(s: ChainState, gen: Gen, by: number, rows: readonly (ModId | null)[]): ChainState {
