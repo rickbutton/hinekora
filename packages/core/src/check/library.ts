@@ -11,6 +11,7 @@ import type { Mod } from "../model/mod.js";
 import type { EssenceSpec, FossilSpec } from "../model/sources.js";
 import type { CurrencyKind } from "../resolve/registry.js";
 import {
+    ELDRITCH_ITEM_LEVEL,
     type EldritchSide,
     type Influence,
     INFLUENCE_ORB,
@@ -455,6 +456,11 @@ export function eldritchImplicitOps(
             what: "body armour, boots, gloves or helmet",
         }),
         noInfluence(ELDRITCH_NAME[side]),
+        require({
+            kind: "minItemLevel",
+            level: ELDRITCH_ITEM_LEVEL,
+            what: `An ${ELDRITCH_NAME[side]}`,
+        }),
         { kind: "eldritch", change: { kind: "set", side, tier, types } },
     ];
 }

@@ -220,6 +220,7 @@ export type Check =
     | { readonly kind: "baseHasTag"; readonly tag: TagId; readonly what: string }
     /** The base carries one of the tags (the Corruption Altar's item types). */
     | { readonly kind: "baseHasAnyTag"; readonly tags: readonly TagId[]; readonly what: string }
+    | { readonly kind: "minItemLevel"; readonly level: number; readonly what: string }
     /** The fossil's base restriction admits this item. */
     | { readonly kind: "fossilAllowed"; readonly fossil: FossilSpec }
     | { readonly kind: "essenceRarity"; readonly tier: number }
@@ -345,6 +346,7 @@ export type PreconditionFailure =
     | { readonly kind: "metamodBlocks" }
     | { readonly kind: "fossilBaseRestricted"; readonly fossil: string }
     | { readonly kind: "wrongBase"; readonly needed: string }
+    | { readonly kind: "itemLevelTooLow"; readonly level: number; readonly what: string }
     | { readonly kind: "noMetamodFits" }
     | { readonly kind: "noImprint" }
     | { readonly kind: "notImprintable" }
@@ -868,6 +870,10 @@ function failing(
             return check.tags.some((t) => a.base.tags.has(t))
                 ? null
                 : { kind: "wrongBase", needed: check.what };
+        case "minItemLevel":
+            return a.ilvl >= check.level
+                ? null
+                : { kind: "itemLevelTooLow", level: check.level, what: check.what };
         case "fossilAllowed": {
             const allowed = check.fossil.allowedTags;
             if (allowed === undefined) return null;

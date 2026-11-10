@@ -304,19 +304,6 @@ group under the item's influence tag (`check/ops.ts` `elevate`), which pairs eve
 influenced modifier of the four classes in the data.
 **Answer:**
 
-### Q38 · game probe · open
-
-**Asked:** 2026-10-30
-**Goal:** whether an Eldritch Ember or Ichor needs an item level. The rows carry a
-required level of 75 in the data, and the item pages say only "a normal, magic or rare
-item" ([Lesser Eldritch Ember](https://www.poewiki.net/wiki/Lesser_Eldritch_Ember)).
-**Procure:** a pair of gloves of item level 20; a Lesser Eldritch Ember.
-**Steps:** apply it; note whether it is refused.
-**Record:** refused or applied.
-**Assumed meanwhile:** any item level (`check/library.ts` `eldritchImplicitOps` has no
-level gate; `packages/data/scripts/ingest-eldritch.mjs` drops the row's level).
-**Answer:**
-
 ### Q33 · game probe · open
 
 **Asked:** 2026-10-29
@@ -715,6 +702,20 @@ most tiers; a Recombinator's result may keep either input's strands (`check/ops.
 ---
 
 ## Resolved
+
+### Q38 · game probe · resolved
+
+**Asked:** 2026-10-30
+**Goal:** whether an Eldritch Ember or Ichor needs an item level. The rows carry a
+required level of 75 in the data, and the item pages say only "a normal, magic or rare
+item" ([Lesser Eldritch Ember](https://www.poewiki.net/wiki/Lesser_Eldritch_Ember)).
+**Procure:** a pair of gloves of item level 20; a Lesser Eldritch Ember.
+**Steps:** apply it; note whether it is refused.
+**Record:** refused or applied.
+**Assumed meanwhile:** any item level (`check/library.ts` `eldritchImplicitOps` has no
+level gate; `packages/data/scripts/ingest-eldritch.mjs` drops the row's level).
+**Answer:** 2026-11-10: not seen in play; assume the data's level 75 as an item level until
+a game shows otherwise (`model/marks.ts` `ELDRITCH_ITEM_LEVEL`, required by an ember, an ichor and the item block).
 
 ### Q36 · game probe · resolved
 

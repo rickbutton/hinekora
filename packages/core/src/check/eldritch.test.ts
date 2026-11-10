@@ -265,6 +265,24 @@ describe("corruption may replace an eldritch implicit", () => {
     });
 });
 
+describe("an Eldritch Ember on a low item level", () => {
+    it("needs item level 75", () => {
+        const low = item({ base: "Iron Greaves", ilvl: 74, rarity: "rare" });
+        expect(messages(craft(low, [wordArg(["ember"], "lesser")]))).toContain(
+            "An Eldritch Ember needs item level 75 or more — this item is item level 74.",
+        );
+        const at = item({ base: "Iron Greaves", ilvl: 75, rarity: "rare" });
+        expect(messages(craft(at, [wordArg(["ichor"], "lesser")]))).toBe("");
+    });
+
+    it("cannot be on an item block below it", () => {
+        const declared = item({ base: "Iron Greaves", ilvl: 74, rarity: "rare", eater: "grand" });
+        expect(messages(craft(declared, []))).toBe(
+            "An eldritch implicit needs item level 75; this item is level 74.",
+        );
+    });
+});
+
 describe("the Orb of Conflict", () => {
     it("raises one implicit and lowers the other, removing a lowered Lesser", () => {
         const r = run(craft(boots({ exarch: "greater", eater: "lesser" }), [words("conflict")]));

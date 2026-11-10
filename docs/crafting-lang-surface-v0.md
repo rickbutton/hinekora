@@ -96,7 +96,8 @@ item {
   a mod name is (§2) among the implicits of that side, the wording the words cover best
   winning and a tie ambiguous as in §2; an implicit's "presence" variant ("While a
   Unique Enemy is in your Presence, …") is a wording of its own, named by the words of
-  its condition. An influenced item cannot carry one, so declaring both is an error.
+  its condition. An influenced item cannot carry one, so declaring both is an error, nor
+  an item below item level 75 (`QUESTIONS.md` Q38).
 - `enchant: <passives> "<stat>"` is a [cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel)'s
   two enchantments: how many passive skills it adds (2 to 3 on a Small, 4 to 6 on a Medium,
   8 to 12 on a Large) and the stat its small passives grant, which decides the notables it
@@ -187,7 +188,7 @@ page groups them:
 | `tainted chaos` | [Tainted Chaos Orb](https://www.poewiki.net/wiki/Tainted_Chaos_Orb#Mechanics) | corrupted Rare; reforged, or stripped to the rarity its survivors allow |
 | `tainted exalt` | [Tainted Exalted Orb](https://www.poewiki.net/wiki/Tainted_Exalted_Orb) | corrupted Rare; a modifier added or removed |
 | `tainted divine` | [Tainted Divine Teardrop](https://www.poewiki.net/wiki/Tainted_Divine_Teardrop#Mechanics) | corrupted Rare; every modifier but a crafted one may move a tier, so their tiers are forgotten |
-| `ember <tier>` / `ichor <tier>` | an [Eldritch Ember](https://www.poewiki.net/wiki/Lesser_Eldritch_Ember) or [Ichor](https://www.poewiki.net/wiki/Lesser_Eldritch_Ichor) of that tier, `lesser` to `exceptional` | body armour, boots, gloves or helmet of any rarity, no influence; sets the Exarch (ember) or Eater (ichor) implicit's tier |
+| `ember <tier>` / `ichor <tier>` | an [Eldritch Ember](https://www.poewiki.net/wiki/Lesser_Eldritch_Ember) or [Ichor](https://www.poewiki.net/wiki/Lesser_Eldritch_Ichor) of that tier, `lesser` to `exceptional` | body armour, boots, gloves or helmet of any rarity, item level 75 or more, no influence; sets the Exarch (ember) or Eater (ichor) implicit's tier |
 | `eldritch chaos` | [Eldritch Chaos Orb](https://www.poewiki.net/wiki/Eldritch_Chaos_Orb) | Rare with a dominant implicit; rerolls the prefixes under the Exarch, the suffixes under the Eater, the other side kept |
 | `eldritch exalt` | [Eldritch Exalted Orb](https://www.poewiki.net/wiki/Eldritch_Exalted_Orb) | Rare with a dominant implicit and an open slot on its side |
 | `eldritch annul` | [Eldritch Orb of Annulment](https://www.poewiki.net/wiki/Eldritch_Orb_of_Annulment) | Magic or Rare with a dominant implicit and a removable modifier on its side |

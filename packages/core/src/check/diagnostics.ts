@@ -201,6 +201,8 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return "No metamod fits: the item may have no open slot, or every metamod is already on it.";
             case "wrongBase":
                 return `Needs a ${failure.needed}.`;
+            case "itemLevelTooLow":
+                return `${failure.what} needs item level ${failure.level} or more — this item is item level ${state.ilvl}.`;
             case "notCorruptedItem":
                 return `${failure.what} needs a corrupted item — this item ${failure.sure ? "is not" : "may not be"} corrupted.`;
             case "fossilBaseRestricted":

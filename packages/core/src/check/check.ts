@@ -23,7 +23,12 @@ import type { SourceSpan } from "../ast/span.js";
 import { type Gen, type GroupId, type ModId, TagId, type TypeId } from "../model/ids.js";
 import type { Base } from "../model/base.js";
 import type { Mod } from "../model/mod.js";
-import { type EldritchSide, eldritchTierOf, INFLUENCES } from "../model/marks.js";
+import {
+    ELDRITCH_ITEM_LEVEL,
+    type EldritchSide,
+    eldritchTierOf,
+    INFLUENCES,
+} from "../model/marks.js";
 import { MAX_STRANDS } from "../model/strands.js";
 import type { ModTypeContext, Registry } from "../resolve/registry.js";
 import {
@@ -548,6 +553,15 @@ class Checker {
         // nor carry an eldritch implicit (Eldritch implicit modifier).
         if (influences.length > 0 && (item.exarch !== undefined || item.eater !== undefined)) {
             this.diag("An influenced item cannot have an eldritch implicit.", item.span);
+        }
+        if (
+            (item.exarch !== undefined || item.eater !== undefined) &&
+            item.ilvl < ELDRITCH_ITEM_LEVEL
+        ) {
+            this.diag(
+                `An eldritch implicit needs item level ${ELDRITCH_ITEM_LEVEL}; this item is level ${item.ilvl}.`,
+                item.span,
+            );
         }
         if (influences.length > 0 && fracturedTypes.length + fracturedAnonymous > 0) {
             this.diag("An influenced item cannot have a fractured modifier.", item.span);
