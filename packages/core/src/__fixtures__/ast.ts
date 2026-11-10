@@ -155,7 +155,7 @@ type BeastAction =
       }
     | { readonly kind: "fracture"; readonly n?: number }
     | { readonly kind: "metamod" }
-    | { readonly kind: "aspect"; readonly name: string | ParamRef }
+    | { readonly kind: "aspect"; readonly name: string | ParamRef; readonly level?: number }
     | { readonly kind: "imprint" };
 export const beast = (action: BeastAction): OperationStmt => {
     switch (action.kind) {
@@ -169,7 +169,12 @@ export const beast = (action: BeastAction): OperationStmt => {
             );
         }
         case "aspect":
-            return operation(["beast", "aspect"], [named(action.name)]);
+            return operation(
+                ["beast", "aspect"],
+                action.level === undefined
+                    ? [named(action.name)]
+                    : [named(action.name), { kind: "int", value: action.level, span: ds() }],
+            );
         case "fracture":
             return operation(
                 ["beast", "fracture"],

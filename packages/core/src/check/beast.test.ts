@@ -24,7 +24,8 @@ import {
     RING_BASE,
     TALISMAN_BASE,
 } from "../__fixtures__/mods.js";
-import { TypeId } from "../model/ids.js";
+import { ModId, TypeId } from "../model/ids.js";
+import type { Mod } from "../model/mod.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE, TALISMAN_BASE],
@@ -373,6 +374,29 @@ describe("beast aspect", () => {
         expect(r.diagnostics).toEqual([]);
         expect(guaranteedTypes(r.finalState!).has(ASPECT_CAT.type)).toBe(true);
         expect(r.finalState!.crafted).toEqual([0, 0]);
+    });
+
+    it("crafts the level-20 skill's row for the recipe with the one beast", () => {
+        const low: Mod = {
+            ...ASPECT_CAT,
+            id: ModId("GrantsCatAspectCrafted"),
+            text: "Grants Level 20 Aspect of the Cat Skill",
+        };
+        const both = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...CATALOG, ASPECT_CAT, low],
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
+        const rows = (level?: number) =>
+            check(
+                craft(rareRing(), [
+                    beast({ kind: "aspect", name: "cat", ...(level !== undefined && { level }) }),
+                ]),
+                { registry: both },
+            );
+        expect(rows(20).finalState!.tiers.get(ASPECT_CAT.type)).toEqual(new Set([low.id]));
+        expect(rows().finalState!.tiers.get(ASPECT_CAT.type)).toEqual(new Set([ASPECT_CAT.id]));
+        expect(rows(25).diagnostics[0]!.message).toContain("at level 20 or 30, not 25");
     });
 
     it("allows one skill-granting modifier, needs an open suffix, and knows four animals", () => {

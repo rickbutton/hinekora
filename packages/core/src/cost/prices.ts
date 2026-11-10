@@ -136,7 +136,9 @@ function beastCost(
             return [one(BEAST_METAMOD)];
         case "aspect": {
             const beast = BEAST_ASPECT[text(args[0]).trim().toLowerCase()];
-            return beast === undefined ? undefined : [one(beast), BLACK_MORRIGAN];
+            if (beast === undefined) return undefined;
+            // The level-20 recipe takes the one beast.
+            return tierArg(args[1]) === 20 ? [one(beast)] : [one(beast), BLACK_MORRIGAN];
         }
         case "imprint": {
             // A Magic item's imprint and a Rare talisman's are different recipes.

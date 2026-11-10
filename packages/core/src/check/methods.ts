@@ -474,10 +474,16 @@ export const METHODS: readonly Method[] = [
     },
     {
         words: ["beast", "aspect"],
-        args: [name("aspect")],
-        doc: 'beast aspect "<animal>" — craft that level-30 Aspect skill\'s suffix: cat, avian, spider or crab. Needs an open suffix slot and no other skill-granting modifier; it does not count as a crafted modifier.',
-        build: ([n], _a, registry) => {
-            const row = registry.resolveAspect(text(n));
+        args: [name("aspect"), { kind: "int", optional: true }],
+        doc: 'beast aspect "<animal>" [20] — craft that Aspect skill\'s suffix: cat, avian, spider or crab, at level 30, or at level 20 for the recipe without the Black Mórrigan. Needs an open suffix slot and no other skill-granting modifier; it does not count as a crafted modifier.',
+        build: ([n, l], _a, registry) => {
+            const level = num(l) ?? 30;
+            if (level !== 20 && level !== 30) {
+                return refuse(
+                    `The Bestiary crafts an Aspect skill at level 20 or 30, not ${level}.`,
+                );
+            }
+            const row = registry.resolveAspect(text(n), level);
             return row.ok ? beastAspectOps(row.value) : refuse(resolveMessage(row.error));
         },
     },

@@ -257,8 +257,10 @@ export interface Registry {
     /** The type a Harvest change turns `type` into for that element: the one of
      *  the element's list named alike. Undefined when the list has none. */
     harvestChangeTarget(type: TypeId, element: Element): TypeId | undefined;
-    /** Resolve an Aspect by its animal ("cat") to the row the Bestiary crafts. */
-    resolveAspect(name: string): Resolved<Mod>;
+    /** Resolve an Aspect by its animal ("cat") to the row the Bestiary crafts:
+     *  the level-30 skill's, or the level-20 one's of the recipe that takes
+     *  the one beast. */
+    resolveAspect(name: string, level?: 20 | 30): Resolved<Mod>;
     /** The generation (prefix/suffix) a ModType always occupies, if known. */
     genOfType(type: TypeId): Gen | undefined;
     /** A cluster jewel's enchantment that decides its notable pool, named by the
@@ -717,8 +719,11 @@ export function buildRegistry(data: RegistryData): Registry {
             return data.harvestChange?.[from.kind][element]?.find((t) => alike(t) === wanted);
         },
 
-        resolveAspect(name) {
-            const id = aspects.get(norm(name));
+        resolveAspect(name, level = 30) {
+            // The one-beast recipe's level-20 row is named as the level-30 one
+            // without its level ("GrantsCatAspectCrafted").
+            const top = aspects.get(norm(name));
+            const id = level === 30 ? top : top?.replace(/30$/, "");
             const mod = id === undefined ? undefined : modById.get(id);
             return mod ? found(mod) : fail({ kind: "unknownAspect", name });
         },

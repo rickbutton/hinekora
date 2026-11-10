@@ -135,7 +135,8 @@ describe("every method refuses a corrupted item first", () => {
                     case "word":
                         return [{ kind: "word", value: slot.oneOf[0]! }];
                     case "int":
-                        return [{ kind: "int", value: 2 }];
+                        // Each int slot is optional and means something else.
+                        return [];
                     case "tier":
                         return [];
                 }

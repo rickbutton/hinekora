@@ -146,7 +146,7 @@ A statement opens with its words and takes its arguments after them:
 - Words alone: `chaos`, `exalt hunter`, `eldritch annul`, `foulborn regal`, `bench remove`.
 - A tier word: `ember grand`, `ichor lesser`.
 - A quoted name, some with an optional `t<n>`: `essence "greed" t1` (T1 = Deafening) or
-  `essence "Deafening Essence of Greed"`; `bench "maximum life"`; `beast aspect "cat"`;
+  `essence "Deafening Essence of Greed"`; `bench "maximum life"`; `beast aspect "cat"` (`20` after it for the level-20 skill);
   `unveil "<mod>"`.
 - A harvest tag: `harvest reforge "<tag>"` and `harvest augment "<tag>"`, the
   [Harvest crafts](https://www.poewiki.net/wiki/Harvest_crafting#Modifier_groups) that
