@@ -2,8 +2,8 @@
 
 > The checker proves; the cost layer estimates. It answers what every guide quotes but
 > the checker cannot: how many tries a loop takes and what the craft is expected to
-> spend. This is its design and the game readings it rests on; the code is
-> `packages/core/src/cost/`, the checker it reads [ARCHITECTURE.md](ARCHITECTURE.md) §4.
+> spend. The code is `packages/core/src/cost/`, the checker it reads
+> [ARCHITECTURE.md](ARCHITECTURE.md) §4.
 
 ---
 
@@ -143,26 +143,26 @@ fire together over one reforge, not a product). Expected cost is linear: a state
 expected runs is the mass reaching it times the rounds of every loop around it, times its
 unit price (`cost/prices.ts`, in the step's own currency).
 
-- An **`until`** whose body the tracker can follow
-  is not memoryless: each round starts where the last left the item.
-  It is a Markov chain (`cost/chain.ts`) over the tracked state, a loop inside it
-  solved once per state entering it. The
-  distribution is carried round after round until the mass has left (the exit or a
-  stop); once a round hands on the same shape, only smaller, the rest is a geometric
-  series.
-  A chain not settled within the rounds followed is solved over its states, or past a
-  few hundred noted as an estimate; the states that cannot reach the exit hold the
-  share that never leaves. Where the exit leaves the item is what the next steps see.
-- Any other `until` is a sequence of independent attempts: the body is walked once to
-  find the chance an attempt ends in the exit or a `stop`; the expected rounds is the
-  reciprocal, and the share ending in a stop ends the craft.
+- An **`until`** whose body the tracker can follow is a Markov chain
+  (`cost/chain.ts`) over the tracked state, each round starting where the last left
+  the item, a loop inside it solved once per state entering it. The
+  distribution is carried round after round until the mass has left; once a round
+  hands on the same shape, only smaller, the rest is a geometric series. A chain not
+  settled within the rounds followed is solved over its states; past a few hundred,
+  its own rounds' decay stands for the rest, an estimate. Where those rounds are too
+  few (the work went on loops inside) or lose too little to measure, its rounds are
+  not worked out. States that cannot reach the exit hold the share that never
+  leaves. Where the exit leaves the item is what the next steps see.
+- Any other `until` is independent attempts: the body is walked once for the chance
+  one ends in the exit or a `stop`; the expected rounds is its reciprocal, the share
+  ending in a stop ending the craft.
 - An **`if`** splits each branch by its condition's chance; a `restart` is back at
   its loop's head with the item as it is; a `stop`, or a
   `restart` outside every loop, ends the craft.
 
-Where the model cannot say, the step's note says why. A loop whose rounds have no
-figure (the check refuses it, no round reaches its exit, or the item sticks short of
-it) is given none, nor are its steps or the guide's total.
+Where the model cannot say, the step's note says why. A loop the check refuses, whose
+exit no round reaches or the item sticks short of, or whose rounds were not worked
+out has no figure, nor have its steps or the guide's total.
 
 ---
 
