@@ -20,6 +20,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { GAME_VERSION_NOTE, resolveGameVersion } from "./game-version.mjs";
 
 const OUT_DIR = fileURLToPath(new URL("../data/poe1", import.meta.url));
 const MODS_URL = process.env.REPOE_MODS_URL ?? "https://repoe-fork.github.io/mods.min.json";
@@ -31,22 +32,7 @@ const BENCH_URL =
 const FOSSILS_URL =
     process.env.REPOE_FOSSILS_URL ?? "https://repoe-fork.github.io/fossils.min.json";
 
-const VERSION_URL = process.env.REPOE_VERSION_URL ?? "https://repoe-fork.github.io/version.txt";
-
 const AFFIX_GENS = new Set(["prefix", "suffix"]);
-
-/** The Path of Exile patch the export was built from, which it states in its
- *  `version.txt`; "unknown" when that cannot be read. */
-async function resolveGameVersion() {
-    if (process.env.REPOE_GAME_VERSION) return process.env.REPOE_GAME_VERSION;
-    try {
-        const res = await fetch(VERSION_URL);
-        const text = res.ok ? (await res.text()).trim() : "";
-        return /^\d+(\.\d+)+$/.test(text) ? text : "unknown";
-    } catch {
-        return "unknown";
-    }
-}
 
 /** The manifest with what the other ingest scripts recorded in the one it
  *  replaces: the files this script does not write, and their extents. */
@@ -329,8 +315,7 @@ async function main() {
                 "unknown",
         },
         gameVersion: await resolveGameVersion(),
-        gameVersionNote:
-            "The patch the repoe-fork export stated in its version.txt when the dump at source.publishedAt was published; source.commit is the exporter's code, not the game data.",
+        gameVersionNote: GAME_VERSION_NOTE,
         retrievedAt: new Date().toISOString().slice(0, 10),
         extent: {
             description:

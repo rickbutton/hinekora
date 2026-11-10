@@ -44,3 +44,23 @@ describe("the manifest the main ingest writes", () => {
         expect(keepingOtherFiles(written, undefined)).toEqual(written);
     });
 });
+
+describe("the game version an ingest records", () => {
+    it("is the export's version.txt, or unknown where that is not a version", async () => {
+        const helper = new URL("../scripts/game-version.mjs", import.meta.url).href;
+        const { parseGameVersion } = (await import(/* @vite-ignore */ helper)) as {
+            readonly parseGameVersion: (text: string) => string;
+        };
+        expect(parseGameVersion("3.29.3.5\n")).toBe("3.29.3.5");
+        expect(parseGameVersion("Internal Server Error")).toBe("unknown");
+    });
+
+    it("is what the committed manifest's note says of it", async () => {
+        const helper = new URL("../scripts/game-version.mjs", import.meta.url).href;
+        const { GAME_VERSION_NOTE } = (await import(/* @vite-ignore */ helper)) as {
+            readonly GAME_VERSION_NOTE: string;
+        };
+        const { loadDefaultPoe1 } = await import("./load.js");
+        expect(loadDefaultPoe1().manifest.gameVersionNote).toBe(GAME_VERSION_NOTE);
+    });
+});

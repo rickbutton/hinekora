@@ -11,6 +11,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { resolveGameVersion } from "./game-version.mjs";
 
 const OUT_DIR = fileURLToPath(new URL("../data/poe1", import.meta.url));
 const CLUSTER_URL =
@@ -45,18 +46,6 @@ async function resolveCommit() {
         return { sha: c.sha, date: c.commit.committer.date };
     } catch {
         return { sha: "unknown", date: "unknown" };
-    }
-}
-
-/** The patch the export states in its `version.txt` when it is read. */
-async function resolveGameVersion() {
-    if (process.env.REPOE_GAME_VERSION) return process.env.REPOE_GAME_VERSION;
-    try {
-        const res = await fetch("https://repoe-fork.github.io/version.txt");
-        const text = res.ok ? (await res.text()).trim() : "";
-        return /^\d+(\.\d+)+$/.test(text) ? text : "unknown";
-    } catch {
-        return "unknown";
     }
 }
 

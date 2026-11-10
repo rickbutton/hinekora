@@ -9,7 +9,7 @@
         "publishedAt": "Fri, 06 Nov 2026 16:49:17 GMT"
     },
     "gameVersion": "3.29.3.4",
-    "gameVersionNote": "The patch the repoe-fork export stated in its version.txt when the dump at source.publishedAt was published; source.commit is the exporter's code, not the game data.",
+    "gameVersionNote": "The repoe-fork export's version.txt when this was ingested, or REPOE_GAME_VERSION where an older dump was given; source.commit is the exporter's code, not the game data.",
     "retrievedAt": "2026-11-10",
     "extent": {
         "description": "Full PoE1 catalog projected to the fields the core model uses: all prefix/suffix mods, all released named bases, plus the essence, bench (mod-adding) and fossil catalogs.",
