@@ -139,6 +139,27 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         const desolation = registry.essences.find((e) => e.name === "Essence of Desolation");
         expect(desolation?.tier).toBe(8);
         expect(desolation && isCorruptedEssence(desolation)).toBe(false);
+        // Nor does it restrict the level of the modifiers rolled beside its own.
+        expect(desolation?.maxRandomModLevel).toBeUndefined();
+        const whispering = registry.resolveEssence("Whispering Essence of Greed");
+        expect(whispering.ok && whispering.value.maxRandomModLevel).toBe(35);
+    });
+
+    it("gives a Rune Dagger the Dagger's essence modifier and a Warstaff the Staff's", () => {
+        // Essences name weapons as one- or two-handed, not by class.
+        for (const e of registry.essences) {
+            expect(e.grants.get(ClassId("Rune Dagger")), e.name).toBe(
+                e.grants.get(ClassId("Dagger")),
+            );
+            expect(e.grants.get(ClassId("Warstaff")), e.name).toBe(e.grants.get(ClassId("Staff")));
+        }
+        const woe = registry.resolveEssence("Deafening Essence of Woe");
+        expect(woe.ok && woe.value.grants.get(ClassId("Rune Dagger"))).toBe(
+            "SpellDamageOnWeaponEssence7",
+        );
+        expect(woe.ok && woe.value.grants.get(ClassId("Warstaff"))).toBe(
+            "SpellDamageOnTwoHandWeaponEssence7",
+        );
     });
 
     it("resolves essences by full name, by type + tier, and flags conflicts", () => {

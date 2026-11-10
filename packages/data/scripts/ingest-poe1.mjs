@@ -148,12 +148,28 @@ function projectBases(raw, mods) {
 // essences' rung (Essence of Desolation).
 const LADDER_TIER_FALLBACK = { "Essence of Desolation": 8 };
 
-function projectEssences(raw) {
+// The export keys an essence's modifiers by item class and has none for the
+// two classes split off the daggers and staves. An essence names its weapon
+// modifiers by "One Handed Weapon" and "Two Handed Weapon" (Essence § Essence x
+// Base Matrix), so a Rune Dagger takes the Dagger's and a Warstaff the Staff's.
+const CLASS_TAKES_AFTER = { "Rune Dagger": "Dagger", Warstaff: "Staff" };
+
+// The export gives the Essence of Desolation an item level restriction of 15;
+// the essence's own text states none ("Properties restricted to level …" is
+// absent) and the wiki's essences table has none (Essence of Desolation).
+const NO_LEVEL_RESTRICTION = new Set(["Essence of Desolation"]);
+
+export function projectEssences(raw) {
     const out = {};
     for (const [id, e] of Object.entries(raw)) {
         // Skip essences that grant no mod — the retired "Remnant of Corruption"
         // is the only one; it isn't a mod-adding currency we model.
         if (!e.mods || Object.keys(e.mods).length === 0) continue;
+        const grants = { ...e.mods };
+        for (const [cls, like] of Object.entries(CLASS_TAKES_AFTER)) {
+            if (grants[cls] === undefined && grants[like] !== undefined) grants[cls] = grants[like];
+        }
+        const restricted = e.item_level_restriction != null && !NO_LEVEL_RESTRICTION.has(e.name);
         out[id] = {
             name: e.name,
             // `e.level` is the ladder tier (1 = Whispering … 7 = Deafening, 8 =
@@ -163,10 +179,8 @@ function projectEssences(raw) {
             // `item_level_restriction` caps the RANDOM fill mods' level (absent =
             // no cap). It is NOT an item-level requirement — essences work on any
             // item level; the guaranteed mod is forced at its fixed tier.
-            ...(e.item_level_restriction != null && {
-                maxRandomModLevel: e.item_level_restriction,
-            }),
-            grants: e.mods, // item class → guaranteed mod id
+            ...(restricted && { maxRandomModLevel: e.item_level_restriction }),
+            grants, // item class → guaranteed mod id
         };
     }
     return out;
