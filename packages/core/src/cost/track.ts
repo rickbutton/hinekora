@@ -353,6 +353,11 @@ export class Tracker {
         return this.outcomesOn(item, ops, state, reading);
     }
 
+    private crafted(row: ModId): boolean {
+        const mod = this.registry.resolveMod(readRow(row).base);
+        return mod.ok && mod.value.source === "bench";
+    }
+
     /** The item a veiled placeholder went onto, read on each side it may be
      *  on, the sides with room alike (QUESTIONS.md Q76). */
     private veiledSides(
@@ -375,7 +380,7 @@ export class Tracker {
                 side = side === null ? null : refine(side, c, true);
             }
             if (side === null) continue;
-            const states = this.statesIn(side, reading);
+            const states = this.statesIn(side, reading, from);
             if (states === undefined) return undefined;
             sides.push(states);
         }
@@ -452,7 +457,7 @@ export class Tracker {
                 if (!ran.ok) return [{ state, prob: 1 }];
                 if (ops.some((op) => op.kind === "fill" && op.pool.kind === "veiledPlaceholder"))
                     return this.counted(this.veiledSides(ran.state, state, reading));
-                return this.counted(this.statesIn(ran.state, reading));
+                return this.counted(this.statesIn(ran.state, reading, state));
             }
             default:
                 return this.counted(undefined);
@@ -521,7 +526,11 @@ export class Tracker {
      * atom present or absent, a present one's class by its rows' weight.
      * Undefined where the item leaves a count or an atom open.
      */
-    statesIn(item: AItem, reading: Reading = "estimate"): readonly Outcome[] | undefined {
+    statesIn(
+        item: AItem,
+        reading: Reading = "estimate",
+        from?: ChainState,
+    ): readonly Outcome[] | undefined {
         const [t0, t1] = item.counts.total;
         const [p0, p1] = item.counts.prefix;
         if (t0 !== t1 || p0 !== p1) return undefined;
@@ -544,7 +553,13 @@ export class Tracker {
         for (let i = 0; i < this.atoms.length; i++) {
             const type = this.types[i]!;
             if (guaranteed.has(type)) choose(i, this.rowsOn(i, item));
-            else if (!isExcluded(item, type) && item.possible.has(type)) maybe.push(i);
+            else if (isExcluded(item, type) || !item.possible.has(type)) continue;
+            else if (from !== undefined) {
+                // A sure method the checker reads as perhaps removing a modifier
+                // the state holds removes it only if it was a crafted one.
+                const row = from.rows[i] ?? null;
+                if (row !== null && !this.crafted(row)) choose(i, [{ id: row, weight: 1 }]);
+            } else maybe.push(i);
         }
         if (maybe.length > 0) {
             // The modifiers the item holds that no one names are taken as its

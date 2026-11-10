@@ -6,6 +6,8 @@ import { emptyItem } from "../model/item.js";
 import {
     andp,
     beast,
+    bench,
+    benchRemove,
     callStmt,
     cmp,
     craft,
@@ -26,6 +28,7 @@ import {
 import {
     BENCH_LIFE_ROW,
     CATALOG,
+    CLASS_RING,
     LIFE_T1,
     PROTECT_PREFIXES_CARRIER,
     RING_BASE,
@@ -37,6 +40,7 @@ const registry = buildRegistry({
     bases: [RING_BASE],
     mods: [...CATALOG, BENCH_LIFE_ROW, PROTECT_PREFIXES_CARRIER],
     baseAliases: { "Iron Ring": "IronRing" },
+    benchCrafts: [{ mod: BENCH_LIFE_ROW.id, tier: 1, itemClasses: new Set([CLASS_RING]) }],
 });
 const ring = (
     rarity: "normal" | "magic" | "rare",
@@ -404,6 +408,23 @@ describe("the cost of a guide", () => {
         const fireOnly = after([], ["FireResist1"], []);
         expect(fireOnly).toBeGreaterThan(lifeOnly);
         expect(mixed).toBeCloseTo((lifeOnly + fireOnly) / 2, 9);
+    });
+
+    it("a crafted modifier put on and taken off leaves what the item held as it was", () => {
+        // The checker forgets which life the removal took; the state knows it
+        // was the crafted one.
+        const life = (steps: ReturnType<typeof op>[]) =>
+            report(
+                craft(ring("rare"), [
+                    op("chaos"),
+                    iff(andp(notp(has("maximum life")), cmp("prefixCount", "<=", 2)), steps),
+                    iff(has("maximum life"), [stop()]),
+                ]),
+            ).steps.at(-2)!;
+        const plain = life([]);
+        const crafted = life([bench("maximum life"), benchRemove()]);
+        expect(crafted.note).toBeUndefined();
+        expect(crafted.branch).toBeCloseTo(plain.branch!, 9);
     });
 
     it("a Divine Orb reaches a value by the share of the range at or above it", () => {
