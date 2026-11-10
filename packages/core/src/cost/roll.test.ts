@@ -150,6 +150,8 @@ describe("a modifier the item keeps through a roll", () => {
         if (roll.kind !== "draw") throw new Error("not a draw");
         const life = roll.variants[0]!.present.find((p) => p.type === "IncreasedLife")!;
         expect(life.rows.map((r) => r.mod.id).sort()).toEqual(["IncreasedLife1", "IncreasedLife2"]);
+        // Each by its spawn weight, the row above the level beside the one within it.
+        expect(life.rows.map((r) => r.weight).sort()).toEqual([1000, 2000]);
     });
 });
 
