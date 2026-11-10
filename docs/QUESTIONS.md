@@ -123,21 +123,18 @@ influence section on an item with both? No real paste seen has both.
 **Assumed:** `Corrupted` in its own section, last. **Encoded in:**
 `packages/core/src/render/item.ts` `renderItemText`.
 
-### Q52 · probe · open — what a Harvest-changed crafted modifier becomes
+### Q52 · probe · open — what a Harvest-changed essence, fossil or unveiled modifier becomes
 
-**Q:** does it stay crafted, and which row is it?
-[Harvest crafting § Mechanics](https://www.poewiki.net/wiki/Harvest_crafting#Mechanics)
-does not say; it decides whether "remove crafted modifiers" and the crafted limit reach
-it. [Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting)
-has an Incursion resistance become the other element's Incursion row, and says nothing of
-a bench, essence, fossil, unveiled, elevated or retired row.
-**Probe:** a Rare with a bench fire resistance and no other crafted modifier; change it
-to cold; record the cold's values, whether it shows as crafted and whether the removal
-takes it.
-**Assumed:** it stays crafted; it is the same source's counterpart row or any natural row
-of the target; a natural row an essence placed above the item's level becomes the row of
-its rank, when an essence places that one on the class. **Encoded in:** `check/ops.ts` `fill` on a `rows` pool keeps the new rows
-among `craftedTypes`; `check/methods.ts` `harvestChange`.
+**Q:** which row is it?
+[Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting)
+has an Incursion resistance become the other element's Incursion row, and a bench craft
+becomes the bench's (seen in game); nothing says it of an essence-only, fossil, unveiled,
+elevated or retired row.
+**Probe:** a Rare with an unveiled or essence-only fire modifier; change it to cold;
+record the cold's values and name.
+**Assumed:** the same source's counterpart row or any natural row of the target; a
+natural row an essence placed above the item's level becomes the row of its rank, when an
+essence places that one on the class. **Encoded in:** `check/methods.ts` `harvestChange`.
 
 ### Q58 · probe · open — one or two modifiers from a transmute or an alteration
 

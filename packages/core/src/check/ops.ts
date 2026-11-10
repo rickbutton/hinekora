@@ -113,7 +113,8 @@ export type PoolSpec =
           readonly kind: "rows";
           readonly mods: readonly Mod[];
           /** The type these rows replace (a Harvest change); if it may be a
-           *  crafted modifier, so may they (QUESTIONS.md Q52). */
+           *  crafted modifier, so may they: a changed bench craft is crafted
+           *  still (seen in game). */
           readonly replacing?: TypeId;
       }
     /** One of the metamods not yet on the item whose side may have a slot (the

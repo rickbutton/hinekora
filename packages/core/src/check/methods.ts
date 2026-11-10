@@ -288,16 +288,20 @@ function harvestChange(
     let stuck = false;
     for (const was of mayBe) {
         if (!isNatural(was)) {
-            // A row another source placed becomes that source's counterpart row.
-            // The page says so of the Incursion modifiers alone (Modifier §
-            // Harvest Crafting); of any other the natural rows stay possible
-            // beside it (`QUESTIONS.md` Q52), as they do where it has none. Such
-            // a source places its rows whatever the item's level, so a
-            // counterpart above it is still a result.
+            // A row another source placed becomes that source's counterpart row,
+            // and that alone for an Incursion modifier (Modifier § Harvest
+            // Crafting) and a bench craft (seen in game: the result is the
+            // bench's modifier, crafted still). Of any other the natural rows
+            // stay possible beside it (`QUESTIONS.md` Q52). Where the source
+            // has no counterpart for the item the natural rows are the result,
+            // which no one has observed. Such a source places its rows whatever
+            // the item's level, so a counterpart above it is still a result.
             const twins = twinRows(was, to.value, a, tags, registry);
             for (const m of twins) rows.add(m);
-            const incursion = was.name !== undefined && INCURSION_AFFIXES.has(was.name);
-            if (twins.length === 0 || !incursion) for (const m of targets) rows.add(m);
+            const alone =
+                was.source === "bench" ||
+                (was.name !== undefined && INCURSION_AFFIXES.has(was.name));
+            if (twins.length === 0 || !alone) for (const m of targets) rows.add(m);
             continue;
         }
         // The tier is kept (Modifier § Harvest Crafting): the target's row at

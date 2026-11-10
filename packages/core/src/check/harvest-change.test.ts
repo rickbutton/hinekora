@@ -7,6 +7,7 @@ import { findMethod } from "./methods.js";
 import {
     andp,
     bench,
+    benchRemove,
     craft,
     essence,
     harvestChange,
@@ -286,9 +287,9 @@ describe("harvest change", () => {
         expect(r.finalState!.tiers.get(TypeId("ColdAilments"))).toEqual(new Set(["ColdLevel50"]));
     });
 
-    it("changes a benched modifier into the bench's counterpart or a natural row", () => {
-        // The page speaks of the Incursion rows only; for a crafted modifier
-        // both readings stand until it is probed.
+    it("changes a benched modifier into the bench's counterpart, crafted still", () => {
+        // Seen in game: the result is the bench's own modifier, which its
+        // "Remove Crafted Modifiers" takes off.
         const benchCold: Mod = {
             ...BENCH_FIRE_RES_ROW,
             id: ModId("BenchColdResist1"),
@@ -320,10 +321,18 @@ describe("harvest change", () => {
             { registry: withTwin },
         );
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.tiers.get(COLD_RESIST.type)).toEqual(
-            new Set([benchCold.id, COLD_RESIST.id]),
-        );
+        expect(r.finalState!.tiers.get(COLD_RESIST.type)).toEqual(new Set([benchCold.id]));
         expect(r.finalState!.crafted).toEqual([1, 1]);
+        const removed = check(
+            craft(rareRing(), [
+                bench("fire resistance"),
+                harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
+                benchRemove(),
+            ]),
+            { registry: withTwin },
+        );
+        expect(removed.diagnostics).toEqual([]);
+        expect(isExcluded(removed.finalState!, COLD_RESIST.type)).toBe(true);
     });
 
     it("reads a modifier with no tier recorded as any row it may be, a crafted one among them", () => {
@@ -967,7 +976,7 @@ describe("a Harvest change of a modifier another source placed", () => {
 
     it("gives each counterpart where the modifier may be either of two crafted rows", () => {
         // The fire is the bench's lower craft, or after the branch its higher:
-        // the cold may be the bench's row of either rank, or a natural one.
+        // the cold is the bench's row of either rank.
         const bench2: Mod = { ...BENCH_FIRE_RES_ROW, id: ModId("BenchFireResist2"), minLevel: 30 };
         const cold = (m: Mod, id: string): Mod => ({
             ...m,
@@ -1003,7 +1012,7 @@ describe("a Harvest change of a modifier another source placed", () => {
         );
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.tiers.get(COLD_RESIST.type)).toEqual(
-            new Set(["BenchCold1", "BenchCold2", COLD_RESIST.id]),
+            new Set(["BenchCold1", "BenchCold2"]),
         );
     });
 });
