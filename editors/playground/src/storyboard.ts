@@ -260,6 +260,25 @@ export function repeatTable(
     return { rows, ...(chaos !== undefined && { chaos }) };
 }
 
+/**
+ * The line that sums the guide's spend: the figure under the snapshot, else
+ * the currencies. A guide with a loop that has no figure has no expected
+ * spend, only what the steps outside that loop come to.
+ */
+export function spendLine(
+    report: Pick<CostReport, "total" | "chaos" | "divine" | "unknown">,
+): string | undefined {
+    const list = report.total.map((p) => `${figure(p.amount)} ${p.item}`).join(", ");
+    if (report.unknown) {
+        const rest = list === "" ? "" : `; the steps outside it come to ${list}`;
+        return `expected spend: not known, for a loop above has no figure${rest}`;
+    }
+    if (report.total.length === 0) return undefined;
+    if (report.chaos !== undefined && report.divine !== undefined)
+        return `expected spend: ${approx(report.chaos)} chaos, ${approx(report.divine)} divine`;
+    return `expected spend: ${list}`;
+}
+
 /** Whether a step inside the repeat could not be costed, so its spend reads short. */
 export function passIsPartial(loop: StepCost, steps: readonly StepCost[]): boolean {
     return steps.some(
@@ -747,7 +766,8 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
 
         /** What the whole guide is expected to spend, under the snapshot. */
         function total(): HTMLElement | undefined {
-            if (report === undefined || report.total.length === 0) return undefined;
+            const line = report === undefined ? undefined : spendLine(report);
+            if (report === undefined || line === undefined) return undefined;
             const chaosEnds = spreadText(report.chaosRange, figure);
             const notes = [
                 ...(chaosEnds === undefined
@@ -758,17 +778,22 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                     : []),
             ];
             const el = costLine("", undefined, () =>
-                showBreakdown("expected spend for the guide", report.total, prices, notes),
+                showBreakdown(
+                    report.unknown
+                        ? "spend outside the loop that has no figure"
+                        : "expected spend for the guide",
+                    report.total,
+                    prices,
+                    notes,
+                ),
             );
-            const list = report.total.map((p) => `${figure(p.amount)} ${p.item}`).join(", ");
+            el.append(line);
             if (report.chaos !== undefined && report.divine !== undefined) {
-                el.append(
-                    `expected spend: ${approx(report.chaos)} chaos, ${approx(report.divine)} divine`,
-                );
+                const list = report.total.map((p) => `${figure(p.amount)} ${p.item}`).join(", ");
                 el.title = [list, spreadTitle(report.chaosRange, (n) => `${figure(n)} chaos`)]
                     .filter((s) => s !== undefined)
                     .join("; ");
-            } else el.append(`expected spend: ${list}`);
+            }
             if (prices !== undefined) {
                 el.append(
                     h(

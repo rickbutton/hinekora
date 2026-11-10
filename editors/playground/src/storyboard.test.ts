@@ -7,6 +7,7 @@ import {
     passIsPartial,
     passSpend,
     repeatTable,
+    spendLine,
     stateLine,
 } from "./storyboard.js";
 
@@ -138,6 +139,27 @@ const view = (groups: ModGroup[], remainder?: ItemView["remainder"]): ItemView =
     ...(remainder !== undefined && { remainder }),
     marks: [],
     without: [],
+});
+
+describe("the storyboard's expected spend", () => {
+    const total = [{ item: "Chaos Orb", amount: 12 }];
+
+    it("is the figure under the snapshot, else the currencies", () => {
+        expect(spendLine({ total, chaos: 12, divine: 0.03, unknown: false })).toBe(
+            "expected spend: ~12 chaos, ~0.03 divine",
+        );
+        expect(spendLine({ total, unknown: false })).toBe("expected spend: 12 Chaos Orb");
+        expect(spendLine({ total: [], unknown: false })).toBeUndefined();
+    });
+
+    it("is not known when a loop has no figure, the steps outside it told apart", () => {
+        expect(spendLine({ total, unknown: true })).toBe(
+            "expected spend: not known, for a loop above has no figure; the steps outside it come to 12 Chaos Orb",
+        );
+        expect(spendLine({ total: [], unknown: true })).toBe(
+            "expected spend: not known, for a loop above has no figure",
+        );
+    });
 });
 
 describe("the storyboard's state line", () => {
