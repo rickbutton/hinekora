@@ -315,22 +315,32 @@ make the checker accept or refuse a step, which is what keeps the checker a pure
 tool. The investigation behind it, with the sources, is
 [docs/research/cost-model.md](research/cost-model.md).
 
-### 7.1 Probabilities over a set of items
+### 7.1 The item the cost layer follows
 
-The item at a step is a set of items, so a probability needs a stated reading of it. The
-cost layer takes a **point estimate on the path the guide describes**: the pool a draw
-sees is the pool of the facts the item holds on every path (the base at its level, the
-influence, the modifiers present on every path with their groups and tags), which is the
-item the player is holding when the guide's step is right. A modifier the state holds
-only as possible neither shrinks the pool nor adds its tags. This is exact for a reforge,
-which strips the uncertain modifiers away, and for an item whose named modifiers fill it;
-it is approximate for an add onto an item with unnamed modifiers (`QUESTIONS.md` Q57).
-Beside the estimate the report carries a **spread**: the same walk with every range the
-checker left open (a side's count, the item's memory strands) read at its floor and at
-its ceiling (`Reading`), the two items at the ends of what the checker allows; where the
-ends disagree, the step's figure is given with them, so an Exalted Orb onto an item with
-unnamed modifiers says what it is worth on the emptiest and on the fullest item it may be.
-The game's rules the estimate rests on and the ones no source settles are Q58–Q66 and Q68.
+The checker's item at a step is a set of items; a probability needs to know how likely
+each member is. The cost layer follows a **distribution over a small state** instead
+(`cost/track.ts`, `QUESTIONS.md` Q57): the (prefix, suffix) counts and, for each modifier
+the guide names in a condition or the checker knows is there (declared, granted, crafted,
+a protecting metamod), whether it is on the item and in which tier class (each tier a
+condition names on its own, the rest of the ladder together). The distribution starts
+from the item block, a `"random"` modifier taken as a natural roll of its side by spawn
+weight (Q75), and is carried through every step. Each method is read on the checker's
+item **narrowed to each state** (its counts exact, each tracked modifier present at its
+class or absent): a random method by its roll, a sure one by the checker's own transfer
+function, and the item that leaves read back as states. So a Regal Orb after an Orb of
+Transmutation knows the item had one modifier half the time and two the other half, and
+a reforge under "Suffixes Cannot Be Changed" knows how many suffixes it keeps. A branch
+splits the distribution by its condition; a loop is solved as a chain over it (§7.4).
+
+Two things stay approximate. The modifiers no one names and the checker does not know
+are a count, not identities: when a draw lands beside them each is taken to close a
+modifier group of average weight on its side, as craftofexile's calculator does. And the
+game's rules no source settles are assumptions (Q58–Q66 and Q68). Where a step's randomness is
+one the state does not hold (a Divine Orb's values, an unveil's choice, a fracture's
+lock, an ember's implicit) or the walk cannot follow a statement (a call), the walk falls
+back to reading the roll on the checker's item, the facts every path holds, with every
+range the checker left open read at its floor and at its ceiling (`Reading`) as a spread
+beside the figure.
 
 ### 7.2 The race: an exact draw without listing outcomes
 
@@ -383,23 +393,14 @@ every loop around it, times its unit price (`cost/prices.ts`, in the step's own 
 the orb, the named essence, the fossils and their resonator, the lifeforce, a bench
 craft's listed price).
 
-- An **`until`** is a sequence of independent attempts: the body is walked once from the
-  head to find the chance one attempt ends in the exit (judged on each falling branch's
-  roll and conditions) or in a `stop`; the expected rounds is the reciprocal, every step
-  in the body runs that many times per pass, and the share of rounds ending in a stop ends
-  the craft. The head of the next attempt is where the last one left off short of the
-  exit, so a condition at the top of the body reads the previous round's roll.
-- A loop whose body **changes the item one modifier at a time** (random removals, single
-  draws such as an Exalted Orb, bench crafts, and branches over them, with or without an
-  else arm, that restart, stop or craft; a reforge inside it starts the item over from its
-  roll's outcomes, as an essence spammed again once a kept modifier is lost, and a
-  `restore` starts it over as the imprint) is not
-  memoryless: each round starts where the last left the item. It is solved
-  as a Markov chain (`cost/chain.ts`) over a small state, the (prefix, suffix) counts and,
-  for each modifier the loop's conditions name, whether it is on the item and at which
-  row, from the states the loop may enter with (weighted by the path in), carrying the
-  distribution through the body round after round until the mass has left: the exit, a
-  restart or a stop, or an item full with nothing removing, which the report names. A
+- An **`until`** whose body the tracker can follow (methods, branches, loops inside it,
+  restarts and stops) is not a sequence of independent attempts: each round starts where
+  the last left the item. It is solved as a Markov chain (`cost/chain.ts`) over the
+  tracked state, each method a transition the tracker reads on the narrowed item, a loop
+  inside it going round its own body until its exit each time it is reached, from the
+  states the loop enters with, carrying the distribution through the body round after
+  round until the mass has left: the exit, a restart or a stop, or an item full with
+  nothing removing, which the report names. A
   rare exit would take thousands of rounds to follow; once a round hands the next a
   distribution of the same shape, only smaller, the rounds left are summed at once as a
   geometric series. A chain that has not settled by the last round followed (an item
@@ -407,12 +408,14 @@ craft's listed price).
   and the report notes the figure as an estimate. Where the exit leaves the item, a
   distribution over the same small state, is what the next steps see until one changes
   the item: a second such loop ("until one resistance, then until two") starts from it,
-  and a branch on the counts reads it. A metamod that protects a side is tracked too,
-  since a removal may take it and open its side. The
-  named modifiers are the only ones tracked; the rest of the item is a count whose draws
-  close an average group. The chance of the exit per round, how often each step and
-  branch inside runs, and the stop share fall out of the chain, exact up to that
-  average and, where the note says so, the estimated tail.
+  and a branch on the counts reads it. The chance of the exit per round, how often each
+  step and branch inside runs, and the stop share fall out of the chain, exact up to the
+  unnamed modifiers' average group and, where the note says so, the estimated tail.
+- Any other `until` (its body holds a step the tracker cannot follow) is a sequence of
+  independent attempts: the body is walked once from the head to find the chance one
+  attempt ends in the exit (judged on each falling branch's roll and conditions) or in a
+  `stop`; the expected rounds is the reciprocal, every step in the body runs that many
+  times per pass, and the share of rounds ending in a stop ends the craft.
 - An **`if`** splits each branch by its condition's chance; a `restart` ends the attempt;
   a `stop` ends the craft; a top-level `restart` makes the whole guide one attempt of an
   outer loop.

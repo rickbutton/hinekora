@@ -394,6 +394,24 @@ function poolRows(
     }
 }
 
+/** The groups a modifier the item holds but no one names could be, per side:
+ *  its natural pool on the item, the groups of what it surely holds left out. */
+export function naturalGroups(
+    a: AItem,
+    registry: Registry,
+    reading: Reading = "estimate",
+): { readonly prefix: readonly Group[]; readonly suffix: readonly Group[] } {
+    const rows = poolRows(a, { kind: "natural" }, registry, a, reading);
+    const taken = guaranteedTypes(a);
+    const groups = groupRows(rows, (m) => genOfType(a, registry, m.type, m)).filter(
+        (g) => !taken.has(g.type),
+    );
+    return {
+        prefix: groups.filter((g) => g.gen === "prefix"),
+        suffix: groups.filter((g) => g.gen === "suffix"),
+    };
+}
+
 /** The side a type's rows take on this item. */
 function genOfType(a: AItem, registry: Registry, type: TypeId, hint?: Mod): Gen {
     return (

@@ -73,6 +73,21 @@ export type ChainStep =
     /** The attempt ends; the craft ends. */
     | { readonly id: number; readonly kind: "restart" }
     | { readonly id: number; readonly kind: "stop" }
+    /** A method read on the item as each state has it: where it takes the
+     *  state, with each outcome's chance (`track.ts` asks the checker). */
+    | {
+          readonly id: number;
+          readonly kind: "transition";
+          readonly next: (state: ChainState) => readonly Outcome[];
+      }
+    /** A loop inside the loop: the states that reach it go round its body
+     *  until its exit holds, and go on from there. */
+    | {
+          readonly id: number;
+          readonly kind: "loop";
+          readonly exit: (s: ChainState) => boolean;
+          readonly body: readonly ChainStep[];
+      }
     /** A step the chain's state does not depend on. */
     | { readonly id: number; readonly kind: "other" };
 
@@ -100,8 +115,9 @@ export interface Chain {
     readonly stop: number;
     /** Expected passes through the body in one attempt. */
     readonly passes: number;
-    /** Per step id, how often it is reached in one attempt, and for a branch
-     *  how often its body is entered. */
+    /** Per step id, how often it is reached in one attempt; for a branch how
+     *  often its body is entered, for a loop inside how often it is entered at
+     *  its exit. */
     readonly reached: ReadonlyMap<number, number>;
     readonly taken: ReadonlyMap<number, number>;
     /** Mass that never leaves: a loop the chain cannot see ending, the item
@@ -112,6 +128,10 @@ export interface Chain {
     /** The rounds were cut off before the distribution settled, and the rest
      *  was taken as the last round's tail: the figures are an estimate. */
     readonly estimated: boolean;
+    /** Per loop inside, its rounds over one attempt of this one, and the
+     *  loops whose rounds were estimated. */
+    readonly rounds: ReadonlyMap<number, number>;
+    readonly estimatedLoops: ReadonlySet<number>;
 }
 
 /** Rounds after which the chain stops following the mass still going round,
@@ -136,6 +156,10 @@ interface Totals {
     passes: number;
     reached: Map<number, number>;
     taken: Map<number, number>;
+    rounds: Map<number, number>;
+    estimatedLoops: Set<number>;
+    /** Mass a loop inside never let go. */
+    stuck: number;
 }
 
 function key(s: ChainState): string {
@@ -167,6 +191,8 @@ function changes(steps: readonly ChainStep[]): boolean {
             s.kind === "add" ||
             s.kind === "bench" ||
             s.kind === "reforge" ||
+            s.kind === "transition" ||
+            (s.kind === "loop" && changes(s.body)) ||
             (s.kind === "branch" && (changes(s.body) || changes(s.otherwise ?? []))),
     );
 }
@@ -176,15 +202,8 @@ export function chain(input: ChainInput): Chain | undefined {
     if (!changes(input.body)) return undefined;
     const total = input.starts.reduce((s, x) => s + x.weight, 0);
     if (!(total > 0)) return undefined;
-    const t: Totals = {
-        exit: 0,
-        restart: 0,
-        stop: 0,
-        passes: 0,
-        reached: new Map(),
-        taken: new Map(),
-    };
-    let head: Dist = new Map();
+    const t = totals();
+    const head: Dist = new Map();
     const exits: Dist = new Map();
     for (const { state, weight } of input.starts) {
         if (input.exit(state)) {
@@ -193,26 +212,72 @@ export function chain(input: ChainInput): Chain | undefined {
         } else put(head, state, weight / total);
     }
     const exitAtStart = t.exit;
-    // A rare exit leaves mass going round for thousands of rounds. Once a round
-    // hands the next one a distribution of the same shape, only smaller, every
-    // later round is this one scaled by the share it keeps: the rest is a
-    // geometric tail, added at once.
+    const r = iterate(input.body, head, input.exit, input, t);
+    t.passes += r.passes;
+    for (const { state, prob } of r.exits.values()) {
+        t.exit += prob;
+        put(exits, state, prob);
+    }
+    return {
+        exit: t.exit,
+        restart: t.restart,
+        stop: t.stop,
+        passes: t.passes,
+        reached: t.reached,
+        taken: t.taken,
+        rounds: t.rounds,
+        estimatedLoops: t.estimatedLoops,
+        exitAtStart,
+        unresolved: massOf(r.left) + t.stuck,
+        exits: [...exits.values()],
+        estimated: r.estimated,
+    };
+}
+
+function totals(): Totals {
+    return {
+        exit: 0,
+        restart: 0,
+        stop: 0,
+        passes: 0,
+        reached: new Map(),
+        taken: new Map(),
+        rounds: new Map(),
+        estimatedLoops: new Set(),
+        stuck: 0,
+    };
+}
+
+/**
+ * Carry states round a body until they meet the exit. A rare exit leaves mass
+ * going round for thousands of rounds; once a round hands the next one a
+ * distribution of the same shape, only smaller, every later round is this one
+ * scaled by the share it keeps, so the rest is a geometric tail, added at once.
+ * The body's counts go into `t`; the rounds, the exits and the mass left
+ * going round come back.
+ */
+function iterate(
+    body: readonly ChainStep[],
+    start: Dist,
+    exit: (s: ChainState) => boolean,
+    input: ChainInput,
+    t: Totals,
+): { passes: number; exits: Dist; left: Dist; estimated: boolean } {
+    let head = start;
+    const exits: Dist = new Map();
+    let passes = 0;
     let estimated = false;
     let work = 0;
     for (let round = 0; round < MAX_PASSES && massOf(head) > EPSILON; round++) {
         const mass = massOf(head);
         const shapeIn = head;
         const was = snapshot(t);
-        t.passes += mass;
-        const alive = run(input.body, head, input, t);
+        passes += mass;
+        const alive = run(body, head, input, t);
         head = new Map();
         const leaving: Dist = new Map();
-        for (const { state, prob } of alive.values()) {
-            if (input.exit(state)) {
-                t.exit += prob;
-                put(leaving, state, prob);
-            } else put(head, state, prob);
-        }
+        for (const { state, prob } of alive.values())
+            put(exit(state) ? leaving : head, state, prob);
         const decay = massOf(head) / mass;
         // A chain that mixes slowly may not settle within the rounds followed;
         // its last round's decay is then the best guess at the rest, and the
@@ -221,23 +286,18 @@ export function chain(input: ChainInput): Chain | undefined {
         const last = round === MAX_PASSES - 1 || work >= MAX_WORK;
         const settled = shapeDistance(shapeIn, mass, head, massOf(head)) < SETTLED;
         const tail = decay < 1 - STUCK && (settled || last);
-        const factor = tail ? 1 + decay / (1 - decay) : 1;
+        const factor = tail ? 1 / (1 - decay) : 1;
         for (const { state, prob } of leaving.values()) put(exits, state, prob * factor);
         if (tail) {
             // A tail over little mass moves the figures little, settled or not.
             estimated = !settled && massOf(head) > UNSETTLED_MASS;
             addScaled(t, was, decay / (1 - decay));
+            passes += (mass * decay) / (1 - decay);
             head = new Map();
             break;
         }
     }
-    return {
-        ...t,
-        exitAtStart,
-        unresolved: massOf(head),
-        exits: [...exits.values()],
-        estimated,
-    };
+    return { passes, exits, left: head, estimated };
 }
 
 /** How far apart two distributions are in shape: the summed difference of
@@ -251,7 +311,12 @@ function shapeDistance(a: Dist, aMass: number, b: Dist, bMass: number): number {
 }
 
 function snapshot(t: Totals): Totals {
-    return { ...t, reached: new Map(t.reached), taken: new Map(t.taken) };
+    return {
+        ...t,
+        reached: new Map(t.reached),
+        taken: new Map(t.taken),
+        rounds: new Map(t.rounds),
+    };
 }
 
 /** Add `factor` times what the totals gained since `was`. */
@@ -260,12 +325,34 @@ function addScaled(t: Totals, was: Totals, factor: number): void {
     t.restart += (t.restart - was.restart) * factor;
     t.stop += (t.stop - was.stop) * factor;
     t.passes += (t.passes - was.passes) * factor;
+    t.stuck += (t.stuck - was.stuck) * factor;
     for (const [m, before] of [
         [t.reached, was.reached],
         [t.taken, was.taken],
+        [t.rounds, was.rounds],
     ] as const) {
         for (const [id, n] of m) m.set(id, n + (n - (before.get(id) ?? 0)) * factor);
     }
+}
+
+/**
+ * One step outside a loop: where it takes each of the states, their weights
+ * carried. A restart, a stop or a branch is the walk's to split, not a step's.
+ */
+export function advance(
+    step: ChainStep,
+    states: readonly { readonly state: ChainState; readonly weight: number }[],
+    atoms: readonly ChainAtom[],
+    caps: Readonly<Record<Gen, number>>,
+): { state: ChainState; weight: number }[] {
+    const alive: Dist = new Map();
+    for (const { state, weight } of states) put(alive, state, weight);
+    const input: ChainInput = { atoms, body: [], starts: [], caps, exit: () => false };
+    const t = totals();
+    return [...apply(step, alive, input, t).values()].map((e) => ({
+        state: e.state,
+        weight: e.prob,
+    }));
 }
 
 function run(steps: readonly ChainStep[], alive: Dist, input: ChainInput, t: Totals): Dist {
@@ -300,6 +387,27 @@ function apply(step: ChainStep, alive: Dist, input: ChainInput, t: Totals): Dist
                 step.otherwise === undefined ? outside : run(step.otherwise, outside, input, t);
             for (const { state, prob } of out.values()) put(rest, state, prob);
             return rest;
+        }
+        case "loop": {
+            const done: Dist = new Map();
+            const head: Dist = new Map();
+            for (const { state, prob } of alive.values())
+                put(step.exit(state) ? done : head, state, prob);
+            // A loop entered at its exit takes no round: `taken` counts it.
+            add(t.taken, step.id, massOf(done));
+            const r = iterate(step.body, head, step.exit, input, t);
+            add(t.rounds, step.id, r.passes);
+            if (r.estimated) t.estimatedLoops.add(step.id);
+            t.stuck += massOf(r.left);
+            for (const { state, prob } of r.exits.values()) put(done, state, prob);
+            return done;
+        }
+        case "transition": {
+            const next: Dist = new Map();
+            for (const { state, prob } of alive.values()) {
+                for (const o of step.next(state)) put(next, o.state, prob * o.prob);
+            }
+            return next;
         }
         case "reforge": {
             const next: Dist = new Map();

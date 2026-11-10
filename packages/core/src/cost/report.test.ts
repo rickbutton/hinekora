@@ -29,7 +29,6 @@ import {
     PROTECT_PREFIXES_CARRIER,
     RING_BASE,
 } from "../__fixtures__/mods.js";
-import { allAmongFirst } from "./race.js";
 import { costOf } from "./report.js";
 import type { Prices } from "./prices.js";
 
@@ -71,16 +70,55 @@ describe("the cost of a guide", () => {
         );
         const r = report(c);
         const loop = r.steps.find((s) => s.kind === "until")!;
-        const prefixes = side("prefix");
-        const life = prefixes.types.indexOf(LIFE_T1.type);
-        // The annul before it may take any of the five; the exalt then draws
-        // from whichever side has room, so the chance lies below a prefix-only
-        // draw's and above nothing.
         expect(loop.attempts!.chance).toBeGreaterThan(0);
-        expect(loop.attempts!.chance).toBeLessThanOrEqual(
-            allAmongFirst(prefixes.weights, [life], 1) + 1e-9,
-        );
         expect(loop.attempts!.expected).toBeCloseTo(1 / loop.attempts!.chance, 9);
+    });
+
+    it("an annul and an exalt draw on the item as it is, its modifiers closing their groups", () => {
+        // The annul takes one of the five. A prefix (2/5): the suffixes are
+        // full, the exalt draws a prefix with the other prefix's group closed.
+        // A resistance (3/5): the exalt draws a side by the open pools'
+        // weights, the two prefixes' and the two resistances' groups closed.
+        const c = craft(
+            ring(
+                "rare",
+                ["IncreasedMana1", "IncreasedArmour1"],
+                ["FireResist1", "ColdResist1", "LightningResist1"],
+            ),
+            [op("annul"), op("exalt"), iff(has("maximum life"), [stop()])],
+        );
+        const branch = report(c).steps.find((s) => s.kind === "if")!;
+        // The exalt's chance of a life row on the item the annul left: the life
+        // rows' share of the pool that item leaves open.
+        const lifeShare = (ids: string[]): number => {
+            const mods = ids.map((id) => CATALOG.find((m) => m.id === id)!);
+            const facts = {
+                ...emptyItem(RING_BASE, 84, "rare"),
+                prefixCount: mods.filter((m) => m.gen === "prefix").length,
+                suffixCount: mods.filter((m) => m.gen === "suffix").length,
+                types: new Set(mods.map((m) => m.type)),
+                families: new Set(mods.flatMap((m) => [...m.families])),
+            };
+            const open = pool(registry.catalog, facts).filter((x) =>
+                x.mod.gen === "prefix" ? facts.prefixCount < 3 : facts.suffixCount < 3,
+            );
+            const total = open.reduce((a, x) => a + x.weight, 0);
+            const life = open
+                .filter((x) => x.mod.type === LIFE_T1.type)
+                .reduce((a, x) => a + x.weight, 0);
+            return life / total;
+        };
+        const all = [
+            "IncreasedMana1",
+            "IncreasedArmour1",
+            "FireResist1",
+            "ColdResist1",
+            "LightningResist1",
+        ];
+        let expected = 0;
+        for (const gone of all) expected += lifeShare(all.filter((id) => id !== gone)) / 5;
+        expect(branch.note).toBeUndefined();
+        expect(branch.branch).toBeCloseTo(expected, 9);
     });
 
     it("a chaos loop's rounds multiply the orb's runs and the total", () => {
@@ -265,7 +303,9 @@ describe("the cost of a guide", () => {
         expect(branch.branch).not.toBeCloseTo(3 / 10, 6);
     });
 
-    it("a branch on a modifier no solved loop named reads the item, not its states", () => {
+    it("a branch after a solved loop reads the modifier the loop did not name", () => {
+        // The loop ends on the annul that takes a prefix, any of the three
+        // alike: the life is gone a third of the time.
         const c = craft(
             ring(
                 "rare",
@@ -274,9 +314,9 @@ describe("the cost of a guide", () => {
             ),
             [until(cmp("prefixCount", "<=", 2), [op("annul")]), iff(has("maximum life"), [stop()])],
         );
-        // The annuls may have taken the life; the walk cannot say how likely.
         const branch = report(c).steps.find((s) => s.kind === "if")!;
-        expect(branch.note).toBeDefined();
+        expect(branch.note).toBeUndefined();
+        expect(branch.branch).toBeCloseTo(2 / 3, 9);
     });
 
     it("a reforge in a make-room loop's else arm pays for the kept modifier again", () => {
@@ -389,11 +429,10 @@ describe("the cost of a guide", () => {
     });
 });
 
-describe("the spread over the item's unnamed modifiers", () => {
-    it("brackets an add onto an item whose counts the checker left open", () => {
-        // After a Chaos Orb the ring holds four to six modifiers: on the
-        // emptiest the Exalted Orb draws into the open slots, on the fullest it
-        // finds none and the Chaos Orb's roll is what the condition reads.
+describe("the counts the checker leaves open", () => {
+    it("are followed from the roll that left them, not bracketed", () => {
+        // After a Chaos Orb the ring holds four to six modifiers; the Exalted
+        // Orb's draw is read on each, weighted by the Chaos Orb's odds.
         const c = craft(ring("rare"), [
             op("chaos"),
             op("exalt"),
@@ -402,37 +441,26 @@ describe("the spread over the item's unnamed modifiers", () => {
         const r = report(c);
         const branch = r.steps.find((s) => s.kind === "if")!;
         expect(branch.branch).toBeGreaterThan(0);
-        expect(branch.branchRange).toBeDefined();
-        expect(branch.branchRange!.low).toBeLessThan(branch.branchRange!.high);
-        expect(branch.branch).toBeGreaterThanOrEqual(branch.branchRange!.low - 1e-9);
-        expect(branch.branch).toBeLessThanOrEqual(branch.branchRange!.high + 1e-9);
-        // A reforge leaves nothing open: no spread on its loop.
-        const loop = report(craft(ring("rare"), [until(has("IncreasedLife1"), [op("chaos")])]));
-        expect(loop.steps[0]!.attemptsRange).toBeUndefined();
-        expect(loop.chaosRange).toBeUndefined();
+        expect(branch.branch).toBeLessThan(1);
+        expect(branch.note).toBeUndefined();
+        expect(branch.branchRange).toBeUndefined();
+        expect(r.chaosRange).toBeUndefined();
     });
 
-    it("reads the fullest item within what it can hold", () => {
-        // A Magic ring after a Regal Orb holds two or three modifiers, each side
-        // up to two: the fullest item is three, not two and two, so an Exalted
-        // Orb still finds a slot and its loop keeps a finite spread.
+    it("carry a Magic item's one or two modifiers through a Regal Orb into the loop", () => {
         const c = craft(ring("normal"), [
             op("transmute"),
             op("regal"),
             until(has("IncreasedLife1"), [op("annul"), op("exalt")]),
         ]);
         const loop = report(c).steps.find((s) => s.kind === "until")!;
-        expect(loop.attempts!.expected).toBeGreaterThan(0);
-        expect(loop.attemptsRange).toBeDefined();
-        expect(loop.attemptsRange!.high).toBeLessThan(20 * loop.attempts!.expected);
-        // The chance is per round run: the Regal Orb lands the life some of
-        // the time, and those attempts take no round, so the rounds fall short
-        // of the chance's reciprocal.
+        expect(loop.note).toBeUndefined();
+        expect(loop.attemptsRange).toBeUndefined();
+        // The chance is per round run: the Orb of Transmutation or the Regal
+        // Orb lands the life some of the time, and those attempts take no
+        // round, so the rounds fall short of the chance's reciprocal.
         const { chance, expected } = loop.attempts!;
         expect(chance * expected).toBeLessThan(1);
         expect(chance * expected).toBeGreaterThan(0);
-        expect(loop.chanceRange).toBeDefined();
-        expect(chance).toBeGreaterThanOrEqual(loop.chanceRange!.low - 1e-12);
-        expect(chance).toBeLessThanOrEqual(loop.chanceRange!.high + 1e-12);
     });
 });

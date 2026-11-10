@@ -378,7 +378,7 @@ a guide needs one side's version of a shared wording for its own sake.
 `check/group.test.ts`.
 **Answer:**
 
-### Q57 · decision · open
+### Q57 · decision · answered
 
 **Asked:** 2026-11-09
 **Question:** what a step's probability means when the checker's item is a set of items
@@ -406,7 +406,7 @@ Orb of Transmutation laid down. A fourth option follows: (d) carry a distributio
 the counts and the named modifiers forward through every step, as a chain-solved loop
 already does for its rounds and now hands to the steps after it, so neither a floor nor
 the last roll alone stands in for what came before.
-**Answer:**
+**Answer:** (d), Rick, 2026-11-10: "it's the only way to be accurate."
 
 ### Q58 · game probe · open
 
@@ -595,6 +595,21 @@ one with fire and chaos resistance; the grove's fire-to-cold damage and resistan
 **Record:** which the grove offers.
 **Assumed meanwhile:** penetration is taken; the multiplier and the hybrid are refused
 (`check/methods.ts` `elementalKind`). The refusals only ever make the checker stricter.
+**Answer:**
+
+### Q75 · decision · open
+
+**Asked:** 2026-11-10
+**Question:** what the cost layer takes a modifier the item block declares `"random"` to
+be. The guide says only that a modifier is there; which one changes the odds of every
+draw beside it, and whether it might be one a condition names. (a) A natural roll of its
+side by spawn weight, the item's other modifiers closing their groups, several random
+slots of a side drawn without replacement; (b) none of the guide's named modifiers, a
+modifier of average weight; (c) leave such a guide to the old point estimate and its
+spread.
+**Recommendation:** (a): it is what the item most likely holds if it came from a
+reforge, and it lets the guide's own conditions see the chance the slot is one of theirs.
+**Assumed meanwhile:** (a) (`cost/track.ts` `statesIn`, `cost/roll.ts` `naturalGroups`).
 **Answer:**
 
 ---

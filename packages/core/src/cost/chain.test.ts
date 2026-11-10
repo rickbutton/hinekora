@@ -379,6 +379,60 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.exit).toBeCloseTo(1, 9);
     });
 
+    it("a transition takes each state where its function says", () => {
+        // From any state, the exit with chance 1/4: four rounds on average.
+        const solved = chain({
+            atoms: [],
+            body: [
+                {
+                    id: 0,
+                    kind: "transition",
+                    next: (s) => [
+                        { state: at(9, 9), prob: 1 / 4 },
+                        { state: s, prob: 3 / 4 },
+                    ],
+                },
+            ],
+            starts: [{ state: at(0, 0), weight: 1 }],
+            caps: CAPS,
+            exit: (s) => s.prefix === 9,
+        })!;
+        expect(solved.exit).toBeCloseTo(1, 9);
+        expect(solved.passes).toBeCloseTo(4, 6);
+    });
+
+    it("a loop inside the loop goes round until its own exit each time it is reached", () => {
+        // Inside: annul the prefixes away, three rounds from three. Then the
+        // outer exit half the time, else the prefixes back: two outer rounds,
+        // six inner ones.
+        const solved = chain({
+            atoms: [],
+            body: [
+                {
+                    id: 0,
+                    kind: "loop",
+                    exit: (s) => s.prefix === 0,
+                    body: [{ id: 1, kind: "remove", gen: "prefix" }],
+                },
+                {
+                    id: 2,
+                    kind: "transition",
+                    next: () => [
+                        { state: at(9, 0), prob: 1 / 2 },
+                        { state: at(3, 0), prob: 1 / 2 },
+                    ],
+                },
+            ],
+            starts: [{ state: at(3, 0), weight: 1 }],
+            caps: { prefix: 9, suffix: 9 },
+            exit: (s) => s.prefix === 9,
+        })!;
+        expect(solved.passes).toBeCloseTo(2, 6);
+        expect(solved.rounds.get(0)).toBeCloseTo(6, 6);
+        expect(solved.reached.get(1)).toBeCloseTo(6, 6);
+        expect(solved.reached.get(0)).toBeCloseTo(2, 6);
+    });
+
     it("a body that changes nothing is not a chain", () => {
         expect(
             chain({

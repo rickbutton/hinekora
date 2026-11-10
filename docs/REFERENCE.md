@@ -277,30 +277,39 @@ resolveEssence / resolveBench / resolveHarvestTag`
   (`chance`): the leaves the roll models are enumerated jointly (which named modifiers
   were drawn, which rows, which part of a value range, Q65), a leaf it does not is read
   off the checker's item after the step (`refine` both ways), and a condition neither
-  settles is unknown rather than guessed. `chain.ts` solves a loop whose body changes the
-  item one modifier at a time (`chain`: `ChainStep`s of a random removal, a single draw, a
-  bench craft, a branch over them with or without an else arm, a reforge whose `Outcome`s
-  the item starts over from, a `restore` read as a reforge whose outcomes are the item
-  restored, the imprint the checker holds over every round with its counts spread evenly,
-  a restart or a stop) as a Markov chain over the counts
-  and the named modifiers' rows (`ChainState`, one `ChainAtom` per modifier the loop's
-  conditions name, and one per metamod that protects a side, which a removal's `guards`
-  read: the side is out of reach while it is there), from weighted start states to the
-  exit (`exitAtStart` the part that holds before any round), a restart, a stop or the
-  mass that never leaves; once a round hands the next a distribution of the same shape,
-  or at the last round followed (2000, fewer for a chain of many states, a bound on the
-  states carried) when a slowly mixing chain has not settled (`Chain.estimated`, which
-  the report notes when more than a hundredth of the mass is left), the rounds still to come are added as
-  that round's geometric tail, so a rare exit costs its full expected rounds. The walk
-  builds it in `chainLoop` for every `until` whose body and exit fit, reading each step
-  on the checker's item over the rounds, the rest taking the independent-attempts path.
-  The states the exit leaves the item in (`Chain.exits`) carry on as the branch's
-  `Carried` states until a step changes the item or might (a call, a parameter step, a
-  method the walk cannot read): a later chain-solved loop starts from them, on the
-  modifiers both loops name, and an `if` whose condition reads only the counts and those
-  modifiers splits them (`splitCarried`); a modifier a reforge in that loop held by a
-  stand-in row (`Carried.rowed` false, no condition told its tiers apart) is not read for
-  its tier. `prices.ts` holds the unit
+  settles is unknown rather than guessed. `track.ts` is the item the walk follows
+  (`Tracker`, one per walk): a `ChainAtom` per modifier type any condition of the guide
+  names, any trace item holds for certain (declared, granted, crafted) or a protecting
+  metamod, its rows grouped into the classes the conditions tell apart (each tier a
+  condition names alone, the rest of the ladder together; `classOf`, `rowsOn`); the
+  states an item settles (`statesIn`, an unnamed `"random"` modifier drawn from the
+  item's natural pool, `roll.ts` `naturalGroups`, Q75); the checker's item narrowed to a
+  state (`narrow`, by `refine`); and where a method takes each state (`transition`: the
+  method's roll on the narrowed item, a draw's outcomes by `reforgeOutcomes` with each
+  unnamed modifier closing an average unnamed group of its side (`closed`), a removal's by
+  its candidates, a sure method by `runMethod` read back with `statesIn`; cached per state,
+  a draw's per the item its fill starts from (`signature`); a state the tracker cannot
+  narrow or read back is left as it was and counted in `misses`, which the report notes).
+  `chain.ts` solves a loop over that state (`chain`: `ChainStep`s of a `transition`, a
+  `loop` inside the loop that goes round its own body until its exit each time it is
+  reached (`Chain.rounds`, `estimatedLoops`), a branch with or without an else arm, a
+  reforge whose `Outcome`s the item starts over from (a `restore`, read as the imprint the
+  checker holds over every round), a restart or a stop, beside the older one-modifier
+  steps a removal, a single draw and a bench craft) as a Markov chain from weighted start
+  states to the exit (`exitAtStart` the part that holds before any round), a restart, a
+  stop or the mass that never leaves (`iterate` carries the rounds); once a round hands the
+  next a distribution of the same shape, or at the last round followed (2000, fewer for a
+  chain of many states, a bound on the states carried) when a slowly mixing chain has not
+  settled (`Chain.estimated`, which the report notes when more than a hundredth of the
+  mass is left), the rounds still to come are added as that round's geometric tail, so a
+  rare exit costs its full expected rounds; `advance` takes states through one step
+  outside a loop. The walk starts from the item block's states (`Walker.start`), moves
+  every branch's `Carried` states through each method it can read, splits them at an `if`
+  (`splitCarried`), and solves every `until` whose body it can follow as a chain from them
+  (`chainLoop`, each step read on the checker's item over the rounds), the rest taking the
+  independent-attempts path; the states are dropped, and the roll machinery reads the
+  item, where a step may change it in a way the tracker cannot follow (a call, a
+  parameter step, a method whose randomness the state does not hold). `prices.ts` holds the unit
   cost of a method in its own currency (`unitCost`: the orb's name, the essence, the
   fossils and their resonator, the lifeforce per Harvest craft, a bench craft's
   `BenchCraft.cost`, the beasts a Bestiary recipe takes), the `Prices` snapshot type and
@@ -1076,81 +1085,81 @@ the op needed (surface doc §6). `describePred`, `resolveMessage` for the rest.
 
 ## 5. Key files index
 
-| Path                                                                     | What                                                                                                 |
-| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `packages/core/src/check/astate.ts`                                      | `AItem` (the reduced product), `normalize`, `refine`, `join`, `TierDomain`, presence views           |
-| `packages/core/src/check/values.ts`                                      | modifier values: `rollRange` from a row's text, `narrowRange` by a comparison, `ValueDomain`         |
-| `packages/core/src/check/domain.ts`                                      | `Domain<T>` contract, `RangeDomain`, `SetDomain`, range algebra                                      |
-| `packages/core/src/model/capacity.ts`                                    | the affix caps (`sideCap`, `hardTotalCap`, `maxTotal`, `caps`), shared by the pool and the checker   |
-| `packages/core/src/model/strands.ts`                                     | the tiers memory strands let roll, and their cap                                                     |
-| `packages/core/src/check/counts.ts`                                      | `CountDomain` (suffix, the total/prefix coupling, count refine, `learnPresent`)                      |
-| `packages/core/src/check/bdd.ts`                                         | the hash-consed ROBDD behind `presence`                                                              |
-| `packages/core/src/check/check.ts`                                       | driver, `Flow`, loops/branches, defs, `TraceEntry`, `traceAt`                                        |
-| `packages/core/src/check/ops.ts` / `library.ts`                          | the primitive operations and their interpreter / every method as a sequence of them                  |
-| `packages/core/src/check/methods.ts`                                     | the method table: each method's words, argument slots, help and `build`                              |
-| `packages/core/src/model/marks.ts`                                       | the influences and their data tags, `InfluenceKey`, the mark labels                                  |
-| `packages/core/src/check/diagnostics.ts`                                 | `renderState`, message builders                                                                      |
-| `packages/core/src/model/metamods.ts`                                    | the curated metamod id → effect table, attached to the catalog at registry build                     |
-| `packages/core/src/model/veiled.ts`                                      | veiled placeholder types and the unveiled-result predicate                                           |
-| `packages/core/src/pool/veiled.ts`                                       | `veiledPool`: which unveiled mods an `unveil` can reveal on an item                                  |
-| `packages/core/src/resolve/registry.ts`                                  | `Registry`, `buildRegistry`, resolution, completion lists                                            |
-| `packages/core/src/resolve/fuzzy.ts` / `tiers.ts`                        | fuzzy mod matching / rollable tiers (+ the memoized empty pool)                                      |
-| `packages/core/src/pool/pool.ts`                                         | eligibility + weights                                                                                |
-| `packages/parser/src/{lexer,parser,token}.ts`                            | lexer / parser / token types                                                                         |
-| `packages/parser/src/vocabulary.ts`                                      | the surface vocabulary outside the method table (keywords, predicate words, item fields)             |
-| `packages/data/src/{load,bundle,adapter}.ts` + `scripts/ingest-poe1.mjs` | data load (disk in `load`, pure in `bundle`) + ingest                                                |
-| `editors/playground/src/{main,monaco,language,providers,convert}.ts`     | the browser playground: Monaco bound to the language service                                         |
-| `editors/playground/src/item-card.ts`                                    | the item drawn in the game's style from `itemView`                                                   |
-| `editors/playground/src/storyboard.ts`                                   | the storyboard pane: the item after every step, loops and branches as regions, bound to the editor   |
-| `editors/playground/scripts/fetch-icons.mjs`                             | copies the currency icons from the wiki into `src/icons/`                                            |
-| `packages/core/src/render/item.ts`                                       | `itemView`, `renderItemText`: the item as a player reads it, in the game's copy layout               |
-| `packages/core/src/render/walkthrough.ts`                                | `walkthrough`, `stepDelta`: the guide as steps with the item before and after each                   |
-| `packages/core/src/render/flowchart.ts`                                  | `flowchart`: a walkthrough as Mermaid flowchart text, node ids mapped to statements                  |
-| `packages/core/src/render/conditions.ts`                                 | `clause`, `criteria`: a guide's conditions as prose and as a checklist, in the player's words        |
-| `packages/core/src/cost/race.ts`                                         | the weighted draw as an exponential race: top-`k` membership, its joint distribution, the split      |
-| `packages/core/src/cost/roll.ts`                                         | `rollOf`: a method's op sequence on the checker's item as the pools, counts and certainties it draws |
-| `packages/core/src/cost/chance.ts`                                       | `chance`: a resolved predicate's probability against a roll                                          |
-| `packages/core/src/cost/chain.ts`                                        | a loop of removals, single draws and bench crafts as a Markov chain over counts and named modifiers  |
-| `packages/core/src/cost/track.ts`                                        | the tracked item's pieces: a condition, a reforge's outcomes and carried states over the chain state |
-| `packages/core/src/cost/prices.ts` / `report.ts`                         | unit costs and the `Prices` snapshot / `costOf`: the walk, one `StepCost` per statement              |
-| `packages/core/src/cost/words.ts`                                        | the report's figures, chances and prices in the guide's words, shared by every surface               |
-| `packages/core/src/cost/{race,chain,report}.test.ts`                     | the race against brute force, the chain by hand, the walk over fixture guides                        |
-| `packages/data/scripts/fetch-economy.mjs`                                | refreshes `packages/data/data/poe1/economy.json` from poe.ninja                                      |
-| `packages/cli/src/check.ts`                                              | `checkSource`, `chartSource`, `costSource`: the CLI's check, chart and cost report, pure             |
-| `packages/lsp/src/{walkthrough,flowchart}.test.ts`                       | the walkthrough model and its flowchart over real guides                                             |
-| `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts`    | LSP features                                                                                         |
-| `packages/lsp/src/analysis.ts`                                           | the parse and check of a document, memoized by text; every feature reads it                          |
-| `packages/lsp/src/navigation.ts`                                         | highlights, definition, references, rename, outline over the bindings                                |
-| `packages/lsp/src/signature-help.ts`                                     | `getSignatureHelp`: a call's parameters or a method's slots, the active one marked                   |
-| `packages/lsp/src/folding.ts`                                            | `getFoldingRanges`: brace blocks, comment runs, multi-line predicate defs                            |
-| `packages/lsp/src/inlay-hints.ts`                                        | `getInlayHints`: parameter sorts at declarations, parameter names at calls                           |
-| `packages/lsp/src/formatting.ts`                                         | `getFormattingEdits`: Format Document over `formatCraft`                                             |
-| `packages/parser/src/format.ts`                                          | `formatCraft`: the formatter, comments and blank-line grouping kept                                  |
-| `packages/parser/src/format.test.ts`                                     | formatter layout tests; the example guides stay stable and keep their meaning                        |
-| `packages/core/src/ast/bindings.ts`                                      | `bindingsOf`: every def and parameter with its declaration and references                            |
-| `packages/lsp/src/method-at.ts`                                          | `methodAt`: the method statement a token or cursor position belongs to                               |
-| `packages/core/src/check/check.test.ts`                                  | checker tests (currency set, count-coupling regression, loops, defs)                                 |
-| `packages/core/src/check/check-tiers.test.ts`                            | tier-pinned predicates and the tier overlay through the checker                                      |
-| `packages/core/src/check/counts.test.ts`                                 | `CountDomain` in isolation (caps, coupling, refine)                                                  |
-| `packages/core/src/check/make-room.test.ts`                              | annulling a full item down to open slots: the suffix bound survives the loop                         |
-| `packages/core/src/check/loop-exit.test.ts`                              | a loop whose exit takes several iterations, and one whose exit is never reached                      |
-| `packages/core/src/check/veiled-bench.test.ts`                           | a bench craft between the veiled orb and the unveil keeps the veiled modifier                        |
-| `packages/core/src/check/anonymous-affix.test.ts`                        | a declared random affix may be any modifier of its side, and clashes with a craft of its group       |
-| `packages/cli/src/examples.test.ts`                                      | every guide under `examples/` checks clean against the bundled catalog                               |
-| `packages/core/src/check/bdd.test.ts`                                    | the ROBDD manager (canonicity, operators)                                                            |
-| `packages/core/src/check/fracture.test.ts`                               | fractured items and the Fracturing Orb through the checker                                           |
-| `packages/core/src/check/harvest.test.ts`                                | harvest reforge / augment through the checker                                                        |
-| `packages/core/src/check/metacraft.test.ts`                              | metamods: protection, cannot-roll, multimod, essence blocking                                        |
-| `packages/core/src/check/fossil.test.ts`                                 | resonators: blocked tags, added and forced rows, the corrupted-essence guarantee, the fracture       |
-| `packages/core/src/check/bench.test.ts`                                  | bench remove and the replace of a crafted modifier                                                   |
-| `packages/core/src/check/foulborn.test.ts`                               | the Foulborn orbs' top-tier cull                                                                     |
-| `packages/core/src/check/beast.test.ts`                                  | the Bestiary recipes                                                                                 |
-| `packages/core/src/check/harvest-change.test.ts`                         | the Harvest change of a modifier into another element                                                |
-| `packages/core/src/check/veiled.test.ts`                                 | veiled orbs and `unveil` through the checker                                                         |
-| `packages/lsp/src/features.test.ts`                                      | hover / completion / semantic-token tests                                                            |
-| `packages/lsp/src/navigation.test.ts`                                    | highlight / definition / references / rename / outline tests                                         |
-| `packages/lsp/src/signature-help.test.ts`                                | signature help for def calls and method slots                                                        |
-| `packages/lsp/src/service.test.ts`                                       | `getDiagnostics` over the real data pipeline                                                         |
+| Path                                                                     | What                                                                                                  |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `packages/core/src/check/astate.ts`                                      | `AItem` (the reduced product), `normalize`, `refine`, `join`, `TierDomain`, presence views            |
+| `packages/core/src/check/values.ts`                                      | modifier values: `rollRange` from a row's text, `narrowRange` by a comparison, `ValueDomain`          |
+| `packages/core/src/check/domain.ts`                                      | `Domain<T>` contract, `RangeDomain`, `SetDomain`, range algebra                                       |
+| `packages/core/src/model/capacity.ts`                                    | the affix caps (`sideCap`, `hardTotalCap`, `maxTotal`, `caps`), shared by the pool and the checker    |
+| `packages/core/src/model/strands.ts`                                     | the tiers memory strands let roll, and their cap                                                      |
+| `packages/core/src/check/counts.ts`                                      | `CountDomain` (suffix, the total/prefix coupling, count refine, `learnPresent`)                       |
+| `packages/core/src/check/bdd.ts`                                         | the hash-consed ROBDD behind `presence`                                                               |
+| `packages/core/src/check/check.ts`                                       | driver, `Flow`, loops/branches, defs, `TraceEntry`, `traceAt`                                         |
+| `packages/core/src/check/ops.ts` / `library.ts`                          | the primitive operations and their interpreter / every method as a sequence of them                   |
+| `packages/core/src/check/methods.ts`                                     | the method table: each method's words, argument slots, help and `build`                               |
+| `packages/core/src/model/marks.ts`                                       | the influences and their data tags, `InfluenceKey`, the mark labels                                   |
+| `packages/core/src/check/diagnostics.ts`                                 | `renderState`, message builders                                                                       |
+| `packages/core/src/model/metamods.ts`                                    | the curated metamod id → effect table, attached to the catalog at registry build                      |
+| `packages/core/src/model/veiled.ts`                                      | veiled placeholder types and the unveiled-result predicate                                            |
+| `packages/core/src/pool/veiled.ts`                                       | `veiledPool`: which unveiled mods an `unveil` can reveal on an item                                   |
+| `packages/core/src/resolve/registry.ts`                                  | `Registry`, `buildRegistry`, resolution, completion lists                                             |
+| `packages/core/src/resolve/fuzzy.ts` / `tiers.ts`                        | fuzzy mod matching / rollable tiers (+ the memoized empty pool)                                       |
+| `packages/core/src/pool/pool.ts`                                         | eligibility + weights                                                                                 |
+| `packages/parser/src/{lexer,parser,token}.ts`                            | lexer / parser / token types                                                                          |
+| `packages/parser/src/vocabulary.ts`                                      | the surface vocabulary outside the method table (keywords, predicate words, item fields)              |
+| `packages/data/src/{load,bundle,adapter}.ts` + `scripts/ingest-poe1.mjs` | data load (disk in `load`, pure in `bundle`) + ingest                                                 |
+| `editors/playground/src/{main,monaco,language,providers,convert}.ts`     | the browser playground: Monaco bound to the language service                                          |
+| `editors/playground/src/item-card.ts`                                    | the item drawn in the game's style from `itemView`                                                    |
+| `editors/playground/src/storyboard.ts`                                   | the storyboard pane: the item after every step, loops and branches as regions, bound to the editor    |
+| `editors/playground/scripts/fetch-icons.mjs`                             | copies the currency icons from the wiki into `src/icons/`                                             |
+| `packages/core/src/render/item.ts`                                       | `itemView`, `renderItemText`: the item as a player reads it, in the game's copy layout                |
+| `packages/core/src/render/walkthrough.ts`                                | `walkthrough`, `stepDelta`: the guide as steps with the item before and after each                    |
+| `packages/core/src/render/flowchart.ts`                                  | `flowchart`: a walkthrough as Mermaid flowchart text, node ids mapped to statements                   |
+| `packages/core/src/render/conditions.ts`                                 | `clause`, `criteria`: a guide's conditions as prose and as a checklist, in the player's words         |
+| `packages/core/src/cost/race.ts`                                         | the weighted draw as an exponential race: top-`k` membership, its joint distribution, the split       |
+| `packages/core/src/cost/roll.ts`                                         | `rollOf`: a method's op sequence on the checker's item as the pools, counts and certainties it draws  |
+| `packages/core/src/cost/chance.ts`                                       | `chance`: a resolved predicate's probability against a roll                                           |
+| `packages/core/src/cost/chain.ts`                                        | a loop of removals, single draws and bench crafts as a Markov chain over counts and named modifiers   |
+| `packages/core/src/cost/track.ts`                                        | the item the cost walk follows: tracked modifiers, states narrowed to the checker's item, transitions |
+| `packages/core/src/cost/prices.ts` / `report.ts`                         | unit costs and the `Prices` snapshot / `costOf`: the walk, one `StepCost` per statement               |
+| `packages/core/src/cost/words.ts`                                        | the report's figures, chances and prices in the guide's words, shared by every surface                |
+| `packages/core/src/cost/{race,chain,report}.test.ts`                     | the race against brute force, the chain by hand, the walk over fixture guides                         |
+| `packages/data/scripts/fetch-economy.mjs`                                | refreshes `packages/data/data/poe1/economy.json` from poe.ninja                                       |
+| `packages/cli/src/check.ts`                                              | `checkSource`, `chartSource`, `costSource`: the CLI's check, chart and cost report, pure              |
+| `packages/lsp/src/{walkthrough,flowchart}.test.ts`                       | the walkthrough model and its flowchart over real guides                                              |
+| `packages/lsp/src/{hover,completion,semantic,service,server,node}.ts`    | LSP features                                                                                          |
+| `packages/lsp/src/analysis.ts`                                           | the parse and check of a document, memoized by text; every feature reads it                           |
+| `packages/lsp/src/navigation.ts`                                         | highlights, definition, references, rename, outline over the bindings                                 |
+| `packages/lsp/src/signature-help.ts`                                     | `getSignatureHelp`: a call's parameters or a method's slots, the active one marked                    |
+| `packages/lsp/src/folding.ts`                                            | `getFoldingRanges`: brace blocks, comment runs, multi-line predicate defs                             |
+| `packages/lsp/src/inlay-hints.ts`                                        | `getInlayHints`: parameter sorts at declarations, parameter names at calls                            |
+| `packages/lsp/src/formatting.ts`                                         | `getFormattingEdits`: Format Document over `formatCraft`                                              |
+| `packages/parser/src/format.ts`                                          | `formatCraft`: the formatter, comments and blank-line grouping kept                                   |
+| `packages/parser/src/format.test.ts`                                     | formatter layout tests; the example guides stay stable and keep their meaning                         |
+| `packages/core/src/ast/bindings.ts`                                      | `bindingsOf`: every def and parameter with its declaration and references                             |
+| `packages/lsp/src/method-at.ts`                                          | `methodAt`: the method statement a token or cursor position belongs to                                |
+| `packages/core/src/check/check.test.ts`                                  | checker tests (currency set, count-coupling regression, loops, defs)                                  |
+| `packages/core/src/check/check-tiers.test.ts`                            | tier-pinned predicates and the tier overlay through the checker                                       |
+| `packages/core/src/check/counts.test.ts`                                 | `CountDomain` in isolation (caps, coupling, refine)                                                   |
+| `packages/core/src/check/make-room.test.ts`                              | annulling a full item down to open slots: the suffix bound survives the loop                          |
+| `packages/core/src/check/loop-exit.test.ts`                              | a loop whose exit takes several iterations, and one whose exit is never reached                       |
+| `packages/core/src/check/veiled-bench.test.ts`                           | a bench craft between the veiled orb and the unveil keeps the veiled modifier                         |
+| `packages/core/src/check/anonymous-affix.test.ts`                        | a declared random affix may be any modifier of its side, and clashes with a craft of its group        |
+| `packages/cli/src/examples.test.ts`                                      | every guide under `examples/` checks clean against the bundled catalog                                |
+| `packages/core/src/check/bdd.test.ts`                                    | the ROBDD manager (canonicity, operators)                                                             |
+| `packages/core/src/check/fracture.test.ts`                               | fractured items and the Fracturing Orb through the checker                                            |
+| `packages/core/src/check/harvest.test.ts`                                | harvest reforge / augment through the checker                                                         |
+| `packages/core/src/check/metacraft.test.ts`                              | metamods: protection, cannot-roll, multimod, essence blocking                                         |
+| `packages/core/src/check/fossil.test.ts`                                 | resonators: blocked tags, added and forced rows, the corrupted-essence guarantee, the fracture        |
+| `packages/core/src/check/bench.test.ts`                                  | bench remove and the replace of a crafted modifier                                                    |
+| `packages/core/src/check/foulborn.test.ts`                               | the Foulborn orbs' top-tier cull                                                                      |
+| `packages/core/src/check/beast.test.ts`                                  | the Bestiary recipes                                                                                  |
+| `packages/core/src/check/harvest-change.test.ts`                         | the Harvest change of a modifier into another element                                                 |
+| `packages/core/src/check/veiled.test.ts`                                 | veiled orbs and `unveil` through the checker                                                          |
+| `packages/lsp/src/features.test.ts`                                      | hover / completion / semantic-token tests                                                             |
+| `packages/lsp/src/navigation.test.ts`                                    | highlight / definition / references / rename / outline tests                                          |
+| `packages/lsp/src/signature-help.test.ts`                                | signature help for def calls and method slots                                                         |
+| `packages/lsp/src/service.test.ts`                                       | `getDiagnostics` over the real data pipeline                                                          |
 
 ---
 
