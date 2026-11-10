@@ -17,6 +17,7 @@ import {
 import type { OperationStmt } from "../ast/ast.js";
 import { TypeId } from "../model/ids.js";
 import {
+    AMULET_BASE,
     ATTACK_PREFIX,
     ELDRITCH_ROWS,
     FOSSIL_BLOODSTAINED,
@@ -31,7 +32,7 @@ import {
 import { eldritchKey } from "../model/marks.js";
 
 const registry = buildRegistry({
-    bases: [RING_BASE, BOOTS_BASE],
+    bases: [RING_BASE, BOOTS_BASE, AMULET_BASE],
     mods: [
         ...CATALOG,
         ATTACK_PREFIX,
@@ -95,6 +96,23 @@ describe("embers and ichors", () => {
             "Only a body armour, boots, gloves, a helmet or an amulet can have an eldritch implicit",
         );
         expect(messages(craft(boots({ exarch: "grand" }), []))).toBe("");
+    });
+
+    it("are declared on an amulet one at a time, Lesser to Exceptional", () => {
+        const amulet = (extra: Spec) =>
+            item({ base: "CoralAmulet", ilvl: 100, rarity: "rare", ...extra });
+        expect(messages(craft(amulet({ exarch: "exceptional" }), []))).toBe("");
+        expect(messages(craft(amulet({ eater: "lesser" }), []))).toBe("");
+        expect(messages(craft(amulet({ exarch: "grand", eater: "lesser" }), []))).toContain(
+            "An amulet has one eldritch implicit",
+        );
+        expect(messages(craft(amulet({ eater: "exquisite" }), []))).toContain(
+            "An amulet's eldritch implicit is Lesser to Exceptional, not Exquisite",
+        );
+        // With one implicit only, an Orb of Conflict has nothing to trade.
+        expect(messages(craft(amulet({ exarch: "grand" }), [words("conflict")]))).toContain(
+            "An Orb of Conflict needs both",
+        );
     });
 
     it("cannot be declared beside an influence", () => {

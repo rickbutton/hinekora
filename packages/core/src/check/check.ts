@@ -22,10 +22,13 @@ import { type Gen, type GroupId, type ModId, TagId, type TypeId } from "../model
 import type { Base } from "../model/base.js";
 import type { Mod } from "../model/mod.js";
 import {
+    AMULET_ELDRITCH_TOP_TIER,
     canHaveEldritch,
     ELDRITCH_ITEM_LEVEL,
     type EldritchSide,
+    eldritchTierLabel,
     eldritchTierOf,
+    isEldritchAmulet,
     INFLUENCE_STEMS,
     INFLUENCES,
 } from "../model/marks.js";
@@ -523,6 +526,22 @@ class Checker {
                 "Only a body armour, boots, gloves, a helmet or an amulet can have an eldritch implicit.",
                 item.span,
             );
+        }
+        if (isEldritchAmulet(base)) {
+            if (item.exarch !== undefined && item.eater !== undefined) {
+                this.diag(
+                    "An amulet has one eldritch implicit, the Searing Exarch's or the Eater of Worlds', not both.",
+                    item.span,
+                );
+            }
+            for (const decl of [item.exarch, item.eater]) {
+                if (decl !== undefined && eldritchTierOf(decl.tier) > AMULET_ELDRITCH_TOP_TIER) {
+                    this.diag(
+                        `An amulet's eldritch implicit is Lesser to ${eldritchTierLabel(AMULET_ELDRITCH_TOP_TIER)}, not ${eldritchTierLabel(eldritchTierOf(decl.tier))}.`,
+                        item.span,
+                    );
+                }
+            }
         }
         if (
             (item.exarch !== undefined || item.eater !== undefined) &&

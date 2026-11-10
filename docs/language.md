@@ -79,7 +79,8 @@ item {
   `greater`, `grand`, `exceptional`, `exquisite`, `perfect`. A wording after the tier names
   which implicit it is (`exarch: grand "increased movement speed"`), matched as a mod name is
   (§2). An influenced item cannot carry one, nor an item below item level 75, nor any
-  class but body armours, boots, gloves, helmets and amulets.
+  class but body armours, boots, gloves, helmets and amulets; an amulet has one of the
+  two, `exceptional` at most.
 - `enchant: <passives> "<stat>"` is a
   [cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel#Mechanics)'s two enchantments:
   how many passives it adds and the stat its small passives grant, which decides the

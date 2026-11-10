@@ -85,11 +85,19 @@ export const ELDRITCH_TAGS: readonly TagId[] = ["body_armour", "boots", "gloves"
 );
 
 /** Can an item of this base carry an eldritch implicit at all: the four armour
- *  classes, and an amulet, which no ember or ichor marks but Allflame crafting
+ *  classes, and an amulet, which no ember or ichor marks but Ukatoa's Ducat
  *  does (Eldritch implicit modifier). */
 export function canHaveEldritch(base: Base): boolean {
-    return base.itemClass === "Amulet" || ELDRITCH_TAGS.some((t) => base.tags.has(t));
+    return isEldritchAmulet(base) || ELDRITCH_TAGS.some((t) => base.tags.has(t));
 }
+
+/** An amulet's eldritch implicit has one source, which gives one implicit of
+ *  either pool, Lesser to Exceptional, and takes no amulet that has one
+ *  already (Ukatoa's Ducat § Mechanics). */
+export function isEldritchAmulet(base: Base): boolean {
+    return base.itemClass === "Amulet";
+}
+export const AMULET_ELDRITCH_TOP_TIER = 4;
 
 export function isEldritchSide(word: string): word is EldritchSide {
     return (ELDRITCH_SIDES as readonly string[]).includes(word);
