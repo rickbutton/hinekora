@@ -22,17 +22,16 @@ def anyEleRes(t) =
     or has "cold resistance" t
     or has "lightning resistance" t
 
-until anyEleRes(t1) {
-    essence "greed" t1
-}
+until anyEleRes(t1) and suffixCount <= 2 {
+    until anyEleRes(t1) {
+        essence "greed" t1
+    }
 
-# Make room on the suffix side under Eater dominance; the fractured mod and
-# the prefixes are safe from an eldritch annul there.
-if suffixCount == 3 {
-    ichor lesser
-    eldritch annul
-    if not anyEleRes(t1) {
-        restart
+    # Make room on the suffix side under Eater dominance; the fractured mod
+    # and the prefixes are safe from an eldritch annul there.
+    if suffixCount == 3 {
+        ichor lesser
+        eldritch annul
     }
 }
 
