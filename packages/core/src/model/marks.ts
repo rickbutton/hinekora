@@ -75,7 +75,7 @@ export const ELDRITCH_TIERS = [
 export type EldritchTierName = (typeof ELDRITCH_TIERS)[number];
 
 /** Every eldritch implicit row requires level 75 in the game data, read as the
- *  item level the implicit needs; the item pages name no level. */
+ *  item level the implicit needs; the item pages name no level (QUESTIONS.md Q86). */
 export const ELDRITCH_ITEM_LEVEL = 75;
 
 /** The four armour classes an ember or ichor marks and an Orb of Dominance

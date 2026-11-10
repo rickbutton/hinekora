@@ -131,17 +131,22 @@ influence; an influenced item any one influence or its own; an eldritch implicit
 beside the new influence (the wide reading). **Encoded in:** `check/library.ts`
 `locusOps`, `vaalOps`, `brickBranch`.
 
-### Q33 · probe · open — the Tainted Chaos Orb under a protection
+### Q33 · probe · open — the Tainted Chaos Orb under a protection, and its rarity
 
 **Q:** does its reforge respect a protection?
 [Tainted Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Tainted_Chaos_Orb#Mechanics)
 names only the fractured modifier as surviving; the
 [Metamod table](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions) has a row for
-the Tainted Exalted Orb only.
-**Probe:** a corrupted Rare with "Suffixes Cannot Be Changed", Tainted Chaos Orbs; apply
-until each outcome shows; record whether the suffixes survived either.
-**Assumed:** both halves of the orb ignore the protection. **Encoded in:**
-`check/library.ts` `TAINTED_CHAOS`, `unprotect`.
+the Tainted Exalted Orb only. And what rarity does its strip leave with one fractured
+prefix and one fractured suffix? That page says Magic ("the lowest eligible rarity");
+[Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) says two modifiers stay
+Rare.
+**Probe:** a corrupted Rare with "Suffixes Cannot Be Changed", and one with a fractured
+prefix and a fractured suffix; Tainted Chaos Orbs; apply until each outcome shows; record
+whether the suffixes survived, and the second item's rarity when stripped.
+**Assumed:** both halves ignore the protection; the strip leaves a scour's rarity, Rare
+with two survivors. **Encoded in:** `check/library.ts` `TAINTED_CHAOS`, `unprotect`;
+`check/ops.ts` `scouredRarities`.
 
 ### Q41 · probe · open — where a copied item's `Corrupted` goes
 
@@ -313,3 +318,24 @@ attempt from the loop's entry in both, the checker joining that item into the he
 **Assumed:** the split above; the cost layer cannot follow a `restart` in a loop nested in
 another until this is settled. **Encoded in:** `check/check.ts` `restartHeads`,
 `cost/chain.ts` `restart`, `cost/report.ts` `chainLoop`.
+
+### Q85 · probe · open — a bench craft on a Normal item
+
+**Q:** does the bench craft a modifier onto a Normal item, making it Magic?
+[Crafting Bench § Using the crafting bench](https://www.poewiki.net/wiki/Crafting_Bench#Using_the_crafting_bench)
+asks only for an open slot of the modifier's side and names Magic and Rare items.
+**Probe:** a Normal ring, the bench; craft any modifier; record refused, or the item's
+rarity afterwards.
+**Assumed:** refused: a Normal item has no slot. **Encoded in:** `check/library.ts`
+`benchOps`, its `openSlot`.
+
+### Q86 · probe · open — the item level an ember or ichor needs
+
+**Q:** does an Eldritch Ember or Ichor refuse an item below some item level? Neither
+[Lesser Eldritch Ember](https://www.poewiki.net/wiki/Lesser_Eldritch_Ember) nor
+[Eldritch implicit modifier](https://www.poewiki.net/wiki/Eldritch_implicit_modifier)
+names one; every implicit row's required level in the data is 75.
+**Probe:** boots of item level 70 and a Lesser Eldritch Ember; apply it; record refused or
+applied.
+**Assumed:** refused below item level 75, in a step and in the item block. **Encoded in:**
+`model/marks.ts` `ELDRITCH_ITEM_LEVEL`.
