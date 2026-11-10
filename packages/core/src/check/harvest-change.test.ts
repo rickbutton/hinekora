@@ -11,7 +11,10 @@ import {
     CLASS_RING,
     COLD_DAMAGE,
     COLD_RESIST,
+    FIRE_CHAOS_RESIST,
+    FIRE_CRIT_MULTI,
     FIRE_DAMAGE,
+    FIRE_DOT_MULTI,
     FIRE_RESIST,
     COLD_RES_TIERS,
     FIRE_RES_TIERS,
@@ -29,6 +32,8 @@ const registry = buildRegistry({
         ...COLD_RES_TIERS,
         FIRE_DAMAGE,
         COLD_DAMAGE,
+        FIRE_CRIT_MULTI,
+        FIRE_DOT_MULTI,
         PROTECT_SUFFIXES_CARRIER,
         BENCH_FIRE_RES_ROW,
         BENCH_LIFE_ROW,
@@ -48,6 +53,17 @@ const rareRing = (prefixes: Affix[] = [], suffixes: Affix[] = []) =>
     item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes, suffixes });
 
 describe("harvest change", () => {
+    it("refuses a critical or damage over time multiplier, and a resistance shared with chaos", () => {
+        for (const from of [FIRE_CRIT_MULTI, FIRE_DOT_MULTI]) {
+            const c = craft(rareRing([], [from.id]), [harvestChange(from.id, COLD_DAMAGE.id)]);
+            expect(check(c, ctx).diagnostics[0]!.message).toContain("The grove changes");
+        }
+        const hybrid = craft(rareRing([], [FIRE_CHAOS_RESIST.id]), [
+            harvestChange(FIRE_CHAOS_RESIST.id, COLD_RESIST.id),
+        ]);
+        expect(check(hybrid, ctx).diagnostics[0]!.message).toContain("The grove changes");
+    });
+
     it("turns the named modifier into the other, keeping the count", () => {
         const c = craft(rareRing([], [FIRE_RESIST.id, LIGHTNING_RESIST.id]), [
             harvestChange(FIRE_RESIST.id, COLD_RESIST.id),

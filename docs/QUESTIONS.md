@@ -35,24 +35,6 @@ what the add-pool holds (`check/ops.ts` `foulbornTiers`); the cull keeps every r
 count between the sure and the tag-enabled total would keep.
 **Answer:**
 
-### Q18 · game probe · open
-
-**Asked:** 2026-10-28
-**Goal:** which modifier types the Harvest "change a modifier that grants Fire Damage"
-crafts accept. The grove's option table (the cached cargo rows) names the twelve
-crafts: the three elemental resistances among themselves and the three elemental damages
-among themselves; it does not say whether "grants Fire Damage" covers flat added damage
-only, or also increased damage, penetration and the hybrids.
-**Procure:** a Rare with a flat added fire damage modifier, one with increased fire
-damage, one with fire penetration; the grove's "Fire Damage into Cold Damage" craft.
-**Steps:** try the craft on each; note which it offers.
-**Record:** the modifiers it changed.
-**Assumed meanwhile:** any type whose rows carry the element's tag and the damage tag
-(`check/methods.ts` `elementalKind`), and for resistances the element's tag and the
-resistance tag, which admits the fire-and-chaos hybrid; a type that names two of the
-three elements (the fire-and-cold hybrid) is refused.
-**Answer:**
-
 ### Q19 · game probe · open
 
 **Asked:** 2026-10-28
@@ -696,6 +678,32 @@ multipliers, a side admitting no more once full (`cost/race.ts` `splitDistributi
 ---
 
 ## Resolved
+
+### Q18 · game probe · resolved
+
+**Asked:** 2026-10-28
+**Goal:** which modifier types the Harvest "change a modifier that grants Fire Damage"
+crafts accept. The grove's option table (the cached cargo rows) names the twelve
+crafts: the three elemental resistances among themselves and the three elemental damages
+among themselves; it does not say whether "grants Fire Damage" covers flat added damage
+only, or also increased damage, penetration and the hybrids.
+**Procure:** a Rare with a flat added fire damage modifier, one with increased fire
+damage, one with fire penetration; the grove's "Fire Damage into Cold Damage" craft.
+**Steps:** try the craft on each; note which it offers.
+**Record:** the modifiers it changed.
+**Assumed meanwhile:** any type whose rows carry the element's tag and the damage tag
+(`check/methods.ts` `elementalKind`), and for resistances the element's tag and the
+resistance tag, which admits the fire-and-chaos hybrid; a type that names two of the
+three elements (the fire-and-cold hybrid) is refused.
+**Answer:** 2026-11-10, from the wiki and players' reports: the damage change refuses a
+critical strike multiplier ([Harvest crafting § Version history](https://www.poewiki.net/wiki/Harvest_crafting#Version_history),
+3.28.0 Hotfix 8), and players report it refusing a damage over time multiplier
+([forum](https://www.pathofexile.com/forum/view-thread/3923545)) and the resistance change
+refusing a resistance shared with chaos ([forum](https://pathofexile.com/forum/view-thread/3270484));
+[Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting) adds
+that it takes the Incursion resistance modifiers too, and the 3.28.0c fix that increased
+elemental damage changes. `elementalKind` now leaves out rows tagged `critical`,
+`dot_multi`, and resistances tagged `chaos`; penetration stays admitted, unconfirmed.
 
 ### Q67 · game probe · resolved
 

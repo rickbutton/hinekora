@@ -1075,6 +1075,28 @@ const damageRow = (element: string, family: string): Mod =>
 export const FIRE_DAMAGE = damageRow("fire", "Fire");
 export const COLD_DAMAGE = damageRow("cold", "Cold");
 
+/** Fire damage rows the grove's change refuses (`QUESTIONS.md` Q18). */
+export const FIRE_CRIT_MULTI: Mod = mkMod({
+    id: "FireCritMulti1",
+    type: "FireCritMulti",
+    gen: "suffix",
+    minLevel: 1,
+    families: ["FireCritMulti"],
+    spawn: [spawn(TAG_RING, 1000), spawn(TAG_DEFAULT, 0)],
+    implicitTags: ["damage", "fire", "critical"],
+    text: "+#% to Critical Strike Multiplier with Fire Skills",
+});
+export const FIRE_DOT_MULTI: Mod = mkMod({
+    id: "FireDotMulti1",
+    type: "FireDotMulti",
+    gen: "suffix",
+    minLevel: 1,
+    families: ["FireDotMulti"],
+    spawn: [spawn(TAG_RING, 1000), spawn(TAG_DEFAULT, 0)],
+    implicitTags: ["dot_multi", "damage", "fire"],
+    text: "+#% to Fire Damage over Time Multiplier",
+});
+
 /** A second three-tier type at MaxLife's levels, for tier-to-tier changes. */
 export const MAXMANA_TIERS: readonly Mod[] = [
     ["MaxManaLow", 1],

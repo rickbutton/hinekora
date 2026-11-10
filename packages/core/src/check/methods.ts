@@ -119,7 +119,12 @@ const num = (l: Literal | undefined): number | undefined =>
 
 const ELEMENTS = ["fire", "cold", "lightning"] as const;
 
-/** Which elemental resistance or damage a modifier type grants, by its rows' tags. */
+/**
+ * Which elemental resistance or damage a modifier type grants, by its rows'
+ * tags. The grove refuses a critical strike multiplier (Harvest crafting §
+ * Version history, 3.28.0 Hotfix 8), and players report it refusing a damage
+ * over time multiplier and a resistance shared with chaos (`QUESTIONS.md` Q18).
+ */
 function elementalKind(
     catalog: readonly Mod[],
     type: TypeId,
@@ -128,8 +133,14 @@ function elementalKind(
     for (const m of catalog) if (m.type === type) for (const t of m.implicitTags) tags.add(t);
     const elements = ELEMENTS.filter((e) => tags.has(e));
     if (elements.length !== 1) return null;
-    const kind = tags.has("resistance") ? "resistance" : tags.has("damage") ? "damage" : null;
-    return kind === null ? null : { element: elements[0]!, kind };
+    if (tags.has("resistance")) {
+        return tags.has("chaos") ? null : { element: elements[0]!, kind: "resistance" };
+    }
+    if (tags.has("damage")) {
+        if (tags.has("critical") || tags.has("dot_multi")) return null;
+        return { element: elements[0]!, kind: "damage" };
+    }
+    return null;
 }
 
 /** The Harvest change: both names resolved, the pair one the grove offers. */
