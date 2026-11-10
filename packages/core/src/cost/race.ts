@@ -46,7 +46,6 @@ function legendre(n: number): Rule {
             z -= dz;
             if (Math.abs(dz) < 1e-15) break;
         }
-        // Map from [-1, 1] to [0, 1].
         x.push((1 - z) / 2);
         w.push(1 / ((1 - z * z) * dp * dp));
     }

@@ -67,7 +67,6 @@ const unshielded: Selector = { kind: "random", honourCannotRoll: true };
 
 /** A rare reforge lays down four to six modifiers (Chaos Orb § Mechanics). */
 const RARE_REFORGE: Range = [4, 6];
-/** A magic reforge lays down one or two. */
 const MAGIC_REFORGE: Range = [1, 2];
 
 /** The most memory strands one use may use up (Memory strand § Crafting
@@ -395,7 +394,6 @@ export const TAINTED_CHAOS: readonly Op[] = [
     strands(60),
 ];
 
-/** A Tainted Exalted Orb: a corrupted Rare gains a modifier or loses one. */
 export const TAINTED_EXALT: readonly Op[] = [
     corruptedItem("A Tainted Exalted Orb"),
     isRare,
@@ -462,7 +460,6 @@ export function eldritchChaosOps(side: EldritchSide): readonly Op[] {
     ];
 }
 
-/** An Eldritch Exalted Orb: a modifier added on the dominant implicit's side. */
 export function eldritchExaltOps(side: EldritchSide): readonly Op[] {
     const gen = SIDE_OF[side];
     return [
@@ -681,7 +678,6 @@ export const VEILED_CHAOS: readonly Op[] = [
     strands(80),
 ];
 
-/** Veiled Exalted Orb: remove a random modifier and add a veiled one. */
 export const VEILED_EXALT: readonly Op[] = [
     notCorrupted,
     isRare,

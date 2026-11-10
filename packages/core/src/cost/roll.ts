@@ -36,13 +36,11 @@ import { splitDistribution } from "./race.js";
  */
 export type Reading = "estimate" | "floors" | "ceilings";
 
-/** One row of a group with the weight it rolls at here. */
 export interface Row {
     readonly mod: Mod;
     readonly weight: number;
 }
 
-/** A group in the race: a modifier type and its rows. */
 export interface Group {
     readonly type: TypeId;
     readonly gen: Gen;
@@ -163,7 +161,6 @@ function countDistribution(
     return out;
 }
 
-/** The split of `m` draws between the sides, each case's probability. */
 function countCases(
     prefix: readonly Group[],
     suffix: readonly Group[],

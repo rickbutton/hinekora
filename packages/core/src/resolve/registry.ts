@@ -34,15 +34,11 @@ import { rollableTiers } from "./tiers.js";
 /** DSL tier (T1 = best) → catalog ladder level (Deafening = 7, Whispering = 1). */
 const ladderOf = (tier: number): number => 8 - tier;
 
-/** Shared empty result for `addsTagsOfType` on a type that adds none. */
 const EMPTY_TAGS: ReadonlySet<TagId> = new Set();
 /** The cluster jewels' domain, whose notables roll under their enchantment's tag. */
 const CLUSTER_DOMAIN = Domain("affliction_jewel");
-/** Shared empty result for `sidesOfType` on an unknown type. */
 const EMPTY_SIDES: ReadonlySet<Gen> = new Set();
-/** Shared empty result for `familiesOfType` on an unknown type. */
 const EMPTY_FAMILIES: ReadonlySet<GroupId> = new Set();
-/** Shared empty result for `effectsOfType` on a non-carrier type. */
 const EMPTY_EFFECTS: readonly Effect[] = [];
 
 /** A cluster jewel enchantment: the notables' spawn tag and the words of its stat. */
@@ -189,8 +185,6 @@ export interface Registry {
      */
     resolveModType(name: string, ctx?: ModTypeContext): Resolved<TypeId>;
     resolveCurrency(name: string): Resolved<CurrencySpec>;
-    /** Resolve a harvest modifier category ("fire", "caster") to its canonical
-     *  category tag (`Mod.implicitTags`). */
     resolveHarvestTag(name: string): Resolved<TagId>;
     /**
      * Resolve an essence by full name (`"Deafening Essence of Greed"`) or
@@ -226,13 +220,11 @@ export interface Registry {
      *  words of the stat its small passives grant ("lightning damage"); the
      *  catalog knows it as the spawn tag the notables roll under. */
     resolveClusterEnchant(name: string): Resolved<TagId>;
-    /** Every cluster jewel enchantment the catalog knows, with its wording. */
     clusterEnchants(): readonly ClusterEnchant[];
     /** The sides the type's rows sit on across the catalog: one for most types,
      *  both for a type that is a prefix on one base and a suffix on another. */
     sidesOfType(type: TypeId): ReadonlySet<Gen>;
-    /** The mod groups (families) a ModType belongs to, across its tiers;
-     *  drives the bench group-exclusivity check. */
+    /** The mod groups (families) a ModType belongs to, across its tiers. */
     familiesOfType(type: TypeId): ReadonlySet<GroupId>;
     /** The types sharing a modifier group (family) with this one, itself included:
      *  what `has group` asks about and what a bench craft of it clashes with. */
@@ -241,29 +233,22 @@ export interface Registry {
     addsTagsOfType(type: TypeId): ReadonlySet<TagId>;
     /** The tags an influence adds to a base, the ones its rows' spawn tables name. */
     influenceTags(base: Base, influence: Influence): ReadonlySet<TagId>;
-    /** The effects a ModType carries (non-empty only for metamod carriers);
-     *  drives the abstract metamod folds (protection, cannot-roll, multimod). */
+    /** The effects a ModType carries (non-empty only for metamod carriers). */
     effectsOfType(type: TypeId): readonly Effect[];
     /** Canonical range-stripped wording for a ModType ("maximum life"), for
      *  hover/diagnostics; falls back to the raw TypeId. */
     typeLabel(type: TypeId): string;
 
     // --- completion lists (precomputed) ---
-    /** Currency alias names. */
     readonly currencyNames: readonly string[];
-    /** The full currency catalog (alias + kind + display name + description). */
     readonly currencies: readonly CurrencySpec[];
     /** Display names that name one base of a class that takes modifiers. */
     readonly baseNames: readonly string[];
-    /** Stat-description suggestions for mod completion. */
     readonly statSuggestions: readonly StatSuggestion[];
     /** Full essence names, for `essence "…"` completion. */
     readonly essenceNames: readonly string[];
-    /** Full fossil names. */
     readonly fossilNames: readonly string[];
-    /** The Aspect names the Bestiary crafts. */
     readonly aspectNames: readonly string[];
-    /** The essence catalog. */
     readonly essences: readonly EssenceSpec[];
     /** Distinct bench-mod descriptions, for `bench "…"` completion. */
     readonly benchNames: readonly string[];
@@ -349,7 +334,6 @@ export interface RegistryData {
     readonly mods: readonly Mod[];
     /** Optional human aliases → mod id (e.g. "T1 Life" → "IncreasedLife1"). */
     readonly modAliases?: Readonly<Record<string, string>>;
-    /** Optional base aliases → base id. */
     readonly baseAliases?: Readonly<Record<string, string>>;
     /** Optional community wordings → the game's ("spell suppression" → "chance to
      *  suppress spell damage"), rewritten inside a modifier name before matching. */
@@ -363,10 +347,6 @@ export interface RegistryData {
     readonly aspects?: Readonly<Record<string, string>>;
 }
 
-/**
- * Build a registry from loaded data. Lookups are case-insensitive on the whole
- * name; ids and aliases are both accepted.
- */
 /** Do two bases agree on everything the model reads of a base: class, domain,
  *  tags and affix caps? */
 function sameToTheModel(a: Base, b: Base): boolean {
@@ -378,6 +358,7 @@ function sameToTheModel(a: Base, b: Base): boolean {
     );
 }
 
+/** Lookups are case-insensitive on the whole name; ids and aliases are both accepted. */
 export function buildRegistry(data: RegistryData): Registry {
     const norm = (s: string): string => s.trim().toLowerCase();
 
@@ -457,7 +438,6 @@ export function buildRegistry(data: RegistryData): Registry {
         sides.add(m.gen);
     }
 
-    // Union of families per ModType, the group set used for bench conflict checks.
     const typeAddsTags = new Map<TypeId, Set<TagId>>();
     for (const m of catalog) {
         if (m.addsTags.size === 0) continue;
@@ -548,7 +528,6 @@ export function buildRegistry(data: RegistryData): Registry {
 
         resolveBase(name) {
             const key = norm(name);
-            // 1) exact id (metadata path), 2) curated alias, 3) display name.
             const direct = baseById.get(key);
             if (direct) return found(direct);
             const aliased = baseAlias.get(key);
@@ -578,7 +557,6 @@ export function buildRegistry(data: RegistryData): Registry {
 
         resolveModType(name, ctx) {
             const key = norm(name);
-            // An exact mod id / alias resolves to that mod's type directly.
             const exact = modById.get(key) ?? modById.get(modAlias.get(key) ?? "");
             if (exact) return found(exact.type);
 
@@ -750,7 +728,6 @@ export function buildRegistry(data: RegistryData): Registry {
         },
 
         eldritchTextOf(type) {
-            // The most common text among the type's rows, as the mod index does.
             const counts = new Map<string, number>();
             for (const e of eldritch) {
                 if (e.type === type) counts.set(e.text, (counts.get(e.text) ?? 0) + 1);
@@ -779,8 +756,6 @@ export function buildRegistry(data: RegistryData): Registry {
             if (scored.length === 0) return fail({ kind: "unknownBench", name });
             const top = Math.max(...scored.map((s) => s.score));
             const best = scored.filter((s) => s.score === top);
-            // Only distinct mod families are ambiguous; tiers of one mod just
-            // pick the best (or the tier given).
             const types = new Set(best.map((s) => s.mod.type));
             if (types.size > 1) {
                 return fail({

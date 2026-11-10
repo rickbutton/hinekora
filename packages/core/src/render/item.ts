@@ -312,7 +312,6 @@ export function itemView(a: AItem, registry: Registry): ItemView {
             marks.push({ text: `${INFLUENCE_NAME[i]} Item`, maybe: false });
         }
     } else if (influenceSets.length > 0) {
-        // Each possible influence set as the game would write it, or none.
         const named = influenceSets.map((k) => `${influenceSetLabel(k)} Item`).join(", or ");
         marks.push({ text: `${named}${mayLackInfluence ? ", or no influence" : ""}`, maybe: true });
     }
@@ -345,7 +344,6 @@ export function itemView(a: AItem, registry: Registry): ItemView {
 
 const SEPARATOR = "--------";
 const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six"];
-/** A small count in words, as the "one of" headers write it. */
 export const numberWord = (n: number): string => NUMBER_WORDS[n] ?? String(n);
 /** The game's name for each eldritch side, as its `… Item` line writes it. */
 export const SIDE_NAME: Readonly<Record<EldritchSide, string>> = {

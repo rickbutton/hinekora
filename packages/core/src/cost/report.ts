@@ -40,7 +40,6 @@ export interface Bounds {
     readonly high: number;
 }
 
-/** What the cost layer says about one statement. */
 export interface StepCost {
     readonly span: SourceSpan;
     readonly kind: Stmt["kind"];
@@ -258,7 +257,6 @@ function withBounds(
         seen.set(k, n + 1);
         return indexed.map((byKey) => byKey.get(k)?.[n]);
     };
-    // The spans of the loops and branches a reading assumed rather than solved.
     const assumed: { start: number; end: number }[] = [];
     const peerLists = estimate.map((s) => peersOf(s));
     estimate.forEach((s, i) => {
@@ -468,7 +466,6 @@ class Walker {
         return this.byStart.get(`${s.kind}@${s.span.start.offset}`);
     }
 
-    /** Walk a sequence; the branches that fall off its end come back. */
     sequence(stmts: readonly Stmt[], branches: readonly Branch[], frame: Frame): Branch[] {
         let current = trim(branches);
         for (const stmt of stmts) {
@@ -1249,7 +1246,6 @@ class Walker {
         return Math.min(1, joint / given);
     }
 
-    /** The chance of the path's conditions and `pred` together, over the path's roll. */
     private jointChance(path: Path, pred: RPred, after: AItem): number | undefined {
         return chance(conjunction([...path.conditions, pred]), path.roll, after);
     }

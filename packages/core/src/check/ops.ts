@@ -1,11 +1,8 @@
 /**
- * The primitive operations (operations.md §2) and their interpreter. A crafting
- * method is an ordered sequence of these; `runMethod` folds each into the
- * abstract item without enumerating outcomes, and a failed `require` anywhere
- * fails the whole method with the item unchanged. The metamods in force are read
- * once, when the method is applied, and govern every operation in it: a reforge
- * that rerolls the carrier of "prefixes cannot be changed" still keeps the
- * prefixes.
+ * The primitive operations (operations.md §2) and their interpreter. The metamods
+ * in force are read once, when the method is applied, and govern every operation
+ * in it: a reforge that rerolls the carrier of "prefixes cannot be changed" still
+ * keeps the prefixes.
  */
 import { craftedCapOf, type Effect } from "../model/effects.js";
 import { dropValues, keepValues } from "./values.js";
@@ -88,9 +85,7 @@ export type PoolSpec =
     | { readonly kind: "tagged"; readonly tag: TagId }
     /** The row a bench craft places; it counts as a crafted modifier. */
     | { readonly kind: "bench"; readonly mod: Mod }
-    /** The row an essence grants to the item's class. */
     | { readonly kind: "essenceGrant"; readonly spec: EssenceSpec }
-    /** The veiled placeholder, a modifier of either side awaiting its unveil. */
     | { readonly kind: "veiledPlaceholder" }
     /** The unveil results the item's placeholder may become; the fill replaces
      *  the placeholder. A target names the one the player picks. */
@@ -205,7 +200,6 @@ export type Check =
     | { readonly kind: "noBlockingMetamod" }
     /** The modifier is guaranteed present, not fractured, and on an unprotected side. */
     | { readonly kind: "typeRemovable"; readonly type: TypeId; readonly label: string }
-    /** An imprint is held on every path. */
     | { readonly kind: "hasImprint" }
     /** The Bestiary imprints a Magic item or a Rare talisman. */
     | { readonly kind: "imprintable" }
@@ -216,7 +210,6 @@ export type Check =
     /** The base carries one of the tags (the Corruption Altar's item types). */
     | { readonly kind: "baseHasAnyTag"; readonly tags: readonly TagId[]; readonly what: string }
     | { readonly kind: "minItemLevel"; readonly level: number; readonly what: string }
-    /** The fossil's base restriction admits this item. */
     | { readonly kind: "fossilAllowed"; readonly fossil: FossilSpec }
     | { readonly kind: "essenceRarity"; readonly tier: number }
     | { readonly kind: "essenceGrant"; readonly spec: EssenceSpec }
@@ -249,7 +242,6 @@ export type Op =
      *  survive, since no method in the library ends on every outcome. */
     | { readonly kind: "either"; readonly branches: readonly (readonly Transform[])[] }
     | { readonly kind: "end" }
-    /** The item is corrupted from here on. */
     | { readonly kind: "corrupt" }
     /** Forget which tier each present modifier is; a crafted one keeps its tier
      *  when `crafted` is false. */
@@ -258,8 +250,7 @@ export type Op =
      *  fractured ones excepted (the Divine Orb). */
     | { readonly kind: "reroll" }
     /** One influenced modifier went up a tier, or to its elevated row at the
-     *  top (the Orb of Dominance): every influenced modifier the item may have
-     *  loses its tier and may be its elevated row, and one of them remains. */
+     *  top (the Orb of Dominance). */
     | { readonly kind: "elevate" }
     /** Change the influence mark: to one set, by adding an influence to every
      *  possible set, or to every set of the same size (the grove's randomise). */
@@ -270,11 +261,9 @@ export type Op =
     | { readonly kind: "rarity"; readonly rarity: Rarity | "survivors" }
     /** `n` random present modifiers become fractured. */
     | { readonly kind: "lock"; readonly n: number }
-    /** The item uses up memory strands: at most `consume` of them, or, given a
-     *  list, at most the entry for the modifiers on the item before the method
-     *  (the last entry beyond the list). The floor falls, the ceiling stays. */
+    /** A list `consume` is indexed by the modifier count before the method, its
+     *  last entry standing for every count beyond it. */
     | { readonly kind: "strands"; readonly consume: number | readonly number[] }
-    /** Hold the item as it is now, to restore later. */
     | { readonly kind: "imprint" }
     /** Replace the item with the held imprint, consuming it. */
     | { readonly kind: "restore" };
@@ -378,15 +367,8 @@ export type TransferResult =
     | { readonly ok: true; readonly state: AItem }
     | { readonly ok: false; readonly failure: PreconditionFailure; readonly state: AItem };
 
-/**
- * Run a method: the operations in order, each on the state the previous one
- * produced. A failed `require` fails the method as a whole and names the first
- * failure. The state returned with it is the one the method leaves where its
- * preconditions hold, so what follows a reported failure is judged against the
- * guide's intent rather than against an item the failed step left untouched: a
- * loop whose body fills the item is still one whose exit the body can reach,
- * where a step that failed and did nothing would make every exit look unreachable.
- */
+/** On a failed `require`, the state returned is the one the method leaves where
+ *  its preconditions hold, not the input (operations.md §2). */
 export function runMethod(a0: AItem, ops: readonly Op[], registry: Registry): TransferResult {
     let rules = rulesInForce(a0, registry, ops);
     let a = a0;
@@ -613,7 +595,6 @@ function rulesInForce(a: AItem, registry: Registry, ops: readonly Op[]): Rules {
     };
 }
 
-/** The effects active right now: the union over guaranteed effect-carriers. */
 function activeEffects(a: AItem, registry: Registry): readonly Effect[] {
     const out: Effect[] = [];
     for (const t of guaranteedTypes(a)) out.push(...registry.effectsOfType(t));
@@ -651,7 +632,6 @@ function shieldFor(selector: Selector, rules: Rules): Shield | null {
     return selector.kind === "random" && selector.honourCannotRoll ? rules.cannotRoll : null;
 }
 
-/** The side `type` occupies on this item's base (`rollableGen`). */
 function genOf(a: AItem, registry: Registry, type: TypeId): Gen {
     return rollableGen(registry.catalog, a.base, a.ilvl, type) ?? "prefix";
 }
@@ -868,7 +848,6 @@ function failing(
         case "noBlockingMetamod":
             return rules.blocksSourced ? { kind: "metamodBlocks" } : null;
         case "essenceRarity":
-            // Normal always, Rare only for ladder tier ≥ 5, never Magic.
             return [...a.rarities].some((r) => r === "magic" || (r === "rare" && check.tier < 5))
                 ? { kind: "essenceRarity", tier: check.tier, actual: a.rarities }
                 : null;
@@ -931,8 +910,7 @@ function failing(
                 // Every realisable pair of side counts must leave a tagged row
                 // room: the sides are coupled through the total, so each path's
                 // pair is judged on its own rather than both sides at their
-                // fullest at once. A pair with tagged rows that a possibly
-                // present modifier blocks is blocked, one with none has no room.
+                // fullest at once.
                 for (const [p, s] of sidePairs(path)) {
                     if (!open(p, s)) {
                         return plain(p, s).length > 0
@@ -985,7 +963,7 @@ function hasRemovable(
     shield: Shield | null,
     registry: Registry,
 ): boolean {
-    if (allowed.size === 0) return false; // every side protected → nothing to remove
+    if (allowed.size === 0) return false;
     // A fractured mod is locked, so it doesn't count toward what's removable; an
     // unproven fracture likewise locks a mod of unknown generation.
     const fractured = fracturedTypes(a);
@@ -1025,7 +1003,7 @@ function typesSharingFamilyWithPresent(a: AItem, mod: Mod, registry: Registry): 
         for (const f of mod.families) if (fams.has(f)) return true;
         return false;
     };
-    for (const type of guaranteed) if (shares(type)) return [type]; // definitely present
+    for (const type of guaranteed) if (shares(type)) return [type];
 
     const clashing: TypeId[] = [];
     for (const type of a.possible) {
@@ -1035,7 +1013,6 @@ function typesSharingFamilyWithPresent(a: AItem, mod: Mod, registry: Registry): 
     return clashing;
 }
 
-/** Is a veiled placeholder present (a mod awaiting unveil)? */
 function hasVeiledPlaceholder(a: AItem): boolean {
     const clause = a.bdd.or(a.bdd.variable(VEILED_PREFIX), a.bdd.variable(VEILED_SUFFIX));
     return a.bdd.entails(a.presence, clause);
@@ -1063,7 +1040,6 @@ function mayHaveVeiled(a: AItem, registry: Registry, among?: (t: TypeId) => bool
     return false;
 }
 
-/** The side a type sits on; the veiled placeholders name theirs. */
 function sideOf(a: AItem, registry: Registry, t: TypeId): Gen {
     if (t === VEILED_PREFIX) return "prefix";
     if (t === VEILED_SUFFIX) return "suffix";
@@ -1116,13 +1092,8 @@ function essenceGrant(a: AItem, spec: EssenceSpec, registry: Registry): Mod | un
 
 // --- strip ---------------------------------------------------------------------
 
-/**
- * Every modifier goes but those on a protected side and the fractured one.
- * Counts fall to what is kept; guarantees survive only for kept types, tier pins
- * and `possible` for kept types and, under an unproven lock, for every current
- * type; exclusions stay (nothing is added); the fracture facts are
- * permanent; the crafted range keeps only what the kept side could hold.
- */
+/** Beyond operations.md §2: under an unproven lock, `possible` and the tier pins
+ *  survive for every current type, since the lock may sit on any of them. */
 function strip(a: AItem, rules: Rules, registry: Registry): AItem {
     const keep = rules.protected;
     const genOfT = (t: TypeId): Gen => genOf(a, registry, t);
@@ -1132,7 +1103,6 @@ function strip(a: AItem, rules: Rules, registry: Registry): AItem {
     // The unproven fractures keep as many mods, of unknown generation.
     const unprovenLock = unprovenFractures(a)[1];
 
-    // Kept counts per side: the whole side if protected, else just its fractured mod.
     const keptPrefix: Range = keep.has("prefix")
         ? a.counts.prefix
         : [fracIn("prefix"), fracIn("prefix")];
@@ -1201,7 +1171,6 @@ function fracturedCrafted(a: AItem, registry: Registry): number {
     return Math.min(n + unprovenHi, a.crafted[1]);
 }
 
-/** The fractured mods on one side. */
 function fracturedIn(a: AItem, registry: Registry, gen: Gen): number {
     let n = 0;
     for (const t of fracturedTypes(a)) if (genOf(a, registry, t) === gen) n++;
@@ -1240,7 +1209,6 @@ function rarityForSurvivors(n: number): Rarity {
     return "rare";
 }
 
-/** The rarities a scour may leave: one per survivor count the strip allows. */
 function scouredRarities(a0: AItem, rules: Rules, registry: Registry): ReadonlySet<Rarity> {
     const [lo, hi] = survivorsOf(a0, rules, registry);
     const out = new Set<Rarity>();
@@ -1257,8 +1225,6 @@ export function anonymousTypes(a: AItem, registry: Registry, gen: Gen): readonly
     return resolvePool(a, { kind: "natural", gen }, registry).types;
 }
 
-/** A pool resolved against a state: its rows, the types a draw may be, and
- *  whether the draw is narrow enough to assert "at least one of these". */
 interface ResolvedPool {
     readonly mods: readonly Mod[];
     readonly types: readonly TypeId[];
@@ -1423,13 +1389,8 @@ function typesOf(mods: readonly Mod[]): TypeId[] {
     return [...new Set(mods.map((m) => m.type))];
 }
 
-/**
- * Lay down modifiers drawn from `pool`. Counts rise by the fill count, clamped to
- * the caps; the pool's types join `possible` and its rows the tier overlay (a
- * one-row pool pins the tier); exclusions on the pool's types are relaxed, since
- * the draw may be any of them; a pool narrow enough to name asserts "at least
- * one of its types is present". A bench craft raises the crafted count.
- */
+/** Beyond operations.md §2: a one-row pool pins the tier, and a bench or
+ *  metamod craft raises the crafted count. */
 function fill(
     a: AItem,
     a0: AItem,
@@ -1456,8 +1417,6 @@ function fill(
                 Math.min(a.counts.total[0] + lo, tight.total),
                 Math.min(a.counts.total[1] + hi, maxT),
             ];
-            // The side the pool draws from grows by the fill; the other side
-            // stays; a pool of either side may grow either.
             const gen = drawn.gen;
             const grown = (side: Range, tightCap: number, cap: number): Range => [
                 Math.min(side[0] + lo, tightCap),
@@ -1650,9 +1609,7 @@ function isInfluenceType(a: AItem, type: TypeId, registry: Registry): boolean {
     );
 }
 
-/** How many modifiers a reforge at the item's own rarity lays down, the loosest
- *  range over the rarities it may have (Orb of Transmutation § Spending, Chaos
- *  Orb § Mechanics). */
+/** The `byRarity` count (Orb of Transmutation § Spending, Chaos Orb § Mechanics). */
 function reforgeCountByRarity(a: AItem): Range {
     const byRarity: Record<Rarity, Range> = { normal: [0, 0], magic: [1, 2], rare: [4, 6] };
     const ranges = [...a.rarities].map((r) => byRarity[r]);
@@ -1819,8 +1776,6 @@ function removeCrafted(a: AItem, rules: Rules, registry: Registry, replacing: bo
         Math.min(a.crafted[0], fracturedLower),
         Math.min(a.crafted[1], fracturedUpper),
     ];
-    // Only a fractured crafted modifier survives; under an unproven lock any
-    // of them may be the fractured one.
     const craftedTypes = new Set(
         [...a.craftedTypes].filter((t) => fractured.has(t) || unprovenLock),
     );
@@ -1837,11 +1792,10 @@ function removeCrafted(a: AItem, rules: Rules, registry: Registry, replacing: bo
 
 // --- lock -----------------------------------------------------------------------
 
-/** `n` random modifiers become fractured. The targets are random, so no
- *  specific mod is proven fractured yet: every present named mod becomes a
- *  candidate a `fractured X` branch can pin, and the locks the anonymous mods
- *  cannot account for provably landed among them. A metamod is an ordinary
- *  candidate. */
+/** The targets are random, so no specific mod is proven fractured yet: every
+ *  present named mod becomes a candidate a `fractured X` branch can pin, and
+ *  the locks the anonymous mods cannot account for provably landed among them.
+ *  A metamod is an ordinary candidate. */
 function lock(a: AItem, n: number): AItem {
     const already = fracturedTypes(a);
     const candidates = [...guaranteedTypes(a)].filter((t) => !already.has(t));
@@ -2039,8 +1993,8 @@ export function influenceTagsAny(a: AItem, registry: Registry): ReadonlySet<TagI
     return new Set([...sure, ...maybe]);
 }
 
-/** The state's guaranteed mods as the facts the pool reads, at rare caps. */
-/** `strands`: the facts carry the item's memory strands, for the fill of a
+/** The state's guaranteed mods as the facts the pool reads, at rare caps.
+ *  `strands`: the facts carry the item's memory strands, for the fill of a
  *  method that uses them up; other pools are not cut by them. */
 export function guaranteedFacts(
     a: AItem,

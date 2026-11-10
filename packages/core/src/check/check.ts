@@ -1,10 +1,8 @@
 /**
  * The checker: thread the abstract item state (`AItem`) through a parsed
- * `Craft`, verifying every operation's precondition on every path. A statement
- * either falls through with a new state or restarts (diverges); `if`/`else`
- * joins its arms; `until` computes a loop invariant and proves its exit
- * predicate into the after-state. Errors are collected as diagnostics, not
- * thrown, a craft can have several independent problems.
+ * `Craft`, verifying every operation's precondition on every path. Errors are
+ * collected as diagnostics, not thrown, a craft can have several independent
+ * problems.
  */
 import type {
     AffixDecl,
@@ -66,8 +64,6 @@ export interface CheckContext {
     readonly registry: Registry;
 }
 
-/** A resolved `<projection> >= value` count predicate, for pushing a proven
- *  lower bound into the count ranges. */
 const cmpAtLeast = (projection: "prefixCount" | "suffixCount", value: number): RPred => ({
     kind: "compare",
     projection,
@@ -80,7 +76,6 @@ export interface TraceEntry {
     readonly span: SourceSpan;
     /** What produced this entry, the statement kind, or "item" for the block. */
     readonly kind: Stmt["kind"] | "item";
-    /** State entering the statement. */
     readonly before: AItem;
     /** State after it completes; absent if that path diverges (via restart). */
     readonly after?: AItem;
@@ -100,8 +95,7 @@ export interface CheckResult {
 }
 
 /**
- * The innermost (smallest-span) trace entry containing `offset`, the statement
- * whose before/after state the cursor is on. Powers the LSP hover. Hovering a
+ * The innermost (smallest-span) trace entry containing `offset`. Hovering a
  * loop (whose span runs through its closing `}`) yields the loop entry, whose
  * `after` is the proven post-loop state.
  */
@@ -158,12 +152,10 @@ function unknownOperation(words: readonly string[]): string {
         : `Unknown operation "${words.join(" ")}".`;
 }
 
-/** Join a list of branch states into their LUB; `null` when the list is empty. */
 function foldJoin(states: readonly AItem[]): AItem | null {
     return states.length === 0 ? null : states.reduce(join);
 }
 
-/** Type guard for a live (non-dead) sub-state, `refine` returns `null` for dead. */
 const isLive = (s: AItem | null): s is AItem => s !== null;
 
 export function check(craft: Craft, ctx: CheckContext): CheckResult {
@@ -263,7 +255,7 @@ class Checker {
         const baseRes = this.registry.resolveBase(item.base);
         if (!baseRes.ok) {
             this.diag(resolveMessage(baseRes.error), item.span);
-            return null; // without a base we cannot compute pools, abort
+            return null; // without a base no pool can be computed
         }
         let base = baseRes.value;
         // A cluster jewel's notables roll under its enchantment's tag (Cluster
@@ -399,7 +391,7 @@ class Checker {
                     `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t1\`), a starting item's mods must name a specific tier and ${tiers.length} roll here.`,
                     item.span,
                 );
-                claim(affix.mod, type); // still count it as present, just untiered
+                claim(affix.mod, type); // still present, just untiered
                 return type;
             }
             const tier = affix.tier ?? 1;
@@ -460,7 +452,6 @@ class Checker {
         let prefixCount = countAffixes(item.prefixes, "prefix");
         let suffixCount = countAffixes(item.suffixes, "suffix");
 
-        // wf: a flask/tincture can never be Rare.
         if (item.rarity === "rare" && !canBeRare(base)) {
             this.diag(
                 `a ${base.name ?? "flask"} cannot be Rare; its kind of item is Magic at most`,
@@ -468,7 +459,6 @@ class Checker {
             );
         }
 
-        // wf: counts must fit the base's per-side caps (implicit deltas included).
         const pCap = sideCap("prefix", item.rarity, base);
         const sCap = sideCap("suffix", item.rarity, base);
         if (prefixCount > pCap) {
@@ -485,7 +475,7 @@ class Checker {
             );
             suffixCount = sCap;
         }
-        // wf: the two sides together are held to the rarity's total, which a
+        // The two sides together are held to the rarity's total, which a
         // +delta side cap can exceed (a magic Ratcheting Ring holds two suffixes).
         const tCap = maxTotal(item.rarity, base);
         if (prefixCount + suffixCount > tCap) {
@@ -588,8 +578,7 @@ class Checker {
         for (const stmt of stmts) {
             const before = state;
             const flow = this.checkStmt(before, stmt);
-            // Record before/after for hover, only on the real (non-quiet) pass,
-            // so each source statement appears exactly once.
+            // Only the real (non-quiet) pass records, so each statement appears once.
             if (this.quiet === 0 && this.suppressTrace === 0) {
                 this.trace.push({
                     span: stmt.span,
@@ -598,7 +587,7 @@ class Checker {
                     ...(flow.kind === "fall" && { after: flow.state }),
                 });
             }
-            if (flow.kind !== "fall") return flow; // rest is unreachable
+            if (flow.kind !== "fall") return flow;
             state = flow.state;
         }
         return { kind: "fall", state };
@@ -609,11 +598,9 @@ class Checker {
             case "operation":
                 return this.checkOperation(a, stmt);
             case "restart": {
-                // Record the state re-entering the innermost loop, if any, so the
-                // loop invariant can fold in this back-edge (a `restart` after an
-                // additive op can fill the item the same way falling off the body
-                // end can). A top-level restart has no collector, behaviour there
-                // is unchanged.
+                // The loop invariant must fold in this back-edge: a `restart`
+                // after an additive op can fill the item the same way falling off
+                // the body end can.
                 const frame = this.restartHeads[this.restartHeads.length - 1];
                 if (frame !== undefined) frame.push(a);
                 return { kind: "restart" };
@@ -785,8 +772,6 @@ class Checker {
         return rpred === null ? head : refine(head, rpred, false);
     }
 
-    /** Refine each loop-head state by the exit predicate (`positive`) or its
-     *  negation, dropping the dead ones, the exit-states or the continue-states. */
     private refineHeads(states: readonly AItem[], rpred: RPred | null, positive: boolean): AItem[] {
         return states.map((h) => (rpred === null ? h : refine(h, rpred, positive))).filter(isLive);
     }
@@ -865,13 +850,10 @@ class Checker {
                 const entering = this.continuing(invariant, rpred);
                 if (entering === null) break; // every head state leaves at once
                 const continues = this.refineHeads(this.headStates(entering, body), rpred, false);
-                if (continues.length === 0) break; // no live back-edge → no further heads
+                if (continues.length === 0) break;
                 const joined = [invariant, ...continues].reduce(join);
-                // Widen once past a few exact iterations: a small loop reaches a
-                // precise fixpoint first; a tall `≥k of n` disjunction is
-                // over-approximated so it converges (soundly) instead of crawling.
                 const next = i >= WIDEN_AFTER ? widenPresence(joined) : joined;
-                if (stateEqual(next, invariant)) break; // fixpoint reached
+                if (stateEqual(next, invariant)) break;
                 invariant = next;
             }
             return invariant;
@@ -880,7 +862,6 @@ class Checker {
 
     // --- predicate defs ----------------------------------------------------
 
-    /** Register defs by name (rejecting duplicates) and infer their param types. */
     private collectDefs(defs: readonly Def[]): void {
         for (const def of defs) {
             if (this.defs.has(def.name)) {
@@ -904,8 +885,7 @@ class Checker {
         }
     }
 
-    /** Register operation functions by name and infer their param types. Shares
-     *  the name space with predicate defs, a name can't be both. */
+    /** Procs share the name space with predicate defs, a name can't be both. */
     private collectProcs(procs: readonly ProcDef[]): void {
         for (const proc of procs) {
             if (this.defs.has(proc.name) || this.procs.has(proc.name)) {
@@ -937,11 +917,9 @@ class Checker {
         }
     }
 
-    /** Check a call to an operation function: resolve it, bind args, then inline
-     *  the substituted body. Inlining threads the item state through and lets a
-     *  `restart` inside the body re-enter the caller's enclosing loop, the body
-     *  composes exactly as if written in place. The inlined body is a trace black
-     *  box (only the call site is recorded for hover). */
+    /** Inlining lets a `restart` inside the body re-enter the caller's enclosing
+     *  loop, so the body composes exactly as if written in place. Only the call
+     *  site is traced, not the inlined body. */
     private checkCall(a: AItem, stmt: Extract<Stmt, { kind: "call" }>): Flow {
         const entry = this.procs.get(stmt.name);
         if (!entry) {
@@ -1043,9 +1021,8 @@ class Checker {
             }
             case "and":
             case "or": {
-                // An unresolvable sub-predicate (already reported) makes the whole
-                // combination unknown, return null so we skip narrowing entirely
-                // rather than narrow by a half-understood condition.
+                // An unresolvable sub-predicate (already reported) skips narrowing
+                // entirely rather than narrow by a half-understood condition.
                 const left = this.resolvePred(pred.left, a);
                 const right = this.resolvePred(pred.right, a);
                 return left === null || right === null ? null : { kind: pred.kind, left, right };
@@ -1080,7 +1057,6 @@ class Checker {
         return { base: a.base, ilvl: a.ilvl, tags: this.tagsOf(a) };
     }
 
-    /** Expand a def call: check arity + arg types, substitute, resolve the body. */
     private resolveCall(pred: Extract<Pred, { kind: "call" }>, a: AItem): RPred | null {
         const entry = this.defs.get(pred.name);
         if (!entry) {
@@ -1317,7 +1293,7 @@ interface ParamUses {
 }
 
 function noteSort(u: ParamUses, ref: ParamRef, ty: ParamType): void {
-    if (!u.params.has(ref.param)) return; // not a param here; ignore
+    if (!u.params.has(ref.param)) return;
     u.used.add(ref.param);
     const seen = u.sorts.get(ref.param) ?? new Set<ParamType>();
     seen.add(ty);
@@ -1489,7 +1465,6 @@ function subArgs(args: readonly Arg[], env: Map<string, Arg>): Arg[] {
     );
 }
 
-/** Replace parameter references in a predicate with the bound argument values. */
 function substitute(pred: Pred, env: Map<string, Arg>): Pred {
     switch (pred.kind) {
         case "isRarity":

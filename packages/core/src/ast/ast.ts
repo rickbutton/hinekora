@@ -42,7 +42,6 @@ export interface Def {
  * Its body is a statement block that mutates the item; a call inlines the body
  * with arguments substituted for parameters. Same `def` keyword as a predicate
  * `Def`, distinguished at parse time by a `{ … }` body instead of `= <pred>`.
- * Parameter sorts are inferred from use, exactly as for a predicate `Def`.
  */
 export interface ProcDef {
     readonly kind: "procDef";
@@ -243,7 +242,6 @@ export interface DominantPred {
     readonly span: SourceSpan;
 }
 
-/** Comparison operators for count projections. */
 export type Cmp = "==" | "!=" | "<" | "<=" | ">" | ">=";
 
 /** `isRare` / `isMagic` / `isNormal`, niladic rarity check. */
