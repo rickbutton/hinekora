@@ -168,13 +168,22 @@ export function amongFirstDistribution(
     special: readonly number[],
     k: number,
 ): Float64Array {
+    return exactly(special, (members) => allAmongFirst(rates, members, k));
+}
+
+/** P(exactly this subset of `special` is taken), per subset, from P(at least
+ *  this subset is taken). */
+function exactly(
+    special: readonly number[],
+    all: (members: readonly number[]) => number,
+): Float64Array {
     const n = special.length;
     const size = 1 << n;
     const superset = new Float64Array(size);
     for (let mask = 0; mask < size; mask++) {
         const members: number[] = [];
         for (let b = 0; b < n; b++) if (mask & (1 << b)) members.push(special[b]!);
-        superset[mask] = allAmongFirst(rates, members, k);
+        superset[mask] = all(members);
     }
     // Möbius inversion: P(exactly T) = Σ_{S ⊇ T} (−1)^{|S|−|T|} P(S ⊆ taken).
     const exact = new Float64Array(size);
@@ -221,6 +230,87 @@ function nthDensity(rates: readonly number[], b: number, t: number): number {
     }
     // P(at least b) is the last cell; its derivative is the density.
     return slope[b]!;
+}
+
+/**
+ * P(of `m` draws exactly `k` land on this side, and every group in `special`
+ * is among them). This side takes at least k when its k-th clock fires before
+ * the other side's (m − k + 1)-th, and more than k when its (k + 1)-th fires
+ * before the other's (m − k)-th; the first less the second is "exactly k", and
+ * each is one integral over the time of this side's k-th or (k + 1)-th
+ * firing, with every special clock fired by then, against the other side's
+ * count at that time. A full side admits no more, as in `splitDistribution`.
+ * `special` holds indices into `own`.
+ */
+export function allAmongSplit(
+    own: readonly number[],
+    other: readonly number[],
+    special: readonly number[],
+    k: number,
+    m: number,
+    capOwn: number,
+    capOther: number,
+): number {
+    const liveOther = other.filter((r) => r > 0);
+    const maxOwn = Math.min(capOwn, own.filter((r) => r > 0).length, m);
+    const maxOther = Math.min(capOther, liveOther.length, m);
+    const j = m - k;
+    if (k < 0 || k > maxOwn || j < 0 || j > maxOther || special.length > k) return 0;
+    const mine = special.map((i) => own[i]!);
+    if (mine.some((r) => !(r > 0))) return 0;
+    const chosen = new Set(special);
+    const rest = own.filter((r, i) => r > 0 && !chosen.has(i));
+    const clocks = [...own, ...liveOther];
+    const slack = k - mine.length;
+    const allFired = (t: number): number => {
+        let p = 1;
+        for (const r of mine) p *= -Math.expm1(-r * t);
+        return p;
+    };
+    // This side's k-th firing at t with every special clock fired by then: the
+    // k-th is the last special one, or one of the rest after them all.
+    const kth = (t: number): number =>
+        (mine.length === 0 ? 0 : lastOfDensity(mine, t) * firedBy(rest, t, slack + 1)[slack]!) +
+        (slack === 0 ? 0 : allFired(t) * nthDensity(rest, slack, t));
+    let atLeast: number;
+    if (k === 0) atLeast = 1;
+    else if (j + 1 > maxOther) atLeast = allAmongFirst(own, special, k);
+    else atLeast = integrate(clocks, (t) => kth(t) * atMostBy(liveOther, t, j));
+    const more =
+        k + 1 > maxOwn || j === 0
+            ? 0
+            : integrate(
+                  clocks,
+                  (t) =>
+                      allFired(t) * nthDensity(rest, slack + 1, t) * atMostBy(liveOther, t, j - 1),
+              );
+    return Math.max(0, atLeast - more);
+}
+
+/**
+ * Which of the `special` groups of this side are among its `k` draws, given
+ * that the `m` draws split so: a probability per subset, as
+ * `amongFirstDistribution`. The split and the side's membership are not
+ * independent (a heavy group drawn early leaves its side slower to draw
+ * again), so this is the joint over the split, not the side's race alone.
+ */
+export function amongSplitDistribution(
+    own: readonly number[],
+    other: readonly number[],
+    special: readonly number[],
+    k: number,
+    m: number,
+    capOwn: number,
+    capOther: number,
+): Float64Array {
+    const split = allAmongSplit(own, other, [], k, m, capOwn, capOther);
+    if (special.length === 0 || !(split > 0)) return amongFirstDistribution(own, special, k);
+    const joint = exactly(special, (members) =>
+        members.length === 0 ? split : allAmongSplit(own, other, members, k, m, capOwn, capOther),
+    );
+    let total = 0;
+    for (const p of joint) total += p;
+    return total > 0 ? joint.map((p) => p / total) : joint;
 }
 
 /**

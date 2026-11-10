@@ -36,7 +36,7 @@ import { lookupWeight } from "../pool/pool.js";
 import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
 import { rollableGen, rollableTiers } from "../resolve/tiers.js";
 import type { ChainAtom, ChainState, Outcome } from "./chain.js";
-import { pieces } from "./chance.js";
+import { pieces, sidesGivenSplit } from "./chance.js";
 import { amongFirstDistribution } from "./race.js";
 import {
     holdsNamed,
@@ -1346,8 +1346,8 @@ export function splitCarried(
 
 /**
  * The states a reforge leaves the chain in: for each variant and count case of
- * its roll, which of the atoms the race draws on each side (`amongFirstDistribution`,
- * the sides independent given the split), the present ones placed, each atom's
+ * its roll, which of the atoms the race draws on each side (`sidesGivenSplit`),
+ * the present ones placed, each atom's
  * row class by its rows' weight share; the counts are the modifiers placed,
  * kept and drawn. Undefined when the roll has more atoms on a side than the
  * race can list.
@@ -1409,18 +1409,11 @@ export function reforgeOutcomes(
         });
         if (sides.some((s) => s.special.length > 12)) return undefined;
         for (const c of v.counts) {
-            const dists = sides.map((s) =>
-                amongFirstDistribution(
-                    s.groups.map((g) => g.weight),
-                    s.special,
-                    c[s.gen],
-                ),
-            );
             const counts = {
                 prefix: presentCount.prefix + (v.before.prefix ?? 0) + c.prefix,
                 suffix: presentCount.suffix + (v.before.suffix ?? 0) + c.suffix,
             };
-            const [pd, sd] = dists as [Float64Array, Float64Array];
+            const [pd, sd] = sidesGivenSplit(v, c, sides[0]!.special, sides[1]!.special);
             for (let pm = 0; pm < pd.length; pm++) {
                 if (pd[pm] === 0) continue;
                 for (let sm = 0; sm < sd.length; sm++) {

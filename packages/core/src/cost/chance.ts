@@ -15,9 +15,10 @@ import type { Gen, ModId, TypeId } from "../model/ids.js";
 import { type AItem, guaranteedTypes, type RPred, refine, suffixRange } from "../check/astate.js";
 import type { Range } from "../check/domain.js";
 import { narrowRange } from "../check/values.js";
-import { amongFirstDistribution } from "./race.js";
+import { amongSplitDistribution } from "./race.js";
 import {
     type Candidate,
+    type CountCase,
     type DrawVariant,
     type Group,
     holdsNamed,
@@ -331,6 +332,27 @@ function typesOfInterest(pred: RPred): Set<TypeId> {
 
 // --- the draw ---------------------------------------------------------------
 
+/**
+ * Which named groups each side drew, given how the draws split: each side's
+ * joint with the split (`amongSplitDistribution`). The two sides are then
+ * taken as independent given the split, which the race tests bound.
+ */
+export function sidesGivenSplit(
+    v: DrawVariant,
+    c: CountCase,
+    prefixSpecial: readonly number[],
+    suffixSpecial: readonly number[],
+): [Float64Array, Float64Array] {
+    const prefix = v.prefix.map((g) => g.weight);
+    const suffix = v.suffix.map((g) => g.weight);
+    const m = c.prefix + c.suffix;
+    const { prefix: capP, suffix: capS } = v.room;
+    return [
+        amongSplitDistribution(prefix, suffix, prefixSpecial, c.prefix, m, capP, capS),
+        amongSplitDistribution(suffix, prefix, suffixSpecial, c.suffix, m, capS, capP),
+    ];
+}
+
 /** A row by id with the weight it is drawn at among its type's rows. */
 interface RowLike {
     readonly id: ModId;
@@ -382,16 +404,7 @@ function drawChance(
         const presentCount = { prefix: 0, suffix: 0 };
         for (const p of v.present) presentCount[p.gen]++;
         for (const c of v.counts) {
-            const pd = amongFirstDistribution(
-                v.prefix.map((g) => g.weight),
-                prefixSpecial,
-                c.prefix,
-            );
-            const sd = amongFirstDistribution(
-                v.suffix.map((g) => g.weight),
-                suffixSpecial,
-                c.suffix,
-            );
+            const [pd, sd] = sidesGivenSplit(v, c, prefixSpecial, suffixSpecial);
             // A side whose count the item left open has no count the roll can
             // give; a count atom on it is what the item after settles.
             const counts = {

@@ -88,6 +88,8 @@ export interface DrawVariant {
      *  condition names, when the item knows the side's count exactly; the
      *  counts after the fill are these, the present ones and the draws. */
     readonly before: Readonly<Record<Gen, number | undefined>>;
+    /** The slots each side has open for the draws. */
+    readonly room: Readonly<Record<Gen, number>>;
 }
 
 /** One candidate of a uniform pick: a removal or a fracture lands on one of them. */
@@ -978,11 +980,11 @@ function drawRoll(
             left.filter((g) => g.gen === "prefix"),
             left.filter((g) => g.gen === "suffix"),
         );
+        const open = [capP - presentP - unnamedP, capS - presentS - unnamedS] as const;
         for (const { prob: share, prefix, suffix } of sides) {
             const counts = new Map<string, CountCase>();
             for (const [m, prob] of totals) {
                 const draws = Math.max(0, m - v.present.length - unnamedP - unnamedS);
-                const open = [capP - presentP - unnamedP, capS - presentS - unnamedS] as const;
                 for (const c of countCases(prefix, suffix, draws, open[0], open[1])) {
                     const key = `${c.prefix}/${c.suffix}`;
                     const seen = counts.get(key);
@@ -1000,6 +1002,7 @@ function drawRoll(
                 suffix,
                 counts: [...counts.values()],
                 before,
+                room: { prefix: Math.max(0, open[0]), suffix: Math.max(0, open[1]) },
             });
         }
     }

@@ -99,16 +99,18 @@ groups off in the order their clocks fire, skip a group whose side is full.
 "These groups are all among the first k drawn" is "fewer than k minus their number of
 the other groups fired before the last of them", a Poisson-binomial count at a time,
 integrated against that time's density; the split of m draws is a race between the two
-sides' order statistics. The dynamic program (`cost/race.ts`) carries a count, never a list of draws.
+sides' order statistics. The dynamic program (`cost/race.ts`) carries a count, never draws.
 
-It is exact for one group, for any set jointly (by inclusion–exclusion), and for the
-split with depletion. Given the split, which groups landed on a side is read from that
-side's race alone, where the true draw couples the two through depletion; the race
-tests bound that at two hundredths. A group with rows on both sides (a
-jewel's) fits a clock loosely, as a mixture, wholly a prefix or wholly a suffix by weight,
-bounded by a test against the draw played out (`packages/cli/src/race.test.ts`). An
-unveil is not raced: its three draws from a few dozen types are played out one by one
-(`unveilOffers`), exactly, a type that lists several groups closing them all.
+It is exact for one group, for any set of one side jointly (by inclusion–exclusion), for
+the split with depletion, and for a side's groups jointly with the split, which the
+draw couples (a heavy group drawn early leaves its side slower to draw again). The
+sides are taken as independent given the split, which reads a condition on both within
+two hundredths (0.8 low on a wand). A group with rows on both sides (a jewel's) is a
+mixture, wholly a prefix or wholly a suffix by weight, and loses a draw the full side
+turns away: up to five hundredths low (2.5 on a Cobalt Jewel, 4 with a count beside it).
+Each bound is a test against the draw played out (`packages/cli/src/race.test.ts`). An
+unveil is not raced: its three draws from a few dozen types are played out
+(`unveilOffers`), exactly.
 
 ---
 

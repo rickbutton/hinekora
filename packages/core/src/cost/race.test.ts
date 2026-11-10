@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { allAmongFirst, amongFirstDistribution, splitDistribution } from "./race.js";
+import {
+    allAmongFirst,
+    allAmongSplit,
+    amongFirstDistribution,
+    amongSplitDistribution,
+    splitDistribution,
+} from "./race.js";
 
 interface Group {
     readonly weight: number;
@@ -138,24 +144,61 @@ describe("the race against brute force", () => {
         }
     });
 
-    it("given the split, which groups land on a side is that side's own race", () => {
-        // The identity of the taken prefix groups, given that two were taken, is
-        // close to the prefix race's own top-two distribution: the dependence
-        // through depletion is second order.
-        const prefix = POOL.filter((g) => g.side === "prefix");
-        const rates = prefix.map((g) => g.weight);
-        let both = 0;
-        let twoPrefixes = 0;
-        enumerate(POOL, 4, { prefix: 3, suffix: 3 }, (taken, p) => {
-            const got = [0, 1, 2].filter((i) => taken.has(i));
-            if (got.length === 2) {
-                twoPrefixes += p;
-                if (taken.has(1) && taken.has(2)) both += p;
+    it("both sides: the groups a side drew jointly with the split", () => {
+        // Which prefix groups were taken depends on how many were: a heavy
+        // group drawn early leaves its side slower to draw again. The joint
+        // is exact, where the side's own race given the count is only close.
+        const sides = {
+            prefix: POOL.filter((g) => g.side === "prefix").map((g) => g.weight),
+            suffix: POOL.filter((g) => g.side === "suffix").map((g) => g.weight),
+        };
+        const first = { prefix: 0, suffix: sides.prefix.length };
+        const other = { prefix: "suffix", suffix: "prefix" } as const;
+        for (const [m, caps] of [
+            [4, { prefix: 3, suffix: 3 }],
+            [5, { prefix: 3, suffix: 3 }],
+            [6, { prefix: 3, suffix: 3 }],
+            [3, { prefix: 2, suffix: 2 }],
+            [2, { prefix: 1, suffix: 3 }],
+        ] as const) {
+            for (const side of ["prefix", "suffix"] as const) {
+                const n = sides[side].length;
+                for (const special of [[], [0], [n - 1], [0, n - 1], [1, 2]]) {
+                    for (let k = 0; k <= caps[side]; k++) {
+                        let truth = 0;
+                        enumerate(POOL, m, caps, (taken, p) => {
+                            const own = [...taken].filter((i) => POOL[i]!.side === side);
+                            if (own.length !== k) return;
+                            if (special.every((g) => taken.has(first[side] + g))) truth += p;
+                        });
+                        const got = allAmongSplit(
+                            sides[side],
+                            sides[other[side]],
+                            special,
+                            k,
+                            m,
+                            caps[side],
+                            caps[other[side]],
+                        );
+                        expect(got).toBeCloseTo(truth, 7);
+                    }
+                }
             }
+        }
+        // The light prefix group, given that one prefix was drawn of four
+        // modifiers: by the joint, and by the prefix race alone.
+        let one = 0;
+        let light = 0;
+        enumerate(POOL, 4, { prefix: 3, suffix: 3 }, (taken, p) => {
+            if ([0, 1, 2].filter((i) => taken.has(i)).length !== 1) return;
+            one += p;
+            if (taken.has(2)) light += p;
         });
-        const conditional = both / twoPrefixes;
-        const raceOnly = allAmongFirst(rates, [1, 2], 2);
-        expect(Math.abs(conditional - raceOnly)).toBeLessThan(0.02);
+        const given = amongSplitDistribution(sides.prefix, sides.suffix, [2], 1, 4, 3, 3);
+        expect(given[1]).toBeCloseTo(light / one, 7);
+        expect(given[0]! + given[1]!).toBeCloseTo(1, 9);
+        const alone = allAmongFirst(sides.prefix, [2], 1);
+        expect(Math.abs(alone / (light / one) - 1)).toBeGreaterThan(0.01);
     });
 
     it("a side with nothing to draw from and a special beyond the draw", () => {

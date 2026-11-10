@@ -15,7 +15,7 @@ import { loadDefaultPoe1, registryOf } from "@hinekora/data";
 
 // The cost layer's draw against the game's rule played out row by row over the
 // same pool: modifiers drawn one at a time by weight, each closing every
-// modifier group it lists (Modifier § Group/family) and a full side admitting
+// modifier group it lists (Modifier Â§ Group/family) and a full side admitting
 // no more. The bases are ones where a group holds several modifier types.
 const registry = registryOf(loadDefaultPoe1());
 
@@ -130,6 +130,51 @@ describe("the race against the draw played out", () => {
         const exact = played(rows, chaosCount, 3, has("WeaponSpellDamage"));
         expect(exact).toBeGreaterThan(0.24);
         expect(exact).toBeLessThan(0.26);
+        expect(Math.abs(chance / exact - 1)).toBeLessThan(0.01);
+    });
+
+    const prefixes =
+        (n: number) =>
+        (drawn: readonly Mod[]): boolean =>
+            drawn.filter((m) => m.gen === "prefix").length === n;
+
+    it("a modifier together with its side's count, which the draw couples", () => {
+        // With one prefix drawn it is likelier a heavy one, with three a
+        // lighter one is likelier among them.
+        const joint = (n: number) =>
+            judged(wand("rare"), ["chaos"], `has "increased spell damage" and prefixCount == ${n}`);
+        // One played sample counts both.
+        const trials = 200_000;
+        const seen = [0, 0, 0, 0];
+        played(
+            joint(1).rows,
+            chaosCount,
+            3,
+            (drawn) => {
+                if (has("WeaponSpellDamage")(drawn))
+                    seen[drawn.filter((m) => m.gen === "prefix").length]!++;
+                return false;
+            },
+            trials,
+        );
+        for (const n of [1, 3]) {
+            expect(Math.abs((joint(n).chance * trials) / seen[n]! - 1)).toBeLessThan(0.025);
+        }
+    });
+
+    it("a modifier of each side together, the sides taken as independent given the split", () => {
+        const { rows, chance } = judged(
+            wand("rare"),
+            ["chaos"],
+            'has "increased spell damage" and has "cast speed"',
+        );
+        const exact = played(
+            rows,
+            chaosCount,
+            3,
+            (drawn) => has("WeaponSpellDamage")(drawn) && has("IncreasedCastSpeed")(drawn),
+            150_000,
+        );
         expect(Math.abs(chance / exact - 1)).toBeLessThan(0.02);
     });
 
@@ -175,13 +220,20 @@ describe("the race against the draw played out", () => {
             ...c,
             gen: c.mod.gen,
         }));
-        const exact = played(
-            rows,
-            (random) => (random() < 0.65 ? 3 : 4),
-            2,
-            has("SpellDamageForJewel"),
-        );
+        const count = (random: () => number): number => (random() < 0.65 ? 3 : 4);
+        const exact = played(rows, count, 2, has("SpellDamageForJewel"), 200_000);
         expect(Math.abs(chance / exact - 1)).toBeLessThan(0.05);
+        // Low, never high: a draw the full side turns away loses the group.
+        expect(chance).toBeLessThan(exact);
+        const joint = judged(item, ["chaos"], 'has "increased spell damage" and prefixCount == 2');
+        const jointExact = played(
+            rows,
+            count,
+            2,
+            (drawn) => has("SpellDamageForJewel")(drawn) && prefixes(2)(drawn),
+            150_000,
+        );
+        expect(Math.abs(joint.chance / jointExact - 1)).toBeLessThan(0.05);
     });
 
     const unveiled = (base: string, held: string, lock: string, condition: string) =>
