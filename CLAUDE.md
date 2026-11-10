@@ -4,13 +4,15 @@ Hinekora is a **statically-checked DSL for Path of Exile crafting guides**. A ch
 proves each currency operation's precondition holds on every path (via abstract
 interpretation) before real currency is spent.
 
-**Docs** (in `docs/`), each detail in exactly one place; link rather than duplicate:
+**Docs** (in `docs/`), each detail in exactly one place; link rather than duplicate. The
+code is the reference for what exists and where; read it. Open a doc when the task
+touches its subject:
 
-- `docs/REFERENCE.md`: what exists and where. Package layout, per-module breakdown,
-  key-files index, gotchas, design notes. **Read it first.**
 - `docs/ARCHITECTURE.md`: the shape of the implementation. The layers, how they compose,
   and the theory behind the checker (abstract interpretation). The mental model.
-- `docs/ROADMAP.md`: forward-looking work (pending, deferred, future). Not history.
+- `docs/REFERENCE.md`: the abstract state's fields, and the gotchas no single comment
+  can hold.
+- `docs/ROADMAP.md`: work not built (deferred, future). Not history.
 - `docs/item-model.md`: the item and modifier model the code is audited against, each rule
   linked to its wiki section.
 - `docs/language.md`: the guide author's language reference (syntax, the item block,
@@ -36,17 +38,15 @@ outcomes in the checker, stop; that violates the design and won't scale.
 - **Hand-written** lexer + recursive-descent parser; no parser generators.
 - **ESLint + Prettier: 4-space indent, double quotes.**
 - **Comments are lean.** A comment earns its place only by stating a non-obvious _why_,
-  a constraint the code can't show. Design prose belongs in the docs above, not in
-  comments; don't narrate what code does, recount design history, or cite milestones.
+  a constraint the code can't show; never narrate what code does, recount history, or
+  restate a signature.
 - **User-facing text speaks the game's language.** Errors, hover, and completion talk
   about items, mods, tiers, and slots, never type-system vocabulary (proofs, predicates
   "holding", abstract state).
-- **Comments and commit messages stand alone.** They must be understandable from the repo
-  alone, with no memory of the conversation, task, or plan that produced them. No session
-  or task references ("audit findings", "1/3", "as discussed", "per the plan", "as
-  requested"), no progress or milestone notes, and no point-in-time process artifacts (a
-  specific test count, "gate green", "all four green"). Describe the change and its why the
-  way a human would when revisiting the code a year later.
+- **Comments and commit messages stand alone**, understandable from the repo with no
+  memory of the session that produced them: no task references ("audit findings", "1/3",
+  "as discussed", "per the plan"), progress notes, or point-in-time artifacts (a test
+  count, "gate green"). Write the change and its why for a reader a year from now.
 - **Vitest**, with extensive tests. **PoE1 only**, with no provision for PoE2.
 - Surface syntax: C-style braces; a file opens with its item block, no header.
 
@@ -59,8 +59,9 @@ pnpm -C c:/git/hinekora format        # prettier --write ., when the check fails
 
 `pnpm gate` is `tsc -b` + `vitest run` + `eslint .` + `prettier --check .` +
 `scripts/check-docs.mjs`. The docs check fails when a doc names a path or symbol the code
-does not have, omits a keyword, currency, harvest tag or abstract-state field the code
-has, or links a wiki section the local cache lacks (skipped without the cache). A `git
+does not have, omits a keyword, harvest tag, `Op` kind or abstract-state field the code
+has, links a wiki section the local cache lacks (skipped without the cache), or outgrows
+its budget. A `git
 commit` issued through the Bash or PowerShell tool runs the gate first
 (`.claude/hooks/pre-commit-gate.mjs`) on the working tree of the checkout the command runs
 in, as it stands when the command starts, and is refused when it fails; so make the fixes
@@ -81,10 +82,19 @@ The user is not always present. Work runs autonomously and the repo carries the 
   under that assumption. On resuming, read that file first and apply every `answered`
   entry, then delete it, before new work. Never leave work undone because a question is open unless no
   assumption is reversible.
-- **Docs change in the same commit as the behaviour.** `REFERENCE.md` names what exists,
-  `ARCHITECTURE.md` the shape, `language.md` the syntax, `item-model.md` the model,
-  `ROADMAP.md` only what is not built. Nothing in the docs may describe code that does
-  not exist; nothing user-visible may exist undocumented.
+- **Docs hold only what the code cannot show**: rationale, invariants, model rules,
+  decisions and their reasons. Never a file or function inventory, a restatement of what
+  a reader gets by opening the code, a copy of a wiki rule (link it), history, or a
+  dated observation. A reason with one site in the code is a comment there, not a doc
+  paragraph. A doc changes in the same commit as the behaviour it describes, and nothing
+  in it may describe code that does not exist. Every language word has its help text in
+  the code (hover) or in `language.md`.
+- **Docs have budgets.** The docs check holds each doc to a word budget
+  (`scripts/check-docs.mjs`) and fails on a file under `docs/` that has none. A doc at
+  its budget makes room by cutting what has gone derivable or stale, not by raising the
+  budget; raising one is a decision to justify in the commit message. Research notes,
+  probe outputs and data snapshots do not go under `docs/`: keep them out of the tree
+  (scratch, a branch or a tag) and land only the conclusions.
 - **Commits.** One logical change per commit; a refactor and a behaviour change are
   separate commits; each commit passes the gate on its own; the message stands alone (the
   convention above). Commit as you go; do not push.
