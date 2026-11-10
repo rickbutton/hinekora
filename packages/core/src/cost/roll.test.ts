@@ -90,6 +90,28 @@ describe("a random removal's reach", () => {
     });
 });
 
+describe("a random removal's odds", () => {
+    it("never take a fractured modifier", () => {
+        // Two prefixes and a fractured suffix: the Orb of Annulment takes one
+        // of the two prefixes, each half the time, and the suffix never.
+        const c = craft(
+            item({
+                base: "Iron Ring",
+                ilvl: 84,
+                rarity: "rare",
+                prefixes: ["IncreasedLife1", "IncreasedMana1"],
+                suffixes: [{ mod: "FireResist1", fractured: true }],
+            }),
+            [],
+        );
+        const a = check(c, { registry }).finalState!;
+        const roll = rollOf(a, currencyOps("annul"), registry);
+        if (roll.kind !== "removal") throw new Error("not a removal");
+        expect(roll.sides.suffix.unnamed).toBe(0);
+        expect(roll.candidates.map((x) => x.prob)).toEqual([0.5, 0.5]);
+    });
+});
+
 describe("the Foulborn cull", () => {
     it("keeps a type's top tiers at the weight of all of them", () => {
         // Three life tiers at 800/400/200: the top two stay, scaled by 3/2 so

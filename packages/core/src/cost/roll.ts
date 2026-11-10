@@ -572,15 +572,23 @@ function removalRoll(
     };
     const named = { prefix: 0, suffix: 0 };
     for (const t of reachable) named[genOfType(before, registry, t)]++;
-    const total = Math.max(1, count.prefix + count.suffix, reachable.length);
+    // What the removal surely leaves (a fractured modifier) is on its side but
+    // never taken: the odds are over the rest.
+    const removable = { ...count };
+    for (const t of guaranteedTypes(before)) {
+        if (!kept.has(t)) continue;
+        const g = genOfType(before, registry, t);
+        if (reaches(g)) removable[g] = Math.max(0, removable[g] - 1);
+    }
+    const total = Math.max(1, removable.prefix + removable.suffix, reachable.length);
     const sides = {
         prefix: {
             count: count.prefix,
-            unnamed: Math.max(0, count.prefix - named.prefix) / total,
+            unnamed: Math.max(0, removable.prefix - named.prefix) / total,
         },
         suffix: {
             count: count.suffix,
-            unnamed: Math.max(0, count.suffix - named.suffix) / total,
+            unnamed: Math.max(0, removable.suffix - named.suffix) / total,
         },
     };
     const only: Gen | undefined =
