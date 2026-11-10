@@ -5,13 +5,13 @@ proves each currency operation's precondition holds on every path (via abstract
 interpretation) before real currency is spent.
 
 **Docs** (in `docs/`), each detail in exactly one place; link rather than duplicate. The
-code is the reference for what exists and where; read it. Open a doc when the task
-touches its subject:
+code is the reference for what exists; read it. Open a doc when the task touches its
+subject:
 
 - `docs/ARCHITECTURE.md`: the shape of the implementation. The layers, how they compose,
-  and the theory behind the checker (abstract interpretation). The mental model.
-- `docs/REFERENCE.md`: the abstract state's fields, and the gotchas no single comment
-  can hold.
+  and the theory behind the checker (abstract interpretation).
+- `docs/REFERENCE.md`: the abstract state's fields, the gotchas no single comment can
+  hold (packaging, editors, build), and the standing design notes (TypeScript, the BDD).
 - `docs/ROADMAP.md`: work not built (deferred, future). Not history.
 - `docs/item-model.md`: the item and modifier model the code is audited against, each rule
   linked to its wiki section.
@@ -46,7 +46,7 @@ outcomes in the checker, stop; that violates the design and won't scale.
 - **Comments and commit messages stand alone**, understandable from the repo with no
   memory of the session that produced them: no task references ("audit findings", "1/3",
   "as discussed", "per the plan"), progress notes, or point-in-time artifacts (a test
-  count, "gate green"). Write the change and its why for a reader a year from now.
+  count, "gate green"). Write the change and its why.
 - **Vitest**, with extensive tests. **PoE1 only**, with no provision for PoE2.
 - Surface syntax: C-style braces; a file opens with its item block, no header.
 
@@ -61,13 +61,12 @@ pnpm -C c:/git/hinekora format        # prettier --write ., when the check fails
 `scripts/check-docs.mjs`. The docs check fails when a doc names a path or symbol the code
 does not have, omits a keyword, harvest tag, `Op` kind or abstract-state field the code
 has, links a wiki section the local cache lacks (skipped without the cache), or outgrows
-its budget. A `git
-commit` issued through the Bash or PowerShell tool runs the gate first
-(`.claude/hooks/pre-commit-gate.mjs`) on the working tree of the checkout the command runs
-in, as it stands when the command starts, and is refused when it fails; so make the fixes
-in one command and commit in the next. **Soundness principle:** tightening the abstract domain only
-ever removes false positives (never adds false negatives), so existing green tests
-staying green is evidence a tightening is sound.
+its budget. A `git commit` issued through the Bash or PowerShell tool runs the gate
+first (`.claude/hooks/pre-commit-gate.mjs`) on the working tree of the checkout the
+command runs in, as it stands when the command starts, and is refused when it fails; so
+make the fixes in one command and commit in the next. **Soundness principle:** tightening
+the abstract domain only ever removes false positives (never adds false negatives), so
+existing green tests staying green is evidence a tightening is sound.
 
 ## Working protocol
 
@@ -80,8 +79,8 @@ The user is not always present. Work runs autonomously and the repo carries the 
   settle goes into `docs/QUESTIONS.md`: the question, the options with a recommendation,
   the assumption the code proceeds under, and the files that encode it. Then continue
   under that assumption. On resuming, read that file first and apply every `answered`
-  entry, then delete it, before new work. Never leave work undone because a question is open unless no
-  assumption is reversible.
+  entry, then delete it, before new work. Never leave work undone because a question is
+  open unless no assumption is reversible.
 - **Docs hold only what the code cannot show**: rationale, invariants, model rules,
   decisions and their reasons. Never a file or function inventory, a restatement of what
   a reader gets by opening the code, a copy of a wiki rule (link it), history, or a
