@@ -966,8 +966,9 @@ class Walker {
                     if (!tracker.implicits) return undefined;
                     break;
                 default: {
+                    // Only a leaf the item settles is fixed for every state.
                     const c = this.conditionChance(leaf, undefined, item);
-                    if (c === undefined) return undefined;
+                    if (c === undefined || (c > 1e-12 && c < 1 - 1e-12)) return undefined;
                     fixed.set(leaf, c >= 0.5);
                 }
             }
