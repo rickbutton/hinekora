@@ -519,9 +519,12 @@ class Walker {
         branches: readonly Branch[],
         frame: Frame,
     ): Branch[] {
+        // Only a method reads the item as found: a loop or branch at the head
+        // of the body asks what the round before left, which the join over the
+        // rounds holds and the path in weighs.
         const first = stmt.body[0];
         const before = entry?.before;
-        if (first !== undefined && before !== undefined) this.firstSteps.set(first, before);
+        if (first?.kind === "operation" && before !== undefined) this.firstSteps.set(first, before);
         try {
             return this.loopFrom(stmt, entry, branches, frame);
         } finally {

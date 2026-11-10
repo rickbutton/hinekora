@@ -171,6 +171,34 @@ if has "maximum life" t1 {
         expect(branch).toMatch(/taken 1[23]%$/);
     });
 
+    it("a loop at the head of a loop body reads what the round before left", () => {
+        // The ring enters with one prefix, but a later round starts from the
+        // reforge's item, which holds three prefixes now and then: the inner
+        // loop annuls those to make room for the metamod.
+        const r = costSource(
+            `item {
+    base: "Vermillion Ring"
+    ilvl: 84
+    rarity: rare
+    prefixes: [ "maximum mana" t5 ]
+    suffixes: [ "fire resistance" t1, "cold resistance" t1, "chaos resistance" t2 ]
+}
+until has "maximum life" t1 and prefixCount <= 2 {
+    until prefixCount <= 2 {
+        annul
+    }
+    bench "suffixes cannot be changed"
+    harvest reforge "life"
+}`,
+            "test.craft",
+            registry,
+            prices,
+        );
+        const annul = r.output.split("\n").find((l) => /^\s*\d+\s+annul/.test(l));
+        expect(annul).toBeDefined();
+        expect(annul).not.toMatch(/×0[:\s]/);
+    });
+
     it("names what the snapshot cannot price and still sums the rest", () => {
         const r = costSource(
             `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] }\nlocus`,

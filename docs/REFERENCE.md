@@ -311,8 +311,10 @@ resolveEssence / resolveBench / resolveHarvestTag`
   quote them, "1/37 chance", or a percentage once better than even, `oddsFigure` the
   same as the end of a spread, "1/36.5"), the one copy the CLI, the hover and the playground print, and
   `costIsObvious`, the step whose cost says nothing its name does not (it runs once and
-  spends one of one currency), whose line the hover and the storyboard leave out. The first step of a loop body is judged on the item the loop finds, not on
-  the join over its rounds, so the attempts are taken alike.
+  spends one of one currency), whose line the hover and the storyboard leave out. A
+  method first in a loop body is judged on the item the loop finds, not on the join
+  over its rounds, so the attempts are taken alike; a loop or branch first in the body
+  reads the join, weighed by the path the round before left.
 
 ### 3b. `@hinekora/parser`
 
