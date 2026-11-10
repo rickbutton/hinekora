@@ -20,6 +20,7 @@ import {
     walkthrough,
     plural,
     approx,
+    oddsFigure,
     oddsText,
 } from "@hinekora/core";
 import { parse } from "@hinekora/parser";
@@ -144,9 +145,7 @@ function stepFigure(s: StepCost, prices: Prices | undefined): string {
     const spread = (b: Bounds | undefined, show: (n: number) => string): string =>
         b === undefined ? "" : ` [${show(b.low)} to ${show(b.high)}]`;
     if (s.attempts !== undefined) {
-        parts.push(
-            `${oddsText(s.attempts.chance)}${spread(s.attemptsRange, (n) => `1/${figure(n)}`)}`,
-        );
+        parts.push(`${oddsText(s.attempts.chance)}${spread(s.chanceRange, oddsFigure)}`);
     }
     if (s.branch !== undefined) {
         parts.push(`taken ${percentage(s.branch)}${spread(s.branchRange, percentage)}`);

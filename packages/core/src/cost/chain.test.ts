@@ -249,6 +249,21 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.exit).toBeCloseTo(0, 9);
     });
 
+    it("counts apart the attempts that hold the exit before any round", () => {
+        const solved = chain({
+            atoms: [],
+            body: [{ id: 0, kind: "remove" }],
+            starts: [
+                { state: at(2, 3), weight: 3 },
+                { state: at(3, 3), weight: 1 },
+            ],
+            caps: CAPS,
+            exit: (s) => s.prefix <= 2,
+        })!;
+        expect(solved.exitAtStart).toBeCloseTo(3 / 4, 9);
+        expect(solved.exit).toBeCloseTo(1, 9);
+    });
+
     it("a body that changes nothing is not a chain", () => {
         expect(
             chain({

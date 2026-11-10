@@ -87,6 +87,8 @@ export interface ChainInput {
 export interface Chain {
     /** How one attempt ends: in the exit, a restart or a stop. */
     readonly exit: number;
+    /** The part of `exit` that holds before the first round. */
+    readonly exitAtStart: number;
     readonly restart: number;
     readonly stop: number;
     /** Expected passes through the body in one attempt. */
@@ -170,6 +172,7 @@ export function chain(input: ChainInput): Chain | undefined {
         if (input.exit(state)) t.exit += weight / total;
         else put(head, state, weight / total);
     }
+    const exitAtStart = t.exit;
     // A rare exit leaves mass going round for thousands of rounds. Once the
     // share each round keeps has settled, the distribution keeps its shape and
     // only shrinks, so every later round is this one scaled by that share: the
@@ -193,7 +196,7 @@ export function chain(input: ChainInput): Chain | undefined {
         }
         lastDecay = decay;
     }
-    return { ...t, unresolved: massOf(head) };
+    return { ...t, exitAtStart, unresolved: massOf(head) };
 }
 
 function snapshot(t: Totals): Totals {

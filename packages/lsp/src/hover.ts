@@ -40,6 +40,7 @@ import {
     rangeText,
     approx,
     costIsObvious,
+    oddsFigure,
     oddsText,
 } from "@hinekora/core";
 import { type Token, tokenize } from "@hinekora/parser";
@@ -564,9 +565,7 @@ function costLine(
     if (step === undefined) return undefined;
     const parts: string[] = [];
     if (step.attempts !== undefined) {
-        parts.push(
-            `${oddsText(step.attempts.chance)}${spread(step.attemptsRange, (n) => `1/${figure(n)}`)}`,
-        );
+        parts.push(`${oddsText(step.attempts.chance)}${spread(step.chanceRange, oddsFigure)}`);
     }
     if (step.branch !== undefined) {
         parts.push(

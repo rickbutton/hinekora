@@ -271,6 +271,15 @@ describe("the spread over the item's unnamed modifiers", () => {
         expect(loop.attempts!.expected).toBeGreaterThan(0);
         expect(loop.attemptsRange).toBeDefined();
         expect(loop.attemptsRange!.high).toBeLessThan(20 * loop.attempts!.expected);
+        // The chance is per round run: the Regal Orb lands the life some of
+        // the time, and those attempts take no round, so the rounds fall short
+        // of the chance's reciprocal.
+        const { chance, expected } = loop.attempts!;
+        expect(chance * expected).toBeLessThan(1);
+        expect(chance * expected).toBeGreaterThan(0);
+        expect(loop.chanceRange).toBeDefined();
+        expect(chance).toBeGreaterThanOrEqual(loop.chanceRange!.low - 1e-12);
+        expect(chance).toBeLessThanOrEqual(loop.chanceRange!.high + 1e-12);
     });
 });
 

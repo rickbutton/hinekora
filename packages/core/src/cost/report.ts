@@ -63,6 +63,8 @@ export interface StepCost {
      *  chance over the item's open counts, where they differ. */
     readonly runsRange?: Bounds;
     readonly attemptsRange?: Bounds;
+    /** The spread of a loop's chance per round. */
+    readonly chanceRange?: Bounds;
     readonly branchRange?: Bounds;
 }
 
@@ -273,6 +275,13 @@ function withBounds(
                       s.attempts.expected,
                       peers.map((p) => p?.attempts?.expected ?? s.attempts!.expected),
                   );
+        const chance =
+            s.attempts === undefined
+                ? undefined
+                : bounds(
+                      s.attempts.chance,
+                      peers.map((p) => p?.attempts?.chance ?? s.attempts!.chance),
+                  );
         const branch =
             s.branch === undefined
                 ? undefined
@@ -284,6 +293,7 @@ function withBounds(
             ...s,
             ...(runs !== undefined && { runsRange: runs }),
             ...(attempts !== undefined && { attemptsRange: attempts }),
+            ...(chance !== undefined && { chanceRange: chance }),
             ...(branch !== undefined && { branchRange: branch }),
         };
     });
@@ -975,7 +985,11 @@ class Walker {
         const rounds = solved.passes * attempts;
         this.record(stmt, mass, frame, {
             attempts: {
-                chance: solved.passes > 0 ? Math.min(1, ending / solved.passes) : 1,
+                // Per round run: the attempts that end on entering take none.
+                chance:
+                    solved.passes > 0
+                        ? Math.min(1, (ending - solved.exitAtStart) / solved.passes)
+                        : 1,
                 expected: rounds,
             },
             ...(solved.unresolved >= 0.005 && {

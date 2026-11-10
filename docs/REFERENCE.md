@@ -286,8 +286,8 @@ resolveEssence / resolveBench / resolveHarvestTag`
   bench craft, a branch over them with or without an else arm, a reforge whose `Outcome`s
   the item starts over from, a restart or a stop) as a Markov chain over the counts
   and the named modifiers' rows (`ChainState`, one `ChainAtom` per modifier the loop's
-  conditions name), from weighted start states to the exit, a restart, a stop or the
-  mass that never leaves; once the
+  conditions name), from weighted start states to the exit (`exitAtStart` the part that
+  holds before any round), a restart, a stop or the mass that never leaves; once the
   share of mass each round keeps has settled, the rounds still to come are added as
   that round's geometric tail, so a rare exit costs its full expected rounds. The walk
   builds it in `chainLoop` for every `until` whose body and exit fit, the rest taking
@@ -298,16 +298,17 @@ resolveEssence / resolveBench / resolveHarvestTag`
   `inChaos`. `report.ts` is the walk
   (`costOf(craft, result, registry, prices?)` → `CostReport`): one `StepCost` per
   statement keyed by its span (`reached`, `runs`, `unit`, `expected`, a loop's `attempts`
-  as rounds and the chance each ends it, a branch's chance, a `note` where a figure is
-  assumed), the `total` per currency, `chaos` and `divine` under the snapshot, the
+  as rounds and the chance each round run ends it, a branch's chance, a `note` where a
+  figure is assumed), the `total` per currency, `chaos` and `divine` under the snapshot, the
   `unpriced` items and the chance the craft `stopped`. The walk runs once per `Reading`,
   and each step carries the spread of its figures over the floors and ceilings walks
-  where they differ (`Bounds`: `runsRange`, `attemptsRange`, `branchRange`), the report
+  where they differ (`Bounds`: `runsRange`, `attemptsRange`, `chanceRange`, `branchRange`), the report
   its `chaosRange`; a step whose figure is an assumption (its `note`) in any reading, and
   the steps inside such a loop or branch, carry none, and the total's spread is left out
   with them. `words.ts` is the figures in the guide's words (`figure`, `percentage`,
   `priceText`; `approx` marks an estimate "~24", `oddsText` is a repeat's odds as guides
-  quote them, "1/37 chance", or a percentage once better than even), the one copy the CLI, the hover and the playground print, and
+  quote them, "1/37 chance", or a percentage once better than even, `oddsFigure` the
+  same as the end of a spread, "1/36.5"), the one copy the CLI, the hover and the playground print, and
   `costIsObvious`, the step whose cost says nothing its name does not (it runs once and
   spends one of one currency), whose line the hover and the storyboard leave out. The first step of a loop body is judged on the item the loop finds, not on
   the join over its rounds, so the attempts are taken alike.

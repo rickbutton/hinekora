@@ -38,6 +38,13 @@ export function oddsText(chance: number): string {
     return `1/${Math.round(1 / chance)} chance`;
 }
 
+/** A chance as the end of a spread: "1/36.5", "62%". */
+export function oddsFigure(chance: number): string {
+    if (!(chance > 0)) return "never";
+    if (chance >= 0.5) return percentage(chance);
+    return `1/${figure(1 / chance)}`;
+}
+
 /**
  * A step whose cost says nothing its own name does not: it runs once and
  * spends exactly one of one currency ("transmute" is one Orb of
