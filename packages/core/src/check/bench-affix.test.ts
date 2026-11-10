@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { benchRemove, craft, item } from "../__fixtures__/ast.js";
+import { benchRemove, craft, has, iff, item, notp, op } from "../__fixtures__/ast.js";
 import { BENCH_LIFE_ROW, CATALOG, CLASS_RING, RING_BASE } from "../__fixtures__/mods.js";
 
 // A `bench` affix in the item block is the bench's row: it counts toward the
@@ -55,5 +55,24 @@ describe("a bench affix in the item block", () => {
         expect(check(craft(natural, [benchRemove()]), ctx).diagnostics[0]!.message).toContain(
             "No crafted modifier is guaranteed",
         );
+    });
+
+    it("anonymous, may still be the bench's row after an add drew its type's natural rows", () => {
+        // The crafted prefix may be the bench's life; an Exalted Orb may add a
+        // natural life only where it is not, so a life that is neither natural
+        // tier is the bench's and the innermost branch runs.
+        const start = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: [{ mod: "random", bench: true }],
+        });
+        const c = craft(start, [
+            op("exalt"),
+            iff(has("maximum life"), [
+                iff(notp(has("maximum life", 1)), [iff(notp(has("maximum life", 2)), [])]),
+            ]),
+        ]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 });

@@ -1713,9 +1713,14 @@ function fill(
     for (const t of drawn.types) possible.add(t);
     // A drawn modifier is a fresh roll, whatever was known of the type's value.
     const values = dropValues(a.values, drawn.types);
+    // A type the item may already carry with no rows recorded is any row, and
+    // stays so: the drawn rows would otherwise stand for a modifier that was
+    // there before the draw (a declared bench affix, a branch's unknown).
+    const anyRow = (t: TypeId): boolean =>
+        !a.tiers.has(t) && a.counts.total[1] > 0 && a.possible.has(t) && !isExcluded(a, t);
     for (const m of drawn.mods) {
-        const cur = tiers.get(m.type);
-        tiers.set(m.type, one ? new Set([m.id]) : cur ? new Set([...cur, m.id]) : new Set([m.id]));
+        if (one) tiers.set(m.type, new Set([m.id]));
+        else if (!anyRow(m.type)) tiers.set(m.type, new Set([...(tiers.get(m.type) ?? []), m.id]));
     }
     // The draw may be any of the pool's types, rows or not (the veiled
     // placeholders have no row), so an exclusion on any of them is relaxed.
