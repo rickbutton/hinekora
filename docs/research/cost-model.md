@@ -525,4 +525,5 @@ some spell damage on an Aetheric reforge 67.5% of the time where hinekora reads 
 (Q73).
 
 The Recombinator was not run: the simulator picks the surviving modifiers uniformly and
-keeps them by a count table that differs from the wiki's, which hinekora follows (Q67).
+keeps them by a count table that differs from the wiki's, which hinekora followed (Q67)
+until the Recombinator was removed (§1.4).
