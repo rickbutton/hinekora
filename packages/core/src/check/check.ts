@@ -79,6 +79,8 @@ export interface TraceEntry {
     readonly before: AItem;
     /** State after it completes; absent if that path diverges (via restart). */
     readonly after?: AItem;
+    /** A call's body with its arguments bound, and its own trace. */
+    readonly inlined?: { readonly body: readonly Stmt[]; readonly trace: readonly TraceEntry[] };
 }
 
 export interface CheckResult {
@@ -185,9 +187,10 @@ class Checker {
     /** Predicate defs currently being expanded, guards against (mutual)
      *  recursion; procs are checked statically instead (`recursiveProcs`). */
     private readonly expanding = new Set<string>();
-    /** When > 0, don't record trace entries, a proc call is a black box for
-     *  hover: only the call site itself gets an entry, not the inlined body. */
-    private suppressTrace = 0;
+    /** Where statements are recorded: the trace, or a call's own while its
+     *  body runs, so hover sees a call as one step. */
+    private sink: TraceEntry[] = this.trace;
+    private readonly inlined = new WeakMap<Stmt, NonNullable<TraceEntry["inlined"]>>();
     /** Stack of `restart` back-edge collectors, innermost loop last. A `restart`
      *  re-enters the innermost enclosing loop, so its state is a loop-head state
      *  that must join into that loop's invariant. */
@@ -235,17 +238,6 @@ class Checker {
             return fn();
         } finally {
             this.quiet--;
-        }
-    }
-
-    /** Run `fn` with trace recording suppressed but diagnostics kept, an inlined
-     *  proc body is a hover black box, yet its precondition failures still matter. */
-    private untraced<T>(fn: () => T): T {
-        this.suppressTrace++;
-        try {
-            return fn();
-        } finally {
-            this.suppressTrace--;
         }
     }
 
@@ -579,12 +571,14 @@ class Checker {
             const before = state;
             const flow = this.checkStmt(before, stmt);
             // Only the real (non-quiet) pass records, so each statement appears once.
-            if (this.quiet === 0 && this.suppressTrace === 0) {
-                this.trace.push({
+            if (this.quiet === 0) {
+                const inlined = this.inlined.get(stmt);
+                this.sink.push({
                     span: stmt.span,
                     kind: stmt.kind,
                     before,
                     ...(flow.kind === "fall" && { after: flow.state }),
+                    ...(inlined !== undefined && { inlined }),
                 });
             }
             if (flow.kind !== "fall") return flow;
@@ -939,7 +933,15 @@ class Checker {
         if (env === null) return { kind: "fall", state: a };
 
         const body = substituteStmts(proc.body, env);
-        return this.untraced(() => this.checkSeq(a, body));
+        const trace: TraceEntry[] = [];
+        const outer = this.sink;
+        this.sink = trace;
+        try {
+            return this.checkSeq(a, body);
+        } finally {
+            this.sink = outer;
+            this.inlined.set(stmt, { body, trace });
+        }
     }
 
     /** Bind call arguments to parameters, checking arity and each arg's sort.
