@@ -95,6 +95,20 @@ interface RowClass {
     readonly members: readonly { readonly id: ModId; readonly weight: number }[];
 }
 
+/** The states one walk may read a method on, and the outcomes one reading may
+ *  give: past them the guide's named modifiers are too many to follow by
+ *  state, a product of their rows and value pieces, and the walk takes the
+ *  checker's item instead. */
+const MAX_STATES = 5000;
+const MAX_OUTCOMES = 5000;
+
+/** Thrown where a guide's states outgrow `MAX_STATES` or `MAX_OUTCOMES`. */
+export class TrackerOverflow extends Error {
+    constructor() {
+        super("too many states to follow");
+    }
+}
+
 /**
  * The modifiers the guide's conditions name, the ones any step's item surely
  * holds, and the metamods that protect a side, tracked through it: one atom per
@@ -286,6 +300,11 @@ export class Tracker {
     /** States a method left as they were because the checker's item, narrowed
      *  to them, could not say exactly where the method takes them. */
     misses = 0;
+    private computed = 0;
+
+    private another(): void {
+        if (++this.computed > MAX_STATES) throw new TrackerOverflow();
+    }
 
     /**
      * Where a method takes each state: the checker's item before it narrowed to
@@ -307,6 +326,7 @@ export class Tracker {
         if (kind === "reroll") {
             return (state) => {
                 const key = stateKey(state);
+                if (!cache.has(key)) this.another();
                 const out = cache.get(key) ?? keepLocks(state, this.rerolled(state));
                 cache.set(key, out);
                 return out;
@@ -335,6 +355,7 @@ export class Tracker {
             const key = stateKey(state);
             const hit = cache.get(key);
             if (hit !== undefined) return hit;
+            this.another();
             let out: readonly Outcome[] | undefined;
             const item =
                 kind === "draw" && fillAt >= 0 && cut < 0 ? this.narrow(before, state) : null;
@@ -350,6 +371,7 @@ export class Tracker {
             } else {
                 out = this.outcomes(before, ops, state, reading) ?? [{ state, prob: 1 }];
             }
+            if (out.length > MAX_OUTCOMES) throw new TrackerOverflow();
             out = keepLocks(state, out);
             cache.set(key, out);
             return out;
@@ -736,6 +758,7 @@ export class Tracker {
                 states = next;
             }
         }
+        if (states.length > MAX_OUTCOMES) throw new TrackerOverflow();
         return states.map((st) => ({
             state: { prefix: counts.prefix, suffix: counts.suffix, rows: st.rows },
             prob: st.prob,

@@ -23,7 +23,15 @@ import { advance, chain, type ChainState, type ChainStep } from "./chain.js";
 import { guaranteedTypes, isExcluded, rarityOf, sideCap, suffixRange } from "../check/astate.js";
 import { addPrices, inChaos, type Price, type Prices, unitCost } from "./prices.js";
 import { type Reading, type Roll, rollOf, withPresent } from "./roll.js";
-import { type Carried, genOfOn, holdsOn, predLeaves, splitCarried, Tracker } from "./track.js";
+import {
+    type Carried,
+    genOfOn,
+    holdsOn,
+    predLeaves,
+    splitCarried,
+    Tracker,
+    TrackerOverflow,
+} from "./track.js";
 
 /** The ends of a figure over the two items at the ends of what the checker
  *  allows at the step (`Reading`), given only where they differ. */
@@ -421,11 +429,23 @@ class Walker {
 
     /** Where the guide starts: the item block as the tracker's states, when it
      *  settles them. */
+    /** What `f` reads off the tracked states, or undefined once they are too
+     *  many to follow, the walk then read on the checker's item. */
+    private untilOverflow<T>(f: () => T): T | undefined {
+        try {
+            return f();
+        } catch (e) {
+            if (!(e instanceof TrackerOverflow)) throw e;
+            this.lost = true;
+            return undefined;
+        }
+    }
+
     start(): Branch {
         const states =
             this.tracker === undefined || this.first === undefined
                 ? undefined
-                : this.tracker.statesIn(this.first, this.reading);
+                : this.untilOverflow(() => this.tracker!.statesIn(this.first!, this.reading));
         return {
             mass: 1,
             path: undefined,
@@ -536,7 +556,7 @@ class Walker {
         // Where each branch's states go: the method read on the item as each
         // state has it.
         const misses = this.tracker?.misses ?? 0;
-        const moved = this.moved(stmt, entry, branches);
+        const moved = this.untilOverflow(() => this.moved(stmt, entry, branches));
         const missed = (this.tracker?.misses ?? 0) > misses;
         this.record(stmt, massOf(branches), frame, {
             ...(unit !== undefined ? { unit } : {}),
@@ -693,7 +713,9 @@ class Walker {
         const before = entry?.before;
         const rpred = before === undefined ? null : this.resolve(stmt.pred, before);
         if (before !== undefined && rpred !== null) {
-            const solved = this.chainLoop(stmt, before, rpred, branches, frame);
+            const solved = this.untilOverflow(() =>
+                this.chainLoop(stmt, before, rpred, branches, frame),
+            );
             if (solved !== undefined) return solved;
         }
         this.lost = true;

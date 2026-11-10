@@ -127,6 +127,23 @@ describe("costSource — what a guide is expected to spend", () => {
         );
     });
 
+    it("answers for a guide whose compared values are too many to follow one by one", () => {
+        // Four values compared against thresholds: their rows and the pieces
+        // the thresholds cut are more states than the walk follows, so it
+        // reads the loop on the checker's item instead, and answers at once.
+        const r = costSource(
+            `item { base: "Amethyst Ring" ilvl: 84 rarity: rare }
+until has "maximum life" >= 70 and has "fire resistance" >= 40 and has "cold resistance" >= 40 and has "lightning resistance" >= 40 {
+    chaos
+}`,
+            "test.craft",
+            registry,
+            prices,
+        );
+        expect(r.ok).toBe(true);
+        expect(r.output).toMatch(/1\/\d+ chance/);
+    });
+
     it("gives a branch's chance but no figure for a restart", () => {
         const r = costSource(
             `item { base: "Iron Ring" ilvl: 84 rarity: rare }
