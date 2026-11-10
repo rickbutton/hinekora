@@ -288,10 +288,11 @@ resolveEssence / resolveBench / resolveHarvestTag`
   restored, a restart or a stop) as a Markov chain over the counts
   and the named modifiers' rows (`ChainState`, one `ChainAtom` per modifier the loop's
   conditions name), from weighted start states to the exit (`exitAtStart` the part that
-  holds before any round), a restart, a stop or the mass that never leaves; once the
-  share of mass each round keeps has settled, or at the last round followed when a
-  slowly mixing chain has not, the rounds still to come are added as that round's
-  geometric tail, so a rare exit costs its full expected rounds. The walk
+  holds before any round), a restart, a stop or the mass that never leaves; once a round
+  hands the next a distribution of the same shape, or at the last round followed when a
+  slowly mixing chain has not settled (`Chain.estimated`, which the report notes), the
+  rounds still to come are added as that round's geometric tail, so a rare exit costs
+  its full expected rounds. The walk
   builds it in `chainLoop` for every `until` whose body and exit fit, the rest taking
   the independent-attempts path. The states the exit leaves the item in (`Chain.exits`)
   carry on as the branch's `Carried` states until a step changes the item or might (a

@@ -288,9 +288,58 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         })!;
         expect(solved.unresolved).toBeCloseTo(0, 9);
         expect(solved.exit).toBeCloseTo(1, 9);
+        expect(solved.estimated).toBe(true);
         // 10 000 rounds in A and 1 000 in B on average.
         expect(solved.passes).toBeGreaterThan(5000);
         expect(solved.passes).toBeLessThan(22000);
+    });
+
+    it("waits for the distribution's shape to settle, not only the share that leaves", () => {
+        // From A and from B the exit comes with chance p each round, so the
+        // mass leaves at one steady rate from the first round; but A drifts to
+        // B, and a branch taken in A alone counts the rounds spent there.
+        const p = 1e-3;
+        const q = 0.01;
+        const A = at(0, 1);
+        const B = at(1, 1);
+        const E = at(2, 1);
+        const solved = chain({
+            atoms: [],
+            body: [
+                {
+                    id: 0,
+                    kind: "branch",
+                    holds: (s) => s.prefix === 0,
+                    body: [
+                        {
+                            id: 1,
+                            kind: "reforge",
+                            outcomes: [
+                                { state: E, prob: p },
+                                { state: B, prob: q },
+                                { state: A, prob: 1 - p - q },
+                            ],
+                        },
+                    ],
+                    otherwise: [
+                        {
+                            id: 2,
+                            kind: "reforge",
+                            outcomes: [
+                                { state: E, prob: p },
+                                { state: B, prob: 1 - p },
+                            ],
+                        },
+                    ],
+                },
+            ],
+            starts: [{ state: A, weight: 1 }],
+            caps: CAPS,
+            exit: (s) => s.prefix === 2,
+        })!;
+        expect(solved.estimated).toBe(false);
+        expect(solved.passes * p).toBeCloseTo(1, 6);
+        expect(solved.taken.get(0)! * (p + q)).toBeCloseTo(1, 6);
     });
 
     it("a loop that cannot end is left unresolved", () => {

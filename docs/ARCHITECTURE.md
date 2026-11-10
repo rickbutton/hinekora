@@ -404,15 +404,18 @@ craft's listed price).
   row, from the states the loop may enter with (weighted by the path in), carrying the
   distribution through the body round after round until the mass has left: the exit, a
   restart or a stop, or an item full with nothing removing, which the report names. A
-  rare exit would take thousands of rounds to follow; once the share each round keeps
-  has settled, the distribution only shrinks, and the rounds left are summed at once as
-  a geometric series. Where the exit leaves the item, a distribution over the same
-  small state, is what the next steps see until one changes the item: a second such
-  loop ("until one resistance, then until two") starts from it, and a branch on the
-  counts reads it. The
+  rare exit would take thousands of rounds to follow; once a round hands the next a
+  distribution of the same shape, only smaller, the rounds left are summed at once as a
+  geometric series. A chain that has not settled by the last round followed (an item
+  drifting between easier and harder states) takes that round's share as the rest's,
+  and the report notes the figure as an estimate. Where the exit leaves the item, a
+  distribution over the same small state, is what the next steps see until one changes
+  the item: a second such loop ("until one resistance, then until two") starts from it,
+  and a branch on the counts reads it. The
   named modifiers are the only ones tracked; the rest of the item is a count whose draws
   close an average group. The chance of the exit per round, how often each step and
-  branch inside runs, and the stop share all fall out exactly.
+  branch inside runs, and the stop share fall out of the chain, exact up to that
+  average and, where the note says so, the estimated tail.
 - An **`if`** splits each branch by its condition's chance; a `restart` ends the attempt;
   a `stop` ends the craft; a top-level `restart` makes the whole guide one attempt of an
   outer loop.

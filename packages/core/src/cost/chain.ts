@@ -102,13 +102,16 @@ export interface Chain {
     readonly unresolved: number;
     /** The states the exit leaves the item in, their probabilities summing to `exit`. */
     readonly exits: readonly { readonly state: ChainState; readonly prob: number }[];
+    /** The rounds were cut off before the distribution settled, and the rest
+     *  was taken as the last round's tail: the figures are an estimate. */
+    readonly estimated: boolean;
 }
 
 /** Rounds after which the chain stops following the mass still going round. */
 const MAX_PASSES = 2000;
 const EPSILON = 1e-9;
-/** How close two rounds' decay must be for the rest to be taken as their
- *  geometric tail, and how close to one a decay counts as none. */
+/** How close in shape two rounds' distributions must be for the rest to be
+ *  taken as a geometric tail, and how close to one a decay counts as none. */
 const SETTLED = 1e-10;
 const STUCK = 1e-9;
 
@@ -178,13 +181,14 @@ export function chain(input: ChainInput): Chain | undefined {
         } else put(head, state, weight / total);
     }
     const exitAtStart = t.exit;
-    // A rare exit leaves mass going round for thousands of rounds. Once the
-    // share each round keeps has settled, the distribution keeps its shape and
-    // only shrinks, so every later round is this one scaled by that share: the
-    // rest is a geometric tail, added at once.
-    let lastDecay: number | undefined;
+    // A rare exit leaves mass going round for thousands of rounds. Once a round
+    // hands the next one a distribution of the same shape, only smaller, every
+    // later round is this one scaled by the share it keeps: the rest is a
+    // geometric tail, added at once.
+    let estimated = false;
     for (let round = 0; round < MAX_PASSES && massOf(head) > EPSILON; round++) {
         const mass = massOf(head);
+        const shapeIn = head;
         const was = snapshot(t);
         t.passes += mass;
         const alive = run(input.body, head, input, t);
@@ -198,21 +202,37 @@ export function chain(input: ChainInput): Chain | undefined {
         }
         const decay = massOf(head) / mass;
         // A chain that mixes slowly may not settle within the rounds followed;
-        // its last round's decay is then the best guess at the rest.
+        // its last round's decay is then the best guess at the rest, and the
+        // figures are an estimate.
         const last = round === MAX_PASSES - 1;
-        const settled =
-            decay < 1 - STUCK &&
-            (last || (lastDecay !== undefined && Math.abs(decay - lastDecay) < SETTLED));
-        const factor = settled ? 1 + decay / (1 - decay) : 1;
+        const settled = shapeDistance(shapeIn, mass, head, massOf(head)) < SETTLED;
+        const tail = decay < 1 - STUCK && (settled || last);
+        const factor = tail ? 1 + decay / (1 - decay) : 1;
         for (const { state, prob } of leaving.values()) put(exits, state, prob * factor);
-        if (settled) {
+        if (tail) {
+            estimated = !settled;
             addScaled(t, was, decay / (1 - decay));
             head = new Map();
             break;
         }
-        lastDecay = decay;
     }
-    return { ...t, exitAtStart, unresolved: massOf(head), exits: [...exits.values()] };
+    return {
+        ...t,
+        exitAtStart,
+        unresolved: massOf(head),
+        exits: [...exits.values()],
+        estimated,
+    };
+}
+
+/** How far apart two distributions are in shape: the summed difference of
+ *  their states' shares. */
+function shapeDistance(a: Dist, aMass: number, b: Dist, bMass: number): number {
+    if (!(aMass > 0) || !(bMass > 0)) return Infinity;
+    let d = 0;
+    for (const [k, e] of a) d += Math.abs(e.prob / aMass - (b.get(k)?.prob ?? 0) / bMass);
+    for (const [k, e] of b) if (!a.has(k)) d += e.prob / bMass;
+    return d;
 }
 
 function snapshot(t: Totals): Totals {

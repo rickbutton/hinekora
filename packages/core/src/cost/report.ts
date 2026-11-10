@@ -1096,9 +1096,13 @@ class Walker {
                         : 1,
                 expected: rounds,
             },
-            ...(solved.unresolved >= 0.005 && {
-                note: `in ${Math.round(solved.unresolved * 100)}% of attempts the item fills up before the exit and the loop cannot end as written`,
-            }),
+            ...(solved.unresolved >= 0.005
+                ? {
+                      note: `in ${Math.round(solved.unresolved * 100)}% of attempts the item fills up before the exit and the loop cannot end as written`,
+                  }
+                : solved.estimated && {
+                      note: "the item drifts between easier and harder states for thousands of rounds; the rounds beyond those followed are estimated",
+                  }),
         });
         // A step inside is reached so often per round, and runs that times the
         // rounds of the loop, so its `reached` stays a chance.
