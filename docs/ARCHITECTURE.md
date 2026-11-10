@@ -343,8 +343,8 @@ game's rules no source settles are assumptions (Q58–Q66, Q68, Q76 and Q77), as
 (Q78). A state the
 checker's item, narrowed to it, cannot carry through a step exactly is left as it was
 (`Tracker.misses`) and the step says so. Where a step's randomness is
-one the state does not hold (a fracture's lock, an ember's implicit) or the walk
-cannot follow a statement (a call), the walk falls
+one the state does not hold (an ember's implicit) or the walk cannot follow a statement
+(a call), the walk falls
 back to reading the roll on the checker's item, the facts every path holds, with every
 range the checker left open read at its floor and at its ceiling (`Reading`) as a spread
 beside the figure.

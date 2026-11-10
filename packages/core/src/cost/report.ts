@@ -936,6 +936,9 @@ class Walker {
                 case "hasValue":
                     if (!tracker.valued(leaf.type)) return undefined;
                     break;
+                case "fractured":
+                    if (!tracker.locks || !tracker.index.has(leaf.type)) return undefined;
+                    break;
                 default: {
                     const c = this.conditionChance(leaf, undefined, item);
                     if (c === undefined) return undefined;

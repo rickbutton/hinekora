@@ -14,6 +14,7 @@ import {
     type AItem,
     guaranteedTypes,
     isExcluded,
+    isFractured,
     rarityOf,
     refine,
     type RPred,
@@ -40,6 +41,8 @@ export interface Carried {
     readonly types: readonly TypeId[];
     /** The types whose rows carry the part of the range their value is in. */
     readonly valued?: ReadonlySet<TypeId>;
+    /** The rows say which modifier is fractured. */
+    readonly locks?: boolean;
     readonly dist: readonly { readonly state: ChainState; readonly weight: number }[];
 }
 
@@ -60,9 +63,10 @@ function overlap(part: Range, span: Range): number {
 /**
  * A tracked row of a modifier whose value a condition compares carries the
  * part of the row's range its value is in, as `row~lo~hi`; any other row is
- * the row alone.
+ * the row alone. A fractured modifier's row ends in `!`.
  */
-export function readRow(row: ModId): { base: ModId; value?: Range } {
+export function readRow(row: ModId): { base: ModId; value?: Range; locked?: true } {
+    if (row.endsWith("!")) return { ...readRow(ModId(row.slice(0, -1))), locked: true };
     const at = row.indexOf("~");
     if (at < 0) return { base: row };
     const [lo, hi] = row
@@ -74,6 +78,14 @@ export function readRow(row: ModId): { base: ModId; value?: Range } {
 
 function valueRow(base: ModId, value: Range): ModId {
     return ModId(`${base}~${value[0]}~${value[1]}`);
+}
+
+function lockedRow(row: ModId): ModId {
+    return row.endsWith("!") ? row : ModId(`${row}!`);
+}
+
+function unlockedRow(row: ModId): ModId {
+    return row.endsWith("!") ? ModId(row.slice(0, -1)) : row;
 }
 
 /** Rows a condition tells apart: one named tier, or the rest of a ladder. */
@@ -98,6 +110,8 @@ export class Tracker {
     readonly types: TypeId[] = [];
     readonly index = new Map<TypeId, number>();
     readonly protections: { readonly atom: number; readonly side: Gen }[] = [];
+    /** Some step's item may carry a fractured modifier, so a state says which. */
+    readonly locks: boolean;
     readonly classes: RowClass[][] = [];
     /** Per atom, each row's classes with the share of the row's weight each holds. */
     private readonly classesOfRow: Map<ModId, { rep: ModId; share: number }[]>[] = [];
@@ -111,6 +125,7 @@ export class Tracker {
         preds: readonly RPred[],
         crafted: readonly TypeId[],
     ) {
+        this.locks = items.some((a) => a.fractures[1] > 0);
         const named = new Set<ModId>();
         const wanted: TypeId[] = [];
         for (const pred of preds) {
@@ -119,6 +134,7 @@ export class Tracker {
                     wanted.push(leaf.type);
                     if (leaf.tierMod !== undefined) named.add(leaf.tierMod);
                 } else if (leaf.kind === "hasGroup") wanted.push(...leaf.types);
+                else if (leaf.kind === "fractured") wanted.push(leaf.type);
                 else if (leaf.kind === "hasValue") {
                     wanted.push(leaf.type);
                     const list = this.valueLeaves.get(leaf.type) ?? [];
@@ -262,6 +278,7 @@ export class Tracker {
         return {
             types: this.types,
             valued: new Set(this.valueLeaves.keys()),
+            locks: this.locks,
             dist,
         };
     }
@@ -277,8 +294,8 @@ export class Tracker {
      * random method's roll gives the outcomes and their chances; a sure one
      * gives one state; a Divine Orb rolls the value of every modifier a
      * condition compares again within its tier. Undefined for a method whose
-     * randomness the state does not hold (a fracture's lock, an implicit),
-     * which the walk reads off the roll instead.
+     * randomness the state does not hold (an implicit), which the walk reads
+     * off the roll instead.
      */
     transition(
         before: AItem,
@@ -290,12 +307,18 @@ export class Tracker {
         if (kind === "reroll") {
             return (state) => {
                 const key = stateKey(state);
-                const out = cache.get(key) ?? this.rerolled(state);
+                const out = cache.get(key) ?? keepLocks(state, this.rerolled(state));
                 cache.set(key, out);
                 return out;
             };
         }
-        if (kind !== "draw" && kind !== "removal" && kind !== "none" && kind !== "unveil")
+        if (
+            kind !== "draw" &&
+            kind !== "removal" &&
+            kind !== "none" &&
+            kind !== "unveil" &&
+            kind !== "lock"
+        )
             return undefined;
         // A draw's outcomes rest on the item its fill starts from, which many
         // states share where a reforge strips what tells them apart.
@@ -327,6 +350,7 @@ export class Tracker {
             } else {
                 out = this.outcomes(before, ops, state, reading) ?? [{ state, prob: 1 }];
             }
+            out = keepLocks(state, out);
             cache.set(key, out);
             return out;
         };
@@ -516,6 +540,22 @@ export class Tracker {
                     ? out.map((o) => ({ ...o, prob: o.prob / total }))
                     : [{ state, prob: 1 }];
             }
+            case "lock": {
+                // A lock that may land on a modifier no one names leaves a state
+                // that cannot say which side keeps it.
+                const out: Outcome[] = [];
+                let mass = 0;
+                for (const c of roll.candidates) {
+                    const i = this.index.get(c.type);
+                    const row = i === undefined ? null : (state.rows[i] ?? null);
+                    if (row === null) return this.counted(undefined);
+                    const rows = [...state.rows];
+                    rows[i!] = lockedRow(row);
+                    out.push({ state: { ...state, rows }, prob: c.prob });
+                    mass += c.prob;
+                }
+                return mass > 1 - 1e-9 ? out : this.counted(undefined);
+            }
             case "unveil": {
                 let target: TypeId | undefined;
                 for (const op of ops)
@@ -623,8 +663,14 @@ export class Tracker {
         const maybe: number[] = [];
         for (let i = 0; i < this.atoms.length; i++) {
             const type = this.types[i]!;
-            if (guaranteed.has(type)) choose(i, this.rowsOn(i, item));
-            else if (isExcluded(item, type) || !item.possible.has(type)) continue;
+            if (guaranteed.has(type)) {
+                const fromRow = from?.rows[i] ?? null;
+                const locked =
+                    this.locks &&
+                    (isFractured(item, type) || (fromRow !== null && readRow(fromRow).locked));
+                const rows = this.rowsOn(i, item);
+                choose(i, locked ? rows.map((r) => ({ ...r, id: lockedRow(r.id) })) : rows);
+            } else if (isExcluded(item, type) || !item.possible.has(type)) continue;
             else if (from !== undefined) {
                 // A sure method the checker reads as perhaps removing a modifier
                 // the state holds removes it only if it was a crafted one.
@@ -702,8 +748,13 @@ export class Tracker {
                 conds.push({ kind: "not", inner: has });
                 return;
             }
+            if (this.locks) {
+                const locked: RPred = { kind: "fractured", type };
+                conds.push(readRow(row).locked ? locked : { kind: "not", inner: locked });
+            }
             const classes = this.classes[i]!;
             const { base, value } = readRow(row);
+            const bare = unlockedRow(row);
             const leaf = this.valueLeaves.get(type)?.[0];
             if (value !== undefined && leaf !== undefined) {
                 // The row, its value in the part of the range the state holds.
@@ -712,7 +763,7 @@ export class Tracker {
                 conds.push({ ...leaf, op: "<=", value: value[1] });
                 return;
             }
-            const own = classes.find((c) => c.rep === row);
+            const own = classes.find((c) => c.rep === bare);
             if (own !== undefined && own.members.length === 1) {
                 conds.push({ ...has, tierMod: base });
                 return;
@@ -720,7 +771,7 @@ export class Tracker {
             // The rest of the ladder: present, at none of the tiers named apart.
             conds.push(has);
             for (const c of classes) {
-                if (c.rep !== row && c.members.length === 1)
+                if (c.rep !== bare && c.members.length === 1)
                     conds.push({ kind: "not", inner: { ...has, tierMod: c.rep } });
             }
         });
@@ -738,6 +789,23 @@ function removalBeforeFill(ops: readonly Op[]): number {
     const at = ops.findIndex((op) => op.kind === "remove" && op.selector.kind === "random");
     if (at < 0 || ops.slice(0, at).some((op) => op.kind === "fill")) return -1;
     return ops.slice(at + 1).some((op) => op.kind === "fill") ? at : -1;
+}
+
+/** A fractured modifier stays fractured whatever a step does around it. */
+function keepLocks(from: ChainState, out: readonly Outcome[]): readonly Outcome[] {
+    const locked: number[] = [];
+    from.rows.forEach((r, i) => {
+        if (r !== null && readRow(r).locked) locked.push(i);
+    });
+    if (locked.length === 0) return out;
+    return out.map((o) => {
+        const rows = [...o.state.rows];
+        for (const i of locked) {
+            const r = rows[i] ?? null;
+            if (r !== null) rows[i] = lockedRow(r);
+        }
+        return { state: { ...o.state, rows }, prob: o.prob };
+    });
 }
 
 function stateKey(s: ChainState): string {
@@ -783,6 +851,7 @@ export function splitCarried(
         if (leaf.kind === "has" && index.has(leaf.type)) continue;
         if (leaf.kind === "hasGroup" && [...leaf.types].every((t) => index.has(t))) continue;
         if (leaf.kind === "hasValue" && c.valued?.has(leaf.type)) continue;
+        if (leaf.kind === "fractured" && c.locks && index.has(leaf.type)) continue;
         return undefined;
     }
     const yes: Carried["dist"][number][] = [];
@@ -979,6 +1048,11 @@ export function holdsOn(
                 const i = atomIndex.get(t);
                 return i !== undefined && s.rows[i] !== null;
             });
+        case "fractured": {
+            const i = atomIndex.get(pred.type);
+            const row = i === undefined ? null : (s.rows[i] ?? null);
+            return row !== null && readRow(row).locked === true;
+        }
         default:
             return fixed.get(pred) ?? false;
     }

@@ -279,15 +279,21 @@ resolveEssence / resolveBench / resolveHarvestTag`
   off the checker's item after the step (`refine` both ways), and a condition neither
   settles is unknown rather than guessed. `track.ts` is the item the walk follows
   (`Tracker`, one per walk): a `ChainAtom` per modifier type any condition of the guide
-  names, any trace item holds for certain (declared, granted, crafted) or a protecting
-  metamod, its rows grouped into the classes the conditions tell apart (each tier a
-  condition names alone, the rest of the ladder together; `classOf`, `rowsOn`); the
-  states an item settles (`statesIn`, an unnamed `"random"` modifier drawn from the
+  names, any trace item holds for certain (declared, granted, crafted), a protecting
+  metamod, or a veiled placeholder where one may be, its rows grouped into the classes the
+  conditions tell apart (each tier a condition names alone, the rest of the ladder
+  together; a type compared by value per row and per piece of its range between the
+  thresholds, as `row~lo~hi`; a fractured modifier's row ending in `!`, `readRow`;
+  `classesOf`, `rowsOn`); the states an item settles (`statesIn`, an unnamed `"random"` modifier drawn from the
   item's natural pool, `roll.ts` `naturalGroups`, Q75); the checker's item narrowed to a
   state (`narrow`, by `refine`); and where a method takes each state (`transition`: the
   method's roll on the narrowed item, a draw's outcomes by `reforgeOutcomes` with each
   unnamed modifier closing an average unnamed group of its side (`closed`), a removal's by
-  its candidates, a sure method by `runMethod` read back with `statesIn`; cached per state,
+  its candidates, a removal before a fill per modifier it takes, a veiled placeholder on
+  either side with room (`veiledSides`, Q76), an unveil by the option the player takes
+  (`unveiled`, Q78), a Divine Orb by each compared value's pieces (`rerolled`), a
+  Fracturing Orb by its candidates, a sure method by `runMethod` read back with
+  `statesIn`; a fractured modifier stays fractured through every step; cached per state,
   a draw's per the item its fill starts from (`signature`); a state the tracker cannot
   narrow or read back is left as it was and counted in `misses`, which the report notes).
   `chain.ts` solves a loop over that state (`chain`: `ChainStep`s of a `transition`, a

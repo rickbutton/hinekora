@@ -11,6 +11,7 @@ import {
     callStmt,
     cmp,
     craft,
+    fracturedP,
     harvest,
     has,
     hasValue,
@@ -407,6 +408,24 @@ describe("the cost of a guide", () => {
         );
         const branch = report(c).steps.find((s) => s.kind === "if")!;
         expect(branch.branch).toBeCloseTo(0, 9);
+    });
+
+    it("a fractured modifier is one the annuls after never take", () => {
+        // The lock lands on the mana a quarter of the time; otherwise one annul
+        // takes it one time in three among the three left unlocked.
+        const c = craft(
+            ring("rare", ["IncreasedMana1", "IncreasedArmour1"], ["FireResist1", "ColdResist1"]),
+            [
+                op("fracture"),
+                iff(fracturedP("IncreasedMana1"), [op("exalt")]),
+                op("annul"),
+                iff(has("IncreasedMana1"), [stop()]),
+            ],
+        );
+        const steps = report(c).steps.filter((s) => s.kind === "if");
+        expect(steps[0]!.branch).toBeCloseTo(1 / 4, 9);
+        expect(steps[1]!.note).toBeUndefined();
+        expect(steps[1]!.branch).toBeCloseTo(1 / 4 + (3 / 4) * (2 / 3), 9);
     });
 
     it("a Harvest augment keeps what its removal did not take", () => {
