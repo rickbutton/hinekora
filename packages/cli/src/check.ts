@@ -132,7 +132,9 @@ export function costSource(
         out.push(`Not counted: ${report.unpriced.join(", ")}.`);
     }
     if (report.stopped > 0) {
-        out.push(`The craft ends before its last step ${percentage(report.stopped)} of the time.`);
+        out.push(
+            `The craft ends short of a finished item ${percentage(report.stopped)} of the time.`,
+        );
     }
     return { ok: parsed.ok, output: out.join("\n") };
 }

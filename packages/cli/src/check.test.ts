@@ -291,7 +291,7 @@ until has "maximum life" {
             ).output;
         const cobalt = vaal("Cobalt Jewel");
         expect(cobalt).toContain("25% of the time a Vaal Orb turns this jewel into a unique jewel");
-        expect(cobalt).toContain("The craft ends before its last step 25% of the time.");
+        expect(cobalt).toContain("The craft ends short of a finished item 25% of the time.");
         // Only the three basic jewels have a unique to become (Vaal Orb § Jewels).
         expect(vaal("Ghastly Eye Jewel")).not.toContain("The craft ends");
     });

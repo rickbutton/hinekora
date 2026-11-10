@@ -778,7 +778,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                           h(
                               "div",
                               "note",
-                              `ends before its last step ${percentage(report.stopped)} of the time`,
+                              `ends short of a finished item ${percentage(report.stopped)} of the time`,
                           ),
                       ]
                     : []),
@@ -817,7 +817,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                     h(
                         "span",
                         "when",
-                        `ends before its last step ${percentage(report.stopped)} of the time`,
+                        `ends short of a finished item ${percentage(report.stopped)} of the time`,
                     ),
                 );
             }
