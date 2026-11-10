@@ -269,6 +269,21 @@ until has "maximum life" {
         expect(r.output).toContain("Expected spend: nothing this report can count.");
     });
 
+    it("ends the craft where a Vaal Orb turns a jewel into a unique one", () => {
+        const vaal = (base: string) =>
+            costSource(
+                `item { base: "${base}" ilvl: 84 rarity: rare }\nvaal`,
+                "test.craft",
+                registry,
+                prices,
+            ).output;
+        const cobalt = vaal("Cobalt Jewel");
+        expect(cobalt).toContain("25% of the time a Vaal Orb turns this jewel into a unique jewel");
+        expect(cobalt).toContain("The craft ends before its last step 25% of the time.");
+        // Only the three basic jewels have a unique to become (Vaal Orb § Jewels).
+        expect(vaal("Ghastly Eye Jewel")).not.toContain("The craft ends");
+    });
+
     it("costs a guide with errors as written, and says so", () => {
         const r = costSource(
             `item { base: "Iron Ring" ilvl: 84 rarity: magic }\nexalt`,

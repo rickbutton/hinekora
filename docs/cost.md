@@ -12,7 +12,7 @@
 The cost layer reads the same method table and op sequences the checker runs, and
 consumes the checker's output, the trace with the item before every statement, without
 touching a transfer function. Nothing it computes can make the checker accept or refuse
-a step, which keeps the checker a pure soundness tool.
+a step.
 ---
 
 ## 2. How the game rolls
@@ -31,11 +31,14 @@ of the veiled modifier's side where the item says which; the player takes the gu
 target if offered, else a modifier its conditions ask for, else one no one names. A
 value falls as
 [Modifier § Mechanics overview](https://www.poewiki.net/wiki/Modifier#Mechanics_overview)
-has it, a Vaal Orb's outcomes as
-[Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment), a Sanctified
+has it, a corruption's outcomes as
+[Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment),
+[§ Jewels](https://www.poewiki.net/wiki/Vaal_Orb#Jewels) and
+[Locus of Corruption § Possible outcomes](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes),
+the craft ending where the item is destroyed or becomes a unique, a Sanctified
 Fossil's weights as
 [Sanctified Fossil § Further analysis](https://www.poewiki.net/wiki/Sanctified_Fossil#Further_analysis),
-its lucky values not modelled; a Tangled Fossil's roll is not read.
+its lucky values not modelled.
 
 Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entry):
 
@@ -53,6 +56,7 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
 - **Veiled orbs.** The veiled modifier lands on either side with room alike (Q76).
 - **Tainted Exalted Orb.** It adds or removes at even odds, and removes from a full item
   (Q95).
+- **Corruption Altar.** Its reforge gives each of the six influences alike (Q32).
 - **Orb of Conflict.** The line of
   [Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)
   is carried past the gap it states, neither side below one in a hundred (Q96).
@@ -142,8 +146,7 @@ unit price (`cost/prices.ts`, in the step's own currency).
 
 - An **`until`** whose body the tracker can follow
   is not memoryless: each round starts where the last left the item.
-  It is solved as a Markov chain (`cost/chain.ts`) over the tracked state, from the
-  states the loop enters with. The
+  It is solved as a Markov chain (`cost/chain.ts`) over the tracked state. The
   distribution is carried round after round until the mass has left (the exit or a
   stop); once a round hands the next a
   distribution of the same shape, only smaller, the rest is summed as a geometric series.
@@ -154,7 +157,7 @@ unit price (`cost/prices.ts`, in the step's own currency).
   find the chance an attempt ends in the exit or a `stop`; the expected rounds is the
   reciprocal, and the share ending in a stop ends the craft.
 - An **`if`** splits each branch by its condition's chance; a `restart` is back at
-  its loop's head with the item as it is, the checker's meaning; a `stop`, or a
+  its loop's head with the item as it is; a `stop`, or a
   `restart` outside every loop, ends the craft.
 
 Where the model cannot say, the step's note says why. A loop whose rounds have no

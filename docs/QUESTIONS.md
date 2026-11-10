@@ -120,8 +120,9 @@ thread 2147954.)
 implicit, altar access, Vaal Orbs; record each reforge's affix count and marks.
 **Assumed:** the altar four to six, a Vaal Orb six, a jewel three or four without an
 influence; an influenced item any one influence or its own; an eldritch implicit kept
-beside the new influence (the wide reading). **Encoded in:** `check/library.ts`
-`locusOps`, `vaalOps`, `brickBranch`.
+beside the new influence (the wide reading); in the cost, each of the six influences
+alike. **Encoded in:** `check/library.ts` `locusOps`, `vaalOps`, `brickBranch`;
+`cost/track.ts` `byInfluence`.
 
 ### Q33 · probe · open — the Tainted Chaos Orb under a protection, and its rarity
 

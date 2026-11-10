@@ -774,7 +774,13 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                     ? []
                     : [h("div", "note", `${chaosEnds} chaos by what the item may hold`)]),
                 ...(report.stopped > 0
-                    ? [h("div", "note", `ends on a stop ${percentage(report.stopped)} of the time`)]
+                    ? [
+                          h(
+                              "div",
+                              "note",
+                              `ends before its last step ${percentage(report.stopped)} of the time`,
+                          ),
+                      ]
                     : []),
             ];
             const el = costLine("", undefined, () =>
@@ -808,7 +814,11 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
             }
             if (report.stopped > 0) {
                 el.append(
-                    h("span", "when", `ends on a stop ${percentage(report.stopped)} of the time`),
+                    h(
+                        "span",
+                        "when",
+                        `ends before its last step ${percentage(report.stopped)} of the time`,
+                    ),
                 );
             }
             return el;

@@ -657,6 +657,31 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.stuckInside).toBeCloseTo(1, 6);
     });
 
+    it("an outcome that ends the craft counts as a stop", () => {
+        // Each round: the item destroyed one time in four, the exit as often.
+        const solved = chain({
+            atoms: [],
+            body: [
+                {
+                    id: 0,
+                    kind: "transition",
+                    next: (s) => [
+                        { state: s, prob: 1 / 4, ends: true },
+                        { state: at(0, 0), prob: 1 / 4 },
+                        { state: s, prob: 1 / 2 },
+                    ],
+                },
+            ],
+            starts: [{ state: at(1, 0), weight: 1 }],
+            caps: CAPS,
+            exit: (s) => s.prefix === 0,
+        })!;
+        expect(solved.stop).toBeCloseTo(1 / 2, 9);
+        expect(solved.exit).toBeCloseTo(1 / 2, 9);
+        expect(solved.passes).toBeCloseTo(2, 9);
+        expect(solved.unresolved).toBeCloseTo(0, 9);
+    });
+
     it("a body that changes nothing is not a chain", () => {
         expect(
             chain({

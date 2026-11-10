@@ -801,21 +801,26 @@ describe("the cost of a guide", () => {
         expect(loop.unknown).toBe(true);
     });
 
-    it("a step that cannot be followed ends what the roll before it says of the item", () => {
-        // The Corruption Altar may reforge or destroy the item: the Chaos
-        // Orb's roll no longer says whether it has the life.
-        const after = (...steps: string[]) =>
-            report(
-                craft(ring("rare"), [
-                    ...steps.map((s) => op(s)),
-                    iff(has("maximum life", 1), [stop()]),
-                ]),
-            ).steps.find((s) => s.kind === "if")!;
-        const rolled = after("chaos");
-        expect(rolled.note).toBeUndefined();
-        const altered = after("chaos", "locus");
-        expect(altered.note).toMatch(/not known/);
-        expect(altered.branch).not.toBeCloseTo(rolled.branch!, 6);
+    it("the Corruption Altar's four outcomes are each as likely, one of them the item destroyed", () => {
+        const r = report(
+            craft(ring("rare", ["IncreasedLife1"], ["FireResist1"]), [
+                op("locus"),
+                iff(has("maximum life", 1), [stop()]),
+                iff(cmp("suffixCount", "==", 1), [stop()]),
+            ]),
+        );
+        const [kept, untouched] = r.steps.filter((s) => s.kind === "if");
+        expect(r.steps[0]!.note).toMatch(/25% of the time the Corruption Altar destroys the item/);
+        // The craft goes on three times in four: two outcomes leave the life,
+        // and the reforge rolls it now and then.
+        expect(kept!.reached).toBeCloseTo(3 / 4, 9);
+        expect(kept!.note).toBeUndefined();
+        expect(kept!.branch).toBeGreaterThan(2 / 3);
+        expect(kept!.branch).toBeLessThan(1);
+        // What is left without the life is the reforge, of four modifiers or more.
+        expect(untouched!.branch).toBeLessThan(0.5);
+        expect(r.stopped).toBeGreaterThan(1 / 4 + 2 / 4);
+        expect(r.stopped).toBeLessThan(1);
     });
 
     it("a Vaal Orb's four outcomes are each as likely, one of them a reforge", () => {
@@ -1026,6 +1031,22 @@ describe("the eldritch implicits", () => {
         const loop = r.steps.find((s) => s.kind === "until")!;
         expect(loop.note).toBeUndefined();
         expect(loop.attempts!.chance).toBeCloseTo(1 / 3, 9);
+    });
+
+    it("a step that cannot be followed ends what the roll before it says of the item", () => {
+        // A Vaal Orb may replace the implicit, which no state can then hold,
+        // or reforge the item: the Chaos Orb's roll no longer says whether it
+        // has the life.
+        const after = (...steps: string[]) =>
+            on({ exarch: "greater" }, [
+                ...steps.map((s) => op(s)),
+                iff(has("IncreasedLife1"), [stop()]),
+            ]).steps.find((s) => s.kind === "if")!;
+        const rolled = after("chaos");
+        expect(rolled.note).toBeUndefined();
+        const altered = after("chaos", "vaal");
+        expect(altered.note).toMatch(/not known/);
+        expect(altered.branch).not.toBeCloseTo(rolled.branch!, 6);
     });
 
     it("an implicit a Vaal Orb may replace is not taken as kept", () => {

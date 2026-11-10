@@ -24,9 +24,11 @@ import { advance, chain, type ChainState, type ChainStep } from "./chain.js";
 import { guaranteedTypes, isExcluded, rarityOf, sideCap, suffixRange } from "../check/astate.js";
 import { addPrices, inChaos, type Price, type Prices, unitCost } from "./prices.js";
 import { type Reading, type Roll, rollOf, unmodelled, withPresent } from "./roll.js";
+import { percentage } from "./words.js";
 import {
-    ASSUMED_ODDS,
+    assumedOdds,
     type Carried,
+    ending,
     genOfOn,
     holdsOn,
     predLeaves,
@@ -84,7 +86,8 @@ export interface CostReport {
     /** The items the snapshot could not price; a step whose price is unknown says
      *  so in its own note. */
     readonly unpriced: readonly string[];
-    /** The chance the craft ends on a `stop` before its last step. */
+    /** The chance the craft ends before its last step: on a `stop`, or on an
+     *  outcome that destroys the item or turns it into another. */
     readonly stopped: number;
     /** Some loop's rounds are not known: `total` leaves its steps out, and no
      *  figure in Chaos Orbs is given. */
@@ -119,7 +122,7 @@ const BRANCH_LIMIT = 12;
 interface Frame {
     /** The expected runs of one pass through the enclosing sequence. */
     readonly scale: number;
-    /** Mass ending the craft (`stop`), per pass. */
+    /** Mass ending the craft (a `stop`, an outcome that ends it), per pass. */
     stopped: number;
     /** Mass a `restart` sent back to the head of the loop around it. */
     restarted: number;
@@ -628,21 +631,35 @@ class Walker {
         const moved = missed ? undefined : carried;
         const built = method.build(literals, entry.before, this.registry);
         const cause = "refused" in built ? undefined : unmodelled(built);
+        // An outcome that destroys the item or turns it into another ends the
+        // craft on its share of the uses, followed by state or not.
+        const end = "refused" in built ? undefined : ending(words, built, entry.before);
+        const assumed = "refused" in built ? undefined : assumedOdds(words, built);
         const notes = [
             ...(unit === undefined ? [`${words}: no price is known for this step`] : []),
             ...(cause !== undefined ? [cause] : missed ? [MISSED] : []),
-            ...(!missed && ASSUMED_ODDS[words] !== undefined ? [ASSUMED_ODDS[words]] : []),
+            ...(!missed && assumed !== undefined ? [assumed] : []),
+            ...(end !== undefined ? [`${percentage(end.share)} of the time ${end.note}`] : []),
         ];
         this.record(stmt, massOf(branches), frame, {
             ...(unit !== undefined ? { unit } : {}),
             ...(notes.length > 0 && { note: notes.join("; ") }),
         });
-        if ("refused" in built || entry.after === undefined) return withoutStates(branches);
+        const ended = branches.map((_b, i) => moved?.[i]?.ended ?? end?.share ?? 0);
+        frame.stopped += branches.reduce((sum, b, i) => sum + b.mass * ended[i]!, 0);
+        const live = branches.map((b, i) => ({ ...b, mass: b.mass * (1 - ended[i]!) }));
+        if ("refused" in built || entry.after === undefined) return withoutStates(live);
         const roll = rollOf(entry.before, built, this.registry, this.reading);
         if (roll.kind !== "none") {
             // A new roll: every way of getting here is one way of being after it.
-            const mass = massOf(branches);
-            const merged = moved === undefined ? undefined : mixture(moved, branches);
+            const mass = massOf(live);
+            const merged =
+                moved === undefined
+                    ? undefined
+                    : mixture(
+                          moved.map((m) => m.states),
+                          live,
+                      );
             return [
                 {
                     mass,
@@ -653,19 +670,19 @@ class Walker {
         }
         if (moved !== undefined) {
             const after = entry.after;
-            return branches.map((b, i) => ({
+            return live.map((b, i) => ({
                 mass: b.mass,
                 path:
                     b.path === undefined || stmt.words[0] !== "bench"
                         ? b.path
                         : this.benchOnPath(b.path, literals, after),
-                states: moved[i]!,
+                states: moved[i]!.states,
             }));
         }
         // The step changed the item: where a loop left it is no longer where it is.
         if (stmt.words[0] === "bench") {
             const after = entry.after;
-            return branches.map((b) => ({
+            return live.map((b) => ({
                 mass: b.mass,
                 path: b.path === undefined ? undefined : this.benchOnPath(b.path, literals, after),
             }));
@@ -673,25 +690,29 @@ class Walker {
         // A step that could not be followed changed the item in ways the roll
         // before it does not show: what that roll left is no longer the item.
         const stale = missed || cause !== undefined;
-        return branches.map((b) => ({ mass: b.mass, path: stale ? undefined : b.path }));
+        return live.map((b) => ({ mass: b.mass, path: stale ? undefined : b.path }));
     }
 
-    /** Each branch's states after a method; undefined when a branch has none or
-     *  the tracker cannot follow the method. */
+    /** Each branch's states after a method, and the share of the branch on
+     *  which the method ended the craft; undefined when a branch has no states
+     *  or the tracker cannot follow the method. */
     private moved(
         stmt: Extract<Stmt, { kind: "operation" }>,
         entry: TraceEntry,
         branches: readonly Branch[],
-    ): Carried[] | undefined {
+    ): { states: Carried; ended: number }[] | undefined {
         const tracker = this.tracker;
         if (tracker === undefined || entry.after === undefined) return undefined;
         if (branches.some((b) => b.states === undefined)) return undefined;
         const step = this.methodStep(stmt, 0);
         if (step === undefined) return undefined;
         const caps = capsOf(entry.after);
-        return branches.map((b) =>
-            tracker.carried(advance(step, b.states!.dist, tracker.atoms, caps)),
-        );
+        return branches.map((b) => {
+            const { states, ended } = advance(step, b.states!.dist, tracker.atoms, caps);
+            const left = states.reduce((sum, s) => sum + s.weight, 0);
+            const dist = left > 0 ? states.map((s) => ({ ...s, weight: s.weight / left })) : [];
+            return { states: tracker.carried(dist), ended: ended / (ended + left || 1) };
+        });
     }
 
     private branchStmt(
@@ -1227,7 +1248,7 @@ class Walker {
                             suffix: o.state.suffix,
                             rows: o.state.rows,
                         };
-                        return { prob: o.prob, state: { ...held, held } };
+                        return { ...o, state: { ...held, held } };
                     });
                     kept.set(state, out);
                 }

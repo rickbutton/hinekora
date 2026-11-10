@@ -14,6 +14,7 @@ import {
     dominantOf,
     eldritchKey,
     eldritchOf,
+    influenceSetsOfSize,
     NO_ELDRITCH,
 } from "../model/marks.js";
 import type { Range } from "../check/domain.js";
@@ -133,23 +134,26 @@ const CONFLICT_FLOOR = 0.01;
 
 type Outcomes = readonly (readonly Op[])[];
 
+/** Four outcomes, each as likely: the ones that change nothing the item block
+ *  names (a socket's colour, no effect, an outcome the base cannot take) are
+ *  the empty branch, which holds what the others leave of the four. */
+const fourAlike = (branches: Outcomes): readonly number[] =>
+    branches.map((b) => (b.length === 0 ? 4 - (branches.length - 1) : 1));
+
 /**
  * How likely each outcome of a method with several is, by the method's words,
  * as weights over its `either` branches on the item it is used on; undefined
- * where the odds are not known or an outcome ends the craft, which the tracker
- * does not hold.
+ * where the odds are not known.
  */
 const OUTCOME_ODDS: Readonly<
     Record<string, (branches: Outcomes, item: AItem) => readonly number[] | undefined>
 > = {
-    // Four outcomes, each as likely (Vaal Orb § Equipment, § Jewels): a new
-    // implicit, the reforge, and two that change nothing the item block
-    // names, a socket's colour and no effect. An outcome the base cannot take
-    // (a reforge of a base that cannot be Rare) is no effect too.
-    vaal: (branches) =>
-        branches.some((b) => b.some((op) => op.kind === "end"))
-            ? undefined
-            : branches.map((b) => (b.length === 0 ? 4 - (branches.length - 1) : 1)),
+    // Vaal Orb § Equipment, § Jewels: a new implicit, the reforge, and on the
+    // three basic jewels a unique jewel, on which the craft ends.
+    vaal: fourAlike,
+    // Locus of Corruption § Possible outcomes: two new implicits, the
+    // influenced reforge, and the item destroyed, on which the craft ends.
+    locus: fourAlike,
     // No source gives the odds: adding and removing are taken alike, and a
     // full item, with nothing to add, as losing a modifier (`ASSUMED_ODDS`).
     "tainted exalt": (branches, item) => {
@@ -159,10 +163,68 @@ const OUTCOME_ODDS: Readonly<
 };
 
 /** What a step whose odds no source states is taken to do, for its note. */
-export const ASSUMED_ODDS: Readonly<Record<string, string>> = {
+const ASSUMED_ODDS: Readonly<Record<string, string>> = {
     "tainted exalt":
         "a Tainted Exalted Orb is taken to add or remove a modifier at even odds, and to remove one from a full item; no source states its odds",
+    locus: "the Corruption Altar's reforge is taken to give each of the six influences alike; no source states which it gives",
 };
+
+/** The note of a step that, as built, rests on odds no source states. */
+export function assumedOdds(method: string, ops: readonly Op[]): string | undefined {
+    const marks = ops.some(
+        (op) => op.kind === "either" && op.branches.some((b) => byInfluence(b).length > 1),
+    );
+    return method === "locus" && !marks ? undefined : ASSUMED_ODDS[method];
+}
+
+/** How a step ends the craft on one of its outcomes, for its note. */
+const ENDINGS: Readonly<Record<string, string>> = {
+    vaal: "a Vaal Orb turns this jewel into a unique jewel, which ends the craft there",
+    locus: "the Corruption Altar destroys the item, which ends the craft there",
+};
+
+function endsCraft(branch: readonly Op[]): boolean {
+    return branch.some((op) => op.kind === "end");
+}
+
+/**
+ * The share of a method's uses that end the craft (the item destroyed, or
+ * turned into another), with the words that say so; undefined for a method
+ * with no such outcome or whose odds are not known.
+ */
+export function ending(
+    method: string,
+    ops: readonly Op[],
+    item: AItem,
+): { readonly share: number; readonly note: string } | undefined {
+    const either = ops.find((op) => op.kind === "either");
+    if (either?.kind !== "either") return undefined;
+    const odds = OUTCOME_ODDS[method]?.(either.branches, item);
+    const note = ENDINGS[method];
+    if (odds === undefined || note === undefined) return undefined;
+    let ends = 0;
+    let total = 0;
+    either.branches.forEach((b, i) => {
+        total += odds[i]!;
+        if (endsCraft(b)) ends += odds[i]!;
+    });
+    return ends > 0 ? { share: ends / total, note } : undefined;
+}
+
+/**
+ * An outcome that marks the item with "any one influence" (the Corruption
+ * Altar's reforge) as one outcome an influence, each alike (`ASSUMED_ODDS`),
+ * so each reforge draws from the pool its influence gives.
+ */
+function byInfluence(branch: readonly Op[]): (readonly Op[])[] {
+    const at = branch.findIndex((op) => op.kind === "influence" && op.change.kind === "anyOne");
+    if (at < 0) return [branch];
+    return influenceSetsOfSize(1).map((key) => [
+        ...branch.slice(0, at),
+        { kind: "influence", change: { kind: "set", key } },
+        ...branch.slice(at + 1),
+    ]);
+}
 
 /** Rows a condition tells apart: one named tier, or the rest of a ladder. */
 interface RowClass {
@@ -521,10 +583,19 @@ export class Tracker {
         const out: Outcome[] = [];
         for (let b = 0; b < either.branches.length; b++) {
             if (!(odds[b]! > 0)) continue;
-            const taken = [...ops.slice(0, at), ...either.branches[b]!, ...ops.slice(at + 1)];
-            const next = this.outcomesOn(item, taken, state, reading);
-            if (next === undefined) return undefined;
-            for (const o of next) out.push({ state: o.state, prob: (o.prob * odds[b]!) / total });
+            const share = odds[b]! / total;
+            if (endsCraft(either.branches[b]!)) {
+                out.push({ state, prob: share, ends: true });
+                continue;
+            }
+            const ways = byInfluence(either.branches[b]!);
+            for (const way of ways) {
+                const taken = [...ops.slice(0, at), ...way, ...ops.slice(at + 1)];
+                const next = this.outcomesOn(item, taken, state, reading);
+                if (next === undefined) return undefined;
+                for (const o of next)
+                    out.push({ state: o.state, prob: (o.prob * share) / ways.length });
+            }
         }
         return out;
     }
@@ -1241,7 +1312,7 @@ function keepAcross(
             if (r !== null) rows[i] = lockedRow(r);
         }
         for (const i of implicitAtoms) rows[i] = from.rows[i] ?? null;
-        return { state: { ...o.state, rows }, prob: o.prob };
+        return { ...o, state: { ...o.state, rows } };
     });
 }
 
@@ -1279,7 +1350,7 @@ function besideImprint(
         }
         let withHeld = byOut.get(out);
         if (withHeld === undefined) {
-            withHeld = out.map((o) => ({ prob: o.prob, state: { ...o.state, held } }));
+            withHeld = out.map((o) => ({ ...o, state: { ...o.state, held } }));
             byOut.set(out, withHeld);
         }
         return withHeld;

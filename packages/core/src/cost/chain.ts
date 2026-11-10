@@ -91,10 +91,13 @@ export type ChainStep =
     /** A step the chain's state does not depend on. */
     | { readonly id: number; readonly kind: "other" };
 
-/** One way a reforge leaves the item, with its probability. */
+/** One way a step leaves the item, with its probability. */
 export interface Outcome {
     readonly prob: number;
     readonly state: ChainState;
+    /** The craft ends on this outcome: the item is destroyed, or no longer
+     *  the one being crafted. */
+    readonly ends?: true;
 }
 
 export interface ChainInput {
@@ -612,22 +615,24 @@ function addScaled(t: Totals, was: Totals, factor: number): void {
 
 /**
  * One step outside a loop: where it takes each of the states, their weights
- * carried. A restart, a stop or a branch is the walk's to split, not a step's.
+ * carried, and the weight on which it ends the craft. A restart, a stop or a
+ * branch is the walk's to split, not a step's.
  */
 export function advance(
     step: ChainStep,
     states: readonly { readonly state: ChainState; readonly weight: number }[],
     atoms: readonly ChainAtom[],
     caps: Readonly<Record<Gen, number>>,
-): { state: ChainState; weight: number }[] {
+): { states: { state: ChainState; weight: number }[]; ended: number } {
     const alive: Dist = new Map();
     for (const { state, weight } of states) put(alive, state, weight);
     const input: ChainInput = { atoms, body: [], starts: [], caps, exit: () => false };
     const t = totals();
-    return [...apply(step, alive, input, t).values()].map((e) => ({
+    const out = [...apply(step, alive, input, t).values()].map((e) => ({
         state: e.state,
         weight: e.prob,
     }));
+    return { states: out, ended: t.stop };
 }
 
 function run(steps: readonly ChainStep[], alive: Dist, input: ChainInput, t: Totals): Dist {
@@ -688,15 +693,12 @@ function apply(step: ChainStep, alive: Dist, input: ChainInput, t: Totals): Dist
                 byOutcomes.set(out, (byOutcomes.get(out) ?? 0) + prob);
             }
             const next: Dist = new Map();
-            for (const [out, mass] of byOutcomes) {
-                for (const o of out) put(next, o.state, mass * o.prob);
-            }
+            for (const [out, mass] of byOutcomes) spread(out, mass, next, t);
             return next;
         }
         case "reforge": {
             const next: Dist = new Map();
-            const mass = massOf(alive);
-            for (const o of step.outcomes) put(next, o.state, mass * o.prob);
+            spread(step.outcomes, massOf(alive), next, t);
             return next;
         }
         case "bench": {
@@ -722,6 +724,14 @@ function apply(step: ChainStep, alive: Dist, input: ChainInput, t: Totals): Dist
             return removeStep(step, alive, input);
         case "add":
             return addStep(step, alive, input);
+    }
+}
+
+/** `mass` over a step's outcomes: the ones that end the craft count as a stop. */
+function spread(out: readonly Outcome[], mass: number, next: Dist, t: Totals): void {
+    for (const o of out) {
+        if (o.ends) t.stop += mass * o.prob;
+        else put(next, o.state, mass * o.prob);
     }
 }
 
