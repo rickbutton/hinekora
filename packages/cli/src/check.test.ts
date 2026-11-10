@@ -107,6 +107,59 @@ if has "maximum life" { exalt }`);
         expect(r.output).toMatch(/\{ Fractured [^\n]*\}\n *[^\n]*to Damage over Time Multiplier\n/);
         expect(r.output).toContain("  --------\n  Fractured Item");
     });
+
+    // A Shaper Laminated Kite Shield of item level 85, copied from the game
+    // with the advanced tooltip on (patch 3.29): each tier below is the number
+    // its modifier's header showed.
+    const shield = (ilvl: number, suffixes: string) => `item {
+    base:       "Laminated Kite Shield"
+    ilvl:       ${ilvl}
+    rarity:     rare
+    influences: shaper
+    prefixes:   [ "armour maximum life" t3, "maximum mana" t7, "maximum life" t8 ]
+    suffixes:   [ ${suffixes} ]
+    corrupted
+}`;
+
+    it("numbers a real item's tiers as the game's advanced tooltip does", () => {
+        const r = run(
+            shield(
+                85,
+                `"maximum lightning resistance" t3, "intelligence" t1, "fire resistance" t8`,
+            ),
+        );
+        expect(r.ok).toBe(true);
+        for (const header of [
+            `{ Prefix Modifier "Oyster's" (Tier: 3) `,
+            `{ Prefix Modifier "Aqua" (Tier: 7) `,
+            `{ Prefix Modifier "Stalwart" (Tier: 8) `,
+            `{ Suffix Modifier "of Impedance" (Tier: 3) `,
+            `{ Suffix Modifier "of the Genius" (Tier: 1) `,
+            `{ Suffix Modifier "of the Whelpling" (Tier: 8) `,
+        ]) {
+            expect(r.output).toContain(header);
+        }
+    });
+
+    it("keeps those numbers on an item whose level stops short of the best tiers", () => {
+        // At item level 68 no currency rolls the mana or life above 60 and 64,
+        // nor the level-82 Intelligence; the rows below keep their numbers.
+        const r = run(shield(68, `"maximum lightning resistance" t3, "fire resistance" t8`));
+        expect(r.ok).toBe(true);
+        expect(r.output).toContain(`{ Prefix Modifier "Aqua" (Tier: 7) `);
+        expect(r.output).toContain(`{ Prefix Modifier "Stalwart" (Tier: 8) `);
+        expect(r.output).toContain(`{ Suffix Modifier "of Impedance" (Tier: 3) `);
+        const genius = run(
+            shield(
+                68,
+                `"maximum lightning resistance" t3, "intelligence" t1, "fire resistance" t8`,
+            ),
+        );
+        expect(genius.ok).toBe(false);
+        expect(genius.output).toContain(
+            'Tier 1 "intelligence" needs item level 82; this item is level 68.',
+        );
+    });
 });
 
 describe("costSource — what a guide is expected to spend", () => {

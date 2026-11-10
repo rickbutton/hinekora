@@ -532,7 +532,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["harvest", "change"],
         args: [name("mod"), name("mod")],
-        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier (a penetration or a damage over time multiplier too) into the same modifier of another element, at the same tier, even one the item\'s level does not roll: no t<n> names that tier, so test its value. Refused for a critical strike multiplier, for a modifier the other element has no form of, for a fractured modifier or one on a side a metamod protects, and where another modifier of the new one\'s group is on the item.',
+        doc: 'harvest change "<mod>" "<mod>" — change a fire, cold or lightning resistance or damage modifier (a penetration or a damage over time multiplier too) into the same modifier of another element, at the same tier, even one the item\'s level does not roll. Refused for a critical strike multiplier, for a modifier the other element has no form of, for a fractured modifier or one on a side a metamod protects, and where another modifier of the new one\'s group is on the item.',
         build: ([from, to], a, registry) => harvestChange(text(from), text(to), a, registry),
     },
     {

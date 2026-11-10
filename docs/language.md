@@ -50,7 +50,7 @@ item {
   is rejected at `rare` ([Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare)).
 - `prefixes` / `suffixes` list the affixes. A starting item is concrete, so each named
   affix **pins a tier**: a mod name with `t<n>` (§2) or an exact mod id; a bare name is
-  accepted only where a single tier rolls. `"random"` (or `"?"`) is an anonymous affix:
+  accepted only where the item's level rolls a single tier. `"random"` (or `"?"`) is an anonymous affix:
   counted, not named, and any natural modifier of its side the item could roll, so a `has`
   may be it and a bench craft of its group may clash with it. More affixes than the base
   allows at the rarity, or a mod on the wrong side, is an error.
@@ -101,13 +101,13 @@ An unknown or ambiguous name is reported on the item block before any step is ch
 ## 2. Names
 
 **Currencies** are written by their short name (`chaos`, `alteration`), as completion offers
-them; there are no other aliases.
+them.
 
 **Mods** are written as a stat description and name a modifier type, every tier of it. A
 query word matches an entry word exactly or as a prefix of at least three letters, so
 `"max life"` finds "maximum Life". Only the types that can roll on the base at its item level
-are candidates, then those an unveil or the bench puts on its class, which is how a metamod
-is named (`has "suffixes cannot be changed"`). Guide spellings are read as the game's
+are candidates, then those its level stops short of, then those an unveil or the bench puts
+on its class, which is how a metamod is named (`has "suffixes cannot be changed"`). Guide spellings are read as the game's
 first (`"max es"`, `"+1 gems"`, `"flat phys"`); the table is `packages/data/src/aliases.ts`.
 An exact mod id (`IncreasedLife5`) always resolves. Matches rank by the share of a type's
 wording the query covers, the best taken; a tie at the top is an error listing the tied
@@ -117,11 +117,13 @@ types:
 Ambiguous name "res" — candidates: fire resistance, cold resistance, lightning resistance.
 ```
 
-**Tiers.** `t<n>` names a tier, T1 the best. The game stores no tier numbers, only each
-row's [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level); hinekora numbers the
-rows of a type that can roll on this base at this item level, best first. So `t1` on a ring
-is a different row from `t1` on body armour, and may differ from the in-game display, which
-numbers tiers across all bases. A tier that cannot roll here is an error.
+**Tiers.** `t<n>` is the tier the game's advanced tooltip shows, `t1` the modifier's Tier 1
+on that base: its rows that roll on the base, counted best first by
+[mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level), whatever the item's level. So
+`t1` on a ring is a different row from `t1` on body armour. The item's level decides which
+tiers a currency can roll, not their numbers. A tier above it is an error in the item block;
+in a condition no currency meets it, though an essence or a Harvest change may. A number
+past the ladder is an error.
 
 ---
 
@@ -208,9 +210,7 @@ number `1`).
 
 A step parameter is bound at the call to one statement or a `{ … }` block, which runs where
 the parameter is written, as if pasted there (a `restart` in it re-enters the `until`
-enclosing that point). A parameter shadows a method word of the same name. Hovering a step
-written in a call's argument shows what it does but no item, since it may run many times
-inside the function.
+enclosing that point). A parameter shadows a method word of the same name.
 
 ```
 def anyEleRes(t) = has "fire res" t or has "cold res" t or has "lightning res" t
@@ -284,7 +284,8 @@ the game's copy-to-clipboard text is, with tier ranges, "one of these" groups an
 marks where the item is not certain.
 
 - **Names**: an unknown or ambiguous base, mod, currency, essence, bench craft or harvest
-  tag; a mod without a tier in the item block; a tier that cannot roll here.
+  tag; a mod without a tier in the item block; a tier past the ladder, or in the item block
+  above the item's level.
 - **Requirements**: the step does not fit the item on some path (§3).
 - **Control**: a loop that can never exit or whose body never runs; a branch that can never
   run; a def with conflicting, unused or repeated parameters, recursion, or a predicate

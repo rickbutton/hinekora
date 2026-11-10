@@ -51,9 +51,8 @@ export interface ModView {
     readonly text: string;
     /** The affix name ("Virile"), when the tier is known. */
     readonly name?: string;
-    /** The tier numbers the modifier may be, T1 the best that rolls here; a row
-     *  above the item's level (an essence's, a Harvest change's) is numbered
-     *  on the whole ladder. */
+    /** The tier numbers the modifier may be, as the game's advanced tooltip
+     *  numbers them: over the modifier's whole ladder on the base. */
     readonly tier?: Range;
     /** The modifier's category tags, as the advanced tooltip shows them. */
     readonly tags: readonly string[];
@@ -218,13 +217,8 @@ function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: Mod
     const known = a.values.get(type);
     const span = texts.length > 0 ? rollSpan(texts) : registry.typeLabel(type);
     const text = known === undefined ? span : withValue(span, known);
-    // A natural row above the item's level is an essence's or a Harvest
-    // change's: no row that rolls here ranks it, so it takes its number on the
-    // modifier's whole ladder.
-    const whole = tierLadder(registry.catalog, a.base, type, tags);
-    const numbers = mods
-        .map((m) => tierNumber(rollable, m.id) ?? tierNumber(whole, m.id))
-        .filter((n) => n !== undefined);
+    const ladder = tierLadder(registry.catalog, a.base, type, tags);
+    const numbers = mods.map((m) => tierNumber(ladder, m.id)).filter((n) => n !== undefined);
     const tagSet = new Set<string>();
     for (const m of mods) for (const t of m.implicitTags) tagSet.add(tagLabel(t));
     const one = mods.length === 1 ? mods[0]! : undefined;

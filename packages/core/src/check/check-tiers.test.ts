@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { rollableTiers } from "../resolve/tiers.js";
+import { rollableTiers, tierLadder } from "../resolve/tiers.js";
 import { andp, craft, has, iff, item, notp, op, orp, until } from "../__fixtures__/ast.js";
 import { FIRE_RES_TIERED, MAXLIFE_T1, RING_BASE, TIERED_CATALOG } from "../__fixtures__/mods.js";
 import type { TypeId } from "../model/ids.js";
@@ -70,6 +70,76 @@ describe("checker — fuzzy names in predicates and item blocks", () => {
         expect(check(c, ctx).diagnostics.some((d) => d.message.includes("out of range"))).toBe(
             true,
         );
+    });
+});
+
+describe("tier numbers, whatever the item's level", () => {
+    // Life's tiers unlock at levels 60, 30 and 1. The game numbers them over the
+    // whole ladder, so an item of level 40 has no Tier 1 and its best is Tier 2.
+    const LIFE = MAXLIFE_T1.type;
+    const ringAt = (
+        ilvl: number,
+        prefixes: readonly (string | { mod: string; tier?: number })[] = [],
+    ) => item({ base: "IronRing", ilvl, rarity: "rare", prefixes });
+
+    it("names the same row at every item level", () => {
+        expect(tierLadder(TIERED_CATALOG, RING_BASE, LIFE).map((m) => m.id)).toEqual([
+            "MaxLifeHigh",
+            "MaxLifeMid",
+            "MaxLifeLow",
+        ]);
+        for (const ilvl of [40, 100]) {
+            const r = check(craft(ringAt(ilvl, [{ mod: "maximum life", tier: 2 }]), []), ctx);
+            expect(r.diagnostics).toEqual([]);
+            expect(r.finalState!.tiers.get(LIFE)).toEqual(new Set(["MaxLifeMid"]));
+        }
+    });
+
+    it("refuses a declared tier the item's level cannot roll, saying the level it needs", () => {
+        const r = check(craft(ringAt(40, [{ mod: "maximum life", tier: 1 }]), []), ctx);
+        expect(r.diagnostics.map((d) => d.message)).toEqual([
+            'Tier 1 "maximum life" needs item level 60; this item is level 40.',
+        ]);
+    });
+
+    it("refuses a tier beyond the ladder", () => {
+        const r = check(craft(ringAt(40, [{ mod: "maximum life", tier: 4 }]), []), ctx);
+        expect(r.diagnostics[0]!.message).toContain(
+            'tier 4 is out of range for "maximum life" (it has 3 tiers on this base)',
+        );
+    });
+
+    it("reads a bare name as the one tier the item's level rolls", () => {
+        const r = check(craft(ringAt(10, ["maximum life"]), []), ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(LIFE)).toEqual(new Set(["MaxLifeLow"]));
+        const two = check(craft(ringAt(40, ["maximum life"]), []), ctx);
+        expect(two.diagnostics[0]!.message).toContain('(e.g. `"maximum life" t2`)');
+    });
+
+    it("says a loop waiting on a tier no currency rolls here can never exit, and why", () => {
+        const c = craft(ringAt(40), [until(has("maximum life", 1), [op("chaos")])]);
+        expect(check(c, ctx).diagnostics.map((d) => d.message)).toEqual([
+            'this loop can never exit: has "maximum life" t1 can never become true here — Tier 1 "maximum life" needs item level 60; this item is level 40',
+        ]);
+        // The best tier the level rolls is reached.
+        const best = craft(ringAt(40), [until(has("maximum life", 2), [op("chaos")])]);
+        expect(check(best, ctx).diagnostics).toEqual([]);
+    });
+
+    it("gives the level as the reason only where the tier is waited for", () => {
+        const never = craft(ringAt(40), [op("exalt"), iff(has("maximum life", 1), [op("annul")])]);
+        expect(check(never, ctx).diagnostics[0]!.message).toContain(
+            'is impossible here — Tier 1 "maximum life" needs item level 60',
+        );
+        const absent = craft(ringAt(40), [
+            op("exalt"),
+            iff(notp(has("maximum life", 1)), [], [op("annul")]),
+        ]);
+        const messages = check(absent, ctx).diagnostics.map((d) => d.message);
+        expect(messages).toHaveLength(1);
+        expect(messages[0]).toContain("always holds here");
+        expect(messages[0]).not.toContain("item level");
     });
 });
 

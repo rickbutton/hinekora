@@ -491,7 +491,30 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
         expect(isExcluded(r.finalState!, FIRE)).toBe(true);
     });
 
-    it("leaves a modifier whose value a guide can test, its tier having no number", () => {
+    it("leaves a modifier a guide can test by its tier", () => {
+        // The level-26 cold resistance is the ladder's second tier, at any item
+        // level. Seen in game: the changed modifier of a level-25 body armour
+        // shows "Tier: 6", its place among the eight the base rolls.
+        const r = known(25, "FireTiers24", "ColdTiers1", [iff(has("ColdTiers1", 2), [], [stop()])]);
+        expect(r.diagnostics).toHaveLength(1);
+        expect(r.diagnostics[0]!.message).toContain("always holds here");
+        expect(r.diagnostics[0]!.message).not.toContain("item level");
+    });
+
+    it("leaves that tier out of a currency's reach all the same", () => {
+        // No Chaos Orb rolls the level-26 cold resistance at item level 25.
+        const r = check(
+            craft(item({ base: "Iron Ring", ilvl: 25, rarity: "rare" }), [
+                until(has("ColdTiers1", 2), [op("chaos")]),
+            ]),
+            { registry: offset },
+        );
+        expect(r.diagnostics[0]!.message).toBe(
+            'this loop can never exit: has "ColdTiers1" t2 can never become true here — Tier 2 "ColdTiers1" needs item level 26; this item is level 25',
+        );
+    });
+
+    it("leaves a modifier a guide can test by its value", () => {
         // The cold resistance is +(18-23)%: at least 18 on every path.
         const r = known(25, "FireTiers24", "ColdTiers1", [
             iff(hasValue("ColdTiers1", ">=", 18), [], [stop()]),
@@ -596,15 +619,15 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
             baseAliases: { "Iron Ring": "IronRing" },
             benchCrafts: [{ mod: benchFire.id, tier: 1, itemClasses: new Set([CLASS_RING]) }],
         });
-        // The fire is the bench's on one path and the best tier that rolls on
-        // the other. The bench has no cold craft here, so its fire becomes a
+        // The fire is the bench's on one path and the best tier that rolls, the
+        // ladder's second, on the other. The bench has no cold craft here, so its fire becomes a
         // cold that rolls; the tier becomes the cold of its rank.
         const r = check(
             craft(item({ base: "Iron Ring", ilvl: 25, rarity: "rare", prefixes: ["random"] }), [
                 iff(
                     has("IncreasedMana1"),
                     [bench("fire resistance")],
-                    [until(has("FireTiers1", 1), [op("chaos")])],
+                    [until(has("FireTiers1", 2), [op("chaos")])],
                 ),
                 iff(notp(has("ColdTiers1")), [harvestChange("FireTiers1", "ColdTiers1")], [stop()]),
             ]),

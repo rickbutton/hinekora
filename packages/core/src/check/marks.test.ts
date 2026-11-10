@@ -73,7 +73,7 @@ describe("influence", () => {
             rarity: "rare",
             suffixes: [{ mod: "Hunter ring suffix", tier: 1 }],
         });
-        expect(messages(craft(plain, [])).join("\n")).toMatch(/only 0 tiers roll here/);
+        expect(messages(craft(plain, [])).join("\n")).toMatch(/it has 0 tiers on this base/);
     });
 
     it("reads a two-influence item as both, for `influenced` and for a fracture", () => {

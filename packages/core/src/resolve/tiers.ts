@@ -1,9 +1,12 @@
 /**
- * Tier resolution: which mods (tiers) of a ModType can roll on a base at an
- * ilvl. Tiers are base- and ilvl-dependent, so rather than invent a tier
- * table we derive it from `pool` and rank by `minLevel` descending — the
- * highest-requirement tier that can appear is T1. An influenced item's rows
- * roll on its influence tags, passed as `tags` beside the base's own.
+ * Tier resolution. A tier number is the game's: a row's place, best first,
+ * among the rows of its ModType that roll on the base, whatever the item's
+ * level (`tierLadder`, `tierNumber`); the advanced tooltip shows the same
+ * number on an item whose level stops short of Tier 1. The item's level
+ * decides only which of those rows a currency can roll (`rollableTiers`). Both
+ * are derived from `pool`, ranked by `minLevel` descending. An influenced
+ * item's rows roll on its influence tags, passed as `tags` beside the base's
+ * own.
  */
 import type { Base } from "../model/base.js";
 import type { Gen, ModId, TagId, TypeId } from "../model/ids.js";
@@ -65,9 +68,9 @@ function laddersOf(
     return cached;
 }
 
-/** The rollable tiers of `type` on `base` at `ilvl`, best (T1) first. A row's id
- *  does not give its tier: ids count up with mod level, T-numbers down from the
- *  best here, so `IncreasedLife11` can be T1. */
+/** The rows of `type` a currency can roll on `base` at `ilvl`, best first. A
+ *  row's place here is not its tier number, which counts the rows above the
+ *  item's level too (`tierLadder`). */
 export function rollableTiers(
     catalog: ModCatalog,
     base: Base,
@@ -92,7 +95,8 @@ export function rollableTiers(
 }
 
 /** The whole ladder of `type` on `base`: every row that rolls on it at some
- *  item level, best first. */
+ *  item level, best (T1) first. A row's id does not give its tier: ids count up
+ *  with mod level, T-numbers down from the best, so `IncreasedLife11` can be T1. */
 export function tierLadder(
     catalog: ModCatalog,
     base: Base,
@@ -146,10 +150,14 @@ export function rollableGen(
     type: TypeId,
     tags: ReadonlySet<TagId> = NO_TAGS,
 ): Gen | undefined {
-    return rollableTiers(catalog, base, ilvl, type, tags)[0]?.gen ?? firstGen(catalog, type);
+    return (
+        rollableTiers(catalog, base, ilvl, type, tags)[0]?.gen ??
+        tierLadder(catalog, base, type, tags)[0]?.gen ??
+        firstGen(catalog, type)
+    );
 }
 
-/** The mod at tier `n` (1-based, T1 = best), or `undefined` if out of range. */
-export function tierMod(tiers: readonly Mod[], n: number): Mod | undefined {
-    return n >= 1 ? tiers[n - 1] : undefined;
+/** The row at tier `n` of a ladder (1-based, T1 = best), or `undefined` if out of range. */
+export function tierMod(ladder: readonly Mod[], n: number): Mod | undefined {
+    return n >= 1 ? ladder[n - 1] : undefined;
 }

@@ -11,7 +11,7 @@ item {
     base:     "Amethyst Ring"
     ilvl:     84
     rarity:   rare
-    prefixes: [ "maximum life" t1, "maximum mana" t6 ]
+    prefixes: [ "maximum life" t1, "maximum mana" t7 ]
     suffixes: [ "fire resistance" t7, "strength" t8 ]
 }
 

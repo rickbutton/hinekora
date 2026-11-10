@@ -25,6 +25,15 @@ describe("hover", () => {
         expect(md!).toContain("Rare"); // after regal
     });
 
+    it("lists a modifier's tiers by the game's numbers, those above the item's level marked", () => {
+        const src = `item { base: "Titan Greaves" ilvl: 84 rarity: rare }\nif has "movement speed" t1 { stop }`;
+        const md = getHover(src, src.indexOf("movement") + 1, registry)!;
+        expect(md).toContain("6 tiers on Titan Greaves; item level 84 rolls T2 and below:");
+        expect(md).toMatch(/\| \*\*T1\*\* \|[^\n]*\| 86 \(above this item's level\) \|/);
+        expect(md).toMatch(/\| T2 \|[^\n]*\| 55 \|/);
+        expect(md).toContain("(ilvl 86); this item is level 84, so no currency rolls it here");
+    });
+
     it("hovers a fossil line with what each fossil does", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }\nfossil "pristine" "hollow"`;
         const md = getHover(src, src.indexOf("pristine") + 1, registry);
@@ -236,6 +245,26 @@ annul`;
 });
 
 describe("completion", () => {
+    it("offers a modifier's tiers by the game's numbers, marking those above the item's level", () => {
+        const boots = `item { base: "Titan Greaves" ilvl: 84 rarity: rare`;
+        for (const src of [
+            `${boots} }\nuntil has "movement speed" `,
+            `${boots} }\nuntil has "movement speed" t`,
+            `${boots} prefixes: [ "movement speed" `,
+            `${boots} prefixes: [ fractured "movement speed" `,
+        ]) {
+            const items = getCompletions(src, src.length, registry);
+            expect(items.map((c) => c.label)).toEqual(["t1", "t2", "t3", "t4", "t5", "t6"]);
+            expect(items[0]!.detail).toContain("35% increased Movement Speed");
+            expect(items[0]!.detail).toContain("needs item level 86");
+            expect(items[1]!.detail).toBe("30% increased Movement Speed");
+        }
+        // An essence's tier is its own, not a modifier's.
+        const essence = `${boots} }\nessence "greed" `;
+        const labels = getCompletions(essence, essence.length, registry).map((c) => c.label);
+        expect(labels).not.toContain("t1");
+    });
+
     it("offers currencies + control keywords at statement position", () => {
         const labels = getCompletions(SRC, SRC.length, registry).map((c) => c.label);
         expect(labels).toContain("exalt");

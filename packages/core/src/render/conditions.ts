@@ -9,7 +9,7 @@
 import type { Arg, Cmp, Craft, ParamRef, Pred } from "../ast/ast.js";
 import type { Base } from "../model/base.js";
 import type { Registry } from "../resolve/registry.js";
-import { rollableTiers } from "../resolve/tiers.js";
+import { tierLadder } from "../resolve/tiers.js";
 import { numberWord } from "./item.js";
 
 /** Where the words are for: the item's base and level resolve the mod names. */
@@ -79,14 +79,14 @@ function bindPred(p: Pred, env: Map<string, Arg>): Pred {
 
 /**
  * A modifier's wording as the trade site writes it, numbers as `#`:
- * "+# to maximum Life". The type's label when no row rolls here; the name as
+ * "+# to maximum Life". The type's label when no row rolls on the base; the name as
  * written when it does not resolve or there is nothing to resolve it against.
  */
 export function modWording(name: string, registry: Registry, wording?: Wording): string {
     if (wording === undefined) return name;
     const type = registry.resolveModType(name, wording);
     if (!type.ok) return name;
-    const row = rollableTiers(registry.catalog, wording.base, wording.ilvl, type.value)[0];
+    const row = tierLadder(registry.catalog, wording.base, type.value)[0];
     const text = row?.text;
     return text === undefined
         ? registry.typeLabel(type.value)

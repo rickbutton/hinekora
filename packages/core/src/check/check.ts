@@ -58,7 +58,7 @@ import {
     preconditionMessage,
     resolveMessage,
 } from "./diagnostics.js";
-import { rollableGen, rollableTiers, tierMod } from "../resolve/tiers.js";
+import { rollableGen, tierLadder, tierMod, tierNumber } from "../resolve/tiers.js";
 import { findMethod, type Literal, type Method, slotAt } from "./methods.js";
 import { anonymousRows, influenceTagsAny, influenceTagsOf, runMethod } from "./ops.js";
 import { rollRange } from "./values.js";
@@ -212,6 +212,9 @@ class Checker {
      *  re-enters the innermost enclosing loop, so its state is a loop-head state
      *  that must join into that loop's invariant. */
     private readonly restartHeads: AItem[][] = [];
+    /** Why a tier the condition being resolved waits for is one no currency
+     *  rolls on this item: its item level, said after "can never". */
+    private aboveLevel: string[] = [];
 
     constructor(
         private readonly registry: Registry,
@@ -416,24 +419,39 @@ class Checker {
                 rollableGen(this.registry.catalog, base, item.ilvl, type, tags),
                 gen,
             );
-            const tiers = rollableTiers(this.registry.catalog, base, item.ilvl, type, tags);
-            if (affix.tier === undefined && tiers.length > 1) {
+            // The number is the game's, counted over the whole ladder; the
+            // item's level decides which of its rows the item can have rolled.
+            const ladder = tierLadder(this.registry.catalog, base, type, tags);
+            const reachable = ladder.filter((m) => m.minLevel <= item.ilvl);
+            if (affix.tier === undefined && reachable.length > 1) {
+                const best = tierNumber(ladder, reachable[0]!.id);
                 this.diag(
-                    `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t1\`), a starting item's mods must name a specific tier and ${tiers.length} roll here.`,
+                    `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t${best}\`), a starting item's mods must name a specific tier and ${reachable.length} roll at this item level.`,
                     item.span,
                 );
                 claim(affix.mod, type); // still present, just untiered
                 return type;
             }
-            const tier = affix.tier ?? 1;
-            const mod = tierMod(tiers, tier);
+            // Unnamed, it is the one tier the item can have rolled, or with none
+            // the lowest, which the level check below reports.
+            const tier =
+                affix.tier ??
+                (reachable[0] !== undefined ? tierNumber(ladder, reachable[0].id) : undefined) ??
+                Math.max(1, ladder.length);
+            const mod = tierMod(ladder, tier);
             if (mod === undefined) {
                 this.diag(
-                    `tier ${tier} is out of range for "${affix.mod}" (only ${tiers.length} ${plural(tiers.length, "tier")} roll here).`,
+                    `tier ${tier} is out of range for "${affix.mod}" (it has ${ladder.length} ${plural(ladder.length, "tier")} on this base).`,
                     item.span,
                 );
                 claim(affix.mod, type);
                 return type;
+            }
+            if (mod.minLevel > item.ilvl) {
+                this.diag(
+                    `Tier ${tier} "${affix.mod}" needs item level ${mod.minLevel}; this item is level ${item.ilvl}.`,
+                    item.span,
+                );
             }
             claim(affix.mod, type);
             pinned.set(type, mod.id);
@@ -729,7 +747,7 @@ class Checker {
     // --- narrowing (if / else) --------------------------------------------
 
     private checkIf(a: AItem, stmt: Extract<Stmt, { kind: "if" }>): Flow {
-        const rpred = this.resolvePred(stmt.pred, a);
+        const [rpred, levels] = this.resolveWithLevels(stmt.pred, a);
 
         // A narrowed count may leave a proven "≥k of these suffixes" below the
         // suffix count's new floor, so the presence facts are pushed back in.
@@ -743,7 +761,7 @@ class Checker {
 
         if (thenState === null) {
             this.diag(
-                `the 'if' branch can never run: ${describePred(stmt.pred)} is impossible here`,
+                `the 'if' branch can never run: ${describePred(stmt.pred)} is impossible here${levels}`,
                 stmt.pred.span,
             );
         }
@@ -774,7 +792,7 @@ class Checker {
     // --- loops (until) -----------------------------------------------------
 
     private checkUntil(a: AItem, stmt: Extract<Stmt, { kind: "until" }>): Flow {
-        const rpred = this.resolvePred(stmt.pred, a);
+        const [rpred, levels] = this.resolveWithLevels(stmt.pred, a);
 
         // Compute the loop invariant (a quiet join-fixpoint) and probe the exit
         // from it, quietly: a loop that needs several iterations to reach its
@@ -804,7 +822,7 @@ class Checker {
         const exitReachable = exits(probe);
         if (rpred !== null && exitReachable === null) {
             this.diag(
-                `this loop can never exit: ${describePred(stmt.pred)} can never become true here`,
+                `this loop can never exit: ${describePred(stmt.pred)} can never become true here${levels}`,
                 stmt.pred.span,
             );
             return { kind: "fall", state: foldJoin(probe) ?? invariant };
@@ -1067,6 +1085,25 @@ class Checker {
 
     // --- predicate resolution ---------------------------------------------
 
+    /** A condition resolved, with the item-level reasons a tier it names is out
+     *  of a currency's reach, worded to follow a "can never" message. */
+    private resolveWithLevels(pred: Pred, a: AItem): [RPred | null, string] {
+        this.aboveLevel = [];
+        const rpred = this.resolvePred(pred, a);
+        const reasons = [...new Set(this.aboveLevel)];
+        return [rpred, reasons.length === 0 ? "" : ` — ${reasons.join("; ")}`];
+    }
+
+    /** Note a named tier the item's level stops short of. It is no error: an
+     *  essence or a Harvest change places such a row, a currency never rolls it. */
+    private noteLevel(tier: number, name: string, mod: Mod, a: AItem): void {
+        if ((mod.source ?? "natural") === "natural" && mod.minLevel > a.ilvl) {
+            this.aboveLevel.push(
+                `Tier ${tier} "${name}" needs item level ${mod.minLevel}; this item is level ${a.ilvl}`,
+            );
+        }
+    }
+
     private resolvePred(pred: Pred, a: AItem): RPred | null {
         switch (pred.kind) {
             case "isRarity":
@@ -1103,7 +1140,10 @@ class Checker {
                     : { kind: "compare", projection: pred.projection, op: pred.op, value };
             }
             case "not": {
+                // A tier the condition wants absent is no reason it cannot be met.
+                const noted = this.aboveLevel.length;
                 const inner = this.resolvePred(pred.inner, a);
+                this.aboveLevel.length = noted;
                 return inner === null ? null : { kind: "not", inner };
             }
             case "and":
@@ -1232,8 +1272,8 @@ class Checker {
             if (pred.tier !== undefined) {
                 const tier = this.literalInt(pred.tier, pred.span);
                 if (tier === null) return null;
-                const tiers = rollableTiers(this.registry.catalog, a.base, a.ilvl, type, tags);
-                const mod = tierMod(tiers, tier);
+                const ladder = tierLadder(this.registry.catalog, a.base, type, tags);
+                const mod = tierMod(ladder, tier);
                 if (mod === undefined || !rows.has(mod.id)) {
                     this.diag(
                         `tier ${tier} of "${modName}" has no value to compare here`,
@@ -1241,6 +1281,7 @@ class Checker {
                     );
                     return null;
                 }
+                this.noteLevel(tier, modName, mod, a);
                 for (const id of [...rows.keys()]) if (id !== mod.id) rows.delete(id);
                 unnumbered.clear();
             }
@@ -1264,16 +1305,19 @@ class Checker {
         }
         const tier = this.literalInt(pred.tier, pred.span);
         if (tier === null) return null;
-        // Resolve the requested tier to a specific mod (T1 = best rollable here).
-        const tiers = rollableTiers(this.registry.catalog, a.base, a.ilvl, type, tags);
-        const mod = tierMod(tiers, tier);
+        // The tier is the game's number, counted over the whole ladder: a row
+        // above the item's level is one the item may hold, though no currency
+        // rolls it, and the state says whether it does.
+        const ladder = tierLadder(this.registry.catalog, a.base, type, tags);
+        const mod = tierMod(ladder, tier);
         if (mod === undefined) {
             this.diag(
-                `tier ${tier} is out of range for "${modName}" (only ${tiers.length} ${plural(tiers.length, "tier")} roll here)`,
+                `tier ${tier} is out of range for "${modName}" (it has ${ladder.length} ${plural(ladder.length, "tier")} on this base)`,
                 pred.span,
             );
             return null;
         }
+        this.noteLevel(tier, modName, mod, a);
         const tierSpan = mod.text === undefined ? undefined : rollRange(mod.text);
         return {
             kind: "has",

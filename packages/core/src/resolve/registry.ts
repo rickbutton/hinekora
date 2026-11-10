@@ -35,7 +35,7 @@ import {
     type WordingAliasEntry,
     wordingAliases,
 } from "./fuzzy.js";
-import { rollableTiers } from "./tiers.js";
+import { rollableTiers, tierLadder } from "./tiers.js";
 
 /** DSL tier (T1 = best) → catalog ladder level (Deafening = 7, Whispering = 1). */
 const ladderOf = (tier: number): number => 8 - tier;
@@ -654,18 +654,24 @@ export function buildRegistry(data: RegistryData): Registry {
 
             let matches = matchTypes(typeIndex, name, wordings);
             // Narrow to types that can actually roll on this item, when known;
-            // failing any, to those an unveil or the bench can put on it. The
-            // words name what rolls first: a veiled-only type shares many of
-            // them with the natural modifier it resembles.
+            // failing any, to those its level stops short of (an essence or a
+            // Harvest change still places one), then to those an unveil or the
+            // bench can put on it. The words name what rolls first: a
+            // veiled-only type shares many of them with the natural modifier
+            // it resembles.
             if (ctx) {
                 const rollable = matches.filter(
                     (m) => rollableTiers(catalog, ctx.base, ctx.ilvl, m.type, ctx.tags).length > 0,
+                );
+                const onBase = matches.filter(
+                    (m) => tierLadder(catalog, ctx.base, m.type, ctx.tags).length > 0,
                 );
                 const benchable = benchTypesByClass.get(ctx.base.itemClass);
                 const reachable = matches.filter(
                     (m) => veiledTypes.has(m.type) || benchable?.has(m.type),
                 );
                 if (rollable.length > 0) matches = rollable;
+                else if (onBase.length > 0) matches = onBase;
                 else if (reachable.length > 0) matches = reachable;
             }
             if (matches.length === 0) return fail({ kind: "unknownMod", name });

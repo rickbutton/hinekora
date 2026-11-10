@@ -78,8 +78,9 @@ What resolution provides to the checker:
   [spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag) and
   [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) rules, with the generation
   table the data pairs with each spawn table. This is what a currency add draws from.
-- **tiers**: the tier ladder per base/ilvl (T1 = the best mod that can roll here), derived
-  by sorting a type's rollable rows by mod level, since the game stores no tier numbers.
+- **tiers**: the tier ladder per base (T1 = the best row of a type that rolls on it, at
+  any item level, the number the game's tooltip shows), derived by sorting those rows by
+  mod level; the item level only decides which of them a currency can roll.
 - **caps**: the per-base affix limits (the [rarity](https://www.poewiki.net/wiki/Rarity#Rarities)
   limits shifted by an experimented base's stats, e.g.
   [Simplex Amulet](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)), consumed by the

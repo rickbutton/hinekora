@@ -22,6 +22,7 @@ import {
     rollableTypes,
     slotAt,
     type TagId,
+    tierLadder,
     traceAt,
     type TypeId,
 } from "@hinekora/core";
@@ -99,6 +100,8 @@ type Context =
     | { readonly kind: "predicate" }
     | { readonly kind: "base" }
     | { readonly kind: "mod" }
+    /** After a modifier's name in an affix list or a `has`: its tiers. */
+    | { readonly kind: "tier"; readonly mod: string }
     | { readonly kind: "nothing" }
     /** After a family's first word: its second words, and the next statement
      *  too when the first word is a method on its own (`exalt`, `bench`). */
@@ -154,6 +157,7 @@ function contextAt(source: string, offset: number): Context {
     const done = complete ? pieces : pieces.slice(0, -1);
     if (done.length === 0) return { kind: "statement" };
     const last = done[done.length - 1]!;
+    if (last.kind === "string" && namesTieredMod(done)) return { kind: "tier", mod: last.text };
     if (last.kind === "word" && PREDICATE_INTRODUCERS.has(last.text)) return { kind: "predicate" };
     if (last.kind === "word" && methodsAfter([last.text]).length > 0) {
         return {
@@ -170,6 +174,20 @@ function contextAt(source: string, offset: number): Context {
         return slot.kind === "word" ? { kind: "word", oneOf: slot.oneOf } : { kind: "nothing" };
     }
     return { kind: "statement" };
+}
+
+/** Is the string that ends `pieces` a modifier a `t<n>` may follow: an affix
+ *  of the item block (first on its line, or after `[`, `,` or `fractured`
+ *  there) or the name after `has`. */
+function namesTieredMod(pieces: readonly Piece[]): boolean {
+    const listed = (p: Piece | undefined): boolean =>
+        p === undefined || (p.kind === "punct" && (p.text === "[" || p.text === ","));
+    const before = pieces[pieces.length - 2];
+    if (listed(before)) return true;
+    if (before?.kind !== "word") return false;
+    return (
+        before.text === "has" || (before.text === "fractured" && listed(pieces[pieces.length - 3]))
+    );
 }
 
 /** Best-effort base, ilvl and influence tags for the craft, read from the text
@@ -300,6 +318,8 @@ export function getCompletions(
                 : namesOf(ctx.of, registry, ctx.augment).map(value);
         case "mod":
             return modItems(source, offset, registry);
+        case "tier":
+            return tierItems(source, ctx.mod, registry);
         case "eldritchName":
             return registry.eldritchNames(ctx.side).map(value);
         case "nothing":
@@ -307,6 +327,28 @@ export function getCompletions(
         case "statement":
             return statementItems(source);
     }
+}
+
+/** The modifier's tiers on the item's base, numbered as the game numbers them;
+ *  one above the item's level says so, since no currency rolls it there. */
+function tierItems(source: string, mod: string, registry: Registry): CompletionItem[] {
+    const ctx = itemContext(source, registry);
+    if (ctx === undefined) return [];
+    const type = registry.resolveModType(mod, ctx);
+    if (!type.ok) return [];
+    return tierLadder(registry.catalog, ctx.base, type.value, ctx.tags).map((m, i) => {
+        const roll = (m.text ?? m.id).replace(/\n/g, " / ");
+        const reach =
+            m.minLevel > ctx.ilvl
+                ? ` — needs item level ${m.minLevel}; no currency rolls it on this item`
+                : "";
+        return {
+            label: `t${i + 1}`,
+            detail: `${roll}${reach}`,
+            kind: CompletionItemKind.Value,
+            sortText: String(i + 1).padStart(3, "0"),
+        };
+    });
 }
 
 /** Stat descriptions, narrowed to what can roll here and is not proven absent. */

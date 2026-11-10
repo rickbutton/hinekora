@@ -282,9 +282,26 @@ describe("the marks and the crafted flag", () => {
     });
 });
 
-describe("a modifier an essence placed above the item's level", () => {
-    // No tier that rolls on the item ranks it, and the game's own copy of
-    // such an item has not been seen: it is numbered on the whole ladder.
+describe("the tier numbers of an item whose level stops short of the best tier", () => {
+    // Life's tiers unlock at levels 60, 30 and 1. The game counts all three at
+    // any item level: seen on a level-25 body armour, whose +(18-23)% cold
+    // resistance shows "Tier: 6" of the eight the base rolls.
+    const low = (prefixes: readonly (string | { mod: string; tier?: number })[] = []) =>
+        item({ base: "IronRing", ilvl: 40, rarity: "rare", prefixes });
+
+    it("shows a declared modifier's place on the whole ladder", () => {
+        expect(after(craft(low([{ mod: "maximum life", tier: 2 }]), []))).toContain(
+            '{ Prefix Modifier "Robust" (Tier: 2) }',
+        );
+    });
+
+    it("shows the tiers a currency may have rolled as a range of those numbers", () => {
+        const rolled = craft(low(), [until(has("maximum life"), [op("chaos")])]);
+        expect(after(rolled)).toContain(
+            "{ Prefix Modifier (Tier: 2-3) }\n+(10-84) to maximum Life",
+        );
+    });
+
     const essenced = buildRegistry({
         bases: [RING_BASE],
         mods: TIERED_CATALOG,
@@ -298,7 +315,7 @@ describe("a modifier an essence placed above the item's level", () => {
         ],
     });
 
-    it("shows its tier counted on the modifier's whole ladder", () => {
+    it("shows the tier of a modifier an essence placed above the item's level", () => {
         const r = check(
             craft(item({ base: "IronRing", ilvl: 1, rarity: "normal" }), [
                 essence("Deafening Essence of Greed"),
