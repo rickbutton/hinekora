@@ -171,7 +171,7 @@ function methodHover(method: Method, entry: TraceEntry | undefined, registry: Re
         dash < 0
             ? method.doc
             : `**${method.doc.slice(0, dash)}** — ${method.doc.slice(dash + " — ".length)}`;
-    if (first === "veiled" || first === "aisling" || first === "unveil") {
+    if (first === "veiled" || first === "unveil") {
         return [head, unveilOptionsHover(entry, registry)].join("\n\n");
     }
     return head;

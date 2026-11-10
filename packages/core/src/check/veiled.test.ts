@@ -154,9 +154,9 @@ describe("veiled orbs", () => {
         expect(r.diagnostics[0]!.message).toContain("would survive the reforge");
     });
 
-    it("is also spelt aisling, after the safehouse bench", () => {
-        const r = check(craft(rareRing(["FireResist1"]), [op("aisling"), unveil()]), ctx);
-        expect(r.diagnostics).toEqual([]);
+    it("has no word for Aisling's retired safehouse bench", () => {
+        const r = check(craft(rareRing(["FireResist1"]), [op("aisling")]), ctx);
+        expect(r.diagnostics).toHaveLength(1);
     });
 
     it("veiled exalt keeps the affix count (removes one, adds the veiled mod)", () => {
