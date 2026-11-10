@@ -758,22 +758,38 @@ item block carrying the variant's deltas and magnitudes.
 **Assumed meanwhile:** (a) (`model/capacity.ts`, the item block's count check).
 **Answer:**
 
+### Q71 · game probe · open
+
+**Asked:** 2026-11-09
+**Goal:** whether an experimented base's magnitude implicit scales a granted skill's
+level. [Simplex Amulet § Mechanics](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)
+says the 100% doubles "+1 gem" modifiers, but not whether "Grants Level 22 Wrath Skill"
+(the Awakener's Orb aura suffixes) reads Level 44.
+**Procure:** a Simplex or Focused Amulet with a "Grants Level N … Skill" suffix (an
+Awakener's Orb onto one).
+**Steps:** read the granted level on the item and on the skill.
+**Record:** whether the level is scaled.
+**Assumed meanwhile:** scaled, like every value of the side: the checker reads it scaled
+(`check/values.ts` `spanOn`) and the item card prints it scaled (`render/item.ts`
+`scaledText`).
+**Answer:**
+
 ### Q69 · game probe · open
 
 **Asked:** 2026-11-09
 **Goal:** how the game rounds a value an experimented base scales. A Helical Ring's
 "50% increased Suffix Modifier magnitudes" turns a +57 roll into 85.5
 ([Helical Ring](https://www.poewiki.net/wiki/Helical_Ring#Mechanics)); the item shows a
-whole number, and whether it is rounded down, up or to nearest decides whether `has "…"
-
-> = 86` holds on that roll.
+whole number, and whether it is rounded down, up or to nearest decides whether
+`has "…" >= 86` holds on that roll.
 **Procure:** a Helical or Cogwork Ring with a suffix whose scaled value is not whole.
 **Steps:** read the shown value; compare with the row's span scaled by hand.
 **Record:** the rounding.
 **Assumed meanwhile:** no rounding (`check/values.ts` `spanOn`): the span keeps its
 fractional ends, which `narrowRange` reads as non-strict, so no whole threshold is wrongly
-> ruled in or out.
-> **Answer:**
+ruled in or out. The item card prints the same fractional ends (`render/item.ts`
+`scaledText`, "+(85.5-93) to Strength" on a Helical Ring).
+**Answer:**
 
 ### Q68 · game probe · open
 

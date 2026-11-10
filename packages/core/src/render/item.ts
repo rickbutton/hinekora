@@ -173,15 +173,18 @@ export function rollSpan(texts: readonly string[]): string {
 
 const oneLine = (text: string): string => text.replace(/\n/g, " / ");
 
-const NUMBERS = /\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)|(\d+(?:\.\d+)?)/g;
-// The scale's float noise ("1.1 * 3") stays off the card.
+// A number after "per" is the stat's wording, not its value: a Simplex Amulet
+// shows "2% increased Damage per 15 Strength".
+const NUMBERS = /(per )?(?:\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)|(\d+(?:\.\d+)?))/g;
+// A fractional roll scales with float noise (0.3 × 1.5 is 0.44999…).
 const shown = (n: number): string => String(Number(n.toFixed(2)));
 
-/** The text's numbers as the base shows them, an experimented base's magnitude
+/** The text's values as the base shows them, an experimented base's magnitude
  *  implicit scaling every value of the side. */
-function scaledText(text: string, base: Base, gen: Gen): string {
+export function scaledText(text: string, base: Base, gen: Gen): string {
     if ((base.magnitude?.[gen] ?? 0) === 0) return text;
-    return text.replace(NUMBERS, (_m, lo?: string, hi?: string, n?: string) => {
+    return text.replace(NUMBERS, (m, per?: string, lo?: string, hi?: string, n?: string) => {
+        if (per !== undefined) return m;
         if (n !== undefined) return shown(spanOn(base, gen, [Number(n), Number(n)])[0]);
         const [a, b] = spanOn(base, gen, [Number(lo), Number(hi)]);
         return `(${shown(a)}-${shown(b)})`;
@@ -200,7 +203,7 @@ function withValue(text: string, value: Range): string {
     const lo = Math.max(value[0], Number(m[1]));
     const hi = Math.min(value[1], Number(m[2]));
     if (lo > hi) return text;
-    return text.replace(re, lo === hi ? String(lo) : `(${lo}-${hi})`);
+    return text.replace(re, lo === hi ? shown(lo) : `(${shown(lo)}-${shown(hi)})`);
 }
 
 /** The modifier view for a present type, pinned to `pin` when a disjunction names its tier. */

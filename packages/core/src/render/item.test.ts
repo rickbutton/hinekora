@@ -23,7 +23,14 @@ import {
     TIERED_CATALOG,
 } from "../__fixtures__/mods.js";
 import type { BenchCraft } from "../model/sources.js";
-import { itemClassLabel, itemView, remainderText, renderItemText, rollSpan } from "./item.js";
+import {
+    itemClassLabel,
+    itemView,
+    remainderText,
+    renderItemText,
+    rollSpan,
+    scaledText,
+} from "./item.js";
 
 const registry = buildRegistry({ bases: [RING_BASE], mods: TIERED_CATALOG });
 const ctx: CheckContext = { registry };
@@ -76,6 +83,26 @@ describe("the item in the game's copy layout", () => {
         expect(text([])).toContain("+(230-258) to maximum Life");
         expect(text([iff(notp(hasValue("maximum life", ">=", 240)), [stop()])])).toContain(
             "+(240-258) to maximum Life",
+        );
+    });
+
+    it("scales a side's values by its magnitude, but not a number the wording carries", () => {
+        const helical = { ...RING_BASE, magnitude: { prefix: 0, suffix: 50 } };
+        expect(scaledText("+(57-62) to Strength", helical, "suffix")).toBe(
+            "+(85.5-93) to Strength",
+        );
+        expect(scaledText("+(57-62) to Strength", helical, "prefix")).toBe("+(57-62) to Strength");
+        expect(scaledText("+(0.3-0.4)% of Life Regenerated", helical, "suffix")).toBe(
+            "+(0.45-0.6)% of Life Regenerated",
+        );
+        expect(scaledText("+1 to Level of all Skill Gems", SIMPLEX_BASE, "prefix")).toBe(
+            "+2 to Level of all Skill Gems",
+        );
+        expect(scaledText("1% increased Damage per 15 Strength", SIMPLEX_BASE, "prefix")).toBe(
+            "2% increased Damage per 15 Strength",
+        );
+        expect(scaledText("Adds (1-2) to (3-4) Damage", SIMPLEX_BASE, "prefix")).toBe(
+            "Adds (2-4) to (6-8) Damage",
         );
     });
 
