@@ -3,7 +3,17 @@ import { check } from "../check/check.js";
 import type { RPred } from "../check/astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, item, op } from "../__fixtures__/ast.js";
-import { CATALOG, LIFE_T1, LIFE_T2, RING_BASE } from "../__fixtures__/mods.js";
+import {
+    BOOTS_BASE,
+    CATALOG,
+    ELEVATED_BOOTS_PREFIX,
+    ELEVATED_BOOTS_SUFFIX,
+    HUNTER_BOOTS_PREFIX,
+    HUNTER_BOOTS_SUFFIX,
+    LIFE_T1,
+    LIFE_T2,
+    RING_BASE,
+} from "../__fixtures__/mods.js";
 import { ModId } from "../model/ids.js";
 import { findMethod } from "../check/methods.js";
 import { Tracker } from "./track.js";
@@ -75,5 +85,39 @@ describe("the tracked state", () => {
         expect(top1).toBeGreaterThan(0);
         expect(top1).toBeLessThan(1);
         expect(tracker.misses).toBe(0);
+    });
+
+    it("an Orb of Dominance's random pick among the influenced modifiers is not taken as sure", () => {
+        const boots = buildRegistry({
+            bases: [BOOTS_BASE],
+            mods: [
+                ...CATALOG,
+                HUNTER_BOOTS_PREFIX,
+                HUNTER_BOOTS_SUFFIX,
+                ELEVATED_BOOTS_PREFIX,
+                ELEVATED_BOOTS_SUFFIX,
+            ],
+        });
+        const c = craft(
+            item({
+                base: "Iron Greaves",
+                ilvl: 100,
+                rarity: "rare",
+                // Both influenced modifiers on one side, so the counts after
+                // are the same whichever goes.
+                prefixes: [HUNTER_BOOTS_PREFIX.id, ELEVATED_BOOTS_PREFIX.id],
+                suffixes: ["FireResist1"],
+                influences: ["hunter"],
+            }),
+            [op("dominance")],
+        );
+        const entry = check(c, { registry: boots }).trace.at(-1)!;
+        const tracker = new Tracker(boots, entry.before, [entry.before], [], []);
+        const built = findMethod(["dominance"])!.build([], entry.before, boots);
+        if ("refused" in built) throw new Error(built.refused);
+        const [start] = tracker.statesIn(entry.before)!;
+        const outx = tracker.transition(entry.before, built, "estimate")!(start!.state);
+        console.log("DBGD", JSON.stringify(start), JSON.stringify(outx), tracker.types);
+        expect(tracker.misses).toBe(1);
     });
 });

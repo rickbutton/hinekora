@@ -585,6 +585,10 @@ export class Tracker {
                 return this.counted(this.unveiled(state, roll.options, target));
             }
             case "none": {
+                // An Orb of Dominance takes one of the influenced modifiers at
+                // random, which the checker reads as a join over which.
+                if (ops.some((op) => op.kind === "remove" && op.selector.kind === "influenced"))
+                    return this.counted(undefined);
                 const ran = runMethod(item, ops, this.registry);
                 // A method this state cannot take leaves it as it was.
                 if (!ran.ok) return [{ state, prob: 1 }];
