@@ -795,6 +795,34 @@ describe("the eldritch implicits", () => {
         expect(r.steps.find((s) => s.kind === "if")!.branch).toBeLessThan(1);
     });
 
+    it("an Orb of Conflict takes a lowered Lesser implicit off and keeps a raised Perfect one", () => {
+        const branch = (
+            decl: Partial<Parameters<typeof item>[0]>,
+            pred: Parameters<typeof iff>[0],
+        ) =>
+            on(decl, [op("conflict"), iff(pred, [stop()])]).steps.find((s) => s.kind === "if")!
+                .branch!;
+        // Lesser Exarch, Grand Eater: half the time the Exarch is lowered off.
+        expect(branch({ exarch: "lesser", eater: "grand" }, eldritchP("exarch"))).toBeCloseTo(
+            1 / 2,
+            9,
+        );
+        // Perfect Exarch: raised it stays Perfect, lowered it is Exquisite.
+        expect(
+            branch({ exarch: "perfect", eater: "grand" }, eldritchP("exarch", "perfect")),
+        ).toBeCloseTo(1 / 2, 9);
+    });
+
+    it("a method that does not touch the implicits leaves them as they were", () => {
+        const r = on({ exarch: "greater" }, [
+            op("chaos"),
+            iff(eldritchP("exarch", "greater"), [stop()]),
+        ]);
+        const branch = r.steps.find((s) => s.kind === "if")!;
+        expect(branch.note).toBeUndefined();
+        expect(branch.branch).toBeCloseTo(1, 9);
+    });
+
     it("an Orb of Conflict raises either implicit alike and lowers the other", () => {
         // Greater Exarch, Grand Eater: the Exarch rises to Grand half the
         // time, and the Eater rises to Exceptional, dominant, the other half.
