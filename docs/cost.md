@@ -26,8 +26,8 @@ modifiers add, and its influence's. A
 reforge rolls a count, then draws modifiers one at a time by weight without replacement,
 a group closing once one of it is drawn
 ([Modifier § Group/family](https://www.poewiki.net/wiki/Modifier#Group/family)) and a
-side closing when full. The wiki states the group rule but not the order; craftofexile's
-emulator and every community calculator draw this way, and it is taken as settled. An
+side closing when full. The wiki gives the group rule, not the order; every calculator draws
+this way, and it is taken as settled. An
 unveil's three
 options are drawn the same way
 ([Veiled modifier § Version history](https://www.poewiki.net/wiki/Veiled_modifier#Version_history)),
@@ -49,6 +49,8 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
 - **Unveil.** The options are of the veiled modifier's side where the item says which
   (Q77); the player takes the guide's target if offered, else a modifier its conditions
   name, else one no one names (Q78).
+- **Orb of Conflict.** Either implicit rises alike (Q81).
+- **Harvest augment** removes before it adds (Q82).
 - **Memory strands.** The share used up is not stated; the estimate reads the floor
   (Q68).
 
@@ -60,7 +62,7 @@ The checker's item at a step is a set of items; a probability needs to know how 
 each member is. The cost layer follows a **distribution over a small state**
 (`cost/track.ts`): the (prefix, suffix) counts and, for each modifier a condition names
 or the checker knows is there (declared, granted, crafted, a protecting metamod, a veiled
-placeholder), whether it is on the item, in which tier class (each tier a condition names
+placeholder; each eldritch implicit's tier, and its type where a condition names one), whether it is on the item, in which tier class (each tier a condition names
 on its own, the rest of the ladder together) and whether it is fractured (its row marked
 `!`); a modifier a condition compares by value is held per tier
 and value piece, cut at the condition's thresholds. The distribution starts from the item
@@ -71,16 +73,15 @@ random method by its roll (an unveil by the option taken, a Fracturing Orb by th
 modifier it locks), a sure one by the checker's own transfer function, the item
 that leaves read back as states. So a Regal Orb after an Orb of Transmutation knows the
 item had one modifier half the time and two the other half, and a Divine Orb rerolls the
-values the item has. A branch splits the distribution by its condition; a loop is solved
+values neither fractured nor protected. A branch splits the distribution by its condition; a loop is solved
 as a chain over it (§6). A guide followed so throughout is walked once.
 
-Two things stay approximate. The modifiers no one names and the checker does not know are
-a count, not identities: when a draw lands beside them each closes a group of average
-weight on its side, as craftofexile's calculator does. And a state the narrowed item
-cannot carry through a step exactly is left as it was, which the step notes; where a
-step's randomness is one the state does not hold (an ember's implicit) or the walk cannot
-follow a statement (a call), the states are dropped and the roll is
-read on the checker's item, the facts every path holds: a modifier held only as possible
+What stays approximate: the modifiers no one names are a count, not identities, so a draw
+beside them keeps each unnamed group's weight by its chance of not being among that many
+draws by weight (within 2.5% of a brute force, where craftofexile's average group is 12%
+off). A state the narrowed item cannot carry exactly is left as it was, which the step
+notes. Where the walk cannot follow a statement (a call) or its states outgrow 5000
+(`TrackerOverflow`), they are dropped and the roll is read on the checker's item, the facts every path holds: a modifier held only as possible
 neither shrinks the pool nor adds its tags, and every range the checker left open is read
 at its floor and at its ceiling (`Reading`), a **spread** given beside the figure where
 the ends disagree.
@@ -163,8 +164,7 @@ Prices come from a **snapshot committed with the data**,
 `packages/data/data/poe1/economy.json`, for one league on one day, never from live calls
 in the checker, the CLI or the editor (Q62), so a figure is
 reproducible and dated by the snapshot. `fetch-economy.mjs`
-refreshes it from the poe.ninja endpoints the site's own pages read, undocumented (the
-documented one answers 404); when they move, the script is what changes.
+refreshes it from the poe.ninja endpoints the site's own pages read, undocumented; when they move, the script is what changes.
 
 The snapshot cannot price three things, which the code carries itself: a bench craft's
 cost, read from the catalog; a Harvest craft's lifeforce, a table in `cost/prices.ts`
@@ -187,5 +187,3 @@ wherever the calculator is exact, to the rounding of its display. Where they dif
 - **The race's clocks are modifier types**, not groups, so two types of one group may both
   be drawn and a group's other members never close it; on a wand's spell damage this
   moves the figure by up to a fifth either way (Q73).
-- **A step the tracker cannot follow** reads the checker's item, an open count at its
-  floor, where the game's item remembers every roll.
