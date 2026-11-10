@@ -146,8 +146,8 @@ export function currencyOps(kind: CurrencyKind): readonly Op[] {
             // tier, a fractured one's excepted; Magic or Rare only.
             return [notCorrupted, notNormal, { kind: "reroll" }];
         case "fracture":
-            // No metamod check: the Fracturing Orb ignores them (Metamod § Rules
-            // and Exceptions), and its lock may land on any present modifier.
+            // No metamod check: the Fracturing Orb ignores them (Fracturing Orb §
+            // Mechanics), and its lock may land on any present modifier.
             return [
                 notCorrupted,
                 isRare,
