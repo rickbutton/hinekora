@@ -8,8 +8,8 @@
         "commitDate": "2026-10-25T03:48:01Z",
         "publishedAt": "Fri, 06 Nov 2026 16:49:17 GMT"
     },
-    "gameVersion": "unknown",
-    "gameVersionNote": "repoe-fork does not stamp the Path of Exile patch in its exports (no version file, no release tags). Provenance rests on source.commit + publishedAt; set REPOE_GAME_VERSION when the patch is known.",
+    "gameVersion": "3.29.3.5",
+    "gameVersionNote": "The patch the repoe-fork export states in its version.txt, read when the catalog was ingested; the precise dump is source.commit + publishedAt.",
     "retrievedAt": "2026-11-10",
     "extent": {
         "description": "Full PoE1 catalog projected to the fields the core model uses: all prefix/suffix mods, all released named bases, plus the essence, bench (mod-adding) and fossil catalogs.",

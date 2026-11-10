@@ -11,10 +11,14 @@
  *   REPOE_MODS_URL / REPOE_BASES_URL   source URLs (default: the .min exports)
  *   REPOE_MODS_FILE / REPOE_BASES_FILE local files to use instead of fetching
  *   REPOE_COMMIT / REPOE_COMMIT_DATE / REPOE_PUBLISHED_AT   provenance overrides
- *   REPOE_GAME_VERSION                 the PoE patch, if known (default "unknown")
+ *   REPOE_GAME_VERSION                 the PoE patch (default: the export's version.txt)
+ *
+ * The other ingest scripts add their own files to the manifest
+ * (`ingest-eldritch.mjs`, `ingest-harvest-change.mjs`, `ingest-cluster.mjs`);
+ * this one keeps their entries.
  */
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const OUT_DIR = fileURLToPath(new URL("../data/poe1", import.meta.url));
@@ -27,7 +31,33 @@ const BENCH_URL =
 const FOSSILS_URL =
     process.env.REPOE_FOSSILS_URL ?? "https://repoe-fork.github.io/fossils.min.json";
 
+const VERSION_URL = process.env.REPOE_VERSION_URL ?? "https://repoe-fork.github.io/version.txt";
+
 const AFFIX_GENS = new Set(["prefix", "suffix"]);
+
+/** The Path of Exile patch the export was built from, which it states in its
+ *  `version.txt`; "unknown" when that cannot be read. */
+async function resolveGameVersion() {
+    if (process.env.REPOE_GAME_VERSION) return process.env.REPOE_GAME_VERSION;
+    try {
+        const res = await fetch(VERSION_URL);
+        const text = res.ok ? (await res.text()).trim() : "";
+        return /^\d+(\.\d+)+$/.test(text) ? text : "unknown";
+    } catch {
+        return "unknown";
+    }
+}
+
+/** The manifest with what the other ingest scripts recorded in the one it
+ *  replaces: the files this script does not write, and their extents. */
+export function keepingOtherFiles(manifest, previous) {
+    if (previous === undefined) return manifest;
+    return {
+        ...manifest,
+        extent: { ...previous.extent, ...manifest.extent },
+        files: { ...previous.files, ...manifest.files },
+    };
+}
 
 async function getSource(url, fileEnv) {
     const localPath = process.env[fileEnv];
@@ -280,7 +310,11 @@ async function main() {
     const benchFile = writeJson("bench.json", projectBench(bench.json, bases.json));
     const fossilsFile = writeJson("fossils.json", projectFossils(fossils.json));
 
-    const manifest = {
+    const manifestPath = `${OUT_DIR}/manifest.json`;
+    const previous = existsSync(manifestPath)
+        ? JSON.parse(readFileSync(manifestPath, "utf8"))
+        : undefined;
+    const written = {
         game: "poe1",
         source: {
             name: "repoe-fork/repoe",
@@ -294,9 +328,9 @@ async function main() {
                 bases.lastModified ??
                 "unknown",
         },
-        gameVersion: process.env.REPOE_GAME_VERSION ?? "unknown",
+        gameVersion: await resolveGameVersion(),
         gameVersionNote:
-            "repoe-fork does not stamp the Path of Exile patch in its exports (no version file, no release tags). Provenance rests on source.commit + publishedAt; set REPOE_GAME_VERSION when the patch is known.",
+            "The patch the repoe-fork export states in its version.txt, read when the catalog was ingested; the precise dump is source.commit + publishedAt.",
         retrievedAt: new Date().toISOString().slice(0, 10),
         extent: {
             description:
@@ -315,7 +349,8 @@ async function main() {
             "fossils.json": fossilsFile,
         },
     };
-    writeFileSync(`${OUT_DIR}/manifest.json`, JSON.stringify(manifest, null, 4) + "\n");
+    const manifest = keepingOtherFiles(written, previous);
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 4) + "\n");
 
     console.log(
         `wrote ${modsFile.count} mods, ${basesFile.count} bases, ${essencesFile.count} essences, ${benchFile.count} bench crafts, ${fossilsFile.count} fossils to ${OUT_DIR}`,

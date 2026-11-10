@@ -16,7 +16,7 @@ import {
     ModId,
     TypeId,
 } from "@hinekora/core";
-import { registryOf } from "./bundle.js";
+import { POE1_FILES, registryOf } from "./bundle.js";
 import { loadDefaultEconomy, loadDefaultPoe1 } from "./load.js";
 
 const data = loadDefaultPoe1();
@@ -43,6 +43,13 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         // publishedAt is the gh-pages republish timestamp — it changes on rebuilds
         // even for the same commit, so assert only that provenance is present.
         expect(data.manifest.source.publishedAt).toBeTruthy();
+        expect(data.manifest.gameVersion).toMatch(/^3\.\d+/);
+        // Every data file has its entry, whichever ingest script wrote it.
+        expect(Object.keys(data.manifest.files).sort()).toEqual(
+            Object.values(POE1_FILES)
+                .filter((f) => f !== POE1_FILES.manifest)
+                .sort(),
+        );
     });
 
     it("loads the essence and bench catalogs", () => {

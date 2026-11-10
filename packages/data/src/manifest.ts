@@ -4,8 +4,8 @@
  * This is the critical artifact for reproducibility: it records exactly
  * WHICH RePoE dump the catalog came from (commit + publish date) and WHICH game
  * version it targets, so a checked craft can always be traced to a concrete data
- * snapshot. (repoe-fork does not stamp the PoE patch anywhere, so `gameVersion`
- * is recorded manually and may be "unknown"; the commit + `publishedAt` are the
+ * snapshot. (`gameVersion` is the patch the export's `version.txt` states,
+ * "unknown" where it could not be read; the commit + `publishedAt` are the
  * hard identity.)
  */
 
