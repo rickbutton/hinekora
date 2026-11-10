@@ -23,7 +23,7 @@ import {
 import type { Mod } from "../model/mod.js";
 import { type FossilSpec, isCorruptedEssence } from "../model/sources.js";
 import { HARVEST_AUGMENT_TAGS, type Registry, STANDARD_CURRENCIES } from "../resolve/registry.js";
-import { rollableTiers, TOP_ITEM_LEVEL } from "../resolve/tiers.js";
+import { rollableTiers, tierLadder } from "../resolve/tiers.js";
 import type { AItem } from "./astate.js";
 import { resolveMessage } from "./diagnostics.js";
 import {
@@ -226,8 +226,7 @@ function harvestChange(
     // another source places and any natural row an essence places on the
     // item's class. The ladders are whole, whatever the item's level: an
     // essence or an earlier change may have left a row above it.
-    const whole = (type: TypeId): readonly Mod[] =>
-        rollableTiers(catalog, a.base, TOP_ITEM_LEVEL, type, tags);
+    const whole = (type: TypeId): readonly Mod[] => tierLadder(catalog, a.base, type, tags);
     const [wholeFrom, wholeTo] = [whole(from.value), whole(to.value)];
     const targets = rollableTiers(catalog, a.base, a.ilvl, to.value, tags);
     // The influence whose tag lets a row roll on the item, none for a row the

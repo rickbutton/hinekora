@@ -6,13 +6,13 @@
  * roll on its influence tags, passed as `tags` beside the base's own.
  */
 import type { Base } from "../model/base.js";
-import type { Gen, TagId, TypeId } from "../model/ids.js";
+import type { Gen, ModId, TagId, TypeId } from "../model/ids.js";
 import { emptyItem } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
 import { type ModCatalog, pool } from "../pool/pool.js";
 
 /** The item level at which every row of a ladder rolls. */
-export const TOP_ITEM_LEVEL = 100;
+const TOP_ITEM_LEVEL = 100;
 
 const NO_TAGS: ReadonlySet<TagId> = new Set();
 const NO_ROWS: readonly Mod[] = [];
@@ -89,6 +89,23 @@ export function rollableTiers(
         ladders.tiers = rows;
     }
     return ladders.tiers.get(type) ?? NO_ROWS;
+}
+
+/** The whole ladder of `type` on `base`: every row that rolls on it at some
+ *  item level, best first. */
+export function tierLadder(
+    catalog: ModCatalog,
+    base: Base,
+    type: TypeId,
+    tags: ReadonlySet<TagId> = NO_TAGS,
+): readonly Mod[] {
+    return rollableTiers(catalog, base, TOP_ITEM_LEVEL, type, tags);
+}
+
+/** The place of a row on a ladder, 1 the best; `undefined` for a row not on it. */
+export function tierNumber(ladder: readonly Mod[], row: ModId): number | undefined {
+    const i = ladder.findIndex((m) => m.id === row);
+    return i < 0 ? undefined : i + 1;
 }
 
 /** Every ModType that can roll on `base` at `ilvl` — the type-level pool. */

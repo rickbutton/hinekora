@@ -41,7 +41,7 @@ import {
 import type { Mod } from "../model/mod.js";
 import { isUnveiledResult } from "../model/veiled.js";
 import type { Registry } from "../resolve/registry.js";
-import { rollableGen, rollableTiers, TOP_ITEM_LEVEL } from "../resolve/tiers.js";
+import { rollableGen, rollableTiers, tierLadder, tierNumber } from "../resolve/tiers.js";
 import { baseLabel } from "./render.js";
 import { capitalise, pluralRange, rangeText, rarityText } from "../words.js";
 
@@ -221,13 +221,10 @@ function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: Mod
     // A natural row above the item's level is an essence's or a Harvest
     // change's: no row that rolls here ranks it, so it takes its number on the
     // modifier's whole ladder.
-    const whole = rollableTiers(registry.catalog, a.base, TOP_ITEM_LEVEL, type, tags);
+    const whole = tierLadder(registry.catalog, a.base, type, tags);
     const numbers = mods
-        .map((m) => {
-            const n = rollable.findIndex((r) => r.id === m.id) + 1;
-            return n > 0 ? n : whole.findIndex((r) => r.id === m.id) + 1;
-        })
-        .filter((n) => n > 0);
+        .map((m) => tierNumber(rollable, m.id) ?? tierNumber(whole, m.id))
+        .filter((n) => n !== undefined);
     const tagSet = new Set<string>();
     for (const m of mods) for (const t of m.implicitTags) tagSet.add(tagLabel(t));
     const one = mods.length === 1 ? mods[0]! : undefined;
