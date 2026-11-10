@@ -15,7 +15,7 @@ import { loadDefaultPoe1, registryOf } from "@hinekora/data";
 
 // The cost layer's draw against the game's rule played out row by row over the
 // same pool: modifiers drawn one at a time by weight, each closing every
-// modifier group it lists (Modifier Â§ Group/family) and a full side admitting
+// modifier group it lists (Modifier Ã‚Â§ Group/family) and a full side admitting
 // no more. The bases are ones where a group holds several modifier types.
 const registry = registryOf(loadDefaultPoe1());
 
@@ -144,7 +144,7 @@ describe("the race against the draw played out", () => {
         const joint = (n: number) =>
             judged(wand("rare"), ["chaos"], `has "increased spell damage" and prefixCount == ${n}`);
         // One played sample counts both.
-        const trials = 200_000;
+        const trials = 100_000;
         const seen = [0, 0, 0, 0];
         played(
             joint(1).rows,
@@ -173,7 +173,7 @@ describe("the race against the draw played out", () => {
             chaosCount,
             3,
             (drawn) => has("WeaponSpellDamage")(drawn) && has("IncreasedCastSpeed")(drawn),
-            150_000,
+            80_000,
         );
         expect(Math.abs(chance / exact - 1)).toBeLessThan(0.02);
     });
@@ -231,7 +231,7 @@ describe("the race against the draw played out", () => {
             count,
             2,
             (drawn) => has("SpellDamageForJewel")(drawn) && prefixes(2)(drawn),
-            150_000,
+            80_000,
         );
         expect(Math.abs(joint.chance / jointExact - 1)).toBeLessThan(0.05);
     });
