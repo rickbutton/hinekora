@@ -152,7 +152,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                     : `Requires an open ${failure.gen} slot — ${why}.`;
             }
             case "modConflict":
-                return `The item may already carry a "${failure.group}" modifier${
+                return `The item ${failure.sure ? "already carries" : "may already carry"} ${/^[aeiou]/i.test(failure.group) ? "an" : "a"} "${failure.group}" modifier${
                     failure.among.length > 0
                         ? ` or one of its group (${failure.among.map((n) => `"${n}"`).join(", ")})`
                         : ""
@@ -190,7 +190,7 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                     case "absent":
                         return `"${failure.mod}" isn't guaranteed on the item, so it can't be changed.`;
                     case "fractured":
-                        return `"${failure.mod}" may be fractured, so it can't be changed.`;
+                        return `"${failure.mod}" ${failure.sure ? "is" : "may be"} fractured, so it can't be changed.`;
                     case "protected":
                         return `"${failure.mod}" sits on a side a metamod protects, so it can't be changed.`;
                 }

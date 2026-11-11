@@ -262,7 +262,10 @@ describe("checker — bench crafts", () => {
         // The ring already carries a life prefix; benching another life mod would
         // be a second mod of the same group — impossible in-game.
         const c = craft(rareRing(["IncreasedLife1"]), [bench("maximum life")]);
-        expect(check(c, ctx).diagnostics[0]?.message).toContain("at most one per group");
+        const message = check(c, ctx).diagnostics[0]?.message;
+        expect(message).toContain("at most one per group");
+        // The item block declares the modifier, so it is not a "may".
+        expect(message).toContain("The item already carries a ");
     });
 });
 

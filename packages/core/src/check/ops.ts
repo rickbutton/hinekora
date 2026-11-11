@@ -333,6 +333,8 @@ export type PreconditionFailure =
     | {
           readonly kind: "modConflict";
           readonly group: string;
+          /** One of them is on the item on every path. */
+          readonly sure: boolean;
           /** The other modifiers of the group the item may carry, named so a guide
            *  can rule them out one by one. */
           readonly among: readonly string[];
@@ -368,6 +370,7 @@ export type PreconditionFailure =
           readonly kind: "typeNotRemovable";
           readonly mod: string;
           readonly why: "absent" | "fractured" | "protected";
+          readonly sure?: true;
       }
     | { readonly kind: "tooFewMods"; readonly needed: number; readonly what?: string }
     | { readonly kind: "alreadyFractured"; readonly sure: boolean; readonly what?: string }
@@ -964,7 +967,10 @@ function failing(
             if (!guaranteedTypes(a).has(type))
                 return { kind: "typeNotRemovable", mod: label, why: "absent" };
             const fractured = fracturedTypes(a);
-            if (fractured.has(type) || unprovenFractures(a)[1] > 0) {
+            if (fractured.has(type)) {
+                return { kind: "typeNotRemovable", mod: label, why: "fractured", sure: true };
+            }
+            if (unprovenFractures(a)[1] > 0) {
                 return { kind: "typeNotRemovable", mod: label, why: "fractured" };
             }
             if (rules.protected.has(genOf(a, registry, type))) {
@@ -1023,6 +1029,7 @@ function failing(
                 ? {
                       kind: "modConflict",
                       group: registry.typeLabel(check.mod.type),
+                      sure: clashing.some((t) => guaranteedTypes(a).has(t)),
                       among: clashing
                           .filter((t) => t !== check.mod.type)
                           .map((t) => registry.typeLabel(t)),

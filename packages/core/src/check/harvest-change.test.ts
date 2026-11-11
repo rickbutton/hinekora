@@ -392,7 +392,7 @@ describe("harvest change", () => {
             ]),
             ctx,
         );
-        expect(fractured.diagnostics[0]!.message).toContain("may be fractured");
+        expect(fractured.diagnostics[0]!.message).toContain("is fractured");
         const shielded = check(
             craft(rareRing([PROTECT_SUFFIXES_CARRIER.id], [FIRE_RESIST.id]), [
                 harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
