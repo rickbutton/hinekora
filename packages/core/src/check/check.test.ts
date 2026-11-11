@@ -713,6 +713,20 @@ describe("checker — the rarity seam (surface §6 errors)", () => {
         expect(r.finalState!.counts.total).toEqual([4, 5]);
     });
 
+    it("judges the steps after a reforge refused for its rarity on the reforged item", () => {
+        // A Chaos Orb requires a Rare and sets no rarity of its own: run on the
+        // Normal ring it would leave no modifier for the annul to remove.
+        const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [
+            op("chaos"),
+            op("annul"),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toHaveLength(1);
+        expect(r.diagnostics[0]!.message).toContain("Requires a Rare item");
+        expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
+        expect(r.finalState!.counts.total).toEqual([3, 5]);
+    });
+
     it("judges a scour and an essence over every rarity the item may have", () => {
         // A scour in one arm leaves the ring Normal or Magic where the arms meet:
         // a second scour may be wasted, a low essence may land on a Magic.

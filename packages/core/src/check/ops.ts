@@ -512,7 +512,14 @@ function runCase(a0: AItem, ops: readonly Op[], registry: Registry): TransferRes
     let failure: PreconditionFailure | null = null;
     for (const op of ops) {
         if (op.kind === "require") {
-            failure ??= failing(a, op.check, rules, registry);
+            const failed = failing(a, op.check, rules, registry);
+            failure ??= failed;
+            // An item that cannot be of the needed rarity is taken as that
+            // rarity for the rest: a reforge run on a Normal item would leave
+            // it empty, and every later step would be refused for that.
+            if (failed?.kind === "wrongRarity" && !a.rarities.has(failed.needed)) {
+                a = settled({ ...a, rarities: new Set([failed.needed]) });
+            }
             continue;
         }
         if (op.kind === "unprotect") {
