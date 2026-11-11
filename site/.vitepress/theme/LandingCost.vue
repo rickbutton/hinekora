@@ -33,9 +33,6 @@ const cost = data.cost;
             </tfoot>
         </table>
         <div class="when">chaos at {{ cost.prices }}</div>
-        <div class="caption">the finished item</div>
-        <!-- The card's markup is the checker's own state, built with the site. -->
-        <div class="card" v-html="cost.card"></div>
     </div>
 </template>
 
@@ -46,7 +43,7 @@ const cost = data.cost;
 }
 
 table {
-    width: 100%;
+    width: auto;
     margin: 0;
     border-collapse: collapse;
     font-size: 13px;
@@ -109,8 +106,7 @@ tfoot td {
 }
 
 .when {
-    margin: 4px 0 14px;
-    text-align: right;
+    margin-top: 6px;
     font-size: 12px;
     color: var(--vp-c-text-3);
 }

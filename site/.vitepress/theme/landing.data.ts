@@ -114,7 +114,7 @@ function cost(registry: Registry): Cost {
             text: (lines[s.span.start.line - 1] ?? "").trim().replace(/\s*\{$/, ""),
             times: s.attempts !== undefined ? oddsText(s.attempts.chance) : `×${figure(s.runs)}`,
             spend: s.expected === undefined ? "" : priceText(s.expected),
-            chaos: chaos === undefined ? "" : figure(chaos),
+            chaos: chaos === undefined ? "" : approx(chaos),
         };
     });
     return {

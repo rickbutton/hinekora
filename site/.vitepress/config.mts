@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import { METHOD_WORDS } from "@hinekora/core";
 import { defineConfig, type DefaultTheme } from "vitepress";
 
 const readJson = <T,>(path: string): T =>
@@ -6,9 +7,31 @@ const readJson = <T,>(path: string): T =>
 
 // The VS Code extension's grammar is the one source of the language's
 // colouring outside Monaco; Shiki reads TextMate grammars as they are.
-const grammar = readJson<Record<string, unknown>>(
+interface Grammar {
+    readonly repository: {
+        readonly keywords: { readonly patterns: readonly Record<string, string>[] };
+    };
+}
+const extensionGrammar = readJson<Grammar>(
     "../../editors/vscode/syntaxes/hinekora.tmLanguage.json",
 );
+// The extension colours the currencies from the language service; a page has
+// no service, so here every operation word is in the grammar itself.
+const grammar = {
+    ...extensionGrammar,
+    repository: {
+        ...extensionGrammar.repository,
+        keywords: {
+            patterns: [
+                ...extensionGrammar.repository.keywords.patterns,
+                {
+                    match: `\\b(${METHOD_WORDS.join("|")})\\b`,
+                    name: "keyword.other.operation.hinekora",
+                },
+            ],
+        },
+    },
+};
 
 // Written by scripts/gen-reference.mjs from the method table; absent until
 // the generator has run, when the operations section is empty.

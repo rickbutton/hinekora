@@ -1,4 +1,4 @@
-/* The home page: what the language is on the left, the tool's own output on the right. */
+/* The home page: each paragraph on the left beside what it speaks of on the right. */
 .landing {
     max-width: 1180px;
     margin: 0 auto;
@@ -32,7 +32,11 @@
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
     gap: 48px;
     align-items: start;
-    margin-top: 40px;
+    margin-top: 28px;
+}
+
+.landing .prose {
+    padding-top: 12px;
 }
 
 .landing .prose > p:first-child {
@@ -41,14 +45,13 @@
 
 .landing .vp-doc div[class*="language-"] {
     margin: 0;
-    border-radius: 8px 8px 0 0;
+    border-radius: 8px;
 }
 
-/* What the tool says of the craft, joined to the code above it. */
+/* What the tool says of a craft. */
 .landing .output {
     padding: 14px 20px 18px;
-    border-radius: 0 0 8px 8px;
-    border-top: 1px solid #333;
+    border-radius: 8px;
     background: #161616;
     font-size: 14px;
     line-height: 1.5;
