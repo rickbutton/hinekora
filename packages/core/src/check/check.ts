@@ -230,6 +230,16 @@ function joinAll(parts: Parts): AItem {
     return parts.reduce(join);
 }
 
+/** How many entries a loop's settled invariants are kept for. */
+const SETTLED_PER_LOOP = 16;
+
+/** A loop's invariant for the parts it was entered with (`Checker.settled`). */
+interface Settled {
+    readonly entry: Parts;
+    readonly invariant: Parts;
+    readonly heads: readonly AItem[];
+}
+
 function sameParts(a: Parts, b: Parts): boolean {
     if (a.length !== b.length) return false;
     const byKey = new Map(b.map((s) => [partKey(s), s]));
@@ -287,6 +297,12 @@ class Checker {
      *  re-enters the innermost enclosing loop, so its state is a loop-head state
      *  that must join into that loop's invariant. */
     private readonly restartHeads: AItem[][] = [];
+    /** The invariants already worked out, by loop body. An outer loop runs its
+     *  body once a round until it settles, and an inner loop is entered with
+     *  the same parts on most of those rounds: its invariant depends on
+     *  nothing else, so it is worked out once for each. */
+    private readonly settled = new WeakMap<readonly Stmt[], Settled[]>();
+    private readonly bodies = new WeakMap<Stmt, readonly Stmt[]>();
 
     constructor(
         private readonly registry: Registry,
@@ -1124,8 +1140,18 @@ class Checker {
         body: readonly Stmt[],
         rpred: Cond | null,
     ): { invariant: Parts; heads: readonly AItem[] } {
+        const start = this.apart(entry);
+        const known = this.settled.get(body) ?? [];
+        // `stateEqual` leaves the base and level out, and a step may change the base.
+        const hit = known.find(
+            (k) =>
+                k.entry[0]?.base === start[0]?.base &&
+                k.entry[0]?.ilvl === start[0]?.ilvl &&
+                sameParts(k.entry, start),
+        );
+        if (hit !== undefined) return hit;
         return this.quietly(() => {
-            let invariant: Parts = this.apart(entry);
+            let invariant: Parts = start;
             let heads: readonly AItem[] = [];
             for (let i = 0; ; i++) {
                 const entering = this.apart(this.refineParts(invariant, rpred, false));
@@ -1137,6 +1163,9 @@ class Checker {
                 if (sameParts(next, invariant)) break;
                 invariant = next;
             }
+            if (known.length >= SETTLED_PER_LOOP) known.shift();
+            known.push({ entry: start, invariant, heads });
+            this.settled.set(body, known);
             return { invariant, heads };
         });
     }
@@ -1235,7 +1264,10 @@ class Checker {
         const env = this.bindArgs(stmt.name, proc.params, paramTypes, stmt.args, stmt.span);
         if (env === null) return { kind: "fall", parts };
 
-        const body = substituteStmts(proc.body, env);
+        // One body for a call site, so a loop in it is the same loop on every
+        // pass and its invariant is found again (`settled`).
+        const body = this.bodies.get(stmt) ?? substituteStmts(proc.body, env);
+        this.bodies.set(stmt, body);
         const trace: TraceEntry[] = [];
         const outer = this.sink;
         this.sink = trace;

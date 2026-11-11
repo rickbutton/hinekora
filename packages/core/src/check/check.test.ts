@@ -966,6 +966,28 @@ describe("checker — paths that leave different items stay apart", () => {
         expect(guaranteedTypes(r.finalState!).has(FIRE_RESIST.type)).toBe(true);
     });
 
+    it("judges an inner loop met again with the same items as it did the first time", () => {
+        // The outer loop comes round to the inner one with the items it entered
+        // it with before; in place or in a def, the verdict and the item agree.
+        const fire = has("FireResist1");
+        const inner = until(fire, [op("chaos")]);
+        const fills = [inner, op("exalt"), iff(notp(life), [op("exalt")])];
+        const inPlace = check(craft(rareRing(), [until(life, fills)]), ctx);
+        const inDef = check(
+            craft(
+                rareRing(),
+                [until(life, [callStmt("round")])],
+                [],
+                [procDef("round", [], fills)],
+            ),
+            ctx,
+        );
+        const messages = (r: typeof inPlace) => r.diagnostics.map((d) => d.message);
+        expect(messages(inPlace).join()).toContain("open affix slot");
+        expect(messages(inDef)).toEqual(messages(inPlace));
+        expect(inDef.finalState?.counts).toEqual(inPlace.finalState?.counts);
+    });
+
     it("reports a step that fails on one path once, for the item over every path", () => {
         const r = check(craft(five(), [op("exalt"), undo, op("exalt")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
