@@ -63,7 +63,7 @@ Two lists, "surely there" and "surely not", cannot hold this fact. No one resist
 to be there and none is sure to be absent, so both lists are empty and all eight rows pass.
 With the rule, the checker knows that a later test for "none of the three" is dead.
 
-A table doubles with every modifier, and a ring can roll hundreds. The checker stores the rule
+A table doubles with every modifier, and a ring can roll dozens. The checker stores the rule
 as a [decision diagram](https://en.wikipedia.org/wiki/Binary_decision_diagram), which asks
 about one modifier at a time and shares the questions that many combinations have in common.
 
