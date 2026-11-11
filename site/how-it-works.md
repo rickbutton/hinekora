@@ -63,7 +63,15 @@ A loop body must be safe on every pass. The checker takes the summary entering t
 the body, and joins the result back into the summary at the top. It repeats until a pass adds
 nothing. That summary covers every pass, and the checker judges the body against it.
 
+<!-- refused -->
+
 ```hinekora
+item {
+    base:   "Vermillion Ring"
+    ilvl:   84
+    rarity: rare
+}
+
 until has "maximum life" t1 {
     exalt
 }

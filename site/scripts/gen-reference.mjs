@@ -8,9 +8,6 @@
  * says of an operation comes from the table, so it changes with it; only the
  * grouping (FAMILIES, where a new first word lands in "Other") and the
  * wording around the table's text are kept here.
- *
- * Only the operations in PAGES get a page of their own for now; the index
- * lists them all.
  */
 import {
     copyFileSync,
@@ -30,8 +27,6 @@ const repo = join(site, "..");
 const out = join(site, "docs", "operations");
 const icons = join(site, "public", "op-icons");
 const GITHUB = "https://github.com/rickbutton/hinekora/blob/main";
-
-const PAGES = new Set(["essence", "harvest-reforge", "bench"]);
 
 /** The families the index groups operations under, by their first word. */
 const FAMILIES = [
@@ -175,12 +170,20 @@ function exampleOf(m) {
     return found.sort((a, b) => named(a) - named(b) || a.text.length - b.text.length)[0];
 }
 
+/** The craft under site/examples/ops/ named for the method, if it has one. */
+function ownExample(m) {
+    const file = join(site, "examples", "ops", `${slugOf(m)}.craft`);
+    return existsSync(file) ? readFileSync(file, "utf8").replace(/\r/g, "").trimEnd() : undefined;
+}
+
 function page(m, links) {
     const slug = slugOf(m);
     const doc = readDoc(m);
     const name = m.words.join(" ");
     const link = links.get(name) ?? links.get(`${m.words[0]} *`);
-    const example = exampleOf(m);
+    // A short craft written for the page, where there is one; else one of the repo's.
+    const own = ownExample(m);
+    const example = own === undefined ? exampleOf(m) : undefined;
     const icon = existsSync(join(icons, `${slug}.png`)) ? `/op-icons/${slug}.png` : undefined;
     const parts = [
         "---",
@@ -205,19 +208,23 @@ function page(m, links) {
         "## What it does",
         "",
         ...doc.does.map((s) => `${escape(s)}\n`),
-        "## What the item needs",
-        "",
-        doc.needs.length > 0
-            ? doc.needs
-                  .map(
-                      (s) =>
-                          `- ${escape(s.replace(/^Needs /, "").replace(/^./, (c) => c.toUpperCase()))}`,
-                  )
-                  .join("\n")
-            : "The help line states no requirement beyond the description above. The checker rejects the step if the item may differ from it on any path.",
-        "",
     ];
-    if (example !== undefined) {
+    if (doc.needs.length > 0) {
+        parts.push(
+            "## What the item needs",
+            "",
+            doc.needs
+                .map(
+                    (s) =>
+                        `- ${escape(s.replace(/^Needs /, "").replace(/^./, (c) => c.toUpperCase()))}`,
+                )
+                .join("\n"),
+            "",
+        );
+    }
+    if (own !== undefined) {
+        parts.push("## Example", "", "```hinekora", own, "```", "");
+    } else if (example !== undefined) {
         parts.push(
             "## Example",
             "",
@@ -253,7 +260,7 @@ function index() {
         "# Operations",
         "",
         "A statement of a craft is one operation on the item. Each operation's page gives its syntax,",
-        "its effect, its precondition and a craft from examples/ that uses it.",
+        "its effect, what it needs of the item and a craft that uses it.",
         "",
     ];
     for (const [family] of [...FAMILIES, ["Other"]]) {
@@ -262,8 +269,9 @@ function index() {
         lines.push(`## ${family}`, "", "| Operation | What it does |", "| --- | --- |");
         for (const m of members) {
             const name = `\`${m.words.join(" ")}\``;
-            const cell = PAGES.has(slugOf(m)) ? `[${name}](./${slugOf(m)})` : name;
-            lines.push(`| ${cell} | ${escape(readDoc(m).summary).replace(/\|/g, "\\|")} |`);
+            lines.push(
+                `| [${name}](./${slugOf(m)}) | ${escape(readDoc(m).summary).replace(/\|/g, "\\|")} |`,
+            );
         }
         lines.push("");
     }
@@ -280,11 +288,21 @@ for (const m of METHODS) {
     if (from !== undefined) copyFileSync(from, join(icons, `${slug}.png`));
 }
 const links = wikiLinks();
-const sidebar = [];
-for (const m of METHODS.filter((m) => PAGES.has(slugOf(m)))) {
-    writeFileSync(join(out, `${slugOf(m)}.md`), page(m, links));
-    sidebar.push({ text: m.words.join(" "), link: `/docs/operations/${slugOf(m)}` });
-}
+for (const m of METHODS) writeFileSync(join(out, `${slugOf(m)}.md`), page(m, links));
+// One collapsed group per family, in the index's order.
+const sidebar = [...FAMILIES, ["Other"]]
+    .map(([family]) => ({
+        text: family,
+        collapsed: true,
+        items: METHODS.filter((m) => familyOf(m) === family).map((m) => ({
+            text: m.words.join(" "),
+            link: `/docs/operations/${slugOf(m)}`,
+        })),
+    }))
+    .filter((group) => group.items.length > 0);
 writeFileSync(join(out, "index.md"), index());
 writeFileSync(join(out, "sidebar.json"), JSON.stringify(sidebar, null, 4));
-console.log(`operations reference: ${sidebar.length} pages, ${METHODS.length} operations indexed`);
+const bare = METHODS.filter((m) => ownExample(m) === undefined).map((m) => m.words.join(" "));
+console.log(
+    `operations reference: ${METHODS.length} pages; no craft of its own for: ${bare.join(", ") || "none"}`,
+);

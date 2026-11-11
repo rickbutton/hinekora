@@ -7,7 +7,8 @@
     "scripts": {
         "prepare-content": "node scripts/prepare.mjs",
         "dev": "node scripts/prepare.mjs && vitepress dev",
-        "build": "node scripts/prepare.mjs && vitepress build",
+        "build": "node scripts/prepare.mjs && node scripts/check-examples.mjs && vitepress build",
+        "check-examples": "node scripts/check-examples.mjs",
         "preview": "vitepress preview",
         "typecheck": "tsc -b"
     },
