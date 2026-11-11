@@ -100,7 +100,7 @@ export function costSource(
     const width = Math.max(...report.steps.map((s) => stepText(lines, s).length), 10);
     for (const s of report.steps) {
         const text = stepText(lines, s);
-        out.push(`  ${text.padEnd(width)}  ${stepFigure(s, prices)}`);
+        out.push(`  ${text.padEnd(width)}  ${stepFigure(s, prices)}`.trimEnd());
         if (s.note !== undefined) out.push(`  ${"".padEnd(width)}  (${s.note})`);
     }
     out.push("");
@@ -139,10 +139,15 @@ export function costSource(
     return { ok: parsed.ok, output: out.join("\n") };
 }
 
-/** The statement's first source line, with its line number. */
+/** The statement's first source line, with its line number; a statement
+ *  written after another on the line is its own text alone. */
 function stepText(lines: readonly string[], s: StepCost): string {
-    const line = lines[s.span.start.line - 1] ?? "";
-    return `${String(s.span.start.line).padStart(3)}  ${line.trim()}`;
+    const { start, end } = s.span;
+    const line = lines[start.line - 1] ?? "";
+    const before = line.slice(0, start.column - 1);
+    const own = line.slice(start.column - 1, end.line === start.line ? end.column - 1 : undefined);
+    const text = before.trim() === "" ? line.trim() : own.trim();
+    return `${String(start.line).padStart(3)}  ${text}`;
 }
 
 /**

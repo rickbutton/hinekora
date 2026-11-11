@@ -338,6 +338,27 @@ describe("costSource — what a guide is expected to spend", () => {
         );
     });
 
+    it("gives a step written inside a one-line branch its own text", () => {
+        const r = costSource(
+            `item {
+    base: "Iron Ring"
+    ilvl: 84
+    rarity: magic
+    prefixes: ["maximum life" t1]
+}
+if suffixCount == 0 { augment }
+regal`,
+            "test.craft",
+            registry,
+            prices,
+        );
+        const rows = r.output.split("\n").filter((l) => /^\s+7\s/.test(l));
+        expect(rows.map((l) => l.trim().split(/\s{2,}/)[1])).toEqual([
+            "if suffixCount == 0 { augment }",
+            "augment",
+        ]);
+    });
+
     it("answers for a guide whose compared values are too many to follow one by one", () => {
         // Four values compared against thresholds: their rows and the pieces
         // the thresholds cut are more states than the walk follows, so it
