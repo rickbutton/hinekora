@@ -27,6 +27,7 @@ import {
     canHaveEldritch,
     ELDRITCH_ITEM_LEVEL,
     type EldritchSide,
+    eldritchOf,
     eldritchTierLabel,
     eldritchTierOf,
     isEldritchAmulet,
@@ -190,9 +191,16 @@ const MAX_PARTS = 12;
 
 /** The fields a step's precondition reads that a join blurs. Summaries that
  *  agree on all of them are joined; what else differs between them (tiers,
- *  values, strands, the possible types) is joined field by field. */
+ *  values, strands, the possible types) is joined field by field. An eldritch
+ *  implicit counts by whether it may be there and may be missing: its tier
+ *  changes with every ember, and paths that differ in the tier alone would
+ *  each be a part, for a fact the set of tier pairs keeps well enough. */
 function partKey(a: AItem): string {
     const set = (s: ReadonlySet<unknown>): string => [...s].sort().join(",");
+    const implicit = (side: EldritchSide): string => {
+        const tiers = [...a.eldritch].map((key) => eldritchOf(key)[side]);
+        return `${tiers.some((t) => t > 0)}${tiers.some((t) => t === 0)}`;
+    };
     return [
         set(a.rarities),
         a.counts.total,
@@ -202,7 +210,8 @@ function partKey(a: AItem): string {
         a.fractures,
         set(a.corrupted),
         set(a.influences),
-        set(a.eldritch),
+        implicit("exarch"),
+        implicit("eater"),
     ].join("|");
 }
 
