@@ -100,7 +100,7 @@ The abstract state's fields are tabled in [REFERENCE §4](REFERENCE.md).
 A craft is a program over an item, with loops and branches, and every operation's
 precondition must hold on every path. Simulating is hopeless (the
 [core invariant](../CLAUDE.md)), so the checker uses **abstract interpretation**: it
-tracks one summary, an `AItem`, standing for the whole set of items possible at a program
+tracks summaries, each an `AItem` standing for a set of items possible at a program
 point. Each operation has a **transfer function** from summary to summary; where control
 flow merges, a `join` covers both summaries; a loop iterates to a fixpoint.
 
@@ -151,16 +151,22 @@ case per method.
 
 ### 4.4 The driver: sequencing, branches, loops
 
-`check.ts` threads a summary through the program. A statement either _falls through_ with a
-new summary, _restarts_ (diverges, re-entering the enclosing loop) or _stops_ (the path
+`check.ts` threads a few summaries, the **parts**, through the program. One summary
+decorrelates its non-relational pieces at a merge: "five modifiers with the life" joined
+with "four without" is "four or five, with or without", and a later step is refused for an
+item no path makes. So summaries that differ in counts, rarity or marks stay apart, and
+those that agree join field by field. A part whose counts cannot hold the modifiers
+proven present is dropped. Each part is
+checked on its own; a failure is worded for their join, which the trace records. The parts are capped, the last joined past the cap. A statement either _falls through_ with
+new parts, _restarts_ (diverges, re-entering the enclosing loop) or _stops_ (the path
 ends; it joins nothing downstream, which is how a guide's "the item is bricked" branch
 leaves the rest of the craft judged on the good paths only).
 
 - **Sequence**: look each statement's words up in the method table and run the sequence
   its entry builds from the arguments.
-- **Branch (`if`)**: refine the summary into each arm (narrow by the condition), check
-  each, then `join` the arms that fall through. An arm whose condition is impossible here
-  is flagged as dead.
+- **Branch (`if`)**: refine the parts into each arm (narrow by the condition), check
+  each, then gather the arms that fall through. An arm no part can enter is flagged as
+  dead.
 - **Loop (`until`)**: three steps. _reachability_ (can the exit predicate ever hold on this
   base? if never, report that root cause), the **loop invariant** (a join-fixpoint over the
   states that re-enter the head, so the body is checked at _every_ iteration; this is what
@@ -168,15 +174,15 @@ leaves the rest of the craft judged on the good paths only).
   predicate holds, so refine the after-state by it). The body runs only from the part of
   a head state where the exit predicate is false: the rest leaves at once, and checking
   the body on it would refuse steps no path takes (an inner loop entered from an outer
-  loop's joined invariant). All three are expressed over one primitive: `headStates`,
-  the states re-entering the loop head after one body run (the fall-off-end state, unjoined
-  per arm where a branch closes the body, plus every `restart` back-edge).
+  loop's invariant). All three are expressed over one primitive: `headStates`,
+  the states re-entering the loop head after one body run (the fall-off-end parts plus
+  every `restart` back-edge).
 - **Termination**: the invariant lattice is finite and the step monotone, but the
   relational presence part is tall (~2^atoms), so past a few exact iterations the driver
   **widens**: it over-approximates presence to its unit facts, guaranteeing quick
   convergence. Widening trades a little precision for termination; the loop's exit refine
-  re-establishes what was dropped. The iteration ends only at a fixpoint: a numeric range
-  still moving after many more rounds jumps to the end of its domain, so one is reached.
+  re-establishes what was dropped. The iteration ends only at a fixpoint: after many more
+  rounds the parts become one, whose moving ranges jump to the end of their domains.
 - **Defs & procs**: predicate defs (`def f(p) = <pred>`) and operation functions
   (`def f(p) { <stmts> }`) are _inlined_: arguments substituted, body checked in place. So
   they need nothing new in the domain or driver; state threading, nested loops, and

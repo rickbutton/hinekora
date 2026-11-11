@@ -32,6 +32,7 @@ import {
     paramStep,
     procDef,
     restart,
+    stop,
     tierArg,
     until,
 } from "../__fixtures__/ast.js";
@@ -893,39 +894,50 @@ describe("checker — restart is a loop back-edge", () => {
     });
 });
 
-describe("checker — a branch that closes a loop's body", () => {
+describe("checker — paths that leave different items stay apart", () => {
     const life = has("IncreasedLife1");
     const undo = iff(notp(life), [op("annul")]);
+    const five = () => rareRing(["random", "random", "random"], ["random", "random"]);
 
-    it("reaches the loop's condition one arm at a time", () => {
+    it("sorts the arms of a loop's last branch by the loop's condition", () => {
         // The arm that kept the new modifier has the life and leaves; the arm
-        // that removed it is back at the count it started the round with. Joined
-        // first, "one more modifier" and "no life" would go round together.
+        // that removed it is back at the count it started the round with. As
+        // one summary, "one more modifier" and "no life" would go round together.
         const c = craft(rareRing(), [until(life, [op("exalt"), undo])]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState?.counts.total).toEqual([1, 1]);
     });
 
-    it("does so through a branch nested last in an arm, and through a def's steps", () => {
-        const nested = iff(has("FireResist1"), [op("annul")], [undo]);
-        expect(
-            check(craft(rareRing(), [until(life, [op("exalt"), nested])]), ctx).diagnostics,
-        ).toEqual([]);
-        const round = procDef("round", [], [op("exalt"), undo]);
-        expect(
-            check(craft(rareRing(), [until(life, [callStmt("round")])], [], [round]), ctx)
-                .diagnostics,
-        ).toEqual([]);
+    it("does so through a nested branch, a def's steps and a restart on one arm", () => {
+        const clean = (
+            body: Parameters<typeof until>[1],
+            procs: ReturnType<typeof procDef>[] = [],
+        ): void => {
+            const r = check(craft(rareRing(), [until(life, body)], [], procs), ctx);
+            expect(r.diagnostics).toEqual([]);
+            expect(r.finalState?.counts.total).toEqual([1, 1]);
+        };
+        clean([op("exalt"), iff(has("FireResist1"), [op("annul")], [undo])]);
+        clean([callStmt("round")], [procDef("round", [], [op("exalt"), undo])]);
+        clean([op("exalt"), iff(has("FireResist1"), [op("annul"), restart()], [undo])]);
     });
 
-    it("takes a restart on one arm beside the arms that fall off the end", () => {
-        const c = craft(rareRing(), [
-            until(life, [op("exalt"), iff(has("FireResist1"), [op("annul"), restart()], [undo])]),
+    it("keeps them apart through the steps after the branch", () => {
+        const c = craft(rareRing([], ["random"]), [
+            until(life, [op("exalt"), undo, iff(has("FireResist1"), [stop()])]),
         ]);
-        const r = check(c, ctx);
-        expect(r.diagnostics).toEqual([]);
-        expect(r.finalState?.counts.total).toEqual([1, 1]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
+    });
+
+    it("lets a later branch pick the path whose count has room, outside a loop too", () => {
+        // Six modifiers with the life, five without it.
+        const filled = [op("exalt"), undo];
+        expect(
+            check(craft(five(), [...filled, iff(notp(life), [op("exalt")])]), ctx).diagnostics,
+        ).toEqual([]);
+        const full = check(craft(five(), [...filled, iff(life, [op("exalt")])]), ctx);
+        expect(full.diagnostics.map((d) => d.message).join()).toContain("open affix slot");
     });
 
     it("still refuses a round that some arm leaves one modifier fuller", () => {
@@ -934,6 +946,68 @@ describe("checker — a branch that closes a loop's body", () => {
         ]);
         const r = check(c, ctx);
         expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
+    });
+
+    it("shows one item for a step, covering every path that reaches it", () => {
+        const c = craft(five(), [op("exalt"), undo, op("annul")]);
+        const r = check(c, ctx);
+        const last = r.trace.filter((e) => e.kind === "operation").at(-1)!;
+        expect(last.before.counts.total).toEqual([5, 6]);
+    });
+
+    it("reports a step that fails on one path once, for the item over every path", () => {
+        const r = check(craft(five(), [op("exalt"), undo, op("exalt")]), ctx);
+        expect(r.diagnostics).toHaveLength(1);
+        expect(r.diagnostics[0]!.message).toContain("5–6 affixes");
+        expect(r.diagnostics[0]!.message).toContain("the item may be full");
+    });
+
+    it("joins the paths past the number it keeps apart", () => {
+        const loop = craft(rareRing(), [until(life, [op("exalt"), undo])]);
+        const one = check(loop, ctx, { maxParts: 1 });
+        expect(one.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
+    });
+
+    it("refuses a loop that fills the item whatever the number kept apart", () => {
+        // Each round leaves more counts at the head than a small number holds,
+        // so the last of them are joined; the full item is still among them.
+        const fills = craft(rareRing(), [
+            until(life, [op("exalt"), iff(has("FireResist1"), [op("annul")], [undo, op("exalt")])]),
+        ]);
+        for (const maxParts of [1, 2, 3, 12]) {
+            const r = check(fills, ctx, { maxParts });
+            expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
+        }
+    });
+
+    it("judges a loop the same once its parts have become one widened summary", () => {
+        const round = (last: Parameters<typeof until>[1][number]) =>
+            craft(rareRing(), [until(life, [op("exalt"), last])]);
+        const wide = { widenRangesAfter: 0 };
+        expect(check(round(undo), ctx, wide).diagnostics).toEqual([]);
+        const fills = check(round(iff(has("FireResist1"), [op("annul")])), ctx, wide);
+        expect(fills.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
+    });
+
+    const fireOrBoth = orp(has("FireResist1"), andp(has("ColdResist1"), has("LightningResist1")));
+
+    it("keeps a path whose one suffix may meet the condition alone", () => {
+        // Three prefixes and the fire resistance: the branch runs, and the
+        // third Exalted Orb in it finds the item full.
+        const c = craft(rareRing(["random", "random"], ["random"]), [
+            op("exalt"),
+            iff(cmp("prefixCount", "==", 2), [
+                op("annul"),
+                iff(cmp("suffixCount", "<=", 1), [stop()]),
+            ]),
+            iff(fireOrBoth, [op("exalt"), op("exalt"), op("exalt")]),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
+        const open = craft(rareRing(["random", "random", "random"], ["random"]), [
+            iff(fireOrBoth, [op("annul")]),
+        ]);
+        expect(check(open, ctx).diagnostics).toEqual([]);
     });
 });
 

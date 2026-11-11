@@ -86,8 +86,8 @@ Annulment is a `remove`. A new method is a new sequence, with no change to the c
 ## Branches and loops
 
 At an `if` the checker narrows the summary by the condition for one arm and by its negation
-for the other. After the arms it joins the two results into one summary that covers both. It
-reports an arm whose condition cannot hold as dead.
+for the other. After the arms it joins results that agree on counts and rarity and keeps the
+rest apart. An arm that cannot run is dead.
 
 A loop body must be safe on every pass. The checker takes the summary entering the loop, runs
 the body, and joins the result back into the summary at the top. It repeats until a pass adds

@@ -27,10 +27,9 @@ waits until a guide calls for it.
   Orb, whose result keeps an influenced modifier of each item, Reflecting Mist and
   Kishara's Ducat.
 - **choice over an operation's outcomes** (Hinekora's Lock, Allflame crafting).
-- **a count tied to a modifier across an `if` with steps after it**: the join after
-  `exalt  if not has X { annul }` keeps "four or five modifiers" and "X or not" apart, so
-  a later `if has X` sees either count. A branch that closes a loop's body is exempt: its
-  arms reach the loop's head unjoined.
+- **facts the parts do not keep apart**: a tier, a value or a strand count tied to a
+  path joins where the paths agree on counts, rarity and marks; and an `or` inside one
+  condition still narrows to a single joined summary.
 - English negation sugar (`doesn't have` → `not has`); a power-user annotation tier for
   reusable techniques; a way to name an unveiled modifier whose words a natural one
   shares other than by its mod id.

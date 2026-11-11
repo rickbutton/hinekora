@@ -84,6 +84,8 @@ export interface CheckTuning {
     /** The loop round from which the numeric ranges are widened; a test sets
      *  it low to drive the widening. */
     readonly widenRangesAfter?: number;
+    /** The most summaries kept apart at one point (`MAX_PARTS`). */
+    readonly maxParts?: number;
 }
 
 const cmpAtLeast = (projection: "prefixCount" | "suffixCount", value: number): RPred => ({
@@ -165,21 +167,77 @@ const WIDEN_AFTER = 3;
  *  short, not what a loop is meant to converge by. */
 const WIDEN_RANGES_AFTER = 32;
 
+/**
+ * The items a point of the craft may hold, as a few summaries kept apart; never
+ * empty. One summary for them all would hold "four or five modifiers" and "with
+ * the life or without", and forget that the five go with the life: the counts,
+ * the rarity and the marks are ranges and sets of their own, tied to nothing.
+ * So summaries that differ in those stay apart (`partition`), and each is
+ * checked on its own.
+ */
+type Parts = readonly AItem[];
+
 /** How a statement leaves: with an item, or ending the path, by re-entering the
  *  enclosing loop (`restart`) or by ending the craft on this path (`stop`). */
 type Flow =
-    | {
-          readonly kind: "fall";
-          readonly state: AItem;
-          /** The states `state` joins, when the statement was a branch whose arms
-           *  left different items. A branch that closes a loop's body hands them
-           *  to the loop one by one: the join would forget which count goes with
-           *  which modifier, and the loop's condition could no longer tell the
-           *  arm that leaves from the arm that goes round again. */
-          readonly parts?: readonly AItem[];
-      }
+    | { readonly kind: "fall"; readonly parts: Parts }
     | { readonly kind: "restart" }
     | { readonly kind: "stop" };
+
+/** The most summaries kept apart at one point. Past it the last two are joined
+ *  until they fit, which costs precision, never soundness. */
+const MAX_PARTS = 12;
+
+/** The fields a step's precondition reads that a join blurs. Summaries that
+ *  agree on all of them are joined; what else differs between them (tiers,
+ *  values, strands, the possible types) is joined field by field. */
+function partKey(a: AItem): string {
+    const set = (s: ReadonlySet<unknown>): string => [...s].sort().join(",");
+    return [
+        set(a.rarities),
+        a.counts.total,
+        a.counts.prefix,
+        a.counts.suffix,
+        a.crafted,
+        a.fractures,
+        set(a.corrupted),
+        set(a.influences),
+        set(a.eldritch),
+    ].join("|");
+}
+
+/** The states reaching one point as parts: those with one key joined, the rest
+ *  apart, up to `most`. Empty only for no states. */
+function partition(states: readonly AItem[], most: number): AItem[] {
+    const byKey = new Map<string, AItem>();
+    const add = (s: AItem): void => {
+        const key = partKey(s);
+        const held = byKey.get(key);
+        byKey.set(key, held === undefined ? s : join(held, s));
+    };
+    states.forEach(add);
+    while (byKey.size > Math.max(1, most)) {
+        const [a, b] = [...byKey].slice(-2) as [[string, AItem], [string, AItem]];
+        byKey.delete(a[0]);
+        byKey.delete(b[0]);
+        add(join(a[1], b[1]));
+    }
+    return [...byKey.values()];
+}
+
+/** One summary covering every part: what the trace shows of a point. */
+function joinAll(parts: Parts): AItem {
+    return parts.reduce(join);
+}
+
+function sameParts(a: Parts, b: Parts): boolean {
+    if (a.length !== b.length) return false;
+    const byKey = new Map(b.map((s) => [partKey(s), s]));
+    return a.every((s) => {
+        const other = byKey.get(partKey(s));
+        return other !== undefined && stateEqual(s, other);
+    });
+}
 
 /** A statement whose words name no method: a currency's name is the common
  *  case, so that is what the message calls it. */
@@ -189,14 +247,10 @@ function unknownOperation(words: readonly string[]): string {
         : `Unknown operation "${words.join(" ")}".`;
 }
 
-function foldJoin(states: readonly AItem[]): AItem | null {
-    return states.length === 0 ? null : states.reduce(join);
-}
-
 const isLive = (s: AItem | null): s is AItem => s !== null;
 
 export function check(craft: Craft, ctx: CheckContext, tuning: CheckTuning = {}): CheckResult {
-    return new Checker(ctx.registry, tuning.widenRangesAfter).run(craft);
+    return new Checker(ctx.registry, tuning.widenRangesAfter, tuning.maxParts).run(craft);
 }
 
 class Checker {
@@ -204,6 +258,9 @@ class Checker {
     /** When > 0, suppress diagnostics, loop-invariant passes re-check the body
      *  and must not emit duplicates; only the final, real pass does. */
     private quiet = 0;
+    /** How many diagnostics the quiet passes held back: a quiet run of a step
+     *  that moves it found something to report. */
+    private unsaid = 0;
     private readonly trace: TraceEntry[] = [];
     /** One BDD manager per check, shared by all states so `presence` ids compare. */
     private readonly bdd = new BddManager();
@@ -234,7 +291,12 @@ class Checker {
     constructor(
         private readonly registry: Registry,
         private readonly widenRangesAfter = WIDEN_RANGES_AFTER,
+        private readonly maxParts = MAX_PARTS,
     ) {}
+
+    private apart(states: readonly AItem[]): AItem[] {
+        return partition(states, this.maxParts);
+    }
 
     run(craft: Craft): CheckResult {
         this.collectDefs(craft.defs);
@@ -244,12 +306,12 @@ class Checker {
             return { ok: false, diagnostics: this.diagnostics, trace: this.trace };
         }
         this.trace.push({ span: craft.item.span, kind: "item", before: initial, after: initial });
-        const flow = this.checkSeq(initial, craft.body);
+        const flow = this.checkSeq([initial], craft.body);
         const result: CheckResult = {
             ok: this.diagnostics.length === 0,
             diagnostics: this.diagnostics,
             trace: this.trace,
-            ...(flow.kind === "fall" && { finalState: flow.state }),
+            ...(flow.kind === "fall" && { finalState: joinAll(flow.parts) }),
         };
         return result;
     }
@@ -264,7 +326,10 @@ class Checker {
     }
 
     private diag(message: string, span: CheckDiagnostic["span"]): void {
-        if (this.quiet > 0) return;
+        if (this.quiet > 0) {
+            this.unsaid++;
+            return;
+        }
         this.diagnostics.push({ message, span });
     }
 
@@ -687,21 +752,23 @@ class Checker {
 
     // --- statement sequencing ---------------------------------------------
 
-    private checkSeq(entry: AItem, stmts: readonly Stmt[]): Flow {
-        let state = entry;
-        let last: Flow = { kind: "fall", state };
+    private checkSeq(entry: Parts, stmts: readonly Stmt[]): Flow {
+        let parts = entry;
+        // The joined item is the trace's alone, so a quiet pass never builds it.
+        let joined: AItem | undefined;
         for (const [i, stmt] of stmts.entries()) {
-            const before = state;
-            const flow = this.checkStmt(before, stmt);
+            const flow = this.checkStmt(parts, stmt);
             // Only the real (non-quiet) pass records, so each statement appears once.
             if (this.quiet === 0) {
+                const before = joined ?? joinAll(parts);
+                joined = flow.kind === "fall" ? joinAll(flow.parts) : undefined;
                 const inlined = this.inlined.get(stmt);
                 this.sink.push({
                     span: stmt.span,
                     kind: stmt.kind,
                     ...(this.sink !== this.trace && { stmt }),
                     before,
-                    ...(flow.kind === "fall" && { after: flow.state }),
+                    ...(joined !== undefined && { after: joined }),
                     ...(inlined !== undefined && { inlined }),
                 });
             }
@@ -719,63 +786,91 @@ class Checker {
                 }
                 return flow;
             }
-            state = flow.state;
-            last = flow;
+            parts = flow.parts;
         }
-        return last;
+        return { kind: "fall", parts };
     }
 
-    private checkStmt(a: AItem, stmt: Stmt): Flow {
+    private checkStmt(parts: Parts, stmt: Stmt): Flow {
         switch (stmt.kind) {
             case "operation":
-                return this.checkOperation(a, stmt);
+                return this.checkOperationOn(parts, stmt);
             case "restart": {
                 // The loop invariant must fold in this back-edge: a `restart`
                 // after an additive op can fill the item the same way falling off
                 // the body end can.
                 const frame = this.restartHeads[this.restartHeads.length - 1];
-                if (frame !== undefined) frame.push(a);
+                if (frame !== undefined) frame.push(...parts);
                 return { kind: "restart" };
             }
             case "stop":
                 return { kind: "stop" };
             case "until":
-                return this.checkUntil(a, stmt);
+                return this.checkUntil(parts, stmt);
             case "if":
-                return this.checkIf(a, stmt);
+                return this.checkIf(parts, stmt);
             case "call":
-                return this.checkCall(a, stmt);
+                return this.checkCall(parts, stmt);
             case "paramStep":
                 // Inlining splices the bound steps in; one left standing was
                 // never bound (the proc's own error was reported).
                 this.diag(`parameter "${stmt.param}" was never given a value`, stmt.span);
-                return { kind: "fall", state: a };
+                return { kind: "fall", parts };
         }
     }
 
     // --- operations --------------------------------------------------------
 
+    /** The step on every part. One that fails on some part is reported once,
+     *  and worded for the item over all the parts: "may be Magic or Rare" is
+     *  what the craft's author can act on, where one part alone reads as if
+     *  the step failed on every path. */
+    private checkOperationOn(parts: Parts, stmt: Extract<Stmt, { kind: "operation" }>): Flow {
+        const run = (a: AItem): AItem | null => this.checkOperation(a, stmt);
+        const [only] = parts;
+        let afters: (AItem | null)[];
+        if (parts.length === 1 && only !== undefined) {
+            afters = [run(only)];
+        } else {
+            const unsaid = this.unsaid;
+            afters = this.quietly(() => parts.map(run));
+            if (this.unsaid > unsaid && this.quiet === 0) {
+                const reported = this.diagnostics.length;
+                run(joinAll(parts));
+                // The join is checked only for its wording; where it finds
+                // nothing to say, the first part that fails speaks.
+                for (const a of parts) {
+                    if (this.diagnostics.length > reported) break;
+                    run(a);
+                }
+            }
+        }
+        const falls = afters.filter(isLive);
+        return falls.length === 0 ? { kind: "stop" } : { kind: "fall", parts: this.apart(falls) };
+    }
+
     /** Look the method up, bind its arguments, build its operations and run them.
      *  An unknown method, or one the catalog cannot build, leaves the state as it
-     *  was; one whose check fails continues from the state it would have left. */
-    private checkOperation(a: AItem, stmt: Extract<Stmt, { kind: "operation" }>): Flow {
+     *  was; one whose check fails continues from the state it would have left.
+     *  `null` when the method leaves no item. */
+    private checkOperation(a: AItem, stmt: Extract<Stmt, { kind: "operation" }>): AItem | null {
         const method = findMethod(stmt.words);
         if (method === undefined) {
             this.diag(unknownOperation(stmt.words), stmt.span);
-            return { kind: "fall", state: a };
+            return a;
         }
         const literals: Literal[] = [];
         for (const arg of stmt.args) {
             if (arg.kind === "param") {
                 this.diag(`parameter "${arg.param}" was never given a value`, stmt.span);
-                return { kind: "fall", state: a };
+                return a;
             }
             literals.push(arg);
         }
         const built = method.build(literals, a, this.registry);
         if ("refused" in built) {
             this.diag(built.refused, stmt.span);
-            return { kind: "fall", state: a };
+            return a;
         }
         const result = runMethod(a, built, this.registry);
         if (!result.ok) {
@@ -787,32 +882,30 @@ class Checker {
             this.diag(preconditionMessage(a, result.failure) + where, stmt.span);
         }
         // A method that leaves no item on any outcome ends the path, as `stop` does.
-        return result.ended ? { kind: "stop" } : { kind: "fall", state: result.state };
+        return result.ended ? null : result.state;
     }
 
     // --- narrowing (if / else) --------------------------------------------
 
-    private checkIf(a: AItem, stmt: Extract<Stmt, { kind: "if" }>): Flow {
-        const resolved = this.resolvePred(stmt.pred, a);
-        const rpred = resolved?.pred ?? null;
+    private checkIf(parts: Parts, stmt: Extract<Stmt, { kind: "if" }>): Flow {
+        const all = joinAll(parts);
+        const resolved = this.resolvePred(stmt.pred, all);
+        const rpred = this.condition(stmt.pred, resolved);
 
         // A narrowed count may leave a proven "≥k of these suffixes" below the
         // suffix count's new floor, so the presence facts are pushed back in.
-        const narrow = (positive: boolean): AItem | null => {
-            if (rpred === null) return a;
-            const s = refine(a, rpred, positive);
-            return s === null ? null : this.tightenCounts(s);
-        };
-        const thenState = narrow(true);
-        const elseState = narrow(false);
+        const narrow = (positive: boolean): AItem[] =>
+            this.apart(this.tightened(this.refineParts(parts, rpred, positive)));
+        const thenParts = narrow(true);
+        const elseParts = narrow(false);
 
-        if (thenState === null) {
+        if (thenParts.length === 0) {
             this.diag(
-                `the 'if' branch can never run: ${describePred(stmt.pred)} is impossible here${levelReasons(resolved, a)}`,
+                `the 'if' branch can never run: ${describePred(stmt.pred)} is impossible here${levelReasons(resolved, all)}`,
                 stmt.pred.span,
             );
         }
-        if (elseState === null && stmt.elseBody !== undefined) {
+        if (elseParts.length === 0 && stmt.elseBody !== undefined) {
             this.diag(
                 `the 'else' branch can never run: ${describePred(stmt.pred)} always holds here`,
                 stmt.pred.span,
@@ -820,78 +913,76 @@ class Checker {
         }
 
         const falls: AItem[] = [];
-        // An arm that ends the path contributes nothing to the join; when no arm
+        // An arm that ends the path contributes nothing downstream; when no arm
         // falls through, the statement ends the path as its arms did (a restart
         // over a stop, since the loop is re-entered on that arm).
         let ended: Flow | null = null;
-        const arm = (state: AItem, body: readonly Stmt[]): void => {
-            const f = this.checkSeq(state, body);
-            if (f.kind === "fall") falls.push(...(f.parts ?? [f.state]));
+        const arm = (entry: Parts, body: readonly Stmt[]): void => {
+            const f = this.checkSeq(entry, body);
+            if (f.kind === "fall") falls.push(...f.parts);
             else if (ended === null || f.kind === "restart") ended = f;
         };
-        if (thenState !== null) arm(thenState, stmt.body);
-        if (elseState !== null) arm(elseState, stmt.elseBody ?? []);
+        if (thenParts.length > 0) arm(thenParts, stmt.body);
+        if (elseParts.length > 0) arm(elseParts, stmt.elseBody ?? []);
 
-        if (falls.length === 0) return ended ?? { kind: "fall", state: a };
-        return {
-            kind: "fall",
-            state: this.tightenCounts(falls.reduce(join)),
-            ...(falls.length > 1 && { parts: falls.map((s) => this.tightenCounts(s)) }),
-        };
+        if (falls.length === 0) return ended ?? { kind: "fall", parts };
+        const live = this.tightened(falls);
+        return { kind: "fall", parts: this.apart(live.length > 0 ? live : falls) };
     }
 
     // --- loops (until) -----------------------------------------------------
 
-    private checkUntil(a: AItem, stmt: Extract<Stmt, { kind: "until" }>): Flow {
-        const resolved = this.resolvePred(stmt.pred, a);
-        const rpred = resolved?.pred ?? null;
+    private checkUntil(parts: Parts, stmt: Extract<Stmt, { kind: "until" }>): Flow {
+        const resolved = this.resolvePred(stmt.pred, joinAll(parts));
+        const rpred = this.condition(stmt.pred, resolved);
 
         // Compute the loop invariant (a quiet join-fixpoint) and probe the exit
         // from it, quietly: a loop that needs several iterations to reach its
         // goal (two annuls from a full item to two open slots) is only
         // unsatisfiable when no head state of the whole invariant satisfies the
         // predicate. Report that root cause instead of a downstream symptom.
-        const invariant = this.loopInvariant(a, stmt.body, rpred);
+        const { invariant, heads } = this.loopInvariant(parts, stmt.body, rpred);
         // The body runs only where the exit predicate is false; a head state that
         // already satisfies it leaves at once. An inner loop entered from an outer
-        // loop's joined invariant would otherwise run its body on states no path
+        // loop's invariant would otherwise run its body on states no path
         // continues from.
-        const entering = this.continuing(invariant, rpred);
-        if (entering === null) {
+        const entering = this.apart(this.refineParts(invariant, rpred, false));
+        if (entering.length === 0) {
             this.diag(
                 `this loop's body never runs: ${describePred(stmt.pred)} already holds here`,
                 stmt.pred.span,
             );
-            return { kind: "fall", state: a };
+            return { kind: "fall", parts };
         }
         // The states at the head are the entry and the body's results, so the
         // exits are the entry where it already satisfies the predicate and those
-        // results where they do; the joined invariant would blur the two.
-        const leaving = rpred === null ? null : refine(a, rpred, true);
-        const exits = (heads: readonly AItem[]): AItem | null =>
-            foldJoin([...(leaving ? [leaving] : []), ...this.refineHeads(heads, rpred, true)]);
-        const probe = this.quietly(() => this.headStates(entering, stmt.body));
-        const exitReachable = exits(probe);
-        if (rpred !== null && exitReachable === null) {
+        // results where they do; the invariant would blur the two.
+        const leaving = rpred === null ? [] : this.refineParts(parts, rpred, true);
+        const exits = (heads: readonly AItem[]): AItem[] =>
+            this.apart(this.tightened([...leaving, ...this.refineParts(heads, rpred, true)]));
+        // The invariant's last round ran the body from these very parts.
+        const probe = heads;
+        if (rpred !== null && exits(probe).length === 0) {
             this.diag(
-                `this loop can never exit: ${describePred(stmt.pred)} can never become true here${levelReasons(resolved, invariant)}`,
+                `this loop can never exit: ${describePred(stmt.pred)} can never become true here${levelReasons(resolved, joinAll(invariant))}`,
                 stmt.pred.span,
             );
-            return { kind: "fall", state: foldJoin(probe) ?? invariant };
+            return { kind: "fall", parts: probe.length > 0 ? this.apart(probe) : invariant };
         }
 
         // Then run the body once more FROM the invariant, the real pass that
         // emits the loop's diagnostics and trace, and catches a precondition that
         // only fails on a later iteration (`until has X { exalt }` eventually fills
         // the item). On exit the exit predicate is known to hold: the after-state
-        // is the join of every loop-head state refined by it.
-        const exit = exits(this.headStates(entering, stmt.body));
-        return { kind: "fall", state: this.tightenCounts(exit ?? invariant) };
+        // is every loop-head state refined by it.
+        // A quiet pass has nothing to emit, so what the probe found stands.
+        const exit = exits(this.quiet > 0 ? probe : this.headStates(entering, stmt.body));
+        return { kind: "fall", parts: exit.length > 0 ? exit : invariant };
     }
 
     /** Run a loop body while collecting the states of any `restart` inside it
      *  (back-edges to this loop's head). */
-    private runBody(entry: AItem, body: readonly Stmt[]): { flow: Flow; restarts: AItem[] } {
+    private runBody(entry: Parts, body: readonly Stmt[]): { flow: Flow; restarts: AItem[] } {
         const frame: AItem[] = [];
         this.restartHeads.push(frame);
         try {
@@ -902,21 +993,33 @@ class Checker {
     }
 
     /** Run the body once from `entry` and return every state that re-enters the
-     *  loop head: the fall-off-end state (when the body falls through) plus every
+     *  loop head: the fall-off-end states (when the body falls through) plus every
      *  `restart` back-edge collected inside it. */
-    private headStates(entry: AItem, body: readonly Stmt[]): AItem[] {
+    private headStates(entry: Parts, body: readonly Stmt[]): AItem[] {
         const { flow, restarts } = this.runBody(entry, body);
-        return flow.kind === "fall" ? [...(flow.parts ?? [flow.state]), ...restarts] : restarts;
+        return flow.kind === "fall" ? [...flow.parts, ...restarts] : restarts;
     }
 
-    /** The part of a loop-head state that runs the body: where the exit predicate
-     *  is false, or all of it while the predicate did not resolve. */
-    private continuing(head: AItem, rpred: RPred | null): AItem | null {
-        return rpred === null ? head : refine(head, rpred, false);
+    /** A condition as the parts are narrowed by it. One that compares a value
+     *  is resolved against the item it narrows: the rows it may be are read off
+     *  the item, and a part may hold the modifier at a row the join of the parts
+     *  does not single out. */
+    private condition(pred: Pred, resolved: Resolved | null): Cond | null {
+        if (resolved === null) return null;
+        return { pred, rpred: resolved.pred, perPart: comparesValue(resolved.pred) };
     }
 
-    private refineHeads(states: readonly AItem[], rpred: RPred | null, positive: boolean): AItem[] {
-        return states.map((h) => (rpred === null ? h : refine(h, rpred, positive))).filter(isLive);
+    /** Each state where the condition holds (`positive`) or fails, the ones where
+     *  it cannot dropped; all of them while the condition did not resolve. */
+    private refineParts(states: readonly AItem[], cond: Cond | null, positive: boolean): AItem[] {
+        const narrowed = (h: AItem): AItem | null => {
+            if (cond === null) return h;
+            const own = cond.perPart
+                ? this.quietly(() => this.resolvePred(cond.pred, h))?.pred
+                : undefined;
+            return refine(h, own ?? cond.rpred, positive);
+        };
+        return states.map(narrowed).filter(isLive);
     }
 
     /**
@@ -925,11 +1028,19 @@ class Checker {
      * ≥ k (and guaranteed types each count for one). A disjunction of resistance
      * suffixes therefore pins the suffix count, and, via the total coupling, the
      * prefix count, where the presence BDD alone left it a range. A sound
-     * tightening: it only ever removes a spurious slot, never adds one.
+     * tightening: it only ever removes a spurious slot, never adds one. `null`
+     * where the counts cannot hold what is proven present: no item is so.
      */
-    private tightenCounts(a: AItem): AItem {
-        const genOf = (t: TypeId): Gen =>
-            rollableGen(this.registry.catalog, a.base, a.ilvl, t, this.tagsOf(a)) ?? "prefix";
+    private tightenCounts(a: AItem): AItem | null {
+        // A type with rows on both sides has its side guessed from this base;
+        // a guess may narrow a count, but is no ground to rule the state out.
+        let guessed = false;
+        const genOf = (t: TypeId): Gen => {
+            if (this.registry.sidesOfType(t).size !== 1) guessed = true;
+            return (
+                rollableGen(this.registry.catalog, a.base, a.ilvl, t, this.tagsOf(a)) ?? "prefix"
+            );
+        };
         const guaranteed = guaranteedTypes(a);
         const cards = cardinalityGuarantees(a);
         const minFor = (gen: Gen): number => {
@@ -954,7 +1065,15 @@ class Checker {
             const minP = minFor("prefix");
             if (minP > 0) s = refine(s, cmpAtLeast("prefixCount", minP));
         }
-        return s === null ? a : this.dropUnnamed(s);
+        if (s === null) return guessed ? a : null;
+        return this.dropUnnamed(s);
+    }
+
+    /** The states with their counts tightened, without those the tightening
+     *  shows to hold no item: a part with one suffix that the condition proved
+     *  to have two of the resistances. */
+    private tightened(states: readonly AItem[]): AItem[] {
+        return states.map((s) => this.tightenCounts(s)).filter(isLive);
     }
 
     /**
@@ -990,31 +1109,51 @@ class Checker {
     }
 
     /**
-     * The loop invariant: the least state (by join) covering the entry and every
+     * The loop invariant: the least parts (by join) covering the entry and every
      * "continue" state (a back-edge whose exit predicate is still false). The
      * lattice is finite and the iteration monotone, so this converges quickly;
      * widening past a few exact iterations bounds the tall disjunctive part.
      * The loop ends only at a fixpoint, never at a round count: an invariant
-     * short of it would leave later rounds of the body unchecked. Each join
-     * only grows the state, the sets it grows are finite, and past
-     * `WIDEN_RANGES_AFTER` a range that still moves jumps to its bound, so a
-     * fixpoint is always reached.
+     * short of it would leave later rounds of the body unchecked. Each round
+     * only grows the parts, the sets they grow are finite, and past
+     * `WIDEN_RANGES_AFTER` the parts become one whose moving ranges jump to
+     * their bounds, so a fixpoint is always reached.
      */
-    private loopInvariant(entry: AItem, body: readonly Stmt[], rpred: RPred | null): AItem {
+    private loopInvariant(
+        entry: Parts,
+        body: readonly Stmt[],
+        rpred: Cond | null,
+    ): { invariant: Parts; heads: readonly AItem[] } {
         return this.quietly(() => {
-            let invariant = entry;
+            let invariant: Parts = this.apart(entry);
+            let heads: readonly AItem[] = [];
             for (let i = 0; ; i++) {
-                const entering = this.continuing(invariant, rpred);
-                if (entering === null) break; // every head state leaves at once
-                const continues = this.refineHeads(this.headStates(entering, body), rpred, false);
+                const entering = this.apart(this.refineParts(invariant, rpred, false));
+                if (entering.length === 0) break; // every head state leaves at once
+                heads = this.headStates(entering, body);
+                const continues = this.refineParts(heads, rpred, false);
                 if (continues.length === 0) break;
-                const joined = [invariant, ...continues].reduce(join);
-                const widened = i >= WIDEN_AFTER ? widenPresence(joined) : joined;
-                const next = i >= this.widenRangesAfter ? widenRanges(invariant, widened) : widened;
-                if (stateEqual(next, invariant)) break;
+                const next = this.grown(invariant, continues, i);
+                if (sameParts(next, invariant)) break;
                 invariant = next;
             }
-            return invariant;
+            return { invariant, heads };
+        });
+    }
+
+    /** The invariant after round `i` brought `continues` back to the head. */
+    private grown(invariant: Parts, continues: readonly AItem[], i: number): Parts {
+        if (i >= this.widenRangesAfter) {
+            const prev = joinAll(invariant);
+            const joined = [prev, ...continues].reduce(join);
+            return [widenRanges(prev, i >= WIDEN_AFTER ? widenPresence(joined) : joined)];
+        }
+        const next = this.apart([...invariant, ...continues]);
+        if (i < WIDEN_AFTER) return next;
+        const before = new Map(invariant.map((s) => [partKey(s), s]));
+        return next.map((s) => {
+            const old = before.get(partKey(s));
+            return old !== undefined && stateEqual(old, s) ? s : widenPresence(s);
         });
     }
 
@@ -1078,7 +1217,7 @@ class Checker {
     /** Inlining lets a `restart` inside the body re-enter the caller's enclosing
      *  loop, so the body composes exactly as if written in place. The call site
      *  is traced as one step; the body's own trace hangs off it. */
-    private checkCall(a: AItem, stmt: Extract<Stmt, { kind: "call" }>): Flow {
+    private checkCall(parts: Parts, stmt: Extract<Stmt, { kind: "call" }>): Flow {
         const entry = this.procs.get(stmt.name);
         if (!entry) {
             if (this.defs.has(stmt.name)) {
@@ -1089,19 +1228,19 @@ class Checker {
             } else {
                 this.diag(`unknown def "${stmt.name}"`, stmt.span);
             }
-            return { kind: "fall", state: a };
+            return { kind: "fall", parts };
         }
         const { proc, paramTypes, valid } = entry;
-        if (!valid) return { kind: "fall", state: a }; // the proc's own error was reported
+        if (!valid) return { kind: "fall", parts }; // the proc's own error was reported
         const env = this.bindArgs(stmt.name, proc.params, paramTypes, stmt.args, stmt.span);
-        if (env === null) return { kind: "fall", state: a };
+        if (env === null) return { kind: "fall", parts };
 
         const body = substituteStmts(proc.body, env);
         const trace: TraceEntry[] = [];
         const outer = this.sink;
         this.sink = trace;
         try {
-            return this.checkSeq(a, body);
+            return this.checkSeq(parts, body);
         } finally {
             this.sink = outer;
             this.inlined.set(stmt, { body, trace });
@@ -1470,6 +1609,28 @@ interface AboveLevel {
 
 /** A condition resolved, with the tiers it waits for that the item's level
  *  stops short of; one it wants absent is not among them. */
+/** A resolved condition with the words it came from, for the parts whose
+ *  own item decides what it means (`Checker.condition`). */
+interface Cond {
+    readonly pred: Pred;
+    readonly rpred: RPred;
+    readonly perPart: boolean;
+}
+
+function comparesValue(pred: RPred): boolean {
+    switch (pred.kind) {
+        case "hasValue":
+            return true;
+        case "not":
+            return comparesValue(pred.inner);
+        case "and":
+        case "or":
+            return comparesValue(pred.left) || comparesValue(pred.right);
+        default:
+            return false;
+    }
+}
+
 interface Resolved {
     readonly pred: RPred;
     readonly aboveLevel: readonly AboveLevel[];
