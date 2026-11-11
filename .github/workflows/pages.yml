@@ -1,8 +1,8 @@
-name: Playground
+name: Site
 
-# Builds the browser playground and publishes it to GitHub Pages on every
-# push to main. Pages must be set to deploy from GitHub Actions in the
-# repository settings once.
+# Builds the website (the home page, the docs and the playground inside it)
+# and publishes it to GitHub Pages on every push to main. Pages must be set
+# to deploy from GitHub Actions in the repository settings once.
 on:
     push:
         branches: [main]
@@ -36,18 +36,20 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-            # The playground resolves the workspace packages through their
-            # exports, which point at dist/, so the solution builds first.
+            # The site and the playground resolve the workspace packages through
+            # their exports, which point at dist/, so the solution builds first.
             - name: Build the packages
               run: pnpm build
 
-            - name: Build the playground
-              run: pnpm -C editors/playground build
+            # Builds the playground into the site, generates the operation
+            # pages and runs the checker over every craft the pages show.
+            - name: Build the site
+              run: pnpm -C site build
 
             - uses: actions/configure-pages@v5
             - uses: actions/upload-pages-artifact@v3
               with:
-                  path: editors/playground/dist
+                  path: site/.vitepress/dist
 
     deploy:
         needs: build
