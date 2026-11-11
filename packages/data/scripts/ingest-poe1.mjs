@@ -143,6 +143,9 @@ function projectBases(raw, mods) {
     const out = {};
     for (const [key, b] of Object.entries(raw)) {
         if (b.release_state !== "released" || !b.name) continue; // skip unreleased / nameless internals
+        // Royale's bases share a name with the main game's (Opal Ring, Heavy
+        // Belt), which would leave the name standing for two bases.
+        if (/Royale/.test(key)) continue;
         const capDelta = capDeltaOf(b, mods);
         const magnitude = magnitudeOf(b, mods);
         out[key] = {

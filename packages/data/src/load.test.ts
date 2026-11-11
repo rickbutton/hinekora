@@ -260,6 +260,14 @@ describe("registry resolution against real data", () => {
         expect(registry.resolveBase("Avian Twins Talisman").ok).toBe(true);
     });
 
+    it("resolves a base whose name a Royale base shared", () => {
+        for (const name of ["Opal Ring", "Diamond Ring", "Prismatic Ring", "Heavy Belt"]) {
+            const r = registry.resolveBase(name);
+            expect(r.ok && r.value.id).not.toContain("Royale");
+            expect(r.ok).toBe(true);
+        }
+    });
+
     it("reports a colliding base name as ambiguous, with candidates", () => {
         // Several bases share the name "Two-Toned Boots", with different tags.
         const r = registry.resolveBase("Two-Toned Boots");
