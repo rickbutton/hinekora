@@ -14,9 +14,11 @@ titleTemplate: A statically checked language for Path of Exile item crafting
 <section class="row">
 <div class="prose">
 
-A hinekora craft is a sequence of crafting steps applied to one item: currency orbs, bench
-crafts, essences, fossils, Harvest and the rest, with loops and branches over what the item
-has. Most steps have a random outcome, so a craft describes a tree of possible items, not one.
+A hinekora craft is a sequence of crafting steps applied to an item. Each step is one of the
+game's crafting methods: an orb, a bench craft, an essence, a Harvest craft. Loops and
+branches test what the item has.
+
+Most steps are random, so a craft describes a tree of possible items.
 
 </div>
 <div class="example">
@@ -31,9 +33,11 @@ has. Most steps have a random outcome, so a craft describes a tree of possible i
 <section class="row">
 <div class="prose">
 
-The checker walks that tree symbolically. It keeps a summary of every item the steps so far
-could have produced, and at each step asks whether the step's precondition holds for all of
-them. This craft checks, and the summary it ends with is the finished item.
+The checker walks that tree symbolically. It keeps one summary of every item the steps so
+far could have produced. Before each step it asks whether the step's precondition holds for
+all of them.
+
+This craft checks. The summary it ends with is the finished item.
 
 </div>
 <div class="example">
@@ -44,9 +48,9 @@ them. This craft checks, and the summary it ends with is the finished item.
 <section class="row">
 <div class="prose">
 
-A craft that checks can be costed. From the game's modifier weights, hinekora works out the
-chance each loop exits on a round and how many of each currency the craft is expected to
-use, then prices that from a market snapshot.
+A craft that checks can be costed. The game's modifier weights give the chance that a loop
+exits on each round. From that comes the expected number of each currency, priced here from
+a market snapshot.
 
 </div>
 <div class="example">
@@ -72,8 +76,9 @@ This one goes on with two Exalted Orbs and a bench craft.
 <section class="row">
 <div class="prose">
 
-The bench craft is a prefix, and a ring holds three. The Regal Orb and each Exalted Orb can
-add one, so on some paths no slot is left. The craft is rejected, with the item at that step.
+The bench craft is a prefix and a ring holds three. The Regal Orb and each Exalted Orb can
+add one. On some paths no slot is left, so the craft is rejected. The error shows the item
+at that step.
 
 </div>
 <div class="example">
