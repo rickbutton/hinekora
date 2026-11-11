@@ -138,7 +138,7 @@ const has =
 const wand = (rarity: string): string =>
     `item {\n    base: "Imbued Wand"\n    ilvl: 84\n    rarity: ${rarity}\n}`;
 
-describe("the race against the draw played out", () => {
+describe("the race against the draw played out", { timeout: LONG }, () => {
     it("a Chaos Orb on a wand, where spell damage shares its group with three elements", () => {
         const { rows, chance } = judged(wand("rare"), ["chaos"], 'has "increased spell damage"');
         const exact = played(rows, chaosCount, 3, has("WeaponSpellDamage"));
@@ -152,60 +152,48 @@ describe("the race against the draw played out", () => {
         (drawn: readonly Mod[]): boolean =>
             drawn.filter((m) => m.gen === "prefix").length === n;
 
-    it(
-        "a modifier together with its side's count, which the draw couples",
-        () => {
-            // With one prefix drawn it is likelier a heavy one, with three a
-            // lighter one is likelier among them.
-            const joint = (n: number) =>
-                judged(
-                    wand("rare"),
-                    ["chaos"],
-                    `has "increased spell damage" and prefixCount == ${n}`,
-                );
-            // One played sample counts both: three standard errors are under a
-            // thirtieth of either chance, the model allowed a two-hundredth more.
-            const trials = 400_000;
-            const seen = [0, 0, 0, 0];
-            played(
-                joint(1).rows,
-                chaosCount,
-                3,
-                (drawn) => {
-                    if (has("WeaponSpellDamage")(drawn))
-                        seen[drawn.filter((m) => m.gen === "prefix").length]!++;
-                    return false;
-                },
-                trials,
-            );
-            for (const n of [1, 3]) {
-                expect(agrees(joint(n).chance, seen[n]!, trials, 0.005)).toBe(true);
-            }
-        },
-        LONG,
-    );
+    it("a modifier together with its side's count, which the draw couples", () => {
+        // With one prefix drawn it is likelier a heavy one, with three a
+        // lighter one is likelier among them.
+        const joint = (n: number) =>
+            judged(wand("rare"), ["chaos"], `has "increased spell damage" and prefixCount == ${n}`);
+        // One played sample counts both: three standard errors are under a
+        // thirtieth of either chance, the model allowed a two-hundredth more.
+        const trials = 400_000;
+        const seen = [0, 0, 0, 0];
+        played(
+            joint(1).rows,
+            chaosCount,
+            3,
+            (drawn) => {
+                if (has("WeaponSpellDamage")(drawn))
+                    seen[drawn.filter((m) => m.gen === "prefix").length]!++;
+                return false;
+            },
+            trials,
+        );
+        for (const n of [1, 3]) {
+            expect(agrees(joint(n).chance, seen[n]!, trials, 0.005)).toBe(true);
+        }
+    });
 
-    it(
-        "a modifier of each side together, the sides taken as independent given the split",
-        () => {
-            const { rows, chance } = judged(
-                wand("rare"),
-                ["chaos"],
-                'has "increased spell damage" and has "cast speed"',
-            );
-            const trials = 300_000;
-            const exact = played(
-                rows,
-                chaosCount,
-                3,
-                (drawn) => has("WeaponSpellDamage")(drawn) && has("IncreasedCastSpeed")(drawn),
-                trials,
-            );
-            // The model reads about a hundredth low here; two are allowed it.
-            expect(agrees(chance, exact * trials, trials, 0.02)).toBe(true);
-        },
-        LONG,
-    );
+    it("a modifier of each side together, the sides taken as independent given the split", () => {
+        const { rows, chance } = judged(
+            wand("rare"),
+            ["chaos"],
+            'has "increased spell damage" and has "cast speed"',
+        );
+        const trials = 300_000;
+        const exact = played(
+            rows,
+            chaosCount,
+            3,
+            (drawn) => has("WeaponSpellDamage")(drawn) && has("IncreasedCastSpeed")(drawn),
+            trials,
+        );
+        // The model reads about a hundredth low here; two are allowed it.
+        expect(agrees(chance, exact * trials, trials, 0.02)).toBe(true);
+    });
 
     it("either of two modifiers of one group, which never come together", () => {
         const { rows, chance } = judged(
@@ -240,48 +228,40 @@ describe("the race against the draw played out", () => {
         expect(Math.abs(chance / exact - 1)).toBeLessThan(0.02);
     });
 
-    it(
-        "a jewel, whose damage group has rows on both sides",
-        () => {
-            const item = `item {\n    base: "Cobalt Jewel"\n    ilvl: 84\n    rarity: rare\n}`;
-            const { chance } = judged(item, ["chaos"], 'has "increased spell damage"');
-            const base = registry.resolveBase("Cobalt Jewel");
-            if (!base.ok) throw new Error("no base");
-            const rows = pool(registry.catalog, emptyItem(base.value, 84, "rare")).map((c) => ({
-                ...c,
-                gen: c.mod.gen,
-            }));
-            const count = (random: () => number): number => (random() < 0.65 ? 3 : 4);
-            // One played sample counts the modifier and its joint with the count.
-            const trials = 400_000;
-            let alone = 0;
-            let together = 0;
-            played(
-                rows,
-                count,
-                2,
-                (drawn) => {
-                    if (!has("SpellDamageForJewel")(drawn)) return false;
-                    alone++;
-                    if (prefixes(2)(drawn)) together++;
-                    return false;
-                },
-                trials,
-            );
-            // Up to five hundredths low, never high: a draw the full side turns
-            // away loses the group.
-            expect(agrees(chance, alone, trials, 0.05)).toBe(true);
-            expect(chance).toBeLessThan(alone / trials);
-            const joint = judged(
-                item,
-                ["chaos"],
-                'has "increased spell damage" and prefixCount == 2',
-            );
-            expect(agrees(joint.chance, together, trials, 0.05)).toBe(true);
-            expect(joint.chance).toBeLessThan(together / trials);
-        },
-        LONG,
-    );
+    it("a jewel, whose damage group has rows on both sides", () => {
+        const item = `item {\n    base: "Cobalt Jewel"\n    ilvl: 84\n    rarity: rare\n}`;
+        const { chance } = judged(item, ["chaos"], 'has "increased spell damage"');
+        const base = registry.resolveBase("Cobalt Jewel");
+        if (!base.ok) throw new Error("no base");
+        const rows = pool(registry.catalog, emptyItem(base.value, 84, "rare")).map((c) => ({
+            ...c,
+            gen: c.mod.gen,
+        }));
+        const count = (random: () => number): number => (random() < 0.65 ? 3 : 4);
+        // One played sample counts the modifier and its joint with the count.
+        const trials = 400_000;
+        let alone = 0;
+        let together = 0;
+        played(
+            rows,
+            count,
+            2,
+            (drawn) => {
+                if (!has("SpellDamageForJewel")(drawn)) return false;
+                alone++;
+                if (prefixes(2)(drawn)) together++;
+                return false;
+            },
+            trials,
+        );
+        // Up to five hundredths low, never high: a draw the full side turns
+        // away loses the group.
+        expect(agrees(chance, alone, trials, 0.05)).toBe(true);
+        expect(chance).toBeLessThan(alone / trials);
+        const joint = judged(item, ["chaos"], 'has "increased spell damage" and prefixCount == 2');
+        expect(agrees(joint.chance, together, trials, 0.05)).toBe(true);
+        expect(joint.chance).toBeLessThan(together / trials);
+    });
 
     const unveiled = (base: string, held: string, lock: string, condition: string) =>
         judged(
