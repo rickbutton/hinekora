@@ -129,6 +129,32 @@ until anyEleRes(t1) { chaos }`;
 `);
     });
 
+    it("breaks a statement's long condition the same way, the brace on its own line", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
+until has "fire resistance" t1 or has "cold resistance" t1 or (has "lightning resistance" t1 and has "maximum life" t1) { # any
+    chaos
+    if has "fire resistance" t1 and has "cold resistance" t1 and has "lightning resistance" t1 and has "life" { stop } else { annul }
+}`;
+        const out = fmt(src);
+        expect(out).toContain(`until has "fire resistance" t1
+    or has "cold resistance" t1
+    or (has "lightning resistance" t1 and has "maximum life" t1)
+{ # any
+    chaos
+    if has "fire resistance" t1
+        and has "cold resistance" t1
+        and has "lightning resistance" t1
+        and has "life"
+    {
+        stop
+    } else {
+        annul
+    }
+}
+`);
+        expect(fmt(out)).toBe(out);
+    });
+
     it("prints calls, block arguments as written, and an if with an else", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
 def roll(m, step) { until has m { step } }

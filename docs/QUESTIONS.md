@@ -361,13 +361,3 @@ record the tier in the header.
 number, and a name that words one of them means that one alone. **Encoded in:**
 `resolve/tiers.ts` `tiersOf`; `resolve/registry.ts` `rowsNamed`; `check/check.ts`
 `rowsOnly`.
-
-### Q104 · decision · open — a condition wider than the formatter's line
-
-**Q:** `fmt` leaves an `until` or `if` whose condition passes 100 columns on one line; a
-`def` of that width is broken before each `or`. Should a statement's condition break the
-same way?
-**Options:** (a) break before each top-level `or`, then `and`, indented one step, the
-`{` on its own line (recommended); (b) leave long conditions to the author, who can name
-them with a `def`.
-**Assumed:** (b). **Encoded in:** `packages/parser/src/format.ts` `fits`.

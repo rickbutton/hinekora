@@ -253,30 +253,76 @@ class Printer {
                 this.call(depth, s);
                 return;
             case "until":
+                if (this.wide(depth, "until", s.pred)) {
+                    this.spread(depth, "until", s.pred);
+                    this.stmts(s.body, depth + 1);
+                    this.line(depth, "}", s.span.end.line);
+                    return;
+                }
                 this.block(depth, `until ${pred(s.pred, this.source, depth)}`, s.body, s.span);
                 return;
             case "if": {
-                if (s.elseBody === undefined) {
+                const wide = this.wide(depth, "if", s.pred);
+                if (s.elseBody === undefined && !wide) {
                     this.block(depth, `if ${pred(s.pred, this.source, depth)}`, s.body, s.span);
                     return;
                 }
-                // The `else` opens on the line the `if` body closes.
-                const elseAt = this.elseLine(s.span);
-                const ifSpan = { start: s.span.start, end: { line: elseAt } };
-                const elseSpan = { start: { line: elseAt }, end: s.span.end };
                 const inline = inlineStmt(s, this.source, depth);
                 if (s.span.start.line === s.span.end.line && this.fits(depth, inline)) {
                     this.line(depth, inline, s.span.start.line);
                     return;
                 }
-                this.line(depth, `if ${pred(s.pred, this.source, depth)} {`, ifSpan.start.line);
+                if (wide) this.spread(depth, "if", s.pred);
+                else
+                    this.line(depth, `if ${pred(s.pred, this.source, depth)} {`, s.span.start.line);
                 this.stmts(s.body, depth + 1);
-                this.line(depth, "} else {", elseAt);
-                this.stmts(s.elseBody, depth + 1);
-                this.line(depth, "}", elseSpan.end.line);
+                if (s.elseBody !== undefined) {
+                    // The `else` opens on the line the `if` body closes.
+                    this.line(depth, "} else {", this.elseLine(s.span));
+                    this.stmts(s.elseBody, depth + 1);
+                }
+                this.line(depth, "}", s.span.end.line);
                 return;
             }
         }
+    }
+
+    /** Whether a statement's condition is a chain too long for the line that opens its block. */
+    private wide(depth: number, word: "until" | "if", p: Pred): boolean {
+        const text = `${word} ${pred(p, this.source, depth)} {`;
+        return (p.kind === "or" || p.kind === "and") && !this.fits(depth, text);
+    }
+
+    /**
+     * The header of a statement whose condition is too long for one line: one
+     * operand of the loosest chain per line, the connective leading, and the
+     * `{` on a line of its own so the body does not run on from the condition.
+     */
+    private spread(depth: number, word: "until" | "if", p: Pred): void {
+        this.operands(p, depth + 1).forEach(({ text, src }, i) => {
+            if (i === 0) this.line(depth, `${word} ${text}`, src);
+            else this.line(depth + 1, text, src);
+        });
+        // A comment after the source's `{` stays after it, so the line is that brace's own.
+        const brace = this.tokens.find(
+            (t) => t.kind === "lbrace" && t.span.start.offset >= p.span.end.offset,
+        );
+        this.line(depth, "{", brace?.span.start.line ?? p.span.end.line);
+    }
+
+    /** The operands of a predicate's loosest chain, each after the first led by its connective. */
+    private operands(p: Pred, depth: number): { text: string; src: number }[] {
+        const kind = p.kind === "or" ? "or" : p.kind === "and" ? "and" : undefined;
+        if (kind === undefined) {
+            return [{ text: pred(p, this.source, depth), src: p.span.start.line }];
+        }
+        return chain(p, kind).map((operand, i) => {
+            const text = pred(operand, this.source, depth);
+            // An `or` or `and` operand was bracketed by the author (or is an
+            // `and` under an `or`, bracketed for the reader); it stays so.
+            const wrapped = operand.kind === "or" || operand.kind === "and" ? `(${text})` : text;
+            return { text: i === 0 ? wrapped : `${kind} ${wrapped}`, src: operand.span.start.line };
+        });
     }
 
     /** The line of the `else` keyword inside an if statement's span. */
@@ -307,18 +353,8 @@ class Printer {
         // Too long for one line: the body goes under the header, one operand of
         // the loosest chain per line, the connective leading.
         this.line(depth, `${head} =`, d.span.start.line);
-        const kind = d.body.kind === "or" ? "or" : d.body.kind === "and" ? "and" : undefined;
-        if (kind === undefined) {
-            this.line(depth + 1, body, d.body.span.start.line);
-            return;
-        }
-        chain(d.body, kind).forEach((operand, i) => {
-            const text = pred(operand, this.source, depth + 1);
-            // An `or` or `and` operand was bracketed by the author (or is an
-            // `and` under an `or`, bracketed for the reader); it stays so.
-            const wrapped = operand.kind === "or" || operand.kind === "and" ? `(${text})` : text;
-            this.line(depth + 1, i === 0 ? wrapped : `${kind} ${wrapped}`, operand.span.start.line);
-        });
+        for (const { text, src } of this.operands(d.body, depth + 1))
+            this.line(depth + 1, text, src);
     }
 
     item(item: ItemBlock): void {
