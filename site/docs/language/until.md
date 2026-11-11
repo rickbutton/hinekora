@@ -2,16 +2,17 @@
 
 ## until
 
+<!-- fragment -->
+
 ```hinekora
 until <condition> {
     <statements>
 }
 ```
 
-The loop tests its condition before each pass, the first included, and runs the body while
-the condition is false. After the loop the checker knows the condition is true and checks the
-statements that follow against that state. A loop whose condition is already true on every
-path that reaches the loop is an error, since its body would never run.
+The loop tests its [condition](./conditions) before each pass, the first included. It runs
+the body while the condition is false. After the loop the checker knows the condition is true
+and checks the statements that follow against that item.
 
 ```hinekora
 item {
@@ -27,13 +28,21 @@ until has "fire resistance" t1 {
 
 On exit the item has the essence's maximum Life and a tier 1 fire resistance.
 
-### Every iteration
+### Every pass
 
-The checker runs the body against every state in which the condition can be false at the start of a
-pass, after any number of earlier passes, not only the first. Starting from a Rare item with no affixes, the checker rejects this loop: after some exalts the
-item may be full while the life is still absent.
+The checker runs the body against every item for which the condition can be false at the
+start of a pass, after any number of earlier passes. It rejects this loop. After some exalts
+the item may be full while the life is still absent.
+
+<!-- refused -->
 
 ```hinekora
+item {
+    base:   "Titan Greaves"
+    ilvl:   84
+    rarity: rare
+}
+
 until has "maximum life" {
     exalt
 }
@@ -46,8 +55,10 @@ Requires an open affix slot — the item may be full.
 
 ### Loops the checker rejects
 
-A loop whose condition can never become true, and a loop whose condition is already true on
-every path into it, are errors:
+The checker rejects a loop whose condition is already true for every item that reaches it,
+since the body would never run.
+
+<!-- refused -->
 
 ```hinekora
 item {
@@ -63,18 +74,25 @@ until has "maximum life" t1 {
 ```
 
 ```txt
-error: this loop's body never runs: has "maximum life" t1 already holds here
+this loop's body never runs: has "maximum life" t1 already holds here
 ```
 
-The other error reads `this loop can never exit: <condition> can never become true here`.
+It also rejects a loop whose condition no pass can make true. That message reads
+`this loop can never exit: <condition> can never become true here`.
 
 ## restart
 
 `restart` returns to the condition test of the innermost enclosing `until`. The rest of that
-pass does not run, so the checker follows the statements after a `restart` behind an `if` only on the paths
-where the `if` was not taken.
+pass does not run. The checker follows the statements after an `if` that ends in `restart`
+only for the items that skipped the `if`.
 
 ```hinekora
+item {
+    base:   "Titan Greaves"
+    ilvl:   84
+    rarity: rare
+}
+
 until has "maximum life" t1 and has "cold resistance" {
     chaos
     if not has "maximum life" t1 {
@@ -86,15 +104,21 @@ until has "maximum life" t1 and has "cold resistance" {
 }
 ```
 
-The `exalt` runs only on items with a tier 1 life. Outside every `until`, `restart` ends the craft on that path, as `stop`
-does.
+The `exalt` runs only on items with a tier 1 life. Outside every `until`, `restart` ends the
+craft on that path, as `stop` does.
 
 ## stop
 
-`stop` ends the craft on the current path. The checker follows the statements after it only on the
-paths that continue.
+`stop` ends the craft on the current path. The checker follows the statements after it only
+on the paths that continue.
 
 ```hinekora
+item {
+    base:   "Titan Greaves"
+    ilvl:   84
+    rarity: rare
+}
+
 chaos
 if not has "maximum life" {
     stop
@@ -104,10 +128,10 @@ until has "maximum life" >= 90 {
 }
 ```
 
-The checker runs the `divine` loop against items that have maximum Life. A craft on which every path
-stops has no final item.
+The checker runs the `divine` loop against items that have maximum Life. A craft on which
+every path stops has no final item.
 
 ## Related
 
-- [Syntax overview](../syntax): conditions and the other control statements.
-- `hinekora cost` and the playground give each loop's odds and expected spend.
+- [Branches: if and else](./if) for the narrowing inside an arm.
+- [Reading a cost report](../cost) for each loop's odds and expected spend.
