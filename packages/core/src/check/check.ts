@@ -82,9 +82,8 @@ export interface CheckContext {
 
 /** How the analysis is run, apart from what it is run on. */
 export interface CheckTuning {
-    /** The loop round from which the numeric ranges are widened; a test sets
-     *  it low to drive the widening. */
-    readonly widenRangesAfter?: number;
+    /** The rounds a loop's invariant is given to settle (`MAX_ROUNDS`). */
+    readonly maxRounds?: number;
     /** The most summaries kept apart at one point (`MAX_PARTS`). */
     readonly maxParts?: number;
 }
@@ -159,14 +158,12 @@ function clusterSize(base: Base): ClusterSize | undefined {
     return undefined;
 }
 
-/** Exact join iterations before widening kicks in (`widenPresence`): a small loop
- *  reaches a precise fixpoint first, a tall disjunction then gets over-approximated. */
-const WIDEN_AFTER = 3;
-/** Exact iterations of the numeric ranges before they are widened too
- *  (`widenRanges`). Widening the counts costs the after-state its totals, so
- *  it comes late: it is what makes the fixpoint terminate rather than stop
- *  short, not what a loop is meant to converge by. */
-const WIDEN_RANGES_AFTER = 32;
+/** The rounds a loop's invariant is given to settle. Every round is exact, and
+ *  what a summary can hold is finite, so a loop settles on its own; one that
+ *  has not by here is refused, since cutting it short by widening would
+ *  refuse a later step for an item no round makes. Loops written to make an
+ *  item settle within ten. */
+const MAX_ROUNDS = 256;
 
 /**
  * The items a point of the craft may hold, as a few summaries kept apart; never
@@ -273,7 +270,7 @@ function unknownOperation(words: readonly string[]): string {
 const isLive = (s: AItem | null): s is AItem => s !== null;
 
 export function check(craft: Craft, ctx: CheckContext, tuning: CheckTuning = {}): CheckResult {
-    return new Checker(ctx.registry, tuning.widenRangesAfter, tuning.maxParts).run(craft);
+    return new Checker(ctx.registry, tuning.maxRounds, tuning.maxParts).run(craft);
 }
 
 class Checker {
@@ -320,10 +317,12 @@ class Checker {
      *  more parts than are kept apart. */
     private current: Stmt | undefined;
     private readonly tooMany = new WeakSet<Stmt>();
+    /** The loops already reported as not settling within `maxRounds`. */
+    private readonly unsettled = new WeakSet<Stmt>();
 
     constructor(
         private readonly registry: Registry,
-        private readonly widenRangesAfter = WIDEN_RANGES_AFTER,
+        private readonly maxRounds = MAX_ROUNDS,
         private readonly maxParts = MAX_PARTS,
     ) {}
 
@@ -1157,13 +1156,12 @@ class Checker {
     /**
      * The loop invariant: the least parts (by join) covering the entry and every
      * "continue" state (a back-edge whose exit predicate is still false). The
-     * lattice is finite and the iteration monotone, so this converges quickly;
-     * widening past a few exact iterations bounds the tall disjunctive part.
-     * The loop ends only at a fixpoint, never at a round count: an invariant
-     * short of it would leave later rounds of the body unchecked. Each round
-     * only grows the parts, the sets they grow are finite, and past
-     * `WIDEN_RANGES_AFTER` the parts become one whose moving ranges jump to
-     * their bounds, so a fixpoint is always reached.
+     * lattice is finite and the iteration monotone, so this converges. The
+     * loop ends only at a fixpoint, never at a round count: an invariant short
+     * of it would leave later rounds of the body unchecked. A loop past
+     * `MAX_ROUNDS` is refused, and to judge the rest of the craft its parts
+     * become one whose moving ranges jump to their bounds (`widenRanges`),
+     * from where a fixpoint is reached in a few rounds more.
      */
     private loopInvariant(
         entry: Parts,
@@ -1202,18 +1200,17 @@ class Checker {
 
     /** The invariant after round `i` brought `continues` back to the head. */
     private grown(invariant: Parts, continues: readonly AItem[], i: number): Parts {
-        if (i >= this.widenRangesAfter) {
-            const prev = joinAll(invariant);
-            const joined = [prev, ...continues].reduce(join);
-            return [widenRanges(prev, i >= WIDEN_AFTER ? widenPresence(joined) : joined)];
+        if (i < this.maxRounds) return this.apart([...invariant, ...continues]);
+        const at = this.current;
+        if (at !== undefined && !this.unsettled.has(at)) {
+            this.unsettled.add(at);
+            this.diagnostics.push({
+                message: `The item this loop works on is still changing after ${this.maxRounds} rounds, too many to follow.`,
+                span: at.span,
+            });
         }
-        const next = this.apart([...invariant, ...continues]);
-        if (i < WIDEN_AFTER) return next;
-        const before = new Map(invariant.map((s) => [partKey(s), s]));
-        return next.map((s) => {
-            const old = before.get(partKey(s));
-            return old !== undefined && stateEqual(old, s) ? s : widenPresence(s);
-        });
+        const prev = joinAll(invariant);
+        return [widenRanges(prev, widenPresence([prev, ...continues].reduce(join)))];
     }
 
     // --- predicate defs ----------------------------------------------------

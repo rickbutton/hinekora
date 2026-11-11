@@ -177,12 +177,11 @@ leaves the rest of the craft judged on the good paths only).
   loop's invariant). All three are expressed over one primitive: `headStates`,
   the states re-entering the loop head after one body run (the fall-off-end parts plus
   every `restart` back-edge).
-- **Termination**: the invariant lattice is finite and the step monotone, but the
-  relational presence part is tall (~2^atoms), so past a few exact iterations the driver
-  **widens**: it over-approximates presence to its unit facts, guaranteeing quick
-  convergence. Widening trades a little precision for termination; the loop's exit refine
-  re-establishes what was dropped. The iteration ends only at a fixpoint: after many more
-  rounds the parts become one, whose moving ranges jump to the end of their domains.
+- **Termination**: the invariant lattice is finite and the step monotone, so the exact
+  iteration reaches a fixpoint, in practice within ten rounds. There is no widening (an
+  over-approximation made to converge sooner): it would refuse a later step for an item no
+  round makes. A loop past a round limit is refused instead, and only then widened, so the
+  rest of the craft is still judged.
 - **Defs & procs**: predicate defs (`def f(p) = <pred>`) and operation functions
   (`def f(p) { <stmts> }`) are _inlined_: arguments substituted, body checked in place. So
   they need nothing new in the domain or driver; state threading, nested loops, and

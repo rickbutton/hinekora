@@ -1017,13 +1017,17 @@ describe("checker — paths that leave different items stay apart", () => {
         }
     });
 
-    it("judges a loop the same once its parts have become one widened summary", () => {
+    it("refuses a loop that has not settled in the rounds it is given, and judges on", () => {
         const round = (last: Parameters<typeof until>[1][number]) =>
             craft(rareRing(), [until(life, [op("exalt"), last])]);
-        const wide = { widenRangesAfter: 0 };
-        expect(check(round(undo), ctx, wide).diagnostics).toEqual([]);
-        const fills = check(round(iff(has("FireResist1"), [op("annul")])), ctx, wide);
-        expect(fills.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
+        const messages = (c: ReturnType<typeof craft>, maxRounds: number) =>
+            check(c, ctx, { maxRounds }).diagnostics.map((d) => d.message);
+        expect(messages(round(undo), 2)).toEqual([]);
+        expect(messages(round(undo), 0)).toEqual([
+            "The item this loop works on is still changing after 0 rounds, too many to follow.",
+        ]);
+        const fills = messages(round(iff(has("FireResist1"), [op("annul")])), 0);
+        expect(fills.some((m) => m.includes("open affix slot"))).toBe(true);
     });
 
     const fireOrBoth = orp(has("FireResist1"), andp(has("ColdResist1"), has("LightningResist1")));

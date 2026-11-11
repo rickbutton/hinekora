@@ -54,7 +54,7 @@ const BUDGETS = {
     "site/docs/cli.md": 600,
     "site/docs/cost.md": 600,
     "site/docs/editor.md": 600,
-    "site/docs/errors.md": 600,
+    "site/docs/errors.md": 620,
     "site/docs/getting-started.md": 500,
     "site/docs/index.md": 300,
     "site/docs/language/conditions.md": 600,

@@ -106,6 +106,7 @@ counts and its item level. The wording of the second line says how sure the chec
 | `the 'if' branch can never run: <condition> is impossible here`    | [Branches](./language/if) |
 | `the 'else' branch can never run: <condition> always holds here`   | [Branches](./language/if) |
 | `this step can never run: the craft always stops before it`        | [Loops](./language/until) |
+| `The item this loop works on is still changing after 256 rounds`   | [Loops](./language/until) |
 | `Too many different items reach this step`                         | [Branches](./language/if) |
 
 ## Definitions

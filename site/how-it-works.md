@@ -109,8 +109,9 @@ until has "maximum life" t1 {
 
 <HowLoop />
 
-A range that is still moving after many rounds jumps to its limit, so the iteration always
-ends. After the loop the condition is true, and the checker narrows the summary by it.
+A summary can hold only so many facts, so the passes stop adding. The checker refuses a
+loop still changing after 256 of them. After the loop the condition is true, and the
+checker narrows the summary by it.
 
 ## When one summary is not enough
 
