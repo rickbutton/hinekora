@@ -18,7 +18,8 @@ until has "fire resistance" t1 {
 ```
 
 The essence reforges the boots with maximum Life guaranteed and the other modifiers random. The
-loop repeats it until a tier 1 fire resistance is among them. After the loop, the checker knows
+loop tests for a tier 1 fire resistance before each pass and applies the essence while there is
+none. After the loop, the checker knows
 both modifiers are present.
 
 ## What the checker reports
@@ -27,7 +28,7 @@ both modifiers are present.
   craft whose group may already be present, a currency on the wrong rarity. The report gives the
   item's state at that point and the requirement that failed.
 - A name that resolves to no base, modifier, essence, bench craft or fossil, or to more than one,
-  and a tier that cannot roll on the base at its item level.
+  and a tier number the modifier does not have on the base.
 - A loop that can never exit or whose body never runs, and a branch that can never be taken.
 
 ## Pages

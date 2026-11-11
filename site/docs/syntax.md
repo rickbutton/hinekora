@@ -63,7 +63,7 @@ fossil "pristine" "dense"
 beast add prefix 84
 ```
 
-The arguments are a tier word, quoted names (some with a tier), a harvest tag, one to four
+These lines show the statement forms; they are not one craft. The arguments are a tier word, quoted names (some with a tier), a harvest tag, one to four
 fossils, or a side and a beast level. The [operations reference](./operations/) has a page for
 each operation.
 
@@ -74,16 +74,17 @@ until has "maximum life" t1 {
     chaos
 }
 
-if not has "maximum mana" {
-    bench "maximum mana"
+if suffixCount <= 2 and not has group "cold resistance" {
+    bench "cold resistance"
 } else {
     stop
 }
 ```
 
-After `until`, its condition is true. Inside `if` the condition is true; inside `else` its
-negation is. `restart` re-enters the innermost enclosing `until`; `stop` ends the craft on the
-current path. See [Loops: until, restart, stop](./language/until).
+`until` tests its condition before each pass, the first included, and runs the body while it is
+false; after the loop the condition is true. Inside `if` the condition is true; inside `else` its
+negation is. `restart` returns to the condition test of the innermost enclosing `until`; `stop`
+ends the craft on the current path. See [Loops: until, restart, stop](./language/until).
 
 ## Conditions
 
