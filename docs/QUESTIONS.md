@@ -72,16 +72,14 @@ not.
 
 **Q:** how many affixes does the altar's reforge roll
 ([Locus of Corruption § Possible outcomes](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes)
-says "random affix modifiers"; only the Vaal Orb's six is stated,
-[Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment)), how many does
-either roll on a jewel, and what does the altar's reforge make of an item that already
-has an influence or an eldritch implicit? (The influence is one of the six: GGG, forum
-thread 2147954.)
-**Probe:** a Rare ring, a Rare jewel, an influenced ring and boots with an eldritch
-implicit, altar access, Vaal Orbs; record each reforge's affix count and marks.
+states no count; players report four to six, or always six), how many on a
+jewel, and what does the altar make of an item with an influence
+or an eldritch implicit? (The influence is one of the six: GGG, forum thread 2147954.)
+**Probe:** a Rare ring, a Rare jewel, an influenced ring, boots with an eldritch
+implicit, a ring below item level 68 (reported to get no influence); record each reforge's affix count and marks, and any reforge with two influences.
 **Assumed:** the altar four to six, a Vaal Orb six, a jewel three or four without an
 influence; an influenced item any one influence or its own; an eldritch implicit kept
-beside the new influence (the wide reading); in the cost, each of the six influences
+beside the new influence; in the cost, each of the six influences
 alike. **Encoded in:** `check/library.ts` `locusOps`, `vaalOps`, `brickBranch`;
 `cost/track.ts` `byInfluence`.
 
