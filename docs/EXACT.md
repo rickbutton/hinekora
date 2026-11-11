@@ -42,7 +42,11 @@ interface CItem {
 }
 ```
 
-`value` is the first number of the row's text, as `check/values.ts` reads it. A primitive
+`value` is the first number of the row's text, as `check/values.ts` reads it, and
+undefined for a row with no number, where every value comparison is false. `crafted` is a
+mark of its own: a bench row always has it, and a natural row may (a Harvest change of a
+bench craft). The crafted limit is the bench's precondition, not a property of items: an
+annul can take the multimod and leave two crafted modifiers. A primitive
 (`Op` of `check/ops.ts`) is a function from one concrete item to the set of items it can
 leave, or a failure. The prose of [operations.md](operations.md) §2, the comments of
 `check/ops.ts` and the wiki sections they cite define these functions; the reference
@@ -67,17 +71,17 @@ craft (the universe):
 - when the craft imprints, a second copy of every slot for the held imprint, and a slot
   for whether one is held.
 
-A type whose rows can be on an item two at a time (rows of one type in families that do
-not exclude each other) is split into one slot per such family, so that a slot holds one
-row.
+A type's rows always share their families (the data loader's tests pin it), so a slot
+holds one row and one slot per type is enough. They do not always share a side: a value
+counts on the side of its own row.
 
 **Counts are not stored.** A prefix count is the number of slots holding a prefix row. A
 count condition, a cap or a "has an open slot" check is a diagram built by running a small
 automaton over the slots.
 
 **Well-formedness.** One diagram, built with the universe, holds the items the game
-allows: one modifier per family, the side caps of the rarity and the base, the crafted
-limit with and without the multimod, fractured only where present. Every state is a subset
+allows: one modifier per family, the side caps of the rarity and the base, the rules of
+the marks. Every state is a subset
 of it, and a transformation that could leave it is intersected with it, which is how "the
 pool excludes a modifier whose family is taken or whose side is full" is stated.
 
@@ -164,7 +168,8 @@ An error can name an item that breaks the step, taken from a witness of the fail
 - One package at a time is built by an agent with a fresh context, from this document and
   a brief; a reviewer agent reads it before the next depends on it.
 - The present checker is not changed until package 10. New code imports the model, the
-  registry and the `Op` types; it does not import `check/astate.ts`.
+  registry and the `Op` types; of `check/astate.ts` it imports the `RPred` type alone, which
+  moves when that file goes.
 - A game rule comes from the wiki cache and is cited where it is encoded. An agent that
   meets a rule the wiki does not settle reports it with its assumption; it does not guess
   silently.

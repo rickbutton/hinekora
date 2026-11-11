@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q106.
+keeps it. New entries continue from Q109.
 
 ```
 ### Qn · probe|decision · open — title
@@ -361,3 +361,32 @@ record the tier in the header.
 number, and a name that words one of them means that one alone. **Encoded in:**
 `resolve/tiers.ts` `tiersOf`; `resolve/registry.ts` `rowsNamed`; `check/check.ts`
 `rowsOnly`.
+
+### Q106 · decision · open — a value comparison on a modifier with no number
+
+**Q:** `has "X" >= 5` where the item's row of X has no number in its text (a metamod, a
+flag modifier): is the condition false, or an error? [language.md](language.md) §5 says
+only that it compares the first number.
+**Options:** false whatever the operator, `!=` included, so `not has "X" != 0` holds there
+(recommended: nothing compares); or refuse the condition when a row of the modifier has no
+number.
+**Assumed:** false. **Encoded in:** `exact/reference/conditions.ts` `holds`.
+
+### Q107 · probe · open — the multimod and its own three
+
+**Q:** does "Can have up to 3 Crafted Modifiers" count toward the three?
+[Metamod](https://www.poewiki.net/wiki/Metamod) and
+[Crafting Bench](https://www.poewiki.net/wiki/Crafting_Bench) do not say.
+**Probe:** craft the multimod, then bench crafts until the bench refuses; record how many
+it took.
+**Assumed:** it counts, so two more fit. **Encoded in:** `check/ops.ts` `craftedBelowCap`;
+`exact/reference/item.ts` `craftedLimit`.
+
+### Q108 · probe · open — an Astrolabe Amulet and a fracture
+
+**Q:** the [Astrolabe Amulet](https://www.poewiki.net/wiki/Astrolabe_Amulet) counts as
+having every influence. Can it be fractured, as an influenced item cannot?
+**Probe:** use a Fracturing Orb on a Rare Astrolabe Amulet with four modifiers; record the
+refusal or the result.
+**Assumed:** refused, as for any influenced item. **Encoded in:**
+`exact/reference/wellformed.ts` `violations`; `check/check.ts` `elaborateItem`.
