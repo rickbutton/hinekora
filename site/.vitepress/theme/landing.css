@@ -1,6 +1,6 @@
-/* The home page reads like a README: one column at a reading measure. */
+/* The home page: what the language is on the left, the tool's own output on the right. */
 .landing {
-    max-width: 720px;
+    max-width: 1180px;
     margin: 0 auto;
     padding: 72px 24px 96px;
     font-size: 16px;
@@ -22,37 +22,50 @@
 }
 
 .landing .subtitle {
-    margin: 12px 0 32px;
+    margin: 12px 0 24px;
     font-size: 19px;
     color: var(--vp-c-text-2);
 }
 
-.landing h2 {
-    margin: 48px 0 0;
-    font-family: var(--hk-font-display);
-    font-size: 29px;
-    font-weight: 700;
-    line-height: 1.3;
+.landing .row {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 48px;
+    align-items: start;
+    margin-top: 40px;
+}
+
+.landing .prose > p:first-child {
+    margin-top: 0;
 }
 
 .landing .vp-doc div[class*="language-"] {
-    margin: 24px 0 0;
+    margin: 0;
     border-radius: 8px 8px 0 0;
 }
 
-/* The checker's output, as a terminal prints it, joined to the code above. */
-.landing .terminal {
-    margin: 0 0 24px;
-    padding: 14px 20px;
-    overflow-x: auto;
+/* What the tool says of the craft, joined to the code above it. */
+.landing .output {
+    padding: 14px 20px 18px;
     border-radius: 0 0 8px 8px;
     border-top: 1px solid #333;
-    background: #0d0d0d;
-    color: #d4d4d4;
-    font-family: var(--vp-font-family-mono);
-    font-size: 13px;
-    line-height: 1.6;
-    white-space: pre-wrap;
+    background: #161616;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.landing .output .caption {
+    margin-bottom: 6px;
+    color: var(--vp-c-text-2);
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+}
+
+.landing .output .card {
+    width: fit-content;
+    min-width: 280px;
+    max-width: 100%;
 }
 
 .landing a {
@@ -62,7 +75,14 @@
 }
 
 .landing .links {
-    margin-top: 40px;
+    margin-top: 48px;
+}
+
+@media (max-width: 900px) {
+    .landing .row {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+    }
 }
 
 @media (max-width: 560px) {

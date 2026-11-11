@@ -1,0 +1,14 @@
+item {
+    base:   "Vermillion Ring"
+    ilvl:   84
+    rarity: normal
+}
+
+transmute
+until has "maximum life" t1 {
+    alteration
+}
+regal
+exalt
+exalt
+bench "maximum mana"

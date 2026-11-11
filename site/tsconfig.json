@@ -8,6 +8,12 @@
         "moduleResolution": "Bundler",
         "lib": ["ES2023", "DOM", "DOM.Iterable"]
     },
+    "references": [
+        { "path": "../packages/core" },
+        { "path": "../packages/parser" },
+        { "path": "../packages/data" },
+        { "path": "../packages/item-card" }
+    ],
     "include": [".vitepress/**/*.ts", ".vitepress/**/*.mts"],
     "exclude": ["dist", ".vitepress/cache", ".vitepress/dist"]
 }

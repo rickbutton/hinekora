@@ -12,7 +12,10 @@
         "typecheck": "tsc -b"
     },
     "dependencies": {
-        "@hinekora/core": "workspace:*"
+        "@hinekora/core": "workspace:*",
+        "@hinekora/data": "workspace:*",
+        "@hinekora/item-card": "workspace:*",
+        "@hinekora/parser": "workspace:*"
     },
     "devDependencies": {
         "@hinekora/playground": "workspace:*",

@@ -1,7 +1,9 @@
 import { type Theme, withBase } from "vitepress";
 import DefaultTheme from "vitepress/theme";
-import ItemCard from "./ItemCard.vue";
+import LandingCost from "./LandingCost.vue";
+import LandingFinding from "./LandingFinding.vue";
 import PlaygroundFrame from "./PlaygroundFrame.vue";
+import "@hinekora/item-card/style.css";
 import "./style.css";
 import "./landing.css";
 import "./reference.css";
@@ -18,7 +20,8 @@ export default {
     extends: DefaultTheme,
     enhanceApp({ app }) {
         app.config.globalProperties.$withBase = withBase;
-        app.component("ItemCard", ItemCard);
+        app.component("LandingCost", LandingCost);
+        app.component("LandingFinding", LandingFinding);
         app.component("PlaygroundFrame", PlaygroundFrame);
     },
 } satisfies Theme;
