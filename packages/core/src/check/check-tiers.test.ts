@@ -152,6 +152,37 @@ describe("tier numbers, whatever the item's level", () => {
     });
 });
 
+describe("the item level as the reason a tier cannot be met", () => {
+    const ringAt = (ilvl: number, prefixes: readonly { mod: string; tier: number }[]) =>
+        item({ base: "IronRing", ilvl, rarity: "rare", prefixes });
+
+    it("is not given for a modifier the item holds at another tier", () => {
+        // The item has the second tier: that, not its level, rules the first out.
+        const held = craft(ringAt(40, [{ mod: "maximum life", tier: 2 }]), [
+            iff(has("maximum life", 1), [op("annul")]),
+        ]);
+        expect(check(held, ctx).diagnostics.map((d) => d.message)).toEqual([
+            `the 'if' branch can never run: has "maximum life" t1 is impossible here`,
+        ]);
+        // A loop that never rerolls the modifier cannot reach the tier either.
+        const kept = craft(ringAt(40, [{ mod: "maximum life", tier: 2 }]), [
+            until(has("maximum life", 1), [op("exalt")]),
+        ]);
+        expect(check(kept, ctx).diagnostics[0]!.message).toBe(
+            `this loop can never exit: has "maximum life" t1 can never become true here`,
+        );
+    });
+
+    it("is given where a reroll could bring the modifier back at a tier the level allows", () => {
+        const rerolled = craft(ringAt(40, [{ mod: "maximum life", tier: 2 }]), [
+            until(has("maximum life", 1), [op("chaos")]),
+        ]);
+        expect(check(rerolled, ctx).diagnostics[0]!.message).toContain(
+            'Tier 1 "maximum life" needs item level 60; this item is level 40',
+        );
+    });
+});
+
 describe("tier numbers on an item with two influences", () => {
     // Each influence's rows are numbered apart, so a tier names a row of each.
     const WARD = TypeId("Ward");

@@ -41,6 +41,7 @@ import {
     cardinalityGuarantees,
     guaranteedTypes,
     isExcluded,
+    isGuaranteed,
     suffixRange,
     initialState,
     join,
@@ -767,7 +768,7 @@ class Checker {
 
         if (thenState === null) {
             this.diag(
-                `the 'if' branch can never run: ${describePred(stmt.pred)} is impossible here${levelReasons(resolved)}`,
+                `the 'if' branch can never run: ${describePred(stmt.pred)} is impossible here${levelReasons(resolved, a)}`,
                 stmt.pred.span,
             );
         }
@@ -829,7 +830,7 @@ class Checker {
         const exitReachable = exits(probe);
         if (rpred !== null && exitReachable === null) {
             this.diag(
-                `this loop can never exit: ${describePred(stmt.pred)} can never become true here${levelReasons(resolved)}`,
+                `this loop can never exit: ${describePred(stmt.pred)} can never become true here${levelReasons(resolved, invariant)}`,
                 stmt.pred.span,
             );
             return { kind: "fall", state: foldJoin(probe) ?? invariant };
@@ -1386,10 +1387,15 @@ interface Resolved {
 
 const plain = (pred: RPred): Resolved => ({ pred, aboveLevel: [] });
 
-/** The item-level reasons a condition cannot be met, worded to follow a
- *  "can never" message. */
-function levelReasons(resolved: Resolved | null): string {
-    const reasons = (resolved?.aboveLevel ?? []).map((note) => note.reason);
+/**
+ * Why a condition that can never be met cannot, where the item's level is the
+ * reason, worded to follow a "can never" message. The level is not why for a
+ * modifier the item is known to hold: it is at another tier, whatever its level.
+ */
+function levelReasons(resolved: Resolved | null, a: AItem): string {
+    const reasons = (resolved?.aboveLevel ?? [])
+        .filter((note) => !isGuaranteed(a, note.type))
+        .map((note) => note.reason);
     return reasons.length === 0 ? "" : ` — ${[...new Set(reasons)].join("; ")}`;
 }
 
