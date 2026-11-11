@@ -955,6 +955,17 @@ describe("checker — paths that leave different items stay apart", () => {
         expect(last.before.counts.total).toEqual([5, 6]);
     });
 
+    it("judges a loop inside a loop on the passes that settle the outer one", () => {
+        // The outer loop's exit rests on the inner loop's exits as the quiet
+        // passes found them: a reforged item with the fire resistance.
+        const fire = has("FireResist1");
+        const c = craft(rareRing(), [until(life, [until(fire, [op("chaos")])])]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState?.counts.total).toEqual([4, 6]);
+        expect(guaranteedTypes(r.finalState!).has(FIRE_RESIST.type)).toBe(true);
+    });
+
     it("reports a step that fails on one path once, for the item over every path", () => {
         const r = check(craft(five(), [op("exalt"), undo, op("exalt")]), ctx);
         expect(r.diagnostics).toHaveLength(1);

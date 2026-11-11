@@ -1014,10 +1014,10 @@ class Checker {
     private refineParts(states: readonly AItem[], cond: Cond | null, positive: boolean): AItem[] {
         const narrowed = (h: AItem): AItem | null => {
             if (cond === null) return h;
-            const own = cond.perPart
-                ? this.quietly(() => this.resolvePred(cond.pred, h))?.pred
-                : undefined;
-            return refine(h, own ?? cond.rpred, positive);
+            if (!cond.perPart) return refine(h, cond.rpred, positive);
+            // A part the condition does not resolve on may go either way.
+            const own = this.quietly(() => this.resolvePred(cond.pred, h));
+            return own === null ? h : refine(h, own.pred, positive);
         };
         return states.map(narrowed).filter(isLive);
     }
@@ -1607,8 +1607,6 @@ interface AboveLevel {
     readonly reason: string;
 }
 
-/** A condition resolved, with the tiers it waits for that the item's level
- *  stops short of; one it wants absent is not among them. */
 /** A resolved condition with the words it came from, for the parts whose
  *  own item decides what it means (`Checker.condition`). */
 interface Cond {
@@ -1631,6 +1629,8 @@ function comparesValue(pred: RPred): boolean {
     }
 }
 
+/** A condition resolved, with the tiers it waits for that the item's level
+ *  stops short of; one it wants absent is not among them. */
 interface Resolved {
     readonly pred: RPred;
     readonly aboveLevel: readonly AboveLevel[];

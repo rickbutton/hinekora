@@ -46,6 +46,23 @@ const ring = (
     rarity: Rarity = "rare",
 ) => item({ base: "IronRing", ilvl: 100, rarity, prefixes });
 
+describe("a value condition where paths left different items", () => {
+    it("is read against each of them", () => {
+        // One path kept the life the Exalted Orb rolled, the other removed
+        // what it rolled; only the first can meet the condition.
+        const c = craft(ring(), [
+            op("exalt"),
+            iff(notp(has("maximum life")), [op("annul")]),
+            iff(hasValue("maximum life", ">=", 100), [op("annul")]),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        const inside = r.trace.filter((e) => e.kind === "operation").at(-1)!;
+        expect(inside.before.counts.total).toEqual([1, 1]);
+        expect(r.finalState?.counts.total).toEqual([0, 1]);
+    });
+});
+
 describe("a modifier's value", () => {
     it("is the first number of its text", () => {
         expect(rollRange("+(70-84) to maximum Life")).toEqual([70, 84]);
