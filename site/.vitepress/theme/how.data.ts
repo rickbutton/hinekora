@@ -34,6 +34,8 @@ export interface Weights {
     /** Of the prefixes, every tier of maximum Life, and its best tier alone. */
     readonly life: number;
     readonly best: number;
+    /** The chance an Orb of Alteration lands a prefix at all. */
+    readonly lands: number;
     /** The cost layer's own figure for the loop: "1/87 chance". */
     readonly odds: string;
 }
@@ -97,13 +99,27 @@ export default defineLoader({
         );
         if (loop?.attempts === undefined) throw new Error("landing.craft: its loop has no odds");
 
+        const prefixes = sum((c) => c.mod.gen === "prefix");
+        const suffixes = sum((c) => c.mod.gen === "suffix");
+        const best = sum((c) => c.mod.type === life.value && c.mod.minLevel === top);
+        // One modifier or two at even odds, two being one of each side: the
+        // reading the cost layer makes (QUESTIONS.md Q58). The figure shows this
+        // sum beside the cost layer's chance, so the two must agree.
+        const lands = 0.5 * (prefixes / (prefixes + suffixes)) + 0.5;
+        const byHand = (lands * best) / prefixes;
+        if (Math.abs(byHand - loop.attempts.chance) > 1e-3 * loop.attempts.chance)
+            throw new Error(
+                `the weights figure's sum (${byHand}) is not the cost layer's chance (${loop.attempts.chance})`,
+            );
+
         return {
             trace,
             weights: {
-                prefixes: sum((c) => c.mod.gen === "prefix"),
-                suffixes: sum((c) => c.mod.gen === "suffix"),
+                prefixes,
+                suffixes,
                 life: sum((c) => c.mod.type === life.value),
-                best: sum((c) => c.mod.type === life.value && c.mod.minLevel === top),
+                best,
+                lands,
                 odds: oddsText(loop.attempts.chance),
             },
         };

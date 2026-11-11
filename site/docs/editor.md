@@ -22,7 +22,7 @@ One language service backs two editors: a VS Code extension and the browser
 ### Hover
 
 Hover on a step shows three things: what the operation does and needs, the item after the
-step, and the step's expected cost. The item has the layout of the game's item text:
+step, and the expected cost of a repeated step. The item has the layout of the game's item text:
 
 ```txt
 Item Class: Boots
@@ -68,8 +68,7 @@ and the price snapshot from the repository.
 ## Playground
 
 The [playground](/playground/) is the same service in the browser, with no server. The
-editor has every feature in the table. Its hover leaves out the cost, which the side pane
-shows.
+editor has every feature in the table. Its hover gives costs without prices; the side pane has the priced line.
 
 - The `example` list loads the crafts from the repository's `examples/` folder.
 - The side pane shows the craft step by step. Each step has the item after it and its

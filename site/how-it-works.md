@@ -5,7 +5,7 @@ aside: false
 
 # How it works
 
-hinekora has two parts. The checker decides whether every step of a craft can apply. The cost
+Hinekora has two parts. The checker decides whether every step of a craft can apply. The cost
 layer estimates what the craft spends. Both read the same description of each crafting method.
 
 ## The problem
@@ -39,9 +39,9 @@ keeps it, so the checker knows that a later test for "none of the three" is dead
 
 ## A step changes the summary
 
-Each crafting method is a short sequence of primitive operations. A Regal Orb is four:
+Each crafting method is a short sequence of primitive operations. A Regal Orb is, in order:
 
-1. require a Magic item that is not corrupted;
+1. require a Magic item that is not corrupted, on a base that can be Rare;
 2. set the rarity to Rare;
 3. add one modifier from the pool the item can roll;
 4. use up memory strands, if the item has any.

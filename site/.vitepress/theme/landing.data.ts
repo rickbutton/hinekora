@@ -86,11 +86,14 @@ function finding(registry: Registry): Finding {
     const step = firstRefused(walkthrough(parsed.craft, result, registry).steps);
     if (step?.before === undefined || (step.kind !== "operation" && step.kind !== "call"))
         throw new Error("landing-refused.craft: the page expects the checker to refuse a step");
+    // A step's refusal opens with the item in a line of text; the card stands for that line.
+    const [item, ...need] = step.problems[0]!.split("\n");
+    if (!item!.startsWith("at this point the item is") || need.length === 0)
+        throw new Error("landing-refused.craft: the page expects a step the item cannot take");
     return {
         line: step.span.start.line,
         step: step.text,
-        // A finding opens with the item in a line of text; the card stands for that line.
-        message: step.problems[0]!.split("\n").slice(1).join("\n"),
+        message: need.join("\n"),
         card: itemCardHtml(itemView(step.before, registry)),
     };
 }

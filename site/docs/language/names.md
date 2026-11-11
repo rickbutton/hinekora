@@ -10,7 +10,7 @@ A quoted modifier name is a search over the stat text of the
 [modifiers](https://www.poewiki.net/wiki/Modifier) the item can have. It names a modifier
 type, every tier of it.
 
-- The search ignores case, numbers and punctuation.
+- The search ignores case, numbers and most punctuation.
 - Each word of the name must match a word of the stat text. A word matches whole, or as a
   prefix of three letters or more. `"max life"` names "+# to maximum Life".
 - The checker ranks matches by how much of the stat text the name covers. `"maximum life"`

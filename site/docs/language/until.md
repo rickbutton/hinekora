@@ -120,16 +120,15 @@ item {
 }
 
 chaos
-if not has "maximum life" {
+if not has "maximum life" t1 {
     stop
 }
-until has "maximum life" >= 90 {
+until has "maximum life" >= 125 {
     divine
 }
 ```
 
-The checker runs the `divine` loop against items that have maximum Life. A craft on which
-every path stops has no final item.
+The checker runs the `divine` loop against items with tier 1 Life. A craft whose every path stops has no final item.
 
 ## Related
 

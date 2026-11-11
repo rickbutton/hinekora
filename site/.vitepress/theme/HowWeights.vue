@@ -4,8 +4,6 @@ import { data } from "./how.data";
 const w = data.weights;
 const n = (x: number): string => x.toLocaleString("en-US");
 const pct = (x: number): string => `${(100 * x).toFixed(1)}%`;
-// A Magic item rolls one modifier or two at even odds; two are one of each side.
-const prefixLands = 0.5 * (w.prefixes / (w.prefixes + w.suffixes)) + 0.5;
 </script>
 
 <template>
@@ -21,8 +19,9 @@ const prefixLands = 0.5 * (w.prefixes / (w.prefixes + w.suffixes)) + 0.5;
             <li><i class="rest"></i>every other prefix: {{ n(w.prefixes - w.life) }}</li>
         </ul>
         <p class="sum">
-            A prefix lands {{ pct(prefixLands) }} of the time, and tier 1 Life is {{ n(w.best) }} of
-            the {{ n(w.prefixes) }} prefix weight: {{ pct(prefixLands) }} ×
+            The cost layer assumes the orb rolls one modifier or two at even odds. A prefix then
+            lands {{ pct(w.lands) }} of the time. Tier 1 Life is {{ n(w.best) }} of the
+            {{ n(w.prefixes) }} prefix weight. {{ pct(w.lands) }} ×
             {{ pct(w.best / w.prefixes) }} is the {{ w.odds }} the cost table shows.
         </p>
         <figcaption>The prefixes one Orb of Alteration can roll on the ring, by weight.</figcaption>

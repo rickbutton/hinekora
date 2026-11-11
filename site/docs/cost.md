@@ -54,17 +54,16 @@ If some paths end in a [`stop`](./language/until), a last line gives their share
 
 ## Spreads
 
-A chance can depend on something the item block leaves open, such as its
-[memory strands](https://www.poewiki.net/wiki/Memory_strand#Mechanics). The report then gives
-the estimate, followed by the two ends of the range in brackets.
+A chance can depend on something the checker knows only as a range, such as the
+[memory strands](https://www.poewiki.net/wiki/Memory_strand#Mechanics) left after each Chaos
+Orb. The report then gives the estimate and, in brackets, the two ends of the range.
 
 ```hinekora
 item {
-    base:     "Iron Ring"
-    ilvl:     84
-    rarity:   rare
-    strands:  60
-    prefixes: [ "random" ]
+    base:    "Iron Ring"
+    ilvl:    84
+    strands: 60
+    rarity:  rare
 }
 
 until has "maximum life" t1 {
@@ -73,11 +72,11 @@ until has "maximum life" t1 {
 ```
 
 ```txt
-    9  until has "maximum life" t1 {  1/32 chance [1/32 to 1/11.4]
-   10  chaos                          ×31.5 [11.2 to 31.5]: 31.5 Chaos Orb  (31.5 chaos)
+    8  until has "maximum life" t1 {  1/32 chance [1/32 to 1/11.4]
+    9  chaos                          ×32 [11.4 to 32]: 32 Chaos Orb  (32 chaos)
 
-Expected spend: 31.5 Chaos Orb.
-~31.5 Chaos Orbs (~0.07 Divine Orbs), 11.2 to 31.5 by what the item may hold, at Allflame prices of 2026-11-09.
+Expected spend: 32 Chaos Orb.
+~32 Chaos Orbs (~0.07 Divine Orbs), 11.4 to 32 by what the item may hold, at Allflame prices of 2026-11-09.
 ```
 
 ## Not known

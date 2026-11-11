@@ -124,7 +124,8 @@ says "a prefix, suffix, or both" with no ratio.
 **Probe:** fifty Orbs of Transmutation on Normal rings, or fifty Alterations on a Magic
 ring; record the counts with one modifier and with two.
 **Assumed:** one half each, a single modifier's side by the sides' weight shares.
-**Encoded in:** [cost.md §2](cost.md#2-how-the-game-rolls).
+**Encoded in:** [cost.md §2](cost.md#2-how-the-game-rolls); the site's weights figure
+(`site/.vitepress/theme/how.data.ts`).
 
 ### Q59 · probe · open — the modifier count of the Chaos-like reforges
 

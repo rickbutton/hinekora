@@ -5,7 +5,7 @@ below build the command-line tool from the repository.
 
 ## Build
 
-hinekora needs [Node.js](https://nodejs.org/) 22 or later and [pnpm](https://pnpm.io/).
+Building it needs [Node.js](https://nodejs.org/) 22 or later and [pnpm](https://pnpm.io/).
 
 ```sh
 git clone https://github.com/rickbutton/hinekora
