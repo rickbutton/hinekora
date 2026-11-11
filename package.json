@@ -19,10 +19,12 @@
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "docs:check": "node scripts/check-docs.mjs",
+        "prose": "vale sync && vale --glob=!**/{node_modules,operations,public,.vitepress}/** site",
         "gate": "pnpm typecheck && pnpm test && pnpm lint && pnpm format:check && pnpm docs:check"
     },
     "pnpm": {
         "onlyBuiltDependencies": [
+            "@vvago/vale",
             "esbuild"
         ]
     },
@@ -30,6 +32,7 @@
         "@eslint/js": "^9.18.0",
         "@types/node": "^22.10.5",
         "@vitest/coverage-v8": "^3.0.5",
+        "@vvago/vale": "^3.25.1",
         "eslint": "^9.18.0",
         "eslint-config-prettier": "^10.0.1",
         "prettier": "^3.4.2",

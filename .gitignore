@@ -12,3 +12,6 @@ site/.vitepress/cache/
 site/public/playground/app/
 site/public/op-icons/
 site/docs/operations/
+
+# The prose linter's styles, fetched by `vale sync`.
+.vale/
