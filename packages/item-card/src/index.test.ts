@@ -44,6 +44,18 @@ describe("the item card's markup", () => {
         expect(html).toContain('<span class="tier span">T1–3</span>');
     });
 
+    it("flags a bench craft and an unveiled modifier, in the one colour", () => {
+        const html = itemCardHtml(
+            view({
+                prefixes: [{ kind: "mod", mod: mod({ crafted: true }) }],
+                suffixes: [{ kind: "mod", mod: mod({ gen: "suffix", veiled: true }) }],
+            }),
+        );
+        expect(html).toContain('<span class="flag"> (crafted)</span>');
+        expect(html).toContain('<span class="flag"> (veiled)</span>');
+        expect(html.match(/class="mod crafted"/g)).toHaveLength(2);
+    });
+
     it("escapes the game's text, in the card and in a hover title", () => {
         const html = itemCardHtml(
             view({

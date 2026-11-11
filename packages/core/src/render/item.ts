@@ -59,7 +59,7 @@ export interface ModView {
     readonly fractured: boolean;
     /** Every row it may be is a bench craft, which the game shows as master crafted. */
     readonly crafted: boolean;
-    /** Every row it may be is an unveiled one, which the game shows as veiled. */
+    /** Every row it may be is an unveiled one, which is not a crafted modifier. */
     readonly veiled: boolean;
     /** The bench rank, when the modifier is one ranked bench craft. */
     readonly rank?: number;
@@ -413,7 +413,8 @@ const tagsText = (tags: readonly string[]): string =>
 /**
  * The game's advanced-copy header for a modifier: `{ Prefix Modifier "Virile"
  * (Tier: 1) — Life }`, `{ Fractured Prefix Modifier … }`, `{ Master Crafted
- * Suffix Modifier "of Craft" (Rank: 2) — … }`, or `{ Veiled Suffix Modifier … }`.
+ * Suffix Modifier "of Craft" (Rank: 2) — … }`; an unveiled
+ * modifier, which the game does not count as crafted, is headed `Veiled`.
  */
 function modHeader(m: ModView): string {
     const marker = m.fractured

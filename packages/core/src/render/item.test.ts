@@ -25,6 +25,7 @@ import {
     VEILED_SUFFIX_MOD,
 } from "../__fixtures__/mods.js";
 import type { BenchCraft } from "../model/sources.js";
+import { itemDelta } from "./walkthrough.js";
 import {
     type ItemView,
     itemClassLabel,
@@ -280,6 +281,9 @@ describe("the marks and the crafted flag", () => {
                 "Fractured Item",
             ].join("\n"),
         );
+        expect(itemDelta({ ...view, suffixes: [] }, view).added).toEqual([
+            "+(115-129) to maximum Life (veiled)",
+        ]);
     });
 });
 
