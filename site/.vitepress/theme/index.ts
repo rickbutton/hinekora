@@ -3,6 +3,7 @@ import DefaultTheme from "vitepress/theme";
 import HowChain from "./HowChain.vue";
 import HowLoop from "./HowLoop.vue";
 import HowModel from "./HowModel.vue";
+import HowParts from "./HowParts.vue";
 import HowPresence from "./HowPresence.vue";
 import HowTrace from "./HowTrace.vue";
 import HowTree from "./HowTree.vue";
@@ -32,6 +33,7 @@ export default {
         app.component("HowChain", HowChain);
         app.component("HowLoop", HowLoop);
         app.component("HowModel", HowModel);
+        app.component("HowParts", HowParts);
         app.component("HowPresence", HowPresence);
         app.component("HowTrace", HowTrace);
         app.component("HowTree", HowTree);

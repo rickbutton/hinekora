@@ -86,8 +86,8 @@ Annulment is a `remove`. A new method is a new sequence, with no change to the c
 ## Branches and loops
 
 At an `if` the checker narrows the summary by the condition for one arm and by its negation
-for the other. After the arms it joins results that agree on counts and rarity and keeps the
-rest apart. An arm that cannot run is dead.
+for the other. After the arms it joins the two results into one summary that covers both,
+where that loses nothing. It reports an arm whose condition cannot hold as dead.
 
 A loop body must be safe on every pass. The checker takes the summary entering the loop, runs
 the body, and joins the result back into the summary at the top. It repeats until a pass adds
@@ -111,6 +111,50 @@ until has "maximum life" t1 {
 
 A range that is still moving after many rounds jumps to its limit, so the iteration always
 ends. After the loop the condition is true, and the checker narrows the summary by it.
+
+## When one summary is not enough
+
+Joining two arms can lose a fact that a later step needs. This ring starts with five
+modifiers:
+
+```hinekora
+item {
+    base:     "Vermillion Ring"
+    ilvl:     84
+    rarity:   rare
+    prefixes: ["random", "random", "random"]
+    suffixes: ["random", "random"]
+}
+
+exalt
+if not has "maximum life" t1 {
+    annul
+}
+if not has "maximum life" t1 {
+    exalt
+}
+```
+
+The first `if` leaves two kinds of item. One kept the new modifier: six modifiers, with
+tier 1 Life. The other lost a modifier to the annul: five modifiers, without it. One summary
+of both says "five or six modifiers" and "Life or not". The count is a range and the
+presence rule is a separate part, so nothing ties the six to the Life. The second `if` would
+then see an item with six modifiers and no Life. The checker would refuse the Exalted Orb
+for an item no path makes.
+
+<HowParts />
+
+The checker keeps such summaries apart. Two summaries stay apart when they differ in their
+counts, their rarity, or a mark such as corruption or an influence. The checker joins two
+that agree on those, because the presence rule can hold what differs between them.
+
+The checker runs every later step on each summary it holds. A step must be safe on each
+one, and a branch is dead only when none can enter it. A loop works the same way: it tests
+each summary that reaches the top against its condition.
+
+The checker holds at most twelve summaries at one point. Past that it joins the newest ones.
+A join can only add items to what a summary covers, so the limit can make the checker refuse
+a craft that works. It cannot make it accept one that fails.
 
 ## What a verdict means
 
