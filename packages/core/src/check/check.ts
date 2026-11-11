@@ -680,7 +680,7 @@ class Checker {
 
     private checkSeq(entry: AItem, stmts: readonly Stmt[]): Flow {
         let state = entry;
-        for (const stmt of stmts) {
+        for (const [i, stmt] of stmts.entries()) {
             const before = state;
             const flow = this.checkStmt(before, stmt);
             // Only the real (non-quiet) pass records, so each statement appears once.
@@ -695,7 +695,17 @@ class Checker {
                     ...(inlined !== undefined && { inlined }),
                 });
             }
-            if (flow.kind !== "fall") return flow;
+            if (flow.kind !== "fall") {
+                const next = stmts[i + 1];
+                if (next !== undefined) {
+                    const restarts = flow.kind === "restart" && this.restartHeads.length > 0;
+                    this.diag(
+                        `this step can never run: the ${restarts ? "loop always restarts" : "craft always stops"} before it`,
+                        next.span,
+                    );
+                }
+                return flow;
+            }
             state = flow.state;
         }
         return { kind: "fall", state };

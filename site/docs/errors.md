@@ -1,6 +1,6 @@
 # Errors
 
-The checker reports every error it finds in one run. Each has a position and a message. The
+The checker reports every error it finds in one run. The
 [command line](./cli) prints them, and the [editor](./editor) underlines them.
 
 ## Syntax
@@ -37,8 +37,7 @@ too many prefixes for a magic Iron Ring: 2 (max 1)
 
 ## Names
 
-The checker rejects a quoted name that matches nothing, a name that matches two things
-equally well, and a tier the modifier does not have. See [Names and tiers](./language/names).
+The checker rejects a quoted name that matches nothing, a name that matches two things, and a tier the modifier does not have. See [Names and tiers](./language/names).
 
 <!-- refused -->
 
@@ -90,8 +89,6 @@ The item line gives the base, the rarities the item may have, the ranges of its 
 counts and its item level. The wording of the second line says how sure the checker is.
 "This item is Rare" means every path. "The item may be full" means some path.
 
-Common messages:
-
 | Message                                                        | The step needed                    |
 | -------------------------------------------------------------- | ---------------------------------- |
 | `Requires a Rare item — this item may be Normal or Rare.`      | one rarity on every path           |
@@ -108,6 +105,7 @@ Common messages:
 | `this loop can never exit: <condition> can never become true here` | [Loops](./language/until) |
 | `the 'if' branch can never run: <condition> is impossible here`    | [Branches](./language/if) |
 | `the 'else' branch can never run: <condition> always holds here`   | [Branches](./language/if) |
+| `this step can never run: the craft always stops before it`        | [Loops](./language/until) |
 
 ## Definitions
 

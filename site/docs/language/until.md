@@ -10,7 +10,7 @@ until <condition> {
 }
 ```
 
-The loop tests its [condition](./conditions) before each pass, the first included. It runs
+The loop tests its [condition](./conditions) before each pass. It runs
 the body while the condition is false. After the loop the checker knows the condition is true
 and checks the statements that follow against that item.
 
@@ -55,8 +55,7 @@ Requires an open affix slot — the item may be full.
 
 ### Loops the checker rejects
 
-The checker rejects a loop whose condition is already true for every item that reaches it,
-since the body would never run.
+The checker rejects a loop whose condition is already true for every item that reaches it.
 
 <!-- refused -->
 
@@ -104,7 +103,7 @@ until has "maximum life" t1 and has "cold resistance" {
 }
 ```
 
-The `exalt` runs only on items with a tier 1 life. Outside every `until`, `restart` ends the
+Outside every `until`, `restart` ends the
 craft on that path, as `stop` does.
 
 ## stop
@@ -129,6 +128,9 @@ until has "maximum life" >= 125 {
 ```
 
 The checker runs the `divine` loop against items with tier 1 Life. A craft whose every path stops has no final item.
+
+A step written after a `stop` or `restart` in its block never runs, and the checker rejects
+it.
 
 ## Related
 

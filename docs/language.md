@@ -286,8 +286,8 @@ marks where the item is not certain.
 - **Names**: an unknown or ambiguous base, mod, currency, essence, bench craft or harvest
   tag; a mod without a tier in the item block; a tier past the ladder.
 - **Requirements**: the step does not fit the item on some path (§3).
-- **Control**: a loop that can never exit or whose body never runs; a branch that can never
-  run; a def with conflicting, unused or repeated parameters, recursion, or a predicate
+- **Control**: a loop that can never exit or whose body never runs; a branch or step that never
+  runs; a def with conflicting, unused or repeated parameters, recursion, or a predicate
   called as a statement (or a function in a condition).
 
 ---

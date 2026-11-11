@@ -362,15 +362,6 @@ number, and a name that words one of them means that one alone. **Encoded in:**
 `resolve/tiers.ts` `tiersOf`; `resolve/registry.ts` `rowsNamed`; `check/check.ts`
 `rowsOnly`.
 
-### Q103 · decision · open — steps written after a path has ended
-
-**Q:** a step after a top-level `stop` or `restart`, or after either in a loop body, can
-never run. Should the checker say so?
-**Options:** (a) an error, as an `if` branch that can never run is (recommended: such a
-step is a mistake, and its cost and its place in the chart are silently dropped); (b)
-leave it unreported.
-**Assumed:** (b). **Encoded in:** `check/check.ts` `checkSeq`.
-
 ### Q104 · decision · open — a condition wider than the formatter's line
 
 **Q:** `fmt` leaves an `until` or `if` whose condition passes 100 columns on one line; a

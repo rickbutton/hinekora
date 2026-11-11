@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { check, type CheckContext } from "./check.js";
 import { guaranteedTypes, isExcluded } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, has, iff, item, notp, op, stop, until } from "../__fixtures__/ast.js";
+import { craft, has, iff, item, notp, op, restart, stop, until } from "../__fixtures__/ast.js";
 import { CATALOG, FIRE_RESIST, LIFE_T1, RING_BASE } from "../__fixtures__/mods.js";
 
 const registry = buildRegistry({
@@ -46,5 +46,34 @@ describe("stop ends the craft on a path", () => {
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState).toBeUndefined();
+    });
+});
+
+describe("a step written where no path reaches it", () => {
+    const messages = (body: Parameters<typeof craft>[1]): string[] =>
+        check(craft(ring([LIFE_T1.id]), body), ctx).diagnostics.map((d) => d.message);
+
+    it("is reported after a stop, once for the steps that follow", () => {
+        expect(messages([op("exalt"), stop(), op("exalt"), op("exalt")])).toEqual([
+            "this step can never run: the craft always stops before it",
+        ]);
+    });
+
+    it("is reported after a branch whose arms both stop", () => {
+        expect(
+            messages([op("exalt"), iff(has(FIRE_RESIST.id), [stop()], [stop()]), op("exalt")]),
+        ).toEqual(["this step can never run: the craft always stops before it"]);
+    });
+
+    it("is reported after a restart in a loop body", () => {
+        expect(
+            messages([until(has(FIRE_RESIST.id), [op("chaos"), restart(), op("exalt")])]),
+        ).toEqual(["this step can never run: the loop always restarts before it"]);
+    });
+
+    it("says the craft stops for a restart outside every loop", () => {
+        expect(messages([restart(), op("exalt")])).toEqual([
+            "this step can never run: the craft always stops before it",
+        ]);
     });
 });
