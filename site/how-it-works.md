@@ -28,16 +28,16 @@ produced. The abstract item has four parts:
 
 <HowModel />
 
-Each step of a craft changes the parts:
-
 <HowTrace />
 
 ## Which modifiers are present
 
-The presence part is a rule. Give it a yes or a no for each modifier, "is fire resistance on
-the item?", and it answers whether an item with that combination can exist at this point. A
-rule of this kind is a boolean function. This loop ends when the ring has any of three
-resistances:
+Steps depend on which modifiers the item has. A bench craft cannot add fire resistance to an
+item that has one, and an `if has "maximum life"` sends the items with Life one way and the
+rest the other. The checker has to track which modifiers can be there.
+
+Often the checker is sure of no single modifier and still knows a fact about a group of
+them. This loop ends when the ring has any of three resistances:
 
 ```hinekora
 item {
@@ -51,15 +51,17 @@ until has "fire resistance" or has "cold resistance" or has "lightning resistanc
 }
 ```
 
-After the loop the condition is true, so the checker removes from the rule every combination
-that breaks it. Seven of the eight combinations of the three remain:
+After the loop the ring may have any one of the three, or two, or all. It cannot have none.
+To hold a fact like that, the presence part is a rule. Give it a yes or a no for each
+modifier, and it answers whether an item with that combination can exist at this point. A
+rule of this kind is a boolean function. Written as a table, it has a row for each
+combination, and the loop's condition removes the one row that breaks it:
 
 <HowPresence />
 
 Two lists, "surely there" and "surely not", cannot hold this fact. No one resistance is sure
 to be there and none is sure to be absent, so both lists are empty and all eight rows pass.
-The rule drops the last row. The checker then knows that a later test for "none of the three"
-is dead.
+With the rule, the checker knows that a later test for "none of the three" is dead.
 
 A table doubles with every modifier, and a ring can roll hundreds. The checker stores the rule
 as a [decision diagram](https://en.wikipedia.org/wiki/Binary_decision_diagram), which asks

@@ -1,6 +1,6 @@
 <template>
     <figure class="how-figure chain">
-        <svg viewBox="0 0 520 150" role="img" aria-label="A loop as a chain of states">
+        <svg viewBox="0 0 600 255" role="img" aria-label="A loop as a chain of states">
             <defs>
                 <marker
                     id="how-arrow"
@@ -15,29 +15,48 @@
                 </marker>
             </defs>
             <g class="edges">
-                <path d="M150 52 C 190 22, 230 22, 270 52" marker-end="url(#how-arrow)" />
-                <path d="M270 88 C 230 118, 190 118, 150 88" marker-end="url(#how-arrow)" />
-                <path d="M118 104 C 200 150, 360 150, 428 92" marker-end="url(#how-arrow)" />
+                <path d="M150 50 L223 50" marker-end="url(#how-arrow)" />
+                <path d="M355 50 L458 50" marker-end="url(#how-arrow)" />
+                <path d="M290 70 L290 120" marker-end="url(#how-arrow)" />
+                <path d="M245 140 L157 140" marker-end="url(#how-arrow)" />
+                <path d="M90 120 L90 72" marker-end="url(#how-arrow)" />
+                <path d="M90 160 L90 203" marker-end="url(#how-arrow)" />
+                <path d="M150 225 C 240 225, 290 205, 290 160" marker-end="url(#how-arrow)" />
             </g>
             <g class="states">
-                <rect x="70" y="48" width="96" height="44" rx="22" />
-                <rect x="254" y="48" width="96" height="44" rx="22" />
-                <rect x="410" y="48" width="96" height="44" rx="22" class="exit" />
+                <rect x="30" y="30" width="120" height="40" rx="20" />
+                <rect x="30" y="205" width="120" height="40" rx="20" />
+                <rect x="460" y="30" width="120" height="40" rx="20" class="exit" />
+            </g>
+            <g class="draws">
+                <rect x="225" y="30" width="130" height="40" rx="4" />
+                <rect x="25" y="120" width="130" height="40" rx="4" />
+            </g>
+            <g class="steps">
+                <rect x="245" y="122" width="90" height="36" rx="4" />
             </g>
             <g class="names">
-                <text x="118" y="74">a slot open</text>
-                <text x="302" y="74">slot filled</text>
-                <text x="458" y="74">tier 1 Life</text>
+                <text x="90" y="55">a prefix open</text>
+                <text x="90" y="230">prefixes full</text>
+                <text x="520" y="55">tier 1 Life</text>
+                <text x="290" y="55">rolled tier 1 Life?</text>
+                <text x="90" y="145">a prefix open?</text>
+                <text x="290" y="145">annul</text>
             </g>
             <g class="labels">
-                <text x="210" y="24">exalt misses</text>
-                <text x="210" y="124">annul</text>
-                <text x="300" y="146">exalt hits</text>
+                <text x="187" y="43">exalt</text>
+                <text x="407" y="43">yes</text>
+                <text x="305" y="99">no</text>
+                <text x="105" y="100">yes</text>
+                <text x="105" y="186">no</text>
+                <text x="372" y="212">exalt adds a suffix</text>
             </g>
         </svg>
         <figcaption>
-            A loop that exalts for tier 1 Life and annuls after a miss, as a chain. Each arrow
-            carries a chance from the weights; the expected number of rounds is solved from them.
+            One round of a loop that exalts for tier 1 Life and annuls after a miss. The rounded
+            boxes are the states a round starts or ends in. Life is a prefix, so with the prefixes
+            full the exalt can only add a suffix. Each dashed box is a draw whose answers carry
+            chances from the weights; the expected number of rounds is solved from them.
         </figcaption>
     </figure>
 </template>
@@ -46,7 +65,7 @@
 svg {
     display: block;
     width: 100%;
-    max-width: 560px;
+    max-width: 620px;
     margin: 0 auto;
 }
 
@@ -63,6 +82,17 @@ marker path {
 .states rect {
     fill: var(--vp-c-bg-soft);
     stroke: #8888ff;
+}
+
+.draws rect {
+    fill: none;
+    stroke: var(--vp-c-text-3);
+    stroke-dasharray: 4 3;
+}
+
+.steps rect {
+    fill: var(--vp-c-bg-soft);
+    stroke: var(--vp-c-text-3);
 }
 
 .states .exit {
