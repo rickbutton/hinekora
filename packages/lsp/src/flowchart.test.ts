@@ -28,7 +28,7 @@ describe("the flowchart", () => {
         expect(c.nodes.get(FLOW_START)!.step).toBeUndefined();
     });
 
-    it("draws a loop as a repeat region whose decision leads back to its first step", () => {
+    it("draws a loop as a repeat region entered at its decision", () => {
         const c = chart(`item { base: "Iron Ring" ilvl: 84 rarity: rare }
 until has "maximum life" t1 {
     chaos
@@ -36,16 +36,17 @@ until has "maximum life" t1 {
 }`);
         const l = lines(c.text);
         expect(l).toContain("subgraph n1 [repeat]");
-        expect(l).toContain('n3{{"`item has no +#35; to maximum Life?`"}}');
-        expect(l).toContain('n5{{"`item has +#35; to maximum Life (T1)?`"}}');
-        expect(l).toContain('n5 -- "`no`" --> n2');
-        expect(l).toContain(`n5 -- "\`yes\`" --> ${FLOW_END}`);
-        // The restart in the branch goes back to the first step too; the
-        // branch's "no" falls through to the loop's decision.
-        expect(l).toContain("n4 --> n2");
-        expect(l).toContain('n3 -- "`no`" --> n5');
-        expect(c.nodes.get("n5")!.step!.kind).toBe("loop");
-        expect(c.nodes.get("n4")!.step!.kind).toBe("restart");
+        expect(l).toContain('n2{{"`item has +#35; to maximum Life (T1)?`"}}');
+        expect(l).toContain('n4{{"`item has no +#35; to maximum Life?`"}}');
+        // The condition is asked before the first Chaos Orb is spent.
+        expect(l).toContain(`${FLOW_START} --> n2`);
+        expect(l).toContain('n2 -- "`no`" --> n3');
+        expect(l).toContain(`n2 -- "\`yes\`" --> ${FLOW_END}`);
+        // The restart and the branch's "no" both lead back to the decision.
+        expect(l).toContain("n5 --> n2");
+        expect(l).toContain('n4 -- "`no`" --> n2');
+        expect(c.nodes.get("n2")!.step!.kind).toBe("loop");
+        expect(c.nodes.get("n5")!.step!.kind).toBe("restart");
     });
 
     it("asks a decision in the player's words, alternatives listed under 'one of'", () => {

@@ -77,7 +77,7 @@ A file that does not parse is left alone, with a message on standard error.
 ## chart
 
 `chart` prints the craft as a [Mermaid](https://mermaid.js.org/) flowchart. A step is a box,
-a loop is a `repeat` group with its condition drawn after the body, and a branch is a
+a loop is a `repeat` group with its condition drawn before the body, and a branch is a
 decision.
 
 ```txt
@@ -85,14 +85,14 @@ flowchart TD
     start(["`start with the item`"]):::start
     subgraph n1 [repeat]
     direction TB
-    n2["`essence #quot;greed#quot; t1`"]:::essence
-    n3{{"`item has +#35;% to Fire Resistance (T1)?`"}}
+    n2{{"`item has +#35;% to Fire Resistance (T1)?`"}}
+    n3["`essence #quot;greed#quot; t1`"]:::essence
     end
     finish(["`done`"]):::finish
-    n2 --> n3
-    n3 -- "`no`" --> n2
+    n3 --> n2
+    n2 -- "`no`" --> n3
     start --> n2
-    n3 -- "`yes`" --> finish
+    n2 -- "`yes`" --> finish
 ```
 
 `chart` does not need the craft to check.

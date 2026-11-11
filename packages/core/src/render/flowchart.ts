@@ -1,8 +1,8 @@
 /**
  * The guide as a Mermaid flowchart: an action node per statement, a
  * decision per loop exit or branch asking for the condition in the player's
- * words, "yes" and "no" edges, a loop as a "repeat" region whose decision
- * leads back to its first step, start and end. The text is what a flowchart
+ * words, "yes" and "no" edges, a loop as a "repeat" region entered at its
+ * decision, which its last step leads back to, start and end. The text is what a flowchart
  * renderer lays out; the node ids map back to the statements for a consumer
  * that binds the drawn nodes to the text.
  */
@@ -101,7 +101,7 @@ export function flowchart(w: Walkthrough): Flowchart {
         );
     };
 
-    /** Restarts met inside a loop's body, joined to its first step once that is known. */
+    /** Restarts met inside a loop's body, which lead back to its decision. */
     type LoopFrame = string[];
 
     const seq = (steps: readonly Step[], loop: LoopFrame | undefined): Part | undefined => {
@@ -142,14 +142,15 @@ export function flowchart(w: Walkthrough): Flowchart {
                 const frame: LoopFrame = [];
                 decls.push(`    subgraph ${fresh()} [repeat]`);
                 decls.push("    direction TB");
-                const body = seq(s.body, frame);
+                // The condition is asked before the first round, as the loop
+                // asks it: an item that already has it takes no step.
                 const decision = declare(fresh(), `{{${label(question(s.check))}}}`, node);
+                const body = seq(s.body, frame);
                 decls.push("    end");
-                const first = body?.entry ?? decision;
                 if (body !== undefined) for (const from of body.exits) edge(from, decision);
-                for (const again of frame) edge({ id: again }, first);
-                edge({ id: decision, label: "no" }, first);
-                return { entry: first, exits: [{ id: decision, label: "yes" }] };
+                for (const again of frame) edge({ id: again }, decision);
+                edge({ id: decision, label: "no" }, body?.entry ?? decision);
+                return { entry: decision, exits: [{ id: decision, label: "yes" }] };
             }
             case "branch": {
                 const decision = declare(fresh(), `{{${label(question(s.check))}}}`, node);
