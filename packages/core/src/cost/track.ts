@@ -1788,8 +1788,15 @@ export function holdsOn(
             // the conditions' thresholds fall, so it holds wholly or not at all.
             const i = atomIndex.get(pred.type);
             const row = i === undefined ? null : (s.rows[i] ?? null);
-            const value = row === null ? undefined : readRow(row).value;
-            return value !== undefined && narrowRange(value, pred.op, pred.value) !== null;
+            if (row === null) return false;
+            // Another condition's threshold may have given a row this one does
+            // not name a value too.
+            const { base, value } = readRow(row);
+            return (
+                pred.rows.has(base) &&
+                value !== undefined &&
+                narrowRange(value, pred.op, pred.value) !== null
+            );
         }
         case "hasGroup":
             return [...pred.types].some((t) => {

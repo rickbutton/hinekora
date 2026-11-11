@@ -39,6 +39,7 @@ import {
     ELDRITCH_ROWS,
     CLASS_RING,
     LIFE_T1,
+    LIFE_T2,
     PROTECT_PREFIXES_CARRIER,
     RING_BASE,
     VEILED_CATALOG,
@@ -823,6 +824,51 @@ describe("the cost of a guide", () => {
         const tier = report(craft(ring("rare"), [until(has("maximum life", 1), [op("chaos")])]))
             .steps[0]!.attempts!;
         expect(value.expected).toBeCloseTo(3 * tier.expected, 6);
+    });
+
+    describe("a value compared at a named tier, beside a comparison at another", () => {
+        // Both life tiers with a roll range: T1 70–84 at weight 1000, T2 55–69
+        // at weight 2000.
+        const tiered = buildRegistry({
+            bases: [RING_BASE],
+            mods: CATALOG.map((m) =>
+                m.id === LIFE_T2.id ? { ...LIFE_T2, text: "+(55-69) to maximum Life" } : m,
+            ),
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
+        const costs = (c: ReturnType<typeof craft>) =>
+            costOf(c, check(c, { registry: tiered }), tiered);
+        const lowTier = hasValue("maximum life", ">=", 62, 2);
+        const topTier = hasValue("maximum life", ">=", 75, 1);
+
+        it("a branch holds only for a modifier at the tier it names", () => {
+            // The life is T2 two times in three, and 8 of T2's 15 values are 62
+            // or more: 2/3 × 8/15 = 16/45. Every T1 value is above 62, and none
+            // of them counts. Of the 29/45 left, T1 at 75 or more is
+            // 1/3 × 10/15 = 10/45.
+            const r = costs(
+                craft(ring("rare"), [
+                    until(has("maximum life"), [op("chaos")]),
+                    iff(lowTier, [stop()]),
+                    iff(topTier, [stop()]),
+                ]),
+            );
+            const [first, second] = r.steps.filter((s) => s.kind === "if");
+            expect(first!.branch).toBeCloseTo(16 / 45, 9);
+            expect(second!.branch).toBeCloseTo(10 / 29, 9);
+        });
+
+        it("a loop ends only on a modifier at the tier it names", () => {
+            // A round ends the loop when the Chaos Orb lands T2 life, the
+            // chance the loop on the tier alone has, with one of the 8 values
+            // in 15 at 62 or more.
+            const tier = costs(craft(ring("rare"), [until(has("maximum life", 2), [op("chaos")])]))
+                .steps[0]!.attempts!.chance;
+            const r = costs(
+                craft(ring("rare"), [until(lowTier, [op("chaos")]), iff(topTier, [stop()])]),
+            );
+            expect(r.steps[0]!.attempts!.chance).toBeCloseTo((tier * 8) / 15, 9);
+        });
     });
 
     it("a loop with a step that cannot be followed says its rounds are read alike", () => {
