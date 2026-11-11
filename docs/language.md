@@ -120,9 +120,9 @@ Ambiguous name "res" — candidates: fire resistance, cold resistance, lightning
 **Tiers.** `t<n>` is the tier the game's advanced tooltip shows, `t1` the modifier's Tier 1
 on that base: its rows that roll on the base, counted best first by
 [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level), whatever the item's level. An
-influence's rows are counted apart from the base's, so with two influences a number may name
-a row of each (`QUESTIONS.md` Q101). The item's level decides which
-tiers a currency can roll, not their numbers. A tier above it is an error in the item block;
+influence's rows are counted apart from the base's and another influence's, so a number may
+name a row of each (`QUESTIONS.md` Q101). The item's level decides which tiers a currency
+can roll, not their numbers. A tier above it is an error in the item block;
 in a condition no currency meets it, though an essence or a Harvest change may.
 
 ---

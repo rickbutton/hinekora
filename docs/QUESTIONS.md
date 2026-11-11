@@ -334,20 +334,20 @@ own section before `Shaper Item`. Does it come before `Fractured Item` too?
 **Assumed:** `Corrupted`, then the influence, then `Fractured Item`. **Encoded in:**
 `packages/core/src/render/item.ts` `renderItemText`.
 
-### Q101 · probe · open — an item with two influences: the Harvest change, and tier numbers
+### Q101 · probe · open — an influence's rows: the Harvest change, and tier numbers
 
 **Q:** [Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting)
-says the change keeps the tier. Where a modifier has rows under each of the item's two
-influences, does one become the other element's row of its own influence only? And does
-the advanced tooltip number each influence's rows apart, or all as one ladder?
-**Probe:** a Shaper and Redeemer wand with the Redeemer's "physical damage as extra cold";
-change it; record the new modifier's name and values, or the refusal. An Elder and Hunter
-body armour with "increased maximum Life", and an Elder ring with "Life per Enemy Hit";
-record the tier in each header.
-**Assumed:** it stays within its own influence's rows, refused where that influence has no
-row of the target; a tier counts the rows of the modifier's own influence, or the base's
-own, so a number may name a row of each. **Encoded in:** `check/methods.ts`
-`harvestChange`; `resolve/tiers.ts` `tierLadders`.
+says the change keeps the tier. With rows under each of an item's two influences, does a
+modifier become the other element's row of its own influence only? Does the tooltip number
+each influence's rows and the base's apart, or as one ladder?
+**Probe:** change the Redeemer's "physical damage as extra cold" on a Shaper and Redeemer
+wand; record the result or refusal. Record the tier shown for "increased maximum Life" on
+an Elder and Hunter body armour, the base's "Gain 2 Life per Enemy Hit" on an Elder ring
+(assumed 1; 3 as one ladder) and "Minions deal increased Damage" on a Redeemer Bone Ring
+(assumed 5 and 3 tiers; 8 as one).
+**Assumed:** it stays within its own influence's rows, else refused; a tier counts the rows
+of the modifier's own influence, or the base's own.
+**Encoded in:** `check/methods.ts` `harvestChange`; `resolve/tiers.ts` `tierLadders`.
 
 ### Q102 · probe · open — the tier of two modifiers that share a type and a mod level
 

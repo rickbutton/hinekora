@@ -171,6 +171,34 @@ if has "maximum life" { exalt }`);
         );
     });
 
+    it("numbers one influence's rows apart from the base's own of the same modifier", () => {
+        const ring = (base: string, influence: string, side: string, mod: string) =>
+            run(`item {
+    base: "${base}"
+    ilvl: 84
+    rarity: rare
+    influences: ${influence}
+    ${side}: [ "${mod}" ]
+}`);
+        // An Elder ring's own life per enemy hit is one row below the Elder's
+        // two: the first tier of its ladder, the third were they one ladder.
+        const own = ring("Iron Ring", "elder", "suffixes", "LifeGainPerTarget1");
+        expect(own.ok).toBe(true);
+        expect(own.output).toContain(`"of Rejuvenation" (Tier: 1) `);
+        // A Redeemer Bone Ring's minion damage: the base's five rows and the
+        // Redeemer's three, not one ladder of eight.
+        for (const [mod, tier] of [
+            ["MinionDamagePercent5", 1],
+            ["MinionDamagePercent1", 5],
+            ["MinionDamageRingInfluence3", 1],
+            ["MinionDamageRingInfluence1", 3],
+        ] as const) {
+            const r = ring("Bone Ring", "redeemer", "prefixes", mod);
+            expect(r.ok).toBe(true);
+            expect(r.output).toContain(`(Tier: ${tier}) `);
+        }
+    });
+
     describe("an Elder amulet's two minion modifiers, one type and one level", () => {
         const amulet = (prefixes: string, body = "") => `item {
     base: "Paua Amulet"
