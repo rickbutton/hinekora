@@ -60,6 +60,7 @@ import {
     rarityOf,
     refine,
     relaxTiers,
+    normalize,
     settled,
     suffixRange,
     unprovenFractures,
@@ -519,9 +520,10 @@ function runCase(a0: AItem, ops: readonly Op[], registry: Registry): TransferRes
             failure ??= failed;
             // An item that cannot be of the needed rarity is taken as that
             // rarity for the rest: a reforge run on a Normal item would leave
-            // it empty, and every later step would be refused for that.
+            // it empty, and every later step would be refused for that. An item
+            // holding more modifiers than that rarity can stays as it is.
             if (failed?.kind === "wrongRarity" && !a.rarities.has(failed.needed)) {
-                a = settled({ ...a, rarities: new Set([failed.needed]) });
+                a = normalize({ ...a, rarities: new Set([failed.needed]) }) ?? a;
             }
             continue;
         }

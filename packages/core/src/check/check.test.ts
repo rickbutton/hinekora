@@ -730,6 +730,23 @@ describe("checker — the rarity seam (surface §6 errors)", () => {
         expect(r.finalState!.counts.total).toEqual([3, 5]);
     });
 
+    it("keeps a refused item's modifiers where the needed rarity could not hold them", () => {
+        // A Rare ring of four modifiers cannot be the Magic item the augment
+        // needs, so the exalt after it is judged on the Rare ring.
+        const full = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: ["T1 Life", "random"],
+            suffixes: ["random", "random"],
+        });
+        const r = check(craft(full, [op("augment"), op("exalt")]), ctx);
+        expect(r.diagnostics).toHaveLength(1);
+        expect(r.diagnostics[0]!.message).toContain("Requires a Magic item");
+        expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
+        expect(r.finalState!.counts.total).toEqual([6, 6]);
+    });
+
     it("judges a scour and an essence over every rarity the item may have", () => {
         // A scour in one arm leaves the ring Normal or Magic where the arms meet:
         // a second scour may be wasted, a low essence may land on a Magic.
