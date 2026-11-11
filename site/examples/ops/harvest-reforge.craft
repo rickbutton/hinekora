@@ -1,0 +1,11 @@
+item {
+    base:     "Vermillion Ring"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum life" t5 ]
+    suffixes: [ "fire resistance" t1 ]
+}
+
+until has "maximum life" t1 {
+    harvest reforge "life"
+}

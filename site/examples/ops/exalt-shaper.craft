@@ -1,0 +1,9 @@
+item {
+    base:     "Hubris Circlet"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum energy shield" t1 ]
+    suffixes: [ "fire resistance" t1, "cold resistance" t1 ]
+}
+
+exalt shaper

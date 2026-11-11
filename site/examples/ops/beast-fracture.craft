@@ -1,0 +1,9 @@
+item {
+    base:     "Black Maw Talisman"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum life" t1, "maximum mana" t5 ]
+    suffixes: [ "strength" t1, "fire resistance" t1 ]
+}
+
+beast fracture

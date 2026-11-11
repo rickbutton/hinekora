@@ -1,0 +1,11 @@
+item {
+    base:     "Crystal Belt"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum life" t1 ]
+    suffixes: [ "fire resistance" t1, "cold resistance" t1 ]
+}
+
+until has "maximum life" >= 140 {
+    divine
+}

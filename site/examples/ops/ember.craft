@@ -1,0 +1,9 @@
+item {
+    base:     "Sorcerer Boots"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum energy shield" t1 ]
+    suffixes: [ "cold resistance" t1 ]
+}
+
+ember grand

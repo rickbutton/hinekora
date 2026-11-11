@@ -1,0 +1,7 @@
+item {
+    base:   "Astral Plate"
+    ilvl:   84
+    rarity: normal
+}
+
+alchemy

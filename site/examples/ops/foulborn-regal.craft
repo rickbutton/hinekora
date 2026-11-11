@@ -1,0 +1,9 @@
+item {
+    base:     "Gold Ring"
+    ilvl:     84
+    rarity:   magic
+    prefixes: [ "maximum life" t1 ]
+    suffixes: [ "chaos resistance" t1 ]
+}
+
+foulborn regal

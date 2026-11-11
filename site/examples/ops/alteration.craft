@@ -1,0 +1,10 @@
+item {
+    base:    "Small Cluster Jewel"
+    ilvl:    84
+    rarity:  magic
+    enchant: 3 "maximum life"
+}
+
+until has "fettle" {
+    alteration
+}

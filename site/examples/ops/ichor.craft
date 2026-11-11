@@ -1,0 +1,9 @@
+item {
+    base:     "Titan Gauntlets"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum life" t1 ]
+    suffixes: [ "fire resistance" t1, "lightning resistance" t1 ]
+}
+
+ichor exceptional

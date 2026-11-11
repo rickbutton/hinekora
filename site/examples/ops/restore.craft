@@ -1,0 +1,12 @@
+item {
+    base:     "Crimson Jewel"
+    ilvl:     84
+    rarity:   magic
+    prefixes: [ "increased maximum life" t1 ]
+}
+
+beast imprint
+augment
+if not has "increased attack speed" {
+    restore
+}

@@ -1,0 +1,9 @@
+item {
+    base:     "Coral Ring"
+    ilvl:     84
+    rarity:   magic
+    prefixes: [ "maximum life" t2 ]
+    suffixes: [ "cold resistance" t1 ]
+}
+
+regal

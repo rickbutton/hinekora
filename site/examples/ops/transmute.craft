@@ -1,0 +1,7 @@
+item {
+    base:   "Sapphire Ring"
+    ilvl:   84
+    rarity: normal
+}
+
+transmute

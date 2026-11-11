@@ -1,0 +1,8 @@
+item {
+    base:     "Cobalt Jewel"
+    ilvl:     84
+    rarity:   magic
+    prefixes: [ "increased maximum life" t1 ]
+}
+
+foulborn augment

@@ -1,0 +1,9 @@
+item {
+    base:   "Hubris Circlet"
+    ilvl:   84
+    rarity: normal
+}
+
+until has "maximum energy shield" t1 {
+    essence "greed" t1
+}

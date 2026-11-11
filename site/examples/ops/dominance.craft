@@ -1,0 +1,10 @@
+item {
+    base:       "Titan Gauntlets"
+    ilvl:       84
+    rarity:     rare
+    prefixes:   [ "maximum life" t1, "chance to impale" t2 ]
+    suffixes:   [ "increased dexterity" t2, "fire resistance" t1 ]
+    influences: hunter
+}
+
+dominance

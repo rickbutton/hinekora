@@ -1,0 +1,10 @@
+item {
+    base:     "Vaal Regalia"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum energy shield" t4 ]
+}
+
+until has "maximum energy shield" t1 {
+    chaos
+}

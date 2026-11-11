@@ -1,0 +1,11 @@
+item {
+    base:     "Titan Gauntlets"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum life" t1 ]
+}
+
+until has "strength and dexterity" {
+    veiled chaos
+    unveil
+}

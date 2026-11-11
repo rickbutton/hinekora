@@ -1,0 +1,9 @@
+item {
+    base:     "Two-Stone Ring"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum life" t1 ]
+    suffixes: [ "cold resistance" t1, "lightning resistance" t2 ]
+}
+
+exalt

@@ -1,0 +1,9 @@
+item {
+    base:     "Sorcerer Boots"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum energy shield" t1, "movement speed" t1 ]
+    suffixes: [ "intelligence" t1, "cold resistance" t5 ]
+}
+
+fracture

@@ -1,0 +1,9 @@
+item {
+    base:     "Ruby Ring"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum life" t1 ]
+    suffixes: [ "fire resistance" t1, "lightning resistance" t1 ]
+}
+
+harvest change "fire resistance" "cold resistance"

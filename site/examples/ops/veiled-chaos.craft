@@ -1,0 +1,9 @@
+item {
+    base:     "Astral Plate"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum life" t5 ]
+}
+
+veiled chaos
+unveil

@@ -1,0 +1,10 @@
+item {
+    base:     "Slink Boots"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum life" t1, "increased evasion rating" t6 ]
+    suffixes: [ "fire resistance" t1, "cold resistance" t1 ]
+    exarch:   grand
+}
+
+eldritch annul

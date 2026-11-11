@@ -1,0 +1,9 @@
+item {
+    base:     "Imbued Wand"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "spell damage" t1, "maximum mana" t6 ]
+    suffixes: [ "cast speed" t1 ]
+}
+
+annul

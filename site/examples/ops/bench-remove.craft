@@ -1,0 +1,10 @@
+item {
+    base:     "Moonstone Ring"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum life" t1 ]
+    suffixes: [ "fire resistance" t1, bench "cold resistance" ]
+}
+
+bench remove
+bench "lightning resistance"

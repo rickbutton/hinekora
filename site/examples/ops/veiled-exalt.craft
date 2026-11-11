@@ -1,0 +1,10 @@
+item {
+    base:     "Vaal Regalia"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum energy shield" t1, "maximum mana" t9 ]
+    suffixes: [ "intelligence" t1, "fire resistance" t1, "cold resistance" t1 ]
+}
+
+veiled exalt
+unveil

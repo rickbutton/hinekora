@@ -1,0 +1,14 @@
+item {
+    base:     "Cobalt Jewel"
+    ilvl:     84
+    rarity:   magic
+    prefixes: [ "increased maximum life" t1 ]
+}
+
+beast imprint
+regal
+until has "increased energy shield" {
+    restore
+    beast imprint
+    regal
+}

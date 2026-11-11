@@ -1,0 +1,9 @@
+item {
+    base:   "Astral Plate"
+    ilvl:   84
+    rarity: normal
+}
+
+until has "maximum life" t2 {
+    fossil "pristine"
+}

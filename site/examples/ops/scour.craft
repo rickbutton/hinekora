@@ -1,0 +1,10 @@
+item {
+    base:     "Chain Belt"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "maximum life" t7 ]
+    suffixes: [ "strength" t6, "fire resistance" t7 ]
+}
+
+scour
+alchemy
