@@ -501,6 +501,20 @@ until has "life" or `;
         // A ring can't roll everything, so this is a strict subset of all mods.
         expect(labels.length).toBeLessThan(registry.statSuggestions.length);
     });
+
+    it("offers a modifier whose tiers all lie above the item's level, saying the level it needs", () => {
+        // A ring's lowest chaos resistance needs item level 16; an essence or
+        // a Harvest change may still place a modifier no currency rolls.
+        const at = (ilvl: number) => {
+            const src = `item { base: "Iron Ring" ilvl: ${ilvl} rarity: rare }\nuntil has "`;
+            const items = getCompletions(src, src.length, registry);
+            return items.find((c) => c.label === "chaos resistance")?.detail;
+        };
+        expect(at(84)).toBe("+(5-10)% to Chaos Resistance");
+        expect(at(10)).toBe(
+            "+(5-10)% to Chaos Resistance — needs item level 16; no currency rolls it on this item",
+        );
+    });
 });
 
 describe("semantic tokens", () => {

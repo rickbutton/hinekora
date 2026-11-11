@@ -3,7 +3,7 @@
  * it (tolerant of half-typed source): which method the line's opening words
  * name, and which of its slots the cursor is in, all read from the method
  * table. Mod suggestions are narrowed to what is possible at the cursor,
- * rollable on the base + ilvl and not proven absent by the checker, with each
+ * rollable on the base and not proven absent by the checker, with each
  * filter degrading to "all mods" when the source can't be read, never to nothing.
  */
 import {
@@ -23,6 +23,7 @@ import {
     slotAt,
     type TagId,
     tierCount,
+    tierLadder,
     tierLadders,
     tierRows,
     traceAt,
@@ -357,14 +358,34 @@ function tierItems(source: string, mod: string, registry: Registry): CompletionI
     });
 }
 
-/** Stat descriptions, narrowed to what can roll here and is not proven absent. */
+/** The item level every row of a ladder rolls at. */
+const TOP_ITEM_LEVEL = 100;
+
+/** Stat descriptions, narrowed to what rolls on the base and is not proven
+ *  absent. A modifier whose every tier lies above the item's level is offered
+ *  too, and says so: an essence or a Harvest change may still place it. */
 function modItems(source: string, offset: number, registry: Registry): CompletionItem[] {
     const ctx = itemContext(source, registry);
-    const rollable = ctx
-        ? rollableTypes(registry.catalog, ctx.base, ctx.ilvl, ctx.tags)
-        : undefined;
     const excluded = excludedAt(source, offset, registry);
+    if (ctx === undefined) {
+        return registry.statSuggestions
+            .filter((s) => !excluded.has(s.type))
+            .map((s) => ({ label: s.label, detail: s.detail, kind: CompletionItemKind.Value }));
+    }
+    const onBase = rollableTypes(registry.catalog, ctx.base, TOP_ITEM_LEVEL, ctx.tags);
+    const rollable = rollableTypes(registry.catalog, ctx.base, ctx.ilvl, ctx.tags);
     return registry.statSuggestions
-        .filter((s) => (!rollable || rollable.has(s.type)) && !excluded.has(s.type))
-        .map((s) => ({ label: s.label, detail: s.detail, kind: CompletionItemKind.Value }));
+        .filter((s) => onBase.has(s.type) && !excluded.has(s.type))
+        .map((s) => {
+            if (rollable.has(s.type)) {
+                return { label: s.label, detail: s.detail, kind: CompletionItemKind.Value };
+            }
+            const rows = tierLadder(registry.catalog, ctx.base, s.type, ctx.tags);
+            const needs = Math.min(...rows.map((m) => m.minLevel));
+            return {
+                label: s.label,
+                detail: `${s.detail} — needs item level ${needs}; no currency rolls it on this item`,
+                kind: CompletionItemKind.Value,
+            };
+        });
 }
