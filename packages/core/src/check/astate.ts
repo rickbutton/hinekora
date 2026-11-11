@@ -917,6 +917,9 @@ export type RPred =
           /** Rows of the type with no number in their text: the comparison can
            *  neither rule them in nor out. */
           readonly unnumbered: ReadonlySet<ModId>;
+          /** The condition names a tier, so `rows` are that tier's only and the
+           *  modifier may be at a row outside them, where the condition fails. */
+          readonly oneTier?: true;
       }
     | {
           readonly kind: "compare";
@@ -1124,7 +1127,8 @@ function refineHas(
  * the modifier is absent or its value compares the other way, so only a
  * guaranteed modifier learns anything, and what it learns is the other part.
  * A row with no number stays possible on both branches, and while it may be
- * the one present the value is unknown.
+ * the one present the value is unknown. Where the condition names a tier the
+ * modifier may be at another, and there the condition fails whatever the value.
  */
 function refineHasValue(
     a: AItem,
@@ -1148,6 +1152,20 @@ function refineHasValue(
         if (part !== null) kept.set(id, part);
     }
     const blank = [...pred.unnumbered].filter((id) => pinned === undefined || pinned.has(id));
+    if (!positive) {
+        // Which rows the modifier may be is not recorded: nothing is learnt.
+        if (pinned === undefined && pred.oneTier) return a;
+        const others = [...(pinned ?? [])].filter(
+            (id) => !pred.rows.has(id) && !pred.unnumbered.has(id),
+        );
+        if (pinned !== undefined && others.length > 0) {
+            // It is at a row the condition does not name, or at a named one
+            // with the value the other way; the value known so far still holds.
+            const left = new Set([...others, ...kept.keys(), ...blank]);
+            if (left.size === pinned.size) return a;
+            return reduceTiers({ ...a, tiers: new Map(a.tiers).set(type, left) });
+        }
+    }
     if (kept.size === 0 && blank.length === 0) return null;
     let hull: Range | undefined;
     for (const r of kept.values()) hull = hull === undefined ? r : RangeDomain.join(hull, r);

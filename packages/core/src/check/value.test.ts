@@ -14,6 +14,7 @@ import {
     item,
     notp,
     op,
+    orp,
     stop,
     until,
 } from "../__fixtures__/ast.js";
@@ -75,6 +76,44 @@ describe("a modifier's value", () => {
         expect(narrowRange([70, 84], "==", 80)).toEqual([80, 80]);
         expect(narrowRange([70, 84], "!=", 80)).toEqual([70, 84]);
         expect(narrowRange([5.5, 7.5], "<", 6)).toEqual([5.5, 6]);
+    });
+});
+
+describe("has <mod> t<n> <cmp> <n>, on a modifier at another tier", () => {
+    it("fails, so the else branch runs", () => {
+        // The item's life is the second tier: "the first tier at 120 or more"
+        // is false of it, not both impossible and always true.
+        const c = craft(ring([{ mod: "maximum life", tier: 2 }]), [
+            iff(hasValue("maximum life", ">=", 120, 1), [op("annul")], [op("exalt")]),
+        ]);
+        expect(check(c, ctx).diagnostics.map((d) => d.message)).toEqual([
+            `the 'if' branch can never run: has "maximum life" t1 >= 120 is impossible here`,
+        ]);
+    });
+
+    it("says nothing of the tier or the value where the comparison fails", () => {
+        // Life of an unknown tier: without the first tier at 120 or more it
+        // may be the first below 120, or any other tier at any value.
+        const c = craft(ring(), [
+            until(has("maximum life"), [op("chaos")]),
+            iff(
+                hasValue("maximum life", ">=", 120, 1),
+                [],
+                [iff(has("maximum life", 2), [op("annul")])],
+            ),
+        ]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
+    });
+
+    it("leaves the tiers it does not name where the item may be at several", () => {
+        const c = craft(ring(), [
+            until(orp(has("maximum life", 1), has("maximum life", 2)), [op("chaos")]),
+            iff(hasValue("maximum life", ">=", 120, 1), [stop()]),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState!.tiers.get(LIFE)).toEqual(new Set(["MaxLifeHigh", "MaxLifeMid"]));
+        expect(r.finalState!.values.get(LIFE)).toBeUndefined();
     });
 });
 

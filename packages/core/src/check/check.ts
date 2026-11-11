@@ -1317,6 +1317,7 @@ class Checker {
                     value: pred.value.value,
                     rows,
                     unnumbered,
+                    ...(pred.tier !== undefined && { oneTier: true as const }),
                 },
                 aboveLevel,
             };
