@@ -51,7 +51,14 @@ const BUDGETS = {
     "docs/item-model.md": 1900,
     "docs/language.md": 2500,
     "docs/operations.md": 1400,
+    "site/docs/index.md": 300,
+    "site/docs/language/until.md": 500,
+    "site/docs/syntax.md": 800,
+    "site/index.md": 300,
+    "site/playground/index.md": 50,
 };
+/** Generated from the method table on each build, so held to no budget. */
+const SITE_GENERATED = "site/docs/operations/";
 const QUESTION_BUDGET = 150;
 const QUESTIONS = "docs/QUESTIONS.md";
 
@@ -322,6 +329,11 @@ for (const p of walk(join(root, "docs"), () => true)) {
     const rel = relative(root, p).replaceAll("\\", "/");
     if (!(rel in BUDGETS))
         fail(rel, 1, "no word budget for this file; docs/ holds only the docs in BUDGETS");
+}
+for (const p of walk(join(root, "site"), (f) => f.endsWith(".md"))) {
+    const rel = relative(root, p).replaceAll("\\", "/");
+    if (!(rel in BUDGETS) && !rel.startsWith(SITE_GENERATED))
+        fail(rel, 1, "no word budget for this page; a site page is brief by decision");
 }
 for (const [doc, budget] of Object.entries(BUDGETS)) {
     if (!existsSync(join(root, doc))) {
