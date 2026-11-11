@@ -45,9 +45,9 @@ jobs:
             - name: Test with coverage
               run: pnpm test:coverage
 
-            # Coverage slows the played-out draws past what the runner waits for
+            # Coverage slows the Monte Carlo tests past what the runner waits for
             # a worker, so the coverage run leaves them out and they run plain.
-            - name: Played-out draws
+            - name: Simulation tests
               run: pnpm exec vitest run packages/cli/src/race.test.ts
 
             - name: Coverage summary
