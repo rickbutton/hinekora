@@ -99,7 +99,7 @@ side closes too. For one Orb of Alteration the arithmetic is short:
 
 <HowWeights />
 
-A Rare reforge draws four to six modifiers, and each draw changes the weights left for the
+A Chaos Orb draws four to six modifiers, and each draw changes the weights left for the
 next. The cost layer treats the draw as a race. Every modifier group gets a clock that fires
 at a rate equal to its weight, and the order the clocks fire in is the order of the draw. "Tier
 1 Life is among the prefixes" becomes an integral over the time its clock fires. The answer is

@@ -17,8 +17,6 @@
             <g class="edges">
                 <path d="M150 52 C 190 22, 230 22, 270 52" marker-end="url(#how-arrow)" />
                 <path d="M270 88 C 230 118, 190 118, 150 88" marker-end="url(#how-arrow)" />
-                <path d="M68 44 C 30 10, 30 130, 68 96" marker-end="url(#how-arrow)" />
-                <path d="M150 70 L 180 70" class="hidden" />
                 <path d="M118 104 C 200 150, 360 150, 428 92" marker-end="url(#how-arrow)" />
             </g>
             <g class="states">
@@ -27,21 +25,19 @@
                 <rect x="410" y="48" width="96" height="44" rx="22" class="exit" />
             </g>
             <g class="names">
-                <text x="118" y="74">a prefix open</text>
-                <text x="302" y="74">prefixes full</text>
+                <text x="118" y="74">a slot open</text>
+                <text x="302" y="74">slot filled</text>
                 <text x="458" y="74">tier 1 Life</text>
             </g>
             <g class="labels">
-                <text x="210" y="24">reforge fills them</text>
+                <text x="210" y="24">exalt misses</text>
                 <text x="210" y="124">annul</text>
-                <text x="14" y="74">miss</text>
-                <text x="300" y="146">hit</text>
+                <text x="300" y="146">exalt hits</text>
             </g>
         </svg>
         <figcaption>
-            A loop that reforges for tier 1 Life and annuls when the prefixes fill, as a chain. Each
-            arrow carries a chance from the weights; the expected number of rounds is solved from
-            them.
+            A loop that exalts for tier 1 Life and annuls after a miss, as a chain. Each arrow
+            carries a chance from the weights; the expected number of rounds is solved from them.
         </figcaption>
     </figure>
 </template>
@@ -58,10 +54,6 @@ svg {
     fill: none;
     stroke: var(--vp-c-text-3);
     stroke-width: 1.2;
-}
-
-.edges .hidden {
-    display: none;
 }
 
 marker path {
