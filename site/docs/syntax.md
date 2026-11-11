@@ -3,7 +3,7 @@
 ## Files
 
 A craft is one `.craft` file. It opens with an item block, the starting item, followed by
-statements. Blocks are delimited by braces; whitespace, newlines included, is insignificant, and
+statements. Braces delimit blocks; whitespace, newlines included, is insignificant, and
 statements need no separators. A comment runs from `#` to the end of the line.
 
 ```hinekora
@@ -23,7 +23,7 @@ The item is implicit. Every statement acts on the current item, which is never n
 
 ## The item block
 
-The item block is the only declared state. The state after each statement is inferred.
+The item block is the only declared state. The checker infers the state after each statement.
 
 | Field                  | Example                           | Meaning                                                   |
 | ---------------------- | --------------------------------- | --------------------------------------------------------- |
@@ -36,13 +36,13 @@ The item block is the only declared state. The state after each statement is inf
 | `exarch`, `eater`      | `grand`                           | the tier of an eldritch implicit                          |
 | `enchant`              | `8 "lightning damage"`            | a cluster jewel's enchantments                            |
 | `strands`              | `82`                              | memory strands                                            |
-| `corrupted`            |                                   | the item is corrupted                                     |
+| `corrupted`            |                                   | a corrupted item                                          |
 
 ## Names and tiers
 
-A modifier is named by its stat text in quotes. A query word matches a word of the text exactly or
-as a prefix of at least three letters, so `"max life"` names "+# to maximum Life". A name that
-matches several modifier types equally well is an error listing them.
+A quoted string names a modifier by its stat text. A query word matches a whole word of the text
+or a prefix of at least three letters, so `"max life"` names "+# to maximum Life". A name that
+matches two or more modifier types equally well is an error listing them.
 
 `t<n>` names a tier, `t1` the best. The number is the one the game's advanced tooltip shows for
 that base. The item level decides which tiers a currency can roll, not their numbers.
@@ -81,8 +81,8 @@ if suffixCount <= 2 and not has group "cold resistance" {
 }
 ```
 
-`until` tests its condition before each pass, the first included, and runs the body while it is
-false; after the loop the condition is true. Inside `if` the condition is true; inside `else` its
+`until` tests its condition before each pass, the first included, and runs the body while the
+condition is false; after the loop the condition is true. Inside `if` the condition is true; inside `else` its
 negation is. `restart` returns to the condition test of the innermost enclosing `until`; `stop`
 ends the craft on the current path. See [Loops: until, restart, stop](./language/until).
 
@@ -95,9 +95,9 @@ ends the craft on the current path. See [Loops: until, restart, stop](./language
 | `has "maximum life" t1`                    | the modifier is present at that tier              |
 | `has "maximum life" >= 110`                | its value, the first number of its text, is so    |
 | `has group "spell damage"`                 | some modifier of that modifier's group is present |
-| `fractured "maximum life"`                 | that modifier is fractured                        |
+| `fractured "maximum life"`                 | the item has that modifier, fractured             |
 | `influenced`, `influenced hunter`          | the item has an influence, or that one            |
-| `corrupted`                                | the item is corrupted                             |
+| `corrupted`                                | a corrupted item                                  |
 | `exarch grand`, `eater`, `dominant exarch` | the eldritch implicits                            |
 | `prefixCount <= 2`, `suffixCount == 3`     | affix counts; `==` `!=` `<` `<=` `>` `>=`         |
 | `not`, `and`, `or`, `( … )`                | combinations; `or` binds loosest                  |
@@ -122,5 +122,5 @@ guarantee("maximum life", { scour alchemy })
 until anyEleRes(t1) { chaos }
 ```
 
-A parameter's kind is inferred from its use: a tier, a number, a name, or, in statement
+A parameter takes its kind from its use: a tier, a number, a name, or, in statement
 position, steps. A steps argument is one statement or a `{ … }` block.

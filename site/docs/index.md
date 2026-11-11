@@ -26,10 +26,10 @@ both modifiers are present.
 
 - A step whose precondition may fail on some path: an exalt where the item may be full, a bench
   craft whose group may already be present, a currency on the wrong rarity. The report gives the
-  item's state at that point and the requirement that failed.
+  item's state at that point and what the step needed.
 - A name that resolves to no base, modifier, essence, bench craft or fossil, or to more than one,
   and a tier number the modifier does not have on the base.
-- A loop that can never exit or whose body never runs, and a branch that can never be taken.
+- A loop that can never exit or whose body never runs, and a branch the craft can never take.
 
 ## Pages
 

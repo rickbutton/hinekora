@@ -8,10 +8,10 @@ until <condition> {
 }
 ```
 
-The condition is tested before each pass, the first included, and the body runs while it is
-false. After the loop the condition is known to be true, and the statements that follow are
-checked against that state. A loop whose condition is already true on every path into it is an
-error, since its body would never run.
+The loop tests its condition before each pass, the first included, and runs the body while
+the condition is false. After the loop the checker knows the condition is true and checks the
+statements that follow against that state. A loop whose condition is already true on every
+path that reaches the loop is an error, since its body would never run.
 
 ```hinekora
 item {
@@ -29,8 +29,8 @@ On exit the item has the essence's maximum Life and a tier 1 fire resistance.
 
 ### Every iteration
 
-The body is checked against every state in which the condition can be false at the start of a
-pass, after any number of earlier passes, not only the first. Starting from a Rare item with no affixes, this loop is rejected: after some exalts the
+The checker runs the body against every state in which the condition can be false at the start of a
+pass, after any number of earlier passes, not only the first. Starting from a Rare item with no affixes, the checker rejects this loop: after some exalts the
 item may be full while the life is still absent.
 
 ```hinekora
@@ -71,7 +71,7 @@ The other error reads `this loop can never exit: <condition> can never become tr
 ## restart
 
 `restart` returns to the condition test of the innermost enclosing `until`. The rest of that
-pass does not run, so the statements after a `restart` behind an `if` are checked only on the paths
+pass does not run, so the checker follows the statements after a `restart` behind an `if` only on the paths
 where the `if` was not taken.
 
 ```hinekora
@@ -91,7 +91,7 @@ does.
 
 ## stop
 
-`stop` ends the craft on the current path. The statements after it are checked only on the
+`stop` ends the craft on the current path. The checker follows the statements after it only on the
 paths that continue.
 
 ```hinekora
@@ -104,7 +104,7 @@ until has "maximum life" >= 90 {
 }
 ```
 
-The `divine` loop is checked against items that have maximum Life. A craft on which every path
+The checker runs the `divine` loop against items that have maximum Life. A craft on which every path
 stops has no final item.
 
 ## Related

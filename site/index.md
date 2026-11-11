@@ -35,7 +35,7 @@ Most steps are random, so a craft describes a tree of possible items.
 
 The checker walks that tree symbolically. It keeps one summary of every item the steps so
 far could have produced. Before each step it asks whether the step's precondition holds for
-all of them.
+every one of them.
 
 This craft checks. The summary it ends with is the finished item.
 
@@ -48,7 +48,7 @@ This craft checks. The summary it ends with is the finished item.
 <section class="row">
 <div class="prose">
 
-A craft that checks can be costed. The game's modifier weights give the chance that a loop
+A craft that checks has a cost. The game's modifier weights give the chance that a loop
 exits on each round. From that comes the expected number of each currency, priced here from
 a market snapshot.
 
@@ -77,7 +77,7 @@ This one goes on with two Exalted Orbs and a bench craft.
 <div class="prose">
 
 The bench craft is a prefix and a ring holds three. The Regal Orb and each Exalted Orb can
-add one. On some paths no slot is left, so the craft is rejected. The error shows the item
+add one. On some paths no slot is left, so the checker rejects the craft. The error shows the item
 at that step.
 
 </div>
