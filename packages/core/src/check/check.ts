@@ -698,11 +698,14 @@ class Checker {
             if (flow.kind !== "fall") {
                 const next = stmts[i + 1];
                 if (next !== undefined) {
-                    const restarts = flow.kind === "restart" && this.restartHeads.length > 0;
-                    this.diag(
-                        `this step can never run: the ${restarts ? "loop always restarts" : "craft always stops"} before it`,
-                        next.span,
-                    );
+                    // A branch that ends as a restart may stop on its other arm.
+                    const why =
+                        flow.kind === "stop" || this.restartHeads.length === 0
+                            ? "the craft always stops before it"
+                            : stmt.kind === "restart"
+                              ? "the loop always restarts before it"
+                              : "every path before it stops or restarts";
+                    this.diag(`this step can never run: ${why}`, next.span);
                 }
                 return flow;
             }

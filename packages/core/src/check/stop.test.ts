@@ -71,6 +71,18 @@ describe("a step written where no path reaches it", () => {
         ).toEqual(["this step can never run: the loop always restarts before it"]);
     });
 
+    it("names both ends after a branch that restarts on one arm and stops on the other", () => {
+        expect(
+            messages([
+                until(has(FIRE_RESIST.id), [
+                    op("chaos"),
+                    iff(has(LIFE_T1.id), [restart()], [stop()]),
+                    op("exalt"),
+                ]),
+            ]),
+        ).toEqual(["this step can never run: every path before it stops or restarts"]);
+    });
+
     it("says the craft stops for a restart outside every loop", () => {
         expect(messages([restart(), op("exalt")])).toEqual([
             "this step can never run: the craft always stops before it",
