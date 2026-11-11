@@ -104,10 +104,34 @@ describe("tier numbers, whatever the item's level", () => {
         }
     });
 
-    it("refuses a declared tier the item's level cannot roll, saying the level it needs", () => {
-        const r = check(craft(ringAt(40, [{ mod: "maximum life", tier: 1 }]), []), ctx);
+    it("takes a declared tier above the item's level, by number or by id", () => {
+        // An essence or a Harvest change leaves such a row on a real item.
+        for (const declared of [{ mod: "maximum life", tier: 1 }, "MaxLifeHigh"]) {
+            const r = check(craft(ringAt(40, [declared]), []), ctx);
+            expect(r.diagnostics).toEqual([]);
+            expect(r.finalState!.tiers.get(LIFE)).toEqual(new Set(["MaxLifeHigh"]));
+        }
+    });
+
+    it("says a loop cannot bring back a declared tier no currency rolls, and why", () => {
+        const c = craft(ringAt(40, [{ mod: "maximum life", tier: 1 }]), [
+            op("chaos"),
+            until(has("maximum life", 1), [op("chaos")]),
+        ]);
+        expect(check(c, ctx).diagnostics.map((d) => d.message)).toEqual([
+            'this loop can never exit: has "maximum life" t1 can never become true here — Tier 1 "maximum life" needs item level 60; this item is level 40',
+        ]);
+    });
+
+    it("asks a bare name for its tier where the item's level rolls none of several", () => {
+        const low: Mod = { ...MAXLIFE_T1, id: ModId("MaxLifeLowest"), minLevel: 20 };
+        const high = buildRegistry({
+            bases: [RING_BASE],
+            mods: TIERED_CATALOG.map((m) => (m.id === "MaxLifeLow" ? low : m)),
+        });
+        const r = check(craft(ringAt(10, ["maximum life"]), []), { registry: high });
         expect(r.diagnostics.map((d) => d.message)).toEqual([
-            'Tier 1 "maximum life" needs item level 60; this item is level 40.',
+            'declare the tier of "maximum life" (e.g. `"maximum life" t3`), a starting item\'s mods must name a specific tier and none of its 3 rolls at this item level.',
         ]);
     });
 
@@ -231,15 +255,16 @@ describe("tier numbers on an item with two influences", () => {
         expect(fourth.diagnostics[0]!.message).toContain("it has 3 tiers on this base");
     });
 
-    it("holds a declared tier to the rows the item's level rolls", () => {
-        // At level 82 the Shaper's first tier rolls and the Redeemer's does not.
-        const r = run(craft(boots(82, [{ mod: WARD_NAME, tier: 1 }]), []));
-        expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.tiers.get(WARD)).toEqual(new Set(["Ward_shaper_80"]));
-        const low = run(craft(boots(70, [{ mod: WARD_NAME, tier: 1 }]), []));
-        expect(low.diagnostics.map((d) => d.message)).toEqual([
-            `Tier 1 "${WARD_NAME}" needs item level 80; this item is level 70.`,
-        ]);
+    it("reads a declared tier as either row whatever the item's level", () => {
+        // At level 82 the Shaper's first tier rolls and the Redeemer's does
+        // not, at 70 neither: the item may hold either all the same.
+        for (const ilvl of [82, 70]) {
+            const r = run(craft(boots(ilvl, [{ mod: WARD_NAME, tier: 1 }]), []));
+            expect(r.diagnostics).toEqual([]);
+            expect(r.finalState!.tiers.get(WARD)).toEqual(
+                new Set(["Ward_shaper_80", "Ward_eyrie_84"]),
+            );
+        }
     });
 
     it("finds a row at its own influence's number in a condition", () => {

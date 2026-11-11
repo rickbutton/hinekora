@@ -122,8 +122,8 @@ on that base: its rows that roll on the base, counted best first by
 [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level), whatever the item's level. An
 influence's rows are counted apart from the base's and another influence's, so a number may
 name a row of each (`QUESTIONS.md` Q101). The item's level decides which tiers a currency
-can roll, not their numbers. A tier above it is an error in the item block;
-in a condition no currency meets it, though an essence or a Harvest change may.
+can roll, not their numbers. The item block takes a tier above it, as an essence or a
+Harvest change leaves one; in a condition no currency meets it.
 
 ---
 
@@ -284,8 +284,7 @@ the game's copy-to-clipboard text is, with tier ranges, "one of these" groups an
 marks where the item is not certain.
 
 - **Names**: an unknown or ambiguous base, mod, currency, essence, bench craft or harvest
-  tag; a mod without a tier in the item block; a tier past the ladder, or in the item block
-  above the item's level.
+  tag; a mod without a tier in the item block; a tier past the ladder.
 - **Requirements**: the step does not fit the item on some path (§3).
 - **Control**: a loop that can never exit or whose body never runs; a branch that can never
   run; a def with conflicting, unused or repeated parameters, recursion, or a predicate

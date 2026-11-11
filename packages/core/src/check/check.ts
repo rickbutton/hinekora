@@ -390,21 +390,12 @@ class Checker {
             if (byId.ok) {
                 const mod = byId.value;
                 checkGen(affix.mod, mod.gen, gen);
-                // A naturally rolled row must fit the base's domain and item level;
-                // a row another mechanic placed (bench, essence, unveiled, fossil) is
-                // exempt (item-model.md §3).
-                if ((mod.source ?? "natural") === "natural") {
-                    if (mod.domain !== base.domain) {
-                        this.diag(
-                            `"${affix.mod}" cannot roll on a ${base.name ?? "item"}.`,
-                            item.span,
-                        );
-                    } else if (mod.minLevel > item.ilvl) {
-                        this.diag(
-                            `"${affix.mod}" needs item level ${mod.minLevel}; this item is level ${item.ilvl}.`,
-                            item.span,
-                        );
-                    }
+                // A naturally rolled row must fit the base's domain; a row
+                // another mechanic placed (bench, essence, unveiled, fossil) is
+                // exempt (item-model.md §3). Its level may be above the item's:
+                // an essence or a Harvest change leaves such a row.
+                if ((mod.source ?? "natural") === "natural" && mod.domain !== base.domain) {
+                    this.diag(`"${affix.mod}" cannot roll on a ${base.name ?? "item"}.`, item.span);
                 }
                 claim(affix.mod, mod.type);
                 pinned.set(mod.type, mod.id);
@@ -425,25 +416,32 @@ class Checker {
                 rollableGen(this.registry.catalog, base, item.ilvl, type, tags),
                 gen,
             );
-            // The number is the game's, counted over the whole ladder; the
-            // item's level decides which of its rows the item can have rolled.
+            // The number is the game's, counted over the whole ladder. A tier
+            // above the item's level is taken as declared: an essence places
+            // its row whatever the level, and a Harvest change keeps the tier.
             const ladders = tierLadders(this.registry.catalog, base, type, tags);
             const count = tierCount(ladders);
+            const rolls = (m: Mod): boolean => m.minLevel <= item.ilvl;
             const reachable: number[] = [];
             for (let n = 1; n <= count; n++) {
-                if (tierRows(ladders, n).some((m) => m.minLevel <= item.ilvl)) reachable.push(n);
+                if (tierRows(ladders, n).some(rolls)) reachable.push(n);
             }
-            if (affix.tier === undefined && reachable.length > 1) {
+            // Unnamed, it is the one tier the item's level rolls, or the
+            // modifier's only tier.
+            const single = reachable.length === 1 ? reachable[0] : count === 1 ? 1 : undefined;
+            if (affix.tier === undefined && single === undefined && count > 0) {
+                const why =
+                    reachable.length > 1
+                        ? `${reachable.length} roll at this item level`
+                        : `none of its ${count} rolls at this item level`;
                 this.diag(
-                    `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t${reachable[0]}\`), a starting item's mods must name a specific tier and ${reachable.length} roll at this item level.`,
+                    `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t${reachable[0] ?? count}\`), a starting item's mods must name a specific tier and ${why}.`,
                     item.span,
                 );
                 claim(affix.mod, type); // still present, just untiered
                 return type;
             }
-            // Unnamed, it is the one tier the item can have rolled, or with none
-            // the lowest, which the level check below reports.
-            const tier = affix.tier ?? reachable[0] ?? Math.max(1, count);
+            const tier = affix.tier ?? single ?? 1;
             const atTier = this.rowsAt(ladders, tier, affix.mod);
             if (atTier.length === 0) {
                 this.diag(
@@ -453,16 +451,10 @@ class Checker {
                 claim(affix.mod, type);
                 return type;
             }
-            // Two influences may each have a row at the tier: the item holds
-            // one the level allows, and which is not said.
-            const rolled = atTier.filter((m) => m.minLevel <= item.ilvl);
-            if (rolled.length === 0) {
-                const needs = Math.min(...atTier.map((m) => m.minLevel));
-                this.diag(
-                    `Tier ${tier} "${affix.mod}" needs item level ${needs}; this item is level ${item.ilvl}.`,
-                    item.span,
-                );
-            }
+            // Two influences may each have a row at the tier, and which the
+            // item holds is not said. A tier read off the item's level is a
+            // row that level rolls.
+            const rolled = affix.tier === undefined ? atTier.filter(rolls) : [];
             const rows = rolled.length > 0 ? rolled : atTier;
             claim(affix.mod, type);
             if (rows.length === 1) pinned.set(type, rows[0]!.id);

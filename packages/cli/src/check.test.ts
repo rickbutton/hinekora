@@ -165,10 +165,65 @@ if has "maximum life" { exalt }`);
                 `"maximum lightning resistance" t3, "intelligence" t1, "fire resistance" t8`,
             ),
         );
-        expect(genius.ok).toBe(false);
-        expect(genius.output).toContain(
-            'Tier 1 "intelligence" needs item level 82; this item is level 68.',
-        );
+        // The Intelligence is declared all the same, as an item an essence or
+        // a Harvest change left it on.
+        expect(genius.ok).toBe(true);
+        expect(genius.output).toContain(`{ Suffix Modifier "of the Genius" (Tier: 1) `);
+    });
+
+    describe("a modifier above the item's level", () => {
+        it("is declared on a body armour of level 25 at the tier its tooltip shows", () => {
+            const r = run(`item {
+    base: "Plate Vest"
+    ilvl: 25
+    rarity: rare
+    suffixes: [ "cold resistance" t6 ]
+}`);
+            expect(r.ok).toBe(true);
+            expect(r.output).toContain("(Tier: 6) ");
+            const byId = run(`item {
+    base: "Plate Vest"
+    ilvl: 25
+    rarity: rare
+    suffixes: [ "ColdResist3" ]
+}`);
+            expect(byId.ok).toBe(true);
+            expect(byId.output).toContain("(Tier: 6) ");
+        });
+
+        const boots = (body = "") => `item {
+    base: "Titan Greaves"
+    ilvl: 84
+    rarity: rare
+    prefixes: [ "movement speed" t1 ]
+}
+${body}`;
+
+        it("is declared on boots of level 84, where no currency rolls it", () => {
+            const r = run(boots());
+            expect(r.ok).toBe(true);
+            expect(r.output).toContain("(Tier: 1) ");
+        });
+
+        it("is not rolled back once lost: the loop that waits for it cannot exit", () => {
+            const r = run(boots(`chaos\nuntil has "movement speed" t1 { chaos }`));
+            expect(r.ok).toBe(false);
+            expect(r.output).toContain("this loop can never exit");
+            expect(r.output).toContain(
+                'Tier 1 "movement speed" needs item level 86; this item is level 84',
+            );
+        });
+
+        it("is still refused where the number is beyond the modifier's tiers", () => {
+            const r = run(`item {
+    base: "Plate Vest"
+    ilvl: 25
+    rarity: rare
+    suffixes: [ "cold resistance" t9 ]
+}`);
+            expect(r.ok).toBe(false);
+            expect(r.output).toContain('tier 9 is out of range for "cold resistance"');
+        });
     });
 
     it("numbers one influence's rows apart from the base's own of the same modifier", () => {

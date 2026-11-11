@@ -1338,17 +1338,6 @@ describe("checker — the item block rejects modifiers that cannot share an item
         expect(r.diagnostics[0]?.message).toContain("same group");
     });
 
-    it("a natural row above the item's level, named by id", () => {
-        const low = item({
-            base: "Iron Ring",
-            ilvl: 50,
-            rarity: "rare",
-            prefixes: ["IncreasedLife1"],
-        });
-        const r = check(craft(low, []), ctx);
-        expect(r.diagnostics[0]?.message).toContain("needs item level 60");
-    });
-
     it("a row of another domain, named by id", () => {
         const r = check(craft(rareRing(["FlaskRecovery1"]), []), ctx);
         expect(r.diagnostics[0]?.message).toContain("cannot roll on");
