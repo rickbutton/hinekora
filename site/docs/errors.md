@@ -1,6 +1,6 @@
 # Errors
 
-The checker reports every error it finds in one run. The
+The checker reports every error in one run. The
 [command line](./cli) prints them, and the [editor](./editor) underlines them.
 
 ## Syntax
@@ -16,8 +16,8 @@ chain.craft:7:27: error: expected '{' to open a block
 
 ## The item block
 
-The checker reports an item block that cannot describe an item before it checks any step.
-The causes are an unknown base, a modifier without a tier, more modifiers than the base
+The checker reports an item block that describes no item before it checks a step.
+The causes: an unknown base, a modifier without a tier, more modifiers than the base
 holds, and marks that cannot go together. See [The item block](./language/item).
 
 <!-- refused -->
@@ -106,6 +106,7 @@ counts and its item level. The wording of the second line says how sure the chec
 | `the 'if' branch can never run: <condition> is impossible here`    | [Branches](./language/if) |
 | `the 'else' branch can never run: <condition> always holds here`   | [Branches](./language/if) |
 | `this step can never run: the craft always stops before it`        | [Loops](./language/until) |
+| `Too many different items reach this step`                         | [Branches](./language/if) |
 
 ## Definitions
 

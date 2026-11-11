@@ -185,9 +185,11 @@ type Flow =
     | { readonly kind: "restart" }
     | { readonly kind: "stop" };
 
-/** The most summaries kept apart at one point. Past it the last two are joined
- *  until they fit, which costs precision, never soundness. */
-const MAX_PARTS = 12;
+/** The most summaries kept apart at one point. A craft that needs more is
+ *  refused: joining some to fit would refuse a later step for an item no path
+ *  makes, at a point the craft's author cannot see. No craft written to make
+ *  an item comes near it. */
+const MAX_PARTS = 256;
 
 /** The fields a step's precondition reads that a join blurs. Summaries that
  *  agree on all of them are joined; what else differs between them (tiers,
@@ -216,8 +218,9 @@ function partKey(a: AItem): string {
 }
 
 /** The states reaching one point as parts: those with one key joined, the rest
- *  apart, up to `most`. Empty only for no states. */
-function partition(states: readonly AItem[], most: number): AItem[] {
+ *  apart. Empty only for no states. Past `most` it calls `over` and joins
+ *  the last ones to fit, so the rest of a refused craft is still checked. */
+function partition(states: readonly AItem[], most: number, over: () => void): AItem[] {
     const byKey = new Map<string, AItem>();
     const add = (s: AItem): void => {
         const key = partKey(s);
@@ -225,6 +228,7 @@ function partition(states: readonly AItem[], most: number): AItem[] {
         byKey.set(key, held === undefined ? s : join(held, s));
     };
     states.forEach(add);
+    if (byKey.size > Math.max(1, most)) over();
     while (byKey.size > Math.max(1, most)) {
         const [a, b] = [...byKey].slice(-2) as [[string, AItem], [string, AItem]];
         byKey.delete(a[0]);
@@ -312,6 +316,10 @@ class Checker {
      *  nothing else, so it is worked out once for each. */
     private readonly settled = new WeakMap<readonly Stmt[], Settled[]>();
     private readonly bodies = new WeakMap<Stmt, readonly Stmt[]>();
+    /** The statement being checked, and those already reported as reached by
+     *  more parts than are kept apart. */
+    private current: Stmt | undefined;
+    private readonly tooMany = new WeakSet<Stmt>();
 
     constructor(
         private readonly registry: Registry,
@@ -320,7 +328,17 @@ class Checker {
     ) {}
 
     private apart(states: readonly AItem[]): AItem[] {
-        return partition(states, this.maxParts);
+        return partition(states, this.maxParts, () => {
+            // Reported from a quiet pass too: a loop may pass the limit only
+            // on the rounds that settle it.
+            const at = this.current;
+            if (at === undefined || this.tooMany.has(at)) return;
+            this.tooMany.add(at);
+            this.diagnostics.push({
+                message: `Too many different items reach this step to check each: more than ${this.maxParts} combinations of modifier counts, rarity, corruption and influence.`,
+                span: at.span,
+            });
+        });
     }
 
     run(craft: Craft): CheckResult {
@@ -782,7 +800,10 @@ class Checker {
         // The joined item is the trace's alone, so a quiet pass never builds it.
         let joined: AItem | undefined;
         for (const [i, stmt] of stmts.entries()) {
+            const outer = this.current;
+            this.current = stmt;
             const flow = this.checkStmt(parts, stmt);
+            this.current = outer;
             // Only the real (non-quiet) pass records, so each statement appears once.
             if (this.quiet === 0) {
                 const before = joined ?? joinAll(parts);
@@ -1151,11 +1172,11 @@ class Checker {
     ): { invariant: Parts; heads: readonly AItem[] } {
         const start = this.apart(entry);
         const known = this.settled.get(body) ?? [];
-        // `stateEqual` leaves the base and level out, and a step may change the base.
+        // `stateEqual` leaves the base and level out.
+        const [first] = start;
         const hit = known.find(
             (k) =>
-                k.entry[0]?.base === start[0]?.base &&
-                k.entry[0]?.ilvl === start[0]?.ilvl &&
+                k.entry.every((s) => s.base === first?.base && s.ilvl === first.ilvl) &&
                 sameParts(k.entry, start),
         );
         if (hit !== undefined) return hit;

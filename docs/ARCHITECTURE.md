@@ -157,7 +157,7 @@ with "four without" is "four or five, with or without", and a later step is refu
 item no path makes. So summaries that differ in counts, rarity or marks stay apart, and
 those that agree join field by field. A part whose counts cannot hold the modifiers
 proven present is dropped. Each part is
-checked on its own; a failure is worded for their join, which the trace records. The parts are capped, the last joined past the cap. A statement either _falls through_ with
+checked on its own; a failure is worded for their join, which the trace records. A craft needing more parts than a cap is refused. A statement either _falls through_ with
 new parts, _restarts_ (diverges, re-entering the enclosing loop) or _stops_ (the path
 ends; it joins nothing downstream, which is how a guide's "the item is bricked" branch
 leaves the rest of the craft judged on the good paths only).

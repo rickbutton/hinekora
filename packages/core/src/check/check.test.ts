@@ -995,10 +995,14 @@ describe("checker — paths that leave different items stay apart", () => {
         expect(r.diagnostics[0]!.message).toContain("the item may be full");
     });
 
-    it("joins the paths past the number it keeps apart", () => {
+    it("refuses a craft whose paths outnumber those it keeps apart, once for a step", () => {
         const loop = craft(rareRing(), [until(life, [op("exalt"), undo])]);
-        const one = check(loop, ctx, { maxParts: 1 });
-        expect(one.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
+        expect(check(loop, ctx, { maxParts: 2 }).diagnostics).toEqual([]);
+        const one = check(loop, ctx, { maxParts: 1 }).diagnostics.map((d) => d.message);
+        const tooMany = one.filter((m) => m.startsWith("Too many different items reach this step"));
+        // The branch and the loop each meet two paths, on every pass over them.
+        expect(tooMany).toHaveLength(2);
+        expect(tooMany[0]).toContain("more than 1 combinations");
     });
 
     it("refuses a loop that fills the item whatever the number kept apart", () => {

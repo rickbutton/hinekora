@@ -152,9 +152,9 @@ The checker runs every later step on each summary it holds. A step must be safe 
 one, and a branch is dead only when none can enter it. A loop works the same way: it tests
 each summary that reaches the top against its condition.
 
-The checker holds at most twelve summaries at one point. Past that it joins the newest ones.
-A join can only add items to what a summary covers, so the limit can make the checker refuse
-a craft that works. It cannot make it accept one that fails.
+The checker holds at most 256 summaries at one point, and refuses a craft that needs more.
+Joining some to fit would refuse a later step for an item no path makes. A craft written to
+make an item holds a handful.
 
 ## What a verdict means
 
