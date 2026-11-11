@@ -21,6 +21,7 @@ import {
     guaranteedTypes,
     itemView,
     type Method,
+    type Mod,
     type Price,
     type Prices,
     type ProcDef,
@@ -371,7 +372,16 @@ function modSignature(
     }
     const type = t.value;
     const gen = registry.genOfType(type) ?? "affix";
-    const label = registry.typeLabel(type);
+    // Modifiers that share the type may share a tier: the name's own are listed.
+    const pick = (rows: readonly Mod[]): readonly Mod[] => registry.rowsNamed(text, rows);
+    const ladders = ctx ? tierLadders(registry.catalog, ctx.base, type, ctx.tags) : undefined;
+    const count = ladders ? tierCount(ladders) : 0;
+    const tiers = Array.from({ length: count }, (_, i) =>
+        tierRows(ladders!, i + 1, pick).map((m) => ({ n: i + 1, m })),
+    ).flat();
+    // The type's wording is another modifier's where the name picks its own.
+    const whole = Array.from({ length: count }, (_, i) => tierRows(ladders!, i + 1)).flat();
+    const label = tiers.length < whole.length ? "" : registry.typeLabel(type);
     const resolved = label && label.toLowerCase() !== text.toLowerCase() ? `**${label}** · ` : "";
     const header = `**"${text}"** → ${resolved}${gen} · \`${type}\``;
 
@@ -379,15 +389,9 @@ function modSignature(
         return `${header}\n\n_tiers depend on the item — hover inside a craft to list them._`;
     }
     const baseName = ctx.base.name ?? ctx.base.id;
-    // Two influences may each have a row at a tier, so a number can name two.
-    const ladders = tierLadders(registry.catalog, ctx.base, type, ctx.tags);
-    const count = tierCount(ladders);
-    if (count === 0) {
+    if (ladders === undefined || count === 0) {
         return `${header}\n\n_cannot roll on ${baseName}._`;
     }
-    const tiers = Array.from({ length: count }, (_, i) =>
-        tierRows(ladders, i + 1).map((m) => ({ n: i + 1, m })),
-    ).flat();
     const above = (m: { minLevel: number }): boolean => m.minLevel > ctx.ilvl;
 
     const sources = new Set(tiers.map(({ m }) => m.source ?? "natural"));
@@ -405,7 +409,7 @@ function modSignature(
 
     // Spotlight the specific tier a `tier N` predicate resolved with.
     if (tier !== undefined) {
-        const picked = tierRows(ladders, tier);
+        const picked = tierRows(ladders, tier, pick);
         if (picked.length === 0) {
             blocks.push(`**tier ${tier}** → no such tier (only ${count}).`);
         }

@@ -48,9 +48,9 @@ item {
 - `ilvl` is the [item level](https://www.poewiki.net/wiki/Item_level); it never changes.
 - `rarity` is `normal`, `magic` or `rare`. A base that can never be Rare (flasks, tinctures)
   is rejected at `rare` ([Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare)).
-- `prefixes` / `suffixes` list the affixes. A starting item is concrete, so each named
-  affix **pins a tier**: a mod name with `t<n>` (§2) or an exact mod id; a bare name is
-  accepted only where the item's level rolls a single tier. `"random"` (or `"?"`) is an anonymous affix:
+- `prefixes` / `suffixes` list the affixes. Each named affix **pins a tier**: a mod name
+  with `t<n>` (§2) or an exact mod id; a bare name only where the item's level rolls a
+  single tier. `"random"` (or `"?"`) is an anonymous affix:
   counted, not named, and any natural modifier of its side the item could roll, so a `has`
   may be it and a bench craft of its group may clash with it. More affixes than the base
   allows at the rarity, or a mod on the wrong side, is an error.
@@ -105,13 +105,13 @@ them.
 
 **Mods** are written as a stat description and name a modifier type, every tier of it. A
 query word matches an entry word exactly or as a prefix of at least three letters, so
-`"max life"` finds "maximum Life". Only the types that can roll on the base at its item level
-are candidates, then those its level stops short of, then those an unveil or the bench puts
-on its class, which is how a metamod is named (`has "suffixes cannot be changed"`). Guide spellings are read as the game's
-first (`"max es"`, `"+1 gems"`, `"flat phys"`); the table is `packages/data/src/aliases.ts`.
-An exact mod id (`IncreasedLife5`) always resolves. Matches rank by the share of a type's
-wording the query covers, the best taken; a tie at the top is an error listing the tied
-types:
+`"max life"` finds "maximum Life". Only types that roll on the base at its item level are
+candidates, then those its level stops short of, then those an unveil or the bench puts on
+its class, as a metamod is (`has "suffixes cannot be changed"`). Guide spellings are read as
+the game's first (`"max es"`, `"+1 gems"`); the table is `packages/data/src/aliases.ts`. An
+exact mod id (`IncreasedLife5`) always resolves. Where modifiers of one type share a tier
+(an Elder amulet's Skeletons and Raised Zombies), a name means the one it words. Matches
+rank by the share of a type's wording the query covers; a tie at the top is an error:
 
 ```
 Ambiguous name "res" — candidates: fire resistance, cold resistance, lightning resistance.

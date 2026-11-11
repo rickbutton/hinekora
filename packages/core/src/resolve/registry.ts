@@ -30,6 +30,8 @@ import {
     buildTypeIndex,
     matchTypes,
     normalizeText,
+    queryTokens,
+    rowWordings,
     singular,
     tokenMatches,
     type WordingAliasEntry,
@@ -219,6 +221,12 @@ export interface Registry {
      * disambiguating identically-worded types of which only one rolls here.
      */
     resolveModType(name: string, ctx?: ModTypeContext): Resolved<TypeId>;
+    /**
+     * Of rows of one ModType, the ones a name means: the row whose id it is,
+     * or the rows whose own wording has every word of it. All of them where
+     * the name tells none apart.
+     */
+    rowsNamed(name: string, rows: readonly Mod[]): readonly Mod[];
     resolveCurrency(name: string): Resolved<CurrencySpec>;
     resolveHarvestTag(name: string): Resolved<TagId>;
     /**
@@ -552,6 +560,7 @@ export function buildRegistry(data: RegistryData): Registry {
     for (const m of catalog) if (m.source === "veiled") veiledTypes.add(m.type);
 
     const typeIndex = buildTypeIndex(catalog);
+    const variedRows = rowWordings(catalog, typeIndex);
 
     // Every tag a spawn table names, which is what tells an influence tag that
     // exists (`ring_shaper`) from one no row would ever match.
@@ -653,6 +662,29 @@ export function buildRegistry(data: RegistryData): Registry {
             if (exact) return found(exact.type);
 
             let matches = matchTypes(typeIndex, name, wordings);
+            // A row of the item's that reads differently from its type's
+            // wording answers to its own.
+            if (ctx) {
+                const q = queryTokens(name, wordings);
+                let added = false;
+                for (const [type, rows] of variedRows) {
+                    const scores = rows
+                        .filter(({ tokens }) => q.every((w) => tokenMatches(w, tokens)))
+                        .filter(({ mod }) =>
+                            tierLadder(catalog, ctx.base, type, ctx.tags).includes(mod),
+                        )
+                        .map(({ tokens }) => q.length / tokens.size);
+                    if (q.length === 0 || scores.length === 0) continue;
+                    const score = Math.max(...scores);
+                    const known = matches.findIndex((m) => m.type === type);
+                    if (known >= 0 && matches[known]!.score >= score) continue;
+                    const match = { type, entry: typeIndex.get(type)!, score };
+                    if (known >= 0) matches[known] = match;
+                    else matches.push(match);
+                    added = true;
+                }
+                if (added) matches.sort((a, b) => b.score - a.score);
+            }
             // Narrow to types that can actually roll on this item, when known;
             // failing any, to those its level stops short of (an essence or a
             // Harvest change still places one), then to those an unveil or the
@@ -680,6 +712,19 @@ export function buildRegistry(data: RegistryData): Registry {
             const tied = matches.filter((m) => m.score === top.score);
             if (tied.length === 1) return found(top.type);
             return fail({ kind: "ambiguous", name, candidates: tied.map((m) => m.entry.text) });
+        },
+
+        rowsNamed(name, rows) {
+            if (rows.length < 2) return rows;
+            const key = norm(name);
+            const exact = modById.get(key) ?? modById.get(modAlias.get(key) ?? "");
+            if (exact) return rows.includes(exact) ? [exact] : rows;
+            const q = queryTokens(name, wordings);
+            const named = rows.filter((m) => {
+                const tokens = new Set(normalizeText(m.text ?? ""));
+                return q.every((w) => tokenMatches(w, tokens));
+            });
+            return named.length > 0 ? named : rows;
         },
 
         resolveCurrency(name) {

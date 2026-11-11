@@ -53,6 +53,24 @@ describe("hover", () => {
         ]);
     });
 
+    it("lists the modifier a name words where two share a type and a tier", () => {
+        // An Elder amulet's Skeletons and Raised Zombies rows are one type.
+        const amulet = `item { base: "Paua Amulet" ilvl: 84 rarity: rare influences: elder }\n`;
+        const src = `${amulet}until has "maximum number of skeletons" t1 { chaos }`;
+        const md = getHover(src, src.indexOf("skeletons"), registry)!;
+        expect(md).toContain("1 tier on Paua Amulet @ ilvl 84:");
+        expect(md).toMatch(/\| \*\*T1\*\* \| `MaximumSkeletonsUber1` \|/);
+        expect(md).not.toMatch(/zombies/i);
+        const both = `${amulet}until has "maximum number of" t1 { chaos }`;
+        const either = getHover(both, both.indexOf("maximum number"), registry)!;
+        expect(either).toMatch(/\| \*\*T1\*\* \| `MaximumSkeletonsUber1` \|/);
+        expect(either).toMatch(/\| \*\*T1\*\* \| `MaximumZombiesUber1` \|/);
+        const tiers = `${amulet}until has "maximum number of raised zombies" `;
+        expect(
+            getCompletions(tiers, tiers.length, registry).map((c) => [c.label, c.detail]),
+        ).toEqual([["t1", "+1 to maximum number of Raised Zombies"]]);
+    });
+
     it("hovers a fossil line with what each fossil does", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }\nfossil "pristine" "hollow"`;
         const md = getHover(src, src.indexOf("pristine") + 1, registry);

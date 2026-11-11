@@ -365,3 +365,91 @@ describe("checker — one of several tiers, then the work after it", () => {
         );
     });
 });
+
+describe("checker — two modifiers that share a type and a level", () => {
+    // As an Elder amulet's minion counts are: one type, two rows of one level,
+    // each the only tier of its own modifier.
+    const minion = (id: string, text: string): Mod => ({
+        ...MAXLIFE_T1,
+        id: ModId(id),
+        type: TypeId("MinionCount"),
+        families: new Set([GroupId("MinionCount")]),
+        minLevel: 68,
+        text,
+    });
+    const SKELETONS = minion("Skeletons1", "+1 to maximum number of Skeletons");
+    const ZOMBIES = minion("Zombies1", "+1 to maximum number of Raised Zombies");
+    const twins = buildRegistry({
+        bases: [RING_BASE],
+        mods: [...TIERED_CATALOG, SKELETONS, ZOMBIES],
+    });
+    const run = (c: ReturnType<typeof craft>) => check(c, { registry: twins });
+    const rows = (r: ReturnType<typeof check>) => [
+        ...(r.finalState!.tiers.get(SKELETONS.type) ?? []),
+    ];
+    const zombies = "maximum number of raised zombies";
+    const skeletons = "maximum number of skeletons";
+
+    it("resolves either modifier's wording to the type", () => {
+        const rctx = { base: RING_BASE, ilvl: 100 };
+        for (const name of [zombies, skeletons, "maximum number of"]) {
+            expect(twins.resolveModType(name, rctx)).toEqual({ ok: true, value: SKELETONS.type });
+        }
+    });
+
+    it("declares the one a name words, with no tier to give", () => {
+        for (const [name, row] of [
+            [zombies, ZOMBIES],
+            [skeletons, SKELETONS],
+        ] as const) {
+            const r = run(craft(rareRing([name]), []));
+            expect(r.diagnostics).toEqual([]);
+            expect(rows(r)).toEqual([row.id]);
+        }
+    });
+
+    it("declares either where the name words both", () => {
+        const r = run(craft(rareRing(["maximum number of"]), []));
+        expect(r.diagnostics).toEqual([]);
+        expect(rows(r).sort()).toEqual([SKELETONS.id, ZOMBIES.id]);
+    });
+
+    it("has one tier, so a second is out of range", () => {
+        const declared = run(craft(rareRing([{ mod: zombies, tier: 2 }]), []));
+        expect(declared.diagnostics.map((d) => d.message)).toEqual([
+            `tier 2 is out of range for "${zombies}" (it has 1 tier on this base).`,
+        ]);
+        const loop = run(craft(rareRing(), [until(has(zombies, 2), [op("chaos")])]));
+        expect(loop.diagnostics.map((d) => d.message)).toEqual([
+            `tier 2 is out of range for "${zombies}" (it has 1 tier on this base)`,
+        ]);
+    });
+
+    it("a condition on one is not met by the other, with a tier or without", () => {
+        for (const tier of [undefined, 1]) {
+            const other = run(
+                craft(rareRing([zombies]), [iff(has(skeletons, tier), [op("annul")])]),
+            );
+            expect(other.diagnostics.map((d) => d.message)).toEqual([
+                expect.stringContaining("the 'if' branch can never run"),
+            ]);
+            const same = run(craft(rareRing([zombies]), [iff(has(zombies, tier), [op("annul")])]));
+            expect(same.diagnostics).toEqual([]);
+        }
+    });
+
+    it("a loop on one ends on that one, and on either where the name words both", () => {
+        const one = run(craft(rareRing(), [until(has(zombies), [op("chaos")])]));
+        expect(one.diagnostics).toEqual([]);
+        expect(rows(one)).toEqual([ZOMBIES.id]);
+        const either = run(craft(rareRing(), [until(has("maximum number of"), [op("chaos")])]));
+        expect(either.diagnostics).toEqual([]);
+        expect(rows(either).sort()).toEqual([SKELETONS.id, ZOMBIES.id]);
+    });
+
+    it("a modifier's id among them means that one", () => {
+        const r = run(craft(rareRing(), [until(has(ZOMBIES.id), [op("chaos")])]));
+        expect(r.diagnostics).toEqual([]);
+        expect(rows(r)).toEqual([ZOMBIES.id]);
+    });
+});

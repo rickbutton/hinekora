@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q102.
+keeps it. New entries continue from Q103.
 
 ```
 ### Qn · probe|decision · open — title
@@ -348,3 +348,17 @@ record the tier in each header.
 row of the target; a tier counts the rows of the modifier's own influence, or the base's
 own, so a number may name a row of each. **Encoded in:** `check/methods.ts`
 `harvestChange`; `resolve/tiers.ts` `tierLadders`.
+
+### Q102 · probe · open — the tier of two modifiers that share a type and a mod level
+
+**Q:** an Elder amulet's "+1 to maximum number of Skeletons" and "+1 to maximum number of
+Raised Zombies" are one modifier type in the data, both of
+[mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) 68; so are a Hunter helmet's
+three Conflux modifiers (80) and an abyss jewel's two "Chance to Block Spell Damage if you
+were Damaged by a Hit Recently" (1). Which tier does the advanced tooltip show for each?
+**Probe:** an Elder amulet with either minion modifier, or a Hunter helmet with a Conflux;
+record the tier in the header.
+**Assumed:** each is Tier 1 of its own modifier: rows of one level in a ladder share the
+number, and a name that words one of them means that one alone. **Encoded in:**
+`resolve/tiers.ts` `tiersOf`; `resolve/registry.ts` `rowsNamed`; `check/check.ts`
+`rowsOnly`.

@@ -40,13 +40,29 @@ interface Ladders {
 }
 
 /**
- * Best first. Rows of one level are told apart by id, an order the game does
- * not give: where one ladder holds two such rows (two modifiers sharing a
- * ModType, each of one tier), which of them a tier number names is arbitrary,
- * but the same on every run and whatever order the catalog lists them in.
+ * Best first. Rows of one level are different modifiers that share a ModType
+ * and a tier number (`tiersOf`); the id only keeps their order the same on
+ * every run, whatever order the catalog lists them in.
  */
 function byLevel(a: Mod, b: Mod): number {
     return b.minLevel - a.minLevel || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+}
+
+/**
+ * A ladder's tiers, best first. Rows of one level are one tier: they are
+ * modifiers of their own that share the ModType (an Elder amulet's "+1 to
+ * maximum number of Skeletons" and "… of Raised Zombies"), each the only tier
+ * of its own modifier, so neither is a tier above the other. The game's number
+ * for such a row has not been observed (`QUESTIONS.md` Q102).
+ */
+function tiersOf(ladder: readonly Mod[]): readonly (readonly Mod[])[] {
+    const tiers: Mod[][] = [];
+    for (const m of ladder) {
+        const last = tiers.at(-1);
+        if (last !== undefined && last[0]!.minLevel === m.minLevel) last.push(m);
+        else tiers.push([m]);
+    }
+    return tiers;
 }
 
 /**
@@ -133,11 +149,11 @@ export function tierLadder(
  * The ladders of `type` on `base`. A row is ranked among the rows that roll on
  * the item by the same right as it does: the base's own tags, or the tag of
  * one influence. So an influence's rows are numbered apart from the base's and
- * from another influence's, and on an item with two influences a tier number
- * may name a row of each. This is the reading under which a Harvest change keeps
- * a modifier within its own influence; how the game numbers a modifier with
- * rows under two influences, or under an influence and the base, has not been
- * observed (`QUESTIONS.md` Q101).
+ * from another influence's, and a tier number may name a row of each ladder.
+ * This is the reading under which a Harvest change keeps a modifier within its
+ * own influence; how the game numbers a modifier with rows under two
+ * influences, or under an influence and the base, has not been observed
+ * (`QUESTIONS.md` Q101).
  */
 export function tierLadders(
     catalog: ModCatalog,
@@ -177,21 +193,32 @@ export function tierLadders(
 /** The tier of a row, 1 the best of its ladder; `undefined` for a row on none. */
 export function tierNumber(ladders: TierLadders, row: ModId): number | undefined {
     for (const ladder of ladders.values()) {
-        const i = ladder.findIndex((m) => m.id === row);
+        const i = tiersOf(ladder).findIndex((tier) => tier.some((m) => m.id === row));
         if (i >= 0) return i + 1;
     }
     return undefined;
 }
 
-/** The rows at tier `n` (T1 = best), one of each ladder that reaches it. */
-export function tierRows(ladders: TierLadders, n: number): readonly Mod[] {
+/**
+ * The rows at tier `n` (T1 = best) of each ladder that reaches it. A ladder
+ * has several where modifiers that share the ModType share the tier; `pick`
+ * chooses among those (the ones a name's wording means).
+ */
+export function tierRows(
+    ladders: TierLadders,
+    n: number,
+    pick: (rows: readonly Mod[]) => readonly Mod[] = (rows) => rows,
+): readonly Mod[] {
     if (n < 1) return NO_ROWS;
-    return [...ladders.values()].flatMap((ladder) => ladder[n - 1] ?? []);
+    return [...ladders.values()].flatMap((ladder) => {
+        const rows = tiersOf(ladder)[n - 1];
+        return rows === undefined ? [] : pick(rows);
+    });
 }
 
-/** How many tiers the modifier has: the length of its longest ladder. */
+/** How many tiers the modifier has: those of its longest ladder. */
 export function tierCount(ladders: TierLadders): number {
-    return Math.max(0, ...[...ladders.values()].map((ladder) => ladder.length));
+    return Math.max(0, ...[...ladders.values()].map((ladder) => tiersOf(ladder).length));
 }
 
 /** Every ModType that can roll on `base` at `ilvl` — the type-level pool. */

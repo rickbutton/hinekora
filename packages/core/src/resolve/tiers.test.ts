@@ -129,6 +129,27 @@ describe("the rows of a type that roll on a base", () => {
         });
     });
 
+    it("give rows of one level in a ladder the same tier number", () => {
+        // Two modifiers that share the type, each of one tier, below a third row.
+        const row = (id: string, minLevel: number): Mod => ({
+            ...LIFE_T1,
+            id: ModId(id),
+            minLevel,
+        });
+        const [a, b, c, d] = [row("A", 50), row("B", 50), row("C", 60), row("D", 40)];
+        const ladders = tierLadders([b, d, a, c], BOOTS_BASE, LIFE_T1.type);
+        expect(tierCount(ladders)).toBe(3);
+        expect(tierNumber(ladders, c.id)).toBe(1);
+        expect(tierNumber(ladders, a.id)).toBe(2);
+        expect(tierNumber(ladders, b.id)).toBe(2);
+        expect(tierNumber(ladders, d.id)).toBe(3);
+        expect(tierRows(ladders, 2)).toEqual([a, b]);
+        expect(tierRows(ladders, 3)).toEqual([d]);
+        expect(tierRows(ladders, 4)).toEqual([]);
+        // A caller that knows which of them is meant picks among the tier's rows.
+        expect(tierRows(ladders, 2, (rows) => rows.filter((m) => m.id === b.id))).toEqual([b]);
+    });
+
     it("give the type its side, or the catalog's first row's where none rolls", () => {
         expect(rollableGen(catalog, RING_BASE, 100, LIFE_T1.type)).toBe("prefix");
         expect(rollableGen(catalog, RING_BASE, 100, NOTABLE_SADIST.type)).toBe(NOTABLE_SADIST.gen);

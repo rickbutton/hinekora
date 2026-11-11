@@ -137,6 +137,34 @@ export function tokenMatches(w: string, tokens: ReadonlySet<string>): boolean {
     return false;
 }
 
+/** A query's words as they are matched: aliases expanded, each word once. */
+export function queryTokens(query: string, aliases: WordingAliases = new Map()): string[] {
+    return [...new Set(expandAliases(normalizeText(query), aliases))];
+}
+
+/**
+ * The rows whose own wording differs from their type's: a ModType may hold
+ * modifiers that read differently ("+1 to maximum number of Skeletons" and
+ * "… of Raised Zombies"), and the index words a type by one of them.
+ */
+export function rowWordings(
+    mods: readonly Mod[],
+    index: ReadonlyMap<TypeId, TypeEntry>,
+): Map<TypeId, { readonly mod: Mod; readonly tokens: ReadonlySet<string> }[]> {
+    const out = new Map<TypeId, { mod: Mod; tokens: ReadonlySet<string> }[]>();
+    for (const m of mods) {
+        const entry = index.get(m.type);
+        if (!m.text || entry === undefined || !m.spawn.some((s) => s.weight > 0)) continue;
+        const tokens = new Set(normalizeText(m.text));
+        if (tokens.size === entry.tokens.size && [...tokens].every((t) => entry.tokens.has(t)))
+            continue;
+        const list = out.get(m.type);
+        if (list) list.push({ mod: m, tokens });
+        else out.set(m.type, [{ mod: m, tokens }]);
+    }
+    return out;
+}
+
 /** Types whose wording covers every query token, ranked most-specific first
  *  (`score = query tokens / entry tokens`). */
 export function matchTypes(
@@ -144,7 +172,7 @@ export function matchTypes(
     query: string,
     aliases: WordingAliases = new Map(),
 ): TypeMatch[] {
-    const q = [...new Set(expandAliases(normalizeText(query), aliases))];
+    const q = queryTokens(query, aliases);
     if (q.length === 0) return [];
     const out: TypeMatch[] = [];
     for (const entry of index.values()) {

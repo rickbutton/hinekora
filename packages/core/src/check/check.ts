@@ -59,7 +59,13 @@ import {
     preconditionMessage,
     resolveMessage,
 } from "./diagnostics.js";
-import { rollableGen, tierCount, tierLadders, tierRows } from "../resolve/tiers.js";
+import {
+    rollableGen,
+    tierCount,
+    type TierLadders,
+    tierLadders,
+    tierRows,
+} from "../resolve/tiers.js";
 import { findMethod, type Literal, type Method, slotAt } from "./methods.js";
 import { anonymousRows, influenceTagsAny, influenceTagsOf, runMethod } from "./ops.js";
 import { rollRange } from "./values.js";
@@ -438,7 +444,7 @@ class Checker {
             // Unnamed, it is the one tier the item can have rolled, or with none
             // the lowest, which the level check below reports.
             const tier = affix.tier ?? reachable[0] ?? Math.max(1, count);
-            const atTier = tierRows(ladders, tier);
+            const atTier = this.rowsAt(ladders, tier, affix.mod);
             if (atTier.length === 0) {
                 this.diag(
                     `tier ${tier} is out of range for "${affix.mod}" (it has ${count} ${plural(count, "tier")} on this base).`,
@@ -1196,6 +1202,31 @@ class Checker {
         return influenceTagsAny(a, this.registry);
     }
 
+    /** The rows at a tier that a name means: where modifiers that share the
+     *  type share the tier, the one the name words. */
+    private rowsAt(ladders: TierLadders, tier: number, name: string): readonly Mod[] {
+        return tierRows(ladders, tier, (rows) => this.registry.rowsNamed(name, rows));
+    }
+
+    /**
+     * The rows a name without a tier means, where it words one of the
+     * modifiers that share the type and a tier on this item: every row of the
+     * type that reads so, a bench craft's or a fossil's among them. Undefined
+     * for a name that means the type whole.
+     */
+    private rowsOnly(name: string, type: TypeId, a: AItem): readonly Mod[] | undefined {
+        const ladders = tierLadders(this.registry.catalog, a.base, type, this.tagsOf(a));
+        let apart = false;
+        for (let n = 1; n <= tierCount(ladders) && !apart; n++) {
+            apart = this.rowsAt(ladders, n, name).length < tierRows(ladders, n).length;
+        }
+        if (!apart) return undefined;
+        return this.registry.rowsNamed(
+            name,
+            this.registry.catalog.filter((m) => m.type === type),
+        );
+    }
+
     private modContext(a: AItem): ModTypeContext {
         return { base: a.base, ilvl: a.ilvl, tags: this.tagsOf(a) };
     }
@@ -1291,7 +1322,7 @@ class Checker {
                 const tier = this.literalInt(pred.tier, pred.span);
                 if (tier === null) return null;
                 const ladders = tierLadders(this.registry.catalog, a.base, type, tags);
-                const atTier = tierRows(ladders, tier).filter((m) => rows.has(m.id));
+                const atTier = this.rowsAt(ladders, tier, modName).filter((m) => rows.has(m.id));
                 if (atTier.length === 0) {
                     this.diag(
                         `tier ${tier} of "${modName}" has no value to compare here`,
@@ -1303,6 +1334,12 @@ class Checker {
                 const named = new Set(atTier.map((m) => m.id));
                 for (const id of [...rows.keys()]) if (!named.has(id)) rows.delete(id);
                 unnumbered.clear();
+            }
+            const only = pred.tier === undefined ? this.rowsOnly(modName, type, a) : undefined;
+            if (only !== undefined) {
+                const ids = new Set(only.map((m) => m.id));
+                for (const id of [...rows.keys()]) if (!ids.has(id)) rows.delete(id);
+                for (const id of [...unnumbered]) if (!ids.has(id)) unnumbered.delete(id);
             }
             if (rows.size === 0) {
                 this.diag(`"${modName}" has no number to compare`, pred.span);
@@ -1317,32 +1354,16 @@ class Checker {
                     value: pred.value.value,
                     rows,
                     unnumbered,
-                    ...(pred.tier !== undefined && { oneTier: true as const }),
+                    ...((pred.tier !== undefined || only !== undefined) && {
+                        oneTier: true as const,
+                    }),
                 },
                 aboveLevel,
             };
         }
 
-        if (pred.tier === undefined) {
-            return plain({ kind: "has", type, gen });
-        }
-        const tier = this.literalInt(pred.tier, pred.span);
-        if (tier === null) return null;
-        // The tier is the game's number, counted over the whole ladder: a row
-        // above the item's level is one the item may hold, though no currency
-        // rolls it, and the state says whether it does.
-        const ladders = tierLadders(this.registry.catalog, a.base, type, tags);
-        const atTier = tierRows(ladders, tier);
-        if (atTier.length === 0) {
-            const count = tierCount(ladders);
-            this.diag(
-                `tier ${tier} is out of range for "${modName}" (it has ${count} ${plural(count, "tier")} on this base)`,
-                pred.span,
-            );
-            return null;
-        }
-        // Two influences may each have a row at the tier: the item is at the
-        // tier when it holds either.
+        // Two influences may each have a row at a tier, and a name may mean
+        // several rows of the type: the condition holds when the item has any.
         const at = (mod: Mod): RPred => {
             const tierSpan = mod.text === undefined ? undefined : rollRange(mod.text);
             return {
@@ -1353,8 +1374,29 @@ class Checker {
                 ...(tierSpan !== undefined && { tierSpan }),
             };
         };
+        const any = (rows: readonly Mod[]): RPred =>
+            rows.map(at).reduce((left, right) => ({ kind: "or", left, right }));
+        if (pred.tier === undefined) {
+            const named = this.rowsOnly(modName, type, a);
+            return plain(named === undefined ? { kind: "has", type, gen } : any(named));
+        }
+        const tier = this.literalInt(pred.tier, pred.span);
+        if (tier === null) return null;
+        // The tier is the game's number, counted over the whole ladder: a row
+        // above the item's level is one the item may hold, though no currency
+        // rolls it, and the state says whether it does.
+        const ladders = tierLadders(this.registry.catalog, a.base, type, tags);
+        const atTier = this.rowsAt(ladders, tier, modName);
+        if (atTier.length === 0) {
+            const count = tierCount(ladders);
+            this.diag(
+                `tier ${tier} is out of range for "${modName}" (it has ${count} ${plural(count, "tier")} on this base)`,
+                pred.span,
+            );
+            return null;
+        }
         return {
-            pred: atTier.map(at).reduce((left, right) => ({ kind: "or", left, right })),
+            pred: any(atTier),
             aboveLevel: this.aboveLevel(type, tier, modName, atTier, a),
         };
     }

@@ -170,6 +170,57 @@ if has "maximum life" { exalt }`);
             'Tier 1 "intelligence" needs item level 82; this item is level 68.',
         );
     });
+
+    describe("an Elder amulet's two minion modifiers, one type and one level", () => {
+        const amulet = (prefixes: string, body = "") => `item {
+    base: "Paua Amulet"
+    ilvl: 84
+    rarity: rare
+    influences: elder
+    prefixes: [ ${prefixes} ]
+}
+${body}`;
+
+        it("declares the one its name words, each the first tier of its own", () => {
+            const zombies = run(amulet(`"maximum number of raised zombies"`));
+            expect(zombies.ok).toBe(true);
+            expect(zombies.output).toContain("(Tier: 1)");
+            expect(zombies.output).toContain("+1 to maximum number of Raised Zombies");
+            expect(zombies.output).not.toContain("Skeletons");
+            const skeletons = run(amulet(`"maximum number of skeletons" t1`));
+            expect(skeletons.ok).toBe(true);
+            expect(skeletons.output).toContain("+1 to maximum number of Skeletons");
+            expect(skeletons.output).not.toContain("Zombies");
+        });
+
+        it("refuses a second tier of either", () => {
+            const declared = run(amulet(`"maximum number of raised zombies" t2`));
+            expect(declared.ok).toBe(false);
+            expect(declared.output).toContain(
+                'tier 2 is out of range for "maximum number of raised zombies" (it has 1 tier on this base)',
+            );
+            const loop = run(
+                amulet("", `until has "maximum number of raised zombies" t2 { chaos }`),
+            );
+            expect(loop.ok).toBe(false);
+            expect(loop.output).toContain("tier 2 is out of range");
+        });
+
+        it("ends a loop for the Raised Zombies on that modifier, not on the Skeletons", () => {
+            const r = run(amulet("", `until has "maximum number of raised zombies" { chaos }`));
+            expect(r.ok).toBe(true);
+            expect(r.output).toContain("+1 to maximum number of Raised Zombies");
+            expect(r.output).not.toContain("Skeletons");
+            const other = run(
+                amulet(
+                    `"maximum number of skeletons"`,
+                    `if has "maximum number of raised zombies" { annul }`,
+                ),
+            );
+            expect(other.ok).toBe(false);
+            expect(other.output).toContain("the 'if' branch can never run");
+        });
+    });
 });
 
 describe("costSource — what a guide is expected to spend", () => {

@@ -341,8 +341,9 @@ function tierItems(source: string, mod: string, registry: Registry): CompletionI
     if (!type.ok) return [];
     const ladders = tierLadders(registry.catalog, ctx.base, type.value, ctx.tags);
     return Array.from({ length: tierCount(ladders) }, (_, i) => {
-        // Two influences may each have a row at the tier.
-        const rows = tierRows(ladders, i + 1);
+        // Two influences may each have a row at the tier, and so may two
+        // modifiers that share the type: of those, the ones the name means.
+        const rows = tierRows(ladders, i + 1, (twins) => registry.rowsNamed(mod, twins));
         const rolls = [...new Set(rows.map((m) => (m.text ?? m.id).replace(/\n/g, " / ")))];
         const needs = Math.min(...rows.map((m) => m.minLevel));
         const reach =
