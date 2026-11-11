@@ -2,6 +2,8 @@ import { type Theme, withBase } from "vitepress";
 import DefaultTheme from "vitepress/theme";
 import HowChain from "./HowChain.vue";
 import HowLoop from "./HowLoop.vue";
+import HowModel from "./HowModel.vue";
+import HowPresence from "./HowPresence.vue";
 import HowTrace from "./HowTrace.vue";
 import HowTree from "./HowTree.vue";
 import HowWeights from "./HowWeights.vue";
@@ -29,6 +31,8 @@ export default {
         app.config.globalProperties.$withBase = withBase;
         app.component("HowChain", HowChain);
         app.component("HowLoop", HowLoop);
+        app.component("HowModel", HowModel);
+        app.component("HowPresence", HowPresence);
         app.component("HowTrace", HowTrace);
         app.component("HowTree", HowTree);
         app.component("HowWeights", HowWeights);

@@ -24,18 +24,46 @@ an item stuck halfway.
 
 The checker is an [abstract interpreter](https://en.wikipedia.org/wiki/Abstract_interpretation).
 It keeps one value, the abstract item, that stands for every item the steps so far could have
-produced. The abstract item holds:
+produced. The abstract item has four parts:
 
-- the rarities the item may have;
-- a range for the number of prefixes, of suffixes and of both together;
-- which modifiers are on the item, as a boolean function over "modifier X is present";
-- the tiers each known modifier may be at.
+<HowModel />
+
+Each step of a craft changes the parts:
 
 <HowTrace />
 
-Presence is a function and not two lists, "surely there" and "surely not". Two lists lose a
-fact such as "one of these three resistances is there" when two branches merge. The function
-keeps it, so the checker knows that a later test for "none of the three" is dead.
+## Which modifiers are present
+
+The presence part is a rule. Give it a yes or a no for each modifier, "is fire resistance on
+the item?", and it answers whether an item with that combination can exist at this point. A
+rule of this kind is a boolean function. This loop ends when the ring has any of three
+resistances:
+
+```hinekora
+item {
+    base:   "Vermillion Ring"
+    ilvl:   84
+    rarity: rare
+}
+
+until has "fire resistance" or has "cold resistance" or has "lightning resistance" {
+    chaos
+}
+```
+
+After the loop the condition is true, so the checker removes from the rule every combination
+that breaks it. Seven of the eight combinations of the three remain:
+
+<HowPresence />
+
+Two lists, "surely there" and "surely not", cannot hold this fact. No one resistance is sure
+to be there and none is sure to be absent, so both lists are empty and all eight rows pass.
+The rule drops the last row. The checker then knows that a later test for "none of the three"
+is dead.
+
+A table doubles with every modifier, and a ring can roll hundreds. The checker stores the rule
+as a [decision diagram](https://en.wikipedia.org/wiki/Binary_decision_diagram), which asks
+about one modifier at a time and shares the questions that many combinations have in common.
 
 ## A step changes the summary
 
