@@ -85,7 +85,21 @@ export interface AffixDecl {
     /** Marked `bench` — a bench craft, named by the modifier the bench adds or
      *  left anonymous (`bench "random"`); it counts toward the crafted limit. */
     readonly bench?: boolean;
+    readonly span?: SourceSpan;
 }
+
+/** The item block's fields that take a value. */
+export type ItemField =
+    | "base"
+    | "ilvl"
+    | "strands"
+    | "rarity"
+    | "prefixes"
+    | "suffixes"
+    | "influences"
+    | "exarch"
+    | "eater"
+    | "enchant";
 
 /** The item declaration, the only place state is given rather than inferred. */
 export interface ItemBlock {
@@ -106,6 +120,8 @@ export interface ItemBlock {
     readonly eater?: EldritchDecl;
     /** `enchant: 8 "lightning damage"`, a cluster jewel's two enchantments. */
     readonly enchant?: ClusterEnchantDecl;
+    /** Each written field's value, so an error points at the field it is about. */
+    readonly fields?: Readonly<Partial<Record<ItemField, SourceSpan>>>;
     readonly span: SourceSpan;
 }
 

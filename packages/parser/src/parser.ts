@@ -24,6 +24,7 @@ import {
     isEldritchTier,
     isInfluence,
     type ItemBlock,
+    type ItemField,
     type Method,
     methodsAfter,
     type NameKind,
@@ -260,6 +261,7 @@ class Parser {
         let exarch: EldritchDecl | undefined;
         let eater: EldritchDecl | undefined;
         let enchant: ClusterEnchantDecl | undefined;
+        const fields: Partial<Record<ItemField, SourceSpan>> = {};
 
         const setOnce = <T>(
             current: T | undefined,
@@ -285,6 +287,7 @@ class Parser {
                 continue;
             }
             this.expect("colon", `':' after '${key}'`);
+            const valueStart = this.peek().span.start;
 
             switch (key) {
                 case "base":
@@ -336,6 +339,7 @@ class Parser {
                 default:
                     throw this.error(`unknown item field '${key}'`, keyTok.span);
             }
+            fields[key] = span(valueStart, this.prev.span.end);
 
             if (this.at("comma")) this.advance(); // optional separator
         }
@@ -358,6 +362,7 @@ class Parser {
             ...(exarch !== undefined && { exarch }),
             ...(eater !== undefined && { eater }),
             ...(enchant !== undefined && { enchant }),
+            fields,
             span: span(start, close.span.end),
         };
     }
@@ -430,6 +435,7 @@ class Parser {
         this.expect("lbracket", "'[' to open a list");
         const items: AffixDecl[] = [];
         while (!this.at("rbracket")) {
+            const start = this.peek().span.start;
             let fractured = false;
             let bench = false;
             while (this.atKeyword("fractured") || this.atKeyword("bench")) {
@@ -444,6 +450,7 @@ class Parser {
                 ...(tier !== undefined && { tier }),
                 ...(fractured && { fractured: true }),
                 ...(bench && { bench: true }),
+                span: span(start, this.prev.span.end),
             });
             if (this.at("comma")) {
                 this.advance();

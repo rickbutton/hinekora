@@ -49,7 +49,32 @@ describe("parser — the canonical craft (surface §8)", () => {
         const c = parseOk(
             `item { base: "R" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1, "random" ] }`,
         );
-        expect(c.item.prefixes).toEqual([{ mod: "maximum life", tier: 1 }, { mod: "random" }]);
+        expect(c.item.prefixes).toMatchObject([
+            { mod: "maximum life", tier: 1 },
+            { mod: "random" },
+        ]);
+        expect(c.item.prefixes[1]).not.toHaveProperty("tier");
+    });
+
+    it("records where each field's value and each declared modifier is written", () => {
+        const c = parseOk(
+            `item {
+    base: "R"
+    ilvl: 84
+    rarity: rare
+    prefixes: [ "maximum life" t1, fractured "random" ]
+}`,
+        );
+        const at = (s: { start: { line: number; column: number }; end: { column: number } }) => [
+            s.start.line,
+            s.start.column,
+            s.end.column,
+        ];
+        expect(at(c.item.fields!.base!)).toEqual([2, 11, 14]);
+        expect(at(c.item.fields!.rarity!)).toEqual([4, 13, 17]);
+        expect(at(c.item.prefixes[0]!.span!)).toEqual([5, 17, 34]);
+        expect(at(c.item.prefixes[1]!.span!)).toEqual([5, 36, 54]);
+        expect(c.item.fields).not.toHaveProperty("suffixes");
     });
 
     it("parses the body: an op, then an until-loop", () => {
@@ -647,7 +672,7 @@ describe("item block — affix marks", () => {
         const c = parseOk(
             `item { base: "R" ilvl: 84 rarity: rare prefixes: [ bench "maximum life" t1, bench "random", fractured bench "maximum mana" t1 ] }`,
         );
-        expect(c.item.prefixes).toEqual([
+        expect(c.item.prefixes).toMatchObject([
             { mod: "maximum life", tier: 1, bench: true },
             { mod: "random", bench: true },
             { mod: "maximum mana", tier: 1, fractured: true, bench: true },

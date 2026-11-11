@@ -11,6 +11,7 @@ import type {
     Def,
     EldritchDecl,
     ItemBlock,
+    ItemField,
     OperationArg,
     ParamRef,
     Pred,
@@ -271,9 +272,13 @@ class Checker {
     // --- item block → initial state ---------------------------------------
 
     private elaborateItem(item: ItemBlock): AItem | null {
+        const at = (...fields: readonly ItemField[]): SourceSpan =>
+            fields.map((f) => item.fields?.[f]).find((s) => s !== undefined) ?? item.span;
+        // The declared modifier being read, which its errors point at.
+        let affixAt = item.span;
         const baseRes = this.registry.resolveBase(item.base);
         if (!baseRes.ok) {
-            this.diag(resolveMessage(baseRes.error), item.span);
+            this.diag(resolveMessage(baseRes.error), at("base"));
             return null; // without a base no pool can be computed
         }
         let base = baseRes.value;
@@ -284,17 +289,17 @@ class Checker {
         const size = clusterSize(base);
         if (item.enchant !== undefined) {
             if (size === undefined) {
-                this.diag("Only a cluster jewel has an enchant.", item.span);
+                this.diag("Only a cluster jewel has an enchant.", at("enchant"));
             } else {
                 const [lo, hi] = CLUSTER_PASSIVES[size];
                 if (item.enchant.passives < lo || item.enchant.passives > hi) {
                     this.diag(
                         `A ${size} cluster jewel adds ${lo} to ${hi} passive skills, not ${item.enchant.passives}.`,
-                        item.span,
+                        at("enchant"),
                     );
                 }
                 const tag = this.registry.resolveClusterEnchant(item.enchant.text);
-                if (!tag.ok) this.diag(resolveMessage(tag.error), item.span);
+                if (!tag.ok) this.diag(resolveMessage(tag.error), at("enchant"));
                 else {
                     // An enchantment belongs to the jewels of one size, and so do
                     // its notables: read off the game's list of each size's
@@ -303,7 +308,7 @@ class Checker {
                     if (sizes !== undefined && !sizes.has(size)) {
                         this.diag(
                             `A ${size} cluster jewel cannot have the "${item.enchant.text}" enchant — it is a ${[...sizes].join(" or ")} cluster jewel's.`,
-                            item.span,
+                            at("enchant"),
                         );
                     }
                     base = this.registry.enchantedBase(base, tag.value);
@@ -312,7 +317,7 @@ class Checker {
         } else if (size !== undefined) {
             this.diag(
                 'A cluster jewel\'s modifiers depend on its enchant: add `enchant: <passives> "<stat>"`.',
-                item.span,
+                at("base"),
             );
         }
         const present = new Set<TypeId>();
@@ -329,7 +334,7 @@ class Checker {
         if (base.allInfluences && item.influences.length > 0) {
             this.diag(
                 "This base has every influence by its implicit; leave `influences:` out.",
-                item.span,
+                at("influences"),
             );
         }
         const influences = base.allInfluences ? [...INFLUENCES] : item.influences;
@@ -337,7 +342,7 @@ class Checker {
         if (item.influences.length > 0 && INFLUENCE_STEMS[base.itemClass] === undefined) {
             this.diag(
                 `${base.name ?? "This base"} is of a class that cannot be influenced — leave \`influences:\` out.`,
-                item.span,
+                at("influences"),
             );
         }
         // A declared influence's rows roll on the item, so they resolve and tier here.
@@ -346,7 +351,7 @@ class Checker {
 
         const checkGen = (name: string, modGen: Gen | undefined, gen: Gen): void => {
             if (modGen !== undefined && modGen !== gen) {
-                this.diag(`"${name}" is a ${modGen}, but it is listed under ${gen}es.`, item.span);
+                this.diag(`"${name}" is a ${modGen}, but it is listed under ${gen}es.`, affixAt);
             }
         };
 
@@ -361,7 +366,7 @@ class Checker {
                     earlier === name
                         ? `"${name}" is declared twice; an item holds it once.`
                         : `"${name}" and "${earlier}" are tiers of one modifier; an item holds one of them.`,
-                    item.span,
+                    affixAt,
                 );
                 return;
             }
@@ -371,7 +376,7 @@ class Checker {
                 if (other !== undefined) {
                     this.diag(
                         `"${name}" and "${other}" cannot both be on an item; they are modifiers of the same group.`,
-                        item.span,
+                        affixAt,
                     );
                     break;
                 }
@@ -395,7 +400,7 @@ class Checker {
                 // exempt (item-model.md §3). Its level may be above the item's:
                 // an essence or a Harvest change leaves such a row.
                 if ((mod.source ?? "natural") === "natural" && mod.domain !== base.domain) {
-                    this.diag(`"${affix.mod}" cannot roll on a ${base.name ?? "item"}.`, item.span);
+                    this.diag(`"${affix.mod}" cannot roll on a ${base.name ?? "item"}.`, affixAt);
                 }
                 claim(affix.mod, mod.type);
                 pinned.set(mod.type, mod.id);
@@ -407,7 +412,7 @@ class Checker {
             }
             const typeRes = this.registry.resolveModType(affix.mod, ctx);
             if (!typeRes.ok) {
-                this.diag(resolveMessage(typeRes.error), item.span);
+                this.diag(resolveMessage(typeRes.error), affixAt);
                 return undefined;
             }
             const type = typeRes.value;
@@ -436,7 +441,7 @@ class Checker {
                         : `none of its ${count} rolls at this item level`;
                 this.diag(
                     `declare the tier of "${affix.mod}" (e.g. \`"${affix.mod}" t${reachable[0] ?? count}\`), a starting item's mods must name a specific tier and ${why}.`,
-                    item.span,
+                    affixAt,
                 );
                 claim(affix.mod, type); // still present, just untiered
                 return type;
@@ -446,7 +451,7 @@ class Checker {
             if (atTier.length === 0) {
                 this.diag(
                     `tier ${tier} is out of range for "${affix.mod}" (it has ${count} ${plural(count, "tier")} on this base).`,
-                    item.span,
+                    affixAt,
                 );
                 claim(affix.mod, type);
                 return type;
@@ -468,7 +473,7 @@ class Checker {
         const pinCrafted = (affix: AffixDecl, gen: Gen): TypeId | undefined => {
             const res = this.registry.resolveBench(affix.mod, base.itemClass, affix.tier);
             if (!res.ok) {
-                this.diag(resolveMessage(res.error), item.span);
+                this.diag(resolveMessage(res.error), affixAt);
                 return undefined;
             }
             const mod = this.registry.resolveMod(res.value.mod);
@@ -485,6 +490,7 @@ class Checker {
         const craftedAnonymousBy = { prefix: 0, suffix: 0 };
         const countAffixes = (affixes: readonly AffixDecl[], gen: Gen): number => {
             for (const affix of affixes) {
+                affixAt = affix.span ?? at(gen === "prefix" ? "prefixes" : "suffixes");
                 const anonymous = PLACEHOLDERS.test(affix.mod.trim().toLowerCase());
                 if (anonymous && affix.bench) {
                     craftedAnonymousBy[gen]++;
@@ -508,7 +514,7 @@ class Checker {
         if (item.rarity === "rare" && !canBeRare(base)) {
             this.diag(
                 `a ${base.name ?? "flask"} cannot be Rare; its kind of item is Magic at most`,
-                item.span,
+                at("rarity"),
             );
         }
 
@@ -517,14 +523,14 @@ class Checker {
         if (prefixCount > pCap) {
             this.diag(
                 `too many prefixes for a ${item.rarity} ${base.name ?? "item"}: ${prefixCount} (max ${pCap})`,
-                item.span,
+                at("prefixes"),
             );
             prefixCount = pCap;
         }
         if (suffixCount > sCap) {
             this.diag(
                 `too many suffixes for a ${item.rarity} ${base.name ?? "item"}: ${suffixCount} (max ${sCap})`,
-                item.span,
+                at("suffixes"),
             );
             suffixCount = sCap;
         }
@@ -548,7 +554,7 @@ class Checker {
             if (decl?.text === undefined) return undefined;
             const types = this.registry.resolveEldritch(decl.text, side, base);
             if (!types.ok) {
-                this.diag(resolveMessage(types.error), item.span);
+                this.diag(resolveMessage(types.error), at(side));
                 return undefined;
             }
             return new Set(types.value);
@@ -558,33 +564,37 @@ class Checker {
         if (item.strands !== undefined && (item.strands < 0 || item.strands > MAX_STRANDS)) {
             this.diag(
                 `An item holds 0 to ${MAX_STRANDS} memory strands, not ${item.strands}.`,
-                item.span,
+                at("strands"),
             );
         }
 
         // An influenced item cannot be fractured (Influenced item § Mechanics)
         // nor carry an eldritch implicit (Eldritch implicit modifier).
         if (influences.length > 0 && (item.exarch !== undefined || item.eater !== undefined)) {
-            this.diag("An influenced item cannot have an eldritch implicit.", item.span);
+            this.diag(
+                "An influenced item cannot have an eldritch implicit.",
+                at("exarch", "eater"),
+            );
         }
         if ((item.exarch !== undefined || item.eater !== undefined) && !canHaveEldritch(base)) {
             this.diag(
                 "Only a body armour, boots, gloves, a helmet or an amulet can have an eldritch implicit.",
-                item.span,
+                at("exarch", "eater"),
             );
         }
         if (isEldritchAmulet(base)) {
             if (item.exarch !== undefined && item.eater !== undefined) {
                 this.diag(
                     "An amulet has one eldritch implicit, the Searing Exarch's or the Eater of Worlds', not both.",
-                    item.span,
+                    at("eater"),
                 );
             }
-            for (const decl of [item.exarch, item.eater]) {
+            for (const side of ["exarch", "eater"] as const) {
+                const decl = item[side];
                 if (decl !== undefined && eldritchTierOf(decl.tier) > AMULET_ELDRITCH_TOP_TIER) {
                     this.diag(
                         `An amulet's eldritch implicit is Lesser to ${eldritchTierLabel(AMULET_ELDRITCH_TOP_TIER)}, not ${eldritchTierLabel(eldritchTierOf(decl.tier))}.`,
-                        item.span,
+                        at(side),
                     );
                 }
             }
@@ -595,11 +605,11 @@ class Checker {
         ) {
             this.diag(
                 `An eldritch implicit needs item level ${ELDRITCH_ITEM_LEVEL} or more — this item is item level ${item.ilvl}.`,
-                item.span,
+                at("exarch", "eater"),
             );
         }
         if (influences.length > 0 && fracturedTypes.length + fracturedAnonymous > 0) {
-            this.diag("An influenced item cannot have a fractured modifier.", item.span);
+            this.diag("An influenced item cannot have a fractured modifier.", at("influences"));
         }
         // An anonymous bench affix is some bench row of its side.
         for (const gen of ["prefix", "suffix"] as const) {

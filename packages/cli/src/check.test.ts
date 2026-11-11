@@ -45,6 +45,20 @@ exalt`);
         expect(r.output).toContain("✗ 1 error");
     });
 
+    it("points an item block's error at the field or the modifier it is about", () => {
+        const r = run(`item {
+    base: "Iron Ring"
+    ilvl: 84
+    rarity: rare
+    prefixes: ["maximum life" t1, "maximum lief" t1]
+    strands: 400
+}
+exalt`);
+        expect(r.output).toContain('test.craft:5:35: error: Unknown mod "maximum lief".');
+        expect(r.output).toContain("test.craft:6:14: error: An item holds 0 to");
+        expect(r.output).toContain("✗ 2 errors");
+    });
+
     it("reports a parse error with location", () => {
         const r = run(`item { base: "Iron Ring" ilvl: 84 rarity: rare
 exalt`);
