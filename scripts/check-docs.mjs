@@ -63,7 +63,7 @@ const BUDGETS = {
     "site/docs/language/item.md": 600,
     "site/docs/language/names.md": 600,
     "site/docs/language/until.md": 500,
-    "site/docs/syntax.md": 800,
+    "site/docs/syntax.md": 500,
     "site/how-it-works.md": 900,
     "site/index.md": 300,
     "site/playground/index.md": 50,

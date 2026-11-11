@@ -46,12 +46,29 @@ const docsSidebar: DefaultTheme.SidebarItem[] = [
         text: "Overview",
         items: [
             { text: "Introduction", link: "/docs/" },
+            { text: "Getting started", link: "/docs/getting-started" },
             { text: "Syntax overview", link: "/docs/syntax" },
         ],
     },
     {
         text: "Language",
-        items: [{ text: "Loops: until, restart, stop", link: "/docs/language/until" }],
+        items: [
+            { text: "The item block", link: "/docs/language/item" },
+            { text: "Names and tiers", link: "/docs/language/names" },
+            { text: "Conditions", link: "/docs/language/conditions" },
+            { text: "Loops: until, restart, stop", link: "/docs/language/until" },
+            { text: "Branches: if and else", link: "/docs/language/if" },
+            { text: "Definitions", link: "/docs/language/def" },
+        ],
+    },
+    {
+        text: "Tools",
+        items: [
+            { text: "Command line", link: "/docs/cli" },
+            { text: "Reading a cost report", link: "/docs/cost" },
+            { text: "Errors", link: "/docs/errors" },
+            { text: "Editor support", link: "/docs/editor" },
+        ],
     },
     {
         text: "Operations",

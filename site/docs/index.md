@@ -17,23 +17,39 @@ until has "fire resistance" t1 {
 }
 ```
 
-The essence reforges the boots with maximum Life guaranteed and the other modifiers random. The
-loop tests for a tier 1 fire resistance before each pass and applies the essence while there is
-none. After the loop, the checker knows
-both modifiers are present.
+The essence reforges the boots with maximum Life guaranteed and the other modifiers random.
+The loop tests for a tier 1 fire resistance before each pass and applies the essence while
+there is none. After the loop, the checker knows both modifiers are present.
 
-## What the checker reports
-
-- A step whose precondition may fail on some path: an exalt where the item may be full, a bench
-  craft whose group may already be present, a currency on the wrong rarity. The report gives the
-  item's state at that point and what the step needed.
-- A name that resolves to no base, modifier, essence, bench craft or fossil, or to more than one,
-  and a tier number the modifier does not have on the base.
-- A loop that can never exit or whose body never runs, and a branch the craft can never take.
+The checker reports a step whose precondition may fail on some path, a name it cannot
+resolve, a loop that cannot exit and a branch the craft can never take. [Errors](./errors)
+shows each kind.
 
 ## Pages
 
-- [Syntax overview](./syntax)
+Overview
+
+- [Getting started](./getting-started): build the tool, check a first craft
+- [Syntax overview](./syntax): the shape of a file
+
+Language
+
+- [The item block](./language/item)
+- [Names and tiers](./language/names)
+- [Conditions](./language/conditions)
 - [Loops: until, restart, stop](./language/until)
-- [Operations](./operations/), one page per crafting method
+- [Branches: if and else](./language/if)
+- [Definitions](./language/def)
+
+Tools
+
+- [Command line](./cli)
+- [Reading a cost report](./cost)
+- [Errors](./errors)
+- [Editor support](./editor)
 - [Playground](/playground/), the checker in the browser
+
+Reference
+
+- [Operations](./operations/), one page per crafting method
+- [How it works](/how-it-works), the checker and the cost layer
