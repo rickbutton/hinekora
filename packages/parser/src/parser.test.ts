@@ -717,6 +717,15 @@ describe("parser — has group", () => {
                 .message,
         ).toMatch(/a group has no tier/);
     });
+
+    it("points an error about a written tier or parameter at it, not at what follows", () => {
+        const item = 'item { base: "R" ilvl: 84 rarity: rare }\n';
+        const tier = parseErr(`${item}if has group "x" t1 { stop }`);
+        expect([tier.span.start.line, tier.span.start.column]).toEqual([2, 18]);
+        const param = parseErr(`${item}def f(n) = has "x" >= n\n\nstop`);
+        expect(param.message).toMatch(/not a parameter/);
+        expect([param.span.start.line, param.span.start.column]).toEqual([2, 23]);
+    });
 });
 
 describe("item block — the cluster jewel enchant", () => {

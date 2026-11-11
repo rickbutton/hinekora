@@ -724,7 +724,7 @@ class Parser {
             const mod = this.parseModOrParam();
             const tier = this.parseTierOrParam();
             if (group && tier !== undefined) {
-                throw this.error('a group has no tier: write `has group "<mod>"`');
+                throw this.error('a group has no tier: write `has group "<mod>"`', this.prev.span);
             }
             let value: { op: Cmp; value: number } | undefined;
             if (CMP_KINDS[this.peek().kind] !== undefined) {
@@ -732,7 +732,10 @@ class Parser {
                 const op = this.parseCmp();
                 const v = this.parseIntOrParam();
                 if (typeof v === "object") {
-                    throw this.error("a modifier's value compares to a number, not a parameter");
+                    throw this.error(
+                        "a modifier's value compares to a number, not a parameter",
+                        v.span,
+                    );
                 }
                 value = { op, value: v };
             }
