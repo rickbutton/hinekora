@@ -60,8 +60,12 @@ for (const file of walk(site, ".md")) {
     const lines = readFileSync(file, "utf8").replace(/\r/g, "").split("\n");
     for (let i = 0; i < lines.length; i++) {
         if (!/^```hinekora\b/.test(lines[i])) continue;
-        const end = lines.indexOf("```", i + 1);
+        const end = lines.findIndex((line, at) => at > i && /^\s*```\s*$/.test(line));
         const where = `${relative(site, file)}:${i + 1}`;
+        if (end < 0) {
+            problems.push(`${where}: the code block is never closed`);
+            break;
+        }
         // The formatter sets a blank line between the mark and the fence.
         const above = lines.slice(0, i).findLast((line) => line.trim() !== "") ?? "";
         const mark = /^<!-- (refused|fragment) -->$/.exec(above)?.[1];

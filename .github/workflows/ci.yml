@@ -29,6 +29,10 @@ jobs:
             - name: Typecheck
               run: pnpm typecheck
 
+            # The typecheck has built the packages, which is all this needs.
+            - name: Site examples
+              run: node site/scripts/check-examples.mjs
+
             - name: Lint
               run: pnpm lint
 
