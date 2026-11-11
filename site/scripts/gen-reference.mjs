@@ -3,21 +3,13 @@
  * Writes the operations reference under docs/operations/ from the method
  * table the parser, completion, hover and the checker all read
  * (`METHODS` in @hinekora/core): each page's syntax, argument list and
- * description are the table's, its example a craft in examples/,
- * its wiki link the one docs/operations.md gives the method. What a page
- * says of an operation comes from the table, so it changes with it; only the
- * grouping (FAMILIES, where a new first word lands in "Other") and the
- * wording around the table's text are kept here.
+ * description are the table's, its example the craft under examples/ops/
+ * named for the method, its wiki link the one docs/operations.md gives the
+ * method. What a page says of an operation comes from the table, so it
+ * changes with it; only the grouping (FAMILIES, where a new first word lands
+ * in "Other") and the wording around the table's text are kept here.
  */
-import {
-    copyFileSync,
-    existsSync,
-    mkdirSync,
-    readdirSync,
-    readFileSync,
-    rmSync,
-    writeFileSync,
-} from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { METHODS } from "@hinekora/core";
@@ -27,6 +19,7 @@ const repo = join(site, "..");
 const out = join(site, "docs", "operations");
 const icons = join(site, "public", "op-icons");
 const GITHUB = "https://github.com/rickbutton/hinekora/blob/main";
+const WIKI = "https://www.poewiki.net/wiki/";
 
 /** The families the index groups operations under, by their first word. */
 const FAMILIES = [
@@ -58,8 +51,7 @@ const FAMILIES = [
 
 const slugOf = (m) => m.words.join("-");
 
-// The site calls a program a craft; the help lines in the code still say
-// "guide" until the code is renamed.
+// The site calls a program a craft, where a help line says "guide".
 const asCraft = (s) =>
     s.replace(/\b([Gg])uide(s|'s)?\b/g, (_, g, end = "") => `${g === "G" ? "C" : "c"}raft${end}`);
 const escape = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -72,27 +64,35 @@ function familyOf(m) {
 
 /**
  * A method's help line is "<syntax> — <description>", or for a plain
- * currency "<orb's name> — <description>". The sentences that say what the
- * item needs are pulled out of the description.
+ * currency "<orb's name> — <description>"; a method written two ways has one
+ * such form after the other. The sentences that say what the item needs are
+ * pulled out of each description.
  */
 function readDoc(m) {
-    const cut = m.doc.indexOf(" — ");
-    const head = m.doc.slice(0, cut);
-    const body = asCraft(m.doc.slice(cut + 3));
-    const own = head.startsWith(m.words.join(" "));
-    const sentences = body
-        .split(/(?<=\.)\s+(?=[A-Z])/)
-        .flatMap((s) => s.split(/; (?=needs )/))
-        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-        .map((s) => (/[.!]$/.test(s) ? s : `${s}.`));
-    const needs = sentences.filter((s) => s.startsWith("Needs "));
-    return {
-        syntax: own ? head : m.words.join(" "),
-        title: own ? undefined : head,
-        does: sentences.filter((s) => !needs.includes(s)),
-        needs,
-        summary: sentences[0] ?? "",
-    };
+    const words = m.words.join(" ");
+    const starts = [0];
+    for (const hit of m.doc.matchAll(new RegExp(`\\. (?=${words}[^.]*? — )`, "g")))
+        starts.push(hit.index + 2);
+    const forms = starts.map((start, i) => {
+        const text = m.doc.slice(start, starts[i + 1]).trim();
+        const cut = text.indexOf(" — ");
+        const head = text.slice(0, cut);
+        const sentences = asCraft(text.slice(cut + 3))
+            .split(/(?<=\.)\s+(?=[A-Z])/)
+            // "needs one" leans on the clause before it, so the two stay together.
+            .flatMap((s) => s.split(/; (?=needs (?!one\b))/))
+            .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+            .map((s) => (/[.!]$/.test(s) ? s : `${s}.`));
+        const needs = sentences.filter((s) => s.startsWith("Needs "));
+        const own = head.startsWith(words);
+        return {
+            syntax: own ? head : words,
+            title: own ? undefined : head,
+            does: sentences.filter((s) => !needs.includes(s)),
+            needs,
+        };
+    });
+    return { forms, title: forms[0].title, summary: forms[0].does[0] ?? "" };
 }
 
 const SLOT_NOUN = {
@@ -120,6 +120,20 @@ function slotText(slot) {
     return "";
 }
 
+/**
+ * The wiki pages docs/operations.md's table of built methods gives a row
+ * cannot say per method where it lists several, so these go by name.
+ */
+const WIKI_PAGE = {
+    "bench remove": "Crafting_Bench",
+    ...Object.fromEntries(
+        ["Shaper", "Elder", "Crusader", "Hunter", "Redeemer", "Warlord"].map((who) => [
+            `exalt ${who.toLowerCase()}`,
+            `${who}%27s_Exalted_Orb`,
+        ]),
+    ),
+};
+
 /** The wiki links of docs/operations.md's table of built methods, by surface. */
 function wikiLinks() {
     const doc = readFileSync(join(repo, "docs", "operations.md"), "utf8");
@@ -127,64 +141,48 @@ function wikiLinks() {
     for (const line of doc.split("\n")) {
         const cells = line.split("|").map((c) => c.trim());
         if (cells.length < 4) continue;
-        const urls = [...cells[1].matchAll(/\[([^\]]+)\]\((https:\/\/www\.poewiki\.net[^)]+)\)/g)];
+        const urls = [...cells[1].matchAll(/\]\((https:\/\/www\.poewiki\.net[^)]+)\)/g)];
         const surfaces = [...cells[2].matchAll(/`([^`]+)`/g)].map((s) =>
             s[1].replace(/<[^>]+>/g, "*").trim(),
         );
         if (urls.length === 0 || surfaces.length === 0) continue;
         surfaces.forEach((surface, i) => {
             const url = urls.length === surfaces.length ? urls[i] : urls[0];
-            if (!links.has(surface)) links.set(surface, { text: url[1], href: url[2] });
+            if (!links.has(surface)) links.set(surface, url[1]);
         });
     }
     return links;
 }
 
-/**
- * A craft in examples/ with a statement that opens with the method's words,
- * shown without its comments: those explain the example file, not the method.
- */
-function exampleOf(m) {
-    const dir = join(repo, "examples");
-    const longest = (words) =>
-        METHODS.filter((o) => o.words.every((w, i) => words[i] === w)).sort(
-            (a, b) => b.words.length - a.words.length,
-        )[0];
-    const found = [];
-    for (const file of readdirSync(dir).filter((f) => f.endsWith(".craft"))) {
-        const kept = readFileSync(join(dir, file), "utf8")
-            .replace(/\r/g, "")
-            .split("\n")
-            .filter((line) => !/^\s*#/.test(line))
-            .map((line) => line.replace(/\s*#.*$/, ""))
-            .filter((line, i, all) => line !== "" || (i > 0 && all[i - 1] !== ""));
-        while (kept[0] === "") kept.shift();
-        const hits = [];
-        kept.forEach((line, i) => {
-            if (longest(line.trim().split(/[\s"]+/)) === m) hits.push(i + 1);
-        });
-        if (hits.length > 0) found.push({ file, text: kept.join("\n").trimEnd(), hits });
-    }
-    // A craft named for the method shows it best; among the rest, the shortest.
-    const named = (f) => (f.file.includes(m.words[0]) ? 0 : 1);
-    return found.sort((a, b) => named(a) - named(b) || a.text.length - b.text.length)[0];
+/** The link under its page's own title, which a table cell's wording is not. */
+function wikiLink(m, links) {
+    const name = m.words.join(" ");
+    const href =
+        name in WIKI_PAGE
+            ? WIKI + WIKI_PAGE[name]
+            : (links.get(name) ?? links.get(`${m.words[0]} *`));
+    if (href === undefined) return undefined;
+    const page = href.slice(WIKI.length).replace(/#.*$/, "");
+    return { href, text: decodeURIComponent(page).replace(/_/g, " ") };
 }
 
-/** The craft under site/examples/ops/ named for the method, if it has one. */
-function ownExample(m) {
+/** The craft under site/examples/ops/ named for the method. */
+function exampleOf(m) {
     const file = join(site, "examples", "ops", `${slugOf(m)}.craft`);
-    return existsSync(file) ? readFileSync(file, "utf8").replace(/\r/g, "").trimEnd() : undefined;
+    if (!existsSync(file))
+        throw new Error(
+            `no craft for "${m.words.join(" ")}": write examples/ops/${slugOf(m)}.craft`,
+        );
+    return readFileSync(file, "utf8").replace(/\r/g, "").trimEnd();
 }
 
 function page(m, links) {
     const slug = slugOf(m);
     const doc = readDoc(m);
     const name = m.words.join(" ");
-    const link = links.get(name) ?? links.get(`${m.words[0]} *`);
-    // A short craft written for the page, where there is one; else one of the repo's.
-    const own = ownExample(m);
-    const example = own === undefined ? exampleOf(m) : undefined;
+    const link = wikiLink(m, links);
     const icon = existsSync(join(icons, `${slug}.png`)) ? `/op-icons/${slug}.png` : undefined;
+    const needs = doc.forms.flatMap((f) => f.needs);
     const parts = [
         "---",
         `title: ${name}`,
@@ -199,21 +197,23 @@ function page(m, links) {
         doc.title ? `${doc.title}.\n` : "",
         "## Syntax",
         "",
-        `<div class="op-signature">${escape(doc.syntax)}</div>`,
-        "",
+        ...doc.forms.map((f) => `<div class="op-signature">${escape(f.syntax)}</div>\n`),
         m.args.length === 0
             ? "It takes no arguments."
             : m.args.map((s, i) => `${i + 1}. ${slotText(s)}`).join("\n"),
         "",
         "## What it does",
         "",
-        ...doc.does.map((s) => `${escape(s)}\n`),
+        // A second way of writing the method opens its own paragraph.
+        ...doc.forms.flatMap((f, i) =>
+            f.does.map((s, j) => `${i > 0 && j === 0 ? `\`${f.syntax}\`: ` : ""}${escape(s)}\n`),
+        ),
     ];
-    if (doc.needs.length > 0) {
+    if (needs.length > 0) {
         parts.push(
             "## What the item needs",
             "",
-            doc.needs
+            needs
                 .map(
                     (s) =>
                         `- ${escape(s.replace(/^Needs /, "").replace(/^./, (c) => c.toUpperCase()))}`,
@@ -222,20 +222,7 @@ function page(m, links) {
             "",
         );
     }
-    if (own !== undefined) {
-        parts.push("## Example", "", "```hinekora", own, "```", "");
-    } else if (example !== undefined) {
-        parts.push(
-            "## Example",
-            "",
-            "```hinekora {" + example.hits.join(",") + "}",
-            example.text,
-            "```",
-            "",
-            `From [examples/${example.file}](${GITHUB}/examples/${example.file}), comments removed. The [playground](/playground/) has it under the same name.`,
-            "",
-        );
-    }
+    parts.push("## Example", "", "```hinekora", exampleOf(m), "```", "");
     if (link !== undefined) {
         parts.push(
             "## Reference",
@@ -302,7 +289,4 @@ const sidebar = [...FAMILIES, ["Other"]]
     .filter((group) => group.items.length > 0);
 writeFileSync(join(out, "index.md"), index());
 writeFileSync(join(out, "sidebar.json"), JSON.stringify(sidebar, null, 4));
-const bare = METHODS.filter((m) => ownExample(m) === undefined).map((m) => m.words.join(" "));
-console.log(
-    `operations reference: ${METHODS.length} pages; no craft of its own for: ${bare.join(", ") || "none"}`,
-);
+console.log(`operations reference: ${METHODS.length} pages`);
