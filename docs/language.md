@@ -114,7 +114,7 @@ exact mod id (`IncreasedLife5`) always resolves. Where modifiers of one type sha
 rank by the share of a type's wording the query covers; a tie at the top is an error:
 
 ```
-Ambiguous name "res" — candidates: fire resistance, cold resistance, lightning resistance.
+Ambiguous name "res" — candidates: +(6-11)% to Fire Resistance, +(6-11)% to Cold Resistance, +(6-11)% to Lightning Resistance, +(5-10)% to Chaos Resistance.
 ```
 
 **Tiers.** `t<n>` is the tier the game's advanced tooltip shows, `t1` the modifier's Tier 1

@@ -276,8 +276,13 @@ export function resolveMessage(error: ResolveError): string {
             return `"${error.name}" is not a harvest modifier type.`;
         case "unknownEnchant":
             return `"${error.name}" is not a cluster jewel enchantment — name the stat its small passives grant ("lightning damage", "minion damage").`;
+        case "noSuchTier":
+            return error.best === error.worst
+                ? `"${error.name}" has no tier ${error.tier} — it has the one tier, t${error.best}.`
+                : `"${error.name}" has no tier ${error.tier} — it has t${error.best} to t${error.worst}.`;
         case "ambiguous":
-            return `Ambiguous name "${error.name}" — candidates: ${error.candidates.join(", ")}.`;
+            // A hybrid modifier's wording is two lines.
+            return `Ambiguous name "${error.name}" — candidates: ${error.candidates.map((c) => c.replace(/\s*\n\s*/g, " / ")).join(", ")}.`;
     }
 }
 

@@ -110,6 +110,14 @@ export type ResolveError =
     | { readonly kind: "unknownBench"; readonly name: string }
     | { readonly kind: "unknownHarvestTag"; readonly name: string }
     | { readonly kind: "unknownEnchant"; readonly name: string }
+    /** The name is known, but not at that tier; `best` and `worst` are the tiers it has. */
+    | {
+          readonly kind: "noSuchTier";
+          readonly name: string;
+          readonly tier: number;
+          readonly best: number;
+          readonly worst: number;
+      }
     | { readonly kind: "ambiguous"; readonly name: string; readonly candidates: readonly string[] };
 
 /**
@@ -799,6 +807,18 @@ export function buildRegistry(data: RegistryData): Registry {
             ) {
                 return found(named[0]!);
             }
+            if (matches.length === 0 && tier !== undefined && named.length > 0) {
+                const tiers = named.map((e) =>
+                    e.tier === CORRUPTED_ESSENCE_TIER ? 1 : ladderOf(e.tier),
+                );
+                return fail({
+                    kind: "noSuchTier",
+                    name,
+                    tier,
+                    best: Math.min(...tiers),
+                    worst: Math.max(...tiers),
+                });
+            }
             if (matches.length === 0) return fail({ kind: "unknownEssence", name });
             return fail({ kind: "ambiguous", name, candidates: matches.map((e) => e.name) });
         },
@@ -932,17 +952,24 @@ export function buildRegistry(data: RegistryData): Registry {
             if (scored.length === 0) return fail({ kind: "unknownBench", name });
             const top = Math.max(...scored.map((s) => s.score));
             const best = scored.filter((s) => s.score === top);
-            const types = new Set(best.map((s) => s.mod.type));
-            if (types.size > 1) {
-                return fail({
-                    kind: "ambiguous",
-                    name,
-                    candidates: [...new Set(best.map((s) => s.mod.text ?? ""))],
-                });
-            }
             const sorted = best.sort((a, b) => b.craft.tier - a.craft.tier);
+            // A modifier's tiers are one candidate, named by its best.
+            const byType = new Map<TypeId, string>();
+            for (const s of sorted) {
+                if (!byType.has(s.mod.type)) byType.set(s.mod.type, s.mod.text ?? "");
+            }
+            if (byType.size > 1) {
+                return fail({ kind: "ambiguous", name, candidates: [...byType.values()] });
+            }
             const pick = tier === undefined ? sorted[0] : sorted[tier - 1];
-            return pick ? found(pick.craft) : fail({ kind: "unknownBench", name });
+            if (pick) return found(pick.craft);
+            return fail({
+                kind: "noSuchTier",
+                name,
+                tier: tier ?? 1,
+                best: 1,
+                worst: sorted.length,
+            });
         },
 
         benchTypesFor(itemClass) {

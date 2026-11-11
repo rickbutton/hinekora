@@ -232,6 +232,36 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         expect(registry.resolveEssence("Deafening Essence of Greed", 2).ok).toBe(false);
     });
 
+    it("says which tiers a known essence or bench craft has, for a tier it lacks", () => {
+        const error = (r: { ok: boolean; error?: unknown }) => (r.ok ? undefined : r.error);
+        expect(error(registry.resolveEssence("greed", 8))).toMatchObject({
+            kind: "noSuchTier",
+            best: 1,
+            worst: 7,
+        });
+        expect(error(registry.resolveEssence("delirium", 2))).toMatchObject({
+            kind: "noSuchTier",
+            best: 1,
+            worst: 1,
+        });
+        expect(error(registry.resolveEssence("nonsense", 2))).toMatchObject({
+            kind: "unknownEssence",
+        });
+        expect(error(registry.resolveBench("cold resistance", ClassId("Ring"), 9))).toMatchObject({
+            kind: "noSuchTier",
+            best: 1,
+        });
+    });
+
+    it("names each modifier once where a bench name fits several", () => {
+        const r = registry.resolveBench("resistance", ClassId("Ring"));
+        expect(!r.ok && r.error.kind === "ambiguous" && r.error.candidates).toEqual([
+            "+(21-28)% to Fire Resistance",
+            "+(21-28)% to Cold Resistance",
+            "+(21-28)% to Lightning Resistance",
+        ]);
+    });
+
     it("stamps a source on every mod, and isolates natural from essence", () => {
         expect(data.mods.every((m) => m.source !== undefined)).toBe(true);
         const bySource = (s: string) => data.mods.filter((m) => m.source === s).length;
