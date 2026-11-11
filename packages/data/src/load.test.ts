@@ -605,6 +605,24 @@ describe("the grove's change lists", () => {
         );
     });
 
+    it("name only modifiers whose rows all claim the same groups", () => {
+        // A change is not blocked by a modifier of the changed one's group
+        // (core, check/ops.ts `typesSharingFamilyWithPresent`), which reads a
+        // type's groups as the union over its rows: exact only while they agree.
+        const listed = new Set(
+            Object.values(data.harvestChange).flatMap((byElement) =>
+                Object.values(byElement).flatMap((rows) => rows.map((r) => r.from)),
+            ),
+        );
+        expect(listed.size).toBeGreaterThan(100);
+        for (const t of listed) {
+            const groups = data.mods
+                .filter((m) => m.type === t)
+                .map((m) => [...m.families].sort().join(","));
+            expect(new Set(groups).size, t).toBe(1);
+        }
+    });
+
     it("name modifier types of the catalog only, as many as the manifest counts", () => {
         const types = new Set(data.mods.map((m) => m.type));
         const rows = Object.values(data.harvestChange).flatMap((byElement) =>

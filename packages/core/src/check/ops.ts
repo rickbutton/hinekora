@@ -1205,7 +1205,9 @@ function typesSharingFamilyWithPresent(
     };
     for (const type of guaranteed) if (shares(type)) return [type];
 
-    // The replaced modifier is on the item, so no other of its group is.
+    // The replaced modifier is on the item, so no other of its group is. Its
+    // groups are read off all its rows, which agree for every modifier a
+    // Harvest change takes (pinned in the data package's `load.test.ts`).
     const replaced = replacing === undefined ? undefined : registry.familiesOfType(replacing);
     const besideReplaced = (type: TypeId): boolean =>
         replaced !== undefined && [...registry.familiesOfType(type)].some((f) => replaced.has(f));
