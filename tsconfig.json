@@ -9,6 +9,7 @@
         { "path": "packages/data" },
         { "path": "packages/cli" },
         { "path": "packages/lsp" },
+        { "path": "packages/item-card" },
         { "path": "editors/playground" },
         { "path": "site" }
     ]

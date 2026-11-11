@@ -11,6 +11,7 @@
         { "path": "../../packages/core" },
         { "path": "../../packages/parser" },
         { "path": "../../packages/data" },
+        { "path": "../../packages/item-card" },
         { "path": "../../packages/lsp" }
     ],
     "include": ["src/**/*.ts", "vite.config.ts"],

@@ -44,6 +44,9 @@ importers:
       '@hinekora/data':
         specifier: workspace:*
         version: link:../../packages/data
+      '@hinekora/item-card':
+        specifier: workspace:*
+        version: link:../../packages/item-card
       '@hinekora/lsp':
         specifier: workspace:*
         version: link:../../packages/lsp
@@ -94,6 +97,12 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/item-card:
+    dependencies:
+      '@hinekora/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/lsp:
     dependencies:
       '@hinekora/core':
@@ -126,6 +135,15 @@ importers:
       '@hinekora/core':
         specifier: workspace:*
         version: link:../packages/core
+      '@hinekora/data':
+        specifier: workspace:*
+        version: link:../packages/data
+      '@hinekora/item-card':
+        specifier: workspace:*
+        version: link:../packages/item-card
+      '@hinekora/parser':
+        specifier: workspace:*
+        version: link:../packages/parser
     devDependencies:
       '@hinekora/playground':
         specifier: workspace:*

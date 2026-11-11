@@ -21,6 +21,9 @@ export default defineConfig({
             "@hinekora/data": fileURLToPath(
                 new URL("./packages/data/src/index.ts", import.meta.url),
             ),
+            "@hinekora/item-card": fileURLToPath(
+                new URL("./packages/item-card/src/index.ts", import.meta.url),
+            ),
         },
     },
     test: {

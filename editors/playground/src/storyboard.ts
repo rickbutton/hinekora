@@ -52,7 +52,7 @@ import {
     spreadText,
 } from "@hinekora/core";
 import { checkCached, costCached, parseCached } from "@hinekora/lsp";
-import { renderItemCard } from "./item-card.js";
+import { itemCardHtml } from "@hinekora/item-card";
 
 export interface StoryHooks {
     /** The user chose a step: move the cursor to this offset. */
@@ -312,6 +312,13 @@ export function stateLine(v: ItemView): string {
     const [lo, hi] = v.remainder?.count ?? [0, 0];
     const [a, b] = [shown + lo, shown + hi];
     return `${rarity} · ${rangeText([a, b], "–")} ${pluralRange([a, b], "modifier")}`;
+}
+
+/** The card's markup as an element. */
+function renderItemCard(view: ItemView): HTMLElement {
+    const holder = document.createElement("template");
+    holder.innerHTML = itemCardHtml(view);
+    return holder.content.firstElementChild as HTMLElement;
 }
 
 /** The card with its copy button; the text is what the game writes on Ctrl+C. */

@@ -1,0 +1,161 @@
+/* The item card, in the game's colours. */
+
+.item-card {
+    --rarity: #c8c8c8;
+    --explicit: #8888ff;
+    --crafted: #b4b4ff;
+    --fractured: #a29162;
+    --corrupted: #d20000;
+    --dim: #7f7f7f;
+    background: #0c0b0b;
+    border: 1px solid #3a3528;
+    color: var(--explicit);
+    font-family: "Fontin SmallCaps", "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.35;
+    text-align: center;
+}
+
+.item-card.rarity-magic {
+    --rarity: #8888ff;
+}
+.item-card.rarity-rare {
+    --rarity: #ffff77;
+}
+
+.item-card header {
+    display: block;
+    padding: 8px 12px 6px;
+    background: linear-gradient(#1c1a14, #0c0b0b);
+    border-bottom: 1px solid #3a3528;
+}
+
+.item-card .base {
+    color: var(--rarity);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.item-card .class {
+    color: var(--dim);
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.item-card section {
+    padding: 6px 12px;
+    border-bottom: 1px solid #3a3528;
+}
+
+.item-card section:last-child {
+    border-bottom: none;
+}
+
+.item-card .mod {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    text-align: left;
+    padding: 1px 0;
+}
+
+.item-card .mod .text {
+    flex: 1;
+}
+
+.item-card .mod .roll {
+    color: #9fc5ff;
+    opacity: 0.85;
+}
+
+.item-card .mod.crafted {
+    color: var(--crafted);
+}
+.item-card .mod.fractured {
+    color: var(--fractured);
+}
+.item-card .mod .flag {
+    color: var(--dim);
+    font-size: 12px;
+}
+.item-card .mod.implicit {
+    color: #b19cd9;
+}
+.item-card .mod.implicit.exarch {
+    color: #f0a070;
+}
+.item-card .mod.implicit.eater {
+    color: #b19cd9;
+}
+
+.item-card .meta {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+    font-size: 11px;
+    color: var(--dim);
+    white-space: nowrap;
+}
+.item-card .meta .side {
+    border: 1px solid #3a3528;
+    border-radius: 2px;
+    padding: 0 4px;
+}
+.item-card .meta .tier.pinned {
+    color: #ffff77;
+}
+.item-card .meta .tier.span {
+    color: #c8a35a;
+}
+
+.item-card .one-of {
+    border-left: 2px solid #5a5340;
+    margin: 3px 0;
+    padding-left: 8px;
+}
+.item-card .one-of .label,
+.item-card .mod.implicit .label {
+    color: var(--dim);
+    font-size: 12px;
+    text-align: left;
+    font-style: italic;
+}
+
+.item-card .meta .side {
+    text-transform: none;
+}
+
+.item-card .mod.unknown {
+    color: var(--dim);
+    font-style: italic;
+    border: 1px dashed #3a3528;
+    padding: 2px 6px;
+    margin-top: 3px;
+    justify-content: center;
+}
+
+.item-card .mark {
+    color: #c8c8c8;
+}
+.item-card .corrupted {
+    color: var(--corrupted);
+}
+.item-card .maybe {
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.item-card .without .absent {
+    color: var(--dim);
+    text-decoration: line-through;
+    font-size: 13px;
+}
+
+.item-card .without .label {
+    color: var(--dim);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    text-align: left;
+}

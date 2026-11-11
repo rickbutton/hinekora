@@ -1,0 +1,23 @@
+{
+    "name": "@hinekora/item-card",
+    "version": "0.0.0",
+    "private": true,
+    "description": "The item card: an item's view drawn as the game draws an item, as markup any page can place, with its stylesheet.",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        },
+        "./style.css": "./style.css"
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "scripts": {
+        "build": "tsc -b",
+        "test": "vitest run"
+    },
+    "dependencies": {
+        "@hinekora/core": "workspace:*"
+    }
+}
