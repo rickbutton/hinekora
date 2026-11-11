@@ -1332,6 +1332,23 @@ describe("checker — count refinement through disjunctions", () => {
         expect(suffixRange(st)).toEqual([2, 2]);
     });
 
+    it("counts one suffix for groups that one modifier can meet", () => {
+        // "Fire, or cold and lightning" holds with the fire resistance alone, so
+        // the item may still be three prefixes and that one suffix.
+        const fireOrBoth = orp(
+            has("FireResist1"),
+            andp(has("ColdResist1"), has("LightningResist1")),
+        );
+        const c = craft(rareRing(["random", "random", "random"], ["random", "random"]), [
+            op("annul"),
+            iff(fireOrBoth, [op("annul")]),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        const inside = r.trace.filter((e) => e.kind === "operation").at(-1)!;
+        expect(inside.before.counts.prefix).toEqual([2, 3]);
+    });
+
     it("allows benching a life prefix afterwards — the group is provably absent", () => {
         const c = craft(rareRing(["random"], ["random"]), [
             until(twoEleRes, [op("annul"), op("exalt")]),

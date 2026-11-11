@@ -935,7 +935,16 @@ class Checker {
         const minFor = (gen: Gen): number => {
             let n = 0;
             for (const t of guaranteed) if (genOf(t) === gen) n++;
-            for (const c of cards) if (c.types.every((t) => genOf(t) === gen)) n += c.atLeast;
+            // Groups that share a type may be met by that one modifier ("fire, or
+            // cold and lightning" reads as "fire or cold" and "fire or lightning"),
+            // so only groups with no type in common add up.
+            const counted = new Set<TypeId>();
+            for (const c of [...cards].sort((x, y) => y.atLeast - x.atLeast)) {
+                if (!c.types.every((t) => genOf(t) === gen)) continue;
+                if (c.types.some((t) => counted.has(t))) continue;
+                n += c.atLeast;
+                for (const t of c.types) counted.add(t);
+            }
             return n;
         };
         let s: AItem | null = a;
