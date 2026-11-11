@@ -250,6 +250,7 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         expect(error(registry.resolveBench("cold resistance", ClassId("Ring"), 9))).toMatchObject({
             kind: "noSuchTier",
             best: 1,
+            worst: 2,
         });
     });
 

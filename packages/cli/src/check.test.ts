@@ -239,6 +239,17 @@ ${body}`;
             expect(r.output).toContain('tier 9 is out of range for "cold resistance"');
         });
 
+        it("writes 'an' before a modifier's name that opens with a vowel", () => {
+            const r = run(`item {
+    base: "Two-Stone Ring"
+    ilvl: 84
+    rarity: rare
+    prefixes: [ "adds fire damage to attacks" t1 ]
+}
+bench "adds fire damage to attacks"`);
+            expect(r.output).toContain('The item already carries an "adds fire damage');
+        });
+
         it("says a modifier the base cannot roll cannot roll, and how a bench craft is declared", () => {
             const declared = (mod: string): string =>
                 run(`item {
