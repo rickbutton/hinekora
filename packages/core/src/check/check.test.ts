@@ -919,6 +919,15 @@ describe("checker — a branch that closes a loop's body", () => {
         ).toEqual([]);
     });
 
+    it("takes a restart on one arm beside the arms that fall off the end", () => {
+        const c = craft(rareRing(), [
+            until(life, [op("exalt"), iff(has("FireResist1"), [op("annul"), restart()], [undo])]),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState?.counts.total).toEqual([1, 1]);
+    });
+
     it("still refuses a round that some arm leaves one modifier fuller", () => {
         const c = craft(rareRing(), [
             until(life, [op("exalt"), iff(has("FireResist1"), [op("annul")])]),
