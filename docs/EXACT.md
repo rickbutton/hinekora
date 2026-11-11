@@ -76,7 +76,7 @@ holds one row and one slot per type is enough. They do not always share a side: 
 counts on the side of its own row.
 
 **Counts are not stored.** A prefix count is the number of slots holding a prefix row. A
-count condition, a cap or a "has an open slot" check is a diagram built by running a small
+count condition, a cap or a "has an done slot" check is a diagram built by running a small
 automaton over the slots.
 
 **Well-formedness.** One diagram, built with the universe, holds the items the game
@@ -180,9 +180,9 @@ An error can name an item that breaks the step, taken from a witness of the fail
 
 | #   | Package                                                                        | State |
 | --- | ------------------------------------------------------------------------------ | ----- |
-| 1   | Reference interpreter: concrete items, tiny catalogues, set harness            | open  |
-| 2   | Decision-diagram engine                                                        | open  |
-| 3   | Universe: slots, values, order, well-formedness, from the registry and craft   | open  |
+| 1   | Reference interpreter: concrete items, tiny catalogues, set harness            | done  |
+| 2   | Decision-diagram engine                                                        | done  |
+| 3   | Universe: slots, values, order, well-formedness, from the registry and craft   | done  |
 | 4   | The state: conditions, narrowing, views                                        | open  |
 | 5   | Marks and rarity: `rarity`, `corrupt`, `influence`, `eldritch`, their checks   | open  |
 | 6   | Adding: `fill` over every pool and count, its checks                           | open  |

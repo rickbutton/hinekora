@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q109.
+keeps it. New entries continue from Q110.
 
 ```
 ### Qn · probe|decision · open — title
@@ -390,3 +390,14 @@ having every influence. Can it be fractured, as an influenced item cannot?
 refusal or the result.
 **Assumed:** refused, as for any influenced item. **Encoded in:**
 `exact/reference/wellformed.ts` `violations`; `check/check.ts` `elaborateItem`.
+
+### Q109 · probe · open — which veiled modifier a veiled orb places
+
+**Q:** the data holds a placeholder row per Syndicate member beside the plain veiled prefix
+and suffix. [Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) says some
+veiled modifiers come only from a member's drops; it does not say which a Veiled Chaos
+Orb or a Veiled Exalted Orb adds.
+**Probe:** use a Veiled Chaos Orb on a Rare ring several times; record each veiled
+modifier's name in the advanced tooltip.
+**Assumed:** the plain placeholder of its side, never a member's. **Encoded in:**
+`exact/rows.ts` `candidateRows`.

@@ -5,42 +5,13 @@
  */
 import type { Base } from "../../model/base.js";
 import { craftedCapOf, type Effect, effectsOf } from "../../model/effects.js";
-import type { Gen, GroupId, ModId, Rarity, TypeId } from "../../model/ids.js";
-import { type InfluenceKey, NO_INFLUENCE } from "../../model/marks.js";
+import type { Gen, GroupId, ModId, TypeId } from "../../model/ids.js";
+import { NO_INFLUENCE } from "../../model/marks.js";
 import type { Mod } from "../../model/mod.js";
 import type { Registry } from "../../resolve/registry.js";
+import type { CEldritch, CItem, CMod } from "../item.js";
 
-/** One modifier on the item. `value` is the first number of the row's text
- *  (`check/values.ts`), undefined for a row whose text has none. `crafted` is a
- *  mark of its own: a bench row is always crafted, and a Harvest change keeps
- *  the mark on the natural row it puts in a crafted modifier's place. */
-export interface CMod {
-    readonly row: ModId;
-    readonly value: number | undefined;
-    readonly fractured: boolean;
-    readonly crafted: boolean;
-}
-
-/** An eldritch implicit: tier 0 is none. `type` is which implicit it is,
- *  undefined only where it is absent or the catalogue names no implicit of
- *  that side and tier on the base. */
-export interface CEldritch {
-    readonly tier: number;
-    readonly type: TypeId | undefined;
-}
-
-export interface CItem {
-    readonly rarity: Rarity;
-    /** Order carries no meaning; the key sorts them. */
-    readonly mods: readonly CMod[];
-    readonly influences: InfluenceKey;
-    readonly corrupted: boolean;
-    readonly exarch: CEldritch;
-    readonly eater: CEldritch;
-    readonly strands: number;
-    /** The held imprint, itself an item with no imprint. */
-    readonly imprint: CItem | undefined;
-}
+export type { CEldritch, CItem, CMod } from "../item.js";
 
 /** What every concrete item of a check shares: the catalogue, the base and the
  *  item level, with the rows indexed by id. */
