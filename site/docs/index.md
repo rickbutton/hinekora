@@ -1,9 +1,9 @@
 # Introduction
 
-A crafting guide is a list of steps: start from this base, spam this essence until a
-resistance rolls, lock the suffixes, reforge. Hinekora is that list written so a program can
-read it. Every step is checked against every outcome the steps before it could have had, so a
-guide that works only when you are lucky is caught before you follow it.
+A craft is a `.craft` file: a starting item, then a sequence of crafting steps applied to it.
+Each step is a method of the game (a currency orb, a bench craft, an essence, a Harvest or
+Bestiary craft), and most have a random outcome. Loops and branches choose the next step from
+what the item has.
 
 ```hinekora
 item {
@@ -17,23 +17,22 @@ until has "fire resistance" t1 {
 }
 ```
 
-Deafening Essence of Greed reforges the boots with maximum Life guaranteed, and the loop goes
-round until a tier 1 fire resistance rolls with it. When the loop ends, hinekora knows both are
-on the item.
+The essence reforges the boots with maximum Life guaranteed and the other modifiers random. The
+loop repeats it until a tier 1 fire resistance is among them. After the loop, the checker knows
+both modifiers are present.
 
-## What it checks
+## What the checker reports
 
-- **Each step's needs.** An exalt needs a Rare item with an open slot; a bench craft needs an
-  open slot of its side and no modifier of its group. A step is accepted only if what it needs
-  is true on every path the craft can have taken.
-- **Names.** Bases, modifiers, essences, bench crafts and fossils are looked up in the game's
-  data, and a tier that cannot roll on this base at this item level is an error.
-- **Control.** A loop that can never finish, or never runs, and a branch that can never be
-  taken are reported.
+- A step whose precondition may fail on some path: an exalt where the item may be full, a bench
+  craft whose group may already be present, a currency on the wrong rarity. The report gives the
+  item's state at that point and the requirement that failed.
+- A name that resolves to no base, modifier, essence, bench craft or fossil, or to more than one,
+  and a tier that cannot roll on the base at its item level.
+- A loop that can never exit or whose body never runs, and a branch that can never be taken.
 
-## Where to go next
+## Pages
 
-- [Syntax overview](./syntax): the whole language on one page.
-- [Loops: until, restart, stop](./language/until): repeating a step until it lands.
-- [Operations](./operations/): every currency and craft, one page each.
-- [Playground](/playground/): write a guide in the browser and see the item at every step.
+- [Syntax overview](./syntax)
+- [Loops: until, restart, stop](./language/until)
+- [Operations](./operations/), one page per crafting method
+- [Playground](/playground/), the checker in the browser

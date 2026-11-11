@@ -1,19 +1,16 @@
 # Loops: until, restart, stop
 
-Most crafts repeat a step until it lands: spam an essence until a resistance rolls, reforge until
-the life is tier 1. `until` writes that down, and `restart` and `stop` say what happens when a
-round goes wrong.
-
 ## until
 
 ```hinekora
 until <condition> {
-    <steps>
+    <statements>
 }
 ```
 
-The steps run, then the condition is asked; the loop goes round again until it is true. After
-the loop, hinekora knows the condition is true, so the steps after it can rely on it.
+The body runs, then the condition is tested; the loop repeats until it is true. After the loop
+the condition is known to be true, and the statements that follow are checked against that
+state.
 
 ```hinekora
 item {
@@ -27,14 +24,13 @@ until has "fire resistance" t1 {
 }
 ```
 
-When the loop ends, the boots have the essence's maximum Life and a tier 1 fire resistance, and
-every step after the loop is checked against that item.
+On exit the item has the essence's maximum Life and a tier 1 fire resistance.
 
-### Every round, not just the first
+### Every iteration
 
-Each step in the loop has to work on every round, with the item as any earlier round could have
-left it. On Rare boots with no modifiers yet, this loop is reported, because after a few exalts the item can be full before the life
-has rolled:
+The body is checked against every state any number of earlier iterations can leave, not only the
+first. Starting from a Rare item with no affixes, this loop is rejected: after some exalts the
+item may be full while the life is still absent.
 
 ```hinekora
 until has "maximum life" {
@@ -47,12 +43,10 @@ at this point the item is: Titan Greaves · Rare · 0–6 affixes · 0–3 prefi
 Requires an open affix slot — the item may be full.
 ```
 
-The fix is to make room inside the loop, the way the guide on the [home page](/) annuls until a
-prefix is free before it benches.
+### Loops the checker rejects
 
-### Loops that cannot work
-
-Hinekora reports a loop that can never finish, and one whose steps never run:
+A loop whose condition can never become true, and a loop whose condition is already true on
+entry, are errors:
 
 ```txt
 this loop can never exit: has "fire resistance" can never become true here
@@ -61,14 +55,15 @@ this loop's body never runs: prefixCount <= 3 already holds here
 
 ## restart
 
-`restart` goes back to the start of the loop it is in, as if the round had just begun. It is for
-a round that has already gone wrong, so the rest of it is not worth paying for:
+`restart` re-enters the innermost enclosing `until` from its start. The rest of that iteration
+does not run, so the statements after a `restart` behind an `if` are checked only on the paths
+where the `if` was not taken.
 
 ```hinekora
 until has "maximum life" t1 and has "cold resistance" {
     chaos
     if not has "maximum life" t1 {
-        restart                # no exalt on boots without the life
+        restart
     }
     if suffixCount <= 2 {
         exalt
@@ -76,31 +71,28 @@ until has "maximum life" t1 and has "cold resistance" {
 }
 ```
 
-After the `if`, the life is known to be tier 1, since every round without it went back to the
-start.
-
-Outside every loop, `restart` ends the craft.
+The `exalt` runs only on items with a tier 1 life. At top level, `restart` ends the craft.
 
 ## stop
 
-`stop` ends the craft on this path: you keep the item as it is, or it is not worth more
-currency. The steps after it are checked only on the paths that go on, so a `stop` behind an
-`if` makes its condition's opposite true for everything after it.
+`stop` ends the craft on the current path. The statements after it are checked only on the
+paths that continue.
 
 ```hinekora
 chaos
 if not has "maximum life" {
-    stop                       # start over with a new base
+    stop
 }
 until has "maximum life" >= 90 {
-    divine                     # the life is known to be there
+    divine
 }
 ```
 
-A craft whose every path stops has no finished item.
+The `divine` loop is checked against items that have maximum Life. A craft on which every path
+stops has no final item.
 
-## See also
+## Related
 
-- [Syntax overview](../syntax) for conditions and the other control words.
-- The playground shows each loop's chance of finishing and its expected spend, under the loop's
-  first line.
+- [Syntax overview](../syntax): conditions and the other control statements.
+- The playground shows, under each loop's first line, the chance it exits and its expected
+  cost.

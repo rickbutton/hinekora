@@ -3,7 +3,7 @@
  * Writes the operations reference under docs/operations/ from the method
  * table the parser, completion, hover and the checker all read
  * (`METHODS` in @hinekora/core): each page's syntax, argument list and
- * description are the table's, its example a line of a guide in examples/,
+ * description are the table's, its example a craft in examples/,
  * its wiki link the one docs/operations.md gives the method. What a page
  * says of an operation comes from the table, so it changes with it; only the
  * grouping (FAMILIES, where a new first word lands in "Other") and the
@@ -18,6 +18,7 @@ import {
     mkdirSync,
     readdirSync,
     readFileSync,
+    rmSync,
     writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
@@ -61,6 +62,11 @@ const FAMILIES = [
 ];
 
 const slugOf = (m) => m.words.join("-");
+
+// The site calls a program a craft; the help lines in the code still say
+// "guide" until the code is renamed.
+const asCraft = (s) =>
+    s.replace(/\b([Gg])uide(s|'s)?\b/g, (_, g, end = "") => `${g === "G" ? "C" : "c"}raft${end}`);
 const escape = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 function familyOf(m) {
@@ -77,7 +83,7 @@ function familyOf(m) {
 function readDoc(m) {
     const cut = m.doc.indexOf(" — ");
     const head = m.doc.slice(0, cut);
-    const body = m.doc.slice(cut + 3);
+    const body = asCraft(m.doc.slice(cut + 3));
     const own = head.startsWith(m.words.join(" "));
     const sentences = body
         .split(/(?<=\.)\s+(?=[A-Z])/)
@@ -139,7 +145,10 @@ function wikiLinks() {
     return links;
 }
 
-/** A guide in examples/ with a statement that opens with the method's words. */
+/**
+ * A craft in examples/ with a statement that opens with the method's words,
+ * shown without its comments: those explain the example file, not the method.
+ */
 function exampleOf(m) {
     const dir = join(repo, "examples");
     const longest = (words) =>
@@ -148,21 +157,20 @@ function exampleOf(m) {
         )[0];
     const found = [];
     for (const file of readdirSync(dir).filter((f) => f.endsWith(".craft"))) {
-        const lines = readFileSync(join(dir, file), "utf8").replace(/\r/g, "").split("\n");
-        let start = 0;
-        while (start < lines.length && /^\s*(#.*)?$/.test(lines[start])) start++;
-        const kept = lines.slice(start);
+        const kept = readFileSync(join(dir, file), "utf8")
+            .replace(/\r/g, "")
+            .split("\n")
+            .filter((line) => !/^\s*#/.test(line))
+            .map((line) => line.replace(/\s*#.*$/, ""))
+            .filter((line, i, all) => line !== "" || (i > 0 && all[i - 1] !== ""));
+        while (kept[0] === "") kept.shift();
         const hits = [];
         kept.forEach((line, i) => {
-            const words = line
-                .replace(/#.*$/, "")
-                .trim()
-                .split(/[\s"]+/);
-            if (longest(words) === m) hits.push(i + 1);
+            if (longest(line.trim().split(/[\s"]+/)) === m) hits.push(i + 1);
         });
         if (hits.length > 0) found.push({ file, text: kept.join("\n").trimEnd(), hits });
     }
-    // A guide named for the method shows it best; among the rest, the shortest.
+    // A craft named for the method shows it best; among the rest, the shortest.
     const named = (f) => (f.file.includes(m.words[0]) ? 0 : 1);
     return found.sort((a, b) => named(a) - named(b) || a.text.length - b.text.length)[0];
 }
@@ -206,7 +214,7 @@ function page(m, links) {
                           `- ${escape(s.replace(/^Needs /, "").replace(/^./, (c) => c.toUpperCase()))}`,
                   )
                   .join("\n")
-            : "What the description above names: the item must be so on every path the craft can take, or the step is flagged.",
+            : "The help line states no requirement beyond the description above. The checker rejects the step if the item may differ from it on any path.",
         "",
     ];
     if (example !== undefined) {
@@ -217,20 +225,20 @@ function page(m, links) {
             example.text,
             "```",
             "",
-            `From [examples/${example.file}](${GITHUB}/examples/${example.file}); open it in the [playground](/playground/).`,
+            `From [examples/${example.file}](${GITHUB}/examples/${example.file}), comments removed. The [playground](/playground/) has it under the same name.`,
             "",
         );
     }
     if (link !== undefined) {
         parts.push(
-            "## In the game",
+            "## Reference",
             "",
             `[${link.text}](${link.href}) on the Path of Exile Wiki.`,
             "",
         );
     }
     parts.push(
-        `<p class="op-generated">Generated from the method table, <a href="${GITHUB}/packages/core/src/check/methods.ts">methods.ts</a>; hover the step in an editor for the same text.</p>`,
+        `<p class="op-generated">Generated from the method table in <a href="${GITHUB}/packages/core/src/check/methods.ts">methods.ts</a>, which is also the source of the editor's hover text.</p>`,
         "",
     );
     return parts.filter((p, i, all) => !(p === "" && all[i - 1] === "")).join("\n");
@@ -244,8 +252,8 @@ function index() {
         "",
         "# Operations",
         "",
-        "Every statement of a guide is one operation on the item. Each page shows the operation's",
-        "syntax, what it does, what the item needs for it, and a guide that uses it.",
+        "A statement of a craft is one operation on the item. Each operation's page gives its syntax,",
+        "its effect, its precondition and a craft from examples/ that uses it.",
         "",
     ];
     for (const [family] of [...FAMILIES, ["Other"]]) {
@@ -262,6 +270,7 @@ function index() {
     return lines.join("\n");
 }
 
+rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 mkdirSync(icons, { recursive: true });
 const iconDir = join(repo, "editors", "playground", "src", "icons");

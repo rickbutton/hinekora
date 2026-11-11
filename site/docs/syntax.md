@@ -1,12 +1,10 @@
 # Syntax overview
 
-The whole language on one page. Each part links to its own page for the details.
+## Files
 
-## A file
-
-A guide is one `.craft` file. It opens with the item you start from, then lists the steps.
-Blocks use braces, line breaks do not matter, and a comment runs from `#` to the end of the
-line.
+A craft is one `.craft` file. It opens with an item block, the starting item, followed by
+statements. Blocks are delimited by braces; whitespace, newlines included, is insignificant, and
+statements need no separators. A comment runs from `#` to the end of the line.
 
 ```hinekora
 # Finish a ring at the bench.
@@ -21,92 +19,94 @@ item {
 bench "cold resistance"
 ```
 
-The item is never named again: every step acts on the current item.
+The item is implicit. Every statement acts on the current item, which is never named.
 
-## The starting item
+## The item block
 
-The `item` block is the only place an item is described. After it, hinekora works out what the
-item can be at every step.
+The item block is the only declared state. The state after each statement is inferred.
 
-| Field                  | Example                           | Meaning                                                                 |
-| ---------------------- | --------------------------------- | ----------------------------------------------------------------------- |
-| `base`                 | `"Titan Greaves"`                 | the base, by its name in the game                                       |
-| `ilvl`                 | `84`                              | the item level                                                          |
-| `rarity`               | `normal`, `magic`, `rare`         | the rarity                                                              |
-| `prefixes`, `suffixes` | `[ "maximum life" t2, "random" ]` | the modifiers, each at its tier; `"random"` is one you don't care about |
-| `fractured`, `bench`   | `fractured "maximum life" t1`     | a fractured or a crafted modifier, inside the lists                     |
-| `influences`           | `hunter`, `shaper elder`          | the item's influences                                                   |
-| `exarch`, `eater`      | `grand`                           | the tier of an eldritch implicit                                        |
-| `enchant`              | `8 "lightning damage"`            | a cluster jewel's enchantments                                          |
-| `strands`              | `82`                              | memory strands                                                          |
-| `corrupted`            |                                   | the item is corrupted                                                   |
+| Field                  | Example                           | Meaning                                                   |
+| ---------------------- | --------------------------------- | --------------------------------------------------------- |
+| `base`                 | `"Titan Greaves"`                 | the base item, by its display name                        |
+| `ilvl`                 | `84`                              | the item level                                            |
+| `rarity`               | `normal`, `magic`, `rare`         | the rarity                                                |
+| `prefixes`, `suffixes` | `[ "maximum life" t2, "random" ]` | the affixes, each at a tier; `"random"` is an unnamed one |
+| `fractured`, `bench`   | `fractured "maximum life" t1`     | marks on an affix in the lists                            |
+| `influences`           | `hunter`, `shaper elder`          | the item's influences                                     |
+| `exarch`, `eater`      | `grand`                           | the tier of an eldritch implicit                          |
+| `enchant`              | `8 "lightning damage"`            | a cluster jewel's enchantments                            |
+| `strands`              | `82`                              | memory strands                                            |
+| `corrupted`            |                                   | the item is corrupted                                     |
 
 ## Names and tiers
 
-Modifiers are written as their text, in quotes, and shortened words are fine: `"max life"`
-finds "+# to maximum Life". A name that matches several modifiers equally well is an error
-that lists them.
+A modifier is named by its stat text in quotes. A query word matches a word of the text exactly or
+as a prefix of at least three letters, so `"max life"` names "+# to maximum Life". A name that
+matches several modifier types equally well is an error listing them.
 
-`t<n>` names a tier, `t1` the best. Tiers are counted among the rows that can roll on this base
-at this item level, so `t1` on a ring and `t1` on body armour can be different rows.
+`t<n>` names a tier, `t1` the best. The number is the one the game's advanced tooltip shows for
+that base. The item level decides which tiers a currency can roll, not their numbers.
 
-## Steps
+## Statements
 
-Each statement is one operation: its words, then its arguments.
+A statement is an operation: its words, then its arguments.
 
 ```hinekora
-chaos                                        # words alone
+chaos
 exalt hunter
-ember grand                                  # a tier word
-essence "greed" t1                           # a quoted name, some with a tier
+ember grand
+essence "greed" t1
 bench "maximum life"
-harvest reforge "life"                       # a harvest tag
+harvest reforge "life"
 harvest change "fire resistance" "cold resistance"
-fossil "pristine" "dense"                    # one to four fossils
-beast add prefix 84                          # a side and a beast level
+fossil "pristine" "dense"
+beast add prefix 84
 ```
 
-The [operations reference](./operations/) has a page for each.
+The arguments are a tier word, quoted names (some with a tier), a harvest tag, one to four
+fossils, or a side and a beast level. The [operations reference](./operations/) has a page for
+each operation.
 
-## Loops and branches
+## Control
 
 ```hinekora
-until has "maximum life" t1 {                # repeat until true
+until has "maximum life" t1 {
     chaos
 }
 
-if not has "maximum mana" {                  # branch on the item as it is now
+if not has "maximum mana" {
     bench "maximum mana"
 } else {
-    stop                                     # end the craft on this path
+    stop
 }
 ```
 
-After `until`, its condition is known to be true. Inside `if` the condition is true, inside
-`else` it does not. `restart` goes back to the start of the loop it is in, and `stop` ends the
-craft on this path. See [Loops: until, restart, stop](./language/until).
+After `until`, its condition is true. Inside `if` the condition is true; inside `else` its
+negation is. `restart` re-enters the innermost enclosing `until`; `stop` ends the craft on the
+current path. See [Loops: until, restart, stop](./language/until).
 
 ## Conditions
 
-| Condition                                  | True when                                       |
-| ------------------------------------------ | ----------------------------------------------- |
-| `isNormal`, `isMagic`, `isRare`            | the item has that rarity                        |
-| `has "maximum life"`                       | the modifier is on the item, at any tier        |
-| `has "maximum life" t1`                    | at that tier                                    |
-| `has "maximum life" >= 110`                | with its value at least 110                     |
-| `has group "spell damage"`                 | some modifier of that group is on the item      |
-| `fractured "maximum life"`                 | that modifier is fractured                      |
-| `influenced`, `influenced hunter`          | the item has an influence, or that one          |
-| `corrupted`                                | the item is corrupted                           |
-| `exarch grand`, `eater`, `dominant exarch` | the eldritch implicits                          |
-| `prefixCount <= 2`, `suffixCount == 3`     | counting modifiers; `==` `!=` `<` `<=` `>` `>=` |
-| `not`, `and`, `or`, `( … )`                | combining them, `or` loosest                    |
+| Condition                                  | True when                                         |
+| ------------------------------------------ | ------------------------------------------------- |
+| `isNormal`, `isMagic`, `isRare`            | the item has that rarity                          |
+| `has "maximum life"`                       | the modifier is present, at any tier              |
+| `has "maximum life" t1`                    | the modifier is present at that tier              |
+| `has "maximum life" >= 110`                | its value, the first number of its text, is so    |
+| `has group "spell damage"`                 | some modifier of that modifier's group is present |
+| `fractured "maximum life"`                 | that modifier is fractured                        |
+| `influenced`, `influenced hunter`          | the item has an influence, or that one            |
+| `corrupted`                                | the item is corrupted                             |
+| `exarch grand`, `eater`, `dominant exarch` | the eldritch implicits                            |
+| `prefixCount <= 2`, `suffixCount == 3`     | affix counts; `==` `!=` `<` `<=` `>` `>=`         |
+| `not`, `and`, `or`, `( … )`                | combinations; `or` binds loosest                  |
 
-A condition asks about the item as it is now; nothing looks back at earlier steps.
+A condition reads the current state only; there are no history predicates.
 
 ## Definitions
 
-`def` names a condition or a group of steps, so a guide can say it once.
+`def name(params) = <condition>` declares a predicate; `def name(params) { <statements> }` an
+operation function. Both are local to the file and inlined at each use.
 
 ```hinekora
 def anyEleRes(t) = has "fire res" t or has "cold res" t or has "lightning res" t
@@ -121,5 +121,5 @@ guarantee("maximum life", { scour alchemy })
 until anyEleRes(t1) { chaos }
 ```
 
-A parameter can be a tier, a number, a name, or steps; hinekora works out which from how it is
-used.
+A parameter's kind is inferred from its use: a tier, a number, a name, or, in statement
+position, steps. A steps argument is one statement or a `{ … }` block.

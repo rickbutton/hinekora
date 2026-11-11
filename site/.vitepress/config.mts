@@ -20,7 +20,7 @@ const operationsSidebar = (): DefaultTheme.SidebarItem[] =>
 
 const docsSidebar: DefaultTheme.SidebarItem[] = [
     {
-        text: "Start here",
+        text: "Overview",
         items: [
             { text: "Introduction", link: "/docs/" },
             { text: "Syntax overview", link: "/docs/syntax" },
@@ -39,7 +39,7 @@ const docsSidebar: DefaultTheme.SidebarItem[] = [
 
 export default defineConfig({
     title: "hinekora",
-    description: "A checked language for Path of Exile crafting guides.",
+    description: "A statically checked language for Path of Exile item crafting.",
     lang: "en",
     // GitHub Pages serves a project site under the repository's name.
     base: process.env["SITE_BASE"] ?? "/hinekora/",
