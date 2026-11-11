@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q103.
+keeps it. New entries continue from Q105.
 
 ```
 ### Qn · probe|decision · open — title
@@ -361,3 +361,22 @@ record the tier in the header.
 number, and a name that words one of them means that one alone. **Encoded in:**
 `resolve/tiers.ts` `tiersOf`; `resolve/registry.ts` `rowsNamed`; `check/check.ts`
 `rowsOnly`.
+
+### Q103 · decision · open — steps written after a path has ended
+
+**Q:** a step after a top-level `stop` or `restart`, or after either in a loop body, can
+never run. Should the checker say so?
+**Options:** (a) an error, as an `if` branch that can never run is (recommended: such a
+step is a mistake, and its cost and its place in the chart are silently dropped); (b)
+leave it unreported.
+**Assumed:** (b). **Encoded in:** `check/check.ts` `checkSeq`.
+
+### Q104 · decision · open — a condition wider than the formatter's line
+
+**Q:** `fmt` leaves an `until` or `if` whose condition passes 100 columns on one line; a
+`def` of that width is broken before each `or`. Should a statement's condition break the
+same way?
+**Options:** (a) break before each top-level `or`, then `and`, indented one step, the
+`{` on its own line (recommended); (b) leave long conditions to the author, who can name
+them with a `def`.
+**Assumed:** (b). **Encoded in:** `packages/parser/src/format.ts` `fits`.
