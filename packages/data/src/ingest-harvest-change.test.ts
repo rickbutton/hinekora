@@ -149,6 +149,19 @@ describe("the Harvest change lists read from the game's table", () => {
         ).toThrow("the bases disagree for FireDamage to cold");
     });
 
+    it("fails on an observation or a decision the lists no longer bear out", () => {
+        const lists = damage(["FireDamage"], ["ColdDamage"], []);
+        expect(() =>
+            pairHarvestChange(lists, new Set(), { FireDamage: { cold: "ColdGone" } }, {}),
+        ).toThrow("FireDamage was seen to become ColdGone, which is not on the cold list");
+        expect(() =>
+            pairHarvestChange(lists, new Set(), { FireGone: { cold: "ColdDamage" } }, {}),
+        ).toThrow('"seen in game" names types on no list: FireGone');
+        expect(() => pairHarvestChange(lists, new Set(), {}, { FireGone: ["cold"] })).toThrow(
+            '"no counterpart" names types on no list: FireGone',
+        );
+    });
+
     it("reads the rows of a compiled table: fixed-width rows, then the strings", () => {
         const width = 48;
         const strings = [

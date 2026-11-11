@@ -114,7 +114,8 @@ export const NO_COUNTERPART = {
  * exchanged with it), unless the pair was seen in game. A critical strike
  * multiplier is listed but refused by the damage change since 3.28.0 (Harvest
  * crafting § Version history, Hotfix 8). Every pair must be decided, and two
- * bases that disagree fail.
+ * bases that disagree fail; so does an observation or a decision about a type
+ * the lists no longer name, or an observed counterpart off the element's list.
  */
 export function pairHarvestChange(
     lists,
@@ -122,6 +123,18 @@ export function pairHarvestChange(
     seen = SEEN_IN_GAME,
     unpaired = NO_COUNTERPART,
 ) {
+    const listed = new Set(
+        Object.values(lists).flatMap((byElement) => Object.values(byElement).flat()),
+    );
+    for (const [what, table] of [
+        ["seen in game", seen],
+        ["no counterpart", unpaired],
+    ]) {
+        const stale = Object.keys(table).filter((type) => !listed.has(type));
+        if (stale.length > 0) {
+            throw new Error(`"${what}" names types on no list: ${stale.join(", ")}`);
+        }
+    }
     const out = {};
     for (const [kind, byElement] of Object.entries(lists)) {
         out[kind] = {};
@@ -139,6 +152,11 @@ export function pairHarvestChange(
                         ? named(exchanged.replaceAll(AILMENT[from], AILMENT[element]))
                         : undefined;
                     const observed = seen[type]?.[element];
+                    if (observed != null && !byElement[element].includes(observed)) {
+                        throw new Error(
+                            `${type} was seen to become ${observed}, which is not on the ${element} list`,
+                        );
+                    }
                     const none = unpaired[type]?.includes(element) ? null : undefined;
                     const decisions = [
                         [byName, "name"],

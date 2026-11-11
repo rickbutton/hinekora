@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
     type Base,
@@ -574,6 +575,35 @@ describe("real pool — a Cobalt Jewel draws its jewel mods", () => {
 
 describe("the grove's change lists", () => {
     const type = (id: string) => TypeId(id);
+
+    it("are the table the ingest's pairing makes of the lists and its recorded decisions", async () => {
+        // The committed file is generated: an edit to it, or to what was seen
+        // in game or decided to have no counterpart, without the other fails.
+        type Lists = Record<string, Record<string, string[]>>;
+        interface Script {
+            readonly pairHarvestChange: (lists: Lists, critical: ReadonlySet<string>) => unknown;
+            readonly renderHarvestChange: (pairs: unknown) => string;
+        }
+        const url = new URL("../scripts/ingest-harvest-change.mjs", import.meta.url).href;
+        const script = (await import(/* @vite-ignore */ url)) as Script;
+        const lists: Lists = {};
+        for (const [kind, byElement] of Object.entries(data.harvestChange)) {
+            lists[kind] = {};
+            for (const [element, rows] of Object.entries(byElement)) {
+                lists[kind][element] = rows.map((r) => r.from);
+            }
+        }
+        const critical = new Set<string>(
+            data.mods.filter((m) => m.implicitTags.has(TagId("critical"))).map((m) => m.type),
+        );
+        const committed = readFileSync(
+            new URL(`../data/poe1/${POE1_FILES.harvestChange}`, import.meta.url),
+            "utf8",
+        );
+        expect(script.renderHarvestChange(script.pairHarvestChange(lists, critical))).toBe(
+            committed,
+        );
+    });
 
     it("name modifier types of the catalog only, as many as the manifest counts", () => {
         const types = new Set(data.mods.map((m) => m.type));
