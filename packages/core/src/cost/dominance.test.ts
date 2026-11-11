@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { check } from "../check/check.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { andp, craft, has, hasValue, iff, item, notp, op, orp } from "../__fixtures__/ast.js";
+import { andp, cmp, craft, has, hasValue, iff, item, notp, op, orp } from "../__fixtures__/ast.js";
 import {
     BOOTS_BASE,
     CATALOG,
@@ -12,9 +12,12 @@ import {
     PROTECT_SUFFIXES_CARRIER,
 } from "../__fixtures__/mods.js";
 import type { Pred } from "../ast/index.js";
-import { GroupId, ModId, TypeId } from "../model/ids.js";
+import { GroupId, ModId, TagId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
+import { findMethod } from "../check/methods.js";
+import { influenceKey } from "../model/marks.js";
 import { costOf } from "./report.js";
+import { Tracker } from "./track.js";
 
 /** Another Hunter modifier of the base's, with an elevated row of its type:
  *  a condition tells the two apart by value alone. */
@@ -198,6 +201,107 @@ describe("the cost walk through an Orb of Dominance", () => {
         const low = after(start(30), [elevatedPrefix], tiered);
         expect(low.orb.note).toContain("a tier above the item's level is not known");
         expect(low.orb.note).toContain("every item the check allows");
+    });
+
+    it("rolls the values of an already elevated modifier again", () => {
+        // The elevated modifier rolls 30 to 40 and is known to be 35 or more.
+        // Half the time it is the one raised, and its value is rolled fresh:
+        // 35 to 40 is six values of eleven. Kept as it was, it would hold
+        // whenever it stays.
+        const high = hasValue(THIRD!.id, ">=", 35);
+        const c = craft(boots([HUNTER_BOOTS_PREFIX.id], [ELEVATED_THIRD!.id]), [
+            iff(high, [op("dominance"), iff(high, [])]),
+        ]);
+        const result = check(c, { registry });
+        expect(result.diagnostics).toEqual([]);
+        const steps = costOf(c, result, registry).steps;
+        const [, inner] = steps.filter((s) => s.kind === "if");
+        expect(inner!.note).toBeUndefined();
+        expect(inner!.branch).toBeCloseTo((1 / 2) * (6 / 11), 12);
+    });
+
+    it("keeps an elevated modifier of a type of its own in the slot of the one it was made of", () => {
+        // No condition names the elevated prefix: it is counted on its side all
+        // the same. Two prefixes are left when the suffix is the one removed.
+        const start = boots([HUNTER_BOOTS_PREFIX.id, "IncreasedLife1"], [HUNTER_BOOTS_SUFFIX.id]);
+        const { asked, chances } = after(start, [
+            cmp("prefixCount", "==", 2),
+            has(HUNTER_BOOTS_PREFIX.id),
+            cmp("suffixCount", "==", 0),
+        ]);
+        expect(chances[0]).toBeCloseTo(1 / 2, 12);
+        expect(chances[1]).toBe(0);
+        expect(chances[2]).toBeCloseTo(1 / 2, 12);
+        expect(asked.map((s) => s.note)).toEqual(asked.map(() => undefined));
+    });
+
+    describe("is not followed, and says why,", () => {
+        /** The orb's note on an item it takes but the walk cannot read. */
+        const noteOf = (c: ReturnType<typeof craft>, reg: typeof registry): string => {
+            const result = check(c, { registry: reg });
+            expect(result.diagnostics).toEqual([]);
+            const orb = costOf(c, result, reg).steps.findLast((s) => s.kind === "operation")!;
+            expect(orb.note).toContain("every item the check allows");
+            return orb.note!;
+        };
+
+        it("where the item's influences differ by path", () => {
+            // The item the check hands the walk is a Hunter's on one path and
+            // a Hunter and Shaper's on another, as after a join.
+            const shaper: Mod = {
+                ...THIRD!,
+                id: ModId("ShaperBoots1"),
+                type: TypeId("ShaperBoots"),
+                families: new Set([GroupId("ShaperBoots")]),
+                spawn: [
+                    { tag: TagId("boots_shaper"), weight: 500 },
+                    { tag: TagId("default"), weight: 0 },
+                ],
+            };
+            const dual = buildRegistry({ bases: [BOOTS_BASE], mods: [...mods, shaper] });
+            const c = craft(boots([HUNTER_BOOTS_PREFIX.id], [HUNTER_BOOTS_SUFFIX.id]), [
+                op("dominance"),
+            ]);
+            const settled = check(c, { registry: dual }).trace.at(-1)!.before;
+            const before = {
+                ...settled,
+                influences: new Set([...settled.influences, influenceKey(["shaper", "hunter"])]),
+            };
+            const tracker = new Tracker(dual, before, [before], [], []);
+            const built = findMethod(["dominance"])!.build([], before, dual);
+            if ("refused" in built) throw new Error(built.refused);
+            const [start] = tracker.statesIn(before)!;
+            tracker.transition(before, built, "estimate")!(start!.state);
+            expect(tracker.unfollowed).toBe(
+                "which influences the item has is not settled at this step",
+            );
+        });
+
+        it("where two tiers above the modifier share a level", () => {
+            const twin: Mod = { ...HIGHER, id: ModId("HunterBootsSuffix0b") };
+            const tied = buildRegistry({ bases: [BOOTS_BASE], mods: [...mods, HIGHER, twin] });
+            const c = craft(boots([HUNTER_BOOTS_PREFIX.id], [HUNTER_BOOTS_SUFFIX.id]), [
+                op("dominance"),
+            ]);
+            expect(noteOf(c, tied)).toContain(
+                "which tier an Orb of Dominance raises a modifier to is not settled where two tiers share a level",
+            );
+        });
+
+        it("where a top-tier modifier has no one elevated modifier", () => {
+            // As a Shaper helmet's mana regeneration has none in the data.
+            const start = boots([HUNTER_BOOTS_PREFIX.id], [THIRD!.id]);
+            const none = buildRegistry({
+                bases: [BOOTS_BASE],
+                mods: mods.filter((m) => m !== ELEVATED_THIRD),
+            });
+            const reason =
+                "the elevated modifier an Orb of Dominance makes of a top-tier modifier here is not known";
+            expect(noteOf(craft(start, [op("dominance")]), none)).toContain(reason);
+            const second: Mod = { ...ELEVATED_THIRD!, id: ModId("HunterBootsThirdElevated2") };
+            const two = buildRegistry({ bases: [BOOTS_BASE], mods: [...mods, second] });
+            expect(noteOf(craft(start, [op("dominance")]), two)).toContain(reason);
+        });
     });
 
     it("is not followed where a modifier the guide does not name may be influenced", () => {

@@ -264,6 +264,46 @@ describe("tier numbers on an item with two influences", () => {
         expect(rolled.diagnostics.map((d) => d.message)).toHaveLength(1);
         expect(rolled.diagnostics[0]!.message).toContain("always holds here");
     });
+
+    /** The rows the modifier may be before the last step, an `annul`. */
+    const rowsBeforeAnnul = (c: ReturnType<typeof craft>) => {
+        const r = run(c);
+        expect(r.diagnostics).toEqual([]);
+        const entry = r.trace.findLast((e) => e.kind === "operation")!;
+        return [...(entry.before.tiers.get(WARD) ?? [])].sort();
+    };
+
+    it("leaves a loop on a tier at either influence's row of it", () => {
+        const exit = (ilvl: number) =>
+            rowsBeforeAnnul(
+                craft(boots(ilvl, []), [until(has(WARD_NAME, 1), [op("chaos")]), op("annul")]),
+            );
+        expect(exit(100)).toEqual(["Ward_eyrie_84", "Ward_shaper_80"]);
+        // At level 82 a Chaos Orb rolls the Shaper's first tier only.
+        expect(exit(82)).toEqual(["Ward_shaper_80"]);
+    });
+
+    it("rules both rows of a tier out where the condition on it fails", () => {
+        // The modifier is at any of its five rows; not at its first tier, it is
+        // at neither influence's.
+        const others = rowsBeforeAnnul(
+            craft(boots(100, []), [
+                until(has(WARD_NAME), [op("chaos")]),
+                iff(has(WARD_NAME, 1), [], [op("annul")]),
+            ]),
+        );
+        expect(others).toEqual(["Ward_eyrie_60", "Ward_eyrie_75", "Ward_shaper_68"]);
+        // Declared at the second tier, it is one of two rows: the first tier's
+        // condition never holds, the second's never fails.
+        const declared = (tier: number) =>
+            run(
+                craft(boots(100, [{ mod: WARD_NAME, tier: 2 }]), [
+                    iff(has(WARD_NAME, tier), [op("exalt")], [op("annul")]),
+                ]),
+            ).diagnostics.map((d) => d.message);
+        expect(declared(1)).toEqual([expect.stringContaining("the 'if' branch can never run")]);
+        expect(declared(2)).toEqual([expect.stringContaining("the 'else' branch can never run")]);
+    });
 });
 
 describe("checker — tier tracking through operations", () => {
