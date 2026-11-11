@@ -238,6 +238,22 @@ ${body}`;
             expect(r.ok).toBe(false);
             expect(r.output).toContain('tier 9 is out of range for "cold resistance"');
         });
+
+        it("says a modifier the base cannot roll cannot roll, and how a bench craft is declared", () => {
+            const declared = (mod: string): string =>
+                run(`item {
+    base: "Two-Stone Ring"
+    ilvl: 84
+    rarity: rare
+    prefixes: [ "${mod}" ]
+}`).output;
+            expect(declared("increased spell damage")).toContain(
+                '"increased spell damage" cannot roll on a Two-Stone Ring.',
+            );
+            expect(declared("suffixes cannot be changed")).toContain(
+                'a bench craft is declared as `bench "suffixes cannot be changed"`.',
+            );
+        });
     });
 
     it("numbers one influence's rows apart from the base's own of the same modifier", () => {

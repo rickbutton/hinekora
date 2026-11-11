@@ -286,6 +286,6 @@ export function resolveMessage(error: ResolveError): string {
     }
 }
 
-function withArticle(noun: string): string {
+export function withArticle(noun: string): string {
     return `${/^[aeiou]/i.test(noun) ? "an" : "a"} ${noun}`;
 }

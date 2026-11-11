@@ -58,6 +58,7 @@ import {
     type CheckDiagnostic,
     describePred,
     preconditionMessage,
+    withArticle,
     resolveMessage,
 } from "./diagnostics.js";
 import {
@@ -400,7 +401,10 @@ class Checker {
                 // exempt (item-model.md §3). Its level may be above the item's:
                 // an essence or a Harvest change leaves such a row.
                 if ((mod.source ?? "natural") === "natural" && mod.domain !== base.domain) {
-                    this.diag(`"${affix.mod}" cannot roll on a ${base.name ?? "item"}.`, affixAt);
+                    this.diag(
+                        `"${affix.mod}" cannot roll on ${base.name === undefined ? "this item" : withArticle(base.name)}.`,
+                        affixAt,
+                    );
                 }
                 claim(affix.mod, mod.type);
                 pinned.set(mod.type, mod.id);
@@ -449,8 +453,12 @@ class Checker {
             const tier = affix.tier ?? single ?? 1;
             const atTier = this.rowsAt(ladders, tier, affix.mod);
             if (atTier.length === 0) {
+                const benched =
+                    count === 0 && this.registry.resolveBench(affix.mod, base.itemClass).ok;
                 this.diag(
-                    `tier ${tier} is out of range for "${affix.mod}" (it has ${count} ${plural(count, "tier")} on this base).`,
+                    count === 0
+                        ? `"${affix.mod}" cannot roll on ${base.name === undefined ? "this item" : withArticle(base.name)}${benched ? ` — a bench craft is declared as \`bench "${affix.mod}"\`` : ""}.`
+                        : `tier ${tier} is out of range for "${affix.mod}" (it has ${count} ${plural(count, "tier")} on this base).`,
                     affixAt,
                 );
                 claim(affix.mod, type);
