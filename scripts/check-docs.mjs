@@ -44,6 +44,7 @@ const fail = (file, line, msg) => problems.push(`${file}:${line}: ${msg}`);
 const BUDGETS = {
     "CLAUDE.md": 1100,
     "docs/ARCHITECTURE.md": 2200,
+    "docs/EXACT.md": 2100,
     "docs/QUESTIONS.md": 4500,
     "docs/REFERENCE.md": 1300,
     "docs/ROADMAP.md": 600,

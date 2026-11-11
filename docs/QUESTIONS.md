@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q105.
+keeps it. New entries continue from Q106.
 
 ```
 ### Qn · probe|decision · open — title
@@ -361,17 +361,3 @@ record the tier in the header.
 number, and a name that words one of them means that one alone. **Encoded in:**
 `resolve/tiers.ts` `tiersOf`; `resolve/registry.ts` `rowsNamed`; `check/check.ts`
 `rowsOnly`.
-
-### Q105 · decision · open — how the checker stops losing precision
-
-**Q:** the checker covers items no path makes wherever a fact lives outside the presence
-function (counts, tiers, values, influences). An audit found plain crafts refused for it
-and three soundness faults: a bench-only modifier's side is guessed, `fractured "X"` is
-dead for a modifier only possible at the lock, a dual-side modifier raises the guessed
-side's count.
-**Options:** (a) mend each site: operations and conditions hand back several summaries,
-counts tighten after every step, removals forget only what they touch; losses from how a
-field is held stay. (b) hold the item as one decision diagram, counts and marks as bits,
-every primitive exact; rewrites `check/astate.ts` and `check/ops.ts`, speed unmeasured.
-**Recommended:** the soundness faults; then (a); then a measured spike of (b).
-**Assumed:** nothing is built on either. **Encoded in:** `check/astate.ts`, `check/ops.ts`.
