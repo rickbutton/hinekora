@@ -61,7 +61,7 @@ a market snapshot.
 <section class="row">
 <div class="prose">
 
-This one goes on with two Exalted Orbs and a bench craft.
+This one adds two Exalted Orbs and a bench craft.
 
 </div>
 <div class="example">
@@ -87,6 +87,7 @@ at that step.
 </section>
 
 <p class="links">
+<a :href="$withBase('/how-it-works')">How it works</a> ·
 <a :href="$withBase('/docs/')">Docs</a> ·
 <a :href="$withBase('/playground/')">Playground</a> ·
 <a href="https://github.com/rickbutton/hinekora">Source</a>

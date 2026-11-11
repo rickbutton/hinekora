@@ -87,6 +87,7 @@ export default defineConfig({
     themeConfig: {
         siteTitle: "hinekora",
         nav: [
+            { text: "How it works", link: "/how-it-works" },
             { text: "Docs", link: "/docs/", activeMatch: "^/docs/" },
             { text: "Playground", link: "/playground/" },
         ],

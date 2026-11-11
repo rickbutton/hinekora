@@ -1,0 +1,14 @@
+/* A figure on the "how it works" page: a panel like the home page's, with its caption under it. */
+.how-figure {
+    margin: 24px 0;
+    padding: 18px 20px;
+    border-radius: 8px;
+    background: var(--vp-c-bg-alt);
+}
+
+.how-figure figcaption {
+    margin-top: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--vp-c-text-2);
+}
