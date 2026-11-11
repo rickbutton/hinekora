@@ -51,12 +51,14 @@ function statText(text: string): string {
 }
 
 function modRow(m: ModView): string {
-    const kind = m.fractured ? "fractured" : m.crafted ? "crafted" : "explicit";
+    const kind = m.fractured ? "fractured" : m.crafted || m.veiled ? "crafted" : "explicit";
     const flag = m.fractured
         ? h("span", "flag", " (fractured)")
         : m.crafted
           ? h("span", "flag", " (crafted)")
-          : "";
+          : m.veiled
+            ? h("span", "flag", " (veiled)")
+            : "";
     const tier =
         m.tier === undefined
             ? ""

@@ -180,7 +180,7 @@ describe("the marks and the crafted flag", () => {
         expect(text).not.toContain("Tier");
     });
 
-    it("heads an unveiled modifier as master crafted, with no rank", () => {
+    it("heads an unveiled modifier as veiled, with no rank", () => {
         const veiledRegistry = buildRegistry({
             bases: [RING_BASE],
             mods: [...CATALOG, VEILED_SUFFIX_MOD, VEILED_A],
@@ -196,7 +196,7 @@ describe("the marks and the crafted flag", () => {
         });
         expect(r.diagnostics).toEqual([]);
         const text = renderItemText(itemView(r.finalState!, veiledRegistry));
-        expect(text).toContain("{ Master Crafted Suffix Modifier }\nveiled double damage");
+        expect(text).toContain("{ Veiled Suffix Modifier }\nveiled double damage");
     });
 
     it("lays out the 3.28 advanced copy's headers and marks", () => {
@@ -206,6 +206,7 @@ describe("the marks and the crafted flag", () => {
             tags: ["Life"],
             fractured: false,
             crafted: false,
+            veiled: false,
             ...over,
         });
         const view: ItemView = {
@@ -238,7 +239,7 @@ describe("the marks and the crafted flag", () => {
                 },
                 { kind: "mod", mod: mod({ name: "Upgraded", crafted: true, rank: 3 }) },
             ],
-            suffixes: [{ kind: "mod", mod: mod({ gen: "suffix", crafted: true, tags: [] }) }],
+            suffixes: [{ kind: "mod", mod: mod({ gen: "suffix", veiled: true, tags: [] }) }],
             either: [],
             marks: [
                 { kind: "influence", text: "Hunter Item", maybe: false },
@@ -268,7 +269,7 @@ describe("the marks and the crafted flag", () => {
                 "+(24-28) to maximum Life",
                 '{ Master Crafted Prefix Modifier "Upgraded" (Rank: 3) — Life }',
                 "+(115-129) to maximum Life",
-                "{ Master Crafted Suffix Modifier }",
+                "{ Veiled Suffix Modifier }",
                 "+(115-129) to maximum Life",
                 "Searing Exarch Item",
                 "--------",

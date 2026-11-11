@@ -8,6 +8,7 @@ const mod = (over: Partial<ModView>): ModView => ({
     tags: [],
     fractured: false,
     crafted: false,
+    veiled: false,
     ...over,
 });
 

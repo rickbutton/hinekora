@@ -57,11 +57,10 @@ export interface ModView {
     /** The modifier's category tags, as the advanced tooltip shows them. */
     readonly tags: readonly string[];
     readonly fractured: boolean;
-    /**
-     * Every row it may be is one the game shows as master crafted: a bench row,
-     * or an unveiled row (which does not count against the crafted limit).
-     */
+    /** Every row it may be is a bench craft, which the game shows as master crafted. */
     readonly crafted: boolean;
+    /** Every row it may be is an unveiled one, which the game shows as veiled. */
+    readonly veiled: boolean;
     /** The bench rank, when the modifier is one ranked bench craft. */
     readonly rank?: number;
 }
@@ -233,7 +232,8 @@ function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: Mod
         }),
         tags: [...tagSet],
         fractured: isFractured(a, type),
-        crafted: mods.length > 0 && mods.every((m) => m.source === "bench" || isUnveiledResult(m)),
+        crafted: mods.length > 0 && mods.every((m) => m.source === "bench"),
+        veiled: mods.length > 0 && mods.every(isUnveiledResult),
         ...(rank > 0 && { rank }),
     };
 }
@@ -412,11 +412,17 @@ const tagsText = (tags: readonly string[]): string =>
 
 /**
  * The game's advanced-copy header for a modifier: `{ Prefix Modifier "Virile"
- * (Tier: 1) — Life }`, `{ Fractured Prefix Modifier … }`, or `{ Master Crafted
- * Suffix Modifier "of Craft" (Rank: 2) — … }`.
+ * (Tier: 1) — Life }`, `{ Fractured Prefix Modifier … }`, `{ Master Crafted
+ * Suffix Modifier "of Craft" (Rank: 2) — … }`, or `{ Veiled Suffix Modifier … }`.
  */
 function modHeader(m: ModView): string {
-    const marker = m.fractured ? "Fractured " : m.crafted ? "Master Crafted " : "";
+    const marker = m.fractured
+        ? "Fractured "
+        : m.crafted
+          ? "Master Crafted "
+          : m.veiled
+            ? "Veiled "
+            : "";
     const kind = `${marker}${capitalise(m.gen)} Modifier`;
     const name = m.name !== undefined ? ` "${m.name}"` : "";
     const tier =

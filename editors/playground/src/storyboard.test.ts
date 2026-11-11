@@ -125,6 +125,7 @@ const mod = (text: string): ModView => ({
     tags: [],
     fractured: false,
     crafted: false,
+    veiled: false,
 });
 
 const view = (groups: ModGroup[], remainder?: ItemView["remainder"]): ItemView => ({

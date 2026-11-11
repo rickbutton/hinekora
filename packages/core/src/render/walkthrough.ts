@@ -228,7 +228,7 @@ function modLines(v: ItemView): string[] {
     const text = (m: ModView): string => m.text.replace(/\n/g, " / ");
     const one = (g: ModGroup): string =>
         g.kind === "mod"
-            ? `${text(g.mod)}${g.mod.fractured ? " (fractured)" : g.mod.crafted ? " (crafted)" : ""}`
+            ? `${text(g.mod)}${g.mod.fractured ? " (fractured)" : g.mod.crafted ? " (crafted)" : g.mod.veiled ? " (veiled)" : ""}`
             : `one of: ${g.members.map(text).join(" | ")}`;
     return [...v.prefixes, ...v.suffixes, ...v.either].map(one);
 }
