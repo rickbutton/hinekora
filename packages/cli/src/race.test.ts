@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
     check,
     costOf,
@@ -139,10 +139,6 @@ const wand = (rarity: string): string =>
     `item {\n    base: "Imbued Wand"\n    ilvl: 84\n    rarity: ${rarity}\n}`;
 
 describe("the race against the draw played out", { timeout: LONG }, () => {
-    // The tests never give up the thread, and the runner fails a file whose
-    // progress reports go a minute unanswered, which coverage makes this one.
-    afterEach(() => new Promise((done) => setTimeout(done)));
-
     it("a Chaos Orb on a wand, where spell damage shares its group with three elements", () => {
         const { rows, chance } = judged(wand("rare"), ["chaos"], 'has "increased spell damage"');
         const exact = played(rows, chaosCount, 3, has("WeaponSpellDamage"));
