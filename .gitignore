@@ -14,4 +14,5 @@ site/public/op-icons/
 site/docs/operations/
 
 # The prose linter's styles, fetched by `vale sync`.
-.vale/
+.vale/styles/*
+!.vale/styles/config/
