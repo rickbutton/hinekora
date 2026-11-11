@@ -212,9 +212,6 @@ class Checker {
      *  re-enters the innermost enclosing loop, so its state is a loop-head state
      *  that must join into that loop's invariant. */
     private readonly restartHeads: AItem[][] = [];
-    /** Why a tier the condition being resolved waits for is one no currency
-     *  rolls on this item: its item level, said after "can never". */
-    private aboveLevel: string[] = [];
 
     constructor(
         private readonly registry: Registry,
@@ -245,7 +242,7 @@ class Checker {
             this.collectDefs(craft.defs);
             this.collectProcs(craft.procs);
         });
-        return (pred, a) => this.quietly(() => this.resolvePred(pred, a));
+        return (pred, a) => this.quietly(() => this.resolvePred(pred, a)?.pred ?? null);
     }
 
     private diag(message: string, span: CheckDiagnostic["span"]): void {
@@ -755,7 +752,8 @@ class Checker {
     // --- narrowing (if / else) --------------------------------------------
 
     private checkIf(a: AItem, stmt: Extract<Stmt, { kind: "if" }>): Flow {
-        const [rpred, levels] = this.resolveWithLevels(stmt.pred, a);
+        const resolved = this.resolvePred(stmt.pred, a);
+        const rpred = resolved?.pred ?? null;
 
         // A narrowed count may leave a proven "≥k of these suffixes" below the
         // suffix count's new floor, so the presence facts are pushed back in.
@@ -769,7 +767,7 @@ class Checker {
 
         if (thenState === null) {
             this.diag(
-                `the 'if' branch can never run: ${describePred(stmt.pred)} is impossible here${levels}`,
+                `the 'if' branch can never run: ${describePred(stmt.pred)} is impossible here${levelReasons(resolved)}`,
                 stmt.pred.span,
             );
         }
@@ -800,7 +798,8 @@ class Checker {
     // --- loops (until) -----------------------------------------------------
 
     private checkUntil(a: AItem, stmt: Extract<Stmt, { kind: "until" }>): Flow {
-        const [rpred, levels] = this.resolveWithLevels(stmt.pred, a);
+        const resolved = this.resolvePred(stmt.pred, a);
+        const rpred = resolved?.pred ?? null;
 
         // Compute the loop invariant (a quiet join-fixpoint) and probe the exit
         // from it, quietly: a loop that needs several iterations to reach its
@@ -830,7 +829,7 @@ class Checker {
         const exitReachable = exits(probe);
         if (rpred !== null && exitReachable === null) {
             this.diag(
-                `this loop can never exit: ${describePred(stmt.pred)} can never become true here${levels}`,
+                `this loop can never exit: ${describePred(stmt.pred)} can never become true here${levelReasons(resolved)}`,
                 stmt.pred.span,
             );
             return { kind: "fall", state: foldJoin(probe) ?? invariant };
@@ -1093,38 +1092,39 @@ class Checker {
 
     // --- predicate resolution ---------------------------------------------
 
-    /** A condition resolved, with the item-level reasons a tier it names is out
-     *  of a currency's reach, worded to follow a "can never" message. */
-    private resolveWithLevels(pred: Pred, a: AItem): [RPred | null, string] {
-        this.aboveLevel = [];
-        const rpred = this.resolvePred(pred, a);
-        const reasons = [...new Set(this.aboveLevel)];
-        return [rpred, reasons.length === 0 ? "" : ` — ${reasons.join("; ")}`];
-    }
-
-    /** Note a named tier the item's level stops short of. It is no error: an
+    /** A named tier the item's level stops short of. It is no error: an
      *  essence or a Harvest change places such a row, a currency never rolls it. */
-    private noteLevel(tier: number, name: string, rows: readonly Mod[], a: AItem): void {
+    private aboveLevel(
+        type: TypeId,
+        tier: number,
+        name: string,
+        rows: readonly Mod[],
+        a: AItem,
+    ): readonly AboveLevel[] {
         const above = (m: Mod): boolean =>
             (m.source ?? "natural") === "natural" && m.minLevel > a.ilvl;
-        if (rows.length > 0 && rows.every(above)) {
-            const needs = Math.min(...rows.map((m) => m.minLevel));
-            this.aboveLevel.push(
-                `Tier ${tier} "${name}" needs item level ${needs}; this item is level ${a.ilvl}`,
-            );
-        }
+        if (rows.length === 0 || !rows.every(above)) return [];
+        const needs = Math.min(...rows.map((m) => m.minLevel));
+        return [
+            {
+                type,
+                reason: `Tier ${tier} "${name}" needs item level ${needs}; this item is level ${a.ilvl}`,
+            },
+        ];
     }
 
-    private resolvePred(pred: Pred, a: AItem): RPred | null {
+    private resolvePred(pred: Pred, a: AItem): Resolved | null {
         switch (pred.kind) {
             case "isRarity":
-                return { kind: "isRarity", rarity: pred.rarity };
+                return plain({ kind: "isRarity", rarity: pred.rarity });
             case "influenced":
-                return pred.influence === undefined
-                    ? { kind: "influenced" }
-                    : { kind: "influenced", influence: pred.influence };
+                return plain(
+                    pred.influence === undefined
+                        ? { kind: "influenced" }
+                        : { kind: "influenced", influence: pred.influence },
+                );
             case "corrupted":
-                return { kind: "corrupted" };
+                return plain({ kind: "corrupted" });
             case "eldritch": {
                 let types: ReadonlySet<TypeId> | undefined;
                 if (pred.text !== undefined) {
@@ -1135,27 +1135,25 @@ class Checker {
                     }
                     types = new Set(found.value);
                 }
-                return {
+                return plain({
                     kind: "eldritch",
                     side: pred.side,
                     ...(pred.tier !== undefined && { tier: eldritchTierOf(pred.tier) }),
                     ...(types !== undefined && { types }),
-                };
+                });
             }
             case "dominant":
-                return { kind: "dominant", side: pred.side };
+                return plain({ kind: "dominant", side: pred.side });
             case "compare": {
                 const value = this.literalInt(pred.value, pred.span);
                 return value === null
                     ? null
-                    : { kind: "compare", projection: pred.projection, op: pred.op, value };
+                    : plain({ kind: "compare", projection: pred.projection, op: pred.op, value });
             }
             case "not": {
                 // A tier the condition wants absent is no reason it cannot be met.
-                const noted = this.aboveLevel.length;
                 const inner = this.resolvePred(pred.inner, a);
-                this.aboveLevel.length = noted;
-                return inner === null ? null : { kind: "not", inner };
+                return inner === null ? null : plain({ kind: "not", inner: inner.pred });
             }
             case "and":
             case "or": {
@@ -1163,12 +1161,18 @@ class Checker {
                 // entirely rather than narrow by a half-understood condition.
                 const left = this.resolvePred(pred.left, a);
                 const right = this.resolvePred(pred.right, a);
-                return left === null || right === null ? null : { kind: pred.kind, left, right };
+                if (left === null || right === null) return null;
+                return {
+                    pred: { kind: pred.kind, left: left.pred, right: right.pred },
+                    aboveLevel: [...left.aboveLevel, ...right.aboveLevel],
+                };
             }
             case "has":
                 return this.resolveHas(pred, a);
-            case "fractured":
-                return this.resolveFractured(pred, a);
+            case "fractured": {
+                const fractured = this.resolveFractured(pred, a);
+                return fractured === null ? null : plain(fractured);
+            }
             case "call":
                 return this.resolveCall(pred, a);
         }
@@ -1195,7 +1199,7 @@ class Checker {
         return { base: a.base, ilvl: a.ilvl, tags: this.tagsOf(a) };
     }
 
-    private resolveCall(pred: Extract<Pred, { kind: "call" }>, a: AItem): RPred | null {
+    private resolveCall(pred: Extract<Pred, { kind: "call" }>, a: AItem): Resolved | null {
         const entry = this.defs.get(pred.name);
         if (!entry) {
             if (this.procs.has(pred.name)) {
@@ -1224,7 +1228,7 @@ class Checker {
         return resolved;
     }
 
-    private resolveHas(pred: Extract<Pred, { kind: "has" }>, a: AItem): RPred | null {
+    private resolveHas(pred: Extract<Pred, { kind: "has" }>, a: AItem): Resolved | null {
         const modName = this.literalString(pred.mod, pred.span);
         if (modName === null) return null;
         const tags = this.tagsOf(a);
@@ -1234,7 +1238,8 @@ class Checker {
             return null;
         }
         const type = typeRes.value;
-        if (pred.group) return { kind: "hasGroup", type, types: this.registry.groupOf(type) };
+        if (pred.group)
+            return plain({ kind: "hasGroup", type, types: this.registry.groupOf(type) });
         const gen = rollableGen(this.registry.catalog, a.base, a.ilvl, type, tags) ?? "prefix";
 
         if (pred.value !== undefined) {
@@ -1274,6 +1279,7 @@ class Checker {
             };
             const rows = new Map<ModId, Range>();
             const unnumbered = new Set<ModId>();
+            let aboveLevel: readonly AboveLevel[] = [];
             for (const m of this.registry.catalog) {
                 if (m.type !== type || !mayCarry(m)) continue;
                 const span = m.text === undefined ? undefined : rollRange(m.text);
@@ -1292,7 +1298,7 @@ class Checker {
                     );
                     return null;
                 }
-                this.noteLevel(tier, modName, atTier, a);
+                aboveLevel = this.aboveLevel(type, tier, modName, atTier, a);
                 const named = new Set(atTier.map((m) => m.id));
                 for (const id of [...rows.keys()]) if (!named.has(id)) rows.delete(id);
                 unnumbered.clear();
@@ -1302,18 +1308,21 @@ class Checker {
                 return null;
             }
             return {
-                kind: "hasValue",
-                type,
-                gen,
-                op: pred.value.op,
-                value: pred.value.value,
-                rows,
-                unnumbered,
+                pred: {
+                    kind: "hasValue",
+                    type,
+                    gen,
+                    op: pred.value.op,
+                    value: pred.value.value,
+                    rows,
+                    unnumbered,
+                },
+                aboveLevel,
             };
         }
 
         if (pred.tier === undefined) {
-            return { kind: "has", type, gen };
+            return plain({ kind: "has", type, gen });
         }
         const tier = this.literalInt(pred.tier, pred.span);
         if (tier === null) return null;
@@ -1330,7 +1339,6 @@ class Checker {
             );
             return null;
         }
-        this.noteLevel(tier, modName, atTier, a);
         // Two influences may each have a row at the tier: the item is at the
         // tier when it holds either.
         const at = (mod: Mod): RPred => {
@@ -1343,7 +1351,10 @@ class Checker {
                 ...(tierSpan !== undefined && { tierSpan }),
             };
         };
-        return atTier.map(at).reduce((left, right) => ({ kind: "or", left, right }));
+        return {
+            pred: atTier.map(at).reduce((left, right) => ({ kind: "or", left, right })),
+            aboveLevel: this.aboveLevel(type, tier, modName, atTier, a),
+        };
     }
 
     /** Narrow a value slot to a literal; a leftover ParamRef never got a value. */
@@ -1358,6 +1369,28 @@ class Checker {
         this.diag(`parameter "${v.param}" was never given a value`, span);
         return null;
     }
+}
+
+/** A tier a condition names that no currency rolls at the item's level. */
+interface AboveLevel {
+    readonly type: TypeId;
+    readonly reason: string;
+}
+
+/** A condition resolved, with the tiers it waits for that the item's level
+ *  stops short of; one it wants absent is not among them. */
+interface Resolved {
+    readonly pred: RPred;
+    readonly aboveLevel: readonly AboveLevel[];
+}
+
+const plain = (pred: RPred): Resolved => ({ pred, aboveLevel: [] });
+
+/** The item-level reasons a condition cannot be met, worded to follow a
+ *  "can never" message. */
+function levelReasons(resolved: Resolved | null): string {
+    const reasons = (resolved?.aboveLevel ?? []).map((note) => note.reason);
+    return reasons.length === 0 ? "" : ` — ${[...new Set(reasons)].join("; ")}`;
 }
 
 // --- def parameter types + substitution (module-level, pure) --------------
