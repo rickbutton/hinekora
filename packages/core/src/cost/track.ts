@@ -34,7 +34,7 @@ import {
     refine,
     type RPred,
 } from "../check/astate.js";
-import { guaranteedFacts, influenceTagsAny, influenceTagsOf, runMethod } from "../check/ops.js";
+import { influenceRowTest, influenceTagsAny, influenceTagsOf, runMethod } from "../check/ops.js";
 import { lookupWeight } from "../pool/pool.js";
 import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
 import { rollableGen, rollableTiers } from "../resolve/tiers.js";
@@ -1015,8 +1015,8 @@ export class Tracker {
      * influenced modifiers it can reach is removed and another goes a tier up,
      * a top-tier one becoming its elevated modifier and an elevated one
      * rolling its values again. A modifier on a side a metamod protects is not
-     * affected, nor is a fractured one. Every pair of removed and raised is
-     * taken as likely as any other (`ASSUMED_ODDS`, QUESTIONS.md Q61). Which
+     * affected. Every pair of removed and raised is taken as likely as any
+     * other (`ASSUMED_ODDS`, QUESTIONS.md Q61). Which
      * rows are an influence's, and which is the next one up, is read as the
      * checker reads it (`check/ops.ts`, `upgradedSurvivor`). Undefined, with
      * the reason, where the state does not say which modifiers are influenced
@@ -1030,10 +1030,8 @@ export class Tracker {
         const { sure, maybe } = influenceTagsOf(item, this.registry);
         if (maybe.size > 0)
             return lose("which influences the item has is not settled at this step");
-        const facts = guaranteedFacts(item, this.registry);
-        const own = new Set([...facts.tags].filter((t) => !sure.has(t)));
-        const isRow = (m: Mod): boolean =>
-            m.domain === item.base.domain && (lookupWeight(m, own) ?? 0) <= 0;
+        const isInfluenceRow = influenceRowTest(item, this.registry);
+        const isRow = (m: Mod): boolean => m.domain === item.base.domain && isInfluenceRow(m);
         const influenced = (type: TypeId): boolean =>
             this.influenceRowsOf(type).some(
                 (m) => isRow(m) && m.spawn.some((w) => sure.has(w.tag)),
@@ -1050,7 +1048,7 @@ export class Tracker {
             if (row === null || implicitSide(type) !== undefined) return;
             const gen = this.atoms[i]!.gen;
             unnamed[gen]--;
-            if (influenced(type) && !shut.has(gen) && !readRow(row).locked) reach.push(i);
+            if (influenced(type) && !shut.has(gen)) reach.push(i);
         });
         // The modifiers no one names are a count: which of them are
         // influenced is known only where none can be.
@@ -1062,7 +1060,10 @@ export class Tracker {
                     "an Orb of Dominance picks among every influenced modifier on the item, and the item may hold some the guide does not name",
                 );
         }
-        if (reach.length < 2) return undefined;
+        if (reach.length < 2)
+            return lose(
+                "an Orb of Dominance needs two influenced modifiers it can reach, and the item does not always have them here",
+            );
 
         const raised = new Map<number, { to: Mod; share: number }[]>();
         for (const i of reach) {
@@ -1112,7 +1113,8 @@ export class Tracker {
                     );
                 forms.push({ to: only, share });
             }
-            if (forms.length === 0) return undefined;
+            if (forms.length === 0)
+                return lose("what an Orb of Dominance makes of a modifier here is not known");
             raised.set(i, forms);
         }
 
@@ -1138,7 +1140,10 @@ export class Tracker {
                         put({ ...left, rows: base }, share / pairs);
                         continue;
                     }
-                    if (at !== up && (base[at] ?? null) !== null) return undefined;
+                    if (at !== up && (base[at] ?? null) !== null)
+                        return lose(
+                            "the elevated modifier an Orb of Dominance would make is already on the item",
+                        );
                     for (const c of this.classesOf(at, to.id)) {
                         const next = [...base];
                         next[at] = c.id;

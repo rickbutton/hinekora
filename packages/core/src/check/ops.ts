@@ -1863,7 +1863,7 @@ function fill(
 
 /** Is a row an influence modifier here: one no tag of the item's own admits,
  *  so only an influence tag does. */
-function influenceRowTest(a: AItem, registry: Registry): (m: Mod) => boolean {
+export function influenceRowTest(a: AItem, registry: Registry): (m: Mod) => boolean {
     const facts = guaranteedFacts(a, registry);
     const sure = influenceTagsOf(a, registry).sure;
     const own = new Set([...facts.tags].filter((t) => !sure.has(t)));

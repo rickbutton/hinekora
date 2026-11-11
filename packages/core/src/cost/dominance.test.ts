@@ -302,6 +302,24 @@ describe("the cost walk through an Orb of Dominance", () => {
             const two = buildRegistry({ bases: [BOOTS_BASE], mods: [...mods, second] });
             expect(noteOf(craft(start, [op("dominance")]), two)).toContain(reason);
         });
+
+        it("where the elevated modifier the orb would make is already on the item", () => {
+            // The suffix removed, the prefix would become the elevated prefix
+            // the item holds beside it. The check refuses the two together,
+            // being of one group; the walk reads the item all the same.
+            const c = craft(
+                boots([HUNTER_BOOTS_PREFIX.id, ELEVATED_BOOTS_PREFIX.id], [HUNTER_BOOTS_SUFFIX.id]),
+                [op("dominance")],
+            );
+            const result = check(c, { registry });
+            expect(result.diagnostics.map((d) => d.message)).toEqual([
+                expect.stringContaining("cannot both be on an item"),
+            ]);
+            const orb = costOf(c, result, registry).steps[0]!;
+            expect(orb.note).toContain(
+                "the elevated modifier an Orb of Dominance would make is already on the item",
+            );
+        });
     });
 
     it("is not followed where a modifier the guide does not name may be influenced", () => {
