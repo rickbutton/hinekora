@@ -168,7 +168,16 @@ const WIDEN_RANGES_AFTER = 32;
 /** How a statement leaves: with an item, or ending the path, by re-entering the
  *  enclosing loop (`restart`) or by ending the craft on this path (`stop`). */
 type Flow =
-    | { readonly kind: "fall"; readonly state: AItem }
+    | {
+          readonly kind: "fall";
+          readonly state: AItem;
+          /** The states `state` joins, when the statement was a branch whose arms
+           *  left different items. A branch that closes a loop's body hands them
+           *  to the loop one by one: the join would forget which count goes with
+           *  which modifier, and the loop's condition could no longer tell the
+           *  arm that leaves from the arm that goes round again. */
+          readonly parts?: readonly AItem[];
+      }
     | { readonly kind: "restart" }
     | { readonly kind: "stop" };
 
@@ -680,6 +689,7 @@ class Checker {
 
     private checkSeq(entry: AItem, stmts: readonly Stmt[]): Flow {
         let state = entry;
+        let last: Flow = { kind: "fall", state };
         for (const [i, stmt] of stmts.entries()) {
             const before = state;
             const flow = this.checkStmt(before, stmt);
@@ -710,8 +720,9 @@ class Checker {
                 return flow;
             }
             state = flow.state;
+            last = flow;
         }
-        return { kind: "fall", state };
+        return last;
     }
 
     private checkStmt(a: AItem, stmt: Stmt): Flow {
@@ -815,14 +826,18 @@ class Checker {
         let ended: Flow | null = null;
         const arm = (state: AItem, body: readonly Stmt[]): void => {
             const f = this.checkSeq(state, body);
-            if (f.kind === "fall") falls.push(f.state);
+            if (f.kind === "fall") falls.push(...(f.parts ?? [f.state]));
             else if (ended === null || f.kind === "restart") ended = f;
         };
         if (thenState !== null) arm(thenState, stmt.body);
         if (elseState !== null) arm(elseState, stmt.elseBody ?? []);
 
         if (falls.length === 0) return ended ?? { kind: "fall", state: a };
-        return { kind: "fall", state: this.tightenCounts(falls.reduce(join)) };
+        return {
+            kind: "fall",
+            state: this.tightenCounts(falls.reduce(join)),
+            ...(falls.length > 1 && { parts: falls.map((s) => this.tightenCounts(s)) }),
+        };
     }
 
     // --- loops (until) -----------------------------------------------------
@@ -891,7 +906,7 @@ class Checker {
      *  `restart` back-edge collected inside it. */
     private headStates(entry: AItem, body: readonly Stmt[]): AItem[] {
         const { flow, restarts } = this.runBody(entry, body);
-        return flow.kind === "fall" ? [flow.state, ...restarts] : restarts;
+        return flow.kind === "fall" ? [...(flow.parts ?? [flow.state]), ...restarts] : restarts;
     }
 
     /** The part of a loop-head state that runs the body: where the exit predicate

@@ -169,8 +169,8 @@ leaves the rest of the craft judged on the good paths only).
   a head state where the exit predicate is false: the rest leaves at once, and checking
   the body on it would refuse steps no path takes (an inner loop entered from an outer
   loop's joined invariant). All three are expressed over one primitive: `headStates`,
-  the states re-entering the loop head after one body run (the fall-off-end state plus
-  every `restart` back-edge).
+  the states re-entering the loop head after one body run (the fall-off-end state, unjoined
+  per arm where a branch closes the body, plus every `restart` back-edge).
 - **Termination**: the invariant lattice is finite and the step monotone, but the
   relational presence part is tall (~2^atoms), so past a few exact iterations the driver
   **widens**: it over-approximates presence to its unit facts, guaranteeing quick

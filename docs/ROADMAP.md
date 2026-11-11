@@ -27,10 +27,10 @@ waits until a guide calls for it.
   Orb, whose result keeps an influenced modifier of each item, Reflecting Mist and
   Kishara's Ducat.
 - **choice over an operation's outcomes** (Hinekora's Lock, Allflame crafting).
-- **a count tied to a modifier across an `if`**: `until has X { exalt  if not has X { annul } }`
-  on an item with room is refused, since the join after the `if` keeps "four or five
-  modifiers" and "X or not" apart, and the next pass exalts the five. Writing `restart`
-  after the `annul` passes: each way round the loop then reaches its head on its own.
+- **a count tied to a modifier across an `if` with steps after it**: the join after
+  `exalt  if not has X { annul }` keeps "four or five modifiers" and "X or not" apart, so
+  a later `if has X` sees either count. A branch that closes a loop's body is exempt: its
+  arms reach the loop's head unjoined.
 - English negation sugar (`doesn't have` → `not has`); a power-user annotation tier for
   reusable techniques; a way to name an unveiled modifier whose words a natural one
   shares other than by its mod id.

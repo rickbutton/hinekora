@@ -893,6 +893,41 @@ describe("checker — restart is a loop back-edge", () => {
     });
 });
 
+describe("checker — a branch that closes a loop's body", () => {
+    const life = has("IncreasedLife1");
+    const undo = iff(notp(life), [op("annul")]);
+
+    it("reaches the loop's condition one arm at a time", () => {
+        // The arm that kept the new modifier has the life and leaves; the arm
+        // that removed it is back at the count it started the round with. Joined
+        // first, "one more modifier" and "no life" would go round together.
+        const c = craft(rareRing(), [until(life, [op("exalt"), undo])]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(r.finalState?.counts.total).toEqual([1, 1]);
+    });
+
+    it("does so through a branch nested last in an arm, and through a def's steps", () => {
+        const nested = iff(has("FireResist1"), [op("annul")], [undo]);
+        expect(
+            check(craft(rareRing(), [until(life, [op("exalt"), nested])]), ctx).diagnostics,
+        ).toEqual([]);
+        const round = procDef("round", [], [op("exalt"), undo]);
+        expect(
+            check(craft(rareRing(), [until(life, [callStmt("round")])], [], [round]), ctx)
+                .diagnostics,
+        ).toEqual([]);
+    });
+
+    it("still refuses a round that some arm leaves one modifier fuller", () => {
+        const c = craft(rareRing(), [
+            until(life, [op("exalt"), iff(has("FireResist1"), [op("annul")])]),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
+    });
+});
+
 describe("checker — narrowing (if / else) and dead arms", () => {
     it("flags a dead 'if' branch (predicate impossible)", () => {
         const c = craft(rareRing(), [iff(isRarity("magic"), [op("exalt")])]);
