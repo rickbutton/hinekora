@@ -68,7 +68,7 @@ and the price snapshot from the repository.
 ## Playground
 
 The [playground](/playground/) is the same service in the browser, with no server. The
-editor has every feature in the table. Its hover gives costs without prices; the side pane has the priced line.
+editor has every feature in the table.
 
 - The `example` list loads the crafts from the repository's `examples/` folder.
 - The side pane shows the craft step by step. Each step has the item after it and its

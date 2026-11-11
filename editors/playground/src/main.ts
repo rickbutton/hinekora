@@ -127,7 +127,7 @@ async function main(): Promise<void> {
             .then(adaptEconomy)
             .catch(() => undefined),
     ]);
-    registerProviders(registry);
+    registerProviders(registry, prices);
     // A handle for the browser console: `hinekora.editor`, `hinekora.registry`,
     // `hinekora.prices`.
     Object.assign(window, { hinekora: { editor, monaco, registry, prices } });

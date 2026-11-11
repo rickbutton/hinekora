@@ -4,7 +4,7 @@
  * and enumerations translated (`convert.ts`). Diagnostics become markers on
  * each change.
  */
-import type { Registry } from "@hinekora/core";
+import type { Prices, Registry } from "@hinekora/core";
 import {
     getCompletions,
     getDefinition,
@@ -68,12 +68,12 @@ export function publishDiagnostics(model: Model, registry: Registry): Diagnostic
     return diagnostics;
 }
 
-export function registerProviders(registry: Registry): void {
+export function registerProviders(registry: Registry, prices?: Prices): void {
     const L = monaco.languages;
 
     L.registerHoverProvider(LANGUAGE_ID, {
         provideHover(model, position) {
-            const md = getHover(model.getValue(), offsetAt(model, position), registry);
+            const md = getHover(model.getValue(), offsetAt(model, position), registry, prices);
             return md === null ? null : { contents: [{ value: md }] };
         },
     });
