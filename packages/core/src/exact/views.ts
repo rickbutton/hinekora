@@ -35,9 +35,7 @@ function memo<T>(s: XItem, key: string, f: () => T): T {
 
 /** The values each diagram slot takes over the items, by slot. */
 function slotValues(s: XItem): readonly (readonly number[])[] {
-    return memo(s, "slots", () =>
-        Array.from({ length: s.u.dd.numSlots }, (_, slot) => s.u.dd.valuesOf(s.dd, slot)),
-    );
+    return memo(s, "slots", () => s.u.dd.valuesOfEach(s.dd));
 }
 
 const valuesAt = (s: XItem, slot: number): readonly number[] => slotValues(s)[slot]!;

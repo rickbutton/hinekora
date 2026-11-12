@@ -39,9 +39,16 @@ import type { Mod } from "../model/mod.js";
 import { pool } from "../pool/pool.js";
 import type { Registry } from "../resolve/registry.js";
 import { rollableGen } from "../resolve/tiers.js";
+import { shapeKey } from "./craft.js";
 import type { Dd } from "./dd.js";
 import { stateOf, type XItem } from "./state.js";
-import { buildUniverse, type ModValue, type Universe, type UniverseOptions } from "./universe.js";
+import {
+    buildUniverse,
+    type ModValue,
+    type Universe,
+    universeFor,
+    type UniverseOptions,
+} from "./universe.js";
 
 /**
  * The rows a `"random"` affix of the side may be: the natural pool of the
@@ -298,7 +305,9 @@ export interface CraftStart {
 /**
  * The item block read, its universe built and its items: what the exact
  * checker starts a craft from. The block's faults are reported through
- * `diag`; null when its base does not resolve.
+ * `diag`; null when its base does not resolve. With no options the universe
+ * of an earlier check that reads the same is reused (`universeFor`), and the
+ * items of an item block met on it before.
  */
 export function startOf(
     registry: Registry,
@@ -308,6 +317,17 @@ export function startOf(
 ): CraftStart | null {
     const decl = declareItem(craft.item, registry, diag);
     if (decl === null) return null;
-    const u = buildUniverse(registry, decl.base, decl.ilvl, craft, options);
-    return { u, decl, state: initialItem(u, decl) };
+    if (options.maxNodes !== undefined || options.imprint !== undefined) {
+        const u = buildUniverse(registry, decl.base, decl.ilvl, craft, options);
+        return { u, decl, state: initialItem(u, decl) };
+    }
+    const u = universeFor(registry, decl.base, decl.ilvl, craft);
+    let byBlock = initials.get(u);
+    if (byBlock === undefined) initials.set(u, (byBlock = new Map<string, XItem | null>()));
+    const key = shapeKey(craft.item);
+    let state = byBlock.get(key);
+    if (state === undefined) byBlock.set(key, (state = initialItem(u, decl)));
+    return { u, decl, state };
 }
+
+const initials = new WeakMap<Universe, Map<string, XItem | null>>();

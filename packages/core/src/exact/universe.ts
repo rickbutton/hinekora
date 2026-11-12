@@ -183,6 +183,7 @@ export class Universe {
     /** The values of a row with given marks, by cell index. */
     private readonly byMarks = new Map<string, { logical: number; values: number[] }>();
     private readonly counts = new Map<string, Dd>();
+    private readonly extra = new Map<Mod, ReadonlySet<TagId>>();
     private withImprint: Dd | undefined;
 
     constructor(
@@ -242,7 +243,7 @@ export class Universe {
             domains,
             options.maxNodes === undefined ? {} : { maxNodes: options.maxNodes },
         );
-        this.wf = this.dd.automaton(this.wfAutomaton(false));
+        this.wf = this.dd.automaton(this.wfAutomaton());
     }
 
     /** The well-formed items with what they hold: with an imprint held, a
@@ -253,7 +254,8 @@ export class Universe {
     get wfWithImprint(): Dd {
         if (!this.imprint) return this.wf;
         if (this.withImprint !== undefined) return this.withImprint;
-        const copy = this.dd.automaton(this.wfAutomaton(true));
+        // Each copy slot sits right after its own, with its domain.
+        const copy = this.dd.rename(this.wf, (s) => s + 1);
         const atDefault = this.dd.automaton<number>({
             init: 0,
             slots: this.itemSlots(true),
@@ -441,10 +443,13 @@ export class Universe {
     /** The tags a row's spawn and generation tables read that the base does
      *  not carry: those an influence or a present modifier may add. */
     extraTags(row: Mod): ReadonlySet<TagId> {
+        const hit = this.extra.get(row);
+        if (hit !== undefined) return hit;
         const out = new Set<TagId>();
         for (const e of [...row.spawn, ...row.generation]) {
             if (!this.base.tags.has(e.tag)) out.add(e.tag);
         }
+        this.extra.set(row, out);
         return out;
     }
 
@@ -726,7 +731,7 @@ export class Universe {
      * where it is a bench row; the influence slot holds only canonical sets the
      * base can have; the strands slot only 0 to 100.
      */
-    private wfAutomaton(copy: boolean) {
+    private wfAutomaton() {
         const { base, ilvl, registry } = this;
         const logical = this.logical;
         // The families a later slot may still claim: past its last slot a
@@ -744,8 +749,17 @@ export class Universe {
                 veiledLater ||= isVeiledPlaceholder(s.type);
             }
         }
-        const named = (side: EldritchSide, tier: number): ReadonlySet<TypeId> =>
-            new Set(registry.eldritchRows(base, side, tier).map((e) => e.type));
+        const namedAt = {
+            exarch: [] as ReadonlySet<TypeId>[],
+            eater: [] as ReadonlySet<TypeId>[],
+        };
+        for (const side of ["exarch", "eater"] as const) {
+            for (let t = 0; t < NUM_TIERS; t++) {
+                namedAt[side].push(
+                    new Set(registry.eldritchRows(base, side, t).map((e) => e.type)),
+                );
+            }
+        }
         const types = this.eldritchTypeList;
         const toLogical = (slot: number): number => (this.imprint ? slot >> 1 : slot);
 
@@ -781,12 +795,12 @@ export class Universe {
         const typeOk = (side: EldritchSide, tier: number, value: number): boolean => {
             const type = types[side][value];
             if (tier === 0) return type === undefined;
-            const n = named(side, tier);
+            const n = namedAt[side][tier]!;
             return type === undefined ? n.size === 0 : n.has(type);
         };
         return {
             init,
-            slots: this.itemSlots(copy),
+            slots: this.itemSlots(),
             step: (slot: number, value: number, s: S): S | undefined => {
                 const i = toLogical(slot);
                 const at = logical[i]!;
@@ -987,4 +1001,60 @@ export function buildUniverse(
         craft === undefined ? NO_COMPARISONS : comparisonsOf(craft, registry, base, ilvl);
     const imprint = options.imprint ?? (craft !== undefined && craftImprints(craft));
     return new Universe(registry, base, ilvl, rows, comparisons, imprint, options);
+}
+
+/** The universes kept for reuse, per registry, and when they are let go: a
+ *  universe's table holds every node its checks made, some hundreds of bytes
+ *  each, and the caches of the conditions and pools read over it hold their
+ *  diagrams. One past its own bound is built anew; past the bound on them
+ *  all, the least recently used go. */
+const UNIVERSES_KEPT = 4;
+const TABLE_KEPT = 250_000;
+const TABLES_KEPT = 400_000;
+
+interface KeptUniverse {
+    readonly base: Base;
+    readonly key: string;
+    readonly u: Universe;
+}
+
+const kept = new WeakMap<Registry, KeptUniverse[]>();
+
+/**
+ * `buildUniverse` for a check, reusing the universe of an earlier check that
+ * reads the same: the base, the level, the candidate rows, the value
+ * comparisons and whether it imprints. An edit to a step keeps them all, so a
+ * re-check reuses the universe and what was read over it. The node budget of
+ * a reused universe counts from here (`DdManager.beginRun`).
+ */
+export function universeFor(registry: Registry, base: Base, ilvl: number, craft: Craft): Universe {
+    const rows = candidateRows(registry, base, ilvl, craft);
+    const comparisons = comparisonsOf(craft, registry, base, ilvl);
+    const imprint = craftImprints(craft);
+    const key = [
+        ilvl,
+        imprint ? 1 : 0,
+        [...rows.keys()]
+            .map((m) => m.id)
+            .sort()
+            .join(","),
+        [...comparisons.byType]
+            .map(([t, xs]) => `${t}:${[...xs].sort((a, b) => a - b).join(",")}`)
+            .sort()
+            .join(";"),
+        [...comparisons.everyType].sort((a, b) => a - b).join(","),
+    ].join("|");
+    let list = kept.get(registry);
+    if (list === undefined) kept.set(registry, (list = []));
+    const at = list.findIndex((k) => k.base === base && k.key === key);
+    const hit = at < 0 ? undefined : list.splice(at, 1)[0]!;
+    const reused = hit !== undefined && hit.u.dd.tableEntryCount < TABLE_KEPT;
+    const u = reused ? hit.u : new Universe(registry, base, ilvl, rows, comparisons, imprint);
+    if (reused) u.dd.beginRun();
+    list.push({ base, key, u });
+    const held = (): number => list.reduce((n, k) => n + k.u.dd.tableEntryCount, 0);
+    while (list.length > UNIVERSES_KEPT || (list.length > 1 && held() > TABLES_KEPT)) {
+        list.shift();
+    }
+    return u;
 }

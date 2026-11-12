@@ -50,8 +50,8 @@ const rolls = (m: Mod, tags: ReadonlySet<TagId>, maybe: ReadonlySet<TagId>): boo
  * - the fossils' added and forced rows for the base;
  * - the elevated rows an influence of the class names (the Orb of Dominance);
  * - the Bestiary's Aspect rows;
- * - every row the item block declares;
- * - and, to a fixpoint, every row a Harvest change can make of these.
+ * - to a fixpoint, every row a Harvest change can make of these;
+ * - every row the item block declares, and what a Harvest change makes of it.
  * A natural row of another domain is left out: no item holds one
  * (item-model.md §8 "Natural affix domain matches base").
  */
@@ -61,12 +61,44 @@ export function candidateRows(
     ilvl: number,
     craft: Craft | undefined,
 ): Map<Mod, RowSource> {
-    const out = new Map<Mod, RowSource>();
-    const add = (m: Mod | undefined, source: RowSource): void => {
+    const common = commonRows(registry, base);
+    const out = new Map(common.rows);
+    if (craft === undefined) return out;
+    const add = adder(base, out);
+    for (const m of declaredRows(craft, registry, base, ilvl)) add(m, "declared");
+    if (out.size > common.rows.size) {
+        closeUnderHarvestChange(registry, base, common.influenceTags, out, add, [
+            ...common.rows.keys(),
+        ]);
+    }
+    return out;
+}
+
+const adder =
+    (base: Base, out: Map<Mod, RowSource>) =>
+    (m: Mod | undefined, source: RowSource): void => {
         if (m === undefined || out.has(m)) return;
         if ((m.source ?? "natural") === "natural" && m.domain !== base.domain) return;
         out.set(m, source);
     };
+
+interface CommonRows {
+    readonly rows: ReadonlyMap<Mod, RowSource>;
+    readonly influenceTags: ReadonlySet<TagId>;
+}
+
+/** Every check on the base reads these, whatever its craft: held per registry. */
+const commonCache = new WeakMap<Registry, WeakMap<Base, CommonRows>>();
+
+/** The rows of every source but the item block, closed under the Harvest
+ *  change; they depend on the base alone, not on its item level. */
+function commonRows(registry: Registry, base: Base): CommonRows {
+    let byBase = commonCache.get(registry);
+    if (byBase === undefined) commonCache.set(registry, (byBase = new WeakMap()));
+    const hit = byBase.get(base);
+    if (hit !== undefined) return hit;
+    const out = new Map<Mod, RowSource>();
+    const add = adder(base, out);
     const catalog = registry.catalog;
     const byId = new Map(catalog.map((m) => [m.id as string, m]));
 
@@ -128,11 +160,10 @@ export function candidateRows(
             if (r.ok) add(r.value, "aspect");
         }
     }
-    if (craft !== undefined) {
-        for (const m of declaredRows(craft, registry, base, ilvl)) add(m, "declared");
-    }
-    closeUnderHarvestChange(registry, base, influenceTags, out, add);
-    return out;
+    closeUnderHarvestChange(registry, base, influenceTags, out, add, []);
+    const made: CommonRows = { rows: out, influenceTags };
+    byBase.set(base, made);
+    return made;
 }
 
 /**
@@ -142,7 +173,7 @@ export function candidateRows(
  * base; a row of another source becomes the target's rows of the same source,
  * level, side and domain that the source puts on the item (`isTwinOn`, under
  * any influence the class takes), and may also become a row of the target's
- * ladders.
+ * ladders. The rows of `closed` are already closed: what they make is in.
  */
 function closeUnderHarvestChange(
     registry: Registry,
@@ -150,10 +181,11 @@ function closeUnderHarvestChange(
     influenceTags: ReadonlySet<TagId>,
     out: ReadonlyMap<Mod, RowSource>,
     add: (m: Mod | undefined, source: RowSource) => void,
+    closed: readonly Mod[],
 ): void {
     const none = new Set<TagId>();
     const tagSets = nameTagSets(registry, base);
-    const done = new Set<Mod>();
+    const done = new Set<Mod>(closed);
     for (;;) {
         const todo = [...out.keys()].filter((m) => !done.has(m));
         if (todo.length === 0) return;

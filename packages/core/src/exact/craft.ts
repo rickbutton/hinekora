@@ -13,6 +13,18 @@ import type { Registry } from "../resolve/registry.js";
 import { tierLadder } from "../resolve/tiers.js";
 import { influenceKeysFor, influenceTagsOfKey } from "./influence.js";
 
+/** A piece of a craft by what it says, its places in the source left out: two
+ *  parses of one text, or of texts that differ elsewhere, give one key. */
+export function shapeKey(node: unknown): string {
+    return JSON.stringify(node, (_k, v: unknown) => (isSpan(v) ? undefined : v));
+}
+
+function isSpan(v: unknown): boolean {
+    if (typeof v !== "object" || v === null || !("start" in v) || !("end" in v)) return false;
+    const start: unknown = v.start;
+    return typeof start === "object" && start !== null && "offset" in start;
+}
+
 /** The thresholds each type's value is compared against. */
 export interface Comparisons {
     readonly byType: ReadonlyMap<TypeId, ReadonlySet<number>>;

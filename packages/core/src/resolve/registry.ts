@@ -39,6 +39,7 @@ import {
     rowWordings,
     singular,
     tokenMatches,
+    type TypeMatch,
     type WordingAliasEntry,
     wordingAliases,
 } from "./fuzzy.js";
@@ -613,6 +614,97 @@ export function buildRegistry(data: RegistryData): Registry {
     const spawnTags = new Set<TagId>();
     for (const m of catalog) for (const e of m.spawn) spawnTags.add(e.tag);
 
+    // A check resolves the same names on the same item many times over (per
+    // influence case, per statement, per edit in the editor). Bounded, since an
+    // editor's names change as they are typed.
+    const MEMO_LIMIT = 4096;
+    const eldritchMemo = new WeakMap<Base, Map<string, readonly EldritchImplicitSpec[]>>();
+    const typeMemo = new Map<string, Resolved<TypeId>>();
+    const typeMemoByBase = new WeakMap<Base, Map<string, Map<string, Resolved<TypeId>>>>();
+    const memoOf = (ctx: ModTypeContext): Map<string, Resolved<TypeId>> => {
+        let byItem = typeMemoByBase.get(ctx.base);
+        if (byItem === undefined)
+            typeMemoByBase.set(
+                ctx.base,
+                (byItem = new Map<string, Map<string, Resolved<TypeId>>>()),
+            );
+        const key = `${ctx.ilvl}|${[...(ctx.tags ?? [])].sort().join(",")}`;
+        let memo = byItem.get(key);
+        if (memo === undefined) {
+            if (byItem.size >= MEMO_LIMIT) byItem.clear();
+            byItem.set(key, (memo = new Map<string, Resolved<TypeId>>()));
+        }
+        return memo;
+    };
+
+    const matchMemo = new Map<string, readonly TypeMatch[]>();
+    const matchesOf = (name: string): readonly TypeMatch[] => {
+        let hit = matchMemo.get(name);
+        if (hit === undefined) {
+            if (matchMemo.size >= MEMO_LIMIT) matchMemo.clear();
+            matchMemo.set(name, (hit = matchTypes(typeIndex, name, wordings)));
+        }
+        return hit;
+    };
+
+    function resolveModTypeOf(name: string, ctx: ModTypeContext | undefined): Resolved<TypeId> {
+        const key = norm(name);
+        const exact = modById.get(key) ?? modById.get(modAlias.get(key) ?? "");
+        if (exact) return found(exact.type);
+
+        let matches = [...matchesOf(name)];
+        // A row of the item's that reads differently from its type's
+        // wording answers to its own.
+        if (ctx) {
+            const q = queryTokens(name, wordings);
+            let added = false;
+            for (const [type, rows] of variedRows) {
+                const scores = rows
+                    .filter(({ tokens }) => q.every((w) => tokenMatches(w, tokens)))
+                    .filter(({ mod }) =>
+                        tierLadder(catalog, ctx.base, type, ctx.tags).includes(mod),
+                    )
+                    .map(({ tokens }) => q.length / tokens.size);
+                if (q.length === 0 || scores.length === 0) continue;
+                const score = Math.max(...scores);
+                const known = matches.findIndex((m) => m.type === type);
+                if (known >= 0 && matches[known]!.score >= score) continue;
+                const match = { type, entry: typeIndex.get(type)!, score };
+                if (known >= 0) matches[known] = match;
+                else matches.push(match);
+                added = true;
+            }
+            if (added) matches.sort((a, b) => b.score - a.score);
+        }
+        // Narrow to types that can actually roll on this item, when known;
+        // failing any, to those its level stops short of (an essence or a
+        // Harvest change still places one), then to those an unveil or the
+        // bench can put on it. The words name what rolls first: a
+        // veiled-only type shares many of them with the natural modifier
+        // it resembles.
+        if (ctx) {
+            const rollable = matches.filter(
+                (m) => rollableTiers(catalog, ctx.base, ctx.ilvl, m.type, ctx.tags).length > 0,
+            );
+            const onBase = matches.filter(
+                (m) => tierLadder(catalog, ctx.base, m.type, ctx.tags).length > 0,
+            );
+            const benchable = benchTypesByClass.get(ctx.base.itemClass);
+            const reachable = matches.filter(
+                (m) => veiledTypes.has(m.type) || benchable?.has(m.type),
+            );
+            if (rollable.length > 0) matches = rollable;
+            else if (onBase.length > 0) matches = onBase;
+            else if (reachable.length > 0) matches = reachable;
+        }
+        if (matches.length === 0) return fail({ kind: "unknownMod", name });
+
+        const top = matches[0]!;
+        const tied = matches.filter((m) => m.score === top.score);
+        if (tied.length === 1) return found(top.type);
+        return fail({ kind: "ambiguous", name, candidates: tied.map((m) => m.entry.text) });
+    }
+
     // --- precompute completion lists ---
     const currencies = [...new Set(currencyByName.values())];
     const currencyNames = currencies.map((c) => c.name);
@@ -703,61 +795,13 @@ export function buildRegistry(data: RegistryData): Registry {
         },
 
         resolveModType(name, ctx) {
-            const key = norm(name);
-            const exact = modById.get(key) ?? modById.get(modAlias.get(key) ?? "");
-            if (exact) return found(exact.type);
-
-            let matches = matchTypes(typeIndex, name, wordings);
-            // A row of the item's that reads differently from its type's
-            // wording answers to its own.
-            if (ctx) {
-                const q = queryTokens(name, wordings);
-                let added = false;
-                for (const [type, rows] of variedRows) {
-                    const scores = rows
-                        .filter(({ tokens }) => q.every((w) => tokenMatches(w, tokens)))
-                        .filter(({ mod }) =>
-                            tierLadder(catalog, ctx.base, type, ctx.tags).includes(mod),
-                        )
-                        .map(({ tokens }) => q.length / tokens.size);
-                    if (q.length === 0 || scores.length === 0) continue;
-                    const score = Math.max(...scores);
-                    const known = matches.findIndex((m) => m.type === type);
-                    if (known >= 0 && matches[known]!.score >= score) continue;
-                    const match = { type, entry: typeIndex.get(type)!, score };
-                    if (known >= 0) matches[known] = match;
-                    else matches.push(match);
-                    added = true;
-                }
-                if (added) matches.sort((a, b) => b.score - a.score);
-            }
-            // Narrow to types that can actually roll on this item, when known;
-            // failing any, to those its level stops short of (an essence or a
-            // Harvest change still places one), then to those an unveil or the
-            // bench can put on it. The words name what rolls first: a
-            // veiled-only type shares many of them with the natural modifier
-            // it resembles.
-            if (ctx) {
-                const rollable = matches.filter(
-                    (m) => rollableTiers(catalog, ctx.base, ctx.ilvl, m.type, ctx.tags).length > 0,
-                );
-                const onBase = matches.filter(
-                    (m) => tierLadder(catalog, ctx.base, m.type, ctx.tags).length > 0,
-                );
-                const benchable = benchTypesByClass.get(ctx.base.itemClass);
-                const reachable = matches.filter(
-                    (m) => veiledTypes.has(m.type) || benchable?.has(m.type),
-                );
-                if (rollable.length > 0) matches = rollable;
-                else if (onBase.length > 0) matches = onBase;
-                else if (reachable.length > 0) matches = reachable;
-            }
-            if (matches.length === 0) return fail({ kind: "unknownMod", name });
-
-            const top = matches[0]!;
-            const tied = matches.filter((m) => m.score === top.score);
-            if (tied.length === 1) return found(top.type);
-            return fail({ kind: "ambiguous", name, candidates: tied.map((m) => m.entry.text) });
+            const byItem = ctx === undefined ? typeMemo : memoOf(ctx);
+            const hit = byItem.get(name);
+            if (hit !== undefined) return hit;
+            if (byItem.size >= MEMO_LIMIT) byItem.clear();
+            const r = resolveModTypeOf(name, ctx);
+            byItem.set(name, r);
+            return r;
         },
 
         rowsNamed(name, rows) {
@@ -900,12 +944,24 @@ export function buildRegistry(data: RegistryData): Registry {
         },
 
         eldritchRows(base, side, tier) {
-            return eldritch.filter(
-                (e) =>
-                    e.side === side &&
-                    e.tier === tier &&
-                    [...e.classes].some((t) => base.tags.has(t)),
-            );
+            let byBase = eldritchMemo.get(base);
+            if (byBase === undefined)
+                eldritchMemo.set(
+                    base,
+                    (byBase = new Map<string, readonly EldritchImplicitSpec[]>()),
+                );
+            const key = `${side}${tier}`;
+            let rows = byBase.get(key);
+            if (rows === undefined) {
+                rows = eldritch.filter(
+                    (e) =>
+                        e.side === side &&
+                        e.tier === tier &&
+                        [...e.classes].some((t) => base.tags.has(t)),
+                );
+                byBase.set(key, rows);
+            }
+            return rows;
         },
 
         resolveEldritch(name, side, base) {

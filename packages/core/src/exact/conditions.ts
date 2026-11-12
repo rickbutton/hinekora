@@ -30,6 +30,7 @@ import {
 } from "../check/resolve-pred.js";
 import type { ModId, TagId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
+import { shapeKey } from "./craft.js";
 import type { Dd } from "./dd.js";
 import { influenceTagsOfKey } from "./influence.js";
 import { conditionOf, predKey, stateOf, type XItem } from "./state.js";
@@ -38,23 +39,64 @@ import { isGuaranteed, possibleTypes, rowsOf } from "./views.js";
 
 const SILENT: Diag = () => {};
 
-const cache = new WeakMap<Universe, WeakMap<PredDefs["defs"], WeakMap<Pred, Dd | null>>>();
+const cache = new WeakMap<Universe, Map<string, Dd | null>>();
+const byNode = new WeakMap<Pred, WeakMap<PredDefs["defs"], string>>();
 
 /**
  * The items of the universe on which the condition holds, each read under its
  * own tags; null when the condition cannot be resolved for any item (a def
  * misused, a parameter never given a value), which `readCondition` reports.
- * Cached by the condition, per universe and defs.
+ * Cached per universe by what the condition says and, where it calls a def,
+ * what the defs say: a re-check parses the craft anew, and a universe is
+ * reused across checks.
  */
 export function conditionOfPred(u: Universe, pred: Pred, defs: PredDefs): Dd | null {
-    let byDefs = cache.get(u);
-    if (byDefs === undefined) cache.set(u, (byDefs = new WeakMap()));
-    let byPred = byDefs.get(defs.defs);
-    if (byPred === undefined) byDefs.set(defs.defs, (byPred = new WeakMap()));
-    if (byPred.has(pred)) return byPred.get(pred)!;
+    let byKey = cache.get(u);
+    if (byKey === undefined) cache.set(u, (byKey = new Map<string, Dd | null>()));
+    const key = conditionKey(pred, defs);
+    if (byKey.has(key)) return byKey.get(key)!;
     const r = buildCondition(u, pred, defs);
-    byPred.set(pred, r);
+    byKey.set(key, r);
     return r;
+}
+
+function conditionKey(pred: Pred, defs: PredDefs): string {
+    let forDefs = byNode.get(pred);
+    if (forDefs === undefined) byNode.set(pred, (forDefs = new WeakMap()));
+    let key = forDefs.get(defs.defs);
+    if (key === undefined) {
+        const shape = shapeKey(pred);
+        key = callsIn(pred) ? `${shape}|${defsKey(defs)}` : shape;
+        forDefs.set(defs.defs, key);
+    }
+    return key;
+}
+
+function callsIn(p: Pred): boolean {
+    switch (p.kind) {
+        case "call":
+            return true;
+        case "not":
+            return callsIn(p.inner);
+        case "and":
+        case "or":
+            return callsIn(p.left) || callsIn(p.right);
+        default:
+            return false;
+    }
+}
+
+/** What a call reads of the defs: each def, and which names are procs. */
+function defsKey(defs: PredDefs): string {
+    return shapeKey(
+        [...defs.defs].map(([name, e]) => [
+            name,
+            e.def,
+            [...e.paramTypes],
+            e.valid,
+            defs.procs.has(name),
+        ]),
+    );
 }
 
 /** The tags a case of the influence slot reads names and tiers under. */

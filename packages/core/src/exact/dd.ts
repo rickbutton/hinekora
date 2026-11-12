@@ -6,11 +6,13 @@
  * slot a path skips holds any value of its domain, and two diagrams of one manager denoting the
  * same set are the same object.
  *
- * A node is held only by the diagrams above it and by the caller; the manager's unique table
- * holds it weakly, so the garbage collector frees what no one holds. A `WeakRef` keeps its
- * target alive until the current job ends, so memory comes back only once the caller yields to
- * the event loop. A conjunction over many slots is best built by `automaton`, or by `and` from
- * the last slot to the first: from the first slot, each step rebuilds the whole diagram above it.
+ * The manager's unique table holds every node it made, for the manager's life: a manager serves
+ * one check, or a few in a row, and its nodes go with it. A weak table would free a dead node
+ * sooner, but a `WeakRef` keeps its target alive until the current job ends, so in a check (one
+ * synchronous run) it frees nothing, and checks run back to back in one job would hold every
+ * node of every one of them. A conjunction over many slots is best built by `automaton`, or by
+ * `and` from the last slot to the first: from the first slot, each step rebuilds the whole
+ * diagram above it.
  */
 declare const brand: unique symbol;
 
@@ -42,11 +44,8 @@ export interface DdAutomaton<S> {
 
 export interface DdOptions {
     /**
-     * The most entries the unique table may hold; making a node past it throws `DdBudgetError`.
-     * An entry stays until a collection and its finalisers have run, which happens only after
-     * a macrotask yield, so within one synchronous run the budget counts every node the run
-     * made, dead or alive. A check is meant to be one synchronous run on its own manager, and
-     * its count is then deterministic.
+     * The most nodes one run may make (from the manager's making, or from `beginRun`); making
+     * one past it throws `DdBudgetError`. Dead nodes count: the table holds them too.
      */
     readonly maxNodes?: number;
 }
@@ -103,10 +102,10 @@ export class DdManager {
 
     private readonly empty: Node;
     private readonly all: Node;
-    private readonly table = new Map<number, WeakRef<Node>[]>();
-    private readonly registry = new FinalizationRegistry<number>((h) => this.sweep(h));
+    private readonly table = new Map<number, Node[]>();
     private live = 0;
     private nextId = 2;
+    private runStart = 2;
     private applies = 0;
 
     // The operation cache holds nodes strongly, so it lives only for the outermost public call
@@ -138,9 +137,25 @@ export class DdManager {
         return this.nextId - 2;
     }
 
-    /** Entries of the unique table, which `maxNodes` bounds: live nodes and dead ones not yet swept. */
+    /** Entries of the unique table: every node made. */
     get tableEntryCount(): number {
         return this.live;
+    }
+
+    /** Nodes made since the run began, which `maxNodes` bounds. */
+    get runNodeCount(): number {
+        return this.nextId - this.runStart;
+    }
+
+    /** What a test failure prints of a manager: its table, every node made, would
+     *  take the printer down. */
+    toJSON(): { slots: number; nodes: number } {
+        return { slots: this.numSlots, nodes: this.live };
+    }
+
+    /** Starts a run: the budget counts the nodes made from here. */
+    beginRun(): void {
+        this.runStart = this.nextId;
     }
 
     /** Binary set operations asked for, trivial ones included, for tests and diagnostics. */
@@ -483,6 +498,46 @@ export class DdManager {
         return out;
     }
 
+    /** `valuesOf` of every slot, by slot, in one pass over the diagram. */
+    valuesOfEach(a: Dd): number[][] {
+        const N = this.numSlots;
+        const root = this.own(a);
+        if (root === this.empty) return this.domains.map(() => []);
+        const found = this.domains.map((d) => new Uint8Array(d));
+        // A slot an edge skips takes every value: marked by interval, summed after.
+        const skipped = new Int32Array(N + 1);
+        const skip = (from: number, to: number): void => {
+            skipped[from] = skipped[from]! + 1;
+            skipped[to] = skipped[to]! - 1;
+        };
+        skip(0, root.slot);
+        const seen = new Set<Node>();
+        const stack = [root];
+        while (stack.length > 0) {
+            const n = stack.pop()!;
+            if (n === this.all || seen.has(n)) continue;
+            seen.add(n);
+            const at = found[n.slot]!;
+            for (let v = 0; v < n.kids.length; v++) {
+                const c = n.kids[v]!;
+                if (c === this.empty) continue;
+                at[v] = 1;
+                skip(n.slot + 1, c.slot);
+                stack.push(c);
+            }
+        }
+        const out: number[][] = [];
+        let open = 0;
+        for (let s = 0; s < N; s++) {
+            open += skipped[s]!;
+            const values: number[] = [];
+            const at = found[s]!;
+            for (let v = 0; v < at.length; v++) if (open > 0 || at[v] === 1) values.push(v);
+            out.push(values);
+        }
+        return out;
+    }
+
     /**
      * The least and greatest sum of `weight(slot, value)` over the assignments of `a`. The
      * weights must be integers whose sums stay safe integers: the sums over skipped slots are
@@ -733,14 +788,7 @@ export class DdManager {
         const bucket = this.table.get(h);
         if (bucket !== undefined) {
             for (let i = 0; i < bucket.length; i++) {
-                const n = bucket[i]!.deref();
-                if (n === undefined) {
-                    bucket[i] = bucket[bucket.length - 1]!;
-                    bucket.pop();
-                    this.live--;
-                    i--;
-                    continue;
-                }
+                const n = bucket[i]!;
                 if (n.slot !== slot) continue;
                 let equal = true;
                 for (let v = 0; v < kids.length; v++) {
@@ -753,26 +801,15 @@ export class DdManager {
             }
         }
 
-        if (this.live >= this.maxNodes) throw new DdBudgetError(this.maxNodes);
+        if (this.nextId - this.runStart >= this.maxNodes) throw new DdBudgetError(this.maxNodes);
         const n = new Node(this, slot, kids, this.nextId++);
-        const ref = new WeakRef(n);
-        if (bucket === undefined) this.table.set(h, [ref]);
-        else bucket.push(ref);
-        this.registry.register(n, h);
+        if (bucket === undefined) this.table.set(h, [n]);
+        else bucket.push(n);
         this.live++;
         if (this.live > this.cacheOp.length * 4 && this.cacheOp.length < MAX_CACHE) {
             this.growCache();
         }
         return n;
-    }
-
-    private sweep(h: number): void {
-        const bucket = this.table.get(h);
-        if (bucket === undefined) return;
-        const kept = bucket.filter((r) => r.deref() !== undefined);
-        this.live -= bucket.length - kept.length;
-        if (kept.length === 0) this.table.delete(h);
-        else this.table.set(h, kept);
     }
 
     private growCache(): void {

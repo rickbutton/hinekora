@@ -289,6 +289,42 @@ describe("every method of the table, built on the exact state", () => {
         expect(parts).toBeGreaterThan(METHODS.length);
     });
 
+    // An `either` whose branch leaves items stuck at a later step has no
+    // traceable refusal and raises an internal error; no sequence of the
+    // library may meet it.
+    it("runs on every part without an internal error", () => {
+        const catalogues = [
+            generateCatalog(5401, { types: 3, influence: true, harvest: true, bench: true }),
+            generateCatalog(5402, { base: "boots", eldritch: true, types: 3, veiled: true }),
+        ];
+        let runs = 0;
+        for (const cat of catalogues) {
+            const cu = harnessUniverse(cat, { imprint: true });
+            const r = rng(cat.seed);
+            const names = {
+                mod: "fire resistance",
+                bench: cat.bench?.id ?? "x",
+                tag: "attack",
+                aspect: "cat",
+            };
+            const states = harnessStates(cu, cat.ctx, cat.seed, {
+                bounds: { rows: pickRows(cu, cat.seed, 3), crafted: true },
+                random: 6,
+            });
+            for (const m of METHODS) {
+                const literals = argsFor(m, names);
+                for (const s of r.sample(states, 4)) {
+                    for (const p of buildMethod(fromItems(cu, s)!, m, literals)) {
+                        if ("refused" in p.built) continue;
+                        runMethod(p.state, p.built);
+                        runs++;
+                    }
+                }
+            }
+        }
+        expect(runs).toBeGreaterThan(METHODS.length);
+    });
+
     it("runs each part exactly", () => {
         const cat = generateCatalog(5301, { types: 3, harvest: true, bench: true });
         const cu = harnessUniverse(cat);

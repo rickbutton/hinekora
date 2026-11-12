@@ -543,15 +543,34 @@ function rowConditions(
     scope: PoolScope,
     present: ReadonlySet<number>,
     strands: number,
-): Map<Mod, Dd> {
+): ReadonlyMap<Mod, Dd> {
     const { u } = dc;
     const m = u.dd;
     const w = whereOf(u);
     let cache = conditionCache.get(u);
     if (cache === undefined) conditionCache.set(u, (cache = new Map<string, Map<Mod, Dd>>()));
+    const free = dc.unrestricted === true;
+    // The whole reading by what it reads, ahead of the reading type by type:
+    // a loop's rounds draw from one pool on the same facts every round.
+    const strandsKey =
+        scope.strands && strands > 0
+            ? ladderLengths(u, scope, key)
+                  .map((n) => strandsClass(strands, n))
+                  .join("/")
+            : "-";
+    const allKey = [
+        "all",
+        key,
+        dc.cut ? 1 : 0,
+        free ? 1 : 0,
+        [...present].sort((a, b) => a - b).join("."),
+        strands > 0 ? 1 : 0,
+        strandsKey,
+    ].join("|");
+    const known = cache.get(allKey);
+    if (known !== undefined) return known;
     const p = u.openSlot("prefix");
     const s = u.openSlot("suffix");
-    const free = dc.unrestricted === true;
     const types = new Set([
         ...scope.weighed.map((r) => r.type),
         ...poolRows(w, spec, EMPTY_VIEW, dc.cut, dc.pools).map((r) => r.type),
@@ -584,6 +603,7 @@ function rowConditions(
         }
         for (const [r, c] of rows) cond.set(r, c);
     }
+    cache.set(allKey, cond);
     return cond;
 }
 
@@ -901,8 +921,7 @@ export function poolHoldsStill(state: Dd, spec: PoolSpec, dc: DrawCtx): boolean 
     const scope = poolScope(w, spec, dc.cut, dc.pools);
     const cases = drawCases(state, spec, dc);
     const laid = new Set(cases.flatMap((c) => c.rows));
-    const reads = new Set<TagId>();
-    for (const r of scope?.weighed ?? []) for (const t of u.extraTags(r)) reads.add(t);
+    const reads = readTagsOf(u, scope?.weighed ?? []);
     for (const r of laid) {
         if ([...r.addsTags].some((t) => reads.has(t))) return false;
         if (effectsOf(r).some((e) => e.kind === "poolRestrict")) return false;
@@ -921,6 +940,21 @@ export function poolHoldsStill(state: Dd, spec: PoolSpec, dc: DrawCtx): boolean 
         }
     }
     return true;
+}
+
+const readTags = new WeakMap<Universe, Map<readonly Mod[], ReadonlySet<TagId>>>();
+
+/** The tags the rows' weights read that the base does not carry. */
+function readTagsOf(u: Universe, rows: readonly Mod[]): ReadonlySet<TagId> {
+    let c = readTags.get(u);
+    if (c === undefined) readTags.set(u, (c = new Map<readonly Mod[], ReadonlySet<TagId>>()));
+    let reads = c.get(rows);
+    if (reads === undefined) {
+        const made = new Set<TagId>();
+        for (const r of rows) for (const t of u.extraTags(r)) made.add(t);
+        c.set(rows, (reads = made));
+    }
+    return reads;
 }
 
 function withoutCull(spec: Extract<PoolSpec, { kind: "natural" }>): PoolSpec {

@@ -644,6 +644,7 @@ describe("the decision-diagram engine", () => {
                     n += e.bits[i]!;
                 }
                 expect(m.count(e.dd)).toBe(BigInt(n));
+                expect(m.valuesOfEach(e.dd)).toEqual(domains.map((_, s) => m.valuesOf(e.dd, s)));
                 pool.push(e);
             }
             const last = pool[pool.length - 1]!;
@@ -653,7 +654,7 @@ describe("the decision-diagram engine", () => {
         }
     });
 
-    it("keeps one diagram per set after unreferenced diagrams are collected", async () => {
+    it("keeps one diagram per set, and goes with its nodes when no one holds it", async () => {
         const domains = [3, 4, 2, 3, 4, 3];
         const m = new DdManager(domains);
         const u = new Universe(domains);
@@ -675,21 +676,22 @@ describe("the decision-diagram engine", () => {
             expect(sorted(toSet(m, again.dd))).toEqual(sorted(sets[i]!));
             expect(fromSet(m, sets[i]!)).toBe(again.dd);
         };
+        const sets = Array.from({ length: 120 }, (_, i) => build(i + 1).set);
+        for (let i = 0; i < sets.length; i++) check(i);
+
         v8.setFlagsFromString("--expose-gc");
         const gc = vm.runInNewContext("gc") as () => void;
+        // The WeakRef below keeps its target until the job ends: collection needs a yield.
         const macrotask = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
-        const sets = Array.from({ length: 120 }, (_, i) => build(i + 1).set);
-        const made = m.tableEntryCount;
-        // A WeakRef keeps its target alive until the job ends, so collection needs a yield.
+        const held = ((): WeakRef<DdManager> => {
+            const other = new DdManager(domains);
+            other.and(other.slotIn(0, [1]), other.slotIn(5, [2]));
+            return new WeakRef(other);
+        })();
         await macrotask();
         gc();
-        // The finalisers have not run yet: these lookups meet references to dead nodes.
-        for (let i = 0; i < 60; i++) check(i);
         await macrotask();
-        gc();
-        await macrotask();
-        expect(m.tableEntryCount).toBeLessThan(made);
-        for (let i = 60; i < sets.length; i++) check(i);
+        expect(held.deref()).toBeUndefined();
     });
 
     it("builds and transforms a 260-slot item in a few thousand nodes", () => {
