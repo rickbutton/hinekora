@@ -32,7 +32,11 @@ const level2 = level1.flatMap((x) => Array.from({ length: FAN }, (_, j) => x - 2
                 <p>Every outcome: the count multiplies at each step.</p>
             </div>
             <div>
-                <svg viewBox="0 0 300 150" role="img" aria-label="One summary after each step">
+                <svg
+                    viewBox="0 0 300 150"
+                    role="img"
+                    aria-label="One table of every possible item after each step"
+                >
                     <g class="edges">
                         <line x1="150" y1="26" x2="150" y2="58" />
                         <line x1="150" y1="82" x2="150" y2="114" />
@@ -41,7 +45,7 @@ const level2 = level1.flatMap((x) => Array.from({ length: FAN }, (_, j) => x - 2
                     <rect x="100" y="60" width="100" height="22" rx="3" />
                     <rect x="100" y="116" width="100" height="22" rx="3" />
                 </svg>
-                <p>One summary: the same size after every step.</p>
+                <p>One table per step, with the same axes every time.</p>
             </div>
         </div>
     </figure>

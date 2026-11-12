@@ -1,11 +1,12 @@
 import { type Theme, withBase } from "vitepress";
 import DefaultTheme from "vitepress/theme";
+import HowAxes from "./HowAxes.vue";
 import HowChain from "./HowChain.vue";
 import HowLoop from "./HowLoop.vue";
-import HowModel from "./HowModel.vue";
 import HowParts from "./HowParts.vue";
 import HowPresence from "./HowPresence.vue";
-import HowTrace from "./HowTrace.vue";
+import HowStep from "./HowStep.vue";
+import HowTable from "./HowTable.vue";
 import HowTree from "./HowTree.vue";
 import HowWeights from "./HowWeights.vue";
 import LandingCost from "./LandingCost.vue";
@@ -30,12 +31,13 @@ export default {
     extends: DefaultTheme,
     enhanceApp({ app }) {
         app.config.globalProperties.$withBase = withBase;
+        app.component("HowAxes", HowAxes);
         app.component("HowChain", HowChain);
         app.component("HowLoop", HowLoop);
-        app.component("HowModel", HowModel);
         app.component("HowParts", HowParts);
         app.component("HowPresence", HowPresence);
-        app.component("HowTrace", HowTrace);
+        app.component("HowStep", HowStep);
+        app.component("HowTable", HowTable);
         app.component("HowTree", HowTree);
         app.component("HowWeights", HowWeights);
         app.component("LandingCost", LandingCost);

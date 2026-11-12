@@ -24,7 +24,11 @@ const QUESTIONS = NAMES.map((name, i) => ({ name, x: 60 + i * 130 }));
                     </tr>
                 </tbody>
             </table>
-            <svg viewBox="0 0 440 170" role="img" aria-label="The rule as three questions in a row">
+            <svg
+                viewBox="0 0 440 170"
+                role="img"
+                aria-label="The table as three questions in a row"
+            >
                 <defs>
                     <marker
                         id="how-presence-arrow"
@@ -62,7 +66,7 @@ const QUESTIONS = NAMES.map((name, i) => ({ name, x: 60 + i * 130 }));
                 </g>
                 <g class="names">
                     <text v-for="q in QUESTIONS" :key="q.name" :x="q.x" y="38">{{ q.name }}?</text>
-                    <text x="190" y="136">possible</text>
+                    <text x="190" y="136">yes: can exist</text>
                     <text x="414" y="38">no</text>
                 </g>
                 <g class="labels">
@@ -74,8 +78,8 @@ const QUESTIONS = NAMES.map((name, i) => ({ name, x: 60 + i * 130 }));
             </svg>
         </div>
         <figcaption>
-            "At least one of the three resistances" as a table and as the checker stores it. The
-            table has a row for every combination. The stored form asks one question per modifier
+            "At least one of the three resistances": the three resistance axes of the ring's table,
+            and the same table as the checker stores it. The stored form asks one question per axis
             and stops at the first answer that settles it.
         </figcaption>
     </figure>
@@ -110,7 +114,8 @@ th {
     background: none;
 }
 
-tr {
+tr,
+tbody tr:nth-child(2n) {
     background: none;
 }
 

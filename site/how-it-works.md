@@ -20,24 +20,36 @@ an item stuck halfway.
 
 <HowTree />
 
-## One summary for every outcome
+## The item is a set of items
 
-The checker is an [abstract interpreter](https://en.wikipedia.org/wiki/Abstract_interpretation).
-It keeps one value, the abstract item, that stands for every item the steps so far could have
-produced. The abstract item has four parts:
+The checker is an [abstract interpreter](https://en.wikipedia.org/wiki/Abstract_interpretation):
+it runs the craft on a description of many items at once. At a point of a craft, the checker's
+item is not one item but every item the steps so far could have made. It holds that set
+exactly.
 
-<HowModel />
+Picture the set as a table. It has one axis for each fact about the item that a step can
+change. A position on every axis picks out one item. Each cell holds yes or no: can this item
+exist here? A toy ring with three axes shows the shape:
 
-<HowTrace />
+<HowTable />
 
-## Which modifiers are present
+A real item has an axis for each modifier the craft can put on the base. Its positions are
+"absent" and each tier. A tier also carries the fractured or crafted mark where the craft can
+give one, and splits at a number the craft compares, as in `has "maximum life" >= 110`. The
+item adds an axis each for rarity, corruption, influences, each eldritch implicit and memory
+strands.
 
-Steps depend on which modifiers the item has. A bench craft cannot add fire resistance to an
-item that has one, and an `if has "maximum life"` sends the items with Life one way and the
-rest the other. The checker has to track which modifiers can be there.
+<HowAxes />
 
-Often the checker is sure of no single modifier and still knows a fact about a group of
-them. This loop ends when the ring has any of three resistances:
+The prefix and suffix counts are not axes. The checker counts them from the modifier axes, so a
+count can never disagree with the modifiers. The game's rules, such as one modifier per group
+and the caps of each rarity, form one fixed table of legal items. Every table the checker
+builds stays inside it.
+
+## Facts about a group of modifiers
+
+The table holds facts that no list of single modifiers can. This loop ends when the ring has
+any of three resistances:
 
 ```hinekora
 item {
@@ -51,23 +63,23 @@ until has "fire resistance" or has "cold resistance" or has "lightning resistanc
 }
 ```
 
-After the loop the ring may have any one of the three, or two, or all. It cannot have none.
-To hold a fact like that, the presence part is a rule. Give it a yes or a no for each
-modifier, and it answers whether an item with that combination can exist at this point. A
-rule of this kind is a boolean function. Written as a table, it has a row for each
-combination, and the loop's condition removes the one row that breaks it:
+After the loop the ring may have one of the three, two, or all. It cannot have none. Cut the
+table down to the three resistance axes and the fact is plain. The loop's condition removes
+the one row that breaks it:
 
 <HowPresence />
 
-Two lists, "surely there" and "surely not", cannot hold this fact. No one resistance is sure
-to be there and none is sure to be absent, so both lists are empty and all eight rows pass.
-With the rule, the checker knows that a later test for "none of the three" is dead.
+Two lists, "surely there" and "surely not", lose this fact. No resistance is sure either way,
+so both lists are empty and all eight rows pass. The table keeps it, so the checker reports a
+later `if` that tests for none of the three as dead.
 
-A table doubles with every modifier, and a ring can roll dozens. The checker stores the rule
-as a [decision diagram](https://en.wikipedia.org/wiki/Binary_decision_diagram), which asks
-about one modifier at a time and shares the questions that many combinations have in common.
+No one writes the table down. A ring's has about 10<sup>54</sup> cells. The checker
+stores it as a [decision diagram](https://en.wikipedia.org/wiki/Binary_decision_diagram): a
+chain of questions, one per axis, where equal sub-questions share one copy. The right half of
+the figure is one. On a ring, the diagram of every legal Rare item asks a few hundred
+questions in all, and a step takes a few milliseconds.
 
-## A step changes the summary
+## A step changes the table
 
 Each crafting method is a short sequence of primitive operations. A Regal Orb is, in order:
 
@@ -76,22 +88,27 @@ Each crafting method is a short sequence of primitive operations. A Regal Orb is
 3. add one modifier from the pool the item can roll;
 4. use up memory strands, if the item has any.
 
-The checker runs each operation on the abstract item. A `require` must hold for every item the
-summary stands for, or the whole method fails, since the game never applies half a currency.
-Adding a modifier raises the count ranges by one and records the pool's modifiers as possible.
+Each operation turns one table into another. Every yes-cell goes to every item the operation
+could make of it. A `require` must hold on every yes-cell, or the checker refuses the whole
+method, since the game never applies half a currency. An Exalted Orb adds one modifier to an
+open slot, and the result must still be a legal item:
 
-About twenty primitives cover every method. A Chaos Orb is a `strip` and a `fill`. An Orb of
-Annulment is a `remove`. A new method is a new sequence, with no change to the checker.
+<HowStep />
+
+About twenty primitives cover every method. A new method is a new sequence, with no change to
+the checker.
 
 ## Branches and loops
 
-At an `if` the checker narrows the summary by the condition for one arm and by its negation
-for the other. After the arms it joins the two results into one summary that covers both,
-where that loses nothing. It reports an arm whose condition cannot hold as dead.
+A condition is a mask over the table: it passes some cells and blocks the rest. At an `if` the
+checker keeps the cells the condition passes for one arm and the rest for the other. Where the
+arms meet, each cell takes yes if either arm has yes there. An arm that no yes-cell can enter is
+dead.
 
-A loop body must be safe on every pass. The checker takes the summary entering the loop, runs
-the body, and joins the result back into the summary at the top. It repeats until a pass adds
-nothing. That summary covers every pass, and the checker judges the body against it.
+A loop body must be safe on every pass. The checker starts from the items entering the loop. It
+runs the body on those that do not meet the condition yet, and adds what comes back to the top
+of the loop. It repeats until a round adds nothing. This loop exalts until it rolls tier 1
+Life:
 
 <!-- refused -->
 
@@ -107,16 +124,17 @@ until has "maximum life" t1 {
 }
 ```
 
+The checker follows the rings at the top of the loop, round by round:
+
 <HowLoop />
 
-A summary can hold only so many facts, so the passes stop adding. The checker refuses a
-loop still changing after 256 of them. After the loop the condition is true, and the
-checker narrows the summary by it.
+Each round adds rings with one more modifier. In round seven the exalt meets the full rings and
+cannot apply. The checker refuses it. After a loop the condition is true, and the checker keeps
+only the cells that meet it.
 
-## When one summary is not enough
+## Why exact matters
 
-Joining two arms can lose a fact that a later step needs. This ring starts with five
-modifiers:
+Exactness is what lets a craft like this one check. The ring starts with five modifiers:
 
 ```hinekora
 item {
@@ -136,38 +154,32 @@ if not has "maximum life" t1 {
 }
 ```
 
-The first `if` leaves two kinds of item. One kept the new modifier: six modifiers, with
-tier 1 Life. The other lost a modifier to the annul: five modifiers, without it. One summary
-of both says "five or six modifiers" and "Life or not". The count is a range and the
-presence rule is a separate part, so nothing ties the six to the Life. The second `if` would
-then see an item with six modifiers and no Life. The checker would refuse the Exalted Orb
-for an item no path makes.
+The first `if` leaves two kinds of ring. A ring with tier 1 Life skips the annul and keeps six
+modifiers. The rest lose one to the annul and have five. The second `if` meets only rings with
+five, and its Exalted Orb has a slot. The craft checks.
 
 <HowParts />
 
-The checker keeps such summaries apart. Two summaries stay apart when they differ in their
-counts, their rarity, or a mark such as corruption or an influence. The checker joins two
-that agree on those, because the presence rule can hold what differs between them.
-
-The checker runs every later step on each summary it holds. A step must be safe on each
-one, and a branch is dead only when none can enter it. A loop works the same way: it tests
-each summary that reaches the top against its condition.
-
-The checker holds at most 256 summaries at one point, and refuses a craft that needs more.
-Joining some to fit would refuse a later step for an item no path makes. A craft written to
-make an item holds a handful.
+A summary that kept each fact on its own would let in the red cell. It would refuse the second
+exalt for a ring no path makes.
 
 ## What a verdict means
 
-The summary always covers at least every item the game could produce. If no check fails on the
-summary, none fails on a real item. The price is the other direction. The summary can cover an
-item that no path produces, so the checker can reject a craft that would have worked. Within
-its model of the game's rules it does not accept one that can fail.
+The checker rounds nothing, so it loses nothing. It refuses a step when some item the craft
+can make breaks it, and only then. Under the error it prints one such item.
+
+"Can make" means within the checker's model of the game. The model is the game's rules as the
+[Path of Exile wiki](https://www.poewiki.net/) states them. Where the wiki is silent, the
+code follows a recorded assumption. A wrong rule in the model gives a wrong verdict.
+
+Where the checker cannot follow a craft, it says so. A diagram can grow past its budget, or a
+loop can still be changing after 256 rounds. Either is an error at that step, and the steps after it go unchecked.
+The checker never trades exactness for speed.
 
 ## Cost
 
 The checker says nothing about odds. The cost layer reads the same method sequences and the
-checker's summaries, and it cannot change a verdict.
+checker's tables, and it cannot change a verdict.
 
 The game draws modifiers one at a time by weight. A drawn modifier closes its group, and a full
 side closes too. For one Orb of Alteration the arithmetic is short:
