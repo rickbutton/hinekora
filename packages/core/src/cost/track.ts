@@ -1546,8 +1546,17 @@ function implicitSide(type: TypeId): EldritchSide | undefined {
     return ELDRITCH_SIDES.find((side) => IMPLICIT_ATOM[side] === type);
 }
 
+const stateKeys = new WeakMap<ChainState, string>();
+
+/** A state's name, without the imprint it holds. Kept per state: the chain
+ *  asks for the same states round after round. */
 function stateKey(s: ChainState): string {
-    return `${s.prefix}/${s.suffix}/${s.rows.map((r) => r ?? "-").join(",")}`;
+    let k = stateKeys.get(s);
+    if (k === undefined) {
+        k = `${s.prefix}/${s.suffix}/${s.rows.map((r) => r ?? "-").join(",")}`;
+        stateKeys.set(s, k);
+    }
+    return k;
 }
 
 /** A step read on a state without the imprint it holds, which no method but
