@@ -161,14 +161,17 @@ export function allAmongFirst(
 /**
  * The exact distribution of which of the `special` groups are among the first
  * `k` to fire, as a probability per subset (a bitmask over `special`'s
- * positions), by inclusion–exclusion over `allAmongFirst`.
+ * positions), by inclusion–exclusion over `allAmongFirst`. The array is
+ * remembered and handed to every caller asking the same: never write to it.
  */
 export function amongFirstDistribution(
     rates: readonly number[],
     special: readonly number[],
     k: number,
 ): Float64Array {
-    return exactly(special, (members) => allAmongFirst(rates, members, k));
+    return remembered(firsts, `${rates.join()}|${special.join()}|${k}`, () =>
+        exactly(special, (members) => allAmongFirst(rates, members, k)),
+    );
 }
 
 /** P(exactly this subset of `special` is taken), per subset, from P(at least
@@ -293,6 +296,8 @@ export function allAmongSplit(
  * `amongFirstDistribution`. The split and the side's membership are not
  * independent (a heavy group drawn early leaves its side slower to draw
  * again), so this is the joint over the split, not the side's race alone.
+ * The array is remembered and handed to every caller asking the same: never
+ * write to it.
  */
 export function amongSplitDistribution(
     own: readonly number[],
@@ -318,6 +323,7 @@ export function amongSplitDistribution(
  */
 const REMEMBERED = 20_000;
 const splits = new Map<string, Float64Array>();
+const firsts = new Map<string, Float64Array>();
 const sides = new Map<string, number[]>();
 
 function remembered<T>(memo: Map<string, T>, key: string, f: () => T): T {
