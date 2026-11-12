@@ -33,7 +33,7 @@ import { InternalError } from "../../ops/handler.js";
 import { addDraws, readsOfFill, reforgeTotals } from "../../ops/fill.js";
 import { essenceRow } from "../../ops/pools.js";
 import type { FillOp } from "../../ops/steps.js";
-import { type CItem, countsOf, type RefCtx } from "../item.js";
+import { type CItem, countsOf, itemKey, type RefCtx } from "../item.js";
 import type {
     RefCheckTable,
     RefCompoundTable,
@@ -45,6 +45,15 @@ import { drawOne, eligible, hasRoom } from "./pools.js";
 
 const total = (item: CItem, ctx: RefCtx): number => countsOf(ctx, item).total;
 
+/** Marks a draw's starting point as visited. The rows laid in another order
+ *  reach the same item, whose outcomes are already listed: the draws are
+ *  walked once per item, not once per order. */
+function firstVisit(seen: Set<string>, key: string): boolean {
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+}
+
 export function add(
     op: FillOp,
     n: readonly [number, number],
@@ -53,7 +62,9 @@ export function add(
 ): CItem[] {
     const { ctx, rules } = mc;
     const [lo, hi] = addDraws(n, item.rarity, ctx.base);
+    const seen = new Set<string>();
     const go = (x: CItem, k: number): CItem[] => {
+        if (!firstVisit(seen, `${k} ${itemKey(x)}`)) return [];
         const out = k >= lo ? [x] : [];
         if (k >= hi) return out;
         const rows = eligible(op.pool, x, ctx, rules.strands, mc.pools);
@@ -80,7 +91,9 @@ function reforge(
         });
     }
     const kept = rules.protected.sides.size > 0 || rules.protected.types.size > 0;
+    const seen = new Set<string>();
     const go = (x: CItem, laid: boolean): CItem[] => {
+        if (!firstVisit(seen, `${laid} ${itemKey(x)}`)) return [];
         const c = total(x, ctx);
         const out = (kept && laid) || c >= least ? [x] : [];
         if (c >= most) return [x];
