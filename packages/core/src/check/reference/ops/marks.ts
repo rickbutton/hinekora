@@ -174,7 +174,7 @@ export const transforms: RefTransformTable = {
                     // A corruption implicit replaces one of the item's implicits
                     // (Vaal Orb § Equipment); the Corruption Altar's replaces an
                     // earlier corruption implicit where the item has two
-                    // (Version 3.30.0, Incursion). The item's other implicits
+                    // (Version 3.30.0, Incursion and Atziri). The item's other implicits
                     // are not known, so it may take either eldritch one or
                     // neither (QUESTIONS.md Q32, Q111).
                     const out = [item];

@@ -422,7 +422,7 @@ function randomBlock(sp: Omit<Space, "procs">): ItemBlock {
         prefixes: side("prefix"),
         suffixes: side("suffix"),
         ...(cat.influence !== undefined && r.chance(0.3) && { influences: ["hunter"] as const }),
-        ...(r.chance(0.01) && { corrupted: r.pick<Corruption>([true, "twice"]) }),
+        ...(r.chance(0.06) && { corrupted: r.pick<Corruption>([true, "twice"]) }),
         ...(eldritch && { exarch: tier(), eater: tier() }),
     });
 }
@@ -467,14 +467,28 @@ function generate(seed: number): Generated {
     // Or, with an influence, a Hunter's orb on some items and a tier only its
     // ladder has: where the orb is refused, only recovered items can read it.
     const hunting = cat.influence !== undefined && r.chance(0.5);
-    const opening = hunting
+    // A corrupted item refuses most steps, so its corruption is read first.
+    const corrupted = block.corrupted !== false && r.chance(0.8);
+    const opening = corrupted
         ? [
-              iff(randomPred(sp, 1), [op2("exalt", "hunter")]),
-              iff(has("hunting", r.int(1, 2)), randomBody(sp, shape, 1), randomBody(sp, shape, 1)),
+              iff(
+                  r.chance(0.5) ? corruptedP() : notp(corruptedP()),
+                  randomBody(sp, shape, 1),
+                  r.chance(0.5) ? randomBody(sp, shape, 1) : undefined,
+              ),
           ]
-        : r.chance(0.4)
-          ? [growingLoop(sp, shape)]
-          : [];
+        : hunting
+          ? [
+                iff(randomPred(sp, 1), [op2("exalt", "hunter")]),
+                iff(
+                    has("hunting", r.int(1, 2)),
+                    randomBody(sp, shape, 1),
+                    randomBody(sp, shape, 1),
+                ),
+            ]
+          : r.chance(0.4)
+            ? [growingLoop(sp, shape)]
+            : [];
     const body = [...opening, ...randomBody(sp, shape, r.int(1, 8))];
     return {
         seed,

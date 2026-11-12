@@ -140,8 +140,7 @@ describe("the cost of any craft the check reads", () => {
 
 describe("the Corruption Altar on a corrupted item", () => {
     // Its outcomes leave the modifiers as they are, or destroy the item.
-    const altar = (item: string) =>
-        costed(`item {\n    ${item}\n    corrupted\n}\n\nlocus\ntainted exalt\n`);
+    const altar = (item: string) => costed(`item {\n    ${item}\n    corrupted\n}\n\nlocus\n`);
 
     it("is costed as the check reads it, the destruction's share named", () => {
         for (const item of [ITEMS[2]!, ITEMS[8]!, `${ITEMS[8]!}\n    exarch: grand`]) {

@@ -702,8 +702,9 @@ describe("what the removals keep of what the item is known to be", () => {
 // --- the partial protections ---------------------------------------------------------
 
 describe("a partial protection", () => {
-    // Version 3.30.0 (Endgame): "1 Prefix Modifier cannot be changed" and its
-    // siblings; which modifiers it keeps is chosen at random each use (ruled).
+    // Version 3.30.0 (Endgame Changes): "1 Prefix Modifier cannot be changed"
+    // and its siblings; which modifiers it keeps is chosen at random each use
+    // (QUESTIONS.md Q128).
     const w = world(
         [
             row({ id: "P1", gen: "prefix" }),
@@ -763,6 +764,51 @@ describe("a partial protection", () => {
                 ["P1", "P2", "S1"],
             ]),
         );
+    });
+
+    it("keeps one, two or all three under both on one side, each reading an outcome", () => {
+        // QUESTIONS.md Q128: either count, or their sum.
+        const both = cItem({
+            rarity: "rare",
+            mods: [
+                ...["P1", "P2", "P3"].map((id) => on(w, id)),
+                on(w, one, { crafted: true }),
+                on(w, two, { crafted: true }),
+            ],
+        });
+        const out = outcomes(w, [both], L.currencyOps("scour"));
+        expect(sorted(rowsOf(out))).toEqual(
+            sorted([
+                ["P1"],
+                ["P2"],
+                ["P3"],
+                ["P1", "P2"],
+                ["P1", "P3"],
+                ["P2", "P3"],
+                ["P1", "P2", "P3"],
+            ]),
+        );
+    });
+
+    it("chooses for a removal after an add among the modifiers then present", () => {
+        // QUESTIONS.md Q128: the one prefix, whole before the add, may go.
+        const pool: PoolSpec = { kind: "rows", mods: [w.ctx.rows.get(ModId("P3"))!] };
+        const ops = (gen?: Gen): Op[] => [
+            { kind: "fill", pool, count: { kind: "add", n: [1, 1] } },
+            remove({ ...random(gen), sparing: pool }),
+        ];
+        const out = outcomes(w, [rare(["P1"], one)], ops());
+        expect(sorted(rowsOf(out))).toEqual(
+            sorted([
+                ["P1", "P3"],
+                ["P3", one],
+            ]),
+        );
+        // Limited to the prefixes, the choice of P1 leaves nothing to take.
+        expect(refusal(w, [rare(["P1"], one)], ops("prefix"))).toEqual({
+            kind: "noOutcome",
+            op: "addAnother",
+        });
     });
 
     it("refuses a removal where some choice leaves nothing to take", () => {

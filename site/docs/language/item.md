@@ -96,4 +96,4 @@ the stat of its small passives. A cluster jewel requires it.
 then rejects every step except the Tainted currencies, such as
 [`tainted exalt`](/docs/operations/tainted-exalt), [`unveil`](/docs/operations/unveil) and
 [`locus`](/docs/operations/locus). `twice corrupted` declares one the altar has corrupted
-again, which it then refuses.
+again, which then takes no step.

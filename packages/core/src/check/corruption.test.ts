@@ -128,13 +128,15 @@ describe("the Vaal Orb", () => {
 });
 
 describe("the Corruption Altar", () => {
-    it("takes corrupted weapons, armour, jewellery, quivers and jewels only", () => {
+    it("takes corrupted equipment only: weapons, armour, jewellery and quivers", () => {
         const flask = item({ base: "Life Flask", ilvl: 100, rarity: "magic", corrupted: true });
         expect(messages(craft(flask, [op("locus")]))).toContain(
-            "Needs a weapon, armour, piece of jewellery, quiver or jewel",
+            "Needs a weapon, armour, piece of jewellery or quiver",
         );
+        // A jewel is not equipment (QUESTIONS.md Q32).
         const jewel = item({ base: "Cobalt Jewel", ilvl: 100, rarity: "rare", corrupted: true });
-        expect(run(craft(jewel, [op("locus")])).diagnostics).toEqual([]);
+        expect(messages(craft(jewel, [op("locus")]))).toContain("Needs a weapon");
+        expect(run(craft(ring({ corrupted: true }), [op("locus")])).diagnostics).toEqual([]);
         expect(messages(craft(ring(), [op("locus")]))).toContain(
             "The Corruption Altar needs a corrupted item — this item is not corrupted.",
         );
@@ -148,11 +150,26 @@ describe("the Corruption Altar", () => {
         expect(v.corruptions(s)).toEqual(new Set(["twice"]));
         expect(v.counts(s).total).toEqual([2, 2]);
         expect(v.influenceSets(s)).toEqual(new Set([influenceKey([])]));
-        // A twice-corrupted item takes the altar no more, and the Tainted currency still.
+        // A twice-corrupted item takes nothing more (QUESTIONS.md Q32).
         expect(messages(craft(start, [op("locus"), op("locus")]))).toContain(
             "The Corruption Altar takes no twice-corrupted item — this item is twice corrupted.",
         );
-        expect(messages(craft(start, [op("locus"), words("tainted", "exalt")]))).toBe("");
+        expect(messages(craft(start, [op("locus"), words("tainted", "exalt")]))).toContain(
+            "A Tainted Exalted Orb takes no twice-corrupted item — this item is twice corrupted.",
+        );
+        expect(messages(craft(start, [op("locus"), op("chaos")]))).toContain(
+            "The item is twice corrupted — a twice-corrupted item takes no further craft.",
+        );
+    });
+
+    it("leaves `corrupted` true on a twice-corrupted item", () => {
+        const twice = ring({ corrupted: "twice", prefixes: ["life"] });
+        expect(messages(craft(twice, [iff(notp(corruptedP()), [op("chaos")])]))).toContain(
+            "'if' branch can never run",
+        );
+        const live = messages(craft(twice, [iff(corruptedP(), [], [op("chaos")])]));
+        expect(live).toContain("'else' branch can never run");
+        expect(live).not.toContain("'if' branch can never run");
     });
 
     it("refuses an item that may already be twice corrupted, in words of the some", () => {

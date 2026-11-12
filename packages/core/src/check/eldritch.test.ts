@@ -183,7 +183,7 @@ describe("the Eldritch orbs act on the dominant implicit's side", () => {
 
     it("annul takes what a cannot-roll metamod bars from rolling, and refuses a protected side", () => {
         // Version 3.30.0 (Item Changes) names the Orb of Annulment; the eldritch
-        // orb is taken alike (QUESTIONS.md Q122).
+        // orb is ruled to follow it.
         const barred = boots({
             exarch: "grand",
             prefixes: [ATTACK_PREFIX.id],

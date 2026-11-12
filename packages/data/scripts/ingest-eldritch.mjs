@@ -23,7 +23,7 @@ const SIDE_OF = {
 
 /**
  * The tier a row is, Lesser = 1 up to Perfect = 6 as the model counts (a higher
- * tier is the stronger ember, Eldritch Chaos Orb § Dominant). The export's
+ * tier is the stronger ember, Eldritch Chaos Orb § Mechanics, "Dominant"). The export's
  * `no_tier_<n>_eldritch_implicit` tag that excludes the row counts the other
  * way, Perfect = 1 down to Lesser = 6: on List of Searing Exarch implicit
  * modifiers the gloves' 8% attack speed row carries `no_tier_6` and the 13%

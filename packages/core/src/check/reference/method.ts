@@ -18,19 +18,9 @@ import {
 import type { PoolTable } from "../ops/pools.js";
 import { HANDLERS } from "../ops/registry.js";
 import { checkPlacement, type CompoundKind, type Step, stepsOf } from "../ops/steps.js";
-import {
-    type Choice,
-    effectsKey,
-    keeping,
-    NO_CHOICE,
-    partialProtections,
-    relevantEffects,
-    type RuleField,
-    rulesOf,
-    subsetsOf,
-    unprotected,
-} from "../rules.js";
-import { type CItem, effectsOn, type RefCtx, rowOf, sideOf } from "./item.js";
+import { type Choice, effectsKey, NO_CHOICE, relevantEffects, type RuleField } from "../rules.js";
+import { type CItem, effectsOn, type RefCtx, rowOf } from "./item.js";
+import { choicesFor, refKeeping, refRulesOf, refUnprotected } from "./rules.js";
 import type {
     RefCheckHandler,
     RefCompoundHandler,
@@ -165,7 +155,7 @@ export function refRunMethod(
     const repair = step === undefined ? undefined : checkOf(handlers, step).repair;
     const mctx = (item: CItem): RefMethodCtx => ({
         ctx,
-        rules: rulesOf(effectsOn(ctx, item), ops),
+        rules: refRulesOf(ctx, item, ops),
         start: item,
         pools: poolsOf(handlers),
     });
@@ -189,30 +179,6 @@ function poolsOf(handlers: RefHandlers): PoolTable {
     return handlers.pools ?? HANDLERS.pools ?? {};
 }
 
-/**
- * How one use of a method may settle the item's partial protections
- * (Version 3.30.0, Endgame; the league's FAQ: the modifiers are chosen at
- * random each time a currency is used): a side holding no more modifiers than
- * the protection keeps is kept whole; on one holding more, each choice of
- * that many of its modifiers, by type, is one way the method may run.
- */
-export function choicesFor(ctx: RefCtx, item: CItem): Choice[] {
-    let out: Choice[] = [NO_CHOICE];
-    for (const [gen, count] of partialProtections(effectsOn(ctx, item))) {
-        const side = item.mods.filter((m) => sideOf(ctx, m) === gen).map((m) => rowOf(ctx, m).type);
-        out =
-            side.length <= count
-                ? out.map((c) => ({ ...c, sides: [...c.sides, gen] }))
-                : out.flatMap((c) =>
-                      subsetsOf(side, count).map((pick) => ({
-                          ...c,
-                          types: [...c.types, ...pick],
-                      })),
-                  );
-    }
-    return out;
-}
-
 function runItem(
     item: CItem,
     choice: Choice,
@@ -224,7 +190,7 @@ function runItem(
 ): CItem[] {
     let mctx: RefMethodCtx = {
         ctx,
-        rules: rulesOf(effectsOn(ctx, item), ops, choice),
+        rules: refRulesOf(ctx, item, ops, choice),
         start: item,
         pools: poolsOf(handlers),
     };
@@ -252,10 +218,10 @@ function runItem(
                 break;
             }
             case "unprotect":
-                mctx = { ...mctx, rules: unprotected(mctx.rules) };
+                mctx = { ...mctx, rules: refUnprotected(mctx.rules) };
                 break;
             case "keep":
-                mctx = { ...mctx, rules: keeping(mctx.rules, step.op.gen) };
+                mctx = { ...mctx, rules: refKeeping(mctx.rules, step.op.gen) };
                 break;
             default:
                 cur = cur.flatMap((x) => {

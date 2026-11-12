@@ -46,7 +46,7 @@ function images(seed: number, opts: CatalogOptions, kept: Gen[]) {
     const { u, states } = statesOf(seed, opts);
     const rules = {
         ...rulesOf([], [chaos]),
-        protected: { sides: new Set(kept), types: new Set<TypeId>() },
+        protected: { sides: new Set(kept), types: new Set<TypeId>(), partial: new Map() },
     };
     return states.map((start) => {
         const ctx = { u, rules, start };

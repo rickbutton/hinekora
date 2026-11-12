@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { canBeRare, caps } from "../model/capacity.js";
 import type { ModId, TypeId } from "../model/ids.js";
-import { eldritchKey, influencesOf } from "../model/marks.js";
+import { CORRUPTIONS, eldritchKey, influencesOf } from "../model/marks.js";
 import { generateCatalog, type CatalogOptions, rng } from "./reference/catalog.js";
 import {
     atCells,
@@ -84,7 +84,7 @@ describe("the views", () => {
                     rows,
                     rarities: RARITIES.filter((x) => x !== "rare" || canBeRare(cat.base)),
                     influences: eldritch ? [u.influenceKeys[0]!] : someInfluences(u).slice(0, 3),
-                    corrupted: [false, true],
+                    corrupted: CORRUPTIONS,
                     exarch: implicits("exarch"),
                     eater: implicits("eater"),
                     strands: [0, 40],

@@ -82,7 +82,7 @@ What resolution provides to the checker:
   any item level, the number the game's tooltip shows), derived by sorting those rows by
   mod level, the base's own and each influence's apart; the item level only decides which
   of them a currency can roll.
-- **caps**: the per-base affix limits (the [rarity](https://www.poewiki.net/wiki/Rarity#Rarities)
+- **caps**: the per-base affix limits (the [rarity](https://www.poewiki.net/wiki/Rarity#Rarity_as_an_item_property)
   limits shifted by an experimented base's stats, e.g.
   [Simplex Amulet](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)), consumed by the
   checker's well-formedness.

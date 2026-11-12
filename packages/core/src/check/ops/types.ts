@@ -89,7 +89,7 @@ export type FillCount =
 /** Which present modifiers a removal may reach. */
 export type Selector =
     /** One random modifier, of one side when `gen` is given. No removal spares
-     *  what a cannot-roll metamod bars from rolling (Version 3.30.0: it no
+     *  what a cannot-roll metamod bars from rolling (Version 3.30.0, Item Changes: it no
      *  longer keeps an Orb of Annulment off a caster or attack modifier). A
      *  side-limited removal whose side is protected is skipped rather than
      *  refused (Metamod § Rules and Exceptions: "will add without removing"). */
@@ -317,7 +317,7 @@ export type PreconditionFailure =
     | {
           readonly kind: "typeNotRemovable";
           readonly mod: string;
-          readonly why: "absent" | "fractured" | "protected";
+          readonly why: "absent" | "fractured" | "protected" | "kept";
           /** The reason holds on every item reaching the check. */
           readonly every?: true;
       }

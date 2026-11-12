@@ -6,7 +6,7 @@ import { RING_BASE } from "../__fixtures__/mods.js";
 import { canBeRare } from "../model/capacity.js";
 import { effectsOf } from "../model/effects.js";
 import { type Gen, TagId, TypeId } from "../model/ids.js";
-import { INFLUENCES, NO_ELDRITCH, NO_INFLUENCE } from "../model/marks.js";
+import { CORRUPTIONS, INFLUENCES, NO_ELDRITCH, NO_INFLUENCE } from "../model/marks.js";
 import { metamodCases, runMethod, runMethodTrace } from "./method.js";
 import {
     type DispatchKey,
@@ -129,7 +129,7 @@ describe("the method frame", () => {
     const cat = generateCatalog(6100, { types: 3 });
     const u = harnessUniverse(cat);
     const rows = pickRows(u, 6100, 3);
-    const states = harnessStates(u, cat.ctx, 6100, { bounds: { rows, corrupted: [false, true] } });
+    const states = harnessStates(u, cat.ctx, 6100, { bounds: { rows, corrupted: CORRUPTIONS } });
     const exact = (
         ops: readonly Op[],
         handlers?: { exact: Handlers; reference: RefHandlers },
@@ -612,7 +612,7 @@ describe("the steps of a method", () => {
         ).toBe(2);
         expect(kinds(stepsOf(L.harvestAugmentOps(TagId("attack"))))).toContain("addAnother");
         expect(kinds(stepsOf(L.harvestChangeOps(mod.type, "x", [other])))).toContain("change");
-        expect(kinds(stepsOf(L.unveilOps(undefined)))).toEqual(["require", "fill"]);
+        expect(kinds(stepsOf(L.unveilOps(undefined)))).toEqual(["require", "require", "fill"]);
         const nested: Op[] = [
             either(
                 [],

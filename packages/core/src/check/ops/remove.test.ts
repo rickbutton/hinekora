@@ -130,6 +130,7 @@ const CATALOGUES: readonly CatalogOptions[] = [
     { types: 4, bench: true },
     { types: 3, addsTag: true },
     { types: 3, veiled: true },
+    { types: 4, metamods: ["onePrefixCannotChange", "twoPrefixesCannotChange"] },
 ];
 
 const flagged = (cat: Catalog, opts: CatalogOptions): Mod[] => [

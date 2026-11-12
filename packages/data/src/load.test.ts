@@ -94,7 +94,7 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         expect(data.fossils.length).toBe(data.manifest.extent.fossils);
         const pristine = registry.resolveFossil("pristine");
         expect(pristine.ok && [...pristine.value.blockedTags]).toEqual(["defences"]);
-        // "More Life modifiers": ten times the weight (Fossil § Fossil weight multipliers).
+        // "More Life modifiers": ten times the weight (Fossil § Mechanics).
         expect(pristine.ok && [...pristine.value.weights]).toEqual([["life", 1000]]);
         const hollow = registry.resolveFossil("Hollow Fossil");
         expect(hollow.ok && hollow.value.forcedMods).toEqual(["DelveAbyssJewelSocket1"]);
@@ -557,9 +557,17 @@ describe("catalog-level facts of the item model", () => {
         // "1 Prefix Modifier cannot be changed" and its siblings (Version 3.30.0)
         // carry their effect only through the curated table; a data refresh that
         // brings their rows fails here until the table lists each.
-        expect(PARTIAL_PROTECTION_TEXT.test("1 Prefix Modifier cannot be changed")).toBe(true);
-        expect(PARTIAL_PROTECTION_TEXT.test("2 Suffix Modifiers cannot be changed")).toBe(true);
+        for (const text of [
+            "1 Prefix Modifier cannot be changed",
+            "2 Suffix Modifiers cannot be changed",
+            "One Prefix Modifier cannot be changed",
+            "Two Suffix Modifiers Cannot Be Changed",
+            "A Prefix Modifier cannot be changed",
+        ]) {
+            expect(PARTIAL_PROTECTION_TEXT.test(text), text).toBe(true);
+        }
         expect(PARTIAL_PROTECTION_TEXT.test("Prefixes Cannot Be Changed")).toBe(false);
+        expect(PARTIAL_PROTECTION_TEXT.test("Suffixes Cannot Be Changed")).toBe(false);
         // The scan reads the bench rows' texts, as the full protections' show.
         const full = registry.catalog.filter((m) => m.text === "Prefixes Cannot Be Changed");
         expect(full.map((m) => m.source)).toEqual(["bench"]);
@@ -568,6 +576,9 @@ describe("catalog-level facts of the item model", () => {
         );
         for (const m of partial) {
             expect(PARTIAL_PROTECTION_EFFECTS.has(m.id), `${m.id}: ${m.text}`).toBe(true);
+            // A guide names it by its wording, which a sibling's must not shadow.
+            const named = registry.resolveBench(m.text!);
+            expect(named.ok && named.value.mod, `${m.id}: ${m.text}`).toBe(m.id);
         }
         const listed = [...PARTIAL_PROTECTION_EFFECTS.keys()];
         expect(listed.filter((id) => !partial.some((m) => m.id === id))).toEqual([]);

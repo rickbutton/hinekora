@@ -438,12 +438,11 @@ describe("the eldritch changes", () => {
         expect(took(false)).toBe(false);
         expect(took(true)).toBe(true);
         expect(took("twice")).toBe(false);
-        // A twice-corrupted item still takes the Tainted currency.
-        const tainted = runMethod(
-            fromItems(s.u, [{ ...item(3, 2), rarity: "rare", corrupted: "twice" }])!,
-            [req({ kind: "corruptedItem", what: "A Tainted Orb" })],
-        );
-        expect(tainted.ok).toBe(true);
+        // A twice-corrupted item takes no Tainted orb either (QUESTIONS.md Q32).
+        const twice = fromItems(s.u, [{ ...item(3, 2), rarity: "rare", corrupted: "twice" }])!;
+        expect(runMethod(twice, L.TAINTED_EXALT).ok).toBe(false);
+        const once = fromItems(s.u, [{ ...item(3, 2), rarity: "rare", corrupted: true }])!;
+        expect(runMethod(once, [req({ kind: "notTwiceCorrupted", what: "An orb" })]).ok).toBe(true);
     });
 
     it("dominance is the higher tier, none on equal tiers", () => {

@@ -2,8 +2,8 @@
  * The rules the metamods impose on a method (operations.md §2, Metamod §
  * Rules and Exceptions): read once, from the modifiers an item carries when
  * the method starts, and changed for the rest of the method only by
- * `unprotect` and `keep`. One record for the symbolic frame and the
- * reference, so the two read the same rules.
+ * `unprotect` and `keep`. The reference states them apart
+ * (reference/rules.ts), so its exactness tests check these too.
  */
 import type { Op } from "./ops/types.js";
 import { craftedCapOf, type Effect } from "../model/effects.js";
@@ -20,9 +20,13 @@ export interface Protection {
     /** The modifiers a partial protection keeps one by one, by type: the
      *  choice made for this use of the method, where the side holds more. */
     readonly types: ReadonlySet<TypeId>;
+    /** The partial protections behind that choice (`partialProtections`): a
+     *  removal after an add in the same method chooses afresh among the
+     *  modifiers then present (`QUESTIONS.md` Q128). */
+    readonly partial: ReadonlyMap<Gen, readonly number[]>;
 }
 
-export const UNPROTECTED: Protection = { sides: new Set(), types: new Set() };
+export const UNPROTECTED: Protection = { sides: new Set(), types: new Set(), partial: new Map() };
 
 /** Does a protection keep the modifier on this row? */
 export function keeps(p: Protection, row: Mod): boolean {
@@ -68,7 +72,7 @@ export function rulesOf(effects: readonly Effect[], ops: readonly Op[], choice =
     const sides = new Set<Gen>(choice.sides);
     for (const e of effects) if (e.kind === "protect") sides.add(e.gen);
     return {
-        protected: { sides, types: new Set(choice.types) },
+        protected: { sides, types: new Set(choice.types), partial: partialProtections(effects) },
         craftedCap: craftedCapOf(effects),
         // A partial protection prevents what a full one does (QUESTIONS.md Q128).
         blocksSourced: effects.some((e) => e.kind !== "craftedCap"),
@@ -77,14 +81,26 @@ export function rulesOf(effects: readonly Effect[], ops: readonly Op[], choice =
     };
 }
 
-/** By side, how many modifiers the effects' partial protections keep (the
- *  most of any carried); none on a side a full protection keeps whole. */
-export function partialProtections(effects: readonly Effect[]): ReadonlyMap<Gen, number> {
+/** By side, the counts of modifiers the effects' partial protections may
+ *  keep, ascending; none on a side a full protection keeps whole. Two on one
+ *  side may keep the count of either or their sum: the wiki does not say, and
+ *  each reading is an outcome (`QUESTIONS.md` Q128). */
+export function partialProtections(
+    effects: readonly Effect[],
+): ReadonlyMap<Gen, readonly number[]> {
     const whole = new Set(effects.flatMap((e) => (e.kind === "protect" ? [e.gen] : [])));
-    const out = new Map<Gen, number>();
+    const carried = new Map<Gen, number[]>();
     for (const e of effects) {
         if (e.kind !== "protectSome" || whole.has(e.gen)) continue;
-        out.set(e.gen, Math.max(out.get(e.gen) ?? 0, e.count));
+        carried.set(e.gen, [...(carried.get(e.gen) ?? []), e.count]);
+    }
+    const out = new Map<Gen, readonly number[]>();
+    for (const [gen, counts] of carried) {
+        const sum = counts.length > 1 ? [counts.reduce((a, b) => a + b, 0)] : [];
+        out.set(
+            gen,
+            [...new Set([...counts, ...sum])].sort((a, b) => a - b),
+        );
     }
     return out;
 }
@@ -103,7 +119,7 @@ export function unprotected(r: Rules): Rules {
 /** After `keep`: that side alone is kept, in place of the item's protections
  *  (Metamod § Rules and Exceptions: the Eldritch Chaos Orb). */
 export function keeping(r: Rules, gen: Gen): Rules {
-    return { ...r, protected: { sides: new Set([gen]), types: new Set() } };
+    return { ...r, protected: { sides: new Set([gen]), types: new Set(), partial: new Map() } };
 }
 
 /** Every choice of `n` of the items, in order. */

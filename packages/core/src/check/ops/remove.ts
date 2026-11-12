@@ -16,7 +16,15 @@ import { effectsOf } from "../../model/effects.js";
 import { lookupWeight } from "../../pool/pool.js";
 import type { Dd, DdRelation } from "../dd.js";
 import { influenceTagsOfKey } from "../influence.js";
-import { keeps, type RuleField, type Rules } from "../rules.js";
+import {
+    type Choice,
+    keeps,
+    NO_CHOICE,
+    type Protection,
+    type RuleField,
+    type Rules,
+    subsetsOf,
+} from "../rules.js";
 import type { ItemSet } from "../state.js";
 import { isFresh, type ModValue, RARITIES, type Universe } from "../universe.js";
 import { addDraws } from "./fill.js";
@@ -36,8 +44,8 @@ type Random = Extract<Selector, { kind: "random" }>;
 const BOTH: readonly Gen[] = ["prefix", "suffix"];
 
 /** The sides a removal reaches: its own, or both, less those kept whole. */
-export function reachSides(gen: Gen | undefined, rules: Rules): Gen[] {
-    return (gen === undefined ? BOTH : [gen]).filter((g) => !rules.protected.sides.has(g));
+export function reachSides(gen: Gen | undefined, p: Protection): Gen[] {
+    return (gen === undefined ? BOTH : [gen]).filter((g) => !p.sides.has(g));
 }
 
 /** What a removal, or a check holding one, reads. */
@@ -189,30 +197,30 @@ function goneWhere(u: Universe, reach: (v: ModValue) => boolean, except?: number
 /** Within reach of a removal limited to these sides: on one, not fractured,
  *  and not a modifier a partial protection keeps. */
 const onSides =
-    (sides: readonly Gen[], rules: Rules) =>
+    (sides: readonly Gen[], p: Protection) =>
     (v: ModValue): boolean =>
-        !v.fractured && sides.includes(v.row.gen) && !keeps(rules.protected, v.row);
+        !v.fractured && sides.includes(v.row.gen) && !keeps(p, v.row);
 
-function randomReach(sel: Random, rules: Rules): (v: ModValue) => boolean {
-    return onSides(reachSides(sel.gen, rules), rules);
+function randomReach(sel: Random, p: Protection): (v: ModValue) => boolean {
+    return onSides(reachSides(sel.gen, p), p);
 }
 
 /** A side-limited removal whose side is protected does nothing (Metamod §
  *  Rules and Exceptions, the two beastcraft rows: "Will add without
  *  removing"); the library refuses the Eldritch Orb of Annulment there. */
-const skipped = (sel: Random, rules: Rules): boolean =>
-    sel.gen !== undefined && reachSides(sel.gen, rules).length === 0;
+const skipped = (sel: Random, p: Protection): boolean =>
+    sel.gen !== undefined && reachSides(sel.gen, p).length === 0;
 
 /** One modifier in reach gone; the items with none in reach are stuck. */
 function removeRandom(
     u: Universe,
     state: Dd,
     sel: Random,
-    rules: Rules,
+    p: Protection,
     except?: number,
 ): { image: Dd; stuck: Dd } {
-    if (skipped(sel, rules)) return { image: state, stuck: u.dd.EMPTY };
-    const reach = randomReach(sel, rules);
+    if (skipped(sel, p)) return { image: state, stuck: u.dd.EMPTY };
+    const reach = randomReach(sel, p);
     return {
         image: u.dd.mapOne(state, goneWhere(u, reach, except)),
         stuck: u.dd.diff(state, u.anyMod(reach)),
@@ -220,7 +228,7 @@ function removeRandom(
 }
 
 function influencedReach(view: InfluenceView, rules: Rules): (v: ModValue) => boolean {
-    const side = onSides(reachSides(undefined, rules), rules);
+    const side = onSides(reachSides(undefined, rules.protected), rules.protected);
     return (v) => side(v) && isInfluenced(v.row, view);
 }
 
@@ -284,10 +292,75 @@ function raised(
     return { image, from: m.and(part, m.forget(image, [slot, target.slot])) };
 }
 
+// --- the partial protections ---------------------------------------------------------
+
+/**
+ * Items by how one use of a method settles their partial protections, chosen
+ * at random each use (`QUESTIONS.md` Q128): for each count a side may keep,
+ * the items holding no more modifiers there keep the side whole, and on one
+ * holding more each choice of that many of its modifiers is a part of its
+ * own, an item lying in every part whose modifiers it holds. A per-item
+ * split, never a list of outcomes.
+ */
+export function partialChoices(
+    u: Universe,
+    dd: Dd,
+    partial: ReadonlyMap<Gen, readonly number[]>,
+): { dd: Dd; choice: Choice }[] {
+    const m = u.dd;
+    let out: { dd: Dd; choice: Choice }[] = [{ dd, choice: NO_CHOICE }];
+    for (const [gen, counts] of partial) {
+        const slots = u
+            .modSlots()
+            .map((slot) => ({
+                slot,
+                type: u.modSlot(slot)!.type,
+                values: u.valuesWhere(slot, (v) => v.row.gen === gen),
+            }))
+            .filter((s) => s.values.length > 0);
+        const next = new Map<string, { dd: Dd; choice: Choice }>();
+        const put = (dd: Dd, choice: Choice): void => {
+            if (dd === m.EMPTY) return;
+            const key = `${choice.sides.join(",")}|${choice.types.join(",")}`;
+            const held = next.get(key);
+            next.set(key, { dd: held === undefined ? dd : m.or(held.dd, dd), choice });
+        };
+        for (const count of counts) {
+            const more = atLeast(u, (v) => v.row.gen === gen, count + 1);
+            for (const c of out) {
+                put(m.diff(c.dd, more), { ...c.choice, sides: [...c.choice.sides, gen] });
+                const rest = m.and(c.dd, more);
+                if (rest === m.EMPTY) continue;
+                for (const pick of subsetsOf(slots, count)) {
+                    put(
+                        pick.reduce((p, s) => m.and(p, m.slotIn(s.slot, s.values)), rest),
+                        { ...c.choice, types: [...c.choice.types, ...pick.map((s) => s.type)] },
+                    );
+                }
+            }
+        }
+        out = [...next.values()];
+    }
+    return out;
+}
+
+/** The protection under a choice made afresh: the sides a full protection
+ *  keeps, and the choice's. */
+function chosen(p: Protection, choice: Choice): Protection {
+    const full = [...p.sides].filter((g) => !p.partial.has(g));
+    return {
+        sides: new Set([...full, ...choice.sides]),
+        types: new Set(choice.types),
+        partial: p.partial,
+    };
+}
+
 // --- the add and remove another ----------------------------------------------------
 
 /** The items whose draw runs dry, or which hold no other modifier in reach,
- *  are stuck: the removal never takes the one just laid. */
+ *  are stuck: the removal never takes the one just laid. A partial
+ *  protection's choice for the removal is made among the modifiers present
+ *  after the add, the wider reading (`QUESTIONS.md` Q128). */
 function addAnother(
     run: CompoundOf<"addAnother">,
     state: Dd,
@@ -304,9 +377,20 @@ function addAnother(
     const raritySlot = u.scalar("rarity");
     const out: Dd[] = [];
     let acted = m.EMPTY;
-    // What the removal reaches on an item does not change with the add: a
-    // value's reach reads its own row and marks.
-    const reaches = skipped(sel, rules) ? m.ALL : u.anyMod(randomReach(sel, rules));
+    let dry = m.EMPTY;
+    const draws: { slot: number; open: Dd; parts: { dd: Dd; p: Protection }[] }[] = [];
+    // What a removal reaches on an item does not change with the add, under
+    // one protection: a value's reach reads its own row and marks.
+    const reaches = (p: Protection): Dd =>
+        skipped(sel, p) ? m.ALL : u.anyMod(randomReach(sel, p));
+    const protection = rules.protected;
+    const removals = (added: Dd): { dd: Dd; p: Protection }[] =>
+        protection.partial.size === 0
+            ? [{ dd: added, p: protection }]
+            : partialChoices(u, added, protection.partial).map((c) => ({
+                  dd: c.dd,
+                  p: chosen(protection, c.choice),
+              }));
     for (const r of m.valuesOf(state, raritySlot)) {
         const part = m.and(state, m.slotIn(raritySlot, [r]));
         // A rarity that holds no modifier leaves nothing to remove.
@@ -325,10 +409,22 @@ function addAnother(
                 if (open === m.EMPTY) continue;
                 const added = m.and(m.and(m.forget(open, [slot]), m.slotIn(slot, values)), u.wf);
                 if (added === m.EMPTY) continue;
-                out.push(removeRandom(u, added, sel, rules, slot).image);
-                acted = m.or(acted, m.and(m.and(open, m.forget(added, [slot])), reaches));
+                const parts = removals(added);
+                for (const c of parts) {
+                    dry = m.or(dry, m.diff(m.and(open, m.forget(c.dd, [slot])), reaches(c.p)));
+                }
+                draws.push({ slot, open, parts });
             }
         }
+    }
+    // An item some draw and choice leave nothing to remove is stuck, its
+    // other outcomes dropped with it.
+    for (const { slot, open, parts } of draws) {
+        const live = m.diff(open, dry);
+        if (live === m.EMPTY) continue;
+        acted = m.or(acted, live);
+        const lifted = m.forget(live, [slot]);
+        for (const c of parts) out.push(removeRandom(u, m.and(c.dd, lifted), sel, c.p, slot).image);
     }
     return { image: unionOf(u, out), stuck: m.diff(state, acted) };
 }
@@ -337,11 +433,14 @@ export const transforms: TransformTable = {
     strip: {
         reads: PROTECTED,
         apply: (_op, state, { u, rules }) =>
-            u.dd.mapEach(state, goneWhere(u, onSides(reachSides(undefined, rules), rules))),
+            u.dd.mapEach(
+                state,
+                goneWhere(u, onSides(reachSides(undefined, rules.protected), rules.protected)),
+            ),
     },
     "remove:random": {
         reads: PROTECTED,
-        apply: (op, state, { u, rules }) => removeRandom(u, state, op.selector, rules),
+        apply: (op, state, { u, rules }) => removeRandom(u, state, op.selector, rules.protected),
     },
     "remove:influenced": {
         reads: PROTECTED,
@@ -443,7 +542,9 @@ export const checks: CheckTable = {
             let pass: Dd;
             switch (sel.kind) {
                 case "random":
-                    pass = skipped(sel, rules) ? u.dd.ALL : u.anyMod(randomReach(sel, rules));
+                    pass = skipped(sel, rules.protected)
+                        ? u.dd.ALL
+                        : u.anyMod(randomReach(sel, rules.protected));
                     break;
                 case "influenced":
                     pass = unionOf(

@@ -91,7 +91,7 @@ item {
   takes no craft but the Tainted currency, an `unveil`
   ([Veiled modifier § Version history](https://www.poewiki.net/wiki/Veiled_modifier#Version_history))
   and a `locus`, which may destroy it; `twice corrupted` one a `locus` has corrupted again,
-  which the altar takes no more.
+  which takes no further craft (`QUESTIONS.md` Q32).
 
 An unknown or ambiguous name is reported on the item block before any step is checked.
 

@@ -512,7 +512,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["locus"],
         args: [],
-        doc: "locus — the Corruption Altar: corrupt a corrupted weapon, armour piece, piece of jewellery, quiver or jewel a second time, making it twice corrupted; it may stay as it is, gain a corruption implicit, or be destroyed, ending the craft. A twice-corrupted item takes the altar no more, only the Tainted currency and an unveil.",
+        doc: "locus — the Corruption Altar: corrupt a corrupted weapon, armour piece, piece of jewellery or quiver a second time, making it twice corrupted; it may stay as it is, gain a corruption implicit, or be destroyed, ending the craft. A twice-corrupted item takes no further craft, the altar, the Tainted currency and an unveil included.",
         build: () => locusOps(),
     },
     {

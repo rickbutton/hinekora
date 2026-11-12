@@ -6,7 +6,7 @@
 import type { Base } from "../../model/base.js";
 import { craftedCapOf, type Effect, effectsOf } from "../../model/effects.js";
 import type { Gen, GroupId, ModId, TypeId } from "../../model/ids.js";
-import { NO_INFLUENCE } from "../../model/marks.js";
+import { type Corruption, NO_INFLUENCE } from "../../model/marks.js";
 import type { Mod } from "../../model/mod.js";
 import type { Registry } from "../../resolve/registry.js";
 import type { CEldritch, CItem, CMod } from "../item.js";
@@ -111,6 +111,9 @@ const modKey = (m: CMod): string =>
 
 const implicitKey = (e: CEldritch): string => `${e.tier}:${e.type ?? "?"}`;
 
+const corruptionKey = (c: Corruption): string =>
+    c === false ? "" : c === "twice" ? " twice-corrupted" : " corrupted";
+
 /** Code-unit order, independent of the locale. */
 export function compareStrings(a: string, b: string): number {
     return a < b ? -1 : a > b ? 1 : 0;
@@ -122,7 +125,7 @@ export function itemKey(item: CItem): string {
     const imprint = item.imprint === undefined ? "" : ` imprint(${itemKey(item.imprint)})`;
     return (
         `${item.rarity} [${mods}] inf=${item.influences === NO_INFLUENCE ? "-" : item.influences}` +
-        `${item.corrupted ? " corrupted" : ""} exarch=${implicitKey(item.exarch)}` +
+        `${corruptionKey(item.corrupted)} exarch=${implicitKey(item.exarch)}` +
         ` eater=${implicitKey(item.eater)} strands=${item.strands}${imprint}`
     );
 }

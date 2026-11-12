@@ -33,6 +33,7 @@ import {
 } from "../model/sources.js";
 import {
     buildTypeIndex,
+    matchScore,
     matchTypes,
     normalizeText,
     queryTokens,
@@ -673,7 +674,7 @@ export function buildRegistry(data: RegistryData): Registry {
                 for (const [type, rows] of variedRows(domain)) {
                     const matched = rows
                         .filter(({ tokens }) => q.every((w) => tokenMatches(w, tokens)))
-                        .map(({ mod, tokens }) => ({ mod, score: q.length / tokens.size }));
+                        .map(({ mod, tokens }) => ({ mod, score: matchScore(q, tokens) }));
                     if (matched.length > 0) hit.push({ type, rows: matched });
                 }
             }
@@ -784,7 +785,7 @@ export function buildRegistry(data: RegistryData): Registry {
             const entry = byWording.get(key) ?? {
                 text: e.text,
                 types: new Set<TypeId>(),
-                score: q.length / set.size,
+                score: matchScore(q, set),
             };
             entry.types.add(e.type);
             byWording.set(key, entry);
@@ -944,7 +945,7 @@ export function buildRegistry(data: RegistryData): Registry {
             const scored = enchants.flatMap((e) => {
                 const tokens = new Set(normalizeText(e.words));
                 return q.every((w) => tokenMatches(w, tokens))
-                    ? [{ e, score: q.length / tokens.size }]
+                    ? [{ e, score: matchScore(q, tokens) }]
                     : [];
             });
             if (scored.length === 0) return fail({ kind: "unknownEnchant", name });
@@ -1124,7 +1125,7 @@ export function buildRegistry(data: RegistryData): Registry {
                 if (!mod?.text) continue;
                 const tokens = new Set(normalizeText(mod.text));
                 if (q.every((w) => tokenMatches(w, tokens))) {
-                    scored.push({ craft, mod, score: q.length / tokens.size });
+                    scored.push({ craft, mod, score: matchScore(q, tokens) });
                 }
             }
             if (scored.length === 0) return fail({ kind: "unknownBench", name });

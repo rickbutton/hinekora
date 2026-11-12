@@ -5,7 +5,13 @@ import { findMethod, type MethodItem } from "../methods.js";
 import type { Check, Op, PreconditionFailure, Transform } from "./types.js";
 import { rollRange } from "../values.js";
 import { type ModId, type Rarity, TypeId } from "../../model/ids.js";
-import { type InfluenceKey, influenceKey, NO_ELDRITCH, NO_INFLUENCE } from "../../model/marks.js";
+import {
+    CORRUPTIONS,
+    type InfluenceKey,
+    influenceKey,
+    NO_ELDRITCH,
+    NO_INFLUENCE,
+} from "../../model/marks.js";
 import type { Mod } from "../../model/mod.js";
 import { TALISMAN_BASE } from "../../__fixtures__/mods.js";
 import { buildRegistry } from "../../resolve/registry.js";
@@ -94,7 +100,7 @@ function setup(plan: Plan): Setup {
             ...(plan.fractured && { fractured: true }),
             ...(plan.crafted && { crafted: true }),
             ...(plan.values && { values: true }),
-            ...(plan.corrupted && { corrupted: [false, true] }),
+            ...(plan.corrupted && { corrupted: CORRUPTIONS }),
         },
         random: 6,
         maxSize: 12,

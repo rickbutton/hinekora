@@ -67,19 +67,19 @@ not.
 
 ### Q32 · probe · open — the Corruption Altar
 
-**Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) (Incursion): the
-altar corrupts an item "a second time", destroys it where it made an influenced Rare, and
-its implicit replaces an earlier corruption implicit where the item has two. Does it still
-take an uncorrupted item? How likely is each outcome? May its implicit replace an eldritch
-implicit? Does the advanced copy (Ctrl+Alt+C) show `Twice Corrupted` in place of
-`Corrupted`?
-**Probe:** corrupted Rares, boots with an eldritch and a Vaal implicit among them, and an
-uncorrupted ring; use the altar some forty times; record refusals, each outcome, which
-implicit went, and the copy's lines.
-**Assumed:** a corrupted item only; no change, an implicit, or destroyed at 1:1:2, the
-destruction taking the old reforge's share; either eldritch implicit may go; `Twice
-Corrupted` alone. **Encoded in:** `check/library.ts` `locusOps`; `cost/track.ts`
-`OUTCOME_ODDS`; `render/item.ts`.
+**Q:** [§ Incursion and Atziri](https://www.poewiki.net/wiki/Version_3.30.0#Incursion_and_Atziri):
+the altar corrupts "an Equipment Item" a second time, and a twice-corrupted item "cannot
+[be] Corrupted further using these devices". Does it take an uncorrupted item, or a jewel
+(the pre-3.30 Locus of Corruption page lists jewels)? How likely is each outcome? May its
+implicit replace an eldritch one? Does the copy (Ctrl+Alt+C) show `Twice Corrupted`
+alone? Does a twice-corrupted item take the Tainted currency or an unveil? No source says.
+**Probe:** corrupted Rares, a jewel, boots with an eldritch and a Vaal implicit, an
+uncorrupted ring; the altar some forty times; then a Tainted Exalted Orb and an unveil on
+a twice-corrupted item; record refusals, outcomes, which implicit went, the copy.
+**Assumed:** corrupted equipment only, no jewel; 1:1:2 to no change, an implicit,
+destroyed; either eldritch implicit may go; `Twice Corrupted` alone; a twice-corrupted
+item takes nothing. **Encoded in:** `check/library.ts` `locusOps`, `onceCorrupted`;
+`cost/track.ts`; `render/item.ts`.
 
 ### Q33 · probe · open — the Tainted Chaos Orb under a protection, and its rarity
 
@@ -218,7 +218,7 @@ each; record how many veiled prefixes and veiled suffixes come up.
 **Q:** what do "Reroll three random modifiers on a Rare item" and "Reroll a random
 modifier" keep? [Version 3.29.0](https://www.poewiki.net/wiki/Version_3.29.0) says only
 "reroll": does the modifier count hold, and may a rerolled modifier land on the other side?
-[Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) has them respect "some meta-crafted Modifiers": which?
+[Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Bug_Fixes) has them respect "some meta-crafted Modifiers": which?
 **Probe:** a Rare with six modifiers, one with "Prefixes Cannot Be Changed", one with a
 prefix and a suffix; reroll three on the first two and one on the third, several times;
 record the prefix and suffix counts before and after, and whether a protected prefix or
@@ -524,17 +524,17 @@ a fractured one is out of reach; a modifier whose elevated row has no room is no
 
 ### Q122 · probe · open — removals beside a metamod
 
-**Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) (Item Changes): the
+**Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Item_Changes): the
 cannot-roll metamods no longer keep "some Currencies that remove Modifiers, such as Orbs
-of Annulment" off what they bar. Are the Eldritch Orb of Annulment and the Tainted Exalted
-Orb among them? Is the eldritch one refused on a protected side, or used up? Under
+of Annulment" off what they bar. Is the Tainted Exalted Orb among them? Is the Eldritch
+Orb of Annulment refused on a protected side, or used up? Under
 "Cannot roll Attack Modifiers", [Metamod § Examples](https://www.poewiki.net/wiki/Metamod#Examples)
 has the Bestiary's "add prefix remove suffix" add only what can roll even when the suffix
 it takes is the metamod: is the prefix added first?
-**Probe:** boots, the Exarch dominant, the caster metamod and a caster prefix, orbs; then
-"Prefixes Cannot Be Changed", one orb. A corrupted Rare with the attack metamod and an
-attack modifier, tainted orbs. The page's bow, the recipe until it takes the metamod.
-**Assumed:** neither spares it; refused; the suffix goes first, so an attack prefix may
+**Probe:** boots, the Exarch dominant, "Prefixes Cannot Be Changed", an Eldritch Orb of
+Annulment. A corrupted Rare with the attack metamod and an attack modifier, tainted orbs.
+The page's bow, the recipe until it takes the metamod.
+**Assumed:** it spares nothing; refused; the suffix goes first, so an attack prefix may
 follow. **Encoded in:** `check/library.ts` `eldritchAnnulOps`, `TAINTED_EXALT`,
 `beastAddOps`; `check/ops/remove.ts`.
 
@@ -585,7 +585,7 @@ text. **Encoded in:** `render/item.ts` `modHeader`, `textless`.
 
 ### Q127 · probe · open — the lifeforce of a Harvest change
 
-**Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) (Harvest): a change of
+**Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Harvest): a change of
 a resistance or damage modifier to another element costs "300 Lifeforce of two different
 types" (a damage change a Crystallised Rancour besides). Which two, for each pair?
 [List of harvest crafting options](https://www.poewiki.net/wiki/List_of_harvest_crafting_options)
@@ -597,22 +597,24 @@ lightning Primal, 300 each. **Encoded in:** `cost/prices.ts` `unitCost`.
 
 ### Q128 · probe · open — the partial protections
 
-**Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) (Endgame) adds "1
-Prefix Modifier cannot be changed" and its siblings; the modifiers kept are chosen at
-random each use (the league's FAQ, ruled). Does one block what the full protection
-blocks: an essence, a fossil, the grove's randomise beside a kept influenced modifier, an
-Eldritch Orb of Annulment on a side it keeps whole? Can the Bestiary's metamod recipe
-craft one? May the choice fall on a fractured modifier?
-**Probe:** a Rare with "1 Prefix Modifier cannot be changed": an essence, a resonator; one
-prefix, an Eldritch Orb of Annulment under the Exarch; the recipe twenty times; three
-prefixes, one fractured, Orbs of Annulment; record refusals and what went.
-**Assumed:** as the full protection; the recipe may craft one; any modifier of the side;
-in the cost, each choice alike, a reforge's chances unknown. **Encoded in:**
-`check/rules.ts` `rulesOf`; `check/method.ts` `choicesOf`; `cost/roll.ts` `removalRoll`.
+**Q:** [§ Endgame Changes](https://www.poewiki.net/wiki/Version_3.30.0#Endgame_Changes)
+adds "1 Prefix Modifier cannot be changed" and its siblings, the kept modifiers chosen at
+random each use ([FAQ](https://www.pathofexile.com/forum/view-thread/4013527), ruled). Does
+one block what the full protection blocks? Can the Bestiary's metamod recipe craft one?
+May the choice fall on a fractured modifier?
+Is a Harvest augment's removal chosen for among the modifiers before its add, or after?
+Do two on one side keep either count, or both?
+**Probe:** "1 Prefix Modifier cannot be changed": an essence; three prefixes, one
+fractured, annuls; one prefix, augments until it goes; with "2 Prefix…" too, scours; the
+recipe twenty times; record refusals and what went.
+**Assumed:** as the full protection; the recipe may craft one; any modifier; after; any
+reading. In the cost, each
+choice alike, the larger count. **Encoded in:** `check/rules.ts` `partialProtections`;
+`check/ops/remove.ts` `partialChoices`; `check/reference/rules.ts`; `cost/roll.ts`.
 
 ### Q129 · probe · open — Merrick's Ducat on a Rare Abyss Jewel
 
-**Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) (Endgame Changes) lets the ducat be used on an Abyss
+**Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Endgame_Changes) lets the ducat be used on an Abyss
 Jewel itself. [Merrick's Ducat § Mechanics](https://www.poewiki.net/wiki/Merrick%27s_Ducat#Mechanics)
 adds a modifier "like an Exalted Orb", on a jewel holding four a fifth, "either a prefix
 or suffix", and corrupts it. May the fifth make three of a side? Does it respect the

@@ -24,8 +24,9 @@ waits until a craft calls for it.
   worked out first: the Recombinator, whose result pools both items' modifiers (an
   earlier form, and the evidence on how it picks, are in the git history before the
   commit that removed it; that evidence predates
-  [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0), whose result takes the chosen base's item level and counts
-  only modifiers the new base can roll, and which takes no corrupted item), the Awakener's
+  [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Item_Generation_Changes), whose result takes the chosen base's item level and counts
+  only modifiers the new base can roll, and which takes no corrupted item
+  ([§ Item Changes](https://www.poewiki.net/wiki/Version_3.30.0#Item_Changes))), the Awakener's
   Orb, whose result keeps an influenced modifier of each item, Reflecting Mist and
   Kishara's Ducat.
 - **Merrick's Ducat on an Abyss Jewel** (Q129) and **Gwennen's "Take a Chance"**, whose

@@ -622,7 +622,7 @@ describe("cannot roll attack modifiers", () => {
 });
 
 describe("a partial protection on the item", () => {
-    // "1 Prefix Modifier cannot be changed" (Version 3.30.0, Endgame): one
+    // "1 Prefix Modifier cannot be changed" (Version 3.30.0, Endgame Changes): one
     // prefix, chosen at random each use, is kept.
     it("keeps one of two prefixes through a chaos, either of them", () => {
         const c = craft(rareRing(["T1 Life", INCREASED_MANA.id], [PROTECT_ONE_PREFIX_CARRIER.id]), [
@@ -640,6 +640,18 @@ describe("a partial protection on the item", () => {
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).toContain("IncreasedLife");
+    });
+
+    it("may lose its one prefix to a Harvest augment that adds a second", () => {
+        // The kept prefix may be chosen among those present when the augment
+        // removes, the one it added among them (QUESTIONS.md Q128).
+        const c = craft(rareRing(["T1 Life"], [PROTECT_ONE_PREFIX_CARRIER.id]), [
+            harvest("augment", "attack"),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteed(r)).not.toContain("IncreasedLife");
+        expect(v.possibleTypes(r.finalState!).has(TypeId("IncreasedLife"))).toBe(true);
     });
 
     it("blocks an essence as the full protections do", () => {

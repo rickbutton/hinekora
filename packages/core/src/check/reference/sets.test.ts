@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BOOTS_BASE, RING_BASE } from "../../__fixtures__/mods.js";
-import { influenceKey, NO_INFLUENCE } from "../../model/marks.js";
+import { CORRUPTIONS, influenceKey, NO_INFLUENCE } from "../../model/marks.js";
 import { buildRegistry } from "../../resolve/registry.js";
 import { benchCraft, benchRow, modRow } from "./catalog.js";
 import { cItem, cMod, NO_IMPLICIT, refCtx } from "./item.js";
@@ -59,14 +59,14 @@ describe("allItems", () => {
         const marks = {
             rows,
             rarities: ["magic"],
-            corrupted: [false, true],
+            corrupted: CORRUPTIONS,
             exarch: [NO_IMPLICIT, { tier: 1, type: undefined }],
             eater: [NO_IMPLICIT, { tier: 2, type: undefined }],
         } as const;
         // Boots of item level 84 take either implicit, unnamed in this catalogue.
-        expect(allItems(refCtx(registry, BOOTS_BASE, 84), marks).size).toBe(5 * 2 * 2 * 2);
+        expect(allItems(refCtx(registry, BOOTS_BASE, 84), marks).size).toBe(5 * 3 * 2 * 2);
         // A ring takes none.
-        expect(allItems(ctx, marks).size).toBe(5 * 2);
+        expect(allItems(ctx, marks).size).toBe(5 * 3);
     });
     it("lists only well-formed items", () => {
         const items = allItems(ctx, { rows, values: true, fractured: true, crafted: true });

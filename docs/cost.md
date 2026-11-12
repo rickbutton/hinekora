@@ -54,7 +54,7 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
 - **Tainted Exalted Orb.** It adds or removes at even odds, and removes from a full item
   (Q95).
 - **Corruption Altar.** No change, an implicit, or the item destroyed two times in four,
-  its old reforge now destroying it ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0), Q32).
+  its old reforge now destroying it ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Incursion_and_Atziri), Q32).
 - **Orb of Conflict.** The line of
   [Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)
   is carried past the gap it states, neither side below one in a hundred (Q96).
@@ -176,7 +176,7 @@ refreshes it from poe.ninja's economy endpoints, which its
 
 What the snapshot cannot price (a bench craft, a Harvest craft's lifeforce, a Bestiary
 recipe's beasts) `cost/prices.ts` carries from the catalog and the wiki's tables, a Harvest
-change's from [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) (Q127).
+change's from [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Harvest) (Q127).
 
 ---
 

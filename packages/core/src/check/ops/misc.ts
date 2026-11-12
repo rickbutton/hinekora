@@ -319,7 +319,7 @@ export const checks: CheckTable = {
                 slot === undefined ? m.EMPTY : m.slotIn(slot, removableValues(u, slot, ctx));
             return {
                 pass,
-                word: (_failing, all) => {
+                word: (failing, all) => {
                     const mod = check.label;
                     const present =
                         slot === undefined ? m.EMPTY : m.slotIn(slot, u.valuesWhere(slot));
@@ -341,7 +341,17 @@ export const checks: CheckTable = {
                     if (m.and(all.dd, fractured) !== m.EMPTY) {
                         return { kind: "typeNotRemovable", mod, why: "fractured" };
                     }
-                    return { kind: "typeNotRemovable", mod, why: "protected" };
+                    // A full protection's side, else a modifier a partial one keeps.
+                    const p = ctx.rules.protected;
+                    const wholeSide = m.slotIn(
+                        slot!,
+                        u.valuesWhere(
+                            slot!,
+                            (v) => p.sides.has(v.row.gen) && !p.partial.has(v.row.gen),
+                        ),
+                    );
+                    const why = m.and(failing.dd, wholeSide) === m.EMPTY ? "kept" : "protected";
+                    return { kind: "typeNotRemovable", mod, why };
                 },
             };
         },

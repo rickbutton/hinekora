@@ -486,12 +486,14 @@ function keepsBeyondRemoval(ops: readonly Op[]): boolean {
     );
 }
 
-/** By side, how many modifiers a partial protection among `types` keeps. */
+/** By side, how many modifiers a partial protection among `types` keeps: the
+ *  most the checker reads it may keep, an estimate where it reads several. */
 function partialProtectionsOn(
     registry: Registry,
     types: Iterable<TypeId>,
 ): ReadonlyMap<Gen, number> {
-    return partialProtections([...types].flatMap((t) => [...registry.effectsOfType(t)]));
+    const counts = partialProtections([...types].flatMap((t) => [...registry.effectsOfType(t)]));
+    return new Map([...counts].map(([gen, cs]) => [gen, Math.max(...cs)]));
 }
 
 /**
@@ -531,8 +533,8 @@ function poolRows(
         case "fossil": {
             // A fossil's "more" multiplies the weight of the rows carrying its
             // tags, once per fossil (the larger when two of its tags match), the
-            // fossils' "more" multipliers adding up (Fossil § Fossil weight
-            // multipliers; QUESTIONS.md Q60). A "fewer" multiplies what that
+            // fossils' "more" multipliers adding up (Fossil § Mechanics, "Fossil
+            // weight multipliers"; QUESTIONS.md Q60). A "fewer" multiplies what that
             // leaves, as craftofexile reads it: a sample of a thousand
             // Sanctified and Pristine reforges from 2020, when the Pristine
             // Fossil had life at ten times and flat life regeneration at a

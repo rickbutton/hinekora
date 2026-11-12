@@ -12,9 +12,10 @@
  *   it does not keep an Orb of Annulment off a caster or attack modifier
  *   (Version 3.30.0, Item Changes), and the Metamod table's "Ignored" and
  *   "Does not protect" say the same of the Orb of Dominance, the Veiled Orb,
- *   the Harvest augment's removal and the beastcraft recipes; for the
- *   Eldritch Orb of Annulment and the Tainted Exalted Orb, which neither
- *   names, it is assumed (QUESTIONS.md Q122). A removal limited to a
+ *   the Harvest augment's removal and the beastcraft recipes. The Eldritch
+ *   Orb of Annulment is ruled to follow the Orb of Annulment; for the Tainted
+ *   Exalted Orb, which neither names, it is assumed (QUESTIONS.md Q122). The
+ *   protections are reference/rules.ts's. A removal limited to a
  *   protected side leaves the item as it is: the Metamod table's rule for
  *   the two beastcraft recipes ("Will add without removing"); the Eldritch
  *   Orb of Annulment, the other removal of one side, the library refuses
@@ -25,8 +26,9 @@
  *   just laid (Harvest crafting, the lead; Metamod § Rules and Exceptions:
  *   "Add a new [Type] modifier and remove another random modifier"). That
  *   the add comes first is the library's observation in game
- *   (check/library.ts `harvestAugmentOps`). An item whose rarity holds no
- *   modifier has nothing to remove and is stuck.
+ *   (check/library.ts `harvestAugmentOps`); a partial protection chooses for
+ *   the removal afresh (reference/rules.ts `rechosen`). An item whose rarity
+ *   holds no modifier has nothing to remove and is stuck.
  * - `remove` "influenced" and `elevate`, the Orb of Dominance (Orb of
  *   Dominance § Mechanics): one influenced modifier in reach goes, then one
  *   in reach is upgraded (ops/remove.ts `elevations`), so they are different
@@ -49,9 +51,9 @@ import {
     isInfluenced,
     PROTECTED,
     AUGMENT_READS,
-    reachSides,
 } from "../../ops/remove.js";
-import { keeps, type Rules } from "../../rules.js";
+import type { Protection, Rules } from "../../rules.js";
+import { keeps, reachSides, rechosen } from "../rules.js";
 import { type CItem, type CMod, type RefCtx, rowOf } from "../item.js";
 import { isWellFormed } from "../wellformed.js";
 import type { RefCheckTable, RefCompoundTable, RefTransformTable } from "./handler.js";
@@ -74,14 +76,14 @@ function sideOf(ctx: RefCtx, m: CMod): Gen {
 
 /** May a removal limited to these sides take the modifier: on one, not
  *  fractured, and not one a partial protection keeps? */
-function inReach(ctx: RefCtx, m: CMod, sides: readonly Gen[], rules: Rules): boolean {
-    return !m.fractured && sides.includes(sideOf(ctx, m)) && !keeps(rules.protected, rowOf(ctx, m));
+function inReach(ctx: RefCtx, m: CMod, sides: readonly Gen[], p: Protection): boolean {
+    return !m.fractured && sides.includes(sideOf(ctx, m)) && !keeps(p, rowOf(ctx, m));
 }
 
 /** The modifiers a random removal reaches on the item, `spared` excepted. */
-function randomReach(ctx: RefCtx, item: CItem, sel: Random, rules: Rules, spared?: CMod): CMod[] {
-    const sides = reachSides(sel.gen, rules);
-    return item.mods.filter((m) => m !== spared && inReach(ctx, m, sides, rules));
+function randomReach(ctx: RefCtx, item: CItem, sel: Random, p: Protection, spared?: CMod): CMod[] {
+    const sides = reachSides(sel.gen, p);
+    return item.mods.filter((m) => m !== spared && inReach(ctx, m, sides, p));
 }
 
 const without = (item: CItem, m: CMod): CItem => ({
@@ -89,17 +91,25 @@ const without = (item: CItem, m: CMod): CItem => ({
     mods: item.mods.filter((x) => x !== m),
 });
 
-function removeRandom(ctx: RefCtx, item: CItem, sel: Random, rules: Rules, spared?: CMod): CItem[] {
-    if (sel.gen !== undefined && reachSides(sel.gen, rules).length === 0) return [item];
-    return randomReach(ctx, item, sel, rules, spared).map((m) => without(item, m));
+function removeRandom(
+    ctx: RefCtx,
+    item: CItem,
+    sel: Random,
+    p: Protection,
+    spared?: CMod,
+): CItem[] {
+    if (sel.gen !== undefined && reachSides(sel.gen, p).length === 0) return [item];
+    return randomReach(ctx, item, sel, p, spared).map((m) => without(item, m));
 }
 
 /** The influenced modifiers the Orb of Dominance reaches: on a side no
  *  metamod protects, not fractured. */
 function influencedReach(ctx: RefCtx, item: CItem, rules: Rules): CMod[] {
     const v = viewOf(ctx, item);
-    const sides = reachSides(undefined, rules);
-    return item.mods.filter((m) => inReach(ctx, m, sides, rules) && isInfluenced(rowOf(ctx, m), v));
+    const sides = reachSides(undefined, rules.protected);
+    return item.mods.filter(
+        (m) => inReach(ctx, m, sides, rules.protected) && isInfluenced(rowOf(ctx, m), v),
+    );
 }
 
 /** Every value of a row's span (whole numbers, as the catalogues hold);
@@ -136,13 +146,18 @@ export const transforms: RefTransformTable = {
     strip: {
         reads: ["protected"],
         apply: (_op, item, { ctx, rules }) => {
-            const sides = reachSides(undefined, rules);
-            return [{ ...item, mods: item.mods.filter((m) => !inReach(ctx, m, sides, rules)) }];
+            const sides = reachSides(undefined, rules.protected);
+            return [
+                {
+                    ...item,
+                    mods: item.mods.filter((m) => !inReach(ctx, m, sides, rules.protected)),
+                },
+            ];
         },
     },
     "remove:random": {
         reads: PROTECTED,
-        apply: (op, item, { ctx, rules }) => removeRandom(ctx, item, op.selector, rules),
+        apply: (op, item, { ctx, rules }) => removeRandom(ctx, item, op.selector, rules.protected),
     },
     "remove:influenced": {
         reads: ["protected"],
@@ -166,10 +181,16 @@ export const compounds: RefCompoundTable = {
             const sel = run.remove.selector;
             if (addDraws(n, item.rarity, ctx.base)[1] === 0) return [];
             const rows = eligible(run.fill.pool, item, ctx, rules.strands, pools);
-            // `drawOne` lays the row last: that is the modifier the removal spares.
-            return drawOne(item, rows).flatMap((x) =>
-                removeRandom(ctx, x, sel, rules, x.mods[x.mods.length - 1]),
+            // `drawOne` lays the row last: that is the modifier the removal
+            // spares. A partial protection chooses afresh among the modifiers
+            // the item then holds; a draw and choice that leave nothing to
+            // remove leave the item stuck.
+            const ways = drawOne(item, rows).flatMap((x) =>
+                rechosen(ctx, x, rules.protected).map((p) =>
+                    removeRandom(ctx, x, sel, p, x.mods[x.mods.length - 1]),
+                ),
             );
+            return ways.some((w) => w.length === 0) ? [] : ways.flat();
         },
     },
 };
@@ -182,8 +203,9 @@ export const checks: RefCheckTable = {
             switch (sel.kind) {
                 case "random":
                     return (
-                        (sel.gen !== undefined && reachSides(sel.gen, rules).length === 0) ||
-                        randomReach(ctx, item, sel, rules).length > 0
+                        (sel.gen !== undefined &&
+                            reachSides(sel.gen, rules.protected).length === 0) ||
+                        randomReach(ctx, item, sel, rules.protected).length > 0
                     );
                 case "influenced":
                     return influencedReach(ctx, item, rules).length > 0;

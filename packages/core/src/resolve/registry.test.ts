@@ -3,6 +3,7 @@ import { buildRegistry } from "./registry.js";
 import { BaseId, ClassId } from "../model/ids.js";
 import type { Base } from "../model/base.js";
 import { CATALOG, RING_BASE } from "../__fixtures__/mods.js";
+import { benchCraft, metamod } from "../check/reference/catalog.js";
 
 describe("a base name two bases share", () => {
     const ring: Base = { ...RING_BASE, name: "Twin" };
@@ -28,5 +29,26 @@ describe("a base name two bases share", () => {
         const other: Base = { ...card, id: BaseId("TwinCard2") };
         const r = buildRegistry({ bases: [card, other], mods: CATALOG }).resolveBase("Twin");
         expect(!r.ok && r.error.kind).toBe("uncraftedBase");
+    });
+});
+
+describe("a bench craft named by its whole wording", () => {
+    const one = metamod("onePrefixCannotChange");
+    const two = metamod("twoPrefixesCannotChange");
+    const registry = buildRegistry({
+        bases: [RING_BASE],
+        mods: [...CATALOG, one, two],
+        benchCrafts: [one, two].map((m) => benchCraft(m, RING_BASE.itemClass)),
+    });
+
+    it("is its own craft, not one whose word it abbreviates", () => {
+        // The numbers are not words: only "Modifier" against "Modifiers" tells
+        // the two wordings apart.
+        for (const m of [one, two]) {
+            const r = registry.resolveBench(m.text!, RING_BASE.itemClass);
+            expect(r.ok && r.value.mod).toBe(m.id);
+        }
+        const short = registry.resolveBench("prefix modifier cannot", RING_BASE.itemClass);
+        expect(short.ok && short.value.mod).toBe(one.id);
     });
 });

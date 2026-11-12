@@ -46,8 +46,8 @@ const influencePool: PoolSpec = { kind: "influence" };
 const influence = (change: InfluenceChange): Transform => ({ kind: "influence", change });
 
 /** A corrupted item takes no craft but the Tainted currency (Corrupted §
- *  Modifying corrupted items), so every other method but an unveil opens with
- *  this. */
+ *  Modifying corrupted items), so every other method but an unveil and the
+ *  altar opens with this. */
 const notCorrupted = require({ kind: "notCorrupted" });
 /** An influenced item cannot be fractured (Influenced item § Mechanics). */
 const noInfluence = (what: string): Op => require({ kind: "noInfluence", what });
@@ -81,7 +81,7 @@ const EXALT_STRANDS: readonly number[] = [16, 22, 26, 32, 34, 38];
 const TAINTED_EXALT_STRANDS = EXALT_STRANDS;
 const FOULBORN_STRANDS = { augment: 32, regal: 48, exalt: 62 } as const;
 
-/** The currencies by name (Crafting § Currency). */
+/** The currencies by name (Currency § Currency items). */
 export function currencyOps(kind: CurrencyKind): readonly Op[] {
     switch (kind) {
         case "transmute":
@@ -321,6 +321,11 @@ const either = (...branches: readonly (readonly Transform[])[]): Op => ({
     branches,
 });
 const corruptedItem = (what: string): Op => require({ kind: "corruptedItem", what });
+/** A twice-corrupted item takes no further craft: the sources name only the
+ *  altar's refusal of one (Version 3.30.0, Incursion and Atziri), none lets
+ *  the Tainted currency or an unveil act on one, and refusing them cannot
+ *  accept a craft the game refuses (`QUESTIONS.md` Q32). */
+const onceCorrupted = (what: string): Op => require({ kind: "notTwiceCorrupted", what });
 
 /** A corruption implicit takes the place of one of the item's implicits, an
  *  eldritch one among them (Vaal Orb § Equipment, Eldritch implicit modifier). */
@@ -349,14 +354,18 @@ export function vaalOps(base: Base): readonly Op[] {
     return [notCorrupted, corrupt, either([], ...outcomes)];
 }
 
-/** The item types the Corruption Altar takes: weapons, armour, jewellery,
- *  quivers and jewels (Locus of Corruption § Corruption Altar). */
-const ALTAR_TAGS = ["weapon", "armour", "ring", "amulet", "belt", "quiver", "jewel"].map(TagId);
+/** The item types the Corruption Altar takes: "an Equipment Item" (Version
+ *  3.30.0, Incursion and Atziri), which Equipment reads as weapons, off-hands,
+ *  armour and jewellery. Locus of Corruption § Corruption Altar, written
+ *  before 3.30, adds jewels; refusing them cannot accept a craft the game
+ *  refuses (`QUESTIONS.md` Q32). */
+const ALTAR_TAGS = ["weapon", "armour", "ring", "amulet", "belt", "quiver"].map(TagId);
 
 /** The Corruption Altar corrupts a corrupted item a second time, making it
  *  twice corrupted, so the altar takes it no more; where it would have made an
  *  influenced Rare it destroys the item, and its corruption implicit replaces
- *  an earlier one where the item has two (Version 3.30.0, Incursion). The
+ *  an earlier one where the item has two (Version 3.30.0, Incursion and
+ *  Atziri). The
  *  outcomes: no change to what the checker tracks (the sockets, no effect), a
  *  corruption implicit, or the item destroyed, ending the craft there. That
  *  it refuses an uncorrupted item, and that its implicit may replace an
@@ -365,11 +374,11 @@ export function locusOps(): readonly Op[] {
     const what = "The Corruption Altar";
     return [
         corruptedItem(what),
-        require({ kind: "notTwiceCorrupted", what }),
+        onceCorrupted(what),
         require({
             kind: "baseHasAnyTag",
             tags: ALTAR_TAGS,
-            what: "weapon, armour, piece of jewellery, quiver or jewel",
+            what: "weapon, armour, piece of jewellery or quiver",
         }),
         corrupt,
         either([], [corruptionImplicit], end),
@@ -384,6 +393,7 @@ export function locusOps(): readonly Op[] {
  *  Scouring's, so the strip leaves either. */
 export const TAINTED_CHAOS: readonly Op[] = [
     corruptedItem("A Tainted Chaos Orb"),
+    onceCorrupted("A Tainted Chaos Orb"),
     isRare,
     { kind: "unprotect" },
     either([strip(), fill(natural, reforge(RARE_REFORGE))], [strip(), rarity("lowest")]),
@@ -392,6 +402,7 @@ export const TAINTED_CHAOS: readonly Op[] = [
 
 export const TAINTED_EXALT: readonly Op[] = [
     corruptedItem("A Tainted Exalted Orb"),
+    onceCorrupted("A Tainted Exalted Orb"),
     isRare,
     either([fill(natural, add([1, 1]))], [remove(anyMod)]),
     strands(TAINTED_EXALT_STRANDS),
@@ -402,6 +413,7 @@ export const TAINTED_EXALT: readonly Op[] = [
  *  Mechanics); the checker forgets their tiers. */
 export const TAINTED_DIVINE: readonly Op[] = [
     corruptedItem("A Tainted Divine Teardrop"),
+    onceCorrupted("A Tainted Divine Teardrop"),
     isRare,
     { kind: "relax", crafted: false },
 ];
@@ -471,8 +483,8 @@ export function eldritchExaltOps(side: EldritchSide): readonly Op[] {
 export function eldritchAnnulOps(side: EldritchSide): readonly Op[] {
     // A protection is respected (Metamod § Rules and Exceptions); a protected
     // side is refused rather than left alone, since the orb would be spent for
-    // nothing. A cannot-roll metamod spares nothing, as for the plain orb
-    // (QUESTIONS.md Q122).
+    // nothing. A cannot-roll metamod spares nothing, as it spares nothing from
+    // the Orb of Annulment (Version 3.30.0, Item Changes; ruled to hold here).
     const gen = SIDE_OF[side];
     const victim: Selector = { kind: "random", gen };
     return [
@@ -712,9 +724,9 @@ export const VEILED_EXALT: readonly Op[] = [
 export function unveilOps(
     target: { readonly type: TypeId; readonly name: string } | undefined,
 ): readonly Op[] {
-    // No corruption check: a corrupted item can be unveiled (Veiled modifier §
-    // Version history, 3.25.0).
-    const ops: Op[] = [require({ kind: "veiledPresent" })];
+    // A corrupted item can be unveiled (Veiled modifier § Version history,
+    // 3.25.0); a twice-corrupted one is assumed not.
+    const ops: Op[] = [onceCorrupted("An unveil"), require({ kind: "veiledPresent" })];
     if (target) ops.push(require({ kind: "unveilTarget", type: target.type, name: target.name }));
     ops.push(fill(target ? { kind: "unveil", target: target.type } : { kind: "unveil" }, within));
     return ops;

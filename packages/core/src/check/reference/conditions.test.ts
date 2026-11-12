@@ -143,6 +143,7 @@ describe("marks", () => {
     });
     it("corrupted", () => {
         expect(at(cItem({ corrupted: true }), { kind: "corrupted" })).toBe(true);
+        expect(at(cItem({ corrupted: "twice" }), { kind: "corrupted" })).toBe(true);
         expect(at(cItem(), { kind: "corrupted" })).toBe(false);
     });
 });

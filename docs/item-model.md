@@ -46,7 +46,7 @@ spawn weight of zero discards the modifier.
 **Generation**: prefix or suffix. Only generation types 1 and 2 occupy affix slots; the rest
 are the implicit layer ([Generation type](https://www.poewiki.net/wiki/Modifier#Generation_type)).
 
-**Rarity**: normal, magic, rare ([Rarities](https://www.poewiki.net/wiki/Rarity#Rarities)).
+**Rarity**: normal, magic, rare ([Rarities](https://www.poewiki.net/wiki/Rarity#Rarity_as_an_item_property)).
 
 **Domain**: the data's partitions, as the data spells them
 ([Domain](https://www.poewiki.net/wiki/Modifier#Domain); `misc` is the wiki's "Jewel",
@@ -99,16 +99,16 @@ Three readings matter to the model:
 - **Spawn table**, in table order: the first entry whose tag the item carries decides, so an
   early zero disables the row for that tag
   ([spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag)).
-- **Added tags**, the data's `adds_tags`, which the item gains while the row is on it. An
-  added tag can disable rows (a weapon-specific jewel
+- **Added tags**, the data's `adds_tags`, which the item gains while the row is on it (the
+  wiki does not describe them). An added tag can disable rows (a weapon-specific jewel
   modifier adds `specific_weapon`, zeroing every other such modifier) or enable them (one
   staff modifier on a Strength jewel lets the others roll, within one Chaos Orb too:
   confirmed in game); the checker reads the tags each item carries, its rows' added ones
   among them.
 - **Generation table**, the data's `generation_weights`, read as the spawn table is, the
   matching entry scaling the weight in percent
-  ([RePoE's mod reference](https://github.com/brather1ng/RePoE/blob/master/RePoE/docs/mods.md)).
-  They hold a Small
+  ([RePoE's mod reference](https://github.com/brather1ng/RePoE/blob/master/RePoE/docs/mods.md);
+  only this reading gives the data's two tables their known results). They hold a Small
   [cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel#Mechanics) to one notable
   and halve a caster weapon's attack rows.
 
@@ -135,18 +135,18 @@ are read off the modifiers present, never recorded on the item, so removing the 
 withdraws its effect with no bookkeeping. Which currency honours which effect is the table
 in [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions).
 Four kinds cover the metamods ([Metamod](https://www.poewiki.net/wiki/Metamod),
-[Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) for the partial protections):
+[Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Endgame_Changes) for the partial protections):
 
 - `PoolRestrict(category)`, "Cannot roll Attack / Caster Modifiers": bars rows of the
-  category from being added, not present ones from removal ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0)).
+  category from being added, not present ones from removal ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Item_Changes)).
 - `ProtectGeneration(generation)`, "Prefixes / Suffixes Cannot Be Changed": shields whatever
   occupies that side from removal and reroll.
 - `ProtectSome(generation, n)`, "1 Prefix Modifier cannot be changed" and its siblings:
-  shields n of that side's modifiers, chosen at random each use (ruled from the league's
-  FAQ), every one where the side holds no more; each choice is an outcome. It forbids what
-  `ProtectGeneration` forbids (`QUESTIONS.md` Q128).
-- `CraftedCap(cap)`, "Can have up to 3 Crafted Modifiers": raises the crafted-mod limit; the
-  highest cap carried wins, never below one.
+  shields n of that side's modifiers, chosen at random each use, every one where the side
+  holds no more; each choice is an outcome. It forbids what `ProtectGeneration` forbids
+  (`QUESTIONS.md` Q128).
+- `CraftedCap(cap)`, "Can have up to 3 Crafted Modifiers": raises the crafted-mod limit
+  (§7).
 
 ---
 
@@ -168,7 +168,7 @@ affixes of each side (order within a side carries no meaning), and its marks:
   ([Fractured item](https://www.poewiki.net/wiki/Fractured_item#Mechanics)).
 - **Corrupted**, never cleared
   ([Corrupted](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items)), and twice
-  corrupted after a Corruption Altar ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0)).
+  corrupted after a Corruption Altar ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Incursion_and_Atziri)).
 - **Eldritch implicits**, the Searing Exarch's and the Eater of Worlds', each a tier and which
   implicit it is ([Eldritch implicit modifier](https://www.poewiki.net/wiki/Eldritch_implicit_modifier)).
 
@@ -176,7 +176,7 @@ Derived: the affix counts by side and by source; the present types and families 
 coexistence facts); the tags a roll matches, the base's ∪ the influence tags ∪ every present
 affix's added tags; and the active effects of the modifiers present.
 
-**Affix capacity.** [Rarities](https://www.poewiki.net/wiki/Rarity#Rarities) gives the
+**Affix capacity.** [Rarities](https://www.poewiki.net/wiki/Rarity#Rarity_as_an_item_property) gives the
 per-side limit; an experimented base's delta shifts each side; and the two sides together
 never exceed twice the rarity's per-side limit, which is what holds a magic Ratcheting Ring
 to two suffixes and a magic Simplex Amulet to none (`model/capacity.ts`).
@@ -230,8 +230,7 @@ True of the ingested PoE1 data, and pinned by the catalog-level tests of
 - **A ladder shares its families.** Every row of a ModType claims the same groups, so a
   modifier named without a tier resolves to its groups from any row.
 - The facts of §2 and §5: a ModType is not one side, essence-only rows never roll, and the
-  five metamods are the only effect carriers the data holds, a partial protection loading
-  only through `PARTIAL_PROTECTION_EFFECTS`.
+  five metamods are the only effect carriers the data holds.
 - What a Harvest change makes of each modifier is a shipped table, generated from the
   game's lists (`packages/data/data/poe1/harvest_change.json`).
 

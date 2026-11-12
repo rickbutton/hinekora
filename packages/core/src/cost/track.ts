@@ -171,7 +171,7 @@ const OUTCOME_ODDS: Readonly<
     vaal: fourAlike,
     // The Corruption Altar keeps the four outcomes of Locus of Corruption §
     // Possible outcomes, its reforge now destroying the item (Version 3.30.0,
-    // Incursion): no change one in four, a corruption implicit one in four,
+    // Incursion and Atziri): no change one in four, a corruption implicit one in four,
     // the item destroyed two in four (`ASSUMED_ODDS`, QUESTIONS.md Q32).
     locus: (branches) => branches.map((b) => (endsCraft(b) ? 2 : 1)),
     // No source gives the odds: adding and removing are taken alike, and a

@@ -9,7 +9,8 @@
  *   method starts. The state is split by the carriers that decide a rule some
  *   handler of this method reads, each case runs under its own rules, and the
  *   results are united. `unprotect` and `keep` change a case's rules. A
- *   partial protection splits a case again by its choice (`choicesOf`).
+ *   partial protection splits a case again by its choice
+ *   (ops/remove.ts `partialChoices`).
  * - A `require` is judged on the items the method has reached; those that
  *   break it are refused and the method goes on from those that pass. Any
  *   refused item refuses the method, which is all or nothing; the refusal is
@@ -47,9 +48,8 @@ import {
 } from "./ops/handler.js";
 import { HANDLERS } from "./ops/registry.js";
 import { checkPlacement, type CompoundKind, type Step, stepsOf } from "./ops/steps.js";
-import { atLeast } from "./ops/remove.js";
+import { partialChoices } from "./ops/remove.js";
 import {
-    type Choice,
     effectsKey,
     keeping,
     NO_CHOICE,
@@ -58,7 +58,6 @@ import {
     type RuleField,
     type Rules,
     rulesOf,
-    subsetsOf,
     unprotected,
 } from "./rules.js";
 import type { ItemSet } from "./state.js";
@@ -158,48 +157,6 @@ export function metamodCases(s: ItemSet, reads: ReadonlySet<RuleField>): readonl
     return [...merged.values()];
 }
 
-/**
- * A case's items by how one use of the method settles their partial
- * protections: on a side holding no more modifiers than the protection keeps,
- * all of them are kept; on one holding more, each choice of that many of its
- * modifiers is a part of its own, an item lying in every part whose modifiers
- * it holds (the league's FAQ: the protected modifiers are chosen at random
- * each time a currency is used). A per-item split, as the reference states
- * it (reference/method.ts `choicesFor`), never a list of outcomes.
- */
-function choicesOf(u: Universe, dd: Dd, effects: readonly Effect[]): { dd: Dd; choice: Choice }[] {
-    const m = u.dd;
-    let out: { dd: Dd; choice: Choice }[] = [{ dd, choice: NO_CHOICE }];
-    for (const [gen, count] of partialProtections(effects)) {
-        const more = atLeast(u, (v) => v.row.gen === gen, count + 1);
-        const slots = u
-            .modSlots()
-            .map((slot) => ({
-                slot,
-                type: u.modSlot(slot)!.type,
-                values: u.valuesWhere(slot, (v) => v.row.gen === gen),
-            }))
-            .filter((s) => s.values.length > 0);
-        const next: { dd: Dd; choice: Choice }[] = [];
-        for (const c of out) {
-            const whole = m.diff(c.dd, more);
-            if (whole !== m.EMPTY) {
-                next.push({ dd: whole, choice: { ...c.choice, sides: [...c.choice.sides, gen] } });
-            }
-            const rest = m.and(c.dd, more);
-            if (rest === m.EMPTY) continue;
-            for (const pick of subsetsOf(slots, count)) {
-                const part = pick.reduce((p, s) => m.and(p, m.slotIn(s.slot, s.values)), rest);
-                if (part === m.EMPTY) continue;
-                const types = [...c.choice.types, ...pick.map((s) => s.type)];
-                next.push({ dd: part, choice: { ...c.choice, types } });
-            }
-        }
-        out = next;
-    }
-    return out;
-}
-
 interface SlotGroups {
     readonly slot: number;
     readonly type: TypeId;
@@ -275,7 +232,7 @@ export function runMethodTrace(
     for (const c of cases) {
         let refused = false;
         const choices = reads.has("protected")
-            ? choicesOf(u, c.dd, c.effects)
+            ? partialChoices(u, c.dd, partialProtections(c.effects))
             : [{ dd: c.dd, choice: NO_CHOICE }];
         const runs = choices.flatMap(({ dd, choice }) =>
             parts(dd, splits, state).map((part) => ({ part, choice })),

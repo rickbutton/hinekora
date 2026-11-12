@@ -41,6 +41,7 @@ import {
     FIRE_RES_TIERS,
     harvestTable,
     PROTECT_SUFFIXES_CARRIER,
+    PROTECT_TWO_SUFFIXES_CARRIER,
     RING_BASE,
     LIGHTNING_RESIST,
 } from "../__fixtures__/mods.js";
@@ -92,6 +93,7 @@ const registry = buildRegistry({
         FIRE_DOT_MULTI,
         COLD_DOT_MULTI,
         PROTECT_SUFFIXES_CARRIER,
+        PROTECT_TWO_SUFFIXES_CARRIER,
         BENCH_FIRE_RES_ROW,
         BENCH_LIFE_ROW,
     ],
@@ -410,6 +412,17 @@ describe("harvest change", () => {
             ctx,
         );
         expect(shielded.diagnostics[0]!.message).toContain("metamod protects");
+        // A partial protection protects no side: it keeps the modifier itself.
+        const kept = (suffixes: string[]) =>
+            check(
+                craft(rareRing([PROTECT_TWO_SUFFIXES_CARRIER.id], suffixes), [
+                    harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
+                ]),
+                ctx,
+            ).diagnostics[0]!.message;
+        expect(kept([FIRE_RESIST.id])).toContain("is a modifier a metamod keeps");
+        const three = [FIRE_RESIST.id, LIGHTNING_RESIST.id, "random"];
+        expect(kept(three)).toContain("may be a modifier a metamod keeps");
     });
 
     it("words the modifier absent as fact only where no item carries it", () => {

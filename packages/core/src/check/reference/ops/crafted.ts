@@ -63,7 +63,7 @@
  *   cannot-roll metamods;
  * - an Aspect is laid uncrafted.
  */
-import { keeps } from "../../rules.js";
+import { keeps } from "../rules.js";
 import { rollRange } from "../../values.js";
 import type { Gen, TypeId } from "../../../model/ids.js";
 import type { Mod } from "../../../model/mod.js";

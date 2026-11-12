@@ -247,6 +247,8 @@ export function preconditionMessage(
                         return `"${failure.mod}" ${every ? "is" : "may be"} fractured, so it can't be changed.`;
                     case "protected":
                         return `"${failure.mod}" ${sure ? "sits" : "may sit"} on a side a metamod protects, so it can't be changed.`;
+                    case "kept":
+                        return `"${failure.mod}" ${sure ? "is" : "may be"} a modifier a metamod keeps, so it can't be changed.`;
                 }
                 break;
             }
@@ -277,7 +279,10 @@ export function preconditionMessage(
                     ? `The item ${sure ? "already has" : "may already have"} a fractured modifier — nothing fractures an item twice.`
                     : `The item ${has} a fractured modifier — ${failure.what}.`;
             case "corrupted":
-                return `The item ${is} corrupted — a corrupted item takes only the Tainted currency, an unveil and the Corruption Altar.`;
+                if (!state.corrupted.has(true)) {
+                    return `The item ${is} twice corrupted — a twice-corrupted item takes no further craft.`;
+                }
+                return `The item ${is} corrupted — a corrupted item takes only the Tainted currency, an unveil and the Corruption Altar${state.corrupted.has("twice") ? ", and a twice-corrupted one none of them" : ""}.`;
             case "eldritchPresent":
                 return `${failure.what} cannot be used on an item with an eldritch implicit — this item ${has} ${eldritchLabel(state.eldritch)}.`;
             case "notDominant":

@@ -18,6 +18,7 @@ import { listItems } from "./reference/listing.js";
 import { allItems, diffSets, CItemSet } from "./reference/sets.js";
 import { BOOTS_BASE, RING_BASE } from "../__fixtures__/mods.js";
 import type { Base } from "../model/base.js";
+import { CORRUPTIONS } from "../model/marks.js";
 import { ModId, TypeId } from "../model/ids.js";
 import { buildRegistry, type Registry } from "../resolve/registry.js";
 import { type Comparisons, NO_COMPARISONS } from "./craft.js";
@@ -64,7 +65,7 @@ describe("narrowing by a condition", () => {
                     rows,
                     rarities: RARITIES.filter((x) => x !== "rare" || canBeRare(cat.base)),
                     influences: eldritch ? [u.influenceKeys[0]!] : someInfluences(u).slice(0, 3),
-                    corrupted: [false, true],
+                    corrupted: CORRUPTIONS,
                     exarch: implicits("exarch"),
                     eater: implicits("eater"),
                     values: true,
@@ -150,6 +151,20 @@ ${d}`,
             ).toBe("");
         }
     };
+
+    it("hold corrupted on an item corrupted once or twice", () => {
+        const u = universe(HAND_REGISTRY, RING_BASE);
+        const ctx = refCtx(HAND_REGISTRY, RING_BASE, 84);
+        const items = CORRUPTIONS.map((corrupted) => cItem({ corrupted }));
+        expectNarrow(u, ctx, items, { kind: "corrupted" });
+        for (const corrupted of CORRUPTIONS) {
+            const one = fromItems(u, [cItem({ corrupted })])!;
+            expect(narrow(one, { kind: "corrupted" }) !== null).toBe(corrupted !== false);
+            expect(holds({ kind: "corrupted" }, cItem({ corrupted }), ctx)).toBe(
+                corrupted !== false,
+            );
+        }
+    });
 
     it("read an eldritch implicit's tier and wording", () => {
         const u = universe(HAND_REGISTRY, BOOTS_BASE);
