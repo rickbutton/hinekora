@@ -289,18 +289,23 @@ class Checker {
     /** A loop's settled head by its body and entry: diagrams are canonical, so
      *  an entry met again is the same diagram, and the head depends on nothing
      *  else. An outer loop's rounds enter an inner loop with the same items
-     *  most rounds. */
-    private readonly settled = new WeakMap<readonly Stmt[], Map<Dd, Settled>>();
-    /** One body per call site, so a loop in it is the same loop every pass. */
-    private readonly bodies = new WeakMap<Stmt, readonly Stmt[]>();
+     *  most rounds. The rounds take no recovery, so the strict check of
+     *  `finish` settles a loop as the reporting pass did and shares them. */
+    private readonly settled: WeakMap<readonly Stmt[], Map<Dd, Settled>>;
+    /** One body per call site, so a loop in it is the same loop every pass,
+     *  the strict check's included. */
+    private readonly bodies: WeakMap<Stmt, readonly Stmt[]>;
     private readonly inlined = new WeakMap<Stmt, NonNullable<TraceEntry["inlined"]>>();
     u!: Universe;
 
     constructor(
         private readonly ctx: CheckContext,
         private readonly tuning: CheckTuning,
+        shared?: Checker,
     ) {
         this.maxRounds = tuning.maxRounds ?? MAX_ROUNDS;
+        this.settled = shared?.settled ?? new WeakMap();
+        this.bodies = shared?.bodies ?? new WeakMap();
     }
 
     run(craft: Craft): CheckResult {
@@ -404,7 +409,7 @@ class Checker {
             | { readonly said: ReadonlySet<string>; readonly entries: ReadonlyMap<string, Dd> }
             | undefined;
         if (m !== undefined && this.recovered && this.tuning.strict !== true) {
-            const checker = new Checker(this.ctx, { ...this.tuning, strict: true });
+            const checker = new Checker(this.ctx, { ...this.tuning, strict: true }, this);
             const r = checker.run(craft);
             strict = {
                 said: new Set(r.findings.map((f) => `${f.kind}@${f.span.start.offset}`)),
