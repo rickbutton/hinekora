@@ -1,11 +1,12 @@
 /**
  * What the "how it works" page draws from the tool itself, worked out when
- * the site is built: the weights behind one Orb of Alteration on the home
- * page's ring, held to the cost layer's chance for that craft's loop. The
- * page's figures are the code's, so they cannot drift from it.
+ * the site is built: the axes the checker builds for a ring under a craft of
+ * Chaos and Exalted Orbs, and the weights behind one Orb of Alteration on the
+ * home page's ring, held to the cost layer's chance for that craft's loop.
+ * The page's figures are the code's, so they cannot drift from it.
  */
 import { readFileSync } from "node:fs";
-import { check, costOf, emptyItem, oddsText, pool } from "@hinekora/core";
+import { type Base, check, costOf, emptyItem, oddsText, pool, type Registry } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { parse } from "@hinekora/parser";
 import { defineLoader } from "vitepress";
@@ -23,7 +24,18 @@ export interface Weights {
     readonly odds: string;
 }
 
+export interface Axes {
+    readonly total: number;
+    readonly item: number;
+    readonly mods: number;
+    /** The tiers of maximum Life, fire and cold resistance, the figure's rows. */
+    readonly tiers: { readonly life: number; readonly fire: number; readonly cold: number };
+    /** The power of ten nearest the product of the axes' sizes. */
+    readonly cells: number;
+}
+
 export interface How {
+    readonly axes: Axes;
     readonly weights: Weights;
 }
 
@@ -33,6 +45,14 @@ export { data };
 const CRAFT = "../../examples/landing.craft";
 const BASE = "Vermillion Ring";
 const ILVL = 84;
+const AXES_CRAFT = `item {
+    base:   "${BASE}"
+    ilvl:   ${ILVL}
+    rarity: rare
+}
+chaos
+exalt
+`;
 
 export default defineLoader({
     watch: [CRAFT],
@@ -72,6 +92,7 @@ export default defineLoader({
             );
 
         return {
+            axes: axesOf(registry, base.value),
             weights: {
                 prefixes,
                 suffixes,
@@ -83,3 +104,28 @@ export default defineLoader({
         };
     },
 });
+
+function axesOf(registry: Registry, base: Base): Axes {
+    const parsed = parse(AXES_CRAFT);
+    if (!parsed.ok) throw new Error(`the axes figure's craft: ${parsed.error.message}`);
+    const u = check(parsed.craft, { registry }).trace[0]!.before.u;
+    const total = u.logical.length;
+    const mods = u.logical.filter((s) => s.kind === "mod");
+    const tiersOf = (name: string): number => {
+        const type = registry.resolveModType(name, { base, ilvl: ILVL });
+        const slot = type.ok ? mods.find((s) => s.type === type.value) : undefined;
+        if (slot === undefined) throw new Error(`the axes figure's ${name} is gone`);
+        return slot.rows.length;
+    };
+    return {
+        total,
+        item: total - mods.length,
+        mods: mods.length,
+        tiers: {
+            life: tiersOf("maximum life"),
+            fire: tiersOf("fire resistance"),
+            cold: tiersOf("cold resistance"),
+        },
+        cells: Math.round(u.dd.domains.reduce((n, d) => n + Math.log10(d), 0)),
+    };
+}

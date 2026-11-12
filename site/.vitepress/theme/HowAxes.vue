@@ -1,11 +1,9 @@
 <script setup lang="ts">
-// The axes of a Vermillion Ring at item level 84 under a craft of Chaos and
-// Exalted Orbs, as the checker builds them: 8 for the item and 74 modifiers
-// the orbs can roll (influenced ones too, as the item may carry an
-// influence), Life and the resistances each with eight tiers there. Every
-// base has the four eldritch axes; on a ring the data names no implicit, and
-// the legal items hold only "none" on the tier axes. With them the product of
-// the axes' sizes is 10^54.9.
+import { data } from "./how.data";
+
+// Every base has the four eldritch axes; on a ring the data names no implicit,
+// and the legal items hold only "none" on the tier axes.
+const a = data.axes;
 const ELDRITCH_TIERS = ["none", "Lesser", "…", "Perfect"];
 const ITEM = [
     { name: "rarity", positions: ["Normal", "Magic", "Rare"] },
@@ -20,12 +18,15 @@ const ITEM = [
     { name: "Eater implicit", positions: ["none: a ring has no such implicit"] },
     { name: "memory strands", positions: ["0", "1", "…", "100"] },
 ];
-const TIERS = ["absent", "tier 1", "tier 2", "…", "tier 8"];
+const tiers = (n: number): string[] => ["absent", "tier 1", "tier 2", "…", `tier ${n}`];
 const MODS = [
-    { name: "maximum Life", positions: TIERS },
-    { name: "fire resistance", positions: TIERS },
-    { name: "cold resistance", positions: TIERS },
+    { name: "maximum Life", positions: tiers(a.tiers.life) },
+    { name: "fire resistance", positions: tiers(a.tiers.fire) },
+    { name: "cold resistance", positions: tiers(a.tiers.cold) },
 ];
+if (a.item !== ITEM.length) {
+    throw new Error(`the checker builds ${a.item} item axes; the figure names ${ITEM.length}`);
+}
 </script>
 
 <template>
@@ -33,22 +34,24 @@ const MODS = [
         <div class="groups">
             <section>
                 <h4>The item</h4>
-                <div v-for="a in ITEM" :key="a.name" class="axis">
-                    <span class="name">{{ a.name }}</span>
+                <div v-for="x in ITEM" :key="x.name" class="axis">
+                    <span class="name">{{ x.name }}</span>
                     <span class="chips">
-                        <i v-for="p in a.positions" :key="p">{{ p }}</i>
+                        <i v-for="p in x.positions" :key="p">{{ p }}</i>
                     </span>
                 </div>
             </section>
             <section>
                 <h4>Its modifiers</h4>
-                <div v-for="a in MODS" :key="a.name" class="axis">
-                    <span class="name">{{ a.name }}</span>
+                <div v-for="x in MODS" :key="x.name" class="axis">
+                    <span class="name">{{ x.name }}</span>
                     <span class="chips">
-                        <i v-for="p in a.positions" :key="p">{{ p }}</i>
+                        <i v-for="p in x.positions" :key="p">{{ p }}</i>
                     </span>
                 </div>
-                <p class="more">… and 71 more, one for each modifier the craft can roll</p>
+                <p class="more">
+                    … and {{ a.mods - MODS.length }} more, one for each modifier the craft can roll
+                </p>
             </section>
             <section class="not">
                 <h4>Not axes</h4>
@@ -58,8 +61,9 @@ const MODS = [
         </div>
         <figcaption>
             The axes of a Vermillion Ring at item level 84, for a craft of Chaos and Exalted Orbs.
-            There are 82 of them, and the table has about 10<sup>55</sup> cells. A ring cannot take
-            an eldritch implicit, so the table of legal items holds only "none" on those axes.
+            There are {{ a.total }} of them, and the table has about 10<sup>{{ a.cells }}</sup>
+            cells. A ring cannot take an eldritch implicit, so the table of legal items holds only
+            "none" on those axes.
         </figcaption>
     </figure>
 </template>

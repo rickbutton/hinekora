@@ -73,7 +73,7 @@ Two lists, "surely there" and "surely not", lose this fact. No resistance is sur
 so both lists are empty and all eight rows pass. The table keeps it, so the checker reports a
 later `if` that tests for none of the three as dead.
 
-No one writes the table down. A ring's table has about 10<sup>55</sup> cells. The checker
+No one writes the table down. A ring's table has about <HowCells /> cells. The checker
 stores it as a [decision diagram](https://en.wikipedia.org/wiki/Binary_decision_diagram): a
 chain of questions, one per axis, where equal sub-questions share one copy. The right half of
 the figure is one. On a ring, the diagram of every legal Rare item asks a few hundred
@@ -160,7 +160,7 @@ five, and its Exalted Orb has a slot. The craft checks.
 <HowParts />
 
 A summary that kept each fact on its own would let in the red cell. It would refuse the second
-exalt for a ring no path makes.
+exalt for a ring never made.
 
 ## What a verdict means
 

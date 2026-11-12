@@ -1,6 +1,7 @@
 import { type Theme, withBase } from "vitepress";
 import DefaultTheme from "vitepress/theme";
 import HowAxes from "./HowAxes.vue";
+import HowCells from "./HowCells.vue";
 import HowChain from "./HowChain.vue";
 import HowLoop from "./HowLoop.vue";
 import HowParts from "./HowParts.vue";
@@ -32,6 +33,7 @@ export default {
     enhanceApp({ app }) {
         app.config.globalProperties.$withBase = withBase;
         app.component("HowAxes", HowAxes);
+        app.component("HowCells", HowCells);
         app.component("HowChain", HowChain);
         app.component("HowLoop", HowLoop);
         app.component("HowParts", HowParts);
