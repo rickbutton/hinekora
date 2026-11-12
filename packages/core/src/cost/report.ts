@@ -493,7 +493,7 @@ class Walker {
     /** The item block's item. */
     private readonly first: ItemSet | undefined;
 
-    /** Every condition and bench craft the craft writes, read on the checker's
+    /** Every condition and bench step of the craft, read on the checker's
      *  item where it stands, names what the tracker follows. */
     private trackerFor(craft: Craft, result: CheckResult): Tracker | undefined {
         const first = result.trace[0]?.before;

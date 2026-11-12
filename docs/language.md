@@ -277,9 +277,9 @@ Requires a Rare item — this item is Magic.
 ```
 
 Hover, the CLI and the playground lay out the item as the game's copy-to-clipboard text,
-with tier ranges, "one of these" groups and "possibly" marks. Where only some of the items
-reaching a rejected step break it, and none came past an earlier error, the CLI and hover
-add one that does.
+with tier ranges, "one of these" groups and "possibly" marks. Where only some items reaching
+a rejected step break it, and none came past an earlier error, the CLI and hover can add one
+that does.
 
 - **Names**: an unknown or ambiguous base, mod, currency, essence, bench craft or harvest
   tag; a mod without a tier in the item block; a tier past the ladder.
@@ -287,9 +287,9 @@ add one that does.
 - **Control**: a loop that can never exit or whose body never runs; a branch or step that never
   runs; a def with conflicting, unused or repeated parameters, recursion, or a predicate
   called as a statement (or a function in a condition).
-- **Stops**: a loop still changing after 256 rounds, an item that can turn out too many ways
-  to follow, or a step the checker cannot handle (CLI exit code 3); later steps go
-  unchecked.
+- **Stops**: a loop still changing after 256 rounds or an item that can turn out too many
+  ways to follow (CLI exit code 1), or a step the checker cannot handle (code 3); later steps
+  go unchecked.
 
 ---
 

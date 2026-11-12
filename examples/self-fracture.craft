@@ -1,8 +1,8 @@
 # Self-fracturing: lock one of four mods, then clear the fillers if it stuck.
 #
-# A Fracturing Orb fractures one random mod of a four-mod rare. Crafts build
-# the item so that the three other mods are cheap fillers, fracture, and keep
-# the item only when the lock landed on the mod they wanted; the checker
+# A Fracturing Orb fractures one random mod of a four-mod rare. This craft
+# builds the item so that the three other mods are cheap fillers, fractures,
+# and keeps the item only when the lock landed on the mod it wants; the checker
 # treats the fracture as "one of these four, unknown which" until the branch
 # names it. In the good branch three annuls clear the fillers, which the fractured mod
 # survives by definition, and the base is ready for essences.

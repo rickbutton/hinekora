@@ -800,10 +800,9 @@ export class Tracker {
 
     /**
      * An unveil: three options (Veiled modifier), drawn as `unveilOffers`
-     * takes them to be, the
-     * veiled modifier becoming the one the player takes: the target when it is
-     * offered, else a modifier a condition asks for, the first the craft asks for,
-     * else one no one names.
+     * takes them to be, the veiled modifier becoming the one the player takes:
+     * the target when it is offered, else the first modifier a condition of the
+     * craft asks for, else one no one names.
      */
     private unveiled(
         state: ChainState,

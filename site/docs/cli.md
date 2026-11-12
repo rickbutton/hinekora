@@ -32,12 +32,13 @@ On a usage error the tool prints the four command forms to standard error.
 For a craft that checks, it prints the final item in the layout of the game's item text, as
 [Getting started](./getting-started#check-it) shows.
 
-If the craft reaches a [`stop`](./language/until) for every item, the line
+If the craft ends for every item, at a [`stop`](./language/until), a `restart` outside any
+loop or a step that ends it, the line
 `(the craft ends for every item before this point)` takes the item's place.
 
 For a craft with errors, it prints each one with its position and source line, then a count.
 Where only some of the items reaching a step break it, and none got there past an earlier
-error, one that does follows:
+error, one that does can follow:
 
 ```txt
 bad.craft:8:1: error: at this point the item is: Iron Ring · Magic · 1–2 affixes · 0–1 prefixes · 0–1 suffixes · ilvl 84

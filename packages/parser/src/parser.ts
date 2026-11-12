@@ -70,7 +70,7 @@ const QUOTED: Readonly<Record<NameKind, string>> = {
     aspect: "a quoted Aspect name",
 };
 
-/** An argument as the craft wrote it, for quoting a statement back in an error. */
+/** An argument as written, for quoting a statement back in an error. */
 function renderArg(arg: OperationArg): string {
     switch (arg.kind) {
         case "string":
