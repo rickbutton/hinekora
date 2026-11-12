@@ -306,7 +306,47 @@ annul`;
     });
 });
 
+describe("a craft the checker cannot judge", () => {
+    it("is one diagnostic, cached like any other", () => {
+        const broken = {
+            ...registry,
+            resolveCurrency: () => {
+                throw new Error("no currencies");
+            },
+        };
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: normal }
+transmute`;
+        const first = getDiagnostics(src, broken);
+        expect(first.map((d) => d.message)).toEqual([
+            expect.stringMatching(/^This step could not be checked.* — no currencies$/),
+        ]);
+        expect(getDiagnostics(src, broken)).toEqual(first);
+        expect(() => getHover(src, src.indexOf("transmute") + 1, broken)).not.toThrow();
+    });
+});
+
 describe("completion", () => {
+    it("offers inside a loop's condition what no item entering the loop has", () => {
+        // Inside the branch the life is ruled out; the loop waits for it all the same.
+        const head = `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: ["random"] }
+if not has "maximum life" {
+    until has "maximum life" or has "`;
+        const tail = `" { chaos }
+    bench "cold resistance"
+}`;
+        const loop = getCompletions(head + tail, head.length, registry).map((c) => c.label);
+        expect(loop).toContain("maximum life");
+        // In a branch's condition the life it is ruled out of is left out.
+        const branch = `${head.slice(0, head.indexOf("    until"))}    if has "`;
+        const inner = getCompletions(
+            `${branch}" { chaos }
+}`,
+            branch.length,
+            registry,
+        );
+        expect(inner.map((c) => c.label)).not.toContain("maximum life");
+    });
+
     it("offers a modifier's tiers by the game's numbers, marking those above the item's level", () => {
         const boots = `item { base: "Titan Greaves" ilvl: 84 rarity: rare`;
         for (const src of [

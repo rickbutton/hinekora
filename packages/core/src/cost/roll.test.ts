@@ -11,9 +11,14 @@ import {
     VEILED_CATALOG,
 } from "../__fixtures__/mods.js";
 import { craft, item, op, unveil } from "../__fixtures__/ast.js";
-import { checkPresent } from "../check/check.js";
+import { check } from "../exact/check.js";
 import { currencyOps, unveilOps } from "../check/library.js";
-import { ModId, TypeId } from "../model/ids.js";
+import { rollRange } from "../check/values.js";
+import type { CItem } from "../exact/item.js";
+import { fromItems } from "../exact/state.js";
+import { ModId } from "../model/ids.js";
+import { NO_INFLUENCE } from "../model/marks.js";
+import type { Mod } from "../model/mod.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { foulbornRows, rollOf } from "./roll.js";
 
@@ -42,7 +47,7 @@ describe("a random removal's reach", () => {
             }),
             [],
         );
-        const a = checkPresent(open, { registry }).finalState!;
+        const a = check(open, { registry }).finalState!;
         for (const reading of ["estimate", "floors", "ceilings"] as const) {
             const roll = rollOf(a, currencyOps("annul"), registry, reading);
             if (roll.kind !== "removal") throw new Error("not a removal");
@@ -59,7 +64,7 @@ describe("a random removal's reach", () => {
             }),
             [],
         );
-        const b = checkPresent(kept, { registry: protecting }).finalState!;
+        const b = check(kept, { registry: protecting }).finalState!;
         const roll = rollOf(b, currencyOps("annul"), protecting);
         if (roll.kind !== "removal") throw new Error("not a removal");
         expect(roll.gen).toBe("suffix");
@@ -80,7 +85,7 @@ describe("a random removal's odds", () => {
             }),
             [],
         );
-        const a = checkPresent(c, { registry }).finalState!;
+        const a = check(c, { registry }).finalState!;
         const roll = rollOf(a, currencyOps("annul"), registry);
         if (roll.kind !== "removal") throw new Error("not a removal");
         expect(roll.sides.suffix.unnamed).toBe(0);
@@ -115,7 +120,7 @@ describe("memory strands in the pool", () => {
         ]);
         // Three Chaos Orbs may have used every strand: the estimate reads none
         // left and both life tiers roll; the ceilings reading keeps the 82.
-        const a = checkPresent(c, { registry }).finalState!;
+        const a = check(c, { registry }).finalState!;
         const rowsOf = (roll: ReturnType<typeof rollOf>): string[] => {
             if (roll.kind !== "draw") throw new Error("not a draw");
             const members = roll.variants[0]!.prefix.flatMap((g) => g.members);
@@ -141,18 +146,32 @@ describe("a modifier the item keeps through a roll", () => {
             mods: [...CATALOG, BENCH_LIFE_ROW],
             baseAliases: { "Iron Ring": "IronRing" },
         });
+        // The block names the bench row, so the check's items may hold it.
         const c = craft(
-            item({ base: "Iron Ring", ilvl: 40, rarity: "rare", prefixes: ["IncreasedLife2"] }),
+            item({ base: "Iron Ring", ilvl: 40, rarity: "rare", prefixes: [BENCH_LIFE_ROW.id] }),
             [],
         );
-        const checked = checkPresent(c, { registry: benched }).finalState!;
-        const a = {
-            ...checked,
-            tiers: new Map([...checked.tiers]).set(
-                TypeId("IncreasedLife"),
-                new Set([BENCH_LIFE_ROW.id, ModId("IncreasedLife2")]),
-            ),
-        };
+        const { u } = check(c, { registry: benched }).finalState!;
+        const holding = (row: Mod): CItem => ({
+            rarity: "rare",
+            mods: [
+                {
+                    row: row.id,
+                    value: row.text === undefined ? undefined : rollRange(row.text)?.[0],
+                    fractured: false,
+                    crafted: row.source === "bench",
+                },
+            ],
+            influences: NO_INFLUENCE,
+            corrupted: false,
+            exarch: { tier: 0, type: undefined },
+            eater: { tier: 0, type: undefined },
+            strands: 0,
+            imprint: undefined,
+        });
+        const ladder = benched.resolveMod(ModId("IncreasedLife2"));
+        if (!ladder.ok) throw new Error("no IncreasedLife2");
+        const a = fromItems(u, [holding(ladder.value), holding(BENCH_LIFE_ROW)])!;
         const roll = rollOf(a, currencyOps("exalt"), benched);
         if (roll.kind !== "draw") throw new Error("not a draw");
         const life = roll.variants[0]!.present.find((p) => p.type === "IncreasedLife")!;
@@ -181,7 +200,7 @@ describe("an unveil", () => {
             }),
             [unveil()],
         );
-        const a = checkPresent(c, { registry: veiled }).trace[0]!.before;
+        const a = check(c, { registry: veiled }).trace[0]!.before;
         const roll = rollOf(a, unveilOps(undefined), veiled);
         if (roll.kind !== "unveil") throw new Error("not an unveil");
         expect(roll.options.map((m) => m.rows[0]!.mod.gen)).toEqual(["suffix", "suffix"]);

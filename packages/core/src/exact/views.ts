@@ -96,7 +96,15 @@ export function presentAmong(s: XItem, types: Iterable<TypeId>): Range {
         const slot = s.u.slotOfType(t);
         if (slot !== undefined) slots.add(slot);
     }
-    return s.u.dd.extent(s.dd, (slot, value) => (value !== 0 && slots.has(slot) ? 1 : 0)) ?? [0, 0];
+    const key = `among:${[...slots].sort((x, y) => x - y).join(",")}`;
+    return memo(
+        s,
+        key,
+        () =>
+            s.u.dd.extent(s.dd, (slot, value) => (value !== 0 && slots.has(slot) ? 1 : 0)) ?? [
+                0, 0,
+            ],
+    );
 }
 
 // --- rarity and caps ------------------------------------------------------------
@@ -490,43 +498,84 @@ export interface CardinalityGuarantee {
     readonly types: readonly TypeId[];
 }
 
+/** Does "at least `k` of `types`" make the clause true on every item: of the
+ *  k present, at most those outside the clause can miss it. */
+export function impliesClause(g: CardinalityGuarantee, clause: readonly TypeId[]): boolean {
+    return g.atLeast - g.types.filter((t) => !clause.includes(t)).length >= 1;
+}
+
 /**
- * The clauses of `disjunctiveGuarantees` gathered into "at least k of these":
- * clauses sharing a type form a group; where the items carry at least k of the
- * group's n types and the group's clauses are exactly every set of n − k + 1
- * of them (what "at least k of n" alone implies), the group is that one
- * guarantee. Any other group is reported clause by clause, each "at least one".
+ * The clauses of `disjunctiveGuarantees` gathered into "at least k of these",
+ * as few as cover them: clauses sharing a type are one problem; its candidate
+ * groups are their types together, those of each side, and each of these less
+ * one type or less one clause's types (so a side, or the item's own modifiers
+ * apart from a pair that replaced one, can each be a group); the candidate
+ * that implies the most clauses not yet implied is taken, the smaller first
+ * on a tie, until every clause is. A clause is its own candidate, so this
+ * ends; a clause no other group implies stays "at least one".
  */
 export function cardinalityGuarantees(
     s: XItem,
     among?: ReadonlySet<TypeId>,
     maxSize = MAX_CLAUSE,
 ): readonly CardinalityGuarantee[] {
-    const clauses = disjunctiveGuarantees(s, among, maxSize);
-    const groups: (readonly TypeId[])[][] = [];
-    for (const c of clauses) {
-        const joined = groups.filter((g) => g.some((d) => d.some((t) => c.includes(t))));
-        const merged = [c, ...joined.flat()];
-        for (const g of joined) groups.splice(groups.indexOf(g), 1);
-        groups.push(merged);
-    }
-    const out: CardinalityGuarantee[] = [];
-    for (const g of groups) {
-        const union = [...new Set(g.flat())].sort();
-        const k = presentAmong(s, union)[0];
-        const size = union.length - k + 1;
-        if (k >= 2 && g.every((c) => c.length === size) && g.length === binom(union.length, size)) {
-            out.push({ atLeast: k, types: union });
-        } else for (const c of g) out.push({ atLeast: 1, types: [...c] });
-    }
-    return out;
-}
-
-function binom(n: number, k: number): number {
-    if (k < 0 || k > n) return 0;
-    let r = 1;
-    for (let i = 0; i < k; i++) r = (r * (n - i)) / (i + 1);
-    return Math.round(r);
+    const key = `cardinality:${among === undefined ? "*" : [...among].sort().join(",")}:${maxSize}`;
+    return memo(s, key, () => {
+        const clauses = disjunctiveGuarantees(s, among, maxSize);
+        const problems: (readonly TypeId[])[][] = [];
+        for (const c of clauses) {
+            const joined = problems.filter((g) => g.some((d) => d.some((t) => c.includes(t))));
+            const merged = [c, ...joined.flat()];
+            for (const g of joined) problems.splice(problems.indexOf(g), 1);
+            problems.push(merged);
+        }
+        const sideOf = (t: TypeId): Gen | undefined => {
+            const sides = new Set(rowsOf(s, t).map((r) => r.gen));
+            return sides.size === 1 ? [...sides][0] : undefined;
+        };
+        const out: CardinalityGuarantee[] = [];
+        for (const problem of problems) {
+            const union = [...new Set(problem.flat())].sort();
+            const bases = [
+                union,
+                ...(["prefix", "suffix"] as const).map((g) => union.filter((t) => sideOf(t) === g)),
+            ].filter((b) => b.length >= 2);
+            const candidates = new Map<string, readonly TypeId[]>();
+            const add = (types: readonly TypeId[]): void => {
+                if (types.length >= 1) candidates.set(types.join(","), types);
+            };
+            for (const b of bases) {
+                add(b);
+                for (const t of b) add(b.filter((x) => x !== t));
+                for (const c of problem) add(b.filter((x) => !c.includes(x)));
+            }
+            for (const c of problem) add([...c].sort());
+            const groups: CardinalityGuarantee[] = [];
+            for (const types of candidates.values()) {
+                const atLeast = presentAmong(s, types)[0];
+                if (atLeast >= 1) groups.push({ atLeast, types });
+            }
+            let open = [...problem];
+            while (open.length > 0) {
+                let best: { g: CardinalityGuarantee; n: number } | undefined;
+                for (const g of groups) {
+                    const n = open.filter((c) => impliesClause(g, c)).length;
+                    if (
+                        n > 0 &&
+                        (best === undefined ||
+                            n > best.n ||
+                            (n === best.n && g.types.length < best.g.types.length))
+                    ) {
+                        best = { g, n };
+                    }
+                }
+                const taken = best!.g;
+                out.push(taken);
+                open = open.filter((c) => !impliesClause(taken, c));
+            }
+        }
+        return out;
+    });
 }
 
 /**

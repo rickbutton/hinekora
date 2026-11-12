@@ -3,6 +3,7 @@ import { checkPresent, type CheckContext } from "./check.js";
 import { guaranteedTypes, isExcluded } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { unitCost } from "../cost/prices.js";
+import { check } from "../exact/check.js";
 import { findMethod } from "./methods.js";
 import {
     andp,
@@ -157,10 +158,7 @@ describe("harvest change", () => {
 
     it("costs 500 lifeforce of the new element's colour, a damage change a Crystallised Rancour besides", () => {
         const unit = (from: string, to: string) => {
-            const before = checkPresent(
-                craft(rareRing([FIRE_DAMAGE.id], [FIRE_RESIST.id]), []),
-                ctx,
-            );
+            const before = check(craft(rareRing([FIRE_DAMAGE.id], [FIRE_RESIST.id]), []), ctx);
             const args = [from, to].map((value) => ({ kind: "string" as const, value }));
             return unitCost(findMethod(["harvest", "change"])!, args, before.finalState!, registry);
         };

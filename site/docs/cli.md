@@ -21,6 +21,7 @@ with no network request.
 | 0    | `check`: the craft checks. `fmt`: the file has the standard layout. `chart`, `cost`: printed.    |
 | 1    | `check`: the craft has errors. `fmt --check`: the file needs formatting. Any: it does not parse. |
 | 2    | wrong arguments, or the file cannot be read                                                      |
+| 3    | `check`: the checker could not judge the craft, a fault of its own to report                     |
 
 On a usage error the tool prints the four command forms to standard error.
 
@@ -28,23 +29,8 @@ On a usage error the tool prints the four command forms to standard error.
 
 `check` parses the craft and runs the checker. It prints the game data's source first.
 
-For a craft that checks, it prints the final item in the layout of the game's item text:
-
-```txt
-✓ first.craft checks.
-
-  Item Class: Boots
-  Rarity: Rare
-  Titan Greaves
-  --------
-  Item Level: 84
-  --------
-  { Prefix Modifier "Essences" — Resource, Life }
-  +(91-105) to maximum Life
-  { Suffix Modifier "of Tzteosh" (Tier: 1) — Elemental, Fire, Resistance }
-  +(46-48)% to Fire Resistance
-  { 2-4 additional prefix or suffix modifiers }
-```
+For a craft that checks, it prints the final item in the layout of the game's item text, as
+[Getting started](./getting-started#check-it) shows.
 
 If every path ends in a [`stop`](./language/until), the line
 `(every path ends the craft before this point)` takes the item's place.

@@ -12,7 +12,10 @@
  */
 import type { Cmp } from "../ast/ast.js";
 import type { Gen, ModId, TypeId } from "../model/ids.js";
-import { type AItem, guaranteedTypes, type RPred, refine, suffixRange } from "../check/astate.js";
+import type { RPred } from "../check/astate.js";
+import type { Dd } from "../exact/dd.js";
+import { narrow, predKey, type XItem } from "../exact/state.js";
+import { counts, guaranteedTypes, rowsOf, suffixRange } from "../exact/views.js";
 import type { Range } from "../check/domain.js";
 import { narrowRange } from "../check/values.js";
 import { amongSplitDistribution } from "./race.js";
@@ -75,18 +78,25 @@ function leaves(pred: RPred, out: Leaf[] = []): Leaf[] {
     }
 }
 
-/** What the checker's item settles on its own: impossible, certain, or neither. */
-function certainty(pred: RPred, a: AItem): boolean | undefined {
-    if (refine(a, pred, true) === null) return false;
-    if (refine(a, pred, false) === null) return true;
-    return undefined;
+const settledBy = new WeakMap<Dd, Map<string, boolean | undefined>>();
+
+/** What the checker's items settle on their own: impossible, certain, or neither. */
+export function certainty(pred: RPred, a: XItem): boolean | undefined {
+    let known = settledBy.get(a.dd);
+    if (known === undefined) settledBy.set(a.dd, (known = new Map<string, boolean | undefined>()));
+    const key = predKey(pred);
+    if (known.has(key)) return known.get(key);
+    const r =
+        narrow(a, pred, true) === null ? false : narrow(a, pred, false) === null ? true : undefined;
+    known.set(key, r);
+    return r;
 }
 
 /**
  * The chance `pred` holds after `roll` left the item `after`. `undefined` when
  * neither the roll nor the item settles it.
  */
-export function chance(pred: RPred, roll: Roll, after: AItem): number | undefined {
+export function chance(pred: RPred, roll: Roll, after: XItem): number | undefined {
     const settled = certainty(pred, after);
     if (settled !== undefined) return settled ? 1 : 0;
     // A leaf the roll does not model is read off the item; one the item cannot
@@ -160,7 +170,7 @@ function modelled(leaf: Leaf, roll: Roll): boolean {
 function removalChance(
     pred: RPred,
     roll: Extract<Roll, { kind: "removal" }>,
-    after: AItem,
+    after: XItem,
     base: Truth,
 ): number | undefined {
     const picks: { type?: TypeId; gen?: Gen; prob: number }[] = [...roll.candidates];
@@ -228,7 +238,7 @@ function survival(pred: RPred, roll: Extract<Roll, { kind: "removal" }>): number
 
 /** A Divine Orb: a present modifier's value is uniform over its row's range
  *  again; which row it is, the item knows or does not. */
-function rerollChance(pred: RPred, after: AItem, base: Truth): number | undefined {
+function rerollChance(pred: RPred, after: XItem, base: Truth): number | undefined {
     const valueLeaves = leaves(pred).filter(
         (l): l is Extract<Leaf, { kind: "hasValue" }> => l.kind === "hasValue",
     );
@@ -237,8 +247,8 @@ function rerollChance(pred: RPred, after: AItem, base: Truth): number | undefine
     const needsRow = new Set<TypeId>();
     for (const leaf of valueLeaves) {
         if (!present.has(leaf.type)) continue;
-        const pinned = after.tiers.get(leaf.type);
-        const ids = [...leaf.rows.keys()].filter((id) => pinned === undefined || pinned.has(id));
+        const held = new Set(rowsOf(after, leaf.type).map((m) => m.id));
+        const ids = [...leaf.rows.keys()].filter((id) => held.has(id));
         if (ids.length === 0) continue;
         taken.set(
             leaf.type,
@@ -246,17 +256,17 @@ function rerollChance(pred: RPred, after: AItem, base: Truth): number | undefine
         );
         needsRow.add(leaf.type);
     }
-    const counts = {
-        prefix:
-            after.counts.prefix[0] === after.counts.prefix[1] ? after.counts.prefix[0] : undefined,
-        suffix: suffixRange(after)[0] === suffixRange(after)[1] ? suffixRange(after)[0] : undefined,
-    };
+    const prefix = counts(after).prefix;
+    const suffix = suffixRange(after);
     return jointChance(
         pred,
         taken,
         needsRow,
         valueLeaves,
-        counts,
+        {
+            prefix: prefix[0] === prefix[1] ? prefix[0] : undefined,
+            suffix: suffix[0] === suffix[1] ? suffix[0] : undefined,
+        },
         (leaf) => base(leaf) ?? certainty(leaf, after),
     );
 }
@@ -265,7 +275,7 @@ function rerollChance(pred: RPred, after: AItem, base: Truth): number | undefine
 function pickChance(
     pred: RPred,
     candidates: readonly Candidate[],
-    after: AItem,
+    after: XItem,
     base: Truth,
     truthFor: (leaf: Leaf, picked: TypeId) => boolean | undefined,
 ): number | undefined {
@@ -375,7 +385,7 @@ interface Drawn {
 function drawChance(
     pred: RPred,
     variants: readonly DrawVariant[],
-    after: AItem,
+    after: XItem,
     base: Truth,
 ): number | undefined {
     const interest = typesOfInterest(pred);

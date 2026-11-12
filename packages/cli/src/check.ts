@@ -40,6 +40,8 @@ export function chartSource(source: string, registry: Registry): string | undefi
 export interface CheckOutput {
     readonly ok: boolean;
     readonly output: string;
+    /** The checker could not judge the craft: a fault of its own, not of the craft. */
+    readonly unjudged?: true;
 }
 
 export function checkSource(source: string, file: string, registry: Registry): CheckOutput {
@@ -65,6 +67,7 @@ export function checkSource(source: string, file: string, registry: Registry): C
     return {
         ok: false,
         output: `${blocks.join("\n\n")}\n\n✗ ${n} ${plural(n, "error")}`,
+        ...(result.findings.some((f) => f.kind === "unjudged") && { unjudged: true as const }),
     };
 }
 
@@ -116,6 +119,10 @@ export function costSource(
         if (s.note !== undefined) out.push(`  ${"".padEnd(width)}  (${s.note})`);
     }
     out.push("");
+    if (report.unjudged === true) {
+        out.push("Expected spend: not known, for the check could not follow the item.");
+        return { ok: true, output: out.join("\n") };
+    }
     if (report.unknown) {
         const rest =
             report.total.length === 0

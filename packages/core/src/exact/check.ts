@@ -87,7 +87,8 @@ export type FindingKind =
     | "unreachable"
     | "ended"
     | "unsettled"
-    | "limit";
+    | "limit"
+    | "unjudged";
 
 export interface Finding {
     readonly kind: FindingKind;
@@ -170,13 +171,35 @@ class Abandoned extends Error {
 const TOO_MANY =
     "The item can turn out too many different ways here to follow each, so the steps from here on are not checked.";
 
+/**
+ * The craft checked. A fault of the checker's own (a case it does not handle,
+ * data it does not expect) never escapes: the craft is then not judged, and
+ * the one error says so at the step it was checking, with the fault's words
+ * for a report.
+ */
 export function checkExact(
     craft: Craft,
     ctx: CheckContext,
     tuning: ExactTuning = {},
 ): ExactCheckResult {
-    return new ExactChecker(ctx, tuning).run(craft);
+    const checker = new ExactChecker(ctx, tuning);
+    try {
+        return checker.run(craft);
+    } catch (e) {
+        const span = checker.at ?? craft.item.span;
+        const why = e instanceof Error ? e.message : String(e);
+        return {
+            ok: false,
+            diagnostics: [{ message: `${UNJUDGED} — ${why}`, span }],
+            trace: [],
+            findings: [{ kind: "unjudged", span }],
+        };
+    }
 }
+
+/** The words of a craft the checker could not judge. */
+export const UNJUDGED =
+    "This step could not be checked, so the craft is not judged from here: the checker does not handle something about it. Please report it";
 
 /** The check the tool runs. */
 export const check = checkExact;
@@ -203,8 +226,49 @@ export function traceAt<E extends { readonly span: SourceSpan }>(
     return best;
 }
 
+/** A finding of the reporting pass, kept until the check ends: whether it is
+ *  reported, and with what item under it, depends on the strict check. */
+interface Pending {
+    readonly finding: Finding;
+    readonly message: string | undefined;
+    /** The statement it is about (`stmtKey`), and the items entering it. */
+    readonly key: string;
+    readonly entry: Dd;
+    /** A refused step's items that break it, where they are items it is used on. */
+    readonly breaking?: Dd;
+    /** A loop that never exits because its body refused a step. */
+    readonly refusedBody?: true;
+}
+
+const stmtKey = (s: Stmt): string => `${s.kind}@${s.span.start.offset}:${s.span.end.offset}`;
+
+/** The control findings: about which steps run, not about an item a step meets. */
+const CONTROL: ReadonlySet<FindingKind> = new Set([
+    "deadIf",
+    "deadElse",
+    "neverRuns",
+    "neverExits",
+    "unreachable",
+]);
+
+/** A refusal's requirement: its words but the line that gives the item. */
+const requirement = (message: string): string =>
+    message
+        .split("\n")
+        .filter((l) => !l.startsWith("at this point the item is"))
+        .join("\n");
+
 class ExactChecker {
     private readonly diagnostics: CheckDiagnostic[] = [];
+    private readonly pending: Pending[] = [];
+    /** The items entering each statement on the reporting pass, by `stmtKey`. */
+    readonly entries = new Map<string, Dd>();
+    /** Some item went on past an error on the reporting pass. */
+    private recovered = false;
+    /** The refusals reported so far, for a loop to tell its body refused. */
+    private refusals = 0;
+    /** The statement being checked, for an error the check cannot go past. */
+    at: SourceSpan | undefined;
     private readonly findings: Finding[] = [];
     private readonly trace: XTraceEntry[] = [];
     private sink: XTraceEntry[] = this.trace;
@@ -228,7 +292,7 @@ class ExactChecker {
     /** One body per call site, so a loop in it is the same loop every pass. */
     private readonly bodies = new WeakMap<Stmt, readonly Stmt[]>();
     private readonly inlined = new WeakMap<Stmt, NonNullable<XTraceEntry["inlined"]>>();
-    private u!: Universe;
+    u!: Universe;
 
     constructor(
         private readonly ctx: CheckContext,
@@ -240,6 +304,7 @@ class ExactChecker {
     run(craft: Craft): ExactCheckResult {
         this.collect(craft.defs, craft.procs);
         const done = (finalState?: XItem): ExactCheckResult => {
+            this.finish(craft);
             const r: ExactCheckResult = {
                 ok: this.diagnostics.length === 0,
                 diagnostics: this.diagnostics,
@@ -292,16 +357,86 @@ class ExactChecker {
         kind: FindingKind,
         message: string | undefined,
         span: SourceSpan,
+        at: {
+            readonly key: string;
+            readonly entry: Dd;
+            readonly breaking?: Dd;
+            readonly refusedBody?: true;
+        },
         items: FindingItems = {},
-        example?: ItemView,
     ): void {
         if (this.quiet > 0) return;
-        if (message !== undefined) {
-            this.diagnostics.push({ message, span, ...(example !== undefined && { example }) });
+        if (kind === "refused") this.refusals++;
+        const finding: Finding = { kind, span };
+        this.findings.push(finding);
+        this.pending.push({ finding, message, ...at });
+        this.items.set(finding, items);
+    }
+
+    /**
+     * The errors the findings of the reporting pass make: every finding stays
+     * in `findings`, for what reads the analysis. After an error the
+     * craft goes on from items the game does not make (a recovery), so one
+     * mistake is not the end of the report; what is found only on those items
+     * is a consequence of the error, not a fact of the craft. The strict check,
+     * which lets no item past an error, tells them apart:
+     *
+     * - a control finding (a dead branch, a loop that never runs or never
+     *   exits, a step that never runs) is reported only where the strict check
+     *   reports it too, and a loop that never exits not where its body refused
+     *   a step, which is then the cause;
+     * - a refusal it does not report is reported only where no error before it
+     *   has stated the same requirement;
+     * - an item under a refusal is shown only where every item entering the
+     *   step is one the game makes, and only some of them break it.
+     *
+     * The errors are then in the order of the craft.
+     */
+    private finish(craft: Craft): void {
+        const m = this.u === undefined ? undefined : this.u.dd;
+        let strict:
+            | { readonly said: ReadonlySet<string>; readonly entries: ReadonlyMap<string, Dd> }
+            | undefined;
+        if (m !== undefined && this.recovered && this.tuning.strict !== true) {
+            const checker = new ExactChecker(this.ctx, { ...this.tuning, strict: true });
+            const r = checker.run(craft);
+            strict = {
+                said: new Set(r.findings.map((f) => `${f.kind}@${f.span.start.offset}`)),
+                // A check given a node budget builds a universe of its own,
+                // whose diagrams say nothing of these.
+                entries: checker.u === this.u ? checker.entries : new Map<string, Dd>(),
+            };
         }
-        const f: Finding = { kind, span };
-        this.findings.push(f);
-        this.items.set(f, items);
+        const said = (f: Finding): boolean =>
+            strict === undefined || strict.said.has(`${f.kind}@${f.span.start.offset}`);
+        const stated = new Set<string>();
+        const ordered = [...this.pending].sort(
+            (a, b) => a.finding.span.start.offset - b.finding.span.start.offset,
+        );
+        for (const p of ordered) {
+            const f = p.finding;
+            if (CONTROL.has(f.kind) && !said(f)) continue;
+            // A body that refuses a step is why no item leaves: that refusal is the error.
+            if (p.refusedBody === true && this.tuning.strict !== true) continue;
+            if (f.kind === "refused" && p.message !== undefined) {
+                const words = requirement(p.message);
+                if (!said(f) && stated.has(words)) continue;
+                stated.add(words);
+            }
+            if (p.message === undefined) continue;
+            let example: ItemView | undefined;
+            if (m !== undefined && p.breaking !== undefined && p.breaking !== p.entry) {
+                const clean =
+                    strict === undefined ? p.entry : (strict.entries.get(p.key) ?? m.EMPTY);
+                if (m.implies(p.entry, clean)) example = this.example(p.breaking);
+            }
+            this.diagnostics.push({
+                message: p.message,
+                span: f.span,
+                ...(example !== undefined && { example }),
+            });
+        }
+        this.diagnostics.sort((a, b) => a.span.start.offset - b.span.start.offset);
     }
 
     /** A recovery feeds the steps after an error on the reporting pass only:
@@ -331,6 +466,11 @@ class ExactChecker {
         let restarted = false;
         let stopped = false;
         for (const [i, stmt] of stmts.entries()) {
+            if (this.quiet === 0) {
+                const key = stmtKey(stmt);
+                const held = this.entries.get(key);
+                this.entries.set(key, held === undefined ? s.dd : this.u.dd.or(held, s.dd));
+            }
             const flow = this.stmt(s, stmt);
             restarted ||= flow.restarted;
             stopped ||= flow.stopped;
@@ -358,9 +498,13 @@ class ExactChecker {
                         restarts: "the loop always restarts before it",
                         both: "every path before it stops or restarts",
                     }[unreached];
-                    this.report("unreachable", `this step can never run: ${why}`, next.span, {
-                        unreached,
-                    });
+                    this.report(
+                        "unreachable",
+                        `this step can never run: ${why}`,
+                        next.span,
+                        { key: stmtKey(next), entry: this.u.dd.EMPTY },
+                        { unreached },
+                    );
                 }
                 return { fall: null, restarted, stopped };
             }
@@ -373,6 +517,7 @@ class ExactChecker {
      *  node budget passed anywhere inside it is reported at the innermost
      *  statement and ends the check. */
     private stmt(s: XItem, stmt: Stmt): Flow {
+        this.at = stmt.span;
         try {
             return this.u.dd.batch(() => this.stmtOn(s, stmt));
         } catch (e) {
@@ -441,56 +586,56 @@ class ExactChecker {
          *  they are not items the step is used on, as an operation before the
          *  failing one has changed them. */
         let breaking: Dd | null | undefined;
+        const firstBreak = (dd: Dd | null): void => {
+            if (breaking === undefined) breaking = dd;
+        };
         let stopped = false;
         const failing = new Map<string, Dd>();
         for (const { part, key } of together(buildMethod(s, method, literals))) {
             if ("refused" in part.built) {
-                breaking ??= part.state.dd;
+                firstBreak(part.state.dd);
                 message ??= part.built.refused;
                 unbuilt = m.or(unbuilt, part.state.dd);
-                if (this.recovering) fall = m.or(fall, part.state.dd);
-                else stopped = true;
+                if (this.recovering) {
+                    fall = m.or(fall, part.state.dd);
+                    this.recovered = true;
+                } else stopped = true;
                 continue;
             }
             const run = runMethodTrace(part.state, part.built);
             const { result } = run;
             for (const [i, dd] of run.failing) failing.set(`${key}#${i}`, dd);
             if (!result.ok) {
-                if (breaking === undefined) {
-                    const first = firstOf(run.failing);
-                    breaking =
-                        first !== undefined && m.implies(first, part.state.dd) ? first : null;
-                }
+                const first = firstOf(run.failing);
+                firstBreak(first !== undefined && m.implies(first, part.state.dd) ? first : null);
                 message ??= this.refusal(s, result.failure, result.under);
             }
             const recovers = result.recovered === true;
+            if (recovers && this.recovering) this.recovered = true;
             if (run.reachedEnd || (!result.ok && !(recovers && this.recovering))) stopped = true;
             if (result.ended !== true && (!recovers || this.recovering)) {
                 fall = m.or(fall, result.state.dd);
             }
         }
+        const at = { key: stmtKey(stmt), entry: s.dd };
         if (message !== undefined) {
-            const example =
-                this.quiet === 0 &&
-                breaking !== undefined &&
-                breaking !== null &&
-                m.count(s.dd) > 1n
-                    ? this.example(breaking)
-                    : undefined;
+            const b: Dd | null | undefined = breaking;
             this.report(
                 "refused",
                 message,
                 stmt.span,
+                { ...at, ...(b !== undefined && b !== null && { breaking: b }) },
                 {
                     ...(failing.size > 0 && { failing }),
                     ...(unbuilt !== m.EMPTY && { unbuilt }),
                 },
-                example,
             );
         }
         const after = stateOf(this.u, fall);
         // A method that leaves no item on any outcome ends the path, as `stop` does.
-        if (after === null && message === undefined) this.report("ended", undefined, stmt.span);
+        if (after === null && message === undefined) {
+            this.report("ended", undefined, stmt.span, at);
+        }
         return { fall: after, restarted: false, stopped };
     }
 
@@ -521,11 +666,13 @@ class ExactChecker {
         );
         const yes = this.cut(s, stmt.pred, true, resolved);
         const no = this.cut(s, stmt.pred, false, resolved);
+        const at = { key: stmtKey(stmt), entry: s.dd };
         if (yes === null) {
             this.report(
                 "deadIf",
                 `the 'if' branch can never run: ${describePred(stmt.pred)} is impossible here${levelReasonsOn(s, resolved)}`,
                 stmt.pred.span,
+                at,
             );
         }
         if (no === null && stmt.elseBody !== undefined) {
@@ -533,6 +680,7 @@ class ExactChecker {
                 "deadElse",
                 `the 'else' branch can never run: ${describePred(stmt.pred)} always holds here`,
                 stmt.pred.span,
+                at,
             );
         }
         let fall = this.u.dd.EMPTY;
@@ -574,24 +722,41 @@ class ExactChecker {
         const { head, stopped } = this.settle(entry, stmt, resolved !== null);
         const going = this.cut(head, stmt.pred, false, resolved);
         const exit = this.cut(head, stmt.pred, true, resolved);
+        const at = { key: stmtKey(stmt), entry: entry.dd };
         if (going === null) {
             this.report(
                 "neverRuns",
                 `this loop's body never runs: ${describePred(stmt.pred)} already holds here`,
                 stmt.pred.span,
+                at,
             );
             return goesOn(entry);
         }
+        const refusals = this.refusals;
+        const back = this.quiet === 0 ? this.back(going, stmt.body) : undefined;
+        const body = back?.stopped ?? stopped;
         if (exit === null) {
             this.report(
                 "neverExits",
                 `this loop can never exit: ${describePred(stmt.pred)} can never become true here${levelReasonsOn(head, resolved)}`,
                 stmt.pred.span,
+                { ...at, ...(this.refusals > refusals && { refusedBody: true as const }) },
             );
         }
-        const body = this.quiet === 0 ? this.back(going, stmt.body).stopped : stopped;
         if (exit !== null) return { fall: exit, restarted: false, stopped: body };
-        return this.recovering ? goesOn(head) : ENDS;
+        if (!this.recovering) return ENDS;
+        // No item leaves: the craft goes on from the items the body's recovery
+        // brings back that meet the condition, else from the whole head.
+        this.recovered = true;
+        const recovered = this.cut(
+            { u: this.u, dd: this.u.dd.or(head.dd, back?.dd ?? this.u.dd.EMPTY) },
+            stmt.pred,
+            true,
+            resolved,
+        );
+        return recovered === null
+            ? goesOn(head)
+            : { fall: recovered, restarted: false, stopped: body };
     }
 
     /**

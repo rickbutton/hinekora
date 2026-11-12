@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CATALOG, RING_BASE, SEVEN_TIER_ROWS } from "../__fixtures__/mods.js";
 import { craft, item } from "../__fixtures__/ast.js";
-import { checkPresent } from "../check/check.js";
+import { check } from "../exact/check.js";
 import { currencyOps, foulbornOps } from "../check/library.js";
 import type { Op } from "../check/ops.js";
 import { buildRegistry } from "../resolve/registry.js";
@@ -16,7 +16,7 @@ const registry = buildRegistry({
 /** The seven-tier modifier's rows an orb may lay down on a ring holding `strands`. */
 function tiers(strands: number, ops: readonly Op[]): string[] {
     const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "rare", strands }), []);
-    const roll = rollOf(checkPresent(c, { registry }).finalState!, ops, registry);
+    const roll = rollOf(check(c, { registry }).finalState!, ops, registry);
     if (roll.kind !== "draw") throw new Error("not a draw");
     const v = roll.variants[0]!;
     return [...v.prefix, ...v.suffix]

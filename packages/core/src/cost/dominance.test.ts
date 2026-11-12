@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent } from "../check/check.js";
 import { check } from "../exact/check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { andp, cmp, craft, has, hasValue, iff, item, notp, op, orp } from "../__fixtures__/ast.js";
@@ -16,6 +15,7 @@ import type { Pred } from "../ast/index.js";
 import { GroupId, ModId, TagId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import { findMethod } from "../check/methods.js";
+import { methodItemOf } from "../exact/build.js";
 import { influenceKey } from "../model/marks.js";
 import { costOf } from "./report.js";
 import { Tracker } from "./track.js";
@@ -76,10 +76,10 @@ const boots = (prefixes: string[], suffixes: string[], ilvl = 100) =>
  *  asked in turn: the orb's step and each condition's chance. */
 function after(start: ReturnType<typeof boots>, conditions: readonly Pred[], reg = registry) {
     const c = craft(start, [op("dominance"), ...conditions.map((p) => iff(p, []))]);
-    const result = checkPresent(c, { registry: reg });
+    const result = check(c, { registry: reg });
     // The check takes the orb; it may find a condition after it impossible.
     for (const d of result.diagnostics) expect(d.message).toContain("can never run");
-    const steps = costOf(c, check(c, { registry: reg }), reg).steps;
+    const steps = costOf(c, result, reg).steps;
     return {
         orb: steps.find((s) => s.kind === "operation")!,
         asked: steps.filter((s) => s.kind === "if"),
@@ -213,9 +213,9 @@ describe("the cost walk through an Orb of Dominance", () => {
         const c = craft(boots([HUNTER_BOOTS_PREFIX.id], [ELEVATED_THIRD!.id]), [
             iff(high, [op("dominance"), iff(high, [])]),
         ]);
-        const result = checkPresent(c, { registry });
+        const result = check(c, { registry });
         expect(result.diagnostics).toEqual([]);
-        const steps = costOf(c, check(c, { registry: registry }), registry).steps;
+        const steps = costOf(c, result, registry).steps;
         const [, inner] = steps.filter((s) => s.kind === "if");
         expect(inner!.note).toBeUndefined();
         expect(inner!.branch).toBeCloseTo((1 / 2) * (6 / 11), 12);
@@ -238,16 +238,10 @@ describe("the cost walk through an Orb of Dominance", () => {
 
     describe("is not followed, and says why,", () => {
         /** The orb's note on an item it takes but the walk cannot read. */
-        const noteOf = (
-            c: ReturnType<typeof craft>,
-            reg: typeof registry,
-            checkedOn: typeof registry = reg,
-        ): string => {
-            const result = checkPresent(c, { registry: reg });
+        const noteOf = (c: ReturnType<typeof craft>, reg: typeof registry): string => {
+            const result = check(c, { registry: reg });
             expect(result.diagnostics).toEqual([]);
-            const orb = costOf(c, check(c, { registry: checkedOn }), reg).steps.findLast(
-                (s) => s.kind === "operation",
-            )!;
+            const orb = costOf(c, result, reg).steps.findLast((s) => s.kind === "operation")!;
             expect(orb.note).toContain("every item the check allows");
             return orb.note!;
         };
@@ -269,13 +263,17 @@ describe("the cost walk through an Orb of Dominance", () => {
             const c = craft(boots([HUNTER_BOOTS_PREFIX.id], [HUNTER_BOOTS_SUFFIX.id]), [
                 op("dominance"),
             ]);
-            const settled = checkPresent(c, { registry: dual }).trace.at(-1)!.before;
+            const settled = check(c, { registry: dual }).trace.at(-1)!.before;
+            const { u } = settled;
+            const m = u.dd;
+            const slot = u.scalar("influences");
+            const both = u.influenceValue(influenceKey(["shaper", "hunter"]))!;
             const before = {
-                ...settled,
-                influences: new Set([...settled.influences, influenceKey(["shaper", "hunter"])]),
+                u,
+                dd: m.or(settled.dd, m.and(m.forget(settled.dd, [slot]), m.slotIn(slot, [both]))),
             };
             const tracker = new Tracker(dual, before, [before], [], []);
-            const built = findMethod(["dominance"])!.build([], before, dual);
+            const built = findMethod(["dominance"])!.build([], methodItemOf(before), dual);
             if ("refused" in built) throw new Error(built.refused);
             const [start] = tracker.statesIn(before)!;
             tracker.transition(before, built, "estimate")!(start!.state);
@@ -294,42 +292,41 @@ describe("the cost walk through an Orb of Dominance", () => {
                 "which tier an Orb of Dominance raises a modifier to is not settled where two tiers share a level",
             );
         });
+    });
 
-        it("where a top-tier modifier has no one elevated modifier", () => {
-            // As a Shaper helmet's mana regeneration has none in the data.
-            const start = boots([HUNTER_BOOTS_PREFIX.id], [THIRD!.id]);
-            const none = buildRegistry({
-                bases: [BOOTS_BASE],
-                mods: mods.filter((m) => m !== ELEVATED_THIRD),
-            });
-            const reason =
-                "the elevated modifier an Orb of Dominance makes of a top-tier modifier here is not known";
-            // The exact check takes a top row with no one elevated row for a
-            // fault of the data (exact/ops/remove.ts `elevations`) and stops:
-            // it checks on the whole registry, and the walk reads its own.
-            expect(noteOf(craft(start, [op("dominance")]), none, registry)).toContain(reason);
-            const second: Mod = { ...ELEVATED_THIRD!, id: ModId("HunterBootsThirdElevated2") };
-            const two = buildRegistry({ bases: [BOOTS_BASE], mods: [...mods, second] });
-            expect(noteOf(craft(start, [op("dominance")]), two, registry)).toContain(reason);
+    it("gives no figure where the check cannot judge the craft", () => {
+        // A top-tier influence row with no elevated row is a fault of the data
+        // (exact/ops/remove.ts `elevations`): the check judges nothing, and
+        // the walk has no item to cost the steps on.
+        const none = buildRegistry({
+            bases: [BOOTS_BASE],
+            mods: mods.filter((m) => m !== ELEVATED_THIRD),
         });
+        const c = craft(boots([HUNTER_BOOTS_PREFIX.id], [THIRD!.id]), [op("dominance")]);
+        const result = check(c, { registry: none });
+        expect(result.ok).toBe(false);
+        expect(result.trace).toEqual([]);
+        const r = costOf(c, result, none);
+        expect(r.unjudged).toBe(true);
+        expect(r.unknown).toBe(true);
+        expect(r.steps).toEqual([]);
+        expect(r.total).toEqual([]);
+    });
 
-        it("where the elevated modifier the orb would make is already on the item", () => {
-            // The suffix removed, the prefix would become the elevated prefix
-            // the item holds beside it. The check refuses the two together,
-            // being of one group; the walk reads the item all the same.
-            const c = craft(
-                boots([HUNTER_BOOTS_PREFIX.id, ELEVATED_BOOTS_PREFIX.id], [HUNTER_BOOTS_SUFFIX.id]),
-                [op("dominance")],
-            );
-            const result = checkPresent(c, { registry });
-            expect(result.diagnostics.map((d) => d.message)).toEqual([
-                expect.stringContaining("cannot both be on an item"),
-            ]);
-            const orb = costOf(c, check(c, { registry: registry }), registry).steps[0]!;
-            expect(orb.note).toContain(
-                "the elevated modifier an Orb of Dominance would make is already on the item",
-            );
-        });
+    it("reads an item block holding an elevated modifier beside the one it was made of as the check goes on from it", () => {
+        // The two are of one group: the check refuses the second and goes on
+        // from the first, which the orb may elevate.
+        const c = craft(
+            boots([HUNTER_BOOTS_PREFIX.id, ELEVATED_BOOTS_PREFIX.id], [HUNTER_BOOTS_SUFFIX.id]),
+            [op("dominance"), iff(elevatedPrefix, [])],
+        );
+        const result = check(c, { registry });
+        expect(result.diagnostics.map((d) => d.message)).toEqual([
+            expect.stringContaining("cannot both be on an item"),
+        ]);
+        const steps = costOf(c, result, registry).steps;
+        expect(steps[0]!.note).not.toContain("every item the check allows");
+        expect(steps[1]!.branch).toBeCloseTo(1 / 2, 12);
     });
 
     it("is not followed where a modifier the guide does not name may be influenced", () => {

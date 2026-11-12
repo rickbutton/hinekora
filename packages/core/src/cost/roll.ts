@@ -1,14 +1,15 @@
 /**
  * A method's roll: what one use of it draws, read off its operation sequence
  * and the item it is used on, as the pools and counts the race (`race.ts`)
- * needs. The item is a checker's abstract item, the trace's or one narrowed to
- * a state the cost walk tracks (docs/cost.md §3), so the pool is the pool of
- * the facts it holds on every path (the base, the kept and fractured modifiers,
- * the influence). Nothing here lists outcomes; a roll is a few weighted
+ * needs. The item is the checker's set of items, the trace's or one narrowed
+ * to a state the cost walk tracks (docs/cost.md §3), so the pool is the pool
+ * of the facts every one of them holds (the base, the kept and fractured
+ * modifiers, the influence). Nothing here lists outcomes; a roll is a few weighted
  * rows per side and a distribution of counts.
  */
 import type { Gen, GroupId, TypeId } from "../model/ids.js";
 import type { Base } from "../model/base.js";
+import type { ItemFacts } from "../model/item.js";
 import type { EldritchSide } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import { lookupWeight, pool } from "../pool/pool.js";
@@ -17,16 +18,24 @@ import { FOULBORN_AS_STRANDS } from "../model/strands.js";
 import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
 import type { Registry } from "../resolve/registry.js";
 import { rollableGen, rollableTiers } from "../resolve/tiers.js";
-import {
-    type AItem,
-    capsOver,
-    guaranteedTypes,
-    rarityOf,
-    suffixRange,
-    sideCap,
-} from "../check/astate.js";
+import { sideCap } from "../model/capacity.js";
 import type { FillCount, Op, PoolSpec } from "../check/ops.js";
-import { guaranteedFacts, influenceTagsAny, runMethod } from "../check/ops.js";
+import { buildKey } from "../exact/build.js";
+import { effectsKey } from "../exact/rules.js";
+import type { Dd } from "../exact/dd.js";
+import { runMethod, type XTransferResult } from "../exact/method.js";
+import type { XItem } from "../exact/state.js";
+import {
+    capsOver,
+    counts as countsOf,
+    guaranteedFacts,
+    guaranteedTypes,
+    influenceTagsAny,
+    rarityOf,
+    rowsOf,
+    strandsRange,
+    suffixRange,
+} from "../exact/views.js";
 import { splitDistribution } from "./race.js";
 
 /**
@@ -110,7 +119,7 @@ export type Roll =
           readonly kind: "removal";
           readonly candidates: readonly Candidate[];
           /** The item before the removal, which knows the candidates' tiers. */
-          readonly before: AItem;
+          readonly before: XItem;
           /** How many modifiers each side holds, and the chance the removal takes
            *  one of that side that no candidate names. */
           readonly sides: Readonly<
@@ -213,7 +222,7 @@ function splitOf(
     m: number,
     capPrefix: number,
     capSuffix: number,
-): number[] {
+): readonly number[] {
     return splitDistribution(prefix, suffix, m, Math.max(0, capPrefix), Math.max(0, capSuffix));
 }
 
@@ -224,11 +233,11 @@ function splitOf(
  * let it, since the sides' ceilings alone may add up to more than the item can
  * hold and would show a full item where the checker proved a slot open.
  */
-function countsAt(a: AItem, reading: Reading): Readonly<Record<Gen, number>> {
-    const prefix = a.counts.prefix;
+function countsAt(a: XItem, reading: Reading): Readonly<Record<Gen, number>> {
+    const prefix = countsOf(a).prefix;
     const suffix = suffixRange(a);
     if (reading !== "ceilings") return { prefix: prefix[0], suffix: suffix[0] };
-    const total = a.counts.total[1];
+    const total = countsOf(a).total[1];
     let p = Math.min(prefix[1], Math.ceil(total / 2));
     const s = Math.min(suffix[1], total - p);
     p = Math.min(prefix[1], total - s);
@@ -238,16 +247,10 @@ function countsAt(a: AItem, reading: Reading): Readonly<Record<Gen, number>> {
 /** The item's facts the pool reads: the guaranteed modifiers, with each side's
  *  count raised to what the reading takes it at, so a side the unnamed
  *  modifiers fill admits nothing more. */
-function sureFacts(
-    a: AItem,
-    registry: Registry,
-    level?: number,
-    reading: Reading = "estimate",
-    withStrands = false,
-) {
-    const facts = guaranteedFacts(a, registry, level);
+function sureFacts(a: XItem, level?: number, reading: Reading = "estimate", withStrands = false) {
+    const facts = guaranteedFacts(a, level);
     const counts = countsAt(a, reading);
-    const strands = withStrands ? a.strands[reading === "ceilings" ? 1 : 0] : 0;
+    const strands = withStrands ? strandsRange(a)[reading === "ceilings" ? 1 : 0] : 0;
     return {
         ...facts,
         prefixCount: Math.max(facts.prefixCount, counts.prefix),
@@ -460,7 +463,7 @@ export function unmodelled(ops: readonly Op[]): string | undefined {
  * says. Empty for a pool this model does not read.
  */
 function poolRows(
-    a: AItem,
+    a: XItem,
     spec: PoolSpec,
     registry: Registry,
     reading: Reading = "estimate",
@@ -468,10 +471,10 @@ function poolRows(
 ): Row[] {
     // Only a method that uses memory strands up has its fill cut by them.
     const natural = (level?: number, withStrands = false, more = 0): Row[] => {
-        const facts = sureFacts(a, registry, level, reading, withStrands);
+        const facts = sureFacts(a, level, reading, withStrands);
         const cut =
             facts.strands === undefined ? facts : { ...facts, strands: facts.strands + more };
-        return pool(registry.catalog, cut).map((c) => ({ mod: c.mod, weight: c.weight }));
+        return [...poolOf(registry, cut)];
     };
     switch (spec.kind) {
         case "natural": {
@@ -479,7 +482,7 @@ function poolRows(
             // On an item holding strands a Foulborn orb is one cut, the
             // strands' at thirty more, not its own after theirs (Memory strand
             // § Mechanics), as the checker reads it.
-            const held = stranded ? a.strands[reading === "ceilings" ? 1 : 0] : 0;
+            const held = stranded ? strandsRange(a)[reading === "ceilings" ? 1 : 0] : 0;
             const asStrands = spec.topTiers === true && held > 0;
             const rows = natural(spec.level, stranded, asStrands ? FOULBORN_AS_STRANDS : 0).filter(
                 (r) => r.mod.minLevel <= cap && (spec.gen === undefined || r.mod.gen === spec.gen),
@@ -524,8 +527,8 @@ function poolRows(
                 .filter((r) => !blocked(r.mod) && !untagged(r.mod))
                 .map((r) => ({ mod: r.mod, weight: r.weight * multiplier(r.mod) }));
             for (const m of spec.added) {
-                if (blocked(m) || m.minLevel > a.ilvl) continue;
-                const w = lookupWeight(m, a.base.tags) ?? 0;
+                if (blocked(m) || m.minLevel > a.u.ilvl) continue;
+                const w = lookupWeight(m, a.u.base.tags) ?? 0;
                 if (w > 0) rows.push({ mod: m, weight: w * multiplier(m) });
             }
             return rows;
@@ -533,8 +536,8 @@ function poolRows(
         case "influence": {
             // The rows the influence admits: in the pool with the influence's
             // tags and not without them.
-            const facts = sureFacts(a, registry, undefined, reading, stranded);
-            const tags = influenceTagsAny(a, registry);
+            const facts = sureFacts(a, undefined, reading, stranded);
+            const tags = influenceTagsAny(a);
             const plain = new Set(
                 pool(registry.catalog, {
                     ...facts,
@@ -548,15 +551,15 @@ function poolRows(
             for (const t of guaranteedTypes(a)) {
                 for (const f of registry.familiesOfType(t)) families.add(f);
             }
-            return veiledPool(registry.catalog, a.base, a.ilvl, families).map((m) => ({
+            return veiledPool(registry.catalog, a.u.base, a.u.ilvl, families).map((m) => ({
                 mod: m,
-                weight: lookupWeight(m, a.base.tags) ?? 1,
+                weight: lookupWeight(m, a.u.base.tags) ?? 1,
             }));
         }
         case "bench":
             return [{ mod: spec.mod, weight: 1 }];
         case "essenceGrant": {
-            const id = spec.spec.grants.get(a.base.itemClass);
+            const id = spec.spec.grants.get(a.u.base.itemClass);
             const mod = id === undefined ? undefined : registry.resolveMod(id);
             return mod?.ok ? [{ mod: mod.value, weight: 1 }] : [];
         }
@@ -576,10 +579,38 @@ function poolRows(
     }
 }
 
+const pools = new WeakMap<Registry, Map<string, readonly Row[]>>();
+const sorted = (xs: Iterable<string>): string => [...xs].sort().join(",");
+
+/** The natural pool on these facts, kept by what they say: the tracked states
+ *  of a walk share a few sets of facts among many items. */
+function poolOf(registry: Registry, facts: ItemFacts): readonly Row[] {
+    let byFacts = pools.get(registry);
+    if (byFacts === undefined) pools.set(registry, (byFacts = new Map<string, readonly Row[]>()));
+    const key = [
+        facts.base.id,
+        facts.ilvl,
+        facts.rarity,
+        facts.prefixCount,
+        facts.suffixCount,
+        facts.strands ?? "",
+        sorted(facts.types),
+        sorted(facts.families),
+        sorted(facts.tags),
+        effectsKey(facts.effects),
+    ].join("|");
+    let rows = byFacts.get(key);
+    if (rows === undefined) {
+        rows = pool(registry.catalog, facts).map((c) => ({ mod: c.mod, weight: c.weight }));
+        byFacts.set(key, rows);
+    }
+    return rows;
+}
+
 /** The groups a modifier the item holds but no one names could be, per side:
  *  its natural pool on the item, the groups of what it surely holds left out. */
 export function naturalGroups(
-    a: AItem,
+    a: XItem,
     registry: Registry,
     reading: Reading = "estimate",
 ): { readonly prefix: readonly Group[]; readonly suffix: readonly Group[] } {
@@ -596,9 +627,9 @@ export function naturalGroups(
 }
 
 /** The side a type's rows take on this item. */
-function genOfType(a: AItem, registry: Registry, type: TypeId, hint?: Mod): Gen {
+function genOfType(a: XItem, registry: Registry, type: TypeId, hint?: Mod): Gen {
     return (
-        rollableGen(registry.catalog, a.base, a.ilvl, type, influenceTagsAny(a, registry)) ??
+        rollableGen(registry.catalog, a.u.base, a.u.ilvl, type, influenceTagsAny(a)) ??
         hint?.gen ??
         registry.genOfType(type) ??
         "prefix"
@@ -606,31 +637,31 @@ function genOfType(a: AItem, registry: Registry, type: TypeId, hint?: Mod): Gen 
 }
 
 /** The modifiers present on every path after `a`, each with the rows it may be. */
-function presentOn(a: AItem, registry: Registry): Present[] {
-    const tags = influenceTagsAny(a, registry);
+function presentOn(a: XItem, registry: Registry): Present[] {
+    const tags = influenceTagsAny(a);
     const out: Present[] = [];
     for (const type of guaranteedTypes(a)) {
-        const pinned = a.tiers.get(type);
+        const pinned = new Set(rowsOf(a, type).map((m) => m.id));
         const weightOf = (m: Mod): number | null =>
-            lookupWeight(m, new Set([...a.base.tags, ...tags]));
-        let rows: Row[] = rollableTiers(registry.catalog, a.base, a.ilvl, type, tags).map((m) => ({
-            mod: m,
-            weight: weightOf(m) ?? 1,
-        }));
-        if (pinned !== undefined) {
-            rows = rows.filter((r) => pinned.has(r.mod.id));
-            if (rows.length < pinned.size) {
-                // A row the ladder at the item's level lacks: a bench, essence
-                // or unveiled row, or a natural row above that level, which an
-                // essence places and a Harvest change leaves (it keeps the
-                // tier). It may stand beside rows of the ladder where paths
-                // meet. It weighs by its spawn weight as they do, and one
-                // where it never spawns.
-                const held = new Set(rows.map((r) => r.mod.id));
-                for (const m of registry.catalog) {
-                    if (pinned.has(m.id) && !held.has(m.id))
-                        rows.push({ mod: m, weight: weightOf(m) || 1 });
-                }
+            lookupWeight(m, new Set([...a.u.base.tags, ...tags]));
+        let rows: Row[] = rollableTiers(registry.catalog, a.u.base, a.u.ilvl, type, tags).map(
+            (m) => ({
+                mod: m,
+                weight: weightOf(m) ?? 1,
+            }),
+        );
+        rows = rows.filter((r) => pinned.has(r.mod.id));
+        if (rows.length < pinned.size) {
+            // A row the ladder at the item's level lacks: a bench, essence
+            // or unveiled row, or a natural row above that level, which an
+            // essence places and a Harvest change leaves (it keeps the
+            // tier). It may stand beside rows of the ladder where paths
+            // meet. It weighs by its spawn weight as they do, and one
+            // where it never spawns.
+            const held = new Set(rows.map((r) => r.mod.id));
+            for (const m of registry.catalog) {
+                if (pinned.has(m.id) && !held.has(m.id))
+                    rows.push({ mod: m, weight: weightOf(m) || 1 });
             }
         }
         out.push({ type, gen: genOfType(a, registry, type, rows[0]?.mod), rows });
@@ -653,8 +684,44 @@ export function implicitWeights(
     });
 }
 
+const runs = new WeakMap<Dd, Map<string, XTransferResult>>();
+const opsKeys = new WeakMap<readonly Op[], string>();
+
+/**
+ * The method's first `end` operations run on the items, its requirements
+ * among them unless `checks` is false. The cost walk asks this of the same
+ * items again and again, as each tracked state's outcomes and its share of a
+ * draw are read, and a re-check after an edit hands it the same diagrams, so
+ * the runs are kept by the items' diagram and what the operations say.
+ */
+export function ranOn(
+    a: XItem,
+    ops: readonly Op[],
+    end = ops.length,
+    checks = true,
+): XTransferResult {
+    if (!checks) {
+        // Where every item meets the requirements they take none away: the
+        // run with them, which the method's roll reads too, is the run without.
+        const judged = ranOn(a, ops, end, true);
+        if (judged.ok && judged.recovered !== true) return judged;
+    }
+    const steps = ops.slice(0, end).filter((op) => checks || op.kind !== "require");
+    if (steps.length === 0) return { ok: true, state: a };
+    let said = opsKeys.get(ops);
+    if (said === undefined) opsKeys.set(ops, (said = buildKey(ops)));
+    let byOps = runs.get(a.dd);
+    if (byOps === undefined) runs.set(a.dd, (byOps = new Map<string, XTransferResult>()));
+    const key = `${end}:${steps.length}:${said}`;
+    const hit = byOps.get(key);
+    if (hit !== undefined) return hit;
+    const r = runMethod(a, steps);
+    byOps.set(key, r);
+    return r;
+}
+
 /** The total a reforge may reach on this item, the loosest cap over its rarities. */
-function totalCap(a: AItem): number {
+function totalCap(a: XItem): number {
     return capsOver(a, Math.max).total;
 }
 
@@ -662,7 +729,7 @@ interface FillPlan {
     readonly spec: PoolSpec;
     readonly count: FillCount;
     /** The item as the fill finds it: after the strip and the removals before it. */
-    readonly before: AItem;
+    readonly before: XItem;
 }
 
 /**
@@ -673,7 +740,7 @@ interface FillPlan {
  * `none`.
  */
 export function rollOf(
-    a: AItem,
+    a: XItem,
     ops: readonly Op[],
     registry: Registry,
     reading: Reading = "estimate",
@@ -689,7 +756,7 @@ export function rollOf(
                 // A veiled modifier added on its own is the tracker's to place
                 // (`veiledSides`); one a reforge lays down is placed first here.
                 if (op.pool.kind === "veiledPlaceholder" && op.count.kind !== "within") break;
-                const before = runMethod(a, ops.slice(0, i), registry).state;
+                const before = ranOn(a, ops, i).state;
                 if (op.pool.kind === "unveil") {
                     return unveilRoll(before, op.pool, registry, reading);
                 }
@@ -707,8 +774,8 @@ export function rollOf(
             }
             case "remove":
                 if (main === undefined && op.selector.kind === "random") {
-                    const before = runMethod(a, ops.slice(0, i), registry).state;
-                    const after = runMethod(a, ops.slice(0, i + 1), registry).state;
+                    const before = ranOn(a, ops, i).state;
+                    const after = ranOn(a, ops, i + 1).state;
                     const fillsAfter = ops
                         .slice(i + 1)
                         .some((o) => o.kind === "fill" && o.pool.kind !== "veiledPlaceholder");
@@ -720,9 +787,9 @@ export function rollOf(
             case "reroll":
                 return { kind: "reroll" };
             case "lock": {
-                const before = runMethod(a, ops.slice(0, i), registry).state;
+                const before = ranOn(a, ops, i).state;
                 const types = [...guaranteedTypes(before)];
-                const n = Math.max(before.counts.total[0], types.length, 1);
+                const n = Math.max(countsOf(before).total[0], types.length, 1);
                 return {
                     kind: "lock",
                     candidates: types.map((type) => ({ type, prob: 1 / n })),
@@ -730,7 +797,12 @@ export function rollOf(
             }
             case "eldritch":
                 if (op.change.kind === "set") {
-                    const rows = implicitWeights(registry, a.base, op.change.side, op.change.tier);
+                    const rows = implicitWeights(
+                        registry,
+                        a.u.base,
+                        op.change.side,
+                        op.change.tier,
+                    );
                     const total = rows.reduce((s, r) => s + r.weight, 0);
                     if (total <= 0) return NO_ROLL;
                     const byType = new Map<TypeId, number>();
@@ -763,8 +835,8 @@ export function rollOf(
  * end the reading asks for.
  */
 function removalRoll(
-    before: AItem,
-    after: AItem,
+    before: XItem,
+    after: XItem,
     gen: Gen | undefined,
     registry: Registry,
     reading: Reading,
@@ -773,7 +845,7 @@ function removalRoll(
     const reachable = [...guaranteedTypes(before)].filter((t) => !kept.has(t));
     const at = countsAt(before, reading);
     const mid = (gen: Gen): number => {
-        const r = gen === "prefix" ? before.counts.prefix : suffixRange(before);
+        const r = gen === "prefix" ? countsOf(before).prefix : suffixRange(before);
         return reading === "estimate" ? (r[0] + r[1]) / 2 : at[gen];
     };
     // A side a metamod protects, or the other side of a one-sided orb, is out
@@ -829,7 +901,7 @@ function removalRoll(
 }
 
 function unveilRoll(
-    before: AItem,
+    before: XItem,
     spec: Extract<PoolSpec, { kind: "unveil" }>,
     registry: Registry,
     reading: Reading,
@@ -963,14 +1035,14 @@ function drawRoll(
     }
 
     const rarity = rarityOf(a) ?? "rare";
-    const capP = sideCap("prefix", rarity, a.base);
-    const capS = sideCap("suffix", rarity, a.base);
+    const capP = sideCap("prefix", rarity, a.u.base);
+    const capS = sideCap("suffix", rarity, a.u.base);
     const totals = countTotals(main.count, a, reading);
     // What the item holds before the fill beyond the named modifiers: its
     // sure count less them, and exactly that when the side's count is settled
     // or the reading takes it at an end.
-    const facts = sureFacts(a, registry, undefined, reading, stranded);
-    const ranges = { prefix: a.counts.prefix, suffix: suffixRange(a) };
+    const facts = sureFacts(a, undefined, reading, stranded);
+    const ranges = { prefix: countsOf(a).prefix, suffix: suffixRange(a) };
     const settled = (r: readonly [number, number]): boolean =>
         reading !== "estimate" || r[0] === r[1];
     const out: DrawVariant[] = [];
@@ -1021,11 +1093,11 @@ function drawRoll(
 
 /** The total modifier count a fill leaves, with its probability: what the item
  *  holds for sure counts toward a reforge's total; an add is that many more. */
-function countTotals(count: FillCount, a: AItem, reading: Reading): Map<number, number> {
+function countTotals(count: FillCount, a: XItem, reading: Reading): Map<number, number> {
     const cap = totalCap(a);
     const present = Math.max(
         guaranteedTypes(a).size,
-        a.counts.total[reading === "ceilings" ? 1 : 0],
+        countsOf(a).total[reading === "ceilings" ? 1 : 0],
     );
     switch (count.kind) {
         case "add": {

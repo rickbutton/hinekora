@@ -14,7 +14,8 @@
  * step is expected to consume and the total at the bundled economy snapshot's
  * prices.
  * Exit codes: 0 = checks pass / formatted / charted / costed, 1 = craft has
- * errors / needs formatting / does not parse, 2 = usage / I/O error. `cost`
+ * errors / needs formatting / does not parse, 2 = usage / I/O error, 3 = the
+ * checker could not judge the craft (a fault of its own). `cost`
  * exits 0 whenever the guide parses: a guide with check errors is still costed,
  * as written, and the report's first line says so.
  */
@@ -45,9 +46,9 @@ function check(file: string): number {
         `data: ${m.source.name} @ ${m.source.commit.slice(0, 10)} (${m.game}, game ${m.gameVersion})\n\n`,
     );
 
-    const { output, ok } = checkSource(source, file, registryOf(data));
+    const { output, ok, unjudged } = checkSource(source, file, registryOf(data));
     process.stdout.write(`${output}\n`);
-    return ok ? 0 : 1;
+    return ok ? 0 : unjudged === true ? 3 : 1;
 }
 
 function fmt(file: string, checkOnly: boolean): number {

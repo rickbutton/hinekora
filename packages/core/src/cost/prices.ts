@@ -12,7 +12,8 @@ import {
     isInfluence,
 } from "../model/marks.js";
 import type { Registry } from "../resolve/registry.js";
-import { type AItem, rarityOf } from "../check/astate.js";
+import type { XItem } from "../exact/state.js";
+import { rarityOf } from "../exact/views.js";
 import type { Literal, Method } from "../check/methods.js";
 import { capitalise } from "../words.js";
 
@@ -117,7 +118,7 @@ const BEAST_METAMOD = "Wild Bristle Matron";
 function beastCost(
     second: string | undefined,
     args: readonly Literal[],
-    a: AItem,
+    a: XItem,
 ): readonly Price[] | undefined {
     const one = (item: string): Price => ({ item, amount: 1 });
     switch (second) {
@@ -167,7 +168,7 @@ function text(l: Literal | undefined): string {
 export function unitCost(
     method: Method,
     args: readonly Literal[],
-    a: AItem,
+    a: XItem,
     registry: Registry,
 ): readonly Price[] | undefined {
     const [first, second] = method.words;
@@ -220,7 +221,11 @@ export function unitCost(
         }
         case "bench": {
             if (second === "remove") return [{ item: "Orb of Scouring", amount: 1 }];
-            const craft = registry.resolveBench(text(args[0]), a.base.itemClass, tierArg(args[1]));
+            const craft = registry.resolveBench(
+                text(args[0]),
+                a.u.base.itemClass,
+                tierArg(args[1]),
+            );
             if (!craft.ok) return undefined;
             return [...(craft.value.cost ?? [])].map(([item, amount]) => ({ item, amount }));
         }
@@ -236,7 +241,10 @@ export function unitCost(
                 const colour = element === undefined ? undefined : HARVEST_REFORGE[element];
                 if (colour === undefined) return undefined;
                 // A damage change takes a Crystallised Rancour besides.
-                const from = registry.resolveModType(text(args[0]), { base: a.base, ilvl: a.ilvl });
+                const from = registry.resolveModType(text(args[0]), {
+                    base: a.u.base,
+                    ilvl: a.u.ilvl,
+                });
                 const damage = from.ok && registry.harvestChangeOf(from.value)?.kind === "damage";
                 const lifeforce = { item: colour.item, amount: 500 };
                 return damage ? [lifeforce, rancour(1)] : [lifeforce];

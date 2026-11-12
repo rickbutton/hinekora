@@ -21,6 +21,8 @@ import {
     type NameKind,
     type Registry,
     rollableTypes,
+    type SourceSpan,
+    type Stmt,
     slotAt,
     type TagId,
     tierCount,
@@ -227,12 +229,28 @@ function excludedAt(source: string, offset: number, registry: Registry): Readonl
         const parsed = parseCached(s);
         const result = checkCached(s, registry);
         if (!parsed.ok || result === undefined) continue;
+        // A loop's condition names what the loop waits for, which no item
+        // entering it may have yet.
+        if (inLoopCondition(parsed.craft.body, offset)) return new Set();
         const entry = traceAt(result.trace, offset);
         if (entry) {
             return excludedTypes(entry.before, craftNames(parsed.craft, entry.before.u).types);
         }
     }
     return new Set();
+}
+
+function inLoopCondition(stmts: readonly Stmt[], offset: number): boolean {
+    const inside = (span: SourceSpan): boolean =>
+        span.start.offset <= offset && offset <= span.end.offset;
+    for (const s of stmts) {
+        if (!inside(s.span)) continue;
+        if (s.kind === "until") return inside(s.pred.span) || inLoopCondition(s.body, offset);
+        if (s.kind === "if") {
+            return inLoopCondition(s.body, offset) || inLoopCondition(s.elseBody ?? [], offset);
+        }
+    }
+    return false;
 }
 
 /** The catalog names a slot offers. */

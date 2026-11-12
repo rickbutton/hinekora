@@ -60,7 +60,9 @@ export function conditionOfPred(u: Universe, pred: Pred, defs: PredDefs): Dd | n
     return r;
 }
 
-function conditionKey(pred: Pred, defs: PredDefs): string {
+/** What a condition says, with the defs it calls: the same key for the same
+ *  condition parsed again. */
+export function conditionKey(pred: Pred, defs: PredDefs): string {
     let forDefs = byNode.get(pred);
     if (forDefs === undefined) byNode.set(pred, (forDefs = new WeakMap()));
     let key = forDefs.get(defs.defs);

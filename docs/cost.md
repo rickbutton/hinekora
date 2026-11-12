@@ -3,7 +3,7 @@
 > The checker proves; the cost layer estimates. It answers what every guide quotes but
 > the checker cannot: how many tries a loop takes and what the craft is expected to
 > spend. The code is `packages/core/src/cost/`, the checker it reads
-> [ARCHITECTURE.md](ARCHITECTURE.md) §4.
+> [EXACT.md](EXACT.md) §3.
 
 ---
 
@@ -110,7 +110,7 @@ sides are taken as independent given the split, which reads a condition on both 
 two hundredths (0.8 low on a wand). A group with rows on both sides (a jewel's) is a
 mixture, wholly a prefix or wholly a suffix by weight, and loses a draw the full side
 turns away: up to five hundredths low (2.5 on a Cobalt Jewel, 4 with a count beside it).
-Each bound is a test against the draw played out (`packages/cli/src/race.test.ts`). An
+Each bound is tested against the draw played out (`packages/cli/src/race.test.ts`). An
 unveil's three draws are played out (`unveilOffers`), not raced.
 
 ---
@@ -122,7 +122,8 @@ the pool it draws from (the checker's own `pool` on the sure facts), the count o
 and the modifiers present for certain (kept, or placed first), or else a removal, a
 fracture, an unveil, an implicit or a reroll.
 
-`cost/chance.ts` evaluates the checker's resolved predicate against the roll. A `has`
+`cost/chance.ts` evaluates the condition, read under every influence the items have, against
+the roll. A `has`
 atom on a side is "its group among the first p of that side's race", the type and row by weight
 share within the group, the value by its share of the row's range; count atoms read the
 split; `and`, `or` and `not` are combined exactly by enumerating which of the few named
@@ -179,9 +180,8 @@ recipe's beasts) `cost/prices.ts` carries from the catalog and the wiki's tables
 
 ## 8. Known differences from craftofexile
 
-craftofexile is the yardstick, not the truth: where they and
-hinekora part, the wiki and the game data decide. craftofexile
-differs in that:
+craftofexile is the yardstick, not the truth: where the two part, the
+wiki and the game data decide. It differs in that:
 
 - its calculator **extrapolates** at ten or more eligible types on a side, an average
   depletion standing for the draws not asked for, a few per cent optimistic;

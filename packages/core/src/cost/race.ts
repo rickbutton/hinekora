@@ -303,6 +303,47 @@ export function amongSplitDistribution(
     capOwn: number,
     capOther: number,
 ): Float64Array {
+    return remembered(
+        splits,
+        `${own.join()}|${other.join()}|${special.join()}|${k}|${m}|${capOwn}|${capOther}`,
+        () => amongSplit(own, other, special, k, m, capOwn, capOther),
+    );
+}
+
+/**
+ * The race's answers by their inputs. The tracked states of a walk draw from a
+ * few pools at a few counts, and a re-check after an edit draws from them
+ * again, so the same race is asked for many times; past `REMEMBERED` answers
+ * the oldest half goes.
+ */
+const REMEMBERED = 20_000;
+const splits = new Map<string, Float64Array>();
+const sides = new Map<string, number[]>();
+
+function remembered<T>(memo: Map<string, T>, key: string, f: () => T): T {
+    const hit = memo.get(key);
+    if (hit !== undefined) return hit;
+    const r = f();
+    if (memo.size >= REMEMBERED) {
+        let drop = memo.size / 2;
+        for (const k of memo.keys()) {
+            if (drop-- <= 0) break;
+            memo.delete(k);
+        }
+    }
+    memo.set(key, r);
+    return r;
+}
+
+function amongSplit(
+    own: readonly number[],
+    other: readonly number[],
+    special: readonly number[],
+    k: number,
+    m: number,
+    capOwn: number,
+    capOther: number,
+): Float64Array {
     // Nothing couples where the other side takes no draw, or the one draw
     // there is has its side given: which clock of a side fires first does not
     // depend on when.
@@ -326,6 +367,20 @@ export function amongSplitDistribution(
  * with fewer groups than the draw asks for simply yields what it has.
  */
 export function splitDistribution(
+    prefixRates: readonly number[],
+    suffixRates: readonly number[],
+    m: number,
+    capPrefix: number,
+    capSuffix: number,
+): readonly number[] {
+    return remembered(
+        sides,
+        `${prefixRates.join()}|${suffixRates.join()}|${m}|${capPrefix}|${capSuffix}`,
+        () => split(prefixRates, suffixRates, m, capPrefix, capSuffix),
+    );
+}
+
+function split(
     prefixRates: readonly number[],
     suffixRates: readonly number[],
     m: number,

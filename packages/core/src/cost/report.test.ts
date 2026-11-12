@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { check } from "../exact/check.js";
-import { ModId } from "../model/ids.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { pool } from "../pool/pool.js";
 import { emptyItem } from "../model/item.js";
@@ -37,7 +36,7 @@ import {
     BENCH_LIFE_ROW,
     BOOTS_BASE,
     CATALOG,
-    ELDRITCH_ROWS,
+    ELDRITCH_ROWS_EVERY_TIER,
     CLASS_RING,
     LIFE_T1,
     LIFE_T2,
@@ -785,6 +784,10 @@ describe("the cost of a guide", () => {
             /the check finds this loop can never reach its exit/,
         );
         expect(refused.steps[1]!.note).toBeUndefined();
+        // The check runs the body once though no item leaves: the step's price
+        // is known, its uses are not.
+        expect(refused.steps[1]!.unit).toEqual([{ item: "Chaos Orb", amount: 1 }]);
+        expect(refused.steps[1]!.expected).toBeUndefined();
         expect(refused.unknown).toBe(true);
         expect(refused.chaos).toBeUndefined();
     });
@@ -869,6 +872,9 @@ describe("the cost of a guide", () => {
                 craft(ring("rare"), [until(lowTier, [op("chaos")]), iff(topTier, [stop()])]),
             );
             expect(r.steps[0]!.attempts!.chance).toBeCloseTo((tier * 8) / 15, 9);
+            // The check's items hold each life value in its part of the range,
+            // so every round is followed as states.
+            expect(r.steps[0]!.note).toBeUndefined();
         });
     });
 
@@ -1084,21 +1090,10 @@ describe("the counts the checker leaves open", () => {
 });
 
 describe("the eldritch implicits", () => {
-    // Each implicit at every tier, as the game's data has them: an Orb of
-    // Conflict moves one a tier and keeps its wording, and a tier its wording
-    // has no row at holds no item.
-    const spanning = [...ELDRITCH_ROWS];
-    for (const r of ELDRITCH_ROWS) {
-        for (let tier = 1; tier <= 6; tier++) {
-            if (spanning.some((x) => x.side === r.side && x.type === r.type && x.tier === tier))
-                continue;
-            spanning.push({ ...r, id: ModId(`${r.id}Tier${tier}`), tier });
-        }
-    }
     const boots = buildRegistry({
         bases: [BOOTS_BASE],
         mods: [...CATALOG],
-        eldritch: spanning,
+        eldritch: ELDRITCH_ROWS_EVERY_TIER,
     });
     const at = (words: string[], tier: string) => {
         const o = op(words[0]!);

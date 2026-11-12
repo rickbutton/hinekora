@@ -55,6 +55,7 @@ import {
     unprotected,
 } from "./rules.js";
 import type { XItem } from "./state.js";
+import type { Universe } from "./universe.js";
 
 export type XTransferResult = (
     | { readonly ok: true; readonly state: XItem }
@@ -115,21 +116,8 @@ export function metamodCases(s: XItem, reads: ReadonlySet<RuleField>): readonly 
         carriers: TypeId[];
     }
     let combos: Combo[] = [{ dd: s.dd, effects: [], carriers: [] }];
-    for (const slot of u.modSlots()) {
-        const ms = u.modSlot(slot)!;
-        const groups = new Map<string, { effects: Effect[]; values: number[] }>();
-        ms.values.forEach((v, i) => {
-            const effects = v === undefined ? [] : relevantEffects(effectsOf(v.row), reads);
-            const key = effectsKey(effects);
-            const g = groups.get(key);
-            if (g === undefined) groups.set(key, { effects, values: [i] });
-            else g.values.push(i);
-        });
-        if (groups.size < 2 && groups.has("")) continue;
+    for (const { slot, type, ordered } of effectGroups(u, reads)) {
         const next: Combo[] = [];
-        const ordered = [...groups.entries()].sort(([a], [b]) =>
-            a === "" ? -1 : b === "" ? 1 : 0,
-        );
         for (const [key, g] of ordered) {
             for (const c of combos) {
                 const dd = m.and(c.dd, m.slotIn(slot, g.values));
@@ -140,7 +128,7 @@ export function metamodCases(s: XItem, reads: ReadonlySet<RuleField>): readonly 
                         : {
                               dd,
                               effects: [...c.effects, ...g.effects],
-                              carriers: [...c.carriers, ms.type],
+                              carriers: [...c.carriers, type],
                           },
                 );
             }
@@ -158,6 +146,46 @@ export function metamodCases(s: XItem, reads: ReadonlySet<RuleField>): readonly 
         }
     }
     return [...merged.values()];
+}
+
+interface SlotGroups {
+    readonly slot: number;
+    readonly type: TypeId;
+    /** The slot's values by the effects they carry of those read, the values
+     *  carrying none first. */
+    readonly ordered: readonly (readonly [string, { effects: Effect[]; values: number[] }])[];
+}
+
+const groupsOf = new WeakMap<Universe, Map<string, readonly SlotGroups[]>>();
+
+/** The modifier slots whose values differ in the effects read, each with its
+ *  values grouped by them: the same for every state over the universe. */
+function effectGroups(u: Universe, reads: ReadonlySet<RuleField>): readonly SlotGroups[] {
+    let byReads = groupsOf.get(u);
+    if (byReads === undefined)
+        groupsOf.set(u, (byReads = new Map<string, readonly SlotGroups[]>()));
+    const readsKey = [...reads].sort().join(",");
+    const hit = byReads.get(readsKey);
+    if (hit !== undefined) return hit;
+    const out: SlotGroups[] = [];
+    for (const slot of u.modSlots()) {
+        const ms = u.modSlot(slot)!;
+        const groups = new Map<string, { effects: Effect[]; values: number[] }>();
+        ms.values.forEach((v, i) => {
+            const effects = v === undefined ? [] : relevantEffects(effectsOf(v.row), reads);
+            const key = effectsKey(effects);
+            const g = groups.get(key);
+            if (g === undefined) groups.set(key, { effects, values: [i] });
+            else g.values.push(i);
+        });
+        if (groups.size < 2 && groups.has("")) continue;
+        const ordered = [...groups.entries()].sort(([a], [b]) =>
+            a === "" ? -1 : b === "" ? 1 : 0,
+        );
+        out.push({ slot, type: ms.type, ordered });
+    }
+    byReads.set(readsKey, out);
+    return out;
 }
 
 /** What one step refused over the parts run so far: a check's failing items,

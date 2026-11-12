@@ -21,6 +21,7 @@ export {
     type TraceEntry,
     type XTraceEntry,
 } from "./exact/check.js";
+export { methodItemOf } from "./exact/build.js";
 export { type CraftNames, craftNames } from "./exact/names.js";
 export type { XItem } from "./exact/state.js";
 export * from "./exact/views.js";

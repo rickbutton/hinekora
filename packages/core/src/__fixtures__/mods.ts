@@ -238,6 +238,21 @@ export const ELDRITCH_ROWS: readonly EldritchImplicitSpec[] = [
     eldritchRow("EldritchChaosRes3", "eater", 3, "ImplicitChaosRes", "+15% to Chaos Resistance"),
 ];
 
+/** `ELDRITCH_ROWS` with each implicit at every tier, as the game's data has
+ *  them (packages/data/src/load.test.ts pins it): an Orb of Conflict moves an
+ *  implicit a tier and keeps its wording. */
+export const ELDRITCH_ROWS_EVERY_TIER: readonly EldritchImplicitSpec[] = (() => {
+    const out = [...ELDRITCH_ROWS];
+    for (const r of ELDRITCH_ROWS) {
+        for (let tier = 1; tier <= 6; tier++) {
+            if (out.some((x) => x.side === r.side && x.type === r.type && x.tier === tier))
+                continue;
+            out.push({ ...r, id: ModId(`${r.id}Tier${tier}`), tier });
+        }
+    }
+    return out;
+})();
+
 /** A jewel: a class no influence can mark (its spawn tables name no influence stem). */
 export const JEWEL_BASE: Base = {
     id: BaseId("CobaltJewel"),

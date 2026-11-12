@@ -784,6 +784,63 @@ describe("the economy snapshot", () => {
     });
 });
 
+describe("what the exact checker takes of the data as given", () => {
+    // The armour pieces an Orb of Dominance takes (Orb of Dominance § Mechanics).
+    const armour = ["Titan Gauntlets", "Titan Greaves", "Royal Burgonet", "Vaal Regalia"].map(base);
+
+    it("pairs every top-tier influence row the orb can reach with one elevated row", () => {
+        // exact/ops/remove.ts `elevations`: a row with no higher row of its type
+        // under its own influence tags becomes its elevated row.
+        let tops = 0;
+        for (const b of armour) {
+            for (const influence of INFLUENCES) {
+                const own = registry.influenceTags(b, influence);
+                for (const row of registry.catalog) {
+                    if (row.source === "elevated" || row.domain !== b.domain) continue;
+                    const tags = new Set(
+                        row.spawn.filter((e) => e.weight > 0 && own.has(e.tag)).map((e) => e.tag),
+                    );
+                    if (tags.size === 0) continue;
+                    const higher = registry.catalog.some(
+                        (m) =>
+                            m.type === row.type &&
+                            m.source !== "elevated" &&
+                            m.minLevel > row.minLevel &&
+                            m.spawn.some((e) => e.weight > 0 && tags.has(e.tag)),
+                    );
+                    if (higher) continue;
+                    tops++;
+                    expect(registry.elevatedOf(row), `${b.name} ${row.id}`).toBeDefined();
+                }
+            }
+        }
+        expect(tops).toBeGreaterThan(200);
+    });
+
+    it("has every eldritch implicit at every tier its side reaches on the base", () => {
+        // exact/ops/marks.ts `conflict`: an Orb of Conflict moves an implicit a
+        // tier and keeps its wording, so the wording has a row at each tier.
+        // An amulet takes them too (Ukatoa's Ducat § Mechanics).
+        for (const b of [...armour, base("Onyx Amulet")]) {
+            for (const side of ["exarch", "eater"] as const) {
+                const tiers = new Map<TypeId, number[]>();
+                for (let t = 1; t <= 6; t++) {
+                    for (const e of registry.eldritchRows(b, side, t)) {
+                        tiers.set(e.type, [...(tiers.get(e.type) ?? []), t]);
+                    }
+                }
+                expect(tiers.size, `${b.name} ${side}`).toBeGreaterThan(0);
+                const reached = Math.max(...[...tiers.values()].flat());
+                for (const [type, at] of tiers) {
+                    expect([...new Set(at)].sort(), `${b.name} ${side} ${type}`).toEqual(
+                        Array.from({ length: reached }, (_, i) => i + 1),
+                    );
+                }
+            }
+        }
+    });
+});
+
 describe("the elevated row of an influence modifier", () => {
     // The armour pieces an Orb of Dominance takes (Orb of Dominance § Mechanics).
     const armour = ["Titan Gauntlets", "Titan Greaves", "Royal Burgonet", "Vaal Regalia"].map(base);

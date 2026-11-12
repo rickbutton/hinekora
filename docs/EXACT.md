@@ -2,8 +2,9 @@
 
 A working document for the migration of the checker to an exact domain. It describes code
 that is being built; when the migration ends its content moves to
-[ARCHITECTURE.md](ARCHITECTURE.md) and this file is deleted. New code lives under
-packages/core/src/exact/ and is unused by the tool until package 10 switches the driver.
+[ARCHITECTURE.md](ARCHITECTURE.md) and this file is deleted. The code lives under
+packages/core/src/exact/; the tool's `check` is this checker, and the present one stays for
+its own tests until package 12.
 
 ## 1. What exact means
 
@@ -144,12 +145,11 @@ check stops.
 
 ## 6. What the rest of the tool reads
 
-The cost layer, the renderer and the editors read the state through functions and fields
-of the present `AItem`. The exact state offers the same reads as views computed from the
-diagram and cached by its identity: the count ranges, the rarities, the types sure,
+The renderer and the editors read the state through views computed from the diagram and
+cached by its identity (exact/views.ts): the count ranges, the rarities, the types sure,
 possible and excluded, the rows and value span a type may have, the crafted and fractured
-counts, the marks, the "at least k of these" groups, and `narrow` (the present `refine`) and `runMethod`. A consumer changes its imports and its field reads; where it took a missing entry to mean
-"any row" or "any value", it now reads the rows and span the items have.
+counts, the marks, the "at least k of these" groups. Where the items alone would say too
+much, the craft's own names bound a view (exact/names.ts).
 
 An error can name an item that breaks the step, taken from a witness of the failing set.
 
@@ -197,5 +197,5 @@ An error can name an item that breaks the step, taken from a witness of the fail
 | 8   | `lock`, bench crafts and crafted removal, veiled and unveil                   | done  |
 | 9   | `reroll`, `relax`, Harvest change, `strands`, `imprint`, `restore`            | done  |
 | 10  | The driver on one state; whole-craft exactness tests; the switch              | done  |
-| 11  | Messages with a witness; renderer, cost layer, editors on the views           | open  |
+| 11  | Messages with a witness; renderer, cost layer, editors on the views           | done  |
 | 12  | Delete the present domain; docs; the soundness faults re-probed; limits tuned | open  |

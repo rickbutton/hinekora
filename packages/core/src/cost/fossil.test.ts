@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CATALOG, RING_BASE } from "../__fixtures__/mods.js";
 import { craft, item } from "../__fixtures__/ast.js";
-import { checkPresent } from "../check/check.js";
+import { check } from "../exact/check.js";
 import { currencyOps, resonatorOps } from "../check/library.js";
 import { TagId } from "../model/ids.js";
 import type { FossilSpec } from "../model/sources.js";
@@ -26,7 +26,7 @@ const fossil = (name: string, weights: Record<string, number>): FossilSpec => ({
     corrupts: false,
 });
 
-const blank = checkPresent(craft(item({ base: "Iron Ring", ilvl: 84, rarity: "normal" }), []), {
+const blank = check(craft(item({ base: "Iron Ring", ilvl: 84, rarity: "normal" }), []), {
     registry,
 }).finalState!;
 

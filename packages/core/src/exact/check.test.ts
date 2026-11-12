@@ -24,7 +24,8 @@ import type { Craft, ProcDef, Stmt } from "../ast/ast.js";
 import { checkPresent } from "../check/check.js";
 import { renderState } from "../check/diagnostics.js";
 import { TypeId } from "../model/ids.js";
-import { checkExact, exactDetail, type ExactTuning } from "./check.js";
+import { checkExact, exactDetail, type ExactTuning, UNJUDGED } from "./check.js";
+import type { Registry } from "../resolve/registry.js";
 import { startOf } from "./initial.js";
 import { generateCatalog } from "./reference/catalog.js";
 import { compareCraft } from "./reference/craft.js";
@@ -110,7 +111,8 @@ describe("the exact driver's words", () => {
     it("name a parameter never given a value", () => {
         const proc = procDef("p", ["step"], [paramStep("other")]);
         const c = craft(ring(), [callStmt("p", [blockArg([op("chaos")])])], [], [proc]);
-        expect(said(c)).toEqual(presentSaid(c));
+        // The same words; the exact checker gives them in the order of the craft.
+        expect([...said(c)].sort()).toEqual([...presentSaid(c)].sort());
     });
 });
 
@@ -311,9 +313,62 @@ describe("the item an error shows", () => {
         expect(d!.example).toBeUndefined();
     });
 
+    it("is left out where every item the step is used on breaks it", () => {
+        // Many Magic rings, none of which a Chaos Orb takes.
+        const c = craft(ring({ rarity: "magic", prefixes: ["random"] }), [op("chaos")]);
+        const [d] = exact(c).diagnostics;
+        expect(d!.message).toContain("Requires a Rare item");
+        expect(d!.example).toBeUndefined();
+    });
+
+    it("is left out where the items reach the step only past an earlier error", () => {
+        const after = (first: Stmt[]) =>
+            exact(
+                craft(ring({ prefixes: ["random"], suffixes: ["Fire1"] }), [
+                    ...first,
+                    iff(has("Life1"), [op("scour")]),
+                    op("chaos"),
+                ]),
+            ).diagnostics.at(-1)!;
+        expect(after([]).example).toBeDefined();
+        // A Regal Orb refused on every item: the craft goes on from them as
+        // they were, items the game does not make there.
+        const past = after([op("regal")]);
+        expect(past.message).toContain("Requires a Rare item");
+        expect(past.example).toBeUndefined();
+    });
+
     it("is left out where the error is no refused step", () => {
         const c = craft(ring({ prefixes: ["Life1"] }), [iff(notp(has("Life1")), [op("chaos")])]);
         expect(exact(c).diagnostics.map((d) => d.example)).toEqual([undefined]);
+    });
+});
+
+describe("a fault of the checker's own", () => {
+    const failing = (name: keyof Registry): Registry => ({
+        ...HAND_REGISTRY,
+        [name]: () => {
+            throw new Error(`no ${String(name)} here`);
+        },
+    });
+
+    it("leaves the craft unjudged in one error at the step it was checking", () => {
+        const step = op("exalt");
+        const c = craft(ring({ prefixes: ["Life1"] }), [step, op("chaos")]);
+        // A currency's method reads the registry for the currency.
+        const r = checkExact(c, { registry: failing("resolveCurrency") });
+        expect(r.ok).toBe(false);
+        expect(r.diagnostics).toEqual([
+            { message: `${UNJUDGED} — no resolveCurrency here`, span: step.span },
+        ]);
+        expect(r.findings.map((f) => f.kind)).toEqual(["unjudged"]);
+        expect(r.trace).toEqual([]);
+    });
+
+    it("is at the item block where the item cannot be read", () => {
+        const c = craft(ring(), [op("chaos")]);
+        const r = checkExact(c, { registry: failing("influenceTags") });
+        expect(r.diagnostics.map((d) => d.span)).toEqual([c.item.span]);
     });
 });
 
@@ -372,8 +427,11 @@ describe("the rounds that settle a loop", () => {
         const r = run([outer]);
         expect(r.ok).toBe(false);
         // The item can never leave the inner loop, so none comes back to the
-        // outer loop's head: both are reported.
-        expect(neverExits(r).map((d) => d.span)).toEqual([outer.pred.span, loop.pred.span]);
+        // outer loop's head: both are reported, in the order of the craft.
+        const spans = [outer.pred.span, loop.pred.span].sort(
+            (a, b) => a.start.offset - b.start.offset,
+        );
+        expect(neverExits(r).map((d) => d.span)).toEqual(spans);
     });
 
     it("leave the inner loop alone refused as never exiting", () => {

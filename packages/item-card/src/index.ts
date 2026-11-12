@@ -18,6 +18,7 @@ import {
     type ModGroup,
     type ModView,
     remainderText,
+    totalText,
     SIDE_NAME,
     SIDE_SHORT,
     rarityText,
@@ -56,9 +57,11 @@ function modRow(m: ModView): string {
         ? h("span", "flag", " (fractured)")
         : m.crafted
           ? h("span", "flag", " (crafted)")
-          : m.veiled
-            ? h("span", "flag", " (veiled)")
-            : "";
+          : m.possiblyCrafted === true
+            ? h("span", "flag", " (possibly crafted)")
+            : m.veiled
+              ? h("span", "flag", " (veiled)")
+              : "";
     const tier =
         m.tier === undefined
             ? ""
@@ -98,7 +101,7 @@ function implicitRow(i: ItemView["implicits"][number]): string {
             : i.texts.length === 0
               ? esc(`any ${tier} ${who} implicit`)
               : i.texts.length > IMPLICIT_LIST_LIMIT
-                ? esc(`one of ${i.texts.length} ${who} implicits`)
+                ? esc(`one of ${i.count} ${who} implicits`)
                 : h("span", "label", "one of") + i.texts.map((t) => `<br>${statText(t)}`).join("");
     const listed =
         i.texts.length > 1
@@ -125,6 +128,7 @@ export function itemCardHtml(v: ItemView): string {
     if (v.remainder !== undefined) {
         mods.push(h("div", "mod unknown", esc(remainderText(v.remainder, "–"))));
     }
+    if (v.total !== undefined) mods.push(h("div", "mod unknown", esc(totalText(v.total, "–"))));
 
     return h(
         "div",

@@ -183,6 +183,7 @@ export class Universe {
     /** The values of a row with given marks, by cell index. */
     private readonly byMarks = new Map<string, { logical: number; values: number[] }>();
     private readonly counts = new Map<string, Dd>();
+    private readonly anyMods = new Map<string, Dd>();
     private readonly extra = new Map<Mod, ReadonlySet<TagId>>();
     private withImprint: Dd | undefined;
 
@@ -594,14 +595,24 @@ export class Universe {
         return r;
     }
 
-    /** The items some modifier of which satisfies `test`. */
+    /** The items some modifier of which satisfies `test`. Kept by the values
+     *  that satisfy it: a method run over and over asks the same of the
+     *  universe with a new test each time. */
     anyMod(test: (v: ModValue, slot: ModSlot) => boolean, copy = false): Dd {
-        let r = this.dd.EMPTY;
+        const parts: (readonly [number, number[]])[] = [];
+        let key = "";
         for (const slot of this.modSlots(copy)) {
             const s = this.modSlot(slot)!;
             const values = this.valuesWhere(slot, (v) => test(v, s));
-            if (values.length > 0) r = this.dd.or(r, this.dd.slotIn(slot, values));
+            if (values.length === 0) continue;
+            parts.push([slot, values]);
+            key += `${slot}:${values.join(",")};`;
         }
+        const hit = this.anyMods.get(key);
+        if (hit !== undefined) return hit;
+        let r = this.dd.EMPTY;
+        for (const [slot, values] of parts) r = this.dd.or(r, this.dd.slotIn(slot, values));
+        this.anyMods.set(key, r);
         return r;
     }
 

@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
     check,
-    checkPresent,
     costOf,
     emptyItem,
     findMethod,
     type Gen,
     type Literal,
+    methodItemOf,
     type Mod,
     pool,
     rollOf,
@@ -106,18 +106,18 @@ function judged(
     item: string,
     steps: readonly string[],
     condition: string,
-): { rows: Candidate[]; chance: number } {
+): { rows: Candidate[]; chance: number; impossible: boolean } {
     const parsed = parse(`${item}\n${steps.join("\n")}\nif ${condition} {\n    divine\n}\n`);
     if (!parsed.ok) throw new Error(parsed.error.message);
-    // The roll is read off the present checker's items, as the cost layer reads it.
-    const result = checkPresent(parsed.craft, { registry });
-    expect(result.diagnostics).toEqual([]);
+    const result = check(parsed.craft, { registry });
+    // The check may find the condition can never hold after the step.
+    for (const d of result.diagnostics) expect(d.message).toContain("can never run");
     const stmt = parsed.craft.body[steps.length - 1]!;
     if (stmt.kind !== "operation") throw new Error("not a step");
     const entry = result.trace.find((e) => e.span.start.offset === stmt.span.start.offset)!;
     const literals: Literal[] = [];
     for (const arg of stmt.args) if (arg.kind !== "param") literals.push(arg);
-    const ops = findMethod(stmt.words)!.build(literals, entry.before, registry);
+    const ops = findMethod(stmt.words)!.build(literals, methodItemOf(entry.before), registry);
     if ("refused" in ops) throw new Error(ops.refused);
     const roll = rollOf(entry.before, ops, registry);
     const rows =
@@ -128,10 +128,8 @@ function judged(
             : roll.kind === "unveil"
               ? roll.options.flatMap((m) => m.rows.map((r) => ({ ...r, gen: r.mod.gen })))
               : [];
-    const branch = costOf(parsed.craft, check(parsed.craft, { registry }), registry).steps.find(
-        (s) => s.kind === "if",
-    )!;
-    return { rows, chance: branch.branch! };
+    const branch = costOf(parsed.craft, result, registry).steps.find((s) => s.kind === "if")!;
+    return { rows, chance: branch.branch!, impossible: result.diagnostics.length > 0 };
 }
 
 const has =
@@ -217,6 +215,7 @@ describe("the race against the draw played out", { timeout: LONG }, () => {
             ["chaos"],
             'has "increased spell damage" and has "increased fire damage"',
         );
+        expect(both.impossible).toBe(true);
         expect(both.chance).toBeLessThan(1e-9);
     });
 

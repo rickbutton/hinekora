@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent } from "../check/check.js";
 import { check } from "../exact/check.js";
 import type { RPred } from "../check/astate.js";
 import { buildRegistry } from "../resolve/registry.js";
@@ -20,6 +19,7 @@ import { GroupId, ModId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import { costOf } from "./report.js";
 import { findMethod } from "../check/methods.js";
+import { methodItemOf } from "../exact/build.js";
 import type { ChainState } from "./chain.js";
 import { pruned, Tracker } from "./track.js";
 
@@ -35,7 +35,7 @@ const registry = buildRegistry({
 describe("the tracked state", () => {
     it("a method whose every outcome ends the craft ends it", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 84, rarity: "rare" }), []);
-        const before = checkPresent(c, { registry }).finalState!;
+        const before = check(c, { registry }).finalState!;
         const tracker = new Tracker(registry, before, [before], [], []);
         const ends = tracker.transition(
             before,
@@ -49,7 +49,7 @@ describe("the tracked state", () => {
 
     it("a modifier held at a tier no condition names is not read back at a named one", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 84, rarity: "rare" }), [op("chaos")]);
-        const after = checkPresent(c, { registry }).trace.at(-1)!.after!;
+        const after = check(c, { registry }).trace.at(-1)!.after!;
         const top: RPred = { kind: "has", type: LIFE_T1.type, gen: "prefix", tierMod: LIFE_T1.id };
         const tracker = new Tracker(registry, after, [after], [top], []);
         const i = tracker.index.get(LIFE_T1.type)!;
@@ -75,7 +75,7 @@ describe("the tracked state", () => {
             }),
             [op("chaos")],
         );
-        const first = checkPresent(c, { registry }).trace.at(-1)!.before;
+        const first = check(c, { registry }).trace.at(-1)!.before;
         const tracker = new Tracker(registry, first, [first], [], []);
         const states = tracker.statesIn(first)!;
         expect(states).toHaveLength(1);
@@ -88,10 +88,10 @@ describe("the tracked state", () => {
 
     it("a reforge's outcomes from a state sum to one", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 84, rarity: "rare" }), [op("chaos")]);
-        const entry = checkPresent(c, { registry }).trace.at(-1)!;
+        const entry = check(c, { registry }).trace.at(-1)!;
         const top: RPred = { kind: "has", type: LIFE_T1.type, gen: "prefix", tierMod: LIFE_T1.id };
         const tracker = new Tracker(registry, entry.before, [entry.after!], [top], []);
-        const built = findMethod(["chaos"])!.build([], entry.before, registry);
+        const built = findMethod(["chaos"])!.build([], methodItemOf(entry.before), registry);
         if ("refused" in built) throw new Error(built.refused);
         const next = tracker.transition(entry.before, built, "estimate")!;
         const [start] = tracker.statesIn(entry.before)!;
@@ -106,7 +106,41 @@ describe("the tracked state", () => {
         expect(tracker.misses).toBe(0);
     });
 
-    it("an Orb of Dominance on an elevated modifier and the one it was made of leaves the elevated one", () => {
+    it("a modifier no condition names that the catalogue makes one type is closed for certain", () => {
+        // Mana and fire resistance, and a prefix no one names: with life
+        // absent, the catalogue's one other prefix, the armour. An Exalted Orb
+        // then draws among life (5000 over its three tiers), cold and
+        // lightning resistance (500 each): life five times in six. Read as
+        // any prefix, the armour's group would stay open to the side split.
+        const c = craft(
+            item({
+                base: "Iron Ring",
+                ilvl: 84,
+                rarity: "rare",
+                prefixes: ["IncreasedMana1", "random"],
+                suffixes: ["FireResist1"],
+            }),
+            [op("exalt")],
+        );
+        const entry = check(c, { registry }).trace.at(-1)!;
+        const life: RPred = { kind: "has", type: LIFE_T1.type, gen: "prefix" };
+        const tracker = new Tracker(registry, entry.before, [entry.before], [life], []);
+        const built = findMethod(["exalt"])!.build([], methodItemOf(entry.before), registry);
+        if ("refused" in built) throw new Error(built.refused);
+        const at = tracker.index.get(LIFE_T1.type)!;
+        const start: ChainState = {
+            prefix: 2,
+            suffix: 1,
+            rows: tracker.atoms.map((_a, i) => (i === at ? null : tracker.atoms[i]!.rows[0]!.id)),
+        };
+        const out = tracker.transition(entry.before, built, "estimate")!(start);
+        const drawn = out
+            .filter((o) => o.state.rows[at] !== null)
+            .reduce((sum, o) => sum + o.prob, 0);
+        expect(drawn).toBeCloseTo(5 / 6, 12);
+    });
+
+    it("an Orb of Dominance that elevates a modifier into a type of its own leaves that type in its place", () => {
         const boots = buildRegistry({
             bases: [BOOTS_BASE],
             mods: [
@@ -117,33 +151,45 @@ describe("the tracked state", () => {
                 ELEVATED_BOOTS_SUFFIX,
             ],
         });
+        // An elevated row shares its family with the row it was made of, so an
+        // item holds one of the two.
         const c = craft(
             item({
                 base: "Iron Greaves",
                 ilvl: 100,
                 rarity: "rare",
-                prefixes: [HUNTER_BOOTS_PREFIX.id, ELEVATED_BOOTS_PREFIX.id],
-                suffixes: ["FireResist1"],
+                prefixes: [HUNTER_BOOTS_PREFIX.id],
+                suffixes: [HUNTER_BOOTS_SUFFIX.id, "FireResist1"],
                 influences: ["hunter"],
             }),
             [op("dominance")],
         );
-        const entry = checkPresent(c, { registry: boots }).trace.at(-1)!;
-        const tracker = new Tracker(boots, entry.before, [entry.before], [], []);
-        const built = findMethod(["dominance"])!.build([], entry.before, boots);
+        const entry = check(c, { registry: boots }).trace.at(-1)!;
+        const tracker = new Tracker(boots, entry.before, [entry.before, entry.after!], [], []);
+        const built = findMethod(["dominance"])!.build([], methodItemOf(entry.before), boots);
         if ("refused" in built) throw new Error(built.refused);
         const [start] = tracker.statesIn(entry.before)!;
         const out = tracker.transition(entry.before, built, "estimate")!(start!.state);
-        // The elevated one is removed and the other elevated, or the other
-        // removed and the elevated one's values rolled again: one state.
+        // One influenced modifier goes and the other is elevated, each alike:
+        // the suffix into a row of its own type, the prefix into a type of its
+        // own, which takes the prefix's place.
+        const prefixAt = tracker.index.get(HUNTER_BOOTS_PREFIX.type)!;
+        const suffixAt = tracker.index.get(HUNTER_BOOTS_SUFFIX.type)!;
+        const elevatedAt = tracker.index.get(ELEVATED_BOOTS_PREFIX.type)!;
         expect(tracker.misses).toBe(0);
-        expect(out).toHaveLength(1);
-        expect(out[0]!.prob).toBeCloseTo(1, 12);
-        expect(out[0]!.state.prefix).toBe(1);
-        expect(out[0]!.state.rows[tracker.index.get(HUNTER_BOOTS_PREFIX.type)!]).toBeNull();
-        expect(out[0]!.state.rows[tracker.index.get(ELEVATED_BOOTS_PREFIX.type)!]).toBe(
-            ELEVATED_BOOTS_PREFIX.id,
+        expect(out).toHaveLength(2);
+        const suffixUp = out.find((o) => o.state.prefix === 0)!;
+        expect(suffixUp.prob).toBeCloseTo(0.5, 12);
+        expect(suffixUp.state.rows[prefixAt]).toBeNull();
+        // No condition names a tier, so the elevated row is in its type's one class.
+        expect(suffixUp.state.rows[suffixAt]).toBe(
+            tracker.classesOf(suffixAt, ELEVATED_BOOTS_SUFFIX.id)[0]!.id,
         );
+        const prefixUp = out.find((o) => o.state.prefix === 1)!;
+        expect(prefixUp.prob).toBeCloseTo(0.5, 12);
+        expect(prefixUp.state.suffix).toBe(1);
+        expect(prefixUp.state.rows[prefixAt]).toBeNull();
+        expect(prefixUp.state.rows[elevatedAt]).toBe(ELEVATED_BOOTS_PREFIX.id);
     });
 });
 
@@ -170,9 +216,9 @@ describe("a step's outcomes", () => {
             item({ base: "Iron Ring", ilvl: 84, rarity: "rare", prefixes: ["IncreasedLife1"] }),
             [op("annul")],
         );
-        const entry = checkPresent(c, { registry }).trace.at(-1)!;
+        const entry = check(c, { registry }).trace.at(-1)!;
         const tracker = new Tracker(registry, entry.before, [entry.before], [], []);
-        const built = findMethod(["annul"])!.build([], entry.before, registry);
+        const built = findMethod(["annul"])!.build([], methodItemOf(entry.before), registry);
         if ("refused" in built) throw new Error(built.refused);
         const next = tracker.transition(entry.before, built, "estimate")!;
         const [start] = tracker.statesIn(entry.before)!;

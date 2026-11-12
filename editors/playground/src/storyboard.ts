@@ -311,7 +311,7 @@ export function stateLine(v: ItemView): string {
         0,
     );
     const [lo, hi] = v.remainder?.count ?? [0, 0];
-    const [a, b] = [shown + lo, shown + hi];
+    const [a, b] = v.total ?? [shown + lo, shown + hi];
     return `${rarity} · ${rangeText([a, b], "–")} ${pluralRange([a, b], "modifier")}`;
 }
 

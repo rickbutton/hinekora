@@ -79,6 +79,7 @@ describe("the item card's markup", () => {
             side: "exarch",
             tiers: ["Lesser"],
             texts,
+            count: texts.length,
             tags: [],
             maybe: false,
         });

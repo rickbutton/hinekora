@@ -67,19 +67,21 @@ game's item text: the two named modifiers are on every one, and the last line co
 
 ## A step the checker rejects
 
-Add a bench craft after the loop:
+Bench movement speed after the loop, where the essence rolled none:
 
 <!-- fragment -->
 
 ```hinekora
-bench "movement speed"
+if not has group "movement speed" {
+    bench "movement speed"
+}
 ```
 
 ```txt
-first.craft:10:1: error: at this point the item is: Titan Greaves · Rare · 4–6 affixes · 1–3 prefixes · 1–3 suffixes · ilvl 84
+first.craft:11:5: error: at this point the item is: Titan Greaves · Rare · 4–6 affixes · 1–3 prefixes · 1–3 suffixes · ilvl 84
   Requires an open prefix slot — none is guaranteed open here.
-  10 | bench "movement speed"
-     | ^
+  11 |     bench "movement speed"
+     |     ^
   For example, this item:
     Item Class: Boots
     Rarity: Rare
@@ -87,22 +89,23 @@ first.craft:10:1: error: at this point the item is: Titan Greaves · Rare · 4�
     --------
     Item Level: 84
     --------
-    { Prefix Modifier "Essences" — Resource, Life }
-    +(91-105) to maximum Life
     { Prefix Modifier "Pirate's" (Tier: 1) — Drop }
     (13-18)% increased Rarity of Items found
-    { Prefix Modifier "Cheetah's" (Tier: 2) — Speed }
-    30% increased Movement Speed
+    { Prefix Modifier "Mammoth's" (Tier: 1) — Defences, Armour }
+    (39-42)% increased Armour
+    (16-17)% increased Stun and Block Recovery
+    { Prefix Modifier "Essences" — Resource, Life }
+    +(91-105) to maximum Life
     { Suffix Modifier "of Tzteosh" (Tier: 1) — Elemental, Fire, Resistance }
     +(46-48)% to Fire Resistance
 
 ✗ 1 error
 ```
 
-The error gives the position, the item at that step, what the step needed and an item that
-breaks it. Movement speed is a prefix, and the essence can fill all three.
+Movement speed is a prefix, and the essence can fill all three, as on the item under the
+error.
 
-A [branch](./language/if) restricts the step to the items that can take it:
+A count in the [branch](./language/if) restricts the step to the items that can take it:
 
 ```hinekora
 item {
@@ -119,8 +122,7 @@ if prefixCount <= 2 and not has group "movement speed" {
 }
 ```
 
-This craft checks. The second test is there because the essence can roll movement speed
-itself.
+This craft checks.
 
 ## Next
 

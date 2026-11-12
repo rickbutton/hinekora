@@ -25,6 +25,32 @@ describe("chartSource — the guide as Mermaid text", () => {
     });
 });
 
+describe("the modifiers an item is listed without", () => {
+    /** The `n`th hinekora block of a site page. */
+    const block = (page: string, n: number): string => {
+        const text = readFileSync(
+            fileURLToPath(new URL(`../../../site/${page}`, import.meta.url)),
+            "utf8",
+        ).replace(/\r/g, "");
+        const blocks = [...text.matchAll(/```hinekora\n([\s\S]*?)```/g)].map((m) => m[1]!);
+        return blocks[n]!;
+    };
+
+    it.each([
+        ["docs/language/conditions.md", 0],
+        ["docs/getting-started.md", 2],
+        ["docs/cost.md", 0],
+        ["docs/syntax.md", 0],
+    ])("are plain words on the item %s block %i ends with", (page, n) => {
+        const r = run(block(page, n));
+        expect(r.ok).toBe(true);
+        const line = r.output.split("\n").find((l) => l.trim().startsWith("Without:"));
+        for (const w of line?.trim().slice("Without: ".length).split(", ") ?? []) {
+            expect(w).toMatch(/^[a-z0-9][a-z0-9 %+'-]*$/);
+        }
+    });
+});
+
 describe("checkSource — end to end against real data", () => {
     it("passes a valid craft and reports the final item", () => {
         const r = run(`item { base: "Iron Ring" ilvl: 84 rarity: normal }
@@ -61,6 +87,29 @@ bench "maximum life"`);
         const one = run(`item { base: "Iron Ring" ilvl: 84 rarity: magic }
 exalt`);
         expect(one.output).not.toContain("For example");
+    });
+
+    it("says when the checker could not judge the craft, apart from the craft's errors", () => {
+        const broken = {
+            ...registry,
+            resolveCurrency: () => {
+                throw new Error("no currencies");
+            },
+        };
+        const r = checkSource(
+            `item { base: "Iron Ring" ilvl: 84 rarity: normal }
+transmute`,
+            "t.craft",
+            broken,
+        );
+        expect(r.ok).toBe(false);
+        expect(r.unjudged).toBe(true);
+        expect(r.output).toContain("t.craft:2:1: error: This step could not be checked");
+        expect(r.output).toContain("— no currencies");
+        expect(
+            run(`item { base: "Iron Ring" ilvl: 84 rarity: magic }
+exalt`).unjudged,
+        ).toBeUndefined();
     });
 
     it("points an item block's error at the field or the modifier it is about", () => {
