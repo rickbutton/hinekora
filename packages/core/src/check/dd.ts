@@ -164,7 +164,8 @@ export class DdManager {
         this.runStart = this.nextId;
     }
 
-    /** Binary set operations asked for, trivial ones included, for tests and diagnostics. */
+    /** Calls into the binary set operations, for tests and diagnostics: an
+     *  empty child a node settles in place makes none. */
     get applyCount(): number {
         return this.applies;
     }
@@ -767,8 +768,15 @@ export class DdManager {
         const s = a.slot < b.slot ? a.slot : b.slot;
         const d = this.domains[s]!;
         const kids = new Array<Node>(d);
+        const splitA = a.slot === s;
+        const splitB = b.slot === s;
         for (let v = 0; v < d; v++) {
-            kids[v] = this.apply(op, a.slot === s ? a.kids[v]! : a, b.slot === s ? b.kids[v]! : b);
+            const x = splitA ? a.kids[v]! : a;
+            const y = splitB ? b.kids[v]! : b;
+            // Most children of a wide slot are empty: settled here, not by a call.
+            if (x === empty) kids[v] = op === OR ? y : empty;
+            else if (y === empty) kids[v] = op === AND ? empty : x;
+            else kids[v] = this.apply(op, x, y);
         }
         const r = this.mk(s, kids);
         // The cache may have grown during the recursion.
