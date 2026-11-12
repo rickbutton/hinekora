@@ -21,7 +21,7 @@ The essence reforges the boots with maximum Life guaranteed and the other modifi
 The loop tests for a tier 1 fire resistance before each pass and applies the essence while
 there is none. After the loop, the checker knows both modifiers are present.
 
-The checker reports a step whose precondition may fail on some path, a name it cannot
+The checker reports a step that some item the craft can make cannot take, a name it cannot
 resolve, a loop that cannot exit and a branch the craft can never take. [Errors](./errors)
 shows each kind.
 

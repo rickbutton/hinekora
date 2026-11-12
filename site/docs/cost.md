@@ -54,9 +54,9 @@ If some paths end in a [`stop`](./language/until), a last line gives their share
 
 ## Spreads
 
-A chance can depend on something the checker knows only as a range, such as the
+A chance can depend on something that differs between the items reaching a step, such as the
 [memory strands](https://www.poewiki.net/wiki/Memory_strand#Mechanics) left after each Chaos
-Orb. The report then gives the estimate and, in brackets, the two ends of the range.
+Orb. The report then gives the estimate and, in brackets, the two ends.
 
 ```hinekora
 item {

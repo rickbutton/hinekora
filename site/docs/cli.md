@@ -53,8 +53,8 @@ bad.craft:8:1: error: at this point the item is: Iron Ring · Magic · 1–2 aff
     --------
     { Prefix Modifier "Annealed" (Tier: 1) — Physical Damage, Damage, Physical, Attack }
     Adds (6-9) to (13-15) Physical Damage to Attacks
-    { Suffix Modifier "of Nirvana" (Tier: 1) — Resource, Mana }
-    (60-69)% increased Mana Regeneration Rate
+    { Suffix Modifier "of the Gods" (Tier: 1) — Attribute }
+    +(51-55) to Strength
 
 ✗ 1 error
 ```

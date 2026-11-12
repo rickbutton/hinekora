@@ -87,9 +87,9 @@ catalogue allows one type, so a draw beside them keeps each unnamed group's weig
 chance of not being among that many draws. A step that cannot carry a state exactly says
 so, and the walk reads on from the checker's item, as past 5000 states
 (`TrackerOverflow`).
-There a roll is read on the facts every path holds: a modifier held only as possible
-neither shrinks the pool nor adds its tags, and every range the checker left open is read
-at its floor and at its ceiling (`Reading`), a **spread** given beside the figure where
+There a roll is read on the facts every item holds: a modifier some items lack neither
+shrinks the pool nor adds its tags, and every range the items span is read at its floor
+and at its ceiling (`Reading`), a **spread** given beside the figure where
 the ends disagree.
 
 ---

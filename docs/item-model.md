@@ -104,7 +104,8 @@ Three readings matter to the model:
   wiki does not describe them). An added tag can disable rows (a weapon-specific jewel
   modifier adds `specific_weapon`, zeroing every other such modifier) or enable them (one
   staff modifier on a Strength jewel lets the others roll, within one Chaos Orb too:
-  confirmed in game); the checker admits such rows for a possibly present adder.
+  confirmed in game); the checker reads the tags each item carries, its rows' added ones
+  among them.
 - **Generation table**, the data's `generation_weights`, read as the spawn table is, the
   matching entry scaling the weight in percent
   ([RePoE's mod reference](https://github.com/brather1ng/RePoE/blob/master/RePoE/docs/mods.md);

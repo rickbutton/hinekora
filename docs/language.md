@@ -66,7 +66,7 @@ item {
   [memory strands](https://www.poewiki.net/wiki/Memory_strand#Mechanics), 0 to 100, none
   when absent; the crafts that use them up are
   [those the wiki lists](https://www.poewiki.net/wiki/Memory_strand#Crafting_methods_consuming_memory_strands)
-  (`QUESTIONS.md` Q68). The checker counts the strands the item surely has left.
+  (`QUESTIONS.md` Q68). The checker follows the strands each item has left.
 - `influences: hunter` (or two, `influences: shaper elder`) marks an
   [influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics); the six are
   `shaper`, `elder`, `crusader`, `hunter`, `redeemer` and `warlord`; its influence
@@ -133,16 +133,14 @@ Each statement applies one operation to the current item: a currency, an essence
 Harvest, Bestiary or Eldritch craft, a fossil resonator, an unveil. Completion lists them
 all, and hovering a step shows what it does and what the item needs for it. Every item
 the craft can have there must meet them; a failure is reported as in §6, and checking goes
-on from the items the step fits, else as the guide meant it, so one wrong step is reported
+on from the items the step fits, else as the craft meant it, so one wrong step is reported
 once.
 
-"Open slot" and "removable" hold on every path: a slot is open only if it is open on every
-path the craft can have taken, and a modifier is removable only if one is present on every
-path and not locked (fractured, or shielded by a
-[metamod](https://www.poewiki.net/wiki/Metamod)). A metamod the item has on some paths
-only is read both ways: a step must fit with it and without it, and leaves what either
-would. `fracture` locks a random modifier; no
-specific one is known to be locked until a `fractured "<mod>"` branch (§5) narrows it.
+So a slot is open only if it is open on every item the craft can have there, and a
+modifier is removable only if every such item has one not locked (fractured, or shielded
+by a [metamod](https://www.poewiki.net/wiki/Metamod)). Items with a metamod and items
+without are each judged under their own rules. `fracture` locks a random modifier: the
+items after it hold every choice until a `fractured "<mod>"` branch (§5) narrows them.
 
 A statement opens with its words and takes its arguments after them:
 
@@ -175,8 +173,8 @@ inside one, a bare parameter standing for the steps bound to it.
 ### 4.1 `until <pred> { … }`
 
 Run the body until the predicate holds; later lines may rely on it. The body must be safe on
-every round, not just the first (`until has "X" { exalt }` is reported: the item fills before
-X is sure). A loop that can never exit, or never runs, is reported:
+every round, not just the first (`until has "X" { exalt }` is reported: some item fills before
+it has X). A loop that can never exit, or never runs, is reported:
 
 ```
 this loop can never exit: has "fire resistance" can never become true here
@@ -186,8 +184,8 @@ this loop's body never runs: prefixCount <= 3 already holds here
 ### 4.2 `if <pred> { … } [else { … }]`
 
 Branch on what is now true of the item. Inside `if` the predicate holds; inside `else`, its
-negation. A branch that can never run is reported. After the branch, what both arms
-guarantee is kept, including "one of these three is present".
+negation. A branch that can never run is reported. After the branch the items of both arms
+go on together, so a fact true after each, such as "one of these three is present", holds.
 
 ### 4.3 `restart` and `stop`
 
@@ -196,7 +194,7 @@ craft); typically after a removal that may have taken a wanted modifier.
 
 `stop` ends the craft on this path: the item is kept, or is not worth more currency. What
 follows is judged only on the paths that continue, so "if the life was removed, start over
-with a new base" is `if not has "maximum life" { stop }`, after which the life is sure. A
+with a new base" is `if not has "maximum life" { stop }`, after which every item has it. A
 craft whose every path stops has no finished item.
 
 ### 4.4 Definitions
@@ -255,11 +253,10 @@ A predicate asks about the item's current state only; there are no history predi
 
 - `has "X"` means any tier of X; `has "X" t1` the specific tier, which the checker tracks
   through every step.
-- `has "X" >= 110` compares the modifier's **value**, the first number of its text. Tiers
-  that cannot reach it are ruled out, and the value stays known until a reforge or a
-  `divine` rolls it again: `until has "maximum life" >= 110 { divine }` is a guide's "divine
-  the life into range". An experimented base's "increased modifier magnitudes" implicit is
-  not applied.
+- `has "X" >= 110` compares the modifier's **value**, the first number of its text. Values
+  that miss it are ruled out, and a value holds until a reforge or a `divine` rolls it
+  again: `until has "maximum life" >= 110 { divine }` is "divine the life into range". An
+  experimented base's "increased modifier magnitudes" implicit is not applied.
 - `has group "X"` asks for any modifier of X's
   [group](https://www.poewiki.net/wiki/Modifier#Group/family), read across every base:
   `if not has group "spell damage" { bench "spell damage" }` is a guide's "unless you already
@@ -280,15 +277,19 @@ Requires a Rare item — this item is Magic.
 ```
 
 Hover, the CLI and the playground lay out the item as the game's copy-to-clipboard text,
-with tier ranges, "one of these" groups and "possibly" marks. Where several items reach a
-rejected step, the CLI and hover add one that breaks it.
+with tier ranges, "one of these" groups and "possibly" marks. Where only some of the items
+reaching a rejected step break it, and none came past an earlier error, the CLI and hover
+add one that does.
 
 - **Names**: an unknown or ambiguous base, mod, currency, essence, bench craft or harvest
   tag; a mod without a tier in the item block; a tier past the ladder.
-- **Requirements**: the step does not fit the item on some path (§3).
+- **Requirements**: some item the craft can have there does not fit the step (§3).
 - **Control**: a loop that can never exit or whose body never runs; a branch or step that never
   runs; a def with conflicting, unused or repeated parameters, recursion, or a predicate
   called as a statement (or a function in a condition).
+- **Stops**: a loop still changing after 256 rounds, an item that can turn out too many ways
+  to follow, or a step the checker cannot handle (CLI exit code 3); later steps go
+  unchecked.
 
 ---
 
@@ -311,7 +312,5 @@ until anyEleRes(t1) {
 }
 ```
 
-Deafening Essence of Greed reforges the item with maximum Life guaranteed; the loop spins
-until the random fill includes a T1 elemental resistance. On exit the checker knows maximum
-Life is present at its essence tier and one of the three resistances at T1. More in
-`examples/`.
+The essence guarantees maximum Life; on exit every item has it and one of the three
+resistances at T1. More in `examples/`.

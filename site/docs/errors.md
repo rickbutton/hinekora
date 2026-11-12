@@ -61,11 +61,11 @@ Unknown mod "ma life".
 
 A bare word that is no operation reads `Unknown currency "chaoss".`
 
-## A step that may not apply
+## A step an item cannot take
 
-Each [operation](./operations/) has preconditions, which the editor's hover lists. The checker
-reports a step whose precondition fails for some item that can reach it. The message gives
-the item at that point, then what the step needed.
+Each [operation](./operations/) has preconditions. The checker reports a step whose
+precondition fails for some item that can reach it. The message gives the item at that
+point, then what the step needed.
 
 <!-- refused -->
 
@@ -88,10 +88,10 @@ Requires a Magic item — this item is Rare.
 ```
 
 The first line gives the item's base, rarities, modifier counts and item level. The second
-says how sure the checker is: "this item is Rare" means every path, "the item may be full"
-some path.
+says how many items break the step: "this item is Rare" means all, "the item may be full"
+some, one of which [`check`](./cli#check) can print.
 
-Other steps need one rarity on every path, an open slot, room on one side, a modifier to
+Other steps need one rarity on every item, an open slot, room on one side, a modifier to
 remove, or none of the new modifier's group:
 
 - `Requires a Rare item — this item may be Normal or Rare.`
@@ -112,12 +112,12 @@ See [Loops](./language/until) and [Branches](./language/if).
 
 ## Where the checker stops
 
-The steps after one of these go unchecked:
+The steps after these errors go unchecked:
 
 - `The item this loop works on is still changing after 256 rounds …`: the loop does not settle.
-- `The item can turn out too many different ways here to follow each …`: the items outgrow the
-  checker's limit.
-- `This step could not be checked …`: a fault in the checker, to report.
+- `The item can turn out too many different ways here to follow each …`: the items outgrow its
+  limit.
+- `This step could not be checked …`: a checker fault, to report; the tool exits with 3.
 
 ## Definitions
 

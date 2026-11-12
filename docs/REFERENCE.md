@@ -15,9 +15,8 @@
 
 TypeScript (settled): the design needed fast iteration, the tool wants a browser
 playground, and the data is JSON-heavy. Performance never separates the languages here: a
-pool computation is ~200 mods × ~25 cheap checks per step, as long as the
-intensional-union invariant (`../CLAUDE.md`) holds, and that invariant is an algorithm
-choice, not a language choice.
+step is operations on decision diagrams (§6), never a list of outcomes (the core invariant,
+`../CLAUDE.md`), and that is an algorithm choice, not a language choice.
 
 The name: the deity Hinekora foresees the future, and the currency _Hinekora's Lock_ lets
 an item foresee the result of the next currency used on it. The language generalizes that

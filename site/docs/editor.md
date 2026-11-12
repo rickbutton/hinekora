@@ -21,9 +21,9 @@ One language service backs two editors: a VS Code extension and the browser
 
 ### Hover
 
-Hover on a step shows three things: what the operation does and needs, the item after the
-step, and the expected cost of a repeated step. On a refused step it adds an item that breaks
-it. The item has the layout of the game's item text:
+Hover on a step shows what the operation does and needs, the item after the step, and the
+expected cost of a repeated step. A refused step can add an item that breaks it, as the
+[command line](./cli#check) does. The item has the layout of the game's item text:
 
 ```txt
 Item Class: Boots
