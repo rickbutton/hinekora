@@ -104,12 +104,12 @@ until has "maximum life" t1 and has "cold resistance" {
 ```
 
 Outside every `until`, `restart` ends the
-craft on that path, as `stop` does.
+craft for that item, as `stop` does.
 
 ## stop
 
-`stop` ends the craft on the current path. The checker follows the statements after it only
-on the paths that continue.
+`stop` ends the craft for the item. The checker follows the statements after it only
+on the items that continue.
 
 ```hinekora
 item {
@@ -127,7 +127,7 @@ until has "maximum life" >= 125 {
 }
 ```
 
-The checker runs the `divine` loop against items with tier 1 Life. A craft whose every path stops has no final item.
+The checker runs the `divine` loop against items with tier 1 Life. A craft that stops for every item has no final item.
 
 A step written after a `stop` or `restart` in its block never runs, and the checker rejects
 it.

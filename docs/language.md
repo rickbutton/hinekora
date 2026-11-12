@@ -92,7 +92,7 @@ item {
   ([Veiled modifier § Version history](https://www.poewiki.net/wiki/Veiled_modifier#Version_history)).
   After a step that may corrupt the item (`vaal`,
   `locus`), the craft continues under every outcome at once (§5); one that destroys the
-  item ends the craft on that path.
+  item ends the craft for it.
 
 An unknown or ambiguous name is reported on the item block before any step is checked.
 
@@ -192,10 +192,10 @@ go on together, so a fact true after each, such as "one of these three is presen
 `restart` re-enters the innermost enclosing `until` from its start (at top level it ends the
 craft); typically after a removal that may have taken a wanted modifier.
 
-`stop` ends the craft on this path: the item is kept, or is not worth more currency. What
-follows is judged only on the paths that continue, so "if the life was removed, start over
+`stop` ends the craft for the item: it is kept, or is not worth more currency. What
+follows is judged only on the items that continue, so "if the life was removed, start over
 with a new base" is `if not has "maximum life" { stop }`, after which every item has it. A
-craft whose every path stops has no finished item.
+craft that stops for every item has no finished item.
 
 ### 4.4 Definitions
 
@@ -261,8 +261,8 @@ A predicate asks about the item's current state only; there are no history predi
   [group](https://www.poewiki.net/wiki/Modifier#Group/family), read across every base:
   `if not has group "spell damage" { bench "spell damage" }` is a player's "unless you already
   have one of those".
-- `influenced`, `corrupted` and `dominant` ask about the item's marks (§1); where paths with
-  different marks meet, as after a `locus` or a `conflict`, a branch on them narrows to one.
+- `influenced`, `corrupted` and `dominant` ask about the item's marks (§1); where the items
+  differ in their marks, as after a `locus` or a `conflict`, a branch on them narrows to one.
   An Eldritch orb reads each item's own dominant side.
 
 ---

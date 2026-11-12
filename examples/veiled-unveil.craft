@@ -6,9 +6,9 @@
 # possible prefixes; the craft takes the % life one when it is offered and
 # otherwise annuls the unveiled mod away and tries again. An unveiled mod is
 # not a crafted mod, so the bench's removal cannot take it, and an
-# annul may hit the life or a suffix instead: on those paths the item is
-# bricked and the craft stops, so what follows is judged on the paths where
-# the item is still worth the next orb.
+# annul may hit the life or a suffix instead: those items are bricked and
+# the craft stops for them, so what follows is judged on the items still
+# worth the next orb.
 
 item {
     base:     "Astral Plate"

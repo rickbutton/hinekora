@@ -48,7 +48,7 @@ hand-written list; the metamods in force and the memory strands' tier cut apply 
 | `imprint`   | The item as it stands is held.                                                                                                                                                                                                                                         |
 | `restore`   | The item becomes the held one, which is consumed.                                                                                                                                                                                                                      |
 | `either`    | Each branch is an outcome; a branch of `end` leaves no item; all ending, so does the craft.                                                                                                                                                                            |
-| `end`       | The item is destroyed or unmodifiable on this path; the craft ends here.                                                                                                                                                                                               |
+| `end`       | The item is destroyed or unmodifiable; the craft ends here for it.                                                                                                                                                                                                     |
 
 The protections in force are read once, when the method is applied, and govern every
 operation in it ([Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions));

@@ -94,7 +94,7 @@ What resolution provides to the checker:
 ### 4.1 The idea
 
 A craft is a program over an item, with loops and branches, and every operation's
-precondition must hold on every path. Simulating each path is hopeless (the
+precondition must hold on every item the craft can have there. Simulating each run is hopeless (the
 [core invariant](../CLAUDE.md)): a currency has hundreds of outcomes, and a chain of them
 multiplies. So the checker runs the craft once over a _set_ of items: the state at a point
 of the craft is exactly the set of items the game can produce there, and each operation

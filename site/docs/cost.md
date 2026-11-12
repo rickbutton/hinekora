@@ -49,7 +49,7 @@ beast.
 Divine Orbs and names the league and date of the prices. It names a currency that has no
 price in place of the converted total.
 
-If some paths end in a [`stop`](./language/until), a last line gives their share, such as
+If the craft can end at a [`stop`](./language/until), a last line gives how often, such as
 `The craft ends short of a finished item 18% of the time.`
 
 ## Spreads

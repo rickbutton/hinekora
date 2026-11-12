@@ -77,7 +77,7 @@ This one adds two Exalted Orbs and a bench craft.
 <div class="prose">
 
 The bench craft is a prefix and a ring holds three. The Regal Orb and each Exalted Orb can
-add one. On some paths no slot is left, so the checker rejects the craft. The error shows the item
+add one. Some items have no slot left, so the checker rejects the craft. The error shows the item
 at that step.
 
 </div>
