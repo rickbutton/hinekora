@@ -14,7 +14,7 @@
         "typecheck": "tsc -b",
         "test": "vitest run",
         "test:watch": "vitest",
-        "test:coverage": "vitest run --coverage --testTimeout 30000 --exclude \"**/src/race.test.ts\"",
+        "test:coverage": "vitest run --coverage --testTimeout 30000 --exclude \"**/src/race.test.ts\" --exclude \"**/src/memory.test.ts\"",
         "lint": "eslint .",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
