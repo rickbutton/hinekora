@@ -1,17 +1,18 @@
 # hinekora — project guide for Claude
 
 Hinekora is a **statically-checked DSL for Path of Exile crafting guides**. A checker
-proves each currency operation's precondition holds on every path (via abstract
-interpretation) before real currency is spent.
+proves each currency operation's precondition holds on every item the craft can reach
+before real currency is spent.
 
 **Docs** (in `docs/`), each detail in exactly one place; link rather than duplicate. The
 code is the reference for what exists; read it. Open a doc when the task touches its
 subject:
 
 - `docs/ARCHITECTURE.md`: the shape of the implementation. The layers, how they compose,
-  and the theory behind the checker (abstract interpretation).
-- `docs/REFERENCE.md`: the abstract state's fields, the gotchas no single comment can
-  hold (packaging, editors, build), and the standing design notes (TypeScript, the BDD).
+  and the theory behind the checker (exact sets of items).
+- `docs/REFERENCE.md`: the checker's slots, the gotchas no single comment can hold
+  (packaging, editors, build), and the standing design notes (TypeScript, the decision
+  diagram).
 - `docs/ROADMAP.md`: work not built (deferred, future). Not history.
 - `docs/item-model.md`: the item and modifier model the code is audited against, each rule
   linked to its wiki section.
@@ -26,9 +27,9 @@ subject:
 ## The core invariant
 
 **Never enumerate outcome unions.** A currency op has hundreds of concrete results;
-chaining `n` of them is `~200^n`. Keep a symbolic summary (the checker's `XItem`) and fold
-each op's effect into it. If you find yourself building a list of concrete items or
-outcomes in the checker, stop; that violates the design and won't scale.
+chaining `n` of them is `~200^n`. Keep the set symbolic (the checker's `XItem`, one
+decision diagram) and map each op over it. Never build a list of concrete items or
+outcomes in the checker outside `check/reference/`; it won't scale.
 
 ## Conventions (firm; do not relitigate)
 
@@ -59,14 +60,14 @@ pnpm -C c:/git/hinekora format        # prettier --write ., when the check fails
 
 `pnpm gate` is `tsc -b` + `vitest run` + `eslint .` + `prettier --check .` +
 `scripts/check-docs.mjs`. The docs check fails when a doc names a path or symbol the code
-does not have, omits a keyword, harvest tag, `Op` kind or abstract-state field the code
+does not have, omits a keyword, harvest tag, `Op` kind or scalar slot the code
 has, links a wiki section the local cache lacks (skipped without the cache), or outgrows
 its budget. A `git commit` issued through the Bash or PowerShell tool runs the gate
 first (`.claude/hooks/pre-commit-gate.mjs`) on the working tree of the checkout the
 command runs in, as it stands when the command starts, and is refused when it fails; so
-make the fixes in one command and commit in the next. **Soundness principle:** tightening
-the abstract domain only ever removes false positives (never adds false negatives), so
-existing green tests staying green is evidence a tightening is sound.
+make the fixes in one command and commit in the next. **Exactness principle:** every
+state is exactly the items the model allows; the exactness tests hold each handler to
+the reference interpreter, failing on an image too large or too small.
 
 ## Working protocol
 
@@ -105,8 +106,8 @@ The user is not always present. Work runs autonomously and the repo carries the 
 ## Working style
 
 - The user is an experienced compiler/PL engineer but **new to type-system theory**, so
-  explain type-theory concepts (abstract domains, relational vs non-relational,
-  join/widening, soundness) as they come up. Prefer **clear code over clever code.**
+  explain type-theory concepts (decision diagrams, exact images, fixpoints, soundness vs
+  exactness) as they come up. Prefer **clear code over clever code.**
   Walk through non-obvious design choices rather than deciding silently.
 - When the user asks a conceptual question, answer the concept first, then implement.
 - Never prefix bash commands with `cd`; the working directory is already correct.
