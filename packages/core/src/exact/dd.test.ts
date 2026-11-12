@@ -1,5 +1,13 @@
-import { describe, expect, it } from "vitest";
+// eslint-disable-next-line no-restricted-imports -- test only: a deterministic collection
+import * as v8 from "node:v8";
+// eslint-disable-next-line no-restricted-imports -- test only: a deterministic collection
+import * as vm from "node:vm";
+import { describe, expect, it, vi } from "vitest";
 import { type Dd, DdBudgetError, DdManager, type DdRelation } from "./dd.js";
+
+// These compare against sets listed in full; beside the rest of the suite
+// they run several times slower than alone.
+vi.setConfig({ testTimeout: 60_000 });
 
 function rng(seed: number): () => number {
     let s = seed >>> 0;
@@ -217,6 +225,13 @@ function checkEntry(m: DdManager, u: Universe, e: Entry, r: () => number): void 
         );
     expect(m.support(e.dd)).toEqual(depends);
     for (const x of xs.slice(0, 5)) expect(m.contains(e.dd, x)).toBe(true);
+    const probe = u.decode(Math.floor(r() * u.size));
+    const s = Math.floor(r() * m.numSlots);
+    const outside = [...probe];
+    outside[s] = r() < 0.5 ? -1 : u.domains[s]!;
+    expect(() => m.contains(e.dd, outside)).toThrow(RangeError);
+    expect(() => m.contains(e.dd, probe.slice(1))).toThrow(RangeError);
+    expect(() => m.contains(e.dd, [...probe, 0])).toThrow(RangeError);
 }
 
 function randomStep(m: DdManager, u: Universe, pool: Entry[], r: () => number): Entry | undefined {
@@ -441,6 +456,64 @@ describe("the decision-diagram engine", () => {
         expect(() => m.mapOne(a, () => [3])).toThrow(RangeError);
     });
 
+    it("rejects a diagram of another manager", () => {
+        const m = new DdManager([2, 2]);
+        const other = new DdManager([2, 2]);
+        const a = other.slotIn(0, [1]);
+        expect(() => m.and(m.ALL, a)).toThrow(RangeError);
+        expect(() => m.or(other.EMPTY, m.ALL)).toThrow(RangeError);
+        expect(() => m.isEmpty(other.EMPTY)).toThrow(RangeError);
+        expect(() => m.top(a)).toThrow(RangeError);
+        expect(() => m.child(a, 0)).toThrow(RangeError);
+        expect(() => m.contains(a, [1, 0])).toThrow(RangeError);
+        expect(() => m.forget(a, [0])).toThrow(RangeError);
+        expect(() => m.mapOne(a, () => undefined)).toThrow(RangeError);
+        expect(() => m.rename(a, (s) => s)).toThrow(RangeError);
+        expect(() => m.count(a)).toThrow(RangeError);
+    });
+
+    it("keeps the operation cache across the calls of a batch", () => {
+        const m = new DdManager(new Array<number>(12).fill(3));
+        const a = m.automaton<number>({
+            init: 0,
+            step: (_s, v, c) => (c + v) % 5,
+            accept: (c) => c !== 2,
+            key: (c) => c,
+        });
+        const b = m.automaton<number>({
+            init: 0,
+            step: (_s, v, c) => (v === 0 ? c : Math.min(c + 1, 4)),
+            accept: (c) => c >= 3,
+            key: (c) => c,
+        });
+        const cost = (f: () => Dd): number => {
+            const before = m.applyCount;
+            f();
+            return m.applyCount - before;
+        };
+        const alone = cost(() => m.and(a, b));
+        expect(alone).toBeGreaterThan(1);
+        expect(cost(() => m.and(a, b))).toBe(alone);
+        const used = (): number => (m as unknown as { used: number[] }).used.length;
+        m.batch(() => {
+            expect(cost(() => m.and(a, b))).toBe(alone);
+            expect(cost(() => m.and(a, b))).toBe(1);
+            m.batch(() => expect(cost(() => m.or(a, b))).toBeGreaterThan(1));
+            expect(cost(() => m.or(a, b))).toBe(1);
+            expect(cost(() => m.and(b, a))).toBe(1);
+        });
+        expect(used()).toBe(0);
+        expect(cost(() => m.and(a, b))).toBe(alone);
+        expect(() =>
+            m.batch(() => {
+                m.diff(a, b);
+                throw new Error("stop");
+            }),
+        ).toThrow("stop");
+        expect(used()).toBe(0);
+        expect(cost(() => m.diff(a, b))).toBeGreaterThan(1);
+    });
+
     it("unites a dense relation's sources once per group of targets", () => {
         const N = 30;
         const D = 20;
@@ -596,24 +669,27 @@ describe("the decision-diagram engine", () => {
             }
             return pool[pool.length - 1]!;
         };
-        const sets = Array.from({ length: 120 }, (_, i) => build(i + 1).set);
-        // A WeakRef keeps its target alive until the job ends, so collection needs a yield.
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        const gc = (globalThis as { gc?: () => void }).gc;
-        if (gc !== undefined) gc();
-        else {
-            let junk: object[] = [];
-            for (let i = 0; i < 2_000_000; i++) junk.push({ i });
-            expect(junk).toHaveLength(2_000_000);
-            junk = [];
-        }
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        for (let i = 0; i < sets.length; i++) {
+        const check = (i: number): void => {
             const again = build(i + 1);
             expect(sorted(again.set)).toEqual(sorted(sets[i]!));
             expect(sorted(toSet(m, again.dd))).toEqual(sorted(sets[i]!));
             expect(fromSet(m, sets[i]!)).toBe(again.dd);
-        }
+        };
+        v8.setFlagsFromString("--expose-gc");
+        const gc = vm.runInNewContext("gc") as () => void;
+        const macrotask = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
+        const sets = Array.from({ length: 120 }, (_, i) => build(i + 1).set);
+        const made = m.tableEntryCount;
+        // A WeakRef keeps its target alive until the job ends, so collection needs a yield.
+        await macrotask();
+        gc();
+        // The finalisers have not run yet: these lookups meet references to dead nodes.
+        for (let i = 0; i < 60; i++) check(i);
+        await macrotask();
+        gc();
+        await macrotask();
+        expect(m.tableEntryCount).toBeLessThan(made);
+        for (let i = 60; i < sets.length; i++) check(i);
     });
 
     it("builds and transforms a 260-slot item in a few thousand nodes", () => {

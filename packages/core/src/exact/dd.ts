@@ -19,7 +19,11 @@ export interface Dd {
     readonly [brand]: true;
 }
 
-/** A relation on one slot's values: what `from` may become, or `undefined` for no change. */
+/**
+ * A relation on one slot's values: what `from` may become, or `undefined` for no change.
+ * Returning one array object for every value with the same image is the fast path: each
+ * distinct array is read once per call, and its sources are united once per node.
+ */
 export type DdRelation = (slot: number, from: number) => readonly number[] | undefined;
 
 /**
@@ -38,9 +42,11 @@ export interface DdAutomaton<S> {
 
 export interface DdOptions {
     /**
-     * The most nodes the unique table may hold at once; making one past it throws
-     * `DdBudgetError`. Within one synchronous run nothing is freed, so this counts every node
-     * the run made.
+     * The most entries the unique table may hold; making a node past it throws `DdBudgetError`.
+     * An entry stays until a collection and its finalisers have run, which happens only after
+     * a macrotask yield, so within one synchronous run the budget counts every node the run
+     * made, dead or alive. A check is meant to be one synchronous run on its own manager, and
+     * its count is then deterministic.
      */
     readonly maxNodes?: number;
 }
@@ -55,10 +61,10 @@ export class DdBudgetError extends Error {
 class Node implements Dd {
     declare readonly [brand]: true;
     constructor(
+        readonly owner: DdManager,
         readonly slot: number,
         readonly kids: readonly Node[],
         readonly id: number,
-        readonly hash: number,
     ) {}
 }
 
@@ -103,8 +109,8 @@ export class DdManager {
     private nextId = 2;
     private applies = 0;
 
-    // The operation cache holds nodes strongly, so it lives only for one public call: `depth`
-    // counts the public calls under way, and the outermost one clears the entries in `used`.
+    // The operation cache holds nodes strongly, so it lives only for the outermost public call
+    // or `batch` under way (`depth` counts them), whose end clears the entries in `used`.
     private depth = 0;
     private used: number[] = [];
     private cacheOp = new Uint8Array(MIN_CACHE);
@@ -121,8 +127,8 @@ export class DdManager {
         this.domains = [...domains];
         this.numSlots = domains.length;
         this.maxNodes = options.maxNodes ?? 2_000_000;
-        this.empty = new Node(this.numSlots, [], 0, 0);
-        this.all = new Node(this.numSlots, [], 1, 1);
+        this.empty = new Node(this, this.numSlots, [], 0);
+        this.all = new Node(this, this.numSlots, [], 1);
         this.EMPTY = this.empty;
         this.ALL = this.all;
     }
@@ -132,8 +138,8 @@ export class DdManager {
         return this.nextId - 2;
     }
 
-    /** Entries of the unique table: live nodes, and dead ones not yet swept. */
-    get liveNodeCount(): number {
+    /** Entries of the unique table, which `maxNodes` bounds: live nodes and dead ones not yet swept. */
+    get tableEntryCount(): number {
         return this.live;
     }
 
@@ -144,15 +150,24 @@ export class DdManager {
 
     /** The slot a diagram's root tests; `numSlots` for `EMPTY` and `ALL`. */
     top(a: Dd): number {
-        return (a as Node).slot;
+        return this.own(a).slot;
     }
 
     /** The diagram reached from `a` when its top slot holds `value`; `a` itself when `a` is a terminal. */
     child(a: Dd, value: number): Dd {
-        const n = a as Node;
+        const n = this.own(a);
         if (n === this.empty || n === this.all) return n;
         this.checkValue(n.slot, value);
         return n.kids[value]!;
+    }
+
+    /**
+     * Runs `fn` with the operation cache kept across the calls it makes, so a repeated
+     * operation is answered from the cache; the outermost batch clears it however it ends.
+     * Outside a batch the cache lasts one call, since it holds the nodes it caches.
+     */
+    batch<T>(fn: () => T): T {
+        return this.run(fn);
     }
 
     clearCaches(): void {
@@ -168,27 +183,27 @@ export class DdManager {
     // ---- set algebra ---------------------------------------------------------------------
 
     and(a: Dd, b: Dd): Dd {
-        return this.run(() => this.apply(AND, a as Node, b as Node));
+        return this.run(() => this.apply(AND, this.own(a), this.own(b)));
     }
 
     or(a: Dd, b: Dd): Dd {
-        return this.run(() => this.apply(OR, a as Node, b as Node));
+        return this.run(() => this.apply(OR, this.own(a), this.own(b)));
     }
 
     diff(a: Dd, b: Dd): Dd {
-        return this.run(() => this.apply(DIFF, a as Node, b as Node));
+        return this.run(() => this.apply(DIFF, this.own(a), this.own(b)));
     }
 
     not(a: Dd): Dd {
-        return this.run(() => this.apply(DIFF, this.all, a as Node));
+        return this.run(() => this.apply(DIFF, this.all, this.own(a)));
     }
 
     isEmpty(a: Dd): boolean {
-        return a === this.empty;
+        return this.own(a) === this.empty;
     }
 
     implies(a: Dd, b: Dd): boolean {
-        return this.run(() => this.apply(DIFF, a as Node, b as Node)) === this.empty;
+        return this.run(() => this.apply(DIFF, this.own(a), this.own(b))) === this.empty;
     }
 
     slotIn(slot: number, values: Iterable<number>): Dd {
@@ -255,7 +270,7 @@ export class DdManager {
             memo.set(n, r);
             return r;
         };
-        return this.run(() => go(a as Node));
+        return this.run(() => go(this.own(a)));
     }
 
     /** Forget the slot, then fix it to `value`. */
@@ -304,7 +319,7 @@ export class DdManager {
             memo.set(key, r);
             return r;
         };
-        return this.run(() => go(0, a as Node));
+        return this.run(() => go(0, this.own(a)));
     }
 
     /**
@@ -348,7 +363,7 @@ export class DdManager {
             memo.set(key, r);
             return r;
         };
-        return this.run(() => go(0, a as Node));
+        return this.run(() => go(0, this.own(a)));
     }
 
     /**
@@ -384,7 +399,7 @@ export class DdManager {
             memo.set(n, r);
             return r;
         };
-        return go(a as Node);
+        return go(this.own(a));
     }
 
     /** A diagram from an automaton over the slots, sharing states by their key at each slot. */
@@ -424,7 +439,7 @@ export class DdManager {
             );
         }
         for (let s = 0; s < this.numSlots; s++) this.checkValue(s, assignment[s]!);
-        let n = a as Node;
+        let n = this.own(a);
         while (n !== this.empty && n !== this.all) n = n.kids[assignment[n.slot]!]!;
         return n === this.all;
     }
@@ -433,7 +448,7 @@ export class DdManager {
     witness(a: Dd): number[] | undefined {
         if (a === this.empty) return undefined;
         const out = new Array<number>(this.numSlots).fill(0);
-        let n = a as Node;
+        let n = this.own(a);
         while (n !== this.all) {
             let v = 0;
             while (n.kids[v] === this.empty) v++;
@@ -462,7 +477,7 @@ export class DdManager {
                 } else visit(c);
             }
         };
-        visit(a as Node);
+        visit(this.own(a));
         const out: number[] = [];
         for (let v = 0; v < d; v++) if (found[v] === 1) out.push(v);
         return out;
@@ -516,7 +531,7 @@ export class DdManager {
             memo.set(n, r);
             return r;
         };
-        const n = a as Node;
+        const n = this.own(a);
         const [lo, hi] = go(n);
         return [lowBefore[n.slot]! + lo, highBefore[n.slot]! + hi];
     }
@@ -541,19 +556,19 @@ export class DdManager {
             memo.set(n, r);
             return r;
         };
-        const n = a as Node;
+        const n = this.own(a);
         return go(n) * (after[0]! / after[n.slot]!);
     }
 
     /** The internal nodes reachable from `a`. */
     size(a: Dd): number {
-        return this.reachable(a as Node).length;
+        return this.reachable(this.own(a)).length;
     }
 
     /** The slots `a` tests, ascending: exactly the slots its set depends on. */
     support(a: Dd): number[] {
         const slots = new Set<number>();
-        for (const n of this.reachable(a as Node)) slots.add(n.slot);
+        for (const n of this.reachable(this.own(a))) slots.add(n.slot);
         return [...slots].sort((x, y) => x - y);
     }
 
@@ -578,6 +593,13 @@ export class DdManager {
             for (const c of n.kids) stack.push(c);
         }
         return [...seen];
+    }
+
+    private own(a: Dd): Node {
+        if (!(a instanceof Node) || a.owner !== this) {
+            throw new RangeError("the diagram belongs to another manager");
+        }
+        return a;
     }
 
     private domainOf(slot: number): number {
@@ -732,7 +754,7 @@ export class DdManager {
         }
 
         if (this.live >= this.maxNodes) throw new DdBudgetError(this.maxNodes);
-        const n = new Node(slot, kids, this.nextId++, h);
+        const n = new Node(this, slot, kids, this.nextId++);
         const ref = new WeakRef(n);
         if (bucket === undefined) this.table.set(h, [ref]);
         else bucket.push(ref);

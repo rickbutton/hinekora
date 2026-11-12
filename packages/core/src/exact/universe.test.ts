@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { beast, craft, hasValue, iff, item, op, until } from "../__fixtures__/ast.js";
 import { BOOTS_BASE, RING_BASE } from "../__fixtures__/mods.js";
 import { maxTotal, sideCap } from "../model/capacity.js";
@@ -30,6 +30,10 @@ import { allItems, type Bounds, diffSets, ItemSet } from "./reference/sets.js";
 import { buildUniverse, isFresh, RARITIES, type Universe, UniverseError } from "./universe.js";
 import { METHODS } from "../check/methods.js";
 import type { Op } from "../check/ops.js";
+
+// These compare against sets listed in full; beside the rest of the suite
+// they run several times slower than alone.
+vi.setConfig({ testTimeout: 60_000 });
 
 /** A few influence sets of those the base can have: none, one, and a pair. */
 function someInfluences(u: Universe): InfluenceKey[] {
