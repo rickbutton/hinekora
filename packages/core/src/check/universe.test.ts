@@ -141,6 +141,7 @@ const LIGHT: CatalogOptions[] = [
     { base: "ratcheting", influence: true },
     { base: "simplex", eldritch: true },
     { base: "amulet", influence: true, metamods: ["multimod", "suffixesCannotChange"] },
+    { types: 3, bench: true, metamods: ["twoPrefixesCannotChange", "oneSuffixCannotChange"] },
 ];
 for (let i = 0; i < 26; i++) {
     PLANS.push({ opts: { types: 3 + (i % 2), ...LIGHT[i % LIGHT.length] }, full: false });

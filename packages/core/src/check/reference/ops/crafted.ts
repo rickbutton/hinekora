@@ -63,6 +63,7 @@
  *   cannot-roll metamods;
  * - an Aspect is laid uncrafted.
  */
+import { keeps } from "../../rules.js";
 import { rollRange } from "../../values.js";
 import type { Gen, TypeId } from "../../../model/ids.js";
 import type { Mod } from "../../../model/mod.js";
@@ -230,7 +231,7 @@ export const checks: RefCheckTable = {
         pass: (_check, item, { ctx, rules }) =>
             !item.mods.some((m) => {
                 const row = rowOf(ctx, m);
-                return isVeiledRow(row, false) && (m.fractured || rules.protected.has(row.gen));
+                return isVeiledRow(row, false) && (m.fractured || keeps(rules.protected, row));
             }),
     },
     unveilTarget: {

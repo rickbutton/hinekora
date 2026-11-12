@@ -145,7 +145,7 @@ export function reforgeImage(
     const { u } = ctx;
     const m = u.dd;
     const dc = drawCtxOf(ctx);
-    const kept = ctx.rules.protected.size > 0;
+    const kept = ctx.rules.protected.sides.size > 0 || ctx.rules.protected.types.size > 0;
     const out: Dd[] = [];
     for (const [rarity, part] of byRarity(u, state)) {
         const [least, most] = reforgeTotals(op.count.n, rarity, u.base);

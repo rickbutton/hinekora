@@ -451,13 +451,13 @@ describe("the method frame", () => {
 // A stand-in operation that writes the rules an item runs under into its
 // memory strands, so a listing shows them item by item.
 const code = (r: Rules): number =>
-    (r.protected.has("prefix") ? 1 : 0) +
-    (r.protected.has("suffix") ? 2 : 0) +
+    (r.protected.sides.has("prefix") ? 1 : 0) +
+    (r.protected.sides.has("suffix") ? 2 : 0) +
     (r.craftedCap > 1 ? 8 : 0) +
     (r.governed ? 16 : 0) +
     (r.blocksSourced ? 32 : 0);
 
-const sideFree = (gen: Gen, r: Rules): boolean => !r.protected.has(gen);
+const sideFree = (gen: Gen, r: Rules): boolean => !r.protected.sides.has(gen);
 
 const EXACT_FAKE: Handlers = {
     ...HANDLERS,

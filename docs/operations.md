@@ -52,7 +52,10 @@ hand-written list; the metamods in force and the memory strands' tier cut apply 
 
 The protections in force are read once, when the method is applied, and govern every
 operation in it ([Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions));
-only `unprotect` and `keep` change that. A cannot-roll metamod restricts a pool only
+only `unprotect` and `keep` change that. A partial protection keeps n of its side's
+modifiers, chosen at each use ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0); ruled from the league's
+FAQ): every one on a side holding no more, otherwise each choice of n is a case of its
+own. A cannot-roll metamod restricts a pool only
 while it is still on the item when the `fill` draws: a reforge that strips it rolls
 freely, as the table's Chaos Orb row has it. The checker splits its items by the metamods
 they carry (`metamodCases`), runs each case under its own rules and unites the results.

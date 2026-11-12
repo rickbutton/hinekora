@@ -21,7 +21,7 @@ import { rollableGen, rollableTiers } from "../resolve/tiers.js";
 import { sideCap } from "../model/capacity.js";
 import type { FillCount, Op, PoolSpec } from "../check/ops/types.js";
 import { buildKey } from "../check/build.js";
-import { effectsKey } from "../check/rules.js";
+import { effectsKey, partialProtections } from "../check/rules.js";
 import type { Dd } from "../check/dd.js";
 import { runMethod, type TransferResult } from "../check/method.js";
 import type { ItemSet } from "../check/state.js";
@@ -449,16 +449,49 @@ const TANGLED = "Tangled Fossil";
  * resonator is socketed, far more weight and bars another (Tangled Fossil §
  * Mechanics), so the pool it rolls from is not one pool.
  */
-export function unmodelled(ops: readonly Op[]): string | undefined {
+export function unmodelled(
+    ops: readonly Op[],
+    item?: ItemSet,
+    registry?: Registry,
+): string | undefined {
     const tangled = ops.some(
         (op) =>
             op.kind === "fill" &&
             op.pool.kind === "fossil" &&
             op.pool.fossils.some((f) => f.name === TANGLED),
     );
-    return tangled
-        ? "a Tangled Fossil makes one kind of modifier, picked at random, far likelier and bars another, which is not modelled, so the chances after it are not known"
-        : undefined;
+    if (tangled) {
+        return "a Tangled Fossil makes one kind of modifier, picked at random, far likelier and bars another, which is not modelled, so the chances after it are not known";
+    }
+    if (item !== undefined && registry !== undefined && keepsBeyondRemoval(ops)) {
+        if (partialProtectionsOn(registry, possibleTypes(item)).size > 0) {
+            return "a metamod keeps some of a side's modifiers, chosen at random each use, which this step's chances are not read under, so the chances after it are not known";
+        }
+    }
+    return undefined;
+}
+
+/** Does the method keep modifiers a protection holds otherwise than by one
+ *  random removal: a strip, a reroll, an upgrade, a removal of a named or an
+ *  influenced modifier, or a removal that spares what it added? */
+function keepsBeyondRemoval(ops: readonly Op[]): boolean {
+    return ops.some(
+        (op) =>
+            op.kind === "strip" ||
+            op.kind === "reroll" ||
+            op.kind === "elevate" ||
+            (op.kind === "remove" &&
+                (op.selector.kind !== "random" || op.selector.sparing !== undefined)) ||
+            (op.kind === "either" && keepsBeyondRemoval(op.branches.flat())),
+    );
+}
+
+/** By side, how many modifiers a partial protection among `types` keeps. */
+function partialProtectionsOn(
+    registry: Registry,
+    types: Iterable<TypeId>,
+): ReadonlyMap<Gen, number> {
+    return partialProtections([...types].flatMap((t) => [...registry.effectsOfType(t)]));
 }
 
 /**
@@ -759,7 +792,7 @@ export function rollOf(
     registry: Registry,
     reading: Reading = "estimate",
 ): Roll {
-    if (unmodelled(ops) !== undefined) return NO_ROLL;
+    if (unmodelled(ops, a, registry) !== undefined) return NO_ROLL;
     let main: FillPlan | undefined;
     const forced: FillPlan[] = [];
     const stranded = ops.some((op) => op.kind === "strands");
@@ -869,10 +902,20 @@ function removalRoll(
         for (const e of registry.effectsOfType(t))
             if (e.kind === "protect") protectedSides.add(e.gen);
     }
-    const reaches = (g: Gen): boolean => (gen === undefined || gen === g) && !protectedSides.has(g);
+    // A partial protection keeps that many of its side's modifiers, each
+    // choice of them as likely (QUESTIONS.md Q128): a modifier of the side is
+    // out of reach in that share of the uses, and the side holds that many
+    // fewer to take.
+    const partial = partialProtectionsOn(registry, guaranteedTypes(before));
+    const free = (g: Gen): number => {
+        const n = partial.get(g) ?? 0;
+        return n === 0 ? 1 : Math.max(0, mid(g) - n) / Math.max(mid(g), 1);
+    };
+    const reaches = (g: Gen): boolean =>
+        (gen === undefined || gen === g) && !protectedSides.has(g) && free(g) > 0;
     const count = {
-        prefix: reaches("prefix") ? mid("prefix") : 0,
-        suffix: reaches("suffix") ? mid("suffix") : 0,
+        prefix: reaches("prefix") ? mid("prefix") * free("prefix") : 0,
+        suffix: reaches("suffix") ? mid("suffix") * free("suffix") : 0,
     };
     const named = { prefix: 0, suffix: 0 };
     for (const t of reachable) named[heldSide(before, registry, t)]++;
@@ -882,17 +925,22 @@ function removalRoll(
     for (const t of guaranteedTypes(before)) {
         if (!kept.has(t)) continue;
         const g = heldSide(before, registry, t);
-        if (reaches(g)) removable[g] = Math.max(0, removable[g] - 1);
+        if (reaches(g)) removable[g] = Math.max(0, removable[g] - free(g));
     }
-    const total = Math.max(1, removable.prefix + removable.suffix, reachable.length);
+    const shares = reachable.map((t) => free(heldSide(before, registry, t)));
+    const total = Math.max(
+        1,
+        removable.prefix + removable.suffix,
+        shares.reduce((a, b) => a + b, 0),
+    );
     const sides = {
         prefix: {
             count: count.prefix,
-            unnamed: Math.max(0, removable.prefix - named.prefix) / total,
+            unnamed: Math.max(0, removable.prefix - named.prefix * free("prefix")) / total,
         },
         suffix: {
             count: count.suffix,
-            unnamed: Math.max(0, removable.suffix - named.suffix) / total,
+            unnamed: Math.max(0, removable.suffix - named.suffix * free("suffix")) / total,
         },
     };
     const only: Gen | undefined =
@@ -904,9 +952,9 @@ function removalRoll(
     return {
         kind: "removal",
         ...(only !== undefined && { gen: only }),
-        candidates: reachable.map((type) => ({
+        candidates: reachable.map((type, i) => ({
             type,
-            prob: 1 / total,
+            prob: shares[i]! / total,
             gen: heldSide(before, registry, type),
         })),
         before,

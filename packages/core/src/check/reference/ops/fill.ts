@@ -79,7 +79,7 @@ function reforge(
                 : drawOne(x, rows).map((y) => ({ x: y, laid: true }));
         });
     }
-    const kept = rules.protected.size > 0;
+    const kept = rules.protected.sides.size > 0 || rules.protected.types.size > 0;
     const go = (x: CItem, laid: boolean): CItem[] => {
         const c = total(x, ctx);
         const out = (kept && laid) || c >= least ? [x] : [];

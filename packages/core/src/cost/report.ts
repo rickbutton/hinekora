@@ -716,7 +716,8 @@ class Walker {
         // the steps after read the checker's item instead.
         const moved = missed ? undefined : carried;
         const built = method.build(literals, methodItemOf(entry.before), this.registry);
-        const cause = "refused" in built ? undefined : unmodelled(built);
+        const cause =
+            "refused" in built ? undefined : unmodelled(built, entry.before, this.registry);
         // An outcome that destroys the item or turns it into another ends the
         // craft on its share of the uses, followed by state or not.
         const end = "refused" in built ? undefined : ending(words, built, entry.before);
@@ -1062,7 +1063,7 @@ class Walker {
                 for (const arg of s.args) if (arg.kind !== "param") literals.push(arg);
                 if (e !== undefined && method !== undefined && literals.length === s.args.length) {
                     const built = method.build(literals, methodItemOf(e.before), this.registry);
-                    if (!("refused" in built)) cause = unmodelled(built);
+                    if (!("refused" in built)) cause = unmodelled(built, e.before, this.registry);
                 }
             }
             if (cause !== undefined) return cause;

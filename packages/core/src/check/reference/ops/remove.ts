@@ -51,7 +51,7 @@ import {
     AUGMENT_READS,
     reachSides,
 } from "../../ops/remove.js";
-import type { Rules } from "../../rules.js";
+import { keeps, type Rules } from "../../rules.js";
 import { type CItem, type CMod, type RefCtx, rowOf } from "../item.js";
 import { isWellFormed } from "../wellformed.js";
 import type { RefCheckTable, RefCompoundTable, RefTransformTable } from "./handler.js";
@@ -72,15 +72,16 @@ function sideOf(ctx: RefCtx, m: CMod): Gen {
     return rowOf(ctx, m).gen;
 }
 
-/** May a removal limited to these sides take the modifier? */
-function inReach(ctx: RefCtx, m: CMod, sides: readonly Gen[]): boolean {
-    return !m.fractured && sides.includes(sideOf(ctx, m));
+/** May a removal limited to these sides take the modifier: on one, not
+ *  fractured, and not one a partial protection keeps? */
+function inReach(ctx: RefCtx, m: CMod, sides: readonly Gen[], rules: Rules): boolean {
+    return !m.fractured && sides.includes(sideOf(ctx, m)) && !keeps(rules.protected, rowOf(ctx, m));
 }
 
 /** The modifiers a random removal reaches on the item, `spared` excepted. */
 function randomReach(ctx: RefCtx, item: CItem, sel: Random, rules: Rules, spared?: CMod): CMod[] {
     const sides = reachSides(sel.gen, rules);
-    return item.mods.filter((m) => m !== spared && inReach(ctx, m, sides));
+    return item.mods.filter((m) => m !== spared && inReach(ctx, m, sides, rules));
 }
 
 const without = (item: CItem, m: CMod): CItem => ({
@@ -98,7 +99,7 @@ function removeRandom(ctx: RefCtx, item: CItem, sel: Random, rules: Rules, spare
 function influencedReach(ctx: RefCtx, item: CItem, rules: Rules): CMod[] {
     const v = viewOf(ctx, item);
     const sides = reachSides(undefined, rules);
-    return item.mods.filter((m) => inReach(ctx, m, sides) && isInfluenced(rowOf(ctx, m), v));
+    return item.mods.filter((m) => inReach(ctx, m, sides, rules) && isInfluenced(rowOf(ctx, m), v));
 }
 
 /** Every value of a row's span (whole numbers, as the catalogues hold);
@@ -136,7 +137,7 @@ export const transforms: RefTransformTable = {
         reads: ["protected"],
         apply: (_op, item, { ctx, rules }) => {
             const sides = reachSides(undefined, rules);
-            return [{ ...item, mods: item.mods.filter((m) => !inReach(ctx, m, sides)) }];
+            return [{ ...item, mods: item.mods.filter((m) => !inReach(ctx, m, sides, rules)) }];
         },
     },
     "remove:random": {
@@ -195,11 +196,12 @@ export const checks: RefCheckTable = {
     // protected (QUESTIONS.md Q83).
     strippable: {
         reads: ["protected"],
-        pass: (_check, item, { rules }) => item.rarity !== "normal" && rules.protected.size < 2,
+        pass: (_check, item, { rules }) =>
+            item.rarity !== "normal" && rules.protected.sides.size < 2,
     },
     unprotectedSide: {
         reads: ["protected"],
-        pass: (check, _item, { rules }) => !rules.protected.has(check.gen),
+        pass: (check, _item, { rules }) => !rules.protected.sides.has(check.gen),
     },
     influencedAtLeast: {
         reads: ["protected"],
@@ -207,13 +209,14 @@ export const checks: RefCheckTable = {
             influencedReach(ctx, item, rules).length >= check.count,
     },
     // Metamod § Rules and Exceptions, the grove's randomise: "usage is
-    // prevented if any prefix is influenced" under the prefix protection.
+    // prevented if any prefix is influenced" under the prefix protection; a
+    // modifier a partial protection keeps prevents it alike (QUESTIONS.md Q128).
     noInfluencedOnProtected: {
         reads: ["protected"],
         pass: (_check, item, { ctx, rules }) => {
             const v = viewOf(ctx, item);
             return !item.mods.some(
-                (m) => rules.protected.has(sideOf(ctx, m)) && isInfluenced(rowOf(ctx, m), v),
+                (m) => keeps(rules.protected, rowOf(ctx, m)) && isInfluenced(rowOf(ctx, m), v),
             );
         },
     },

@@ -3,6 +3,7 @@
  * one type, the Harvest change (that removal and the rows replacing it) and
  * their checks. The rules are reference/ops/misc.ts's, each cited there.
  */
+import { keeps } from "../rules.js";
 import type { PoolSpec } from "./types.js";
 import type { Base } from "../../model/base.js";
 import { type ModId, TagId, type TypeId } from "../../model/ids.js";
@@ -85,7 +86,7 @@ export function changeRows(pool: Extract<PoolSpec, { kind: "rows" }>, row: ModId
  *  fractured, on a side no metamod protects. */
 function removableValues(u: Universe, slot: number, ctx: MethodCtx): number[] {
     const prot = ctx.rules.protected;
-    return u.valuesWhere(slot, (v) => !v.fractured && !prot.has(v.row.gen));
+    return u.valuesWhere(slot, (v) => !v.fractured && !keeps(prot, v.row));
 }
 
 /** The type's modifier gone; an item where it cannot be taken is stuck. */
@@ -230,7 +231,7 @@ export const transforms: TransformTable = {
                 state,
                 u.modRelation((s, from, at) => {
                     const v = s.values[from];
-                    if (v === undefined || v.fractured || rules.protected.has(v.row.gen)) {
+                    if (v === undefined || v.fractured || keeps(rules.protected, v.row)) {
                         return undefined;
                     }
                     return u.rerolled(at, from);

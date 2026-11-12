@@ -43,7 +43,7 @@ import { rollRange } from "../../values.js";
 import type { TypeId } from "../../../model/ids.js";
 import type { Mod } from "../../../model/mod.js";
 import { changeRows, strandsTaken, TALISMAN, teardropMoves } from "../../ops/misc.js";
-import type { Rules } from "../../rules.js";
+import { keeps, type Rules } from "../../rules.js";
 import { type CItem, type CMod, modOfType, type RefCtx, rowOf } from "../item.js";
 import { isWellFormed } from "../wellformed.js";
 import type { RefCheckTable, RefCompoundTable, RefTransformTable } from "./handler.js";
@@ -72,7 +72,7 @@ const at = (m: CMod, row: Mod, value: number | undefined): CMod => ({ ...m, row:
 /** The type's modifier where a removal of it can take it. */
 function removable(item: CItem, type: TypeId, ctx: RefCtx, rules: Rules): CMod | undefined {
     const m = modOfType(ctx, item, type);
-    if (m === undefined || m.fractured || rules.protected.has(rowOf(ctx, m).gen)) return undefined;
+    if (m === undefined || m.fractured || keeps(rules.protected, rowOf(ctx, m))) return undefined;
     return m;
 }
 
@@ -96,7 +96,7 @@ export const transforms: RefTransformTable = {
                 item,
                 item.mods.map((m) => {
                     const row = rowOf(ctx, m);
-                    if (m.fractured || rules.protected.has(row.gen)) return [m];
+                    if (m.fractured || keeps(rules.protected, row)) return [m];
                     return spanValues(row).map((v) => at(m, row, v));
                 }),
             ),

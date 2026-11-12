@@ -8,6 +8,7 @@ import {
     MAXLIFE_T1,
     MAXLIFE_T2,
     MAXLIFE_T3,
+    PROTECT_ONE_PREFIX_CARRIER,
     PROTECT_PREFIXES_CARRIER,
     RING_BASE,
     VEILED_CATALOG,
@@ -22,7 +23,7 @@ import { ModId } from "../model/ids.js";
 import { NO_INFLUENCE } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { foulbornRows, rollOf } from "./roll.js";
+import { foulbornRows, rollOf, unmodelled } from "./roll.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE],
@@ -119,6 +120,47 @@ describe("a random removal's odds", () => {
             [ATTACK_PREFIX.type, 0.5],
             [CANNOT_ROLL_ATTACK_CARRIER.type, 0.5],
         ]);
+    });
+});
+
+describe("a random removal beside a partial protection", () => {
+    // "1 Prefix Modifier cannot be changed" keeps one prefix, each as likely
+    // (QUESTIONS.md Q128): of three, two are in reach on a use.
+    const partial = buildRegistry({
+        bases: [RING_BASE],
+        mods: [...CATALOG, PROTECT_ONE_PREFIX_CARRIER],
+        baseAliases: { "Iron Ring": "IronRing" },
+    });
+    const c = craft(
+        item({
+            base: "Iron Ring",
+            ilvl: 84,
+            rarity: "rare",
+            prefixes: ["IncreasedLife1", "IncreasedMana1", "IncreasedArmour1"],
+            suffixes: [PROTECT_ONE_PREFIX_CARRIER.id],
+        }),
+        [],
+    );
+
+    it("takes each prefix two times in nine, the metamod three", () => {
+        const r = check(c, { registry: partial });
+        expect(r.diagnostics).toEqual([]);
+        const a = r.finalState!;
+        const roll = rollOf(a, currencyOps("annul"), partial);
+        if (roll.kind !== "removal") throw new Error("not a removal");
+        const probs = new Map(roll.candidates.map((x) => [x.type as string, x.prob]));
+        expect(probs.size).toBe(4);
+        expect(probs.get(PROTECT_ONE_PREFIX_CARRIER.type)).toBeCloseTo(1 / 3, 9);
+        for (const [t, p] of probs)
+            if (t !== PROTECT_ONE_PREFIX_CARRIER.type) {
+                expect(p).toBeCloseTo(2 / 9, 9);
+            }
+    });
+
+    it("leaves a reforge's chances unknown", () => {
+        const a = check(c, { registry: partial }).finalState!;
+        expect(unmodelled(currencyOps("chaos"), a, partial)).toMatch(/chosen at random each use/);
+        expect(unmodelled(currencyOps("annul"), a, partial)).toBeUndefined();
     });
 });
 

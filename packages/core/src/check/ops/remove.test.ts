@@ -119,6 +119,9 @@ const CATALOGUES: readonly CatalogOptions[] = [
     { types: 4, metamods: ["suffixesCannotChange", "cannotRollAttack"] },
     { types: 4, metamods: ["prefixesCannotChange", "suffixesCannotChange"] },
     { types: 4, metamods: ["cannotRollAttack", "cannotRollCaster"] },
+    { types: 4, metamods: ["onePrefixCannotChange"] },
+    { types: 4, metamods: ["twoPrefixesCannotChange", "oneSuffixCannotChange"] },
+    { types: 4, metamods: ["twoSuffixesCannotChange", "prefixesCannotChange"] },
     { types: 3, twoSided: true },
     { types: 3, base: "jewel" },
     { types: 3, base: "flask" },
@@ -228,6 +231,13 @@ const DOMINANCE_CATALOGUES: readonly CatalogOptions[] = [
         influence: true,
         elevated: true,
         metamods: ["suffixesCannotChange"],
+    },
+    {
+        types: 2,
+        base: "boots",
+        influence: true,
+        elevated: true,
+        metamods: ["onePrefixCannotChange"],
     },
     {
         types: 2,

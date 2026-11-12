@@ -698,3 +698,82 @@ describe("what the removals keep of what the item is known to be", () => {
         expect(runMethod(r.state, [req({ kind: "openSlot", gen: "suffix" })]).ok).toBe(true);
     });
 });
+
+// --- the partial protections ---------------------------------------------------------
+
+describe("a partial protection", () => {
+    // Version 3.30.0 (Endgame): "1 Prefix Modifier cannot be changed" and its
+    // siblings; which modifiers it keeps is chosen at random each use (ruled).
+    const w = world(
+        [
+            row({ id: "P1", gen: "prefix" }),
+            row({ id: "P2", gen: "prefix" }),
+            row({ id: "P3", gen: "prefix" }),
+            row({ id: "S1", gen: "suffix" }),
+        ],
+        RING_BASE,
+        ["onePrefixCannotChange", "twoPrefixesCannotChange"],
+    );
+    const one = metaId("onePrefixCannotChange");
+    const two = metaId("twoPrefixesCannotChange");
+    const rare = (ids: string[], meta: string): CItem =>
+        cItem({
+            rarity: "rare",
+            mods: [...ids.map((id) => on(w, id)), on(w, meta, { crafted: true })],
+        });
+
+    it("keeps one of three prefixes through a scour, any one of them", () => {
+        const out = outcomes(w, [rare(["P1", "P2", "P3"], one)], L.currencyOps("scour"));
+        expect(sorted(rowsOf(out))).toEqual([["P1"], ["P2"], ["P3"]]);
+    });
+
+    it("keeps two of three, any two, under the two-prefix protection", () => {
+        const out = outcomes(w, [rare(["P1", "P2", "P3"], two)], L.currencyOps("scour"));
+        expect(sorted(rowsOf(out))).toEqual(
+            sorted([
+                ["P1", "P2"],
+                ["P1", "P3"],
+                ["P2", "P3"],
+            ]),
+        );
+    });
+
+    it("keeps the whole side where it holds no more than the protection keeps", () => {
+        expect(rowsOf(outcomes(w, [rare(["P1"], one)], L.currencyOps("scour")))).toEqual([["P1"]]);
+        const kept = outcomes(w, [rare(["P1", "P2"], two)], L.currencyOps("scour"));
+        expect(sorted(rowsOf(kept))).toEqual([["P1", "P2"]]);
+        // The side kept whole refuses the Eldritch Orb of Annulment as the full
+        // protection does (QUESTIONS.md Q128).
+        expect(
+            refusal(
+                w,
+                [rare(["P1"], one)],
+                [req({ kind: "unprotectedSide", gen: "prefix", what: "An orb" })],
+            ),
+        ).toEqual({ kind: "sideProtected", gen: "prefix", what: "An orb" });
+    });
+
+    it("lets an annul take any modifier but the kept one, the metamod among them", () => {
+        const out = outcomes(w, [rare(["P1", "P2", "S1"], one)], L.currencyOps("annul"));
+        expect(sorted(rowsOf(out))).toEqual(
+            sorted([
+                ["P2", "S1", one],
+                ["P1", "S1", one],
+                ["P1", "P2", one],
+                ["P1", "P2", "S1"],
+            ]),
+        );
+    });
+
+    it("refuses a removal where some choice leaves nothing to take", () => {
+        // The one prefix not fractured may be the kept one.
+        const item = cItem({
+            rarity: "rare",
+            mods: [on(w, "P1"), on(w, "P2", { fractured: true }), on(w, one, { crafted: true })],
+        });
+        const sideOnly: Op[] = [
+            req({ kind: "removable", selector: { kind: "random", gen: "prefix" } }),
+        ];
+        expect(refusal(w, [item], sideOnly)).toEqual({ kind: "nothingToRemove" });
+    });
+});

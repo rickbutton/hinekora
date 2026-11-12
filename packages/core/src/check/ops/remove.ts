@@ -16,7 +16,7 @@ import { effectsOf } from "../../model/effects.js";
 import { lookupWeight } from "../../pool/pool.js";
 import type { Dd, DdRelation } from "../dd.js";
 import { influenceTagsOfKey } from "../influence.js";
-import type { RuleField, Rules } from "../rules.js";
+import { keeps, type RuleField, type Rules } from "../rules.js";
 import type { ItemSet } from "../state.js";
 import { isFresh, type ModValue, RARITIES, type Universe } from "../universe.js";
 import { addDraws } from "./fill.js";
@@ -35,9 +35,9 @@ type Random = Extract<Selector, { kind: "random" }>;
 
 const BOTH: readonly Gen[] = ["prefix", "suffix"];
 
-/** The sides a removal reaches: its own, or both, less those protected. */
+/** The sides a removal reaches: its own, or both, less those kept whole. */
 export function reachSides(gen: Gen | undefined, rules: Rules): Gen[] {
-    return (gen === undefined ? BOTH : [gen]).filter((g) => !rules.protected.has(g));
+    return (gen === undefined ? BOTH : [gen]).filter((g) => !rules.protected.sides.has(g));
 }
 
 /** What a removal, or a check holding one, reads. */
@@ -186,14 +186,15 @@ function goneWhere(u: Universe, reach: (v: ModValue) => boolean, except?: number
     });
 }
 
-/** Within reach of a removal limited to these sides: on one, not fractured. */
+/** Within reach of a removal limited to these sides: on one, not fractured,
+ *  and not a modifier a partial protection keeps. */
 const onSides =
-    (sides: readonly Gen[]) =>
+    (sides: readonly Gen[], rules: Rules) =>
     (v: ModValue): boolean =>
-        !v.fractured && sides.includes(v.row.gen);
+        !v.fractured && sides.includes(v.row.gen) && !keeps(rules.protected, v.row);
 
 function randomReach(sel: Random, rules: Rules): (v: ModValue) => boolean {
-    return onSides(reachSides(sel.gen, rules));
+    return onSides(reachSides(sel.gen, rules), rules);
 }
 
 /** A side-limited removal whose side is protected does nothing (Metamod §
@@ -219,7 +220,7 @@ function removeRandom(
 }
 
 function influencedReach(view: InfluenceView, rules: Rules): (v: ModValue) => boolean {
-    const side = onSides(reachSides(undefined, rules));
+    const side = onSides(reachSides(undefined, rules), rules);
     return (v) => side(v) && isInfluenced(v.row, view);
 }
 
@@ -336,7 +337,7 @@ export const transforms: TransformTable = {
     strip: {
         reads: PROTECTED,
         apply: (_op, state, { u, rules }) =>
-            u.dd.mapEach(state, goneWhere(u, onSides(reachSides(undefined, rules)))),
+            u.dd.mapEach(state, goneWhere(u, onSides(reachSides(undefined, rules), rules))),
     },
     "remove:random": {
         reads: PROTECTED,
@@ -383,7 +384,7 @@ function countedBy(u: Universe, reach: (v: ModValue) => boolean) {
 }
 
 /** The items holding at least `n` modifiers `reach` admits. */
-function atLeast(u: Universe, reach: (v: ModValue) => boolean, n: number): Dd {
+export function atLeast(u: Universe, reach: (v: ModValue) => boolean, n: number): Dd {
     const weight = countedBy(u, reach);
     return u.dd.automaton<number>({
         init: 0,
@@ -399,12 +400,18 @@ function atLeast(u: Universe, reach: (v: ModValue) => boolean, n: number): Dd {
  * The fewest influenced modifiers in reach over the items, each under the
  * protections its own metamods set: the refusal words the items of every
  * metamod case together. The check comes before any `keep` or `unprotect`
- * in the library (`DOMINANCE`), so the items' metamods are the rules.
+ * in the library (`DOMINANCE`), so the items' metamods are the rules. A
+ * partial protection's side is counted as kept whole, the fewest its choice
+ * can leave where it keeps every influenced modifier there.
  */
 function fewestInfluenced(u: Universe, items: Dd): number {
     const m = u.dd;
     const carries = (gen: Gen): Dd =>
-        u.anyMod((v) => effectsOf(v.row).some((e) => e.kind === "protect" && e.gen === gen));
+        u.anyMod((v) =>
+            effectsOf(v.row).some(
+                (e) => (e.kind === "protect" || e.kind === "protectSome") && e.gen === gen,
+            ),
+        );
     const [p, q] = [carries("prefix"), carries("suffix")];
     let least = Infinity;
     for (const [hasP, hasQ] of [
@@ -415,7 +422,8 @@ function fewestInfluenced(u: Universe, items: Dd): number {
     ] as const) {
         const part = m.and(m.and(items, hasP ? p : m.not(p)), hasQ ? q : m.not(q));
         if (part === m.EMPTY) continue;
-        const side = onSides(BOTH.filter((g) => (g === "prefix" ? !hasP : !hasQ)));
+        const side = (v: ModValue): boolean =>
+            !v.fractured && (v.row.gen === "prefix" ? !hasP : !hasQ);
         for (const c of influenceCases(u, part)) {
             const reach = (v: ModValue): boolean => side(v) && isInfluenced(v.row, c.view);
             const r = m.extent(c.dd, countedBy(u, reach));
@@ -455,7 +463,7 @@ export const checks: CheckTable = {
         reads: PROTECTED,
         verdict: (_check, _state, { u, rules }) => ({
             pass:
-                rules.protected.size < 2
+                rules.protected.sides.size < 2
                     ? u.dd.not(u.dd.slotIn(u.scalar("rarity"), [u.rarityValue("normal")]))
                     : u.dd.EMPTY,
             word: () => ({ kind: "nothingToRemove" }),
@@ -464,7 +472,7 @@ export const checks: CheckTable = {
     unprotectedSide: {
         reads: PROTECTED,
         verdict: (check, _state, { u, rules }) => ({
-            pass: constant(u, !rules.protected.has(check.gen)),
+            pass: constant(u, !rules.protected.sides.has(check.gen)),
             word: () => ({ kind: "sideProtected", gen: check.gen, what: check.what }),
         }),
     },
@@ -487,19 +495,25 @@ export const checks: CheckTable = {
     noInfluencedOnProtected: {
         reads: PROTECTED,
         verdict: (check, state, { u, rules }) => {
+            // A modifier a protection keeps, on a side kept whole or chosen by
+            // a partial protection, prevents it as on the full metamod's side
+            // (QUESTIONS.md Q128).
             const on = (gen: Gen): Dd =>
                 unionOf(
                     u,
                     influenceCases(u, state).map((c) =>
                         u.dd.and(
                             c.dd,
-                            u.anyMod((v) => v.row.gen === gen && isInfluenced(v.row, c.view)),
+                            u.anyMod(
+                                (v) =>
+                                    v.row.gen === gen &&
+                                    keeps(rules.protected, v.row) &&
+                                    isInfluenced(v.row, c.view),
+                            ),
                         ),
                     ),
                 );
-            const sides = BOTH.filter((g) => rules.protected.has(g)).map(
-                (g) => [g, on(g)] as const,
-            );
+            const sides = BOTH.map((g) => [g, on(g)] as const);
             return {
                 pass: u.dd.not(
                     unionOf(

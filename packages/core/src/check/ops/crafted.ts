@@ -13,6 +13,7 @@
  * - An unveil replaces the placeholder in its own image: one of its side's
  *   results whose groups are free takes its place, with its marks.
  */
+import { keeps } from "../rules.js";
 import type { PoolSpec } from "./types.js";
 import type { Gen, GroupId, TypeId } from "../../model/ids.js";
 import { isVeiledPlaceholder } from "../../model/veiled.js";
@@ -448,8 +449,7 @@ export const checks: CheckTable = {
             pass: u.dd.not(
                 u.anyMod(
                     (v) =>
-                        isVeiledRow(v.row, false) &&
-                        (v.fractured || rules.protected.has(v.row.gen)),
+                        isVeiledRow(v.row, false) && (v.fractured || keeps(rules.protected, v.row)),
                 ),
             ),
             word: () => ({ kind: "veiledWouldSurvive" }),

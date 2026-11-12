@@ -6,6 +6,7 @@ export * from "./base.js";
 export * from "./capacity.js";
 export * from "./item.js";
 export * from "./effects.js";
+export { PARTIAL_PROTECTION_EFFECTS, PARTIAL_PROTECTION_TEXT } from "./metamods.js";
 export * from "./veiled.js";
 export * from "./marks.js";
 export * from "./strands.js";

@@ -1,13 +1,13 @@
 # Questions for Rick
 
 Decisions and in-game probes only the user can settle. Work never waits on one: each
-entry names the assumption the code proceeds under and where it lives, so an answer is a
-bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
+entry names the assumption the code proceeds under and where, so an answer is a bounded
+change (`../CLAUDE.md`, Asking without blocking).
 
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q128.
+keeps it. New entries continue from Q129.
 
 ```
 ### Qn · probe|decision · open — title
@@ -35,9 +35,8 @@ tags included. **Encoded in:** `check/ops/pools.ts` `foulbornCull`; `model/stran
 
 **Q:** what does a resonator do when the other fossils block every row a fossil would
 force? [Glyphic Fossil § Mechanics](https://www.poewiki.net/wiki/Glyphic_Fossil#Mechanics)
-says a Jagged Fossil blocks the chaos-tagged essence modifiers, not what happens when
-none is left. No one fossil blocks all four on any base; on boots Corroded, Shuddering
-and Jagged together do.
+says a Jagged Fossil blocks the chaos-tagged essence modifiers, not what happens when none
+is left (on boots Corroded, Shuddering and Jagged together do).
 **Probe:** boots, a Prime Chaotic Resonator with Glyphic, Corroded, Shuddering and
 Jagged Fossils; resonate; record whether an essence modifier appears, the resonator is
 refused, or the item rolls without one.
@@ -88,12 +87,9 @@ Corrupted` alone. **Encoded in:** `check/library.ts` `locusOps`; `cost/track.ts`
 
 **Q:** does its reforge respect a protection?
 [Tainted Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Tainted_Chaos_Orb#Mechanics)
-names only the fractured modifier as surviving; the
-[Metamod table](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions) has a row for
-the Tainted Exalted Orb only. And what rarity does its strip leave with one fractured
-prefix and one fractured suffix? That page says Magic ("the lowest eligible rarity");
-[Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) says two modifiers stay
-Rare.
+names only the fractured modifier as surviving. What rarity does its strip leave with a
+fractured prefix and a fractured suffix: Magic ("the lowest eligible rarity"), or Rare, as
+[Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) has two modifiers?
 **Probe:** a corrupted Rare with "Suffixes Cannot Be Changed", and one with a fractured
 prefix and a fractured suffix; Tainted Chaos Orbs; apply until each outcome shows; record
 whether the suffixes survived, and the second item's rarity when stripped.
@@ -106,9 +102,8 @@ refused. **Encoded in:** `check/library.ts` `TAINTED_CHAOS`, `unprotect`;
 
 **Q:** which row is it?
 [Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting)
-has an Incursion resistance become the other element's Incursion row, and a bench craft
-becomes the bench's (seen in game); nothing says it of an essence-only, fossil, unveiled,
-elevated or retired row.
+has an Incursion resistance become the other element's Incursion row, a bench craft the
+bench's (seen); nothing covers an essence-only, fossil, unveiled, elevated or retired row.
 **Probe:** a Rare with an unveiled or essence-only fire modifier; change it to cold;
 record the cold's values and name.
 **Assumed:** the same source's counterpart row or any natural row of the target, above the
@@ -132,13 +127,11 @@ ring; record the counts with one modifier and with two.
 
 **Q:** do essences, resonators, Harvest reforges and the Veiled Chaos Orb lay down 4, 5 or
 6 modifiers at the [Chaos Orb's](https://www.poewiki.net/wiki/Chaos_Orb#Mechanics) 8:3:1?
-Does the count of an [Eldritch Chaos Orb](https://www.poewiki.net/wiki/Eldritch_Chaos_Orb),
-which its page does not give, include the side it keeps? What does a base holding five
-roll?
-**Probe:** a Rare body armour; forty Screaming essences, forty resonators with one fossil,
-lifeforce for forty reforges; record how many of each batch left 4, 5 and 6. Boots with
-both implicits and three modifiers on the kept side, forty Eldritch Chaos Orbs; record
-the rerolled side's counts.
+Does an [Eldritch Chaos Orb's](https://www.poewiki.net/wiki/Eldritch_Chaos_Orb) count
+include the side it keeps? What does a base holding five roll?
+**Probe:** a Rare body armour; forty each of Screaming essences, one-fossil resonators and
+Harvest reforges; record the counts. Boots with both implicits and three modifiers on the
+kept side, forty Eldritch Chaos Orbs; record the rerolled side's counts.
 **Assumed:** 8:3:1 for all, the guaranteed modifier and an Eldritch Chaos Orb's kept side
 among them (craftofexile's reading); a base holding four (a jewel) or five one fewer or
 all at 65:35, craftofexile's reading of
@@ -148,12 +141,10 @@ all at 65:35, craftofexile's reading of
 
 ### Q60 · probe · open — do two fossils' multipliers add or multiply?
 
-**Q:** [Fossil](https://www.poewiki.net/wiki/Fossil) records the dispute and calls
-additive the more accepted theory; how a "fewer" multiplier meets another fossil's
-"more" it does not say.
-A row must carry both fossils' tags to tell the readings apart: a lightning modifier
-under Metallic (lightning) and Prismatic (elemental), a caster one under Aetheric (more)
-and Serrated (fewer).
+**Q:** [Fossil](https://www.poewiki.net/wiki/Fossil) calls additive the more accepted
+theory, and does not say how a "fewer" multiplier meets another fossil's "more". A row
+carrying both fossils' tags tells them apart: lightning under Metallic and Prismatic,
+caster under Aetheric (more) and Serrated (fewer).
 **Probe:** an Iron Ring of item level 84 or more, a Potent Chaotic Resonator, Metallic and
 Prismatic Fossils; resonate forty times; record how many results hold a lightning
 modifier. A wand, Aetheric and Serrated Fossils, forty times; record how many hold a
@@ -188,8 +179,8 @@ frequencies against their weights, and the total counts.
 
 **Q:** [Memory strand § Crafting methods consuming memory strands](https://www.poewiki.net/wiki/Memory_strand#Crafting_methods_consuming_memory_strands)
 leaves the Foulborn Exalted Orb below five modifiers ("0-?") and an Exalted Orb on an
-empty item ("likely 0-10") open; nor does it say whether `tiers` counts a modifier's
-whole ladder or the rows the item level allows.
+empty item ("likely 0-10") open, and whether `tiers` counts the whole ladder or the rows
+the item level allows.
 **Probe:** two empty Rare rings with 100 strands, a Foulborn Exalted and an Exalted Orb;
 record strands used per orb. A Rare of item level 30 with 82 strands, Chaos Orbs; record
 the lowest resistance tier seen.
@@ -201,16 +192,16 @@ strands at four modifiers and 38 at five where it gives 32 and 34. **Encoded in:
 
 ### Q74 · probe · open — Harvest damage modifiers paired by ailment, or with no counterpart
 
-**Q:** the other element's list has no modifier named like these: a jewel's fire damage
-with bows (to cold or lightning), added cold or lightning damage with bows (to fire),
-cold or lightning damage avoidance (to fire). Does the grove refuse them? And does a modifier that names an ailment become the other element's with
-its own ailment? Only "fire damage and chance to ignite" to cold was seen.
+**Q:** the other element's list has no counterpart of a jewel's fire damage with bows (to
+cold or lightning), added cold or lightning damage with bows (to fire), or cold or
+lightning damage avoidance (to fire). Does the grove refuse them? Does a modifier naming an
+ailment take the other element's ailment? Only "fire damage and chance to ignite" to cold
+was seen.
 **Probe:** an item with one of the first; the grove's damage change to that element; record
 the message or the result. A Shaper ring with "adds cold damage against chilled or frozen
 enemies"; change it to lightning; record the result.
 **Assumed:** the first refused; ignite, freeze and shock exchanged with the element, for
-the other five pairs of damage with an ailment's chance and the six of added damage
-against ailing enemies, all unobserved. **Encoded in:**
+the five other pairs and the six of added damage against ailing enemies. **Encoded in:**
 `packages/data/scripts/ingest-harvest-change.mjs` `NO_COUNTERPART`, `AILMENT`.
 
 ### Q76 · probe · open — the side of a veiled orb's veiled modifier
@@ -273,9 +264,8 @@ applied.
 ### Q87 · probe · open — the item level a bench craft needs
 
 **Q:** does the bench refuse a craft on an item below the crafted modifier's level?
-[Crafting Bench](https://www.poewiki.net/wiki/Crafting_Bench) names no item level, and
-the wiki's table of bench options gives a required level to the map crafts only; the
-crafted rows carry a level in the game's data (the top life craft's is 80).
+[Crafting Bench](https://www.poewiki.net/wiki/Crafting_Bench) names none; the crafted rows
+carry one in the game's data (the top life craft's is 80).
 **Probe:** a ring of item level 10, the bench with its top life craft unlocked; craft it;
 record refused or applied.
 **Assumed:** applied at any item level, in a step and in the item block. **Encoded in:**
@@ -295,9 +285,8 @@ one to each; record added or removed, and whether a full item ever comes back un
 ### Q96 · probe · open — an Orb of Conflict over a wide gap
 
 **Q:** [Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)
-gives one half at equal tiers, "approximately ±11%" for each tier of difference and one
-example, two tiers apart. Does that line hold three and more tiers apart, where five
-would leave the side ahead no chance at all?
+gives one half at equal tiers and "approximately ±11%" a tier of difference, with one
+example two tiers apart. Does the line hold further apart, where five tiers leave no chance?
 **Probe:** boots with a Perfect and a Lesser implicit, and with an Exceptional and a
 Lesser one, an imprint of each, some fifty Orbs of Conflict a pair; record how often the
 higher implicit rises.
@@ -323,9 +312,8 @@ a Refracting Fog made otherwise cannot be declared. **Encoded in:** `check/item-
 ### Q99 · probe · open — how an unveil's three options are drawn
 
 **Q:** [Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) says only that
-unveiling "presents three random mods", and that their weighting was rebalanced in
-3.14.0. Are they drawn by spawn weight without replacement, and may two options share a
-modifier group, as two on one item may not?
+unveiling "presents three random mods". Are they drawn by spawn weight without
+replacement, and may two options share a modifier group?
 **Probe:** unveil some thirty body armours with a veiled suffix; record the three options
 each time, and whether two of one group (Strength and Dexterity beside Dexterity and
 Intelligence) are ever offered together.
@@ -344,9 +332,8 @@ own section before `Shaper Item`. Does it come before `Fractured Item` too?
 ### Q101 · probe · open — an influence's rows: the Harvest change, and tier numbers
 
 **Q:** [Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting)
-says the change keeps the tier. With rows under each of an item's two influences, does a
-modifier become the other element's row of its own influence only? Does the tooltip number
-each influence's rows and the base's apart, or as one ladder?
+keeps the tier. Under two influences, does a modifier become the other element's row of
+its own influence only? Does the tooltip number each influence's rows and the base's apart?
 **Probe:** change the Redeemer's "physical damage as extra cold" on a Shaper and Redeemer
 wand; record the result or refusal. Record the tier shown for "increased maximum Life" on
 an Elder and Hunter body armour, the base's "Gain 2 Life per Enemy Hit" on an Elder ring
@@ -358,11 +345,10 @@ of the modifier's own influence, or the base's own.
 
 ### Q102 · probe · open — the tier of two modifiers that share a type and a mod level
 
-**Q:** an Elder amulet's "+1 to maximum number of Skeletons" and "+1 to maximum number of
-Raised Zombies" are one modifier type in the data, both of
-[mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) 68; so are a Hunter helmet's
-three Conflux modifiers (80) and an abyss jewel's two "Chance to Block Spell Damage if you
-were Damaged by a Hit Recently" (1). Which tier does the advanced tooltip show for each?
+**Q:** an Elder amulet's "+1 to maximum number of Skeletons" and "… Raised Zombies" are one
+modifier type, both of [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level) 68; so
+are a Hunter helmet's three Conflux modifiers (80). Which tier does the advanced tooltip
+show for each?
 **Probe:** an Elder amulet with either minion modifier, or a Hunter helmet with a Conflux;
 record the tier in the header.
 **Assumed:** each is Tier 1 of its own modifier: rows of one level in a ladder share the
@@ -435,8 +421,7 @@ Gilded Fossil sets), which makes the outcome exact (recommended); or keep the wi
 
 **Q:** with "Prefixes Cannot Be Changed", how many modifiers does a reforge add?
 [Metamod § Examples](https://www.poewiki.net/wiki/Metamod#Examples) has two kept prefixes
-take "1 prefix as well as 0 to 3 suffixes, or add 0 prefix and add 1 to 3 suffixes", three
-to six in all; the cost layer takes the kept side to count toward four to six.
+take "1 prefix as well as 0 to 3 suffixes, or add 0 prefix and add 1 to 3 suffixes".
 **Probe:** a Rare with two prefixes and the metamod as its only suffix; forty Chaos Orbs,
 re-crafting the metamod each time; record each total. The same with no prefix.
 **Assumed:** the checker admits both: a modifier is laid, or the total already reaches
@@ -531,9 +516,9 @@ is not crafted. **Encoded in:** `check/library.ts` `BENCH_REMOVE`, `benchOps`,
 ### Q121 · probe · open — an Orb of Dominance: its order, the item level, the other side
 
 **Q:** [§ Mechanics](https://www.poewiki.net/wiki/Orb_of_Dominance#Mechanics) upgrades one influenced modifier and
-removes one other. Which first? Does a tier upgrade below the top ignore the item level,
-as the elevation does? The data's elevated energy shield leech on Crusader gloves is a
-prefix and its top tier a suffix: with three prefixes, can the orb pick it?
+removes one other. Which first? Does a tier upgrade below the top ignore the item level?
+The elevated energy shield leech on Crusader gloves is a prefix, its top tier a suffix:
+with three prefixes, can the orb pick it?
 **Probe:** such gloves with one other Crusader suffix; orbs; record what went and what the
 other became, and on which side.
 **Assumed:** removed first, then one of those left is upgraded, whatever the item level;
@@ -559,8 +544,8 @@ follow. **Encoded in:** `check/library.ts` `eldritchAnnulOps`, `TAINTED_EXALT`,
 ### Q123 · probe · open — the tier of a modifier beside a tag another modifier adds
 
 **Q:** [Modifier § Spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag) does not say whether
-the tier the tooltip shows counts the rows that roll only under a tag one of the item's
-other modifiers adds. Does such a row have a tier, and does it renumber the others?
+the tooltip's tier counts rows that roll only under a tag another modifier adds. Does such
+a row have a tier, and does it renumber the others?
 **Probe:** a Crimson Jewel with a staff modifier and "increased Spell Damage while
 wielding a Staff"; record the tier shown, annul the staff modifier, record it again.
 **Assumed:** a name and a tier are read on the base and the item's influences alone
@@ -594,10 +579,9 @@ an unveil never changes the item's prefix and suffix counts. **Encoded in:**
 
 ### Q126 · probe · open — the advanced copy of a veiled modifier
 
-**Q:** what header and line does the game's advanced copy (Ctrl+Alt+C) give a modifier
-still veiled? The `mods` Cargo table names the placeholders "Veiled" and "of the Veil",
-their text "Veiled (prefix)" and "of the Veil (suffix)"; [Veiled
-modifier](https://www.poewiki.net/wiki/Veiled_modifier) shows only the tooltip, no copy.
+**Q:** what header and line does the advanced copy (Ctrl+Alt+C) give a modifier still
+veiled? The `mods` Cargo table names the placeholders "Veiled" and "of the Veil";
+[Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) shows no copy.
 **Probe:** a Rare item with one veiled prefix and one veiled suffix (a Veiled Chaos Orb's
 output, a Betrayal drop); copy it with Ctrl+Alt+C; record the two headers and the lines
 under them, and whether `Veiled` leads the header as it does on an unveiled modifier.
@@ -615,3 +599,18 @@ still gives 500 of one, the target's colour.
 changes and one damage change.
 **Assumed:** the colours of the element left and the element taken, fire Wild, cold Vivid,
 lightning Primal, 300 each. **Encoded in:** `cost/prices.ts` `unitCost`.
+
+### Q128 · probe · open — the partial protections
+
+**Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) (Endgame) adds "1
+Prefix Modifier cannot be changed" and its siblings; the modifiers kept are chosen at
+random each use (the league's FAQ, ruled). Does one block what the full protection
+blocks: an essence, a fossil, the grove's randomise beside a kept influenced modifier, an
+Eldritch Orb of Annulment on a side it keeps whole? Can the Bestiary's metamod recipe
+craft one? May the choice fall on a fractured modifier?
+**Probe:** a Rare with "1 Prefix Modifier cannot be changed": an essence, a resonator; one
+prefix, an Eldritch Orb of Annulment under the Exarch; the recipe twenty times; three
+prefixes, one fractured, Orbs of Annulment; record refusals and what went.
+**Assumed:** as the full protection; the recipe may craft one; any modifier of the side;
+in the cost, each choice alike, a reforge's chances unknown. **Encoded in:**
+`check/rules.ts` `rulesOf`; `check/method.ts` `choicesOf`; `cost/roll.ts` `removalRoll`.

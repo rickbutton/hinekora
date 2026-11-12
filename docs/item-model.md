@@ -3,15 +3,14 @@
 > The item and modifier model hinekora audits its code against, for Path of Exile 1: what
 > an item and a modifier are, and which modifiers may sit together. Each game rule links
 > its wiki section (cached in `tools/poewiki`) and the text says only how hinekora models
-> it, or narrows it. The fields are the types in `packages/core/src/model/`; this doc
-> gives their meaning.
+> it, or narrows it.
 
 ---
 
 ## 1. Scope
 
-In: `Base`, `Mod`, `Effect`, `Item`; the identifier types; spawn weights; modifier sources;
-influence and fracture marks; affix capacity; well-formedness.
+In: the item and its modifiers, their sources, weights and marks; affix capacity;
+well-formedness.
 
 Out: candidate-pool eligibility (the
 [spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag) rule applied to
@@ -26,8 +25,8 @@ as an influence orb, the Fracturing Orb and the Fractured Fossil do.
 
 ## 2. Identifiers
 
-The game keys its data by several families of identifier, distinct types in `model/ids.ts`
-because confusing one for another is a category error. Two carry meaning beyond their name:
+Each family of identifier is a distinct type (`model/ids.ts`). Two carry meaning beyond
+their name:
 
 - A **mod type** is the tier bucket of a row of the `Mods` table
   ([Mod Level](https://www.poewiki.net/wiki/Modifier#Mod_Level)). Rows of one type never
@@ -108,13 +107,13 @@ Three readings matter to the model:
   among them.
 - **Generation table**, the data's `generation_weights`, read as the spawn table is, the
   matching entry scaling the weight in percent
-  ([RePoE's mod reference](https://github.com/brather1ng/RePoE/blob/master/RePoE/docs/mods.md);
-  only this reading gives the data's two tables their known results). They hold a Small
+  ([RePoE's mod reference](https://github.com/brather1ng/RePoE/blob/master/RePoE/docs/mods.md)).
+  They hold a Small
   [cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel#Mechanics) to one notable
   and halve a caster weapon's attack rows.
 
 A row's **effects** are the rule changes it carries while on the item (§6), empty for every
-row but the five metamods. A row is **essence-only** when the data says so
+row but the metamods. A row is **essence-only** when the data says so
 ([Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting)).
 
 Rules every row satisfies:
@@ -135,12 +134,17 @@ A change to the crafting rules, active exactly while its carrier is on the item.
 are read off the modifiers present, never recorded on the item, so removing the carrier
 withdraws its effect with no bookkeeping. Which currency honours which effect is the table
 in [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions).
-Three kinds cover the five real metamods ([Metamod](https://www.poewiki.net/wiki/Metamod)):
+Four kinds cover the metamods ([Metamod](https://www.poewiki.net/wiki/Metamod),
+[Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) for the partial protections):
 
 - `PoolRestrict(category)`, "Cannot roll Attack / Caster Modifiers": bars rows of the
   category from being added, not present ones from removal ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0)).
 - `ProtectGeneration(generation)`, "Prefixes / Suffixes Cannot Be Changed": shields whatever
   occupies that side from removal and reroll.
+- `ProtectSome(generation, n)`, "1 Prefix Modifier cannot be changed" and its siblings:
+  shields n of that side's modifiers, chosen at random each use (ruled from the league's
+  FAQ), every one where the side holds no more; each choice is an outcome. It forbids what
+  `ProtectGeneration` forbids (`QUESTIONS.md` Q128).
 - `CraftedCap(cap)`, "Can have up to 3 Crafted Modifiers": raises the crafted-mod limit; the
   highest cap carried wins, never below one.
 
@@ -226,7 +230,8 @@ True of the ingested PoE1 data, and pinned by the catalog-level tests of
 - **A ladder shares its families.** Every row of a ModType claims the same groups, so a
   modifier named without a tier resolves to its groups from any row.
 - The facts of §2 and §5: a ModType is not one side, essence-only rows never roll, and the
-  five metamods are the only effect carriers.
+  five metamods are the only effect carriers the data holds, a partial protection loading
+  only through `PARTIAL_PROTECTION_EFFECTS`.
 - What a Harvest change makes of each modifier is a shipped table, generated from the
   game's lists (`packages/data/data/poe1/harvest_change.json`).
 
@@ -235,9 +240,7 @@ True of the ingested PoE1 data, and pinned by the catalog-level tests of
 ## 10. The item in the implementation
 
 The checker's set of items is the implementation's only item: a declared item is a
-set with no uncertainty beyond its `"random"` affixes, and the marks of §7 live there
-(fracture, veiled state, the influences, corruption and the eldritch implicits, with
-the currencies that set them).
+set with no uncertainty beyond its `"random"` affixes, and the marks of §7 live there.
 The pool reads a projection of it, the facts of §7 a roll depends on: base, level, rarity,
 counts, present types and families, tags, active effects (`ItemFacts` in
 `packages/core/src/model/item.ts`).

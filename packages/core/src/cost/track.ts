@@ -602,7 +602,9 @@ export class Tracker {
         method: string,
     ): readonly Outcome[] | undefined {
         const item = this.narrow(before, state);
-        if (item === null || unmodelled(ops) !== undefined) return this.counted(undefined);
+        if (item === null || unmodelled(ops, item, this.registry) !== undefined) {
+            return this.counted(undefined);
+        }
         const at = ops.findIndex((op) => op.kind === "either");
         const either = ops[at];
         if (either?.kind !== "either") return this.outcomesOn(item, ops, state, reading);

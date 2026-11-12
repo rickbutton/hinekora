@@ -119,10 +119,16 @@ export type MetamodKind =
     | "prefixesCannotChange"
     | "suffixesCannotChange"
     | "cannotRollAttack"
-    | "cannotRollCaster";
+    | "cannotRollCaster"
+    | "onePrefixCannotChange"
+    | "twoPrefixesCannotChange"
+    | "oneSuffixCannotChange"
+    | "twoSuffixesCannotChange";
 
 /** The five metamods by the data's ids, types and sides; the registry attaches
- *  their effects by id (model/metamods.ts). */
+ *  their effects by id (model/metamods.ts). The four partial protections the
+ *  data does not hold yet carry theirs on the row, each on the side opposite
+ *  the one it protects, as the full protections sit. */
 const METAMOD_ROWS: Readonly<Record<MetamodKind, Mod>> = {
     multimod: metamodRow(
         "StrIntMasterItemGenerationCanHaveMultipleCraftedMods",
@@ -154,7 +160,21 @@ const METAMOD_ROWS: Readonly<Record<MetamodKind, Mod>> = {
         "suffix",
         "Cannot roll Caster Modifiers",
     ),
+    onePrefixCannotChange: partialRow("prefix", 1),
+    twoPrefixesCannotChange: partialRow("prefix", 2),
+    oneSuffixCannotChange: partialRow("suffix", 1),
+    twoSuffixesCannotChange: partialRow("suffix", 2),
 };
+
+function partialRow(gen: Gen, count: number): Mod {
+    const side = gen === "prefix" ? "Prefix" : "Suffix";
+    const id = `TestItemGenerationCannotChange${count}${side}`;
+    const text = `${count} ${side} Modifier${count > 1 ? "s" : ""} cannot be changed`;
+    return {
+        ...metamodRow(id, id, gen === "prefix" ? "suffix" : "prefix", text),
+        effects: [{ kind: "protectSome", gen, count }],
+    };
+}
 
 function metamodRow(id: string, type: string, gen: Gen, text: string): Mod {
     return modRow({ id, type, gen, text, spawn: [], domain: CRAFTED, source: "bench" });

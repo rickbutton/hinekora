@@ -60,6 +60,8 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
   is carried past the gap it states, neither side below one in a hundred (Q96).
 - **Memory strands.** The share used up is not stated; the estimate reads the floor
   (Q68).
+- **Partial protections.** Each choice of the modifiers kept is as likely; a removal's
+  odds weigh them so, and other steps' chances under one are not known (Q128).
 
 ---
 
@@ -107,10 +109,9 @@ It is exact for one group, for any set of one side jointly (by inclusion–exclu
 the split with depletion, and for a side's groups jointly with the split, which the
 draw couples (a heavy group drawn early leaves its side slower to draw again). The
 sides are taken as independent given the split, which reads a condition on both within
-two hundredths (0.8 low on a wand). A group with rows on both sides (a jewel's) is a
+two hundredths. A group with rows on both sides (a jewel's) is a
 mixture, wholly a prefix or wholly a suffix by weight, and loses a draw the full side
-turns away: up to five hundredths low (2.5 on a Cobalt Jewel, 4 with a count beside it).
-Each bound is tested against the draw played out (`packages/cli/src/race.test.ts`). An
+turns away: up to five hundredths low, each bound tested against the draw played out. An
 unveil's three draws are played out (`unveilOffers`), not raced.
 
 ---
@@ -152,7 +153,7 @@ unit price (`cost/prices.ts`, in the step's own currency).
   its own rounds' decay stands for the rest, an estimate. Where those rounds are too
   few (the work went on loops inside) or lose too little to measure, its rounds are
   not worked out. States that cannot reach the exit hold the share that never
-  leaves. Where the exit leaves the item is what the next steps see.
+  leaves.
 - Any other `until` is independent attempts: the body is walked once for the chance
   one ends in the exit or a `stop`; the expected rounds is its reciprocal, the share
   ending in a stop ending the craft.

@@ -36,13 +36,31 @@ export const METAMOD_EFFECTS: ReadonlyMap<ModId, readonly Effect[]> = new Map<
 ]);
 
 /**
+ * The partial protections, "1 Prefix Modifier cannot be changed" and its three
+ * siblings (Version 3.30.0, Endgame), by their mod ids. The game data this
+ * repository holds predates them, so the table names none yet; the load tests
+ * fail on a bench craft of theirs that it does not list, so a data refresh
+ * cannot load one as a plain crafted modifier. Each entry is
+ * `[{ kind: "protectSome", gen, count }]`, `gen` the side it protects.
+ */
+export const PARTIAL_PROTECTION_EFFECTS: ReadonlyMap<ModId, readonly Effect[]> = new Map<
+    ModId,
+    readonly Effect[]
+>([]);
+
+/** The bench craft text of a partial protection: a count, then the side. The
+ *  data's wording is not known yet, so the variants a refresh may bring match. */
+export const PARTIAL_PROTECTION_TEXT =
+    /\b\d+ (?:Prefix(?:es)?|Suffix(?:es)?)(?: Modifiers?)? cannot be changed/i;
+
+/**
  * Attach curated metamod effects to matching catalog mods. Mods that already
  * carry effects (e.g. test fixtures) are left untouched, so the two sources of
  * effect-carriers do not fight.
  */
 export function withMetamodEffects(catalog: readonly Mod[]): readonly Mod[] {
     return catalog.map((m) => {
-        const effects = METAMOD_EFFECTS.get(m.id);
+        const effects = METAMOD_EFFECTS.get(m.id) ?? PARTIAL_PROTECTION_EFFECTS.get(m.id);
         return effects && m.effects === undefined ? { ...m, effects } : m;
     });
 }

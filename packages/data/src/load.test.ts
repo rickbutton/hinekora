@@ -13,6 +13,8 @@ import {
     influenceTags,
     isCorruptedEssence,
     type ItemFacts,
+    PARTIAL_PROTECTION_EFFECTS,
+    PARTIAL_PROTECTION_TEXT,
     pool,
     rollableTiers,
     TagId,
@@ -498,8 +500,7 @@ describe("catalog-level facts of the item model", () => {
     });
 
     it("a ModType's rows agree on the attack and caster tags", () => {
-        // The cannot-roll shield reads a type's first row; it is exact only while
-        // every row of the type carries the same attack and caster tags.
+        // A cannot-roll metamod bars a whole type or none of it.
         for (const rows of byType.values()) {
             const key = (m: (typeof rows)[number]) =>
                 `${m.implicitTags.has(TagId("attack"))}/${m.implicitTags.has(TagId("caster"))}`;
@@ -550,6 +551,26 @@ describe("catalog-level facts of the item model", () => {
             "StrMasterItemGenerationCannotChangePrefixes",
         ]);
         expect(carriers.every((m) => m.source === "bench")).toBe(true);
+    });
+
+    it("loads no partial protection as a plain bench craft", () => {
+        // "1 Prefix Modifier cannot be changed" and its siblings (Version 3.30.0)
+        // carry their effect only through the curated table; a data refresh that
+        // brings their rows fails here until the table lists each.
+        expect(PARTIAL_PROTECTION_TEXT.test("1 Prefix Modifier cannot be changed")).toBe(true);
+        expect(PARTIAL_PROTECTION_TEXT.test("2 Suffix Modifiers cannot be changed")).toBe(true);
+        expect(PARTIAL_PROTECTION_TEXT.test("Prefixes Cannot Be Changed")).toBe(false);
+        // The scan reads the bench rows' texts, as the full protections' show.
+        const full = registry.catalog.filter((m) => m.text === "Prefixes Cannot Be Changed");
+        expect(full.map((m) => m.source)).toEqual(["bench"]);
+        const partial = registry.catalog.filter(
+            (m) => m.source === "bench" && PARTIAL_PROTECTION_TEXT.test(m.text ?? ""),
+        );
+        for (const m of partial) {
+            expect(PARTIAL_PROTECTION_EFFECTS.has(m.id), `${m.id}: ${m.text}`).toBe(true);
+        }
+        const listed = [...PARTIAL_PROTECTION_EFFECTS.keys()];
+        expect(listed.filter((id) => !partial.some((m) => m.id === id))).toEqual([]);
     });
 });
 

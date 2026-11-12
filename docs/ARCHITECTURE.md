@@ -139,8 +139,8 @@ A method is a sequence of primitives (`Op`, `check/ops/types.ts`; their meaning 
 blocks: narrow (intersect with a condition), set a slot, _one of_ (exactly one slot of a
 set changes: an added modifier, a removal), _each of_ (every slot of a set changes
 independently: a strip, a reroll), and _by case_: where what an operation does depends on
-the item (its influence, a metamod's protection or cannot-roll rule, the dominant
-implicit), the state is split by the slots that decide it, each case transformed under
+the item (its influence, a metamod's protection, a partial one's choice or a cannot-roll
+rule, the dominant implicit), the state is split by the slots that decide it, each case transformed under
 its own rule, and the cases united. A fill of several modifiers is one draw repeated, so
 the order of the draw is the game's.
 

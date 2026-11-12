@@ -9,10 +9,13 @@
 import type { Gen } from "./ids.js";
 import type { Mod } from "./mod.js";
 
-/** What an effect does to the rules: the three kinds the five metamods need. */
+/** What an effect does to the rules. */
 export type Effect =
     | { readonly kind: "poolRestrict"; readonly allows: (m: Mod) => boolean } // shrink add-side pool
     | { readonly kind: "protect"; readonly gen: Gen } // shield a generation from removal and reroll
+    /** Shield `count` of the side's modifiers, chosen at random each time a
+     *  currency is used ("1 Prefix Modifier cannot be changed"). */
+    | { readonly kind: "protectSome"; readonly gen: Gen; readonly count: number }
     | { readonly kind: "craftedCap"; readonly cap: number }; // raise the crafted-mod limit ("multimod")
 
 /** The effects a single mod carries (usually none). */

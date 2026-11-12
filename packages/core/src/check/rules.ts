@@ -7,14 +7,30 @@
  */
 import type { Op } from "./ops/types.js";
 import { craftedCapOf, type Effect } from "../model/effects.js";
-import type { Gen } from "../model/ids.js";
+import type { Gen, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 
 export type CannotRoll = Extract<Effect, { kind: "poolRestrict" }>;
 
+/** What the protections keep from removal and reroll. */
+export interface Protection {
+    /** Sides kept whole: "Prefixes Cannot Be Changed", or a partial protection
+     *  on a side holding no more modifiers than it keeps. */
+    readonly sides: ReadonlySet<Gen>;
+    /** The modifiers a partial protection keeps one by one, by type: the
+     *  choice made for this use of the method, where the side holds more. */
+    readonly types: ReadonlySet<TypeId>;
+}
+
+export const UNPROTECTED: Protection = { sides: new Set(), types: new Set() };
+
+/** Does a protection keep the modifier on this row? */
+export function keeps(p: Protection, row: Mod): boolean {
+    return p.sides.has(row.gen) || p.types.has(row.type);
+}
+
 export interface Rules {
-    /** Sides shielded from removal and reroll by "cannot be changed". */
-    readonly protected: ReadonlySet<Gen>;
+    readonly protected: Protection;
     /** The crafted-modifier limit (one, or three under the multimod). */
     readonly craftedCap: number;
     /** A protection or cannot-roll metamod prevents an essence or a fossil.
@@ -36,17 +52,41 @@ export interface Rules {
 
 export type RuleField = keyof Rules;
 
-/** The rules under the effects an item's modifiers carry. */
-export function rulesOf(effects: readonly Effect[], ops: readonly Op[]): Rules {
-    const protectedGens = new Set<Gen>();
-    for (const e of effects) if (e.kind === "protect") protectedGens.add(e.gen);
+/** How a use of the method settles the item's partial protections: the sides
+ *  kept whole for holding no more than they keep, and the modifiers chosen on
+ *  the others. */
+export interface Choice {
+    readonly sides: readonly Gen[];
+    readonly types: readonly TypeId[];
+}
+
+export const NO_CHOICE: Choice = { sides: [], types: [] };
+
+/** The rules under the effects an item's modifiers carry, its partial
+ *  protections settled by `choice`. */
+export function rulesOf(effects: readonly Effect[], ops: readonly Op[], choice = NO_CHOICE): Rules {
+    const sides = new Set<Gen>(choice.sides);
+    for (const e of effects) if (e.kind === "protect") sides.add(e.gen);
     return {
-        protected: protectedGens,
+        protected: { sides, types: new Set(choice.types) },
         craftedCap: craftedCapOf(effects),
-        blocksSourced: protectedGens.size > 0 || effects.some((e) => e.kind === "poolRestrict"),
+        // A partial protection prevents what a full one does (QUESTIONS.md Q128).
+        blocksSourced: effects.some((e) => e.kind !== "craftedCap"),
         governed: true,
         strands: usesStrands(ops),
     };
+}
+
+/** By side, how many modifiers the effects' partial protections keep (the
+ *  most of any carried); none on a side a full protection keeps whole. */
+export function partialProtections(effects: readonly Effect[]): ReadonlyMap<Gen, number> {
+    const whole = new Set(effects.flatMap((e) => (e.kind === "protect" ? [e.gen] : [])));
+    const out = new Map<Gen, number>();
+    for (const e of effects) {
+        if (e.kind !== "protectSome" || whole.has(e.gen)) continue;
+        out.set(e.gen, Math.max(out.get(e.gen) ?? 0, e.count));
+    }
+    return out;
 }
 
 function usesStrands(ops: readonly Op[]): boolean {
@@ -57,13 +97,19 @@ function usesStrands(ops: readonly Op[]): boolean {
 
 /** After `unprotect`. */
 export function unprotected(r: Rules): Rules {
-    return { ...r, protected: new Set(), governed: false };
+    return { ...r, protected: UNPROTECTED, governed: false };
 }
 
 /** After `keep`: that side alone is kept, in place of the item's protections
  *  (Metamod § Rules and Exceptions: the Eldritch Chaos Orb). */
 export function keeping(r: Rules, gen: Gen): Rules {
-    return { ...r, protected: new Set([gen]) };
+    return { ...r, protected: { sides: new Set([gen]), types: new Set() } };
+}
+
+/** Every choice of `n` of the items, in order. */
+export function subsetsOf<T>(xs: readonly T[], n: number): T[][] {
+    if (n === 0) return [[]];
+    return xs.flatMap((x, i) => subsetsOf(xs.slice(i + 1), n - 1).map((rest) => [x, ...rest]));
 }
 
 // --- what a method reads -------------------------------------------------------------
@@ -77,6 +123,7 @@ export function relevantEffects(
     return effects.filter((e) => {
         switch (e.kind) {
             case "protect":
+            case "protectSome":
                 return reads.has("protected") || sourced;
             case "poolRestrict":
                 return sourced;
@@ -94,6 +141,8 @@ export function effectKey(e: Effect): string {
     switch (e.kind) {
         case "protect":
             return `protect:${e.gen}`;
+        case "protectSome":
+            return `protect:${e.gen}:${e.count}`;
         case "craftedCap":
             return `cap:${e.cap}`;
         case "poolRestrict": {

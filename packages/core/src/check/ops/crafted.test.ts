@@ -775,7 +775,7 @@ describe("the veiled orbs on the strip and removal they use", () => {
         types: 4,
         veiled: true,
         bench: true,
-        metamods: ["prefixesCannotChange", "suffixesCannotChange", "cannotRollAttack"],
+        metamods: ["prefixesCannotChange", "oneSuffixCannotChange", "cannotRollAttack"],
     });
     const s = setupOf(cat);
     const nat = naturals(cat, 4);

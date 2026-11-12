@@ -79,6 +79,9 @@ function catalogueFor(seed: number, flavour: Flavour): Catalog {
                     ...(seed % 5 === 2 && {
                         metamods: ["prefixesCannotChange", "multimod"] as const,
                     }),
+                    ...(seed % 5 === 4 && {
+                        metamods: ["onePrefixCannotChange", "multimod"] as const,
+                    }),
                 };
     return generateCatalog(seed, options);
 }

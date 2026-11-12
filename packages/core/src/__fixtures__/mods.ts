@@ -569,6 +569,31 @@ export const PROTECT_SUFFIXES_CARRIER: Mod = mkMod({
     text: "suffixes cannot be changed",
 });
 
+/** "1 Prefix Modifier cannot be changed", a SUFFIX carrier, and "2 Suffix
+ *  Modifiers cannot be changed", a PREFIX one: the partial protections, by
+ *  test ids the data does not hold. */
+export const PROTECT_ONE_PREFIX_CARRIER: Mod = mkMod({
+    id: "MetaOnePrefixCannotChange",
+    type: "MetaOnePrefixCannotChange",
+    source: "bench",
+    gen: "suffix",
+    minLevel: 1,
+    spawn: [spawn(TAG_DEFAULT, 0)],
+    effects: [{ kind: "protectSome", gen: "prefix", count: 1 }],
+    text: "1 prefix modifier cannot be changed",
+});
+
+export const PROTECT_TWO_SUFFIXES_CARRIER: Mod = mkMod({
+    id: "MetaTwoSuffixesCannotChange",
+    type: "MetaTwoSuffixesCannotChange",
+    source: "bench",
+    gen: "prefix",
+    minLevel: 1,
+    spawn: [spawn(TAG_DEFAULT, 0)],
+    effects: [{ kind: "protectSome", gen: "suffix", count: 2 }],
+    text: "2 suffix modifiers cannot be changed",
+});
+
 /** "Cannot roll attack modifiers": a SUFFIX pool-restrict carrier keyed on the
  *  `attack` category tag. */
 export const CANNOT_ROLL_ATTACK_CARRIER: Mod = mkMod({

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PoolSpec } from "./ops/types.js";
-import { type Gen, TagId } from "../model/ids.js";
+import { type Gen, TagId, type TypeId } from "../model/ids.js";
 import type { ItemFacts } from "../model/item.js";
 import { influenceOfTag } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
@@ -44,7 +44,10 @@ function statesOf(seed: number, opts: CatalogOptions) {
  *  by each mode, over one universe. */
 function images(seed: number, opts: CatalogOptions, kept: Gen[]) {
     const { u, states } = statesOf(seed, opts);
-    const rules = { ...rulesOf([], [chaos]), protected: new Set(kept) };
+    const rules = {
+        ...rulesOf([], [chaos]),
+        protected: { sides: new Set(kept), types: new Set<TypeId>() },
+    };
     return states.map((start) => {
         const ctx = { u, rules, start };
         const by = (mode: ReforgeMode) => reforgeImage(chaos, [], start, ctx, mode);

@@ -19,14 +19,18 @@ import type { PoolTable } from "../ops/pools.js";
 import { HANDLERS } from "../ops/registry.js";
 import { checkPlacement, type CompoundKind, type Step, stepsOf } from "../ops/steps.js";
 import {
+    type Choice,
     effectsKey,
     keeping,
+    NO_CHOICE,
+    partialProtections,
     relevantEffects,
     type RuleField,
     rulesOf,
+    subsetsOf,
     unprotected,
 } from "../rules.js";
-import { type CItem, effectsOn, type RefCtx, rowOf } from "./item.js";
+import { type CItem, effectsOn, type RefCtx, rowOf, sideOf } from "./item.js";
 import type {
     RefCheckHandler,
     RefCompoundHandler,
@@ -120,7 +124,10 @@ export function refRunMethod(
         const before = new Set(run.failing.keys());
         const sizes = new Map([...run.failing].map(([i, xs]) => [i, xs.length]));
         // An item may have more outcomes than a spread's arguments may hold.
-        for (const x of runItem(item, ops, steps, ctx, handlers, run)) out.push(x);
+        const choices = reads.has("protected") ? choicesFor(ctx, item) : [NO_CHOICE];
+        for (const choice of choices) {
+            for (const x of runItem(item, choice, ops, steps, ctx, handlers, run)) out.push(x);
+        }
         for (const [i, xs] of run.failing) {
             if (!before.has(i) || xs.length > (sizes.get(i) ?? 0)) c.refusedAt.add(i);
         }
@@ -182,8 +189,33 @@ function poolsOf(handlers: RefHandlers): PoolTable {
     return handlers.pools ?? HANDLERS.pools ?? {};
 }
 
+/**
+ * How one use of a method may settle the item's partial protections
+ * (Version 3.30.0, Endgame; the league's FAQ: the modifiers are chosen at
+ * random each time a currency is used): a side holding no more modifiers than
+ * the protection keeps is kept whole; on one holding more, each choice of
+ * that many of its modifiers, by type, is one way the method may run.
+ */
+export function choicesFor(ctx: RefCtx, item: CItem): Choice[] {
+    let out: Choice[] = [NO_CHOICE];
+    for (const [gen, count] of partialProtections(effectsOn(ctx, item))) {
+        const side = item.mods.filter((m) => sideOf(ctx, m) === gen).map((m) => rowOf(ctx, m).type);
+        out =
+            side.length <= count
+                ? out.map((c) => ({ ...c, sides: [...c.sides, gen] }))
+                : out.flatMap((c) =>
+                      subsetsOf(side, count).map((pick) => ({
+                          ...c,
+                          types: [...c.types, ...pick],
+                      })),
+                  );
+    }
+    return out;
+}
+
 function runItem(
     item: CItem,
+    choice: Choice,
     ops: readonly Op[],
     steps: readonly Step[],
     ctx: RefCtx,
@@ -192,7 +224,7 @@ function runItem(
 ): CItem[] {
     let mctx: RefMethodCtx = {
         ctx,
-        rules: rulesOf(effectsOn(ctx, item), ops),
+        rules: rulesOf(effectsOn(ctx, item), ops, choice),
         start: item,
         pools: poolsOf(handlers),
     };

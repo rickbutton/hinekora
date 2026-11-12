@@ -25,6 +25,7 @@ import {
     LIFE_T1,
     MULTIMOD_CARRIER,
     PROTECT_PREFIXES_CARRIER,
+    PROTECT_ONE_PREFIX_CARRIER,
     INCREASED_MANA,
     PROTECT_SUFFIXES_CARRIER,
     RING_BASE,
@@ -56,6 +57,7 @@ const registry = buildRegistry({
         PROTECT_SUFFIXES_CARRIER,
         CANNOT_ROLL_ATTACK_CARRIER,
         MULTIMOD_CARRIER,
+        PROTECT_ONE_PREFIX_CARRIER,
     ],
     modAliases: { "T1 Life": "IncreasedLife1" },
     baseAliases: { "Iron Ring": "IronRing" },
@@ -65,6 +67,7 @@ const registry = buildRegistry({
         benchOf(PROTECT_SUFFIXES_CARRIER.id),
         benchOf(CANNOT_ROLL_ATTACK_CARRIER.id),
         benchOf(MULTIMOD_CARRIER.id),
+        benchOf(PROTECT_ONE_PREFIX_CARRIER.id),
     ],
 });
 const ctx: CheckContext = { registry };
@@ -615,5 +618,34 @@ describe("cannot roll attack modifiers", () => {
         expect(v.possibleTypes(r.finalState!).has(TypeId("AddedAttackDamage"))).toBe(false);
         // A non-attack mod is still addable.
         expect(v.possibleTypes(r.finalState!).has(TypeId("IncreasedLife"))).toBe(true);
+    });
+});
+
+describe("a partial protection on the item", () => {
+    // "1 Prefix Modifier cannot be changed" (Version 3.30.0, Endgame): one
+    // prefix, chosen at random each use, is kept.
+    it("keeps one of two prefixes through a chaos, either of them", () => {
+        const c = craft(rareRing(["T1 Life", INCREASED_MANA.id], [PROTECT_ONE_PREFIX_CARRIER.id]), [
+            op("chaos"),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteed(r)).not.toContain("IncreasedLife");
+        const clauses = disjunctiveGuarantees(r.finalState!).map((cl) => new Set(cl));
+        expect(clauses).toContainEqual(new Set([TypeId("IncreasedLife"), INCREASED_MANA.type]));
+    });
+
+    it("keeps the one prefix where there is one, as the full protection does", () => {
+        const c = craft(rareRing(["T1 Life"], [PROTECT_ONE_PREFIX_CARRIER.id]), [op("chaos")]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        expect(guaranteed(r)).toContain("IncreasedLife");
+    });
+
+    it("blocks an essence as the full protections do", () => {
+        const c = craft(rareRing(["T1 Life"], [PROTECT_ONE_PREFIX_CARRIER.id]), [
+            essence("greed", 1),
+        ]);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("metacraft modifier");
     });
 });

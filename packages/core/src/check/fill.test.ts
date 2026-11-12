@@ -222,12 +222,14 @@ describe("a reforge", () => {
         const kinds = [
             ["prefixesCannotChange"],
             ["suffixesCannotChange", "cannotRollAttack"],
+            ["onePrefixCannotChange"],
+            ["twoSuffixesCannotChange", "onePrefixCannotChange"],
         ] as const;
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 8; i++) {
             exactOn(
                 {
                     seed: 7900 + i,
-                    opts: { types: 4, metamods: kinds[i % 2]! },
+                    opts: { types: 4, metamods: kinds[i % 4]! },
                     rarities: ["rare"],
                     rows: 4,
                     include: (cat) => cat.metamods.slice(0, 1),

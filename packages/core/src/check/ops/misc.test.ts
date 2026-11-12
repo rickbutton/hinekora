@@ -160,6 +160,13 @@ describe("the Divine Orb's reroll", () => {
         },
         {
             seed: 9020,
+            opts: { types: 4, metamods: ["onePrefixCannotChange", "twoSuffixesCannotChange"] },
+            values: true,
+            include: (cat) => cat.metamods.map((m) => m.id),
+            rows: 4,
+        },
+        {
+            seed: 9020,
             opts: { types: 3, bench: true },
             values: true,
             crafted: true,
@@ -277,6 +284,19 @@ describe("the removal of one type and the Harvest change", () => {
         ],
         rows: 4,
     };
+    const partial: Plan = {
+        seed: 9415,
+        opts: {
+            types: 2,
+            harvest: true,
+            metamods: ["onePrefixCannotChange", "oneSuffixCannotChange"],
+        },
+        include: (cat) => [
+            ...rowsOf(cat, "FireRes3", "ColdRes1"),
+            ...cat.metamods.map((m) => m.id),
+        ],
+        rows: 4,
+    };
     const crafted: Plan = {
         seed: 9420,
         opts: { types: 2, harvest: true },
@@ -286,7 +306,7 @@ describe("the removal of one type and the Harvest change", () => {
         rows: 3,
     };
     const fire = TypeId("TypeFireRes");
-    for (const plan of [harvest, protectedPlan, crafted]) {
+    for (const plan of [harvest, protectedPlan, partial, crafted]) {
         it(`is exact for the removal on catalogue ${plan.seed}`, () => {
             exactOn(plan, () => [removable(fire), removeType(fire)]);
             exactOn(plan, () => [removable(TypeId("TypeColdRes"))]);
