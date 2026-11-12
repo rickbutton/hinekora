@@ -444,6 +444,33 @@ function byCondition(craft: Craft): Map<number, number> {
     return out;
 }
 
+/** Did the run report a fault in reading a condition: an error inside a
+ *  condition that is not about which arm or loop runs? */
+function unread(r: CheckResult, craft: Craft): boolean {
+    const spans: SourceSpan[] = [];
+    const visit = (stmts: readonly Stmt[]): void => {
+        for (const s of stmts) {
+            if (s.kind === "if" || s.kind === "until") {
+                spans.push(s.pred.span);
+                visit(s.body);
+                if (s.kind === "if") visit(s.elseBody ?? []);
+            } else if (s.kind === "call") {
+                for (const a of s.args) if (a.kind === "block") visit(a.body);
+            }
+        }
+    };
+    visit(craft.body);
+    for (const p of craft.procs) visit(p.body);
+    const control = new Set(r.findings.map((f) => f.span.start.offset));
+    return r.diagnostics.some(
+        (d) =>
+            !control.has(d.span.start.offset) &&
+            spans.some(
+                (p) => p.start.offset <= d.span.start.offset && d.span.end.offset <= p.end.offset,
+            ),
+    );
+}
+
 const ABORTS: readonly FindingKind[] = ["unsettled", "limit"];
 const FEWER: readonly FindingKind[] = ["deadIf", "deadElse", "neverRuns", "neverExits"];
 
@@ -459,7 +486,8 @@ const FEWER: readonly FindingKind[] = ["deadIf", "deadElse", "neverRuns", "never
  *   the strict run by inclusion: each statement the strict run reaches it
  *   reaches with at least those items before and after, it refuses every step
  *   the strict run refuses, and a branch, a loop or a step it finds dead the
- *   strict run finds dead too, or never reaches.
+ *   strict run finds dead too, or never reaches. Not where the strict run
+ *   could not read a condition (`unread`).
  *
  * Both sides are read at the universe's value cells.
  */
@@ -582,6 +610,10 @@ export function compareCraft(
 
     // The driver as the tool runs it, against the strict run.
     if (aborted || exact.findings.some((f) => ABORTS.includes(f.kind))) return done("");
+    // A condition the strict run cannot read narrows nothing there, a recovery
+    // of its own made on the strict run's items; recovered items it can be read
+    // on narrow it, so past it the runs are not comparable.
+    if (unread(strict, craft)) return done("");
     const theirs = traced(exact.trace);
     const conditions = byCondition(craft);
     const holds = (big: Dd | undefined, small: Dd | undefined): boolean =>

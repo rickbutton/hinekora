@@ -4,13 +4,29 @@ import { guaranteedTypes } from "./views.js";
 import { rowIds } from "../__fixtures__/views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { rollableTiers, tierLadder } from "../resolve/tiers.js";
-import { andp, craft, has, iff, item, notp, op, orp, until } from "../__fixtures__/ast.js";
 import {
+    andp,
+    bench,
+    craft,
+    has,
+    iff,
+    item,
+    notp,
+    op,
+    orp,
+    procDef,
+    until,
+} from "../__fixtures__/ast.js";
+import {
+    BENCH_LIFE_ROW,
     BOOTS_BASE,
     CATALOG,
+    CLASS_RING,
     FILLERS,
     FIRE_RES_TIERED,
     FIRE_RESIST,
+    LIFE_T1,
+    LIFE_T2,
     MAXLIFE_T1,
     RING_BASE,
     TIERED_CATALOG,
@@ -517,5 +533,33 @@ describe("checker — two modifiers that share a type and a level", () => {
         const r = run(craft(rareRing(), [until(has(ZOMBIES.id), [op("chaos")])]));
         expect(r.diagnostics).toEqual([]);
         expect(rows(r)).toEqual([ZOMBIES.id]);
+    });
+});
+
+describe("a declared tier the modifier does not have", () => {
+    const withBench = buildRegistry({
+        bases: [RING_BASE],
+        mods: [...CATALOG, BENCH_LIFE_ROW],
+        benchCrafts: [{ mod: BENCH_LIFE_ROW.id, tier: 1, itemClasses: new Set([CLASS_RING]) }],
+    });
+
+    it("is read as any natural row of the modifier, whatever steps come after", () => {
+        const block = rareRing([{ mod: "maximum life", tier: 9 }]);
+        const bare = check(craft(block, []), { registry: withBench });
+        // A bench step in a def never called adds the bench's life row to what
+        // the check can follow; the declared modifier stays a natural one.
+        const unused = procDef("unused", [], [bench("maximum life")]);
+        const benched = check(craft(block, [], [], [unused]), { registry: withBench });
+        expect(bare.diagnostics.map((d) => d.message)).toEqual([
+            'tier 9 is out of range for "maximum life" (it has 2 tiers on this base).',
+        ]);
+        expect(benched.diagnostics.map((d) => d.message)).toEqual(
+            bare.diagnostics.map((d) => d.message),
+        );
+        for (const r of [bare, benched]) {
+            expect(rowIds(r.trace[0]!.before, LIFE_T1.type)).toEqual(
+                new Set([LIFE_T1.id, LIFE_T2.id]),
+            );
+        }
     });
 });

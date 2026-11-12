@@ -77,6 +77,10 @@ export interface Carried {
     readonly locks?: boolean;
     /** The rows say which eldritch implicits the item carries. */
     readonly implicits?: boolean;
+    /** The states passed a method of several outcomes, read on odds and
+     *  counts of the walk's own (`OUTCOME_ODDS`, QUESTIONS.md Q112), which may
+     *  leave out items the check reaches. */
+    readonly forked?: boolean;
     readonly dist: readonly { readonly state: ChainState; readonly weight: number }[];
 }
 

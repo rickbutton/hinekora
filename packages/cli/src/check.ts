@@ -125,16 +125,17 @@ export function costSource(
     }
     const result = check(parsed.craft, { registry });
     const report = costOf(parsed.craft, result, registry, prices);
+    if (result.findings.some((f) => f.kind === "unjudged")) {
+        const blocks = result.diagnostics.map((d) => errorText(source, file, d));
+        return { ok: false, output: blocks.join("\n\n"), unjudged: true };
+    }
+    if (report.failed !== undefined) {
+        return { ok: false, output: unjudgedText(file, report.failed), unjudged: true };
+    }
     if (report.unjudged === true) {
         return {
             ok: true,
             output: "Expected spend: not known, for the check could not follow the item.",
-        };
-    }
-    if (report.failed !== undefined) {
-        return {
-            ok: true,
-            output: `Expected spend: not known, for the cost of this craft could not be worked out (internal: ${report.failed}).`,
         };
     }
     const lines = source.split(/\r?\n/);

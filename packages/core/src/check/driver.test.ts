@@ -22,14 +22,15 @@ import {
 } from "../__fixtures__/ast.js";
 import type { Craft, ProcDef, Stmt } from "../ast/ast.js";
 import { renderState } from "./diagnostics.js";
-import { TypeId } from "../model/ids.js";
+import { TagId, TypeId } from "../model/ids.js";
 import { check, exactDetail, type CheckTuning, UNJUDGED } from "./check.js";
 import { buildRegistry, type Registry } from "../resolve/registry.js";
 import { RING_BASE, TIERED_CATALOG } from "../__fixtures__/mods.js";
 import { startOf } from "./initial.js";
-import { generateCatalog } from "./reference/catalog.js";
+import { generateCatalog, modRow } from "./reference/catalog.js";
 import { compareCraft } from "./reference/craft.js";
-import { handCtx, HAND_REGISTRY } from "./reference/hand.js";
+import { handCtx, HAND_MODS, HAND_REGISTRY } from "./reference/hand.js";
+import { refCtx } from "./reference/item.js";
 import { isGuaranteed, rarities, summaryOf } from "./views.js";
 
 type Spec = Parameters<typeof item>[0];
@@ -580,4 +581,35 @@ describe("a method built in parts", () => {
 
     // No method of the table ends the craft on every item (a `locus` destroys
     // some outcomes only), so the `ended` finding is reached by no craft here.
+});
+
+describe("a condition only the items past an error can read", () => {
+    it("narrows nothing without recovery, and the items with it", () => {
+        // The modifier's second tier is a Hunter row: read on an item with no
+        // influence the tier is out of range, which narrows nothing; the
+        // recovered Hunter's orb leaves items it is read on, which it narrows.
+        const ex = modRow({ id: "Ex1", type: "TypeEx", gen: "prefix", text: "+(1-2) to Ex" });
+        const hunterEx = (id: string, minLevel: number) =>
+            modRow({
+                id,
+                type: "TypeEx",
+                gen: "prefix",
+                text: "+(3-4) to Ex",
+                minLevel,
+                spawn: [{ tag: TagId("ring_basilisk"), weight: 500 }],
+            });
+        const registry = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...HAND_MODS, ex, hunterEx("ExHunter1", 1), hunterEx("ExHunter2", 50)],
+        });
+        const c = craft(ring({ rarity: "magic", prefixes: [{ mod: "random" }] }), [
+            iff(has("Life1"), [{ ...op("exalt"), words: ["exalt", "hunter"] }]),
+            iff(has("ex", 2), [op("scour")], [stop()]),
+        ]);
+        const r = compareCraft(c, registry, refCtx(registry, RING_BASE, 84));
+        expect(r.diff).toBe("");
+        expect(r.strict.diagnostics.map((d) => d.message)).toContain(
+            'tier 2 is out of range for "ex" (it has 1 tier on this base)',
+        );
+    });
 });

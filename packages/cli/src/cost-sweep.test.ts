@@ -170,6 +170,11 @@ describe("a branch the check finds open", () => {
         ['bench "maximum life"', "annul"],
         ["fracture"],
         ['essence "greed"'],
+        ["vaal"],
+        ['bench "prefixes cannot be changed"', "vaal"],
+        ["locus"],
+        ["vaal", "tainted exalt"],
+        ["vaal", "tainted chaos"],
     ];
     for (const [i, item] of ITEMS.entries()) {
         it(
@@ -194,6 +199,27 @@ describe("a branch the check finds open", () => {
         // The beast takes one of the two suffixes alike (QUESTIONS.md Q61).
         expect(branch.note).toBeUndefined();
         expect(branch.branch).toBeCloseTo(1 / 2, 9);
+    });
+
+    it("after a Vaal Orb, whose reforge the walk reads its own way", () => {
+        const cases: readonly [string, readonly string[], string][] = [
+            [
+                'base: "Titan Greaves"\n    ilvl: 84\n    rarity: magic',
+                ['bench "prefixes cannot be changed"', "vaal"],
+                "not suffixCount == 0",
+            ],
+            [
+                'base: "Vaal Regalia"\n    ilvl: 84\n    rarity: rare\n    suffixes: [ "intelligence" t3 ]',
+                ["exalt hunter", "vaal"],
+                'has "intelligence" t1 and influenced',
+            ],
+        ];
+        for (const [item, steps, condition] of cases) {
+            const source = crafted(item, steps, condition);
+            branchesAgree(source);
+            const { report } = costed(source);
+            expect(report.steps.find((s) => s.kind === "if")?.branch, source).toBe(1 / 2);
+        }
     });
 
     it("in the examples and on the site", () => {

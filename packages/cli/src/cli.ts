@@ -16,8 +16,8 @@
  * Exit codes: 0 = checks pass / formatted / charted / costed, 1 = craft has
  * errors / needs formatting / does not parse, 2 = usage / I/O error, 3 = the
  * tool could not judge the craft (a fault of its own), under any command. `cost`
- * exits 0 whenever the guide parses: a guide with check errors is still costed,
- * as written, and the report's first line says so.
+ * exits 0 whenever the guide parses and the tool judges it: a guide with check
+ * errors is still costed, as written, and the report's first line says so.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { loadDefaultEconomy, loadDefaultPoe1, registryOf } from "@hinekora/data";
@@ -88,14 +88,14 @@ function chart(file: string): number {
 function cost(file: string): number {
     const source = tryRead(file);
     if (source === undefined) return 2;
-    const { output, ok } = costSource(
+    const { output, ok, unjudged } = costSource(
         source,
         file,
         registryOf(loadDefaultPoe1()),
         loadDefaultEconomy(),
     );
     process.stdout.write(`${output}\n`);
-    return ok ? 0 : 1;
+    return ok ? 0 : unjudged === true ? 3 : 1;
 }
 
 /** Every command: a fault of the tool's own ends it with the could-not-judge

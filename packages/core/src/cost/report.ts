@@ -22,7 +22,7 @@ import { carriedRows, resolvePred, type ResolveView } from "../check/resolve-pre
 import { rollableGen } from "../resolve/tiers.js";
 import { methodItemOf } from "../check/build.js";
 import type { CheckResult, TraceEntry } from "../check/check.js";
-import type { XItem } from "../check/state.js";
+import { narrow as narrowTo, type XItem } from "../check/state.js";
 import {
     counts as countsOf,
     guaranteedTypes,
@@ -758,15 +758,26 @@ class Walker {
                 },
             ];
         }
+        // Outcomes some of which roll the modifiers again (a Vaal Orb's
+        // reforge) leave an item the roll before them no longer describes.
+        const forks = built.some(
+            (op) =>
+                op.kind === "either" &&
+                op.branches.some((b) =>
+                    b.some((t) => t.kind === "fill" || t.kind === "strip" || t.kind === "remove"),
+                ),
+        );
         if (moved !== undefined) {
             const after = entry.after;
             return live.map((b, i) => ({
                 mass: b.mass,
                 path:
-                    b.path === undefined || stmt.words[0] !== "bench"
-                        ? b.path
-                        : this.benchOnPath(b.path, literals, after),
-                states: moved[i]!.states,
+                    b.path === undefined || forks
+                        ? undefined
+                        : stmt.words[0] !== "bench"
+                          ? b.path
+                          : this.benchOnPath(b.path, literals, after),
+                states: forks ? { ...moved[i]!.states, forked: true } : moved[i]!.states,
             }));
         }
         // The step changed the item: where a loop left it is no longer where it is.
@@ -779,7 +790,7 @@ class Walker {
         }
         // A step that could not be followed changed the item in ways the roll
         // before it does not show: what that roll left is no longer the item.
-        const stale = missed || cause !== undefined;
+        const stale = missed || cause !== undefined || forks;
         return live.map((b) => ({ mass: b.mass, path: stale ? undefined : b.path }));
     }
 
@@ -801,7 +812,11 @@ class Walker {
             const { states, ended } = advance(step, b.states!.dist, tracker.atoms, caps);
             const left = states.reduce((sum, s) => sum + s.weight, 0);
             const dist = left > 0 ? states.map((s) => ({ ...s, weight: s.weight / left })) : [];
-            return { states: tracker.carried(dist), ended: ended / (ended + left || 1) };
+            const carried = tracker.carried(dist);
+            return {
+                states: b.states!.forked === true ? { ...carried, forked: true } : carried,
+                ended: ended / (ended + left || 1),
+            };
         });
     }
 
@@ -857,6 +872,26 @@ class Walker {
             }
         }
         const mass = massOf(branches);
+        // Where states read past a method of several outcomes leave an arm no
+        // item though the checker's items reach it, they do not know the chance.
+        const figure = mass > 0 ? massOf(then) / mass : 0;
+        if (
+            branches.some((b) => b.states?.forked === true) &&
+            mass > 0 &&
+            (figure === 0 || figure === 1) &&
+            rpred !== null &&
+            before !== undefined &&
+            narrowTo(before, rpred, true) !== null &&
+            narrowTo(before, rpred, false) !== null
+        ) {
+            unknown = true;
+            then.length = 0;
+            otherwise.length = 0;
+            for (const b of branches) {
+                then.push({ mass: b.mass / 2, path: extend(b.path, rpred, true) });
+                otherwise.push({ mass: b.mass / 2, path: extend(b.path, rpred, false) });
+            }
+        }
         this.record(stmt, mass, frame, {
             branch: mass > 0 ? massOf(then) / mass : 0,
             ...(unknown && { note: "the chance of this condition is not known; half is assumed" }),

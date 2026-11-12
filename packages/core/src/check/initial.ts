@@ -136,7 +136,7 @@ export function heldAffixes(
         affix,
         rows:
             affix.kind === "named"
-                ? (affix.rows ?? registry.catalog.filter((m) => m.type === affix.type))
+                ? (affix.rows ?? [])
                 : affix.kind === "bench"
                   ? benchRowsOf(registry, decl, affix.gen)
                   : anonymousRows(registry, decl, affix.gen, types),

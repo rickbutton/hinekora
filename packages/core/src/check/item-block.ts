@@ -63,8 +63,10 @@ function clusterSize(base: Base): ClusterSize | undefined {
 /**
  * One declared affix, in the order the block lists it.
  * - `named`: a modifier the block names; `rows` are those it may be (one, or
- *   one under each of two influences that share the tier), or undefined where
- *   the block gives no tier the item can hold (reported), any row of `type`.
+ *   one under each of two influences that share the tier), or, where the
+ *   block gives no tier the item can hold (reported), every row of its
+ *   ladders on the base, so what the item is read as does not hang on the
+ *   steps after.
  * - `anonymous`: `"random"`, some natural modifier of its side.
  * - `bench`: `bench "random"`, some bench modifier of its side.
  * - `unknown`: a name that did not resolve (reported); it is counted.
@@ -304,6 +306,7 @@ export function declareItem(item: ItemBlock, registry: Registry, diag: Diag): It
                 affixAt,
             );
             claim(affix.mod, type); // still present, just untiered
+            entry = { type, rows: [...ladders.values()].flat(), crafted: false };
             return type;
         }
         const tier = affix.tier ?? single ?? 1;
@@ -317,6 +320,7 @@ export function declareItem(item: ItemBlock, registry: Registry, diag: Diag): It
                 affixAt,
             );
             claim(affix.mod, type);
+            entry = { type, rows: [...ladders.values()].flat(), crafted: false };
             return type;
         }
         // Two influences may each have a row at the tier, and which the

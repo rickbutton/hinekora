@@ -31,14 +31,25 @@ import {
     stop,
     until,
 } from "../__fixtures__/ast.js";
-import type { AffixDecl, Cmp, Craft, ItemBlock, Pred, ProcDef, Stmt } from "../ast/ast.js";
+import type {
+    AffixDecl,
+    Cmp,
+    Craft,
+    ItemBlock,
+    OperationArg,
+    Pred,
+    ProcDef,
+    Stmt,
+} from "../ast/ast.js";
+import { METHODS } from "./methods.js";
 import { declareItem } from "./item-block.js";
 import { rollRange } from "./values.js";
 import { describePred } from "./diagnostics.js";
 import type { Rarity } from "../model/ids.js";
 import { ELDRITCH_TIERS, type EldritchTierName } from "../model/marks.js";
 import { generateCatalog, type Catalog, type CatalogOptions } from "./reference/catalog.js";
-import { exactDetail } from "./check.js";
+import { check, exactDetail, type TraceEntry } from "./check.js";
+import type { Dd } from "./dd.js";
 import { compareCraft } from "./reference/craft.js";
 import { initialItems } from "./reference/initial.js";
 import { rng, type Rng } from "./reference/rng.js";
@@ -156,6 +167,11 @@ function operationsOf(cat: Catalog, flavour: Flavour, r: Rng): OpSpec[] {
             to: "rare",
             make: () => essence("Deafening Essence of Testing"),
         });
+    }
+    if (cat.influence !== undefined) {
+        // On a Magic item its refusal recovers to Hunter items, on which a
+        // tier only the Hunter ladder has can be read.
+        out.push({ on: ["rare"], make: () => op2("exalt", "hunter") });
     }
     out.push({ on: ["rare"], make: () => harvest("reforge", r.pick(["attack", "caster"])) });
     out.push({ on: ["rare"], make: () => harvest("augment", r.pick(["attack", "caster"])) });
@@ -444,7 +460,17 @@ function generate(seed: number): Generated {
     const sp: Space = { ...base, procs };
     const shape: Shape = { inLoop: false, depth: 0, calls: true };
     // A loop that takes several rounds, early, before most paths have ended.
-    const opening = r.chance(0.4) ? [growingLoop(sp, shape)] : [];
+    // Or, with an influence, a Hunter's orb on some items and a tier only its
+    // ladder has: where the orb is refused, only recovered items can read it.
+    const hunting = cat.influence !== undefined && r.chance(0.5);
+    const opening = hunting
+        ? [
+              iff(randomPred(sp, 1), [op2("exalt", "hunter")]),
+              iff(has("hunting", r.int(1, 2)), randomBody(sp, shape, 1), randomBody(sp, shape, 1)),
+          ]
+        : r.chance(0.4)
+          ? [growingLoop(sp, shape)]
+          : [];
     const body = [...opening, ...randomBody(sp, shape, r.int(1, 8))];
     return {
         seed,
@@ -613,5 +639,69 @@ describe("a whole craft, run exactly", () => {
         expect(runs(2)).toBeGreaterThan(80);
         expect(runs(3)).toBeGreaterThan(4);
         expect(tally.largest).toBeGreaterThan(50);
+    });
+});
+
+// --- the universe a craft reaches ---------------------------------------------------
+
+/** A def never called that uses every method, so the universe holds every row
+ *  any step can lay: what a check of the craft alone must agree with. */
+function everyMethod(): ProcDef {
+    const at = op("x").span;
+    const body: Stmt[] = METHODS.map((m) => ({
+        kind: "operation",
+        words: m.words,
+        args: m.args.flatMap((s): OperationArg[] => {
+            switch (s.kind) {
+                case "int":
+                    return s.optional === true ? [] : [{ kind: "int", value: 1, span: at }];
+                case "tier":
+                    return s.optional === true ? [] : [{ kind: "tier", value: 1, span: at }];
+                case "word":
+                    return [{ kind: "word", value: s.oneOf[0]!, span: at }];
+                case "name":
+                    return s.optional === true ? [] : [{ kind: "string", value: "x", span: at }];
+                case "names":
+                    return [{ kind: "string", value: "x", span: at }];
+            }
+        }),
+        span: at,
+    }));
+    return procDef("everyMethod", [], body);
+}
+
+/** Each traced statement's items, counted, calls' bodies within. */
+function itemCounts(trace: readonly TraceEntry[]): string[] {
+    return trace.flatMap((e) => {
+        const n = (dd: Dd | undefined): string =>
+            dd === undefined ? "-" : String(e.before.u.dd.count(dd));
+        return [
+            `${e.kind}@${e.span.start.offset}: ${n(e.before.dd)} -> ${n(e.after?.dd)}`,
+            ...itemCounts(e.inlined?.trace ?? []),
+        ];
+    });
+}
+
+describe("a craft checked over the rows it reaches", () => {
+    it("agrees with the same craft beside a def that uses every method", () => {
+        let wider = 0;
+        const size = (r: { trace: readonly TraceEntry[] }): number =>
+            r.trace[0]?.before.u.dd.domains.reduce((a, b) => a + b, 0) ?? 0;
+        for (let seed = 1; seed <= 120; seed++) {
+            const g = generate(seed);
+            const full: Craft = { ...g.craft, procs: [...g.craft.procs, everyMethod()] };
+            const tuning = { maxRounds: g.maxRounds };
+            const trimmed = check(g.craft, { registry: g.cat.registry }, tuning);
+            const wide = check(full, { registry: g.cat.registry }, tuning);
+            const said = (r: typeof trimmed): string[] =>
+                r.diagnostics.map((d) => `${d.span.start.offset}: ${d.message}`);
+            const where = `seed ${seed}:\n${craftText(g.craft)}\n`;
+            expect(said(trimmed), where).toEqual(said(wide));
+            expect(trimmed.ok, where).toBe(wide.ok);
+            expect(itemCounts(trimmed.trace), where).toEqual(itemCounts(wide.trace));
+            if (size(wide) > size(trimmed)) wider++;
+        }
+        // The def widens most universes, or the comparison says nothing.
+        expect(wider).toBeGreaterThan(60);
     });
 });

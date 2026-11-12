@@ -112,6 +112,25 @@ exalt`).unjudged,
         ).toBeUndefined();
     });
 
+    it("gives a cost the checker could not judge as such, not as a figure", () => {
+        const broken = {
+            ...registry,
+            resolveCurrency: () => {
+                throw new Error("no currencies");
+            },
+        };
+        const r = costSource(
+            `item { base: "Iron Ring" ilvl: 84 rarity: normal }
+transmute`,
+            "t.craft",
+            broken,
+        );
+        expect(r.ok).toBe(false);
+        expect(r.unjudged).toBe(true);
+        expect(r.output).toContain("t.craft:2:1: error: This step could not be checked");
+        expect(r.output).not.toContain("Expected spend");
+    });
+
     it("gives the could-not-judge line where drawing the item fails after a clean check", () => {
         const broken = {
             ...registry,
