@@ -130,7 +130,6 @@ for (let i = 0; i < titles.length; i += EXPORT_BATCH) {
         action: "query",
         titles: batch.join("|"),
         export: 1,
-        exportnowrap: 0,
     });
     const seen = new Set();
     for (const page of splitPages(body.query.export)) {
