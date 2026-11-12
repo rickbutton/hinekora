@@ -12,9 +12,12 @@
  *   it does not keep an Orb of Annulment off a caster or attack modifier
  *   (Version 3.30.0, Item Changes), and the Metamod table's "Ignored" and
  *   "Does not protect" say the same of the Orb of Dominance, the Veiled Orb,
- *   the Harvest augment's removal and the beastcraft recipes. The Eldritch
- *   Orb of Annulment is ruled to follow the Orb of Annulment; for the Tainted
- *   Exalted Orb, which neither names, it is assumed (QUESTIONS.md Q122). The
+ *   the Harvest augment's removal and the beastcraft recipes. That the
+ *   Eldritch Orb of Annulment follows the Orb of Annulment is the project's
+ *   owner's ruling on the 3.30 notes, which name only "some Currencies …
+ *   such as Orbs of Annulment"; the wiki's Metamod table still lists it as
+ *   "Respected". For the Tainted Exalted Orb, which neither names, it is
+ *   assumed (QUESTIONS.md Q122). The
  *   protections are reference/rules.ts's. A removal limited to a
  *   protected side leaves the item as it is: the Metamod table's rule for
  *   the two beastcraft recipes ("Will add without removing"); the Eldritch

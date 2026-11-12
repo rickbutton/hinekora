@@ -162,6 +162,18 @@ describe("the Corruption Altar", () => {
         );
     });
 
+    it.each([
+        [["tainted", "chaos"], "A Tainted Chaos Orb"],
+        [["tainted", "exalt"], "A Tainted Exalted Orb"],
+        [["tainted", "divine"], "A Tainted Divine Teardrop"],
+        [["unveil"], "An unveil"],
+    ])("refuses %j on a twice-corrupted item", (step, what) => {
+        const twice = ring({ corrupted: "twice", prefixes: ["life"], suffixes: ["cold"] });
+        expect(messages(craft(twice, [words(...step)]))).toContain(
+            `${what} takes no twice-corrupted item — this item is twice corrupted.`,
+        );
+    });
+
     it("leaves `corrupted` true on a twice-corrupted item", () => {
         const twice = ring({ corrupted: "twice", prefixes: ["life"] });
         expect(messages(craft(twice, [iff(notp(corruptedP()), [op("chaos")])]))).toContain(

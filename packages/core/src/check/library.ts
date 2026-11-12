@@ -483,8 +483,10 @@ export function eldritchExaltOps(side: EldritchSide): readonly Op[] {
 export function eldritchAnnulOps(side: EldritchSide): readonly Op[] {
     // A protection is respected (Metamod § Rules and Exceptions); a protected
     // side is refused rather than left alone, since the orb would be spent for
-    // nothing. A cannot-roll metamod spares nothing, as it spares nothing from
-    // the Orb of Annulment (Version 3.30.0, Item Changes; ruled to hold here).
+    // nothing. A cannot-roll metamod spares nothing, as from an Orb of Annulment:
+    // the project's owner ruled so on reading Version 3.30.0 § Item Changes, which
+    // names only "some Currencies … such as Orbs of Annulment", while the wiki's
+    // Metamod table still lists this orb as "Respected".
     const gen = SIDE_OF[side];
     const victim: Selector = { kind: "random", gen };
     return [

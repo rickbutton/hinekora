@@ -463,12 +463,28 @@ export function unmodelled(
     if (tangled) {
         return "a Tangled Fossil makes one kind of modifier, picked at random, far likelier and bars another, which is not modelled, so the chances after it are not known";
     }
-    if (item !== undefined && registry !== undefined && keepsBeyondRemoval(ops)) {
-        if (partialProtectionsOn(registry, possibleTypes(item)).size > 0) {
+    if (item !== undefined && registry !== undefined && removes(ops)) {
+        const partial = partialReadings(registry, possibleTypes(item));
+        if (keepsBeyondRemoval(ops) && partial.size > 0) {
             return "a metamod keeps some of a side's modifiers, chosen at random each use, which this step's chances are not read under, so the chances after it are not known";
+        }
+        if ([...partial.values()].some((counts) => counts.length > 1)) {
+            return "two metamods each keep some modifiers of one side, and how many they keep together is not known, so the chances after this step are not known";
         }
     }
     return undefined;
+}
+
+/** Does the method take or replace any modifier? */
+function removes(ops: readonly Op[]): boolean {
+    return ops.some(
+        (op) =>
+            op.kind === "strip" ||
+            op.kind === "reroll" ||
+            op.kind === "elevate" ||
+            op.kind === "remove" ||
+            (op.kind === "either" && removes(op.branches.flat())),
+    );
 }
 
 /** Does the method keep modifiers a protection holds otherwise than by one
@@ -486,14 +502,13 @@ function keepsBeyondRemoval(ops: readonly Op[]): boolean {
     );
 }
 
-/** By side, how many modifiers a partial protection among `types` keeps: the
- *  most the checker reads it may keep, an estimate where it reads several. */
-function partialProtectionsOn(
+/** By side, every count of modifiers the checker reads the partial
+ *  protections among `types` as keeping. */
+function partialReadings(
     registry: Registry,
     types: Iterable<TypeId>,
-): ReadonlyMap<Gen, number> {
-    const counts = partialProtections([...types].flatMap((t) => [...registry.effectsOfType(t)]));
-    return new Map([...counts].map(([gen, cs]) => [gen, Math.max(...cs)]));
+): ReadonlyMap<Gen, readonly number[]> {
+    return partialProtections([...types].flatMap((t) => [...registry.effectsOfType(t)]));
 }
 
 /**
@@ -908,9 +923,10 @@ function removalRoll(
     // choice of them as likely (QUESTIONS.md Q128): a modifier of the side is
     // out of reach in that share of the uses, and the side holds that many
     // fewer to take.
-    const partial = partialProtectionsOn(registry, guaranteedTypes(before));
+    // A side with several readings never gets here (`unmodelled`).
+    const partial = partialReadings(registry, guaranteedTypes(before));
     const free = (g: Gen): number => {
-        const n = partial.get(g) ?? 0;
+        const n = partial.get(g)?.[0] ?? 0;
         return n === 0 ? 1 : Math.max(0, mid(g) - n) / Math.max(mid(g), 1);
     };
     const reaches = (g: Gen): boolean =>

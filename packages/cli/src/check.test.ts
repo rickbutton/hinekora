@@ -71,6 +71,18 @@ exalt`);
         expect(r.output).toContain("✗ 1 error");
     });
 
+    it("refuses a Tainted orb on an item the Corruption Altar corrupted again", () => {
+        const r =
+            run(`item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] corrupted }
+locus
+tainted chaos`);
+        expect(r.ok).toBe(false);
+        expect(r.output).toContain("test.craft:3:1: error:");
+        expect(r.output).toContain(
+            "A Tainted Chaos Orb takes no twice-corrupted item — this item is twice corrupted.",
+        );
+    });
+
     it("shows under an error an item that breaks the step, where the items differ", () => {
         // An annul leaves two or three prefixes: the bench is refused where three are left.
         const r =

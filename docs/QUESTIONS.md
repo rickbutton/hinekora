@@ -70,15 +70,17 @@ not.
 **Q:** [§ Incursion and Atziri](https://www.poewiki.net/wiki/Version_3.30.0#Incursion_and_Atziri):
 the altar corrupts "an Equipment Item" a second time, and a twice-corrupted item "cannot
 [be] Corrupted further using these devices". Does it take an uncorrupted item, or a jewel
-(the pre-3.30 Locus of Corruption page lists jewels)? How likely is each outcome? May its
-implicit replace an eldritch one? Does the copy (Ctrl+Alt+C) show `Twice Corrupted`
-alone? Does a twice-corrupted item take the Tainted currency or an unveil? No source says.
-**Probe:** corrupted Rares, a jewel, boots with an eldritch and a Vaal implicit, an
-uncorrupted ring; the altar some forty times; then a Tainted Exalted Orb and an unveil on
-a twice-corrupted item; record refusals, outcomes, which implicit went, the copy.
+(the old Locus of Corruption page lists them)? How likely is each outcome? May its
+implicit replace an eldritch one? Does the copy show `Twice Corrupted` alone? Does a
+twice-corrupted item take the Tainted currency or an unveil?
+[Corrupted § Modifying corrupted items](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items)
+leans to yes: Tainted currency "can be used on corrupted … items".
+**Probe:** corrupted Rares, a jewel, boots with eldritch and Vaal implicits, an
+uncorrupted ring; the altar forty times, then Tainted orbs, an unveil; record
+refusals, outcomes, implicits lost, the copy.
 **Assumed:** corrupted equipment only, no jewel; 1:1:2 to no change, an implicit,
-destroyed; either eldritch implicit may go; `Twice Corrupted` alone; a twice-corrupted
-item takes nothing. **Encoded in:** `check/library.ts` `locusOps`, `onceCorrupted`;
+destroyed; either eldritch implicit may go; `Twice Corrupted` alone; it
+takes nothing. **Encoded in:** `check/library.ts` `locusOps`, `onceCorrupted`;
 `cost/track.ts`; `render/item.ts`.
 
 ### Q33 · probe · open — the Tainted Chaos Orb under a protection, and its rarity
@@ -601,15 +603,15 @@ lightning Primal, 300 each. **Encoded in:** `cost/prices.ts` `unitCost`.
 adds "1 Prefix Modifier cannot be changed" and its siblings, the kept modifiers chosen at
 random each use ([FAQ](https://www.pathofexile.com/forum/view-thread/4013527), ruled). Does
 one block what the full protection blocks? Can the Bestiary's metamod recipe craft one?
-May the choice fall on a fractured modifier?
-Is a Harvest augment's removal chosen for among the modifiers before its add, or after?
+May the choice fall on a fractured modifier? Is a Harvest augment's removal chosen before
+its add or after, and with nothing to take, is it refused or does it only add?
 Do two on one side keep either count, or both?
 **Probe:** "1 Prefix Modifier cannot be changed": an essence; three prefixes, one
-fractured, annuls; one prefix, augments until it goes; with "2 Prefix…" too, scours; the
-recipe twenty times; record refusals and what went.
-**Assumed:** as the full protection; the recipe may craft one; any modifier; after; any
-reading. In the cost, each
-choice alike, the larger count. **Encoded in:** `check/rules.ts` `partialProtections`;
+fractured, annuls; one prefix, augments; with "2 Prefix…" too, scours; the recipe twenty
+times; record refusals, what went.
+**Assumed:** as the full protection; the recipe may craft one; any modifier; after,
+refused; any reading. In the cost, each choice alike; two on one side leave a removal's
+odds unread. **Encoded in:** `check/rules.ts` `partialProtections`;
 `check/ops/remove.ts` `partialChoices`; `check/reference/rules.ts`; `cost/roll.ts`.
 
 ### Q129 · probe · open — Merrick's Ducat on a Rare Abyss Jewel
