@@ -76,7 +76,8 @@ export interface TraceEntry {
     readonly before: XItem;
     /** The items it lets through; absent where none falls through. */
     readonly after?: XItem;
-    /** The statement, inside a call's body (check/check.ts `TraceEntry`). */
+    /** The statement as inlined, inside a call's body: one written statement
+     *  may run there more than once, so its span alone names no one entry. */
     readonly stmt?: Stmt;
     /** A call's body with its arguments bound, and its own trace. */
     readonly inlined?: { readonly body: readonly Stmt[]; readonly trace: readonly TraceEntry[] };

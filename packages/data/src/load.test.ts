@@ -34,7 +34,7 @@ function base(name: string): Base {
 
 describe("the longest ladder a base rolls", () => {
     it("is thirteen tiers, every influence on it: where the Foulborn cull's formula still agrees with the strands'", () => {
-        // `foulbornKept` (core, check/ops/types.ts) follows the Foulborn page's formula,
+        // `foulbornKept` (core, model/strands.ts) follows the Foulborn page's formula,
         // which keeps one tier fewer than the memory strands' from fifteen up.
         let longest = 0;
         const seen = new Set<string>();
@@ -646,8 +646,8 @@ describe("the grove's change lists", () => {
 
     it("name only modifiers whose rows all claim the same groups", () => {
         // A change is not blocked by a modifier of the changed one's group
-        // (core, check/ops/types.ts `typesSharingFamilyWithPresent`), which reads a
-        // type's groups as the union over its rows: exact only while they agree.
+        // (core, check/ops/crafted.ts `noGroupConflict`), which reads one set of
+        // groups per type: exact only while its rows agree.
         const listed = new Set(
             Object.values(data.harvestChange).flatMap((byElement) =>
                 Object.values(byElement).flatMap((rows) => rows.map((r) => r.from)),

@@ -425,22 +425,19 @@ function resonator(
     return resonatorOps({ fossils, added, forced, corrupted });
 }
 
-/** The side an Eldritch orb acts on: the dominant implicit, which must be the
- *  same on every path for the orb to have one meaning. */
+/** The side an Eldritch orb acts on: the dominant implicit. The checker
+ *  builds the step on each dominant side apart (build.ts `partsFor`); an item
+ *  that may have either is one the cost layer reads whole, and is refused. */
 function dominantSide(
     a: MethodItem,
     orb: string,
     ops: (side: EldritchSide) => readonly Op[],
 ): readonly Op[] | Refusal {
     const sides = new Set([...a.eldritch].map(dominantOf));
-    if (sides.size === 1 && !sides.has(undefined)) return ops([...sides][0]!);
-    if (sides.has(undefined) && sides.size === 1) {
-        return refuse(
-            `An ${orb} needs an item where the Searing Exarch or the Eater of Worlds is dominant — this item has ${eldritchLabel(a.eldritch)}.`,
-        );
-    }
+    const [side] = sides;
+    if (sides.size === 1 && side !== undefined) return ops(side);
     return refuse(
-        `An ${orb} acts on the dominant implicit's side, which differs between paths here (${eldritchLabel(a.eldritch)}); narrow it with 'if dominant exarch' first.`,
+        `An ${orb} needs an item where the Searing Exarch or the Eater of Worlds is dominant — this item has ${eldritchLabel(a.eldritch)}.`,
     );
 }
 

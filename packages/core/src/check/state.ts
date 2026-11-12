@@ -39,10 +39,6 @@ export function unite(a: XItem, b: XItem): XItem {
     return { u: a.u, dd: a.u.dd.or(a.dd, b.dd) };
 }
 
-export function sameItems(a: XItem, b: XItem): boolean {
-    return a.dd === b.dd;
-}
-
 /**
  * The state whose items are these, each read at the cell its values lie in:
  * an item stands for every item that differs from it only within its cells,
@@ -68,8 +64,8 @@ export function cube(u: Universe, assignment: readonly number[]): Dd {
 // --- conditions ---------------------------------------------------------------
 
 /**
- * The exact counterpart of `refine`: the items of the state on which `pred`
- * holds (or fails, when not `positive`); null when there are none.
+ * The items of the state on which `pred` holds (or fails, when not
+ * `positive`); null when there are none.
  */
 export function narrow(state: XItem, pred: RPred, positive = true): XItem | null {
     const m = state.u.dd;

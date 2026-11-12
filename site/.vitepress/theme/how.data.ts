@@ -1,31 +1,14 @@
 /**
  * What the "how it works" page draws from the tool itself, worked out when
- * the site is built: the checker's item after each step of the home page's
- * craft, and the weights behind one Orb of Alteration on its ring. The page's
- * figures are the code's, so they cannot drift from it.
+ * the site is built: the weights behind one Orb of Alteration on the home
+ * page's ring, held to the cost layer's chance for that craft's loop. The
+ * page's figures are the code's, so they cannot drift from it.
  */
 import { readFileSync } from "node:fs";
-import {
-    check,
-    costOf,
-    emptyItem,
-    itemView,
-    oddsText,
-    pool,
-    type Step,
-    walkthrough,
-} from "@hinekora/core";
+import { check, costOf, emptyItem, oddsText, pool } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
-import { itemCardHtml } from "@hinekora/item-card";
 import { parse } from "@hinekora/parser";
 import { defineLoader } from "vitepress";
-
-export interface TraceCard {
-    /** The step as written; absent for the item block. */
-    readonly step?: string;
-    /** The checker's item after it, as the item card's markup. */
-    readonly card: string;
-}
 
 export interface Weights {
     /** The weight of every prefix an Orb of Alteration can roll on the ring. */
@@ -41,7 +24,6 @@ export interface Weights {
 }
 
 export interface How {
-    readonly trace: readonly TraceCard[];
     readonly weights: Weights;
 }
 
@@ -52,21 +34,6 @@ const CRAFT = "../../examples/landing.craft";
 const BASE = "Vermillion Ring";
 const ILVL = 84;
 
-function stepText(s: Step): string {
-    switch (s.kind) {
-        case "operation":
-        case "call":
-            return s.text;
-        case "loop":
-            return `until ${s.condition}`;
-        case "branch":
-            return `if ${s.condition}`;
-        case "restart":
-        case "stop":
-            return s.kind;
-    }
-}
-
 export default defineLoader({
     watch: [CRAFT],
     load(): How {
@@ -74,15 +41,7 @@ export default defineLoader({
         const parsed = parse(readFileSync(new URL(CRAFT, import.meta.url), "utf8"));
         if (!parsed.ok) throw new Error(`landing.craft: ${parsed.error.message}`);
         const result = check(parsed.craft, { registry });
-        const w = walkthrough(parsed.craft, result, registry);
-        if (!result.ok || w.start.item === undefined)
-            throw new Error("landing.craft: the page expects this craft to check");
-        const card = (state: Parameters<typeof itemView>[0]): string =>
-            itemCardHtml(itemView(state, registry, parsed.craft));
-        const trace: TraceCard[] = [{ card: card(w.start.item) }];
-        for (const s of w.steps) {
-            if (s.after !== undefined) trace.push({ step: stepText(s), card: card(s.after) });
-        }
+        if (!result.ok) throw new Error("landing.craft: the page expects this craft to check");
 
         const base = registry.resolveBase(BASE);
         if (!base.ok) throw new Error(`the page's ${BASE} is gone`);
@@ -113,7 +72,6 @@ export default defineLoader({
             );
 
         return {
-            trace,
             weights: {
                 prefixes,
                 suffixes,

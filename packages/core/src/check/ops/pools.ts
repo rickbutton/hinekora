@@ -860,17 +860,6 @@ function rowsImage(u: Universe, rows: readonly Mod[]): RowsImage {
     return made;
 }
 
-/**
- * The relation of one draw of the rows, for `mapOne`: an absent slot takes a
- * fresh value of one of them. The image does not say which slot was filled; a
- * caller that needs it (an add, then a removal sparing what it added) draws
- * per slot instead: for each case of `drawCases` and each slot its rows sit
- * in, `mapOne` restricted to that slot, which leaves the slot known.
- */
-export function freshRelation(u: Universe, rows: readonly Mod[]): DdRelation {
-    return rowsImage(u, rows).forward;
-}
-
 /** The items on which one of the rows fits: an absent slot of its type, its
  *  families free, room on its side. Cached by the rows. */
 export function canTake(u: Universe, rows: readonly Mod[]): Dd {

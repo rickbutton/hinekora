@@ -19,10 +19,11 @@
  *   reported, a check and an operation ordered by their place.
  * - The craft ends when every item that passed the checks was consumed by an
  *   `end`.
- * - Recovery, outside the equality of §1: when no item passes, the craft goes
- *   on from the refused items of the first refusing check as the guide meant
- *   them (`CheckVerdict.repair`), or from the unchanged state, so one wrong
- *   step does not refuse every step after it.
+ * - Recovery, which the reference model (reference/craft.ts) leaves out and
+ *   holds to the strict run by inclusion only: when no item passes, the craft
+ *   goes on from the refused items of the first refusing check as the guide
+ *   meant them (`CheckVerdict.repair`), or from the unchanged state, so one
+ *   wrong step does not refuse every step after it.
  */
 import type { Op, PreconditionFailure } from "./ops/types.js";
 import { type Effect, effectsOf } from "../model/effects.js";

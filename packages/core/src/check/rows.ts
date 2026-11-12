@@ -50,8 +50,8 @@ const rolls = (m: Mod, tags: ReadonlySet<TagId>, maybe: ReadonlySet<TagId>): boo
  * craft's steps and item block reach (`craftReach`; every source with no
  * craft), since a row no step can lay down is on no item of the check:
  * - natural rows of the base's domain that roll at some item level, under any
- *   influence the class takes and any tag a row so admitted adds (to a
- *   fixpoint, as `check/ops/types.ts` `addableMods` reads tags);
+ *   influence the class takes and any tag a row so admitted adds, to a
+ *   fixpoint;
  * - the bench's rows for the class, and every metamod (the Bestiary crafts one
  *   on any class);
  * - every essence's row for the class, the corrupted essences' among them;

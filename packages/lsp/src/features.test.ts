@@ -274,8 +274,8 @@ until ${twoOf3} { annul annul exalt exalt }`;
 until ${twoOf3} { annul annul exalt exalt }`;
         const md = getHover(src, src.indexOf("until") + 1, registry)!;
 
-        // The T1 fire-resistance roll on this base — the block must show THIS, not
-        // the merged T1..Tn span the flat overlay fell back to.
+        // The T1 fire-resistance roll on this base: the block must show this, not
+        // the merged T1..Tn span of every tier.
         const base = registry.resolveBase("Vaal Regalia");
         expect(base.ok).toBe(true);
         const type = registry.resolveModType("fire resistance", {
