@@ -247,6 +247,26 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
                 return `"${failure.mod}" is not an available unveil option on this item.`;
             case "unveilNotGuaranteed":
                 return `"${failure.mod}" isn't guaranteed — ${failure.options} options can be offered, so block the pool to 3 or fewer first.`;
+            case "noOutcome": {
+                const may = failure.sure ? "has" : "may have";
+                switch (failure.op) {
+                    case "fill":
+                    case "addAnother":
+                        return `No modifier can be added here — the item ${may} none left that fits.`;
+                    case "remove":
+                        return `No modifier can be removed here — the item ${may} none this can take.`;
+                    case "elevate":
+                        return `No influenced modifier can be upgraded here — the item ${may} none left to upgrade.`;
+                    case "change":
+                        return `The modifier can't be changed here — the item ${may} no room for what it becomes.`;
+                    case "lock":
+                        return `No modifier can be fractured here — the item ${may} too few that are not fractured.`;
+                    default:
+                        return failure.sure
+                            ? "This step has nothing to act on."
+                            : "This step may have nothing to act on.";
+                }
+            }
         }
     })();
     return `at this point the item is: ${renderState(state)}\n${need}`;

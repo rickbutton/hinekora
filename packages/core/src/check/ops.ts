@@ -119,9 +119,9 @@ export type PoolSpec =
           readonly replacing?: TypeId;
           /** With `replacing`: by the id of each row the replaced modifier may
            *  be at, the rows it becomes, so its tier and crafted mark carry to
-           *  the replacement per source row. Read by the exact checker only;
-           *  check/methods.ts `harvestChange` is to fill it in with the exact
-           *  Harvest change. */
+           *  the replacement per source row; a row with no entry, or an
+           *  empty one, becomes nothing. Filled by check/methods.ts
+           *  `harvestChange`; read by the exact checker only. */
           readonly bySource?: ReadonlyMap<ModId, readonly Mod[]>;
       }
     /** One of the metamods not yet on the item whose side may have a slot (the
@@ -401,7 +401,11 @@ export type PreconditionFailure =
     | { readonly kind: "alreadyVeiled" }
     | { readonly kind: "veiledWouldSurvive" }
     | { readonly kind: "unveilNotAvailable"; readonly mod: string }
-    | { readonly kind: "unveilNotGuaranteed"; readonly mod: string; readonly options: number };
+    | { readonly kind: "unveilNotGuaranteed"; readonly mod: string; readonly options: number }
+    /** The operation can do nothing on some item it reaches (`op` its kind:
+     *  a fill with no modifier left that fits, a removal with none in reach);
+     *  `sure` when it can on none. Reported by the exact checker. */
+    | { readonly kind: "noOutcome"; readonly op: string; readonly sure: boolean };
 
 export type TransferResult = (
     | { readonly ok: true; readonly state: AItem }

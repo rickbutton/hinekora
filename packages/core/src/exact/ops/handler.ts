@@ -7,10 +7,14 @@
  * The contract every handler keeps:
  * - `apply` may assume that every `require` of the method before it holds on
  *   each item of its input: the frame runs it only on the items that passed.
- * - An operation that cannot act on an item leaves no outcome for it. That is
- *   legitimate only as a branch of an `either` (an outcome on which the
- *   operation does something else); anywhere else a check of the method must
- *   have refused the item, and the frame raises an `InternalError`.
+ * - An operation that cannot act on an item (an add whose pool has nothing
+ *   left that fits, a removal with nothing in reach) leaves no outcome for it
+ *   and reports it as `stuck`: the frame refuses the method on that item's
+ *   path as it does for a failed `require` (`noOutcome`), and goes on from
+ *   the rest. Within an `either` an item is stuck only where no branch acts
+ *   on it and none ends. An outcome the game forbids, which the library's
+ *   checks are there to exclude (a rarity over its caps, an influence beside
+ *   a fracture), is an `InternalError` instead.
  * - A handler reads of `ctx.rules` only the fields it declares in `reads`,
  *   a list or a function of the operation (an add reads less than a reforge
  *   of the same pool)
@@ -57,8 +61,9 @@ export interface MethodCtx {
     /** The items of this case when the method started, uniform in every
      *  property a `split` of the method cut it by. */
     readonly start: Dd;
-    /** The pools of other families a draw resolves (`Handlers.pools`); the
-     *  merged table of ops/registry.ts where absent. */
+    /** The pools of other families a draw resolves: the handlers' own
+     *  (`Handlers.pools`), or the merged table of ops/registry.ts where the
+     *  handlers carry none, as the frame sets it. */
     readonly pools?: PoolTable;
 }
 
@@ -74,18 +79,27 @@ export function readsFor<T>(reads: Reads<T>, op: T): readonly RuleField[] {
     return typeof reads === "function" ? reads(op) : reads;
 }
 
+/**
+ * What an operation leaves: the image alone, every item of the input having
+ * an outcome in it, or the image with the input items that have none. An
+ * empty image alone says every item is stuck.
+ */
+export type Outcome = Dd | { readonly image: Dd; readonly stuck: Dd };
+
+export const outcome = (image: Dd, stuck: Dd): Outcome => ({ image, stuck });
+
 export interface TransformHandler<K extends DispatchKey> {
     readonly reads: Reads<OpAt<K>>;
     /** The items the operation can leave of the items of `state`, each
      *  well-formed (within `u.wfWithImprint`). */
-    readonly apply: (op: OpAt<K>, state: Dd, ctx: MethodCtx) => Dd;
+    readonly apply: (op: OpAt<K>, state: Dd, ctx: MethodCtx) => Outcome;
     readonly split?: Split<OpAt<K>>;
 }
 
 /** A compound run of operations (steps.ts), stated as one image. */
 export interface CompoundHandler<K extends CompoundKind> {
     readonly reads: Reads<CompoundOf<K>>;
-    readonly apply: (run: CompoundOf<K>, state: Dd, ctx: MethodCtx) => Dd;
+    readonly apply: (run: CompoundOf<K>, state: Dd, ctx: MethodCtx) => Outcome;
     readonly split?: Split<CompoundOf<K>>;
 }
 

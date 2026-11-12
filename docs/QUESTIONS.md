@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q115.
+keeps it. New entries continue from Q123.
 
 ```
 ### Qn · probe|decision · open — title
@@ -327,7 +327,8 @@ modifier group, as two on one item may not?
 each time, and whether two of one group (Strength and Dexterity beside Dexterity and
 Intelligence) are ever offered together.
 **Assumed:** by spawn weight, one at a time, an option closing every modifier that shares
-a group with it. **Encoded in:** `cost/roll.ts` `offerSetsOf`.
+a group with it; so a named result is sure only among three or fewer, none sharing its
+group. **Encoded in:** `cost/roll.ts` `offerSetsOf`; `exact/ops/crafted.ts`.
 
 ### Q100 · probe · open — where a copied item's `Corrupted` goes beside `Fractured Item`
 
@@ -462,3 +463,92 @@ Orb; record refused, or used up with no change.
 **Assumed:** the checks do not look at the pool, so the present checker accepts the step;
 the exact checker finds no outcome there. **Encoded in:** `check/library.ts`
 `currencyOps`; `exact/reference/ops/fill.ts`.
+
+### Q115 · probe · open — a Divine Orb on a crafted modifier
+
+**Q:** [Divine Orb § Crafting](https://www.poewiki.net/wiki/Divine_Orb#Crafting) rerolls "all random explicit
+modifiers" and excepts fractured ones; it does not name a bench craft.
+**Probe:** a Rare with a bench craft of a value range; a Divine Orb; record whether the
+crafted value changes.
+**Assumed:** it is rerolled. **Encoded in:** `exact/reference/ops/misc.ts`.
+
+### Q116 · probe · open — how far a Tainted Divine Teardrop moves a modifier
+
+**Q:** [Tainted Divine Teardrop § Mechanics](https://www.poewiki.net/wiki/Tainted_Divine_Teardrop#Mechanics) stops
+at "a tier usually obtainable on that base type". The base's whole ladder, or the rows the
+item's level allows? Does a fractured modifier move? Does one that "does nothing" keep its
+value?
+**Probe:** a corrupted Rare of item level 30 with a top-rollable resistance, and one with
+a fractured modifier; teardrops; record tiers and values before and after.
+**Assumed:** the whole ladder; a fractured modifier moves and stays fractured; an unmoved
+value kept, a moved one rolled anew. **Encoded in:** `exact/ops/misc.ts`;
+`exact/reference/ops/misc.ts`.
+
+### Q117 · decision · open — one held imprint
+
+**Q:** an imprint is an item, and a craft may hold several; the checker holds one, and a
+new imprint replaces it.
+**Options:** one, the latest (recommended: a craft that needs two is refused, never
+wrongly accepted); or a stack of imprints.
+**Assumed:** one. **Encoded in:** `exact/reference/ops/misc.ts`.
+
+### Q118 · probe · open — unveiling a fractured veiled modifier, or one with nothing to offer
+
+**Q:** does a fractured veiled modifier
+([Fractured item § How to obtain](https://www.poewiki.net/wiki/Fractured_item#How_to_obtain)) stay fractured when
+unveiled? What does unveiling do when every result of its side shares a group with a
+modifier on the item?
+**Probe:** a dropped item with a fractured veiled modifier; unveil. A jewel whose few
+results are each blocked by a modifier on it; unveil; record refused, empty, or options
+that ignore the groups.
+**Assumed:** it stays fractured; with nothing to offer the veiled modifier stays and the
+step is accepted. **Encoded in:** `exact/reference/ops/crafted.ts`.
+
+### Q119 · probe · open — the Veiled Chaos Orb beside a veiled modifier it would keep
+
+**Q:** is it refused, and does it honour the protections as a Chaos Orb does?
+[Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions) has no row for it.
+**Probe:** a Rare with an unveiled prefix and "Prefixes Cannot Be Changed", and one with a
+fractured unveiled modifier; a Veiled Chaos Orb on each.
+**Assumed:** refused where a veiled or unveiled modifier is fractured or on a protected
+side; protections honoured. **Encoded in:** `check/library.ts` `VEILED_CHAOS`;
+`exact/reference/ops/crafted.ts`.
+
+### Q120 · probe · open — the bench under a metamod, and an Aspect
+
+**Q:** does "Remove Crafted Mods" take a crafted modifier on a protected side? Does
+"Cannot roll Attack Modifiers" bar an attack bench craft? Is a beastcrafted Aspect
+([Aspect of the Cat](https://www.poewiki.net/wiki/Aspect_of_the_Cat)) a crafted modifier?
+**Probe:** a Rare with the multimod, "Prefixes Cannot Be Changed" and a crafted prefix;
+remove crafted. A Rare with the cannot-roll metamod; craft an attack modifier. An item with
+an Aspect; bench-craft, then remove crafted.
+**Assumed:** every unfractured crafted modifier goes; the craft is not barred; an Aspect
+is not crafted. **Encoded in:** `check/library.ts` `BENCH_REMOVE`, `benchOps`,
+`beastAspectOps`; `exact/reference/ops/crafted.ts`.
+
+### Q121 · probe · open — an Orb of Dominance: its order, the item level, the other side
+
+**Q:** [§ Mechanics](https://www.poewiki.net/wiki/Orb_of_Dominance#Mechanics) upgrades one influenced modifier and
+removes one other. Which first? Does a tier upgrade below the top ignore the item level,
+as the elevation does? The data's elevated energy shield leech on Crusader gloves is a
+prefix and its top tier a suffix: with three prefixes, can the orb pick it?
+**Probe:** such gloves with one other Crusader suffix; orbs; record what went and what the
+other became, and on which side.
+**Assumed:** removed first, then one of those left is upgraded, whatever the item level;
+a fractured one is out of reach; a modifier whose elevated row has no room is not picked.
+**Encoded in:** `exact/ops/remove.ts`; `exact/reference/ops/remove.ts`.
+
+### Q122 · probe · open — removals beside a metamod
+
+**Q:** [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions): is an Eldritch
+Orb of Annulment on a protected side refused, or used up for nothing? Does a Tainted
+Exalted Orb's removal spare attack modifiers under "Cannot roll Attack Modifiers"? Under
+that metamod, [§ Examples](https://www.poewiki.net/wiki/Metamod#Examples) has the Bestiary's "add prefix remove
+suffix" add only what can roll even when the suffix it takes is the metamod: is the prefix
+added first?
+**Probe:** boots with the Exarch dominant and "Prefixes Cannot Be Changed", one orb. A
+corrupted Rare with the metamod and an attack modifier, tainted orbs. The page's bow, the
+recipe until it takes the metamod.
+**Assumed:** refused; not spared; the suffix goes first, so an attack prefix may follow.
+**Encoded in:** `check/library.ts` `eldritchAnnulOps`, `TAINTED_EXALT`, `beastAddOps`;
+`exact/ops/remove.ts`.

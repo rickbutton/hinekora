@@ -45,7 +45,12 @@ import { drawOne, eligible, hasRoom } from "./pools.js";
 
 const total = (item: CItem, ctx: RefCtx): number => countsOf(ctx, item).total;
 
-function add(op: FillOp, n: readonly [number, number], item: CItem, mc: RefMethodCtx): CItem[] {
+export function add(
+    op: FillOp,
+    n: readonly [number, number],
+    item: CItem,
+    mc: RefMethodCtx,
+): CItem[] {
     const { ctx, rules } = mc;
     const [lo, hi] = addDraws(n, item.rarity, ctx.base);
     const go = (x: CItem, k: number): CItem[] => {

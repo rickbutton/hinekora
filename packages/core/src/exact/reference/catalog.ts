@@ -28,7 +28,10 @@ import type {
     FossilSpec,
     BenchCraft,
     EldritchImplicitSpec,
+    Element,
     EssenceSpec,
+    HarvestChangePair,
+    HarvestChangeTable,
     ModSource,
 } from "../../model/sources.js";
 import { VEILED_PREFIX, VEILED_SUFFIX } from "../../model/veiled.js";
@@ -220,6 +223,21 @@ export interface CatalogOptions {
     readonly twoSided?: boolean;
     /** A fossil whose own row of another domain joins a resonator's pool. */
     readonly fossil?: boolean;
+    /** Fire, cold and lightning resistance suffixes the grove changes into one
+     *  another (`FireRes1`.., `ColdRes1`.., `LightningRes1`..), lightning's
+     *  ladder a tier short, and a bench row of fire and of cold. */
+    readonly harvest?: boolean;
+    /** With `influence`, what an Orb of Dominance reads: a Hunter ladder
+     *  (`HunterA1`, `HunterA2`) with a Shaper row of its type between them
+     *  (`ShaperA1`), a one-row Hunter type (`HunterB1`), and the elevated rows
+     *  of their groups, one per influence (`ElevatedHunterA`,
+     *  `ElevatedShaperA`, `ElevatedHunterB` with no number), each a type of
+     *  its own; `Hunter1`'s (`ElevatedHunter`) sits on the other side. */
+    readonly elevated?: boolean;
+    /** With `influence` and `addsTag`, a Hunter row the adder's tag also
+     *  weighs (`HunterGated1`): influenced only where no modifier adds the
+     *  tag; with `elevated`, its elevated row (`ElevatedHunterGated`). */
+    readonly influencedAdder?: boolean;
 }
 
 export interface Catalog {
@@ -393,6 +411,7 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
             implicitTags: ["influence_only"],
         });
         extra.push(influence);
+        if (options.elevated) extra.push(...dominanceRows(r, stem, base, influence));
     }
     const veiled: Mod[] = [];
     if (options.veiled) {
@@ -444,6 +463,33 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
                 ],
             }),
         );
+        if (options.influencedAdder) {
+            const stem = INFLUENCE_STEMS[base.itemClass];
+            if (stem === undefined || !options.influence) {
+                throw new Error("an influenced adder row needs an influence on the base");
+            }
+            const hunter = TagId(`${stem}_basilisk`);
+            const gen = r.pick(["prefix", "suffix"] as const);
+            extra.push(
+                modRow({
+                    id: "HunterGated1",
+                    type: "TypeHunterGated",
+                    gen,
+                    text: rowText(r, "HunterGated", 1, true),
+                    domain: base.domain,
+                    spawn: [
+                        { tag: TagId(tag), weight: 200 },
+                        { tag: hunter, weight: 400 },
+                        { tag: TAG_DEFAULT, weight: 0 },
+                    ],
+                }),
+            );
+            if (options.elevated) {
+                extra.push(
+                    elevatedRow(r, "ElevatedHunterGated", "TypeHunterGated", gen, hunter, base),
+                );
+            }
+        }
     }
     if (options.twoSided) {
         const levels = [1, r.pick([20, 45]), 68];
@@ -488,6 +534,9 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
         extra.push(metamod(k));
         benchCrafts.push(benchCraft(metamod(k), base.itemClass));
     }
+    const harvestChange = options.harvest
+        ? harvestResistances(extra, benchCrafts, base)
+        : undefined;
     const eldritch: EldritchImplicitSpec[] = [];
     if (options.eldritch) {
         const tag = ELDRITCH_CLASS_TAG[kind];
@@ -507,6 +556,7 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
         essences,
         eldritch,
         fossils,
+        ...(harvestChange !== undefined && { harvestChange }),
     });
     const byId = new Map(registry.catalog.map((m) => [m.id, m]));
     const held = (m: Mod): Mod => byId.get(m.id)!;
@@ -527,6 +577,116 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
         fossil: fossils[0],
         fossilRows: fossils.length > 0 ? extra.filter((m) => m.id === "Delve1").map(held) : [],
     };
+}
+
+const RESIST_LEVELS: Readonly<Record<string, readonly number[]>> = {
+    Fire: [1, 45, 82],
+    Cold: [1, 45, 82],
+    Lightning: [1, 45],
+};
+
+/** The rows and the grove's table of the `harvest` option, pushed onto `extra`. */
+function harvestResistances(
+    extra: Mod[],
+    benchCrafts: BenchCraft[],
+    base: Base,
+): HarvestChangeTable {
+    const elements = ["Fire", "Cold", "Lightning"] as const;
+    for (const e of elements) {
+        RESIST_LEVELS[e]!.forEach((minLevel, k) => {
+            const lo = 6 + 8 * k;
+            extra.push(
+                modRow({
+                    id: `${e}Res${k + 1}`,
+                    type: `Type${e}Res`,
+                    gen: "suffix",
+                    minLevel,
+                    text: `+(${lo}-${lo + 1})% to ${e} Resistance`,
+                    domain: base.domain,
+                }),
+            );
+        });
+        if (e !== "Lightning") {
+            const of = extra.find((m) => m.id === ModId(`${e}Res1`))!;
+            const row = benchRow(`Bench${e}Res`, of, `+(3-4)% to ${e} Resistance`);
+            extra.push(row);
+            benchCrafts.push(benchCraft(row, base.itemClass));
+        }
+    }
+    const element = (e: string): Element => e.toLowerCase() as Element;
+    const pairs = (from: (typeof elements)[number]): HarvestChangePair[] => [
+        {
+            from: TypeId(`Type${from}Res`),
+            to: Object.fromEntries(
+                elements
+                    .filter((e) => e !== from)
+                    .map((e) => [element(e), { type: TypeId(`Type${e}Res`), basis: "test" }]),
+            ),
+        },
+    ];
+    return {
+        resistance: { fire: pairs("Fire"), cold: pairs("Cold"), lightning: pairs("Lightning") },
+        damage: {},
+    };
+}
+
+/** An elevated row of the group: it rolls nowhere and names its
+ *  influence's tag at no weight, as the data's do. */
+function elevatedRow(
+    r: Rng,
+    id: string,
+    family: string,
+    gen: Gen,
+    tag: TagId,
+    base: Base,
+    numbered = true,
+): Mod {
+    return modRow({
+        id,
+        type: `Type${id}`,
+        gen,
+        families: [family],
+        text: rowText(r, id, 3, numbered),
+        domain: base.domain,
+        source: "elevated",
+        spawn: [
+            { tag, weight: 0 },
+            { tag: TAG_DEFAULT, weight: 0 },
+        ],
+    });
+}
+
+/** The rows of the `elevated` option. */
+function dominanceRows(r: Rng, stem: string, base: Base, hunter1: Mod): Mod[] {
+    const hunter = TagId(`${stem}_basilisk`);
+    const shaper = TagId(`${stem}_shaper`);
+    const sideA = r.pick(["prefix", "suffix"] as const);
+    const sideB = r.pick(["prefix", "suffix"] as const);
+    const row = (id: string, type: string, gen: Gen, minLevel: number, tag: TagId, k: number) =>
+        modRow({
+            id,
+            type,
+            gen,
+            minLevel,
+            families: [type === "TypeHunterB" ? "FamHunterB" : "FamHunterA"],
+            text: rowText(r, id, k, true),
+            domain: base.domain,
+            spawn: [
+                { tag, weight: 400 },
+                { tag: TAG_DEFAULT, weight: 0 },
+            ],
+        });
+    const other: Gen = hunter1.gen === "prefix" ? "suffix" : "prefix";
+    return [
+        row("HunterA1", "TypeHunterA", sideA, 1, hunter, 0),
+        row("ShaperA1", "TypeHunterA", sideA, 30, shaper, 1),
+        row("HunterA2", "TypeHunterA", sideA, 60, hunter, 2),
+        row("HunterB1", "TypeHunterB", sideB, 1, hunter, 0),
+        elevatedRow(r, "ElevatedHunterA", "FamHunterA", sideA, hunter, base),
+        elevatedRow(r, "ElevatedShaperA", "FamHunterA", sideA, shaper, base),
+        elevatedRow(r, "ElevatedHunterB", "FamHunterB", sideB, hunter, base, false),
+        elevatedRow(r, "ElevatedHunter", [...hunter1.families][0]!, other, hunter, base),
+    ];
 }
 
 /** One implicit per name, `Implicit<name>`, with a row at each of the six tiers

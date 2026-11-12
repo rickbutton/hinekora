@@ -121,9 +121,8 @@ from the unchanged state. That state is recovery, outside the equality of §1.
 
 Three runs of operations are one image, since each needs what the step before discards: a
 reforge with the modifiers it guarantees, an addition with the removal that must spare it,
-and a Harvest change, whose new modifier keeps the old one's tier and crafted mark. An
-operation that cannot act on an item leaves nothing of it, which only an `either` branch
-may do.
+and a Harvest change, whose new modifier keeps the old one's tier and crafted mark. An operation that cannot act on an item refuses the method there, as a failed check does;
+in an `either`, where no branch acts.
 
 The `Op`, `PoolSpec`, `Selector` and `Check` types and the sequences of `check/library.ts`
 and `check/methods.ts` do not change: the exact domain is a second interpreter of the same
@@ -175,7 +174,7 @@ An error can name an item that breaks the step, taken from a witness of the fail
 
 - One package at a time is built by an agent with a fresh context, from this document and
   a brief; a reviewer agent reads it before the next depends on it.
-- The present checker is not changed until package 10. New code imports the model, the
+- The present checker is not changed until package 10, but for data it ignores (a Harvest change's rows by source, a failure's kind). New code imports the model, the
   registry and the `Op` types; of `check/astate.ts` it imports the `RPred` type alone, which
   moves when that file goes.
 - A game rule comes from the wiki cache and is cited where it is encoded. An agent that
@@ -186,17 +185,17 @@ An error can name an item that breaks the step, taken from a witness of the fail
 
 ## 9. Packages
 
-| #   | Package                                                                        | State |
-| --- | ------------------------------------------------------------------------------ | ----- |
-| 1   | Reference interpreter: concrete items, tiny catalogues, set harness            | done  |
-| 2   | Decision-diagram engine                                                        | done  |
-| 3   | Universe: slots, values, order, well-formedness, from the registry and craft   | done  |
-| 4   | The state: conditions, narrowing, views                                        | done  |
-| 5   | Marks and rarity: `rarity`, `corrupt`, `influence`, `eldritch`, their checks   | done  |
-| 6   | Adding: `fill` over every pool and count, its checks                           | done  |
-| 7   | Removing: `strip`, `remove`, protections, `unprotect`, `keep`, metamod cases   | open  |
-| 8   | `lock`, bench crafts and crafted removal, veiled and unveil                    | open  |
-| 9   | `reroll`, `relax`, `elevate`, `strands`, `imprint`, `restore`, `either`, `end` | open  |
-| 10  | The driver on one state; whole-craft exactness tests; the switch               | open  |
-| 11  | Messages with a witness; renderer, cost layer, editors on the views            | open  |
-| 12  | Delete the present domain; docs; the soundness faults re-probed; limits tuned  | open  |
+| #   | Package                                                                       | State |
+| --- | ----------------------------------------------------------------------------- | ----- |
+| 1   | Reference interpreter: concrete items, tiny catalogues, set harness           | done  |
+| 2   | Decision-diagram engine                                                       | done  |
+| 3   | Universe: slots, values, order, well-formedness, from the registry and craft  | done  |
+| 4   | The state: conditions, narrowing, views                                       | done  |
+| 5   | Marks and rarity: `rarity`, `corrupt`, `influence`, `eldritch`, their checks  | done  |
+| 6   | Adding: `fill` over every pool and count, its checks                          | done  |
+| 7   | Removing: `strip`, `remove`, protections, `unprotect`, `keep`, metamod cases  | done  |
+| 8   | `lock`, bench crafts and crafted removal, veiled and unveil                   | done  |
+| 9   | `reroll`, `relax`, Harvest change, `strands`, `imprint`, `restore`            | done  |
+| 10  | The driver on one state; whole-craft exactness tests; the switch              | open  |
+| 11  | Messages with a witness; renderer, cost layer, editors on the views           | open  |
+| 12  | Delete the present domain; docs; the soundness faults re-probed; limits tuned | open  |

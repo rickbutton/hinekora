@@ -1,8 +1,9 @@
 /**
  * The reference frame: a method over explicit items, one at a time, with the
  * semantics exact/method.ts states. Each item reads its rules from its own
- * modifiers; a `require` an item reached by the method breaks is reported,
- * and the method does not apply to that item. Test support.
+ * modifiers; a `require` an item reached by the method breaks, or an
+ * operation that cannot act on it, is reported, and the method does not
+ * apply to that item. Test support.
  */
 import type { Op } from "../../check/ops.js";
 import type { TypeId } from "../../model/ids.js";
@@ -44,7 +45,8 @@ export interface RefMethodRun {
     readonly state: ItemSet;
     /** Every item that passed the checks was consumed by an `end`. */
     readonly ended: boolean;
-    /** By the index of each `require`, the items it refused; absent where none. */
+    /** By the index of each `require`, the items it refused, and of each
+     *  operation, the items it could not act on; absent where none. */
     readonly failing: ReadonlyMap<number, ItemSet>;
     /** As `XTransferResult.under`. */
     readonly under?: readonly TypeId[];
@@ -147,8 +149,8 @@ export function refRunMethod(
     };
     if (passed.size > 0) return { ...refusal, state: passed, ended: false };
     if (run.reachedEnd) return { ...refusal, state: start, ended: true };
-    const step = steps.find((s): s is Check => s.kind === "require" && s.at === first)!;
-    const repair = checkOf(handlers, step).repair;
+    const step = steps.find((s): s is Check => s.kind === "require" && s.at === first);
+    const repair = step === undefined ? undefined : checkOf(handlers, step).repair;
     const mctx = (item: CItem): RefMethodCtx => ({
         ctx,
         rules: rulesOf(effectsOn(ctx, item), ops),
@@ -162,7 +164,7 @@ export function refRunMethod(
                   failing
                       .get(first)!
                       .items()
-                      .flatMap((x) => repair(step.check as never, x, mctx(x))),
+                      .flatMap((x) => repair(step!.check as never, x, mctx(x))),
               );
     if (repaired.size === 0) return { ...refusal, state: start, ended: false };
     const rest = refRunMethod(repaired, ops.slice(first + 1), ctx, handlers);
@@ -219,41 +221,45 @@ function runItem(
                 mctx = { ...mctx, rules: keeping(mctx.rules, step.op.gen) };
                 break;
             default:
-                cur = cur.flatMap((x) => exec(step, x, mctx, handlers, run, false));
+                cur = cur.flatMap((x) => {
+                    const r = exec(step, x, mctx, handlers, run);
+                    if (r.stuck) run.failing.set(step.at, [...(run.failing.get(step.at) ?? []), x]);
+                    return r.items;
+                });
         }
     }
     return cur;
 }
 
-/** The outcomes of one step on one item. */
+/** The outcomes of one step on one item, and whether it has none because
+ *  the step cannot act on it. */
 function exec(
     step: Step,
     item: CItem,
     ctx: RefMethodCtx,
     handlers: RefHandlers,
     run: Run,
-    branch: boolean,
-): CItem[] {
+): { items: CItem[]; stuck: boolean } {
     let r: readonly CItem[];
     let who: string;
     switch (step.kind) {
         case "end":
             run.reachedEnd = true;
-            return [];
+            return { items: [], stuck: false };
         case "either": {
+            // Stuck only where no branch has an outcome for the item and none
+            // ended it; within a branch a path without one goes.
             const ends = run.reachedEnd;
             run.reachedEnd = false;
-            const out = step.branches.flatMap((b) =>
+            const items = step.branches.flatMap((b) =>
                 b.reduce<CItem[]>(
-                    (xs, s) => xs.flatMap((x) => exec(s, x, ctx, handlers, run, true)),
+                    (xs, s) => xs.flatMap((x) => exec(s, x, ctx, handlers, run).items),
                     [item],
                 ),
             );
-            if (out.length === 0 && !run.reachedEnd && !branch) {
-                throw new InternalError("no branch of an either has an outcome or ends");
-            }
+            const stuck = items.length === 0 && !run.reachedEnd;
             run.reachedEnd ||= ends;
-            return out;
+            return { items, stuck };
         }
         case "single": {
             const key = dispatchKey(step.op);
@@ -277,7 +283,5 @@ function exec(
         default:
             throw new InternalError(`a "${step.kind}" inside a branch`);
     }
-    if (r.length === 0 && !branch)
-        throw new InternalError(`${who} leaves no outcome on an item the checks passed`);
-    return [...r];
+    return { items: [...r], stuck: r.length === 0 };
 }

@@ -19,6 +19,7 @@ import {
     type CompoundTable,
     InternalError,
     type MethodCtx,
+    NotImplementedError,
     type RuleField,
     type TransformHandler,
     type TransformTable,
@@ -93,22 +94,36 @@ function byRarity(u: Universe, state: Dd): [Rarity, Dd][] {
 }
 
 /** `add`: from `lo` to `hi` draws, each from the item as it stands; an item
- *  on which the draws run dry before `lo` has no outcome. */
-function add(op: FillOp, n: readonly [number, number], state: Dd, ctx: MethodCtx): Dd {
+ *  on which the draws run dry before `lo` has no outcome, reported stuck. */
+export function add(
+    op: FillOp,
+    n: readonly [number, number],
+    state: Dd,
+    ctx: MethodCtx,
+): { image: Dd; stuck: Dd } {
     const { u } = ctx;
     const m = u.dd;
     const dc = drawCtxOf(ctx);
     const out: Dd[] = [];
+    let stuck = m.EMPTY;
     for (const [rarity, part] of byRarity(u, state)) {
         const [lo, hi] = addDraws(n, rarity, u.base);
         let cur = part;
         for (let j = 0; j < hi && cur !== m.EMPTY; j++) {
             if (j >= lo) out.push(cur);
-            cur = drawOne(cur, op.pool, dc).drawn;
+            const d = drawOne(cur, op.pool, dc);
+            if (j < lo && d.dry !== m.EMPTY) {
+                // A path dry after a draw is an item the add made, not one it
+                // was given: which input it came from is not kept.
+                if (j > 0)
+                    throw new NotImplementedError("an add whose floor is more than one draw");
+                stuck = m.or(stuck, d.dry);
+            }
+            cur = d.drawn;
         }
         out.push(cur);
     }
-    return unionOf(u, out);
+    return { image: unionOf(u, out), stuck };
 }
 
 export type ReforgeMode = "auto" | "loop" | "closure";

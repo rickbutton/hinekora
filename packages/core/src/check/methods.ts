@@ -277,9 +277,19 @@ function harvestChange(
                   return row.ok ? [row.value] : [];
               });
     const rows = new Set<Mod>();
+    // What each row the modifier may be becomes, for the exact checker.
+    const bySource = new Map<ModId, Mod[]>();
+    const becomes = (was: Mod, m: Mod): void => {
+        rows.add(m);
+        const to = bySource.get(was.id);
+        if (to === undefined) bySource.set(was.id, [m]);
+        else if (!to.includes(m)) to.push(m);
+    };
     // A row the modifier may be has no row of the target to become.
     let stuck = false;
     for (const was of mayBe) {
+        // A row it gives none for has an empty entry: no target, said so.
+        if (!bySource.has(was.id)) bySource.set(was.id, []);
         if (!isNatural(was)) {
             // A row another source placed becomes that source's counterpart row,
             // and that alone for an Incursion modifier (Modifier § Harvest
@@ -291,11 +301,11 @@ function harvestChange(
             // the item's level, so a counterpart above it is still a result,
             // and so is a natural row above it.
             const twins = twinRows(was, to.value, a, tags, registry);
-            for (const m of twins) rows.add(m);
+            for (const m of twins) becomes(was, m);
             const alone =
                 was.source === "bench" ||
                 (was.name !== undefined && INCURSION_AFFIXES.has(was.name));
-            if (twins.length === 0 || !alone) for (const m of targets) rows.add(m);
+            if (twins.length === 0 || !alone) for (const m of targets) becomes(was, m);
             continue;
         }
         // The tier is kept (Modifier § Harvest Crafting): the target's row at
@@ -312,16 +322,20 @@ function harvestChange(
             // A row the base does not roll is an essence's, and becomes one
             // an essence places on the item's class.
             if (same === undefined || (!onBase && !essenceRows.has(same.id))) stuck = true;
-            else rows.add(same);
+            else becomes(was, same);
         } else if (!onBase || ladderTo.length === 0) {
             stuck = true;
         } else {
             // The rank names no one row: any of the ladder's.
-            for (const m of ladderTo) rows.add(m);
+            for (const m of ladderTo) becomes(was, m);
         }
     }
     if (stuck || rows.size === 0) return refuse(`"${toName}" cannot roll on this item.`);
-    return harvestChangeOps(from.value, registry.typeLabel(from.value), [...rows]);
+    return harvestChangeOps(from.value, registry.typeLabel(from.value), [...rows]).map((op) =>
+        op.kind === "fill" && op.pool.kind === "rows" && op.pool.replacing === from.value
+            ? { ...op, pool: { ...op.pool, bySource } }
+            : op,
+    );
 }
 
 /** A resonator: the fossils resolved, distinct, at most four, their rows looked up. */

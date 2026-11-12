@@ -15,6 +15,7 @@ import {
     type Handlers,
     InternalError,
     NotImplementedError,
+    outcome,
     type Reads,
     readsFor,
     type RuleField,
@@ -77,22 +78,47 @@ describe("the families", () => {
             for (const k of Object.keys(h.checks))
                 expect(CHECK_OWNERS[k as Check["kind"]], k).toBe(family);
         }
-        // A handler reading by its operation is read on each count of a fill.
-        const samples = (k: string): unknown[] =>
-            k.startsWith("fill:")
-                ? (["add", "reforge", "within"] as const).map((count) => ({
-                      kind: "fill",
-                      pool: { kind: k.slice(5) },
-                      count: { kind: count, n: [1, 1] },
-                  }))
-                : [undefined];
+        // A handler reading by its operation is read on a real one of each
+        // shape it may hold; a list ignores it.
+        const random = [true, false].map((honourCannotRoll) => ({
+            kind: "random",
+            honourCannotRoll,
+        }));
+        const selectors = [
+            ...random,
+            { kind: "crafted", replacing: true },
+            { kind: "type", type: TypeId("TypeX") },
+            { kind: "influenced" },
+        ];
+        const fillOf = (pool: string, count: string): unknown => ({
+            kind: "fill",
+            pool: { kind: pool },
+            count: { kind: count, n: [1, 1] },
+        });
+        const samples = (k: string, reads: Reads<unknown>): unknown[] => {
+            if (typeof reads !== "function") return [undefined];
+            if (k.startsWith("fill:")) {
+                return ["add", "reforge", "within"].map((count) => fillOf(k.slice(5), count));
+            }
+            if (k === "remove:random")
+                return random.map((selector) => ({ kind: "remove", selector }));
+            if (k === "removable") return selectors.map((selector) => ({ kind: k, selector }));
+            if (k === "addAnother") {
+                return random.map((selector) => ({
+                    kind: k,
+                    fill: fillOf("tagged", "add"),
+                    remove: { kind: "remove", selector },
+                }));
+            }
+            throw new Error(`no sample operation for ${k}, whose reads are by operation`);
+        };
         for (const table of ["transforms", "compounds", "checks"] as const) {
             const exact = HANDLERS[table] as Record<string, { reads: Reads<unknown> }>;
             const ref = REF_HANDLERS[table] as Record<string, { reads: Reads<unknown> }>;
             expect(Object.keys(exact).sort()).toEqual(Object.keys(ref).sort());
             for (const k of Object.keys(exact)) {
                 expect(typeof exact[k]!.reads, k).toBe(typeof ref[k]!.reads);
-                for (const op of samples(k)) {
+                for (const op of samples(k, exact[k]!.reads)) {
                     expect([...readsFor(exact[k]!.reads, op)].sort(), k).toEqual(
                         [...readsFor(ref[k]!.reads, op)].sort(),
                     );
@@ -101,23 +127,24 @@ describe("the families", () => {
         }
     });
 
-    it("refuse what no family implements yet, by name", () => {
+    it("implement every operation, pool, selector, run and check in both frames", () => {
+        for (const h of [HANDLERS, REF_HANDLERS] as const) {
+            for (const [k, family] of Object.entries(OP_OWNERS)) {
+                if (family === "frame") continue;
+                expect((h.transforms as Record<string, unknown>)[k], k).toBeDefined();
+            }
+            for (const k of Object.keys(COMPOUND_OWNERS)) {
+                expect((h.compounds as Record<string, unknown>)[k], k).toBeDefined();
+            }
+            for (const k of Object.keys(CHECK_OWNERS)) {
+                expect((h.checks as Record<string, unknown>)[k], k).toBeDefined();
+            }
+        }
         const cat = generateCatalog(6000, { types: 2 });
-        const u = harnessUniverse(cat);
-        const s = fromItems(u, [cItem()])!;
-        expect(() => runMethod(s, [{ kind: "imprint" }])).toThrow(NotImplementedError);
-        expect(() => runMethod(s, [req({ kind: "hasImprint" })])).toThrow(/"hasImprint"/);
-        const type = cat.natural[0]!.type;
-        expect(() =>
-            runMethod(s, [
-                { kind: "remove", selector: { kind: "type", type } },
-                {
-                    kind: "fill",
-                    pool: { kind: "rows", mods: [], replacing: type },
-                    count: { kind: "add", n: [1, 1] },
-                },
-            ]),
-        ).toThrow(/"change"/);
+        const s = fromItems(harnessUniverse(cat), [cItem()])!;
+        const none: Handlers = { ...HANDLERS, transforms: {}, checks: {} };
+        expect(() => runMethod(s, [corrupt], none)).toThrow(NotImplementedError);
+        expect(() => runMethod(s, [req({ kind: "hasImprint" })], none)).toThrow(/"hasImprint"/);
     });
 });
 
@@ -272,28 +299,100 @@ describe("the method frame", () => {
         expect(runMethod(mixed, [req({ kind: "notCorrupted" }), end]).ended).toBe(true);
     });
 
-    it("raises an internal error for an operation that cannot act outside an either", () => {
-        const cannot: Handlers = {
+    // A corrupt that cannot act on a Normal item, in both frames.
+    const normal = (v: typeof u) => v.dd.slotIn(v.scalar("rarity"), [v.rarityValue("normal")]);
+    const picky = {
+        exact: {
             ...HANDLERS,
             transforms: {
                 ...HANDLERS.transforms,
-                corrupt: { reads: [], apply: (_op, _s, { u: v }) => v.dd.EMPTY },
+                corrupt: {
+                    reads: [],
+                    apply: (_op, d, { u: v }) =>
+                        outcome(
+                            v.dd.set(v.dd.diff(d, normal(v)), v.scalar("corrupted"), 1),
+                            v.dd.and(d, normal(v)),
+                        ),
+                },
+            },
+        } satisfies Handlers,
+        reference: {
+            ...REF_HANDLERS,
+            transforms: {
+                ...REF_HANDLERS.transforms,
+                corrupt: {
+                    reads: [],
+                    apply: (_op, item) =>
+                        item.rarity === "normal" ? [] : [{ ...item, corrupted: true }],
+                },
+            },
+        } satisfies RefHandlers,
+    };
+    const two = (): ReturnType<typeof fromItems> =>
+        fromItems(u, [cItem(), cItem({ rarity: "magic" })]);
+
+    it("refuses a method on the items an operation cannot act on, as both frames see them", () => {
+        exact([corrupt], picky);
+        exact([either([corrupt], [])], picky);
+        exact([either([corrupt], [corrupt])], picky);
+        exact([either([corrupt], [end])], picky);
+        exact([req({ kind: "notCorrupted" }), corrupt], picky);
+        const r = runMethodTrace(two()!, [corrupt], picky.exact);
+        expect(r.result).toMatchObject({
+            ok: false,
+            failure: { kind: "noOutcome", op: "corrupt", sure: false },
+        });
+        expect(listItems(u, r.failing.get(0)!).items()).toEqual([cItem()]);
+        const all = fromItems(u, [cItem()])!;
+        expect(runMethod(all, [corrupt], picky.exact)).toEqual({
+            ok: false,
+            failure: { kind: "noOutcome", op: "corrupt", sure: true },
+            state: all,
+        });
+    });
+
+    it("goes on from the items an operation acts on", () => {
+        const r = runMethod(two()!, [corrupt], picky.exact);
+        expect(listItems(u, r.state.dd).items()).toEqual([
+            cItem({ rarity: "magic", corrupted: true }),
+        ]);
+    });
+
+    it("takes no refusal from an either branch while another acts", () => {
+        const s = two()!;
+        expect(runMethod(s, [either([corrupt], [])], picky.exact).ok).toBe(true);
+        const both = runMethod(s, [either([corrupt], [corrupt])], picky.exact);
+        expect(both.ok === false && both.failure).toEqual({
+            kind: "noOutcome",
+            op: "either",
+            sure: false,
+        });
+        expect(
+            runMethod(fromItems(u, [cItem()])!, [either([corrupt], [end])], picky.exact).ended,
+        ).toBe(true);
+    });
+
+    it("reports the earliest refusing step, a check or an operation", () => {
+        const s = two()!;
+        const later = runMethod(s, [corrupt, req({ kind: "rarity", rarity: "rare" })], picky.exact);
+        expect(later.ok === false && later.failure.kind).toBe("noOutcome");
+        const earlier = runMethod(s, [req({ kind: "notMagic" }), corrupt], picky.exact);
+        expect(earlier.ok === false && earlier.failure.kind).toBe("magicRefused");
+        exact([corrupt, req({ kind: "rarity", rarity: "rare" })], picky);
+    });
+
+    it("raises an internal error for a handler that loses items it does not report", () => {
+        const loses: Handlers = {
+            ...HANDLERS,
+            transforms: {
+                ...HANDLERS.transforms,
+                corrupt: {
+                    reads: [],
+                    apply: (_op, d, { u: v }) => outcome(v.dd.EMPTY, v.dd.and(d, normal(v))),
+                },
             },
         };
-        const refCannot: RefHandlers = {
-            ...REF_HANDLERS,
-            transforms: { ...REF_HANDLERS.transforms, corrupt: { reads: [], apply: () => [] } },
-        };
-        const s = fromItems(u, [cItem()])!;
-        const items = ItemSet.of([cItem()]);
-        expect(() => runMethod(s, [corrupt], cannot)).toThrow(InternalError);
-        expect(() => refRunMethod(items, [corrupt], cat.ctx, refCannot)).toThrow(InternalError);
-        expect(runMethod(s, [either([corrupt], [rarity("magic")])], cannot).ok).toBe(true);
-        expect(() => runMethod(s, [either([corrupt], [corrupt])], cannot)).toThrow(InternalError);
-        expect(() =>
-            refRunMethod(items, [either([corrupt], [corrupt])], cat.ctx, refCannot),
-        ).toThrow(InternalError);
-        expect(runMethod(s, [either([corrupt], [end])], cannot).ended).toBe(true);
+        expect(() => runMethod(two()!, [corrupt], loses)).toThrow(InternalError);
     });
 
     it("is told apart from a handler that is wrong", () => {
@@ -609,7 +708,8 @@ describe("the steps of a method", () => {
         };
         const d = compareMethodOn(u, cat.ctx, states, ops, { exact, reference: ref });
         expect(d, d).toBe("");
-        expect(() => runMethod(fromItems(u, states[0]!)!, ops)).toThrow(/"change"/);
+        const none: Handlers = { ...HANDLERS, compounds: {} };
+        expect(() => runMethod(fromItems(u, states[0]!)!, ops, none)).toThrow(/"change"/);
     });
 });
 

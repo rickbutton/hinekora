@@ -127,17 +127,18 @@ describe("how many modifiers a fill lays", () => {
         expect(out.equals(ItemSet.of([cItem({ rarity: "magic" })]))).toBe(true);
     });
 
-    it("an add on a full item has no outcome, which leaves only an either's other branch", () => {
+    it("an add on a full item has no outcome: a refusal, but for an either's other branch", () => {
         const full = rare([...P, ...S].map((m) => cMod(m.id, 1)));
         const ops: Op[] = [
             { kind: "either", branches: [[fill(natural, add())], [{ kind: "corrupt" }]] },
         ];
         const out = leaves(w, [full], ops);
         expect(out.equals(ItemSet.of([{ ...full, corrupted: true }]))).toBe(true);
-        // Outside an either, a check of the method must have refused it.
-        expect(() => runMethod(fromItems(w.u, [full])!, [fill(natural, add())])).toThrow(
-            /leaves no outcome/,
-        );
+        // Outside an either, the add refuses the method on it.
+        expect(runMethod(fromItems(w.u, [full])!, [fill(natural, add())])).toMatchObject({
+            ok: false,
+            failure: { kind: "noOutcome", op: "fill", sure: true },
+        });
     });
 
     it("under a protected side, a reforge lays one at least, or reaches the count", () => {

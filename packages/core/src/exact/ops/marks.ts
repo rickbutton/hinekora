@@ -21,6 +21,8 @@ import {
     type CheckTable,
     type CompoundTable,
     InternalError,
+    type Outcome,
+    outcome,
     type TransformTable,
 } from "./handler.js";
 
@@ -152,9 +154,9 @@ function withoutImplicit(u: Universe, state: Dd, side: EldritchSide): Dd {
 /** An Orb of Conflict: one side up a tier, the other down, a Lesser lowered
  *  being removed (Orb of Conflict); either way round, since neither chance is
  *  nil (QUESTIONS.md Q96). Assumed, the wiki silent: a Perfect raised stays
- *  Perfect. The wording, so the type, stays. An item without both has no
- *  outcome: its check refuses it. */
-function conflict(u: Universe, state: Dd): Dd {
+ *  Perfect. The wording, so the type, stays. An item without both cannot
+ *  take it, reported stuck; its check refuses it first. */
+function conflict(u: Universe, state: Dd): Outcome {
     const m = u.dd;
     const exarch = u.scalar("exarchTier");
     const eater = u.scalar("eaterTier");
@@ -174,7 +176,8 @@ function conflict(u: Universe, state: Dd): Dd {
             }
         }
     }
-    return wellFormed(u, out, "an Orb of Conflict");
+    const both = m.and(m.diff(m.ALL, m.slotIn(exarch, [0])), m.diff(m.ALL, m.slotIn(eater, [0])));
+    return outcome(wellFormed(u, out, "an Orb of Conflict"), m.diff(state, both));
 }
 
 export const transforms: TransformTable = {

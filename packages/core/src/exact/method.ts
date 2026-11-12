@@ -13,6 +13,10 @@
  *   break it are refused and the method goes on from those that pass. Any
  *   refused item refuses the method, which is all or nothing; the refusal is
  *   worded once, over every case together.
+ * - An operation that cannot act on an item it reaches (ops/handler.ts
+ *   `Outcome`) refuses the method on that item's path as a failed check does
+ *   (`noOutcome`); the earliest refusing step of the sequence is the one
+ *   reported, a check and an operation ordered by their place.
  * - The craft ends when every item that passed the checks was consumed by an
  *   `end`.
  * - Recovery, outside the equality of §1: when no item passes, the craft goes
@@ -34,6 +38,7 @@ import {
     InternalError,
     type MethodCtx,
     NotImplementedError,
+    type Outcome,
     readsFor,
     restrictRules,
     type TransformHandler,
@@ -68,8 +73,9 @@ export type XTransferResult = (
 
 export interface MethodRun {
     readonly result: XTransferResult;
-    /** By the index of each `require`, the items it refused over every case;
-     *  absent where it refused none. */
+    /** By the index of each `require`, the items it refused, and of each
+     *  operation (a compound run's first, an `either`'s own), the items it
+     *  could not act on, over every case; absent where none. */
     readonly failing: ReadonlyMap<number, Dd>;
 }
 
@@ -149,11 +155,13 @@ export function metamodCases(s: XItem, reads: ReadonlySet<RuleField>): readonly 
     return [...merged.values()];
 }
 
-/** What one `require` saw over the parts run so far. */
+/** What one step refused over the parts run so far: a check's failing items,
+ *  an operation's stuck ones. */
 interface Judged {
     reached: Dd;
     failing: Dd;
-    verdict: CheckVerdict;
+    word: CheckVerdict["word"];
+    repair?: CheckVerdict["repair"];
 }
 
 interface CaseRun {
@@ -189,7 +197,10 @@ export function runMethodTrace(
                 const held = judged.get(i);
                 if (held === undefined) judged.set(i, { ...j });
                 else {
-                    if (held.failing === m.EMPTY && j.failing !== m.EMPTY) held.verdict = j.verdict;
+                    if (held.failing === m.EMPTY && j.failing !== m.EMPTY) {
+                        held.word = j.word;
+                        if (j.repair !== undefined) held.repair = j.repair;
+                    }
                     held.reached = m.or(held.reached, j.reached);
                     held.failing = m.or(held.failing, j.failing);
                 }
@@ -213,7 +224,7 @@ export function runMethodTrace(
         };
     }
     const j = judged.get(first)!;
-    const failure = j.verdict.word({ u, dd: j.failing }, { u, dd: j.reached });
+    const failure = j.word({ u, dd: j.failing }, { u, dd: j.reached });
     const common = (cs: readonly MetamodCase[]): TypeId[] =>
         cs
             .map((c) => c.carriers)
@@ -227,7 +238,7 @@ export function runMethodTrace(
     };
     if (out !== m.EMPTY) return { result: { ...refusal, state: { u, dd: out } }, failing };
     if (reachedEnd) return { result: { ...refusal, state, ...ended }, failing };
-    const repaired = j.verdict.repair?.(j.failing) ?? m.EMPTY;
+    const repaired = j.repair?.(j.failing) ?? m.EMPTY;
     if (repaired === m.EMPTY) return { result: { ...refusal, state }, failing };
     const rest = runMethodTrace({ u, dd: repaired }, ops.slice(first + 1), handlers).result;
     return {
@@ -334,7 +345,7 @@ function runCase(
         u,
         rules: initial,
         start,
-        ...(handlers.pools !== undefined && { pools: handlers.pools }),
+        pools: handlers.pools ?? HANDLERS.pools ?? {},
     };
     const run: CaseRun = { out: m.EMPTY, reachedEnd: false, judged: new Map() };
     let cur = start;
@@ -352,7 +363,12 @@ function runCase(
                     ),
                 });
                 const fail = m.diff(cur, verdict.pass);
-                run.judged.set(step.at, { reached: cur, failing: fail, verdict });
+                run.judged.set(step.at, {
+                    reached: cur,
+                    failing: fail,
+                    word: verdict.word,
+                    ...(verdict.repair !== undefined && { repair: verdict.repair }),
+                });
                 cur = m.and(cur, verdict.pass);
                 break;
             }
@@ -362,46 +378,79 @@ function runCase(
             case "keep":
                 ctx = { ...ctx, rules: keeping(ctx.rules, step.op.gen) };
                 break;
-            default:
-                cur = exec(step, cur, ctx, handlers, run, false);
+            default: {
+                const r = exec(step, cur, ctx, handlers, run);
+                const op = labelOf(step);
+                run.judged.set(step.at, {
+                    reached: cur,
+                    failing: r.stuck,
+                    word: (failing, all) => ({
+                        kind: "noOutcome",
+                        op,
+                        sure: failing.dd === all.dd,
+                    }),
+                });
+                cur = r.image;
+            }
         }
     }
     run.out = cur;
     return run;
 }
 
-/** The image of one step; an item may go without an outcome only in a
- *  branch of an `either` or through an `end`. */
-function exec(
-    step: Step,
-    state: Dd,
-    ctx: MethodCtx,
-    handlers: Handlers,
-    run: CaseRun,
-    branch: boolean,
-): Dd {
+/** The operation's kind, as a refusal names it. */
+function labelOf(step: Step): string {
+    switch (step.kind) {
+        case "single":
+            return step.op.kind;
+        case "compound":
+            return step.compound.kind;
+        default:
+            return step.kind;
+    }
+}
+
+interface Image {
+    readonly image: Dd;
+    /** The input items with no outcome. */
+    readonly stuck: Dd;
+}
+
+/** The image of one step and the items of its input it cannot act on. */
+function exec(step: Step, state: Dd, ctx: MethodCtx, handlers: Handlers, run: CaseRun): Image {
     const m = ctx.u.dd;
-    if (state === m.EMPTY) return state;
-    let r: Dd;
+    if (state === m.EMPTY) return { image: state, stuck: state };
+    let r: Outcome;
     let who: string;
     switch (step.kind) {
         case "end":
             run.reachedEnd = true;
-            return m.EMPTY;
+            return { image: m.EMPTY, stuck: m.EMPTY };
         case "either": {
-            const ends = run.reachedEnd;
-            run.reachedEnd = false;
-            r = m.EMPTY;
+            // An item is stuck only where no branch acts on it: a branch acts
+            // on the items its first step does not leave stuck, and a later
+            // step that leaves some stuck cannot be traced back to the input.
+            let image = m.EMPTY;
+            let acted = m.EMPTY;
+            let traced = true;
             for (const b of step.branches) {
-                let x = state;
-                for (const s of b) x = exec(s, x, ctx, handlers, run, true);
-                r = m.or(r, x);
+                let cur = state;
+                b.forEach((s, k) => {
+                    const x = exec(s, cur, ctx, handlers, run);
+                    if (k === 0) acted = m.or(acted, m.diff(state, x.stuck));
+                    else if (x.stuck !== m.EMPTY) traced = false;
+                    cur = x.image;
+                });
+                if (b.length === 0) acted = state;
+                image = m.or(image, cur);
             }
-            if (r === m.EMPTY && !run.reachedEnd && !branch) {
-                throw new InternalError("no branch of an either has an outcome or ends");
+            const stuck = m.diff(state, acted);
+            if (stuck !== m.EMPTY && !traced) {
+                throw new InternalError(
+                    "a branch's later step has no outcome on items no branch acts on",
+                );
             }
-            run.reachedEnd ||= ends;
-            return r;
+            return { image, stuck };
         }
         case "single": {
             const key = dispatchKey(step.op);
@@ -425,7 +474,10 @@ function exec(
         default:
             throw new InternalError(`a "${step.kind}" inside a branch`);
     }
-    if (r === m.EMPTY && !branch)
-        throw new InternalError(`${who} leaves no outcome on items the checks passed`);
-    return r;
+    if (!("image" in r)) return { image: r, stuck: r === m.EMPTY ? state : m.EMPTY };
+    const stuck = m.and(r.stuck, state);
+    if (r.image === m.EMPTY && stuck !== state) {
+        throw new InternalError(`${who} leaves items without an outcome it does not report`);
+    }
+    return { image: r.image, stuck };
 }

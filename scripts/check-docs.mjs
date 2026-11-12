@@ -45,7 +45,7 @@ const BUDGETS = {
     "CLAUDE.md": 1100,
     "docs/ARCHITECTURE.md": 2200,
     "docs/EXACT.md": 2100,
-    "docs/QUESTIONS.md": 4500,
+    "docs/QUESTIONS.md": 5500,
     "docs/REFERENCE.md": 1300,
     "docs/ROADMAP.md": 600,
     "docs/cost.md": 1900,

@@ -783,3 +783,63 @@ describe("the economy snapshot", () => {
         }
     });
 });
+
+describe("the elevated row of an influence modifier", () => {
+    // The armour pieces an Orb of Dominance takes (Orb of Dominance § Mechanics).
+    const armour = ["Titan Gauntlets", "Titan Greaves", "Royal Burgonet", "Vaal Regalia"].map(base);
+    const positive = (m: (typeof registry.catalog)[number], tags: ReadonlySet<TagId>) =>
+        m.spawn.some((e) => e.weight > 0 && tags.has(e.tag));
+
+    it("is one row for every top-tier influence row with an elevated row of its group", () => {
+        let tops = 0;
+        let ambiguous = 0;
+        const seen = new Set<string>();
+        for (const b of armour) {
+            const tags = new Set(INFLUENCES.flatMap((i) => [...registry.influenceTags(b, i)]));
+            for (const row of registry.catalog) {
+                if (row.source === "elevated" || row.domain !== b.domain || seen.has(row.id))
+                    continue;
+                if (
+                    !positive(row, tags) ||
+                    row.spawn.some((e) => e.weight > 0 && b.tags.has(e.tag))
+                )
+                    continue;
+                seen.add(row.id);
+                const own = new Set(
+                    row.spawn.filter((e) => e.weight > 0 && tags.has(e.tag)).map((e) => e.tag),
+                );
+                const higher = registry.catalog.some(
+                    (m) =>
+                        m.type === row.type &&
+                        m.source !== "elevated" &&
+                        m.minLevel > row.minLevel &&
+                        positive(m, own),
+                );
+                if (higher) continue;
+                const candidates = registry.catalog.filter(
+                    (m) =>
+                        m.source === "elevated" &&
+                        !/^OLD/i.test(m.id) &&
+                        [...m.families].some((f) => row.families.has(f)) &&
+                        m.spawn.some((e) => own.has(e.tag)),
+                );
+                if (candidates.length === 0) continue;
+                tops++;
+                if (candidates.length > 1) ambiguous++;
+                const e = registry.elevatedOf(row);
+                expect(e && candidates.includes(e), row.id).toBe(true);
+            }
+        }
+        expect(tops).toBe(221);
+        expect(ambiguous).toBe(51);
+    });
+
+    it("is named for the row, else of its type", () => {
+        const of = (id: string) =>
+            registry.elevatedOf(registry.catalog.find((m) => m.id === id)!)?.id;
+        expect(of("ImmuneToChilledGroundUber1")).toBe("ImmuneToChilledGroundUberMaven");
+        expect(of("MaximumEnergyShieldLeechRateSuffixInfluence1")).toBe(
+            "MaximumEnergyShieldLeechRateInfluenceMaven_",
+        );
+    });
+});

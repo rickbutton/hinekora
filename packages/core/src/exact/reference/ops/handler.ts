@@ -24,7 +24,8 @@ export interface RefMethodCtx {
 
 export interface RefTransformHandler<K extends DispatchKey> {
     readonly reads: Reads<OpAt<K>>;
-    /** The items the operation can leave of `item`; none where it cannot act. */
+    /** The items the operation can leave of `item`; none where it cannot act,
+     *  which the frame reports as the item stuck (ops/handler.ts `Outcome`). */
     readonly apply: (op: OpAt<K>, item: CItem, ctx: RefMethodCtx) => readonly CItem[];
 }
 

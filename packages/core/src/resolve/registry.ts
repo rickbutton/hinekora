@@ -9,7 +9,12 @@ import { isCraftedOn } from "../model/capacity.js";
 import type { Effect } from "../model/effects.js";
 import type { ClassId, Gen, GroupId, ModId, TypeId } from "../model/ids.js";
 import { Domain, TagId } from "../model/ids.js";
-import { type EldritchSide, type Influence, influenceTags } from "../model/marks.js";
+import {
+    type EldritchSide,
+    type Influence,
+    influenceOfTag,
+    influenceTags,
+} from "../model/marks.js";
 import { withMetamodEffects } from "../model/metamods.js";
 import { emptyItem } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
@@ -276,6 +281,11 @@ export interface Registry {
     /** The type a Harvest change turns `type` into for that element, by the
      *  data's pairing table. Undefined where the grove refuses the change. */
     harvestChangeTarget(type: TypeId, element: Element): TypeId | undefined;
+    /** The elevated row an Orb of Dominance makes of an influence row at the
+     *  top of its ladder, where the data has one: of those sharing its group
+     *  under its influence, the one named for it (its id less its tier, plus
+     *  "Maven"), else the one of its type. Never a retired (`OLD…`) row. */
+    elevatedOf(row: Mod): Mod | undefined;
     /** Resolve an Aspect by its animal ("cat") to the row the Bestiary crafts:
      *  the level-30 skill's, or the level-20 one's of the recipe that takes
      *  the one beast. */
@@ -509,6 +519,34 @@ export function buildRegistry(data: RegistryData): Registry {
             }
         }
     }
+
+    // Elevated rows by the groups they share, retired ones left out (the wiki's
+    // Elevated modifier tables list none of them).
+    const elevatedByFamily = new Map<GroupId, Mod[]>();
+    for (const m of catalog) {
+        if (m.source !== "elevated" || /^OLD/i.test(m.id)) continue;
+        for (const f of m.families)
+            elevatedByFamily.set(f, [...(elevatedByFamily.get(f) ?? []), m]);
+    }
+    const elevatedMemo = new Map<Mod, Mod | undefined>();
+    const elevatedPair = (row: Mod): Mod | undefined => {
+        const own = new Set(
+            row.spawn
+                .filter((e) => e.weight > 0 && influenceOfTag(e.tag) !== undefined)
+                .map((e) => e.tag),
+        );
+        const candidates = [
+            ...new Set([...row.families].flatMap((f) => elevatedByFamily.get(f) ?? [])),
+        ].filter((m) => m.spawn.some((e) => own.has(e.tag)));
+        if (candidates.length <= 1) return candidates[0];
+        const bare = (id: string): string => id.replace(/_+$/, "");
+        // "ImmuneToChilledGroundUber1" → "…UberMaven", "…Influence2New_" → "…InfluenceMavenNew".
+        const named = bare(row.id).replace(/\d+(New)?$/, "Maven$1");
+        const byName = candidates.filter((m) => bare(m.id) === named);
+        if (byName.length === 1) return byName[0];
+        const byType = candidates.filter((m) => m.type === row.type);
+        return byType.length === 1 ? byType[0] : undefined;
+    };
 
     const typeGen = new Map<TypeId, Gen>();
     for (const m of catalog) if (!typeGen.has(m.type)) typeGen.set(m.type, m.gen);
@@ -829,6 +867,11 @@ export function buildRegistry(data: RegistryData): Registry {
 
         harvestChangeTarget(type, element) {
             return changeTo.get(type)?.[element]?.type ?? undefined;
+        },
+
+        elevatedOf(row) {
+            if (!elevatedMemo.has(row)) elevatedMemo.set(row, elevatedPair(row));
+            return elevatedMemo.get(row);
         },
 
         resolveAspect(name, level = 30) {
