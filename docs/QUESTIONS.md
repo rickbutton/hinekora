@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q126.
+keeps it. New entries continue from Q127.
 
 ```
 ### Qn · probe|decision · open — title
@@ -589,3 +589,15 @@ offered.
 an unveil never changes the item's prefix and suffix counts. **Encoded in:**
 `check/ops/crafted-rows.ts` `unveilRows`; `check/ops/crafted.ts`;
 `check/reference/ops/crafted.ts`.
+
+### Q126 · probe · open — the advanced copy of a veiled modifier
+
+**Q:** what header and line does the game's advanced copy (Ctrl+Alt+C) give a modifier
+still veiled? The `mods` Cargo table names the placeholders "Veiled" and "of the Veil",
+their text "Veiled (prefix)" and "of the Veil (suffix)"; [Veiled
+modifier](https://www.poewiki.net/wiki/Veiled_modifier) shows only the tooltip, no copy.
+**Probe:** a Rare item with one veiled prefix and one veiled suffix (a Veiled Chaos Orb's
+output, a Betrayal drop); copy it with Ctrl+Alt+C; record the two headers and the lines
+under them, and whether `Veiled` leads the header as it does on an unveiled modifier.
+**Assumed:** the header of any affix, `{ Prefix Modifier "Veiled" }`, over the table's
+text. **Encoded in:** `render/item.ts` `modHeader`, `textless`.
