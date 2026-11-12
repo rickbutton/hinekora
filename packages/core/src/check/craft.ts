@@ -184,7 +184,7 @@ export type ReachSource =
  *  every other method draws from that pool alone or adds nothing. A test
  *  pins it against the operations each method builds. */
 export const REACH: Readonly<Record<string, Partial<CraftReach>>> = {
-    bench: { sources: new Set(["bench", "metamod"]) },
+    bench: { sources: new Set(["bench"]) },
     "beast metamod": { sources: new Set(["metamod"]) },
     "beast aspect": { sources: new Set(["aspect"]) },
     essence: { sources: new Set(["essence"]) },
