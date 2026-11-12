@@ -1,6 +1,6 @@
 # hinekora — project guide for Claude
 
-Hinekora is a **statically-checked DSL for Path of Exile crafting guides**. A checker
+Hinekora is a **statically-checked DSL for Path of Exile crafts**. A checker
 proves each currency operation's precondition holds on every item the craft can reach
 before real currency is spent.
 
@@ -16,11 +16,11 @@ subject:
 - `docs/ROADMAP.md`: work not built (deferred, future). Not history.
 - `docs/item-model.md`: the item and modifier model the code is audited against, each rule
   linked to its wiki section.
-- `docs/language.md`: the guide author's language reference (syntax, the item block,
+- `docs/language.md`: the craft author's language reference (syntax, the item block,
   names, control, predicates, errors); each operation's own help is its hover text.
 - `docs/operations.md`: the operations model (primitive effects, the library of every
   crafting method and its status).
-- `docs/cost.md`: the cost layer (how a roll's chance and a guide's expected spend are
+- `docs/cost.md`: the cost layer (how a roll's chance and a craft's expected spend are
   computed, the game readings they rest on, the economy snapshot).
 - `docs/QUESTIONS.md`: open questions for the user and the assumptions made meanwhile.
 
