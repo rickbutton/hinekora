@@ -192,7 +192,7 @@ An error can name an item that breaks the step, taken from a witness of the fail
 | 2   | Decision-diagram engine                                                        | done  |
 | 3   | Universe: slots, values, order, well-formedness, from the registry and craft   | done  |
 | 4   | The state: conditions, narrowing, views                                        | done  |
-| 5   | Marks and rarity: `rarity`, `corrupt`, `influence`, `eldritch`, their checks   | open  |
+| 5   | Marks and rarity: `rarity`, `corrupt`, `influence`, `eldritch`, their checks   | done  |
 | 6   | Adding: `fill` over every pool and count, its checks                           | open  |
 | 7   | Removing: `strip`, `remove`, protections, `unprotect`, `keep`, metamod cases   | open  |
 | 8   | `lock`, bench crafts and crafted removal, veiled and unveil                    | open  |

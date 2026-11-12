@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q110.
+keeps it. New entries continue from Q112.
 
 ```
 ### Qn · probe|decision · open — title
@@ -72,16 +72,16 @@ not.
 
 **Q:** how many affixes does the altar's reforge roll
 ([Locus of Corruption § Possible outcomes](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes)
-states no count; players report four to six, or always six), how many on a
-jewel, and what does the altar make of an item with an influence
-or an eldritch implicit? (The influence is one of the six: GGG, forum thread 2147954.)
-**Probe:** a Rare ring, a Rare jewel, an influenced ring, boots with an eldritch
-implicit, a ring below item level 68 (reported to get no influence); record each reforge's affix count and marks, and any reforge with two influences.
+states no count; players report four to six, or always six), on a jewel, and what does the altar make of an item with an influence
+or an eldritch implicit? **Probe:** a Rare ring, a Rare jewel, an influenced ring, boots with an eldritch
+implicit, a ring below item level 68 (reported to get no influence); record each count and its marks.
 **Assumed:** the altar four to six, a Vaal Orb six, a jewel three or four without an
-influence; an influenced item any one influence or its own; an eldritch implicit kept
-beside the new influence; in the cost, each of the six influences
-alike. **Encoded in:** `check/library.ts` `locusOps`, `vaalOps`, `brickBranch`;
-`cost/track.ts` `byInfluence`.
+influence; an influenced item any one influence or its own; an item with an eldritch implicit or a
+fracture no influence
+([Influenced item § Mechanics](https://www.poewiki.net/wiki/Influenced_item#Mechanics)),
+its implicits kept; a kept modifier of a lost influence stays; each influence alike in
+the cost. **Encoded in:** `check/library.ts` `locusOps`, `vaalOps`, `brickBranch`;
+`exact/ops/marks.ts`; `cost/track.ts` `byInfluence`.
 
 ### Q33 · probe · open — the Tainted Chaos Orb under a protection, and its rarity
 
@@ -297,8 +297,11 @@ would leave the side ahead no chance at all?
 **Probe:** boots with a Perfect and a Lesser implicit, and with an Exceptional and a
 Lesser one, an imprint of each, some fifty Orbs of Conflict a pair; record how often the
 higher implicit rises.
-**Assumed:** the line carried on, neither side below one in a hundred. **Encoded in:**
-`cost/track.ts` `CONFLICT_STEP`, `CONFLICT_FLOOR`, `conflicted`.
+Record also whether the orb works on a Perfect implicit, and whether the other side drops
+when the Perfect one is chosen to rise.
+**Assumed:** the line carried on, neither side below one in a hundred; a Perfect stays
+and the other drops. **Encoded in:** `cost/track.ts` `CONFLICT_STEP`, `CONFLICT_FLOOR`,
+`conflicted`; `exact/ops/marks.ts`.
 
 ### Q98 · probe · open — a cluster jewel's enchantment and its size
 
@@ -401,3 +404,24 @@ Orb or a Veiled Exalted Orb adds.
 modifier's name in the advanced tooltip.
 **Assumed:** the plain placeholder of its side, never a member's. **Encoded in:**
 `exact/rows.ts` `candidateRows`.
+
+### Q110 · probe · open — a scour that leaves more than the lower rarity holds
+
+**Q:** an Orb of Scouring leaves a Rare item with one kept modifier Magic. A Magic
+[Simplex Amulet](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics) holds none. What
+rarity does the scour leave it?
+**Probe:** a Rare Simplex Amulet with "Prefixes Cannot Be Changed" and one prefix; scour;
+record the rarity.
+**Assumed:** it stays Rare, the next rarity up that holds what is left. **Encoded in:**
+`exact/ops/marks.ts`; `exact/reference/ops/marks.ts`.
+
+### Q111 · decision · open — an item's other implicits
+
+**Q:** a corruption implicit replaces one of an item's implicits
+([Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment)), the altar two.
+The checker knows the eldritch implicits only, so it lets none, one or two of them go;
+on boots with no other implicit a Vaal Orb always takes one and the altar both.
+**Options:** track whether the item has another implicit (from the base, and a mark a
+Gilded Fossil sets), which makes the outcome exact (recommended); or keep the wider set.
+**Assumed:** the wider set. **Encoded in:** `exact/ops/marks.ts`;
+`exact/reference/ops/marks.ts`.
