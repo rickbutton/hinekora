@@ -14,8 +14,8 @@ import {
     dominantOf,
     eldritchKey,
     eldritchOf,
+    INFLUENCES,
     influenceOfTag,
-    influenceSetsOfSize,
     NO_ELDRITCH,
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
@@ -240,9 +240,9 @@ export function ending(
 function byInfluence(branch: readonly Op[]): (readonly Op[])[] {
     const at = branch.findIndex((op) => op.kind === "influence" && op.change.kind === "anyOne");
     if (at < 0) return [branch];
-    return influenceSetsOfSize(1).map((key) => [
+    return INFLUENCES.map((influence) => [
         ...branch.slice(0, at),
-        { kind: "influence", change: { kind: "set", key } },
+        { kind: "influence", change: { kind: "one", influence } },
         ...branch.slice(at + 1),
     ]);
 }
@@ -1040,7 +1040,7 @@ export class Tracker {
      * affected. Every pair of removed and raised is taken as likely as any
      * other (`ASSUMED_ODDS`, QUESTIONS.md Q61). Which
      * rows are an influence's, and which is the next one up, is read as the
-     * checker reads it (`check/ops/types.ts`, `upgradedSurvivor`). Undefined, with
+     * checker reads it (`check/ops/remove.ts` `elevations`). Undefined, with
      * the reason, where the state does not say which modifiers are influenced
      * or no source says what the raised one becomes.
      */

@@ -150,6 +150,10 @@ export const transforms: RefTransformTable = {
                             influences: influenceKey([i]),
                         })).filter((x) => x.influences !== item.influences && isWellFormed(x, ctx)),
                     ];
+                case "one": {
+                    const x = { ...item, influences: influenceKey([c.influence]) };
+                    return [isWellFormed(x, ctx) ? x : item];
+                }
             }
         },
     },

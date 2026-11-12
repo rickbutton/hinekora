@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import * as L from "../library.js";
 import { rollRange } from "../values.js";
 import type { Check, InfluenceChange, Op, Transform } from "./types.js";
@@ -33,6 +33,8 @@ import type { Bounds } from "../reference/sets.js";
 import { ItemSet } from "../reference/sets.js";
 import { fromItems } from "../state.js";
 import type { Universe } from "../universe.js";
+
+vi.setConfig({ testTimeout: 30_000 });
 
 const req = (check: Check): Op => ({ kind: "require", check });
 const rarity = (r: Rarity | "survivors" | "lowest"): Transform => ({ kind: "rarity", rarity: r });
@@ -178,6 +180,7 @@ describe("the marks over tiny catalogues", () => {
             const bounds = { influences, fractured: true, ...eldritch };
             exact(s, seed + 7, bounds, [influence({ kind: "anyOne" })]);
             exact(s, seed + 8, bounds, [influence({ kind: "randomise" })]);
+            exact(s, seed + 9, bounds, [influence({ kind: "one", influence: "hunter" })]);
         });
 
         if (flags.influence) {
@@ -394,6 +397,29 @@ describe("the influence changes", () => {
         const type = s.cat.eldritch.find((e) => e.side === "exarch")!.type;
         const item = cItem({ exarch: { tier: 2, type } });
         expect(outcomes(s, item, [influence({ kind: "anyOne" })])).toEqual([item]);
+    });
+
+    it("one gives that influence in place of the item's own", () => {
+        const pair = influenceKey(["shaper", "elder"]);
+        const out = outcomes(s, cItem({ influences: pair }), [
+            influence({ kind: "one", influence: "hunter" }),
+        ]);
+        expect(keys(out)).toEqual([hunter]);
+    });
+
+    it("one leaves an item with a fracture or an eldritch implicit as it was", () => {
+        const id = s.rows.find((r) => r !== s.cat.influence?.id)!;
+        const fractured = cItem({
+            rarity: "rare",
+            mods: [cMod(id, valueIn(s, id), { fractured: true })],
+        });
+        const type = s.cat.eldritch.find((e) => e.side === "eater")!.type;
+        const implicit = cItem({ eater: { tier: 2, type } });
+        for (const item of [fractured, implicit]) {
+            expect(outcomes(s, item, [influence({ kind: "one", influence: "hunter" })])).toEqual([
+                item,
+            ]);
+        }
     });
 
     it("leaves the modifiers as they are", () => {

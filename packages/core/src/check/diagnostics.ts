@@ -207,8 +207,6 @@ export function preconditionMessage(state: ItemSummary, failure: PreconditionFai
                 return "The item's crafted modifier may be fractured — the bench can't replace it.";
             case "craftedMultiple":
                 return "The item may have more than one crafted modifier — the bench can't replace them.";
-            case "craftedCapUnknown":
-                return "The item may carry 'can have up to 3 crafted modifiers' — the bench would add beside the crafted modifier on that path and replace it otherwise, so narrow it with an if first.";
             case "harvestEmptyPool":
                 return `No ${failure.tag} modifier can appear on ${withArticle(state.base.name ?? "item")} at this item level.`;
             case "harvestNoRoom":

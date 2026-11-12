@@ -250,6 +250,15 @@ export const transforms: TransformTable = {
                     const rel = onInfluence(u, (from) => [...new Set([from, ...singles])]);
                     return m.and(m.mapEach(state, rel), u.wf);
                 }
+                case "one": {
+                    // Whether an item can take it rests on more than its
+                    // influence (a fracture, an eldritch implicit), so the
+                    // items that can are those well formed with it.
+                    const v = u.influenceValue(influenceKey([c.influence]));
+                    if (v === undefined) return state;
+                    const can = m.forget(m.and(u.wf, m.slotIn(slot, [v])), [slot]);
+                    return m.or(m.set(m.and(state, can), slot, v), m.diff(state, can));
+                }
             }
         },
     },

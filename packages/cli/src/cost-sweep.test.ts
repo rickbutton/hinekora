@@ -58,6 +58,7 @@ const ITEMS: readonly string[] = [
     'base: "Quicksilver Flask"\n    ilvl: 84\n    rarity: normal',
     'base: "Titan Greaves"\n    ilvl: 84\n    rarity: rare\n    influences: hunter\n    prefixes: [ "maximum life" t1, "random", "random", "random" ]\n    suffixes: [ "fire resistance" t1 ]',
     'base: "Thicket Bow"\n    ilvl: 84\n    rarity: rare\n    prefixes: [ "random" ]\n    suffixes: [ "random" ]',
+    'base: "Titan Greaves"\n    ilvl: 84\n    rarity: rare\n    prefixes: [ fractured "movement speed" t1 ]\n    suffixes: [ "random" ]',
 ];
 
 /** Conditions asked after the step; each `if` has an `else`, so the check
@@ -134,6 +135,18 @@ describe("the cost of any craft the check reads", () => {
             expect(report.failed, source).toBeUndefined();
             expect(report.steps.length, source).toBeGreaterThan(0);
         }
+    });
+});
+
+describe("the Corruption Altar on a fractured item", () => {
+    // A fractured item takes no influence (Fractured item § Mechanics), so its
+    // reforge leaves it uninfluenced in the cost walk as in the check.
+    it("is costed as the check reads it", () => {
+        const source = `item {\n    ${ITEMS[8]!}\n}\n\nlocus\n`;
+        const { result, report } = costed(source);
+        expect(result.ok, source).toBe(true);
+        expect(report.failed, source).toBeUndefined();
+        expect(report.unjudged, source).toBeUndefined();
     });
 });
 

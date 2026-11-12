@@ -265,7 +265,11 @@ export type InfluenceChange =
     /** Every set of the size the item has (the grove's randomise). */
     | { readonly kind: "randomise" }
     /** Any one influence, whatever the item had (the Corruption Altar). */
-    | { readonly kind: "anyOne" };
+    | { readonly kind: "anyOne" }
+    /** That influence in place of the item's own, or its own set where it can
+     *  take none: one of `anyOne`'s outcomes, which the cost layer weighs
+     *  apart. */
+    | { readonly kind: "one"; readonly influence: Influence };
 
 /** Why an operation's precondition fails on the current state. */
 export type PreconditionFailure =
@@ -300,7 +304,6 @@ export type PreconditionFailure =
     | { readonly kind: "noCraftedToRemove" }
     | { readonly kind: "craftedFractured" }
     | { readonly kind: "craftedMultiple" }
-    | { readonly kind: "craftedCapUnknown" }
     | { readonly kind: "harvestEmptyPool"; readonly tag: TagId }
     | { readonly kind: "harvestNoRoom"; readonly tag: TagId }
     | { readonly kind: "harvestBlocked"; readonly tag: TagId }
