@@ -51,8 +51,12 @@ describe("the Vaal Orb", () => {
         expect(v.corruptions(s)).toEqual(new Set([true]));
         expect(v.rarities(s)).toEqual(new Set(["magic", "rare"]));
         expect(v.counts(s).total).toEqual([1, 6]);
-        // Six modifiers take all three ring prefixes, so the life stays, rerolled.
-        expect(guaranteedTypes(s).has(LIFE_T1.type)).toBe(true);
+        const m = s.u.dd;
+        const rare = m.slotIn(s.u.scalar("rarity"), [s.u.rarityValue("rare")]);
+        expect(v.counts({ u: s.u, dd: m.and(s.dd, rare) }).total).toEqual([6, 6]);
+        const kept = { u: s.u, dd: m.diff(s.dd, rare) };
+        expect(v.rarities(kept)).toEqual(new Set(["magic"]));
+        expect(rowIds(kept, LIFE_T1.type)).toEqual(new Set([LIFE_T1.id]));
         expect(rowIds(s, LIFE_T1.type)).toEqual(new Set([LIFE_T1.id, LIFE_T2.id]));
     });
 

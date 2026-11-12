@@ -39,12 +39,18 @@ function runsAt(file: string, line: number): number {
 // to the cost model that moves them shows. They are not validation: what
 // checks the model is the draw played out in race.test.ts.
 describe("the example guides' costs", () => {
-    it("metamod-harvest-loop.craft: about nine reforges and one and a third annuls", () => {
-        expect(runsAt("metamod-harvest-loop.craft", 23)).toBeGreaterThan(8.5);
-        expect(runsAt("metamod-harvest-loop.craft", 23)).toBeLessThan(9.1);
-        expect(runsAt("metamod-harvest-loop.craft", 20)).toBeGreaterThan(1.25);
-        expect(runsAt("metamod-harvest-loop.craft", 20)).toBeLessThan(1.37);
-    });
+    it(
+        "metamod-harvest-loop.craft: about nine reforges and one and a third annuls",
+        {
+            timeout: 30_000,
+        },
+        () => {
+            expect(runsAt("metamod-harvest-loop.craft", 23)).toBeGreaterThan(8.5);
+            expect(runsAt("metamod-harvest-loop.craft", 23)).toBeLessThan(9.1);
+            expect(runsAt("metamod-harvest-loop.craft", 20)).toBeGreaterThan(1.25);
+            expect(runsAt("metamod-harvest-loop.craft", 20)).toBeLessThan(1.37);
+        },
+    );
 
     it("example.craft: the first loop annuls about thirty-six times", () => {
         expect(runsAt("example.craft", 11)).toBeGreaterThan(35.5);

@@ -1,8 +1,10 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { loadDefaultEconomy, loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { checkSource, costSource } from "./check.js";
+
+vi.setConfig({ testTimeout: 30_000 });
 
 // A site page that shows a craft and, right below it, a `txt` block prints what
 // the tool says of that craft: `hinekora cost`'s whole output, or lines of

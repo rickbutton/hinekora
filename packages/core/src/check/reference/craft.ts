@@ -612,7 +612,10 @@ export function compareCraft(
     if (aborted || exact.findings.some((f) => ABORTS.includes(f.kind))) return done("");
     // A condition the strict run cannot read narrows nothing there, a recovery
     // of its own made on the strict run's items; recovered items it can be read
-    // on narrow it, so past it the runs are not comparable.
+    // on narrow it, so past it the runs are not comparable. In a loop or a
+    // called body "past it" reaches back before it, so a craft with such a
+    // condition anywhere skips this whole comparison, every statement and
+    // finding: only the strict run's comparison with the reference holds it.
     if (unread(strict, craft)) return done("");
     const theirs = traced(exact.trace);
     const conditions = byCondition(craft);
