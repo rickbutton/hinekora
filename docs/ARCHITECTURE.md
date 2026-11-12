@@ -21,7 +21,7 @@ function of `(source, registry)`; no I/O anywhere in it.
    Registry: names ⇒ game entities         Layer 2 · data & resolution
         │   @hinekora/core: check/
         ▼
-   abstract interpretation                 Layer 3 · the checker  ◀── the heart
+   the exact checker                       Layer 3 · the checker  ◀── the heart
         │   ⇒ diagnostics  +  a per-statement trace
         │        └─▶ @hinekora/core: cost/   the cost layer reads the trace (§7)
         ▼
@@ -91,105 +91,10 @@ This layer is pure data → structures. It never analyses; it answers questions.
 
 ---
 
-## 4. Layer 3: the checker (abstract interpretation)
+## 4. Layer 3: the checker
 
-The abstract state's fields are tabled in [REFERENCE §4](REFERENCE.md).
-
-### 4.1 The idea
-
-A craft is a program over an item, with loops and branches, and every operation's
-precondition must hold on every path. Simulating is hopeless (the
-[core invariant](../CLAUDE.md)), so the checker uses **abstract interpretation**: it
-tracks summaries, each an `AItem` standing for a set of items possible at a program
-point. Each operation has a **transfer function** from summary to summary; where control
-flow merges, a `join` covers both summaries; a loop iterates to a fixpoint.
-
-In plain terms: the summary always allows at least every item the game could produce, so
-if no check fails on the summary, none fails in reality (**soundness**). A summary too
-loose only costs _false positives_, a fine craft flagged. "X is guaranteed" means every
-item in the set has X; "excluded", none does; a _disjunction_, each has one of a group.
-Background: [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation),
-[lattices](https://en.wikipedia.org/wiki/Lattice_%28order%29).
-
-### 4.2 The abstract domain: a reduced product
-
-`AItem` is not one blob. It is a **reduced product** of small, independent domains, each
-tracking one kind of fact. `check/domain.ts` declares the shared contract `Domain<T>`: the
-two operations the merge/fixpoint machinery needs from _every_ piece, `join` (least upper
-bound, to merge branches) and `equal` (to detect a fixpoint). Most pieces are
-non-relational: a range per count, a set of the concrete values the paths reaching a
-point allow (so a join is a union), a per-type overlay. The one **relational** piece is
-presence: a BDD (a compact canonical boolean function) over "type X is present"
-variables, whose payoff is that a _disjunction_ ("at least one of these three
-resistances") survives a branch merge, because merging presence is boolean OR.
-Guaranteed / excluded / "≥k of n" are all _views_ of this single function. Where two
-facts must be kept together, a domain carries them as one value (the affix counts as
-three ranges normalized under `prefix + suffix = total`, an eldritch implicit pair as a
-pair) rather than as two independent ones that a join would decorrelate.
-
-Why "reduced product": the domains are independent, but a few facts couple them, e.g.
-crafted mods are a subset of all affixes, so `crafted ≤ total`. Such a cross-domain fact is
-a **reduction**, applied _explicitly_ at the product level (in `normalize`), never smuggled
-inside one domain. Keeping each domain ignorant of the others is what makes them small and
-independently testable; the reductions are the named seams where they exchange information.
-
-The relational BDD is the one deliberately clever part. A purely per-type set of
-guaranteed/excluded facts would intersect a disjunction away at a join and forget it, so a
-later "if neither A nor B" could not be flagged dead. The BDD keeps it. (Why not hand the
-whole thing to an SMT solver, per [REFERENCE §6](REFERENCE.md): worse diagnostics, a heavy
-async dependency, and you would still need the loop fixpoint yourself.)
-
-### 4.3 Operations: methods as sequences of state transformers
-
-A crafting method is a sequence of primitive transfer functions `AItem → AItem`, whose
-semantics and all-or-nothing rule are [operations.md](operations.md) §2. The operations
-are _transformers_, not part of any domain, so they live apart (`check/ops.ts`, the
-sequences in `check/library.ts`) and do not change when a domain is refactored: the
-domains supply the lattice, the transformers the semantics. The method table
-(`check/methods.ts`) maps a statement's words to a sequence, one dispatch rather than a
-case per method.
-
-### 4.4 The driver: sequencing, branches, loops
-
-`check.ts` threads a few summaries, the **parts**, through the program. One summary
-decorrelates its non-relational pieces at a merge: "five modifiers with the life" joined
-with "four without" is "four or five, with or without", and a later step is refused for an
-item no path makes. So summaries that differ in counts, rarity or marks stay apart, and
-those that agree join field by field. A part whose counts cannot hold the modifiers
-proven present is dropped. Each part is
-checked on its own; a failure is worded for their join, which the trace records. A craft needing more parts than a cap is refused. A statement either _falls through_ with
-new parts, _restarts_ (diverges, re-entering the enclosing loop) or _stops_ (the path
-ends; it joins nothing downstream, which is how a guide's "the item is bricked" branch
-leaves the rest of the craft judged on the good paths only).
-
-- **Sequence**: look each statement's words up in the method table and run the sequence
-  its entry builds from the arguments.
-- **Branch (`if`)**: refine the parts into each arm (narrow by the condition), check
-  each, then gather the arms that fall through. An arm no part can enter is flagged as
-  dead.
-- **Loop (`until`)**: three steps. _reachability_ (can the exit predicate ever hold on this
-  base? if never, report that root cause), the **loop invariant** (a join-fixpoint over the
-  states that re-enter the head, so the body is checked at _every_ iteration; this is what
-  catches `until has X { exalt }` filling the item), and _exit-as-proof_ (on exit the
-  predicate holds, so refine the after-state by it). The body runs only from the part of
-  a head state where the exit predicate is false: the rest leaves at once, and checking
-  the body on it would refuse steps no path takes (an inner loop entered from an outer
-  loop's invariant). All three are expressed over one primitive: `headStates`,
-  the states re-entering the loop head after one body run (the fall-off-end parts plus
-  every `restart` back-edge).
-- **Termination**: the invariant lattice is finite and the step monotone, so the exact
-  iteration reaches a fixpoint, in practice within ten rounds. There is no widening (an
-  over-approximation made to converge sooner): it would refuse a later step for an item no
-  round makes. A loop past a round limit is refused instead, and only then widened, so the
-  rest of the craft is still judged.
-- **Defs & procs**: predicate defs (`def f(p) = <pred>`) and operation functions
-  (`def f(p) { <stmts> }`) are _inlined_: arguments substituted, body checked in place. So
-  they need nothing new in the domain or driver; state threading, nested loops, and
-  `restart` back-edges compose for free across a call.
-
-A probe or fixpoint pass runs `quietly` (no diagnostics, no trace). An inlined proc body
-records into its own trace (`TraceEntry.inlined`, each entry naming its statement), so the
-top-level trace holds the call as one step while the cost layer can walk the body in place.
+The checker runs a craft over the exact set of items each point of it can hold, one
+decision diagram per state; its design is [EXACT.md](EXACT.md).
 
 ---
 

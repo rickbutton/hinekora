@@ -12,7 +12,7 @@
  */
 import type { Cmp } from "../ast/ast.js";
 import type { Gen, ModId, TypeId } from "../model/ids.js";
-import type { RPred } from "../check/astate.js";
+import type { RPred } from "../check/pred.js";
 import type { Dd } from "../exact/dd.js";
 import { narrow, predKey, type XItem } from "../exact/state.js";
 import { counts, guaranteedTypes, rowsOf, suffixRange } from "../exact/views.js";

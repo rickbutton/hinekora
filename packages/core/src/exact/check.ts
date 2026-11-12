@@ -18,7 +18,6 @@
  */
 import type { Craft, Def, Pred, ProcDef, Stmt } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
-import type { CheckContext } from "../check/check.js";
 import {
     bindArgs,
     collectDefs,
@@ -38,6 +37,7 @@ import { findMethod, type Literal } from "../check/methods.js";
 import type { Resolved } from "../check/resolve-pred.js";
 import type { PreconditionFailure } from "../check/ops.js";
 import type { TypeId } from "../model/ids.js";
+import type { Registry } from "../resolve/registry.js";
 import { plural } from "../words.js";
 import { type BuiltPart, buildKey, buildMethod } from "./build.js";
 import { levelReasonsOn, narrowBy, readCondition } from "./conditions.js";
@@ -48,6 +48,11 @@ import { type ItemView, itemView } from "../render/item.js";
 import { fromItems, stateOf, type XItem } from "./state.js";
 import type { Universe } from "./universe.js";
 import { summaryOf } from "./views.js";
+
+/** What a check is run against. */
+export interface CheckContext {
+    readonly registry: Registry;
+}
 
 /** How the exact check is run, apart from what it is run on. */
 export interface ExactTuning {
@@ -709,8 +714,8 @@ class ExactChecker {
     }
 
     /** The items on which the condition holds (or fails): all of them where
-     *  its reading was refused, as the present checker narrows by nothing
-     *  there, so a reported fault is not followed by a branch or loop error. */
+     *  its reading was refused, so a reported fault is not followed by a
+     *  branch or loop error. */
     private cut(s: XItem, pred: Pred, positive: boolean, resolved: Resolved | null): XItem | null {
         return resolved === null ? s : narrowBy(s, pred, positive, this.predDefs);
     }

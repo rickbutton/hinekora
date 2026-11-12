@@ -1,9 +1,9 @@
 /**
  * A resolved condition on one concrete item (language.md §5): the concrete
- * meaning each kind of `RPred` narrows the abstract state by.
+ * meaning each kind of `RPred` narrows a state by.
  */
 import type { Cmp } from "../../ast/ast.js";
-import type { RPred } from "../../check/astate.js";
+import type { RPred } from "../../check/pred.js";
 import { dominantOf, eldritchKey, influencesOf, NO_INFLUENCE } from "../../model/marks.js";
 import { type CItem, countsOf, modOfType, type RefCtx, rowOf } from "./item.js";
 

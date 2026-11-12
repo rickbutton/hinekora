@@ -16,7 +16,7 @@
  * forty random states of a few dozen items each run in well under a second.
  */
 import type { Cmp } from "../../ast/ast.js";
-import type { RPred } from "../../check/astate.js";
+import type { RPred } from "../../check/pred.js";
 import type { Op } from "../../check/ops.js";
 import { rollRange } from "../../check/values.js";
 import { canBeRare } from "../../model/capacity.js";

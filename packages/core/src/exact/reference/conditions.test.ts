@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BOOTS_BASE } from "../../__fixtures__/mods.js";
-import type { RPred } from "../../check/astate.js";
+import type { RPred } from "../../check/pred.js";
 import type { ModId } from "../../model/ids.js";
 import { TypeId } from "../../model/ids.js";
 import { influenceKey } from "../../model/marks.js";

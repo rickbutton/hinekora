@@ -21,7 +21,6 @@ import {
     until,
 } from "../__fixtures__/ast.js";
 import type { Craft, ProcDef, Stmt } from "../ast/ast.js";
-import { checkPresent } from "../check/check.js";
 import { renderState } from "../check/diagnostics.js";
 import { TypeId } from "../model/ids.js";
 import { checkExact, exactDetail, type ExactTuning, UNJUDGED } from "./check.js";
@@ -44,24 +43,21 @@ const exact = (c: Craft, tuning?: ExactTuning) =>
 const said = (c: Craft, tuning?: ExactTuning): string[] =>
     exact(c, tuning).diagnostics.map((d) => d.message);
 
-const presentSaid = (c: Craft): string[] =>
-    checkPresent(c, { registry: HAND_REGISTRY }).diagnostics.map((d) => d.message);
-
 /** The exact driver against the reference on the hand catalogue's ring. */
 const agrees = (c: Craft, tuning?: ExactTuning): void => {
     expect(compareCraft(c, HAND_REGISTRY, handCtx(), tuning).diff).toBe("");
 };
 
 describe("the exact driver's words", () => {
-    it("word an item's summary as the present checker does", () => {
+    it("word an item's summary", () => {
         const block = ring({ prefixes: ["Life1", { mod: "random" }], suffixes: ["Fire1"] });
         const start = startOf(HAND_REGISTRY, craft(block, []), () => {})!;
-        const present = checkPresent(craft(block, []), { registry: HAND_REGISTRY }).trace[0]!
-            .before;
-        expect(renderState(summaryOf(start.state!))).toBe(renderState(present));
+        expect(renderState(summaryOf(start.state!))).toBe(
+            "IronRing · Rare · 3 affixes · 2 prefixes · 1 suffix · ilvl 84",
+        );
     });
 
-    it("refuse a step as the present checker does", () => {
+    it("refuse a step", () => {
         const crafts = [
             craft(ring({ rarity: "magic", prefixes: ["Life1"] }), [op("exalt")]),
             craft(ring({ rarity: "normal" }), [op("chaos")]),
@@ -76,10 +72,22 @@ describe("the exact driver's words", () => {
                 [op("exalt")],
             ),
         ];
-        for (const c of crafts) {
-            expect(said(c)).toEqual(presentSaid(c));
-            expect(said(c).length).toBe(1);
-        }
+        expect(crafts.map((c) => said(c))).toEqual([
+            [
+                "at this point the item is: IronRing · Magic · 1 affix · 1 prefix · 0 suffixes · ilvl 84\nRequires a Rare item — this item is Magic.",
+            ],
+            [
+                "at this point the item is: IronRing · Normal · 0 affixes · 0 prefixes · 0 suffixes · ilvl 84\nRequires a Rare item — this item is Normal.",
+            ],
+            [
+                "at this point the item is: IronRing · Rare · 1 affix · 1 prefix · 0 suffixes · ilvl 84\nRequires a Magic item — this item is Rare.",
+            ],
+            ['Unknown currency "zzz".'],
+            ['Unknown operation "beast zzz".'],
+            [
+                "at this point the item is: IronRing · Rare · 6 affixes · 3 prefixes · 3 suffixes · ilvl 84\nRequires an open affix slot — the item may be full.",
+            ],
+        ]);
     });
 
     it("say which metamod a step is refused under, where some items carry it", () => {
@@ -112,8 +120,10 @@ describe("the exact driver's words", () => {
     it("name a parameter never given a value", () => {
         const proc = procDef("p", ["step"], [paramStep("other")]);
         const c = craft(ring(), [callStmt("p", [blockArg([op("chaos")])])], [], [proc]);
-        // The same words; the exact checker gives them in the order of the craft.
-        expect([...said(c)].sort()).toEqual([...presentSaid(c)].sort());
+        expect(said(c)).toEqual([
+            'parameter "other" was never given a value',
+            'parameter "step" of "p" is never used',
+        ]);
     });
 });
 
@@ -146,19 +156,21 @@ describe("the steps that never run", () => {
 });
 
 describe("the branches that never run", () => {
-    it("are worded as the present checker words them", () => {
+    it("are worded so", () => {
         const life = ring({ prefixes: ["Life1"] });
         const crafts = [
             craft(life, [iff(isRarity("magic"), [op("chaos")])]),
             craft(life, [iff(has("Life1"), [], [op("chaos")])]),
             craft(ring({ ilvl: 30, prefixes: ["Mana1"] }), [iff(has("maximum life", 1), [])]),
         ];
-        for (const c of crafts) {
-            expect(said(c)).toEqual(presentSaid(c));
-            expect(said(c).length).toBe(1);
-            agrees(c);
-        }
-        expect(said(crafts[2]!)[0]).toContain("needs item level 50; this item is level 30");
+        expect(crafts.map((c) => said(c))).toEqual([
+            ["the 'if' branch can never run: isMagic is impossible here"],
+            [`the 'else' branch can never run: has "Life1" always holds here`],
+            [
+                `the 'if' branch can never run: has "maximum life" t1 is impossible here — Tier 1 "maximum life" needs item level 50; this item is level 30`,
+            ],
+        ]);
+        for (const c of crafts) agrees(c);
     });
 
     it("unite the arms that fall through", () => {
@@ -196,8 +208,7 @@ describe("a loop", () => {
             craft(life, [iff(has("no such modifier"), [op("annul")], [op("divine")])]),
         ];
         for (const c of crafts) {
-            expect(said(c)).toEqual(presentSaid(c));
-            expect(said(c).length).toBe(1);
+            expect(said(c)).toEqual(['Unknown mod "no such modifier".']);
             agrees(c);
         }
     });
@@ -205,9 +216,9 @@ describe("a loop", () => {
     it("judges every round: an item the body fills on a later round refuses it", () => {
         const c = craft(ring({ prefixes: ["Life1"] }), [until(has("Fire1"), [op("exalt")])]);
         const r = exact(c);
-        expect(r.diagnostics.map((d) => d.message)).toEqual(presentSaid(c));
-        expect(r.diagnostics.length).toBe(1);
-        expect(r.diagnostics[0]!.message).toContain("Requires an open affix slot");
+        expect(r.diagnostics.map((d) => d.message)).toEqual([
+            "at this point the item is: IronRing · Rare · 1–6 affixes · 1–3 prefixes · 0–3 suffixes · ilvl 84\nRequires an open affix slot — the item may be full.",
+        ]);
         expect(isGuaranteed(r.finalState!, TypeId("TypeFire"))).toBe(true);
         agrees(c);
     });

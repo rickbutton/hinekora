@@ -3,12 +3,12 @@ import { join, relative } from "node:path";
 import * as v8 from "node:v8";
 import * as vm from "node:vm";
 import { describe, expect, it, vi } from "vitest";
-import { checkExact, type CheckDiagnostic, checkPresent, counts, type Craft } from "@hinekora/core";
+import { checkExact, counts, type Craft } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { parse } from "@hinekora/parser";
 
-// Both checkers run over every craft the repository shows, and the exact one
-// over them again and again for its memory: seconds each on a loaded machine.
+// The checker runs over every craft the repository shows, again and again
+// for its memory: seconds each on a loaded machine.
 vi.setConfig({ testTimeout: 120_000 });
 
 const registry = registryOf(loadDefaultPoe1());
@@ -65,11 +65,8 @@ function corpus(): { name: string; source: string }[] {
     return out;
 }
 
-/**
- * Crafts the present checker answers wrongly, or that test a rule it reads
- * loosely, each with its right verdict. Their differences from the present
- * checker are in the table below with the others'.
- */
+/** Crafts whose verdict rests on reading a rule exactly, each with its right
+ *  verdict. */
 const AUDIT: readonly { name: string; checks: boolean; source: string }[] = [
     {
         // Each annul takes a prefix or a non-fractured suffix; while a prefix
@@ -280,118 +277,7 @@ dominance`,
     },
 ];
 
-/** A diagnostic one checker gives and the other does not. */
-interface Difference {
-    readonly line: number;
-    readonly present?: string;
-    readonly exact?: string;
-}
-
-/**
- * Where the exact checker answers a craft differently from the present one,
- * by craft, each difference with its class and reason:
- * (a) an imprecision of the present checker the exact one removes;
- * (b) a soundness fault of the present checker;
- * (c) a rule the exact model states that the present one does not.
- * A fault of the exact checker has no place here: it is fixed. The examples
- * and the site's crafts give none; the audit's crafts give these.
- */
-const DIFFERENCES: Readonly<
-    Record<string, readonly (Difference & { class: "a" | "b" | "c"; why: string })[]>
-> = {
-    "an annul loop that clears the prefixes": [
-        {
-            line: 9,
-            present:
-                "at this point the item is: Amethyst Ring · Rare · 1–6 affixes · 1–3 prefixes · 0–3 suffixes · ilvl 84\nRequires a removable affix — the item may have none.",
-            class: "a",
-            why: "its loop head joins the counts apart, so an item the loop runs on seems to hold only the fractured suffix",
-        },
-    ],
-    "a settled suffix changed in each arm": [
-        {
-            line: 18,
-            present:
-                "at this point the item is: Sorcerer Boots · Rare · 2–4 affixes · 1–3 prefixes · 1 suffix · ilvl 84 · Grand Exarch and Lesser Eater\n\"cold resistance\" isn't guaranteed on the item, so it can't be changed.",
-            class: "a",
-            why: "it holds the fire-or-cold group beside each type's presence, so not fire does not make the cold resistance sure",
-        },
-    ],
-    "a speed augment, then a suffix at the bench": [
-        {
-            line: 9,
-            present:
-                "at this point the item is: Sorcerer Boots · Rare · 3 affixes · 0–2 prefixes · 1–3 suffixes · ilvl 84\nRequires an open suffix slot — none is guaranteed open here.",
-            class: "a",
-            why: "it lets the added modifier be of either side, though the base's speed rows are all prefixes",
-        },
-    ],
-    "a fracture of one of four random modifiers": [
-        {
-            line: 9,
-            present: "the 'if' branch can never run: fractured \"maximum life\" is impossible here",
-            class: "a",
-            why: "it lets a fracture fall only on a type the item block names, so a random modifier is never the fractured one",
-        },
-    ],
-    "a crafted suffix of a prefix type, then a random suffix removed": [
-        {
-            line: 10,
-            present:
-                "the 'else' branch can never run: has \"chaos damage over time multiplier\" always holds here",
-            class: "a",
-            why: "it places the type on its natural side, a prefix, which the suffix removal spares",
-        },
-    ],
-    "a count of two inside a count of one or three": [
-        {
-            line: 10,
-            exact: "the 'if' branch can never run: prefixCount == 2 is impossible here",
-            class: "a",
-            why: "its prefix count is a range, so the or of two counts holds the count between them",
-        },
-    ],
-    "a value test after the items that pass it stopped": [
-        {
-            line: 11,
-            exact: "the 'if' branch can never run: has \"maximum life\" >= 110 is impossible here",
-            class: "a",
-            why: "the failed comparison does not narrow the value of a life roll that is only possible",
-        },
-    ],
-};
-
-function differences(a: readonly CheckDiagnostic[], b: readonly CheckDiagnostic[]): Difference[] {
-    const key = (d: CheckDiagnostic): string => `${d.span.start.line}\n${d.message}`;
-    const inB = new Set(b.map(key));
-    const inA = new Set(a.map(key));
-    return [
-        ...a
-            .filter((d) => !inB.has(key(d)))
-            .map((d) => ({ line: d.span.start.line, present: d.message })),
-        ...b
-            .filter((d) => !inA.has(key(d)))
-            .map((d) => ({ line: d.span.start.line, exact: d.message })),
-    ];
-}
-
-describe("the exact checker against the present one", () => {
-    for (const { name, source } of [...corpus(), ...AUDIT]) {
-        it(`answers ${name} as the table says`, () => {
-            const craft = parsed(source);
-            const present = checkPresent(craft, { registry }).diagnostics;
-            const exact = checkExact(craft, { registry }).diagnostics;
-            const expected = (DIFFERENCES[name] ?? []).map(({ line, present, exact }) => ({
-                line,
-                ...(present !== undefined && { present }),
-                ...(exact !== undefined && { exact }),
-            }));
-            expect(differences(present, exact)).toEqual(expected);
-        });
-    }
-});
-
-describe("the crafts the present checker answers wrongly", () => {
+describe("the crafts read exactly", () => {
     for (const { name, checks, source } of AUDIT) {
         it(`${checks ? "accepts" : "refuses"} ${name}`, () => {
             expect(checkExact(parsed(source), { registry }).ok).toBe(checks);

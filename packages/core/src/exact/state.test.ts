@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { RPred } from "../check/astate.js";
+import type { RPred } from "../check/pred.js";
 import { holds } from "./reference/conditions.js";
 import { type CatalogOptions, generateCatalog, rng } from "./reference/catalog.js";
 import {

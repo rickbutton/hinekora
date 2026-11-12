@@ -289,7 +289,7 @@ until ${twoOf3} { annul annul exalt exalt }`;
             84,
             type.ok ? type.value : (undefined as never),
         )[0]!;
-        expect(md).toContain(t1.text!); // the exact t1 roll, tier pinned through the join
+        expect(md).toContain(t1.text!); // the exact t1 roll, tier pinned where the paths meet
     });
 
     it("reports a fixed undetermined count as one coupled prefix-or-suffix line", () => {

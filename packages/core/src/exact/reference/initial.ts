@@ -5,9 +5,8 @@
  * declared item offers. The definition exact/initial.ts is held to; a block
  * with a fault is not one it reads. Test support.
  *
- * What `"random"` may be is the reading under question: the present checker's
- * (check/ops.ts `anonymousRows` on its first state), restated here row by row.
- * A natural row of the side, of the base's domain and class, at most the item's
+ * What `"random"` may be is exact/initial.ts `anonymousRows`, restated here
+ * row by row. A natural row of the side, of the base's domain and class, at most the item's
  * level, of a type and groups no declared modifier has, with room on its side
  * at Rare caps beside the declared modifiers, allowed by the declared
  * metamods, and weighed under the base's tags, the influences' and those the

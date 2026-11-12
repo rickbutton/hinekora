@@ -1,8 +1,7 @@
 /**
  * A craft's definitions: its predicate defs and operation functions, the sort
  * of each parameter as its uses determine it, the binding of a call's
- * arguments, and the substitution that inlines a call. Read the same way by
- * the present checker and the exact one.
+ * arguments, and the substitution that inlines a call.
  */
 import type { Arg, Def, OperationArg, ParamRef, Pred, ProcDef, Stmt } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";

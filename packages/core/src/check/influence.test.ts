@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type CheckContext } from "./check.js";
-import { check } from "../exact/check.js";
+import { check, type CheckContext } from "../exact/check.js";
 import * as v from "../exact/views.js";
 import { guaranteedTypes } from "../exact/views.js";
 import { buildRegistry } from "../resolve/registry.js";
@@ -17,11 +16,6 @@ import {
     RING_BASE,
 } from "../__fixtures__/mods.js";
 import { influenceKey, INFLUENCES } from "../model/marks.js";
-import { BddManager } from "./bdd.js";
-import { initialState, join, refine } from "./astate.js";
-import { runMethod } from "./ops.js";
-import { HARVEST_INFLUENCE_REFORGE } from "./library.js";
-import { preconditionMessage } from "./diagnostics.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE, JEWEL_BASE],
@@ -127,37 +121,6 @@ describe("the influence exalts", () => {
 });
 
 describe("an influence the item may have", () => {
-    const bdd = new BddManager();
-    const counts = {
-        prefixCount: 0,
-        suffixCount: 0,
-        present: new Set<never>(),
-        pinned: new Map<never, never>(),
-        crafted: 0,
-    };
-    const hunter = initialState(bdd, RING_BASE, 100, "rare", counts, {
-        influences: ["hunter"],
-        corrupted: false,
-    });
-    const plain = initialState(bdd, RING_BASE, 100, "rare", counts, {
-        influences: [],
-        corrupted: false,
-    });
-    const met = join(hunter, plain);
-
-    it("is not enough for a craft that needs one", () => {
-        const r = runMethod(met, HARVEST_INFLUENCE_REFORGE, registry);
-        expect(r.ok).toBe(false);
-        if (!r.ok) {
-            expect(preconditionMessage(met, r.failure)).toContain(
-                "needs an influenced item — this item may have Hunter or no influence",
-            );
-        }
-        expect(
-            runMethod(refine(met, { kind: "influenced" })!, HARVEST_INFLUENCE_REFORGE, registry).ok,
-        ).toBe(true);
-    });
-
     it("is not enough for a craft that needs one, until a branch picks it out", () => {
         // Only the items that rolled life take the Hunter's orb.
         const maybe = (then: Parameters<typeof craft>[1]) =>

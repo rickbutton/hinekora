@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type CheckContext } from "./check.js";
-import { check } from "../exact/check.js";
+import { check, type CheckContext } from "../exact/check.js";
 import * as v from "../exact/views.js";
 import { guaranteedTypes, isExcluded } from "../exact/views.js";
 import { buildRegistry } from "../resolve/registry.js";

@@ -15,7 +15,7 @@ import type { Gen, ModId, TagId, TypeId } from "../model/ids.js";
 import { sideCap } from "../model/capacity.js";
 import type { Mod } from "../model/mod.js";
 import type { Registry } from "../resolve/registry.js";
-import type { RPred } from "../check/astate.js";
+import type { RPred } from "../check/pred.js";
 import { collectDefs, collectProcs, type Diag } from "../check/defs.js";
 import { findMethod, type Literal } from "../check/methods.js";
 import { carriedRows, resolvePred, type ResolveView } from "../check/resolve-pred.js";
@@ -452,7 +452,7 @@ class Walker {
     /** The traces of the calls being walked, innermost last. */
     private readonly calls: Map<Stmt, TraceEntry>[] = [];
     /** The item a statement is judged on where the trace's is not it: the
-     *  first step of a loop body reads the item the loop finds, not the join
+     *  first step of a loop body reads the item the loop finds, not the union
      *  over every round, so the attempts are taken alike. */
     private readonly firstSteps = new Map<Stmt, XItem>();
     private readonly resolve: (pred: Pred, a: XItem) => RPred | null;
@@ -568,7 +568,7 @@ class Walker {
         return e === undefined || before === undefined ? e : { ...e, before };
     }
 
-    /** The checker's entry for a statement: inside a loop, the join over its rounds. */
+    /** The checker's entry for a statement: inside a loop, the union over its rounds. */
     private traced(s: Stmt): TraceEntry | undefined {
         for (let i = this.calls.length - 1; i >= 0; i--) {
             const e = this.calls[i]!.get(s);
@@ -873,7 +873,7 @@ class Walker {
         frame: Frame,
     ): Branch[] {
         // Only a method reads the item as found: a loop or branch at the head
-        // of the body asks what the round before left, which the join over the
+        // of the body asks what the round before left, which the union over the
         // rounds holds and the path in weighs.
         const first = stmt.body[0];
         const before = entry?.before;
@@ -1260,7 +1260,7 @@ class Walker {
     /**
      * The chain steps of statements, inside a loop or one at a time outside
      * one: a method is a transition the tracker reads on the checker's item (the
-     * join over the rounds inside a loop), a branch its guard, a restart or a
+     * union over the rounds inside a loop), a branch its guard, a restart or a
      * stop itself. Undefined for a statement the tracker cannot follow.
      */
     private chainSteps(
@@ -1322,7 +1322,7 @@ class Walker {
     private methodStep(s: Extract<Stmt, { kind: "operation" }>, id: number): ChainStep | undefined {
         const tracker = this.tracker;
         if (tracker === undefined) return undefined;
-        // A step runs on every round's item: the join over the rounds.
+        // A step runs on every round's item: the union over the rounds.
         const entry = this.traced(s);
         const method = findMethod(s.words);
         if (entry === undefined || method === undefined || entry.after === undefined)

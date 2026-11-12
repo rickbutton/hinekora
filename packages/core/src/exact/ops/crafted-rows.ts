@@ -15,7 +15,7 @@ import type { Where } from "./pools.js";
 
 /** The category tag of a bench row that is the craftable version of a veiled
  *  modifier (the data's; every such row is one of Jun's crafts). */
-export const UNVEILED_CRAFT = TagId("unveiled_mod");
+const UNVEILED_CRAFT = TagId("unveiled_mod");
 
 /** A veiled placeholder or an unveiled result; with `craftable`, a bench row
  *  crafting a veiled modifier too ("an item with a veiled modifier or its

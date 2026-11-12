@@ -2,9 +2,9 @@
  * A surface condition (`Pred`) resolved against the item it is read for: a
  * modifier name to its type under the item's tags, a tier number to the rows
  * of its ladders, a value comparison to the rows the item may be at, a def
- * call to its body. What it reads of the item is a `ResolveView`, so the
- * present checker reads it off its state and the exact checker off one case
- * of its items.
+ * call to its body. What it reads of the item is a `ResolveView`: the checker
+ * reads one case of its items (exact/conditions.ts), the cost layer the items
+ * at a step.
  */
 import type { ParamRef, Pred } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
@@ -23,7 +23,7 @@ import {
     tierRows,
 } from "../resolve/tiers.js";
 import { plural } from "../words.js";
-import type { RPred } from "./astate.js";
+import type { RPred } from "./pred.js";
 import { bindArgs, type Diag, type PredDefs, substitute } from "./defs.js";
 import type { Range } from "./domain.js";
 import { rollRange } from "./values.js";
@@ -73,9 +73,9 @@ export const NEVER: RPred = {
 };
 
 /**
- * The rows of a compared type the present checker's item may be at: a row
- * it has pinned, a row an essence grants its class (whatever its spawn
- * weight on the base), a natural row that rolls on the base at some level
+ * The rows of a compared type the items may be at: a row they hold, a row an
+ * essence grants its class (whatever its spawn weight on the base), a natural
+ * row that rolls on the base at some level
  * under a tag the item has or may have (a tag a present modifier may add
  * among them), a bench row its class takes, an unveiled or otherwise placed
  * row.
@@ -424,21 +424,6 @@ class Resolver {
         if (typeof v === "string") return v;
         this.env.diag(`parameter "${v.param}" was never given a value`, span);
         return null;
-    }
-}
-
-/** Does the condition compare a modifier's value anywhere in it. */
-export function comparesValue(pred: RPred): boolean {
-    switch (pred.kind) {
-        case "hasValue":
-            return true;
-        case "not":
-            return comparesValue(pred.inner);
-        case "and":
-        case "or":
-            return comparesValue(pred.left) || comparesValue(pred.right);
-        default:
-            return false;
     }
 }
 

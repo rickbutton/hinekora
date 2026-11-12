@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent, type CheckContext } from "./check.js";
-import { check } from "../exact/check.js";
+import { check, type CheckContext } from "../exact/check.js";
 import * as v from "../exact/views.js";
 import {
     cardinalityGuarantees,
@@ -915,7 +914,7 @@ describe("checker — restart is a loop back-edge", () => {
     });
 });
 
-describe("checker — paths that leave different items stay apart", () => {
+describe("checker — items that differ by the path that made them", () => {
     const life = has("IncreasedLife1");
     const undo = iff(notp(life), [op("annul")]);
     const five = () => rareRing(["random", "random", "random"], ["random", "random"]);
@@ -1014,28 +1013,6 @@ describe("checker — paths that leave different items stay apart", () => {
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("5–6 affixes");
         expect(r.diagnostics[0]!.message).toContain("the item may be full");
-    });
-
-    it("refuses a craft whose paths outnumber those it keeps apart, once for a step", () => {
-        const loop = craft(rareRing(), [until(life, [op("exalt"), undo])]);
-        expect(checkPresent(loop, ctx, { maxParts: 2 }).diagnostics).toEqual([]);
-        const one = checkPresent(loop, ctx, { maxParts: 1 }).diagnostics.map((d) => d.message);
-        const tooMany = one.filter((m) => m.startsWith("Too many different items reach this step"));
-        // The branch and the loop each meet two paths, on every pass over them.
-        expect(tooMany).toHaveLength(2);
-        expect(tooMany[0]).toContain("more than 1 combinations");
-    });
-
-    it("refuses a loop that fills the item whatever the number kept apart", () => {
-        // Each round leaves more counts at the head than a small number holds,
-        // so the last of them are joined; the full item is still among them.
-        const fills = craft(rareRing(), [
-            until(life, [op("exalt"), iff(has("FireResist1"), [op("annul")], [undo, op("exalt")])]),
-        ]);
-        for (const maxParts of [1, 2, 3, 12]) {
-            const r = checkPresent(fills, ctx, { maxParts });
-            expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
-        }
     });
 
     it("refuses a loop whose rounds fill the item", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { check } from "../exact/check.js";
-import type { RPred } from "../check/astate.js";
+import type { RPred } from "../check/pred.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, has, iff, item, op, stop } from "../__fixtures__/ast.js";
 import {

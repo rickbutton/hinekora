@@ -175,8 +175,8 @@ An error can name an item that breaks the step, taken from a witness of the fail
 - One package at a time is built by an agent with a fresh context, from this document and
   a brief; a reviewer agent reads it before the next depends on it.
 - The present checker is not changed until package 10, but for data it ignores (a Harvest change's rows by source, a failure's kind). New code imports the model, the
-  registry and the `Op` types; of `check/astate.ts` it imports the `RPred` type alone, which
-  moves when that file goes.
+  registry and the `Op` types; of the present checker's state it imports the `RPred` type
+  alone, now in `check/pred.ts`.
 - A game rule comes from the wiki cache and is cited where it is encoded. An agent that
   meets a rule the wiki does not settle reports it with its assumption; it does not guess
   silently.

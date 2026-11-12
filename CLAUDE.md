@@ -26,7 +26,7 @@ subject:
 ## The core invariant
 
 **Never enumerate outcome unions.** A currency op has hundreds of concrete results;
-chaining `n` of them is `~200^n`. Keep a symbolic summary (the checker's `AItem`) and fold
+chaining `n` of them is `~200^n`. Keep a symbolic summary (the checker's `XItem`) and fold
 each op's effect into it. If you find yourself building a list of concrete items or
 outcomes in the checker, stop; that violates the design and won't scale.
 

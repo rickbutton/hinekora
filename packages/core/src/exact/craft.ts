@@ -43,10 +43,9 @@ export function thresholdsOf(c: Comparisons, type: TypeId): number[] {
 /**
  * The tag sets a name is resolved under: those of each influence set an item
  * of the base can have (the influence slot's values). A driver that resolves
- * a name per influence case reads one of these. The present checker reads the
- * union of the influences an item may have over its paths, which can be three
- * or more on a non-Astrolabe base; such a union is no item's, so it is not
- * read here.
+ * a name per influence case reads one of these. The union of the influences
+ * the items may have, which can be three or more on a non-Astrolabe base, is
+ * no item's, so it is not read here.
  */
 export function nameTagSets(registry: Registry, base: Base): ReadonlySet<TagId>[] {
     return influenceKeysFor(base).map((k) => influenceTagsOfKey(registry, base, k));

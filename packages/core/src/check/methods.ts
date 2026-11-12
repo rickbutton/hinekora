@@ -91,9 +91,9 @@ export type Literal =
     | { readonly kind: "tier"; readonly value: number };
 
 /**
- * What a method's builder reads of the item the statement reaches: the
- * present checker's state is one, the exact checker's views another. The
- * fields are what the item may be over its paths.
+ * What a method's builder reads of the items the statement reaches, from the
+ * checker's views (exact/build.ts `methodItemOf`). The fields are what the
+ * items may be.
  */
 export interface MethodItem {
     readonly base: Base;

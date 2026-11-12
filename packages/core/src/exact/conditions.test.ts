@@ -111,8 +111,8 @@ describe("a condition read item by item", () => {
     });
 
     it("differs from one reading over the whole state", () => {
-        // Read once under both influences, as the present checker reads this
-        // state, tier 1 is X2 or XS on every item.
+        // Read once under both influences together, tier 1 is X2 or XS on
+        // every item.
         const once = resolvePred(
             t1,
             {

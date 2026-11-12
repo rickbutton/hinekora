@@ -372,7 +372,7 @@ describe("the pool checks", () => {
         expect(why(w, full)).toEqual({ kind: "harvestNoRoom", tag: "attack" });
     });
 
-    it("word an open slot as the present checker does", () => {
+    it("word an open slot", () => {
         const w = world([...P, ...S]);
         const r = runMethod(fromItems(w.u, [cItem()])!, [req({ kind: "openSlot", gen: "prefix" })]);
         expect(r.ok ? undefined : r.failure).toEqual({

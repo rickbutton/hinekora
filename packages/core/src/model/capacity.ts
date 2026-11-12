@@ -111,7 +111,7 @@ function naturalPerSide(rarity: Rarity, base: Base): number {
 
 /** The hard cap on TOTAL affixes for this rarity — `2 × naturalPerSide`, an
  *  independent bound the per-side deltas cannot exceed (magic = 2, rare = 6). */
-export function hardTotalCap(rarity: Rarity, base: Base): number {
+function hardTotalCap(rarity: Rarity, base: Base): number {
     return 2 * naturalPerSide(rarity, base);
 }
 

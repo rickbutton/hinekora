@@ -113,9 +113,9 @@ export function eldritchTierOf(name: EldritchTierName): number {
 
 declare const eldritchBrand: unique symbol;
 /**
- * The pair of eldritch tiers as a key, `<exarch>/<eater>` with 0 for none. The
- * abstract item holds a set of these: the dominance rule reads the two tiers
- * together, so they are tracked as pairs rather than two independent sets.
+ * The pair of eldritch tiers as a key, `<exarch>/<eater>` with 0 for none: the
+ * dominance rule reads the two tiers together, so the items' implicits are
+ * read as a set of pairs rather than two independent sets.
  */
 export type EldritchKey = string & { readonly [eldritchBrand]: true };
 
@@ -185,8 +185,8 @@ export const INFLUENCE_ORB: Readonly<Record<Influence, string>> = {
 declare const keyBrand: unique symbol;
 /**
  * One set of influences as a canonical key: the names in the game's order
- * joined with `+`, the empty string for none. The abstract item holds a set of
- * these, the influence sets it may have. Branded so a bare influence name is
+ * joined with `+`, the empty string for none; the items at a step have a set
+ * of these. Branded so a bare influence name is
  * not mistaken for the key of its singleton set.
  */
 export type InfluenceKey = string & { readonly [keyBrand]: true };

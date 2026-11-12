@@ -1,5 +1,5 @@
 /**
- * The abstract item drawn as the game draws an item: a rarity-coloured header
+ * The items at a step drawn as the game draws an item: a rarity-coloured header
  * with the base, separated sections for the implicits, the modifiers and the
  * marks, modifier text in the game's blue with the tier at the right. Where
  * the state is not concrete the card says so in place: a tier range, a roll

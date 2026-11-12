@@ -9,7 +9,7 @@
  * names that pool as such a group.
  */
 import type { Craft, Pred, Stmt } from "../ast/ast.js";
-import type { RPred } from "../check/astate.js";
+import type { RPred } from "../check/pred.js";
 import {
     bindArgs,
     collectDefs,

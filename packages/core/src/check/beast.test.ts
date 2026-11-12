@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent, type CheckContext } from "./check.js";
-import { check } from "../exact/check.js";
+import { check, type CheckContext } from "../exact/check.js";
 import * as v from "../exact/views.js";
 import { disjunctiveGuarantees, fracturedTypes, guaranteedTypes } from "../exact/views.js";
-import { join } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { beast, craft, fracturedP, has, iff, item, op, until } from "../__fixtures__/ast.js";
 import {
@@ -254,18 +252,6 @@ describe("beast fracture", () => {
         expect(text).toContain("Requires a removable affix");
         // The refused annul acts on no item, so the craft goes on from the item it was used on.
         expect(v.counts(r.finalState!).total).toEqual([2, 2]);
-    });
-
-    it("joins the count where one path locked two and another one", () => {
-        const two = checkPresent(
-            craft(talisman(6), [beast({ kind: "fracture", n: 2 })]),
-            ctx,
-        ).finalState!;
-        const one = checkPresent(
-            craft(talisman(6), [beast({ kind: "fracture" })]),
-            ctx,
-        ).finalState!;
-        expect(join(two, one).fractures).toEqual([1, 2]);
     });
 
     it("counts one lock or two where a branch fractured two on one path and one on the other", () => {

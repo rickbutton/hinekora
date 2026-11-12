@@ -1,14 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { type CheckContext } from "./check.js";
-import { check } from "../exact/check.js";
+import { check, type CheckContext } from "../exact/check.js";
 import * as v from "../exact/views.js";
-import { BddManager } from "./bdd.js";
-import { type InitialCounts, initialState, join, refine } from "./astate.js";
-import { runMethod } from "./ops.js";
-import { currencyOps, harvestReforgeOps } from "./library.js";
-import { TagId } from "../model/ids.js";
-import { influenceKey } from "../model/marks.js";
-import { preconditionMessage, renderState } from "./diagnostics.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { corruptedP, craft, has, iff, influencedP, item, op, until } from "../__fixtures__/ast.js";
 import { CATALOG, HUNTER_RING_SUFFIX, RING_BASE } from "../__fixtures__/mods.js";
@@ -142,75 +134,5 @@ describe("corruption", () => {
     it("narrows by `corrupted`", () => {
         const c = craft(ring(), [iff(corruptedP(), [op("chaos")], [op("chaos")])]);
         expect(messages(c).join("\n")).toContain("'if' branch can never run");
-    });
-});
-
-describe("marks where paths meet", () => {
-    const bdd = new BddManager();
-    const counts: InitialCounts = {
-        prefixCount: 0,
-        suffixCount: 0,
-        present: new Set(),
-        pinned: new Map(),
-        crafted: 0,
-    };
-    const hunter = initialState(bdd, RING_BASE, 100, "rare", counts, {
-        influences: ["hunter"],
-        corrupted: false,
-    });
-    const plain = initialState(bdd, RING_BASE, 100, "rare", counts, {
-        influences: [],
-        corrupted: true,
-    });
-    const met = join(hunter, plain);
-
-    it("joins to the set of what either path had", () => {
-        expect(met.influences).toEqual(new Set([influenceKey(["hunter"]), influenceKey([])]));
-        expect(met.corrupted).toEqual(new Set([true, false]));
-        expect(renderState(met)).toContain("· Hunter or no influence · maybe corrupted");
-    });
-
-    it("refines back to one path, and to none when the predicate is impossible", () => {
-        expect(refine(met, { kind: "influenced", influence: "hunter" })!.influences).toEqual(
-            new Set([influenceKey(["hunter"])]),
-        );
-        expect(refine(met, { kind: "influenced" }, false)!.influences).toEqual(
-            new Set([influenceKey([])]),
-        );
-        expect(refine(met, { kind: "corrupted" })!.corrupted).toEqual(new Set([true]));
-        expect(refine(hunter, { kind: "corrupted" })).toBeNull();
-        expect(refine(plain, { kind: "influenced", influence: "shaper" })).toBeNull();
-    });
-
-    it("lets an influence held on some path only admit its rows as possible", () => {
-        const maybeHunter = refine(met, { kind: "corrupted" }, false)!;
-        const r = runMethod(maybeHunter, currencyOps("chaos"), registry);
-        expect(r.ok && r.state.possible.has(HUNTER_RING_SUFFIX.type)).toBe(true);
-    });
-
-    it("does not let an influence held on some path only prove a tagged pool non-empty", () => {
-        const reforge = harvestReforgeOps(TagId("influence_only"));
-        const sure = runMethod(hunter, reforge, registry);
-        expect(sure.ok).toBe(true);
-        const unsure = runMethod(refine(met, { kind: "corrupted" }, false)!, reforge, registry);
-        expect(unsure.ok).toBe(false);
-        if (!unsure.ok) expect(unsure.failure.kind).toBe("harvestBlocked");
-    });
-
-    it("judges a mark that holds on some path as unproven", () => {
-        const fracture = runMethod(
-            refine(met, { kind: "corrupted" }, false)!,
-            currencyOps("fracture"),
-            registry,
-        );
-        expect(fracture.ok).toBe(false);
-        if (!fracture.ok) {
-            expect(preconditionMessage(met, fracture.failure)).toContain("may have Hunter");
-        }
-        const exalt = runMethod(met, currencyOps("exalt"), registry);
-        expect(exalt.ok).toBe(false);
-        if (!exalt.ok) {
-            expect(preconditionMessage(met, exalt.failure)).toContain("may be corrupted");
-        }
     });
 });

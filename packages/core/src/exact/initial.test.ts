@@ -17,14 +17,13 @@ import {
     TAG_DEFAULT,
 } from "../__fixtures__/mods.js";
 import type { AffixDecl } from "../ast/ast.js";
-import { checkPresent } from "../check/check.js";
+import { checkExact } from "./check.js";
 import { declareItem } from "../check/item-block.js";
-import { anonymousRows as presentAnonymousRows } from "../check/ops.js";
 import { TagId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import type { Registry } from "../resolve/registry.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { anonymousRows, startOf } from "./initial.js";
+import { startOf } from "./initial.js";
 import { benchCraft, eldritchLadders, generateCatalog, modRow } from "./reference/catalog.js";
 import {
     BENCH_COLD,
@@ -42,7 +41,7 @@ import { diffSets } from "./reference/sets.js";
 
 type Spec = Parameters<typeof item>[0];
 
-/** The block's items both ways, and the anonymous pools against the present checker's. */
+/** The block's items, read symbolically and listed by the reference. */
 function expectItems(registry: Registry, spec: Spec): number {
     const block = item(spec);
     const said: string[] = [];
@@ -53,13 +52,6 @@ function expectItems(registry: Registry, spec: Spec): number {
     const expected = atCells(u, initialItems(ctx, block));
     const listed = state === null ? atCells(u, []) : listItems(u, state.dd, { lowest: true });
     expect(diffSets(expected, listed), JSON.stringify(spec)).toBe("");
-    const before = checkPresent(craft(block, []), { registry }).trace[0]!.before;
-    for (const gen of ["prefix", "suffix"] as const) {
-        const ids = (rows: readonly { id: string }[]) => rows.map((m) => m.id).sort();
-        expect(ids(anonymousRows(registry, decl, gen))).toEqual(
-            ids(presentAnonymousRows(before, registry, gen)),
-        );
-    }
     return expected.size;
 }
 
@@ -389,9 +381,9 @@ describe("the item block's faults", () => {
                 said.some((m) => m.includes(words)),
                 `${JSON.stringify(spec)}: ${said.join(" | ")}`,
             ).toBe(true);
-            // The present checker reports the same: the validation is one code.
+            // The check reports the same, and nothing more.
             expect(said).toEqual(
-                checkPresent(craft(item(spec), []), { registry: FAULTS }).diagnostics.map(
+                checkExact(craft(item(spec), []), { registry: FAULTS }).diagnostics.map(
                     (d) => d.message,
                 ),
             );

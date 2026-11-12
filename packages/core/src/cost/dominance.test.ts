@@ -248,7 +248,7 @@ describe("the cost walk through an Orb of Dominance", () => {
 
         it("where the item's influences differ by path", () => {
             // The item the check hands the walk is a Hunter's on one path and
-            // a Hunter and Shaper's on another, as after a join.
+            // a Hunter and Shaper's on another, as where two paths meet.
             const shaper: Mod = {
                 ...THIRD!,
                 id: ModId("ShaperBoots1"),

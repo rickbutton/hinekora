@@ -18,7 +18,7 @@
  */
 import type { Pred } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
-import type { RPred } from "../check/astate.js";
+import type { RPred } from "../check/pred.js";
 import type { Diag, PredDefs } from "../check/defs.js";
 import {
     carriedRows,
@@ -156,10 +156,9 @@ export function narrowBy(
 /**
  * The condition read for the driver's messages, once per influence set the
  * state's items have, each under its own influences, its rows those the items
- * of that set may be at. A fault is reported, worded as the present checker
- * words it, where it holds in every case: an atom that resolves for no
- * influence set of the state (the first set's wording), or a fault of the
- * condition's structure (a def misused). The result is then null, and the
+ * of that set may be at. A fault is reported where it holds in every case: an
+ * atom that resolves for no influence set of the state (the first set's
+ * wording), or a fault of the condition's structure (a def misused). The result is then null, and the
  * driver narrows by nothing. Otherwise an atom that fails for some sets only
  * never holds there (`conditionOfPred`), and the result is the first set's
  * reading with the tiers each set waits for above the item's level.
@@ -211,7 +210,7 @@ export function readCondition(
 }
 
 /** One influence case of the state as a resolution reads it: its influences'
- *  tags, and the rows its items may be at as the present checker reads them. */
+ *  tags, and the rows its items may be at (`carriedRows`). */
 function caseView(part: XItem, influence: number): ResolveView {
     const { u } = part;
     const tags = caseTags(u, influence);

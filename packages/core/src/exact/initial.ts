@@ -52,8 +52,7 @@ import {
 
 /**
  * The rows a `"random"` affix of the side may be: the natural pool of the
- * item the block declares, at its level, as the present checker reads it
- * (check/ops.ts `anonymousRows` on its first state): the declared modifiers'
+ * item the block declares, at its level: the declared modifiers'
  * types, groups, tags and metamods held as present, at Rare caps, a tag a row
  * of the pool may add read wherever it admits another (to a fixpoint). The
  * declared types are `types`, by default every type the block names; a block

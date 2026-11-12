@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import type { AItem, RPred } from "../../check/astate.js";
+import type { RPred } from "../../check/pred.js";
 import * as L from "../../check/library.js";
-import { findMethod } from "../../check/methods.js";
+import { findMethod, type MethodItem } from "../../check/methods.js";
 import type { Check, Op, PreconditionFailure, Transform } from "../../check/ops.js";
 import { rollRange } from "../../check/values.js";
 import { type ModId, type Rarity, TypeId } from "../../model/ids.js";
-import { type InfluenceKey, influenceKey, NO_INFLUENCE } from "../../model/marks.js";
+import { type InfluenceKey, influenceKey, NO_ELDRITCH, NO_INFLUENCE } from "../../model/marks.js";
 import type { Mod } from "../../model/mod.js";
 import { TALISMAN_BASE } from "../../__fixtures__/mods.js";
 import { buildRegistry } from "../../resolve/registry.js";
@@ -127,12 +127,13 @@ const rowsOf = (cat: Catalog, ...ids: string[]): ModId[] =>
 /** The grove's change as check/methods.ts builds it, for an unknown item of
  *  the catalogue's base: every row the source may be has its targets. */
 function harvestOps(cat: Catalog, from: string, to: string): readonly Op[] {
-    const a = {
+    const a: MethodItem = {
         base: cat.base,
         ilvl: cat.ilvl,
         influences: new Set([NO_INFLUENCE]),
+        eldritch: new Set([NO_ELDRITCH]),
         tiers: new Map(),
-    } as unknown as AItem;
+    };
     const built = findMethod(["harvest", "change"])!.build(
         [
             { kind: "string", value: from },

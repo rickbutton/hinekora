@@ -23,7 +23,7 @@ import type { Range } from "../check/domain.js";
 import { narrowRange } from "../check/values.js";
 import type { Op } from "../check/ops.js";
 import type { Registry } from "../resolve/registry.js";
-import type { RPred } from "../check/astate.js";
+import type { RPred } from "../check/pred.js";
 import type { Dd } from "../exact/dd.js";
 import { narrow as narrowTo, stateOf, type XItem } from "../exact/state.js";
 import type { ModValue, Universe } from "../exact/universe.js";
@@ -979,8 +979,8 @@ export class Tracker {
                 const ran = ranOn(item, ops);
                 // A method this state cannot take leaves it as it was.
                 if (!ran.ok) return [{ state, prob: 1 }];
-                // The checker reads an Orb of Dominance as a join over which
-                // modifier went and which rose; the state says which.
+                // The checker's items after an Orb of Dominance are every way
+                // a modifier went and one rose; the state says which.
                 if (ops.some((op) => op.kind === "elevate"))
                     return this.counted(this.dominated(item, state));
                 if (ops.some((op) => op.kind === "fill" && op.pool.kind === "veiledPlaceholder"))

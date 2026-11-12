@@ -177,8 +177,8 @@ function presentValues(s: XItem, type: TypeId): { slot: number; values: ModValue
     return { slot, values: valuesAt(s, slot).flatMap((v) => (v === 0 ? [] : [ms.values[v]!])) };
 }
 
-/** The rows the type is at on the items that carry it, best first: what the
- *  present checker's tier overlay approximates. Empty where it is absent. */
+/** The rows the type is at on the items that carry it, best first. Empty
+ *  where it is absent. */
 export function rowsOf(s: XItem, type: TypeId): readonly Mod[] {
     return memo(s, `rows:${type}`, () => {
         const at = presentValues(s, type);

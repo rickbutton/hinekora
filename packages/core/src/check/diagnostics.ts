@@ -6,7 +6,6 @@
 import type { Pred } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import type { Base } from "../model/base.js";
-import { caps } from "../model/capacity.js";
 import type { Rarity } from "../model/ids.js";
 import {
     type EldritchKey,
@@ -21,7 +20,6 @@ import {
 import { withArticle } from "../resolve/messages.js";
 import type { ItemView } from "../render/item.js";
 import { baseLabel } from "../render/render.js";
-import { CountDomain, type Counts } from "./counts.js";
 import type { Range } from "./domain.js";
 import type { PreconditionFailure } from "./ops.js";
 import { capitalise, plural, RARITY_WORD, rangeText, rarityText } from "../words.js";
@@ -34,32 +32,21 @@ export interface CheckDiagnostic {
     readonly example?: ItemView;
 }
 
-/**
- * What an error's words read of the item, over every item the step may be
- * used on: the present checker's state is one, and so is a view of the exact
- * checker's (exact/views.ts `summaryOf`), so both checkers' errors are worded
- * by the same functions.
- */
+/** What an error's words read of the items a step is used on
+ *  (exact/views.ts `summaryOf`). */
 export interface ItemSummary {
     readonly base: Base;
     readonly ilvl: number;
     readonly rarities: ReadonlySet<Rarity>;
     /** The least and greatest number of affixes, prefixes and suffixes. */
-    readonly counts: Counts;
+    readonly counts: {
+        readonly total: Range;
+        readonly prefix: Range;
+        readonly suffix: Range;
+    };
     readonly influences: ReadonlySet<InfluenceKey>;
     readonly corrupted: ReadonlySet<boolean>;
     readonly eldritch: ReadonlySet<EldritchKey>;
-}
-
-/** The suffix range, no looser than the total less the prefixes and the
- *  loosest cap of the rarities; an exact count is unchanged by it. */
-function suffixRange(a: ItemSummary): Range {
-    const all = [...a.rarities].map((r) => caps(r, a.base));
-    return CountDomain.suffix(a.counts, {
-        prefix: Math.max(...all.map((c) => c.prefix)),
-        suffix: Math.max(...all.map((c) => c.suffix)),
-        total: Math.max(...all.map((c) => c.total)),
-    });
 }
 
 /** "Magic or Rare": the rarities the item may have, in the game's order. */
@@ -85,7 +72,7 @@ export function renderState(a: ItemSummary): string {
         rarityLabel(a.rarities),
         renderRange(a.counts.total, "affix"),
         renderRange(a.counts.prefix, "prefix"),
-        renderRange(suffixRange(a), "suffix"),
+        renderRange(a.counts.suffix, "suffix"),
         `ilvl ${a.ilvl}`,
         ...marksLabel(a),
     ].join(" · ");

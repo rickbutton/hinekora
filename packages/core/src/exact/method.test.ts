@@ -1,14 +1,12 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { initialState } from "../check/astate.js";
-import { BddManager } from "../check/bdd.js";
 import * as L from "../check/library.js";
-import { METHODS } from "../check/methods.js";
+import { type MethodItem, METHODS } from "../check/methods.js";
 import type { Check, Op, Transform } from "../check/ops.js";
 import { RING_BASE } from "../__fixtures__/mods.js";
 import { canBeRare } from "../model/capacity.js";
 import { effectsOf } from "../model/effects.js";
 import { type Gen, TagId, TypeId } from "../model/ids.js";
-import { INFLUENCES } from "../model/marks.js";
+import { INFLUENCES, NO_ELDRITCH, NO_INFLUENCE } from "../model/marks.js";
 import { metamodCases, runMethod, runMethodTrace } from "./method.js";
 import {
     type DispatchKey,
@@ -762,13 +760,13 @@ describe("the placement of checks", () => {
         let built = 0;
         for (const registry of registries) {
             const base = registry === HAND_REGISTRY ? RING_BASE : cat.base;
-            const a = initialState(new BddManager(), base, 84, "rare", {
-                prefixCount: 0,
-                suffixCount: 0,
-                present: new Set(),
-                pinned: new Map(),
-                crafted: 0,
-            });
+            const a: MethodItem = {
+                base,
+                ilvl: 84,
+                influences: new Set([NO_INFLUENCE]),
+                eldritch: new Set([NO_ELDRITCH]),
+                tiers: new Map(),
+            };
             for (const m of METHODS) {
                 const names = (of: string): string[] =>
                     of === "essence"

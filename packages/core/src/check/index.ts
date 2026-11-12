@@ -1,17 +1,7 @@
 /** Barrel for the checker. */
-export * from "./bdd.js";
-export {
-    type AItem,
-    canBeRare,
-    hardTotalCap,
-    type ImplicitTypes,
-    maxTotal,
-    type Range,
-    type RPred,
-    sideCap,
-    type Tiers,
-} from "./astate.js";
+export type { Range } from "./domain.js";
+export type { RPred } from "./pred.js";
+export { PARAM_SORT_WORD, type ParamType, paramSorts } from "./defs.js";
 export * from "./diagnostics.js";
-export * from "./check.js";
 export * from "./methods.js";
-export { type PreconditionFailure, type TransferResult } from "./ops.js";
+export { type PreconditionFailure } from "./ops.js";

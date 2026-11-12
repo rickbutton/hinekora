@@ -81,8 +81,7 @@ export function influenceView(
 /**
  * An influenced modifier: its row has no weight under the item's tags but
  * its influences', and its spawn table names a tag of one of them, as an
- * influence row is read for the pool (pools.ts `influenceRow`) and by the
- * present checker (check/ops.ts `influenceRowTest`, `isInfluenceType`). An
+ * influence row is read for the pool (pools.ts `influenceRow`). An
  * elevated row names its influence's tag at no weight, so it is one too.
  */
 export function isInfluenced(row: Mod, v: InfluenceView): boolean {

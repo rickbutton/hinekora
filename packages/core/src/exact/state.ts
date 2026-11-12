@@ -2,10 +2,10 @@
  * The exact checker's state: a set of concrete items held as one diagram over
  * a universe (docs/EXACT.md §3), and narrowing by a resolved condition (§5).
  * A live state is never empty; the empty set is `null`, the dead-branch
- * signal, as the present checker's `refine` gives it.
+ * signal.
  */
 import type { Cmp } from "../ast/ast.js";
-import type { RPred } from "../check/astate.js";
+import type { RPred } from "../check/pred.js";
 import {
     dominantOf,
     eldritchKey,

@@ -3,8 +3,8 @@
  * level a row must fit, the rarity that sets the caps, what is already on the
  * item (its counts, mod types and claimed families, which decide what may still
  * coexist), the tags a spawn table is matched against, and the active effects.
- * The pool reads nothing else. The checker projects its abstract state onto
- * this record; there is no concrete item type behind it.
+ * The pool reads nothing else. The checker reads its set of items onto this
+ * record (exact/views.ts `guaranteedFacts`).
  */
 import type { Base } from "./base.js";
 import type { Effect } from "./effects.js";
