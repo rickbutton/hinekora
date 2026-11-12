@@ -19,6 +19,7 @@ import { influenceTagsOfKey } from "../influence.js";
 import {
     type Choice,
     keeps,
+    keptKey,
     NO_CHOICE,
     type Protection,
     type RuleField,
@@ -201,8 +202,32 @@ const onSides =
     (v: ModValue): boolean =>
         !v.fractured && sides.includes(v.row.gen) && !keeps(p, v.row);
 
-function randomReach(sel: Random, p: Protection): (v: ModValue) => boolean {
-    return onSides(reachSides(sel.gen, p), p);
+/** What a removal reaches, with a name for all that `reach` reads, so a
+ *  relation built on it can be kept by the name. */
+interface NamedReach {
+    readonly name: string;
+    readonly reach: (v: ModValue) => boolean;
+}
+
+function sidesReach(sides: readonly Gen[], p: Protection): NamedReach {
+    return { name: `${sides.join(",")}|${keptKey(p)}`, reach: onSides(sides, p) };
+}
+
+function randomReach(sel: Random, p: Protection): NamedReach {
+    return sidesReach(reachSides(sel.gen, p), p);
+}
+
+const goneKept = new WeakMap<Universe, Map<string, DdRelation>>();
+
+/** `goneWhere`, kept per universe by the reach's name, so the engine reads it
+ *  once (dd.ts `DdRelation`). */
+function keptGone(u: Universe, { name, reach }: NamedReach, except?: number): DdRelation {
+    let byName = goneKept.get(u);
+    if (byName === undefined) goneKept.set(u, (byName = new Map<string, DdRelation>()));
+    const key = `${name}|${except ?? "-"}`;
+    let rel = byName.get(key);
+    if (rel === undefined) byName.set(key, (rel = goneWhere(u, reach, except)));
+    return rel;
 }
 
 /** A side-limited removal whose side is protected does nothing (Metamod §
@@ -220,10 +245,10 @@ function removeRandom(
     except?: number,
 ): { image: Dd; stuck: Dd } {
     if (skipped(sel, p)) return { image: state, stuck: u.dd.EMPTY };
-    const reach = randomReach(sel, p);
+    const named = randomReach(sel, p);
     return {
-        image: u.dd.mapOne(state, goneWhere(u, reach, except)),
-        stuck: u.dd.diff(state, u.anyMod(reach)),
+        image: u.dd.mapOne(state, keptGone(u, named, except)),
+        stuck: u.dd.diff(state, u.anyMod(named.reach)),
     };
 }
 
@@ -382,7 +407,7 @@ function addAnother(
     // What a removal reaches on an item does not change with the add, under
     // one protection: a value's reach reads its own row and marks.
     const reaches = (p: Protection): Dd =>
-        skipped(sel, p) ? m.ALL : u.anyMod(randomReach(sel, p));
+        skipped(sel, p) ? m.ALL : u.anyMod(randomReach(sel, p).reach);
     const protection = rules.protected;
     const removals = (added: Dd): { dd: Dd; p: Protection }[] =>
         protection.partial.size === 0
@@ -432,11 +457,10 @@ function addAnother(
 export const transforms: TransformTable = {
     strip: {
         reads: PROTECTED,
-        apply: (_op, state, { u, rules }) =>
-            u.dd.mapEach(
-                state,
-                goneWhere(u, onSides(reachSides(undefined, rules.protected), rules.protected)),
-            ),
+        apply: (_op, state, { u, rules }) => {
+            const p = rules.protected;
+            return u.dd.mapEach(state, keptGone(u, sidesReach(reachSides(undefined, p), p)));
+        },
     },
     "remove:random": {
         reads: PROTECTED,
@@ -544,7 +568,7 @@ export const checks: CheckTable = {
                 case "random":
                     pass = skipped(sel, rules.protected)
                         ? u.dd.ALL
-                        : u.anyMod(randomReach(sel, rules.protected));
+                        : u.anyMod(randomReach(sel, rules.protected).reach);
                     break;
                 case "influenced":
                     pass = unionOf(

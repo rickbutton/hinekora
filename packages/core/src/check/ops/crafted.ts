@@ -17,7 +17,7 @@ import { keeps } from "../rules.js";
 import type { PoolSpec } from "./types.js";
 import type { Gen, GroupId, TypeId } from "../../model/ids.js";
 import { isVeiledPlaceholder } from "../../model/veiled.js";
-import type { Dd } from "../dd.js";
+import type { Dd, DdRelation } from "../dd.js";
 import type { ModSlot, Universe } from "../universe.js";
 import { capOf, isVeiledRow, metamodRows, placeholderRows, unveilRows } from "./crafted-rows.js";
 import { add, readsOfFill } from "./fill.js";
@@ -101,21 +101,36 @@ function viaFill<
     };
 }
 
+/** A relation kept per universe, so the engine reads it once (dd.ts
+ *  `DdRelation`). */
+function keptRelation(
+    kept: WeakMap<Universe, DdRelation>,
+    u: Universe,
+    make: () => DdRelation,
+): DdRelation {
+    let rel = kept.get(u);
+    if (rel === undefined) kept.set(u, (rel = make()));
+    return rel;
+}
+
+const ABSENT: readonly number[] = [0];
+const clearing = new WeakMap<Universe, DdRelation>();
+const fracturing = new WeakMap<Universe, DdRelation>();
+
 /** The unfractured crafted modifiers go. */
 function clearCrafted(u: Universe, state: Dd): Dd {
-    return u.dd.mapEach(
-        state,
+    const rel = keptRelation(clearing, u, () =>
         u.modRelation((s, from) => {
             const v = s.values[from];
-            return v !== undefined && v.crafted && !v.fractured ? [0] : undefined;
+            return v !== undefined && v.crafted && !v.fractured ? ABSENT : undefined;
         }),
     );
+    return u.dd.mapEach(state, rel);
 }
 
 /** One unfractured modifier becomes fractured, any of them. */
 function fractureOne(u: Universe, state: Dd): Dd {
-    return u.dd.mapOne(
-        state,
+    const rel = keptRelation(fracturing, u, () =>
         u.modRelation((s, from, at) => {
             const v = s.values[from];
             if (v === undefined || v.fractured) return undefined;
@@ -124,6 +139,7 @@ function fractureOne(u: Universe, state: Dd): Dd {
             return [to];
         }),
     );
+    return u.dd.mapOne(state, rel);
 }
 
 /** The items holding at least `n` modifiers not fractured. */
