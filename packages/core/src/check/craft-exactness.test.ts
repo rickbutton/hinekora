@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
     andp,
     benchRemove,
@@ -53,10 +53,6 @@ import type { Dd } from "./dd.js";
 import { compareCraft } from "./reference/craft.js";
 import { initialItems } from "./reference/initial.js";
 import { rng, type Rng } from "./reference/rng.js";
-
-// Hundreds of random crafts, each run by the exact driver and by the
-// reference over explicit item sets: far past the default limit.
-vi.setConfig({ testTimeout: 120_000 });
 
 // --- the catalogues ---------------------------------------------------------------
 
@@ -597,20 +593,24 @@ interface Tally {
 }
 
 /** Enough crafts for every kind of finding and a few loops past their round
- *  limit, in about half a minute. */
+ *  limit. */
 const SEEDS = 330;
 
 describe("a whole craft, run exactly", () => {
-    it("reports what the reference finds and holds the items it holds, statement by statement", () => {
-        const tally: Tally = {
-            crafts: 0,
-            statements: 0,
-            findings: new Map(),
-            rounds: new Map(),
-            largest: 0,
-            items: 0,
-        };
-        for (let seed = 1; seed <= SEEDS; seed++) {
+    const tally: Tally = {
+        crafts: 0,
+        statements: 0,
+        findings: new Map(),
+        rounds: new Map(),
+        largest: 0,
+        items: 0,
+    };
+    // A case per craft: the worker reports between them, where one case for
+    // all of them held it past what the test runner waits for a report.
+    const seeds = Array.from({ length: SEEDS }, (_, i) => i + 1);
+    it.each(seeds)(
+        "reports what the reference finds on craft %i, statement by statement",
+        (seed) => {
             const g = generate(seed);
             const c = compareCraft(g.craft, g.cat.registry, g.cat.ctx, { maxRounds: g.maxRounds });
             expect(
@@ -629,7 +629,12 @@ describe("a whole craft, run exactly", () => {
             for (const n of checkDetail(c.strict)?.rounds ?? []) {
                 tally.rounds.set(n, (tally.rounds.get(n) ?? 0) + 1);
             }
-        }
+        },
+    );
+
+    it("draws crafts that reach every kind of finding and loops of several rounds", () => {
+        // Reads what the cases above tallied, so it runs only after all of them.
+        expect(tally.crafts, "every craft above ran").toBe(SEEDS);
         if (process.env["CRAFT_STATS"] !== undefined) {
             console.log(
                 JSON.stringify({
