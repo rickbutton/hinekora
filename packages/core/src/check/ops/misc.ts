@@ -3,7 +3,7 @@
  * one type, the Harvest change (that removal and the rows replacing it) and
  * their checks. The rules are reference/ops/misc.ts's, each cited there.
  */
-import { keeps } from "../rules.js";
+import { keeps, keptKey, type Protection } from "../rules.js";
 import type { PoolSpec } from "./types.js";
 import type { Base } from "../../model/base.js";
 import { type ModId, TagId, type TypeId } from "../../model/ids.js";
@@ -149,6 +149,26 @@ function harvestChange(
     return outcome(out, m.diff(state, acted));
 }
 
+const rerollRelations = new WeakMap<Universe, Map<string, DdRelation>>();
+
+/** A Divine Orb's relation: each value neither fractured nor kept by the
+ *  protection to any value of its row and marks. Kept by what the protection
+ *  keeps, so the engine reads it once (dd.ts `DdRelation`). */
+function rerollRelation(u: Universe, p: Protection): DdRelation {
+    let byKey = rerollRelations.get(u);
+    if (byKey === undefined) rerollRelations.set(u, (byKey = new Map<string, DdRelation>()));
+    const key = keptKey(p);
+    const hit = byKey.get(key);
+    if (hit !== undefined) return hit;
+    const rel = u.modRelation((s, from, at) => {
+        const v = s.values[from];
+        if (v === undefined || v.fractured || keeps(p, v.row)) return undefined;
+        return u.rerolled(at, from);
+    });
+    byKey.set(key, rel);
+    return rel;
+}
+
 const relaxRelations = new WeakMap<Universe, Map<string, DdRelation>>();
 
 /** The teardrop's relation on the item's modifier slots for items of one
@@ -227,16 +247,7 @@ export const transforms: TransformTable = {
     reroll: {
         reads: ["protected"],
         apply: (_op, state, { u, rules }) =>
-            u.dd.mapEach(
-                state,
-                u.modRelation((s, from, at) => {
-                    const v = s.values[from];
-                    if (v === undefined || v.fractured || keeps(rules.protected, v.row)) {
-                        return undefined;
-                    }
-                    return u.rerolled(at, from);
-                }),
-            ),
+            u.dd.mapEach(state, rerollRelation(u, rules.protected)),
     },
     // `crafted: true` moves crafted modifiers too; no method asks for it.
     relax: {

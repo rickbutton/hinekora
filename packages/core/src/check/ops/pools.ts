@@ -820,11 +820,22 @@ interface RowsImage {
 }
 
 const imageCache = new WeakMap<Universe, Map<string, RowsImage>>();
+/** The same by the array of rows: a draw asks for one array twice, which can
+ *  then skip naming it. */
+const imageByRows = new WeakMap<Universe, WeakMap<readonly Mod[], RowsImage>>();
 
 /** The relations of laying one of the rows fresh in an absent slot, of
  *  taking it back off, and of laying any number of them. Throws for a row no
  *  slot of the universe holds. */
 function rowsImage(u: Universe, rows: readonly Mod[]): RowsImage {
+    let byRows = imageByRows.get(u);
+    if (byRows === undefined) imageByRows.set(u, (byRows = new WeakMap()));
+    let img = byRows.get(rows);
+    if (img === undefined) byRows.set(rows, (img = namedRowsImage(u, rows)));
+    return img;
+}
+
+function namedRowsImage(u: Universe, rows: readonly Mod[]): RowsImage {
     let c = imageCache.get(u);
     if (c === undefined) imageCache.set(u, (c = new Map<string, RowsImage>()));
     const key = rows

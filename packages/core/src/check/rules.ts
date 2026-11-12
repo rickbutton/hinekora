@@ -33,6 +33,12 @@ export function keeps(p: Protection, row: Mod): boolean {
     return p.sides.has(row.gen) || p.types.has(row.type);
 }
 
+/** A name for all that `keeps` reads of a protection: a relation built on
+ *  `keeps` can be shared by the protections of one name. */
+export function keptKey(p: Protection): string {
+    return `${[...p.sides].sort().join(",")}/${[...p.types].sort().join(",")}`;
+}
+
 export interface Rules {
     readonly protected: Protection;
     /** The crafted-modifier limit (one, or three under the multimod). */
