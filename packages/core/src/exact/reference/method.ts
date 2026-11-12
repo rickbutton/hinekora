@@ -117,7 +117,8 @@ export function refRunMethod(
         cases.set(key, c);
         const before = new Set(run.failing.keys());
         const sizes = new Map([...run.failing].map(([i, xs]) => [i, xs.length]));
-        out.push(...runItem(item, ops, steps, ctx, handlers, run));
+        // An item may have more outcomes than a spread's arguments may hold.
+        for (const x of runItem(item, ops, steps, ctx, handlers, run)) out.push(x);
         for (const [i, xs] of run.failing) {
             if (!before.has(i) || xs.length > (sizes.get(i) ?? 0)) c.refusedAt.add(i);
         }

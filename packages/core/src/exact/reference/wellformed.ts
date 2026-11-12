@@ -104,14 +104,14 @@ export function violations(item: CItem, ctx: RefCtx): string[] {
         out.push(`influence key "${item.influences}" is not canonical`);
     } else if (base.allInfluences) {
         // The Astrolabe Amulet counts as having every influence (Influenced item §
-        // Mechanics), as check.ts `elaborateItem` reads it.
+        // Mechanics), as check/item-block.ts `declareItem` reads it.
         if (item.influences !== influenceKey(INFLUENCES)) {
             out.push("this base has every influence");
         }
     } else {
         // item-model.md §8 "Influence limit" (Influenced item § Mechanics).
         if (influences.length > 2) out.push(`${influences.length} influences, at most two`);
-        // A class no influence marks (check.ts `elaborateItem`, model/marks.ts INFLUENCE_STEMS).
+        // A class no influence marks (check/item-block.ts `declareItem`, model/marks.ts INFLUENCE_STEMS).
         if (influences.length > 0 && INFLUENCE_STEMS[base.itemClass] === undefined) {
             out.push(`class ${base.itemClass} cannot be influenced`);
         }

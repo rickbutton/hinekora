@@ -5,6 +5,7 @@
  * dispatch read this table and know no method themselves; adding a method is
  * an entry here on top of its sequence in `library.ts`.
  */
+import type { Base } from "../model/base.js";
 import { type Gen, type ModId, TagId, type TypeId } from "../model/ids.js";
 import {
     dominantOf,
@@ -12,20 +13,23 @@ import {
     ELDRITCH_TIERS,
     type EldritchSide,
     type EldritchTierName,
+    type EldritchKey,
     eldritchLabel,
     eldritchTierOf,
     INFLUENCE_ORB,
+    type InfluenceKey,
     influenceKey,
     INFLUENCES,
     influenceSetLabel,
+    influencesOf,
     isInfluence,
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import { type FossilSpec, isCorruptedEssence } from "../model/sources.js";
+import { lookupWeight } from "../pool/pool.js";
+import { resolveMessage } from "../resolve/messages.js";
 import { HARVEST_AUGMENT_TAGS, type Registry, STANDARD_CURRENCIES } from "../resolve/registry.js";
 import { tierLadder, tierLadders } from "../resolve/tiers.js";
-import type { AItem } from "./astate.js";
-import { resolveMessage } from "./diagnostics.js";
 import {
     ANY_BEAST_LEVEL,
     beastFractureOps,
@@ -62,7 +66,7 @@ import {
     VEILED_CHAOS,
     VEILED_EXALT,
 } from "./library.js";
-import { influenceTagsAny, type Op } from "./ops.js";
+import type { Op } from "./ops.js";
 
 /** What a quoted name in an argument slot names in the catalog. */
 export type NameKind = "mod" | "essence" | "bench" | "fossil" | "aspect" | "tag";
@@ -86,6 +90,35 @@ export type Literal =
     | { readonly kind: "int"; readonly value: number }
     | { readonly kind: "tier"; readonly value: number };
 
+/**
+ * What a method's builder reads of the item the statement reaches: the
+ * present checker's state is one, the exact checker's views another. The
+ * fields are what the item may be over its paths.
+ */
+export interface MethodItem {
+    readonly base: Base;
+    readonly ilvl: number;
+    /** The influence sets the item may have. */
+    readonly influences: ReadonlySet<InfluenceKey>;
+    /** The pairs of eldritch tiers it may have. */
+    readonly eldritch: ReadonlySet<EldritchKey>;
+    /** The rows a modifier type may be at, where they are known; a type with
+     *  no entry may be at any of its rows. */
+    readonly tiers: ReadonlyMap<TypeId, ReadonlySet<ModId>>;
+}
+
+/** The influence tags the item carries on any path: what a name written
+ *  against it may mean. */
+export function influenceTagsOfItem(a: MethodItem, registry: Registry): ReadonlySet<TagId> {
+    const out = new Set<TagId>();
+    for (const key of a.influences) {
+        for (const i of influencesOf(key)) {
+            for (const t of registry.influenceTags(a.base, i)) out.add(t);
+        }
+    }
+    return out;
+}
+
 /** Why a method could not be built from its arguments, in the game's words. */
 export interface Refusal {
     readonly refused: string;
@@ -101,7 +134,7 @@ export interface Method {
      *  the statement reaches. */
     readonly build: (
         args: readonly Literal[],
-        a: AItem,
+        a: MethodItem,
         registry: Registry,
     ) => readonly Op[] | Refusal;
 }
@@ -139,33 +172,54 @@ const isNatural = (m: Mod): boolean => (m.source ?? "natural") === "natural";
 /**
  * The rows of `type` that stand to a placed row as its counterpart: the same
  * source, level, side and domain, and a row that source puts on this item.
- * The bench and the essences say which classes take a row; any other row says
- * it by the tags of its spawn table, the base's and its influences', a row
- * that names only other items' tags being theirs.
+ * The bench and the essences say which classes take a row. Any other row
+ * that rolls somewhere is on the item where its spawn table, read first entry
+ * first (item-model.md §5 "Spawn table"), weighs it under the base's tags and
+ * its influences': an unveiled two-handed row is no counterpart on a wand,
+ * whose own tag zeroes it. A row that rolls nowhere says it by the tags it
+ * names, a row naming only other items' tags being theirs. A tag in `maybe`
+ * is one the item may carry, read wherever it admits the row
+ * (`lookupWeight`'s optimistic reading).
  */
+export function isTwinOn(
+    was: Mod,
+    m: Mod,
+    base: Base,
+    registry: Registry,
+    tags: ReadonlySet<TagId>,
+    maybe?: ReadonlySet<TagId>,
+): boolean {
+    const cls = base.itemClass;
+    switch (was.source) {
+        case "bench":
+            return registry.benchModsFor(cls).has(m.id);
+        case "essence":
+            return registry.essences.some((e) => e.grants.get(cls) === m.id);
+        default: {
+            if (m.spawn.some((w) => w.weight > 0)) {
+                return (lookupWeight(m, new Set([...base.tags, ...tags]), maybe) ?? 0) > 0;
+            }
+            const named = (t: TagId): boolean =>
+                base.tags.has(t) || tags.has(t) || maybe?.has(t) === true;
+            return (
+                m.spawn.every((w) => w.tag === DEFAULT_TAG) ||
+                m.spawn.some((w) => w.tag !== DEFAULT_TAG && named(w.tag))
+            );
+        }
+    }
+}
+
 function twinRows(
     was: Mod,
     type: TypeId,
-    a: AItem,
+    a: MethodItem,
     tags: ReadonlySet<TagId>,
     registry: Registry,
 ): readonly Mod[] {
-    const cls = a.base.itemClass;
-    const onThisItem = (m: Mod): boolean => {
-        switch (was.source) {
-            case "bench":
-                return registry.benchModsFor(cls).has(m.id);
-            case "essence":
-                return registry.essences.some((e) => e.grants.get(cls) === m.id);
-            default:
-                return (
-                    m.spawn.every((w) => w.tag === DEFAULT_TAG) ||
-                    m.spawn.some(
-                        (w) => w.tag !== DEFAULT_TAG && (a.base.tags.has(w.tag) || tags.has(w.tag)),
-                    )
-                );
-        }
-    };
+    // The paths' influences together are no one item's, so they belong in
+    // `maybe`; read as sure they let an early zero of one influence stop a row
+    // another path's influence weighs. The exact checker builds per influence.
+    const onThisItem = (m: Mod): boolean => isTwinOn(was, m, a.base, registry, tags);
     return registry.catalog.filter(
         (m) =>
             m.type === type &&
@@ -181,10 +235,10 @@ function twinRows(
 function harvestChange(
     fromName: string,
     toName: string,
-    a: AItem,
+    a: MethodItem,
     registry: Registry,
 ): readonly Op[] | Refusal {
-    const tags = influenceTagsAny(a, registry);
+    const tags = influenceTagsOfItem(a, registry);
     const ctx = { base: a.base, ilvl: a.ilvl, tags };
     const from = registry.resolveModType(fromName, ctx);
     if (!from.ok) return refuse(resolveMessage(from.error));
@@ -341,7 +395,7 @@ function harvestChange(
 /** A resonator: the fossils resolved, distinct, at most four, their rows looked up. */
 function resonator(
     names: readonly string[],
-    a: AItem,
+    a: MethodItem,
     registry: Registry,
 ): readonly Op[] | Refusal {
     const fossils: FossilSpec[] = [];
@@ -374,7 +428,7 @@ function resonator(
 /** The side an Eldritch orb acts on: the dominant implicit, which must be the
  *  same on every path for the orb to have one meaning. */
 function dominantSide(
-    a: AItem,
+    a: MethodItem,
     orb: string,
     ops: (side: EldritchSide) => readonly Op[],
 ): readonly Op[] | Refusal {
@@ -567,7 +621,7 @@ export const METHODS: readonly Method[] = [
             const type = registry.resolveModType(text(n), {
                 base: a.base,
                 ilvl: a.ilvl,
-                tags: influenceTagsAny(a, registry),
+                tags: influenceTagsOfItem(a, registry),
             });
             if (!type.ok) return refuse(resolveMessage(type.error));
             return unveilOps({ type: type.value, name: text(n) });

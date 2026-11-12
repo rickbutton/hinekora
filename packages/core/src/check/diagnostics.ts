@@ -5,24 +5,57 @@
  */
 import type { Pred } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
+import type { Base } from "../model/base.js";
+import { caps } from "../model/capacity.js";
 import type { Rarity } from "../model/ids.js";
 import {
+    type EldritchKey,
     eldritchLabel,
     influenceKey,
     influenceLabel,
     influenceSetLabel,
+    type InfluenceKey,
     NO_ELDRITCH,
     NO_INFLUENCE,
 } from "../model/marks.js";
-import type { ResolveError } from "../resolve/registry.js";
+import { withArticle } from "../resolve/messages.js";
 import { baseLabel } from "../render/render.js";
-import { type AItem, type Range, suffixRange } from "./astate.js";
+import { CountDomain, type Counts } from "./counts.js";
+import type { Range } from "./domain.js";
 import type { PreconditionFailure } from "./ops.js";
 import { capitalise, plural, RARITY_WORD, rangeText, rarityText } from "../words.js";
 
 export interface CheckDiagnostic {
     readonly message: string;
     readonly span: SourceSpan;
+}
+
+/**
+ * What an error's words read of the item, over every item the step may be
+ * used on: the present checker's state is one, and so is a view of the exact
+ * checker's (exact/views.ts `summaryOf`), so both checkers' errors are worded
+ * by the same functions.
+ */
+export interface ItemSummary {
+    readonly base: Base;
+    readonly ilvl: number;
+    readonly rarities: ReadonlySet<Rarity>;
+    /** The least and greatest number of affixes, prefixes and suffixes. */
+    readonly counts: Counts;
+    readonly influences: ReadonlySet<InfluenceKey>;
+    readonly corrupted: ReadonlySet<boolean>;
+    readonly eldritch: ReadonlySet<EldritchKey>;
+}
+
+/** The suffix range, no looser than the total less the prefixes and the
+ *  loosest cap of the rarities; an exact count is unchanged by it. */
+function suffixRange(a: ItemSummary): Range {
+    const all = [...a.rarities].map((r) => caps(r, a.base));
+    return CountDomain.suffix(a.counts, {
+        prefix: Math.max(...all.map((c) => c.prefix)),
+        suffix: Math.max(...all.map((c) => c.suffix)),
+        total: Math.max(...all.map((c) => c.total)),
+    });
 }
 
 /** "Magic or Rare": the rarities the item may have, in the game's order. */
@@ -42,7 +75,7 @@ function renderRange(range: Range, noun: string): string {
  * transmute both show 0–1, implying an impossible (0,0)/(1,1)); the total
  * restores the correlation.
  */
-export function renderState(a: AItem): string {
+export function renderState(a: ItemSummary): string {
     return [
         baseLabel(a.base),
         rarityLabel(a.rarities),
@@ -55,7 +88,7 @@ export function renderState(a: AItem): string {
 }
 
 /** The marks worth a word: an influence the item may have, a possible corruption. */
-export function marksLabel(a: AItem): string[] {
+export function marksLabel(a: ItemSummary): string[] {
     const out: string[] = [];
     if (!(a.influences.size === 1 && a.influences.has(NO_INFLUENCE))) {
         out.push(influenceLabel(a.influences));
@@ -131,8 +164,16 @@ export function describePred(pred: Pred): string {
 
 // --- message builders ------------------------------------------------------
 
+/** A statement whose words name no method: a currency's name is the common
+ *  case, so that is what the message calls it. */
+export function unknownOperation(words: readonly string[]): string {
+    return words.length === 1
+        ? `Unknown currency "${words[0]}".`
+        : `Unknown operation "${words.join(" ")}".`;
+}
+
 /** A precondition failure: state first, then what the op required. */
-export function preconditionMessage(state: AItem, failure: PreconditionFailure): string {
+export function preconditionMessage(state: ItemSummary, failure: PreconditionFailure): string {
     const need = ((): string => {
         switch (failure.kind) {
             case "wrongRarity":
@@ -272,40 +313,4 @@ export function preconditionMessage(state: AItem, failure: PreconditionFailure):
     return `at this point the item is: ${renderState(state)}\n${need}`;
 }
 
-export function resolveMessage(error: ResolveError): string {
-    switch (error.kind) {
-        case "unknownBase":
-            return `Unknown base "${error.name}".`;
-        case "uncraftedBase":
-            return `"${error.name}" is not an item a guide crafts on here — a base is a weapon, a piece of armour or jewellery, a quiver, a jewel, a flask, a tincture, a charm, a relic, an idol, a Thief's Trinket or a piece of Rogue's equipment.`;
-        case "unknownMod":
-            return `Unknown mod "${error.name}".`;
-        case "unknownCurrency":
-            return `Unknown currency "${error.name}".`;
-        case "unknownEssence":
-            return `Unknown essence "${error.name}".`;
-        case "unknownBench":
-            return `No bench craft adds "${error.name}" to this item.`;
-        case "unknownFossil":
-            return `Unknown fossil "${error.name}".`;
-        case "unknownEldritch":
-            return `No ${error.side === "exarch" ? "Searing Exarch" : "Eater of Worlds"} implicit reads "${error.name}".`;
-        case "unknownAspect":
-            return `Unknown Aspect "${error.name}" — the Bestiary crafts cat, avian, spider or crab.`;
-        case "unknownHarvestTag":
-            return `"${error.name}" is not a harvest modifier type.`;
-        case "unknownEnchant":
-            return `"${error.name}" is not a cluster jewel enchantment — name the stat its small passives grant ("lightning damage", "minion damage").`;
-        case "noSuchTier":
-            return error.best === error.worst
-                ? `"${error.name}" has no tier ${error.tier} — it has the one tier, t${error.best}.`
-                : `"${error.name}" has no tier ${error.tier} — it has t${error.best} to t${error.worst}.`;
-        case "ambiguous":
-            // A hybrid modifier's wording is two lines.
-            return `Ambiguous name "${error.name}" — candidates: ${error.candidates.map((c) => c.replace(/\s*\n\s*/g, " / ")).join(", ")}.`;
-    }
-}
-
-export function withArticle(noun: string): string {
-    return `${/^[aeiou]/i.test(noun) ? "an" : "a"} ${noun}`;
-}
+export { resolveMessage, withArticle } from "../resolve/messages.js";

@@ -238,6 +238,9 @@ export interface CatalogOptions {
      *  weighs (`HunterGated1`): influenced only where no modifier adds the
      *  tag; with `elevated`, its elevated row (`ElevatedHunterGated`). */
     readonly influencedAdder?: boolean;
+    /** Every row's span one value: a reforge of many modifiers then has one
+     *  outcome per choice of rows, not one per choice of values too. */
+    readonly oneValue?: boolean;
 }
 
 export interface Catalog {
@@ -549,6 +552,12 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
         }
     }
 
+    if (options.oneValue) {
+        const one = (m: Mod): Mod =>
+            m.text === undefined ? m : { ...m, text: m.text.replace(/\((\d+)-\d+\)/, "$1") };
+        natural.splice(0, natural.length, ...natural.map(one));
+        extra.splice(0, extra.length, ...extra.map(one));
+    }
     const registry = buildRegistry({
         bases: [base],
         mods: [...natural, ...extra],

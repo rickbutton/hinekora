@@ -1007,6 +1007,23 @@ describe("a Harvest change of a modifier another source placed", () => {
         expect(changed(rows)).toEqual(new Set(["ColdTwin", "ColdNatural"]));
     });
 
+    it("takes a counterpart that rolls somewhere only where its first matching entry weighs it", () => {
+        // As an unveiled two-handed row on a wand: its table's first entry the
+        // item matches is a zero, though a later one it matches weighs it.
+        const veiled = { source: "veiled" } as const;
+        const weighs = (...entries: [string, number][]) =>
+            entries.map(([tag, weight]) => ({ tag: TagId(tag), weight }));
+        const rows = [
+            row("Fire", "FireSource", { ...veiled, spawn: weighs(["ring", 100]) }),
+            row("Cold", "ColdTwin", { ...veiled, spawn: weighs(["ring", 100]) }),
+            row("Cold", "ColdOther", {
+                ...veiled,
+                spawn: weighs(["ring", 0], ["default", 100]),
+            }),
+        ];
+        expect(changed(rows)).toEqual(new Set(["ColdTwin", "ColdNatural"]));
+    });
+
     it("takes a counterpart whose spawn table names an influence the item has", () => {
         const elevated = { source: "elevated" } as const;
         const rows = [

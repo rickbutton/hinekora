@@ -592,6 +592,54 @@ describe("the candidate rows", () => {
         expect(rows.get(veiledCold)).toBe("harvest");
         expect(rows.get(naturalCold)).toBe("natural");
     });
+
+    it("leave out a counterpart the item's own tag zeroes, though a later entry weighs it", () => {
+        // An unveiled two-handed row on a wand.
+        const fire = modRow({
+            id: "VeiledFire1",
+            type: "TypeFireDamage",
+            gen: "prefix",
+            minLevel: 60,
+            text: "+(5-6) fire",
+            domain: Domain("unveiled"),
+            source: "veiled",
+            spawn: [{ tag: TagId("ring"), weight: 100 }],
+        });
+        const cold = (id: string, spawn: { tag: TagId; weight: number }[]) =>
+            modRow({
+                id,
+                type: "TypeColdDamage",
+                gen: "prefix",
+                minLevel: 60,
+                text: "+(5-6) cold",
+                domain: Domain("unveiled"),
+                source: "veiled",
+                spawn,
+            });
+        const twin = cold("VeiledCold1", [{ tag: TagId("ring"), weight: 100 }]);
+        const other = cold("VeiledCold2", [
+            { tag: TagId("ring"), weight: 0 },
+            { tag: TagId("default"), weight: 100 },
+        ]);
+        const registry: Registry = buildRegistry({
+            bases: [RING_BASE],
+            mods: [fire, twin, other],
+            harvestChange: {
+                resistance: {},
+                damage: {
+                    fire: [
+                        {
+                            from: TypeId("TypeFireDamage"),
+                            to: { cold: { type: TypeId("TypeColdDamage"), basis: "test" } },
+                        },
+                    ],
+                },
+            },
+        });
+        const rows = buildUniverse(registry, RING_BASE, 84, undefined).rows;
+        expect(rows.has(twin)).toBe(true);
+        expect(rows.has(other)).toBe(false);
+    });
 });
 
 describe("building a universe", () => {

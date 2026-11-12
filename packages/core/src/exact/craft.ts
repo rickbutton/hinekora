@@ -5,6 +5,7 @@
  * would leave a comparison the state cannot answer.
  */
 import type { Arg, Craft, Pred, Stmt } from "../ast/ast.js";
+import { PLACEHOLDERS } from "../check/item-block.js";
 import type { Base } from "../model/base.js";
 import type { TagId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
@@ -27,9 +28,6 @@ export function thresholdsOf(c: Comparisons, type: TypeId): number[] {
     return [...new Set([...(c.byType.get(type) ?? []), ...c.everyType])].sort((x, y) => x - y);
 }
 
-/** A declared `"random"` or `"?"` affix (check.ts `PLACEHOLDERS`). */
-const PLACEHOLDER = /^random\b|^\?$/;
-
 /**
  * The tag sets a name is resolved under: those of each influence set an item
  * of the base can have (the influence slot's values). A driver that resolves
@@ -42,7 +40,8 @@ export function nameTagSets(registry: Registry, base: Base): ReadonlySet<TagId>[
     return influenceKeysFor(base).map((k) => influenceTagsOfKey(registry, base, k));
 }
 
-/** The types a modifier name may resolve to on this item, under any of its influence sets. */
+/** The types a modifier name may resolve to on this item, under any of its
+ *  influence sets: each case exact/conditions.ts reads a condition in. */
 export function typesNamed(registry: Registry, base: Base, ilvl: number, name: string): TypeId[] {
     const byId = registry.resolveMod(name);
     if (byId.ok) return [byId.value.type];
@@ -128,8 +127,8 @@ export function comparisonsOf(
 }
 
 /** The methods that take or apply an imprint (`check/library.ts` BEAST_IMPRINT
- *  and RESTORE), by their words: the method table (`check/methods.ts`) loads
- *  `check/astate.ts` with it. A test pins the list against the table. */
+ *  and RESTORE), by their words, read before any method is built. A test pins
+ *  the list against the method table. */
 export const IMPRINT_WORDS: readonly (readonly string[])[] = [["beast", "imprint"], ["restore"]];
 
 function imprintsIn(stmts: readonly Stmt[]): boolean {
@@ -162,7 +161,7 @@ export function declaredRows(craft: Craft, registry: Registry, base: Base, ilvl:
     const out = new Set<Mod>();
     const { prefixes, suffixes } = craft.item;
     for (const affix of [...prefixes, ...suffixes]) {
-        if (PLACEHOLDER.test(affix.mod.trim().toLowerCase())) continue;
+        if (PLACEHOLDERS.test(affix.mod.trim().toLowerCase())) continue;
         if (affix.bench) {
             const craftRes = registry.resolveBench(affix.mod, base.itemClass, affix.tier);
             const mod = craftRes.ok ? registry.resolveMod(craftRes.value.mod) : undefined;

@@ -11,6 +11,7 @@ import { INFLUENCES } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import { ELEMENTS } from "../model/sources.js";
 import { isUnveiledResult, isVeiledPlaceholder } from "../model/veiled.js";
+import { isTwinOn } from "../check/methods.js";
 import { lookupWeight } from "../pool/pool.js";
 import type { Registry } from "../resolve/registry.js";
 import { tierLadder } from "../resolve/tiers.js";
@@ -134,19 +135,14 @@ export function candidateRows(
     return out;
 }
 
-/** The default spawn tag every base carries (check/methods.ts `DEFAULT_TAG`). */
-const DEFAULT_TAG = "default";
-
 /**
  * Add what a Harvest change can make of every candidate row, to a fixpoint (a
- * row it makes may be changed again). Mirrors the row selection of
- * check/methods.ts `harvestChange` and `twinRows`, which cannot be called
- * without loading the present checker's state module: a natural row becomes
- * a row of the target's ladders on the base; a row of another source becomes
- * the target's rows of the same source, level, side and domain that the
- * source puts on the item (the bench's and the essences' by their tables, any
- * other by a spawn tag the item may carry, whatever its weight), and may also
- * become a row of the target's ladders.
+ * row it makes may be changed again), by the row selection of check/methods.ts
+ * `harvestChange`: a natural row becomes a row of the target's ladders on the
+ * base; a row of another source becomes the target's rows of the same source,
+ * level, side and domain that the source puts on the item (`isTwinOn`, under
+ * any influence the class takes), and may also become a row of the target's
+ * ladders.
  */
 function closeUnderHarvestChange(
     registry: Registry,
@@ -155,26 +151,7 @@ function closeUnderHarvestChange(
     out: ReadonlyMap<Mod, RowSource>,
     add: (m: Mod | undefined, source: RowSource) => void,
 ): void {
-    const cls = base.itemClass;
-    const bench = registry.benchModsFor(cls);
-    const essence = new Set(registry.essences.flatMap((e) => e.grants.get(cls) ?? []));
-    const onThisItem = (was: Mod, m: Mod): boolean => {
-        switch (was.source) {
-            case "bench":
-                return bench.has(m.id);
-            case "essence":
-                return essence.has(m.id);
-            default:
-                return (
-                    m.spawn.every((w) => w.tag === DEFAULT_TAG) ||
-                    m.spawn.some(
-                        (w) =>
-                            w.tag !== DEFAULT_TAG &&
-                            (base.tags.has(w.tag) || influenceTags.has(w.tag)),
-                    )
-                );
-        }
-    };
+    const none = new Set<TagId>();
     const tagSets = nameTagSets(registry, base);
     const done = new Set<Mod>();
     for (;;) {
@@ -199,7 +176,7 @@ function closeUnderHarvestChange(
                         m.minLevel === was.minLevel &&
                         m.domain === was.domain &&
                         m.gen === was.gen &&
-                        onThisItem(was, m)
+                        isTwinOn(was, m, base, registry, none, influenceTags)
                     ) {
                         add(m, "harvest");
                     }

@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q123.
+keeps it. New entries continue from Q125.
 
 ```
 ### Qn · probe|decision · open — title
@@ -113,7 +113,9 @@ record the cold's values and name.
 **Assumed:** the same source's counterpart row or any natural row of the target, above the
 item's level too; a
 natural row an essence placed on a base that rolls no such modifier becomes the row of its
-rank, when an essence places that one on the class. **Encoded in:** `check/methods.ts` `harvestChange`.
+rank, when an essence places that one on the class; a counterpart the base gives no
+weight (a bow's unveiled cold damage over time multiplier) is none, so that change is
+refused. **Encoded in:** `check/methods.ts` `harvestChange`, `isTwinOn`.
 
 ### Q58 · probe · open — one or two modifiers from a transmute or an alteration
 
@@ -276,7 +278,7 @@ crafted rows carry a level in the game's data (the top life craft's is 80).
 **Probe:** a ring of item level 10, the bench with its top life craft unlocked; craft it;
 record refused or applied.
 **Assumed:** applied at any item level, in a step and in the item block. **Encoded in:**
-`check/library.ts` `benchOps` (no level check), `check/check.ts` `elaborateItem`.
+`check/library.ts` `benchOps` (no level check), `check/item-block.ts` `declareItem`.
 
 ### Q95 · probe · open — a Tainted Exalted Orb's odds
 
@@ -314,8 +316,8 @@ enchantment without saying it keeps to the size.
 **Probe:** a Small and a Large Cluster Jewel, some twenty Refracting Fogs each; record
 whether an enchantment of the other size ever appears.
 **Assumed:** one size each; the item block refuses another size's enchantment, so a jewel
-a Refracting Fog made otherwise cannot be declared. **Encoded in:** `check/check.ts`
-`elaborateItem`; `packages/data/data/poe1/cluster_enchants.json`.
+a Refracting Fog made otherwise cannot be declared. **Encoded in:** `check/item-block.ts`
+`declareItem`; `packages/data/data/poe1/cluster_enchants.json`.
 
 ### Q99 · probe · open — how an unveil's three options are drawn
 
@@ -364,7 +366,7 @@ were Damaged by a Hit Recently" (1). Which tier does the advanced tooltip show f
 record the tier in the header.
 **Assumed:** each is Tier 1 of its own modifier: rows of one level in a ladder share the
 number, and a name that words one of them means that one alone. **Encoded in:**
-`resolve/tiers.ts` `tiersOf`; `resolve/registry.ts` `rowsNamed`; `check/check.ts`
+`resolve/tiers.ts` `tiersOf`; `resolve/registry.ts` `rowsNamed`; `check/resolve-pred.ts`
 `rowsOnly`.
 
 ### Q106 · decision · open — a value comparison on a modifier with no number
@@ -394,7 +396,7 @@ having every influence. Can it be fractured, as an influenced item cannot?
 **Probe:** use a Fracturing Orb on a Rare Astrolabe Amulet with four modifiers; record the
 refusal or the result.
 **Assumed:** refused, as for any influenced item. **Encoded in:**
-`exact/reference/wellformed.ts` `violations`; `check/check.ts` `elaborateItem`.
+`exact/reference/wellformed.ts` `violations`; `check/item-block.ts` `declareItem`.
 
 ### Q109 · probe · open — which veiled modifier a veiled orb places
 
@@ -552,3 +554,25 @@ recipe until it takes the metamod.
 **Assumed:** refused; not spared; the suffix goes first, so an attack prefix may follow.
 **Encoded in:** `check/library.ts` `eldritchAnnulOps`, `TAINTED_EXALT`, `beastAddOps`;
 `exact/ops/remove.ts`.
+
+### Q123 · probe · open — the tier of a modifier beside a tag another modifier adds
+
+**Q:** [Modifier § Spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag) does not say whether
+the tier the tooltip shows counts the rows that roll only under a tag one of the item's
+other modifiers adds. Does such a row have a tier, and does it renumber the others?
+**Probe:** a Crimson Jewel with a staff modifier and "increased Spell Damage while
+wielding a Staff"; record the tier shown, annul the staff modifier, record it again.
+**Assumed:** a name and a tier are read on the base and the item's influences alone
+([language.md](language.md) §2); a row that rolls only under an added tag has no tier.
+**Encoded in:** `check/resolve-pred.ts` `resolveHas`; `exact/conditions.ts`.
+
+### Q124 · decision · open — what a `"random"` modifier may be beside the others
+
+**Q:** [language.md](language.md) §1 says "any natural modifier of its side the item could
+roll". A modifier a currency could add to the item as declared, or any an item with these
+others can hold?
+**Options:** as declared (beside "cannot roll attack modifiers" it is never an attack
+modifier; a row gated by a tag needs the modifier that adds it); or any the item can hold
+(recommended: a bought item's history is unknown, the metamod may have come last).
+**Assumed:** as declared, a tag any row of the pool adds read wherever it admits a row.
+**Encoded in:** `check/ops.ts` `anonymousRows`; `exact/initial.ts` `anonymousRows`.

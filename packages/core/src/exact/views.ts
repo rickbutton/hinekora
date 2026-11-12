@@ -4,6 +4,7 @@
  * "guaranteed" is on every item of the state, "possible" on some, a range is
  * the least and greatest over the items.
  */
+import type { ItemSummary } from "../check/diagnostics.js";
 import type { Range } from "../check/domain.js";
 import { type Caps, caps } from "../model/capacity.js";
 import { type Effect, effectsOf } from "../model/effects.js";
@@ -340,6 +341,19 @@ export function influenceTagsOf(s: XItem): {
 export function influenceTagsAny(s: XItem): ReadonlySet<TagId> {
     const { sure, maybe } = influenceTagsOf(s);
     return new Set([...sure, ...maybe]);
+}
+
+/** What an error's words read of the items (check/diagnostics.ts). */
+export function summaryOf(s: XItem): ItemSummary {
+    return {
+        base: s.u.base,
+        ilvl: s.u.ilvl,
+        rarities: rarities(s),
+        counts: counts(s),
+        influences: influenceSets(s),
+        corrupted: corruptions(s),
+        eldritch: eldritchPairs(s),
+    };
 }
 
 // --- the imprint ----------------------------------------------------------------
