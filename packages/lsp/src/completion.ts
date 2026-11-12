@@ -35,6 +35,7 @@ import {
 import { type CompletionItem, CompletionItemKind } from "vscode-languageserver-types";
 import { checkCached, parseCached } from "./analysis.js";
 import { type Atom, methodAt } from "./method-at.js";
+import { guarded } from "./guard.js";
 
 const CONTROL_KEYWORDS = ["until", "if", "else", "restart", "stop"];
 
@@ -307,11 +308,7 @@ function statementItems(source: string): CompletionItem[] {
     return [...seen.values(), ...procs, ...CONTROL_KEYWORDS.map((w) => keyword(w))];
 }
 
-export function getCompletions(
-    source: string,
-    offset: number,
-    registry: Registry,
-): CompletionItem[] {
+function completionsAt(source: string, offset: number, registry: Registry): CompletionItem[] {
     const ctx = contextAt(source, offset);
     switch (ctx.kind) {
         case "predicate":
@@ -414,3 +411,5 @@ function modItems(source: string, offset: number, registry: Registry): Completio
             };
         });
 }
+
+export const getCompletions = guarded("completion", completionsAt, () => []);

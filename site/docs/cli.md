@@ -21,7 +21,7 @@ with no network request.
 | 0    | `check`: the craft checks. `fmt`: the file has the standard layout. `chart`, `cost`: printed.    |
 | 1    | `check`: the craft has errors. `fmt --check`: the file needs formatting. Any: it does not parse. |
 | 2    | wrong arguments, or the file cannot be read                                                      |
-| 3    | `check`: the checker could not judge the craft, a fault of its own to report                     |
+| 3    | any: the tool could not judge the craft, a fault of its own to report                            |
 
 On a usage error the tool prints the four command forms to standard error.
 
@@ -36,7 +36,8 @@ If every path ends in a [`stop`](./language/until), the line
 `(every path ends the craft before this point)` takes the item's place.
 
 For a craft with errors, it prints each one with its position and source line, then a count.
-Where more than one item reaches the step, one that breaks it follows:
+Where only some of the items reaching a step break it, and none got there past an earlier
+error, one that does follows:
 
 ```txt
 bad.craft:8:1: error: at this point the item is: Iron Ring · Magic · 1–2 affixes · 0–1 prefixes · 0–1 suffixes · ilvl 84

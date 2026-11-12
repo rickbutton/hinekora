@@ -139,12 +139,22 @@ describe("the item in the game's copy layout", () => {
         expect(itemClassLabel("Thrusting One Hand Sword")).toBe("Thrusting One Hand Swords");
     });
 
-    it("merges roll ranges across tiers, or keeps the first text when they differ in shape", () => {
+    it("merges roll ranges across tiers, each wording apart", () => {
         expect(rollSpan(["+(70-84) to maximum Life", "+(20-29) to maximum Life"])).toBe(
             "+(20-84) to maximum Life",
         );
+        // Wordings that differ in words are spanned apart, never one for both.
         expect(rollSpan(["Adds (1-2) to (3-4) Damage", "+(5-6) Damage"])).toBe(
-            "Adds (1-2) to (3-4) Damage",
+            "Adds (1-2) to (3-4) Damage\nor\n+(5-6) Damage",
+        );
+        expect(
+            rollSpan([
+                "Projectiles Pierce 2 additional Targets",
+                "Projectiles Pierce an additional Target",
+                "Projectiles Pierce 3 additional Targets",
+            ]),
+        ).toBe(
+            "Projectiles Pierce (2-3) additional Targets\nor\nProjectiles Pierce an additional Target",
         );
         expect(rollSpan(["one text"])).toBe("one text");
     });

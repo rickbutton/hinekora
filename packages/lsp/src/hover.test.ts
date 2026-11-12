@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { priceText } from "@hinekora/core";
 import { loadDefaultEconomy, loadDefaultPoe1, registryOf } from "@hinekora/data";
-import { getHover } from "./hover.js";
+import { getHover, notKnown } from "./hover.js";
 
 const registry = registryOf(loadDefaultPoe1());
 const snapshot = loadDefaultEconomy();
@@ -41,6 +41,19 @@ until has "maximum life" t1 {
         expect(total).toContain(
             "_Expected spend for the guide:_ not known, for a loop in it has no figure.",
         );
+    });
+});
+
+describe("hover: the guide's spend where the cost has none", () => {
+    it("says the check could not follow the item, or the cost could not be worked out", () => {
+        expect(notKnown({ unknown: false, unjudged: true })).toBe(
+            "not known, for the check could not follow the item",
+        );
+        expect(notKnown({ unknown: false, failed: "boom" })).toBe(
+            "not known, for the cost of this craft could not be worked out",
+        );
+        expect(notKnown({ unknown: true })).toBe("not known, for a loop in it has no figure");
+        expect(notKnown({ unknown: false })).toBeUndefined();
     });
 });
 

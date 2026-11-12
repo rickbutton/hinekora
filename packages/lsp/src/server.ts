@@ -15,6 +15,7 @@ import {
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import type { Prices, Registry } from "@hinekora/core";
+import { messageOf, setFaultReporter } from "./guard.js";
 import { getDiagnostics } from "./service.js";
 import { getHover } from "./hover.js";
 import { getCompletions } from "./completion.js";
@@ -34,6 +35,9 @@ import { getFormattingEdits } from "./formatting.js";
 
 export function createServer(connection: Connection, registry: Registry, prices?: Prices): void {
     const documents = new TextDocuments(TextDocument);
+    setFaultReporter((feature, error) => {
+        connection.console.error(`hinekora: ${feature} failed: ${messageOf(error)}`);
+    });
 
     connection.onInitialize(() => ({
         capabilities: {

@@ -472,6 +472,38 @@ describe("the decision-diagram engine", () => {
         expect(() => m.count(a)).toThrow(RangeError);
     });
 
+    it("builds an automaton stepped once per value class as it builds it stepped per value", () => {
+        for (let seed = 1; seed <= 200; seed++) {
+            const r = rng(seed);
+            const domains = Array.from({ length: 2 + Math.floor(r() * 5) }, () =>
+                Math.max(1, Math.floor(r() * 6)),
+            );
+            const a = randomAutomaton(r, domains);
+            // Classes per slot, each value's stand-in the first of its class; the
+            // step of every value made the same as its stand-in's.
+            const reps = domains.map((d) => {
+                const rep: number[] = [];
+                for (let v = 0; v < d; v++) rep.push(v === 0 || r() < 0.4 ? v : rep[v - 1]!);
+                return rep;
+            });
+            const classed: RandomAutomaton = {
+                ...a,
+                next: a.next.map((row, s) => row.map((_, v) => row[reps[s]![v]!]!)),
+            };
+            const m = new DdManager(domains);
+            const perValue = buildAutomaton(m, classed);
+            const perClass = m.automaton<number>({
+                init: 0,
+                ...(a.slots === undefined ? {} : { slots: a.slots }),
+                step: (s, v, st) => classed.next[s]![v]![st],
+                accept: (st) => classed.accept[st]!,
+                key: (st) => st,
+                classes: (s) => reps[s],
+            });
+            expect(perClass).toBe(perValue);
+        }
+    });
+
     it("keeps the operation cache across the calls of a batch", () => {
         const m = new DdManager(new Array<number>(12).fill(3));
         const a = m.automaton<number>({

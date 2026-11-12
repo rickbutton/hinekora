@@ -7,7 +7,7 @@ import type { InfluenceKey } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import { buildRegistry, type Registry } from "../resolve/registry.js";
 import { benchCraft } from "./reference/catalog.js";
-import { declaredRows, IMPRINT_WORDS } from "./craft.js";
+import { declaredRows, IMPRINT_WORDS, REACH, type ReachSource } from "./craft.js";
 import type { Dd } from "./dd.js";
 import {
     type CatalogOptions,
@@ -686,6 +686,57 @@ describe("building a universe", () => {
             }
         }
         expect(imprinting).toEqual(IMPRINT_WORDS);
+    });
+
+    it("knows what each method of the table can lay down beyond the natural pool", () => {
+        // Each method built with stand-in arguments, as above; what its
+        // operations lay down must be within what the table gives its words.
+        const sourceOf: Readonly<Record<string, ReachSource>> = {
+            bench: "bench",
+            essenceGrant: "essence",
+            veiledPlaceholder: "veiled",
+            unveil: "veiled",
+            fossil: "fossil",
+            metamods: "metamod",
+            elevate: "elevated",
+        };
+        for (const m of METHODS) {
+            const args = m.args.map((s) =>
+                s.kind === "int" || s.kind === "tier"
+                    ? { kind: s.kind, value: 1 }
+                    : s.kind === "word"
+                      ? { kind: "word" as const, value: s.oneOf[0]! }
+                      : { kind: "string" as const, value: "life" },
+            );
+            let ops: readonly Op[] = [];
+            try {
+                const built = m.build(args, undefined as never, HAND_REGISTRY);
+                if (!("refused" in built)) ops = built;
+            } catch {
+                continue;
+            }
+            const sources = new Set<ReachSource>();
+            let fractures = false;
+            let changes = false;
+            const visit = (x: unknown): void => {
+                if (typeof x !== "object" || x === null) return;
+                if (Array.isArray(x)) return x.forEach(visit);
+                const o = x as { kind?: unknown; replacing?: unknown };
+                if (typeof o.kind === "string") {
+                    const source = sourceOf[o.kind];
+                    if (source !== undefined) sources.add(source);
+                    if (o.kind === "lock") fractures = true;
+                    if (o.kind === "rows" && o.replacing !== undefined) changes = true;
+                }
+                for (const v of Object.values(o)) visit(v);
+            };
+            visit(ops);
+            const reach = REACH[m.words.join(" ")];
+            const words = m.words.join(" ");
+            for (const x of sources) expect(reach?.sources?.has(x), `${words}: ${x}`).toBe(true);
+            if (fractures) expect(reach?.fractures, `${words} fractures`).toBe(true);
+            if (changes) expect(reach?.changes, `${words} changes`).toBe(true);
+        }
     });
 
     it("refuses a type whose rows differ in families", () => {

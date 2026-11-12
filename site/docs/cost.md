@@ -72,11 +72,11 @@ until has "maximum life" t1 {
 ```
 
 ```txt
-    8  until has "maximum life" t1 {  1/32 chance [1/32 to 1/11.4]
-    9  chaos                          ×32 [11.4 to 32]: 32 Chaos Orb  (32 chaos)
+    8  until has "maximum life" t1 {  1/30 chance [1/30.2 to 1/11.4]
+    9  chaos                          ×30.2 [11.4 to 30.2]: 30.2 Chaos Orb  (30.2 chaos)
 
-Expected spend: 32 Chaos Orb.
-~32 Chaos Orbs (~0.07 Divine Orbs), 11.4 to 32 by what the item may hold, at Allflame prices of 2026-11-09.
+Expected spend: 30.2 Chaos Orb.
+~30.2 Chaos Orbs (~0.06 Divine Orbs), 11.4 to 30.2 by what the item may hold, at Allflame prices of 2026-11-09.
 ```
 
 ## Not known

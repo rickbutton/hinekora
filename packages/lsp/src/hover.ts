@@ -55,6 +55,7 @@ import {
 import { type Token, tokenize } from "@hinekora/parser";
 import { checkCached, costCached, parseCached } from "./analysis.js";
 import { atomOf, type MethodAt, methodAt } from "./method-at.js";
+import { guarded } from "./guard.js";
 
 // --- doc tables ------------------------------------------------------------
 
@@ -618,6 +619,18 @@ function callCostLine(
     return `${head}\n\n${lines.join("\n")}`;
 }
 
+/** Why the guide's spend is not known, where it is not. */
+export function notKnown(
+    report: Pick<CostReport, "unknown" | "unjudged" | "failed">,
+): string | undefined {
+    if (report.unjudged === true) return "not known, for the check could not follow the item";
+    if (report.failed !== undefined) {
+        return "not known, for the cost of this craft could not be worked out";
+    }
+    if (report.unknown) return "not known, for a loop in it has no figure";
+    return undefined;
+}
+
 /**
  * What the step costs, in the guide's words: a loop's rounds and the chance each
  * ends it, a branch's chance, what an operation is expected to consume and its
@@ -636,8 +649,8 @@ function costLine(
         return ends === undefined ? "" : ` (${ends} by what the item may hold)`;
     };
     if (entry.kind === "item") {
-        if (report.unknown)
-            return "_Expected spend for the guide:_ not known, for a loop in it has no figure.";
+        const missing = notKnown(report);
+        if (missing !== undefined) return `_Expected spend for the guide:_ ${missing}.`;
         if (report.total.length === 0) return undefined;
         const when =
             prices === undefined
@@ -681,7 +694,7 @@ function costLine(
     return parts.length === 0 ? undefined : `_Cost:_ ${parts.join("; ")}.`;
 }
 
-export function getHover(
+function hoverAt(
     source: string,
     offset: number,
     registry: Registry,
@@ -724,3 +737,5 @@ export function getHover(
     if (blocks.length === 0) return null;
     return blocks.join("\n\n---\n\n");
 }
+
+export const getHover = guarded("hover", hoverAt, () => null);

@@ -331,6 +331,11 @@ function offeredTruth(leaf: Leaf, offered: ReadonlyMap<TypeId, Member>): boolean
     }
 }
 
+function typesOf(leaf: Leaf): readonly TypeId[] {
+    if (leaf.kind === "has" || leaf.kind === "hasValue") return [leaf.type];
+    return leaf.kind === "hasGroup" ? [...leaf.types] : [];
+}
+
 function typesOfInterest(pred: RPred): Set<TypeId> {
     const out = new Set<TypeId>();
     for (const leaf of leaves(pred)) {
@@ -455,6 +460,13 @@ function drawChance(
                             (leaf) =>
                                 base(leaf) ??
                                 (leaf.kind === "compare" ? certainty(leaf, after) : undefined),
+                            // A modifier the item may hold before the fill and
+                            // the draws do not lay down is as the item after
+                            // the step settles it.
+                            (leaf) =>
+                                typesOf(leaf).some((t) => v.maybe.has(t))
+                                    ? certainty(leaf, after)
+                                    : false,
                         );
                         if (r === undefined) return undefined;
                         total += prob * c.prob * r;
@@ -478,6 +490,7 @@ function jointChance(
     valueLeaves: readonly Extract<Leaf, { kind: "hasValue" }>[],
     counts: Readonly<Record<Gen, number | undefined>>,
     base: Truth,
+    absent: Truth = () => false,
 ): number | undefined {
     const enumerated: { type: TypeId; outcomes: Outcome[] }[] = [];
     let combos = 1;
@@ -501,14 +514,14 @@ function jointChance(
                     return n === undefined ? undefined : compare(n, leaf.op, leaf.value);
                 }
                 case "hasGroup":
-                    return [...leaf.types].some((t) => taken.has(t));
+                    return [...leaf.types].some((t) => taken.has(t)) || absent(leaf);
                 case "has": {
-                    if (!taken.has(leaf.type)) return false;
+                    if (!taken.has(leaf.type)) return absent(leaf);
                     if (leaf.tierMod === undefined) return true;
                     return drawn.get(leaf.type)?.outcome?.row === leaf.tierMod;
                 }
                 case "hasValue": {
-                    if (!taken.has(leaf.type)) return false;
+                    if (!taken.has(leaf.type)) return absent(leaf);
                     const o = drawn.get(leaf.type)?.outcome;
                     if (o === undefined) return undefined;
                     if (!leaf.rows.has(o.row)) return false;

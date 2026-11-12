@@ -39,7 +39,7 @@ import type { Mod } from "../model/mod.js";
 import { pool } from "../pool/pool.js";
 import type { Registry } from "../resolve/registry.js";
 import { rollableGen } from "../resolve/tiers.js";
-import { shapeKey } from "./craft.js";
+import { craftReach, shapeKey } from "./craft.js";
 import type { Dd } from "./dd.js";
 import { stateOf, type XItem } from "./state.js";
 import {
@@ -318,7 +318,12 @@ export function startOf(
     const decl = declareItem(craft.item, registry, diag);
     if (decl === null) return null;
     if (options.maxNodes !== undefined || options.imprint !== undefined) {
-        const u = buildUniverse(registry, decl.base, decl.ilvl, craft, options);
+        const reach = craftReach(craft);
+        const u = buildUniverse(registry, decl.base, decl.ilvl, craft, {
+            fractures: reach.fractures,
+            craftedNatural: reach.changes,
+            ...options,
+        });
         return { u, decl, state: initialItem(u, decl) };
     }
     const u = universeFor(registry, decl.base, decl.ilvl, craft);

@@ -113,6 +113,9 @@ export interface CostReport {
     /** The check holds no item to cost the steps on (it could not judge the
      *  craft, or the item block leaves none): no step has a figure. */
     readonly unjudged?: true;
+    /** The cost walk itself failed on this craft, with the internal message
+     *  for a bug report: no step has a figure. */
+    readonly failed?: string;
 }
 
 /** The conditions passed since the last roll, whose joint chance with the next
@@ -172,11 +175,16 @@ export function costOf(
     // The walk reads methods and conditions over the check's items thousands
     // of times, mostly over the same diagrams: the engine's operation cache is
     // kept for the whole of it.
+    const none = { steps: [], total: [], unpriced: [], stopped: 0, unknown: true } as const;
     const dd = checked.trace[0]?.before.u.dd;
-    if (dd === undefined) {
-        return { steps: [], total: [], unpriced: [], stopped: 0, unknown: true, unjudged: true };
+    if (dd === undefined) return { ...none, unjudged: true };
+    // An estimate is no reason to stop an editor or the command line: a fault
+    // of the walk is reported as a craft with no figure.
+    try {
+        return dd.batch(() => costOfChecked(craft, checked, registry, snapshot));
+    } catch (e) {
+        return { ...none, failed: e instanceof Error ? e.message : String(e) };
     }
-    return dd.batch(() => costOfChecked(craft, checked, registry, snapshot));
 }
 
 function costOfChecked(
@@ -542,7 +550,7 @@ class Walker {
         const states =
             this.tracker === undefined || this.first === undefined
                 ? undefined
-                : this.untilOverflow(() => this.tracker!.statesIn(this.first!, this.reading));
+                : this.untilOverflow(() => this.tracker!.statesIn(this.first!));
         return {
             mass: 1,
             path: undefined,

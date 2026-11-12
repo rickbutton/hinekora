@@ -75,6 +75,82 @@ function tiersOf(ladder: readonly Mod[]): readonly (readonly Mod[])[] {
  */
 const laddersCache = new WeakMap<ModCatalog, WeakMap<Base, Map<string, Ladders>>>();
 
+const domainCache = new WeakMap<ModCatalog, Map<Base["domain"], ModCatalog>>();
+
+/** The catalogue's rows of the base's domain: the only ones its pools read,
+ *  whatever the tags, so each tag set's pool scans these alone. */
+function domainRows(catalog: ModCatalog, base: Base): ModCatalog {
+    let byDomain = domainCache.get(catalog);
+    if (byDomain === undefined) {
+        domainCache.set(catalog, (byDomain = new Map<Base["domain"], ModCatalog>()));
+    }
+    let rows = byDomain.get(base.domain);
+    if (rows === undefined) {
+        rows = catalog.filter((m) => m.domain === base.domain);
+        byDomain.set(base.domain, rows);
+    }
+    return rows;
+}
+
+/** The empty Rare item's pool at every level under the tags. Extra tags
+ *  can admit only a row the base's pool has or one whose spawn table names
+ *  one of them, so a tag set's pool scans those rows alone. */
+function poolAtEveryLevel(
+    catalog: ModCatalog,
+    base: Base,
+    tags: ReadonlySet<TagId>,
+    tagKey: string,
+    byKey: Map<string, Ladders>,
+): Ladders {
+    const allKey = `*:${tagKey}`;
+    let all = byKey.get(allKey);
+    if (all !== undefined) return all;
+    const empty = emptyItem(base, Infinity, "rare");
+    if (tags.size === 0) {
+        all = { pool: pool(domainRows(catalog, base), empty) };
+    } else {
+        const plain = poolAtEveryLevel(catalog, base, NO_TAGS, "", byKey);
+        const index = domainIndex(catalog, base);
+        const rows = new Set(plain.pool.map((c) => c.mod));
+        for (const t of tags) for (const m of index.byTag.get(t) ?? []) rows.add(m);
+        const ordered = [...rows].sort((a, b) => index.at.get(a)! - index.at.get(b)!);
+        all = { pool: pool(ordered, { ...empty, tags: new Set([...empty.tags, ...tags]) }) };
+    }
+    byKey.set(allKey, all);
+    return all;
+}
+
+interface DomainIndex {
+    /** Each row's place in the catalogue, which a pool keeps. */
+    readonly at: ReadonlyMap<Mod, number>;
+    /** The rows whose spawn table names the tag. */
+    readonly byTag: ReadonlyMap<TagId, readonly Mod[]>;
+}
+
+const indexCache = new WeakMap<ModCatalog, Map<Base["domain"], DomainIndex>>();
+
+function domainIndex(catalog: ModCatalog, base: Base): DomainIndex {
+    let byDomain = indexCache.get(catalog);
+    if (byDomain === undefined) {
+        indexCache.set(catalog, (byDomain = new Map<Base["domain"], DomainIndex>()));
+    }
+    let index = byDomain.get(base.domain);
+    if (index === undefined) {
+        const at = new Map<Mod, number>();
+        const byTag = new Map<TagId, Mod[]>();
+        domainRows(catalog, base).forEach((m, i) => {
+            at.set(m, i);
+            for (const w of m.spawn) {
+                const list = byTag.get(w.tag);
+                if (list === undefined) byTag.set(w.tag, [m]);
+                else if (list.at(-1) !== m) list.push(m);
+            }
+        });
+        byDomain.set(base.domain, (index = { at, byTag }));
+    }
+    return index;
+}
+
 function laddersOf(
     catalog: ModCatalog,
     base: Base,
@@ -91,16 +167,15 @@ function laddersOf(
         byKey = new Map<string, Ladders>();
         byBase.set(base, byKey);
     }
-    const key = tags.size === 0 ? `${ilvl}` : `${ilvl}:${[...tags].sort().join(",")}`;
+    const tagKey = tags.size === 0 ? "" : [...tags].sort().join(",");
+    const key = `${ilvl}:${tagKey}`;
     let cached = byKey.get(key);
     if (cached === undefined) {
-        const empty = emptyItem(base, ilvl, "rare");
-        cached = {
-            pool: pool(
-                catalog,
-                tags.size === 0 ? empty : { ...empty, tags: new Set([...empty.tags, ...tags]) },
-            ),
-        };
+        // An empty item's pool differs between levels by the tier gate alone,
+        // so each level's is the pool at every level, filtered: one scan of
+        // the catalogue per base and tags.
+        const all = poolAtEveryLevel(catalog, base, tags, tagKey, byKey);
+        cached = { pool: all.pool.filter((c) => c.mod.minLevel <= ilvl) };
         byKey.set(key, cached);
     }
     return cached;

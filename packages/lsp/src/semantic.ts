@@ -16,6 +16,7 @@ import { tokenize } from "@hinekora/parser";
 import { parseCached } from "./analysis.js";
 import { SemanticTokensBuilder } from "vscode-languageserver";
 import type { SemanticTokens } from "vscode-languageserver-types";
+import { guarded } from "./guard.js";
 
 /** The token types we emit; index into this is the `tokenType` in the encoding. */
 export const SEMANTIC_LEGEND = {
@@ -90,7 +91,7 @@ const FIELDS = new Set([
     "enchant",
 ]);
 
-export function getSemanticTokens(source: string, registry: Registry): SemanticTokens {
+function semanticTokensOf(source: string, registry: Registry): SemanticTokens {
     const builder = new SemanticTokensBuilder();
 
     let tokens;
@@ -125,3 +126,5 @@ export function getSemanticTokens(source: string, registry: Registry): SemanticT
     }
     return builder.build();
 }
+
+export const getSemanticTokens = guarded("semantic tokens", semanticTokensOf, () => ({ data: [] }));

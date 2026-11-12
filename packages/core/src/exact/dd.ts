@@ -40,6 +40,12 @@ export interface DdAutomaton<S> {
     step(slot: number, value: number, state: S): S | undefined;
     accept(state: S): boolean;
     key(state: S): string | number;
+    /**
+     * For a slot, the value standing for each value: `step` gives the same state for a value as
+     * for the one standing for it, which comes no later. The build then steps once per class.
+     * Every value stands for itself where absent.
+     */
+    classes?(slot: number): readonly number[] | undefined;
 }
 
 export interface DdOptions {
@@ -425,6 +431,7 @@ export class DdManager {
                 : [...new Set(spec.slots)].sort((x, y) => x - y);
         for (const s of slots) this.domainOf(s);
         const memo = slots.map(() => new Map<string | number, Node>());
+        const reps = slots.map((s) => spec.classes?.(s));
         const go = (i: number, state: S): Node => {
             const s = slots[i];
             if (s === undefined) return spec.accept(state) ? this.all : this.empty;
@@ -434,7 +441,13 @@ export class DdManager {
             if (hit !== undefined) return hit;
             const d = this.domains[s]!;
             const kids = new Array<Node>(d);
+            const rep = reps[i];
             for (let v = 0; v < d; v++) {
+                const w = rep === undefined ? v : rep[v]!;
+                if (w !== v) {
+                    kids[v] = kids[w]!;
+                    continue;
+                }
                 const next = spec.step(s, v, state);
                 kids[v] = next === undefined ? this.empty : go(i + 1, next);
             }

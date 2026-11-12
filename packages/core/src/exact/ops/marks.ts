@@ -88,6 +88,7 @@ function casesOf(u: Universe, rule: RarityRule): readonly Dd[] {
         u.dd.automaton<S>({
             init: [0, 0, 0],
             slots: [raritySlot, ...u.modSlots()],
+            classes: (slot) => u.sideClasses(slot),
             step: (slot, value, [had, p, s]) => {
                 if (slot === raritySlot) return [value, p, s];
                 if (value === 0) return [had, p, s];

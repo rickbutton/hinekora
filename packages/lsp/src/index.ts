@@ -5,6 +5,7 @@
  * the browser playground binds them to Monaco with no server at all.
  */
 export * from "./analysis.js";
+export * from "./guard.js";
 export * from "./service.js";
 export * from "./hover.js";
 export * from "./completion.js";

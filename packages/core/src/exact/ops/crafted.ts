@@ -130,6 +130,7 @@ function unfracturedAtLeast(u: Universe, n: number): Dd {
     return u.dd.automaton<number>({
         init: 0,
         slots: u.modSlots(),
+        classes: (slot) => u.classesBy("fractured", slot, (v) => v.fractured),
         step: (slot, value, c) => {
             const v = u.modValue(slot, value);
             return Math.min(n, c + (v !== undefined && !v.fractured ? 1 : 0));

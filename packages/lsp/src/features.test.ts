@@ -325,6 +325,28 @@ transmute`;
     });
 });
 
+describe("a fault in one feature", () => {
+    it("degrades that feature alone, after a clean check", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: normal }
+transmute
+until has "maximum life" {
+    alteration
+}`;
+        expect(getDiagnostics(src, registry)).toEqual([]);
+        // The check is clean; what draws the item reads a wording that fails.
+        const broken = {
+            ...registry,
+            typeLabel: () => {
+                throw new Error("no wording");
+            },
+        };
+        expect(getDiagnostics(src, broken)).toEqual([]);
+        expect(getHover(src, src.indexOf("alteration") + 1, broken)).toBeNull();
+        expect(() => getCompletions(src, src.indexOf("maximum") + 1, broken)).not.toThrow();
+        expect(getHover(src, src.indexOf("alteration") + 1, registry)).not.toBeNull();
+    });
+});
+
 describe("completion", () => {
     it("offers inside a loop's condition what no item entering the loop has", () => {
         // Inside the branch the life is ruled out; the loop waits for it all the same.

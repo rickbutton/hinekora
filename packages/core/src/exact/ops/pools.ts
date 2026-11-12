@@ -571,8 +571,11 @@ function rowConditions(
     if (known !== undefined) return known;
     const p = u.openSlot("prefix");
     const s = u.openSlot("suffix");
+    // A weighed type with no slot has no row any item of the check can roll
+    // (exact/rows.ts reads the natural rows under every tag an item may
+    // carry), so no view offers one; a pool's own rows are read whatever.
     const types = new Set([
-        ...scope.weighed.map((r) => r.type),
+        ...[...byTypeOf(scope.weighed).keys()].filter((t) => u.slotOfType(t) !== undefined),
         ...poolRows(w, spec, EMPTY_VIEW, dc.cut, dc.pools).map((r) => r.type),
     ]);
     const cond = new Map<Mod, Dd>();
@@ -689,76 +692,107 @@ interface TypeAnalysis {
     readonly twoSided: boolean;
 }
 
-const analyses = new WeakMap<Universe, Map<readonly Mod[], Map<TypeId, TypeAnalysis>>>();
+/** The weighed rows by type: shared by every universe of the base. */
+const weighedByType = new WeakMap<readonly Mod[], ReadonlyMap<TypeId, readonly Mod[]>>();
 
-function typeAnalysis(u: Universe, weighed: readonly Mod[], type: TypeId): TypeAnalysis {
-    let byWeighed = analyses.get(u);
-    if (byWeighed === undefined) {
-        analyses.set(u, (byWeighed = new Map<readonly Mod[], Map<TypeId, TypeAnalysis>>()));
+function byTypeOf(weighed: readonly Mod[]): ReadonlyMap<TypeId, readonly Mod[]> {
+    let out = weighedByType.get(weighed);
+    if (out === undefined) {
+        const made = new Map<TypeId, Mod[]>();
+        for (const r of weighed) {
+            const list = made.get(r.type);
+            if (list === undefined) made.set(r.type, [r]);
+            else list.push(r);
+        }
+        weighedByType.set(weighed, (out = made));
     }
-    let c = byWeighed.get(weighed);
-    if (c === undefined) byWeighed.set(weighed, (c = analyseTypes(u, weighed)));
-    return (
-        c.get(type) ?? {
+    return out;
+}
+
+/** What every type's analysis over a universe reads, and the analyses made. */
+interface Analyser {
+    readonly effects: ReadonlyMap<string, CannotRoll>;
+    readonly carriers: Map<string, Dd>;
+    readonly influenceTags: readonly ReadonlySet<TagId>[];
+    readonly done: Map<readonly Mod[], Map<TypeId, TypeAnalysis>>;
+}
+
+const analysers = new WeakMap<Universe, Analyser>();
+
+function analyserOf(u: Universe): Analyser {
+    let a = analysers.get(u);
+    if (a === undefined) {
+        const effects = new Map<string, CannotRoll>();
+        for (const slot of u.modSlots()) {
+            for (const row of u.modSlot(slot)!.rows) {
+                for (const e of effectsOf(row)) {
+                    if (e.kind === "poolRestrict") effects.set(effectKey(e), e);
+                }
+            }
+        }
+        a = {
+            effects,
+            carriers: new Map(),
+            influenceTags: u.influenceKeys.map((k) => influenceTagsOfKey(u.registry, u.base, k)),
+            done: new Map(),
+        };
+        analysers.set(u, a);
+    }
+    return a;
+}
+
+/** A type's analysis, made the first time a pool asks for it. */
+function typeAnalysis(u: Universe, weighed: readonly Mod[], type: TypeId): TypeAnalysis {
+    const a = analyserOf(u);
+    let done = a.done.get(weighed);
+    if (done === undefined) a.done.set(weighed, (done = new Map<TypeId, TypeAnalysis>()));
+    const rows = byTypeOf(weighed).get(type);
+    if (rows === undefined) {
+        return {
             influenceGroups: [u.influenceKeys.map((_, i) => i)],
             modTags: [],
             restrictions: [],
             twoSided: false,
-        }
-    );
-}
-
-function analyseTypes(u: Universe, weighed: readonly Mod[]): Map<TypeId, TypeAnalysis> {
-    const m = u.dd;
-    const byType = new Map<TypeId, Mod[]>();
-    for (const r of weighed) byType.set(r.type, [...(byType.get(r.type) ?? []), r]);
-    const effects = new Map<string, CannotRoll>();
-    for (const slot of u.modSlots()) {
-        for (const row of u.modSlot(slot)!.rows) {
-            for (const e of effectsOf(row)) {
-                if (e.kind === "poolRestrict") effects.set(effectKey(e), e);
-            }
-        }
+        };
     }
-    const carriersOf = new Map<string, Dd>();
-    const carriers = (key: string): Dd => {
-        let d = carriersOf.get(key);
+    const hit = done.get(type);
+    if (hit !== undefined) return hit;
+    const m = u.dd;
+    const carriers = (k: string): Dd => {
+        let d = a.carriers.get(k);
         if (d === undefined) {
-            d = u.anyMod((v) => effectsOf(v.row).some((e) => effectKey(e) === key));
-            carriersOf.set(key, d);
+            d = u.anyMod((v) => effectsOf(v.row).some((e) => effectKey(e) === k));
+            a.carriers.set(k, d);
         }
         return d;
     };
-    const influenceTags = u.influenceKeys.map((k) => influenceTagsOfKey(u.registry, u.base, k));
-    const out = new Map<TypeId, TypeAnalysis>();
-    for (const [type, rows] of byType) {
-        const reads = new Set<TagId>();
-        for (const r of rows) for (const t of u.extraTags(r)) reads.add(t);
-        const groups = new Map<string, number[]>();
-        influenceTags.forEach((tags, i) => {
-            const key = [...tags]
-                .filter((t) => reads.has(t))
-                .sort()
-                .join(",");
-            groups.set(key, [...(groups.get(key) ?? []), i]);
-        });
-        const modTags: (readonly [TagId, Dd])[] = [];
-        for (const t of [...reads].sort()) {
-            const by = modCarrying(u, t);
-            if (by !== m.EMPTY) modTags.push([t, by]);
-        }
-        const restrictions = [...effects.entries()]
-            .filter(([, e]) => rows.some((r) => !e.allows(r)))
-            .sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0))
-            .map(([key, effect]) => ({ effect, carriers: carriers(key) }));
-        out.set(type, {
-            influenceGroups: [...groups.values()],
-            modTags,
-            restrictions,
-            twoSided: new Set(rows.map((r) => r.gen)).size > 1,
-        });
+    const reads = new Set<TagId>();
+    for (const r of rows) for (const t of u.extraTags(r)) reads.add(t);
+    const groups = new Map<string, number[]>();
+    a.influenceTags.forEach((tags, i) => {
+        const k = [...tags]
+            .filter((t) => reads.has(t))
+            .sort()
+            .join(",");
+        groups.set(k, [...(groups.get(k) ?? []), i]);
+    });
+    const modTags: (readonly [TagId, Dd])[] = [];
+    for (const t of [...reads].sort()) {
+        const by = modCarrying(u, t);
+        if (by !== m.EMPTY) modTags.push([t, by]);
     }
-    return out;
+    const restrictions = [...a.effects.entries()]
+        .filter(([, e]) => rows.some((r) => !e.allows(r)))
+        .sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0))
+        .map(([k, effect]) => ({ effect, carriers: carriers(k) }));
+    const made: TypeAnalysis = {
+        influenceGroups: [...groups.values()],
+        modTags,
+        restrictions,
+        twoSided: new Set(rows.map((r) => r.gen)).size > 1,
+    };
+    done.set(type, made);
+    return made;
 }
 
 const carrying = new WeakMap<Universe, Map<TagId, Dd>>();

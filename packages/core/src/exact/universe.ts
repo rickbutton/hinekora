@@ -36,6 +36,7 @@ import {
     type Comparisons,
     comparisonsOf,
     craftImprints,
+    craftReach,
     NO_COMPARISONS,
     thresholdsOf,
 } from "./craft.js";
@@ -137,6 +138,11 @@ export interface UniverseOptions {
     readonly maxNodes?: number;
     /** Give the imprint its slots whatever the craft does. */
     readonly imprint?: boolean;
+    /** A modifier may be fractured; else no value is (`CraftReach.fractures`). */
+    readonly fractures?: boolean;
+    /** A natural row may carry the crafted mark, which only a Harvest change
+     *  of a bench craft gives it (`CraftReach.changes`). */
+    readonly craftedNatural?: boolean;
 }
 
 export class UniverseError extends Error {
@@ -185,6 +191,7 @@ export class Universe {
     private readonly counts = new Map<string, Dd>();
     private readonly anyMods = new Map<string, Dd>();
     private readonly extra = new Map<Mod, ReadonlySet<TagId>>();
+    private readonly classMemo = new Map<string, readonly number[] | undefined>();
     private withImprint: Dd | undefined;
 
     constructor(
@@ -214,7 +221,11 @@ export class Universe {
             strands: MAX_STRANDS + 1,
         };
         const logical: LogicalSlot[] = SCALARS_BEFORE.map((kind) => ({ kind, size: sizes[kind] }));
-        for (const slot of modSlots(rows, comparisons)) logical.push(slot);
+        const marks = {
+            fractured: options.fractures ?? true,
+            craftedNatural: options.craftedNatural ?? true,
+        };
+        for (const slot of modSlots(rows, comparisons, marks)) logical.push(slot);
         this.logical = logical;
         logical.forEach((s, i) => {
             if (s.kind === "mod") {
@@ -556,6 +567,8 @@ export class Universe {
         const r = this.dd.automaton<number>({
             init: 0,
             slots: this.modSlots(copy),
+            classes: (slot) =>
+                this.classesBy(`count:${kind}`, slot, (v) => (counts(kind, v) ? "1" : "0")),
             step: (slot, value, c) => {
                 const n = c + w(slot, value);
                 return n > max ? undefined : n;
@@ -579,6 +592,7 @@ export class Universe {
         const r = this.dd.automaton<Room>({
             init: [0, 0, 0],
             slots,
+            classes: (slot) => this.sideClasses(slot),
             step: (slot, value, room) => {
                 if (slot === rarity) return this.capsOf(RARITIES[value]!);
                 if (value === 0) return room;
@@ -598,6 +612,41 @@ export class Universe {
     /** The items some modifier of which satisfies `test`. Kept by the values
      *  that satisfy it: a method run over and over asks the same of the
      *  universe with a new test each time. */
+    /** For a modifier slot, the value standing for each value in an automaton
+     *  that reads a value's side alone (`DdAutomaton.classes`). */
+    sideClasses(slot: number): readonly number[] | undefined {
+        return this.classesBy("side", slot, (v) => v.row.gen);
+    }
+
+    /**
+     * For a modifier slot, each value's stand-in in an automaton whose step
+     * reads a value only through `by` (`DdAutomaton.classes`): the first
+     * value with its `by`, absent standing alone. Undefined for any other
+     * slot. Cached by `name` where one is given.
+     */
+    classesBy(
+        name: string | undefined,
+        slot: number,
+        by: (v: ModValue) => string | boolean,
+    ): readonly number[] | undefined {
+        const key = `${name}@${slot}`;
+        if (name !== undefined && this.classMemo.has(key)) return this.classMemo.get(key);
+        const s = this.modSlot(slot);
+        let out: number[] | undefined;
+        if (s !== undefined) {
+            const first = new Map<string | boolean, number>();
+            out = s.values.map((v, i) => {
+                if (v === undefined) return i;
+                const k = by(v);
+                const at = first.get(k);
+                if (at === undefined) first.set(k, i);
+                return at ?? i;
+            });
+        }
+        if (name !== undefined) this.classMemo.set(key, out);
+        return out;
+    }
+
     anyMod(test: (v: ModValue, slot: ModSlot) => boolean, copy = false): Dd {
         const parts: (readonly [number, number[]])[] = [];
         let key = "";
@@ -812,6 +861,9 @@ export class Universe {
         return {
             init,
             slots: this.itemSlots(),
+            // The step reads a value's side and fracture alone.
+            classes: (slot: number) =>
+                this.classesBy("wf", slot, (v) => `${v.row.gen}${v.fractured ? 1 : 0}`),
             step: (slot: number, value: number, s: S): S | undefined => {
                 const i = toLogical(slot);
                 const at = logical[i]!;
@@ -910,7 +962,11 @@ const byTier = (a: Mod, b: Mod): number =>
  * types are sorted by their families, so those of one family sit together and
  * a family is forgotten soon after its last slot.
  */
-function modSlots(rows: ReadonlyMap<Mod, RowSource>, comparisons: Comparisons): ModSlot[] {
+function modSlots(
+    rows: ReadonlyMap<Mod, RowSource>,
+    comparisons: Comparisons,
+    marks: { readonly fractured: boolean; readonly craftedNatural: boolean },
+): ModSlot[] {
     const byType = new Map<TypeId, Mod[]>();
     for (const m of rows.keys()) {
         const list = byType.get(m.type);
@@ -941,9 +997,10 @@ function modSlots(rows: ReadonlyMap<Mod, RowSource>, comparisons: Comparisons): 
             // A bench row is a crafted modifier (check/ops.ts PoolSpec "bench");
             // any other may carry the mark too (exact/item.ts `CMod`). The
             // order is the layout `ModValue` documents.
-            const crafted = row.source === "bench" ? [true] : [false, true];
+            const crafted =
+                row.source === "bench" ? [true] : marks.craftedNatural ? [false, true] : [false];
             cells.forEach((cell, cellIndex) => {
-                for (const fractured of [false, true]) {
+                for (const fractured of marks.fractured ? [false, true] : [false]) {
                     for (const c of crafted) {
                         values.push({ row, cell, cellIndex, fractured, crafted: c });
                     }
@@ -1042,9 +1099,12 @@ export function universeFor(registry: Registry, base: Base, ilvl: number, craft:
     const rows = candidateRows(registry, base, ilvl, craft);
     const comparisons = comparisonsOf(craft, registry, base, ilvl);
     const imprint = craftImprints(craft);
+    const reach = craftReach(craft);
     const key = [
         ilvl,
         imprint ? 1 : 0,
+        reach.fractures ? 1 : 0,
+        reach.changes ? 1 : 0,
         [...rows.keys()]
             .map((m) => m.id)
             .sort()
@@ -1060,7 +1120,12 @@ export function universeFor(registry: Registry, base: Base, ilvl: number, craft:
     const at = list.findIndex((k) => k.base === base && k.key === key);
     const hit = at < 0 ? undefined : list.splice(at, 1)[0]!;
     const reused = hit !== undefined && hit.u.dd.tableEntryCount < TABLE_KEPT;
-    const u = reused ? hit.u : new Universe(registry, base, ilvl, rows, comparisons, imprint);
+    const u = reused
+        ? hit.u
+        : new Universe(registry, base, ilvl, rows, comparisons, imprint, {
+              fractures: reach.fractures,
+              craftedNatural: reach.changes,
+          });
     if (reused) u.dd.beginRun();
     list.push({ base, key, u });
     const held = (): number => list.reduce((n, k) => n + k.u.dd.tableEntryCount, 0);

@@ -193,14 +193,23 @@ function tagLabel(tag: string): string {
 const NUMBER = /\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)|(\d+(?:\.\d+)?)/g;
 const HOLE = "\u0000";
 
+/** The line between two wordings a modifier may have. */
+export const OR_LINE = "or";
+
 /**
  * Several rows' texts as one roll span, number by number: "+(70-84) …" and
  * "+(20-29) …" ⇒ "+(20-84) …"; "35% increased …" and "10% increased …" ⇒
- * "(10-35)% increased …". Falls back to the first text when the rows' texts
- * differ in more than their numbers.
+ * "(10-35)% increased …". Rows whose texts differ in more than their numbers
+ * ("an additional Target", "2 additional Targets") are spanned apart, each
+ * wording in the order of its first row, with a line `or` between them: no
+ * one row's text stands for the others.
  */
 export function rollSpan(texts: readonly string[]): string {
-    if (texts.length === 1) return texts[0]!;
+    return wordings(texts).join(`\n${OR_LINE}\n`);
+}
+
+/** The texts gathered by wording, each wording's numbers spanned. */
+function wordings(texts: readonly string[]): string[] {
     const read = (text: string): { shape: string; spans: Range[] } => {
         const spans: Range[] = [];
         const shape = text.replace(
@@ -214,15 +223,20 @@ export function rollSpan(texts: readonly string[]): string {
         );
         return { shape, spans };
     };
-    const all = texts.map(read);
-    const first = all[0]!;
-    if (first.spans.length === 0 || all.some((r) => r.shape !== first.shape)) return texts[0]!;
-    let i = 0;
-    return first.shape.replace(new RegExp(HOLE, "g"), () => {
-        const lo = Math.min(...all.map((r) => r.spans[i]![0]));
-        const hi = Math.max(...all.map((r) => r.spans[i]![1]));
-        i++;
-        return lo === hi ? String(lo) : `(${lo}-${hi})`;
+    const byShape = new Map<string, { text: string; spans: Range[] }[]>();
+    for (const text of texts) {
+        const r = read(text);
+        byShape.set(r.shape, [...(byShape.get(r.shape) ?? []), { text, spans: r.spans }]);
+    }
+    return [...byShape].map(([shape, rows]) => {
+        if (rows.length === 1) return rows[0]!.text;
+        let i = 0;
+        return shape.replace(new RegExp(HOLE, "g"), () => {
+            const lo = Math.min(...rows.map((r) => r.spans[i]![0]));
+            const hi = Math.max(...rows.map((r) => r.spans[i]![1]));
+            i++;
+            return lo === hi ? String(lo) : `(${lo}-${hi})`;
+        });
     });
 }
 
@@ -260,14 +274,17 @@ function modView(
               ? held
               : [...rollableTiers(registry.catalog, s.u.base, s.u.ilvl, type, tags)];
     const texts = mods.map((m) => m.text).filter((t): t is string => t !== undefined);
-    const span = texts.length > 0 ? rollSpan(texts) : registry.typeLabel(type);
+    const span = texts.length > 0 ? rollSpan(texts) : textless(type, gen, mods, registry);
     // A value narrower than the rows roll (a condition on it) narrows the first span.
     const value =
         pinned.length > 0 ? hull(pinned.map((m) => valueSpan(s, type, m.id))) : valueSpan(s, type);
     const rolls = hull(mods.map((m) => (m.text === undefined ? undefined : rollRange(m.text))));
     const narrowed =
         value !== undefined && rolls !== undefined && (value[0] > rolls[0] || value[1] < rolls[1]);
-    const text = narrowed ? withValue(span, value) : span;
+    // A value narrows the one wording there is; beside another it would say
+    // nothing of which.
+    const worded = wordings(texts).length === 1;
+    const text = narrowed && worded ? withValue(span, value) : span;
     const ladders = tierLadders(registry.catalog, s.u.base, type, tags);
     const numbers = mods.map((m) => tierNumber(ladders, m.id)).filter((n) => n !== undefined);
     const tagSet = new Set<string>();
@@ -290,6 +307,19 @@ function modView(
         veiled: mods.length > 0 && mods.every(isUnveiledResult),
         ...(rank > 0 && { rank }),
     };
+}
+
+/**
+ * The text of a modifier whose rows have none: its type's wording, else as
+ * the wiki writes a veiled modifier's, its name and side ("Veiled (prefix)",
+ * "of the Veil (suffix)": the `mods` Cargo table's `stat_text` of the
+ * placeholders). Never the type's id.
+ */
+function textless(type: TypeId, gen: Gen, mods: readonly Mod[], registry: Registry): string {
+    const label = registry.typeLabel(type);
+    if (label !== type) return label;
+    const name = mods.find((m) => m.name !== undefined && m.name !== "")?.name;
+    return name === undefined ? `${capitalise(gen)} modifier` : `${name} (${gen})`;
 }
 
 function hull(ranges: readonly (Range | undefined)[]): Range | undefined {

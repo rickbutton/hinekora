@@ -31,6 +31,7 @@ import {
     guaranteedFacts,
     guaranteedTypes,
     influenceTagsAny,
+    possibleTypes,
     rarityOf,
     rowsOf,
     strandsRange,
@@ -97,6 +98,9 @@ export interface DrawVariant {
      *  condition names, when the item knows the side's count exactly; the
      *  counts after the fill are these, the present ones and the draws. */
     readonly before: Readonly<Record<Gen, number | undefined>>;
+    /** The types some item before the fill holds and some does not: one of
+     *  them the draws do not lay down may be on the item all the same. */
+    readonly maybe: ReadonlySet<TypeId>;
     /** The slots each side has open for the draws. */
     readonly room: Readonly<Record<Gen, number>>;
 }
@@ -612,9 +616,10 @@ function poolOf(registry: Registry, facts: ItemFacts): readonly Row[] {
 export function naturalGroups(
     a: XItem,
     registry: Registry,
-    reading: Reading = "estimate",
 ): { readonly prefix: readonly Group[]; readonly suffix: readonly Group[] } {
-    const rows = poolRows(a, { kind: "natural" }, registry, reading);
+    // The pool those modifiers were rolled from: the item's sure facts alone,
+    // the unnamed ones not yet on it, or a side they fill would admit none.
+    const rows = poolOf(registry, guaranteedFacts(a));
     const taken = guaranteedTypes(a);
     const groups = groupRows(
         rows.filter((r) => !taken.has(r.mod.type)),
@@ -634,6 +639,24 @@ function genOfType(a: XItem, registry: Registry, type: TypeId, hint?: Mod): Gen 
         registry.genOfType(type) ??
         "prefix"
     );
+}
+
+/** The side a modifier of these rows takes on the item: its type's on the
+ *  base where the base rolls it, else the one its rows share (a bench craft
+ *  of a type whose rows sit on both sides elsewhere). */
+function sideOf(a: XItem, registry: Registry, rows: readonly Row[]): Gen {
+    const first = rows[0]?.mod;
+    if (first === undefined || rows.some((r) => (r.mod.source ?? "natural") === "natural")) {
+        return genOfType(a, registry, first?.type ?? ("" as TypeId), first);
+    }
+    const sides = new Set(rows.map((r) => r.mod.gen));
+    return sides.size === 1 ? first.gen : genOfType(a, registry, first.type, first);
+}
+
+/** The side the items hold a type on, as `sideOf` reads its rows. */
+function heldSide(a: XItem, registry: Registry, type: TypeId): Gen {
+    const rows = rowsOf(a, type).map((mod) => ({ mod, weight: 1 }));
+    return rows.length === 0 ? genOfType(a, registry, type) : sideOf(a, registry, rows);
 }
 
 /** The modifiers present on every path after `a`, each with the rows it may be. */
@@ -664,7 +687,7 @@ function presentOn(a: XItem, registry: Registry): Present[] {
                     rows.push({ mod: m, weight: weightOf(m) || 1 });
             }
         }
-        out.push({ type, gen: genOfType(a, registry, type, rows[0]?.mod), rows });
+        out.push({ type, gen: sideOf(a, registry, rows), rows });
     }
     return out;
 }
@@ -689,30 +712,21 @@ const opsKeys = new WeakMap<readonly Op[], string>();
 
 /**
  * The method's first `end` operations run on the items, its requirements
- * among them unless `checks` is false. The cost walk asks this of the same
+ * among them: where they refuse some items, the run goes on as the checker's
+ * does, from those that pass or else from its recovery, so no operation is
+ * run on an item its requirements turn away. The cost walk asks this of the same
  * items again and again, as each tracked state's outcomes and its share of a
  * draw are read, and a re-check after an edit hands it the same diagrams, so
  * the runs are kept by the items' diagram and what the operations say.
  */
-export function ranOn(
-    a: XItem,
-    ops: readonly Op[],
-    end = ops.length,
-    checks = true,
-): XTransferResult {
-    if (!checks) {
-        // Where every item meets the requirements they take none away: the
-        // run with them, which the method's roll reads too, is the run without.
-        const judged = ranOn(a, ops, end, true);
-        if (judged.ok && judged.recovered !== true) return judged;
-    }
-    const steps = ops.slice(0, end).filter((op) => checks || op.kind !== "require");
+export function ranOn(a: XItem, ops: readonly Op[], end = ops.length): XTransferResult {
+    const steps = ops.slice(0, end);
     if (steps.length === 0) return { ok: true, state: a };
     let said = opsKeys.get(ops);
     if (said === undefined) opsKeys.set(ops, (said = buildKey(ops)));
     let byOps = runs.get(a.dd);
     if (byOps === undefined) runs.set(a.dd, (byOps = new Map<string, XTransferResult>()));
-    const key = `${end}:${steps.length}:${said}`;
+    const key = `${end}:${said}`;
     const hit = byOps.get(key);
     if (hit !== undefined) return hit;
     const r = runMethod(a, steps);
@@ -861,13 +875,13 @@ function removalRoll(
         suffix: reaches("suffix") ? mid("suffix") : 0,
     };
     const named = { prefix: 0, suffix: 0 };
-    for (const t of reachable) named[genOfType(before, registry, t)]++;
+    for (const t of reachable) named[heldSide(before, registry, t)]++;
     // What the removal surely leaves (a fractured modifier) is on its side but
     // never taken: the odds are over the rest.
     const removable = { ...count };
     for (const t of guaranteedTypes(before)) {
         if (!kept.has(t)) continue;
-        const g = genOfType(before, registry, t);
+        const g = heldSide(before, registry, t);
         if (reaches(g)) removable[g] = Math.max(0, removable[g] - 1);
     }
     const total = Math.max(1, removable.prefix + removable.suffix, reachable.length);
@@ -893,7 +907,7 @@ function removalRoll(
         candidates: reachable.map((type) => ({
             type,
             prob: 1 / total,
-            gen: genOfType(before, registry, type),
+            gen: heldSide(before, registry, type),
         })),
         before,
         sides,
@@ -1007,7 +1021,9 @@ function drawRoll(
     const a = main.before;
     const rows = poolRows(a, main.spec, registry, reading, stranded);
     if (rows.length === 0) return NO_ROLL;
-    const genOf = (m: Mod): Gen => genOfType(a, registry, m.type, m);
+    const sure = guaranteedTypes(a);
+    const maybe = new Set([...possibleTypes(a)].filter((t) => !sure.has(t)));
+    const genOf = (m: Mod): Gen => sideOf(a, registry, [{ mod: m, weight: 1 }]);
     const groups = groupRows(rows, genOf);
     const present = presentOn(a, registry);
 
@@ -1084,6 +1100,7 @@ function drawRoll(
                 suffix,
                 counts: [...counts.values()],
                 before,
+                maybe,
                 room: { prefix: Math.max(0, open[0]), suffix: Math.max(0, open[1]) },
             });
         }
@@ -1132,6 +1149,7 @@ export function withPresent(roll: Roll, type: TypeId, gen: Gen, mod: Mod): Roll 
         variants: roll.variants.map((v) => ({
             ...v,
             present: v.present.some((p) => p.type === type) ? v.present : [...v.present, added],
+            maybe: new Set([...v.maybe].filter((t) => t !== type)),
             prefix: withoutClosed(v.prefix, type, mod),
             suffix: withoutClosed(v.suffix, type, mod),
         })),

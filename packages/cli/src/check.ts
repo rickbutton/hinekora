@@ -44,7 +44,26 @@ export interface CheckOutput {
     readonly unjudged?: true;
 }
 
+/** The line for a craft the tool failed on itself, past its check. */
+export function unjudgedText(file: string, error: unknown): string {
+    const why = error instanceof Error ? error.message : String(error);
+    return `${file}: error: ${UNJUDGED_CRAFT} — ${why}`;
+}
+
+const UNJUDGED_CRAFT =
+    "the craft could not be judged: the tool does not handle something about it. Please report it";
+
+/** The check end to end; a fault of the tool's own in it, past the checker
+ *  (which answers for its own), is the could-not-judge line. */
 export function checkSource(source: string, file: string, registry: Registry): CheckOutput {
+    try {
+        return checked(source, file, registry);
+    } catch (error) {
+        return { ok: false, output: unjudgedText(file, error), unjudged: true };
+    }
+}
+
+function checked(source: string, file: string, registry: Registry): CheckOutput {
     const parsed = parse(source);
     if (!parsed.ok) {
         return {
@@ -106,6 +125,18 @@ export function costSource(
     }
     const result = check(parsed.craft, { registry });
     const report = costOf(parsed.craft, result, registry, prices);
+    if (report.unjudged === true) {
+        return {
+            ok: true,
+            output: "Expected spend: not known, for the check could not follow the item.",
+        };
+    }
+    if (report.failed !== undefined) {
+        return {
+            ok: true,
+            output: `Expected spend: not known, for the cost of this craft could not be worked out (internal: ${report.failed}).`,
+        };
+    }
     const lines = source.split(/\r?\n/);
     const out: string[] = [];
     if (!result.ok) {
@@ -119,10 +150,6 @@ export function costSource(
         if (s.note !== undefined) out.push(`  ${"".padEnd(width)}  (${s.note})`);
     }
     out.push("");
-    if (report.unjudged === true) {
-        out.push("Expected spend: not known, for the check could not follow the item.");
-        return { ok: true, output: out.join("\n") };
-    }
     if (report.unknown) {
         const rest =
             report.total.length === 0

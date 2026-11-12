@@ -403,6 +403,7 @@ function atLeast(u: Universe, reach: (v: ModValue) => boolean, n: number): Dd {
     return u.dd.automaton<number>({
         init: 0,
         slots: u.modSlots(),
+        classes: (slot) => u.classesBy(undefined, slot, reach),
         step: (slot, value, c) => Math.min(n, c + weight(slot, value)),
         accept: (c) => c >= n,
         key: (c) => c,

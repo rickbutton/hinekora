@@ -10,6 +10,7 @@ import { type Token, tokenize } from "@hinekora/parser";
 import type { SignatureHelp } from "vscode-languageserver-types";
 import { localDefs } from "./completion.js";
 import { atomOf, methodAt } from "./method-at.js";
+import { guarded } from "./guard.js";
 
 /** The tokens before the cursor; an open string at the cursor is closed first. */
 function tokensBefore(source: string, offset: number): Token[] | undefined {
@@ -113,7 +114,7 @@ function methodSignature(method: Method, filled: number): SignatureHelp | null {
     };
 }
 
-export function getSignatureHelp(source: string, offset: number): SignatureHelp | null {
+function signatureHelpAt(source: string, offset: number): SignatureHelp | null {
     const tokens = tokensBefore(source, offset);
     if (tokens === undefined || tokens.length === 0) return null;
 
@@ -130,3 +131,5 @@ export function getSignatureHelp(source: string, offset: number): SignatureHelp 
     const filled = tokens.length - (found.start + found.words);
     return methodSignature(found.method, filled);
 }
+
+export const getSignatureHelp = guarded("signature help", signatureHelpAt, () => null);

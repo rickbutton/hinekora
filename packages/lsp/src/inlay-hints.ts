@@ -17,6 +17,7 @@ import {
 } from "@hinekora/core";
 import { parseCached } from "./analysis.js";
 import { type InlayHint, InlayHintKind, type Position } from "vscode-languageserver-types";
+import { guarded } from "./guard.js";
 
 function positionAfter(span: SourceSpan): Position {
     return { line: span.end.line - 1, character: span.end.column - 1 };
@@ -102,7 +103,7 @@ class Hints {
     }
 }
 
-export function getInlayHints(source: string): InlayHint[] {
+function inlayHintsOf(source: string): InlayHint[] {
     const parsed = parseCached(source);
     if (!parsed.ok) return [];
     const h = new Hints(parsed.craft);
@@ -119,3 +120,5 @@ export function getInlayHints(source: string): InlayHint[] {
         (a, b) => a.position.line - b.position.line || a.position.character - b.position.character,
     );
 }
+
+export const getInlayHints = guarded("inlay hints", inlayHintsOf, () => []);

@@ -607,7 +607,20 @@ export function buildRegistry(data: RegistryData): Registry {
     for (const m of catalog) if (m.source === "veiled") veiledTypes.add(m.type);
 
     const typeIndex = buildTypeIndex(catalog);
-    const variedRows = rowWordings(catalog, typeIndex);
+    // Read by a name's resolution on an item, and the lists below by completion:
+    // built on first use, so a run that reads neither does not pay for them.
+    const varied = new Map<Base["domain"], ReturnType<typeof rowWordings>>();
+    const variedRows = (domain: Base["domain"]): ReturnType<typeof rowWordings> => {
+        let rows = varied.get(domain);
+        if (rows === undefined) {
+            rows = rowWordings(
+                catalog.filter((m) => m.domain === domain),
+                typeIndex,
+            );
+            varied.set(domain, rows);
+        }
+        return rows;
+    };
 
     // Every tag a spawn table names, which is what tells an influence tag that
     // exists (`ring_shaper`) from one no row would ever match.
@@ -647,6 +660,29 @@ export function buildRegistry(data: RegistryData): Registry {
         return hit;
     };
 
+    /** The varied rows the name's words all match, by type, each with its
+     *  score; the item narrows them. */
+    const variedMemo = new Map<string, { type: TypeId; rows: { mod: Mod; score: number }[] }[]>();
+    const variedOf = (name: string, domain: Base["domain"]) => {
+        const key = `${domain}|${name}`;
+        let hit = variedMemo.get(key);
+        if (hit === undefined) {
+            const q = queryTokens(name, wordings);
+            hit = [];
+            if (q.length > 0) {
+                for (const [type, rows] of variedRows(domain)) {
+                    const matched = rows
+                        .filter(({ tokens }) => q.every((w) => tokenMatches(w, tokens)))
+                        .map(({ mod, tokens }) => ({ mod, score: q.length / tokens.size }));
+                    if (matched.length > 0) hit.push({ type, rows: matched });
+                }
+            }
+            if (variedMemo.size >= MEMO_LIMIT) variedMemo.clear();
+            variedMemo.set(key, hit);
+        }
+        return hit;
+    };
+
     function resolveModTypeOf(name: string, ctx: ModTypeContext | undefined): Resolved<TypeId> {
         const key = norm(name);
         const exact = modById.get(key) ?? modById.get(modAlias.get(key) ?? "");
@@ -656,16 +692,11 @@ export function buildRegistry(data: RegistryData): Registry {
         // A row of the item's that reads differently from its type's
         // wording answers to its own.
         if (ctx) {
-            const q = queryTokens(name, wordings);
             let added = false;
-            for (const [type, rows] of variedRows) {
-                const scores = rows
-                    .filter(({ tokens }) => q.every((w) => tokenMatches(w, tokens)))
-                    .filter(({ mod }) =>
-                        tierLadder(catalog, ctx.base, type, ctx.tags).includes(mod),
-                    )
-                    .map(({ tokens }) => q.length / tokens.size);
-                if (q.length === 0 || scores.length === 0) continue;
+            for (const { type, rows } of variedOf(name, ctx.base.domain)) {
+                const ladder = tierLadder(catalog, ctx.base, type, ctx.tags);
+                const scores = rows.filter(({ mod }) => ladder.includes(mod)).map((r) => r.score);
+                if (scores.length === 0) continue;
                 const score = Math.max(...scores);
                 const known = matches.findIndex((m) => m.type === type);
                 if (known >= 0 && matches[known]!.score >= score) continue;
@@ -705,6 +736,68 @@ export function buildRegistry(data: RegistryData): Registry {
         return fail({ kind: "ambiguous", name, candidates: tied.map((m) => m.entry.text) });
     }
 
+    const eldritchByName = new Map<string, Resolved<readonly TypeId[]>>();
+    const eldritchByBase = new WeakMap<Base, Map<string, Resolved<readonly TypeId[]>>>();
+    const eldritchMemoOf = (base: Base): Map<string, Resolved<readonly TypeId[]>> => {
+        let m = eldritchByBase.get(base);
+        if (m === undefined)
+            eldritchByBase.set(base, (m = new Map<string, Resolved<readonly TypeId[]>>()));
+        return m;
+    };
+    /** Each implicit's words, read once. */
+    const eldritchWords = new Map<EldritchImplicitSpec, { set: Set<string>; key: string }>();
+    const wordsOf = (e: EldritchImplicitSpec): { set: Set<string>; key: string } => {
+        let w = eldritchWords.get(e);
+        if (w === undefined) {
+            const tokens = normalizeText(e.text);
+            w = { set: new Set(tokens), key: [...new Set(tokens.map(singular))].sort().join(" ") };
+            eldritchWords.set(e, w);
+        }
+        return w;
+    };
+
+    function resolveEldritchOf(
+        name: string,
+        side: EldritchSide,
+        base: Base | undefined,
+    ): Resolved<readonly TypeId[]> {
+        const q = normalizeText(name);
+        if (q.length === 0) return fail({ kind: "unknownEldritch", name, side });
+        const rows = eldritch.filter(
+            (e) =>
+                e.side === side &&
+                (base === undefined || [...e.classes].some((t) => base.tags.has(t))),
+        );
+        // Every query word must be a word (or a prefix of one) of the text.
+        // Rows of one wording (the tiers) are one candidate, ranked by how much
+        // of the wording the query covers, so "attack speed" names the plain
+        // implicit and its presence variants are reached by their condition's
+        // words; a tie at the top is ambiguous. A tier that changes a number
+        // also changes a plural, so plurals are folded.
+        const byWording = new Map<string, { text: string; types: Set<TypeId>; score: number }>();
+        for (const e of rows) {
+            const { set, key } = wordsOf(e);
+            const hit = q.every(
+                (w) => set.has(w) || [...set].some((t) => w.length >= 3 && t.startsWith(w)),
+            );
+            if (!hit) continue;
+            const entry = byWording.get(key) ?? {
+                text: e.text,
+                types: new Set<TypeId>(),
+                score: q.length / set.size,
+            };
+            entry.types.add(e.type);
+            byWording.set(key, entry);
+        }
+        if (byWording.size === 0) return fail({ kind: "unknownEldritch", name, side });
+        const best = Math.max(...[...byWording.values()].map((c) => c.score));
+        const top = [...byWording.values()].filter((c) => c.score === best);
+        if (top.length > 1) {
+            return fail({ kind: "ambiguous", name, candidates: top.map((c) => c.text) });
+        }
+        return found([...top[0]!.types]);
+    }
+
     // --- precompute completion lists ---
     const currencies = [...new Set(currencyByName.values())];
     const currencyNames = currencies.map((c) => c.name);
@@ -712,50 +805,68 @@ export function buildRegistry(data: RegistryData): Registry {
     // modifiers at all: a class is kept once any base of it has a modifier
     // pool (at the loosest gate, ilvl 100 and rare). A name shared by several
     // bases cannot be written in `base:` and is left out too.
-    const craftableClasses = new Set<ClassId>();
-    for (const b of data.bases) {
-        if (craftableClasses.has(b.itemClass) || !isCraftedOn(b)) continue;
-        if (pool(catalog, emptyItem(b, 100, "rare")).length > 0) craftableClasses.add(b.itemClass);
-    }
-    const baseNames = [
+    const baseNamesOf = (): readonly string[] => {
+        const craftableClasses = new Set<ClassId>();
+        for (const b of data.bases) {
+            if (craftableClasses.has(b.itemClass) || !isCraftedOn(b)) continue;
+            if (pool(catalog, emptyItem(b, 100, "rare")).length > 0) {
+                craftableClasses.add(b.itemClass);
+            }
+        }
+        return [
+            ...new Set(
+                data.bases
+                    .filter((b) => craftableClasses.has(b.itemClass))
+                    .map((b) => b.name)
+                    .filter(
+                        (n): n is string =>
+                            n !== undefined && baseByName.get(norm(n))?.length === 1,
+                    ),
+            ),
+        ];
+    };
+    const statSuggestionsOf = (): readonly StatSuggestion[] => {
+        const out: StatSuggestion[] = [];
+        const seenStat = new Set<string>();
+        for (const entry of typeIndex.values()) {
+            const label = normalizeText(entry.text).join(" ");
+            if (label && !seenStat.has(label)) {
+                seenStat.add(label);
+                out.push({ label, detail: entry.text, type: entry.type });
+            }
+        }
+        return out;
+    };
+    const benchNamesOf = (): readonly string[] => [
         ...new Set(
-            data.bases
-                .filter((b) => craftableClasses.has(b.itemClass))
-                .map((b) => b.name)
-                .filter(
-                    (n): n is string => n !== undefined && baseByName.get(norm(n))?.length === 1,
-                ),
+            benchCrafts
+                .map((c) => modById.get(norm(c.mod))?.text)
+                .filter((t): t is string => t !== undefined)
+                .map((t) => normalizeText(t).join(" "))
+                .filter((t) => t.length > 0),
         ),
     ];
-    const statSuggestions: StatSuggestion[] = [];
-    const seenStat = new Set<string>();
-    for (const entry of typeIndex.values()) {
-        const label = normalizeText(entry.text).join(" ");
-        if (label && !seenStat.has(label)) {
-            seenStat.add(label);
-            statSuggestions.push({ label, detail: entry.text, type: entry.type });
-        }
-    }
+    let baseNames: readonly string[] | undefined;
+    let statSuggestions: readonly StatSuggestion[] | undefined;
+    let benchNames: readonly string[] | undefined;
 
     return {
         catalog,
         currencyNames,
         currencies,
-        baseNames,
-        statSuggestions,
+        get baseNames() {
+            return (baseNames ??= baseNamesOf());
+        },
+        get statSuggestions() {
+            return (statSuggestions ??= statSuggestionsOf());
+        },
         essenceNames: essences.map((e) => e.name),
         fossilNames: fossils.map((f) => f.name),
         aspectNames: [...aspects.keys()],
         essences,
-        benchNames: [
-            ...new Set(
-                benchCrafts
-                    .map((c) => modById.get(norm(c.mod))?.text)
-                    .filter((t): t is string => t !== undefined)
-                    .map((t) => normalizeText(t).join(" "))
-                    .filter((t) => t.length > 0),
-            ),
-        ],
+        get benchNames() {
+            return (benchNames ??= benchNamesOf());
+        },
         harvestTags: HARVEST_TAG_LABELS,
 
         resolveBase(name) {
@@ -965,46 +1076,14 @@ export function buildRegistry(data: RegistryData): Registry {
         },
 
         resolveEldritch(name, side, base) {
-            const q = normalizeText(name);
-            if (q.length === 0) return fail({ kind: "unknownEldritch", name, side });
-            const rows = eldritch.filter(
-                (e) =>
-                    e.side === side &&
-                    (base === undefined || [...e.classes].some((t) => base.tags.has(t))),
-            );
-            // Every query word must be a word (or a prefix of one) of the text.
-            // Rows of one wording (the tiers) are one candidate, ranked by how much
-            // of the wording the query covers, so "attack speed" names the plain
-            // implicit and its presence variants are reached by their condition's
-            // words; a tie at the top is ambiguous. A tier that changes a number
-            // also changes a plural, so plurals are folded.
-            const byWording = new Map<
-                string,
-                { text: string; types: Set<TypeId>; score: number }
-            >();
-            for (const e of rows) {
-                const tokens = normalizeText(e.text);
-                const set = new Set(tokens);
-                const hit = q.every(
-                    (w) => set.has(w) || [...set].some((t) => w.length >= 3 && t.startsWith(w)),
-                );
-                if (!hit) continue;
-                const key = [...new Set(tokens.map(singular))].sort().join(" ");
-                const entry = byWording.get(key) ?? {
-                    text: e.text,
-                    types: new Set<TypeId>(),
-                    score: q.length / set.size,
-                };
-                entry.types.add(e.type);
-                byWording.set(key, entry);
+            const memo = base === undefined ? eldritchByName : eldritchMemoOf(base);
+            const key = `${side}|${name}`;
+            let r = memo.get(key);
+            if (r === undefined) {
+                if (memo.size >= MEMO_LIMIT) memo.clear();
+                memo.set(key, (r = resolveEldritchOf(name, side, base)));
             }
-            if (byWording.size === 0) return fail({ kind: "unknownEldritch", name, side });
-            const best = Math.max(...[...byWording.values()].map((c) => c.score));
-            const top = [...byWording.values()].filter((c) => c.score === best);
-            if (top.length > 1) {
-                return fail({ kind: "ambiguous", name, candidates: top.map((c) => c.text) });
-            }
-            return found([...top[0]!.types]);
+            return r;
         },
 
         eldritchNames(side) {

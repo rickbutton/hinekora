@@ -15,7 +15,14 @@ import { isTwinOn } from "../check/methods.js";
 import { lookupWeight } from "../pool/pool.js";
 import type { Registry } from "../resolve/registry.js";
 import { tierLadder } from "../resolve/tiers.js";
-import { declaredRows, nameTagSets } from "./craft.js";
+import {
+    ALL_REACH,
+    type CraftReach,
+    craftReach,
+    declaredRows,
+    nameTagSets,
+    type ReachSource,
+} from "./craft.js";
 
 /** Which source admitted a row, for the measurements and the tests. */
 export type RowSource =
@@ -39,7 +46,9 @@ const rolls = (m: Mod, tags: ReadonlySet<TagId>, maybe: ReadonlySet<TagId>): boo
     (lookupWeight(m, tags, maybe) ?? 0) > 0;
 
 /**
- * The rows, each with the first source that admits it:
+ * The rows, each with the first source that admits it, of the sources the
+ * craft's steps and item block reach (`craftReach`; every source with no
+ * craft), since a row no step can lay down is on no item of the check:
  * - natural rows of the base's domain that roll at some item level, under any
  *   influence the class takes and any tag a row so admitted adds (to a
  *   fixpoint, as `check/ops.ts` `addableMods` reads tags);
@@ -50,8 +59,9 @@ const rolls = (m: Mod, tags: ReadonlySet<TagId>, maybe: ReadonlySet<TagId>): boo
  * - the fossils' added and forced rows for the base;
  * - the elevated rows an influence of the class names (the Orb of Dominance);
  * - the Bestiary's Aspect rows;
- * - to a fixpoint, every row a Harvest change can make of these;
- * - every row the item block declares, and what a Harvest change makes of it.
+ * - every row the item block declares;
+ * - where the craft has a Harvest change, to a fixpoint, every row it can
+ *   make of these.
  * A natural row of another domain is left out: no item holds one
  * (item-model.md §8 "Natural affix domain matches base").
  */
@@ -61,14 +71,16 @@ export function candidateRows(
     ilvl: number,
     craft: Craft | undefined,
 ): Map<Mod, RowSource> {
+    const reach = craft === undefined ? ALL_REACH : craftReach(craft);
     const common = commonRows(registry, base);
-    const out = new Map(common.rows);
+    const reached = reachedRows(registry, base, common, reach);
+    const out = new Map(reached);
     if (craft === undefined) return out;
     const add = adder(base, out);
     for (const m of declaredRows(craft, registry, base, ilvl)) add(m, "declared");
-    if (out.size > common.rows.size) {
+    if (reach.changes && out.size > reached.size) {
         closeUnderHarvestChange(registry, base, common.influenceTags, out, add, [
-            ...common.rows.keys(),
+            ...reached.keys(),
         ]);
     }
     return out;
@@ -82,25 +94,62 @@ const adder =
         out.set(m, source);
     };
 
+/** The order the sources are read in, which names a row read by several. */
+const SOURCES: readonly ReachSource[] = [
+    "bench",
+    "metamod",
+    "essence",
+    "veiled",
+    "fossil",
+    "elevated",
+    "aspect",
+];
+
 interface CommonRows {
-    readonly rows: ReadonlyMap<Mod, RowSource>;
+    readonly natural: readonly Mod[];
+    readonly bySource: ReadonlyMap<ReachSource, readonly Mod[]>;
     readonly influenceTags: ReadonlySet<TagId>;
+    /** By what a craft reaches, its rows: the sources it reaches, closed
+     *  under the Harvest change where it changes one. */
+    readonly reached: Map<string, ReadonlyMap<Mod, RowSource>>;
 }
 
-/** Every check on the base reads these, whatever its craft: held per registry. */
+/** Every check on the base reads these, whatever its craft or item level:
+ *  held per registry. */
 const commonCache = new WeakMap<Registry, WeakMap<Base, CommonRows>>();
 
-/** The rows of every source but the item block, closed under the Harvest
- *  change; they depend on the base alone, not on its item level. */
+function reachedRows(
+    registry: Registry,
+    base: Base,
+    common: CommonRows,
+    reach: CraftReach,
+): ReadonlyMap<Mod, RowSource> {
+    const key = `${SOURCES.filter((x) => reach.sources.has(x)).join(",")}|${reach.changes ? 1 : 0}`;
+    const hit = common.reached.get(key);
+    if (hit !== undefined) return hit;
+    const out = new Map<Mod, RowSource>();
+    const add = adder(base, out);
+    for (const m of common.natural) add(m, "natural");
+    for (const x of SOURCES) {
+        if (reach.sources.has(x)) for (const m of common.bySource.get(x) ?? []) add(m, x);
+    }
+    if (reach.changes) closeUnderHarvestChange(registry, base, common.influenceTags, out, add, []);
+    common.reached.set(key, out);
+    return out;
+}
+
+/** The rows of each source on the base. */
 function commonRows(registry: Registry, base: Base): CommonRows {
     let byBase = commonCache.get(registry);
     if (byBase === undefined) commonCache.set(registry, (byBase = new WeakMap()));
     const hit = byBase.get(base);
     if (hit !== undefined) return hit;
-    const out = new Map<Mod, RowSource>();
-    const add = adder(base, out);
     const catalog = registry.catalog;
     const byId = new Map(catalog.map((m) => [m.id as string, m]));
+    const bySource = new Map<ReachSource, Mod[]>(SOURCES.map((x) => [x, []]));
+    const add = (m: Mod | undefined, x: ReachSource): void => {
+        if (m !== undefined) bySource.get(x)!.push(m);
+    };
 
     const influenceTags = new Set<TagId>();
     for (const i of INFLUENCES)
@@ -119,7 +168,6 @@ function commonRows(registry: Registry, base: Base): CommonRows {
         for (const m of natural) for (const t of m.addsTags) maybe.add(t);
         if (maybe.size === before) break;
     }
-    for (const m of natural) add(m, "natural");
 
     for (const id of registry.benchModsFor(base.itemClass)) add(byId.get(id), "bench");
     for (const m of catalog) if (effectsOf(m).length > 0) add(m, "metamod");
@@ -160,8 +208,7 @@ function commonRows(registry: Registry, base: Base): CommonRows {
             if (r.ok) add(r.value, "aspect");
         }
     }
-    closeUnderHarvestChange(registry, base, influenceTags, out, add, []);
-    const made: CommonRows = { rows: out, influenceTags };
+    const made: CommonRows = { natural, bySource, influenceTags, reached: new Map() };
     byBase.set(base, made);
     return made;
 }

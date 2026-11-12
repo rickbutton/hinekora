@@ -173,7 +173,12 @@ async function main(): Promise<void> {
         pending = undefined;
         showProblems(editor, publishDiagnostics(model, registry));
         pane.render(model.getValue(), registry, prices);
-        pane.setActive(cursorOffset());
+        // The board carries its own fault line; the cursor's mark is a nicety.
+        try {
+            pane.setActive(cursorOffset());
+        } catch {
+            // the board as drawn stands
+        }
     };
     refresh();
     model.onDidChangeContent(() => {

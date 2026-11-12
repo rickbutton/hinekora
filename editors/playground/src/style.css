@@ -141,6 +141,11 @@ main {
     pointer-events: none;
 }
 
+#walkthrough .fault {
+    padding: 4px 8px;
+    color: var(--error, #e06c75);
+}
+
 /* a step and the item it leaves: one block on the rail */
 
 .block {

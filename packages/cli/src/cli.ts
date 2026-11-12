@@ -15,14 +15,14 @@
  * prices.
  * Exit codes: 0 = checks pass / formatted / charted / costed, 1 = craft has
  * errors / needs formatting / does not parse, 2 = usage / I/O error, 3 = the
- * checker could not judge the craft (a fault of its own). `cost`
+ * tool could not judge the craft (a fault of its own), under any command. `cost`
  * exits 0 whenever the guide parses: a guide with check errors is still costed,
  * as written, and the report's first line says so.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { loadDefaultEconomy, loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { formatCraft } from "@hinekora/parser";
-import { chartSource, checkSource, costSource } from "./check.js";
+import { chartSource, checkSource, costSource, unjudgedText } from "./check.js";
 
 const USAGE =
     "usage: hinekora check <file.craft> | hinekora fmt [--check] <file.craft> | hinekora chart <file.craft> | hinekora cost <file.craft>\n";
@@ -98,7 +98,18 @@ function cost(file: string): number {
     return ok ? 0 : 1;
 }
 
+/** Every command: a fault of the tool's own ends it with the could-not-judge
+ *  line and its exit code, not a stack trace. */
 function main(argv: readonly string[]): number {
+    try {
+        return run(argv);
+    } catch (error) {
+        process.stdout.write(`${unjudgedText(argv[argv.length - 1] ?? "", error)}\n`);
+        return 3;
+    }
+}
+
+function run(argv: readonly string[]): number {
     const [cmd, ...rest] = argv.slice(2);
     if (cmd === "check" && rest.length === 1) return check(rest[0]!);
     if (cmd === "cost" && rest.length === 1) return cost(rest[0]!);

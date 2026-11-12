@@ -7,6 +7,7 @@
 import { type Diagnostic, DiagnosticSeverity, type Range } from "vscode-languageserver-types";
 import type { Registry, SourceSpan } from "@hinekora/core";
 import { checkCached, parseCached } from "./analysis.js";
+import { guarded, messageOf } from "./guard.js";
 
 /** Our spans are 1-based line/column; LSP ranges are 0-based line/character. */
 export function toRange(span: SourceSpan): Range {
@@ -29,7 +30,7 @@ function toDiagnostic(message: string, span: SourceSpan): Diagnostic {
 }
 
 /** Parse + check `source`, returning LSP diagnostics (empty ⇒ the craft is clean). */
-export function getDiagnostics(source: string, registry: Registry): Diagnostic[] {
+function diagnosticsOf(source: string, registry: Registry): Diagnostic[] {
     const parsed = parseCached(source);
     if (!parsed.ok) {
         return [toDiagnostic(parsed.error.message, parsed.error.span)];
@@ -37,3 +38,15 @@ export function getDiagnostics(source: string, registry: Registry): Diagnostic[]
     const result = checkCached(source, registry)!;
     return result.diagnostics.map((d) => toDiagnostic(d.message, d.span));
 }
+
+/** Parse + check `source`, returning LSP diagnostics (empty ⇒ the craft is clean). */
+/** The words of a craft whose check failed in the tool itself. */
+const UNCHECKED =
+    "The craft could not be checked: the tool does not handle something about it. Please report it";
+
+export const getDiagnostics = guarded("diagnostics", diagnosticsOf, (error) => [
+    toDiagnostic(`${UNCHECKED} — ${messageOf(error)}`, {
+        start: { line: 1, column: 1, offset: 0 },
+        end: { line: 1, column: 1, offset: 0 },
+    }),
+]);

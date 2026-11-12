@@ -352,11 +352,16 @@ export class Tracker {
                 .map((m) => ({ id: m.id, weight: lookupWeight(m, baseTags) ?? 0 }))
                 .filter((r) => r.weight > 0);
             const weight = rows.reduce((sum, r) => sum + r.weight, 0);
+            let gen = genOfOn(registry, first, type);
             if (rows.length === 0) {
-                // A row no roll lays down (a bench craft's): placed, never drawn.
+                // A row no roll lays down (a bench craft's): placed, never drawn,
+                // on the side of the rows the guide's items hold, where its
+                // type's rows elsewhere sit on both.
                 rows = registry.catalog
                     .filter((m) => m.type === type)
                     .map((m) => ({ id: m.id, weight: 1 }));
+                const sides = new Set(items.flatMap((a) => rowsOf(a, type).map((m) => m.gen)));
+                if (sides.size === 1) gen = [...sides][0]!;
             } else {
                 // An elevated row of a type that rolls: an Orb of Dominance
                 // alone makes it, so it is placed, never drawn.
@@ -398,7 +403,7 @@ export class Tracker {
             this.classes.push(classes);
             this.classesOfRow.push(ofRow);
             this.atoms.push({
-                gen: genOfOn(registry, first, type),
+                gen,
                 rows: classes.map((c) => ({
                     id: c.rep,
                     weight: c.members.reduce((sum, m) => sum + m.weight, 0),
@@ -831,11 +836,7 @@ export class Tracker {
 
     /** The item a veiled placeholder went onto, read on each side it may be
      *  on, the sides with room alike (QUESTIONS.md Q76). */
-    private veiledSides(
-        a: XItem,
-        from: ChainState,
-        reading: Reading,
-    ): readonly Outcome[] | undefined {
+    private veiledSides(a: XItem, from: ChainState): readonly Outcome[] | undefined {
         const sides: (readonly Outcome[])[] = [];
         for (const [type, gen] of [
             [VEILED_PREFIX, "prefix"],
@@ -851,7 +852,7 @@ export class Tracker {
                 side = side === null ? null : narrowTo(side, c, true);
             }
             if (side === null) continue;
-            const states = this.statesIn(side, reading, from);
+            const states = this.statesIn(side, from);
             if (states === undefined) return undefined;
             sides.push(states);
         }
@@ -983,8 +984,8 @@ export class Tracker {
                 if (ops.some((op) => op.kind === "elevate"))
                     return this.counted(this.dominated(item, state));
                 if (ops.some((op) => op.kind === "fill" && op.pool.kind === "veiledPlaceholder"))
-                    return this.counted(this.veiledSides(ran.state, state, reading));
-                return this.counted(this.statesIn(ran.state, reading, state));
+                    return this.counted(this.veiledSides(ran.state, state));
+                return this.counted(this.statesIn(ran.state, state));
             }
             default:
                 return this.counted(undefined);
@@ -1252,10 +1253,10 @@ export class Tracker {
     }
 
     /** The item a method's fill starts from: what its steps before the fill
-     *  leave, its requirements, which change nothing, skipped. */
+     *  leave. */
     private stripped(item: XItem, ops: readonly Op[], fillAt: number): XItem {
         if (fillAt < 0) return item;
-        return ranOn(item, ops, fillAt, false).state;
+        return ranOn(item, ops, fillAt).state;
     }
 
     /** A Divine Orb on a state: each present modifier a condition compares by
@@ -1287,6 +1288,7 @@ export class Tracker {
 
     private counted(out: readonly Outcome[] | undefined): readonly Outcome[] | undefined {
         if (out === undefined) this.misses++;
+
         return out;
     }
 
@@ -1295,11 +1297,7 @@ export class Tracker {
      * atom present or absent, a present one's class by its rows' weight.
      * Undefined where the item leaves a count or an atom open.
      */
-    statesIn(
-        item: XItem,
-        reading: Reading = "estimate",
-        from?: ChainState,
-    ): readonly Outcome[] | undefined {
+    statesIn(item: XItem, from?: ChainState): readonly Outcome[] | undefined {
         const [t0, t1] = countsOf(item).total;
         const [p0, p1] = countsOf(item).prefix;
         if (t0 !== t1 || p0 !== p1) return undefined;
@@ -1350,7 +1348,7 @@ export class Tracker {
             // modifier among them comes up by its share of the race.
             const known = { prefix: 0, suffix: 0 };
             for (const t of guaranteed) known[genOfOn(this.registry, item, t)]++;
-            const groups = naturalGroups(item, this.registry, reading);
+            const groups = naturalGroups(item, this.registry);
             for (const gen of ["prefix", "suffix"] as const) {
                 const slots = counts[gen] - known[gen];
                 const side = groups[gen];

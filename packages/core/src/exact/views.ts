@@ -473,6 +473,17 @@ export function disjunctiveGuarantees(
                 return;
             }
             if (chosen.length >= maxSize) return;
+            if (chosen.length === maxSize - 1) {
+                // One type left to choose: it closes the clause only where every
+                // item left carries it, which one pass over them tells for all.
+                const values = m.valuesOfEach(rest);
+                for (const slot of u.modSlots()) {
+                    if (values[slot]!.includes(0)) continue;
+                    const t = u.modSlot(slot)!.type;
+                    if (eligible(t)) go([...chosen, t], m.EMPTY);
+                }
+                return;
+            }
             const w = m.witness(rest)!;
             for (const slot of u.modSlots()) {
                 if (w[slot] === 0) continue;

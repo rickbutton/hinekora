@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { loadDefaultEconomy, loadDefaultPoe1, registryOf } from "@hinekora/data";
-import { chartSource, checkSource, costSource } from "./check.js";
+import { chartSource, checkSource, costSource, unjudgedText } from "./check.js";
 
 // Built once against the real bundled catalog — the CLI's actual data path.
 const registry = registryOf(loadDefaultPoe1());
@@ -110,6 +110,30 @@ transmute`,
             run(`item { base: "Iron Ring" ilvl: 84 rarity: magic }
 exalt`).unjudged,
         ).toBeUndefined();
+    });
+
+    it("gives the could-not-judge line where drawing the item fails after a clean check", () => {
+        const broken = {
+            ...registry,
+            typeLabel: () => {
+                throw new Error("no wording");
+            },
+        };
+        const r = checkSource(
+            `item { base: "Iron Ring" ilvl: 84 rarity: normal }
+transmute
+until has "maximum life" {
+    alteration
+}`,
+            "t.craft",
+            broken,
+        );
+        expect(r).toEqual({
+            ok: false,
+            output: unjudgedText("t.craft", new Error("no wording")),
+            unjudged: true,
+        });
+        expect(r.output).toMatch(/^t\.craft: error: the craft could not be judged.* — no wording$/);
     });
 
     it("points an item block's error at the field or the modifier it is about", () => {

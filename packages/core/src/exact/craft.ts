@@ -167,6 +167,85 @@ export function craftImprints(craft: Craft): boolean {
     return imprintsIn(craft.body) || craft.procs.some((p) => imprintsIn(p.body));
 }
 
+/** What a craft's steps can put on an item beyond the natural pool's rows. */
+export interface CraftReach {
+    /** The row sources besides the natural pool and the item block. */
+    readonly sources: ReadonlySet<ReachSource>;
+    /** A modifier may come to be fractured. */
+    readonly fractures: boolean;
+    /** A Harvest change may turn a row into another, a crafted one into a
+     *  crafted natural row among them. */
+    readonly changes: boolean;
+}
+
+export type ReachSource =
+    "bench" | "metamod" | "essence" | "veiled" | "fossil" | "elevated" | "aspect";
+
+/** By a method's words, what it can put on an item beyond the natural pool:
+ *  every other method draws from that pool alone or adds nothing. A test
+ *  pins it against the operations each method builds. */
+export const REACH: Readonly<Record<string, Partial<CraftReach>>> = {
+    bench: { sources: new Set(["bench", "metamod"]) },
+    "beast metamod": { sources: new Set(["metamod"]) },
+    "beast aspect": { sources: new Set(["aspect"]) },
+    essence: { sources: new Set(["essence"]) },
+    fossil: { sources: new Set(["fossil", "essence"]), fractures: true },
+    "veiled chaos": { sources: new Set(["veiled"]) },
+    "veiled exalt": { sources: new Set(["veiled"]) },
+    unveil: { sources: new Set(["veiled"]) },
+    dominance: { sources: new Set(["elevated"]) },
+    fracture: { fractures: true },
+    "beast fracture": { fractures: true },
+    "harvest change": { changes: true },
+};
+
+/** Everything a craft can reach: what no craft-aware reading leaves out. */
+export const ALL_REACH: CraftReach = {
+    sources: new Set(["bench", "metamod", "essence", "veiled", "fossil", "elevated", "aspect"]),
+    fractures: true,
+    changes: true,
+};
+
+/** What the craft's steps, in its body, its procs and its step arguments, and
+ *  its item block can put on the item. */
+export function craftReach(craft: Craft): CraftReach {
+    const sources = new Set<ReachSource>();
+    let fractures = false;
+    let changes = false;
+    const visit = (stmts: readonly Stmt[]): void => {
+        for (const s of stmts) {
+            switch (s.kind) {
+                case "operation": {
+                    const r = REACH[s.words.join(" ")];
+                    for (const x of r?.sources ?? []) sources.add(x);
+                    fractures ||= r?.fractures === true;
+                    changes ||= r?.changes === true;
+                    break;
+                }
+                case "if":
+                    visit(s.body);
+                    visit(s.elseBody ?? []);
+                    break;
+                case "until":
+                    visit(s.body);
+                    break;
+                case "call":
+                    for (const a of s.args) if (a.kind === "block") visit(a.body);
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
+    visit(craft.body);
+    for (const p of craft.procs) visit(p.body);
+    for (const a of [...craft.item.prefixes, ...craft.item.suffixes]) {
+        if (a.bench === true) sources.add("bench");
+        fractures ||= a.fractured === true;
+    }
+    return { sources, fractures, changes };
+}
+
 /** The rows the item block may declare: a row named by id, a bench row named
  *  by its modifier, or any row of a named modifier's ladders on the base. */
 export function declaredRows(craft: Craft, registry: Registry, base: Base, ilvl: number): Mod[] {

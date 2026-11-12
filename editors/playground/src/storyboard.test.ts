@@ -3,6 +3,8 @@ import type { ItemView, ModGroup, ModView } from "@hinekora/core";
 import type { StepCost } from "@hinekora/core";
 import {
     breakdown,
+    drawSafely,
+    FAULT,
     named,
     passIsPartial,
     passSpend,
@@ -163,6 +165,17 @@ describe("the storyboard's expected spend", () => {
     });
 });
 
+describe("the storyboard's expected spend where the cost has none", () => {
+    it("says the check could not follow the item, or the cost could not be worked out", () => {
+        expect(spendLine({ total: [], unknown: false, unjudged: true })).toBe(
+            "expected spend: not known, for the check could not follow the item",
+        );
+        expect(spendLine({ total: [], unknown: false, failed: "boom" })).toBe(
+            "expected spend: not known, for the cost of this craft could not be worked out",
+        );
+    });
+});
+
 describe("the storyboard's state line", () => {
     it("counts a group of alternatives as the modifiers it guarantees", () => {
         const two: ModGroup = {
@@ -189,5 +202,15 @@ describe("the storyboard's named changes", () => {
                 removed: ["Magic", "1 unknown modifier", "Hunter Item"],
             }),
         ).toEqual({ added: ["+# to maximum Life"], removed: ["Hunter Item"] });
+    });
+});
+
+describe("a board the tool cannot draw", () => {
+    it("is a line in the game's words, not a thrown error", () => {
+        const drawn = drawSafely(() => {
+            throw new Error("no wording");
+        });
+        expect(drawn).toEqual({ fault: `${FAULT} — no wording` });
+        expect(drawSafely(() => 3)).toEqual({ blocks: 3 });
     });
 });

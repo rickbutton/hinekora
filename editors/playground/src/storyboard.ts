@@ -55,6 +55,19 @@ import {
 import { checkCached, costCached, parseCached } from "@hinekora/lsp";
 import { itemCardHtml } from "@hinekora/item-card";
 
+/** The line over a board the tool could not draw for the text as it stands. */
+export const FAULT =
+    "The steps could not be drawn for this text, so the last ones stay. Please report it";
+
+/** The board `draw` makes, or the line saying it could not be drawn. */
+export function drawSafely<T>(draw: () => T): { readonly blocks: T } | { readonly fault: string } {
+    try {
+        return { blocks: draw() };
+    } catch (error) {
+        return { fault: `${FAULT} — ${error instanceof Error ? error.message : String(error)}` };
+    }
+}
+
 export interface StoryHooks {
     /** The user chose a step: move the cursor to this offset. */
     readonly onSelect: (offset: number) => void;
@@ -267,8 +280,13 @@ export function repeatTable(
  * spend, only what the steps outside that loop come to.
  */
 export function spendLine(
-    report: Pick<CostReport, "total" | "chaos" | "divine" | "unknown">,
+    report: Pick<CostReport, "total" | "chaos" | "divine" | "unknown" | "unjudged" | "failed">,
 ): string | undefined {
+    if (report.unjudged === true)
+        return "expected spend: not known, for the check could not follow the item";
+    if (report.failed !== undefined) {
+        return "expected spend: not known, for the cost of this craft could not be worked out";
+    }
     const list = report.total.map((p) => `${figure(p.amount)} ${p.item}`).join(", ");
     if (report.unknown) {
         const rest = list === "" ? "" : `; the steps outside it come to ${list}`;
@@ -836,24 +854,35 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
 
     return {
         render(source, registry, prices) {
-            const parsed = parseCached(source);
-            const result = checkCached(source, registry);
-            if (!parsed.ok || result === undefined) {
+            const kept = anchors;
+            const drawn = drawSafely(() => {
+                const parsed = parseCached(source);
+                const result = checkCached(source, registry);
+                if (!parsed.ok || result === undefined) return undefined;
+                return build(
+                    parsed.craft,
+                    walkthrough(parsed.craft, result, registry),
+                    registry,
+                    costCached(source, registry, prices),
+                    prices,
+                );
+            });
+            if ("fault" in drawn) {
+                // A fault of the tool's own: the last board stays, dimmed, under a line saying so.
+                anchors = kept;
+                root.classList.add("stale");
+                root.querySelector(".fault")?.remove();
+                root.prepend(h("div", "fault", drawn.fault));
+                return;
+            }
+            if (drawn.blocks === undefined) {
                 // The last board stays, dimmed: its blocks no longer point at
                 // the right places in the text.
                 root.classList.add("stale");
                 return;
             }
             root.classList.remove("stale");
-            root.replaceChildren(
-                ...build(
-                    parsed.craft,
-                    walkthrough(parsed.craft, result, registry),
-                    registry,
-                    costCached(source, registry, prices),
-                    prices,
-                ),
-            );
+            root.replaceChildren(...drawn.blocks);
         },
         setActive(offset) {
             if (root.classList.contains("stale")) return;

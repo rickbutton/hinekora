@@ -77,6 +77,23 @@ function side(gen: "prefix" | "suffix"): { types: string[]; weights: number[] } 
     return { types: [...byType.keys()], weights: [...byType.values()] };
 }
 
+describe("a fault of the cost walk", () => {
+    it("gives a report with no figure and the fault's words, never a throw", () => {
+        const c = craft(ring("rare"), [op("chaos")]);
+        const checked = check(c, { registry });
+        const broken = new Proxy(c, {
+            get: (target, key) => {
+                if (key === "body") throw new Error("the body cannot be read");
+                return Reflect.get(target, key) as unknown;
+            },
+        });
+        const r = costOf(broken, checked, registry);
+        expect(r.failed).toBe("the body cannot be read");
+        expect(r.steps).toEqual([]);
+        expect(r.unknown).toBe(true);
+    });
+});
+
 describe("the cost of a guide", () => {
     it("an exalt into the last prefix slot is one draw from the prefix race", () => {
         // Two prefixes and three suffixes named: the Exalted Orb draws one prefix.
