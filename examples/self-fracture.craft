@@ -1,6 +1,6 @@
 # Self-fracturing: lock one of four mods, then clear the fillers if it stuck.
 #
-# A Fracturing Orb fractures one random mod of a four-mod rare. Guides build
+# A Fracturing Orb fractures one random mod of a four-mod rare. Crafts build
 # the item so that the three other mods are cheap fillers, fracture, and keep
 # the item only when the lock landed on the mod they wanted; the checker
 # treats the fracture as "one of these four, unknown which" until the branch

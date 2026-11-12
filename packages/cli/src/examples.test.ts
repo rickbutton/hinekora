@@ -6,12 +6,12 @@ import { parse } from "@hinekora/parser";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { checkSource } from "./check.js";
 
-// Every guide under examples/ checks clean against the bundled catalog. The
+// Every craft under examples/ checks clean against the bundled catalog. The
 // crafts under examples/future/ wait on a feature and are deliberately left out.
 const registry = registryOf(loadDefaultPoe1());
 const dir = join(import.meta.dirname, "../../../examples");
 
-describe("the example guides", () => {
+describe("the example crafts", () => {
     for (const file of readdirSync(dir).filter((f) => f.endsWith(".craft"))) {
         it(`${file} checks clean`, () => {
             const r = checkSource(readFileSync(join(dir, file), "utf8"), file, registry);
@@ -23,7 +23,7 @@ describe("the example guides", () => {
 
 const reports = new Map<string, ReturnType<typeof costOf>>();
 
-/** The expected runs of the step on `line` of an example guide. */
+/** The expected runs of the step on `line` of an example craft. */
 function runsAt(file: string, line: number): number {
     let report = reports.get(file);
     if (report === undefined) {
@@ -38,7 +38,7 @@ function runsAt(file: string, line: number): number {
 // Regression pins on the walk's own figures, held to a few per cent so a change
 // to the cost model that moves them shows. They are not validation: what
 // checks the model is the draw played out in race.test.ts.
-describe("the example guides' costs", () => {
+describe("the example crafts' costs", () => {
     it(
         "metamod-harvest-loop.craft: about nine reforges and one and a third annuls",
         {

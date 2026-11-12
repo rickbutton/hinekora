@@ -13,7 +13,7 @@ import {
 } from "./words.js";
 
 describe("the cost report's words", () => {
-    it("quotes figures and chances as a guide does", () => {
+    it("quotes figures and chances as players do", () => {
         expect(figure(0.25)).toBe("0.25");
         expect(figure(8.8)).toBe("8.8");
         expect(figure(36.84)).toBe("36.8");
@@ -44,7 +44,7 @@ describe("the cost report's words", () => {
         );
     });
 
-    it("marks an estimate with ~ and words a repeat's odds as guides quote them", () => {
+    it("marks an estimate with ~ and words a repeat's odds as players quote them", () => {
         expect(approx(24.9)).toBe("~24.9");
         expect(oddsText(0.114)).toBe("1/9 chance");
         expect(oddsText(1 / 37)).toBe("1/37 chance");

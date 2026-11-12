@@ -5,7 +5,7 @@
 # beastcraft): preview the Regal Orb and apply it only when it adds a suffix,
 # otherwise spend the preview on a Blessed Orb and lock again. The proposed
 # spelling keeps only the outcomes that satisfy the predicate and joins them
-# with the unchanged item; the loop then reads exactly as the guide does.
+# with the unchanged item; the loop then reads exactly as the craft does.
 
 item {
     base:     "Turquoise Amulet"

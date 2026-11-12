@@ -1,5 +1,5 @@
 /**
- * The words guides use for a modifier where the game's wording differs enough
+ * The words players use for a modifier where the game's wording differs enough
  * that word matching cannot bridge them: an abbreviation shorter than the
  * three letters a prefix match needs, a different word, or a noun the game
  * writes as a verb. Each entry is rewritten inside a name before matching, so

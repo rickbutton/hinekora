@@ -219,7 +219,7 @@ function itemContext(
 }
 
 /**
- * The modifiers the guide names that no item can carry at `offset`: only
+ * The modifiers the craft names that no item can carry at `offset`: only
  * those, since a modifier the item lacks is still one a step may add. The
  * source is usually mid-string here, so also try a copy with the open string
  * closed.

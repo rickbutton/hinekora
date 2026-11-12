@@ -1,5 +1,5 @@
 /**
- * The guide as a Mermaid flowchart: an action node per statement, a
+ * The craft as a Mermaid flowchart: an action node per statement, a
  * decision per loop exit or branch asking for the condition in the player's
  * words, "yes" and "no" edges, a loop as a "repeat" region entered at its
  * decision, which its last step leads back to, start and end. The text is what a flowchart

@@ -60,7 +60,7 @@ const CMP_KINDS: Partial<Record<TokenKind, Cmp>> = {
     ge: ">=",
 };
 
-/** What a name slot asks for, in the guide writer's words. */
+/** What a name slot asks for, in the player's words. */
 const QUOTED: Readonly<Record<NameKind, string>> = {
     mod: "a quoted mod name",
     essence: "a quoted essence name",
@@ -70,7 +70,7 @@ const QUOTED: Readonly<Record<NameKind, string>> = {
     aspect: "a quoted Aspect name",
 };
 
-/** An argument as the guide wrote it, for quoting a statement back in an error. */
+/** An argument as the craft wrote it, for quoting a statement back in an error. */
 function renderArg(arg: OperationArg): string {
     switch (arg.kind) {
         case "string":
@@ -540,7 +540,7 @@ class Parser {
 
     /**
      * Parse the argument(s) one slot asks for, appending to `args`. An error
-     * names what is expected in the guide's words and quotes the statement so
+     * names what is expected in the player's words and quotes the statement so
      * far, so `harvest change "fire res"` says which of its two mods is missing.
      */
     private parseSlot(method: Method, slot: Slot, args: OperationArg[]): void {

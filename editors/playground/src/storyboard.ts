@@ -1,16 +1,16 @@
 /**
- * The guide as the item's journey: one block per step, the currency's icon
+ * The craft as the item's journey: one block per step, the currency's icon
  * and words over the item that results, a loop as a bracketed "repeat" region
  * closed by the checklist the item must meet, a branch as a question with one
- * arm per answer. It reads top to bottom like the crafting guides players
+ * arm per answer. It reads top to bottom like the recipes players
  * already follow, and shows what those cannot: the item, with certainty,
  * after every step. A step that only moves the counts or the rarity gets a
  * one-line state; a step that adds or removes something named gets the card.
  *
- * Under each step the cost layer's line, in the guide's words: what the step
+ * Under each step the cost layer's line, in the player's words: what the step
  * is expected to consume and its price under the economy snapshot, how many
  * rounds a repeat takes, how often a branch is taken, and at the end what the
- * whole guide is expected to spend.
+ * whole craft is expected to spend.
  *
  * A block is the unit of interaction: hovering anywhere in it highlights its
  * statement in the editor, clicking moves the cursor there, and the cursor
@@ -234,7 +234,7 @@ export function breakdown(spend: readonly Price[], snapshot?: Prices): Breakdown
 
 /**
  * What one pass through a loop is expected to consume: the body's expected
- * spend over the whole guide, divided by how often the loop itself runs.
+ * spend over the whole craft, divided by how often the loop itself runs.
  */
 export function passSpend(loop: StepCost, steps: readonly StepCost[]): Price[] {
     const inside = (s: StepCost): boolean =>
@@ -275,8 +275,8 @@ export function repeatTable(
 }
 
 /**
- * The line that sums the guide's spend: the figure under the snapshot, else
- * the currencies. A guide with a loop that has no figure has no expected
+ * The line that sums the craft's spend: the figure under the snapshot, else
+ * the currencies. A craft with a loop that has no figure has no expected
  * spend, only what the steps outside that loop come to.
  */
 export function spendLine(
@@ -540,11 +540,11 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                         `expected ${priceText(expected, prices)}`,
                         spreadTitle(c.runsRange, (n) => `${figure(n)} uses`),
                         () =>
-                            showBreakdown(`${label}: expected over the guide`, expected, prices, [
+                            showBreakdown(`${label}: expected over the craft`, expected, prices, [
                                 h(
                                     "div",
                                     "note",
-                                    `${approx(c.runs)} uses over the guide${spreadNote(c.runsRange)}`,
+                                    `${approx(c.runs)} uses over the craft${spreadNote(c.runsRange)}`,
                                 ),
                             ]),
                     ),
@@ -791,7 +791,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
         }
         return out;
 
-        /** What the whole guide is expected to spend, under the snapshot. */
+        /** What the whole craft is expected to spend, under the snapshot. */
         function total(): HTMLElement | undefined {
             const line = report === undefined ? undefined : spendLine(report);
             if (report === undefined || line === undefined) return undefined;
@@ -814,7 +814,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                 showBreakdown(
                     report.unknown
                         ? "spend outside the loop that has no figure"
-                        : "expected spend for the guide",
+                        : "expected spend for the craft",
                     report.total,
                     prices,
                     notes,

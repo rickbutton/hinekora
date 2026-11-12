@@ -1,6 +1,6 @@
 /**
- * Document formatting: the whole guide replaced by `formatCraft`'s output as
- * one edit, or no edit when the guide does not parse or is already formatted.
+ * Document formatting: the whole craft replaced by `formatCraft`'s output as
+ * one edit, or no edit when the craft does not parse or is already formatted.
  */
 import { formatCraft } from "@hinekora/parser";
 import type { TextEdit } from "vscode-languageserver-types";

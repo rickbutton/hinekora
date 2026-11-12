@@ -141,7 +141,7 @@ describe("has <mod> t<n> <cmp> <n>, on a modifier at another tier", () => {
 
 describe("has <mod> <cmp> <n>", () => {
     it("divines until the roll is in range", () => {
-        // T1 life rolls 115–129; the guide wants 120 or more.
+        // T1 life rolls 115–129; the craft wants 120 or more.
         const c = craft(ring([{ mod: "maximum life", tier: 1 }]), [
             until(hasValue("maximum life", ">=", 120), [op("divine")]),
         ]);

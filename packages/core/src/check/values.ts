@@ -1,7 +1,7 @@
 /**
  * Modifier values. A row's text carries its roll span ("+(70-84) to maximum
  * Life"); the checker reads the first number of the text as the modifier's
- * value, so a guide's "life 75 or more" is a question about that span.
+ * value, so a craft's "life 75 or more" is a question about that span.
  */
 import type { Cmp } from "../ast/ast.js";
 import type { Range } from "./domain.js";

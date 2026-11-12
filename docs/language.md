@@ -1,6 +1,6 @@
 # The hinekora language
 
-The language a guide author writes to describe a craft. Where a construct rests on a game
+The language a player writes a craft in. Where a construct rests on a game
 rule, the rule is linked to its wiki section rather than restated; what is not built yet is
 in [ROADMAP.md](ROADMAP.md).
 
@@ -107,7 +107,7 @@ them.
 query word matches an entry word exactly or as a prefix of at least three letters, so
 `"max life"` finds "maximum Life". Only types that roll on the base at its item level are
 candidates, then those its level stops short of, then those an unveil or the bench puts on
-its class, as a metamod is (`has "suffixes cannot be changed"`). Guide spellings are read as
+its class, as a metamod is (`has "suffixes cannot be changed"`). Players' spellings are read as
 the game's first (`"max es"`, `"+1 gems"`); the table is `packages/data/src/aliases.ts`. An
 exact mod id (`IncreasedLife5`) always resolves. Where modifiers of one type share a tier
 (an Elder amulet's Skeletons and Raised Zombies), a name means the one it words. Matches
@@ -259,7 +259,7 @@ A predicate asks about the item's current state only; there are no history predi
   experimented base's "increased modifier magnitudes" implicit is not applied.
 - `has group "X"` asks for any modifier of X's
   [group](https://www.poewiki.net/wiki/Modifier#Group/family), read across every base:
-  `if not has group "spell damage" { bench "spell damage" }` is a guide's "unless you already
+  `if not has group "spell damage" { bench "spell damage" }` is a player's "unless you already
   have one of those".
 - `influenced`, `corrupted` and `dominant` ask about the item's marks (§1); where paths with
   different marks meet, as after a `locus` or a `conflict`, a branch on them narrows to one.

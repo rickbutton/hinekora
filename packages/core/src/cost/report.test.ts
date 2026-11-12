@@ -94,7 +94,7 @@ describe("a fault of the cost walk", () => {
     });
 });
 
-describe("the cost of a guide", () => {
+describe("the cost of a craft", () => {
     it("an exalt into the last prefix slot is one draw from the prefix race", () => {
         // Two prefixes and three suffixes named: the Exalted Orb draws one prefix.
         const c = craft(
@@ -351,7 +351,7 @@ describe("the cost of a guide", () => {
     });
 
     it("a call is walked as its steps written in its place", () => {
-        const guide = (
+        const written = (
             step: Parameters<typeof craft>[1][number],
             procs: ReturnType<typeof procDef>[],
         ) =>
@@ -369,8 +369,8 @@ describe("the cost of a guide", () => {
                 [],
                 procs,
             );
-        const called = report(guide(callStmt("reroll"), [procDef("reroll", [], [op("chaos")])]));
-        const inline = report(guide(op("chaos"), []));
+        const called = report(written(callStmt("reroll"), [procDef("reroll", [], [op("chaos")])]));
+        const inline = report(written(op("chaos"), []));
         const branch = (r: typeof called) => r.steps.find((s) => s.kind === "if")!;
         expect(called.steps.every((s) => s.note === undefined)).toBe(true);
         expect(called.total).toEqual(inline.total);
@@ -379,7 +379,7 @@ describe("the cost of a guide", () => {
 
     it("a step parameter used twice runs as two steps, each on its own item", () => {
         const twice = procDef("twice", ["s"], [paramStep("s"), paramStep("s")]);
-        const guide = (steps: Parameters<typeof craft>[1], procs: ReturnType<typeof procDef>[]) =>
+        const written = (steps: Parameters<typeof craft>[1], procs: ReturnType<typeof procDef>[]) =>
             craft(
                 ring("rare", ["IncreasedMana1"], ["FireResist1"]),
                 [...steps, iff(has("IncreasedLife1"), [stop()])],
@@ -388,26 +388,27 @@ describe("the cost of a guide", () => {
             );
         const branch = (c: ReturnType<typeof craft>) =>
             report(c).steps.find((s) => s.kind === "if")!.branch!;
-        const inline = branch(guide([op("exalt"), op("exalt")], []));
-        expect(branch(guide([callStmt("twice", [blockArg([op("exalt")])])], [twice]))).toBeCloseTo(
-            inline,
-            9,
-        );
+        const inline = branch(written([op("exalt"), op("exalt")], []));
+        expect(
+            branch(written([callStmt("twice", [blockArg([op("exalt")])])], [twice])),
+        ).toBeCloseTo(inline, 9);
         // A call as the argument of a call: four exalts would not fit, so two
         // calls of one exalt each, nested.
         const once = procDef("once", ["s"], [paramStep("s")]);
-        const nested = guide(
+        const nested = written(
             [callStmt("twice", [blockArg([callStmt("once", [blockArg([op("exalt")])])])])],
             [twice, once],
         );
         expect(branch(nested)).toBeCloseTo(inline, 9);
         expect(
-            branch(guide([callStmt("one"), callStmt("one")], [procDef("one", [], [op("exalt")])])),
+            branch(
+                written([callStmt("one"), callStmt("one")], [procDef("one", [], [op("exalt")])]),
+            ),
         ).toBeCloseTo(inline, 9);
     });
 
     it("a step parameter used twice inside a solved loop is two steps of each round", () => {
-        const guide = (steps: Parameters<typeof craft>[1], procs: ReturnType<typeof procDef>[]) =>
+        const written = (steps: Parameters<typeof craft>[1], procs: ReturnType<typeof procDef>[]) =>
             craft(
                 ring("rare", ["IncreasedMana1"], ["FireResist1"]),
                 [
@@ -422,12 +423,12 @@ describe("the cost of a guide", () => {
                 procs,
             );
         const called = report(
-            guide(
+            written(
                 [callStmt("twice", [blockArg([op("exalt")])])],
                 [procDef("twice", ["s"], [paramStep("s"), paramStep("s")])],
             ),
         ).steps[0]!;
-        const inline = report(guide([op("exalt"), op("exalt")], [])).steps[0]!;
+        const inline = report(written([op("exalt"), op("exalt")], [])).steps[0]!;
         expect(called.note).toBeUndefined();
         expect(called.attempts!.expected).toBeCloseTo(inline.attempts!.expected, 6);
     });
@@ -475,11 +476,11 @@ describe("the cost of a guide", () => {
     });
 
     it("a call inside a loop is followed round by round", () => {
-        const guide = (body: Parameters<typeof craft>[1], procs: ReturnType<typeof procDef>[]) =>
+        const written = (body: Parameters<typeof craft>[1], procs: ReturnType<typeof procDef>[]) =>
             craft(ring("rare"), [until(has("IncreasedLife1"), body)], [], procs);
-        const called = report(guide([callStmt("reroll")], [procDef("reroll", [], [op("chaos")])]))
+        const called = report(written([callStmt("reroll")], [procDef("reroll", [], [op("chaos")])]))
             .steps[0]!;
-        const inline = report(guide([op("chaos")], [])).steps[0]!;
+        const inline = report(written([op("chaos")], [])).steps[0]!;
         expect(called.note).toBeUndefined();
         expect(called.attempts!.expected).toBeCloseTo(inline.attempts!.expected, 9);
     });
@@ -600,7 +601,7 @@ describe("the cost of a guide", () => {
         expect(branch.branch).toBeCloseTo(1 / 4, 9);
     });
 
-    it("an unveil takes the modifier the guide names when it is offered", () => {
+    it("an unveil takes the modifier the craft names when it is offered", () => {
         // The veiled modifier is a suffix half the time, and a ring's veiled
         // suffixes are two, both offered: the named one is taken.
         const c = craft(
@@ -667,7 +668,7 @@ describe("the cost of a guide", () => {
     it("a loop entered from a branch the states cannot read keeps the fracture", () => {
         // A rarity condition drops the tracked states; the loop's start then
         // reads the item, which still says the life is fractured.
-        const guide = (pre: Parameters<typeof craft>[1]) =>
+        const written = (pre: Parameters<typeof craft>[1]) =>
             report(
                 craft(
                     item({
@@ -679,8 +680,8 @@ describe("the cost of a guide", () => {
                     [...pre, until(has("IncreasedArmour1"), [op("chaos")])],
                 ),
             ).steps.find((s) => s.kind === "until")!;
-        const plain = guide([]);
-        const after = guide([iff(isRarity("rare"), [])]);
+        const plain = written([]);
+        const after = written([iff(isRarity("rare"), [])]);
         expect(after.note).toBeUndefined();
         expect(after.attempts!.expected).toBeCloseTo(plain.attempts!.expected, 9);
     });
@@ -752,7 +753,7 @@ describe("the cost of a guide", () => {
         expect(loop.note).toMatch(/cannot end/);
     });
 
-    it("a loop that cannot end has no figure, nor has the guide", () => {
+    it("a loop that cannot end has no figure, nor has the craft", () => {
         const prices: Prices = {
             league: "Test",
             fetchedAt: "2026-11-09T00:00:00Z",

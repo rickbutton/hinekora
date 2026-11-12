@@ -1,6 +1,6 @@
 /**
  * The formatter: parse, then print the tree in the house style, keeping the
- * guide's comments and blank-line grouping. Each printed line remembers the
+ * craft's comments and blank-line grouping. Each printed line remembers the
  * source line it came from; comments are put back by that line (a comment
  * after code on a line stays after that code, a comment on its own line stays
  * before the next code), and one blank line is kept wherever the source had any.
@@ -465,7 +465,7 @@ function assemble(lines: readonly Line[], comments: readonly Comment[], source: 
     return `${out.join(eol)}${eol}`;
 }
 
-/** The guide in the house style, or `undefined` when it does not parse. */
+/** The craft in the house style, or `undefined` when it does not parse. */
 export function formatCraft(source: string): string | undefined {
     let lexed;
     let craft: Craft;

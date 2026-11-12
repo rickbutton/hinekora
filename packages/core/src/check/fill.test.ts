@@ -449,7 +449,7 @@ describe("on a catalogue of tags added, sides shared and metamods", () => {
     });
 });
 
-describe("the reforges a guide reaches for", () => {
+describe("the reforges a craft reaches for", () => {
     it("with forced rows under a kept side is exact", () => {
         for (let i = 0; i < 4; i++) {
             exactOn(

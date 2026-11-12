@@ -1,6 +1,6 @@
 /**
  * The page: fetch the catalog, build the registry, open Monaco on an example
- * guide, and keep the storyboard and the problems panel in step with the
+ * craft, and keep the storyboard and the problems panel in step with the
  * checker.
  */
 import {
@@ -45,7 +45,7 @@ const DATA_URLS: Readonly<Record<keyof RawPoe1, string>> = {
     clusterEnchants: clusterEnchantsUrl,
 };
 
-/** The example guides checked into the repo, by file name. */
+/** The example crafts checked into the repo, by file name. */
 const EXAMPLES = Object.fromEntries(
     Object.entries(
         import.meta.glob("../../../examples/*.craft", {

@@ -21,7 +21,7 @@
  *   `end`.
  * - Recovery, which the reference model (reference/craft.ts) leaves out and
  *   holds to the strict run by inclusion only: when no item passes, the craft
- *   goes on from the refused items of the first refusing check as the guide
+ *   goes on from the refused items of the first refusing check as the craft
  *   meant them (`CheckVerdict.repair`), or from the unchanged state, so one
  *   wrong step does not refuse every step after it.
  */

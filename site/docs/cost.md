@@ -100,7 +100,7 @@ until has "maximum life" t1 {
 
 ```txt
     8  until has "maximum life" t1 {  rounds not known
-                                      (98% of the time the item never reaches the exit, so the loop cannot end as written and its rounds and the guide's total are not known)
+                                      (98% of the time the item never reaches the exit, so the loop cannot end as written and its rounds and the craft's total are not known)
     9  divine                         uses not known
 
 Expected spend: not known, for a loop above has no figure.

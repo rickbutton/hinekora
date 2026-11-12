@@ -8,7 +8,7 @@ import { chartSource, checkSource, costSource, unjudgedText } from "./check.js";
 const registry = registryOf(loadDefaultPoe1());
 const run = (src: string) => checkSource(src, "test.craft", registry);
 
-describe("chartSource — the guide as Mermaid text", () => {
+describe("chartSource — the craft as Mermaid text", () => {
     it("prints a flowchart with a node per step", () => {
         const text = chartSource(
             `item { base: "Iron Ring" ilvl: 84 rarity: normal }\ntransmute\nregal`,
@@ -20,7 +20,7 @@ describe("chartSource — the guide as Mermaid text", () => {
         expect(text).toContain("--> finish");
     });
 
-    it("has nothing for a guide that does not parse", () => {
+    it("has nothing for a craft that does not parse", () => {
         expect(chartSource("item {", registry)).toBeUndefined();
     });
 });
@@ -457,7 +457,7 @@ ${body}`;
     });
 });
 
-describe("costSource — what a guide is expected to spend", () => {
+describe("costSource — what a craft is expected to spend", () => {
     const prices = loadDefaultEconomy();
 
     it("prices an essence loop by its rounds and the snapshot", () => {
@@ -496,7 +496,7 @@ regal`,
         ]);
     });
 
-    it("answers for a guide whose compared values are too many to follow one by one", () => {
+    it("answers for a craft whose compared values are too many to follow one by one", () => {
         // Four values compared against thresholds: their rows and the pieces
         // the thresholds cut are more states than the walk follows, so it
         // reads the loop on the checker's item instead, and answers at once.
@@ -687,7 +687,7 @@ until has "maximum life" {
         );
     });
 
-    it("costs a guide with errors as written, and says so", () => {
+    it("costs a craft with errors as written, and says so", () => {
         const r = costSource(
             `item { base: "Iron Ring" ilvl: 84 rarity: magic }\nexalt`,
             "test.craft",

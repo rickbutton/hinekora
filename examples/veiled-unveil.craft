@@ -3,11 +3,11 @@
 # With the suffixes locked and all three present, a Veiled Exalted Orb must
 # add its veiled mod as a prefix; it also removes one unprotected mod, which
 # is either the metamod or the life roll. Unveiling offers three of the
-# possible prefixes; the guide takes the % life one when it is offered and
+# possible prefixes; the craft takes the % life one when it is offered and
 # otherwise annuls the unveiled mod away and tries again. An unveiled mod is
 # not a crafted mod, so the bench's removal cannot take it, and an
 # annul may hit the life or a suffix instead: on those paths the item is
-# bricked and the guide stops, so what follows is judged on the paths where
+# bricked and the craft stops, so what follows is judged on the paths where
 # the item is still worth the next orb.
 
 item {

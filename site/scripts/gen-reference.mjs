@@ -51,9 +51,6 @@ const FAMILIES = [
 
 const slugOf = (m) => m.words.join("-");
 
-// The site calls a program a craft, where a help line says "guide".
-const asCraft = (s) =>
-    s.replace(/\b([Gg])uide(s|'s)?\b/g, (_, g, end = "") => `${g === "G" ? "C" : "c"}raft${end}`);
 const escape = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 function familyOf(m) {
@@ -77,7 +74,8 @@ function readDoc(m) {
         const text = m.doc.slice(start, starts[i + 1]).trim();
         const cut = text.indexOf(" — ");
         const head = text.slice(0, cut);
-        const sentences = asCraft(text.slice(cut + 3))
+        const sentences = text
+            .slice(cut + 3)
             .split(/(?<=\.)\s+(?=[A-Z])/)
             // "needs one" leans on the clause before it, so the two stay together.
             .flatMap((s) => s.split(/; (?=needs (?!one\b))/))

@@ -1,6 +1,6 @@
 # hinekora: The Cost Layer
 
-> The checker proves; the cost layer estimates. It answers what every guide quotes but
+> The checker proves; the cost layer estimates. It answers what every recipe quotes but
 > the checker cannot: how many tries a loop takes and what the craft is expected to
 > spend. The code is `packages/core/src/cost/`, the checker it reads
 > [ARCHITECTURE.md](ARCHITECTURE.md) §4.
@@ -26,7 +26,7 @@ a group closing once one of it is drawn
 side closing when full (the wiki gives the group rule; the order is every calculator's). An
 unveil's three options
 ([Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier)) are
-of the veiled modifier's side where the item says which; the player takes the guide's
+of the veiled modifier's side where the item says which; the player takes the craft's
 target if offered, else a modifier its conditions ask for, else one no one names. A
 value falls as
 [Modifier § Mechanics overview](https://www.poewiki.net/wiki/Modifier#Mechanics_overview)
@@ -134,7 +134,7 @@ checker's item after the step, which settles it or leaves the chance unknown.
 
 ---
 
-## 6. Cost as a mass walk over the guide
+## 6. Cost as a mass walk over the craft
 
 `cost/report.ts` walks the syntax tree once beside the trace, carrying a probability
 **mass** split into a few **branches**, one per arm of the `if`s passed since the last
@@ -163,7 +163,7 @@ unit price (`cost/prices.ts`, in the step's own currency).
 
 Where the model cannot say, the step's note says why. A loop the check refuses, whose
 exit no round reaches or the item sticks short of, or whose rounds were not worked
-out has no figure, nor have its steps or the guide's total.
+out has no figure, nor have its steps or the craft's total.
 
 ---
 

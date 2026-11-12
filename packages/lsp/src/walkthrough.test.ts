@@ -15,7 +15,7 @@ import { checkCached, parseCached } from "./analysis.js";
 
 const registry = registryOf(loadDefaultPoe1());
 
-/** The walkthrough of a guide, which must parse. */
+/** The walkthrough of a craft, which must parse. */
 const walk = (source: string) => {
     const parsed = parseCached(source);
     if (!parsed.ok) throw new Error(parsed.error.message);
@@ -58,7 +58,7 @@ until has "maximum life" t1 or has "fire resistance" t1 {
         expect(branch.else![0]!.after).toBeUndefined();
     });
 
-    it("narrows a modifier's span to the value the guide proved", () => {
+    it("narrows a modifier's span to the value the craft proved", () => {
         const w = walk(`item { base: "Vaal Regalia" ilvl: 86 rarity: rare }
 until has "maximum life" >= 150 { chaos }`);
         const loop = w.steps[0]!;

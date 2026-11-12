@@ -1,6 +1,6 @@
 /**
  * The item as the cost layer tracks it: a distribution over a small state,
- * the (prefix, suffix) counts and, for each modifier the guide names or the
+ * the (prefix, suffix) counts and, for each modifier the craft names or the
  * checker knows is there (declared, granted, crafted, a protecting metamod),
  * whether it is on the item and at which row (`ChainState`). The walk carries
  * it from the item block through every step it can read, and a loop solved as
@@ -263,13 +263,13 @@ interface RowClass {
 }
 
 /** The states one walk may read a method on, and the outcomes one reading may
- *  give: past them the guide's named modifiers are too many to follow by
+ *  give: past them the craft's named modifiers are too many to follow by
  *  state, a product of their rows and value pieces, and the walk takes the
  *  checker's item instead. */
 const MAX_STATES = 5000;
 const MAX_OUTCOMES = 5000;
 
-/** Thrown where a guide's states outgrow `MAX_STATES` or `MAX_OUTCOMES`. */
+/** Thrown where a craft's states outgrow `MAX_STATES` or `MAX_OUTCOMES`. */
 export class TrackerOverflow extends Error {
     constructor() {
         super("too many states to follow");
@@ -277,7 +277,7 @@ export class TrackerOverflow extends Error {
 }
 
 /**
- * The modifiers the guide's conditions name, the ones any step's item surely
+ * The modifiers the craft's conditions name, the ones any step's item surely
  * holds, and the metamods that protect a side, tracked through it: one atom per
  * type, whatever loop or branch names it, so a distribution means the same
  * thing from the item block to the last step. A type's rows are grouped into
@@ -297,7 +297,7 @@ export class Tracker {
      *  and its type when a condition names one. */
     readonly implicits: boolean;
     private readonly implicitTypes: ReadonlySet<TypeId>;
-    /** The modifier types the guide's conditions ask to be present, in the
+    /** The modifier types the craft's conditions ask to be present, in the
      *  order they first do: what a player takes when an unveil offers one. */
     private readonly asked: TypeId[] = [];
     readonly classes: RowClass[][] = [];
@@ -367,7 +367,7 @@ export class Tracker {
             let gen = genOfOn(registry, first, type);
             if (rows.length === 0) {
                 // A row no roll lays down (a bench craft's): placed, never drawn,
-                // on the side of the rows the guide's items hold, where its
+                // on the side of the rows the craft's items hold, where its
                 // type's rows elsewhere sit on both.
                 rows = registry.catalog
                     .filter((m) => m.type === type)
@@ -802,7 +802,7 @@ export class Tracker {
      * An unveil: three options (Veiled modifier), drawn as `unveilOffers`
      * takes them to be, the
      * veiled modifier becoming the one the player takes: the target when it is
-     * offered, else a modifier a condition asks for, the first the guide asks for,
+     * offered, else a modifier a condition asks for, the first the craft asks for,
      * else one no one names.
      */
     private unveiled(
@@ -1087,7 +1087,7 @@ export class Tracker {
             const gen = genOfOn(this.registry, item, t);
             if (unnamed[gen] > 0 && !shut.has(gen))
                 return lose(
-                    "an Orb of Dominance picks among every influenced modifier on the item, and the item may hold some the guide does not name",
+                    "an Orb of Dominance picks among every influenced modifier on the item, and the item may hold some the craft does not name",
                 );
         }
         if (reach.length < 2)

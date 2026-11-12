@@ -1,5 +1,5 @@
 /**
- * The expected cost of a guide: one walk over the syntax tree beside the
+ * The expected cost of a craft: one walk over the syntax tree beside the
  * checker's trace, carrying the probability of reaching each step and, while
  * the tracker can follow the item, a distribution over it (`track.ts`). A loop
  * the tracker follows is solved as a chain (`chain.ts`); any other runs its
@@ -65,7 +65,7 @@ export interface StepCost {
     /** The chance the step is reached in one pass of its enclosing block; inside
      *  a repeat, in one round. */
     readonly reached: number;
-    /** How many times it is expected to run over the whole guide. */
+    /** How many times it is expected to run over the whole craft. */
     readonly runs: number;
     /** What one run consumes; absent when the price is not known. */
     readonly unit?: readonly Price[];
@@ -75,7 +75,7 @@ export interface StepCost {
     readonly attempts?: { readonly chance: number; readonly expected: number };
     /** A branch: the chance its condition holds here. */
     readonly branch?: number;
-    /** Why a figure is missing or approximate, in the guide's words. */
+    /** Why a figure is missing or approximate, in the player's words. */
     readonly note?: string;
     /** The step has no figure: a loop whose rounds could not be worked out, or
      *  a step inside one, whose `runs` then count a single round. */
@@ -94,7 +94,7 @@ export interface StepCost {
 
 export interface CostReport {
     readonly steps: readonly StepCost[];
-    /** Every currency the guide is expected to spend, summed. */
+    /** Every currency the craft is expected to spend, summed. */
     readonly total: readonly Price[];
     /** The total under the snapshot, where every item has a price. */
     readonly chaos?: number;
@@ -394,8 +394,8 @@ export function openNote(
     if (open < OPEN_SHARE) return undefined;
     const share = (x: number): string => `${Math.min(100, Math.max(1, Math.round(x * 100)))}%`;
     return solved.unresolved >= OPEN_SHARE
-        ? `${share(solved.unresolved)} of the time the item never reaches the exit${solved.stuckInside >= solved.unresolved / 2 ? " of a loop inside" : ""}, so the loop cannot end as written and its rounds and the guide's total are not known`
-        : `${share(open)} of the time whether the item reaches the exit was not worked out within the rounds followed, so the loop's rounds and the guide's total are not known`;
+        ? `${share(solved.unresolved)} of the time the item never reaches the exit${solved.stuckInside >= solved.unresolved / 2 ? " of a loop inside" : ""}, so the loop cannot end as written and its rounds and the craft's total are not known`
+        : `${share(open)} of the time whether the item reaches the exit was not worked out within the rounds followed, so the loop's rounds and the craft's total are not known`;
 }
 
 /** The sides' caps on an item of its rarity. */
@@ -458,7 +458,7 @@ class Walker {
     private readonly resolve: (pred: Pred, a: XItem) => RPred | null;
     /** Where the check finds a loop's exit can never hold: its condition's offset. */
     private readonly neverExits = new Set<number>();
-    /** The guide's named modifiers, tracked from the item block on. */
+    /** The craft's named modifiers, tracked from the item block on. */
     readonly tracker: Tracker | undefined;
     /** Some step was read on the checker's item rather than the tracked states. */
     lost = false;
@@ -493,7 +493,7 @@ class Walker {
     /** The item block's item. */
     private readonly first: XItem | undefined;
 
-    /** Every condition and bench craft of the guide, read on the checker's
+    /** Every condition and bench craft the craft writes, read on the checker's
      *  item where it stands, names what the tracker follows. */
     private trackerFor(craft: Craft, result: CheckResult): Tracker | undefined {
         const first = result.trace[0]?.before;
@@ -544,7 +544,7 @@ class Walker {
         }
     }
 
-    /** Where the guide starts: the item block as the tracker's states, when it
+    /** Where the craft starts: the item block as the tracker's states, when it
      *  settles them. */
     start(): Branch {
         const states =
@@ -943,7 +943,7 @@ class Walker {
                 stmt,
                 branches,
                 frame,
-                "the check finds this loop can never reach its exit, so its rounds and the guide's total are not known",
+                "the check finds this loop can never reach its exit, so its rounds and the craft's total are not known",
             );
         }
         const misses = this.tracker?.misses ?? 0;
@@ -1019,8 +1019,8 @@ class Walker {
                 frame,
                 (alike !== undefined ? `${alike}; ` : "") +
                     (exit === undefined
-                        ? "the chance a round of this loop reaches its exit could not be worked out, so its rounds and the guide's total are not known"
-                        : "no round of this loop reaches its exit as the steps in it are read, so its rounds and the guide's total are not known"),
+                        ? "the chance a round of this loop reaches its exit could not be worked out, so its rounds and the craft's total are not known"
+                        : "no round of this loop reaches its exit as the steps in it are read, so its rounds and the craft's total are not known"),
                 head,
             );
         }
@@ -1608,7 +1608,7 @@ class Walker {
 }
 
 /**
- * The guide's conditions read as the cost layer weighs them: once over the
+ * The craft's conditions read as the cost layer weighs them: once over the
  * items at the step, under every influence some of them carry, where the
  * checker reads each influence's items apart. A name or tier that means
  * different rows under different influences is then one reading for all of

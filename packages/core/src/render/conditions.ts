@@ -1,5 +1,5 @@
 /**
- * A guide's conditions in the player's words. `clause` is the prose form
+ * A craft's conditions in the player's words. `clause` is the prose form
  * ("maximum life at T1 and exactly 2 prefixes"); `criteria` is the checklist
  * form, one requirement per line with alternatives grouped, which is what a
  * player reads off the item at the bench. Both expand a local predicate as
@@ -153,7 +153,7 @@ export function clause(pred: Pred, craft: Craft, registry: Registry, wording?: W
 
 /**
  * A condition as the lines of a checklist: every requirement on its own line,
- * alternatives grouped under "any of" (or "at least k of" when the guide spells
+ * alternatives grouped under "any of" (or "at least k of" when the craft spells
  * that out), a requirement that must be absent negated.
  */
 
@@ -175,7 +175,7 @@ export interface Leaf {
 }
 
 /**
- * The "at least k of these" a guide spells out as every k-subset: `(a and b)
+ * The "at least k of these" a craft spells out as every k-subset: `(a and b)
  * or (a and c) or (b and c)` is at least two of a, b, c. Anything else stays
  * a choice.
  */

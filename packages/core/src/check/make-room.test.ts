@@ -5,7 +5,7 @@ import { buildRegistry } from "../resolve/registry.js";
 import { andp, cmp, craft, item, op, until } from "../__fixtures__/ast.js";
 import { FILLERS, RING_BASE, TIERED_CATALOG } from "../__fixtures__/mods.js";
 
-// The "make room" step of a guide: annul a full rare down to open slots, then
+// The "make room" step of a craft: annul a full rare down to open slots, then
 // use them. Both sides are ranges afterwards, so the suffix bound has to be
 // kept along with the prefix one and the loop has to be allowed several
 // iterations.

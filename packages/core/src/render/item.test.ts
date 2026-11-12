@@ -381,10 +381,10 @@ describe("the tier numbers of an item whose level stops short of the best tier",
     });
 });
 
-describe("what the guide names", () => {
+describe("what the craft names", () => {
     const fill = (n: number) => has(`Fillerprefix${n}`);
 
-    it("shows a group the guide waits for, however many modifiers it holds", () => {
+    it("shows a group the craft waits for, however many modifiers it holds", () => {
         const c = craft(ring(), [
             until(orp(fill(1), orp(fill(2), orp(fill(3), fill(4)))), [op("chaos")]),
         ]);
@@ -393,7 +393,7 @@ describe("what the guide names", () => {
         const named = renderItemText(itemView(r.finalState!, registry, c));
         expect(named).toContain("{ At least one of these prefix modifiers }");
         for (const n of [1, 2, 3, 4]) expect(named).toContain(`    ${n}% filler prefix`);
-        // Without the guide, a group of four is past what the items are searched for.
+        // Without the craft, a group of four is past what the items are searched for.
         expect(renderItemText(itemView(r.finalState!, registry))).not.toContain("one of these");
     });
 

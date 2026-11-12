@@ -344,7 +344,7 @@ function inferProcParamTypes(proc: ProcDef): ReturnType<typeof finishUses> {
     return finishUses(u);
 }
 
-/** What a def's parameter stands for, in the guide's words, for the editor. */
+/** What a def's parameter stands for, in the player's words, for the editor. */
 export const PARAM_SORT_WORD: Record<ParamType, string> = {
     tier: "tier",
     count: "count",

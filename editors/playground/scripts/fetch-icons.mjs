@@ -67,7 +67,7 @@ const ICONS = {
     restore: "Imprinted Bestiary Orb",
 };
 
-const UA = "hinekora-playground/0.1 (crafting-guide checker; github.com/rickbutton/hinekora)";
+const UA = "hinekora-playground/0.1 (crafting checker; github.com/rickbutton/hinekora)";
 
 /** One download, waiting out the wiki's rate limit when it answers 429. */
 async function download(url) {

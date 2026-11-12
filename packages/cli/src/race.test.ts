@@ -100,7 +100,7 @@ const chaosCount = (random: () => number): number => {
     return x < 8 ? 4 : x < 11 ? 5 : 6;
 };
 
-/** A guide of one step and one condition: the step's roll and the chance the
+/** A craft of one step and one condition: the step's roll and the chance the
  *  cost layer gives the condition after it. */
 function judged(
     item: string,

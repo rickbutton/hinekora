@@ -446,7 +446,7 @@ describe("a fracture", () => {
     });
 
     it("leaves every modifier of every item of four fractured on some outcome of it", () => {
-        // Each item alone: whichever of its modifiers a guide names, an outcome
+        // Each item alone: whichever of its modifiers a craft names, an outcome
         // of that item has that one fractured, and one fracture gives four.
         const rows = naturals(cat, 6);
         const items: CItem[] = [];

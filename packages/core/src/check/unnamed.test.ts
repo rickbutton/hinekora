@@ -23,7 +23,7 @@ const ctx: CheckContext = { registry };
 
 describe("a side the named modifiers fill", () => {
     it("carries no other modifier once a count proves it full", () => {
-        // The exalt may have rolled a second prefix; where the guide goes on,
+        // The exalt may have rolled a second prefix; where the craft goes on,
         // the life is alone on that side, so the others are gone for good.
         const c = craft(
             item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes: [LIFE_T1.id] }),

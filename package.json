@@ -2,7 +2,7 @@
     "name": "hinekora",
     "version": "0.0.0",
     "private": true,
-    "description": "hinekora — a statically-checked DSL for Path of Exile crafting guides",
+    "description": "hinekora — a statically-checked DSL for Path of Exile crafts",
     "type": "module",
     "packageManager": "pnpm@10.12.4",
     "engines": {

@@ -3,7 +3,7 @@
  * contributions this playground drives (hover, completion, signature help,
  * highlights, navigation, rename, outline, folding, hints, formatting,
  * semantic tokens) and the editing basics. The package's main entry would
- * also bundle every built-in language, none of which a guide needs.
+ * also bundle every built-in language, none of which a craft needs.
  */
 import "monaco-editor/features/codeEditor/register.js";
 import "monaco-editor/features/codicon/register.js";

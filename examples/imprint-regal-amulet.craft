@@ -5,7 +5,7 @@
 # suffix side, so a Regal Orb can only add a suffix if there is room... but
 # with the metamod and the prefix the item holds two mods and the regal may
 # add either side. A regal that lands as a second prefix wastes the lock and
-# the guide restores the imprint and tries again. Once the suffix is in, the
+# the craft restores the imprint and tries again. Once the suffix is in, the
 # metamod protects the prefixes through a Harvest augment; then the lock goes
 # and the bench finishes the item.
 

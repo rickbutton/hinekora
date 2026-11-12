@@ -286,7 +286,7 @@ export type PreconditionFailure =
           readonly group: string;
           /** One of them is on the item on every path. */
           readonly sure: boolean;
-          /** The other modifiers of the group the item may carry, named so a guide
+          /** The other modifiers of the group the item may carry, named so a craft
            *  can rule them out one by one. */
           readonly among: readonly string[];
           /** What cannot be done then, when it is not a bench craft. */

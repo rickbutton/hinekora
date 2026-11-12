@@ -326,7 +326,7 @@ export const checks: CheckTable = {
                 needed: check.rarity,
                 actual: rarities(all),
             }),
-            // The item as the guide meant it: of the rarity needed, where its
+            // The item as the craft meant it: of the rarity needed, where its
             // modifiers fit that rarity.
             repair: (failing) =>
                 u.dd.and(u.dd.set(failing, u.scalar("rarity"), u.rarityValue(check.rarity)), u.wf),

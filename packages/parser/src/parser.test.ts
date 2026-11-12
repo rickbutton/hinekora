@@ -327,7 +327,7 @@ describe("parser — operation statements, shaped by the method table", () => {
         expect(() => bodyOf("fossil")).toThrow(/a quoted fossil name after 'fossil'/);
     });
 
-    it("names a missing argument in the guide's words, without a token at the end", () => {
+    it("names a missing argument in the player's words, without a token at the end", () => {
         expect(() => bodyOf("bench")).toThrow(/a quoted bench craft after 'bench'$/);
         expect(() => bodyOf("harvest reforge 3")).toThrow(/a quoted modifier type/);
         expect(() => bodyOf("beast add")).toThrow(/or 'warlord' after 'beast add'$/);
@@ -646,7 +646,7 @@ describe("parser — if / else", () => {
 
 describe("parser — comments and error spans", () => {
     it("ignores comments and blank lines", () => {
-        const craft = parseOk(`# a guide
+        const craft = parseOk(`# a craft
 
 
     item { base: "R" ilvl: 1 rarity: rare }   # the item

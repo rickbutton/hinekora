@@ -2,7 +2,7 @@
  * Folding ranges: every brace block (the item block, bodies, block arguments),
  * read off the tokens so it works mid-edit; a run of comment lines; and a
  * predicate def written over several lines, which has no braces, read off the
- * tree when the guide parses.
+ * tree when the craft parses.
  */
 import { commentOpensLine, tokenizeWithComments } from "@hinekora/parser";
 import { parseCached } from "./analysis.js";

@@ -113,7 +113,7 @@ export type HarvestChangeTable = Readonly<
 
 /**
  * One eldritch implicit row (Eldritch implicit modifier): which implicit, at
- * which tier, on which classes, with the text a guide names it by. Rows of one
+ * which tier, on which classes, with the text a craft names it by. Rows of one
  * type are the tiers of one implicit; the "presence" variants (stronger while
  * a Unique or Pinnacle enemy is near) are types of their own with the same
  * wording, so a name resolves to every type that wording covers.

@@ -13,7 +13,7 @@ import {
 import { GroupId, ModId, TagId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 
-// The guide's order is lock, veiled orb, bench a blocker, unveil: the blocker
+// The craft's order is lock, veiled orb, bench a blocker, unveil: the blocker
 // may replace the lock, a crafted modifier, and must leave the veiled one alone.
 const registry = buildRegistry({
     bases: [RING_BASE],

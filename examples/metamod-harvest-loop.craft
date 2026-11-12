@@ -2,7 +2,7 @@
 #
 # "Suffixes Cannot Be Changed" is itself a crafted prefix; a Harvest reforge
 # that includes a Life modifier then rerolls only the prefixes, and the metamod
-# goes with them. The guide repeats bench + reforge until the life roll is at
+# goes with them. The craft repeats bench + reforge until the life roll is at
 # the tier it wants with a prefix still open for the bench. When the three
 # prefixes fill with a bad life roll, there is no slot for the metamod, so the
 # loop spends an annul before it can go round again.

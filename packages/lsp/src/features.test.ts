@@ -226,7 +226,7 @@ bench "maximum life"`;
         expect(getHover(src, src.indexOf("annul") + 1, registry)!).not.toContain("For example");
     });
 
-    it("shows a group the guide waits for however many modifiers it holds", () => {
+    it("shows a group the craft waits for however many modifiers it holds", () => {
         const src = `item { base: "Titan Greaves" ilvl: 84 rarity: normal }
 until has "fire resistance" t1 or has "cold resistance" t1 or has "lightning resistance" t1 or has "chaos resistance" t1 {
   essence "greed" t1
@@ -690,10 +690,10 @@ until has "fire resistance" t1 { essence "greed" t1 }`;
         );
     });
 
-    it("sums the guide on the item block, and prices nothing without a snapshot", () => {
+    it("sums the craft on the item block, and prices nothing without a snapshot", () => {
         const total = getHover(src, src.indexOf("item") + 1, registry, prices);
         expect(total!).toMatch(
-            /_Expected spend for the guide:_ ~\d+(\.\d+)? chaos, ~\d+(\.\d+)? divine at \S+ prices of \d{4}-\d{2}-\d{2}\./,
+            /_Expected spend for the craft:_ ~\d+(\.\d+)? chaos, ~\d+(\.\d+)? divine at \S+ prices of \d{4}-\d{2}-\d{2}\./,
         );
         const bare = getHover(src, src.indexOf("essence") + 1, registry);
         expect(bare!).toMatch(/_Cost:_ expected \d+(\.\d+)? Deafening Essence of Greed\./);

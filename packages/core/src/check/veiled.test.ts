@@ -310,7 +310,7 @@ describe("a veiled orb after an unveiled modifier has provably gone", () => {
     it("is accepted when every affix of each side is a named one", () => {
         // Under the suffix lock the orb takes the life or the metamod; a bad
         // unveil is annulled away, and where the annul took the life or a
-        // resistance the guide stops. What continues has one prefix, the life,
+        // resistance the craft stops. What continues has one prefix, the life,
         // and the three resistances, so no unveiled modifier can remain.
         const locked = item({
             base: "Iron Ring",

@@ -719,11 +719,11 @@ describe("checker — the rarity seam (surface §6 errors)", () => {
         );
         const r = check(c, ctx);
         expect(r.diagnostics[0]!.message).toContain("may be Magic or Rare");
-        // After the refused regal the item is judged as the guide meant it: Rare.
+        // After the refused regal the item is judged as the craft meant it: Rare.
         expect(v.rarities(r.finalState!)).toEqual(new Set(["rare"]));
     });
 
-    it("reports a refused step once and judges the rest as the guide meant", () => {
+    it("reports a refused step once and judges the rest as the craft meant", () => {
         // The regal is refused where the ring may already be Rare; the craft goes
         // on from the Magic rings it does work on, so the exalt after it meets
         // a Rare of three modifiers and is not refused again.

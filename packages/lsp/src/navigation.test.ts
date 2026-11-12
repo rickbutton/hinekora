@@ -16,7 +16,7 @@ roll("maximum life", chaos)
 until anyEleRes(t1) { chaos }
 `;
 
-/** The source text each range covers, so assertions read like the guide. */
+/** The source text each range covers, so assertions read like the craft. */
 const textOf = (range: {
     start: { line: number; character: number };
     end: { character: number };
@@ -79,7 +79,7 @@ add("Deafening Essence of Greed", t1)`;
         expect(uses("def few")).toBe(3); // few: declaration + two calls
     });
 
-    it("highlights nothing on a method word or when the guide does not parse", () => {
+    it("highlights nothing on a method word or when the craft does not parse", () => {
         expect(getDocumentHighlights(SRC, SRC.indexOf("until"))).toEqual([]);
         expect(getDocumentHighlights(`item { base: "Iron Ring"`, 10)).toEqual([]);
     });
@@ -150,9 +150,9 @@ describe("rename", () => {
         expect(getRenameEdits(SRC, t, "T3")).toEqual({ error: '"T3" is how a tier is written' });
     });
 
-    it("refuses to rename while the guide does not parse", () => {
+    it("refuses to rename while the craft does not parse", () => {
         expect(getRenameEdits(`item { base: "Iron Ring"`, 10, "x")).toEqual({
-            error: "the guide does not parse",
+            error: "the craft does not parse",
         });
     });
 });
@@ -169,7 +169,7 @@ describe("document symbols", () => {
         expect(textOf(syms[1]!.selectionRange)).toBe("anyEleRes");
     });
 
-    it("returns nothing while the guide does not parse", () => {
+    it("returns nothing while the craft does not parse", () => {
         expect(getDocumentSymbols(`item {`)).toEqual([]);
     });
 });

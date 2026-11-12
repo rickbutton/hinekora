@@ -1,6 +1,6 @@
 # A Large Cluster Jewel's modifier pool is decided by its enchant: the passive
 # count and the small-passive effect. With the enchant stated, the notables
-# resolve as modifiers and the guide's Harvest loop is an ordinary reforge.
+# resolve as modifiers and the craft's Harvest loop is an ordinary reforge.
 
 item {
     base:     "Large Cluster Jewel"

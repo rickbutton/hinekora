@@ -20,7 +20,7 @@ const fmt = (source: string): string => {
     return out;
 };
 
-describe("formatter — the example guides", () => {
+describe("formatter — the example crafts", () => {
     const dir = join(import.meta.dirname, "../../../examples");
     for (const file of readdirSync(dir).filter((f) => f.endsWith(".craft"))) {
         it(`${file}: is in the house style and keeps its meaning`, () => {
@@ -76,7 +76,7 @@ until has "fire resistance" t1 {
     });
 
     it("keeps comments where they were: before code at its depth, after code on its line", () => {
-        const src = `# A guide.
+        const src = `# A craft.
 item { base: "Iron Ring" ilvl: 84 # high enough
 rarity: rare }
 
@@ -86,7 +86,7 @@ until has "fire resistance" t1 { # the loop
     chaos # one orb
 }
 # done`;
-        expect(fmt(src)).toBe(`# A guide.
+        expect(fmt(src)).toBe(`# A craft.
 item {
     base:   "Iron Ring"
     ilvl:   84 # high enough
@@ -255,7 +255,7 @@ until has "a" {}
         expect(fmt(src)).toContain('bench "a \\"quoted\\" \\\\ name"');
     });
 
-    it("returns nothing for a guide that does not parse", () => {
+    it("returns nothing for a craft that does not parse", () => {
         expect(formatCraft("item {")).toBeUndefined();
     });
 });

@@ -223,7 +223,7 @@ highlight cannot disagree.
 
 ## 6. Layer 5: clients
 
-Thin, by design. The CLI runs the checker and prints diagnostics, or formats a guide. The VSCode extension is a
+Thin, by design. The CLI runs the checker and prints diagnostics, or formats a craft. The VSCode extension is a
 language client: a TextMate grammar for coloring plus an LSP client that spawns the stdio
 server. The browser playground binds the same transport-free service functions to Monaco's
 providers directly, with the catalog fetched as JSON; it is the proof that the service

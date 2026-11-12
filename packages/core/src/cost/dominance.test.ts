@@ -329,10 +329,10 @@ describe("the cost walk through an Orb of Dominance", () => {
         expect(steps[1]!.branch).toBeCloseTo(1 / 2, 12);
     });
 
-    it("is not followed where a modifier the guide does not name may be influenced", () => {
+    it("is not followed where a modifier the craft does not name may be influenced", () => {
         const start = boots([HUNTER_BOOTS_PREFIX.id, "random"], [HUNTER_BOOTS_SUFFIX.id]);
         const { orb } = after(start, [elevatedPrefix], withSecond);
-        expect(orb.note).toContain("the item may hold some the guide does not name");
+        expect(orb.note).toContain("the item may hold some the craft does not name");
         expect(orb.note).toContain("every item the check allows");
         expect(orb.note).not.toContain("no source states its odds");
         // The same item where no other Hunter prefix exists is followed.

@@ -224,7 +224,7 @@ describe("the method frame", () => {
         if (!r.result.ok) expect(r.result.failure).toEqual({ kind: "corrupted", sure: false });
     });
 
-    it("recovers from the refused items as the guide meant them, else from the state unchanged", () => {
+    it("recovers from the refused items as the craft meant them, else from the state unchanged", () => {
         const magic = fromItems(u, [cItem({ rarity: "magic" })])!;
         const r = runMethod(magic, [req({ kind: "rarity", rarity: "rare" }), corrupt]);
         expect(r.ok).toBe(false);

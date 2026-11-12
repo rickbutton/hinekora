@@ -705,7 +705,7 @@ function expectedVisits({ order, at, states, q, out }: System, head: Dist): Dist
 /**
  * What a loop inside does to one state entering it short of its exit, worked
  * out once and for that state alone. The states of every item at once need
- * not mix (a guide's kinds of item each go round their own few states): their
+ * not mix (a craft's kinds of item each go round their own few states): their
  * rounds' decay then says little, and together they are too many to solve
  * where one state's own are few. Those are solved outright; failing that the
  * state is followed round by round, on what is left of the work.

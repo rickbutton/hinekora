@@ -1,5 +1,5 @@
 /**
- * The guide as a player follows it at the bench: the declared item, then one
+ * The craft as a player follows it at the bench: the declared item, then one
  * step per statement with the item before and after it, loops as "repeat
  * until" blocks and branches as "if" blocks, each carrying the checker's
  * findings on it. Built from the syntax tree and the trace, so it needs no

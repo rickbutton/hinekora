@@ -4,7 +4,7 @@ import { getFoldingRanges } from "./folding.js";
 describe("folding ranges", () => {
     it("folds the item block, bodies, block arguments, comment runs and multi-line defs", () => {
         const src = [
-            "# A guide.", // 0
+            "# A craft.", // 0
             "# Two lines of comment.", // 1
             "item {", // 2
             '    base: "Iron Ring"', // 3
@@ -38,7 +38,7 @@ describe("folding ranges", () => {
         expect(getFoldingRanges(src)).toEqual([{ startLine: 1, endLine: 2, kind: "comment" }]);
     });
 
-    it("still folds closed braces while the guide does not parse", () => {
+    it("still folds closed braces while the craft does not parse", () => {
         const src = 'item {\n    base: "Iron Ring"\n}\nuntil {\n    chaos\n';
         expect(getFoldingRanges(src)).toEqual([{ startLine: 0, endLine: 1 }]);
     });

@@ -93,7 +93,7 @@ export function getRenameEdits(
     newName: string,
 ): { edits: TextEdit[] } | { error: string } {
     const craft = craftOf(source);
-    if (craft === undefined) return { error: "the guide does not parse" };
+    if (craft === undefined) return { error: "the craft does not parse" };
     const bindings = bindingsOf(craft);
     const b = bindingAt(bindings, offset);
     if (b === undefined) return { error: "nothing to rename here" };

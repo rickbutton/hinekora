@@ -1,6 +1,6 @@
 # A flask never goes past Magic: one prefix, one suffix, rolled with alterations.
 #
-# The guide rolls until the wanted prefix appears alone, then augments for the
+# The craft rolls until the wanted prefix appears alone, then augments for the
 # suffix rather than gambling the prefix on more alterations.
 
 item {

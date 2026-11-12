@@ -1,12 +1,12 @@
 /**
- * The cost report's figures in the guide's words, shared by the CLI, the
+ * The cost report's figures in the player's words, shared by the CLI, the
  * hover and the playground so a round count or a price reads the same
  * everywhere.
  */
 import { inChaos, type Price, type Prices } from "./prices.js";
 import type { StepCost } from "./report.js";
 
-/** A figure as a guide quotes it: "0.25", "8.8", "37", "473". */
+/** A figure as players quote it: "0.25", "8.8", "37", "473". */
 export function figure(n: number): string {
     if (!Number.isFinite(n)) return "∞";
     if (n >= 100) return String(Math.round(n));
@@ -14,7 +14,7 @@ export function figure(n: number): string {
     return n.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
 }
 
-/** A chance as a guide quotes it: "56%", "4.5%", "0.25%". */
+/** A chance as players quote it: "56%", "4.5%", "0.25%". */
 export function percentage(p: number): string {
     const v = p * 100;
     if (v >= 10) return `${Math.round(v)}%`;
@@ -28,9 +28,9 @@ export function approx(n: number): string {
 }
 
 /**
- * A repeat's odds as guides quote them: "1/37 chance", the chance one round
+ * A repeat's odds as players quote them: "1/37 chance", the chance one round
  * ends it; a percentage once it is better than even ("60% chance"). The
- * rounds a guide expects show in its steps' runs, fewer than the odds'
+ * rounds a craft expects show in its steps' runs, fewer than the odds'
  * denominator where the loop is often entered at its exit.
  */
 export function oddsText(chance: number): string {

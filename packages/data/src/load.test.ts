@@ -285,7 +285,7 @@ describe("registry resolution against real data", () => {
 
     it("resolves a colliding base name when the bases are one to the checker", () => {
         // A tincture's old and new id, a talisman's implicit variants: same class,
-        // domain, tags and caps, so a guide's name for them needs no id.
+        // domain, tags and caps, so a craft's name for them needs no id.
         expect(registry.resolveBase("Ashbark Tincture").ok).toBe(true);
         expect(registry.resolveBase("Black Maw Talisman").ok).toBe(true);
         expect(registry.resolveBase("Avian Twins Talisman").ok).toBe(true);
@@ -339,7 +339,7 @@ describe("registry resolution against real data", () => {
         expect(registry.resolveCurrency("exalt").ok).toBe(true);
     });
 
-    it("reads the words guides use for a modifier", () => {
+    it("reads the words players use for a modifier", () => {
         const wording = (name: string, on: string): string => {
             const r = registry.resolveModType(name, { base: base(on), ilvl: 86 });
             if (!r.ok) throw new Error(`"${name}" on ${on}: ${JSON.stringify(r.error)}`);

@@ -74,7 +74,7 @@ describe("the storyboard's breakdown", () => {
         expect(breakdown([{ item: "Chaos Orb", amount: 2 }]).chaos).toBeUndefined();
     });
 
-    it("tells what one pass through a repeat takes from the body's spend over the guide", () => {
+    it("tells what one pass through a repeat takes from the body's spend over the craft", () => {
         const span = (a: number, b: number) => ({
             start: { offset: a, line: 1, column: 1 },
             end: { offset: b, line: 1, column: 1 },

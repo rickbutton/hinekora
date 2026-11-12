@@ -22,11 +22,11 @@ describe("hover: the cost line where a figure is missing", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: normal }\ntransmute\nregal`;
         const total = getHover(src, src.indexOf("item") + 1, registry, { ...snapshot, chaos });
         expect(total).toContain(
-            `_Expected spend for the guide:_ 1 Orb of Transmutation, 1 Regal Orb (no ${snapshot.league} price for Regal Orb).`,
+            `_Expected spend for the craft:_ 1 Orb of Transmutation, 1 Regal Orb (no ${snapshot.league} price for Regal Orb).`,
         );
     });
 
-    it("says a loop with no figure is not known, and so the guide's spend", () => {
+    it("says a loop with no figure is not known, and so the craft's spend", () => {
         // A fossil pair that blocks the life it is rolled for.
         const src = `item { base: "Stygian Vise" ilvl: 84 rarity: normal }
 until has "maximum life" t1 {
@@ -34,17 +34,17 @@ until has "maximum life" t1 {
 }`;
         const loop = getHover(src, src.indexOf("until") + 1, registry, snapshot);
         expect(loop).toContain(
-            "_Cost:_ the check finds this loop can never reach its exit, so its rounds and the guide's total are not known.",
+            "_Cost:_ the check finds this loop can never reach its exit, so its rounds and the craft's total are not known.",
         );
         expect(loop).not.toMatch(/chance/);
         const total = getHover(src, src.indexOf("item") + 1, registry, snapshot);
         expect(total).toContain(
-            "_Expected spend for the guide:_ not known, for a loop in it has no figure.",
+            "_Expected spend for the craft:_ not known, for a loop in it has no figure.",
         );
     });
 });
 
-describe("hover: the guide's spend where the cost has none", () => {
+describe("hover: the craft's spend where the cost has none", () => {
     it("says the check could not follow the item, or the cost could not be worked out", () => {
         expect(notKnown({ unknown: false, unjudged: true })).toBe(
             "not known, for the check could not follow the item",
@@ -168,7 +168,7 @@ def life() {
 life()`;
         const line = costAt(src, "life()", 1)!;
         expect(line).toMatch(/^_Cost:_ not known, for a loop in this call has no figure; /);
-        expect(line).toContain("its rounds and the guide's total are not known");
+        expect(line).toContain("its rounds and the craft's total are not known");
         expect(line).not.toContain("expected");
     });
 });

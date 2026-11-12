@@ -11,7 +11,7 @@ until viaRes(t1) { chaos }
 `;
 
 const lines = SRC.split("\n");
-/** Hints as `line:col label` so the expectation reads like the guide. */
+/** Hints as `line:col label` so the expectation reads like the craft. */
 const render = (src: string) =>
     getInlayHints(src).map(
         (h) => `${h.position.line}:${h.position.character} ${h.label as string}`,
@@ -49,7 +49,7 @@ describe("inlay hints", () => {
         expect(kinds.has(`m:|${InlayHintKind.Parameter}`)).toBe(true);
     });
 
-    it("returns nothing while the guide does not parse", () => {
+    it("returns nothing while the craft does not parse", () => {
         expect(getInlayHints(`item {`)).toEqual([]);
     });
 });
