@@ -24,7 +24,9 @@ export interface Dd {
 /**
  * A relation on one slot's values: what `from` may become, or `undefined` for no change.
  * Returning one array object for every value with the same image is the fast path: each
- * distinct array is read once per call, and its sources are united once per node.
+ * distinct array is read once per call, and its sources are united once per node. The
+ * manager reads a relation once and keeps what it read for as long as the function lives,
+ * so a relation must answer the same every time; one kept and passed again is not re-read.
  */
 export type DdRelation = (slot: number, from: number) => readonly number[] | undefined;
 
@@ -122,6 +124,9 @@ export class DdManager {
     private cacheA = new Array<Node | undefined>(MIN_CACHE).fill(undefined);
     private cacheB = new Array<Node | undefined>(MIN_CACHE).fill(undefined);
     private cacheR = new Array<Node | undefined>(MIN_CACHE).fill(undefined);
+    /** What `mapOne` and `mapEach` read of each relation, while the relation lives. */
+    private readonly oneTables = new WeakMap<DdRelation, RelationTable>();
+    private readonly eachTables = new WeakMap<DdRelation, RelationTable>();
 
     constructor(domains: readonly number[], options: DdOptions = {}) {
         for (const d of domains) {
@@ -695,6 +700,13 @@ export class DdManager {
     }
 
     private relationTable(rel: DdRelation, keepUndefined: boolean): RelationTable {
+        const tables = keepUndefined ? this.eachTables : this.oneTables;
+        let t = tables.get(rel);
+        if (t === undefined) tables.set(rel, (t = this.readRelation(rel, keepUndefined)));
+        return t;
+    }
+
+    private readRelation(rel: DdRelation, keepUndefined: boolean): RelationTable {
         const N = this.numSlots;
         const groups: RelationGroup[][] = [];
         const reached: Uint8Array[] = [];
