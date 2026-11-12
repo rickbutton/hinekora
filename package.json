@@ -19,8 +19,10 @@
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "docs:check": "node scripts/check-docs.mjs",
-        "prose": "vale sync && vale --glob=!**/{node_modules,operations,public,.vitepress}/** site",
-        "gate": "pnpm typecheck && pnpm test && pnpm lint && pnpm format:check && pnpm docs:check"
+        "prose": "vale sync && pnpm prose:check",
+        "prose:check": "node scripts/check-prose.mjs",
+        "site:check": "pnpm -C site build",
+        "gate": "pnpm typecheck && pnpm test && pnpm lint && pnpm format:check && pnpm docs:check && pnpm site:check && pnpm prose:check"
     },
     "pnpm": {
         "onlyBuiltDependencies": [

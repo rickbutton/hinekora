@@ -54,12 +54,12 @@ outcomes in the checker outside `check/reference/`; it won't scale.
 ## The gate (run before declaring anything done, and before every commit)
 
 ```
-pnpm -C c:/git/hinekora gate          # typecheck, test, lint, prettier --check, docs:check
+pnpm -C c:/git/hinekora gate          # every check below
 pnpm -C c:/git/hinekora format        # prettier --write ., when the check fails
 ```
 
-`pnpm gate` is `tsc -b` + `vitest run` + `eslint .` + `prettier --check .` +
-`scripts/check-docs.mjs`. The docs check fails when a doc names a path or symbol the code
+`pnpm gate` is `tsc -b`, `vitest run`, `eslint .`, `prettier --check .`,
+`scripts/check-docs.mjs`, the site build and vale on synced styles. The docs check fails when a doc names a path or symbol the code
 does not have, omits a keyword, harvest tag, `Op` kind or scalar slot the code
 has, links a wiki section the local cache lacks (skipped without the cache), or outgrows
 its budget. A `git commit` issued through the Bash or PowerShell tool runs the gate
