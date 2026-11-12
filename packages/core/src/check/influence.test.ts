@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent, type CheckContext } from "./check.js";
-import { guaranteedTypes } from "./astate.js";
+import { type CheckContext } from "./check.js";
+import { check } from "../exact/check.js";
+import * as v from "../exact/views.js";
+import { guaranteedTypes } from "../exact/views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, harvest, has as hasT, iff, influencedP, item, until } from "../__fixtures__/ast.js";
 import type { OperationStmt } from "../ast/ast.js";
@@ -52,7 +54,7 @@ const wordArg = (ws: string[], w: string): OperationStmt => ({
     args: [{ kind: "word", value: w, span: words().span }],
 });
 
-const run = (c: ReturnType<typeof craft>) => checkPresent(c, ctx);
+const run = (c: ReturnType<typeof craft>) => check(c, ctx);
 const messages = (c: ReturnType<typeof craft>) =>
     run(c)
         .diagnostics.map((d) => d.message)
@@ -63,9 +65,9 @@ describe("the influence exalts", () => {
         const r = run(craft(ring(), [words("exalt", "hunter")]));
         expect(r.diagnostics).toEqual([]);
         const s = r.finalState!;
-        expect(s.influences).toEqual(new Set([influenceKey(["hunter"])]));
+        expect(v.influenceSets(s)).toEqual(new Set([influenceKey(["hunter"])]));
         expect(guaranteedTypes(s).has(HUNTER_RING_SUFFIX.type)).toBe(true);
-        expect(s.counts.total).toEqual([1, 1]);
+        expect(v.counts(s).total).toEqual([1, 1]);
     });
 
     it("refuse an influenced item, the same influence included, and a fractured one", () => {
@@ -156,6 +158,18 @@ describe("an influence the item may have", () => {
         ).toBe(true);
     });
 
+    it("is not enough for a craft that needs one, until a branch picks it out", () => {
+        // Only the items that rolled life take the Hunter's orb.
+        const maybe = (then: Parameters<typeof craft>[1]) =>
+            craft(ring(), [words("exalt"), iff(hasT("life"), [words("exalt", "hunter")]), ...then]);
+        expect(messages(maybe([harvest("reforge", "influence")]))).toContain(
+            "needs an influenced item — this item may have Hunter or no influence",
+        );
+        expect(
+            run(maybe([iff(influencedP(), [harvest("reforge", "influence")])])).diagnostics,
+        ).toEqual([]);
+    });
+
     it("lets a predicate name its modifier and tier after a randomise", () => {
         const r = run(
             craft(ring(["shaper"]), [
@@ -211,11 +225,13 @@ describe("the grove's influence crafts", () => {
     it("randomises to every influence set of the same size, which `influenced` narrows", () => {
         const r = run(craft(ring(["hunter"]), [words("harvest", "randomise")]));
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.influences).toEqual(new Set(INFLUENCES.map((i) => influenceKey([i]))));
-        expect(r.finalState!.counts.total).toEqual([4, 6]);
+        expect(v.influenceSets(r.finalState!)).toEqual(
+            new Set(INFLUENCES.map((i) => influenceKey([i]))),
+        );
+        expect(v.counts(r.finalState!).total).toEqual([4, 6]);
 
         const pair = run(craft(ring(["shaper", "elder"]), [words("harvest", "randomise")]));
-        expect(pair.finalState!.influences.size).toBe(15);
+        expect(v.influenceSets(pair.finalState!).size).toBe(15);
 
         const narrowed = run(
             craft(ring(["hunter"]), [
@@ -237,7 +253,7 @@ describe("the grove's influence crafts", () => {
         });
         const r = run(craft(magic, [words("harvest", "randomise")]));
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.counts.total).toEqual([1, 2]);
+        expect(v.counts(r.finalState!).total).toEqual([1, 2]);
         const normal = item({
             base: "Iron Ring",
             ilvl: 100,
@@ -245,7 +261,7 @@ describe("the grove's influence crafts", () => {
             influences: ["hunter"],
         });
         expect(
-            run(craft(normal, [words("harvest", "randomise")])).finalState!.counts.total,
+            v.counts(run(craft(normal, [words("harvest", "randomise")])).finalState!).total,
         ).toEqual([0, 0]);
     });
 
@@ -292,8 +308,8 @@ describe("the Bestiary's add-to-an-influenced-item recipe", () => {
     it("needs that influence and adds into an open slot", () => {
         const r = run(craft(ring(["hunter"]), [wordArg(["beast", "add"], "hunter")]));
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.counts.total).toEqual([1, 1]);
-        expect(r.finalState!.possible.has(HUNTER_RING_SUFFIX.type)).toBe(true);
+        expect(v.counts(r.finalState!).total).toEqual([1, 1]);
+        expect(v.possibleTypes(r.finalState!).has(HUNTER_RING_SUFFIX.type)).toBe(true);
         expect(messages(craft(ring(["shaper"]), [wordArg(["beast", "add"], "hunter")]))).toContain(
             "needs a Hunter item — this item has Shaper",
         );
@@ -303,7 +319,7 @@ describe("the Bestiary's add-to-an-influenced-item recipe", () => {
 describe("an influence exalt on an item too low-level for any influence modifier", () => {
     it("is refused below the level of every influence modifier", () => {
         // The orb needs a modifier to add; below the influence rows' level there is
-        // none. The state after the refused step is the one the orb would leave.
+        // none. The craft goes on from the item as it was.
         const high = buildRegistry({
             bases: [RING_BASE],
             mods: [
@@ -313,15 +329,15 @@ describe("an influence exalt on an item too low-level for any influence modifier
             baseAliases: { "Iron Ring": "IronRing" },
         });
         const low = item({ base: "Iron Ring", ilvl: 50, rarity: "rare" });
-        const r = checkPresent(craft(low, [words("exalt", "hunter")]), { registry: high });
+        const r = check(craft(low, [words("exalt", "hunter")]), { registry: high });
         expect(r.diagnostics.map((d) => d.message).join("\n")).toContain(
             "No influence modifier can appear",
         );
         expect(r.ok).toBe(false);
-        expect(r.finalState!.counts.total).toEqual([1, 1]);
+        expect(v.counts(r.finalState!).total).toEqual([0, 0]);
         const fine = item({ base: "Iron Ring", ilvl: 68, rarity: "rare" });
         expect(
-            checkPresent(craft(fine, [words("exalt", "hunter")]), { registry: high }).diagnostics,
+            check(craft(fine, [words("exalt", "hunter")]), { registry: high }).diagnostics,
         ).toEqual([]);
     });
 });
@@ -333,10 +349,10 @@ describe("the Astrolabe Amulet", () => {
             mods: [...CATALOG, PROTECT_SUFFIXES_CARRIER, HUNTER_AMULET_SUFFIX],
         });
         const amulet = item({ base: "Astrolabe Amulet", ilvl: 100, rarity: "rare" });
-        const r = checkPresent(craft(amulet, [words("exalt", "hunter")]), { registry: astrolabe });
+        const r = check(craft(amulet, [words("exalt", "hunter")]), { registry: astrolabe });
         expect(r.diagnostics[0]!.message).toContain("cannot be used on an influenced item");
-        const plain = checkPresent(craft(amulet, []), { registry: astrolabe });
-        expect([...plain.finalState!.influences]).toEqual([
+        const plain = check(craft(amulet, []), { registry: astrolabe });
+        expect([...v.influenceSets(plain.finalState!)]).toEqual([
             "shaper+elder+crusader+hunter+redeemer+warlord",
         ]);
         const declared = item({
@@ -346,7 +362,7 @@ describe("the Astrolabe Amulet", () => {
             influences: ["hunter"],
         });
         expect(
-            checkPresent(craft(declared, []), { registry: astrolabe }).diagnostics[0]!.message,
+            check(craft(declared, []), { registry: astrolabe }).diagnostics[0]!.message,
         ).toContain("leave `influences:` out");
     });
 
@@ -358,12 +374,9 @@ describe("the Astrolabe Amulet", () => {
         const amulet = item({ base: "Astrolabe Amulet", ilvl: 100, rarity: "rare" });
         // The Hunter row spawns only on an influenced amulet's tag, so a loop on it
         // can exit only if the item's influences reach the pool.
-        const r = checkPresent(
-            craft(amulet, [until(hasT(HUNTER_AMULET_SUFFIX.id), [words("chaos")])]),
-            {
-                registry: astrolabe,
-            },
-        );
+        const r = check(craft(amulet, [until(hasT(HUNTER_AMULET_SUFFIX.id), [words("chaos")])]), {
+            registry: astrolabe,
+        });
         expect(r.diagnostics).toEqual([]);
         const fractured = item({
             base: "Astrolabe Amulet",
@@ -372,7 +385,7 @@ describe("the Astrolabe Amulet", () => {
             prefixes: [{ mod: "IncreasedLife1", fractured: true }],
         });
         expect(
-            checkPresent(craft(fractured, []), { registry: astrolabe }).diagnostics[0]!.message,
+            check(craft(fractured, []), { registry: astrolabe }).diagnostics[0]!.message,
         ).toContain("An influenced item cannot have a fractured modifier");
         const eldritch = item({
             base: "Astrolabe Amulet",
@@ -381,7 +394,7 @@ describe("the Astrolabe Amulet", () => {
             exarch: "lesser",
         });
         expect(
-            checkPresent(craft(eldritch, []), { registry: astrolabe })
+            check(craft(eldritch, []), { registry: astrolabe })
                 .diagnostics.map((d) => d.message)
                 .join("\n"),
         ).toContain("An influenced item cannot have an eldritch implicit");

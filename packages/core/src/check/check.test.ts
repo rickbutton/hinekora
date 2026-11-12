@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { checkPresent, type CheckContext } from "./check.js";
+import { check } from "../exact/check.js";
+import * as v from "../exact/views.js";
 import {
-    canBeRare,
     cardinalityGuarantees,
     disjunctiveGuarantees,
     disjunctiveTier,
     excludedTypes,
     guaranteedTypes,
     suffixRange,
-} from "./astate.js";
+} from "../exact/views.js";
+import { canBeRare } from "../model/capacity.js";
 import { buildRegistry } from "../resolve/registry.js";
 import {
     andp,
@@ -44,6 +46,7 @@ import {
     COLD_RESIST,
     DUAL_SIDE_AMULET_SUFFIX,
     DUAL_SIDE_RING_PREFIX,
+    FILLERS,
     FIRE_RES_TIERED,
     FIRE_RESIST,
     FLASK_BASE,
@@ -99,6 +102,17 @@ const registry = buildRegistry({
 });
 const ctx: CheckContext = { registry };
 
+/** The catalogue with more modifiers of each side, so a Rare item can fill up
+ *  without the life prefix: the catalogue alone holds two other prefixes, and
+ *  an exalt on an item without life and with an open slot then adds life. */
+const wideCtx: CheckContext = {
+    registry: buildRegistry({
+        bases: [RING_BASE],
+        mods: [...CATALOG, ...FILLERS],
+        baseAliases: { "Iron Ring": "IronRing" },
+    }),
+};
+
 /** Convenience: a rare Iron Ring item block with the given affix name lists. */
 const rareRing = (prefixes: string[] = [], suffixes: string[] = []) =>
     item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes, suffixes });
@@ -110,27 +124,27 @@ describe("checker — a valid craft type-checks", () => {
             op("regal"),
             op("exalt"),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.ok).toBe(true);
-        expect(r.finalState?.rarities).toEqual(new Set(["rare"]));
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["rare"]));
     });
 });
 
 describe("checker — the wider currency set", () => {
     it("alchemy takes a Normal item to a Rare with 4–6 mods", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [op("alchemy")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.ok).toBe(true);
-        expect(r.finalState?.rarities).toEqual(new Set(["rare"]));
-        expect(r.finalState?.counts.total).toEqual([4, 6]);
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["rare"]));
+        expect(v.counts(r.finalState!).total).toEqual([4, 6]);
     });
 
     it("chaos reforges a Rare — no prior mod stays guaranteed", () => {
         const c = craft(rareRing(["IncreasedLife1"]), [op("chaos")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.ok).toBe(true);
-        expect(r.finalState?.rarities).toEqual(new Set(["rare"]));
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["rare"]));
         expect(guaranteedTypes(r.finalState!).size).toBe(0);
     });
 
@@ -139,20 +153,20 @@ describe("checker — the wider currency set", () => {
         // can't fill to 6 and strand the next op. This is the payoff of modelling
         // reforge as a bounded range rather than an unbounded add.
         const c = craft(rareRing(), [until(has("IncreasedLife1"), [op("chaos")])]);
-        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 
     it("scour strips a Rare back to Normal with no mods", () => {
         const c = craft(rareRing(["IncreasedLife1"], ["FireResist1"]), [op("scour")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.ok).toBe(true);
-        expect(r.finalState?.rarities).toEqual(new Set(["normal"]));
-        expect(r.finalState?.counts.total).toEqual([0, 0]);
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["normal"]));
+        expect(v.counts(r.finalState!).total).toEqual([0, 0]);
     });
 
     it("rejects scouring an item that has no mods (wasted currency)", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [op("scour")]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("removable affix");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("removable affix");
     });
 
     it("augment fills the open slot of a Magic item once a prefix is proven absent, then rejects a second", () => {
@@ -163,7 +177,7 @@ describe("checker — the wider currency set", () => {
             iff(cmp("prefixCount", "==", 0), [op("augment")], []), // → 2 (full)
             op("augment"), // → no open slot
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.ok).toBe(false);
         expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
     });
@@ -173,14 +187,14 @@ describe("checker — the wider currency set", () => {
             item({ base: "Iron Ring", ilvl: 100, rarity: "magic", prefixes: ["IncreasedLife1"] }),
             [op("annul")],
         );
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.ok).toBe(true);
-        expect(r.finalState?.rarities).toEqual(new Set(["magic"]));
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["magic"]));
     });
 
     it("rejects alchemy on a Magic item (wrong rarity)", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "magic" }), [op("alchemy")]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("Requires a Normal item");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("Requires a Normal item");
     });
 });
 
@@ -188,36 +202,33 @@ describe("checker — essences", () => {
     const normalRing = () => item({ base: "Iron Ring", ilvl: 100, rarity: "normal" });
 
     it("guarantees its mod, reforging a Normal item to Rare", () => {
-        const r = checkPresent(craft(normalRing(), [essence("Deafening Essence of Greed")]), ctx);
+        const r = check(craft(normalRing(), [essence("Deafening Essence of Greed")]), ctx);
         expect(r.ok).toBe(true);
-        expect(r.finalState?.rarities).toEqual(new Set(["rare"]));
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["rare"]));
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
 
     it("resolves the `type + t1` shorthand (t1 = Deafening = best)", () => {
-        const r = checkPresent(craft(normalRing(), [essence("greed", 1)]), ctx);
+        const r = check(craft(normalRing(), [essence("greed", 1)]), ctx);
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
 
     it("a high-tier essence reforges a Rare item too", () => {
-        const r = checkPresent(
-            craft(rareRing(["random"]), [essence("Deafening Essence of Greed")]),
-            ctx,
-        );
+        const r = check(craft(rareRing(["random"]), [essence("Deafening Essence of Greed")]), ctx);
         expect(r.ok).toBe(true);
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
 
     it("rejects a low-tier essence on a Rare item", () => {
         const c = craft(rareRing(), [essence("Muttering Essence of Greed")]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("Requires a Normal item");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("Requires a Normal item");
     });
 
     it("rejects any essence on a Magic item", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "magic" }), [
             essence("Deafening Essence of Greed"),
         ]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("Magic item");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("Magic item");
     });
 
     it("rejects an essence that grants nothing for the item's class", () => {
@@ -225,18 +236,18 @@ describe("checker — essences", () => {
         const c = craft(item({ base: "CoralAmulet", ilvl: 100, rarity: "normal" }), [
             essence("Deafening Essence of Greed"),
         ]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("grants no mod");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("grants no mod");
     });
 
     it("reports an unknown essence", () => {
         const c = craft(normalRing(), [essence("Bogus Essence of Nothing")]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("Unknown essence");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("Unknown essence");
     });
 });
 
 describe("checker — bench crafts", () => {
     it("adds a guaranteed mod into its open slot", () => {
-        const r = checkPresent(craft(rareRing(), [bench("maximum life")]), ctx);
+        const r = check(craft(rareRing(), [bench("maximum life")]), ctx);
         expect(r.ok).toBe(true);
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
@@ -248,25 +259,25 @@ describe("checker — bench crafts", () => {
             op("annul"),
             iff(notp(has("maximum life")), [bench("maximum life")]),
         ]);
-        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 
     it("rejects a bench craft when its generation is full", () => {
         // Life is a prefix; a 3-prefix Rare has no open prefix.
         const c = craft(rareRing(["random", "random", "random"]), [bench("maximum life")]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("open prefix slot");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("open prefix slot");
     });
 
     it("reports an unresolvable bench mod", () => {
         const c = craft(rareRing(), [bench("nonexistent")]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("bench craft");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("bench craft");
     });
 
     it("rejects a bench craft whose group is already present (one mod per group)", () => {
         // The ring already carries a life prefix; benching another life mod would
         // be a second mod of the same group — impossible in-game.
         const c = craft(rareRing(["IncreasedLife1"]), [bench("maximum life")]);
-        const message = checkPresent(c, ctx).diagnostics[0]?.message;
+        const message = check(c, ctx).diagnostics[0]?.message;
         expect(message).toContain("at most one per group");
         // The item block declares the modifier, so it is not a "may".
         expect(message).toContain("The item already carries a ");
@@ -283,13 +294,13 @@ describe("checker — predicate defs", () => {
             orp(hasP("IncreasedLife1", param("t")), hasP("FireResist1", param("t"))),
         );
         const c = craft(rareRing(), [until(call("anyEle", [tierArg(1)]), [op("chaos")])], [d]);
-        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 
     it("a def-driven until guarantees the mod, exactly like the inlined predicate", () => {
         const d = def("hasLife", ["t"], hasP("IncreasedLife1", param("t")));
         const c = craft(rareRing(), [until(call("hasLife", [tierArg(1)]), [op("chaos")])], [d]);
-        expect(guaranteedTypes(checkPresent(c, ctx).finalState!).has(LIFE_T1.type)).toBe(true);
+        expect(guaranteedTypes(check(c, ctx).finalState!).has(LIFE_T1.type)).toBe(true);
     });
 
     it("passes a parameter through to a nested def call", () => {
@@ -301,7 +312,7 @@ describe("checker — predicate defs", () => {
             [until(call("viaLife", [tierArg(1)]), [op("chaos")])],
             [inner, outer],
         );
-        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 
     it("catches a passthrough type error at the nested call", () => {
@@ -309,7 +320,7 @@ describe("checker — predicate defs", () => {
         const inner = def("hasLife", ["t"], hasP("IncreasedLife1", param("t")));
         const outer = def("viaLife", ["t"], call("hasLife", [param("t")]));
         const c = craft(rareRing(), [until(call("viaLife", ["x"]), [op("chaos")])], [inner, outer]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("should be a tier");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("should be a tier");
     });
 
     it("flags a parameter that is never used", () => {
@@ -319,7 +330,7 @@ describe("checker — predicate defs", () => {
             [until(call("f", [tierArg(1), tierArg(1)]), [op("chaos")])],
             [d],
         );
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain(`parameter "unused"`);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain(`parameter "unused"`);
     });
 
     it("does not flag a param that is only passed through to a nested call", () => {
@@ -330,19 +341,20 @@ describe("checker — predicate defs", () => {
             [until(call("viaLife", [tierArg(1)]), [op("chaos")])],
             [inner, outer],
         );
-        expect(checkPresent(c, ctx).diagnostics.some((x) => x.message.includes("never used"))).toBe(
-            false,
-        );
+        expect(check(c, ctx).diagnostics.some((x) => x.message.includes("never used"))).toBe(false);
     });
 
     it("reports an unknown def", () => {
         const c = craft(rareRing(), [until(call("nope", [tierArg(1)]), [op("chaos")])]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain(`unknown def "nope"`);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain(`unknown def "nope"`);
     });
 
     it("collapses the pairwise clauses of `≥2 of 3` into one cardinality", () => {
         // (fire∨cold) ∧ (fire∨lightning) ∧ (cold∨lightning) is exactly "≥2 of 3";
         // disjunctiveGuarantees yields the three pairs, cardinality folds them.
+        // Read over the three resistances: a reforge leaves four to six
+        // modifiers of the catalogue's seven, so every item also carries one
+        // of any four of them.
         const twoOfThree = andp(
             andp(
                 orp(has("FireResist1"), has("ColdResist1")),
@@ -351,9 +363,10 @@ describe("checker — predicate defs", () => {
             orp(has("ColdResist1"), has("LightningResist1")),
         );
         const c = craft(rareRing(), [until(twoOfThree, [op("chaos")])]);
-        const r = checkPresent(c, ctx);
-        expect(disjunctiveGuarantees(r.finalState!)).toHaveLength(3); // the pairs
-        const cards = cardinalityGuarantees(r.finalState!);
+        const r = check(c, ctx);
+        const resists = new Set([FIRE_RESIST.type, COLD_RESIST.type, LIGHTNING_RESIST.type]);
+        expect(disjunctiveGuarantees(r.finalState!, resists)).toHaveLength(3); // the pairs
+        const cards = cardinalityGuarantees(r.finalState!, resists);
         expect(cards).toHaveLength(1);
         expect(cards[0]!.atLeast).toBe(2);
         expect(new Set(cards[0]!.types)).toEqual(
@@ -362,27 +375,30 @@ describe("checker — predicate defs", () => {
     });
 
     it("tracks a disjunctive guarantee after `until has X or has Y`", () => {
-        // On exit, at least one of {life, fire-res} is present — neither alone is
-        // guaranteed, but their disjunction is (the presence BDD keeps the OR).
+        // On exit, at least one of {life, fire-res} is present: neither alone is
+        // guaranteed, but their disjunction is. The search is read over the two:
+        // four to six modifiers of seven make wider clauses true as well.
         const c = craft(rareRing(), [
             until(orp(has("IncreasedLife1"), has("FireResist1")), [op("chaos")]),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(guaranteedTypes(r.finalState!).size).toBe(0); // neither individually
-        const disj = disjunctiveGuarantees(r.finalState!);
+        const disj = disjunctiveGuarantees(
+            r.finalState!,
+            new Set([LIFE_T1.type, FIRE_RESIST.type]),
+        );
         expect(disj).toHaveLength(1);
         expect(new Set(disj[0])).toEqual(new Set([LIFE_T1.type, FIRE_RESIST.type]));
     });
 
-    it("keeps each member's tier through a disjunctive join (`has X t1 or has Y t1`)", () => {
-        // On exit the guarantee is (life@t1 ∨ fire-res@t1); the tier of each member
-        // must survive the branch join, so a later hover/predicate sees t1 — not
-        // the full roll span. This is the fact the flat `tiers` overlay dropped.
+    it("keeps each member's tier in a disjunctive guarantee (`has X t1 or has Y t1`)", () => {
+        // On exit the guarantee is (life@t1 ∨ fire-res@t1); each member is read at
+        // t1, so a later hover or condition sees t1, not the full roll span.
         const c = craft(rareRing(), [
             until(orp(has("IncreasedLife1", 1), has("FireResist1", 1)), [op("chaos")]),
         ]);
-        const st = checkPresent(c, ctx).finalState!;
-        const disj = disjunctiveGuarantees(st);
+        const st = check(c, ctx).finalState!;
+        const disj = disjunctiveGuarantees(st, new Set([LIFE_T1.type, FIRE_RESIST.type]));
         expect(disj).toHaveLength(1);
         expect(disjunctiveTier(st, disj[0]!)).toEqual(
             new Map([
@@ -394,13 +410,12 @@ describe("checker — predicate defs", () => {
 
     it("a tier-negating branch after a tier-qualified disjunction is dead", () => {
         // `until has X t1 or has Y t1 { chaos }` proves (X@t1 ∨ Y@t1) on exit; the
-        // following `if not X t1 and not Y t1` can therefore never run. Only works
-        // if the tier survives the join into the after-state.
+        // following `if not X t1 and not Y t1` can therefore never run.
         const c = craft(rareRing(), [
             until(orp(has("IncreasedLife1", 1), has("FireResist1", 1)), [op("chaos")]),
             iff(andp(notp(has("IncreasedLife1", 1)), notp(has("FireResist1", 1))), [op("annul")]),
         ]);
-        const diags = checkPresent(c, ctx).diagnostics;
+        const diags = check(c, ctx).diagnostics;
         expect(diags.some((d) => d.message.includes("'if' branch can never run"))).toBe(true);
     });
 
@@ -411,25 +426,25 @@ describe("checker — predicate defs", () => {
             [until(call("f", [tierArg(1), tierArg(2)]), [op("chaos")])],
             [d],
         );
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("expects 1 argument");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("expects 1 argument");
     });
 
     it("rejects a bare-int count where a tier (t1) is expected", () => {
         const d = def("f", ["t"], hasP("IncreasedLife1", param("t")));
         const c = craft(rareRing(), [until(call("f", [1]), [op("chaos")])], [d]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("should be a tier (t1)");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("should be a tier (t1)");
     });
 
     it("reports an argument type mismatch (a string for a tier param)", () => {
         const d = def("f", ["t"], hasP("IncreasedLife1", param("t")));
         const c = craft(rareRing(), [until(call("f", ["oops"]), [op("chaos")])], [d]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("should be a tier");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("should be a tier");
     });
 
     it("flags a parameter used at conflicting sorts (tier vs mod), without cascading", () => {
         const d = def("weird", ["x"], orp(hasP(param("x")), hasP("IncreasedLife1", param("x"))));
         const c = craft(rareRing(), [until(call("weird", ["life"]), [op("chaos")])], [d]);
-        const msgs = checkPresent(c, ctx).diagnostics.map((x) => x.message);
+        const msgs = check(c, ctx).diagnostics.map((x) => x.message);
         expect(msgs.some((m) => m.includes("used in conflicting ways"))).toBe(true);
         expect(msgs.some((m) => m.includes("never given a value"))).toBe(false);
     });
@@ -442,9 +457,9 @@ describe("checker — operation functions", () => {
         // def prep() { transmute regal } — a Normal item ends up Rare afterwards.
         const p = procDef("prep", [], [op("transmute"), op("regal")]);
         const c = craft(normalRing(), [callStmt("prep")], [], [p]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.ok).toBe(true);
-        expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["rare"]));
     });
 
     it("expands a mod-name param used in a loop guard, proving the exit clean", () => {
@@ -452,7 +467,7 @@ describe("checker — operation functions", () => {
         // afterwards the named mod is guaranteed, exactly like the inlined form.
         const p = procDef("spam", ["m"], [until(hasP(param("m")), [op("chaos")])]);
         const c = craft(rareRing(), [callStmt("spam", ["maximum life"])], [], [p]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
@@ -460,7 +475,7 @@ describe("checker — operation functions", () => {
     it("expands a mod-name param in a bench statement", () => {
         const p = procDef("add", ["m"], [bench(param("m"))]);
         const c = craft(rareRing(), [callStmt("add", ["maximum life"])], [], [p]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.ok).toBe(true);
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
@@ -470,22 +485,22 @@ describe("checker — operation functions", () => {
         const p = procDef("go", [], [op("exalt")]);
         const full = rareRing(["random", "random", "random"], ["random", "random", "random"]);
         const c = craft(full, [callStmt("go")], [], [p]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.ok).toBe(false);
         expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
     });
 
     it("a `restart` inside a proc re-enters the caller's loop (fill-up is flagged)", () => {
         // The proc-inlined `exalt; if not X { restart }` is the same fill-up danger
-        // as writing it directly in the loop body — the restart back-edge must reach
-        // the caller's loop invariant across the call boundary.
+        // as writing it directly in the loop body: the restart sends the item back
+        // to the caller's loop across the call boundary.
         const step = procDef(
             "step",
             [],
             [op("exalt"), iff(notp(has("IncreasedLife1")), [restart()])],
         );
         const c = craft(rareRing(), [until(has("IncreasedLife1"), [callStmt("step")])], [], [step]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, wideCtx);
         expect(r.ok).toBe(false);
         expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
     });
@@ -493,63 +508,57 @@ describe("checker — operation functions", () => {
     it("reports an arity mismatch on a call", () => {
         const p = procDef("add", ["m"], [bench(param("m"))]);
         const c = craft(rareRing(), [callStmt("add")], [], [p]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("expects 1 argument");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("expects 1 argument");
     });
 
     it("reports an argument sort mismatch (a tier where a mod name is expected)", () => {
         const p = procDef("add", ["m"], [bench(param("m"))]);
         const c = craft(rareRing(), [callStmt("add", [tierArg(1)])], [], [p]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain(
-            "should be a quoted mod name",
-        );
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("should be a quoted mod name");
     });
 
     it("reports an unknown operation function", () => {
         const c = craft(rareRing(), [callStmt("nope")]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain(`unknown def "nope"`);
+        expect(check(c, ctx).diagnostics[0]?.message).toContain(`unknown def "nope"`);
     });
 
     it("rejects calling a predicate def as a step", () => {
         const d = def("hasLife", ["t"], hasP("IncreasedLife1", param("t")));
         const c = craft(rareRing(), [callStmt("hasLife", [tierArg(1)])], [d]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("is a condition");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("is a condition");
     });
 
     it("rejects calling a proc inside a condition", () => {
         const p = procDef("go", [], [op("exalt")]);
         const c = craft(rareRing(), [until(call("go"), [op("chaos")])], [], [p]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("runs operations");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("runs operations");
     });
 
     it("rejects a recursive proc", () => {
         const p = procDef("loop", [], [op("scour"), callStmt("loop")]);
         const c = craft(rareRing(), [callStmt("loop")], [], [p]);
-        expect(checkPresent(c, ctx).diagnostics.some((d) => d.message.includes("recursive"))).toBe(
-            true,
-        );
+        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("recursive"))).toBe(true);
     });
 
     it("flags a proc parameter that is never used", () => {
         const p = procDef("f", ["m", "unused"], [bench(param("m"))]);
         const c = craft(rareRing(), [callStmt("f", ["maximum life", "x"])], [], [p]);
-        expect(checkPresent(c, ctx).diagnostics.some((d) => d.message.includes(`"unused"`))).toBe(
-            true,
-        );
+        expect(check(c, ctx).diagnostics.some((d) => d.message.includes(`"unused"`))).toBe(true);
     });
 
     it("flags a proc name that collides with a predicate def", () => {
         const d = def("dup", ["t"], hasP("IncreasedLife1", param("t")));
         const p = procDef("dup", [], [op("scour")]);
         const c = craft(rareRing(), [], [d], [p]);
-        expect(
-            checkPresent(c, ctx).diagnostics.some((d) => d.message.includes("duplicate def")),
-        ).toBe(true);
+        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("duplicate def"))).toBe(
+            true,
+        );
     });
 
     it("records a single trace entry for the call, not the inlined body", () => {
         const p = procDef("prep", [], [op("transmute"), op("regal")]);
         const c = craft(normalRing(), [callStmt("prep")], [], [p]);
-        const trace = checkPresent(c, ctx).trace;
+        const trace = check(c, ctx).trace;
         const calls = trace.filter((e) => e.kind === "call");
         expect(calls).toHaveLength(1);
         // The inlined transmute/regal are a black box — no op entries leak into the trace.
@@ -569,7 +578,7 @@ describe("checker — step parameters", () => {
             [],
             [p],
         );
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
@@ -583,7 +592,7 @@ describe("checker — step parameters", () => {
             [],
             [p],
         );
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
@@ -592,7 +601,7 @@ describe("checker — step parameters", () => {
         // def once(b) { b }   once(regal) on a Normal item: regal needs a Magic item.
         const p = procDef("once", ["b"], [paramStep("b")]);
         const c = craft(normalRing(), [callStmt("once", [blockArg([op("regal")])])], [], [p]);
-        expect(checkPresent(c, ctx).ok).toBe(false);
+        expect(check(c, ctx).ok).toBe(false);
     });
 
     it("lets a step argument call the proc it is passed to", () => {
@@ -600,7 +609,7 @@ describe("checker — step parameters", () => {
         const p = procDef("twice", ["b"], [paramStep("b"), paramStep("b")]);
         const inner = callStmt("twice", [blockArg([op("chaos")])]);
         const c = craft(rareRing(), [callStmt("twice", [blockArg([inner])])], [], [p]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.ok).toBe(true);
     });
@@ -610,7 +619,7 @@ describe("checker — step parameters", () => {
         const twice = procDef("twice", ["b"], [paramStep("b"), paramStep("b")]);
         const g = procDef("g", [], [callStmt("twice", [blockArg([callStmt("g")])])]);
         const c = craft(rareRing(), [callStmt("g")], [], [twice, g]);
-        const msgs = checkPresent(c, ctx).diagnostics.map((d) => d.message);
+        const msgs = check(c, ctx).diagnostics.map((d) => d.message);
         expect(msgs).toContain(`recursive def "g" is not allowed`);
         expect(msgs).not.toContain(`recursive def "twice" is not allowed`);
     });
@@ -618,7 +627,7 @@ describe("checker — step parameters", () => {
     it("reports a recursive proc at its definition even when never called", () => {
         const p = procDef("loop", [], [op("scour"), callStmt("loop")]);
         const c = craft(rareRing(), [op("chaos")], [], [p]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics.map((d) => d.message)).toContain(
             `recursive def "loop" is not allowed`,
         );
@@ -629,7 +638,7 @@ describe("checker — step parameters", () => {
         const a = procDef("a", [], [op("scour"), callStmt("b")]);
         const b = procDef("b", [], [callStmt("a")]);
         const c = craft(rareRing(), [callStmt("a")], [], [a, b]);
-        const msgs = checkPresent(c, ctx).diagnostics.map((d) => d.message);
+        const msgs = check(c, ctx).diagnostics.map((d) => d.message);
         expect(msgs).toContain(`recursive def "a" is not allowed`);
         expect(msgs).toContain(`recursive def "b" is not allowed`);
     });
@@ -643,7 +652,7 @@ describe("checker — step parameters", () => {
             [callStmt("once", [blockArg([until(hasP(param("m")), [op("chaos")])])])],
         );
         const c = craft(rareRing(), [callStmt("want", ["maximum life"])], [], [once, want]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
@@ -657,7 +666,7 @@ describe("checker — step parameters", () => {
             [callStmt("once", [blockArg([until(hasP(param("m")), [op("chaos")])])])],
         );
         const c = craft(rareRing(), [callStmt("want", ["maximum life"])], [], [once, want]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
@@ -671,7 +680,7 @@ describe("checker — step parameters", () => {
             [],
             [once],
         );
-        const r = checkPresent(c, ctx);
+        const r = check(c, wideCtx);
         expect(r.ok).toBe(false);
         expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
     });
@@ -680,19 +689,17 @@ describe("checker — step parameters", () => {
         const once = procDef("once", ["b"], [paramStep("b")]);
         const add = procDef("add", ["m"], [bench(param("m"))]);
         const c1 = craft(rareRing(), [callStmt("once", ["maximum life"])], [], [once]);
-        expect(checkPresent(c1, ctx).diagnostics[0]?.message).toContain(
+        expect(check(c1, ctx).diagnostics[0]?.message).toContain(
             "should be a step or a { … } block of steps",
         );
         const c2 = craft(rareRing(), [callStmt("add", [blockArg([op("chaos")])])], [], [add]);
-        expect(checkPresent(c2, ctx).diagnostics[0]?.message).toContain(
-            "should be a quoted mod name",
-        );
+        expect(check(c2, ctx).diagnostics[0]?.message).toContain("should be a quoted mod name");
     });
 
     it("reports a parameter used both as steps and as a mod name", () => {
         const p = procDef("f", ["x"], [paramStep("x"), bench(param("x"))]);
         const c = craft(rareRing(), [callStmt("f", [blockArg([op("chaos")])])], [], [p]);
-        const msg = checkPresent(c, ctx).diagnostics[0]?.message ?? "";
+        const msg = check(c, ctx).diagnostics[0]?.message ?? "";
         expect(msg).toContain("conflicting ways");
         expect(msg).toContain("a step");
     });
@@ -701,7 +708,7 @@ describe("checker — step parameters", () => {
         const once = procDef("once", ["b"], [paramStep("b")]);
         const via = procDef("via", ["b"], [callStmt("once", [param("b")])]);
         const c = craft(rareRing(), [callStmt("via", [blockArg([op("chaos")])])], [], [once, via]);
-        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 });
 
@@ -711,23 +718,24 @@ describe("checker — the rarity seam (surface §6 errors)", () => {
             item({ base: "Iron Ring", ilvl: 100, rarity: "magic", prefixes: ["T1 Life"] }),
             [op("augment"), iff(has("FireResist1"), [op("regal")]), op("regal")],
         );
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics[0]!.message).toContain("may be Magic or Rare");
         // After the refused regal the item is judged as the guide meant it: Rare.
-        expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["rare"]));
     });
 
     it("reports a refused step once and judges the rest as the guide meant", () => {
-        // The regal is refused where the ring may still be Magic; the exalt after
-        // it is judged on the Rare the regal would have made, not refused again.
+        // The regal is refused where the ring may already be Rare; the craft goes
+        // on from the Magic rings it does work on, so the exalt after it meets
+        // a Rare of three modifiers and is not refused again.
         const c = craft(
             item({ base: "Iron Ring", ilvl: 100, rarity: "magic", prefixes: ["T1 Life"] }),
             [op("augment"), iff(has("FireResist1"), [op("regal")]), op("regal"), op("exalt")],
         );
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("may be Magic or Rare");
-        expect(r.finalState!.counts.total).toEqual([4, 5]);
+        expect(v.counts(r.finalState!).total).toEqual([4, 4]);
     });
 
     it("judges the steps after a reforge refused for its rarity on the reforged item", () => {
@@ -737,16 +745,17 @@ describe("checker — the rarity seam (surface §6 errors)", () => {
             op("chaos"),
             op("annul"),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("Requires a Rare item");
-        expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
-        expect(r.finalState!.counts.total).toEqual([3, 5]);
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["rare"]));
+        expect(v.counts(r.finalState!).total).toEqual([3, 5]);
     });
 
     it("keeps a refused item's modifiers where the needed rarity could not hold them", () => {
         // A Rare ring of four modifiers cannot be the Magic item the augment
-        // needs, so the exalt after it is judged on the Rare ring.
+        // needs, so the craft goes on from the ring unchanged and the exalt
+        // after it is judged on that Rare ring.
         const full = item({
             base: "Iron Ring",
             ilvl: 100,
@@ -754,11 +763,11 @@ describe("checker — the rarity seam (surface §6 errors)", () => {
             prefixes: ["T1 Life", "random"],
             suffixes: ["random", "random"],
         });
-        const r = checkPresent(craft(full, [op("augment"), op("exalt")]), ctx);
+        const r = check(craft(full, [op("augment"), op("exalt")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("Requires a Magic item");
-        expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
-        expect(r.finalState!.counts.total).toEqual([6, 6]);
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["rare"]));
+        expect(v.counts(r.finalState!).total).toEqual([5, 5]);
     });
 
     it("judges a scour and an essence over every rarity the item may have", () => {
@@ -771,9 +780,9 @@ describe("checker — the rarity seam (surface §6 errors)", () => {
             prefixes: ["T1 Life"],
         });
         const meet = [op("augment"), iff(has("FireResist1"), [op("scour")])];
-        const scoured = checkPresent(craft(magicRing, [...meet, op("scour")]), ctx);
+        const scoured = check(craft(magicRing, [...meet, op("scour")]), ctx);
         expect(scoured.diagnostics[0]!.message).toContain("removable affix");
-        const essenced = checkPresent(
+        const essenced = check(
             craft(magicRing, [...meet, essence("Muttering Essence of Greed")]),
             ctx,
         );
@@ -781,7 +790,7 @@ describe("checker — the rarity seam (surface §6 errors)", () => {
         // Normal or Rare: a scour in one arm of a Rare, then the low essence
         // may land on the Rare path.
         const rare = item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes: ["T1 Life"] });
-        const scouredOrNot = checkPresent(
+        const scouredOrNot = check(
             craft(rare, [
                 op("exalt"),
                 iff(has("FireResist1"), [op("scour")]),
@@ -794,7 +803,7 @@ describe("checker — the rarity seam (surface §6 errors)", () => {
 
     it("rejects exalt on a Magic item and renders the state", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "magic" }), [op("exalt")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.ok).toBe(false);
         expect(r.diagnostics[0]?.message).toContain("this item is Magic");
         expect(r.diagnostics[0]?.message).toContain("at this point the item is: IronRing · Magic");
@@ -802,33 +811,33 @@ describe("checker — the rarity seam (surface §6 errors)", () => {
 
     it("rejects transmute on a Rare item", () => {
         const c = craft(rareRing(), [op("transmute")]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("Requires a Normal item");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("Requires a Normal item");
     });
 
     it("rejects exalt on a full 3+3 Rare (no open slot)", () => {
         const c = craft(rareRing(["random", "random", "random"], ["random", "random", "random"]), [
             op("exalt"),
         ]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("open affix slot");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("open affix slot");
     });
 
     it("rejects annul on an empty Rare (nothing removable)", () => {
         const c = craft(rareRing(), [op("annul")]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("removable affix");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("removable affix");
     });
 });
 
 describe("checker — guarantee tracking (additive vs risky)", () => {
     it("exalt preserves a present mod; the final state still guarantees it", () => {
         const c = craft(rareRing(["IncreasedLife1"]), [op("exalt")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.ok).toBe(true);
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
 
     it("an unforced annul risks every mod; nothing stays guaranteed", () => {
         const c = craft(rareRing(["IncreasedLife1"], ["FireResist1"]), [op("annul")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(guaranteedTypes(r.finalState!).size).toBe(0);
     });
 });
@@ -841,39 +850,38 @@ describe("checker — loops (loop-exit-as-proof)", () => {
         const c = craft(rareRing(["IncreasedLife1"], ["FireResist1"]), [
             until(notp(has("FireResist1")), [op("annul")]),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(excludedTypes(r.finalState!).has(FIRE_RESIST.type)).toBe(true);
     });
 
     it("rejects `until has X { exalt }` — exalt may fail once the item fills up", () => {
-        // The soundness fix: exalt is additive, so across iterations the item can
-        // fill to 6 affixes without X ever rolling, and the next exalt has no open
-        // slot. The loop-invariant pass catches this.
+        // Exalt is additive, so across iterations the item can fill to 6 affixes
+        // without X ever rolling, and the next exalt has no open slot.
         const c = craft(rareRing(), [until(has("IncreasedLife1"), [op("exalt")])]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, wideCtx);
         expect(r.ok).toBe(false);
         expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
     });
 
     it("count coupling: a prefixCount-guarded exalt/annul loop checks clean", () => {
         // Exalt only when a prefix slot is open, else annul — so exalt can never
-        // hit a full item and annul can never hit an empty one. This only checks
-        // clean if refining prefixCount also tightens the total range.
+        // hit a full item and annul can never hit an empty one: fewer than three
+        // prefixes leave at most five affixes.
         const c = craft(rareRing(), [
             until(has("IncreasedLife1"), [
                 iff(cmp("prefixCount", "<", 3), [op("exalt")], [op("annul")]),
             ]),
         ]);
-        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
+        expect(check(c, wideCtx).diagnostics).toEqual([]);
     });
 
     it("flags an unreachable exit (the mod can't roll on this base)", () => {
         // JewelOnly1 has a jewel-only spawn tag; it cannot roll on a ring, so the
-        // exit predicate is unsatisfiable — the reachability check reports that
-        // before the fill-up symptom.
-        const c = craft(rareRing(), [until(has("JewelOnly1"), [op("exalt")])]);
-        const r = checkPresent(c, ctx);
+        // exit predicate is unsatisfiable. A chaos never refuses a Rare, so the
+        // loop's exit is the one error.
+        const c = craft(rareRing(), [until(has("JewelOnly1"), [op("chaos")])]);
+        const r = check(c, ctx);
         expect(r.ok).toBe(false);
         expect(r.diagnostics[0]?.message).toContain("can never exit");
     });
@@ -883,15 +891,15 @@ describe("checker — restart is a loop back-edge", () => {
     it("flags fill-up through a restart: `until has X { exalt; if not X { restart } }`", () => {
         // The restart re-enters the loop head with the item having gained a mod
         // but never lost one, so exalt can fill it to 6 before X rolls — the same
-        // danger as `until has X { exalt }`. Only caught if the restart state joins
-        // into the loop invariant.
+        // danger as `until has X { exalt }`: the items a restart sends back are
+        // part of the loop's head.
         const c = craft(rareRing(), [
             until(has("IncreasedLife1"), [
                 op("exalt"),
                 iff(notp(has("IncreasedLife1")), [restart()]),
             ]),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, wideCtx);
         expect(r.ok).toBe(false);
         expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
     });
@@ -903,7 +911,7 @@ describe("checker — restart is a loop back-edge", () => {
         const c = craft(rareRing(["IncreasedLife1"], ["FireResist1"]), [
             until(notp(has("FireResist1")), [op("annul"), iff(has("FireResist1"), [restart()])]),
         ]);
-        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 });
 
@@ -914,12 +922,12 @@ describe("checker — paths that leave different items stay apart", () => {
 
     it("sorts the arms of a loop's last branch by the loop's condition", () => {
         // The arm that kept the new modifier has the life and leaves; the arm
-        // that removed it is back at the count it started the round with. As
-        // one summary, "one more modifier" and "no life" would go round together.
+        // that removed it is back at the count it started the round with, so no
+        // item without the life goes round with one more modifier.
         const c = craft(rareRing(), [until(life, [op("exalt"), undo])]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState?.counts.total).toEqual([1, 1]);
+        expect(v.counts(r.finalState!).total).toEqual([1, 1]);
     });
 
     it("does so through a nested branch, a def's steps and a restart on one arm", () => {
@@ -927,9 +935,9 @@ describe("checker — paths that leave different items stay apart", () => {
             body: Parameters<typeof until>[1],
             procs: ReturnType<typeof procDef>[] = [],
         ): void => {
-            const r = checkPresent(craft(rareRing(), [until(life, body)], [], procs), ctx);
+            const r = check(craft(rareRing(), [until(life, body)], [], procs), ctx);
             expect(r.diagnostics).toEqual([]);
-            expect(r.finalState?.counts.total).toEqual([1, 1]);
+            expect(v.counts(r.finalState!).total).toEqual([1, 1]);
         };
         clean([op("exalt"), iff(has("FireResist1"), [op("annul")], [undo])]);
         clean([callStmt("round")], [procDef("round", [], [op("exalt"), undo])]);
@@ -940,17 +948,16 @@ describe("checker — paths that leave different items stay apart", () => {
         const c = craft(rareRing([], ["random"]), [
             until(life, [op("exalt"), undo, iff(has("FireResist1"), [stop()])]),
         ]);
-        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 
     it("lets a later branch pick the path whose count has room, outside a loop too", () => {
         // Six modifiers with the life, five without it.
         const filled = [op("exalt"), undo];
         expect(
-            checkPresent(craft(five(), [...filled, iff(notp(life), [op("exalt")])]), ctx)
-                .diagnostics,
+            check(craft(five(), [...filled, iff(notp(life), [op("exalt")])]), wideCtx).diagnostics,
         ).toEqual([]);
-        const full = checkPresent(craft(five(), [...filled, iff(life, [op("exalt")])]), ctx);
+        const full = check(craft(five(), [...filled, iff(life, [op("exalt")])]), wideCtx);
         expect(full.diagnostics.map((d) => d.message).join()).toContain("open affix slot");
     });
 
@@ -958,15 +965,15 @@ describe("checker — paths that leave different items stay apart", () => {
         const c = craft(rareRing(), [
             until(life, [op("exalt"), iff(has("FireResist1"), [op("annul")])]),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, wideCtx);
         expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
     });
 
     it("shows one item for a step, covering every path that reaches it", () => {
         const c = craft(five(), [op("exalt"), undo, op("annul")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, wideCtx);
         const last = r.trace.filter((e) => e.kind === "operation").at(-1)!;
-        expect(last.before.counts.total).toEqual([5, 6]);
+        expect(v.counts(last.before).total).toEqual([5, 6]);
     });
 
     it("judges a loop inside a loop on the passes that settle the outer one", () => {
@@ -974,9 +981,9 @@ describe("checker — paths that leave different items stay apart", () => {
         // passes found them: a reforged item with the fire resistance.
         const fire = has("FireResist1");
         const c = craft(rareRing(), [until(life, [until(fire, [op("chaos")])])]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState?.counts.total).toEqual([4, 6]);
+        expect(v.counts(r.finalState!).total).toEqual([4, 6]);
         expect(guaranteedTypes(r.finalState!).has(FIRE_RESIST.type)).toBe(true);
     });
 
@@ -986,8 +993,8 @@ describe("checker — paths that leave different items stay apart", () => {
         const fire = has("FireResist1");
         const inner = until(fire, [op("chaos")]);
         const fills = [inner, op("exalt"), iff(notp(life), [op("exalt")])];
-        const inPlace = checkPresent(craft(rareRing(), [until(life, fills)]), ctx);
-        const inDef = checkPresent(
+        const inPlace = check(craft(rareRing(), [until(life, fills)]), ctx);
+        const inDef = check(
             craft(
                 rareRing(),
                 [until(life, [callStmt("round")])],
@@ -999,11 +1006,11 @@ describe("checker — paths that leave different items stay apart", () => {
         const messages = (r: typeof inPlace) => r.diagnostics.map((d) => d.message);
         expect(messages(inPlace).join()).toContain("open affix slot");
         expect(messages(inDef)).toEqual(messages(inPlace));
-        expect(inDef.finalState?.counts).toEqual(inPlace.finalState?.counts);
+        expect(v.counts(inDef.finalState!)).toEqual(v.counts(inPlace.finalState!));
     });
 
     it("reports a step that fails on one path once, for the item over every path", () => {
-        const r = checkPresent(craft(five(), [op("exalt"), undo, op("exalt")]), ctx);
+        const r = check(craft(five(), [op("exalt"), undo, op("exalt")]), wideCtx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("5–6 affixes");
         expect(r.diagnostics[0]!.message).toContain("the item may be full");
@@ -1031,17 +1038,31 @@ describe("checker — paths that leave different items stay apart", () => {
         }
     });
 
-    it("refuses a loop that has not settled in the rounds it is given, and judges on", () => {
+    it("refuses a loop whose rounds fill the item", () => {
+        // A round that rolls neither the life nor the fire resistance leaves one
+        // modifier more, so the item can fill to six before the life rolls.
+        const fills = craft(rareRing(), [
+            until(life, [op("exalt"), iff(has("FireResist1"), [op("annul")], [undo, op("exalt")])]),
+        ]);
+        const r = check(fills, wideCtx);
+        expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
+    });
+
+    it("refuses a loop that has not settled in the rounds it is given, and stops there", () => {
+        // A head short of its fixpoint would leave later rounds unjudged, so no
+        // step after it is judged either: the fill-up in the second craft's
+        // body is not reached.
         const round = (last: Parameters<typeof until>[1][number]) =>
             craft(rareRing(), [until(life, [op("exalt"), last])]);
         const messages = (c: ReturnType<typeof craft>, maxRounds: number) =>
-            checkPresent(c, ctx, { maxRounds }).diagnostics.map((d) => d.message);
+            check(c, wideCtx, { maxRounds }).diagnostics.map((d) => d.message);
+        const unsettled =
+            "The item this loop works on is still changing after 0 rounds, too many to follow, so the steps from here on are not checked.";
         expect(messages(round(undo), 2)).toEqual([]);
-        expect(messages(round(undo), 0)).toEqual([
-            "The item this loop works on is still changing after 0 rounds, too many to follow.",
-        ]);
-        const fills = messages(round(iff(has("FireResist1"), [op("annul")])), 0);
-        expect(fills.some((m) => m.includes("open affix slot"))).toBe(true);
+        expect(messages(round(undo), 0)).toEqual([unsettled]);
+        const fills = round(iff(has("FireResist1"), [op("annul")]));
+        expect(messages(fills, 0)).toEqual([unsettled]);
+        expect(messages(fills, 256).some((m) => m.includes("open affix slot"))).toBe(true);
     });
 
     const fireOrBoth = orp(has("FireResist1"), andp(has("ColdResist1"), has("LightningResist1")));
@@ -1057,25 +1078,25 @@ describe("checker — paths that leave different items stay apart", () => {
             ]),
             iff(fireOrBoth, [op("exalt"), op("exalt"), op("exalt")]),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
         const open = craft(rareRing(["random", "random", "random"], ["random"]), [
             iff(fireOrBoth, [op("annul")]),
         ]);
-        expect(checkPresent(open, ctx).diagnostics).toEqual([]);
+        expect(check(open, ctx).diagnostics).toEqual([]);
     });
 });
 
 describe("checker — narrowing (if / else) and dead arms", () => {
     it("flags a dead 'if' branch (predicate impossible)", () => {
         const c = craft(rareRing(), [iff(isRarity("magic"), [op("exalt")])]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics[0]?.message).toContain("'if' branch can never run");
     });
 
     it("flags a dead 'else' branch (predicate always holds)", () => {
         const c = craft(rareRing(), [iff(isRarity("rare"), [], [op("annul")])]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics[0]?.message).toContain("'else' branch can never run");
     });
 
@@ -1087,7 +1108,7 @@ describe("checker — narrowing (if / else) and dead arms", () => {
             op("annul"),
             iff(has("IncreasedLife1"), [], []),
         ]);
-        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 
     it("narrows counts with a comparison predicate", () => {
@@ -1095,7 +1116,7 @@ describe("checker — narrowing (if / else) and dead arms", () => {
             op("exalt"), // prefix ∈ [1,2] afterwards
             iff(cmp("prefixCount", "==", 2), [], []),
         ]);
-        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 });
 
@@ -1105,9 +1126,7 @@ describe("checker — boolean predicates (and / or)", () => {
         const c = craft(rareRing(["IncreasedLife1"]), [
             iff(orp(has("IncreasedLife1"), has("FireResist1")), [], [op("annul")]),
         ]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain(
-            "'else' branch can never run",
-        );
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("'else' branch can never run");
     });
 
     it("`and`: an impossible conjunct makes the if arm dead", () => {
@@ -1115,7 +1134,7 @@ describe("checker — boolean predicates (and / or)", () => {
         const c = craft(rareRing(), [
             iff(andp(isRarity("magic"), has("IncreasedLife1")), [op("exalt")]),
         ]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("'if' branch can never run");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("'if' branch can never run");
     });
 
     it("`or`: a genuine two-way narrow has no dead arm", () => {
@@ -1125,22 +1144,20 @@ describe("checker — boolean predicates (and / or)", () => {
             op("exalt"),
             iff(orp(has("IncreasedLife1"), has("FireResist1")), [], []),
         ]);
-        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 
-    it("keeps a disjunction across a loop join: `not(X) and not(Y)` after is dead", () => {
+    it("keeps a disjunction across a loop exit: `not(X) and not(Y)` after is dead", () => {
         // After `until has X or has Y { chaos }`, at least one of X/Y is present.
-        // A later `if not X and not Y` is therefore unreachable — the presence BDD
-        // preserves the disjunction through the loop-exit join, which the old
-        // per-type sets (intersecting to ∅) could not. This is the whole point of
-        // the relational domain.
+        // A later `if not X and not Y` is therefore unreachable, though neither
+        // modifier alone is on every item.
         const c = craft(rareRing(), [
             until(orp(has("IncreasedLife1"), has("FireResist1")), [op("chaos")]),
             iff(andp(notp(has("IncreasedLife1")), notp(has("FireResist1"))), [op("annul")]),
         ]);
-        expect(
-            checkPresent(c, ctx).diagnostics.some((d) => d.message.includes("can never run")),
-        ).toBe(true);
+        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("can never run"))).toBe(
+            true,
+        );
     });
 
     it("`not (X or Y)` drains both: the loop proves both absent on exit", () => {
@@ -1149,7 +1166,7 @@ describe("checker — boolean predicates (and / or)", () => {
         const c = craft(rareRing(["IncreasedLife1"], ["FireResist1"]), [
             until(notp(orp(has("IncreasedLife1"), has("FireResist1"))), [op("annul")]),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(excludedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
         expect(excludedTypes(r.finalState!).has(FIRE_RESIST.type)).toBe(true);
@@ -1159,28 +1176,26 @@ describe("checker — boolean predicates (and / or)", () => {
 describe("checker — resolve-time errors", () => {
     it("reports an unknown currency", () => {
         const c = craft(rareRing(), [op("bogus")]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain('Unknown currency "bogus"');
+        expect(check(c, ctx).diagnostics[0]?.message).toContain('Unknown currency "bogus"');
     });
 
     it("reports an unknown base", () => {
         const c = craft(item({ base: "Nonexistent", ilvl: 1, rarity: "normal" }), [
             op("transmute"),
         ]);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain(
-            'Unknown base "Nonexistent"',
-        );
+        expect(check(c, ctx).diagnostics[0]?.message).toContain('Unknown base "Nonexistent"');
     });
 
     it("reports an unknown mod in a predicate", () => {
         const c = craft(rareRing(), [until(has("Nope"), [op("exalt")])]);
         expect(
-            checkPresent(c, ctx).diagnostics.some((d) => d.message.includes('Unknown mod "Nope"')),
+            check(c, ctx).diagnostics.some((d) => d.message.includes('Unknown mod "Nope"')),
         ).toBe(true);
     });
 
     it("resolves mods and bases via aliases", () => {
         const c = craft(rareRing(["T1 Life"]), [op("exalt")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.ok).toBe(true);
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
@@ -1189,13 +1204,13 @@ describe("checker — resolve-time errors", () => {
 describe("checker — item-block well-formedness", () => {
     it("flags too many prefixes for the rarity", () => {
         const c = craft(rareRing(["random", "random", "random", "random"]), []);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("too many prefixes");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("too many prefixes");
     });
 
     it("flags a mod listed under the wrong generation", () => {
         // FireResist1 is a suffix; listing it under prefixes is a mistake.
         const c = craft(rareRing(["FireResist1"]), []);
-        expect(checkPresent(c, ctx).diagnostics[0]?.message).toContain("is a suffix");
+        expect(check(c, ctx).diagnostics[0]?.message).toContain("is a suffix");
     });
 });
 
@@ -1205,20 +1220,17 @@ describe("checker — per-base affix caps (experimented bases)", () => {
     it("a reforge on a reduced-cap base fills to its exact split (rare Simplex: 1p / 2s)", () => {
         // alchemy wants 4–6 mods but the Simplex holds only 3 (1 prefix + 2
         // suffixes), so the count clamps and the split is forced.
-        const st = checkPresent(craft(normal("Simplex Amulet"), [op("alchemy")]), ctx).finalState!;
-        expect(st.rarities).toEqual(new Set(["rare"]));
-        expect(st.counts.total).toEqual([3, 3]);
-        expect(st.counts.prefix).toEqual([1, 1]);
+        const st = check(craft(normal("Simplex Amulet"), [op("alchemy")]), ctx).finalState!;
+        expect(v.rarities(st)).toEqual(new Set(["rare"]));
+        expect(v.counts(st).total).toEqual([3, 3]);
+        expect(v.counts(st).prefix).toEqual([1, 1]);
         expect(suffixRange(st)).toEqual([2, 2]);
     });
 
     it("transmute on a 0-cap magic base adds no modifiers; augment then has no slot", () => {
-        const r = checkPresent(
-            craft(normal("Simplex Amulet"), [op("transmute"), op("augment")]),
-            ctx,
-        );
-        expect(r.finalState!.rarities).toEqual(new Set(["magic"]));
-        expect(r.finalState!.counts.total).toEqual([0, 0]); // blue base, no explicit mods
+        const r = check(craft(normal("Simplex Amulet"), [op("transmute"), op("augment")]), ctx);
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["magic"]));
+        expect(v.counts(r.finalState!).total).toEqual([0, 0]); // blue base, no explicit mods
         expect(r.diagnostics.some((d) => d.message.toLowerCase().includes("open"))).toBe(true);
     });
 
@@ -1226,15 +1238,15 @@ describe("checker — per-base affix caps (experimented bases)", () => {
         // The +3 suffix would raw-cap at 4, but the magic hard total is 2. A
         // transmute lays down one or two suffixes and an augment fills the second
         // when one is proven open; prefixes never appear.
-        const r = checkPresent(
+        const r = check(
             craft(normal("Ratcheting Ring"), [
                 op("transmute"),
                 iff(cmp("suffixCount", "<", 2), [op("augment")], []),
             ]),
             ctx,
         );
-        expect(r.finalState!.counts.total).toEqual([2, 2]);
-        expect(r.finalState!.counts.prefix).toEqual([0, 0]);
+        expect(v.counts(r.finalState!).total).toEqual([2, 2]);
+        expect(v.counts(r.finalState!).prefix).toEqual([0, 0]);
         expect(suffixRange(r.finalState!)).toEqual([2, 2]);
     });
 
@@ -1252,16 +1264,16 @@ describe("checker — per-base affix caps (experimented bases)", () => {
             rarity: "rare",
             suffixes: [{ mod: "dual side", tier: 1 }],
         });
-        expect(checkPresent(craft(onAmulet, []), { registry: dual }).diagnostics).toEqual([]);
+        expect(check(craft(onAmulet, []), { registry: dual }).diagnostics).toEqual([]);
         const onRing = item({
             base: "Iron Ring",
             ilvl: 100,
             rarity: "rare",
             suffixes: [{ mod: "dual side", tier: 1 }],
         });
-        expect(
-            checkPresent(craft(onRing, []), { registry: dual }).diagnostics[0]?.message,
-        ).toContain("is a prefix");
+        expect(check(craft(onRing, []), { registry: dual }).diagnostics[0]?.message).toContain(
+            "is a prefix",
+        );
     });
 
     it("the add-pool and a removal place a dual-side modifier on the base's side", () => {
@@ -1283,9 +1295,9 @@ describe("checker — per-base affix caps (experimented bases)", () => {
             rarity: "rare",
             suffixes: [{ mod: "dual side", tier: 1 }, "ColdResist1", "LightningResist1"],
         });
-        const added = checkPresent(craft(fullSuffixes, [op("exalt")]), { registry: dual });
+        const added = check(craft(fullSuffixes, [op("exalt")]), { registry: dual });
         expect(added.diagnostics).toEqual([]);
-        expect(added.finalState!.possible.has(FIRE_RESIST.type)).toBe(false);
+        expect(v.possibleTypes(added.finalState!).has(FIRE_RESIST.type)).toBe(false);
         // With the suffixes protected, an annul cannot reach the suffix side, so
         // the dual-side modifier's guarantee survives on the amulet.
         const withPrefix = item({
@@ -1295,14 +1307,15 @@ describe("checker — per-base affix caps (experimented bases)", () => {
             prefixes: ["IncreasedLife1", PROTECT_SUFFIXES_CARRIER.id],
             suffixes: [{ mod: "dual side", tier: 1 }],
         });
-        const removed = checkPresent(craft(withPrefix, [op("annul")]), { registry: dual });
+        const removed = check(craft(withPrefix, [op("annul")]), { registry: dual });
         expect(removed.diagnostics).toEqual([]);
         expect(guaranteedTypes(removed.finalState!).has(DUAL_SIDE_AMULET_SUFFIX.type)).toBe(true);
     });
 
     it("a present modifier's added tag keeps a blocked modifier out of the add-pool", () => {
         // Alpha adds a tag on which beta has a zero weight: with alpha guaranteed, no
-        // exalt can ever add beta, so a loop waiting for it can never exit.
+        // exalt can ever add beta, so a loop waiting for it can never exit. The
+        // exalt is used only while a prefix is open, so the item never fills.
         const tagged = buildRegistry({
             bases: [RING_BASE],
             mods: [...CATALOG, SPECIFIC_WEAPON_A, SPECIFIC_WEAPON_B],
@@ -1314,12 +1327,10 @@ describe("checker — per-base affix caps (experimented bases)", () => {
             rarity: "rare",
             prefixes: ["SpecificWeaponA1"],
         });
-        const r = checkPresent(
-            craft(withAlpha, [until(has("specific weapon beta"), [op("exalt")])]),
-            {
-                registry: tagged,
-            },
-        );
+        const waits = until(has("specific weapon beta"), [
+            iff(cmp("prefixCount", "<", 3), [op("exalt")]),
+        ]);
+        const r = check(craft(withAlpha, [waits]), { registry: tagged });
         expect(r.diagnostics[0]?.message).toContain("can never exit");
     });
 
@@ -1332,9 +1343,9 @@ describe("checker — per-base affix caps (experimented bases)", () => {
             baseAliases: { "Iron Ring": "IronRing" },
         });
         const ring = item({ base: "Iron Ring", ilvl: 100, rarity: "rare" });
-        const r = checkPresent(craft(ring, [op("chaos")]), { registry: staffy });
-        expect(r.finalState!.possible.has(STAFFY_ENABLED.type)).toBe(true);
-        const loop = checkPresent(craft(ring, [until(has("staffy enabled"), [op("chaos")])]), {
+        const r = check(craft(ring, [op("chaos")]), { registry: staffy });
+        expect(v.possibleTypes(r.finalState!).has(STAFFY_ENABLED.type)).toBe(true);
+        const loop = check(craft(ring, [until(has("staffy enabled"), [op("chaos")])]), {
             registry: staffy,
         });
         expect(loop.diagnostics).toEqual([]);
@@ -1351,11 +1362,11 @@ describe("checker — per-base affix caps (experimented bases)", () => {
         });
         const ring = item({ base: "Iron Ring", ilvl: 100, rarity: "rare" });
         // The annul reopens a slot, since a chaos may fill the item.
-        const r = checkPresent(craft(ring, [op("chaos"), op("annul"), op("exalt")]), {
+        const r = check(craft(ring, [op("chaos"), op("annul"), op("exalt")]), {
             registry: staffy,
         });
-        expect(r.finalState!.possible.has(STAFFY_ADDER.type)).toBe(true);
-        expect(r.finalState!.possible.has(STAFFY_ENABLED.type)).toBe(true);
+        expect(v.possibleTypes(r.finalState!).has(STAFFY_ADDER.type)).toBe(true);
+        expect(v.possibleTypes(r.finalState!).has(STAFFY_ENABLED.type)).toBe(true);
     });
 
     it("the item block rejects a count over the combined cap (three suffixes on a magic Ratcheting)", () => {
@@ -1368,9 +1379,9 @@ describe("checker — per-base affix caps (experimented bases)", () => {
             rarity: "magic",
             suffixes: ["random", "random", "random"],
         });
-        const r = checkPresent(craft(over, []), ctx);
+        const r = check(craft(over, []), ctx);
         expect(r.diagnostics[0]?.message).toContain("too many modifiers");
-        expect(r.finalState!.counts.total).toEqual([2, 2]);
+        expect(v.counts(r.finalState!).total).toEqual([2, 2]);
     });
 
     it("a named side also needs the total under its cap (bench a suffix on a full magic Ratcheting)", () => {
@@ -1389,18 +1400,15 @@ describe("checker — per-base affix caps (experimented bases)", () => {
             rarity: "magic",
             suffixes: ["random", "random"],
         });
-        const r = checkPresent(craft(full, [bench("fire resistance")]), { registry: suffixBench });
+        const r = check(craft(full, [bench("fire resistance")]), { registry: suffixBench });
         expect(r.diagnostics[0]?.message).toContain("open suffix slot");
     });
 
     it("rare Simplex is full after a reforge: exalt fails, but works after an annul reopens a slot", () => {
-        const full = checkPresent(
-            craft(normal("Simplex Amulet"), [op("alchemy"), op("exalt")]),
-            ctx,
-        );
+        const full = check(craft(normal("Simplex Amulet"), [op("alchemy"), op("exalt")]), ctx);
         expect(full.diagnostics.some((d) => d.message.toLowerCase().includes("open"))).toBe(true);
 
-        const reopened = checkPresent(
+        const reopened = check(
             craft(normal("Simplex Amulet"), [op("alchemy"), op("annul"), op("exalt")]),
             ctx,
         );
@@ -1408,12 +1416,9 @@ describe("checker — per-base affix caps (experimented bases)", () => {
     });
 
     it("scour on a 0-cap magic base is not wasted currency (blue → white)", () => {
-        const r = checkPresent(
-            craft(normal("Simplex Amulet"), [op("transmute"), op("scour")]),
-            ctx,
-        );
+        const r = check(craft(normal("Simplex Amulet"), [op("transmute"), op("scour")]), ctx);
         expect(r.diagnostics).toEqual([]); // scour still drops the rarity
-        expect(r.finalState!.rarities).toEqual(new Set(["normal"]));
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["normal"]));
     });
 });
 
@@ -1422,18 +1427,18 @@ describe("checker — flasks cap at Magic (no Rare flasks)", () => {
         item({ base: "Life Flask", ilvl: 100, rarity });
 
     it("transmute → augment on a flask is fine (Magic is allowed)", () => {
-        const r = checkPresent(craft(flask("normal"), [op("transmute")]), ctx);
+        const r = check(craft(flask("normal"), [op("transmute")]), ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.rarities).toEqual(new Set(["magic"]));
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["magic"]));
     });
 
     it("alchemy on a flask is rejected — it cannot be made Rare", () => {
-        const r = checkPresent(craft(flask("normal"), [op("alchemy")]), ctx);
+        const r = check(craft(flask("normal"), [op("alchemy")]), ctx);
         expect(r.diagnostics[0]?.message).toContain("cannot be made Rare");
     });
 
     it("regal on a magic flask is rejected", () => {
-        const r = checkPresent(craft(flask("normal"), [op("transmute"), op("regal")]), ctx);
+        const r = check(craft(flask("normal"), [op("transmute"), op("regal")]), ctx);
         expect(r.diagnostics.some((d) => d.message.includes("cannot be made Rare"))).toBe(true);
     });
 
@@ -1451,12 +1456,12 @@ describe("checker — flasks cap at Magic (no Rare flasks)", () => {
     });
 
     it("declaring a Rare flask in the item block is flagged", () => {
-        const r = checkPresent(craft(flask("rare"), []), ctx);
+        const r = check(craft(flask("rare"), []), ctx);
         expect(r.diagnostics.some((d) => d.message.includes("cannot be Rare"))).toBe(true);
     });
 });
 
-describe("checker — count refinement through disjunctions", () => {
+describe("checker — counts read through disjunctions", () => {
     // Mirrors example.craft: a 2-mod Rare proven to hold ≥2 resistances (all
     // suffixes) must have 0 prefixes — so benching a life PREFIX is safe.
     const twoEleRes = orp(
@@ -1471,9 +1476,9 @@ describe("checker — count refinement through disjunctions", () => {
         const c = craft(rareRing(["random"], ["random"]), [
             until(twoEleRes, [op("annul"), op("exalt")]),
         ]);
-        const st = checkPresent(c, ctx).finalState!;
-        expect(st.counts.total).toEqual([2, 2]);
-        expect(st.counts.prefix).toEqual([0, 0]); // both affixes are the proven suffixes
+        const st = check(c, ctx).finalState!;
+        expect(v.counts(st).total).toEqual([2, 2]);
+        expect(v.counts(st).prefix).toEqual([0, 0]); // both affixes are the proven suffixes
         expect(suffixRange(st)).toEqual([2, 2]);
     });
 
@@ -1488,10 +1493,10 @@ describe("checker — count refinement through disjunctions", () => {
             op("annul"),
             iff(fireOrBoth, [op("annul")]),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         const inside = r.trace.filter((e) => e.kind === "operation").at(-1)!;
-        expect(inside.before.counts.prefix).toEqual([2, 3]);
+        expect(v.counts(inside.before).prefix).toEqual([2, 3]);
     });
 
     it("allows benching a life prefix afterwards — the group is provably absent", () => {
@@ -1499,9 +1504,9 @@ describe("checker — count refinement through disjunctions", () => {
             until(twoEleRes, [op("annul"), op("exalt")]),
             bench("maximum life"),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.counts.prefix).toEqual([1, 1]); // the benched life prefix
+        expect(v.counts(r.finalState!).prefix).toEqual([1, 1]); // the benched life prefix
     });
 
     it("a branch's narrowed count keeps the proven suffix disjunction's floor", () => {
@@ -1512,14 +1517,15 @@ describe("checker — count refinement through disjunctions", () => {
             until(twoEleRes, [op("annul"), op("exalt")]),
             iff(cmp("prefixCount", "==", 3), [op("exalt")], []),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         const inside = r.trace.find(
             (e) =>
                 e.kind === "operation" &&
-                e.before.counts.prefix[0] === 3 &&
-                e.before.counts.prefix[1] === 3,
+                v.counts(e.before).prefix[0] === 3 &&
+                v.counts(e.before).prefix[1] === 3,
         );
-        expect(inside?.before.counts.total).toEqual([5, 6]);
+        expect(inside).toBeDefined();
+        expect(v.counts(inside!.before).total).toEqual([5, 6]);
     });
 
     it("keeps a disjunctive guarantee through an additive op (exalt)", () => {
@@ -1530,29 +1536,29 @@ describe("checker — count refinement through disjunctions", () => {
             op("exalt"), // additive; must not forget "A or B"
             iff(andp(notp(has("IncreasedLife1")), notp(has("FireResist1"))), [op("annul")]),
         ]);
-        expect(
-            checkPresent(c, ctx).diagnostics.some((d) => d.message.includes("can never run")),
-        ).toBe(true);
+        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("can never run"))).toBe(
+            true,
+        );
     });
 });
 
 describe("checker — the one-crafted-mod limit", () => {
     it("a second bench craft replaces the crafted mod, so one stays", () => {
         const c = craft(rareRing(), [bench("maximum life"), bench("maximum life")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.crafted).toEqual([1, 1]);
-        expect(r.finalState!.counts.total).toEqual([1, 1]);
+        expect(v.craftedCount(r.finalState!)).toEqual([1, 1]);
+        expect(v.counts(r.finalState!).total).toEqual([1, 1]);
     });
 
     it("tracks the crafted-mod count; a reforge clears it", () => {
-        const benched = checkPresent(craft(rareRing(), [bench("maximum life")]), ctx).finalState!;
-        expect(benched.crafted).toEqual([1, 1]);
-        const reforged = checkPresent(
+        const benched = check(craft(rareRing(), [bench("maximum life")]), ctx).finalState!;
+        expect(v.craftedCount(benched)).toEqual([1, 1]);
+        const reforged = check(
             craft(rareRing(), [bench("maximum life"), op("chaos")]),
             ctx,
         ).finalState!;
-        expect(reforged.crafted).toEqual([0, 0]); // chaos discards the crafted mod
+        expect(v.craftedCount(reforged)).toEqual([0, 0]); // chaos discards the crafted mod
     });
 
     it("an annul may or may not remove the crafted mod; a re-bench adds or replaces", () => {
@@ -1561,25 +1567,25 @@ describe("checker — the one-crafted-mod limit", () => {
             op("annul"),
             bench("maximum life"),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.crafted).toEqual([1, 1]);
+        expect(v.craftedCount(r.finalState!)).toEqual([1, 1]);
     });
 });
 
 describe("checker — the item block rejects modifiers that cannot share an item", () => {
     it("the same modifier declared twice", () => {
-        const r = checkPresent(craft(rareRing(["IncreasedLife1", "IncreasedLife2"]), []), ctx);
+        const r = check(craft(rareRing(["IncreasedLife1", "IncreasedLife2"]), []), ctx);
         expect(r.diagnostics[0]?.message).toContain("tiers of one modifier");
     });
 
     it("two modifiers of one group", () => {
-        const r = checkPresent(craft(rareRing([], ["FireResist1", "FireChaosResist1"]), []), ctx);
+        const r = check(craft(rareRing([], ["FireResist1", "FireChaosResist1"]), []), ctx);
         expect(r.diagnostics[0]?.message).toContain("same group");
     });
 
     it("a row of another domain, named by id", () => {
-        const r = checkPresent(craft(rareRing(["FlaskRecovery1"]), []), ctx);
+        const r = check(craft(rareRing(["FlaskRecovery1"]), []), ctx);
         expect(r.diagnostics[0]?.message).toContain("cannot roll on");
     });
 });
@@ -1591,10 +1597,11 @@ describe("checker — exclusions through a strip and a forced row", () => {
         const c = craft(rareRing(["random"]), [
             iff(andp(notp(has(AMULET_ONLY.id)), notp(has("FireResist1"))), [op("chaos")]),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         const after = r.trace.find((e) => e.kind === "operation")!.after!;
-        expect(excludedTypes(after).has(AMULET_ONLY.type)).toBe(true);
-        expect(excludedTypes(after).has(FIRE_RESIST.type)).toBe(false);
+        const excluded = excludedTypes(after, [AMULET_ONLY.type, FIRE_RESIST.type]);
+        expect(excluded.has(AMULET_ONLY.type)).toBe(true);
+        expect(excluded.has(FIRE_RESIST.type)).toBe(false);
     });
 
     it("an essence forces its row onto an item that had excluded it", () => {
@@ -1603,11 +1610,11 @@ describe("checker — exclusions through a strip and a forced row", () => {
         const c = craft(rareRing(["random"]), [
             iff(notp(has("IncreasedLife1")), [essence("Deafening Essence of Greed")]),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        const after = r.trace.find((e) => e.kind === "operation")!.after!;
-        expect(after.presence).not.toBe(after.bdd.FALSE);
-        expect(guaranteedTypes(after).has(LIFE_T1.type)).toBe(true);
+        const after = r.trace.find((e) => e.kind === "operation")!.after;
+        expect(after).toBeDefined();
+        expect(guaranteedTypes(after!).has(LIFE_T1.type)).toBe(true);
     });
 });
 
@@ -1617,8 +1624,8 @@ describe("checker — a transmute lays down one or two modifiers", () => {
             op("transmute"),
             op("augment"),
         ]);
-        const r = checkPresent(c, ctx);
-        expect(r.trace.find((e) => e.kind === "operation")!.after!.counts.total).toEqual([1, 2]);
+        const r = check(c, ctx);
+        expect(v.counts(r.trace.find((e) => e.kind === "operation")!.after!).total).toEqual([1, 2]);
         expect(r.diagnostics[0]?.message).toContain("open affix slot");
     });
 });

@@ -201,6 +201,11 @@ export function checkExact(
 export const UNJUDGED =
     "This step could not be checked, so the craft is not judged from here: the checker does not handle something about it. Please report it";
 
+/** The words of an item block no item answers to, where no fault of a field
+ *  says why: the base cannot roll enough different modifiers to fill the
+ *  affixes it declares, or what it declares cannot sit together. */
+const NO_ITEM = "No item can have everything this item block declares on this base.";
+
 /** The check the tool runs. */
 export const check = checkExact;
 export type CheckResult = ExactCheckResult;
@@ -321,12 +326,16 @@ class ExactChecker {
             return r;
         };
         try {
+            const said = this.diagnostics.length;
             const start = startOf(
                 this.ctx.registry,
                 craft,
                 (m, span) => this.diag(m, span),
                 this.tuning.maxNodes === undefined ? {} : { maxNodes: this.tuning.maxNodes },
             );
+            if (start !== null && start.state === null && this.diagnostics.length === said) {
+                this.diag(NO_ITEM, craft.item.span);
+            }
             if (start === null || start.state === null) return done();
             this.u = start.u;
             const first = start.state;

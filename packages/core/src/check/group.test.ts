@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent, type CheckContext } from "./check.js";
-import { disjunctiveGuarantees, isExcluded } from "./astate.js";
+import { type CheckContext } from "./check.js";
+import { check } from "../exact/check.js";
+import { disjunctiveGuarantees, isExcluded } from "../exact/views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { bench, craft, has, iff, item, notp, op, until } from "../__fixtures__/ast.js";
 import {
@@ -38,7 +39,7 @@ describe("has group", () => {
         const c = craft(ring(["random"], [FIRE_RESIST.id]), [
             iff(notp(group("maximum life")), [bench("maximum life")]),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
     });
 
@@ -46,9 +47,9 @@ describe("has group", () => {
         const c = craft(ring([LIFE_T1.id], ["random"]), [
             iff(group(FIRE_RESIST.id), [op("exalt")], [op("annul")]),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        const inside = checkPresent(
+        const inside = check(
             craft(ring([LIFE_T1.id], ["random"]), [until(group(FIRE_RESIST.id), [op("chaos")])]),
             ctx,
         );
@@ -60,7 +61,7 @@ describe("has group", () => {
     });
 
     it("is impossible when no member of the group can be on the item", () => {
-        const r = checkPresent(
+        const r = check(
             craft(ring([LIFE_T1.id]), [iff(group(FIRE_RESIST.id), [op("exalt")])]),
             ctx,
         );
@@ -70,12 +71,12 @@ describe("has group", () => {
     });
 
     it("excludes every member after the negative branch", () => {
-        const r = checkPresent(
+        const r = check(
             craft(ring([LIFE_T1.id], ["random"]), [iff(group(FIRE_RESIST.id), [op("annul")])]),
             ctx,
         );
         expect(r.diagnostics).toEqual([]);
-        const after = checkPresent(
+        const after = check(
             craft(ring([LIFE_T1.id], ["random"]), [
                 until(notp(group(FIRE_RESIST.id)), [op("annul")]),
             ]),

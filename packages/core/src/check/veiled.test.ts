@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent, type CheckContext } from "./check.js";
-import { guaranteedTypes } from "./astate.js";
+import { type CheckContext } from "./check.js";
+import { check } from "../exact/check.js";
+import * as v from "../exact/views.js";
+import { guaranteedTypes } from "../exact/views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, has, iff, item, notp, op, orp, stop, unveil, veiled } from "../__fixtures__/ast.js";
 import {
@@ -13,12 +15,14 @@ import {
     PROTECT_PREFIXES_CARRIER,
     PROTECT_SUFFIXES_CARRIER,
     RING_BASE,
+    VEILED_A,
     VEILED_CATALOG,
     VEILED_PREFIX_MOD,
     VEILED_SUFFIX_MOD,
 } from "../__fixtures__/mods.js";
 import { veiledPool } from "../pool/veiled.js";
-import { GroupId, TypeId } from "../model/ids.js";
+import { GroupId, ModId, TypeId } from "../model/ids.js";
+import type { Mod } from "../model/mod.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE, AMULET_BASE],
@@ -31,7 +35,7 @@ const rareRing = (suffixes: string[] = []) =>
     item({ base: "Iron Ring", ilvl: 100, rarity: "rare", suffixes });
 const rareAmulet = () => item({ base: "Coral Amulet", ilvl: 100, rarity: "rare" });
 
-const guaranteed = (r: ReturnType<typeof checkPresent>): Set<string> =>
+const guaranteed = (r: ReturnType<typeof check>): Set<string> =>
     new Set([...guaranteedTypes(r.finalState!)]);
 
 describe("veiledPool", () => {
@@ -54,12 +58,12 @@ describe("veiledPool", () => {
 
 describe("veiled orbs", () => {
     it("veiled chaos leaves a veiled mod ready to unveil", () => {
-        const r = checkPresent(craft(rareRing(), [veiled("chaos"), unveil()]), ctx);
+        const r = check(craft(rareRing(), [veiled("chaos"), unveil()]), ctx);
         expect(r.diagnostics).toEqual([]);
     });
 
     it("unveil without a veiled mod fails", () => {
-        const r = checkPresent(craft(rareRing(), [unveil()]), ctx);
+        const r = check(craft(rareRing(), [unveil()]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("veiled modifier");
     });
@@ -72,22 +76,19 @@ describe("veiled orbs", () => {
             prefixes: ["VeiledPrefix"],
             corrupted: true,
         });
-        expect(checkPresent(craft(corrupted, [unveil()]), ctx).diagnostics).toEqual([]);
-        const again = checkPresent(craft(corrupted, [unveil(), veiled("exalt")]), ctx);
+        expect(check(craft(corrupted, [unveil()]), ctx).diagnostics).toEqual([]);
+        const again = check(craft(corrupted, [unveil(), veiled("exalt")]), ctx);
         expect(again.diagnostics[0]?.message).toContain("The item is corrupted");
     });
 
     it("a veiled orb is refused while a veiled modifier is pending", () => {
-        const r = checkPresent(craft(rareRing(), [veiled("chaos"), veiled("exalt")]), ctx);
+        const r = check(craft(rareRing(), [veiled("chaos"), veiled("exalt")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("veiled or unveiled modifier");
     });
 
     it("a veiled exalt is refused once an unveiled modifier may be on the item", () => {
-        const r = checkPresent(
-            craft(rareRing(), [veiled("chaos"), unveil(), veiled("exalt")]),
-            ctx,
-        );
+        const r = check(craft(rareRing(), [veiled("chaos"), unveil(), veiled("exalt")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("veiled or unveiled modifier");
     });
@@ -95,12 +96,12 @@ describe("veiled orbs", () => {
     it("a veiled orb is refused on an item that declares an unveiled modifier", () => {
         // The declared row shares its type with a natural row listed first, so only
         // the rows the type may be, not the first row, reveal it as unveiled.
-        const r = checkPresent(craft(rareRing(["SharedVeilUnveiled1"]), [veiled("exalt")]), ctx);
+        const r = check(craft(rareRing(["SharedVeilUnveiled1"]), [veiled("exalt")]), ctx);
         expect(r.diagnostics[0]!.message).toContain("veiled or unveiled modifier");
     });
 
     it("a veiled chaos reforges an unveiled modifier away, so it is not refused", () => {
-        const r = checkPresent(craft(rareRing(["SharedVeilUnveiled1"]), [veiled("chaos")]), ctx);
+        const r = check(craft(rareRing(["SharedVeilUnveiled1"]), [veiled("chaos")]), ctx);
         expect(r.diagnostics).toEqual([]);
     });
 
@@ -115,10 +116,10 @@ describe("veiled orbs", () => {
             prefixes: ["VeiledPrefix"],
             suffixes: [PROTECT_PREFIXES_CARRIER.id],
         });
-        const r = checkPresent(craft(kept, [veiled("chaos")]), ctx);
+        const r = check(craft(kept, [veiled("chaos")]), ctx);
         expect(r.diagnostics[0]!.message).toContain("veiled or unveiled modifier");
         const rerolled = rareRing(["SharedVeilUnveiled1", PROTECT_PREFIXES_CARRIER.id]);
-        expect(checkPresent(craft(rerolled, [veiled("chaos")]), ctx).diagnostics).toEqual([]);
+        expect(check(craft(rerolled, [veiled("chaos")]), ctx).diagnostics).toEqual([]);
     });
 
     it("a veiled chaos is refused when a protected side keeps an unveiled modifier", () => {
@@ -129,7 +130,7 @@ describe("veiled orbs", () => {
             prefixes: [PROTECT_SUFFIXES_CARRIER.id],
             suffixes: ["SharedVeilUnveiled1"],
         });
-        const r = checkPresent(craft(kept, [veiled("chaos")]), ctx);
+        const r = check(craft(kept, [veiled("chaos")]), ctx);
         expect(r.diagnostics[0]!.message).toContain("would survive the reforge");
     });
 
@@ -140,7 +141,7 @@ describe("veiled orbs", () => {
             rarity: "rare",
             suffixes: [{ mod: "SharedVeilUnveiled1", fractured: true }],
         });
-        const r = checkPresent(craft(kept, [veiled("chaos")]), ctx);
+        const r = check(craft(kept, [veiled("chaos")]), ctx);
         expect(r.diagnostics[0]!.message).toContain("would survive the reforge");
     });
 
@@ -153,40 +154,58 @@ describe("veiled orbs", () => {
             prefixes: ["random", "random"],
             suffixes: ["SharedVeilUnveiled1", "random"],
         });
-        const r = checkPresent(craft(start, [op("fracture"), veiled("chaos")]), ctx);
+        const r = check(craft(start, [op("fracture"), veiled("chaos")]), ctx);
         expect(r.diagnostics[0]!.message).toContain("would survive the reforge");
     });
 
     it("has no word for Aisling's retired safehouse bench", () => {
-        const r = checkPresent(craft(rareRing(["FireResist1"]), [op("aisling")]), ctx);
+        const r = check(craft(rareRing(["FireResist1"]), [op("aisling")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
     });
 
     it("veiled exalt keeps the affix count (removes one, adds the veiled mod)", () => {
-        const r = checkPresent(craft(rareRing(["random", "random"]), [veiled("exalt")]), ctx);
+        const r = check(craft(rareRing(["random", "random"]), [veiled("exalt")]), ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.counts.total).toEqual([2, 2]);
+        expect(v.counts(r.finalState!).total).toEqual([2, 2]);
     });
 });
 
 describe("unveil", () => {
+    // A veiled modifier unveils into a result of its own side, so each craft
+    // goes on only where the orb laid a veiled suffix.
+    const suffixOnly = iff(notp(has("VeiledSuffix")), [stop()]);
+
     it("guarantees a target when the pool is 3 or fewer", () => {
-        const r = checkPresent(craft(rareRing(), [veiled("chaos"), unveil("double damage")]), ctx);
+        const r = check(
+            craft(rareRing(), [veiled("chaos"), suffixOnly, unveil("double damage")]),
+            ctx,
+        );
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).toContain("VeiledDoubleDamage");
     });
 
     it("cannot guarantee a target when more than 3 options remain", () => {
-        const r = checkPresent(
-            craft(rareAmulet(), [veiled("chaos"), unveil("double damage")]),
-            ctx,
-        );
+        const more = (name: string): Mod => ({
+            ...VEILED_A,
+            id: ModId(name),
+            type: TypeId(name),
+            families: new Set([GroupId(name)]),
+            text: `veiled ${name}`,
+        });
+        const wide = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...CATALOG, ...VEILED_CATALOG, more("VeiledExtraOne"), more("VeiledExtraTwo")],
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
+        const r = check(craft(rareRing(), [veiled("chaos"), suffixOnly, unveil("double damage")]), {
+            registry: wide,
+        });
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toMatch(/block the pool|3 or fewer/);
     });
 
     it("rejects a target that isn't an available option", () => {
-        const r = checkPresent(craft(rareRing(), [veiled("chaos"), unveil("maximum life")]), ctx);
+        const r = check(craft(rareRing(), [veiled("chaos"), unveil("maximum life")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("not an available unveil option");
     });
@@ -197,7 +216,7 @@ describe("unveil", () => {
             unveil(),
             iff(has("cast speed"), [op("scour")]),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         // The `if has "cast speed"` branch is reachable (one possible unveil outcome),
         // so no dead-branch diagnostic.
         expect(r.diagnostics).toEqual([]);
@@ -206,16 +225,17 @@ describe("unveil", () => {
 
 describe("a veiled orb on an item whose placeholders were proven absent", () => {
     it("relaxes the exclusion before asserting the placeholder", () => {
-        // Inside the branch both placeholder types are excluded; the orb's fill
-        // must lift that before it asserts one is present, or the state is a
-        // contradiction under which every later check holds vacuously.
+        // Inside the branch no placeholder is on the item; the orb lays one
+        // there, so items go on past it rather than none, under which every
+        // later check would hold vacuously.
         const c = craft(
             item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes: ["random"] }),
             [iff(notp(orp(has("VeiledPrefix"), has("VeiledSuffix"))), [veiled("chaos")])],
         );
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.presence).not.toBe(r.finalState!.bdd.FALSE);
+        const orb = r.trace.find((e) => e.kind === "operation");
+        expect(orb?.after).toBeDefined();
     });
 });
 
@@ -245,7 +265,7 @@ describe("a modifier unveiled on the other side from its natural row", () => {
             prefixes: ["random"],
             suffixes: ["random"],
         });
-        const r = checkPresent(craft(random, [veiled("exalt")]), { registry: cross });
+        const r = check(craft(random, [veiled("exalt")]), { registry: cross });
         expect(r.diagnostics).toEqual([]);
         const named = item({
             base: "Iron Ring",
@@ -255,7 +275,7 @@ describe("a modifier unveiled on the other side from its natural row", () => {
             suffixes: ["random"],
         });
         expect(
-            checkPresent(craft(named, [veiled("exalt")]), { registry: cross }).diagnostics,
+            check(craft(named, [veiled("exalt")]), { registry: cross }).diagnostics,
         ).toHaveLength(1);
     });
 
@@ -264,7 +284,7 @@ describe("a modifier unveiled on the other side from its natural row", () => {
         // suffix is a natural row; where the arms meet it is still one.
         const random = item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes: ["random"] });
         const c = craft(random, [iff(has("IncreasedLife1"), [op("exalt")]), veiled("exalt")]);
-        expect(checkPresent(c, { registry: cross }).diagnostics).toEqual([]);
+        expect(check(c, { registry: cross }).diagnostics).toEqual([]);
     });
 
     it("may be the unnamed affix of that side, so a later veiled orb is refused", () => {
@@ -279,7 +299,7 @@ describe("a modifier unveiled on the other side from its natural row", () => {
             prefixes: ["IncreasedLife1", PROTECT_SUFFIXES_CARRIER.id],
             suffixes: ["FireResist1", "ColdResist1", "LightningResist1"],
         });
-        const r = checkPresent(craft(locked, [veiled("exalt"), unveil(), veiled("exalt")]), {
+        const r = check(craft(locked, [veiled("exalt"), unveil(), veiled("exalt")]), {
             registry: cross,
         });
         expect(r.diagnostics).toHaveLength(1);
@@ -312,6 +332,6 @@ describe("a veiled orb after an unveiled modifier has provably gone", () => {
             iff(bricked, [stop()]),
             veiled("exalt"),
         ]);
-        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 });

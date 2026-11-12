@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent, type CheckContext } from "./check.js";
+import { type CheckContext } from "./check.js";
+import { check } from "../exact/check.js";
+import * as v from "../exact/views.js";
 import { BddManager } from "./bdd.js";
 import { type InitialCounts, initialState, join, refine } from "./astate.js";
 import { runMethod } from "./ops.js";
@@ -10,6 +12,7 @@ import { preconditionMessage, renderState } from "./diagnostics.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { corruptedP, craft, has, iff, influencedP, item, op, until } from "../__fixtures__/ast.js";
 import { CATALOG, HUNTER_RING_SUFFIX, RING_BASE } from "../__fixtures__/mods.js";
+import { rowIds } from "../__fixtures__/views.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE],
@@ -27,22 +30,18 @@ const ctx: CheckContext = { registry };
 const ring = (extra: { influences?: ("hunter" | "shaper")[]; corrupted?: boolean } = {}) =>
     item({ base: "Iron Ring", ilvl: 100, rarity: "rare", ...extra });
 
-const messages = (c: ReturnType<typeof craft>) =>
-    checkPresent(c, ctx).diagnostics.map((d) => d.message);
+const messages = (c: ReturnType<typeof craft>) => check(c, ctx).diagnostics.map((d) => d.message);
 
 describe("influence", () => {
     it("widens the pool with the influence's rows, and only then", () => {
-        const influenced = checkPresent(
-            craft(ring({ influences: ["hunter"] }), [op("chaos")]),
-            ctx,
-        );
+        const influenced = check(craft(ring({ influences: ["hunter"] }), [op("chaos")]), ctx);
         expect(influenced.diagnostics).toEqual([]);
-        expect(influenced.finalState!.possible.has(HUNTER_RING_SUFFIX.type)).toBe(true);
+        expect(v.possibleTypes(influenced.finalState!).has(HUNTER_RING_SUFFIX.type)).toBe(true);
 
-        const plain = checkPresent(craft(ring(), [op("chaos")]), ctx);
-        expect(plain.finalState!.possible.has(HUNTER_RING_SUFFIX.type)).toBe(false);
-        const other = checkPresent(craft(ring({ influences: ["shaper"] }), [op("chaos")]), ctx);
-        expect(other.finalState!.possible.has(HUNTER_RING_SUFFIX.type)).toBe(false);
+        const plain = check(craft(ring(), [op("chaos")]), ctx);
+        expect(v.possibleTypes(plain.finalState!).has(HUNTER_RING_SUFFIX.type)).toBe(false);
+        const other = check(craft(ring({ influences: ["shaper"] }), [op("chaos")]), ctx);
+        expect(v.possibleTypes(other.finalState!).has(HUNTER_RING_SUFFIX.type)).toBe(false);
     });
 
     it("makes an until on an influence modifier reachable", () => {
@@ -59,19 +58,16 @@ describe("influence", () => {
             suffixes: [{ mod: "Hunter ring suffix", tier: 1 }],
             influences: ["hunter"],
         });
-        expect(checkPresent(craft(declared, [op("exalt")]), ctx).diagnostics).toEqual([]);
+        expect(check(craft(declared, [op("exalt")]), ctx).diagnostics).toEqual([]);
         const hunter = item({
             base: "Iron Ring",
             ilvl: 100,
             rarity: "rare",
             influences: ["hunter"],
         });
-        const r = checkPresent(
-            craft(hunter, [until(has("Hunter ring suffix", 1), [op("chaos")])]),
-            ctx,
-        );
+        const r = check(craft(hunter, [until(has("Hunter ring suffix", 1), [op("chaos")])]), ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.tiers.get(HUNTER_RING_SUFFIX.type)).toEqual(
+        expect(rowIds(r.finalState!, HUNTER_RING_SUFFIX.type)).toEqual(
             new Set([HUNTER_RING_SUFFIX.id]),
         );
         const plain = item({
@@ -92,7 +88,7 @@ describe("influence", () => {
             suffixes: ["cold"],
             influences: ["shaper", "elder"],
         });
-        const r = checkPresent(
+        const r = check(
             craft(both, [iff(influencedP("shaper"), [op("fracture")], [op("chaos")])]),
             ctx,
         );

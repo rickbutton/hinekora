@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent, type CheckContext } from "./check.js";
+import { type CheckContext } from "./check.js";
+import { check } from "../exact/check.js";
+import * as v from "../exact/views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { bench, cmp, craft, iff, item, notp, op, stop } from "../__fixtures__/ast.js";
 import {
@@ -28,9 +30,9 @@ describe("a side the named modifiers fill", () => {
             item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes: [LIFE_T1.id] }),
             [op("exalt"), iff(notp(cmp("prefixCount", "==", 1)), [stop()])],
         );
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        const possible = r.finalState!.possible;
+        const possible = v.possibleTypes(r.finalState!);
         expect(possible.has(LIFE_T1.type)).toBe(true);
         expect(possible.has(INCREASED_MANA.type)).toBe(false);
         expect(possible.has(INCREASED_ARMOUR.type)).toBe(false);
@@ -41,6 +43,6 @@ describe("a side the named modifiers fill", () => {
             item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes: [INCREASED_MANA.id] }),
             [op("exalt"), iff(notp(cmp("prefixCount", "==", 1)), [stop()]), bench("maximum life")],
         );
-        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 });

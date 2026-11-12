@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent, type CheckContext } from "./check.js";
-import { guaranteedTypes } from "./astate.js";
+import { type CheckContext } from "./check.js";
+import { check } from "../exact/check.js";
+import * as v from "../exact/views.js";
+import { guaranteedTypes } from "../exact/views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { beast, craft, has, iff, item, notp, op, restore, until } from "../__fixtures__/ast.js";
 import { CATALOG, FIRE_RESIST, LIFE_T1, RING_BASE, TALISMAN_BASE } from "../__fixtures__/mods.js";
@@ -24,24 +26,24 @@ describe("imprint and restore", () => {
             op("exalt"),
             restore(),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         const s = r.finalState!;
-        expect(s.rarities).toEqual(new Set(["magic"]));
-        expect(s.counts.total).toEqual([1, 1]);
+        expect(v.rarities(s)).toEqual(new Set(["magic"]));
+        expect(v.counts(s).total).toEqual([1, 1]);
         expect(guaranteedTypes(s).has(LIFE_T1.type)).toBe(true);
-        expect(s.imprint).toBeUndefined();
+        expect(v.imprintOf(s)).toBeUndefined();
     });
 
     it("restores only an imprint held on every path", () => {
-        const none = checkPresent(craft(magicRing(["T1 Life"]), [restore()]), ctx);
+        const none = check(craft(magicRing(["T1 Life"]), [restore()]), ctx);
         expect(none.diagnostics[0]!.message).toContain("No imprint");
         const onePath = craft(magicRing(["T1 Life"]), [
             op("augment"),
             iff(has(FIRE_RESIST.id), [beast({ kind: "imprint" })]),
             restore(),
         ]);
-        expect(checkPresent(onePath, ctx).diagnostics[0]!.message).toContain("No imprint");
+        expect(check(onePath, ctx).diagnostics[0]!.message).toContain("No imprint");
     });
 
     it("imprints a Magic item or a Rare talisman, never a fractured one", () => {
@@ -52,8 +54,7 @@ describe("imprint and restore", () => {
             prefixes: ["T1 Life"],
         });
         expect(
-            checkPresent(craft(rareRing, [beast({ kind: "imprint" })]), ctx).diagnostics[0]!
-                .message,
+            check(craft(rareRing, [beast({ kind: "imprint" })]), ctx).diagnostics[0]!.message,
         ).toContain("Magic item or a Rare talisman");
         const talisman = item({
             base: "Talisman",
@@ -61,9 +62,7 @@ describe("imprint and restore", () => {
             rarity: "rare",
             prefixes: ["T1 Life"],
         });
-        expect(
-            checkPresent(craft(talisman, [beast({ kind: "imprint" })]), ctx).diagnostics,
-        ).toEqual([]);
+        expect(check(craft(talisman, [beast({ kind: "imprint" })]), ctx).diagnostics).toEqual([]);
         const fractured = item({
             base: "Iron Ring",
             ilvl: 100,
@@ -71,8 +70,7 @@ describe("imprint and restore", () => {
             prefixes: [{ mod: "IncreasedLife1", fractured: true }],
         });
         expect(
-            checkPresent(craft(fractured, [beast({ kind: "imprint" })]), ctx).diagnostics[0]!
-                .message,
+            check(craft(fractured, [beast({ kind: "imprint" })]), ctx).diagnostics[0]!.message,
         ).toContain("an imprint cannot be made of a fractured item");
     });
 
@@ -85,7 +83,7 @@ describe("imprint and restore", () => {
             op("fracture"),
             restore(),
         ]);
-        expect(checkPresent(c, ctx).diagnostics[0]!.message).toContain(
+        expect(check(c, ctx).diagnostics[0]!.message).toContain(
             "has a fractured modifier — a fractured item cannot take the imprint",
         );
     });
@@ -96,24 +94,24 @@ describe("imprint and restore", () => {
             until(has(FIRE_RESIST.id), [op("alteration")]),
             restore(),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
 
     it("converges when the loop body itself imprints", () => {
-        // Each round imprints a differently rerolled item; the held imprint is
-        // widened with the rest, so the loop settles and the restore applies.
+        // Each round imprints a differently rerolled item; the imprints a round
+        // can hold are finitely many, so the loop settles and the restore applies.
         const c = craft(magicRing(["T1 Life"]), [
             until(has(FIRE_RESIST.id), [op("alteration"), beast({ kind: "imprint" })]),
             restore(),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.rarities).toEqual(new Set(["magic"]));
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["magic"]));
     });
 
-    it("joins imprints of different rarities into one that may be either", () => {
+    it("holds imprints of different rarities, so the restored item may be either", () => {
         // A Magic talisman imprinted on one arm, a Rare one on the other: the
         // restore brings back an item that is Magic or Rare, so a regal after
         // it is refused until the rarity is narrowed.
@@ -133,15 +131,16 @@ describe("imprint and restore", () => {
             restore(),
             op("regal"),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics[0]!.message).toContain("may be Magic or Rare");
         const restored = r.trace.find(
-            (e) => e.kind === "operation" && e.after?.rarities.size === 2,
+            (e) =>
+                e.kind === "operation" && e.after !== undefined && v.rarities(e.after).size === 2,
         )!;
-        expect(restored.after!.rarities).toEqual(new Set(["magic", "rare"]));
+        expect(v.rarities(restored.after!)).toEqual(new Set(["magic", "rare"]));
     });
 
-    it("joins the imprints of two branches that both hold one, and drops it when one lacks it", () => {
+    it("holds the imprints of two branches that both take one, and one taken before a branch", () => {
         const both = craft(magicRing(["T1 Life"]), [
             op("augment"),
             iff(
@@ -152,9 +151,9 @@ describe("imprint and restore", () => {
             op("regal"),
             restore(),
         ]);
-        const r = checkPresent(both, ctx);
+        const r = check(both, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.rarities).toEqual(new Set(["magic"]));
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["magic"]));
         // The alteration branch rerolled the life, so it is no longer guaranteed.
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(false);
         const one = craft(magicRing(["T1 Life"]), [
@@ -162,6 +161,6 @@ describe("imprint and restore", () => {
             iff(notp(has(FIRE_RESIST.id)), [op("regal"), op("scour")]),
             restore(),
         ]);
-        expect(checkPresent(one, ctx).diagnostics).toEqual([]);
+        expect(check(one, ctx).diagnostics).toEqual([]);
     });
 });

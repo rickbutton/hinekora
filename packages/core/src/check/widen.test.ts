@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { checkPresent, type CheckContext } from "./check.js";
+import { check } from "../exact/check.js";
+import * as v from "../exact/views.js";
 import { join, stateEqual, widenRanges } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { cmp, craft, item, op, until } from "../__fixtures__/ast.js";
@@ -72,13 +74,12 @@ describe("widening the numeric ranges of a loop's invariant", () => {
         );
         expect(messages.some((m) => !m.includes("still changing"))).toBe(true);
     });
+});
 
-    it("leaves a loop that converges on its own exact", () => {
-        const r = checkPresent(
-            craft(ring, [until(cmp("prefixCount", ">=", 3), [op("exalt")])]),
-            ctx,
-        );
-        expect(r.finalState!.counts.prefix).toEqual([3, 3]);
-        expect(r.finalState!.strands[1]).toBe(100);
+describe("a loop that settles", () => {
+    it("leaves the items its exit allows", () => {
+        const r = check(craft(ring, [until(cmp("prefixCount", ">=", 3), [op("exalt")])]), ctx);
+        expect(v.counts(r.finalState!).prefix).toEqual([3, 3]);
+        expect(v.strandsRange(r.finalState!)[1]).toBe(100);
     });
 });

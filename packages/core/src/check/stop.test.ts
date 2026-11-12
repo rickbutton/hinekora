@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent, type CheckContext } from "./check.js";
-import { guaranteedTypes, isExcluded } from "./astate.js";
+import { type CheckContext } from "./check.js";
+import { check } from "../exact/check.js";
+import { guaranteedTypes, isExcluded } from "../exact/views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, has, iff, item, notp, op, restart, stop, until } from "../__fixtures__/ast.js";
 import { CATALOG, FIRE_RESIST, LIFE_T1, RING_BASE } from "../__fixtures__/mods.js";
@@ -22,7 +23,7 @@ describe("stop ends the craft on a path", () => {
             op("annul"),
             iff(notp(has(LIFE_T1.id)), [stop()]),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(true);
     });
@@ -31,7 +32,7 @@ describe("stop ends the craft on a path", () => {
         const c = craft(ring([LIFE_T1.id], [FIRE_RESIST.id]), [
             until(notp(has(FIRE_RESIST.id)), [op("annul"), iff(notp(has(LIFE_T1.id)), [stop()])]),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         const s = r.finalState!;
         expect(guaranteedTypes(s).has(LIFE_T1.type)).toBe(true);
@@ -43,7 +44,7 @@ describe("stop ends the craft on a path", () => {
             op("exalt"),
             iff(has(FIRE_RESIST.id), [stop()], [stop()]),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState).toBeUndefined();
     });
@@ -51,7 +52,7 @@ describe("stop ends the craft on a path", () => {
 
 describe("a step written where no path reaches it", () => {
     const messages = (body: Parameters<typeof craft>[1]): string[] =>
-        checkPresent(craft(ring([LIFE_T1.id]), body), ctx).diagnostics.map((d) => d.message);
+        check(craft(ring([LIFE_T1.id]), body), ctx).diagnostics.map((d) => d.message);
 
     it("is reported after a stop, once for the steps that follow", () => {
         expect(messages([op("exalt"), stop(), op("exalt"), op("exalt")])).toEqual([

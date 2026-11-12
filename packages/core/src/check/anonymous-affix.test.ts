@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent, type CheckContext } from "./check.js";
+import { type CheckContext } from "./check.js";
+import { check } from "../exact/check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { bench, craft, has, iff, item, op } from "../__fixtures__/ast.js";
 import { BENCH_LIFE_ROW, CATALOG, CLASS_RING, RING_BASE } from "../__fixtures__/mods.js";
@@ -16,7 +17,7 @@ const ctx: CheckContext = { registry };
 const ring = (prefixes: string[], suffixes: string[] = []) =>
     item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes, suffixes });
 const messages = (c: ReturnType<typeof craft>): string[] =>
-    checkPresent(c, ctx).diagnostics.map((d) => d.message);
+    check(c, ctx).diagnostics.map((d) => d.message);
 
 describe("a declared random affix", () => {
     it("may be the modifier a branch asks about", () => {

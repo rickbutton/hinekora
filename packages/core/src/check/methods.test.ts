@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BddManager } from "./bdd.js";
-import { initialState } from "./astate.js";
-import { type Literal, METHODS } from "./methods.js";
+import { type Literal, METHODS, type MethodItem } from "./methods.js";
 import { type Op } from "./ops.js";
 import {
     BENCH_REMOVE,
@@ -43,6 +41,7 @@ import {
 } from "../__fixtures__/mods.js";
 import type { EssenceSpec } from "../model/sources.js";
 import { TagId } from "../model/ids.js";
+import { eldritchKey, influenceKey } from "../model/marks.js";
 
 const ESSENCE: EssenceSpec = {
     id: "TestLife",
@@ -106,14 +105,13 @@ describe("every method refuses a corrupted item first", () => {
 
     it("holds for each entry of the method table, built with a sample argument per slot", () => {
         // An Exarch implicit, so the Eldritch orbs have a dominant side to build for.
-        const a = initialState(
-            new BddManager(),
-            RING_BASE,
-            100,
-            "rare",
-            { prefixCount: 0, suffixCount: 0, present: new Set(), pinned: new Map(), crafted: 0 },
-            { influences: [], corrupted: false, exarch: 3 },
-        );
+        const a: MethodItem = {
+            base: RING_BASE,
+            ilvl: 100,
+            influences: new Set([influenceKey([])]),
+            eldritch: new Set([eldritchKey(3, 0)]),
+            tiers: new Map(),
+        };
         // Two mod slots in one method (the harvest change) take two elements.
         const sample: Record<string, readonly string[]> = {
             mod: [FIRE_RESIST.id, COLD_RESIST.id],

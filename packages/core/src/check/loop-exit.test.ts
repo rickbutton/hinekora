@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent, type CheckContext } from "./check.js";
+import { type CheckContext } from "./check.js";
+import { check } from "../exact/check.js";
+import * as v from "../exact/views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { andp, cmp, craft, has, iff, isRarity, item, op, until } from "../__fixtures__/ast.js";
-import { RING_BASE, TIERED_CATALOG } from "../__fixtures__/mods.js";
+import { FILLERS, RING_BASE, TIERED_CATALOG } from "../__fixtures__/mods.js";
 
-const registry = buildRegistry({ bases: [RING_BASE], mods: TIERED_CATALOG });
+// The fillers give each side enough modifiers for the full Rare ring to exist.
+const registry = buildRegistry({ bases: [RING_BASE], mods: [...TIERED_CATALOG, ...FILLERS] });
 const ctx: CheckContext = { registry };
 const fullRing = () =>
     item({
@@ -18,21 +21,23 @@ const fullRing = () =>
 describe("checker — a loop whose exit takes several iterations", () => {
     it("is not reported as never exiting", () => {
         // From a full ring, two annuls are needed before both sides can be at
-        // two; the exit is judged against the whole invariant, not one pass.
+        // two; the exit is judged on every item the loop's head holds, not on
+        // those of one pass.
         const c = craft(fullRing(), [
             until(andp(cmp("prefixCount", "<=", 2), cmp("suffixCount", "<=", 2)), [op("annul")]),
         ]);
-        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 
     it("still reports an exit the body only moves away from", () => {
         // An exalt never removes the prefix the item starts with, so no
-        // iteration reaches zero prefixes.
+        // iteration reaches zero prefixes. It is used only while a prefix is
+        // open, so the item never fills and no step of the body is refused.
         const c = craft(
             item({ base: "IronRing", ilvl: 100, rarity: "rare", prefixes: ["maximum life"] }),
-            [until(cmp("prefixCount", "==", 0), [op("exalt")])],
+            [until(cmp("prefixCount", "==", 0), [iff(cmp("prefixCount", "<", 3), [op("exalt")])])],
         );
-        const messages = checkPresent(c, ctx).diagnostics.map((d) => d.message);
+        const messages = check(c, ctx).diagnostics.map((d) => d.message);
         expect(messages.some((m) => m.includes("can never exit"))).toBe(true);
         expect(messages.some((m) => m.includes("has"))).toBe(false);
     });
@@ -51,9 +56,9 @@ describe("checker — the body runs only where the exit predicate is false", () 
             }),
             [until(cmp("prefixCount", "==", 3), [op("exalt")])],
         );
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.counts.total).toEqual([6, 6]);
+        expect(v.counts(r.finalState!).total).toEqual([6, 6]);
     });
 
     it("reports a loop whose exit already holds, so its body never runs", () => {
@@ -61,7 +66,7 @@ describe("checker — the body runs only where the exit predicate is false", () 
             item({ base: "IronRing", ilvl: 100, rarity: "rare", prefixes: ["random"] }),
             [until(cmp("prefixCount", "<=", 3), [op("annul")])],
         );
-        const messages = checkPresent(c, ctx).diagnostics.map((d) => d.message);
+        const messages = check(c, ctx).diagnostics.map((d) => d.message);
         expect(messages).toEqual([expect.stringContaining("this loop's body never runs")]);
     });
 
@@ -77,22 +82,22 @@ describe("checker — the body runs only where the exit predicate is false", () 
             }),
             [until(cmp("prefixCount", "==", 3), [op("exalt"), op("exalt")])],
         );
-        const messages = checkPresent(c, ctx).diagnostics.map((d) => d.message);
+        const messages = check(c, ctx).diagnostics.map((d) => d.message);
         expect(messages.some((m) => m.includes("open affix slot"))).toBe(true);
     });
 });
 
 describe("checker — a modifier the item is known to carry rules out Normal", () => {
     it("leaves a loop entered Normal as Rare once its exit names a modifier", () => {
-        // The head joins the Normal item with the alchemised one; the exit's
+        // The head holds the Normal item and the alchemised ones; the exit's
         // life is a modifier a Normal item cannot hold, so only Rare leaves.
         const c = craft(item({ base: "IronRing", ilvl: 100, rarity: "normal" }), [
             until(has("maximum life"), [iff(isRarity("normal"), [op("alchemy")], [op("scour")])]),
             op("chaos"),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect([...r.finalState!.rarities]).toEqual(["rare"]);
+        expect([...v.rarities(r.finalState!)]).toEqual(["rare"]);
     });
 
     it("leaves a loop that may be Magic as Rare once its exit needs two prefixes", () => {
@@ -103,8 +108,8 @@ describe("checker — a modifier the item is known to carry rules out Normal", (
             ]),
             op("chaos"),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect([...r.finalState!.rarities]).toEqual(["rare"]);
+        expect([...v.rarities(r.finalState!)]).toEqual(["rare"]);
     });
 });

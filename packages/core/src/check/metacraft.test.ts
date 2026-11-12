@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent, type CheckContext } from "./check.js";
-import { disjunctiveGuarantees, guaranteedTypes } from "./astate.js";
+import { type CheckContext } from "./check.js";
+import { check } from "../exact/check.js";
+import * as v from "../exact/views.js";
+import { disjunctiveGuarantees, guaranteedTypes } from "../exact/views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import {
     beast,
@@ -18,6 +20,7 @@ import {
 } from "../__fixtures__/ast.js";
 import {
     ATTACK_PREFIX,
+    ATTACK_SPEED,
     CANNOT_ROLL_ATTACK_CARRIER,
     CATALOG,
     CLASS_RING,
@@ -27,9 +30,11 @@ import {
     INCREASED_MANA,
     PROTECT_SUFFIXES_CARRIER,
     RING_BASE,
+    VEILED_CATALOG,
 } from "../__fixtures__/mods.js";
 import type { BenchCraft, EssenceSpec } from "../model/sources.js";
-import { type ModId, TypeId } from "../model/ids.js";
+import { GroupId, ModId, TypeId } from "../model/ids.js";
+import type { Mod } from "../model/mod.js";
 
 const benchOf = (mod: ModId): BenchCraft => ({
     mod,
@@ -70,7 +75,7 @@ const ctx: CheckContext = { registry };
 const rareRing = (prefixes: string[] = [], suffixes: string[] = []) =>
     item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes, suffixes });
 
-const guaranteed = (r: ReturnType<typeof checkPresent>): Set<string> =>
+const guaranteed = (r: ReturnType<typeof check>): Set<string> =>
     new Set([...guaranteedTypes(r.finalState!)]);
 
 describe("metamod effects are carried on the catalog", () => {
@@ -91,7 +96,7 @@ describe("a metamod named in a predicate", () => {
             bench("prefixes cannot be changed"),
             iff(notp(has("prefixes cannot be changed")), [op("chaos")]),
         ]);
-        const messages = checkPresent(c, ctx).diagnostics.map((d) => d.message);
+        const messages = check(c, ctx).diagnostics.map((d) => d.message);
         expect(messages).toEqual([
             expect.stringContaining('can never run: not has "prefixes cannot be changed"'),
         ]);
@@ -105,7 +110,7 @@ describe("a metamod named in a predicate", () => {
             beast({ kind: "metamod" }),
             iff(notp(has("suffixes cannot be changed")), [op("chaos")]),
         ]);
-        const messages = checkPresent(c, ctx).diagnostics.map((d) => d.message);
+        const messages = check(c, ctx).diagnostics.map((d) => d.message);
         expect(messages).toEqual([expect.stringContaining("can never run")]);
     });
 });
@@ -113,7 +118,7 @@ describe("a metamod named in a predicate", () => {
 describe("protection (prefixes cannot be changed)", () => {
     it("spares the protected side from annul", () => {
         const c = craft(rareRing(["T1 Life"]), [bench("prefixes cannot be changed"), op("annul")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         // The life prefix is protected, so annul removes the suffix carrier instead
         // and the life guarantee survives.
@@ -122,7 +127,7 @@ describe("protection (prefixes cannot be changed)", () => {
 
     it("without the metamod, an unforced annul drops the guarantee", () => {
         const c = craft(rareRing(["T1 Life"]), [op("annul")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(guaranteed(r)).not.toContain("IncreasedLife");
     });
 
@@ -131,7 +136,7 @@ describe("protection (prefixes cannot be changed)", () => {
             bench("prefixes cannot be changed"),
             harvest("augment", "fire"),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).toContain("IncreasedLife");
     });
@@ -147,13 +152,13 @@ describe("a metamod that may or may not be on the item", () => {
         ]);
 
     it("a chaos keeps the prefixes on the path that has it and rerolls them on the other", () => {
-        const r = checkPresent(maybeProtected([op("chaos")]), ctx);
+        const r = check(maybeProtected([op("chaos")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).not.toContain("IncreasedLife");
-        expect(r.finalState!.possible.has(TypeId("IncreasedLife"))).toBe(true);
-        // The protected path may add nothing beside the kept prefix.
-        expect(r.finalState!.counts.total).toEqual([1, 6]);
-        const live = checkPresent(
+        expect(v.possibleTypes(r.finalState!).has(TypeId("IncreasedLife"))).toBe(true);
+        // The protected path lays at least one suffix beside the kept prefix.
+        expect(v.counts(r.finalState!).total).toEqual([2, 6]);
+        const live = check(
             maybeProtected([op("chaos"), iff(has("T1 Life"), [op("annul")], [op("annul")])]),
             ctx,
         );
@@ -161,12 +166,12 @@ describe("a metamod that may or may not be on the item", () => {
     });
 
     it("a fracture after the chaos is refused: the protected path may hold under four", () => {
-        const r = checkPresent(maybeProtected([op("chaos"), op("fracture")]), ctx);
+        const r = check(maybeProtected([op("chaos"), op("fracture")]), ctx);
         expect(r.diagnostics[0]?.message).toContain("at least 4 modifiers");
     });
 
     it("an essence is refused, naming the metamod the item may have", () => {
-        const r = checkPresent(maybeProtected([essence("greed", 1)]), ctx);
+        const r = check(maybeProtected([essence("greed", 1)]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("metacraft modifier");
         expect(r.diagnostics[0]!.message).toContain(
@@ -175,16 +180,16 @@ describe("a metamod that may or may not be on the item", () => {
     });
 
     it("a scour leaves the prefix on the protected path, so the item is Normal or Magic", () => {
-        const r = checkPresent(maybeProtected([op("scour")]), ctx);
+        const r = check(maybeProtected([op("scour")]), ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.rarities).toEqual(new Set(["normal", "magic"]));
-        expect(
-            checkPresent(maybeProtected([op("scour"), op("transmute")]), ctx).diagnostics,
-        ).toHaveLength(1);
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["normal", "magic"]));
+        expect(check(maybeProtected([op("scour"), op("transmute")]), ctx).diagnostics).toHaveLength(
+            1,
+        );
     });
 
     it("an annul may take the life on the path without it", () => {
-        const r = checkPresent(maybeProtected([op("annul")]), ctx);
+        const r = check(maybeProtected([op("annul")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).not.toContain("IncreasedLife");
     });
@@ -197,32 +202,26 @@ describe("a metamod that may or may not be on the item", () => {
                 [op("chaos"), op("fracture")],
             ),
         ]);
-        const messages = checkPresent(settled, ctx).diagnostics.map((d) => d.message);
+        const messages = check(settled, ctx).diagnostics.map((d) => d.message);
         expect(messages).toEqual([expect.stringContaining('can never run: not has "T1 Life"')]);
     });
 
     it("the Bestiary's random metamod is one of several, each read on its own path", () => {
         const start = () => rareRing(["T1 Life"], ["FireResist1"]);
-        const reforged = checkPresent(
-            craft(start(), [beast({ kind: "metamod" }), op("chaos")]),
-            ctx,
-        );
+        const reforged = check(craft(start(), [beast({ kind: "metamod" }), op("chaos")]), ctx);
         expect(reforged.diagnostics).toEqual([]);
-        expect(reforged.finalState!.possible.has(TypeId("IncreasedLife"))).toBe(true);
-        expect(reforged.finalState!.possible.has(TypeId("FireResist"))).toBe(true);
-        const refused = checkPresent(
+        expect(v.possibleTypes(reforged.finalState!).has(TypeId("IncreasedLife"))).toBe(true);
+        expect(v.possibleTypes(reforged.finalState!).has(TypeId("FireResist"))).toBe(true);
+        const refused = check(
             craft(start(), [beast({ kind: "metamod" }), essence("greed", 1)]),
             ctx,
         );
         expect(refused.diagnostics[0]?.message).toContain("metacraft modifier");
         // One metamod was crafted, so no path protects both sides: a scour has
         // something to remove on each.
-        const scoured = checkPresent(
-            craft(start(), [beast({ kind: "metamod" }), op("scour")]),
-            ctx,
-        );
+        const scoured = check(craft(start(), [beast({ kind: "metamod" }), op("scour")]), ctx);
         expect(scoured.diagnostics).toEqual([]);
-        expect(scoured.finalState!.rarities).toEqual(new Set(["normal", "magic"]));
+        expect(v.rarities(scoured.finalState!)).toEqual(new Set(["normal", "magic"]));
     });
 
     it("a cannot-roll metamod that may be there shields nothing for sure", () => {
@@ -231,23 +230,23 @@ describe("a metamod that may or may not be on the item", () => {
             op("annul"),
             op("exalt"),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).not.toContain("AddedAttackDamage");
-        expect(r.finalState!.possible.has(TypeId("AddedAttackDamage"))).toBe(true);
+        expect(v.possibleTypes(r.finalState!).has(TypeId("AddedAttackDamage"))).toBe(true);
     });
 });
 
 describe("scour respects protection", () => {
     it("keeps the protected side; the rarity goes by how many survive", () => {
         const c = craft(rareRing(["T1 Life"]), [bench("prefixes cannot be changed"), op("scour")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         // One prefix survives (suffixes + the metamod are gone) → a 1-mod Magic.
-        expect(r.finalState!.rarities).toEqual(new Set(["magic"]));
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["magic"]));
         expect(guaranteed(r)).toContain("IncreasedLife");
-        expect(r.finalState!.counts.prefix).toEqual([1, 1]);
-        expect(r.finalState!.crafted).toEqual([0, 0]);
+        expect(v.counts(r.finalState!).prefix).toEqual([1, 1]);
+        expect(v.craftedCount(r.finalState!)).toEqual([0, 0]);
     });
 
     it("refuses a scour when both sides are protected, a fractured modifier or not", () => {
@@ -262,16 +261,16 @@ describe("scour respects protection", () => {
                 suffixes: [PROTECT_PREFIXES_CARRIER.id, MULTIMOD_CARRIER.id],
             });
         for (const fractured of [false, true]) {
-            const r = checkPresent(craft(protectedRing(fractured), [op("scour")]), ctx);
+            const r = check(craft(protectedRing(fractured), [op("scour")]), ctx);
             expect(r.diagnostics[0]?.message).toContain("removable affix");
         }
     });
 
     it("without a metamod, scour strips to Normal", () => {
         const c = craft(rareRing(["T1 Life"]), [op("scour")]);
-        const r = checkPresent(c, ctx);
-        expect(r.finalState!.rarities).toEqual(new Set(["normal"]));
-        expect(r.finalState!.counts.total).toEqual([0, 0]);
+        const r = check(c, ctx);
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["normal"]));
+        expect(v.counts(r.finalState!).total).toEqual([0, 0]);
     });
 });
 
@@ -281,7 +280,7 @@ describe("essence is blocked by a metamod", () => {
             bench("prefixes cannot be changed"),
             essence("greed", 1),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("metacraft modifier");
     });
@@ -291,7 +290,7 @@ describe("essence is blocked by a metamod", () => {
             bench("can have up to 3 crafted modifiers"),
             essence("greed", 1),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
     });
 });
@@ -302,9 +301,9 @@ describe("multimod raises the crafted-mod limit", () => {
             bench("prefixes cannot be changed"),
             bench("suffixes cannot be changed"),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.crafted).toEqual([1, 1]);
+        expect(v.craftedCount(r.finalState!)).toEqual([1, 1]);
         expect(guaranteed(r)).toContain(PROTECT_SUFFIXES_CARRIER.type);
         expect(guaranteed(r)).not.toContain(PROTECT_PREFIXES_CARRIER.type);
     });
@@ -315,25 +314,25 @@ describe("multimod raises the crafted-mod limit", () => {
             bench("prefixes cannot be changed"),
             bench("suffixes cannot be changed"),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.crafted).toEqual([3, 3]);
+        expect(v.craftedCount(r.finalState!)).toEqual([3, 3]);
     });
 });
 
 describe("reforge respects protection (Stage B)", () => {
     it("chaos keeps the protected side's guarantees", () => {
         const c = craft(rareRing(["T1 Life"]), [bench("prefixes cannot be changed"), op("chaos")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["rare"]));
         expect(guaranteed(r)).toContain("IncreasedLife"); // the protected prefix survives
-        expect(r.finalState!.crafted).toEqual([0, 0]); // the metamod was rerolled away
+        expect(v.craftedCount(r.finalState!)).toEqual([0, 0]); // the metamod was rerolled away
     });
 
     it("without a metamod, chaos drops all guarantees", () => {
         const c = craft(rareRing(["T1 Life"]), [op("chaos")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(guaranteed(r)).not.toContain("IncreasedLife");
     });
 
@@ -342,7 +341,7 @@ describe("reforge respects protection (Stage B)", () => {
             bench("prefixes cannot be changed"),
             harvest("reforge", "fire"),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).toContain("IncreasedLife");
         const clauses = disjunctiveGuarantees(r.finalState!).map((cl) => new Set(cl));
@@ -355,7 +354,7 @@ describe("cannot roll attack modifiers shields attack mods from removal", () => 
 
     it("an annul never removes the attack prefix, so its guarantee survives", () => {
         const c = craft(attackRing(), [bench("cannot roll attack modifiers"), op("annul")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).toContain("AddedAttackDamage");
     });
@@ -364,24 +363,60 @@ describe("cannot roll attack modifiers shields attack mods from removal", () => 
         // Metamod § Rules and Exceptions: the Veiled Orb's and the harvest augment's
         // removals ignore cannot-roll, so the attack guarantee may be lost, and the
         // attack prefix being the only prefix is no obstacle to either.
+        const withVeiled: CheckContext = {
+            registry: buildRegistry({
+                bases: [RING_BASE],
+                mods: [...CATALOG, ...VEILED_CATALOG, ATTACK_PREFIX, CANNOT_ROLL_ATTACK_CARRIER],
+                baseAliases: { "Iron Ring": "IronRing" },
+                benchCrafts: [benchOf(CANNOT_ROLL_ATTACK_CARRIER.id)],
+            }),
+        };
         for (const step of [veiled("exalt"), harvest("augment", "life")]) {
             const c = craft(attackRing(), [bench("cannot roll attack modifiers"), step]);
-            const r = checkPresent(c, ctx);
+            const r = check(c, withVeiled);
             expect(r.diagnostics).toEqual([]);
             expect(guaranteed(r)).not.toContain("AddedAttackDamage");
         }
     });
 
     it("an unproven lock may sit on the one modifier that would prove a removal", () => {
-        // After the Fracturing Orb the lock may be on the carrier, the only
-        // guaranteed unshielded mod, so no removal is proven.
-        const c = craft(rareRing(["AddedAttack1"], ["random", "random"]), [
+        // Every other modifier is an attack modifier the metamod shields, so after
+        // the Fracturing Orb the lock may be on the carrier and nothing is removable.
+        const attackPrefix2: Mod = {
+            ...ATTACK_PREFIX,
+            id: ModId("AddedAttack2"),
+            type: TypeId("AddedAttackDamage2"),
+            families: new Set([GroupId("AddedAttack2")]),
+        };
+        const attacks: CheckContext = {
+            registry: buildRegistry({
+                bases: [RING_BASE],
+                mods: [
+                    ...CATALOG,
+                    ATTACK_PREFIX,
+                    attackPrefix2,
+                    ATTACK_SPEED,
+                    CANNOT_ROLL_ATTACK_CARRIER,
+                ],
+                baseAliases: { "Iron Ring": "IronRing" },
+                benchCrafts: [benchOf(CANNOT_ROLL_ATTACK_CARRIER.id)],
+            }),
+        };
+        const c = craft(rareRing(["AddedAttack1", "AddedAttack2"], ["AttackSpeed1"]), [
             bench("cannot roll attack modifiers"),
             op("fracture"),
             op("annul"),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, attacks);
         expect(r.diagnostics[0]?.message).toContain("removable");
+        // The ring's random suffixes are never attack modifiers, so one of two is
+        // always removable whichever modifier the lock is on.
+        const unshielded = craft(rareRing(["AddedAttack1"], ["random", "random"]), [
+            bench("cannot roll attack modifiers"),
+            op("fracture"),
+            op("annul"),
+        ]);
+        expect(check(unshielded, ctx).diagnostics).toEqual([]);
     });
 });
 
@@ -401,10 +436,8 @@ describe("a scour that keeps a side sets the rarity by survivor count", () => {
                     PROTECT_PREFIXES_CARRIER.id,
                 ],
             });
-        expect(checkPresent(craft(start(), [op("scour"), op("chaos")]), ctx).diagnostics).toEqual(
-            [],
-        );
-        const r = checkPresent(craft(start(), [op("scour"), op("regal")]), ctx);
+        expect(check(craft(start(), [op("scour"), op("chaos")]), ctx).diagnostics).toEqual([]);
+        const r = check(craft(start(), [op("scour"), op("regal")]), ctx);
         expect(r.diagnostics[0]?.message).toContain("Requires a Magic item");
     });
 
@@ -417,11 +450,9 @@ describe("a scour that keeps a side sets the rarity by survivor count", () => {
                 prefixes: [{ mod: "T1 Life", fractured: true }],
                 suffixes: [{ mod: "FireResist1", fractured: true }],
             });
-        const r = checkPresent(craft(start(), [op("scour")]), ctx);
-        expect(r.finalState!.rarities).toEqual(new Set(["magic"]));
-        expect(checkPresent(craft(start(), [op("scour"), op("regal")]), ctx).diagnostics).toEqual(
-            [],
-        );
+        const r = check(craft(start(), [op("scour")]), ctx);
+        expect(v.rarities(r.finalState!)).toEqual(new Set(["magic"]));
+        expect(check(craft(start(), [op("scour"), op("regal")]), ctx).diagnostics).toEqual([]);
     });
 
     it("a kept prefix and an unproven lock may leave one or two survivors: Magic or Rare", () => {
@@ -432,12 +463,12 @@ describe("a scour that keeps a side sets the rarity by survivor count", () => {
             rareRing(["T1 Life"], [PROTECT_PREFIXES_CARRIER.id, "FireResist1", "ColdResist1"]),
             [op("fracture"), op("scour"), op("regal")],
         );
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics[0]?.message).toContain("may be Magic or Rare");
         const scoured = r.trace.find(
-            (e) => e.kind === "operation" && e.after?.rarities.size === 2,
+            (e) => e.kind === "operation" && v.rarities(e.after!).size === 2,
         )!;
-        expect(scoured.after!.rarities).toEqual(new Set(["magic", "rare"]));
+        expect(v.rarities(scoured.after!)).toEqual(new Set(["magic", "rare"]));
     });
 
     it("two kept prefixes and an unproven lock stay Rare, with the floor at the kept count", () => {
@@ -445,13 +476,13 @@ describe("a scour that keeps a side sets the rarity by survivor count", () => {
             rareRing(["T1 Life", INCREASED_MANA.id], [PROTECT_PREFIXES_CARRIER.id, "FireResist1"]),
             [op("fracture"), op("scour"), op("regal")],
         );
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics[0]?.message).toContain("Requires a Magic item");
         const scoured = r.trace.find(
-            (e) => e.kind === "operation" && e.after?.counts.total[1] === 3,
+            (e) => e.kind === "operation" && v.counts(e.after!).total[1] === 3,
         )!;
         // The lock may sit on a kept prefix, so the floor is two, not three.
-        expect(scoured.after!.counts.total).toEqual([2, 3]);
+        expect(v.counts(scoured.after!).total).toEqual([2, 3]);
     });
 
     it("a scour whose kept side's count is uncertain leaves Normal or Magic", () => {
@@ -463,13 +494,13 @@ describe("a scour that keeps a side sets the rarity by survivor count", () => {
             op("scour"),
             op("augment"),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics[0]?.message).toContain("may be Normal or Magic");
         const narrowed = craft(rareRing([], [PROTECT_PREFIXES_CARRIER.id, "FireResist1"]), [
             op("exalt"),
             iff(cmp("prefixCount", "==", 1), [op("scour"), op("augment")]),
         ]);
-        expect(checkPresent(narrowed, ctx).diagnostics).toEqual([]);
+        expect(check(narrowed, ctx).diagnostics).toEqual([]);
     });
 
     it("a fractured suffix beside a protected side's carrier: Rare with a kept prefix, Magic without", () => {
@@ -491,7 +522,7 @@ describe("a scour that keeps a side sets the rarity by survivor count", () => {
                 ),
             ],
         );
-        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 });
 
@@ -505,10 +536,10 @@ describe("an unproven fracture through a scour", () => {
             op("scour"),
             iff(has("FireResist1"), [], [op("regal")]),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         const scoured = r.trace.find(
-            (e) => e.kind === "operation" && e.after?.rarities.has("magic"),
+            (e) => e.kind === "operation" && v.rarities(e.after!).has("magic"),
         )!;
         expect(guaranteedTypes(scoured.after!).size).toBe(0);
     });
@@ -519,9 +550,9 @@ describe("a declared bench-crafted mod counts toward the crafted limit", () => {
         const c = craft(rareRing([], [PROTECT_PREFIXES_CARRIER.id]), [
             bench("cannot roll attack modifiers"),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.crafted).toEqual([1, 1]);
+        expect(v.craftedCount(r.finalState!)).toEqual([1, 1]);
         expect(guaranteed(r)).not.toContain(PROTECT_PREFIXES_CARRIER.type);
     });
 
@@ -531,20 +562,20 @@ describe("a declared bench-crafted mod counts toward the crafted limit", () => {
         const c = craft(rareRing([ATTACK_PREFIX.id], [CANNOT_ROLL_ATTACK_CARRIER.id]), [
             op("annul"),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.counts.prefix).toEqual([1, 1]);
-        expect(r.finalState!.counts.suffix).toEqual([0, 0]);
+        expect(v.counts(r.finalState!).prefix).toEqual([1, 1]);
+        expect(v.counts(r.finalState!).suffix).toEqual([0, 0]);
         expect(guaranteed(r)).toContain(ATTACK_PREFIX.type);
     });
 
     it("the declared metamod's effect is active from the start", () => {
         const c = craft(rareRing(["T1 Life"], [PROTECT_PREFIXES_CARRIER.id]), [op("annul")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).toContain("IncreasedLife");
         // The carrier is the only suffix, so the annul can have taken nothing else.
-        expect(r.finalState!.crafted).toEqual([0, 0]);
+        expect(v.craftedCount(r.finalState!)).toEqual([0, 0]);
     });
 });
 
@@ -561,15 +592,15 @@ describe("a fractured bench row keeps its crafted count through a reforge", () =
         });
 
     it("after an essence", () => {
-        const r = checkPresent(craft(fracturedMultimod(), [essence("greed", 1)]), ctx);
+        const r = check(craft(fracturedMultimod(), [essence("greed", 1)]), ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.crafted).toEqual([0, 1]);
+        expect(v.craftedCount(r.finalState!)).toEqual([1, 1]);
     });
 
     it("after a chaos", () => {
-        const r = checkPresent(craft(fracturedMultimod(), [op("chaos")]), ctx);
+        const r = check(craft(fracturedMultimod(), [op("chaos")]), ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.crafted).toEqual([0, 1]);
+        expect(v.craftedCount(r.finalState!)).toEqual([1, 1]);
     });
 
     it("an unproven lock may sit on the crafted mod, so a reforge keeps one", () => {
@@ -582,9 +613,9 @@ describe("a fractured bench row keeps its crafted count through a reforge", () =
                 op("fracture"),
                 reforge,
             ]);
-            const r = checkPresent(c, ctx);
+            const r = check(c, ctx);
             expect(r.diagnostics).toEqual([]);
-            expect(r.finalState!.crafted).toEqual([0, 1]);
+            expect(v.craftedCount(r.finalState!)).toEqual([0, 1]);
         }
     });
 });
@@ -596,14 +627,14 @@ describe("a kept cannot-roll metamod restricts a reforge's fresh pool", () => {
         rareRing([PROTECT_SUFFIXES_CARRIER.id], [CANNOT_ROLL_ATTACK_CARRIER.id]);
 
     it("a harvest reforge for the restricted tag has an empty pool", () => {
-        const r = checkPresent(craft(lockedSuffixes(), [harvest("reforge", "attack")]), ctx);
+        const r = check(craft(lockedSuffixes(), [harvest("reforge", "attack")]), ctx);
         expect(r.diagnostics[0]?.message).toContain(
             "No attack modifier can be added while the item cannot roll attack modifiers",
         );
     });
 
     it("a harvest augment for the restricted tag blames the metamod, not a group", () => {
-        const r = checkPresent(
+        const r = check(
             craft(rareRing(["T1 Life"], [CANNOT_ROLL_ATTACK_CARRIER.id]), [
                 harvest("augment", "attack"),
             ]),
@@ -614,20 +645,20 @@ describe("a kept cannot-roll metamod restricts a reforge's fresh pool", () => {
     });
 
     it("a chaos keeps the restriction out of the rerolled side's pool", () => {
-        const r = checkPresent(craft(lockedSuffixes(), [op("chaos")]), ctx);
+        const r = check(craft(lockedSuffixes(), [op("chaos")]), ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.possible.has(TypeId("AddedAttackDamage"))).toBe(false);
-        expect(r.finalState!.possible.has(TypeId("IncreasedLife"))).toBe(true);
+        expect(v.possibleTypes(r.finalState!).has(TypeId("AddedAttackDamage"))).toBe(false);
+        expect(v.possibleTypes(r.finalState!).has(TypeId("IncreasedLife"))).toBe(true);
     });
 });
 
 describe("cannot roll attack modifiers", () => {
     it("excludes attack-tagged types from a later exalt's pool", () => {
         const c = craft(rareRing(), [bench("cannot roll attack modifiers"), op("exalt")]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.possible.has(TypeId("AddedAttackDamage"))).toBe(false);
+        expect(v.possibleTypes(r.finalState!).has(TypeId("AddedAttackDamage"))).toBe(false);
         // A non-attack mod is still addable.
-        expect(r.finalState!.possible.has(TypeId("IncreasedLife"))).toBe(true);
+        expect(v.possibleTypes(r.finalState!).has(TypeId("IncreasedLife"))).toBe(true);
     });
 });

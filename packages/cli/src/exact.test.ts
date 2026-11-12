@@ -3,7 +3,7 @@ import { join, relative } from "node:path";
 import * as v8 from "node:v8";
 import * as vm from "node:vm";
 import { describe, expect, it, vi } from "vitest";
-import { checkExact, type CheckDiagnostic, checkPresent, type Craft } from "@hinekora/core";
+import { checkExact, type CheckDiagnostic, checkPresent, counts, type Craft } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { parse } from "@hinekora/parser";
 
@@ -397,6 +397,73 @@ describe("the crafts the present checker answers wrongly", () => {
             expect(checkExact(parsed(source), { registry }).ok).toBe(checks);
         });
     }
+});
+
+describe("a modifier read on the side of its own row", () => {
+    // On a bow the bench's chaos damage over time multiplier is a suffix,
+    // though the type's natural rows are prefixes.
+    const bow = `item {
+    base:     "Thicket Bow"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "random" ]
+    suffixes: [ "random" ]
+}
+bench "chaos damage over time multiplier"
+`;
+
+    it("is taken by a removal of a random suffix, so the item may be without it", () => {
+        const r = checkExact(
+            parsed(`${bow}beast add prefix
+if has "chaos damage over time multiplier" {
+    stop
+} else {
+    stop
+}`),
+            { registry },
+        );
+        expect(r.diagnostics).toEqual([]);
+    });
+
+    it("counts as a suffix where a condition names it", () => {
+        const craft = parsed(`item {
+    base:     "Thicket Bow"
+    ilvl:     84
+    rarity:   rare
+    suffixes: [ "random" ]
+}
+bench "chaos damage over time multiplier"
+annul
+if has "chaos damage over time multiplier" {
+    if prefixCount == 0 {
+        stop
+    }
+}`);
+        const r = checkExact(craft, { registry });
+        expect(r.diagnostics).toEqual([]);
+        const inner = r.trace.find((e) => e.kind === "if" && e.span.start.line === 10)!;
+        expect(counts(inner.before)).toEqual({ total: [1, 1], prefix: [0, 0], suffix: [1, 1] });
+    });
+});
+
+describe("a Fracturing Orb on modifiers the item block does not name", () => {
+    it("may fracture any modifier the item can roll", () => {
+        const r = checkExact(
+            parsed(`item {
+    base:     "Amethyst Ring"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "random", "random" ]
+    suffixes: [ "random", "random" ]
+}
+fracture
+if fractured "maximum life" {
+    stop
+}`),
+            { registry },
+        );
+        expect(r.diagnostics).toEqual([]);
+    });
 });
 
 describe("the exact checker's memory", () => {

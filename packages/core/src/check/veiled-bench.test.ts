@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent, type CheckContext } from "./check.js";
+import { type CheckContext } from "./check.js";
+import { check } from "../exact/check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { bench, craft, item, unveil, veiled } from "../__fixtures__/ast.js";
 import {
@@ -61,15 +62,13 @@ describe("a bench craft between the veiled orb and the unveil", () => {
             bench("maximum life"),
             unveil(),
         ]);
-        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
+        expect(check(c, ctx).diagnostics).toEqual([]);
     });
 });
 
 describe("a bench-crafted version of a veiled modifier", () => {
     const run = (steps: Parameters<typeof craft>[1]) =>
-        checkPresent(craft(ring(), steps), { registry: withCraftable }).diagnostics.map(
-            (d) => d.message,
-        );
+        check(craft(ring(), steps), { registry: withCraftable }).diagnostics.map((d) => d.message);
 
     it("keeps a Veiled Exalted Orb off the item", () => {
         expect(run([bench("damage taken recouped as life"), veiled("exalt")])).toEqual([
@@ -85,7 +84,7 @@ describe("a bench-crafted version of a veiled modifier", () => {
             prefixes: [{ mod: "random", bench: true }],
             suffixes: ["random"],
         });
-        const messages = checkPresent(craft(bought, [veiled("exalt")]), {
+        const messages = check(craft(bought, [veiled("exalt")]), {
             registry: withCraftable,
         }).diagnostics.map((d) => d.message);
         expect(messages).toEqual([expect.stringContaining("veiled or unveiled modifier")]);

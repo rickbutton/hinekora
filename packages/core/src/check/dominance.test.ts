@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent, type CheckContext } from "./check.js";
-import { disjunctiveGuarantees, guaranteedTypes, isExcluded } from "./astate.js";
+import { type CheckContext } from "./check.js";
+import { check } from "../exact/check.js";
+import * as v from "../exact/views.js";
+import { disjunctiveGuarantees, guaranteedTypes, isExcluded } from "../exact/views.js";
+import { rowIds } from "../__fixtures__/views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, has, iff, item, op } from "../__fixtures__/ast.js";
 import {
@@ -32,7 +35,9 @@ const registry = buildRegistry({
 });
 const ctx: CheckContext = { registry };
 
-/** A third Hunter modifier for boots, and a tier above the suffix's. */
+/** A third Hunter modifier for boots with its elevated row, as the data has
+ *  one for every influence row of the armour the orb takes; and a tier above
+ *  the suffix's. */
 const THIRD: Mod = {
     ...HUNTER_BOOTS_SUFFIX,
     id: ModId("HunterBootsOther1"),
@@ -40,11 +45,21 @@ const THIRD: Mod = {
     families: new Set([GroupId("HunterBootsOther")]),
     text: "Hunter boots other",
 };
+const THIRD_ELEVATED: Mod = {
+    ...ELEVATED_BOOTS_SUFFIX,
+    id: ModId("HunterBootsOtherUberMaven"),
+    type: THIRD.type,
+    families: THIRD.families,
+    text: "Elevated hunter boots other",
+};
 const HIGHER: Mod = { ...HUNTER_BOOTS_SUFFIX, id: ModId("HunterBootsSuffix0"), minLevel: 50 };
-const three = buildRegistry({ bases: [BOOTS_BASE], mods: [...registry.catalog, THIRD] });
+const three = buildRegistry({
+    bases: [BOOTS_BASE],
+    mods: [...registry.catalog, THIRD, THIRD_ELEVATED],
+});
 const tiered = buildRegistry({ bases: [BOOTS_BASE], mods: [...registry.catalog, HIGHER] });
 
-const run = (c: ReturnType<typeof craft>) => checkPresent(c, ctx);
+const run = (c: ReturnType<typeof craft>) => check(c, ctx);
 const messages = (c: ReturnType<typeof craft>) =>
     run(c)
         .diagnostics.map((d) => d.message)
@@ -62,7 +77,7 @@ const boots = (prefixes: string[], suffixes: string[] = []) =>
 
 describe("the Orb of Dominance", () => {
     it("removes one of three influenced modifiers and may raise any other; the rest stay", () => {
-        const r = checkPresent(
+        const r = check(
             craft(boots([HUNTER_BOOTS_PREFIX.id, LIFE_T1.id], [HUNTER_BOOTS_SUFFIX.id, THIRD.id]), [
                 op("dominance"),
             ]),
@@ -70,27 +85,27 @@ describe("the Orb of Dominance", () => {
         );
         expect(r.diagnostics).toEqual([]);
         const s = r.finalState!;
-        expect(s.counts.total).toEqual([3, 3]);
+        expect(v.counts(s).total).toEqual([3, 3]);
         expect(guaranteedTypes(s).has(LIFE_T1.type)).toBe(true);
         expect(guaranteedTypes(s).has(HUNTER_BOOTS_PREFIX.type)).toBe(false);
-        expect(s.possible.has(ELEVATED_BOOTS_PREFIX.type)).toBe(true);
-        expect(s.tiers.get(ELEVATED_BOOTS_PREFIX.type)).toEqual(
-            new Set([ELEVATED_BOOTS_PREFIX.id]),
+        expect(v.possibleTypes(s).has(ELEVATED_BOOTS_PREFIX.type)).toBe(true);
+        expect(rowIds(s, ELEVATED_BOOTS_PREFIX.type)).toEqual(new Set([ELEVATED_BOOTS_PREFIX.id]));
+        // Either of the two left may have been raised: the suffix may be at
+        // either of its rows; the prefix, where it is not raised, is at its own.
+        expect(rowIds(s, HUNTER_BOOTS_PREFIX.type)).toEqual(new Set([HUNTER_BOOTS_PREFIX.id]));
+        expect(rowIds(s, HUNTER_BOOTS_SUFFIX.type)).toEqual(
+            new Set([HUNTER_BOOTS_SUFFIX.id, ELEVATED_BOOTS_SUFFIX.id]),
         );
-        // Which of the two left was raised is unknown, so neither keeps its tier.
-        expect(s.tiers.has(HUNTER_BOOTS_PREFIX.type)).toBe(false);
-        expect(s.tiers.has(HUNTER_BOOTS_SUFFIX.type)).toBe(false);
-        const one = disjunctiveGuarantees(s).find((clause) =>
-            clause.includes(HUNTER_BOOTS_SUFFIX.type),
-        );
-        expect(one).toEqual(
-            expect.arrayContaining([
+        // Two of the three are left, the prefix at its own row or raised.
+        expect(v.cardinalityGuarantees(s)).toContainEqual({
+            atLeast: 2,
+            types: [
+                THIRD.type,
                 HUNTER_BOOTS_PREFIX.type,
                 ELEVATED_BOOTS_PREFIX.type,
                 HUNTER_BOOTS_SUFFIX.type,
-                THIRD.type,
-            ]),
-        );
+            ].sort(),
+        });
     });
 
     it("leaves, of two influenced modifiers, the raised one: elevated from the top tier", () => {
@@ -98,14 +113,12 @@ describe("the Orb of Dominance", () => {
         const r = run(craft(start, [op("dominance")]));
         expect(r.diagnostics).toEqual([]);
         const s = r.finalState!;
-        expect(s.counts.total).toEqual([2, 2]);
+        expect(v.counts(s).total).toEqual([2, 2]);
         expect(guaranteedTypes(s).has(LIFE_T1.type)).toBe(true);
         // The prefix's elevated row is a type of its own; the suffix's shares its type.
         expect(isExcluded(s, HUNTER_BOOTS_PREFIX.type)).toBe(true);
-        expect(s.tiers.get(ELEVATED_BOOTS_PREFIX.type)).toEqual(
-            new Set([ELEVATED_BOOTS_PREFIX.id]),
-        );
-        expect(s.tiers.get(HUNTER_BOOTS_SUFFIX.type)).toEqual(new Set([ELEVATED_BOOTS_SUFFIX.id]));
+        expect(rowIds(s, ELEVATED_BOOTS_PREFIX.type)).toEqual(new Set([ELEVATED_BOOTS_PREFIX.id]));
+        expect(rowIds(s, HUNTER_BOOTS_SUFFIX.type)).toEqual(new Set([ELEVATED_BOOTS_SUFFIX.id]));
         expect(disjunctiveGuarantees(s).map((c) => new Set(c))).toEqual([
             new Set([ELEVATED_BOOTS_PREFIX.type, HUNTER_BOOTS_SUFFIX.type]),
         ]);
@@ -117,7 +130,7 @@ describe("the Orb of Dominance", () => {
         expect(messages(both)).toContain("'if' branch can never run");
     });
 
-    it("raises a modifier below the top a tier, where the item's level reaches the rows above", () => {
+    it("raises a modifier below the top a tier, whatever the item's level", () => {
         const start = (ilvl: number) =>
             item({
                 base: "Iron Greaves",
@@ -127,14 +140,17 @@ describe("the Orb of Dominance", () => {
                 suffixes: [HUNTER_BOOTS_SUFFIX.id],
                 influences: ["hunter"],
             });
-        const r = checkPresent(craft(start(100), [op("dominance")]), { registry: tiered });
+        const r = check(craft(start(100), [op("dominance")]), { registry: tiered });
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.tiers.get(HUNTER_BOOTS_SUFFIX.type)).toEqual(new Set([HIGHER.id]));
-        // Whether the orb raises a modifier past the item's level is not known.
-        const low = checkPresent(craft(start(30), [op("dominance")]), { registry: tiered });
+        expect(rowIds(r.finalState!, HUNTER_BOOTS_SUFFIX.type)).toEqual(new Set([HIGHER.id]));
+        // Below that level the orb raises it all the same, as an elevation
+        // ignores the level (exact/ops/remove.ts `elevations`); the prefix,
+        // raised from its top, is the elevated row's type or gone.
+        const low = check(craft(start(30), [op("dominance")]), { registry: tiered });
         expect(low.diagnostics).toEqual([]);
-        expect(low.finalState!.tiers.has(HUNTER_BOOTS_SUFFIX.type)).toBe(false);
-        expect(low.finalState!.possible.has(HUNTER_BOOTS_PREFIX.type)).toBe(true);
+        expect(rowIds(low.finalState!, HUNTER_BOOTS_SUFFIX.type)).toEqual(new Set([HIGHER.id]));
+        expect(v.possibleTypes(low.finalState!).has(HUNTER_BOOTS_PREFIX.type)).toBe(false);
+        expect(v.possibleTypes(low.finalState!).has(ELEVATED_BOOTS_PREFIX.type)).toBe(true);
     });
 
     it("raises a modifier within its own influence's rows on an item with two influences", () => {
@@ -159,9 +175,9 @@ describe("the Orb of Dominance", () => {
             suffixes: [HUNTER_BOOTS_SUFFIX.id],
             influences: ["elder", "hunter"],
         });
-        const r = checkPresent(craft(start, [op("dominance")]), { registry: dual });
+        const r = check(craft(start, [op("dominance")]), { registry: dual });
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.tiers.get(HUNTER_BOOTS_SUFFIX.type)).toEqual(
+        expect(rowIds(r.finalState!, HUNTER_BOOTS_SUFFIX.type)).toEqual(
             new Set([ELEVATED_BOOTS_SUFFIX.id]),
         );
     });
@@ -187,7 +203,7 @@ describe("the Orb of Dominance", () => {
         });
         const r = run(craft(magic, [op("dominance")]));
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.counts.total).toEqual([1, 1]);
+        expect(v.counts(r.finalState!).total).toEqual([1, 1]);
     });
 
     it("needs two influenced modifiers on sides a metamod does not protect", () => {
@@ -209,7 +225,7 @@ describe("the Orb of Dominance", () => {
         );
         expect(r.diagnostics).toEqual([]);
         expect(guaranteedTypes(r.finalState!).has(ELEVATED_BOOTS_PREFIX.type)).toBe(false);
-        expect(r.finalState!.counts.total).toEqual([1, 1]);
+        expect(v.counts(r.finalState!).total).toEqual([1, 1]);
     });
 
     it("takes the four armour classes only", () => {

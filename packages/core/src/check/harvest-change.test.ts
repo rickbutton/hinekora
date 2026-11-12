@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent, type CheckContext } from "./check.js";
-import { guaranteedTypes, isExcluded } from "./astate.js";
+import { type CheckContext } from "./check.js";
+import * as v from "../exact/views.js";
+import { guaranteedTypes, isExcluded } from "../exact/views.js";
+import { rowIds } from "../__fixtures__/views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { unitCost } from "../cost/prices.js";
 import { check } from "../exact/check.js";
@@ -113,17 +115,15 @@ describe("harvest change", () => {
         const crit = craft(rareRing([], [FIRE_CRIT_MULTI.id]), [
             harvestChange(FIRE_CRIT_MULTI.id, COLD_CRIT_MULTI.id),
         ]);
-        expect(checkPresent(crit, ctx).diagnostics[0]!.message).toContain(
-            "no critical strike multiplier",
-        );
+        expect(check(crit, ctx).diagnostics[0]!.message).toContain("no critical strike multiplier");
         const hybrid = craft(rareRing([], [FIRE_CHAOS_RESIST.id]), [
             harvestChange(FIRE_CHAOS_RESIST.id, COLD_RESIST.id),
         ]);
-        expect(checkPresent(hybrid, ctx).diagnostics[0]!.message).toContain("The grove changes");
+        expect(check(hybrid, ctx).diagnostics[0]!.message).toContain("The grove changes");
     });
 
     it("takes a damage over time multiplier, and refuses it for lightning, which has none", () => {
-        const dot = checkPresent(
+        const dot = check(
             craft(rareRing([], [FIRE_DOT_MULTI.id]), [
                 harvestChange(FIRE_DOT_MULTI.id, COLD_DOT_MULTI.id),
             ]),
@@ -147,7 +147,7 @@ describe("harvest change", () => {
             mods: [...CATALOG, FIRE_DOT_MULTI, COLD_DOT_MULTI, lightning],
             baseAliases: { "Iron Ring": "IronRing" },
         });
-        const none = checkPresent(
+        const none = check(
             craft(rareRing([], [FIRE_DOT_MULTI.id]), [
                 harvestChange(FIRE_DOT_MULTI.id, lightning.id),
             ]),
@@ -173,7 +173,7 @@ describe("harvest change", () => {
 
     it("changes a modifier into its counterpart only, and refuses one with none", () => {
         // Both are fire and cold damage modifiers; they are not the same modifier.
-        const other = checkPresent(
+        const other = check(
             craft(rareRing([FIRE_DAMAGE.id]), [harvestChange(FIRE_DAMAGE.id, COLD_DOT_MULTI.id)]),
             ctx,
         );
@@ -189,7 +189,7 @@ describe("harvest change", () => {
             mods: [...CATALOG, FIRE_DAMAGE, COLD_DOT_MULTI],
             baseAliases: { "Iron Ring": "IronRing" },
         });
-        const lone = checkPresent(
+        const lone = check(
             craft(rareRing([FIRE_DAMAGE.id]), [harvestChange(FIRE_DAMAGE.id, COLD_DOT_MULTI.id)]),
             { registry: none },
         );
@@ -200,16 +200,16 @@ describe("harvest change", () => {
         const c = craft(rareRing([], [FIRE_RESIST.id, LIGHTNING_RESIST.id]), [
             harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
         ]);
-        const r = checkPresent(c, ctx);
+        const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         const s = r.finalState!;
         expect(guaranteedTypes(s).has(COLD_RESIST.type)).toBe(true);
         expect(isExcluded(s, FIRE_RESIST.type)).toBe(true);
-        expect(s.counts.total).toEqual([2, 2]);
+        expect(v.counts(s).total).toEqual([2, 2]);
     });
 
     it("keeps a benched modifier among the crafted ones, so the next bench replaces it", () => {
-        const changed = checkPresent(
+        const changed = check(
             craft(rareRing(), [
                 bench("fire resistance"),
                 harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
@@ -218,10 +218,10 @@ describe("harvest change", () => {
         );
         expect(changed.diagnostics).toEqual([]);
         // The bench has no cold row here, so the cold is a natural row.
-        expect(changed.finalState!.tiers.get(COLD_RESIST.type)).toEqual(new Set([COLD_RESIST.id]));
-        expect(changed.finalState!.crafted).toEqual([1, 1]);
-        expect(changed.finalState!.craftedTypes.has(COLD_RESIST.type)).toBe(true);
-        const again = checkPresent(
+        expect(rowIds(changed.finalState!, COLD_RESIST.type)).toEqual(new Set([COLD_RESIST.id]));
+        expect(v.craftedCount(changed.finalState!)).toEqual([1, 1]);
+        expect(v.craftedTypes(changed.finalState!).has(COLD_RESIST.type)).toBe(true);
+        const again = check(
             craft(rareRing(), [
                 bench("fire resistance"),
                 harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
@@ -232,22 +232,20 @@ describe("harvest change", () => {
         expect(again.diagnostics).toEqual([]);
         // The bench replaces the one crafted modifier, the changed resistance,
         // rather than adding a second beside it.
-        expect(again.finalState!.counts.suffix).toEqual([0, 0]);
+        expect(v.counts(again.finalState!).suffix).toEqual([0, 0]);
         expect(guaranteedTypes(again.finalState!).has(COLD_RESIST.type)).toBe(false);
     });
 
     it("lands at the source's tier when that tier is known", () => {
-        const pinned = checkPresent(
+        const pinned = check(
             craft(rareRing([], ["FireTiersMid"]), [harvestChange("FireTiersMid", "ColdTiersLow")]),
             ctx,
         );
         expect(pinned.diagnostics).toEqual([]);
-        expect(pinned.finalState!.tiers.get(TypeId("ColdTiers"))).toEqual(
-            new Set(["ColdTiersMid"]),
-        );
+        expect(rowIds(pinned.finalState!, TypeId("ColdTiers"))).toEqual(new Set(["ColdTiersMid"]));
         // A fire resistance found after a reforge may be any tier, so the cold
         // may be any.
-        const loose = checkPresent(
+        const loose = check(
             craft(rareRing(), [
                 op("chaos"),
                 iff(
@@ -259,7 +257,7 @@ describe("harvest change", () => {
             ctx,
         );
         expect(loose.diagnostics).toEqual([]);
-        expect(loose.finalState!.tiers.get(TypeId("ColdTiers"))).toEqual(
+        expect(rowIds(loose.finalState!, TypeId("ColdTiers"))).toEqual(
             new Set(["ColdTiersLow", "ColdTiersMid", "ColdTiersHigh"]),
         );
     });
@@ -284,12 +282,12 @@ describe("harvest change", () => {
             mods: [...CATALOG, ...rows],
             baseAliases: { "Iron Ring": "IronRing" },
         });
-        const r = checkPresent(
+        const r = check(
             craft(rareRing([], ["FireLevel50"]), [harvestChange("FireLevel50", "ColdLevel50")]),
             { registry: incursion },
         );
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.tiers.get(TypeId("ColdAilments"))).toEqual(new Set(["ColdLevel50"]));
+        expect(rowIds(r.finalState!, TypeId("ColdAilments"))).toEqual(new Set(["ColdLevel50"]));
     });
 
     it("changes a benched modifier into the bench's counterpart, crafted still", () => {
@@ -318,7 +316,7 @@ describe("harvest change", () => {
                 { mod: amuletCold.id, tier: 1, itemClasses: new Set([CLASS_AMULET]) },
             ],
         });
-        const r = checkPresent(
+        const r = check(
             craft(rareRing(), [
                 bench("fire resistance"),
                 harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
@@ -326,9 +324,9 @@ describe("harvest change", () => {
             { registry: withTwin },
         );
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.tiers.get(COLD_RESIST.type)).toEqual(new Set([benchCold.id]));
-        expect(r.finalState!.crafted).toEqual([1, 1]);
-        const removed = checkPresent(
+        expect(rowIds(r.finalState!, COLD_RESIST.type)).toEqual(new Set([benchCold.id]));
+        expect(v.craftedCount(r.finalState!)).toEqual([1, 1]);
+        const removed = check(
             craft(rareRing(), [
                 bench("fire resistance"),
                 harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
@@ -341,8 +339,9 @@ describe("harvest change", () => {
     });
 
     it("reads a modifier with no tier recorded as any row it may be, a crafted one among them", () => {
-        // An unnamed bench suffix may be the bench's fire resistance or not; a
-        // fire resistance found on the item is then that or the natural row.
+        // An unnamed bench suffix may be the bench's fire resistance or its
+        // lightning; beside an unnamed natural suffix, a fire resistance found
+        // on the item is then the bench's or the natural row.
         const benchCold: Mod = {
             ...BENCH_FIRE_RES_ROW,
             id: ModId("BenchColdResist1"),
@@ -350,12 +349,19 @@ describe("harvest change", () => {
             families: COLD_RESIST.families,
             text: "+(13-18)% to Cold Resistance",
         };
+        const benchLightning: Mod = {
+            ...BENCH_FIRE_RES_ROW,
+            id: ModId("BenchLightningResist1"),
+            type: LIGHTNING_RESIST.type,
+            families: LIGHTNING_RESIST.families,
+            text: "+(13-18)% to Lightning Resistance",
+        };
         const reg = buildRegistry({
             bases: [RING_BASE],
             harvestChange: HARVEST_CHANGE,
-            mods: [...CATALOG, BENCH_FIRE_RES_ROW, benchCold],
+            mods: [...CATALOG, BENCH_FIRE_RES_ROW, benchCold, benchLightning],
             baseAliases: { "Iron Ring": "IronRing" },
-            benchCrafts: [BENCH_FIRE_RES_ROW, benchCold].map((m) => ({
+            benchCrafts: [BENCH_FIRE_RES_ROW, benchCold, benchLightning].map((m) => ({
                 mod: m.id,
                 tier: 1,
                 itemClasses: new Set([CLASS_RING]),
@@ -365,9 +371,9 @@ describe("harvest change", () => {
             base: "Iron Ring",
             ilvl: 100,
             rarity: "rare",
-            suffixes: [{ mod: "random", bench: true }],
+            suffixes: [{ mod: "random", bench: true }, "random"],
         });
-        const r = checkPresent(
+        const r = check(
             craft(start, [
                 iff(
                     andp(has("fire resistance"), notp(has("cold resistance"))),
@@ -378,25 +384,25 @@ describe("harvest change", () => {
             { registry: reg },
         );
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.tiers.get(COLD_RESIST.type)).toEqual(
+        expect(rowIds(r.finalState!, COLD_RESIST.type)).toEqual(
             new Set([benchCold.id, COLD_RESIST.id]),
         );
     });
 
     it("needs the modifier guaranteed, unfractured, on an unprotected side", () => {
-        const absent = checkPresent(
+        const absent = check(
             craft(rareRing(), [harvestChange(FIRE_RESIST.id, COLD_RESIST.id)]),
             ctx,
         );
         expect(absent.diagnostics[0]!.message).toContain("isn't guaranteed");
-        const fractured = checkPresent(
+        const fractured = check(
             craft(rareRing([], [{ mod: FIRE_RESIST.id, fractured: true }]), [
                 harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
             ]),
             ctx,
         );
         expect(fractured.diagnostics[0]!.message).toContain("is fractured");
-        const shielded = checkPresent(
+        const shielded = check(
             craft(rareRing([PROTECT_SUFFIXES_CARRIER.id], [FIRE_RESIST.id]), [
                 harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
             ]),
@@ -406,23 +412,23 @@ describe("harvest change", () => {
     });
 
     it("offers only the elemental resistances among themselves and the elemental damages likewise", () => {
-        const life = checkPresent(
+        const life = check(
             craft(rareRing(["T1 Life"]), [harvestChange("T1 Life", COLD_RESIST.id)]),
             ctx,
         );
         expect(life.diagnostics[0]!.message).toContain("fire, cold or lightning resistance");
-        const same = checkPresent(
+        const same = check(
             craft(rareRing([], [FIRE_RESIST.id]), [harvestChange(FIRE_RESIST.id, "FireTiersLow")]),
             ctx,
         );
         expect(same.diagnostics[0]!.message).toContain("fire, cold or lightning resistance");
-        const damage = checkPresent(
+        const damage = check(
             craft(rareRing([FIRE_DAMAGE.id]), [harvestChange(FIRE_DAMAGE.id, COLD_DAMAGE.id)]),
             ctx,
         );
         expect(damage.diagnostics).toEqual([]);
         expect(guaranteedTypes(damage.finalState!).has(COLD_DAMAGE.type)).toBe(true);
-        const crossKind = checkPresent(
+        const crossKind = check(
             craft(rareRing([], [FIRE_RESIST.id]), [harvestChange(FIRE_RESIST.id, COLD_DAMAGE.id)]),
             ctx,
         );
@@ -430,7 +436,7 @@ describe("harvest change", () => {
     });
 
     it("refuses a target already on the item or one that cannot roll here", () => {
-        const dup = checkPresent(
+        const dup = check(
             craft(rareRing([], [FIRE_RESIST.id, COLD_RESIST.id]), [
                 harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
             ]),
@@ -438,7 +444,7 @@ describe("harvest change", () => {
         );
         expect(dup.diagnostics[0]!.message).toContain("at most one per group");
         expect(dup.diagnostics[0]!.message).toContain("the grove can't change a modifier into it");
-        const nowhere = checkPresent(
+        const nowhere = check(
             craft(
                 item({
                     base: "Coral Amulet",
@@ -477,7 +483,7 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
     const FIRE = TypeId("FireTiers");
     /** The change of a modifier the item starts with at a known tier. */
     const known = (ilvl: number, from: string, to: string, after: Stmt[] = []) =>
-        checkPresent(
+        check(
             craft(item({ base: "Iron Ring", ilvl, rarity: "rare", suffixes: [from] }), [
                 harvestChange(from, to),
                 ...after,
@@ -490,7 +496,7 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
         // has the level-26 cold resistance after the change.
         const r = known(25, "FireTiers24", "ColdTiers1");
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.tiers.get(COLD)).toEqual(new Set(["ColdTiers26"]));
+        expect(rowIds(r.finalState!, COLD)).toEqual(new Set(["ColdTiers26"]));
         expect(isExcluded(r.finalState!, FIRE)).toBe(true);
     });
 
@@ -506,7 +512,7 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
 
     it("leaves that tier out of a currency's reach all the same", () => {
         // No Chaos Orb rolls the level-26 cold resistance at item level 25.
-        const r = checkPresent(
+        const r = check(
             craft(item({ base: "Iron Ring", ilvl: 25, rarity: "rare" }), [
                 until(has("ColdTiers1", 2), [op("chaos")]),
             ]),
@@ -531,15 +537,15 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
             harvestChange("ColdTiers1", "FireTiers1"),
         ]);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.tiers.get(FIRE)).toEqual(new Set(["FireTiers24"]));
+        expect(rowIds(r.finalState!, FIRE)).toEqual(new Set(["FireTiers24"]));
         const down = known(27, "ColdTiers26", "FireTiers1");
         expect(down.diagnostics).toEqual([]);
-        expect(down.finalState!.tiers.get(FIRE)).toEqual(new Set(["FireTiers24"]));
+        expect(rowIds(down.finalState!, FIRE)).toEqual(new Set(["FireTiers24"]));
     });
 
     it("gives each tier's own where the modifier may be any of several", () => {
         // Three fire tiers roll at level 25; the cold of the third does not.
-        const r = checkPresent(
+        const r = check(
             craft(item({ base: "Iron Ring", ilvl: 25, rarity: "rare" }), [
                 op("chaos"),
                 iff(
@@ -551,14 +557,22 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
             { registry: offset },
         );
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.tiers.get(COLD)).toEqual(
+        expect(rowIds(r.finalState!, COLD)).toEqual(
             new Set(["ColdTiers1", "ColdTiers14", "ColdTiers26"]),
         );
     });
 
     it("gives every tier of the ladder for a modifier with no tier recorded", () => {
-        // An unnamed bench suffix leaves the fire resistance any row: a tier
-        // above the item's level among them, which an earlier change may leave.
+        // An unnamed bench suffix may be the bench's fire resistance, which
+        // records no tier; the bench has no cold here, so the change may give
+        // any tier of the ladder, the one above the item's level among them.
+        const benchLightning: Mod = {
+            ...BENCH_FIRE_RES_ROW,
+            id: ModId("BenchLightningResist1"),
+            type: LIGHTNING_RESIST.type,
+            families: LIGHTNING_RESIST.families,
+            text: "+(13-18)% to Lightning Resistance",
+        };
         const start = item({
             base: "Iron Ring",
             ilvl: 25,
@@ -581,13 +595,16 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
                 })),
                 ...ladder("Cold", [1, 14, 26, 38]),
                 BENCH_FIRE_RES_ROW,
+                benchLightning,
             ].filter((m) => m.id !== FIRE_RESIST.id),
             baseAliases: { "Iron Ring": "IronRing" },
-            benchCrafts: [
-                { mod: BENCH_FIRE_RES_ROW.id, tier: 1, itemClasses: new Set([CLASS_RING]) },
-            ],
+            benchCrafts: [BENCH_FIRE_RES_ROW, benchLightning].map((m) => ({
+                mod: m.id,
+                tier: 1,
+                itemClasses: new Set([CLASS_RING]),
+            })),
         });
-        const r = checkPresent(
+        const r = check(
             craft(start, [
                 iff(
                     andp(has("fire resistance"), notp(has("ColdTiers1"))),
@@ -598,7 +615,7 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
             { registry: benched },
         );
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.tiers.get(COLD)).toEqual(
+        expect(rowIds(r.finalState!, COLD)).toEqual(
             new Set(["ColdTiers1", "ColdTiers14", "ColdTiers26", "ColdTiers38"]),
         );
     });
@@ -626,7 +643,7 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
         // ladder's second, on the other. The bench has no cold craft here, so its
         // fire becomes a cold of any tier, the one above the item's level too;
         // the tier becomes the cold of its rank.
-        const r = checkPresent(
+        const r = check(
             craft(item({ base: "Iron Ring", ilvl: 25, rarity: "rare", prefixes: ["random"] }), [
                 iff(
                     has("IncreasedMana1"),
@@ -638,7 +655,7 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
             { registry: benched },
         );
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.tiers.get(COLD)).toEqual(
+        expect(rowIds(r.finalState!, COLD)).toEqual(
             new Set(["ColdTiers1", "ColdTiers14", "ColdTiers26", "ColdTiers38"]),
         );
     });
@@ -695,7 +712,7 @@ describe("a Harvest change into a modifier of the changed one's group", () => {
         ],
     });
     const changed = (on: string, prefixes: string[], from: string, to: string) =>
-        checkPresent(
+        check(
             craft(item({ base: on, ilvl: 100, rarity: "rare", prefixes }), [
                 harvestChange(from, to),
             ]),
@@ -720,7 +737,7 @@ describe("a Harvest change into a modifier of the changed one's group", () => {
     it("is taken beside unknown modifiers, none of which can be of the changed one's group", () => {
         // After a reforge a cold damage to spells could be on a wand, but not
         // beside the lightning one the branch found.
-        const r = checkPresent(
+        const r = check(
             craft(item({ base: "Pagan Wand", ilvl: 100, rarity: "rare" }), [
                 op("chaos"),
                 iff(
@@ -736,7 +753,7 @@ describe("a Harvest change into a modifier of the changed one's group", () => {
 
     it("is refused where another modifier on the item is of the target's group", () => {
         // A fire resistance beside the fire and chaos resistance, one group.
-        const r = checkPresent(
+        const r = check(
             craft(rareRing([], [COLD_RESIST.id, FIRE_CHAOS_RESIST.id]), [
                 harvestChange(COLD_RESIST.id, FIRE_RESIST.id),
             ]),
@@ -762,7 +779,7 @@ describe("a Harvest change on an item with two influences", () => {
         text: `+(46-48)% to ${element} Resistance against Ailing Enemies`,
     });
     const changed = (mods: readonly Mod[], from: string, ilvl = 100) =>
-        checkPresent(
+        check(
             craft(
                 item({
                     base: "Iron Greaves",
@@ -781,8 +798,7 @@ describe("a Harvest change on an item with two influences", () => {
                 }),
             },
         );
-    const cold = (r: ReturnType<typeof checkPresent>) =>
-        r.finalState!.tiers.get(TypeId("ColdAilments"));
+    const cold = (r: ReturnType<typeof check>) => rowIds(r.finalState!, TypeId("ColdAilments"));
 
     it("is refused where the other element has rows of the other influence only", () => {
         // The Shaper's fire rows and the Redeemer's cold rows are ladders of
@@ -884,7 +900,7 @@ describe("a Harvest change of a natural row an essence placed", () => {
     const after = (base: string, ilvl: number, name: string, from: string, to: string) => {
         // The essence's reforge may roll the target on boots, never on the axe.
         const change = harvestChange(from, to);
-        const r = checkPresent(
+        const r = check(
             craft(item({ base, ilvl, rarity: "normal" }), [
                 essence(name),
                 base === "Vaal Hatchet" ? change : iff(notp(has(to)), [change], [stop()]),
@@ -893,7 +909,7 @@ describe("a Harvest change of a natural row an essence placed", () => {
         );
         return r.diagnostics.length > 0
             ? r.diagnostics[0]!.message
-            : r.finalState!.tiers.get(TypeId(to.slice(0, -1)));
+            : rowIds(r.finalState!, TypeId(to.slice(0, -1)));
     };
 
     it("becomes the row of its rank, above the item's level too", () => {
@@ -962,11 +978,11 @@ describe("a Harvest change of a modifier another source placed", () => {
             suffixes: ["FireSource"],
             ...on,
         });
-        const r = checkPresent(craft(start, [harvestChange("FireSource", "ColdNatural")]), {
+        const r = check(craft(start, [harvestChange("FireSource", "ColdNatural")]), {
             registry: reg,
         });
         expect(r.diagnostics).toEqual([]);
-        return r.finalState!.tiers.get(TypeId("ColdAilments"));
+        return rowIds(r.finalState!, TypeId("ColdAilments"));
     };
 
     it("is the counterpart alone for an Incursion modifier, named after its architect", () => {
@@ -1094,7 +1110,7 @@ describe("a Harvest change of a modifier another source placed", () => {
                 itemClasses: new Set([CLASS_RING]),
             })),
         });
-        const r = checkPresent(
+        const r = check(
             craft(rareRing(["random"]), [
                 bench("fire resistance", 2),
                 iff(has("IncreasedMana1"), [bench("fire resistance", 1)]),
@@ -1103,7 +1119,7 @@ describe("a Harvest change of a modifier another source placed", () => {
             { registry: reg },
         );
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.tiers.get(COLD_RESIST.type)).toEqual(
+        expect(rowIds(r.finalState!, COLD_RESIST.type)).toEqual(
             new Set(["BenchCold1", "BenchCold2"]),
         );
     });

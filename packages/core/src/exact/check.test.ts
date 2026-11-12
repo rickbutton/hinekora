@@ -25,7 +25,8 @@ import { checkPresent } from "../check/check.js";
 import { renderState } from "../check/diagnostics.js";
 import { TypeId } from "../model/ids.js";
 import { checkExact, exactDetail, type ExactTuning, UNJUDGED } from "./check.js";
-import type { Registry } from "../resolve/registry.js";
+import { buildRegistry, type Registry } from "../resolve/registry.js";
+import { RING_BASE, TIERED_CATALOG } from "../__fixtures__/mods.js";
 import { startOf } from "./initial.js";
 import { generateCatalog } from "./reference/catalog.js";
 import { compareCraft } from "./reference/craft.js";
@@ -369,6 +370,30 @@ describe("a fault of the checker's own", () => {
         const c = craft(ring(), [op("chaos")]);
         const r = checkExact(c, { registry: failing("influenceTags") });
         expect(r.diagnostics.map((d) => d.span)).toEqual([c.item.span]);
+    });
+});
+
+describe("an item block no item answers to", () => {
+    it("is one error at the block, where no field of it is at fault", () => {
+        // The catalogue's ring rolls one prefix type, so two prefixes cannot both be random rolls.
+        const registry = buildRegistry({ bases: [RING_BASE], mods: TIERED_CATALOG });
+        const c = craft(
+            item({
+                base: "IronRing",
+                ilvl: 84,
+                rarity: "rare",
+                prefixes: [{ mod: "random" }, { mod: "random" }],
+            }),
+            [op("chaos")],
+        );
+        const r = checkExact(c, { registry });
+        expect(r.diagnostics).toEqual([
+            {
+                message: "No item can have everything this item block declares on this base.",
+                span: c.item.span,
+            },
+        ]);
+        expect(r.trace).toEqual([]);
     });
 });
 

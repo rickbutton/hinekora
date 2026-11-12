@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { checkPresent, type CheckContext } from "./check.js";
-import { guaranteedTypes } from "./astate.js";
+import { type CheckContext } from "./check.js";
+import { check } from "../exact/check.js";
+import * as v from "../exact/views.js";
+import { guaranteedTypes } from "../exact/views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import {
     craft,
@@ -20,6 +22,7 @@ import {
     AMULET_BASE,
     ATTACK_PREFIX,
     ELDRITCH_ROWS,
+    ELDRITCH_ROWS_EVERY_TIER,
     FOSSIL_BLOODSTAINED,
     BOOTS_BASE,
     CANNOT_ROLL_ATTACK_CARRIER,
@@ -46,6 +49,15 @@ const registry = buildRegistry({
     fossils: [FOSSIL_BLOODSTAINED],
 });
 const ctx: CheckContext = { registry };
+/** Each implicit at every tier, as the game's data has them: an Orb of
+ *  Conflict moves an implicit a tier and keeps its wording. */
+const everyTier: CheckContext = {
+    registry: buildRegistry({
+        bases: [BOOTS_BASE],
+        mods: CATALOG,
+        eldritch: ELDRITCH_ROWS_EVERY_TIER,
+    }),
+};
 
 const DS = { start: { offset: 0, line: 1, column: 1 }, end: { offset: 0, line: 1, column: 1 } };
 const words = (...ws: string[]): OperationStmt => ({
@@ -58,9 +70,9 @@ const wordArg = (ws: string[], w: string): OperationStmt => ({
     ...words(...ws),
     args: [{ kind: "word", value: w, span: DS }],
 });
-const run = (c: ReturnType<typeof craft>) => checkPresent(c, ctx);
-const messages = (c: ReturnType<typeof craft>) =>
-    run(c)
+const run = (c: ReturnType<typeof craft>, on: CheckContext = ctx) => check(c, on);
+const messages = (c: ReturnType<typeof craft>, on: CheckContext = ctx) =>
+    run(c, on)
         .diagnostics.map((d) => d.message)
         .join("\n");
 
@@ -77,7 +89,7 @@ describe("embers and ichors", () => {
             ]),
         );
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.eldritch).toEqual(new Set([eldritchKey(3, 1)]));
+        expect(v.eldritchPairs(r.finalState!)).toEqual(new Set([eldritchKey(3, 1)]));
     });
 
     it("refuse a ring, and an influenced item", () => {
@@ -140,12 +152,13 @@ describe("the Eldritch orbs act on the dominant implicit's side", () => {
         expect(r.diagnostics).toEqual([]);
         const s = r.finalState!;
         expect(guaranteedTypes(s).has(LIFE_T1.type)).toBe(false);
-        expect(s.counts.prefix).toEqual([0, 3]);
+        // With the suffixes kept, the reforge rolls one prefix at least.
+        expect(v.counts(s).prefix).toEqual([1, 3]);
         expect(guaranteedTypes(s).size).toBe(1); // the cold suffix stayed
         // The orb rolls no suffix, so the suffix count stands and the total
         // is that one suffix plus the new prefixes.
-        expect(s.counts.suffix).toEqual([1, 1]);
-        expect(s.counts.total).toEqual([1, 4]);
+        expect(v.counts(s).suffix).toEqual([1, 1]);
+        expect(v.counts(s).total).toEqual([2, 4]);
     });
 
     it("chaos leaves the other side's open slots open", () => {
@@ -154,7 +167,7 @@ describe("the Eldritch orbs act on the dominant implicit's side", () => {
         // Three prefixes may have rolled, so the Exarch's exalt is refused; the
         // two open suffix slots are still open.
         expect(r.diagnostics[0]?.message).toContain("Requires an open prefix slot");
-        expect(r.finalState!.counts.suffix).toEqual([1, 1]);
+        expect(v.counts(r.finalState!).suffix).toEqual([1, 1]);
     });
 
     it("chaos ignores the item's own protection of the rerolled side", () => {
@@ -192,14 +205,14 @@ describe("the Eldritch orbs act on the dominant implicit's side", () => {
         const start = boots({ eater: "greater", suffixes: ["cold"] });
         const r = run(craft(start, [words("eldritch", "exalt")]));
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.counts.prefix).toEqual([0, 0]);
-        expect(r.finalState!.counts.total).toEqual([2, 2]);
+        expect(v.counts(r.finalState!).prefix).toEqual([0, 0]);
+        expect(v.counts(r.finalState!).total).toEqual([2, 2]);
         const a = run(craft(start, [words("eldritch", "annul")]));
         expect(a.diagnostics).toEqual([]);
-        expect(a.finalState!.counts.total).toEqual([0, 0]);
+        expect(v.counts(a.finalState!).total).toEqual([0, 0]);
     });
 
-    it("refuse an item with no dominance, and one whose dominance differs between paths", () => {
+    it("refuse an item with no dominance, and act on each item's own dominant side", () => {
         expect(
             messages(
                 craft(boots({ exarch: "grand", eater: "grand" }), [words("eldritch", "exalt")]),
@@ -210,7 +223,14 @@ describe("the Eldritch orbs act on the dominant implicit's side", () => {
             words("conflict"),
             words("eldritch", "chaos"),
         ]);
-        expect(messages(split)).toContain("differs between paths");
+        // The conflict leaves either implicit dominant; the orb rerolls that
+        // side of each item, one modifier at least, and nothing of the other.
+        const r = run(split, everyTier);
+        expect(r.diagnostics).toEqual([]);
+        expect(v.eldritchPairs(r.finalState!)).toEqual(
+            new Set([eldritchKey(4, 1), eldritchKey(2, 3)]),
+        );
+        expect(v.counts(r.finalState!).total).toEqual([1, 3]);
     });
 });
 
@@ -220,7 +240,7 @@ describe("which implicit an ember gave", () => {
     it("is one of the tier's pool on the base, which a wording narrows", () => {
         const r = run(craft(boots(), [wordArg(["ember"], "grand")]));
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.eldritchTypes.exarch).toEqual(
+        expect(v.eldritchTypes(r.finalState!, "exarch")).toEqual(
             new Set([...speed, TypeId("ImplicitLifeRegen")]),
         );
         const narrowed = run(
@@ -235,7 +255,7 @@ describe("which implicit an ember gave", () => {
         ]);
         const l = run(loop);
         expect(l.diagnostics).toEqual([]);
-        expect(l.finalState!.eldritchTypes.exarch).toEqual(speed);
+        expect(v.eldritchTypes(l.finalState!, "exarch")).toEqual(speed);
     });
 
     it("cannot be a wording the tier's pool lacks, nor one no implicit has", () => {
@@ -266,9 +286,13 @@ describe("which implicit an ember gave", () => {
             iff(hasP("life"), [wordArg(["ember"], "grand")], []),
             iff(notp(eldritchP("exarch", undefined, "movement speed")), [], []),
         ]);
-        const s = run(maybe).finalState!;
-        // The path without an ember knows nothing, so the join knows nothing.
-        expect(s.eldritchTypes.exarch).toBe("any");
+        // Both arms live: an item without the ember, or with the life implicit,
+        // meets the negation.
+        const r = run(maybe);
+        expect(r.diagnostics).toEqual([]);
+        expect(v.eldritchTypes(r.finalState!, "exarch")).toEqual(
+            new Set([...speed, TypeId("ImplicitLifeRegen")]),
+        );
     });
 
     it("is declared with the item, and survives an Orb of Conflict", () => {
@@ -276,10 +300,13 @@ describe("which implicit an ember gave", () => {
             exarch: { tier: "grand", text: "movement speed" },
             eater: "lesser",
         });
-        const r = run(craft(declared, [words("conflict")]));
+        const r = run(craft(declared, [words("conflict")]), everyTier);
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.eldritchTypes.exarch).toEqual(speed);
-        expect(r.finalState!.eldritchTypes.eater).toBe("any");
+        expect(v.eldritchTypes(r.finalState!, "exarch")).toEqual(speed);
+        // The boots have one Eater implicit, so the declared Lesser is that one.
+        expect(v.eldritchTypes(r.finalState!, "eater")).toEqual(
+            new Set([TypeId("ImplicitChaosRes")]),
+        );
     });
 
     it("is unknown again where a path with another meets", () => {
@@ -288,29 +315,34 @@ describe("which implicit an ember gave", () => {
             iff(hasP("life"), [wordArg(["ember"], "grand")], []),
         ]);
         const s = run(c).finalState!;
-        expect(s.eldritchTypes.exarch).toEqual(new Set([...speed, TypeId("ImplicitLifeRegen")]));
+        expect(v.eldritchTypes(s, "exarch")).toEqual(
+            new Set([...speed, TypeId("ImplicitLifeRegen")]),
+        );
     });
 });
 
 describe("corruption may replace an eldritch implicit", () => {
     it("a Vaal Orb one of them, the Corruption Altar both", () => {
         const start = boots({ exarch: "grand", eater: "lesser" });
-        const v = run(craft(start, [op("vaal")]));
-        expect(v.finalState!.eldritch).toEqual(
+        const vaal = run(craft(start, [op("vaal")]));
+        expect(v.eldritchPairs(vaal.finalState!)).toEqual(
             new Set([eldritchKey(3, 1), eldritchKey(0, 1), eldritchKey(3, 0)]),
         );
         expect(
             messages(craft(start, [op("vaal"), iff(eldritchP("exarch"), [], [])])),
         ).not.toContain("never run");
+        // Up to two implicits go, and the base's own may be among them.
         const l = run(craft(start, [op("locus")]));
-        expect(l.finalState!.eldritch).toEqual(new Set([eldritchKey(3, 1), eldritchKey(0, 0)]));
+        expect(v.eldritchPairs(l.finalState!)).toEqual(
+            new Set([eldritchKey(3, 1), eldritchKey(0, 1), eldritchKey(3, 0), eldritchKey(0, 0)]),
+        );
     });
 
     it("a Bloodstained Fossil one of them, as a Vaal Orb's implicit does", () => {
         const r = run(craft(boots({ exarch: "grand", eater: "lesser" }), [fossil("bloodstained")]));
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.corrupted).toEqual(new Set([true]));
-        expect(r.finalState!.eldritch).toEqual(
+        expect(v.corruptions(r.finalState!)).toEqual(new Set([true]));
+        expect(v.eldritchPairs(r.finalState!)).toEqual(
             new Set([eldritchKey(3, 1), eldritchKey(0, 1), eldritchKey(3, 0)]),
         );
     });
@@ -340,9 +372,14 @@ describe("an Eldritch Ember on a low item level", () => {
 
 describe("the Orb of Conflict", () => {
     it("raises one implicit and lowers the other, removing a lowered Lesser", () => {
-        const r = run(craft(boots({ exarch: "greater", eater: "lesser" }), [words("conflict")]));
+        const r = run(
+            craft(boots({ exarch: "greater", eater: "lesser" }), [words("conflict")]),
+            everyTier,
+        );
         expect(r.diagnostics).toEqual([]);
-        expect(r.finalState!.eldritch).toEqual(new Set([eldritchKey(3, 0), eldritchKey(1, 2)]));
+        expect(v.eldritchPairs(r.finalState!)).toEqual(
+            new Set([eldritchKey(3, 0), eldritchKey(1, 2)]),
+        );
     });
 
     it("needs both implicits", () => {
@@ -358,11 +395,13 @@ describe("the Orb of Conflict", () => {
             words("conflict"),
             words("conflict"),
         ]);
-        const r = run(c);
+        const r = run(c, everyTier);
         expect(r.diagnostics.map((d) => d.message)).toEqual([
             expect.stringContaining("this item has Greater Eater or Greater Exarch."),
         ]);
-        expect(r.finalState!.eldritch).toEqual(new Set([eldritchKey(2, 0), eldritchKey(0, 2)]));
+        expect(v.eldritchPairs(r.finalState!)).toEqual(
+            new Set([eldritchKey(2, 0), eldritchKey(0, 2)]),
+        );
     });
 
     it("leaves a dominance a branch can pick out", () => {
@@ -370,12 +409,12 @@ describe("the Orb of Conflict", () => {
             words("conflict"),
             iff(dominantP("exarch"), [words("eldritch", "chaos")], [words("eldritch", "chaos")]),
         ]);
-        expect(run(c).diagnostics).toEqual([]);
+        expect(run(c, everyTier).diagnostics).toEqual([]);
         const tiered = craft(boots({ exarch: "grand", eater: "grand" }), [
             words("conflict"),
             iff(eldritchP("exarch", "exceptional"), [], [op("chaos")]),
         ]);
-        expect(messages(tiered)).not.toContain("never run");
+        expect(messages(tiered, everyTier)).not.toContain("never run");
         expect(
             messages(craft(boots({ exarch: "grand" }), [iff(eldritchP("eater"), [], [])])),
         ).toContain("'if' branch can never run");
