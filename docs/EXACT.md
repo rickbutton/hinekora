@@ -112,9 +112,18 @@ Every primitive is an exact image. The building blocks:
 A fill of several modifiers is the single addition repeated, so the order of the draw is
 the game's and not an approximation of it. A method stays all or nothing: its `require`s
 are judged on the state it starts from and on the states its earlier operations leave, and
-a failure refuses the method. After a failure the checker continues from the items on
-which the method does work (from the unchanged state when there are none), so that later
-steps are still judged; that state is recovery, outside the equality of §1.
+a failure refuses the method. A check is judged on the items the method has reached, which
+is the item it was used on because only operations with one outcome come before a check;
+the frame refuses a sequence that breaks this. After a failure the checker continues from
+the items on which the method does work; when there are none, from the failing items
+repaired as the craft meant them where the check knows how (a wrong rarity set right), else
+from the unchanged state. That state is recovery, outside the equality of §1.
+
+Three runs of operations are one image, since each needs what the step before discards: a
+reforge with the modifiers it guarantees, an addition with the removal that must spare it,
+and a Harvest change, whose new modifier keeps the old one's tier and crafted mark. An
+operation that cannot act on an item leaves nothing of it, which only an `either` branch
+may do.
 
 The `Op`, `PoolSpec`, `Selector` and `Check` types and the sequences of `check/library.ts`
 and `check/methods.ts` do not change: the exact domain is a second interpreter of the same
@@ -140,9 +149,8 @@ The cost layer, the renderer and the editors read the state through functions an
 of the present `AItem`. The exact state offers the same reads as views computed from the
 diagram and cached by its identity: the count ranges, the rarities, the types sure,
 possible and excluded, the rows and value span a type may have, the crafted and fractured
-counts, the marks, the "at least k of these" groups, and `refine` and `runMethod` under
-their present names. A consumer changes its imports, and a direct field read where the
-view has a function.
+counts, the marks, the "at least k of these" groups, and `narrow` (the present `refine`) and `runMethod`. A consumer changes its imports and its field reads; where it took a missing entry to mean
+"any row" or "any value", it now reads the rows and span the items have.
 
 An error can name an item that breaks the step, taken from a witness of the failing set.
 
@@ -183,7 +191,7 @@ An error can name an item that breaks the step, taken from a witness of the fail
 | 1   | Reference interpreter: concrete items, tiny catalogues, set harness            | done  |
 | 2   | Decision-diagram engine                                                        | done  |
 | 3   | Universe: slots, values, order, well-formedness, from the registry and craft   | done  |
-| 4   | The state: conditions, narrowing, views                                        | open  |
+| 4   | The state: conditions, narrowing, views                                        | done  |
 | 5   | Marks and rarity: `rarity`, `corrupt`, `influence`, `eldritch`, their checks   | open  |
 | 6   | Adding: `fill` over every pool and count, its checks                           | open  |
 | 7   | Removing: `strip`, `remove`, protections, `unprotect`, `keep`, metamod cases   | open  |

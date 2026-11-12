@@ -117,6 +117,12 @@ export type PoolSpec =
            *  crafted modifier, so may they: a changed bench craft is crafted
            *  still (seen in game). */
           readonly replacing?: TypeId;
+          /** With `replacing`: by the id of each row the replaced modifier may
+           *  be at, the rows it becomes, so its tier and crafted mark carry to
+           *  the replacement per source row. Read by the exact checker only;
+           *  check/methods.ts `harvestChange` is to fill it in with the exact
+           *  Harvest change. */
+          readonly bySource?: ReadonlyMap<ModId, readonly Mod[]>;
       }
     /** One of the metamods not yet on the item whose side may have a slot (the
      *  Bestiary's random metamod); crafted. */
