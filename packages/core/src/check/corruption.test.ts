@@ -231,8 +231,9 @@ describe("the Tainted currency", () => {
         expect(v.rarities(scoured.finalState!)).toEqual(new Set(["rare"]));
     });
 
-    it("needs the corruption on every path", () => {
-        // Whether the reforge rolled T1 life is unknown, so only one path corrupts.
+    it("needs the corruption on every item", () => {
+        // Whether the reforge rolled T1 life is unknown, so only some items are
+        // corrupted.
         const c = craft(ring(), [
             op("chaos"),
             iff(has("life", 1), [op("vaal")]),

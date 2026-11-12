@@ -5,7 +5,7 @@
 import type { Cmp } from "../ast/ast.js";
 import type { Gen, ModId, Rarity, TypeId } from "../model/ids.js";
 import type { EldritchSide, Influence } from "../model/marks.js";
-import type { Range } from "./domain.js";
+import type { Range } from "./range.js";
 
 export type RPred =
     | { readonly kind: "isRarity"; readonly rarity: Rarity }

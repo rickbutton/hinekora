@@ -36,7 +36,7 @@ import { listItems } from "./listing.js";
 import { refRunMethod } from "./method.js";
 import type { RefHandlers } from "./ops/handler.js";
 import { type Rng, rng } from "./rng.js";
-import { allItems, type Bounds, diffSets, ItemSet } from "./sets.js";
+import { allItems, type Bounds, diffSets, CItemSet } from "./sets.js";
 
 // --- the universe and its rows -------------------------------------------------------
 
@@ -91,8 +91,8 @@ export function pickRows(
 // --- states ---------------------------------------------------------------------------
 
 /** The items read at their cells: each value moved to the lowest of its cell. */
-export function atCells(u: Universe, items: Iterable<CItem>): ItemSet {
-    return ItemSet.of([...items].map((x) => u.decodeOne(u.encode(x))));
+export function atCells(u: Universe, items: Iterable<CItem>): CItemSet {
+    return CItemSet.of([...items].map((x) => u.decodeOne(u.encode(x))));
 }
 
 export interface StateOptions {
@@ -117,7 +117,7 @@ export function harnessStates(
     ctx: RefCtx,
     seed: number,
     options: StateOptions,
-): ItemSet[] {
+): CItemSet[] {
     const rarities =
         options.bounds.rarities ?? RARITIES.filter((x) => x !== "rare" || canBeRare(ctx.base));
     const r = rng(seed);
@@ -125,7 +125,7 @@ export function harnessStates(
     if (options.imprints) {
         const plain = pool.items();
         pool = pool.union(
-            ItemSet.of(
+            CItemSet.of(
                 r
                     .sample(plain, Math.min(60, plain.length))
                     .map((x) => ({ ...x, imprint: r.pick(plain) })),
@@ -134,14 +134,14 @@ export function harnessStates(
     }
     const items = pool.items();
     if (items.length === 0) throw new Error("the bounds hold no item");
-    const out: ItemSet[] = [ItemSet.of([r.pick(items)]), pool];
+    const out: CItemSet[] = [CItemSet.of([r.pick(items)]), pool];
     for (const rarity of rarities) {
         const some = pool.filter((x) => x.rarity === rarity);
         if (some.size > 0) out.push(some);
     }
     const most = Math.min(options.maxSize ?? 40, items.length);
     for (let i = 0; i < (options.random ?? 20); i++) {
-        out.push(ItemSet.of(r.sample(items, r.int(1, most))));
+        out.push(CItemSet.of(r.sample(items, r.int(1, most))));
     }
     return out;
 }
@@ -161,7 +161,7 @@ export interface FrameHandlers {
 export function compareMethod(
     u: Universe,
     ctx: RefCtx,
-    start: ItemSet,
+    start: CItemSet,
     ops: readonly Op[],
     handlers: FrameHandlers = {},
 ): string {
@@ -184,7 +184,7 @@ export function compareMethod(
     const indices = new Set([...exact.failing.keys(), ...ref.failing.keys()]);
     for (const i of [...indices].sort((a, b) => a - b)) {
         const d = diffSets(
-            atCells(u, ref.failing.get(i) ?? ItemSet.empty),
+            atCells(u, ref.failing.get(i) ?? CItemSet.empty),
             listItems(u, exact.failing.get(i) ?? u.dd.EMPTY, { lowest: true }),
         );
         if (d !== "") out.push(`items refused by op ${i} (${opLabel(ops[i]!)}):\n${d}`);
@@ -204,7 +204,7 @@ export function compareMethod(
 export function compareMethodOn(
     u: Universe,
     ctx: RefCtx,
-    states: readonly ItemSet[],
+    states: readonly CItemSet[],
     ops: readonly Op[],
     handlers: FrameHandlers = {},
 ): string {

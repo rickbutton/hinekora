@@ -5,7 +5,7 @@
  * the least and greatest over the items.
  */
 import type { ItemSummary } from "./diagnostics.js";
-import type { Range } from "./domain.js";
+import type { Range } from "./range.js";
 import { type Caps, caps } from "../model/capacity.js";
 import { type Effect, effectsOf } from "../model/effects.js";
 import type { Gen, GroupId, ModId, Rarity, TagId, TypeId } from "../model/ids.js";
@@ -21,12 +21,12 @@ import {
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import type { Dd } from "./dd.js";
-import type { XItem } from "./state.js";
+import type { ItemSet } from "./state.js";
 import { type CountKind, type ModValue, RARITIES, type Universe } from "./universe.js";
 
 const cache = new WeakMap<Dd, Map<string, unknown>>();
 
-function memo<T>(s: XItem, key: string, f: () => T): T {
+function memo<T>(s: ItemSet, key: string, f: () => T): T {
     let m = cache.get(s.dd);
     if (m === undefined) cache.set(s.dd, (m = new Map<string, unknown>()));
     if (m.has(key)) return m.get(key) as T;
@@ -36,15 +36,15 @@ function memo<T>(s: XItem, key: string, f: () => T): T {
 }
 
 /** The values each diagram slot takes over the items, by slot. */
-function slotValues(s: XItem): readonly (readonly number[])[] {
+function slotValues(s: ItemSet): readonly (readonly number[])[] {
     return memo(s, "slots", () => s.u.dd.valuesOfEach(s.dd));
 }
 
-const valuesAt = (s: XItem, slot: number): readonly number[] => slotValues(s)[slot]!;
+const valuesAt = (s: ItemSet, slot: number): readonly number[] => slotValues(s)[slot]!;
 
 /** The types of the universe with the values their slot takes, in slot order. */
 function typeValues(
-    s: XItem,
+    s: ItemSet,
 ): readonly { type: TypeId; slot: number; values: readonly number[] }[] {
     return memo(s, "types", () =>
         s.u.modSlots().map((slot) => ({
@@ -57,7 +57,7 @@ function typeValues(
 
 // --- counts -------------------------------------------------------------------
 
-function extentOf(s: XItem, kind: CountKind): Range {
+function extentOf(s: ItemSet, kind: CountKind): Range {
     return memo(s, `count:${kind}`, () => s.u.dd.extent(s.dd, s.u.weight(kind)) ?? [0, 0]);
 }
 
@@ -68,7 +68,7 @@ export interface CountRanges {
 }
 
 /** The least and greatest number of affixes, prefixes and suffixes. */
-export function counts(s: XItem): CountRanges {
+export function counts(s: ItemSet): CountRanges {
     return {
         total: extentOf(s, "affix"),
         prefix: extentOf(s, "prefix"),
@@ -76,23 +76,23 @@ export function counts(s: XItem): CountRanges {
     };
 }
 
-export function suffixRange(s: XItem): Range {
+export function suffixRange(s: ItemSet): Range {
     return extentOf(s, "suffix");
 }
 
 /** The least and greatest number of crafted modifiers. */
-export function craftedCount(s: XItem): Range {
+export function craftedCount(s: ItemSet): Range {
     return extentOf(s, "crafted");
 }
 
 /** The least and greatest number of fractured modifiers. */
-export function fracturedCount(s: XItem): Range {
+export function fracturedCount(s: ItemSet): Range {
     return extentOf(s, "fractured");
 }
 
 /** The least and greatest number of these types present: the k of "at least k
  *  of these" is the first. */
-export function presentAmong(s: XItem, types: Iterable<TypeId>): Range {
+export function presentAmong(s: ItemSet, types: Iterable<TypeId>): Range {
     const slots = new Set<number>();
     for (const t of types) {
         const slot = s.u.slotOfType(t);
@@ -111,7 +111,7 @@ export function presentAmong(s: XItem, types: Iterable<TypeId>): Range {
 
 // --- rarity and caps ------------------------------------------------------------
 
-export function rarities(s: XItem): ReadonlySet<Rarity> {
+export function rarities(s: ItemSet): ReadonlySet<Rarity> {
     return memo(
         s,
         "rarities",
@@ -120,14 +120,14 @@ export function rarities(s: XItem): ReadonlySet<Rarity> {
 }
 
 /** The one rarity every item has, or undefined while they differ. */
-export function rarityOf(s: XItem): Rarity | undefined {
+export function rarityOf(s: ItemSet): Rarity | undefined {
     const r = rarities(s);
     return r.size === 1 ? [...r][0] : undefined;
 }
 
 /** The caps over the items' rarities, each field picked by `pick`: `Math.max`
  *  for the loosest, `Math.min` for the tightest. */
-export function capsOver(s: XItem, pick: (...n: number[]) => number): Caps {
+export function capsOver(s: ItemSet, pick: (...n: number[]) => number): Caps {
     const all = [...rarities(s)].map((r) => caps(r, s.u.base));
     return {
         prefix: pick(...all.map((c) => c.prefix)),
@@ -139,7 +139,7 @@ export function capsOver(s: XItem, pick: (...n: number[]) => number): Caps {
 // --- the modifiers ------------------------------------------------------------
 
 /** The types present on every item. */
-export function guaranteedTypes(s: XItem): ReadonlySet<TypeId> {
+export function guaranteedTypes(s: ItemSet): ReadonlySet<TypeId> {
     return memo(
         s,
         "guaranteed",
@@ -148,7 +148,7 @@ export function guaranteedTypes(s: XItem): ReadonlySet<TypeId> {
 }
 
 /** The types present on some item. */
-export function possibleTypes(s: XItem): ReadonlySet<TypeId> {
+export function possibleTypes(s: ItemSet): ReadonlySet<TypeId> {
     return memo(
         s,
         "possible",
@@ -158,21 +158,21 @@ export function possibleTypes(s: XItem): ReadonlySet<TypeId> {
 
 /** The types of `among` (by default every type of the universe) absent from
  *  every item. A type the universe has no slot for is absent everywhere. */
-export function excludedTypes(s: XItem, among?: Iterable<TypeId>): ReadonlySet<TypeId> {
+export function excludedTypes(s: ItemSet, among?: Iterable<TypeId>): ReadonlySet<TypeId> {
     const possible = possibleTypes(s);
     const types = among ?? typeValues(s).map((t) => t.type);
     return new Set([...types].filter((t) => !possible.has(t)));
 }
 
-export function isGuaranteed(s: XItem, type: TypeId): boolean {
+export function isGuaranteed(s: ItemSet, type: TypeId): boolean {
     return guaranteedTypes(s).has(type);
 }
 
-export function isExcluded(s: XItem, type: TypeId): boolean {
+export function isExcluded(s: ItemSet, type: TypeId): boolean {
     return !possibleTypes(s).has(type);
 }
 
-function presentValues(s: XItem, type: TypeId): { slot: number; values: ModValue[] } | undefined {
+function presentValues(s: ItemSet, type: TypeId): { slot: number; values: ModValue[] } | undefined {
     const slot = s.u.slotOfType(type);
     if (slot === undefined) return undefined;
     const ms = s.u.modSlot(slot)!;
@@ -181,7 +181,7 @@ function presentValues(s: XItem, type: TypeId): { slot: number; values: ModValue
 
 /** The rows the type is at on the items that carry it, best first. Empty
  *  where it is absent. */
-export function rowsOf(s: XItem, type: TypeId): readonly Mod[] {
+export function rowsOf(s: ItemSet, type: TypeId): readonly Mod[] {
     return memo(s, `rows:${type}`, () => {
         const at = presentValues(s, type);
         if (at === undefined) return [];
@@ -198,7 +198,7 @@ export function rowsOf(s: XItem, type: TypeId): readonly Mod[] {
  * gives that threshold as its bound. Undefined where it is absent or has no
  * number.
  */
-export function valueSpan(s: XItem, type: TypeId, row?: ModId): Range | undefined {
+export function valueSpan(s: ItemSet, type: TypeId, row?: ModId): Range | undefined {
     const at = presentValues(s, type);
     if (at === undefined) return undefined;
     let lo = Infinity;
@@ -212,7 +212,7 @@ export function valueSpan(s: XItem, type: TypeId, row?: ModId): Range | undefine
 }
 
 /** The types crafted on some item. */
-export function craftedTypes(s: XItem): ReadonlySet<TypeId> {
+export function craftedTypes(s: ItemSet): ReadonlySet<TypeId> {
     return memo(
         s,
         "craftedTypes",
@@ -226,7 +226,7 @@ export function craftedTypes(s: XItem): ReadonlySet<TypeId> {
 }
 
 /** Is the type crafted on every item that carries it (and on some)? */
-export function isCrafted(s: XItem, type: TypeId): boolean {
+export function isCrafted(s: ItemSet, type: TypeId): boolean {
     const at = presentValues(s, type);
     return at !== undefined && at.values.length > 0 && at.values.every((v) => v.crafted);
 }
@@ -236,7 +236,7 @@ export function isCrafted(s: XItem, type: TypeId): boolean {
  * `named`, on the `gen` side when given (a value counts on its own row's
  * side): what a view that names `named` leaves unnamed.
  */
-export function countOutside(s: XItem, named: ReadonlySet<TypeId>, gen?: Gen): Range {
+export function countOutside(s: ItemSet, named: ReadonlySet<TypeId>, gen?: Gen): Range {
     const key = `outside:${gen ?? "*"}:${[...named].sort().join(",")}`;
     return memo(s, key, () => {
         const counted = new Set(
@@ -251,7 +251,7 @@ export function countOutside(s: XItem, named: ReadonlySet<TypeId>, gen?: Gen): R
 }
 
 /** Is the type present and fractured on every item? */
-export function isFractured(s: XItem, type: TypeId): boolean {
+export function isFractured(s: ItemSet, type: TypeId): boolean {
     const at = presentValues(s, type);
     return (
         at !== undefined && !valuesAt(s, at.slot).includes(0) && at.values.every((v) => v.fractured)
@@ -259,12 +259,12 @@ export function isFractured(s: XItem, type: TypeId): boolean {
 }
 
 /** May the type be fractured: fractured on some item. */
-export function mayBeFractured(s: XItem, type: TypeId): boolean {
+export function mayBeFractured(s: ItemSet, type: TypeId): boolean {
     return presentValues(s, type)?.values.some((v) => v.fractured) ?? false;
 }
 
 /** The types fractured on every item. */
-export function fracturedTypes(s: XItem): ReadonlySet<TypeId> {
+export function fracturedTypes(s: ItemSet): ReadonlySet<TypeId> {
     return memo(
         s,
         "fractured",
@@ -278,7 +278,7 @@ export function fracturedTypes(s: XItem): ReadonlySet<TypeId> {
  * names, each of which is one of every item's fractured modifiers. Where a
  * lock may be is `mayBeFractured`.
  */
-export function unprovenFractures(s: XItem): Range {
+export function unprovenFractures(s: ItemSet): Range {
     const named = fracturedTypes(s).size;
     const [lo, hi] = fracturedCount(s);
     return [lo - named, hi - named];
@@ -286,7 +286,7 @@ export function unprovenFractures(s: XItem): Range {
 
 // --- the marks ----------------------------------------------------------------
 
-export function influenceSets(s: XItem): ReadonlySet<InfluenceKey> {
+export function influenceSets(s: ItemSet): ReadonlySet<InfluenceKey> {
     return memo(
         s,
         "influences",
@@ -297,7 +297,7 @@ export function influenceSets(s: XItem): ReadonlySet<InfluenceKey> {
 /** Whether some item could be given one influence in place of its own: a
  *  fracture or an eldritch implicit rules it out, so it is read from the
  *  items well formed with one, not from the influence alone. */
-export function mayTakeInfluence(s: XItem): boolean {
+export function mayTakeInfluence(s: ItemSet): boolean {
     return memo(s, "mayTakeInfluence", () => {
         const { u } = s;
         const m = u.dd;
@@ -309,7 +309,7 @@ export function mayTakeInfluence(s: XItem): boolean {
 }
 
 /** Whether the items are corrupted: `{false}`, `{true}` or both. */
-export function corruptions(s: XItem): ReadonlySet<boolean> {
+export function corruptions(s: ItemSet): ReadonlySet<boolean> {
     return memo(
         s,
         "corrupted",
@@ -318,7 +318,7 @@ export function corruptions(s: XItem): ReadonlySet<boolean> {
 }
 
 /** The pairs of eldritch tiers the items have, as `eldritchKey`s. */
-export function eldritchPairs(s: XItem): ReadonlySet<EldritchKey> {
+export function eldritchPairs(s: ItemSet): ReadonlySet<EldritchKey> {
     return memo(s, "eldritch", () => {
         const m = s.u.dd;
         const exarch = s.u.scalar("exarchTier");
@@ -334,7 +334,7 @@ export function eldritchPairs(s: XItem): ReadonlySet<EldritchKey> {
 
 /** The implicits a side is on the items that have one, among those the
  *  catalogue names; an unnamed implicit adds none. */
-export function eldritchTypes(s: XItem, side: EldritchSide): ReadonlySet<TypeId> {
+export function eldritchTypes(s: ItemSet, side: EldritchSide): ReadonlySet<TypeId> {
     return memo(s, `eldritchTypes:${side}`, () => {
         const m = s.u.dd;
         const present = m.and(s.dd, m.slotIn(s.u.scalar(`${side}Tier`), tiersAbove0(s.u, side)));
@@ -347,7 +347,7 @@ export function eldritchTypes(s: XItem, side: EldritchSide): ReadonlySet<TypeId>
 
 /** Does some item carry an implicit of the side that the catalogue names
  *  no implicit for (check/item.ts `CEldritch`)? */
-export function unnamedImplicit(s: XItem, side: EldritchSide): boolean {
+export function unnamedImplicit(s: ItemSet, side: EldritchSide): boolean {
     const m = s.u.dd;
     const present = m.and(s.dd, m.slotIn(s.u.scalar(`${side}Tier`), tiersAbove0(s.u, side)));
     return m.valuesOf(present, s.u.scalar(`${side}Type`)).includes(0);
@@ -359,14 +359,14 @@ function tiersAbove0(u: Universe, side: EldritchSide): number[] {
 }
 
 /** The least and greatest number of memory strands. */
-export function strandsRange(s: XItem): Range {
+export function strandsRange(s: ItemSet): Range {
     const v = valuesAt(s, s.u.scalar("strands"));
     return [v[0]!, v[v.length - 1]!];
 }
 
 /** The influence tags the items carry: `sure` on every item, `maybe` on some
  *  only, read over the items' influence sets. */
-export function influenceTagsOf(s: XItem): {
+export function influenceTagsOf(s: ItemSet): {
     readonly sure: ReadonlySet<TagId>;
     readonly maybe: ReadonlySet<TagId>;
 } {
@@ -385,13 +385,13 @@ export function influenceTagsOf(s: XItem): {
 }
 
 /** The influence tags some item carries. */
-export function influenceTagsAny(s: XItem): ReadonlySet<TagId> {
+export function influenceTagsAny(s: ItemSet): ReadonlySet<TagId> {
     const { sure, maybe } = influenceTagsOf(s);
     return new Set([...sure, ...maybe]);
 }
 
 /** What an error's words read of the items (check/diagnostics.ts). */
-export function summaryOf(s: XItem): ItemSummary {
+export function summaryOf(s: ItemSet): ItemSummary {
     return {
         base: s.u.base,
         ilvl: s.u.ilvl,
@@ -406,7 +406,7 @@ export function summaryOf(s: XItem): ItemSummary {
 // --- the imprint ----------------------------------------------------------------
 
 /** Whether the items hold an imprint: `{false}` in a universe without one. */
-export function imprintHeld(s: XItem): ReadonlySet<boolean> {
+export function imprintHeld(s: ItemSet): ReadonlySet<boolean> {
     if (!s.u.imprint) return new Set([false]);
     return new Set(valuesAt(s, s.u.held!).map((v) => v === 1));
 }
@@ -431,7 +431,7 @@ function noImprint(u: Universe): Dd {
 
 /** The imprints the items hold, read as items of their own (holding none);
  *  undefined when no item holds one. */
-export function imprintOf(s: XItem): XItem | undefined {
+export function imprintOf(s: ItemSet): ItemSet | undefined {
     if (!s.u.imprint) return undefined;
     return memo(s, "imprint", () => {
         const u = s.u;
@@ -453,7 +453,7 @@ export const MAX_CLAUSE = 3;
 
 /** Does every item carry one of these types: the way to ask of a group known
  *  already (a pool's "one of", a `hasGroup` condition). */
-export function atLeastOneOf(s: XItem, types: Iterable<TypeId>): boolean {
+export function atLeastOneOf(s: ItemSet, types: Iterable<TypeId>): boolean {
     return presentAmong(s, types)[0] >= 1;
 }
 
@@ -466,7 +466,7 @@ export function atLeastOneOf(s: XItem, types: Iterable<TypeId>): boolean {
  * set so far, so it walks only what the items hold.
  */
 export function disjunctiveGuarantees(
-    s: XItem,
+    s: ItemSet,
     among?: ReadonlySet<TypeId>,
     maxSize = MAX_CLAUSE,
 ): readonly (readonly TypeId[])[] {
@@ -542,7 +542,7 @@ export function impliesClause(g: CardinalityGuarantee, clause: readonly TypeId[]
  * ends; a clause no other group implies stays "at least one".
  */
 export function cardinalityGuarantees(
-    s: XItem,
+    s: ItemSet,
     among?: ReadonlySet<TypeId>,
     maxSize = MAX_CLAUSE,
 ): readonly CardinalityGuarantee[] {
@@ -610,7 +610,7 @@ export function cardinalityGuarantees(
  * one choice of a row per type such that every item carries some member at
  * its chosen row. Empty when no choice, or more than one, does.
  */
-export function disjunctiveTier(s: XItem, types: readonly TypeId[]): Map<TypeId, ModId> {
+export function disjunctiveTier(s: ItemSet, types: readonly TypeId[]): Map<TypeId, ModId> {
     const u = s.u;
     const m = u.dd;
     const options = types.map((t) => ({ t, rows: rowsOf(s, t) }));
@@ -645,7 +645,7 @@ export function disjunctiveTier(s: XItem, types: readonly TypeId[]): Map<TypeId,
  * names no rows; a member no such item needs keeps every row.
  */
 export function clauseRows(
-    s: XItem,
+    s: ItemSet,
     types: readonly TypeId[],
     atLeast = 1,
 ): ReadonlyMap<TypeId, readonly Mod[]> {
@@ -696,7 +696,7 @@ export function clauseRows(
  * effects every item's carriers share; the fewest strands when `strands`.
  */
 export function guaranteedFacts(
-    s: XItem,
+    s: ItemSet,
     level = s.u.ilvl,
     strands = false,
     moreStrands = 0,

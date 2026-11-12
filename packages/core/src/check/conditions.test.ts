@@ -36,8 +36,8 @@ import { cItem, cMod, refCtx } from "./reference/item.js";
 import { listItems } from "./reference/listing.js";
 import { holdsPred } from "./reference/pred.js";
 import { rng, type Rng } from "./reference/rng.js";
-import { diffSets, ItemSet } from "./reference/sets.js";
-import { fromItems, narrow, type XItem } from "./state.js";
+import { diffSets, CItemSet } from "./reference/sets.js";
+import { fromItems, narrow, type ItemSet } from "./state.js";
 import { buildUniverse, type Universe } from "./universe.js";
 
 // Each catalogue resolves every condition under every influence set and lists
@@ -99,10 +99,10 @@ describe("a condition read item by item", () => {
         // Hunter's tier 1 is X2, the Shaper's XS; both are tier 1 on an item of the two.
         const narrowed = narrowBy(state, t1, true, defs)!;
         expect(listItems(u, narrowed.dd, { lowest: true })).toEqual(
-            ItemSet.of([at(hunter, X2), at(shaper, XS), at(both, XS)]),
+            CItemSet.of([at(hunter, X2), at(shaper, XS), at(both, XS)]),
         );
         expect(listItems(u, narrowBy(state, t1, false, defs)!.dd, { lowest: true }).keys()).toEqual(
-            ItemSet.of([at(shaper, X2), at(NO_INFLUENCE, X2)]).keys(),
+            CItemSet.of([at(shaper, X2), at(NO_INFLUENCE, X2)]).keys(),
         );
         for (const x of items)
             expect(holdsPred(t1, x, ctx, defs)).toBe(
@@ -291,11 +291,11 @@ function expectExact(
     });
     for (const p of preds) {
         for (const s of states) {
-            const x: XItem = fromItems(u, s)!;
+            const x: ItemSet = fromItems(u, s)!;
             for (const positive of [true, false]) {
                 const exact = narrowBy(x, p, positive, defs);
                 const listed =
-                    exact === null ? ItemSet.empty : listItems(u, exact.dd, { lowest: true });
+                    exact === null ? CItemSet.empty : listItems(u, exact.dd, { lowest: true });
                 const expected = atCells(
                     u,
                     s.filter((i) => holdsPred(p, i, cat.ctx, defs) === positive),
@@ -394,7 +394,7 @@ describe("a condition beside a modifier that adds a tag", () => {
             for (const positive of [true, false]) {
                 const exact = narrowBy(state, p, positive, defs);
                 const listed =
-                    exact === null ? ItemSet.empty : listItems(u, exact.dd, { lowest: true });
+                    exact === null ? CItemSet.empty : listItems(u, exact.dd, { lowest: true });
                 const expected = atCells(
                     u,
                     items.filter((x) => holdsPred(p, x, ctx, defs) === positive),

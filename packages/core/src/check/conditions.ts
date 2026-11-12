@@ -33,7 +33,7 @@ import type { Mod } from "../model/mod.js";
 import { shapeKey } from "./craft.js";
 import type { Dd } from "./dd.js";
 import { influenceTagsOfKey } from "./influence.js";
-import { conditionOf, predKey, stateOf, type XItem } from "./state.js";
+import { conditionOf, predKey, stateOf, type ItemSet } from "./state.js";
 import type { Universe } from "./universe.js";
 import { isGuaranteed, possibleTypes, rowsOf } from "./views.js";
 
@@ -142,11 +142,11 @@ function buildCondition(u: Universe, pred: Pred, defs: PredDefs): Dd | null {
  * condition that cannot be resolved narrows nothing.
  */
 export function narrowBy(
-    state: XItem,
+    state: ItemSet,
     pred: Pred,
     positive: boolean,
     defs: PredDefs,
-): XItem | null {
+): ItemSet | null {
     const c = conditionOfPred(state.u, pred, defs);
     if (c === null) return state;
     const m = state.u.dd;
@@ -164,7 +164,7 @@ export function narrowBy(
  * reading with the tiers each set waits for above the item's level.
  */
 export function readCondition(
-    state: XItem,
+    state: ItemSet,
     pred: Pred,
     defs: PredDefs,
     diag: Diag,
@@ -182,7 +182,7 @@ export function readCondition(
     let first: Said[] | undefined;
     const readings: Resolved[] = [];
     for (const i of m.valuesOf(state.dd, slot)) {
-        const part: XItem = { u, dd: m.and(state.dd, m.slotIn(slot, [i])) };
+        const part: ItemSet = { u, dd: m.and(state.dd, m.slotIn(slot, [i])) };
         const view = caseView(part, i);
         const said: Said[] = [];
         resolvePred(pred, view, {
@@ -211,7 +211,7 @@ export function readCondition(
 
 /** One influence case of the state as a resolution reads it: its influences'
  *  tags, and the rows its items may be at (`carriedRows`). */
-function caseView(part: XItem, influence: number): ResolveView {
+function caseView(part: ItemSet, influence: number): ResolveView {
     const { u } = part;
     const tags = caseTags(u, influence);
     let carried: ((row: Mod) => boolean) | undefined;
@@ -238,7 +238,7 @@ function caseView(part: XItem, influence: number): ResolveView {
     };
 }
 
-function heldRows(state: XItem, type: TypeId): ReadonlySet<ModId> | undefined {
+function heldRows(state: ItemSet, type: TypeId): ReadonlySet<ModId> | undefined {
     const rows = rowsOf(state, type);
     return rows.length === 0 ? undefined : new Set(rows.map((r) => r.id));
 }
@@ -247,6 +247,6 @@ function heldRows(state: XItem, type: TypeId): ReadonlySet<ModId> | undefined {
  *  reason (check/resolve-pred.ts `levelReasons`): the tiers `readCondition`
  *  found an influence case of the state waiting for, less those of a type
  *  every item of the state holds. */
-export function levelReasonsOn(state: XItem, resolved: Resolved | null): string {
+export function levelReasonsOn(state: ItemSet, resolved: Resolved | null): string {
     return levelReasons(resolved, (t) => isGuaranteed(state, t));
 }

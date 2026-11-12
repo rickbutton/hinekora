@@ -12,8 +12,8 @@ import {
 } from "./reference/harness.js";
 import { type CEldritch, type CItem, countsOf, rowOf } from "./reference/item.js";
 import { listItems } from "./reference/listing.js";
-import { allItems, ItemSet } from "./reference/sets.js";
-import { fromItems, type XItem } from "./state.js";
+import { allItems, CItemSet } from "./reference/sets.js";
+import { fromItems, type ItemSet } from "./state.js";
 import { buildUniverse, RARITIES } from "./universe.js";
 import { HAND_REGISTRY, HELMET_BASE } from "./reference/hand.js";
 import { cItem } from "./reference/item.js";
@@ -106,7 +106,7 @@ describe("the views", () => {
 
 let clausesSeen = 0;
 
-function expectViews(s: XItem, items: readonly CItem[], types: readonly TypeId[]): void {
+function expectViews(s: ItemSet, items: readonly CItem[], types: readonly TypeId[]): void {
     const { u } = s;
     const ctx = {
         registry: u.registry,
@@ -250,7 +250,7 @@ describe("the imprint view", () => {
             if (held.length === 0) expect(imprint).toBeUndefined();
             else
                 expect(listItems(u, imprint!.dd, { lowest: true }).items()).toEqual(
-                    ItemSet.of(held).items(),
+                    CItemSet.of(held).items(),
                 );
         }
     });

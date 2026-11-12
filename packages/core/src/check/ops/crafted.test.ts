@@ -22,7 +22,7 @@ import { type CItem, cItem, cMod, refCtx } from "../reference/item.js";
 import { listItems } from "../reference/listing.js";
 import { refRunMethod } from "../reference/method.js";
 import type { Bounds } from "../reference/sets.js";
-import { ItemSet } from "../reference/sets.js";
+import { CItemSet } from "../reference/sets.js";
 import { violations } from "../reference/wellformed.js";
 import { fromItems, narrow } from "../state.js";
 import type { Universe } from "../universe.js";
@@ -114,7 +114,7 @@ function naturals(cat: Catalog, k: number): Mod[] {
 const ids = (rows: readonly (Mod | undefined)[]): ModId[] =>
     rows.filter((m): m is Mod => m !== undefined).map((m) => m.id);
 
-function statesOf(s: Setup, seed: number, bounds: Bounds, random = 10): ItemSet[] {
+function statesOf(s: Setup, seed: number, bounds: Bounds, random = 10): CItemSet[] {
     return harnessStates(s.u, s.cat.ctx, seed, {
         bounds,
         random,
@@ -122,7 +122,7 @@ function statesOf(s: Setup, seed: number, bounds: Bounds, random = 10): ItemSet[
     });
 }
 
-function exact(s: Setup, states: readonly ItemSet[], ops: readonly Op[]): void {
+function exact(s: Setup, states: readonly CItemSet[], ops: readonly Op[]): void {
     const d = compareMethodOn(s.u, s.cat.ctx, states, ops);
     expect(d, d).toBe("");
 }
@@ -278,9 +278,9 @@ function outcomes(
     for (const x of items) expect(violations(x, s.cat.ctx)).toEqual([]);
     const r = runMethod(fromItems(s.u, items)!, ops);
     const got = listItems(s.u, r.state.dd, { lowest: true });
-    const ref = refRunMethod(ItemSet.of(items), ops, s.cat.ctx);
+    const ref = refRunMethod(CItemSet.of(items), ops, s.cat.ctx);
     expect(got.keys()).toEqual(
-        ItemSet.of(ref.state.items().map((x) => s.u.decodeOne(s.u.encode(x)))).keys(),
+        CItemSet.of(ref.state.items().map((x) => s.u.decodeOne(s.u.encode(x)))).keys(),
     );
     expect(r.ok).toBe(ref.ok);
     return { items: got.items(), failure: r.ok ? undefined : r.failure };
@@ -792,9 +792,9 @@ describe("the veiled orbs on the strip and removal they use", () => {
             req({ kind: "noVeiledKept" }),
         ]).failing.get(0);
         const listed =
-            refused === undefined ? ItemSet.empty : listItems(s.u, refused, { lowest: true });
+            refused === undefined ? CItemSet.empty : listItems(s.u, refused, { lowest: true });
         const kept = items.filter((x) =>
-            refRunMethod(ItemSet.of([x]), [{ kind: "strip" }], cat.ctx).state.some((y) =>
+            refRunMethod(CItemSet.of([x]), [{ kind: "strip" }], cat.ctx).state.some((y) =>
                 y.mods.some((m) => isVeiledRow(cat.ctx.rows.get(m.row)!, false)),
             ),
         );

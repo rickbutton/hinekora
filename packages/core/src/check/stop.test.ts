@@ -14,8 +14,8 @@ const ctx: CheckContext = { registry };
 const ring = (prefixes: string[] = [], suffixes: string[] = []) =>
     item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes, suffixes });
 
-describe("stop ends the craft on a path", () => {
-    it("keeps only the paths that continue", () => {
+describe("stop ends the craft for an item", () => {
+    it("keeps only the items that continue", () => {
         // The annul may take the life; the craft stops there, so afterwards the
         // life is sure.
         const c = craft(ring([LIFE_T1.id], [FIRE_RESIST.id]), [
@@ -38,7 +38,7 @@ describe("stop ends the craft on a path", () => {
         expect(isExcluded(s, FIRE_RESIST.type)).toBe(true);
     });
 
-    it("a craft whose every path stops has no final item", () => {
+    it("a craft that stops for every item has no final item", () => {
         const c = craft(ring([LIFE_T1.id]), [
             op("exalt"),
             iff(has(FIRE_RESIST.id), [stop()], [stop()]),

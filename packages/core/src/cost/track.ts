@@ -19,13 +19,13 @@ import {
     NO_ELDRITCH,
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
-import type { Range } from "../check/domain.js";
+import type { Range } from "../check/range.js";
 import { narrowRange } from "../check/values.js";
 import type { Op } from "../check/ops/types.js";
 import type { Registry } from "../resolve/registry.js";
 import type { RPred } from "../check/pred.js";
 import type { Dd } from "../check/dd.js";
-import { narrow as narrowTo, stateOf, type XItem } from "../check/state.js";
+import { narrow as narrowTo, stateOf, type ItemSet } from "../check/state.js";
 import type { ModValue, Universe } from "../check/universe.js";
 import {
     capsOver,
@@ -166,7 +166,7 @@ const fourAlike = (branches: Outcomes): readonly number[] =>
  * where the odds are not known.
  */
 const OUTCOME_ODDS: Readonly<
-    Record<string, (branches: Outcomes, item: XItem) => readonly number[] | undefined>
+    Record<string, (branches: Outcomes, item: ItemSet) => readonly number[] | undefined>
 > = {
     // Vaal Orb § Equipment, § Jewels: a new implicit, the reforge, and on the
     // three basic jewels a unique jewel, on which the craft ends.
@@ -193,7 +193,7 @@ const ASSUMED_ODDS: Readonly<Record<string, string>> = {
 
 /** The note of a step that, as built, rests on odds no source states on the
  *  item it is used on. */
-export function assumedOdds(method: string, ops: readonly Op[], item: XItem): string | undefined {
+export function assumedOdds(method: string, ops: readonly Op[], item: ItemSet): string | undefined {
     const marks =
         mayTakeInfluence(item) &&
         ops.some(
@@ -220,7 +220,7 @@ function endsCraft(branch: readonly Op[]): boolean {
 export function ending(
     method: string,
     ops: readonly Op[],
-    item: XItem,
+    item: ItemSet,
 ): { readonly share: number; readonly note: string } | undefined {
     const either = ops.find((op) => op.kind === "either");
     if (either?.kind !== "either") return undefined;
@@ -308,8 +308,8 @@ export class Tracker {
 
     constructor(
         private readonly registry: Registry,
-        first: XItem,
-        items: readonly XItem[],
+        first: ItemSet,
+        items: readonly ItemSet[],
         preds: readonly RPred[],
         crafted: readonly TypeId[],
     ) {
@@ -483,7 +483,7 @@ export class Tracker {
     }
 
     /** Atom `i`'s classes the item allows, by the weight of their rows it allows. */
-    rowsOn(i: number, item: XItem): readonly { id: ModId; weight: number }[] {
+    rowsOn(i: number, item: ItemSet): readonly { id: ModId; weight: number }[] {
         const type = this.types[i]!;
         const held = heldRows(item, type);
         const out: { id: ModId; weight: number }[] = [];
@@ -538,7 +538,7 @@ export class Tracker {
      * off the roll instead.
      */
     transition(
-        before: XItem,
+        before: ItemSet,
         ops: readonly Op[],
         reading: Reading,
         method = "",
@@ -602,7 +602,7 @@ export class Tracker {
 
     /** What a draw reads of an item: its counts, rarity, strands, influences,
      *  the modifiers it surely holds and the named ones' tiers and values. */
-    private signature(a: XItem): string {
+    private signature(a: ItemSet): string {
         const guaranteed = [...guaranteedTypes(a)].sort();
         const tiers = this.types.map((t) =>
             rowsOf(a, t)
@@ -620,7 +620,7 @@ export class Tracker {
     }
 
     private outcomes(
-        before: XItem,
+        before: ItemSet,
         ops: readonly Op[],
         state: ChainState,
         reading: Reading,
@@ -720,7 +720,7 @@ export class Tracker {
      *  state's own, or else each type the item allows by its weight in the
      *  ember pool of that tier. */
     private implicitIn(
-        item: XItem,
+        item: ItemSet,
         side: EldritchSide,
         from: ChainState | undefined,
     ): readonly { id: ModId; weight: number }[] | undefined {
@@ -754,7 +754,7 @@ export class Tracker {
      * where the item leaves either open.
      */
     marked(
-        item: XItem,
+        item: ItemSet,
         rows: readonly (ModId | null)[],
     ): { rows: (ModId | null)[]; share: number }[] | undefined {
         let out = [{ rows: [...rows], share: 1 }];
@@ -848,14 +848,14 @@ export class Tracker {
 
     /** The item a veiled placeholder went onto, read on each side it may be
      *  on, the sides with room alike (QUESTIONS.md Q76). */
-    private veiledSides(a: XItem, from: ChainState): readonly Outcome[] | undefined {
+    private veiledSides(a: ItemSet, from: ChainState): readonly Outcome[] | undefined {
         const sides: (readonly Outcome[])[] = [];
         for (const [type, gen] of [
             [VEILED_PREFIX, "prefix"],
             [VEILED_SUFFIX, "suffix"],
         ] as const) {
             const to = bump(from, gen, 1, from.rows);
-            let side: XItem | null = a;
+            let side: ItemSet | null = a;
             for (const c of [
                 { kind: "compare", projection: "prefixCount", op: "==", value: to.prefix },
                 { kind: "compare", projection: "suffixCount", op: "==", value: to.suffix },
@@ -873,7 +873,7 @@ export class Tracker {
 
     /** `outcomes` on the checker's item already narrowed to `state`. */
     private outcomesOn(
-        item: XItem,
+        item: ItemSet,
         ops: readonly Op[],
         state: ChainState,
         reading: Reading,
@@ -1023,7 +1023,7 @@ export class Tracker {
     /** The rows a state's row of atom `i` may be on the item, each with its
      *  share: the rows of its class the item allows, by weight, alike where
      *  no roll lays any of them down. */
-    private membersOn(i: number, row: ModId, item: XItem): { mod: Mod; share: number }[] {
+    private membersOn(i: number, row: ModId, item: ItemSet): { mod: Mod; share: number }[] {
         const bare = unlockedRow(row);
         const members = this.classes[i]!.find((c) => c.rep === bare)?.members ?? [
             { id: readRow(row).base, weight: 1 },
@@ -1052,7 +1052,7 @@ export class Tracker {
      * the reason, where the state does not say which modifiers are influenced
      * or no source says what the raised one becomes.
      */
-    private dominated(item: XItem, state: ChainState): readonly Outcome[] | undefined {
+    private dominated(item: ItemSet, state: ChainState): readonly Outcome[] | undefined {
         const lose = (why: string): undefined => {
             this.unfollowed = why;
             return undefined;
@@ -1266,7 +1266,7 @@ export class Tracker {
 
     /** The item a method's fill starts from: what its steps before the fill
      *  leave. */
-    private stripped(item: XItem, ops: readonly Op[], fillAt: number): XItem {
+    private stripped(item: ItemSet, ops: readonly Op[], fillAt: number): ItemSet {
         if (fillAt < 0) return item;
         return ranOn(item, ops, fillAt).state;
     }
@@ -1309,7 +1309,7 @@ export class Tracker {
      * atom present or absent, a present one's class by its rows' weight.
      * Undefined where the item leaves a count or an atom open.
      */
-    statesIn(item: XItem, from?: ChainState): readonly Outcome[] | undefined {
+    statesIn(item: ItemSet, from?: ChainState): readonly Outcome[] | undefined {
         const [t0, t1] = countsOf(item).total;
         const [p0, p1] = countsOf(item).prefix;
         if (t0 !== t1 || p0 !== p1) return undefined;
@@ -1417,7 +1417,7 @@ export class Tracker {
     }
 
     /** The checker's items narrowed to a state: null where the two cannot meet. */
-    narrow(item: XItem, state: ChainState): XItem | null {
+    narrow(item: ItemSet, state: ChainState): ItemSet | null {
         const u = item.u;
         const m = u.dd;
         // Each atom's slot first: the counts read every slot, and are cheaper
@@ -1875,7 +1875,7 @@ export function holdsOn(
 }
 
 /** The side a type's rows sit on, on this item. */
-export function genOfOn(registry: Registry, a: XItem, type: TypeId): Gen {
+export function genOfOn(registry: Registry, a: ItemSet, type: TypeId): Gen {
     return (
         rollableGen(registry.catalog, a.u.base, a.u.ilvl, type, influenceTagsAny(a)) ??
         registry.genOfType(type) ??
@@ -1884,13 +1884,13 @@ export function genOfOn(registry: Registry, a: XItem, type: TypeId): Gen {
 }
 
 /** The rows the items carry the type at. */
-function heldRows(s: XItem, type: TypeId): ReadonlySet<ModId> {
+function heldRows(s: ItemSet, type: TypeId): ReadonlySet<ModId> {
     return new Set(rowsOf(s, type).map((m) => m.id));
 }
 
 /** Whether the type is fractured on the items that carry it: undefined where
  *  it is on some of them only. */
-function lockedOn(s: XItem, type: TypeId): boolean | undefined {
+function lockedOn(s: ItemSet, type: TypeId): boolean | undefined {
     const slot = s.u.slotOfType(type);
     if (slot === undefined) return false;
     const marks = new Set(
@@ -1906,7 +1906,7 @@ function lockedOn(s: XItem, type: TypeId): boolean | undefined {
  * their influences' admits, whose spawn table names an influence's tag (as
  * check/ops/pools.ts `influenceRow` reads it).
  */
-function influenceRowTest(s: XItem): (m: Mod) => boolean {
+function influenceRowTest(s: ItemSet): (m: Mod) => boolean {
     const sure = influenceTagsOf(s).sure;
     const own = new Set([...guaranteedFacts(s).tags].filter((t) => !sure.has(t)));
     return (m) =>

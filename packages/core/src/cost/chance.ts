@@ -14,9 +14,9 @@ import type { Cmp } from "../ast/ast.js";
 import type { Gen, ModId, TypeId } from "../model/ids.js";
 import type { RPred } from "../check/pred.js";
 import type { Dd } from "../check/dd.js";
-import { narrow, predKey, type XItem } from "../check/state.js";
+import { narrow, predKey, type ItemSet } from "../check/state.js";
 import { counts, guaranteedTypes, rowsOf, suffixRange } from "../check/views.js";
-import type { Range } from "../check/domain.js";
+import type { Range } from "../check/range.js";
 import { narrowRange } from "../check/values.js";
 import { amongSplitDistribution } from "./race.js";
 import {
@@ -81,7 +81,7 @@ function leaves(pred: RPred, out: Leaf[] = []): Leaf[] {
 const settledBy = new WeakMap<Dd, Map<string, boolean | undefined>>();
 
 /** What the checker's items settle on their own: impossible, certain, or neither. */
-export function certainty(pred: RPred, a: XItem): boolean | undefined {
+export function certainty(pred: RPred, a: ItemSet): boolean | undefined {
     let known = settledBy.get(a.dd);
     if (known === undefined) settledBy.set(a.dd, (known = new Map<string, boolean | undefined>()));
     const key = predKey(pred);
@@ -96,7 +96,7 @@ export function certainty(pred: RPred, a: XItem): boolean | undefined {
  * The chance `pred` holds after `roll` left the item `after`. `undefined` when
  * neither the roll nor the item settles it.
  */
-export function chance(pred: RPred, roll: Roll, after: XItem): number | undefined {
+export function chance(pred: RPred, roll: Roll, after: ItemSet): number | undefined {
     const settled = certainty(pred, after);
     if (settled !== undefined) return settled ? 1 : 0;
     // A leaf the roll does not model is read off the item; one the item cannot
@@ -170,7 +170,7 @@ function modelled(leaf: Leaf, roll: Roll): boolean {
 function removalChance(
     pred: RPred,
     roll: Extract<Roll, { kind: "removal" }>,
-    after: XItem,
+    after: ItemSet,
     base: Truth,
 ): number | undefined {
     const picks: { type?: TypeId; gen?: Gen; prob: number }[] = [...roll.candidates];
@@ -238,7 +238,7 @@ function survival(pred: RPred, roll: Extract<Roll, { kind: "removal" }>): number
 
 /** A Divine Orb: a present modifier's value is uniform over its row's range
  *  again; which row it is, the item knows or does not. */
-function rerollChance(pred: RPred, after: XItem, base: Truth): number | undefined {
+function rerollChance(pred: RPred, after: ItemSet, base: Truth): number | undefined {
     const valueLeaves = leaves(pred).filter(
         (l): l is Extract<Leaf, { kind: "hasValue" }> => l.kind === "hasValue",
     );
@@ -275,7 +275,7 @@ function rerollChance(pred: RPred, after: XItem, base: Truth): number | undefine
 function pickChance(
     pred: RPred,
     candidates: readonly Candidate[],
-    after: XItem,
+    after: ItemSet,
     base: Truth,
     truthFor: (leaf: Leaf, picked: TypeId) => boolean | undefined,
 ): number | undefined {
@@ -390,7 +390,7 @@ interface Drawn {
 function drawChance(
     pred: RPred,
     variants: readonly DrawVariant[],
-    after: XItem,
+    after: ItemSet,
     base: Truth,
 ): number | undefined {
     const interest = typesOfInterest(pred);

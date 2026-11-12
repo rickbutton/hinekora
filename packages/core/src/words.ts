@@ -3,7 +3,7 @@
  * in one place so the checker, the cost report, the renderers and the editors
  * write them the same way.
  */
-import type { Range } from "./check/domain.js";
+import type { Range } from "./check/range.js";
 import type { Rarity } from "./model/ids.js";
 
 /** "grand" → "Grand". */

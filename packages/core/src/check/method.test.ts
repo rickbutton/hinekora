@@ -41,7 +41,7 @@ import { listItems } from "./reference/listing.js";
 import { refRunMethod } from "./reference/method.js";
 import type { RefHandlers } from "./reference/ops/handler.js";
 import { REF_FAMILIES, REF_HANDLERS } from "./reference/ops/registry.js";
-import { ItemSet } from "./reference/sets.js";
+import { CItemSet } from "./reference/sets.js";
 import type { Rules } from "./rules.js";
 import { fromItems } from "./state.js";
 import { rarities } from "./views.js";
@@ -205,7 +205,7 @@ describe("the method frame", () => {
         const m = [...u.rows.keys()].find((r) => r.id === id)!;
         return m.text === undefined ? undefined : Number(/\d+/.exec(m.text)![0]);
     };
-    const atLeastOne = (s: NonNullable<ReturnType<typeof fromItems>>): ItemSet =>
+    const atLeastOne = (s: NonNullable<ReturnType<typeof fromItems>>): CItemSet =>
         listItems(u, s.dd, { lowest: true });
 
     it("refuses on any item that breaks a check, and goes on from the items that pass", () => {
@@ -740,7 +740,7 @@ describe("the placement of checks", () => {
         };
         expect(() =>
             refRunMethod(
-                ItemSet.of([cItem()]),
+                CItemSet.of([cItem()]),
                 [corrupt, req({ kind: "notCorrupted" })],
                 cat.ctx,
                 two,

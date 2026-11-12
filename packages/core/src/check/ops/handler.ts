@@ -25,7 +25,7 @@
 import type { Check, PoolSpec, PreconditionFailure, Selector } from "./types.js";
 import type { Dd } from "../dd.js";
 import type { RuleField, Rules } from "../rules.js";
-import type { XItem } from "../state.js";
+import type { ItemSet } from "../state.js";
 import type { PoolTable } from "./pools.js";
 import type { Universe } from "../universe.js";
 import type { CompoundKind, CompoundOf, FillOf, RemoveOf, Single } from "./steps.js";
@@ -108,7 +108,7 @@ export interface CheckVerdict {
     readonly pass: Dd;
     /** The refusal, worded once for the method over every case together: the
      *  items refused and the items the check was judged on. */
-    readonly word: (failing: XItem, state: XItem) => PreconditionFailure;
+    readonly word: (failing: ItemSet, state: ItemSet) => PreconditionFailure;
     /** The refused items as the craft meant them (the rarity it needed, say),
      *  for the craft to go on from when no item passes: recovery, not a fact
      *  of the game (docs/ARCHITECTURE.md §4.4). */

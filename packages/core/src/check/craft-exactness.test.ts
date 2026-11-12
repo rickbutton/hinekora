@@ -48,7 +48,7 @@ import { describePred } from "./diagnostics.js";
 import type { Rarity } from "../model/ids.js";
 import { ELDRITCH_TIERS, type EldritchTierName } from "../model/marks.js";
 import { generateCatalog, type Catalog, type CatalogOptions } from "./reference/catalog.js";
-import { check, exactDetail, type TraceEntry } from "./check.js";
+import { check, checkDetail, type TraceEntry } from "./check.js";
 import type { Dd } from "./dd.js";
 import { compareCraft } from "./reference/craft.js";
 import { initialItems } from "./reference/initial.js";
@@ -600,11 +600,11 @@ describe("a whole craft, run exactly", () => {
             tally.largest = Math.max(tally.largest, c.largest);
             tally.items += c.items;
             for (const f of c.strict.findings) {
-                const why = exactDetail(c.strict)?.items.get(f)?.unreached;
+                const why = checkDetail(c.strict)?.items.get(f)?.unreached;
                 const kind = why === undefined ? f.kind : `${f.kind} (${why})`;
                 tally.findings.set(kind, (tally.findings.get(kind) ?? 0) + 1);
             }
-            for (const n of exactDetail(c.strict)?.rounds ?? []) {
+            for (const n of checkDetail(c.strict)?.rounds ?? []) {
                 tally.rounds.set(n, (tally.rounds.get(n) ?? 0) + 1);
             }
         }

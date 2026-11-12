@@ -11,6 +11,7 @@ export * from "./check/index.js";
 export * from "./cost/index.js";
 export {
     check,
+    type CheckContext,
     type CheckResult,
     type CheckTuning,
     type Finding,
@@ -20,6 +21,6 @@ export {
 } from "./check/check.js";
 export { methodItemOf } from "./check/build.js";
 export { type CraftNames, craftNames } from "./check/names.js";
-export type { XItem } from "./check/state.js";
+export type { ItemSet } from "./check/state.js";
 export * from "./check/views.js";
 export * from "./words.js";

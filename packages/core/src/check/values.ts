@@ -4,7 +4,7 @@
  * value, so a craft's "life 75 or more" is a question about that span.
  */
 import type { Cmp } from "../ast/ast.js";
-import type { Range } from "./domain.js";
+import type { Range } from "./range.js";
 
 /** The first number of a text: a rolled span "(70-84)" or a fixed "3". */
 const FIRST_NUMBER = /\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)|(\d+(?:\.\d+)?)/;

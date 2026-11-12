@@ -17,7 +17,7 @@ import { lookupWeight } from "../../pool/pool.js";
 import type { Dd, DdRelation } from "../dd.js";
 import { influenceTagsOfKey } from "../influence.js";
 import { type RuleField, type Rules, shielded } from "../rules.js";
-import type { XItem } from "../state.js";
+import type { ItemSet } from "../state.js";
 import { isFresh, type ModValue, RARITIES, type Universe } from "../universe.js";
 import { addDraws } from "./fill.js";
 import {
@@ -491,7 +491,7 @@ export const checks: CheckTable = {
                     u.dd.and(c.dd, atLeast(u, influencedReach(c.view, rules), check.count)),
                 ),
             ),
-            word: (failing: XItem) => ({
+            word: (failing: ItemSet) => ({
                 kind: "tooFewInfluenced",
                 needed: check.count,
                 have: fewestInfluenced(u, failing.dd),
@@ -521,7 +521,7 @@ export const checks: CheckTable = {
                         sides.map(([, d]) => d),
                     ),
                 ),
-                word: (failing: XItem) => ({
+                word: (failing: ItemSet) => ({
                     kind: "influencedOnProtected",
                     what: check.what,
                     gen:

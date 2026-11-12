@@ -25,7 +25,7 @@ import type { Mod } from "../../model/mod.js";
 import { lookupWeight } from "../../pool/pool.js";
 import { rollableGen } from "../../resolve/tiers.js";
 import { type CEldritch, type CItem, type CMod, cItem, NO_IMPLICIT, type RefCtx } from "./item.js";
-import { ItemSet } from "./sets.js";
+import { CItemSet } from "./sets.js";
 import { isWellFormed } from "./wellformed.js";
 
 /** Each value of the row's span, or none for a row with no number. */
@@ -76,7 +76,7 @@ function offeredBy(ctx: RefCtx, decl: ItemDecl): (row: Mod, gen: Gen) => boolean
     return (row, gen) => row.gen === gen && fits(row) && weighed(row);
 }
 
-export function initialItems(ctx: RefCtx, block: ItemBlock): ItemSet {
+export function initialItems(ctx: RefCtx, block: ItemBlock): CItemSet {
     const faults: string[] = [];
     const decl = declareItem(block, ctx.registry, (m) => faults.push(m));
     if (decl === null || faults.length > 0) {
@@ -140,5 +140,5 @@ export function initialItems(ctx: RefCtx, block: ItemBlock): ItemSet {
             }
         }
     }
-    return ItemSet.of(out);
+    return CItemSet.of(out);
 }

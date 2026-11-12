@@ -30,9 +30,9 @@ import {
 import { type CItem, type CMod, cItem, cMod, refCtx } from "../reference/item.js";
 import { listItems } from "../reference/listing.js";
 import { refRunMethod } from "../reference/method.js";
-import { ItemSet } from "../reference/sets.js";
+import { CItemSet } from "../reference/sets.js";
 import { violations } from "../reference/wellformed.js";
-import { fromItems, narrow, type XItem } from "../state.js";
+import { fromItems, narrow, type ItemSet } from "../state.js";
 import { candidateRows } from "../rows.js";
 import { rulesOf } from "../rules.js";
 import { Universe } from "../universe.js";
@@ -71,7 +71,7 @@ interface Plan {
 interface Setup {
     readonly cat: Catalog;
     readonly u: Universe;
-    readonly states: ItemSet[];
+    readonly states: CItemSet[];
 }
 
 function setup(plan: Plan): Setup {
@@ -319,7 +319,7 @@ function outcomes(s: Setup, item: CItem, ops: readonly Op[]): CItem[] {
     const state = fromItems(s.u, [item])!;
     const r = runMethod(state, ops);
     const exact = listItems(s.u, r.state.dd, { lowest: true });
-    const ref = atCells(s.u, refRunMethod(ItemSet.of([item]), ops, s.cat.ctx).state);
+    const ref = atCells(s.u, refRunMethod(CItemSet.of([item]), ops, s.cat.ctx).state);
     expect(exact.keys()).toEqual(ref.keys());
     return exact.items();
 }
@@ -551,10 +551,10 @@ describe("the imprint's rules", () => {
         };
         let fewer = false;
         for (const start of p.states) {
-            const plain = ItemSet.of(start.items().map((x) => ({ ...x, imprint: undefined })));
+            const plain = CItemSet.of(start.items().map((x) => ({ ...x, imprint: undefined })));
             const state = fromItems(p.u, plain)!;
             const held = runMethod(state, [imprint, relax(false)]);
-            const narrowed: XItem | null = narrow(held.state, pred);
+            const narrowed: ItemSet | null = narrow(held.state, pred);
             const ref = refRunMethod(plain, [imprint, relax(false)], p.cat.ctx).state.filter((x) =>
                 holds(pred, x, p.cat.ctx),
             );
@@ -793,13 +793,13 @@ describe("a Harvest change with no row for the removed one", () => {
     );
 
     it("leaves the item stuck, refused in both frames", () => {
-        const d = compareMethodOn(s.u, s.cat.ctx, [ItemSet.of(items)], ops);
+        const d = compareMethodOn(s.u, s.cat.ctx, [CItemSet.of(items)], ops);
         expect(d, d).toBe("");
         const r = runMethod(fromItems(s.u, items)!, ops);
         expect(r.ok).toBe(false);
         if (!r.ok) expect(r.failure).toMatchObject({ kind: "noOutcome", sure: false });
         expect(rowsAt(listItems(s.u, r.state.dd).items())).toEqual(["ColdRes1"]);
-        const ref = refRunMethod(ItemSet.of(items), ops, s.cat.ctx);
+        const ref = refRunMethod(CItemSet.of(items), ops, s.cat.ctx);
         expect(ref.ok).toBe(false);
         expect([...ref.failing.values()][0]!.size).toBe(2);
     });

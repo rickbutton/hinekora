@@ -26,7 +26,7 @@ import {
 } from "./reference/hand.js";
 import { type CEldritch, type CItem, countsOf, type RefCtx, refCtx } from "./reference/item.js";
 import { assignmentsOf, decode, listItems } from "./reference/listing.js";
-import { allItems, type Bounds, diffSets, ItemSet } from "./reference/sets.js";
+import { allItems, type Bounds, diffSets, CItemSet } from "./reference/sets.js";
 import { buildUniverse, isFresh, RARITIES, type Universe, UniverseError } from "./universe.js";
 import { METHODS } from "./methods.js";
 import type { Op } from "./ops/types.js";
@@ -99,7 +99,7 @@ function restrict(
 
 /** The listing of `wf` under the restriction equals the reference's items, and
  *  each item is one assignment, which it encodes back to. */
-function expectExact(u: Universe, ctx: RefCtx, full: boolean, tiers?: readonly number[]): ItemSet {
+function expectExact(u: Universe, ctx: RefCtx, full: boolean, tiers?: readonly number[]): CItemSet {
     const { dd, bounds } = restrict(u, full, tiers);
     const within = u.dd.and(u.wf, dd);
     const listed = listItems(u, within, { lowest: !full });
@@ -229,7 +229,7 @@ describe("the universe's well-formed items", () => {
             const listed = listItems(u, u.dd.and(u.wfWithImprint, r), { lowest: true });
             const plain = allItems(cat.ctx, bounds);
             const expected = plain.union(
-                ItemSet.of(
+                CItemSet.of(
                     plain.items().flatMap((a) => plain.items().map((b) => ({ ...a, imprint: b }))),
                 ),
             );

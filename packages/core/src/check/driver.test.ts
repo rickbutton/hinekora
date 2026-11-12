@@ -23,7 +23,7 @@ import {
 import type { Craft, ProcDef, Stmt } from "../ast/ast.js";
 import { renderState } from "./diagnostics.js";
 import { TagId, TypeId } from "../model/ids.js";
-import { check, exactDetail, type CheckTuning, UNJUDGED } from "./check.js";
+import { check, checkDetail, type CheckTuning, UNJUDGED } from "./check.js";
 import { buildRegistry, type Registry } from "../resolve/registry.js";
 import { RING_BASE, TIERED_CATALOG } from "../__fixtures__/mods.js";
 import { startOf } from "./initial.js";
@@ -483,13 +483,13 @@ describe("the rounds that settle a loop", () => {
             until(isRarity("normal"), [until(has("Fire1"), [op("chaos")])]),
         ]);
         const r = exact(c);
-        expect(exactDetail(r)!.reused).toBeGreaterThan(0);
+        expect(checkDetail(r)!.reused).toBeGreaterThan(0);
         agrees(c);
     });
 });
 
 describe("a step after", () => {
-    it("a call whose every path stops", () => {
+    it("a call that stops for every item", () => {
         const ender = procDef("ender", [], [stop()]);
         const c = craft(ring(), [callStmt("ender"), op("chaos")], [], [ender]);
         expect(said(c)).toEqual(["this step can never run: the craft always stops before it"]);

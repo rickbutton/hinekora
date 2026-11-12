@@ -22,7 +22,7 @@ import { type CItem, cItem, cMod, refCtx, type RefCtx } from "./reference/item.j
 import { listItems } from "./reference/listing.js";
 import type { RefHandlers } from "./reference/ops/handler.js";
 import { REF_HANDLERS } from "./reference/ops/registry.js";
-import { ItemSet } from "./reference/sets.js";
+import { CItemSet } from "./reference/sets.js";
 import { fromItems } from "./state.js";
 import { buildUniverse, type Universe } from "./universe.js";
 
@@ -74,15 +74,15 @@ function world(
 }
 
 /** The items the method leaves, both frames agreeing. */
-function leaves(w: World, items: readonly CItem[], ops: readonly Op[]): ItemSet {
-    const d = compareMethod(w.u, w.ctx, ItemSet.of(items), ops, STUBS);
+function leaves(w: World, items: readonly CItem[], ops: readonly Op[]): CItemSet {
+    const d = compareMethod(w.u, w.ctx, CItemSet.of(items), ops, STUBS);
     expect(d, d).toBe("");
     const r = runMethod(fromItems(w.u, items)!, ops, STUBS.exact);
     return listItems(w.u, r.state.dd, { lowest: true });
 }
 
-const totals = (s: ItemSet): number[] => [...new Set(s.items().map((x) => x.mods.length))].sort();
-const rowsOn = (s: ItemSet): Set<string> =>
+const totals = (s: CItemSet): number[] => [...new Set(s.items().map((x) => x.mods.length))].sort();
+const rowsOn = (s: CItemSet): Set<string> =>
     new Set(s.items().flatMap((x) => x.mods.map((m) => m.row)));
 
 const P = ["A1", "B1", "C1"].map((id) => row(id, "prefix"));
@@ -124,7 +124,7 @@ describe("how many modifiers a fill lays", () => {
         const sw = world([...P, ...S], SIMPLEX_BASE);
         const ops: Op[] = [{ kind: "rarity", rarity: "magic" }, fill(natural, add(1, 2))];
         const out = leaves(sw, [cItem()], ops);
-        expect(out.equals(ItemSet.of([cItem({ rarity: "magic" })]))).toBe(true);
+        expect(out.equals(CItemSet.of([cItem({ rarity: "magic" })]))).toBe(true);
     });
 
     it("an add on a full item has no outcome: a refusal, but for an either's other branch", () => {
@@ -133,7 +133,7 @@ describe("how many modifiers a fill lays", () => {
             { kind: "either", branches: [[fill(natural, add())], [{ kind: "corrupt" }]] },
         ];
         const out = leaves(w, [full], ops);
-        expect(out.equals(ItemSet.of([{ ...full, corrupted: true }]))).toBe(true);
+        expect(out.equals(CItemSet.of([{ ...full, corrupted: true }]))).toBe(true);
         // Outside an either, the add refuses the method on it.
         expect(runMethod(fromItems(w.u, [full])!, [fill(natural, add())])).toMatchObject({
             ok: false,

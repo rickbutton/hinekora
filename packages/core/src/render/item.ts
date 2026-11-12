@@ -17,10 +17,10 @@
  * never a handler per case: a new readable form is a new view there.
  */
 import type { Craft } from "../ast/ast.js";
-import type { Range } from "../check/domain.js";
+import type { Range } from "../check/range.js";
 import { rollRange } from "../check/values.js";
 import { type CraftNames, craftNames } from "../check/names.js";
-import type { XItem } from "../check/state.js";
+import type { ItemSet } from "../check/state.js";
 import {
     type CardinalityGuarantee,
     cardinalityGuarantees,
@@ -105,7 +105,7 @@ export interface ImplicitView {
     readonly count: number;
     /** The category tags, when the wording is known. */
     readonly tags: readonly string[];
-    /** On some path only. */
+    /** On some of the items only. */
     readonly maybe: boolean;
 }
 
@@ -115,7 +115,7 @@ export type MarkKind = "influence" | "eldritch" | "fractured" | "corrupted";
 export interface Mark {
     readonly kind: MarkKind;
     readonly text: string;
-    /** On some path only. */
+    /** On some of the items only. */
     readonly maybe: boolean;
 }
 
@@ -258,7 +258,7 @@ function withValue(text: string, value: Range): string {
 /** The modifier view for a type some item carries, at the rows the items
  *  hold it at, or at `pin` when a group rests on those rows. */
 function modView(
-    s: XItem,
+    s: ItemSet,
     type: TypeId,
     gen: Gen,
     registry: Registry,
@@ -349,7 +349,7 @@ interface Guarantee {
  * left out where a group already shown implies it.
  */
 function guarantees(
-    s: XItem,
+    s: ItemSet,
     names: CraftNames | undefined,
     genOf: (t: TypeId) => Gen,
 ): Guarantee[] {
@@ -391,7 +391,7 @@ function guarantees(
  * every other.
  */
 function absent(
-    s: XItem,
+    s: ItemSet,
     names: CraftNames,
     sure: ReadonlySet<TypeId>,
     registry: Registry,
@@ -425,7 +425,7 @@ function absent(
  * member. The game's copy orders them by how it stores the item, which the
  * items here do not hold.
  */
-export function itemView(s: XItem, registry: Registry, craft?: Craft): ItemView {
+export function itemView(s: ItemSet, registry: Registry, craft?: Craft): ItemView {
     const { base, ilvl } = s.u;
     const names = craft === undefined ? undefined : craftNames(craft, s.u);
     const tags = influenceTagsAny(s);

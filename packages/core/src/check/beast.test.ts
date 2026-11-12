@@ -333,9 +333,9 @@ describe("beast metamod", () => {
         expect(v.possibleTypes(uncertain.finalState!).has(PROTECT_PREFIXES_CARRIER.type)).toBe(
             true,
         );
-        // A carrier the annul may have removed is still in the pool: on the path
+        // A carrier the annul may have removed is still in the pool: on the item
         // where it is gone the game may craft it, so the fill's "one of these"
-        // names it beside the suffix metamods that fit on every path.
+        // names it beside the suffix metamods that fit on every item.
         const maybe = check(
             craft(
                 item({
@@ -359,8 +359,8 @@ describe("beast metamod", () => {
         );
     });
 
-    it("needs a metamod that fits on every path, not only on some", () => {
-        // The exalt may have filled the suffixes; on that path the only prefix
+    it("needs a metamod that fits on every item, not only on some", () => {
+        // The exalt may have filled the suffixes; on that item the only prefix
         // metamod is already on the item, so nothing can be crafted there.
         const c = craft(
             rareRing([PROTECT_SUFFIXES_CARRIER.id], [MULTIMOD_CARRIER.id, FIRE_RESIST.id]),
@@ -369,7 +369,7 @@ describe("beast metamod", () => {
         expect(check(c, ctx).diagnostics[0]!.message).toContain("No metamod fits");
     });
 
-    it("takes a different metamod on each path: whichever side the add left open", () => {
+    it("takes a different metamod on each item: whichever side the add left open", () => {
         // The exalt filled the prefixes or the suffixes; the other side has a
         // slot either way, and a metamod of that side is free.
         const c = craft(rareRing(["random", "random"], ["random", "random"]), [

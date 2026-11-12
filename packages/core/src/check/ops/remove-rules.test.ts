@@ -25,9 +25,9 @@ import { listItems } from "../reference/listing.js";
 import { refRunMethod } from "../reference/method.js";
 import type { RefHandlers } from "../reference/ops/handler.js";
 import { REF_HANDLERS } from "../reference/ops/registry.js";
-import { ItemSet } from "../reference/sets.js";
+import { CItemSet } from "../reference/sets.js";
 import { violations } from "../reference/wellformed.js";
-import { conditionOf, fromItems, type XItem } from "../state.js";
+import { conditionOf, fromItems, type ItemSet } from "../state.js";
 import { buildUniverse, type Universe } from "../universe.js";
 import { counts } from "../views.js";
 import type { Handlers } from "./handler.js";
@@ -115,8 +115,8 @@ function outcomes(w: World, items: CItem[], ops: readonly Op[]): CItem[] {
     for (const x of items) expect(violations(x, w.ctx)).toEqual([]);
     const r = runMethod(fromItems(w.u, items)!, ops, STUBS.exact);
     const exact = listItems(w.u, r.state.dd, { lowest: true });
-    const ref = refRunMethod(ItemSet.of(items), ops, w.ctx, STUBS.reference);
-    expect(exact.keys()).toEqual(ItemSet.of(ref.state.items().map(lowest(w))).keys());
+    const ref = refRunMethod(CItemSet.of(items), ops, w.ctx, STUBS.reference);
+    expect(exact.keys()).toEqual(CItemSet.of(ref.state.items().map(lowest(w))).keys());
     return exact.items();
 }
 
@@ -134,7 +134,7 @@ const sorted = (xs: string[][]): string[][] =>
 
 function refusal(w: World, items: CItem[], ops: readonly Op[]) {
     const r = runMethod(fromItems(w.u, items)!, ops, STUBS.exact);
-    const ref = refRunMethod(ItemSet.of(items), ops, w.ctx, STUBS.reference);
+    const ref = refRunMethod(CItemSet.of(items), ops, w.ctx, STUBS.reference);
     expect(r.ok).toBe(ref.ok);
     return r.ok ? undefined : r.failure;
 }
@@ -626,7 +626,7 @@ describe("what the removals keep of what the item is known to be", () => {
             value: 1,
         });
         const m = w.u.dd;
-        let s: XItem = fromItems(w.u, [start])!;
+        let s: ItemSet = fromItems(w.u, [start])!;
         let head = s.dd;
         for (let round = 1; round <= 3; round++) {
             const r = runMethod({ u: w.u, dd: m.and(s.dd, prefixes) }, L.currencyOps("annul"));

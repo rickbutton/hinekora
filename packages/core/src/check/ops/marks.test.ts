@@ -30,7 +30,7 @@ import { refRunMethod } from "../reference/method.js";
 import { violations } from "../reference/wellformed.js";
 import type { Mod } from "../../model/mod.js";
 import type { Bounds } from "../reference/sets.js";
-import { ItemSet } from "../reference/sets.js";
+import { CItemSet } from "../reference/sets.js";
 import { fromItems } from "../state.js";
 import type { Universe } from "../universe.js";
 
@@ -314,7 +314,7 @@ function outcomes(s: Setup, item: CItem, ops: readonly Op[]): CItem[] {
     const state = fromItems(s.u, [item])!;
     const r = runMethod(state, ops);
     const exact = listItems(s.u, r.state.dd, { lowest: true });
-    const ref = refRunMethod(ItemSet.of([item]), ops, s.cat.ctx);
+    const ref = refRunMethod(CItemSet.of([item]), ops, s.cat.ctx);
     expect(exact.keys()).toEqual(ref.state.keys());
     return exact.items();
 }
@@ -586,7 +586,7 @@ describe("an influence added where the game forbids one", () => {
     const refused = (item: CItem): void => {
         expect(violations(item, s.cat.ctx)).toEqual([]);
         expect(() => runMethod(fromItems(s.u, [item])!, [add])).toThrow(InternalError);
-        expect(() => refRunMethod(ItemSet.of([item]), [add], s.cat.ctx)).toThrow(InternalError);
+        expect(() => refRunMethod(CItemSet.of([item]), [add], s.cat.ctx)).toThrow(InternalError);
     };
 
     it("is an internal fault: a third influence, a fracture, an eldritch implicit", () => {

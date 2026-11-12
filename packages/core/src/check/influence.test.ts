@@ -228,7 +228,7 @@ describe("the grove's influence crafts", () => {
         ).toEqual([0, 0]);
     });
 
-    it("reforges including an influence modifier after a randomise, judging each path", () => {
+    it("reforges including an influence modifier after a randomise, judging each item", () => {
         // The fixture has Hunter rows only, so an item of another influence,
         // or one that may have another, has no influence modifier to include.
         expect(messages(craft(ring(["shaper"]), [harvest("reforge", "influence")]))).toContain(

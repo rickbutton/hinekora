@@ -23,7 +23,7 @@ import { type CItem, cItem, cMod, type RefCtx, refCtx } from "./reference/item.j
 import { listItems } from "./reference/listing.js";
 import { refRunMethod } from "./reference/method.js";
 import { rng } from "./reference/rng.js";
-import { diffSets, ItemSet } from "./reference/sets.js";
+import { diffSets, CItemSet } from "./reference/sets.js";
 import { fromItems } from "./state.js";
 import { buildUniverse, type Universe } from "./universe.js";
 
@@ -54,7 +54,7 @@ const str = (value: string): Literal => ({ kind: "string", value });
 function expectPartsAlike(
     u: Universe,
     ctx: RefCtx,
-    items: ItemSet,
+    items: CItemSet,
     method: Method,
     literals: readonly Literal[],
 ): number {
@@ -80,18 +80,18 @@ function expectRuns(
     literals: readonly Literal[],
 ): void {
     const state = fromItems(u, items)!;
-    let exact = ItemSet.empty;
+    let exact = CItemSet.empty;
     for (const p of buildMethod(state, method, literals)) {
         if ("refused" in p.built) throw new Error(`a part is refused: ${p.built.refused}`);
         const r = runMethod(p.state, p.built);
         expect(r.ok).toBe(true);
         exact = exact.union(listItems(u, r.state.dd, { lowest: true }));
     }
-    let reference = ItemSet.empty;
+    let reference = CItemSet.empty;
     for (const x of atCells(u, items)) {
         const built = buildFor(ctx, x, method, literals);
         if ("refused" in built) throw new Error(`an item is refused: ${built.refused}`);
-        const r = refRunMethod(ItemSet.of([x]), built, ctx);
+        const r = refRunMethod(CItemSet.of([x]), built, ctx);
         expect(r.ok).toBe(true);
         reference = reference.union(r.state);
     }
@@ -141,7 +141,7 @@ describe("a method built on the exact state", () => {
         cItem({ rarity: "rare", mods: [cMod(row.id, row.minLevel)], influences });
 
     it("changes each row of the modifier into its own counterpart", () => {
-        const items = ItemSet.of([rare(FIRE[0]!), rare(FIRE[1]!), rare(FIRE_H, hunter)]);
+        const items = CItemSet.of([rare(FIRE[0]!), rare(FIRE[1]!), rare(FIRE_H, hunter)]);
         const parts = buildMethod(fromItems(u, items)!, change, args);
         expect(parts.length).toBe(3);
         for (const p of parts) {
@@ -162,7 +162,7 @@ describe("a method built on the exact state", () => {
     it("reads the changed modifier's ladders under the item's own influence", () => {
         // Under the Hunter, FireH is its ladder's top and becomes ColdH; without
         // the influence it rolls on no ladder of the item and the grove refuses.
-        const items = ItemSet.of([rare(FIRE_H, hunter), rare(FIRE_H)]);
+        const items = CItemSet.of([rare(FIRE_H, hunter), rare(FIRE_H)]);
         const parts = buildMethod(fromItems(u, items)!, change, args);
         expect(parts.map((p) => "refused" in p.built).sort()).toEqual([false, true]);
         expect(parts.flatMap((p) => ("refused" in p.built ? [p.built.refused] : []))).toEqual([
@@ -197,12 +197,12 @@ describe("a method built on the exact state", () => {
                 "refused: An Eldritch Chaos Orb needs an item where the Searing Exarch or the Eater of Worlds is dominant — this item has Greater Exarch and Greater Eater.",
             ].sort(),
         );
-        expectPartsAlike(bu, cat.ctx, ItemSet.of(items), chaos, []);
+        expectPartsAlike(bu, cat.ctx, CItemSet.of(items), chaos, []);
         expectRuns(bu, cat.ctx, items.slice(0, 2), chaos, []);
     });
 
     it("builds once where the builder reads nothing of the item", () => {
-        const items = ItemSet.of([rare(FIRE[0]!), rare(COLD_H, hunter)]);
+        const items = CItemSet.of([rare(FIRE[0]!), rare(COLD_H, hunter)]);
         expect(expectPartsAlike(u, ctx, items, findMethod(["chaos"])!, [])).toBe(1);
         expect(expectPartsAlike(u, ctx, items, findMethod(["unveil"])!, [])).toBe(1);
         expect(

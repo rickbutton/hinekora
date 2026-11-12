@@ -20,7 +20,7 @@ import {
 import { withArticle } from "../resolve/messages.js";
 import type { ItemView } from "../render/item.js";
 import { baseLabel } from "../render/render.js";
-import type { Range } from "./domain.js";
+import type { Range } from "./range.js";
 import type { PreconditionFailure } from "./ops/types.js";
 import { capitalise, plural, RARITY_WORD, rangeText, rarityText } from "../words.js";
 

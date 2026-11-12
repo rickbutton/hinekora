@@ -150,7 +150,7 @@ describe("a metamod that may or may not be on the item", () => {
             ...then,
         ]);
 
-    it("a chaos keeps the prefixes on the path that has it and rerolls them on the other", () => {
+    it("a chaos keeps the prefixes on the item that has it and rerolls them on the other", () => {
         const r = check(maybeProtected([op("chaos")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).not.toContain("IncreasedLife");
@@ -187,7 +187,7 @@ describe("a metamod that may or may not be on the item", () => {
         );
     });
 
-    it("an annul may take the life on the path without it", () => {
+    it("an annul may take the life on the item without it", () => {
         const r = check(maybeProtected([op("annul")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).not.toContain("IncreasedLife");
@@ -456,8 +456,8 @@ describe("a scour that keeps a side sets the rarity by survivor count", () => {
 
     it("a kept prefix and an unproven lock may leave one or two survivors: Magic or Rare", () => {
         // The lock may sit on the kept prefix (one survivor, Magic) or on a
-        // stripped suffix (two, Rare); a regal afterwards is refused since the
-        // item is not Magic on every path.
+        // stripped suffix (two, Rare); a regal afterwards is refused since not
+        // every item is Magic.
         const c = craft(
             rareRing(["T1 Life"], [PROTECT_PREFIXES_CARRIER.id, "FireResist1", "ColdResist1"]),
             [op("fracture"), op("scour"), op("regal")],

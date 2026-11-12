@@ -11,7 +11,7 @@ import type { SourceSpan } from "../ast/span.js";
 import { describePred } from "../check/diagnostics.js";
 import { findMethod } from "../check/methods.js";
 import type { CheckResult, TraceEntry } from "../check/check.js";
-import type { XItem } from "../check/state.js";
+import type { ItemSet } from "../check/state.js";
 import type { Registry } from "../resolve/registry.js";
 import { criteria, type Criterion, type Wording } from "./conditions.js";
 import {
@@ -27,9 +27,9 @@ import { pluralRange, rangeText, rarityText } from "../words.js";
 interface StepBase {
     readonly span: SourceSpan;
     /** The item entering the step; absent when the step was never reached. */
-    readonly before?: XItem;
-    /** The item after it; absent when every path through it ends the craft. */
-    readonly after?: XItem;
+    readonly before?: ItemSet;
+    /** The item after it; absent when it ends the craft for every item. */
+    readonly after?: ItemSet;
     /** The checker's findings on this very statement, in the game's words. */
     readonly problems: readonly string[];
 }
@@ -67,7 +67,7 @@ export type Step =
 
 export interface Walkthrough {
     /** The item block and the item it declares. */
-    readonly start: { readonly span: SourceSpan; readonly item?: XItem };
+    readonly start: { readonly span: SourceSpan; readonly item?: ItemSet };
     readonly steps: readonly Step[];
 }
 

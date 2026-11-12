@@ -35,19 +35,19 @@ import type {
     RefTransformHandler,
 } from "./ops/handler.js";
 import { REF_HANDLERS } from "./ops/registry.js";
-import { ItemSet } from "./sets.js";
+import { CItemSet } from "./sets.js";
 import { effectsOf } from "../../model/effects.js";
 
 export interface RefMethodRun {
     /** No item breaks a check. */
     readonly ok: boolean;
     /** The items the method leaves; on a refusal with none, the recovery. */
-    readonly state: ItemSet;
+    readonly state: CItemSet;
     /** Every item that passed the checks was consumed by an `end`. */
     readonly ended: boolean;
     /** By the index of each `require`, the items it refused, and of each
      *  operation, the items it could not act on; absent where none. */
-    readonly failing: ReadonlyMap<number, ItemSet>;
+    readonly failing: ReadonlyMap<number, CItemSet>;
     /** As `TransferResult.under`. */
     readonly under?: readonly TypeId[];
     /** Some item's path was consumed by an `end`. */
@@ -95,7 +95,7 @@ interface Run {
 }
 
 export function refRunMethod(
-    start: ItemSet,
+    start: CItemSet,
     ops: readonly Op[],
     ctx: RefCtx,
     handlers: RefHandlers = REF_HANDLERS,
@@ -125,8 +125,8 @@ export function refRunMethod(
             if (!before.has(i) || xs.length > (sizes.get(i) ?? 0)) c.refusedAt.add(i);
         }
     }
-    const passed = ItemSet.of(out);
-    const failing = new Map([...run.failing].map(([i, xs]) => [i, ItemSet.of(xs)]));
+    const passed = CItemSet.of(out);
+    const failing = new Map([...run.failing].map(([i, xs]) => [i, CItemSet.of(xs)]));
     const first = failing.size === 0 ? undefined : Math.min(...failing.keys());
     if (first === undefined) {
         return {
@@ -164,8 +164,8 @@ export function refRunMethod(
     });
     const repaired =
         repair === undefined
-            ? ItemSet.empty
-            : ItemSet.of(
+            ? CItemSet.empty
+            : CItemSet.of(
                   failing
                       .get(first)!
                       .items()

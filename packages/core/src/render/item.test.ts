@@ -107,7 +107,7 @@ describe("the item in the game's copy layout", () => {
         );
     });
 
-    it("marks a corruption on some path only as possible", () => {
+    it("marks a corruption on some of the items only as possible", () => {
         const text = after(
             craft(ring(["random"]), [
                 iff(notp(has("maximum life")), [op("exalt")]),

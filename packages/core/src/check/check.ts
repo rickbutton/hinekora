@@ -45,7 +45,7 @@ import { type Dd, DdBudgetError } from "./dd.js";
 import { startOf } from "./initial.js";
 import { runMethodTrace } from "./method.js";
 import { type ItemView, itemView } from "../render/item.js";
-import { fromItems, stateOf, type XItem } from "./state.js";
+import { fromItems, stateOf, type ItemSet } from "./state.js";
 import type { Universe } from "./universe.js";
 import { summaryOf } from "./views.js";
 
@@ -73,9 +73,9 @@ export interface CheckTuning {
 export interface TraceEntry {
     readonly span: SourceSpan;
     readonly kind: Stmt["kind"] | "item";
-    readonly before: XItem;
+    readonly before: ItemSet;
     /** The items it lets through; absent where none falls through. */
-    readonly after?: XItem;
+    readonly after?: ItemSet;
     /** The statement as inlined, inside a call's body: one written statement
      *  may run there more than once, so its span alone names no one entry. */
     readonly stmt?: Stmt;
@@ -102,7 +102,7 @@ export interface Finding {
     readonly span: SourceSpan;
 }
 
-/** Why a step can never run: every path before it stopped, every one went
+/** Why a step can never run: every item before it stopped, every one went
  *  back to the loop's head, or some of each. */
 export type Unreached = "stops" | "restarts" | "both";
 
@@ -117,7 +117,7 @@ export interface FindingItems {
 }
 
 /** What the exactness tests read of a check beyond its result. */
-export interface ExactDetail {
+export interface CheckDetail {
     readonly items: ReadonlyMap<Finding, FindingItems>;
     /** How many loop heads were worked out, and how many found again. */
     readonly settled: number;
@@ -126,10 +126,10 @@ export interface ExactDetail {
     readonly rounds: readonly number[];
 }
 
-const details = new WeakMap<CheckResult, ExactDetail>();
+const details = new WeakMap<CheckResult, CheckDetail>();
 
 /** The detail of a check, for the exactness tests. */
-export function exactDetail(r: CheckResult): ExactDetail | undefined {
+export function checkDetail(r: CheckResult): CheckDetail | undefined {
     return details.get(r);
 }
 
@@ -138,7 +138,7 @@ export interface CheckResult {
     readonly diagnostics: readonly CheckDiagnostic[];
     readonly trace: readonly TraceEntry[];
     /** The items after the last statement, where some fall through it. */
-    readonly finalState?: XItem;
+    readonly finalState?: ItemSet;
     readonly findings: readonly Finding[];
 }
 
@@ -152,7 +152,7 @@ const MAX_ROUNDS = 256;
  *  whether some item's path ended in it (a `stop`, a refused or ending step,
  *  a loop no item leaves). */
 interface Flow {
-    readonly fall: XItem | null;
+    readonly fall: ItemSet | null;
     readonly restarted: boolean;
     readonly stopped: boolean;
 }
@@ -305,7 +305,7 @@ class Checker {
 
     run(craft: Craft): CheckResult {
         this.collect(craft.defs, craft.procs);
-        const done = (finalState?: XItem): CheckResult => {
+        const done = (finalState?: ItemSet): CheckResult => {
             this.finish(craft);
             const r: CheckResult = {
                 ok: this.diagnostics.length === 0,
@@ -461,13 +461,13 @@ class Checker {
         }
     }
 
-    private dd(items: XItem | null): Dd {
+    private dd(items: ItemSet | null): Dd {
         return items?.dd ?? this.u.dd.EMPTY;
     }
 
     // --- statements --------------------------------------------------------
 
-    private seq(entry: XItem, stmts: readonly Stmt[]): Flow {
+    private seq(entry: ItemSet, stmts: readonly Stmt[]): Flow {
         let s = entry;
         let restarted = false;
         let stopped = false;
@@ -522,7 +522,7 @@ class Checker {
     /** One statement, its diagram operations sharing the engine's cache. A
      *  node budget passed anywhere inside it is reported at the innermost
      *  statement and ends the check. */
-    private stmt(s: XItem, stmt: Stmt): Flow {
+    private stmt(s: ItemSet, stmt: Stmt): Flow {
         this.at = stmt.span;
         try {
             return this.u.dd.batch(() => this.stmtOn(s, stmt));
@@ -532,7 +532,7 @@ class Checker {
         }
     }
 
-    private stmtOn(s: XItem, stmt: Stmt): Flow {
+    private stmtOn(s: ItemSet, stmt: Stmt): Flow {
         switch (stmt.kind) {
             case "operation":
                 return this.operation(s, stmt);
@@ -569,7 +569,7 @@ class Checker {
      * reporting pass recovers (`recovering`): a part the builder refuses goes
      * on unchanged, a refused run from its recovery (check/method.ts).
      */
-    private operation(s: XItem, stmt: Extract<Stmt, { kind: "operation" }>): Flow {
+    private operation(s: ItemSet, stmt: Extract<Stmt, { kind: "operation" }>): Flow {
         const keep = goesOn(s);
         const method = findMethod(stmt.words);
         if (method === undefined) {
@@ -652,7 +652,7 @@ class Checker {
     }
 
     private refusal(
-        s: XItem,
+        s: ItemSet,
         failure: PreconditionFailure,
         under: readonly TypeId[] | undefined,
     ): string {
@@ -666,7 +666,7 @@ class Checker {
 
     // --- if / else -----------------------------------------------------------
 
-    private branch(s: XItem, stmt: Extract<Stmt, { kind: "if" }>): Flow {
+    private branch(s: ItemSet, stmt: Extract<Stmt, { kind: "if" }>): Flow {
         const resolved = readCondition(s, stmt.pred, this.predDefs, (m, span) =>
             this.diag(m, span),
         );
@@ -708,7 +708,12 @@ class Checker {
     /** The items on which the condition holds (or fails): all of them where
      *  its reading was refused, so a reported fault is not followed by a
      *  branch or loop error. */
-    private cut(s: XItem, pred: Pred, positive: boolean, resolved: Resolved | null): XItem | null {
+    private cut(
+        s: ItemSet,
+        pred: Pred,
+        positive: boolean,
+        resolved: Resolved | null,
+    ): ItemSet | null {
         return resolved === null ? s : narrowBy(s, pred, positive, this.predDefs);
     }
 
@@ -721,7 +726,7 @@ class Checker {
      * ever leaves, the reporting pass recovers: the craft goes on from the
      * whole head, so one error is not followed by one at every step after it.
      */
-    private loop(entry: XItem, stmt: Extract<Stmt, { kind: "until" }>): Flow {
+    private loop(entry: ItemSet, stmt: Extract<Stmt, { kind: "until" }>): Flow {
         const resolved = readCondition(entry, stmt.pred, this.predDefs, (m, span) =>
             this.diag(m, span),
         );
@@ -775,7 +780,7 @@ class Checker {
      * rounds unjudged, and no sound head is known to go on from.
      */
     private settle(
-        entry: XItem,
+        entry: ItemSet,
         stmt: Extract<Stmt, { kind: "until" }>,
         readable: boolean,
     ): Settled {
@@ -790,7 +795,7 @@ class Checker {
         const outermost = this.quiet === 0;
         let runs = 0;
         const m = this.u.dd;
-        const goingOf = (s: XItem): XItem | null =>
+        const goingOf = (s: ItemSet): ItemSet | null =>
             readable ? narrowBy(s, stmt.pred, false, this.predDefs) : s;
         const settled = this.quietly((): Settled => {
             let at = entry;
@@ -824,7 +829,7 @@ class Checker {
     /** The items the body brings back to the loop's head from `entry`, those
      *  falling off its end and those a `restart` sends, and whether some
      *  item's path ended in it. */
-    private back(entry: XItem, body: readonly Stmt[]): { dd: Dd; stopped: boolean } {
+    private back(entry: ItemSet, body: readonly Stmt[]): { dd: Dd; stopped: boolean } {
         const frame = { back: this.u.dd.EMPTY };
         this.frames.push(frame);
         try {
@@ -839,7 +844,7 @@ class Checker {
 
     /** The body inlined, so a `restart` in it re-enters the caller's loop; the
      *  call is traced as one step, its body's trace hanging off it. */
-    private call(s: XItem, stmt: Extract<Stmt, { kind: "call" }>): Flow {
+    private call(s: ItemSet, stmt: Extract<Stmt, { kind: "call" }>): Flow {
         const keep = goesOn(s);
         const entry = this.procs.get(stmt.name);
         if (entry === undefined) {
@@ -877,13 +882,13 @@ function firstOf(failing: ReadonlyMap<number, Dd>): Dd | undefined {
 }
 
 /** The items all go on through a statement that does nothing to them. */
-function goesOn(s: XItem): Flow {
+function goesOn(s: ItemSet): Flow {
     return { fall: s, restarted: false, stopped: false };
 }
 
 /** A loop's head, and whether some item's path ended in its body. */
 interface Settled {
-    readonly head: XItem;
+    readonly head: ItemSet;
     readonly stopped: boolean;
 }
 

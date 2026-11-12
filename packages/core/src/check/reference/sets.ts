@@ -21,20 +21,20 @@ import {
 } from "./item.js";
 import { isWellFormed } from "./wellformed.js";
 
-export class ItemSet implements Iterable<CItem> {
+export class CItemSet implements Iterable<CItem> {
     private readonly byKey: ReadonlyMap<string, CItem>;
 
     private constructor(byKey: ReadonlyMap<string, CItem>) {
         this.byKey = byKey;
     }
 
-    static of(items: Iterable<CItem>): ItemSet {
+    static of(items: Iterable<CItem>): CItemSet {
         const byKey = new Map<string, CItem>();
         for (const item of items) byKey.set(itemKey(item), canonical(item));
-        return new ItemSet(byKey);
+        return new CItemSet(byKey);
     }
 
-    static readonly empty: ItemSet = ItemSet.of([]);
+    static readonly empty: CItemSet = CItemSet.of([]);
 
     get size(): number {
         return this.byKey.size;
@@ -57,30 +57,30 @@ export class ItemSet implements Iterable<CItem> {
         return this.items()[Symbol.iterator]();
     }
 
-    union(other: ItemSet): ItemSet {
-        return ItemSet.of([...this.byKey.values(), ...other.byKey.values()]);
+    union(other: CItemSet): CItemSet {
+        return CItemSet.of([...this.byKey.values(), ...other.byKey.values()]);
     }
 
-    intersect(other: ItemSet): ItemSet {
+    intersect(other: CItemSet): CItemSet {
         return this.filter((i) => other.has(i));
     }
 
-    minus(other: ItemSet): ItemSet {
+    minus(other: CItemSet): CItemSet {
         return this.filter((i) => !other.has(i));
     }
 
-    filter(keep: (item: CItem) => boolean): ItemSet {
-        return ItemSet.of([...this.byKey.values()].filter(keep));
+    filter(keep: (item: CItem) => boolean): CItemSet {
+        return CItemSet.of([...this.byKey.values()].filter(keep));
     }
 
-    map(f: (item: CItem) => CItem): ItemSet {
-        return ItemSet.of([...this.byKey.values()].map(f));
+    map(f: (item: CItem) => CItem): CItemSet {
+        return CItemSet.of([...this.byKey.values()].map(f));
     }
 
     /** The union of `f` over the items: the image of a set under an operation
      *  that takes one item to the items it can leave. */
-    flatMap(f: (item: CItem) => readonly CItem[]): ItemSet {
-        return ItemSet.of([...this.byKey.values()].flatMap(f));
+    flatMap(f: (item: CItem) => readonly CItem[]): CItemSet {
+        return CItemSet.of([...this.byKey.values()].flatMap(f));
     }
 
     some(p: (item: CItem) => boolean): boolean {
@@ -91,14 +91,14 @@ export class ItemSet implements Iterable<CItem> {
         return [...this.byKey.values()].every(p);
     }
 
-    equals(other: ItemSet): boolean {
+    equals(other: CItemSet): boolean {
         return this.size === other.size && [...this.byKey.keys()].every((k) => other.byKey.has(k));
     }
 }
 
 /** What `actual` has that `expected` lacks and the reverse, a few of each, for
  *  a test failure; the empty string when the sets are equal. */
-export function diffSets(expected: ItemSet, actual: ItemSet, limit = 10): string {
+export function diffSets(expected: CItemSet, actual: CItemSet, limit = 10): string {
     const extra = actual.minus(expected).keys();
     const missing = expected.minus(actual).keys();
     if (extra.length === 0 && missing.length === 0) return "";
@@ -142,7 +142,7 @@ export interface Bounds {
 }
 
 /** Every well-formed item over the bounds, with no imprint. */
-export function allItems(ctx: RefCtx, bounds: Bounds): ItemSet {
+export function allItems(ctx: RefCtx, bounds: Bounds): CItemSet {
     const options = (id: ModId): CMod[] => {
         const row = ctx.rows.get(id);
         if (row === undefined) throw new Error(`row ${id} is not in the catalogue`);
@@ -210,10 +210,10 @@ export function allItems(ctx: RefCtx, bounds: Bounds): ItemSet {
             }
         }
     }
-    return ItemSet.of(out);
+    return CItemSet.of(out);
 }
 
 /** `size` items of `set` (all of them when it has fewer), chosen by the seed alone. */
-export function randomSubset(set: ItemSet, seed: number, size: number): ItemSet {
-    return ItemSet.of(rng(seed).sample(set.items(), size));
+export function randomSubset(set: CItemSet, seed: number, size: number): CItemSet {
+    return CItemSet.of(rng(seed).sample(set.items(), size));
 }

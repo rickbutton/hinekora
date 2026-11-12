@@ -19,23 +19,23 @@ import type { CItem } from "./item.js";
 import type { CountKind, Universe } from "./universe.js";
 
 /** A set of concrete items over a universe; `dd` is never empty. */
-export interface XItem {
+export interface ItemSet {
     readonly u: Universe;
     readonly dd: Dd;
 }
 
 /** The state holding the items of `dd`, or null when there are none. */
-export function stateOf(u: Universe, dd: Dd): XItem | null {
+export function stateOf(u: Universe, dd: Dd): ItemSet | null {
     return dd === u.dd.EMPTY ? null : { u, dd };
 }
 
 /** Every item the game allows over the universe, with any imprint it may hold. */
-export function everyItem(u: Universe): XItem {
+export function everyItem(u: Universe): ItemSet {
     return { u, dd: u.wfWithImprint };
 }
 
 /** The items of `a` and of `b`; `a`'s universe is `b`'s. */
-export function unite(a: XItem, b: XItem): XItem {
+export function unite(a: ItemSet, b: ItemSet): ItemSet {
     return { u: a.u, dd: a.u.dd.or(a.dd, b.dd) };
 }
 
@@ -45,7 +45,7 @@ export function unite(a: XItem, b: XItem): XItem {
  * which no condition of the craft tells apart. Throws for an item the
  * universe cannot hold.
  */
-export function fromItems(u: Universe, items: Iterable<CItem>): XItem | null {
+export function fromItems(u: Universe, items: Iterable<CItem>): ItemSet | null {
     let dd = u.dd.EMPTY;
     for (const item of items) dd = u.dd.or(dd, cube(u, u.encode(item)));
     return stateOf(u, dd);
@@ -67,7 +67,7 @@ export function cube(u: Universe, assignment: readonly number[]): Dd {
  * The items of the state on which `pred` holds (or fails, when not
  * `positive`); null when there are none.
  */
-export function narrow(state: XItem, pred: RPred, positive = true): XItem | null {
+export function narrow(state: ItemSet, pred: RPred, positive = true): ItemSet | null {
     const m = state.u.dd;
     const c = conditionOf(state.u, pred);
     return stateOf(state.u, positive ? m.and(state.dd, c) : m.diff(state.dd, c));

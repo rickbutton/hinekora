@@ -12,7 +12,7 @@ import {
     isInfluence,
 } from "../model/marks.js";
 import type { Registry } from "../resolve/registry.js";
-import type { XItem } from "../check/state.js";
+import type { ItemSet } from "../check/state.js";
 import { rarityOf } from "../check/views.js";
 import type { Literal, Method } from "../check/methods.js";
 import { capitalise } from "../words.js";
@@ -118,7 +118,7 @@ const BEAST_METAMOD = "Wild Bristle Matron";
 function beastCost(
     second: string | undefined,
     args: readonly Literal[],
-    a: XItem,
+    a: ItemSet,
 ): readonly Price[] | undefined {
     const one = (item: string): Price => ({ item, amount: 1 });
     switch (second) {
@@ -168,7 +168,7 @@ function text(l: Literal | undefined): string {
 export function unitCost(
     method: Method,
     args: readonly Literal[],
-    a: XItem,
+    a: ItemSet,
     registry: Registry,
 ): readonly Price[] | undefined {
     const [first, second] = method.words;

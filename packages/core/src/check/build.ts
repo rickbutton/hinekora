@@ -26,7 +26,7 @@ import { influenceTagsOfItem } from "./methods.js";
 import type { Op } from "./ops/types.js";
 import type { ModId, TypeId } from "../model/ids.js";
 import type { Dd } from "./dd.js";
-import { dominance, stateOf, type XItem } from "./state.js";
+import { dominance, stateOf, type ItemSet } from "./state.js";
 import { eldritchPairs, influenceSets, rowsOf } from "./views.js";
 
 /** The rows each type is at over the items, read type by type as a builder
@@ -35,7 +35,7 @@ class TiersOf implements ReadonlyMap<TypeId, ReadonlySet<ModId>> {
     private readonly read = new Map<TypeId, ReadonlySet<ModId> | undefined>();
     private all: Map<TypeId, ReadonlySet<ModId>> | undefined;
 
-    constructor(private readonly s: XItem) {}
+    constructor(private readonly s: ItemSet) {}
 
     get(type: TypeId): ReadonlySet<ModId> | undefined {
         if (this.read.has(type)) return this.read.get(type);
@@ -93,7 +93,7 @@ class TiersOf implements ReadonlyMap<TypeId, ReadonlySet<ModId>> {
 }
 
 /** The read-only item a builder reads, over the items of the state. */
-export function methodItemOf(s: XItem): MethodItem {
+export function methodItemOf(s: ItemSet): MethodItem {
     return {
         base: s.u.base,
         ilvl: s.u.ilvl,
@@ -106,14 +106,14 @@ export function methodItemOf(s: XItem): MethodItem {
 /** A part of the state with the operations its builder gives it, or why it
  *  gives none. */
 export interface BuiltPart {
-    readonly state: XItem;
+    readonly state: ItemSet;
     readonly built: readonly Op[] | Refusal;
 }
 
 /** The state's items in parts, a part's items alike in what the method's
  *  builder reads; each with what it builds. */
 export function buildMethod(
-    state: XItem,
+    state: ItemSet,
     method: Method,
     literals: readonly Literal[],
 ): BuiltPart[] {
@@ -147,7 +147,7 @@ export function buildKey(built: readonly Op[] | Refusal): string {
 
 const words = (method: Method): string => method.words.join(" ");
 
-function partsFor(state: XItem, method: Method, literals: readonly Literal[]): XItem[] {
+function partsFor(state: ItemSet, method: Method, literals: readonly Literal[]): ItemSet[] {
     switch (words(method)) {
         case "harvest change":
             return byInfluence(state).flatMap((part) => {
@@ -171,7 +171,7 @@ function partsFor(state: XItem, method: Method, literals: readonly Literal[]): X
     }
 }
 
-function split(state: XItem, cuts: readonly Dd[]): XItem[] {
+function split(state: ItemSet, cuts: readonly Dd[]): ItemSet[] {
     const m = state.u.dd;
     return cuts.flatMap((c) => {
         const part = stateOf(state.u, m.and(state.dd, c));
@@ -179,7 +179,7 @@ function split(state: XItem, cuts: readonly Dd[]): XItem[] {
     });
 }
 
-function byInfluence(state: XItem): XItem[] {
+function byInfluence(state: ItemSet): ItemSet[] {
     const { u } = state;
     const slot = u.scalar("influences");
     const values = u.dd.valuesOf(state.dd, slot);
@@ -191,7 +191,7 @@ function byInfluence(state: XItem): XItem[] {
 }
 
 /** By the row the type is at, its absence a part of its own. */
-function byRow(state: XItem, type: TypeId): XItem[] {
+function byRow(state: ItemSet, type: TypeId): ItemSet[] {
     const { u } = state;
     const slot = u.slotOfType(type);
     if (slot === undefined) return [state];
@@ -209,7 +209,7 @@ function byRow(state: XItem, type: TypeId): XItem[] {
 
 /** By the dominant side; the items with none by their pair of tiers, which
  *  the refusal names. */
-function byDominant(state: XItem): XItem[] {
+function byDominant(state: ItemSet): ItemSet[] {
     const { u } = state;
     const m = u.dd;
     const exarch = dominance(u, "exarch");

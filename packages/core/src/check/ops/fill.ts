@@ -11,7 +11,7 @@ import { holdsFour, maxTotal } from "../../model/capacity.js";
 import type { Rarity } from "../../model/ids.js";
 import type { Mod } from "../../model/mod.js";
 import type { Dd } from "../dd.js";
-import type { XItem } from "../state.js";
+import type { ItemSet } from "../state.js";
 import { RARITIES, type Universe } from "../universe.js";
 import { rarities } from "../views.js";
 import {
@@ -357,7 +357,7 @@ export const checks: CheckTable = {
             const dc = drawCtxOf(ctx);
             return {
                 pass: ctx.u.dd.batch(() => canDraw(state, check.pool, dc)),
-                word: (failing: XItem) => ({
+                word: (failing: ItemSet) => ({
                     kind: whyEmpty(failing.dd, check.pool, dc),
                     tag: check.tag,
                 }),

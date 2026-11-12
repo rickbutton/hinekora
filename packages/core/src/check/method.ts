@@ -55,15 +55,15 @@ import {
     rulesOf,
     unprotected,
 } from "./rules.js";
-import type { XItem } from "./state.js";
+import type { ItemSet } from "./state.js";
 import type { Universe } from "./universe.js";
 
 export type TransferResult = (
-    | { readonly ok: true; readonly state: XItem }
+    | { readonly ok: true; readonly state: ItemSet }
     | {
           readonly ok: false;
           readonly failure: PreconditionFailure;
-          readonly state: XItem;
+          readonly state: ItemSet;
           /** The metamods every refused case carries and some other case does
            *  not, when some case goes through. */
           readonly under?: readonly TypeId[];
@@ -87,7 +87,7 @@ export interface MethodRun {
 }
 
 export function runMethod(
-    state: XItem,
+    state: ItemSet,
     ops: readonly Op[],
     handlers: Handlers = HANDLERS,
 ): TransferResult {
@@ -108,7 +108,7 @@ export interface MetamodCase {
  * far as the effects decide a field of `reads`; combinations equal on those
  * fields are one case. The case carrying none comes first.
  */
-export function metamodCases(s: XItem, reads: ReadonlySet<RuleField>): readonly MetamodCase[] {
+export function metamodCases(s: ItemSet, reads: ReadonlySet<RuleField>): readonly MetamodCase[] {
     const { u } = s;
     const m = u.dd;
     interface Combo {
@@ -205,7 +205,7 @@ interface CaseRun {
 }
 
 export function runMethodTrace(
-    state: XItem,
+    state: ItemSet,
     ops: readonly Op[],
     handlers: Handlers = HANDLERS,
 ): MethodRun {
@@ -352,7 +352,7 @@ function readsOf(steps: readonly Step[], handlers: Handlers): Set<RuleField> {
 }
 
 /** The partitions the method's operations cut the start by. */
-function splitsOf(steps: readonly Step[], handlers: Handlers, s: XItem): (readonly Dd[])[] {
+function splitsOf(steps: readonly Step[], handlers: Handlers, s: ItemSet): (readonly Dd[])[] {
     const out: (readonly Dd[])[] = [];
     const visit = (step: Step): void => {
         let split: readonly Dd[] | undefined;
@@ -369,7 +369,7 @@ function splitsOf(steps: readonly Step[], handlers: Handlers, s: XItem): (readon
     return out;
 }
 
-function parts(dd: Dd, splits: readonly (readonly Dd[])[], s: XItem): Dd[] {
+function parts(dd: Dd, splits: readonly (readonly Dd[])[], s: ItemSet): Dd[] {
     const m = s.u.dd;
     let out = [dd];
     for (const split of splits) {
@@ -379,7 +379,7 @@ function parts(dd: Dd, splits: readonly (readonly Dd[])[], s: XItem): Dd[] {
 }
 
 function runCase(
-    s: XItem,
+    s: ItemSet,
     start: Dd,
     initial: Rules,
     steps: readonly Step[],

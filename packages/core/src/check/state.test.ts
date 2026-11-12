@@ -15,7 +15,7 @@ import { HAND_REGISTRY, LIFE1, LIFE2, FIRE, COLD } from "./reference/hand.js";
 import { type CEldritch, cItem, cMod } from "./reference/item.js";
 import { canBeRare } from "../model/capacity.js";
 import { listItems } from "./reference/listing.js";
-import { allItems, diffSets, ItemSet } from "./reference/sets.js";
+import { allItems, diffSets, CItemSet } from "./reference/sets.js";
 import { BOOTS_BASE, RING_BASE } from "../__fixtures__/mods.js";
 import type { Base } from "../model/base.js";
 import { ModId, TypeId } from "../model/ids.js";
@@ -74,7 +74,7 @@ describe("narrowing by a condition", () => {
             expect(pool.length).toBeGreaterThan(10);
             let split = 0;
             for (let k = 0; k < 6; k++) {
-                const items = ItemSet.of(r.sample(pool, r.int(1, Math.min(40, pool.length))));
+                const items = CItemSet.of(r.sample(pool, r.int(1, Math.min(40, pool.length))));
                 const state = fromItems(u, items)!;
                 for (const pred of preds) {
                     for (const positive of [true, false]) {
@@ -82,7 +82,7 @@ describe("narrowing by a condition", () => {
                         const want = items.filter((x) => holds(pred, x, cat.ctx) === positive);
                         if (want.size > 0 && want.size < items.size) split++;
                         const listed =
-                            got === null ? ItemSet.empty : listItems(u, got.dd, { lowest: true });
+                            got === null ? CItemSet.empty : listItems(u, got.dd, { lowest: true });
                         const d = diffSets(want, listed);
                         expect(d, `${positive ? "" : "not "}${predKey(pred)}\n${d}`).toBe("");
                     }
@@ -141,7 +141,7 @@ describe("hand-written conditions", () => {
             const want = set.filter((x) => holds(pred, x, ctx) === positive);
             const d = diffSets(
                 want,
-                got === null ? ItemSet.empty : listItems(u, got.dd, { lowest: true }),
+                got === null ? CItemSet.empty : listItems(u, got.dd, { lowest: true }),
             );
             expect(
                 d,

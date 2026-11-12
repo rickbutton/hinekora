@@ -27,7 +27,7 @@ subject:
 ## The core invariant
 
 **Never enumerate outcome unions.** A currency op has hundreds of concrete results;
-chaining `n` of them is `~200^n`. Keep the set symbolic (the checker's `XItem`, one
+chaining `n` of them is `~200^n`. Keep the set symbolic (the checker's `ItemSet`, one
 decision diagram) and map each op over it. Never build a list of concrete items or
 outcomes in the checker outside `check/reference/`; it won't scale.
 

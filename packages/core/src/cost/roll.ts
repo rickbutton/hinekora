@@ -24,7 +24,7 @@ import { buildKey } from "../check/build.js";
 import { effectsKey } from "../check/rules.js";
 import type { Dd } from "../check/dd.js";
 import { runMethod, type TransferResult } from "../check/method.js";
-import type { XItem } from "../check/state.js";
+import type { ItemSet } from "../check/state.js";
 import {
     capsOver,
     counts as countsOf,
@@ -123,7 +123,7 @@ export type Roll =
           readonly kind: "removal";
           readonly candidates: readonly Candidate[];
           /** The item before the removal, which knows the candidates' tiers. */
-          readonly before: XItem;
+          readonly before: ItemSet;
           /** How many modifiers each side holds, and the chance the removal takes
            *  one of that side that no candidate names. */
           readonly sides: Readonly<
@@ -237,7 +237,7 @@ function splitOf(
  * let it, since the sides' ceilings alone may add up to more than the item can
  * hold and would show a full item where the checker proved a slot open.
  */
-function countsAt(a: XItem, reading: Reading): Readonly<Record<Gen, number>> {
+function countsAt(a: ItemSet, reading: Reading): Readonly<Record<Gen, number>> {
     const prefix = countsOf(a).prefix;
     const suffix = suffixRange(a);
     if (reading !== "ceilings") return { prefix: prefix[0], suffix: suffix[0] };
@@ -251,7 +251,7 @@ function countsAt(a: XItem, reading: Reading): Readonly<Record<Gen, number>> {
 /** The item's facts the pool reads: the guaranteed modifiers, with each side's
  *  count raised to what the reading takes it at, so a side the unnamed
  *  modifiers fill admits nothing more. */
-function sureFacts(a: XItem, level?: number, reading: Reading = "estimate", withStrands = false) {
+function sureFacts(a: ItemSet, level?: number, reading: Reading = "estimate", withStrands = false) {
     const facts = guaranteedFacts(a, level);
     const counts = countsAt(a, reading);
     const strands = withStrands ? strandsRange(a)[reading === "ceilings" ? 1 : 0] : 0;
@@ -467,7 +467,7 @@ export function unmodelled(ops: readonly Op[]): string | undefined {
  * says. Empty for a pool this model does not read.
  */
 function poolRows(
-    a: XItem,
+    a: ItemSet,
     spec: PoolSpec,
     registry: Registry,
     reading: Reading = "estimate",
@@ -614,7 +614,7 @@ function poolOf(registry: Registry, facts: ItemFacts): readonly Row[] {
 /** The groups a modifier the item holds but no one names could be, per side:
  *  its natural pool on the item, the groups of what it surely holds left out. */
 export function naturalGroups(
-    a: XItem,
+    a: ItemSet,
     registry: Registry,
 ): { readonly prefix: readonly Group[]; readonly suffix: readonly Group[] } {
     // The pool those modifiers were rolled from: the item's sure facts alone,
@@ -632,7 +632,7 @@ export function naturalGroups(
 }
 
 /** The side a type's rows take on this item. */
-function genOfType(a: XItem, registry: Registry, type: TypeId, hint?: Mod): Gen {
+function genOfType(a: ItemSet, registry: Registry, type: TypeId, hint?: Mod): Gen {
     return (
         rollableGen(registry.catalog, a.u.base, a.u.ilvl, type, influenceTagsAny(a)) ??
         hint?.gen ??
@@ -644,7 +644,7 @@ function genOfType(a: XItem, registry: Registry, type: TypeId, hint?: Mod): Gen 
 /** The side a modifier of these rows takes on the item: its type's on the
  *  base where the base rolls it, else the one its rows share (a bench craft
  *  of a type whose rows sit on both sides elsewhere). */
-function sideOf(a: XItem, registry: Registry, rows: readonly Row[]): Gen {
+function sideOf(a: ItemSet, registry: Registry, rows: readonly Row[]): Gen {
     const first = rows[0]?.mod;
     if (first === undefined || rows.some((r) => (r.mod.source ?? "natural") === "natural")) {
         return genOfType(a, registry, first?.type ?? ("" as TypeId), first);
@@ -654,13 +654,13 @@ function sideOf(a: XItem, registry: Registry, rows: readonly Row[]): Gen {
 }
 
 /** The side the items hold a type on, as `sideOf` reads its rows. */
-function heldSide(a: XItem, registry: Registry, type: TypeId): Gen {
+function heldSide(a: ItemSet, registry: Registry, type: TypeId): Gen {
     const rows = rowsOf(a, type).map((mod) => ({ mod, weight: 1 }));
     return rows.length === 0 ? genOfType(a, registry, type) : sideOf(a, registry, rows);
 }
 
-/** The modifiers present on every path after `a`, each with the rows it may be. */
-function presentOn(a: XItem, registry: Registry): Present[] {
+/** The modifiers present on every item of `a`, each with the rows it may be. */
+function presentOn(a: ItemSet, registry: Registry): Present[] {
     const tags = influenceTagsAny(a);
     const out: Present[] = [];
     for (const type of guaranteedTypes(a)) {
@@ -719,7 +719,7 @@ const opsKeys = new WeakMap<readonly Op[], string>();
  * draw are read, and a re-check after an edit hands it the same diagrams, so
  * the runs are kept by the items' diagram and what the operations say.
  */
-export function ranOn(a: XItem, ops: readonly Op[], end = ops.length): TransferResult {
+export function ranOn(a: ItemSet, ops: readonly Op[], end = ops.length): TransferResult {
     const steps = ops.slice(0, end);
     if (steps.length === 0) return { ok: true, state: a };
     let said = opsKeys.get(ops);
@@ -735,7 +735,7 @@ export function ranOn(a: XItem, ops: readonly Op[], end = ops.length): TransferR
 }
 
 /** The total a reforge may reach on this item, the loosest cap over its rarities. */
-function totalCap(a: XItem): number {
+function totalCap(a: ItemSet): number {
     return capsOver(a, Math.max).total;
 }
 
@@ -743,7 +743,7 @@ interface FillPlan {
     readonly spec: PoolSpec;
     readonly count: FillCount;
     /** The item as the fill finds it: after the strip and the removals before it. */
-    readonly before: XItem;
+    readonly before: ItemSet;
 }
 
 /**
@@ -754,7 +754,7 @@ interface FillPlan {
  * `none`.
  */
 export function rollOf(
-    a: XItem,
+    a: ItemSet,
     ops: readonly Op[],
     registry: Registry,
     reading: Reading = "estimate",
@@ -849,8 +849,8 @@ export function rollOf(
  * end the reading asks for.
  */
 function removalRoll(
-    before: XItem,
-    after: XItem,
+    before: ItemSet,
+    after: ItemSet,
     gen: Gen | undefined,
     registry: Registry,
     reading: Reading,
@@ -915,7 +915,7 @@ function removalRoll(
 }
 
 function unveilRoll(
-    before: XItem,
+    before: ItemSet,
     spec: Extract<PoolSpec, { kind: "unveil" }>,
     registry: Registry,
     reading: Reading,
@@ -1110,7 +1110,7 @@ function drawRoll(
 
 /** The total modifier count a fill leaves, with its probability: what the item
  *  holds for sure counts toward a reforge's total; an add is that many more. */
-function countTotals(count: FillCount, a: XItem, reading: Reading): Map<number, number> {
+function countTotals(count: FillCount, a: ItemSet, reading: Reading): Map<number, number> {
     const cap = totalCap(a);
     const present = Math.max(
         guaranteedTypes(a).size,

@@ -34,7 +34,7 @@ describe("imprint and restore", () => {
         expect(v.imprintOf(s)).toBeUndefined();
     });
 
-    it("restores only an imprint held on every path", () => {
+    it("restores only an imprint held on every item", () => {
         const none = check(craft(magicRing(["T1 Life"]), [restore()]), ctx);
         expect(none.diagnostics[0]!.message).toContain("may have no imprint");
         const onePath = craft(magicRing(["T1 Life"]), [

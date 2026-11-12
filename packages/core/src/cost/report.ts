@@ -22,7 +22,7 @@ import { carriedRows, resolvePred, type ResolveView } from "../check/resolve-pre
 import { rollableGen } from "../resolve/tiers.js";
 import { methodItemOf } from "../check/build.js";
 import type { CheckResult, TraceEntry } from "../check/check.js";
-import { narrow as narrowTo, type XItem } from "../check/state.js";
+import { narrow as narrowTo, type ItemSet } from "../check/state.js";
 import {
     counts as countsOf,
     guaranteedTypes,
@@ -123,7 +123,7 @@ export interface CostReport {
 interface Path {
     readonly roll: Roll;
     /** The item after the roll's statement, for what the roll leaves to the checker. */
-    readonly after: XItem;
+    readonly after: ItemSet;
     readonly conditions: readonly RPred[];
     /** The mass at the roll: a branch's mass is this times the chance of its
      *  conditions over the roll. */
@@ -153,7 +153,7 @@ interface Frame {
     /** The ways of being at each `restart`, with the item the check has
      *  there, where the loop around it reads its rounds as independent: a
      *  restart is at the loop's head, so its exit is asked of them too. */
-    again?: { readonly branch: Branch; readonly at: XItem | undefined }[];
+    again?: { readonly branch: Branch; readonly at: ItemSet | undefined }[];
 }
 
 /** One walk's figures under one reading of the item's open counts. */
@@ -399,7 +399,7 @@ export function openNote(
 }
 
 /** The sides' caps on an item of its rarity. */
-function capsOf(item: XItem): Record<Gen, number> {
+function capsOf(item: ItemSet): Record<Gen, number> {
     const rarity = rarityOf(item) ?? "rare";
     return {
         prefix: sideCap("prefix", rarity, item.u.base),
@@ -454,8 +454,8 @@ class Walker {
     /** The item a statement is judged on where the trace's is not it: the
      *  first step of a loop body reads the item the loop finds, not the union
      *  over every round, so the attempts are taken alike. */
-    private readonly firstSteps = new Map<Stmt, XItem>();
-    private readonly resolve: (pred: Pred, a: XItem) => RPred | null;
+    private readonly firstSteps = new Map<Stmt, ItemSet>();
+    private readonly resolve: (pred: Pred, a: ItemSet) => RPred | null;
     /** Where the check finds a loop's exit can never hold: its condition's offset. */
     private readonly neverExits = new Set<number>();
     /** The craft's named modifiers, tracked from the item block on. */
@@ -491,14 +491,14 @@ class Walker {
     }
 
     /** The item block's item. */
-    private readonly first: XItem | undefined;
+    private readonly first: ItemSet | undefined;
 
     /** Every condition and bench craft the craft writes, read on the checker's
      *  item where it stands, names what the tracker follows. */
     private trackerFor(craft: Craft, result: CheckResult): Tracker | undefined {
         const first = result.trace[0]?.before;
         if (first === undefined) return undefined;
-        const items: XItem[] = [];
+        const items: ItemSet[] = [];
         const collect = (trace: readonly TraceEntry[]): void => {
             for (const e of trace) {
                 items.push(e.before);
@@ -1113,7 +1113,7 @@ class Walker {
      */
     private chainLoop(
         stmt: Extract<Stmt, { kind: "until" }>,
-        before: XItem,
+        before: ItemSet,
         rpred: RPred,
         branches: readonly Branch[],
         frame: Frame,
@@ -1257,7 +1257,7 @@ class Walker {
      * counts nor a named modifier is what the item says there, for every state.
      * Undefined for a value condition, which the state does not hold.
      */
-    private compiled(pred: RPred, item: XItem): ((s: ChainState) => boolean) | undefined {
+    private compiled(pred: RPred, item: ItemSet): ((s: ChainState) => boolean) | undefined {
         const tracker = this.tracker;
         if (tracker === undefined) return undefined;
         const fixed = new Map<RPred, boolean>();
@@ -1420,7 +1420,7 @@ class Walker {
      * the path.
      */
     private statesOf(
-        item: XItem,
+        item: ItemSet,
         ins: readonly Branch[],
     ): { state: ChainState; weight: number }[] | undefined {
         const tracker = this.tracker;
@@ -1542,7 +1542,7 @@ class Walker {
     }
 
     /** The row a bench statement crafts on this item, when it resolves. */
-    private benchMod(literals: readonly Literal[], a: XItem): Mod | undefined {
+    private benchMod(literals: readonly Literal[], a: ItemSet): Mod | undefined {
         const name = literals[0];
         if (name === undefined || name.kind !== "string") return undefined;
         const tier = literals[1];
@@ -1559,7 +1559,7 @@ class Walker {
     }
 
     /** The item after the last statement of a body that has one in the trace. */
-    private lastAfter(body: readonly Stmt[]): XItem | undefined {
+    private lastAfter(body: readonly Stmt[]): ItemSet | undefined {
         for (let i = body.length - 1; i >= 0; i--) {
             const e = this.entry(body[i]!);
             if (e?.after !== undefined) return e.after;
@@ -1568,7 +1568,7 @@ class Walker {
     }
 
     /** A bench craft after a roll: its modifier is on the item for certain. */
-    private benchOnPath(path: Path, literals: readonly Literal[], after: XItem): Path {
+    private benchOnPath(path: Path, literals: readonly Literal[], after: ItemSet): Path {
         const mod = this.benchMod(literals, after);
         if (mod === undefined) return path;
         const gen =
@@ -1586,7 +1586,7 @@ class Walker {
     private conditionChance(
         pred: RPred,
         path: Path | undefined,
-        before: XItem,
+        before: ItemSet,
     ): number | undefined {
         if (path === undefined) {
             const settled = certainty(pred, before);
@@ -1602,7 +1602,7 @@ class Walker {
         return Math.min(1, joint / given);
     }
 
-    private jointChance(path: Path, pred: RPred, after: XItem): number | undefined {
+    private jointChance(path: Path, pred: RPred, after: ItemSet): number | undefined {
         return chance(conjunction([...path.conditions, pred]), path.roll, after);
     }
 }
@@ -1614,7 +1614,7 @@ class Walker {
  * different rows under different influences is then one reading for all of
  * them, which the odds of a step with its influences open take as they find.
  */
-function conditionReader(craft: Craft): (pred: Pred, s: XItem) => RPred | null {
+function conditionReader(craft: Craft): (pred: Pred, s: ItemSet) => RPred | null {
     const quiet: Diag = () => {};
     const defs = collectDefs(craft.defs, quiet);
     const procs = collectProcs(craft.procs, defs, quiet);
@@ -1625,7 +1625,7 @@ function conditionReader(craft: Craft): (pred: Pred, s: XItem) => RPred | null {
 
 /** What a condition reads of the items: every influence tag some carry, and
  *  the rows a compared modifier may be at, those the items hold among them. */
-function viewOf(s: XItem): ResolveView {
+function viewOf(s: ItemSet): ResolveView {
     const { base, ilvl, registry } = s.u;
     let carried: ((m: Mod) => boolean) | undefined;
     return {

@@ -170,7 +170,7 @@ describe("checker — the wider currency set", () => {
 
     it("augment fills the open slot of a Magic item once a prefix is proven absent, then rejects a second", () => {
         // A transmute lays down one or two modifiers, so an augment is only safe
-        // once a side is proven open; afterwards the item is full on every path.
+        // once a side is proven open; afterwards every item is full.
         const c = craft(item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [
             op("transmute"), // → Magic, 1–2 affixes
             iff(cmp("prefixCount", "==", 0), [op("augment")], []), // → 2 (full)
@@ -968,7 +968,7 @@ describe("checker — items that differ by the path that made them", () => {
         expect(r.diagnostics.some((d) => d.message.includes("open affix slot"))).toBe(true);
     });
 
-    it("shows one item for a step, covering every path that reaches it", () => {
+    it("shows one item for a step, covering every item that reaches it", () => {
         const c = craft(five(), [op("exalt"), undo, op("annul")]);
         const r = check(c, wideCtx);
         const last = r.trace.filter((e) => e.kind === "operation").at(-1)!;
@@ -1008,7 +1008,7 @@ describe("checker — items that differ by the path that made them", () => {
         expect(v.counts(inDef.finalState!)).toEqual(v.counts(inPlace.finalState!));
     });
 
-    it("reports a step that fails on one path once, for the item over every path", () => {
+    it("reports a step that fails on one item once, for every item at it", () => {
         const r = check(craft(five(), [op("exalt"), undo, op("exalt")]), wideCtx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("5–6 affixes");

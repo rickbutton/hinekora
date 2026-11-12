@@ -6,7 +6,7 @@ import { cellValues } from "../cells.js";
 import type { Dd } from "../dd.js";
 import type { CItem } from "../item.js";
 import type { ModValue, Universe } from "../universe.js";
-import { ItemSet } from "./sets.js";
+import { CItemSet } from "./sets.js";
 
 export interface ListOptions {
     /** Read each cell at its lowest value only, to keep a listing small. */
@@ -51,6 +51,6 @@ export function decode(u: Universe, a: readonly number[], options: ListOptions =
     return picks.map((p) => u.decodeOne(a, (_v: ModValue, slot) => p.get(slot)!));
 }
 
-export function listItems(u: Universe, dd: Dd, options: ListOptions = {}): ItemSet {
-    return ItemSet.of(assignmentsOf(u, dd).flatMap((a) => decode(u, a, options)));
+export function listItems(u: Universe, dd: Dd, options: ListOptions = {}): CItemSet {
+    return CItemSet.of(assignmentsOf(u, dd).flatMap((a) => decode(u, a, options)));
 }

@@ -19,7 +19,7 @@ import {
     INFLUENCE_STEMS,
     influenceKey,
 } from "../model/marks.js";
-import type { Range } from "./domain.js";
+import type { Range } from "./range.js";
 import type {
     Check,
     FillCount,

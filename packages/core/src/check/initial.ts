@@ -41,7 +41,7 @@ import type { Registry } from "../resolve/registry.js";
 import { rollableGen } from "../resolve/tiers.js";
 import { craftReach, shapeKey } from "./craft.js";
 import type { Dd } from "./dd.js";
-import { stateOf, type XItem } from "./state.js";
+import { stateOf, type ItemSet } from "./state.js";
 import {
     buildUniverse,
     type ModValue,
@@ -150,7 +150,7 @@ function influenceValue(u: Universe, decl: ItemDecl): number {
 
 /** The set of items the item block describes, over a universe built for it;
  *  null when there are none (a block whose faults leave no item). */
-export function initialItem(u: Universe, decl: ItemDecl): XItem | null {
+export function initialItem(u: Universe, decl: ItemDecl): ItemSet | null {
     const m = u.dd;
     const { registry } = u;
     const influence = influenceValue(u, decl);
@@ -298,7 +298,7 @@ export interface CraftStart {
     readonly u: Universe;
     readonly decl: ItemDecl;
     /** Null where the block's faults leave no item. */
-    readonly state: XItem | null;
+    readonly state: ItemSet | null;
 }
 
 /**
@@ -327,11 +327,11 @@ export function startOf(
     }
     const u = universeFor(registry, decl.base, decl.ilvl, craft);
     let byBlock = initials.get(u);
-    if (byBlock === undefined) initials.set(u, (byBlock = new Map<string, XItem | null>()));
+    if (byBlock === undefined) initials.set(u, (byBlock = new Map<string, ItemSet | null>()));
     const key = shapeKey(craft.item);
     let state = byBlock.get(key);
     if (state === undefined) byBlock.set(key, (state = initialItem(u, decl)));
     return { u, decl, state };
 }
 
-const initials = new WeakMap<Universe, Map<string, XItem | null>>();
+const initials = new WeakMap<Universe, Map<string, ItemSet | null>>();

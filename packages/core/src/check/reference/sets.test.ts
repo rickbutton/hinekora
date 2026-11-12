@@ -4,7 +4,7 @@ import { influenceKey, NO_INFLUENCE } from "../../model/marks.js";
 import { buildRegistry } from "../../resolve/registry.js";
 import { benchCraft, benchRow, modRow } from "./catalog.js";
 import { cItem, cMod, NO_IMPLICIT, refCtx } from "./item.js";
-import { allItems, diffSets, ItemSet, randomSubset } from "./sets.js";
+import { allItems, diffSets, CItemSet, randomSubset } from "./sets.js";
 import { isWellFormed } from "./wellformed.js";
 
 // Two prefixes and a suffix that shares the first prefix's group.
@@ -74,7 +74,7 @@ describe("allItems", () => {
     });
 });
 
-describe("ItemSet", () => {
+describe("CItemSet", () => {
     const none = cItem({ rarity: "magic" });
     const a1 = cItem({ rarity: "magic", mods: [cMod(A.id, 1)] });
     const a2 = cItem({ rarity: "magic", mods: [cMod(A.id, 2)] });
@@ -82,28 +82,28 @@ describe("ItemSet", () => {
     const cb = cItem({ rarity: "magic", mods: [cMod(B.id, 5), cMod(C.id, undefined)] });
 
     it("an item is its modifiers in any order", () => {
-        expect(ItemSet.of([bc, cb]).size).toBe(1);
-        expect(ItemSet.of([bc]).has(cb)).toBe(true);
+        expect(CItemSet.of([bc, cb]).size).toBe(1);
+        expect(CItemSet.of([bc]).has(cb)).toBe(true);
     });
     it("set algebra", () => {
-        const x = ItemSet.of([none, a1]);
-        const y = ItemSet.of([a1, a2]);
+        const x = CItemSet.of([none, a1]);
+        const y = CItemSet.of([a1, a2]);
         expect(x.union(y).size).toBe(3);
-        expect(x.intersect(y).equals(ItemSet.of([a1]))).toBe(true);
-        expect(x.minus(y).equals(ItemSet.of([none]))).toBe(true);
+        expect(x.intersect(y).equals(CItemSet.of([a1]))).toBe(true);
+        expect(x.minus(y).equals(CItemSet.of([none]))).toBe(true);
         expect(x.equals(y)).toBe(false);
-        expect(ItemSet.empty.size).toBe(0);
+        expect(CItemSet.empty.size).toBe(0);
     });
     it("filter, map and flatMap", () => {
-        const x = ItemSet.of([none, a1, a2]);
+        const x = CItemSet.of([none, a1, a2]);
         expect(x.filter((i) => i.mods.length > 0).size).toBe(2);
-        expect(x.map(() => none).equals(ItemSet.of([none]))).toBe(true);
+        expect(x.map(() => none).equals(CItemSet.of([none]))).toBe(true);
         const image = x.flatMap((i) => (i.mods.length === 0 ? [a1, a2] : []));
-        expect(image.equals(ItemSet.of([a1, a2]))).toBe(true);
+        expect(image.equals(CItemSet.of([a1, a2]))).toBe(true);
     });
     it("a diff names the extra and the missing items, capped", () => {
-        expect(diffSets(ItemSet.of([a1]), ItemSet.of([a1]))).toBe("");
-        const diff = diffSets(ItemSet.of([none, a1]), ItemSet.of([a1, a2, bc]), 1);
+        expect(diffSets(CItemSet.of([a1]), CItemSet.of([a1]))).toBe("");
+        const diff = diffSets(CItemSet.of([none, a1]), CItemSet.of([a1, a2, bc]), 1);
         expect(diff).toContain("expected 2 items, got 3");
         expect(diff).toContain("extra (2):");
         expect(diff).toContain("… and 1 more");

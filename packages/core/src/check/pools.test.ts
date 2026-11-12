@@ -12,7 +12,7 @@ import { cItem, refCtx } from "./reference/item.js";
 import { listItems } from "./reference/listing.js";
 import type { RefHandlers } from "./reference/ops/handler.js";
 import { REF_HANDLERS } from "./reference/ops/registry.js";
-import { ItemSet } from "./reference/sets.js";
+import { CItemSet } from "./reference/sets.js";
 import { fromItems } from "./state.js";
 import { buildUniverse } from "./universe.js";
 
@@ -51,7 +51,7 @@ describe("the pools of other families", () => {
             { kind: "fill", pool: { kind: "veiledPlaceholder" }, count: { kind: "within" } },
         ];
         const start = [cItem({ rarity: "rare" })];
-        const d = compareMethod(u, ctx, ItemSet.of(start), ops, { exact, reference });
+        const d = compareMethod(u, ctx, CItemSet.of(start), ops, { exact, reference });
         expect(d, d).toBe("");
         const out = listItems(u, runMethod(fromItems(u, start)!, ops, exact).state.dd, {
             lowest: true,

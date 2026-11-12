@@ -25,7 +25,7 @@ import {
 import { plural } from "../words.js";
 import type { RPred } from "./pred.js";
 import { bindArgs, type Diag, type PredDefs, substitute } from "./defs.js";
-import type { Range } from "./domain.js";
+import type { Range } from "./range.js";
 import { rollRange } from "./values.js";
 
 /** What resolving a condition reads of the item it is read for. */

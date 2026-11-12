@@ -6,8 +6,8 @@
  *
  * - An operation is built for the item alone (`buildFor`) and run on it alone
  *   (`refRunMethod`). An item its builder or its run refuses is recorded as
- *   refusing the step and goes no further; an item whose every path the
- *   method ends goes no further.
+ *   refusing the step and goes no further; an item for which every outcome of
+ *   the method ends the craft goes no further.
  * - An `if` sends an item into the arm its condition (`holdsPred`) picks; a
  *   condition with a fault on the item (it does not resolve under the item's
  *   own influences) picks both.
@@ -25,8 +25,8 @@
  * body never runs when no item at its head fails the condition, and the loop
  * never exits when items reach its head and none meets it; a step is
  * unreachable when the step before it is reached and no item gets past it,
- * because every path before it in its block stopped, went back to a loop's
- * head, or some of each (a path stops at a `stop`, a top-level `restart`, a
+ * because every item before it in its block stopped, went back to a loop's
+ * head, or some of each (an item stops at a `stop`, a top-level `restart`, a
  * refused or ending step, and in a loop no item leaves).
  */
 import type { Craft, Pred, Stmt } from "../../ast/ast.js";
@@ -38,7 +38,7 @@ import type { Registry } from "../../resolve/registry.js";
 import { buildKey } from "../build.js";
 import {
     check,
-    exactDetail,
+    checkDetail,
     type CheckResult,
     type CheckTuning,
     type FindingKind,
@@ -54,21 +54,21 @@ import { type CItem, itemKey, type RefCtx } from "./item.js";
 import { listItems } from "./listing.js";
 import { refRunMethod } from "./method.js";
 import { holdsPred } from "./pred.js";
-import { diffSets, ItemSet } from "./sets.js";
+import { diffSets, CItemSet } from "./sets.js";
 
 export interface RefRecord {
     readonly kind: Stmt["kind"] | "item";
-    readonly before: ItemSet;
+    readonly before: CItemSet;
     /** Empty where no item gets past it. */
-    readonly after: ItemSet;
+    readonly after: CItemSet;
 }
 
 export interface RefFinding {
     readonly kind: FindingKind;
     readonly span: SourceSpan;
     /** As check/check.ts `FindingItems`. */
-    readonly failing?: ReadonlyMap<string, ItemSet>;
-    readonly unbuilt?: ItemSet;
+    readonly failing?: ReadonlyMap<string, CItemSet>;
+    readonly unbuilt?: CItemSet;
     readonly unreached?: Unreached;
 }
 
@@ -79,13 +79,13 @@ export interface RefCraftRun {
     readonly records: ReadonlyMap<string, RefRecord>;
     readonly findings: readonly RefFinding[];
     /** The items past the last statement. */
-    readonly final: ItemSet;
+    readonly final: CItemSet;
 }
 
 export interface RefCraftOptions {
     /** Applied to the first items and to every operation's outcomes: the exact
      *  side reads an item at its value cells (reference/harness.ts `atCells`). */
-    readonly normalize?: (items: ItemSet) => ItemSet;
+    readonly normalize?: (items: CItemSet) => CItemSet;
 }
 
 type Owner =
@@ -124,7 +124,7 @@ export function refCheckCraft(
     ctx: RefCtx,
     options: RefCraftOptions = {},
 ): RefCraftRun {
-    const normalize = options.normalize ?? ((s: ItemSet) => s);
+    const normalize = options.normalize ?? ((s: CItemSet) => s);
     const silent = (): void => {};
     const defs = collectDefs(craft.defs, silent);
     const procs = collectProcs(craft.procs, defs, silent);
@@ -311,7 +311,7 @@ export function refCheckCraft(
         const key = buildKey(ops);
         const k = `${key}|${itemKey(x)}`;
         let r = runs.get(k);
-        if (r === undefined) runs.set(k, (r = refRunMethod(ItemSet.of([x]), ops, ctx)));
+        if (r === undefined) runs.set(k, (r = refRunMethod(CItemSet.of([x]), ops, ctx)));
         for (const [i, xs] of r.failing) {
             const fk = `${key}#${i}`;
             let m = n.failing.get(fk);
@@ -345,13 +345,13 @@ export function refCheckCraft(
         if (stmt.kind === "operation") {
             if (n.refused) {
                 const failing = new Map(
-                    [...n.failing].map(([k, m]) => [k, ItemSet.of(m.values())] as const),
+                    [...n.failing].map(([k, m]) => [k, CItemSet.of(m.values())] as const),
                 );
                 findings.push({
                     kind: "refused",
                     span: stmt.span,
                     ...(failing.size > 0 && { failing }),
-                    ...(n.unbuilt.size > 0 && { unbuilt: ItemSet.of(n.unbuilt.values()) }),
+                    ...(n.unbuilt.size > 0 && { unbuilt: CItemSet.of(n.unbuilt.values()) }),
                 });
             } else if (n.after.size === 0) findings.push({ kind: "ended", span: stmt.span });
         } else if (stmt.kind === "if" && !n.faulty) {
@@ -386,11 +386,11 @@ export function refCheckCraft(
         if (!reached(n)) continue;
         records.set(n.key, {
             kind: n.stmt.kind,
-            before: ItemSet.of(n.before.values()),
-            after: ItemSet.of(n.after.values()),
+            before: CItemSet.of(n.before.values()),
+            after: CItemSet.of(n.after.values()),
         });
     }
-    return { records, findings, final: ItemSet.of(final.values()) };
+    return { records, findings, final: CItemSet.of(final.values()) };
 }
 
 // --- the comparison ------------------------------------------------------------------
@@ -513,9 +513,9 @@ export function compareCraft(
         reference,
         ...counts,
     });
-    const listed = (dd: Dd | undefined): ItemSet =>
-        dd === undefined ? ItemSet.empty : listItems(u, dd, { lowest: true });
-    const detail = exactDetail(strict)!;
+    const listed = (dd: Dd | undefined): CItemSet =>
+        dd === undefined ? CItemSet.empty : listItems(u, dd, { lowest: true });
+    const detail = checkDetail(strict)!;
     const at = (f: { kind: string; span: SourceSpan }, why?: Unreached): string =>
         `${f.kind}@${f.span.start.offset}${why === undefined ? "" : `(${why})`}`;
     const sorted = (xs: string[]): string => xs.sort().join(" ");
@@ -546,12 +546,12 @@ export function compareCraft(
     }
     // A refused step's items, by statement and operation; a step inlined at
     // two calls is one statement here, its items united.
-    const refusedItems = new Map<string, Map<string, ItemSet>>();
-    const add = (where: number, key: string, xs: ItemSet): void => {
+    const refusedItems = new Map<string, Map<string, CItemSet>>();
+    const add = (where: number, key: string, xs: CItemSet): void => {
         const k = String(where);
         let m = refusedItems.get(k);
-        if (m === undefined) refusedItems.set(k, (m = new Map<string, ItemSet>()));
-        m.set(key, (m.get(key) ?? ItemSet.empty).union(xs));
+        if (m === undefined) refusedItems.set(k, (m = new Map<string, CItemSet>()));
+        m.set(key, (m.get(key) ?? CItemSet.empty).union(xs));
     };
     for (const f of reference.findings) {
         if (f.kind !== "refused") continue;
@@ -574,8 +574,8 @@ export function compareCraft(
         const keys = new Set([...m.keys()].map((k) => k.slice(k.indexOf(" ") + 1)));
         for (const k of keys) {
             const d = diffSets(
-                m.get(`ref ${k}`) ?? ItemSet.empty,
-                m.get(`exact ${k}`) ?? ItemSet.empty,
+                m.get(`ref ${k}`) ?? CItemSet.empty,
+                m.get(`exact ${k}`) ?? CItemSet.empty,
             );
             if (d !== "") return done(`refused@${where}: the items refused by ${k} differ:\n${d}`);
         }

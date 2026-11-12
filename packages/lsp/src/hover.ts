@@ -41,7 +41,7 @@ import {
     type TraceEntry,
     type TypeId,
     veiledPool,
-    type XItem,
+    type ItemSet,
     isCorruptedEssence,
     influenceTagsAny,
     plural,
@@ -86,7 +86,7 @@ const KEYWORD_DOC: Record<string, string> = {
     item: "`item { base: … ilvl: … rarity: … }` — the starting item this craft operates on.",
 };
 
-const PROJECTION: Record<string, { measures: string; of: (s: XItem) => Range }> = {
+const PROJECTION: Record<string, { measures: string; of: (s: ItemSet) => Range }> = {
     prefixCount: { measures: "the number of prefixes on the item", of: (s) => counts(s).prefix },
     suffixCount: { measures: "the number of suffixes on the item", of: (s) => suffixRange(s) },
 };

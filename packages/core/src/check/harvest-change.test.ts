@@ -523,7 +523,7 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
     });
 
     it("leaves a modifier a craft can test by its value", () => {
-        // The cold resistance is +(18-23)%: at least 18 on every path.
+        // The cold resistance is +(18-23)%: at least 18 on every item.
         const r = known(25, "FireTiers24", "ColdTiers1", [
             iff(hasValue("ColdTiers1", ">=", 18), [], [stop()]),
         ]);

@@ -107,7 +107,7 @@ export interface MethodItem {
     readonly tiers: ReadonlyMap<TypeId, ReadonlySet<ModId>>;
 }
 
-/** The influence tags the item carries on any path: what a name written
+/** The influence tags any of the items carries: what a name written
  *  against it may mean. */
 export function influenceTagsOfItem(a: MethodItem, registry: Registry): ReadonlySet<TagId> {
     const out = new Set<TagId>();

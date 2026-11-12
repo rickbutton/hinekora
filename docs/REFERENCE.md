@@ -51,7 +51,7 @@ to the whole craft.
 
 ## 4. The exact state
 
-A state (`XItem`) is a set of items, one decision diagram over the slots of its universe
+A state (`ItemSet`) is a set of items, one decision diagram over the slots of its universe
 (`check/universe.ts`, `ARCHITECTURE.md` §4.2), in this order:
 
 | Slot                      | Its values                                                         |

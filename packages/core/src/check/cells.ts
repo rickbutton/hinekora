@@ -4,7 +4,7 @@
  * value is kept only as finely as some condition reads it.
  */
 import type { Cmp } from "../ast/ast.js";
-import type { Range } from "./domain.js";
+import type { Range } from "./range.js";
 
 /** An interval of a row's span. A whole span (both ends whole numbers) rolls
  *  whole numbers only, so its cells are closed runs of whole numbers. */

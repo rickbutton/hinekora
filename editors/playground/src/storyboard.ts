@@ -42,7 +42,7 @@ import {
     type Stmt,
     type Walkthrough,
     walkthrough,
-    type XItem,
+    type ItemSet,
     pluralRange,
     rangeText,
     rarityText,
@@ -563,7 +563,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
          * the rarity did, nothing when it did not change at all.
          */
         const result = (
-            state: XItem | undefined,
+            state: ItemSet | undefined,
             full: boolean,
             changed: boolean,
             caption?: string,

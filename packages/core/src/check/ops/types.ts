@@ -8,7 +8,7 @@ import type { ClassId, Gen, ModId, Rarity, TagId, TypeId } from "../../model/ids
 import type { EldritchSide, Influence, InfluenceKey } from "../../model/marks.js";
 import type { Mod } from "../../model/mod.js";
 import type { EssenceSpec, FossilSpec } from "../../model/sources.js";
-import type { Range } from "../domain.js";
+import type { Range } from "../range.js";
 
 // --- the operations --------------------------------------------------------
 
@@ -111,7 +111,7 @@ export type Selector =
      *  of Dominance); the other modifiers' guarantees survive. */
     | { readonly kind: "influenced" };
 
-/** A check a `require` must prove on every path. */
+/** A check a `require` must find true of every item at its step. */
 export type Check =
     | { readonly kind: "rarity"; readonly rarity: Rarity }
     | { readonly kind: "notMagic" }
@@ -123,21 +123,21 @@ export type Check =
     | { readonly kind: "strippable" }
     /** `what` names the craft when it is not the Fracturing Orb. */
     | { readonly kind: "atLeast"; readonly count: number; readonly what?: string }
-    /** No fractured modifier on any path; `what` says, for a craft that is not
+    /** No item has a fractured modifier; `what` says, for a craft that is not
      *  itself a fracture, why it refuses one. */
     | { readonly kind: "noFracture"; readonly what?: string }
-    /** The item is not corrupted on any path; every method but the Tainted
+    /** No item is corrupted; every method but the Tainted
      *  currency and an unveil requires it (Corrupted § Modifying corrupted items). */
     | { readonly kind: "notCorrupted" }
-    /** The item is corrupted on every path (the Tainted currency). */
+    /** Every item is corrupted (the Tainted currency). */
     | { readonly kind: "corruptedItem"; readonly what: string }
-    /** The item has no influence on any path (a fracture, an influence orb). */
+    /** No item has an influence (a fracture, an influence orb). */
     | { readonly kind: "noInfluence"; readonly what: string }
-    /** The item has no eldritch implicit on any path (an influence orb). */
+    /** No item has an eldritch implicit (an influence orb). */
     | { readonly kind: "noEldritch"; readonly what: string }
-    /** That eldritch implicit is dominant on every path (the Eldritch orbs). */
+    /** That eldritch implicit is dominant on every item (the Eldritch orbs). */
     | { readonly kind: "dominant"; readonly side: EldritchSide; readonly what: string }
-    /** Both eldritch implicits are present on every path (an Orb of Conflict). */
+    /** Every item has both eldritch implicits (an Orb of Conflict). */
     | { readonly kind: "bothEldritch" }
     /** That side is not protected by a metamod (an Eldritch Orb of Annulment
      *  would otherwise remove nothing). */
@@ -145,7 +145,7 @@ export type Check =
     /** At least that many influenced modifiers are guaranteed on unprotected
      *  sides (the Orb of Dominance). */
     | { readonly kind: "influencedAtLeast"; readonly count: number }
-    /** The item is influenced on every path, with that influence when one is named. */
+    /** Every item is influenced, with that influence when one is named. */
     | { readonly kind: "influenced"; readonly what: string; readonly influence?: Influence }
     /** The item's class can carry that influence (a jewel or a flask cannot). */
     | { readonly kind: "influenceable"; readonly influence: Influence; readonly what: string }
@@ -177,7 +177,7 @@ export type Check =
     | { readonly kind: "essenceGrant"; readonly spec: EssenceSpec }
     /** `refusal` words what cannot be done at the limit, for a craft off the bench. */
     | { readonly kind: "craftedBelowCap"; readonly refusal?: string }
-    /** A crafted modifier the bench can remove is present on every path. */
+    /** Every item has a crafted modifier the bench can remove. */
     | { readonly kind: "craftedRemovable" }
     /** A craft that would replace the crafted modifier can: it is not fractured. */
     | { readonly kind: "craftedReplaceable" }
@@ -284,7 +284,7 @@ export type PreconditionFailure =
     | {
           readonly kind: "modConflict";
           readonly group: string;
-          /** One of them is on the item on every path. */
+          /** One of them is on every item. */
           readonly sure: boolean;
           /** The other modifiers of the group the item may carry, named so a craft
            *  can rule them out one by one. */

@@ -71,7 +71,7 @@ describe("harvest augment against the modifiers the item may carry", () => {
 
     it("is not blocked by one unknown suffix when its candidates span more groups", () => {
         // The one unnamed suffix may be any resistance, but it is one modifier:
-        // of fire, cold and lightning two stay open on every path.
+        // of fire, cold and lightning two stay open on every item.
         const c = craft(rareRing([PROTECT_SUFFIXES_CARRIER.id], ["random"]), [
             harvest("reforge", "elemental"),
         ]);
