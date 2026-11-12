@@ -11,7 +11,9 @@
  *   legitimate only as a branch of an `either` (an outcome on which the
  *   operation does something else); anywhere else a check of the method must
  *   have refused the item, and the frame raises an `InternalError`.
- * - A handler reads of `ctx.rules` only the fields it declares in `reads`
+ * - A handler reads of `ctx.rules` only the fields it declares in `reads`,
+ *   a list or a function of the operation (an add reads less than a reforge
+ *   of the same pool)
  *   (any other read throws), so the frame splits a state only by the
  *   metamods that decide what the method reads. A metamod a fill must honour
  *   as it draws is read from the item at that point, not from the rules.
@@ -20,6 +22,7 @@ import type { Check, PoolSpec, PreconditionFailure, Selector } from "../../check
 import type { Dd } from "../dd.js";
 import type { RuleField, Rules } from "../rules.js";
 import type { XItem } from "../state.js";
+import type { PoolTable } from "./pools.js";
 import type { Universe } from "../universe.js";
 import type { CompoundKind, CompoundOf, FillOf, RemoveOf, Single } from "./steps.js";
 
@@ -54,6 +57,9 @@ export interface MethodCtx {
     /** The items of this case when the method started, uniform in every
      *  property a `split` of the method cut it by. */
     readonly start: Dd;
+    /** The pools of other families a draw resolves (`Handlers.pools`); the
+     *  merged table of ops/registry.ts where absent. */
+    readonly pools?: PoolTable;
 }
 
 /** A partition of every assignment by some property of the item the method
@@ -61,8 +67,15 @@ export interface MethodCtx {
  *  undefined for none: the frame runs the method once per part. */
 export type Split<T> = (op: T, u: Universe) => readonly Dd[] | undefined;
 
+/** The rule fields a handler reads: always the same, or by its operation. */
+export type Reads<T> = readonly RuleField[] | ((op: T) => readonly RuleField[]);
+
+export function readsFor<T>(reads: Reads<T>, op: T): readonly RuleField[] {
+    return typeof reads === "function" ? reads(op) : reads;
+}
+
 export interface TransformHandler<K extends DispatchKey> {
-    readonly reads: readonly RuleField[];
+    readonly reads: Reads<OpAt<K>>;
     /** The items the operation can leave of the items of `state`, each
      *  well-formed (within `u.wfWithImprint`). */
     readonly apply: (op: OpAt<K>, state: Dd, ctx: MethodCtx) => Dd;
@@ -71,7 +84,7 @@ export interface TransformHandler<K extends DispatchKey> {
 
 /** A compound run of operations (steps.ts), stated as one image. */
 export interface CompoundHandler<K extends CompoundKind> {
-    readonly reads: readonly RuleField[];
+    readonly reads: Reads<CompoundOf<K>>;
     readonly apply: (run: CompoundOf<K>, state: Dd, ctx: MethodCtx) => Dd;
     readonly split?: Split<CompoundOf<K>>;
 }
@@ -89,7 +102,7 @@ export interface CheckVerdict {
 }
 
 export interface CheckHandler<K extends Check["kind"]> {
-    readonly reads: readonly RuleField[];
+    readonly reads: Reads<CheckOf<K>>;
     readonly verdict: (check: CheckOf<K>, state: Dd, ctx: MethodCtx) => CheckVerdict;
 }
 
@@ -101,6 +114,8 @@ export interface Handlers {
     readonly transforms: TransformTable;
     readonly compounds: CompoundTable;
     readonly checks: CheckTable;
+    /** The pools a family states for the draws of every family (ops/pools.ts). */
+    readonly pools?: PoolTable;
 }
 
 export class NotImplementedError extends Error {

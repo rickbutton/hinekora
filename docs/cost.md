@@ -45,8 +45,7 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
   Veiled Chaos) is 4, 5 or 6 at 8:3:1, the forced row within it
   ([Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Chaos_Orb#Mechanics), Q59); a
   base holding four or five takes one fewer or all at 65:35; a Magic reforge one or two at
-  even odds (Q58). An Eldritch Chaos Orb's kept side counts toward the total, the
-  rerolled side taking what fits.
+  even odds (Q58). A kept side counts toward the total, the rerolled side taking what fits (Q112).
 - **Fossils.** Several fossils' "more" multipliers add and a "fewer" multiplies the
   result (Q60).
 - **Harvest.** The tagged row is drawn among the tag's rows by weight (Q63).

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { tiersWithStrands } from "./strands.js";
+import { foulbornKept, tiersWithStrands } from "./strands.js";
 
 describe("the tiers that roll under memory strands", () => {
     it("follows the wiki's breakpoints", () => {
@@ -18,5 +18,10 @@ describe("the tiers that roll under memory strands", () => {
         // eligible tiers: the orb's +75 rating alone is 2.5 × 11 + 47.5.
         const kept = [1, 1, 2, 2, 3, 3, 4, 5, 5, 6, 6, 7, 7];
         expect(kept.map((_k, i) => tiersWithStrands(11, i + 1))).toEqual(kept);
+    });
+
+    it("keeps the top half and one, rounded, of a Foulborn orb's eligible tiers", () => {
+        // Foulborn currency � Mechanics, "Amount of tiers kept".
+        expect([1, 2, 3, 4, 5, 6, 7, 8, 13].map(foulbornKept)).toEqual([1, 1, 2, 2, 3, 3, 4, 5, 7]);
     });
 });

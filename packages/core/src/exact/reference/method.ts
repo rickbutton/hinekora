@@ -11,8 +11,11 @@ import {
     type DispatchKey,
     InternalError,
     NotImplementedError,
+    readsFor,
     restrictRules,
 } from "../ops/handler.js";
+import type { PoolTable } from "../ops/pools.js";
+import { HANDLERS } from "../ops/registry.js";
 import { checkPlacement, type CompoundKind, type Step, stepsOf } from "../ops/steps.js";
 import {
     effectsKey,
@@ -68,11 +71,13 @@ const checkOf = (h: RefHandlers, s: Check): RefCheckHandler<Check["check"]["kind
 function readsOf(steps: readonly Step[], h: RefHandlers): Set<RuleField> {
     const out = new Set<RuleField>();
     const visit = (s: Step): void => {
-        if (s.kind === "require") checkOf(h, s).reads.forEach((f) => out.add(f));
+        if (s.kind === "require") readsFor(checkOf(h, s).reads, s.check).forEach((f) => out.add(f));
         else if (s.kind === "single")
-            transformOf(h, dispatchKey(s.op)).reads.forEach((f) => out.add(f));
+            readsFor(transformOf(h, dispatchKey(s.op)).reads, s.op as never).forEach((f) =>
+                out.add(f),
+            );
         else if (s.kind === "compound")
-            compoundOf(h, s.compound.kind).reads.forEach((f) => out.add(f));
+            readsFor(compoundOf(h, s.compound.kind).reads, s.compound).forEach((f) => out.add(f));
         else if (s.kind === "either") s.branches.forEach((b) => b.forEach(visit));
     };
     steps.forEach(visit);
@@ -148,6 +153,7 @@ export function refRunMethod(
         ctx,
         rules: rulesOf(effectsOn(ctx, item), ops),
         start: item,
+        pools: poolsOf(handlers),
     });
     const repaired =
         repair === undefined
@@ -163,6 +169,12 @@ export function refRunMethod(
     return { ...refusal, state: rest.state, ended: rest.ended };
 }
 
+/** The pools the draws read: the handlers' own, every family's by default,
+ *  since the reference's families state none of their own. */
+function poolsOf(handlers: RefHandlers): PoolTable {
+    return handlers.pools ?? HANDLERS.pools ?? {};
+}
+
 function runItem(
     item: CItem,
     ops: readonly Op[],
@@ -171,14 +183,23 @@ function runItem(
     handlers: RefHandlers,
     run: Run,
 ): CItem[] {
-    let mctx: RefMethodCtx = { ctx, rules: rulesOf(effectsOn(ctx, item), ops), start: item };
+    let mctx: RefMethodCtx = {
+        ctx,
+        rules: rulesOf(effectsOn(ctx, item), ops),
+        start: item,
+        pools: poolsOf(handlers),
+    };
     let cur: CItem[] = [item];
     for (const step of steps) {
         if (cur.length === 0) break;
         switch (step.kind) {
             case "require": {
                 const h = checkOf(handlers, step);
-                const rules = restrictRules(mctx.rules, h.reads, `the check "${step.check.kind}"`);
+                const rules = restrictRules(
+                    mctx.rules,
+                    readsFor(h.reads, step.check),
+                    `the check "${step.check.kind}"`,
+                );
                 const pass = cur.filter((x) => h.pass(step.check as never, x, { ...mctx, rules }));
                 if (pass.length !== 0 && pass.length !== cur.length) {
                     throw new InternalError(
@@ -240,7 +261,7 @@ function exec(
             who = `the operation "${key}"`;
             r = h.apply(step.op as never, item, {
                 ...ctx,
-                rules: restrictRules(ctx.rules, h.reads, who),
+                rules: restrictRules(ctx.rules, readsFor(h.reads, step.op as never), who),
             });
             break;
         }
@@ -249,7 +270,7 @@ function exec(
             who = `the run "${step.compound.kind}"`;
             r = h.apply(step.compound, item, {
                 ...ctx,
-                rules: restrictRules(ctx.rules, h.reads, who),
+                rules: restrictRules(ctx.rules, readsFor(h.reads, step.compound), who),
             });
             break;
         }

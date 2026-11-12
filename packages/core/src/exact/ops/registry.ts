@@ -8,6 +8,7 @@ import type { CheckTable, CompoundTable, Handlers, TransformTable } from "./hand
 import * as marks from "./marks.js";
 import * as misc from "./misc.js";
 import type { Family } from "./owners.js";
+import { mergePools } from "./pools.js";
 import * as remove from "./remove.js";
 
 export const FAMILIES: Readonly<Record<Exclude<Family, "frame">, Handlers>> = {
@@ -25,4 +26,5 @@ export const HANDLERS: Handlers = {
     transforms: merged<TransformTable>((h) => h.transforms),
     compounds: merged<CompoundTable>((h) => h.compounds),
     checks: merged<CheckTable>((h) => h.checks),
+    pools: mergePools(Object.entries(FAMILIES).map(([f, h]) => [f, h.pools ?? {}])),
 };

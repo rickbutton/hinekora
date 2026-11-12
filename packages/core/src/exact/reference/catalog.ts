@@ -25,6 +25,7 @@ import {
 } from "../../model/marks.js";
 import type { Mod, SpawnEntry } from "../../model/mod.js";
 import type {
+    FossilSpec,
     BenchCraft,
     EldritchImplicitSpec,
     EssenceSpec,
@@ -213,6 +214,12 @@ export interface CatalogOptions {
     readonly metamods?: readonly MetamodKind[];
     /** Eldritch implicit rows of both sides at every tier (amulet or boots). */
     readonly eldritch?: boolean;
+    /** A row that adds a tag, a row only that tag lets roll, and one it stops. */
+    readonly addsTag?: boolean;
+    /** A type with rows of both sides, a suffix under a prefix. */
+    readonly twoSided?: boolean;
+    /** A fossil whose own row of another domain joins a resonator's pool. */
+    readonly fossil?: boolean;
 }
 
 export interface Catalog {
@@ -230,6 +237,9 @@ export interface Catalog {
     readonly veiled: readonly Mod[];
     readonly metamods: readonly Mod[];
     readonly eldritch: readonly EldritchImplicitSpec[];
+    /** The fossil and the row it adds, with `fossil`. */
+    readonly fossil: FossilSpec | undefined;
+    readonly fossilRows: readonly Mod[];
 }
 
 const STATS = ["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel"];
@@ -403,6 +413,77 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
         }
         extra.push(...veiled);
     }
+    if (options.addsTag) {
+        const tag = "adder_tag";
+        extra.push(
+            modRow({
+                id: "Adder1",
+                type: "TypeAdder",
+                gen: r.pick(["prefix", "suffix"]),
+                text: rowText(r, "Adder", 0, true),
+                domain: base.domain,
+                addsTags: [tag],
+            }),
+            modRow({
+                id: "GatedOn1",
+                type: "TypeGatedOn",
+                gen: r.pick(["prefix", "suffix"]),
+                text: rowText(r, "GatedOn", 0, true),
+                domain: base.domain,
+                spawn: [{ tag: TagId(tag), weight: 200 }],
+            }),
+            modRow({
+                id: "GatedOff1",
+                type: "TypeGatedOff",
+                gen: r.pick(["prefix", "suffix"]),
+                text: rowText(r, "GatedOff", 0, true),
+                domain: base.domain,
+                spawn: [
+                    { tag: TagId(tag), weight: 0 },
+                    { tag: TAG_DEFAULT, weight: 300 },
+                ],
+            }),
+        );
+    }
+    if (options.twoSided) {
+        const levels = [1, r.pick([20, 45]), 68];
+        extra.push(
+            ...levels.map((minLevel, k) =>
+                modRow({
+                    id: `Both${k + 1}`,
+                    type: "TypeBoth",
+                    gen: k === 1 ? "prefix" : "suffix",
+                    minLevel,
+                    text: rowText(r, "Both", k, true),
+                    domain: base.domain,
+                }),
+            ),
+        );
+    }
+    const fossils: FossilSpec[] = [];
+    if (options.fossil) {
+        const row = modRow({
+            id: "Delve1",
+            type: "TypeDelve",
+            gen: r.pick(["prefix", "suffix"]),
+            text: rowText(r, "Delve", 0, true),
+            domain: Domain("delve"),
+            source: "fossil",
+            spawn: [{ tag: TAG_DEFAULT, weight: 100 }],
+        });
+        extra.push(row);
+        fossils.push({
+            id: "TestFossil",
+            name: "Test Fossil",
+            blockedTags: new Set([TagId("attack")]),
+            weights: new Map(),
+            addedMods: [row.id],
+            forcedMods: [],
+            corruptedEssenceChance: 0,
+            fractures: false,
+            corrupts: false,
+        });
+    }
     for (const k of options.metamods ?? []) {
         extra.push(metamod(k));
         benchCrafts.push(benchCraft(metamod(k), base.itemClass));
@@ -425,6 +506,7 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
         benchCrafts,
         essences,
         eldritch,
+        fossils,
     });
     const byId = new Map(registry.catalog.map((m) => [m.id, m]));
     const held = (m: Mod): Mod => byId.get(m.id)!;
@@ -442,6 +524,8 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
         veiled: veiled.map(held),
         metamods: (options.metamods ?? []).map((k) => held(metamod(k))),
         eldritch,
+        fossil: fossils[0],
+        fossilRows: fossils.length > 0 ? extra.filter((m) => m.id === "Delve1").map(held) : [],
     };
 }
 

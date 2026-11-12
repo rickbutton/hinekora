@@ -3,10 +3,11 @@
  * the values each slot takes, the well-formed items as one diagram, and the
  * lookups the conditions and the operations build their diagrams from.
  *
- * Slots, in order: the rarity and the marks, then one slot per modifier type
- * (prefix-only groups of types, then groups with rows of both sides, then
- * suffix-only groups; the types sharing a family adjacent), then the memory
- * strands. A craft that can imprint gets a copy of each slot for the held
+ * Slots, in order: the rarity, the marks and the memory strands, then one
+ * slot per modifier type (prefix-only groups of types, then groups with rows
+ * of both sides, then suffix-only groups; the types sharing a family
+ * adjacent). The strands come before the modifiers because a fill's tier cut
+ * reads them: a split by them then shares what lies below. A craft that can imprint gets a copy of each slot for the held
  * imprint, slot i at 2i and its copy at 2i + 1, and a last slot saying
  * whether an imprint is held: copying the item into the imprint, or back, is
  * then an `equate` or a `rename` between neighbours.
@@ -128,6 +129,7 @@ const SCALARS_BEFORE: readonly ScalarKind[] = [
     "exarchType",
     "eaterTier",
     "eaterType",
+    "strands",
 ];
 
 export interface UniverseOptions {
@@ -211,7 +213,6 @@ export class Universe {
         };
         const logical: LogicalSlot[] = SCALARS_BEFORE.map((kind) => ({ kind, size: sizes[kind] }));
         for (const slot of modSlots(rows, comparisons)) logical.push(slot);
-        logical.push({ kind: "strands", size: sizes.strands });
         this.logical = logical;
         logical.forEach((s, i) => {
             if (s.kind === "mod") {

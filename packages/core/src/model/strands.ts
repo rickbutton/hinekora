@@ -19,3 +19,9 @@ export function tiersWithStrands(strands: number, tiers: number): number {
     if (strands <= 0) return tiers;
     return Math.floor((100 / (2.5 * strands + 147.5)) * (tiers - 1)) + 1;
 }
+
+/** How many of a type's `n` eligible tiers a Foulborn orb lets roll, the top
+ *  ones, on an item holding no strands (Foulborn currency § Mechanics). */
+export function foulbornKept(n: number): number {
+    return n <= 6 ? Math.ceil(n / 2) : Math.floor(n / 2) + 1;
+}

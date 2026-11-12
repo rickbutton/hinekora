@@ -15,6 +15,8 @@ import {
     type Handlers,
     InternalError,
     NotImplementedError,
+    type Reads,
+    readsFor,
     type RuleField,
 } from "./ops/handler.js";
 import { CHECK_OWNERS, COMPOUND_OWNERS, type FrameKind, OP_OWNERS } from "./ops/owners.js";
@@ -75,12 +77,27 @@ describe("the families", () => {
             for (const k of Object.keys(h.checks))
                 expect(CHECK_OWNERS[k as Check["kind"]], k).toBe(family);
         }
+        // A handler reading by its operation is read on each count of a fill.
+        const samples = (k: string): unknown[] =>
+            k.startsWith("fill:")
+                ? (["add", "reforge", "within"] as const).map((count) => ({
+                      kind: "fill",
+                      pool: { kind: k.slice(5) },
+                      count: { kind: count, n: [1, 1] },
+                  }))
+                : [undefined];
         for (const table of ["transforms", "compounds", "checks"] as const) {
-            const exact = HANDLERS[table] as Record<string, { reads: readonly RuleField[] }>;
-            const ref = REF_HANDLERS[table] as Record<string, { reads: readonly RuleField[] }>;
+            const exact = HANDLERS[table] as Record<string, { reads: Reads<unknown> }>;
+            const ref = REF_HANDLERS[table] as Record<string, { reads: Reads<unknown> }>;
             expect(Object.keys(exact).sort()).toEqual(Object.keys(ref).sort());
-            for (const k of Object.keys(exact))
-                expect([...exact[k]!.reads].sort(), k).toEqual([...ref[k]!.reads].sort());
+            for (const k of Object.keys(exact)) {
+                expect(typeof exact[k]!.reads, k).toBe(typeof ref[k]!.reads);
+                for (const op of samples(k)) {
+                    expect([...readsFor(exact[k]!.reads, op)].sort(), k).toEqual(
+                        [...readsFor(ref[k]!.reads, op)].sort(),
+                    );
+                }
+            }
         }
     });
 
@@ -90,18 +107,19 @@ describe("the families", () => {
         const s = fromItems(u, [cItem()])!;
         expect(() => runMethod(s, [{ kind: "imprint" }])).toThrow(NotImplementedError);
         expect(() => runMethod(s, [req({ kind: "hasImprint" })])).toThrow(/"hasImprint"/);
+        const type = cat.natural[0]!.type;
         expect(() =>
-            runMethod(s, L.essenceOps(cat.registry.essences[0] ?? fakeEssence, 84).slice(-3)),
-        ).toThrow(/"reforgeWith"/);
+            runMethod(s, [
+                { kind: "remove", selector: { kind: "type", type } },
+                {
+                    kind: "fill",
+                    pool: { kind: "rows", mods: [], replacing: type },
+                    count: { kind: "add", n: [1, 1] },
+                },
+            ]),
+        ).toThrow(/"change"/);
     });
 });
-
-const fakeEssence = {
-    id: "E",
-    name: "Essence of Testing",
-    tier: 7,
-    grants: new Map(),
-} as unknown as Parameters<typeof L.essenceOps>[0];
 
 describe("the method frame", () => {
     const cat = generateCatalog(6100, { types: 3 });

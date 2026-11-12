@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q112.
+keeps it. New entries continue from Q115.
 
 ```
 ### Qn · probe|decision · open — title
@@ -286,7 +286,8 @@ record refused or applied.
 **Probe:** corrupted Rares with four modifiers and with six, Tainted Exalted Orbs; apply
 one to each; record added or removed, and whether a full item ever comes back unchanged.
 **Assumed:** even odds; a full item loses a modifier. **Encoded in:** `cost/track.ts`
-`OUTCOME_ODDS`, `ASSUMED_ODDS`.
+`OUTCOME_ODDS`, `ASSUMED_ODDS`; `exact/reference/ops/fill.ts`; `check/library.ts`
+`TAINTED_EXALT`.
 
 ### Q96 · probe · open — an Orb of Conflict over a wide gap
 
@@ -425,3 +426,39 @@ on boots with no other implicit a Vaal Orb always takes one and the altar both.
 Gilded Fossil sets), which makes the outcome exact (recommended); or keep the wider set.
 **Assumed:** the wider set. **Encoded in:** `exact/ops/marks.ts`;
 `exact/reference/ops/marks.ts`.
+
+### Q112 · probe · open — a Chaos Orb's count beside a protected side
+
+**Q:** with "Prefixes Cannot Be Changed", how many modifiers does a reforge add?
+[Metamod § Examples](https://www.poewiki.net/wiki/Metamod#Examples) has two kept prefixes
+take "1 prefix as well as 0 to 3 suffixes, or add 0 prefix and add 1 to 3 suffixes", three
+to six in all; the cost layer takes the kept side to count toward four to six.
+**Probe:** a Rare with two prefixes and the metamod as its only suffix; forty Chaos Orbs,
+re-crafting the metamod each time; record each total. The same with no prefix.
+**Assumed:** the checker admits both: a modifier is laid, or the total already reaches
+the reforge's least; the same for an Eldritch Chaos Orb's kept side. The cost layer reads
+four to six. **Encoded in:** `exact/reference/ops/fill.ts`, `exact/ops/fill.ts`;
+`cost/roll.ts` `countCases`.
+
+### Q113 · probe · open — a guaranteed modifier that has no place
+
+**Q:** what does an essence do on a Rare whose fractured modifier shares the group of the
+essence's modifier, or a resonator whose forced row meets one?
+[Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting) and
+[Fossil § Mechanics](https://www.poewiki.net/wiki/Fossil#Mechanics) do not say.
+**Probe:** a Rare ring with a fractured life modifier and a Screaming Essence of Greed;
+record refused, or the modifiers after.
+**Assumed:** reforged without the guaranteed modifier. **Encoded in:**
+`exact/reference/ops/fill.ts`.
+
+### Q114 · probe · open — an orb that adds a modifier when none can roll
+
+**Q:** does the game refuse an Exalted Orb, an Orb of Augmentation or a Regal Orb on an
+item with an open slot that no modifier fits?
+[Metamod § Examples](https://www.poewiki.net/wiki/Metamod#Examples) has a bow under
+"Cannot roll Attack Modifiers" with one prefix left that can roll.
+**Probe:** that bow with the prefix on it, an open prefix and full suffixes; an Exalted
+Orb; record refused, or used up with no change.
+**Assumed:** the checks do not look at the pool, so the present checker accepts the step;
+the exact checker finds no outcome there. **Encoded in:** `check/library.ts`
+`currencyOps`; `exact/reference/ops/fill.ts`.

@@ -34,6 +34,7 @@ import {
     InternalError,
     type MethodCtx,
     NotImplementedError,
+    readsFor,
     restrictRules,
     type TransformHandler,
 } from "./ops/handler.js";
@@ -266,13 +267,21 @@ function readsOf(steps: readonly Step[], handlers: Handlers): Set<RuleField> {
     const visit = (s: Step): void => {
         switch (s.kind) {
             case "require":
-                for (const f of checkHandler(handlers, s).reads) out.add(f);
+                for (const f of readsFor(checkHandler(handlers, s).reads, s.check)) out.add(f);
                 return;
             case "single":
-                for (const f of transformHandler(handlers, dispatchKey(s.op)).reads) out.add(f);
+                for (const f of readsFor(
+                    transformHandler(handlers, dispatchKey(s.op)).reads,
+                    s.op as never,
+                ))
+                    out.add(f);
                 return;
             case "compound":
-                for (const f of compoundHandler(handlers, s.compound.kind).reads) out.add(f);
+                for (const f of readsFor(
+                    compoundHandler(handlers, s.compound.kind).reads,
+                    s.compound,
+                ))
+                    out.add(f);
                 return;
             case "either":
                 for (const b of s.branches) b.forEach(visit);
@@ -321,7 +330,12 @@ function runCase(
 ): CaseRun {
     const { u } = s;
     const m = u.dd;
-    let ctx: MethodCtx = { u, rules: initial, start };
+    let ctx: MethodCtx = {
+        u,
+        rules: initial,
+        start,
+        ...(handlers.pools !== undefined && { pools: handlers.pools }),
+    };
     const run: CaseRun = { out: m.EMPTY, reachedEnd: false, judged: new Map() };
     let cur = start;
     for (const step of steps) {
@@ -331,7 +345,11 @@ function runCase(
                 const h = checkHandler(handlers, step);
                 const verdict = h.verdict(step.check, cur, {
                     ...ctx,
-                    rules: restrictRules(ctx.rules, h.reads, `the check "${step.check.kind}"`),
+                    rules: restrictRules(
+                        ctx.rules,
+                        readsFor(h.reads, step.check),
+                        `the check "${step.check.kind}"`,
+                    ),
                 });
                 const fail = m.diff(cur, verdict.pass);
                 run.judged.set(step.at, { reached: cur, failing: fail, verdict });
@@ -391,7 +409,7 @@ function exec(
             who = `the operation "${key}"`;
             r = h.apply(step.op as never, state, {
                 ...ctx,
-                rules: restrictRules(ctx.rules, h.reads, who),
+                rules: restrictRules(ctx.rules, readsFor(h.reads, step.op as never), who),
             });
             break;
         }
@@ -400,7 +418,7 @@ function exec(
             who = `the run "${step.compound.kind}"`;
             r = h.apply(step.compound, state, {
                 ...ctx,
-                rules: restrictRules(ctx.rules, h.reads, who),
+                rules: restrictRules(ctx.rules, readsFor(h.reads, step.compound), who),
             });
             break;
         }
