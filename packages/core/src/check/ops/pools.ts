@@ -929,7 +929,23 @@ export function canDraw(state: Dd, spec: PoolSpec, dc: DrawCtx): Dd {
 export function drawAtoms(state: Dd, spec: PoolSpec, dc: DrawCtx): DrawCase[] {
     const m = dc.u.dd;
     let atoms: { dd: Dd; rows: Mod[] }[] = [{ dd: state, rows: [] }];
+    // The items of the cases so far. A case outside them meets only the last
+    // atom, the items of no case yet, and splits it alone: the cases are
+    // mostly apart, and cutting every atom by each is quadratic in them.
+    let covered = m.EMPTY;
     for (const c of drawCases(state, spec, dc)) {
+        const rest = atoms[atoms.length - 1];
+        const apart = rest !== undefined && rest.rows.length === 0;
+        if (apart && m.and(covered, c.dd) === m.EMPTY) {
+            const yes = m.and(rest.dd, c.dd);
+            const no = m.diff(rest.dd, c.dd);
+            atoms.pop();
+            if (yes !== m.EMPTY) atoms.push({ dd: yes, rows: [...c.rows] });
+            if (no !== m.EMPTY) atoms.push({ dd: no, rows: rest.rows });
+            covered = m.or(covered, c.dd);
+            continue;
+        }
+        covered = m.or(covered, c.dd);
         const next: { dd: Dd; rows: Mod[] }[] = [];
         for (const a of atoms) {
             const yes = m.and(a.dd, c.dd);
