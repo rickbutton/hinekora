@@ -1,6 +1,6 @@
 /**
- * A method run exactly (docs/EXACT.md §4): the exact counterpart of
- * check/ops/types.ts `runMethod`, with the same result shape over the exact state.
+ * A method run exactly (docs/ARCHITECTURE.md §4.3): its operations' images
+ * over the state, all or nothing.
  *
  * - The method's steps are matched first (ops/steps.ts): a compound run goes
  *   to one handler, and a `require` may follow only operations that leave

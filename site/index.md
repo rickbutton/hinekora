@@ -33,11 +33,11 @@ Most steps are random, so a craft describes a tree of possible items.
 <section class="row">
 <div class="prose">
 
-The checker walks that tree symbolically. It keeps one summary of every item the steps so
+The checker walks that tree symbolically. It keeps the exact set of items the steps so
 far could have produced. Before each step it asks whether the step's precondition holds for
 every one of them.
 
-This craft checks. The summary it ends with is the finished item.
+This craft checks. The set it ends with is the finished item.
 
 </div>
 <div class="example">

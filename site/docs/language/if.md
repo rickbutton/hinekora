@@ -40,8 +40,8 @@ arm the item has no suffix, so the slot is open.
 
 ## After the branch
 
-After the arms the checker joins their results into one item that covers both. A later step
-must apply to an item from either arm.
+After the arms the checker takes the items of both together. A later step must apply to
+every item from either arm.
 
 <!-- refused -->
 
@@ -71,11 +71,11 @@ The first arm leaves a Rare item and the second a Normal one. A
 [`alchemy`](/docs/operations/alchemy) after the `scour` makes both arms Rare, and the craft
 checks.
 
-The join keeps facts that relate modifiers. If one arm ends with maximum Life on the item and
-the other with maximum Mana, the checker knows afterwards that the item has one of the two.
-A later test for "neither" is then an arm that never runs.
+Nothing is lost where the arms meet. If one arm ends with maximum Life on the item and the
+other with maximum Mana, every item afterwards has one of the two. A later test for
+"neither" is then an arm that never runs.
 
-An arm that ends in [`stop` or `restart`](./until) adds nothing to the join. After
+An arm that ends in [`stop` or `restart`](./until) adds no item after the branch. After
 `if not has "maximum life" { stop }` the checker knows the item has maximum Life.
 
 ## Arms that never run

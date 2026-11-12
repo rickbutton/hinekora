@@ -131,10 +131,10 @@ Harvest change leaves one; in a condition no currency meets it.
 
 Each statement applies one operation to the current item: a currency, an essence, a bench,
 Harvest, Bestiary or Eldritch craft, a fossil resonator, an unveil. Completion lists them
-all, and hovering a step shows what it does and what the item needs for it. The checker
-proves those needs from the state it has inferred; a failure is reported as in §6, and
-checking continues from the item the step would have made, so one wrong step is reported
-once rather than at every step after it.
+all, and hovering a step shows what it does and what the item needs for it. Every item
+the craft can have there must meet them; a failure is reported as in §6, and checking goes
+on from the items the step fits, else as the guide meant it, so one wrong step is reported
+once.
 
 "Open slot" and "removable" hold on every path: a slot is open only if it is open on every
 path the craft can have taken, and a modifier is removable only if one is present on every

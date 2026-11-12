@@ -110,8 +110,8 @@ export interface CheckVerdict {
      *  items refused and the items the check was judged on. */
     readonly word: (failing: XItem, state: XItem) => PreconditionFailure;
     /** The refused items as the craft meant them (the rarity it needed, say),
-     *  for the craft to go on from when no item passes: recovery, outside
-     *  the equality of docs/EXACT.md §1. */
+     *  for the craft to go on from when no item passes: recovery, not a fact
+     *  of the game (docs/ARCHITECTURE.md §4.4). */
     readonly repair?: (failing: Dd) => Dd;
 }
 

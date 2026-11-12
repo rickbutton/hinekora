@@ -1,7 +1,7 @@
 /**
- * The exact checker's driver (docs/EXACT.md §5): the craft run over one state,
- * the set of items each point of the craft can hold, every statement an exact
- * image of it. It reports what check/check.ts reports, in the same words.
+ * The checker's driver (docs/ARCHITECTURE.md §4.4): the craft run over one
+ * state, the set of items each point of the craft can hold, every statement
+ * an exact image of it.
  *
  * - An operation is built per part (check/build.ts), parts given the same
  *   operations run together, and the results united.

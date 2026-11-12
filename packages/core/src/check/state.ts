@@ -1,6 +1,7 @@
 /**
- * The exact checker's state: a set of concrete items held as one diagram over
- * a universe (docs/EXACT.md §3), and narrowing by a resolved condition (§5).
+ * The checker's state: a set of concrete items held as one diagram over a
+ * universe (docs/ARCHITECTURE.md §4.2), and narrowing by a resolved condition
+ * (§4.4).
  * A live state is never empty; the empty set is `null`, the dead-branch
  * signal.
  */

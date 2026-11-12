@@ -3,7 +3,7 @@
 > The checker proves; the cost layer estimates. It answers what every guide quotes but
 > the checker cannot: how many tries a loop takes and what the craft is expected to
 > spend. The code is `packages/core/src/cost/`, the checker it reads
-> [EXACT.md](EXACT.md) §3.
+> [ARCHITECTURE.md](ARCHITECTURE.md) §4.
 
 ---
 

@@ -1,5 +1,5 @@
 /**
- * A surface condition read exactly, item by item (docs/EXACT.md §5).
+ * A surface condition read exactly, item by item (docs/ARCHITECTURE.md §4.4).
  *
  * What a name, a tier or a value comparison means depends on the item it is
  * read on (check/resolve-pred.ts): a name resolves to a type that rolls on the

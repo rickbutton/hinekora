@@ -1,5 +1,5 @@
 /**
- * What the rest of the tool reads of a state (docs/EXACT.md §6), each fact
+ * What the rest of the tool reads of a state (docs/REFERENCE.md §4), each fact
  * computed from the diagram and cached by its identity. Every view is exact:
  * "guaranteed" is on every item of the state, "possible" on some, a range is
  * the least and greatest over the items.

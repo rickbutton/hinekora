@@ -11,7 +11,9 @@
  *   - omits a word of the language: every word of the parser's vocabulary and every
  *     harvest tag must be documented in language.md (a method or currency carries its
  *     own help in the code, which its type requires), the vocabulary and the method
- *     words must be coloured by the VSCode grammar;
+ *     words must be coloured by the VSCode grammar, and every scalar slot of the
+ *     checker's universe and every view of its state must be named in
+ *     REFERENCE.md §4;
  *   - lets operations.md §2's primitives table drift from the `Op` union: each first
  *     column names a kind of `Op`, and every kind has a row;
  *   - links a poewiki.net page or section that the local wiki cache does not hold
@@ -43,7 +45,6 @@ const fail = (file, line, msg) => problems.push(`${file}:${line}: ${msg}`);
 const BUDGETS = {
     "CLAUDE.md": 1100,
     "docs/ARCHITECTURE.md": 2200,
-    "docs/EXACT.md": 2100,
     "docs/QUESTIONS.md": 5500,
     "docs/REFERENCE.md": 1300,
     "docs/ROADMAP.md": 600,
@@ -88,6 +89,7 @@ const SYMBOL_DOCS = new Set([
     "docs/cost.md",
 ]);
 const LANGUAGE = "docs/language.md";
+const REFERENCE = "docs/REFERENCE.md";
 const GRAMMAR = "editors/vscode/syntaxes/hinekora.tmLanguage.json";
 const VOCABULARY_FILE = "packages/parser/src/vocabulary.ts";
 const METHODS_FILE = "packages/core/src/check/methods.ts";
@@ -171,6 +173,12 @@ const harvestTags = new Set(
         (m) => m[1],
     ),
 );
+const scalarSlots = literals(
+    block(read("packages/core/src/check/universe.ts"), "export type ScalarKind =", ";"),
+);
+const views = [
+    ...read("packages/core/src/check/views.ts").matchAll(/^export function (\w+)/gm),
+].map((m) => m[1]);
 const languageWords = new Set([...vocabulary, ...methodWords, ...currencies, ...harvestTags]);
 
 // --- 1. backticked tokens: paths, symbols, language words ------------------------
@@ -242,6 +250,16 @@ for (const w of [...vocabulary, ...methodWords]) {
     if (currencies.has(w)) continue; // currency names are coloured by semantic tokens
     if (!new RegExp(`[|(]${w}[|)]`).test(grammar))
         fail(GRAMMAR, 1, `the word \`${w}\` is not highlighted`);
+}
+const checkerSection = block(read(REFERENCE), "\n## 4.", "\n## 5.");
+for (const [what, names] of [
+    ["slot", scalarSlots],
+    ["view", views],
+]) {
+    for (const f of names) {
+        if (!new RegExp(`\`[^\`]*(?<![\w])${f}(?![\w])[^\`]*\``).test(checkerSection))
+            fail(REFERENCE, 1, `the ${what} \`${f}\` is not named in §4`);
+    }
 }
 
 // The primitives table of operations.md §2 names exactly the kinds of the `Op` union.

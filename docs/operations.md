@@ -1,10 +1,10 @@
 # hinekora: The Operations Model
 
-> Every crafting method is a short program over a few primitive operations on the
-> checker's abstract item. §2 is the one statement of the primitives' semantics; §3 the
-> ledger of the game's methods. The sequences are `check/library.ts`, each method's
-> surface and description `check/methods.ts`; the abstract item's fields
-> [REFERENCE.md](REFERENCE.md) §4. Game rules are linked, never restated.
+> Every crafting method is a short program over a few primitive operations on one item.
+> §2 is the one statement of the primitives' semantics; §3 the ledger of the game's
+> methods. The sequences are `check/library.ts`, each method's surface and description
+> `check/methods.ts`; each primitive's rule as code is the reference interpreter's
+> (`check/reference/ops/`). Game rules are linked, never restated.
 
 ---
 
@@ -15,8 +15,9 @@ pool, removes one, changes the rarity, fractures one, or changes a mark of the i
 wiki's [Crafting](https://www.poewiki.net/wiki/Crafting) page sorts every currency into
 those bins). So a method is an `Op` sequence, not a function of its own: the count
 arithmetic, the pool and the presence bookkeeping are written once, in the primitive,
-and cannot drift apart between methods that share them. Every primitive folds its effect
-into the abstract item without enumerating outcomes, and over-approximates.
+and cannot drift apart between methods that share them. The checker computes each
+primitive's exact image over its set of items without listing them
+([ARCHITECTURE.md](ARCHITECTURE.md) §4).
 
 ---
 
@@ -27,43 +28,43 @@ hand-written list; the metamods in force and the memory strands' tier cut apply 
 **count** (`FillCount`) is a number added, a reforge's total, or one already counted. A
 **selector** (`Selector`) names the present modifiers a removal may reach.
 
-| Op          | Effect on the abstract item                                                                                                                                                                                                                                                                                     |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `require`   | The state at this point must prove the check on every path, or the method fails.                                                                                                                                                                                                                                |
-| `strip`     | Every modifier but the protected sides' and the fractured ones goes: counts fall to the kept range; guarantees, tier pins and `possible` survive for kept types only; exclusions and fracture facts survive; the crafted range keeps what the kept sides hold.                                                  |
-| `unprotect` | The metamods no longer govern the rest of the method.                                                                                                                                                                                                                                                           |
-| `keep`      | That side alone is protected for the rest of the method, in place of the item's own protections.                                                                                                                                                                                                                |
-| `fill`      | Lay down a count from a pool: counts rise, clamped to the caps and the pool's side; its types join `possible`, its rows the tier overlay unless the type may already be on the item at any row; exclusions on them relax; a pool narrow enough to name asserts one of its types present.                        |
-| `remove`    | Remove one modifier the selector reaches (the crafted ones: all). A guarantee survives only if unreachable, and of the reachable ones all but one remain; a side-limited removal on a protected side does nothing, and a bench craft's replacing removal does nothing under the three-crafted-modifier metamod. |
-| `rarity`    | Set the rarity; caps follow. `survivors` is the rarity a scour leaves, by what its strip kept of the item the method started on, never above the rarity it had; `lowest` also admits Magic for one survivor a side (`QUESTIONS.md` Q33).                                                                        |
-| `lock`      | `n` random present modifiers become fractured; when the guaranteed types account for every modifier, the lock provably landed among them.                                                                                                                                                                       |
-| `relax`     | Forget each present modifier's tier (a provably crafted one keeps it unless `crafted`): the sound summary of a tier shift.                                                                                                                                                                                      |
-| `reroll`    | Every value rolls again within its tier, fractured modifiers and protected sides excepted ([Divine Orb](https://www.poewiki.net/wiki/Divine_Orb)).                                                                                                                                                              |
-| `elevate`   | One influenced modifier on an unprotected side went up a tier or to its elevated row: of two the one left, else unknown, so each loses its tier.                                                                                                                                                                |
-| `strands`   | The memory strands' floor falls by at most the method's figure; the ceiling stays ([Memory strand § Mechanics](https://www.poewiki.net/wiki/Memory_strand#Mechanics), `QUESTIONS.md` Q68).                                                                                                                      |
-| `corrupt`   | The item is corrupted.                                                                                                                                                                                                                                                                                          |
-| `influence` | Set the influence mark, add an influence, randomise it, or make it any one influence while keeping the sets the item had (the Corruption Altar, `QUESTIONS.md` Q32).                                                                                                                                            |
-| `eldritch`  | Set an eldritch implicit's tier, raise one and lower the other, or let a corruption implicit replace them.                                                                                                                                                                                                      |
-| `imprint`   | Save the abstract item.                                                                                                                                                                                                                                                                                         |
-| `restore`   | Replace the item with the saved one, consuming it.                                                                                                                                                                                                                                                              |
-| `either`    | The join of each branch's effects; a branch of `end` adds nothing; all ending, so does the craft.                                                                                                                                                                                                               |
-| `end`       | The item is destroyed or unmodifiable on this path; the craft ends here.                                                                                                                                                                                                                                        |
+| Op          | What it does to an item                                                                                                                                                                                                                                                |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `require`   | The item must pass the check, or the method is refused on it.                                                                                                                                                                                                          |
+| `strip`     | Every modifier goes but a fractured one and those on a protected side.                                                                                                                                                                                                 |
+| `unprotect` | The metamods no longer govern the rest of the method.                                                                                                                                                                                                                  |
+| `keep`      | That side alone is protected for the rest of the method, in place of the item's own protections.                                                                                                                                                                       |
+| `fill`      | Rows are drawn one at a time from the pool as the item then stands, each at any value of its span, until the count is laid; an item the least count cannot be laid on has no outcome. With a side kept a reforge may also stop once one is laid (`QUESTIONS.md` Q112). |
+| `remove`    | One modifier the selector reaches goes (the bench's removal: every crafted one it can clear); with none in reach, no outcome. A side-limited removal on a protected side changes nothing.                                                                              |
+| `rarity`    | Set the rarity. `survivors`: Normal, Magic or Rare by the modifiers left, never above what it was; `lowest` also admits Magic for one survivor a side (`QUESTIONS.md` Q33).                                                                                            |
+| `lock`      | `n` of the unfractured modifiers become fractured, each choice an outcome.                                                                                                                                                                                             |
+| `relax`     | Each modifier, on its own, stays or moves a tier along its ladder; a crafted one stays unless `crafted` ([Tainted Divine Teardrop](https://www.poewiki.net/wiki/Tainted_Divine_Teardrop)).                                                                             |
+| `reroll`    | Every value rolls again within its tier, fractured modifiers and protected sides excepted ([Divine Orb](https://www.poewiki.net/wiki/Divine_Orb)).                                                                                                                     |
+| `elevate`   | One influenced modifier on an unprotected side, not the one removed, goes up a tier or to its elevated row.                                                                                                                                                            |
+| `strands`   | The memory strands fall by none up to the method's figure, read at the count it started on ([Memory strand § Mechanics](https://www.poewiki.net/wiki/Memory_strand#Mechanics), `QUESTIONS.md` Q68).                                                                    |
+| `corrupt`   | The item is corrupted.                                                                                                                                                                                                                                                 |
+| `influence` | Set the influence mark, add an influence, take any set of the same size, or make it any one influence, the set it had among the outcomes (`QUESTIONS.md` Q32).                                                                                                         |
+| `eldritch`  | Set an eldritch implicit's tier, raise one and lower the other, or let a corruption implicit replace them.                                                                                                                                                             |
+| `imprint`   | The item as it stands is held.                                                                                                                                                                                                                                         |
+| `restore`   | The item becomes the held one, which is consumed.                                                                                                                                                                                                                      |
+| `either`    | Each branch is an outcome; a branch of `end` leaves no item; all ending, so does the craft.                                                                                                                                                                            |
+| `end`       | The item is destroyed or unmodifiable on this path; the craft ends here.                                                                                                                                                                                               |
 
 The protections in force are read once, when the method is applied, and govern every
 operation in it ([Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions));
 only `unprotect` and `keep` change that. A cannot-roll metamod restricts a pool only
 while it is still on the item when the `fill` draws: a reforge that strips it rolls
-freely, as the table's Chaos Orb row has it. Where a protecting or cannot-roll metamod is
-on the item on some paths only, the method runs once with it and once without
-(`metamodCases`) and the results join: its checks must hold both ways.
+freely, as the table's Chaos Orb row has it. The checker splits its items by the metamods
+they carry (`metamodCases`), runs each case under its own rules and unites the results.
 
-**All or nothing.** The game never applies part of a currency, so a failed `require`
-fails the whole method. The checker reports the first failure, and the state `runMethod`
-returns is the one the method leaves where its preconditions hold, not the input: later steps are judged against what the guide meant, so one wrong
-step does not refuse every step after it.
+**All or nothing.** The game never applies part of a currency, so an item that fails a
+`require`, or that an operation cannot act on, refuses the whole method; the checker
+reports the earliest such step. The craft goes on from the items the method works on
+(recovery, [ARCHITECTURE.md](ARCHITECTURE.md) §4.4), so one wrong step does not refuse
+every step after it.
 
-Spawn weights are not carried; they are the cost layer's ([cost.md](cost.md)). Nor is the distribution of values: a value is a span, which a predicate narrows and
-`reroll` resets.
+Spawn weights are not carried; they are the cost layer's ([cost.md](cost.md)). Nor is the distribution of values: a value is a cell of its row's span, cut where the
+craft's conditions compare it.
 
 ---
 

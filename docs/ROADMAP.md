@@ -27,9 +27,17 @@ waits until a guide calls for it.
   Orb, whose result keeps an influenced modifier of each item, Reflecting Mist and
   Kishara's Ducat.
 - **choice over an operation's outcomes** (Hinekora's Lock, Allflame crafting).
-- **facts the parts do not keep apart**: a tier, a value or a strand count tied to a
-  path joins where the paths agree on counts, rarity and marks; and an `or` inside one
-  condition still narrows to a single joined summary.
+- **an item's other implicits**: a corruption that replaces one is read as maybe taking
+  an eldritch implicit, since the base's own are not tracked.
+- **several held imprints**: the checker holds one at a time.
+- **`"random"` as any modifier the item can hold**, not a natural roll alone.
+- **the Bestiary's add-and-remove order** under a cannot-roll metamod, unprobed.
+- **an orb that adds where nothing can roll**: refused as a step with no outcome; a check
+  like `poolNonEmpty` would word it as the harvest crafts' is.
+- **the cost layer's split of a reforge between the sides**, which undercounts a type
+  with rows on both.
+- **a first check's speed**: a flatter node layout, a prebuilt data snapshot, a bundled
+  command line.
 - English negation sugar (`doesn't have` → `not has`); a power-user annotation tier for
   reusable techniques; a way to name an unveiled modifier whose words a natural one
   shares other than by its mod id.

@@ -462,8 +462,7 @@ item with an open slot that no modifier fits?
 "Cannot roll Attack Modifiers" with one prefix left that can roll.
 **Probe:** that bow with the prefix on it, an open prefix and full suffixes; an Exalted
 Orb; record refused, or used up with no change.
-**Assumed:** the checks do not look at the pool, so the present checker accepts the step;
-the exact checker finds no outcome there. **Encoded in:** `check/library.ts`
+**Assumed:** the checks do not look at the pool; the checker finds no outcome there. **Encoded in:** `check/library.ts`
 `currencyOps`; `check/reference/ops/fill.ts`.
 
 ### Q115 · probe · open — a Divine Orb on a crafted modifier

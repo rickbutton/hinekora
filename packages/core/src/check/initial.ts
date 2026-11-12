@@ -17,7 +17,7 @@
  * those the craft can go on from: affixes past the caps and those clashing
  * with an earlier one left out, a name that did not resolve read as a
  * `"random"` of its side, a mark the item cannot carry dropped. That is
- * recovery, outside the equality of docs/EXACT.md §1.
+ * recovery, not a fact of the game (docs/ARCHITECTURE.md §4.4).
  */
 import type { Craft } from "../ast/ast.js";
 import type { Diag } from "./defs.js";

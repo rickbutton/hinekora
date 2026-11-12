@@ -9,7 +9,7 @@
  * - The fit: a row goes on only where its type is absent, its families are
  *   free and its side has room (Modifier § Group/family, item-model.md §7);
  *   the reference tests it per item, the image by intersecting with `wf`.
- * - `drawOne`: the exact image of one draw (docs/EXACT.md §4): each row the
+ * - `drawOne`: the exact image of one draw (docs/ARCHITECTURE.md §4.3): each row the
  *   pool offers with the items it is offered on (`drawCases`), and on those
  *   items one absent slot takes a fresh value of the row (`mapOne`).
  *
@@ -902,7 +902,7 @@ export interface Draw {
 }
 
 /** One modifier drawn from the pool on each item of the state, as the item
- *  stands (docs/EXACT.md §4). */
+ *  stands (docs/ARCHITECTURE.md §4.3). */
 export function drawOne(state: Dd, spec: PoolSpec, dc: DrawCtx): Draw {
     const { u } = dc;
     const m = u.dd;

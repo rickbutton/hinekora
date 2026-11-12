@@ -1,5 +1,5 @@
 /**
- * The concrete item of the exact checker's model (docs/EXACT.md §2): one item
+ * The concrete item of the checker's model (docs/ARCHITECTURE.md §4.5): one item
  * on a fixed base and item level, every fact about it known. The state is a
  * set of these held symbolically; one is read out of it to name an item that
  * breaks a step.

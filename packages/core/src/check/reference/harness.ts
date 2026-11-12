@@ -1,5 +1,5 @@
 /**
- * The exactness harness (docs/EXACT.md §7): states over a tiny catalogue, and
+ * The exactness harness (docs/ARCHITECTURE.md §4.5): states over a tiny catalogue, and
  * the comparison of the symbolic frame with the reference on a method. Test
  * support.
  *
