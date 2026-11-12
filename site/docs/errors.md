@@ -18,7 +18,9 @@ chain.craft:7:27: error: expected '{' to open a block
 
 The checker reports an item block that describes no item before it checks a step.
 The causes: an unknown base, a modifier without a tier, more modifiers than the base
-holds, and marks that cannot go together. See [The item block](./language/item).
+holds, marks that cannot go together, and fields that together fit no item
+(`No item can have everything this item block declares on this base.`). See
+[The item block](./language/item).
 
 <!-- refused -->
 
@@ -85,29 +87,37 @@ at this point the item is: Iron Ring · Rare · 4–6 affixes · 1–3 prefixes 
 Requires a Magic item — this item is Rare.
 ```
 
-The item line gives the base, the rarities the item may have, the ranges of its modifier
-counts and its item level. The wording of the second line says how sure the checker is.
-"This item is Rare" means every path. "The item may be full" means some path.
+The first line gives the item's base, rarities, modifier counts and item level. The second
+says how sure the checker is: "this item is Rare" means every path, "the item may be full"
+some path.
 
-| Message                                                        | The step needed                    |
-| -------------------------------------------------------------- | ---------------------------------- |
-| `Requires a Rare item — this item may be Normal or Rare.`      | one rarity on every path           |
-| `Requires an open affix slot — the item may be full.`          | room for one more modifier         |
-| `Requires an open prefix slot — none is guaranteed open here.` | room on one side                   |
-| `Requires a removable affix — the item may have none.`         | a modifier that a removal can take |
-| `The item may already carry a "cold resistance" modifier …`    | no modifier of the new one's group |
+Other steps need one rarity on every path, an open slot, room on one side, a modifier to
+remove, or none of the new modifier's group:
+
+- `Requires a Rare item — this item may be Normal or Rare.`
+- `Requires an open affix slot — the item may be full.`
+- `Requires an open prefix slot — none is guaranteed open here.`
+- `Requires a removable affix — the item may have none.`
+- `The item may already carry a "cold resistance" modifier …`
 
 ## Loops and branches
 
-| Message                                                            | See                       |
-| ------------------------------------------------------------------ | ------------------------- |
-| `this loop's body never runs: <condition> already holds here`      | [Loops](./language/until) |
-| `this loop can never exit: <condition> can never become true here` | [Loops](./language/until) |
-| `the 'if' branch can never run: <condition> is impossible here`    | [Branches](./language/if) |
-| `the 'else' branch can never run: <condition> always holds here`   | [Branches](./language/if) |
-| `this step can never run: the craft always stops before it`        | [Loops](./language/until) |
-| `The item this loop works on is still changing after 256 rounds`   | [Loops](./language/until) |
-| `Too many different items reach this step`                         | [Branches](./language/if) |
+See [Loops](./language/until) and [Branches](./language/if).
+
+- `this loop's body never runs: <condition> already holds here`
+- `this loop can never exit: <condition> can never become true here`
+- `the 'if' branch can never run: <condition> is impossible here`
+- `the 'else' branch can never run: <condition> always holds here`
+- `this step can never run: the craft always stops before it`
+
+## Where the checker stops
+
+The steps after one of these go unchecked:
+
+- `The item this loop works on is still changing after 256 rounds …`: the loop does not settle.
+- `The item can turn out too many different ways here to follow each …`: the items outgrow the
+  checker's limit.
+- `This step could not be checked …`: a fault in the checker, to report.
 
 ## Definitions
 

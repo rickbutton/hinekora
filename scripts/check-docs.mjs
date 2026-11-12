@@ -12,8 +12,7 @@
  *     harvest tag must be documented in language.md (a method or currency carries its
  *     own help in the code, which its type requires), the vocabulary and the method
  *     words must be coloured by the VSCode grammar, and every scalar slot of the
- *     checker's universe and every view of its state must be named in
- *     REFERENCE.md §4;
+ *     checker's universe must be named in REFERENCE.md §4;
  *   - lets operations.md §2's primitives table drift from the `Op` union: each first
  *     column names a kind of `Op`, and every kind has a row;
  *   - links a poewiki.net page or section that the local wiki cache does not hold
@@ -176,9 +175,6 @@ const harvestTags = new Set(
 const scalarSlots = literals(
     block(read("packages/core/src/check/universe.ts"), "export type ScalarKind =", ";"),
 );
-const views = [
-    ...read("packages/core/src/check/views.ts").matchAll(/^export function (\w+)/gm),
-].map((m) => m[1]);
 const languageWords = new Set([...vocabulary, ...methodWords, ...currencies, ...harvestTags]);
 
 // --- 1. backticked tokens: paths, symbols, language words ------------------------
@@ -238,7 +234,8 @@ for (const doc of DOCS) {
 
 const language = read(LANGUAGE);
 /** Is `word` written inside backticks (inline code or a fence) somewhere in language.md? */
-const documented = (word) => new RegExp(`\`[^\`]*(?<![\w])${word}(?![\w])[^\`]*\``).test(language);
+const documented = (word) =>
+    new RegExp(`\`[^\`]*(?<![\\w])${word}(?![\\w])[^\`]*\``).test(language);
 for (const w of vocabulary) {
     if (!documented(w)) fail(LANGUAGE, 1, `the word \`${w}\` is not documented`);
 }
@@ -252,14 +249,9 @@ for (const w of [...vocabulary, ...methodWords]) {
         fail(GRAMMAR, 1, `the word \`${w}\` is not highlighted`);
 }
 const checkerSection = block(read(REFERENCE), "\n## 4.", "\n## 5.");
-for (const [what, names] of [
-    ["slot", scalarSlots],
-    ["view", views],
-]) {
-    for (const f of names) {
-        if (!new RegExp(`\`[^\`]*(?<![\w])${f}(?![\w])[^\`]*\``).test(checkerSection))
-            fail(REFERENCE, 1, `the ${what} \`${f}\` is not named in §4`);
-    }
+for (const f of scalarSlots) {
+    if (!new RegExp(`\`[^\`]*(?<![\\w])${f}(?![\\w])[^\`]*\``).test(checkerSection))
+        fail(REFERENCE, 1, `the slot \`${f}\` is not named in §4`);
 }
 
 // The primitives table of operations.md §2 names exactly the kinds of the `Op` union.

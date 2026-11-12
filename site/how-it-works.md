@@ -36,8 +36,8 @@ exist here? A toy ring with three axes shows the shape:
 A real item has an axis for each modifier the craft can put on the base. Its positions are
 "absent" and each tier. A tier also carries the fractured or crafted mark where the craft can
 give one, and splits at a number the craft compares, as in `has "maximum life" >= 110`. The
-item adds an axis each for rarity, corruption, influences, each eldritch implicit and memory
-strands.
+item adds an axis each for rarity, corruption, influences and memory strands, and two for each
+eldritch implicit.
 
 <HowAxes />
 
@@ -73,7 +73,7 @@ Two lists, "surely there" and "surely not", lose this fact. No resistance is sur
 so both lists are empty and all eight rows pass. The table keeps it, so the checker reports a
 later `if` that tests for none of the three as dead.
 
-No one writes the table down. A ring's has about 10<sup>54</sup> cells. The checker
+No one writes the table down. A ring's table has about 10<sup>55</sup> cells. The checker
 stores it as a [decision diagram](https://en.wikipedia.org/wiki/Binary_decision_diagram): a
 chain of questions, one per axis, where equal sub-questions share one copy. The right half of
 the figure is one. On a ring, the diagram of every legal Rare item asks a few hundred
@@ -95,8 +95,8 @@ open slot, and the result must still be a legal item:
 
 <HowStep />
 
-About twenty primitives cover every method. A new method is a new sequence, with no change to
-the checker.
+About twenty primitives cover every method. Adding a method adds a sequence and leaves the
+checker alone.
 
 ## Branches and loops
 
@@ -105,9 +105,8 @@ checker keeps the cells the condition passes for one arm and the rest for the ot
 arms meet, each cell takes yes if either arm has yes there. An arm that no yes-cell can enter is
 dead.
 
-A loop body must be safe on every pass. The checker starts from the items entering the loop. It
-runs the body on those that do not meet the condition yet, and adds what comes back to the top
-of the loop. It repeats until a round adds nothing. This loop exalts until it rolls tier 1
+A loop body must be safe on every pass. From the items entering the loop, the checker runs the
+body on those that do not meet the condition yet and adds what comes back to the top. It repeats until a round adds nothing. This loop exalts until it rolls tier 1
 Life:
 
 <!-- refused -->
@@ -128,8 +127,8 @@ The checker follows the rings at the top of the loop, round by round:
 
 <HowLoop />
 
-Each round adds rings with one more modifier. In round seven the exalt meets the full rings and
-cannot apply. The checker refuses it. After a loop the condition is true, and the checker keeps
+Each round adds rings with one more modifier. In round seven the exalt meets the full rings, and
+the checker refuses it. After a loop the condition is true, and the checker keeps
 only the cells that meet it.
 
 ## Why exact matters
@@ -155,7 +154,7 @@ if not has "maximum life" t1 {
 ```
 
 The first `if` leaves two kinds of ring. A ring with tier 1 Life skips the annul and keeps six
-modifiers. The rest lose one to the annul and have five. The second `if` meets only rings with
+modifiers. The rest lose one and have five. The second `if` meets only rings with
 five, and its Exalted Orb has a slot. The craft checks.
 
 <HowParts />
@@ -165,16 +164,16 @@ exalt for a ring no path makes.
 
 ## What a verdict means
 
-The checker rounds nothing, so it loses nothing. It refuses a step when some item the craft
-can make breaks it, and only then. Under the error it prints one such item.
+The checker rounds nothing, so it loses nothing. Up to its first error, it refuses a step only
+when an item the craft can make breaks it. Past an error it goes on from assumed items, so a
+later error may follow from the first. Where it can, it prints an item that breaks the step.
 
 "Can make" means within the checker's model of the game. The model is the game's rules as the
 [Path of Exile wiki](https://www.poewiki.net/) states them. Where the wiki is silent, the
 code follows a recorded assumption. A wrong rule in the model gives a wrong verdict.
 
-Where the checker cannot follow a craft, it says so. A diagram can grow past its budget, or a
-loop can still be changing after 256 rounds. Either is an error at that step, and the steps after it go unchecked.
-The checker never trades exactness for speed.
+Where the checker cannot follow a craft, it says so: a diagram past its budget, or a loop still
+changing after 256 rounds, is an error at that step, and the steps after it go unchecked.
 
 ## Cost
 

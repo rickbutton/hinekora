@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q125.
+keeps it. New entries continue from Q126.
 
 ```
 ### Qn · probe|decision · open — title
@@ -27,9 +27,9 @@ hedges and says "at the current item level".
 **Probe:** a Strength jewel with one staff modifier, Foulborn Exalted Orbs; exalt jewels
 with and without the staff modifier; record the lowest tier of a tag-gated type seen in
 each case.
-**Assumed:** the count is what can roll on the item now, tags included; the cull keeps
-every row some count between the sure and the tag-enabled total would keep. **Encoded
-in:** `check/ops/types.ts` `foulbornTiers`.
+**Assumed:** the count is the type's rows that can roll on the item now, its modifiers'
+tags included. **Encoded in:** `check/ops/pools.ts` `foulbornCull`; `model/strands.ts`
+`foulbornKept`.
 
 ### Q20 · probe · open — a fossil's guarantee when another fossil blocks it
 
@@ -99,7 +99,7 @@ whether the suffixes survived, and the second item's rarity when stripped.
 **Assumed:** both halves ignore the protection; the strip leaves a scour's rarity, and
 with a fractured prefix beside a fractured suffix Magic or Rare, so a second orb is
 refused. **Encoded in:** `check/library.ts` `TAINTED_CHAOS`, `unprotect`;
-`check/ops/types.ts` `scouredRarities`.
+`check/ops/marks.ts` `LOWEST`; `check/reference/ops/marks.ts` `lowestRarity`.
 
 ### Q52 · probe · open — what a Harvest-changed essence, fossil or unveiled modifier becomes
 
@@ -574,4 +574,18 @@ others can hold?
 modifier; a row gated by a tag needs the modifier that adds it); or any the item can hold
 (recommended: a bought item's history is unknown, the metamod may have come last).
 **Assumed:** as declared, a tag any row of the pool adds read wherever it admits a row.
-**Encoded in:** `check/ops/types.ts` `anonymousRows`; `check/initial.ts` `anonymousRows`.
+**Encoded in:** `check/initial.ts` `anonymousRows`.
+
+### Q125 · probe · open — the side of an unveiled modifier
+
+**Q:** is every option an unveil offers of the veiled modifier's own side? [Veiled
+modifier](https://www.poewiki.net/wiki/Veiled_modifier) says only that it "presents three
+random mods"; [Modifier](https://www.poewiki.net/wiki/Modifier) names veiled prefixes
+"Chosen" and suffixes "of the Order", nothing of what each unveils to.
+**Probe:** unveil some twenty Rare items with a veiled prefix and twenty with a veiled
+suffix, on a base that has unveiled rows of both sides; record the side of every option
+offered.
+**Assumed:** a veiled prefix unveils only to prefixes and a veiled suffix to suffixes, so
+an unveil never changes the item's prefix and suffix counts. **Encoded in:**
+`check/ops/crafted-rows.ts` `unveilRows`; `check/ops/crafted.ts`;
+`check/reference/ops/crafted.ts`.

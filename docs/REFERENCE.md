@@ -3,7 +3,7 @@
 > The layout is the repo: read the code. Package roles are in each `package.json`, a
 > module's purpose in its header comment, and the reason behind a single line of code in
 > a comment at that line. This file holds only what the code cannot show: the checker's
-> slots and views in one place, the gotchas that bite across files, and the standing
+> slots in one place, the gotchas that bite across files, and the standing
 > design note on the decision diagram. The shape of the implementation and the
 > theory behind the checker are `ARCHITECTURE.md`; the item model is `item-model.md`; the
 > operations model is `operations.md`; the cost layer is `cost.md`; conventions and the gate are `../CLAUDE.md`.
@@ -72,17 +72,9 @@ method), and value cells cut only where its conditions compare. The universe als
 the well-formed items (`wf`); a later check that reads the same base, level, rows,
 comparisons and imprint reuses it (`universeFor`), so a keystroke re-checks over it.
 
-The rest of the tool reads a state through the views of `check/views.ts`, each exact and
-cached by the diagram: the counts (`counts`, `suffixRange`, `craftedCount`,
-`fracturedCount`, `presentAmong`, `countOutside`), the rarity (`rarities`, `rarityOf`,
-`capsOver`), the modifiers (`guaranteedTypes`, `possibleTypes`, `excludedTypes`,
-`isGuaranteed`, `isExcluded`, `rowsOf`, `valueSpan`, `craftedTypes`, `isCrafted`), the locks
-(`isFractured`, `mayBeFractured`, `fracturedTypes`, `unprovenFractures`), the marks
-(`influenceSets`, `corruptions`, `eldritchPairs`, `eldritchTypes`, `unnamedImplicit`,
-`strandsRange`, `influenceTagsOf`, `influenceTagsAny`), the imprint (`imprintHeld`,
-`imprintOf`), the "at least k of these" groups (`atLeastOneOf`, `disjunctiveGuarantees`,
-`impliesClause`, `cardinalityGuarantees`, `disjunctiveTier`, `clauseRows`), and what an
-error's words and a pool read (`summaryOf`, `guaranteedFacts`).
+The renderer, the editors and the errors read a state through the views of
+`check/views.ts`, each cached by the diagram: a diagram is canonical, so a fact several of
+them ask of the same items is worked out once.
 
 ---
 

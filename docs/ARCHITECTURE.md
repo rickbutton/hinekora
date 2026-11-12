@@ -58,8 +58,8 @@ downstream:
   in the house style; the only thing the tree lacks for that, the comments, the lexer
   keeps alongside the tokens.
 
-Spans thread through every node: they are what later render a diagnostic under the right
-op and let hover find the statement at the cursor.
+Spans thread through every node, placing a diagnostic under its step and letting hover
+find the statement at the cursor.
 
 ---
 
@@ -86,8 +86,6 @@ What resolution provides to the checker:
   limits shifted by an experimented base's stats, e.g.
   [Simplex Amulet](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)), consumed by the
   checker's well-formedness.
-
-This layer is pure data → structures. It never analyses; it answers questions.
 
 ---
 
@@ -172,13 +170,16 @@ its body inlined, traced as one step (`TraceEntry.inlined`).
 **Recovery.** After a refused step the craft goes on, on the reporting pass only, from the
 items the method works on; where none, from the failing items repaired as the craft meant
 them where the check knows how (a wrong rarity set right), else unchanged. That state is
-not a game fact: what is found only on it is reported where a run that takes no recovery
-(`strict`) finds it too, and the rounds that settle a loop take none.
+not a game fact; a run that takes no recovery (`strict`) tells what is found only on
+it. A dead branch, a loop that never runs or exits, or a step that never runs,
+found only there, is not reported; a refusal found only there is, unless an earlier error stated
+the same requirement; and an error shows an item only where the strict run reaches every
+item entering the step. The rounds that settle a loop take none.
 
 ### 4.5 What the rest of the tool reads, and how correctness is held
 
 The renderer, the editors and the cost layer read a state through **views**
-(`check/views.ts`, listed in REFERENCE §4); where the items alone would say too much, the
+(`check/views.ts`); where the items alone would say too much, the
 craft's own names bound a view (`check/names.ts`). An error can show one item that breaks
 the step, a witness of the failing set.
 
@@ -226,11 +227,9 @@ Thin, by design. The CLI runs the checker and prints diagnostics, or formats a g
 language client: a TextMate grammar for coloring plus an LSP client that spawns the stdio
 server. The browser playground binds the same transport-free service functions to Monaco's
 providers directly, with the catalog fetched as JSON; it is the proof that the service
-needs no server. Its storyboard is the trace read the other way round: not "what is my
-item here" for one cursor position but the item after every statement, laid out top to
-bottom as the guide a player follows at the bench, the step with its currency between
-two items. None of the three holds any analysis logic; all of it is in `core`,
-reachable only through the one-way dependency arrow of §1.
+needs no server. Its storyboard is the trace read the other way round: the item after every
+statement, top to bottom, as a player follows the craft at the bench. None of the three holds analysis logic; all of it is in `core`, behind the
+one-way arrow of §1.
 
 ---
 

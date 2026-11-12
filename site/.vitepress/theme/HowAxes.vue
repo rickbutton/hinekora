@@ -1,8 +1,12 @@
 <script setup lang="ts">
 // The axes of a Vermillion Ring at item level 84 under a craft of Chaos and
-// Exalted Orbs, as the checker builds them: 74 modifiers the orbs can roll
-// (influenced ones too, as the item may carry an influence), Life and the
-// resistances each with eight tiers there.
+// Exalted Orbs, as the checker builds them: 8 for the item and 74 modifiers
+// the orbs can roll (influenced ones too, as the item may carry an
+// influence), Life and the resistances each with eight tiers there. Every
+// base has the four eldritch axes; on a ring the data names no implicit, and
+// the legal items hold only "none" on the tier axes. With them the product of
+// the axes' sizes is 10^54.9.
+const ELDRITCH_TIERS = ["none", "Lesser", "…", "Perfect"];
 const ITEM = [
     { name: "rarity", positions: ["Normal", "Magic", "Rare"] },
     { name: "corrupted", positions: ["no", "yes"] },
@@ -10,7 +14,10 @@ const ITEM = [
         name: "influences",
         positions: ["none", "Shaper", "Elder", "…", "Warlord", "any two of the six"],
     },
-    { name: "eldritch implicits", positions: ["none: a ring cannot take one"] },
+    { name: "Exarch implicit tier", positions: ELDRITCH_TIERS },
+    { name: "Exarch implicit", positions: ["none: a ring has no such implicit"] },
+    { name: "Eater implicit tier", positions: ELDRITCH_TIERS },
+    { name: "Eater implicit", positions: ["none: a ring has no such implicit"] },
     { name: "memory strands", positions: ["0", "1", "…", "100"] },
 ];
 const TIERS = ["absent", "tier 1", "tier 2", "…", "tier 8"];
@@ -51,7 +58,8 @@ const MODS = [
         </div>
         <figcaption>
             The axes of a Vermillion Ring at item level 84, for a craft of Chaos and Exalted Orbs.
-            There are 80 of them, and the table has about 10<sup>54</sup> cells.
+            There are 82 of them, and the table has about 10<sup>55</sup> cells. A ring cannot take
+            an eldritch implicit, so the table of legal items holds only "none" on those axes.
         </figcaption>
     </figure>
 </template>
