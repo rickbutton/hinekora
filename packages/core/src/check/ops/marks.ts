@@ -104,7 +104,8 @@ function casesOf(u: Universe, rule: RarityRule): readonly Dd[] {
                     : [had, p, Math.min(s + 1, SATURATED)];
             },
             accept: ([had, p, s]) => rule(u.base, had, p, s).includes(target),
-            key: (s) => s.join(","),
+            // The side counts are at most SATURATED, below 8.
+            key: ([had, p, s]) => (had * 8 + p) * 8 + s,
         }),
     );
     byRule.set(rule, out);

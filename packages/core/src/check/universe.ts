@@ -604,7 +604,8 @@ export class Universe {
             },
             accept: ([p, s, t]) =>
                 t > 0 && (gen === undefined || (gen === "prefix" ? p > 0 : s > 0)),
-            key: ([p, s, t]) => `${p},${s},${t}`,
+            // Each room is a cap less what was laid, from -1 to well below 63.
+            key: ([p, s, t]) => ((p + 1) * 64 + s + 1) * 64 + t + 1,
         });
         this.counts.set(key, r);
         return r;
