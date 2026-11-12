@@ -138,15 +138,36 @@ describe("the cost of any craft the check reads", () => {
     });
 });
 
-describe("the Corruption Altar on a fractured item", () => {
-    // A fractured item takes no influence (Fractured item § Mechanics), so its
-    // reforge leaves it uninfluenced in the cost walk as in the check.
+describe("the Corruption Altar on an item that takes no influence", () => {
+    // A fractured item or one with an eldritch implicit takes no influence
+    // (Fractured item § Mechanics; Influenced item § Mechanics), so its reforge
+    // leaves it uninfluenced in the cost walk as in the check, and the step
+    // claims nothing of which influence it gives.
+    const altar = (item: string) => costed(`item {\n    ${item}\n}\n\nlocus\n`);
+    const greaves = (...lines: string[]): string =>
+        [
+            'base: "Titan Greaves"',
+            "ilvl: 84",
+            "rarity: rare",
+            ...lines,
+            'prefixes: [ "maximum life" t1 ]',
+            'suffixes: [ "random" ]',
+        ].join("\n    ");
+    const influenceNote = (report: CostReport) =>
+        report.steps.some((s) => s.note?.includes("each of the six influences") === true);
+
     it("is costed as the check reads it", () => {
-        const source = `item {\n    ${ITEMS[8]!}\n}\n\nlocus\n`;
-        const { result, report } = costed(source);
-        expect(result.ok, source).toBe(true);
-        expect(report.failed, source).toBeUndefined();
-        expect(report.unjudged, source).toBeUndefined();
+        for (const item of [ITEMS[8]!, greaves("exarch: grand")]) {
+            const { result, report } = altar(item);
+            expect(result.ok, item).toBe(true);
+            expect(report.failed, item).toBeUndefined();
+            expect(report.unjudged, item).toBeUndefined();
+            expect(influenceNote(report), item).toBe(false);
+        }
+    });
+
+    it("says which influence it gives only where the item can take one", () => {
+        expect(influenceNote(altar(greaves()).report)).toBe(true);
     });
 });
 

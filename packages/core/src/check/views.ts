@@ -14,7 +14,9 @@ import {
     type EldritchKey,
     type EldritchSide,
     eldritchKey,
+    INFLUENCES,
     type InfluenceKey,
+    influenceKey,
     influencesOf,
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
@@ -290,6 +292,20 @@ export function influenceSets(s: XItem): ReadonlySet<InfluenceKey> {
         "influences",
         () => new Set(valuesAt(s, s.u.scalar("influences")).map((v) => s.u.influenceKeys[v]!)),
     );
+}
+
+/** Whether some item could be given one influence in place of its own: a
+ *  fracture or an eldritch implicit rules it out, so it is read from the
+ *  items well formed with one, not from the influence alone. */
+export function mayTakeInfluence(s: XItem): boolean {
+    return memo(s, "mayTakeInfluence", () => {
+        const { u } = s;
+        const m = u.dd;
+        const slot = u.scalar("influences");
+        const singles = INFLUENCES.flatMap((i) => u.influenceValue(influenceKey([i])) ?? []);
+        const can = m.forget(m.and(u.wf, m.slotIn(slot, singles)), [slot]);
+        return m.and(s.dd, can) !== m.EMPTY;
+    });
 }
 
 /** Whether the items are corrupted: `{false}`, `{true}` or both. */

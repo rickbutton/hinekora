@@ -73,14 +73,14 @@ not.
 **Q:** how many affixes does the altar's reforge roll
 ([Locus of Corruption § Possible outcomes](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes)
 states no count; players report four to six, or always six), on a jewel, and what does the altar make of an item with an influence
-or an eldritch implicit? **Probe:** a Rare ring, a Rare jewel, an influenced ring, boots with an eldritch
-implicit, a ring below item level 68 (reported to get no influence); record each count and its marks.
+or an eldritch implicit? **Probe:** a Rare ring and jewel, an influenced ring, boots with an eldritch
+implicit, a ring below item level 68 (reported to get no influence); record counts and marks.
 **Assumed:** the altar four to six, a Vaal Orb six, a jewel three or four without an
 influence; an influenced item any one influence or its own; an item with an eldritch implicit or a
 fracture no influence
 ([Influenced item § Mechanics](https://www.poewiki.net/wiki/Influenced_item#Mechanics)),
-its implicits kept; a kept modifier of a lost influence stays; each influence alike in
-the cost. **Encoded in:** `check/library.ts` `locusOps`, `vaalOps`, `brickBranch`;
+its implicits kept; a kept modifier of a lost influence stays; in the cost, each influence
+alike, never the own set where one fits. **Encoded in:** `check/library.ts` `locusOps`, `vaalOps`, `brickBranch`;
 `check/ops/marks.ts`; `cost/track.ts` `byInfluence`.
 
 ### Q33 · probe · open — the Tainted Chaos Orb under a protection, and its rarity

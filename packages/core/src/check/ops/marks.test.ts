@@ -183,6 +183,27 @@ describe("the marks over tiny catalogues", () => {
             exact(s, seed + 9, bounds, [influence({ kind: "one", influence: "hunter" })]);
         });
 
+        it(`${base}: anyOne is the six one's together with the item as it came`, () => {
+            const m = s.u.dd;
+            const states = harnessStates(s.u, s.cat.ctx, seed + 10, {
+                bounds: { rows: s.rows, influences, fractured: true, ...eldritch },
+                random: 12,
+                maxSize: 30,
+            });
+            for (const items of states) {
+                const state = fromItems(s.u, items.items())!;
+                const after = (c: InfluenceChange) => runMethod(state, [influence(c)]).state.dd;
+                const any = after({ kind: "anyOne" });
+                let union = state.dd;
+                for (const i of INFLUENCES) {
+                    const one = after({ kind: "one", influence: i });
+                    expect(m.implies(one, any)).toBe(true);
+                    union = m.or(union, one);
+                }
+                expect(m.implies(union, any) && m.implies(any, union)).toBe(true);
+            }
+        });
+
         if (flags.influence) {
             it(`${base}: the influence changes`, () => {
                 const bounds = { influences, fractured: true, ...eldritch };
@@ -405,6 +426,17 @@ describe("the influence changes", () => {
             influence({ kind: "one", influence: "hunter" }),
         ]);
         expect(keys(out)).toEqual([hunter]);
+    });
+
+    it("no one gives back an item that can take an influence as it came, as anyOne may", () => {
+        for (const own of [NO_INFLUENCE, influenceKey(["shaper", "elder"])]) {
+            const item = cItem({ influences: own });
+            const ones = INFLUENCES.flatMap((i) =>
+                keys(outcomes(s, item, [influence({ kind: "one", influence: i })])),
+            );
+            expect(ones).not.toContain(own);
+            expect(keys(outcomes(s, item, [influence({ kind: "anyOne" })]))).toContain(own);
+        }
     });
 
     it("one leaves an item with a fracture or an eldritch implicit as it was", () => {

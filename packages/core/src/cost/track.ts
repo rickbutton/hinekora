@@ -40,6 +40,7 @@ import {
     influenceTagsOf,
     isExcluded,
     isFractured,
+    mayTakeInfluence,
     possibleTypes,
     rarities,
     rowsOf,
@@ -190,11 +191,14 @@ const ASSUMED_ODDS: Readonly<Record<string, string>> = {
         "an Orb of Dominance is taken to remove each influenced modifier it can reach alike, and to raise each of the others alike; no source states its odds",
 };
 
-/** The note of a step that, as built, rests on odds no source states. */
-export function assumedOdds(method: string, ops: readonly Op[]): string | undefined {
-    const marks = ops.some(
-        (op) => op.kind === "either" && op.branches.some((b) => byInfluence(b).length > 1),
-    );
+/** The note of a step that, as built, rests on odds no source states on the
+ *  item it is used on. */
+export function assumedOdds(method: string, ops: readonly Op[], item: XItem): string | undefined {
+    const marks =
+        mayTakeInfluence(item) &&
+        ops.some(
+            (op) => op.kind === "either" && op.branches.some((b) => byInfluence(b).length > 1),
+        );
     return method === "locus" && !marks ? undefined : ASSUMED_ODDS[method];
 }
 
@@ -235,7 +239,11 @@ export function ending(
 /**
  * An outcome that marks the item with "any one influence" (the Corruption
  * Altar's reforge) as one outcome an influence, each alike (`ASSUMED_ODDS`),
- * so each reforge draws from the pool its influence gives.
+ * so each reforge draws from the pool its influence gives. The checker also
+ * lets an item that can take an influence keep its own set (QUESTIONS.md Q32),
+ * which this split gives no weight: the page has the reforge make "an
+ * influenced" item (Locus of Corruption § Possible outcomes), and the kept set
+ * is allowed only so the check stays sound while that is unprobed.
  */
 function byInfluence(branch: readonly Op[]): (readonly Op[])[] {
     const at = branch.findIndex((op) => op.kind === "influence" && op.change.kind === "anyOne");
