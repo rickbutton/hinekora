@@ -1,6 +1,6 @@
 # Errors
 
-The checker reports every error in one run. The
+The checker reports every error it reaches in one run. The
 [command line](./cli) prints them, and the [editor](./editor) underlines them.
 
 ## Syntax

@@ -68,12 +68,21 @@ const CASES: readonly (readonly [string, readonly string[], string])[] = [
     [RING, ["chaos"], 'has "maximum life" or suffixCount >= 2'],
     [BOW, ["exalt", "annul"], "prefixCount == 1"],
     [RING, ['bench "prefixes cannot be changed"', "chaos"], 'has "fire resistance"'],
+    [
+        block("Iron Ring", "rare", 'prefixes: [ "maximum mana" t1 ]', 'suffixes: [ "random" ]'),
+        ['bench "maximum life"'],
+        'has "fire resistance"',
+    ],
     [RING, ["beast metamod"], 'has "fire resistance"'],
     [GAUNTLETS, ['beast aspect "cat"'], 'has "cold resistance"'],
     // Each with a row of its own: Deafening Greed's on gloves, Glyphic's
     // corrupted essence rows.
     [block("Titan Gauntlets", "normal"), ['essence "greed" t1'], 'has "fire resistance"'],
     [PLATE, ['fossil "glyphic"'], 'has "fire resistance"'],
+    // The Hollow Fossil's forced abyssal socket, a row only a fossil lays; the
+    // Fractured Fossil fractures one of the rows it rolls.
+    [block("Titan Gauntlets", "normal"), ['fossil "hollow"'], 'has "fire resistance"'],
+    [block("Titan Gauntlets", "normal"), ['fossil "fractured"'], 'has "fire resistance"'],
     [BOW, ["veiled chaos"], "suffixCount >= 2"],
     [REGALIA, ["veiled exalt"], 'has "cold resistance"'],
     // An unveil needs a veiled modifier, which only a veiled step puts on, and
