@@ -7,7 +7,7 @@ change (`../CLAUDE.md`, Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q129.
+keeps it. New entries continue from Q130.
 
 ```
 ### Qn · probe|decision · open — title
@@ -24,9 +24,8 @@ keeps it. New entries continue from Q129.
 **Q:** does a tier that only another modifier's tag makes rollable count when that
 modifier is on the item? [Foulborn currency § Mechanics](https://www.poewiki.net/wiki/Foulborn_currency#Mechanics)
 hedges and says "at the current item level".
-**Probe:** a Strength jewel with one staff modifier, Foulborn Exalted Orbs; exalt jewels
-with and without the staff modifier; record the lowest tier of a tag-gated type seen in
-each case.
+**Probe:** Strength jewels with and without a staff modifier, Foulborn Exalted Orbs;
+record the lowest tier of a tag-gated type seen on each.
 **Assumed:** the count is the type's rows that can roll on the item now, its modifiers'
 tags included. **Encoded in:** `check/ops/pools.ts` `foulbornCull`; `model/strands.ts`
 `foulbornKept`.
@@ -47,12 +46,11 @@ refused, or the item rolls without one.
 
 **Q:** is a two-influence item rerolled to any pair, and may an influence it had come
 back? ([Harvest crafting](https://www.poewiki.net/wiki/Harvest_crafting) says only
-"randomise".) One player's long run on one-influence items never saw the same influence
-return ([forum thread 3158689](https://www.pathofexile.com/forum/view-thread/3158689)).
+"randomise"; [one player](https://www.pathofexile.com/forum/view-thread/3158689) never
+saw one return.)
 **Probe:** a two-influence Rare, lifeforce; randomise it several times; record the
 influence sets seen.
-**Assumed:** the count is kept and any set of that size results, the same one included:
-wider than the report, so nothing reachable is ruled out.
+**Assumed:** the count is kept and any set of that size results, the same one included.
 **Encoded in:** `check/library.ts` `HARVEST_RANDOMISE`, `check/ops/types.ts` the `randomise`
 change.
 
@@ -215,12 +213,12 @@ each; record how many veiled prefixes and veiled suffixes come up.
 **Assumed:** the sides with room alike, half each, for a Veiled Chaos Orb's too.
 **Encoded in:** `cost/track.ts` `veiledSides`, `cost/roll.ts` `poolRows`.
 
-### Q80 · probe · open — the bench's 3.29 rerolls
+### Q80 · probe · open — the bench's rerolls
 
 **Q:** what do "Reroll three random modifiers on a Rare item" and "Reroll a random
 modifier" keep? [Version 3.29.0](https://www.poewiki.net/wiki/Version_3.29.0) says only
-"reroll": does the modifier count hold, may a rerolled modifier land on the other side,
-and do the metamods hold?
+"reroll": does the modifier count hold, and may a rerolled modifier land on the other side?
+[Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) has them respect "some meta-crafted Modifiers": which?
 **Probe:** a Rare with six modifiers, one with "Prefixes Cannot Be Changed", one with a
 prefix and a suffix; reroll three on the first two and one on the third, several times;
 record the prefix and suffix counts before and after, and whether a protected prefix or
@@ -465,8 +463,8 @@ crafted value changes.
 at "a tier usually obtainable on that base type". The base's whole ladder, or the rows the
 item's level allows? Does a fractured modifier move? Does one that "does nothing" keep its
 value?
-**Probe:** a corrupted Rare of item level 30 with a top-rollable resistance, and one with
-a fractured modifier; teardrops; record tiers and values before and after.
+**Probe:** a corrupted Rare of item level 30 with a top-rollable resistance, one with a
+fractured modifier; teardrops; record tiers and values.
 **Assumed:** the whole ladder; a fractured modifier moves and stays fractured; an unmoved
 value kept, a moved one rolled anew. **Encoded in:** `check/ops/misc.ts`;
 `check/reference/ops/misc.ts`.
@@ -486,8 +484,7 @@ wrongly accepted); or a stack of imprints.
 unveiled? What does unveiling do when every result of its side shares a group with a
 modifier on the item?
 **Probe:** a dropped item with a fractured veiled modifier; unveil. A jewel whose few
-results are each blocked by a modifier on it; unveil; record refused, empty, or options
-that ignore the groups.
+results are each blocked by a modifier on it; unveil; record what happens.
 **Assumed:** it stays fractured; with nothing to offer the veiled modifier stays and the
 step is accepted. **Encoded in:** `check/reference/ops/crafted.ts`.
 
@@ -529,9 +526,9 @@ a fractured one is out of reach; a modifier whose elevated row has no room is no
 
 **Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) (Item Changes): the
 cannot-roll metamods no longer keep "some Currencies that remove Modifiers, such as Orbs
-of Annulment" off what they bar. Are the Eldritch Orb of Annulment and Tainted Exalted
-Orb? Is an Eldritch Orb of Annulment on a protected side refused, or used up for
-nothing? Under "Cannot roll Attack Modifiers", [Metamod § Examples](https://www.poewiki.net/wiki/Metamod#Examples)
+of Annulment" off what they bar. Are the Eldritch Orb of Annulment and the Tainted Exalted
+Orb among them? Is the eldritch one refused on a protected side, or used up? Under
+"Cannot roll Attack Modifiers", [Metamod § Examples](https://www.poewiki.net/wiki/Metamod#Examples)
 has the Bestiary's "add prefix remove suffix" add only what can roll even when the suffix
 it takes is the metamod: is the prefix added first?
 **Probe:** boots, the Exarch dominant, the caster metamod and a caster prefix, orbs; then
@@ -567,13 +564,11 @@ modifier; a row gated by a tag needs the modifier that adds it); or any the item
 
 **Q:** is every option an unveil offers of the veiled modifier's own side? [Veiled
 modifier](https://www.poewiki.net/wiki/Veiled_modifier) says only that it "presents three
-random mods"; [Modifier](https://www.poewiki.net/wiki/Modifier) names veiled prefixes
-"Chosen" and suffixes "of the Order", nothing of what each unveils to.
+random mods".
 **Probe:** unveil some twenty Rare items with a veiled prefix and twenty with a veiled
 suffix, on a base that has unveiled rows of both sides; record the side of every option
 offered.
-**Assumed:** a veiled prefix unveils only to prefixes and a veiled suffix to suffixes, so
-an unveil never changes the item's prefix and suffix counts. **Encoded in:**
+**Assumed:** a veiled prefix unveils only to prefixes, a veiled suffix to suffixes. **Encoded in:**
 `check/ops/crafted-rows.ts` `unveilRows`; `check/ops/crafted.ts`;
 `check/reference/ops/crafted.ts`.
 
@@ -591,10 +586,10 @@ text. **Encoded in:** `render/item.ts` `modHeader`, `textless`.
 ### Q127 · probe · open — the lifeforce of a Harvest change
 
 **Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) (Harvest): a change of
-a resistance or a damage modifier into another element's costs "300 Lifeforce of two
-different types", a damage change a Crystallised Rancour besides. Which two types, for
-each pair of elements? [List of harvest crafting options](https://www.poewiki.net/wiki/List_of_harvest_crafting_options)
-still gives 500 of one, the target's colour.
+a resistance or damage modifier to another element costs "300 Lifeforce of two different
+types" (a damage change a Crystallised Rancour besides). Which two, for each pair?
+[List of harvest crafting options](https://www.poewiki.net/wiki/List_of_harvest_crafting_options)
+still gives 500 of the target's colour.
 **Probe:** at the Horticrafting Station, read the cost of each of the six resistance
 changes and one damage change.
 **Assumed:** the colours of the element left and the element taken, fire Wild, cold Vivid,
@@ -614,3 +609,14 @@ prefixes, one fractured, Orbs of Annulment; record refusals and what went.
 **Assumed:** as the full protection; the recipe may craft one; any modifier of the side;
 in the cost, each choice alike, a reforge's chances unknown. **Encoded in:**
 `check/rules.ts` `rulesOf`; `check/method.ts` `choicesOf`; `cost/roll.ts` `removalRoll`.
+
+### Q129 · probe · open — Merrick's Ducat on a Rare Abyss Jewel
+
+**Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) (Endgame Changes) lets the ducat be used on an Abyss
+Jewel itself. [Merrick's Ducat § Mechanics](https://www.poewiki.net/wiki/Merrick%27s_Ducat#Mechanics)
+adds a modifier "like an Exalted Orb", on a jewel holding four a fifth, "either a prefix
+or suffix", and corrupts it. May the fifth make three of a side? Does it respect the
+metamods?
+**Probe:** Rare Abyss Jewels with two prefixes and two suffixes, one with "Prefixes Cannot
+Be Changed"; a ducat each, some ten; record the sides after.
+**Assumed:** not built (`operations.md` §3.2). **Encoded in:** nothing yet.

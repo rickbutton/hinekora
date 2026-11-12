@@ -23,10 +23,14 @@ waits until a craft calls for it.
 - **multi-item crafts**, which need a second item named in the craft, a design to be
   worked out first: the Recombinator, whose result pools both items' modifiers (an
   earlier form, and the evidence on how it picks, are in the git history before the
-  commit that removed it), the Awakener's
+  commit that removed it; that evidence predates
+  [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0), whose result takes the chosen base's item level and counts
+  only modifiers the new base can roll, and which takes no corrupted item), the Awakener's
   Orb, whose result keeps an influenced modifier of each item, Reflecting Mist and
   Kishara's Ducat.
-- **choice over an operation's outcomes** (Hinekora's Lock, Allflame crafting).
+- **Merrick's Ducat on an Abyss Jewel** (Q129) and **Gwennen's "Take a Chance"**, whose
+  crafts the wiki does not list yet.
+- **choice over an operation's outcomes** (Hinekora's Lock).
 - **an item's other implicits**: a corruption that replaces one is read as maybe taking
   an eldritch implicit, since the base's own are not tracked.
 - **several held imprints**: the checker holds one at a time.
@@ -42,15 +46,12 @@ waits until a craft calls for it.
   reusable techniques; a way to name an unveiled modifier whose words a natural one
   shares other than by its mod id.
 - **experimented bases' magnitude implicits** ("100% increased Explicit Modifier
-  magnitudes" on a Simplex Amulet, a side's on the rings): the data carries them as
-  `Base.magnitude`, but neither the checker nor the item card scales a value by them; with
-  them come the rounding of a scaled value (down, up or to nearest decides whether
-  `has "…" >= 86` holds on a Helical Ring's 85.5), whether a granted skill's level scales
+  magnitudes" on a Simplex Amulet): carried as `Base.magnitude`, never applied; with them
+  come the rounding of a scaled value, whether a granted skill's level scales
   ([Simplex Amulet § Mechanics](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)
-  names only "+1 gem" modifiers), and catalyst quality, which adds to the same percentage.
-  Meanwhile a value compares on its row's own span, so on a Simplex Amulet
-  `has "maximum life" >= 240` reads as a branch that can never run though the item shows
-  twice the row.
+  names only "+1 gem" modifiers), and catalyst quality. Meanwhile a value compares on its
+  row's own span: on a Simplex Amulet `has "maximum life" >= 240` never holds though the
+  item shows twice the row.
 - **legacy base-implicit variants** of the experimented bases, whose own caps and magnitudes one catalog id cannot carry and
   no collected recipe starts from; a Magic
   Simplex Amulet with modifiers no longer exists since 3.27.0
