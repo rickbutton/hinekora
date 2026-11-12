@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "../exact/check.js";
-import * as v from "../exact/views.js";
-import { guaranteedTypes } from "../exact/views.js";
+import { check, type CheckContext } from "./check.js";
+import * as v from "./views.js";
+import { guaranteedTypes } from "./views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { corruptedP, craft, has, iff, influencedP, item, notp, op } from "../__fixtures__/ast.js";
 import type { OperationStmt } from "../ast/ast.js";

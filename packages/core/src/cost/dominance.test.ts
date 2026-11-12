@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check } from "../exact/check.js";
+import { check } from "../check/check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { andp, cmp, craft, has, hasValue, iff, item, notp, op, orp } from "../__fixtures__/ast.js";
 import {
@@ -15,7 +15,7 @@ import type { Pred } from "../ast/index.js";
 import { GroupId, ModId, TagId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import { findMethod } from "../check/methods.js";
-import { methodItemOf } from "../exact/build.js";
+import { methodItemOf } from "../check/build.js";
 import { influenceKey } from "../model/marks.js";
 import { costOf } from "./report.js";
 import { Tracker } from "./track.js";
@@ -296,7 +296,7 @@ describe("the cost walk through an Orb of Dominance", () => {
 
     it("gives no figure where the check cannot judge the craft", () => {
         // A top-tier influence row with no elevated row is a fault of the data
-        // (exact/ops/remove.ts `elevations`): the check judges nothing, and
+        // (check/ops/remove.ts `elevations`): the check judges nothing, and
         // the walk has no item to cost the steps on.
         const none = buildRegistry({
             bases: [BOOTS_BASE],

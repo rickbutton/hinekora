@@ -29,7 +29,7 @@ with and without the staff modifier; record the lowest tier of a tag-gated type 
 each case.
 **Assumed:** the count is what can roll on the item now, tags included; the cull keeps
 every row some count between the sure and the tag-enabled total would keep. **Encoded
-in:** `check/ops.ts` `foulbornTiers`.
+in:** `check/ops/types.ts` `foulbornTiers`.
 
 ### Q20 · probe · open — a fossil's guarantee when another fossil blocks it
 
@@ -54,7 +54,7 @@ return ([forum thread 3158689](https://www.pathofexile.com/forum/view-thread/315
 influence sets seen.
 **Assumed:** the count is kept and any set of that size results, the same one included:
 wider than the report, so nothing reachable is ruled out.
-**Encoded in:** `check/library.ts` `HARVEST_RANDOMISE`, `check/ops.ts` the `randomise`
+**Encoded in:** `check/library.ts` `HARVEST_RANDOMISE`, `check/ops/types.ts` the `randomise`
 change.
 
 ### Q30 · probe · open — the Bestiary's "Add a Mod to a Hunter Item"
@@ -81,7 +81,7 @@ fracture no influence
 ([Influenced item § Mechanics](https://www.poewiki.net/wiki/Influenced_item#Mechanics)),
 its implicits kept; a kept modifier of a lost influence stays; each influence alike in
 the cost. **Encoded in:** `check/library.ts` `locusOps`, `vaalOps`, `brickBranch`;
-`exact/ops/marks.ts`; `cost/track.ts` `byInfluence`.
+`check/ops/marks.ts`; `cost/track.ts` `byInfluence`.
 
 ### Q33 · probe · open — the Tainted Chaos Orb under a protection, and its rarity
 
@@ -99,7 +99,7 @@ whether the suffixes survived, and the second item's rarity when stripped.
 **Assumed:** both halves ignore the protection; the strip leaves a scour's rarity, and
 with a fractured prefix beside a fractured suffix Magic or Rare, so a second orb is
 refused. **Encoded in:** `check/library.ts` `TAINTED_CHAOS`, `unprotect`;
-`check/ops.ts` `scouredRarities`.
+`check/ops/types.ts` `scouredRarities`.
 
 ### Q52 · probe · open — what a Harvest-changed essence, fossil or unveiled modifier becomes
 
@@ -246,7 +246,7 @@ and both "Cannot Be Changed" metamods are respected by the orb
 **Probe:** a Rare with the multimod and both protection metamods, one without and one
 with a fractured modifier; apply a scour to each; record refused or consumed.
 **Assumed:** refused, with a fractured modifier or without. **Encoded in:**
-`check/ops.ts` `strippable`.
+`check/ops/types.ts` `strippable`.
 
 ### Q85 · probe · open — a bench craft on a Normal item
 
@@ -288,7 +288,7 @@ record refused or applied.
 **Probe:** corrupted Rares with four modifiers and with six, Tainted Exalted Orbs; apply
 one to each; record added or removed, and whether a full item ever comes back unchanged.
 **Assumed:** even odds; a full item loses a modifier. **Encoded in:** `cost/track.ts`
-`OUTCOME_ODDS`, `ASSUMED_ODDS`; `exact/reference/ops/fill.ts`; `check/library.ts`
+`OUTCOME_ODDS`, `ASSUMED_ODDS`; `check/reference/ops/fill.ts`; `check/library.ts`
 `TAINTED_EXALT`.
 
 ### Q96 · probe · open — an Orb of Conflict over a wide gap
@@ -304,7 +304,7 @@ Record also whether the orb works on a Perfect implicit, and whether the other s
 when the Perfect one is chosen to rise.
 **Assumed:** the line carried on, neither side below one in a hundred; a Perfect stays
 and the other drops. **Encoded in:** `cost/track.ts` `CONFLICT_STEP`, `CONFLICT_FLOOR`,
-`conflicted`; `exact/ops/marks.ts`.
+`conflicted`; `check/ops/marks.ts`.
 
 ### Q98 · probe · open — a cluster jewel's enchantment and its size
 
@@ -330,7 +330,7 @@ each time, and whether two of one group (Strength and Dexterity beside Dexterity
 Intelligence) are ever offered together.
 **Assumed:** by spawn weight, one at a time, an option closing every modifier that shares
 a group with it; so a named result is sure only among three or fewer, none sharing its
-group. **Encoded in:** `cost/roll.ts` `offerSetsOf`; `exact/ops/crafted.ts`.
+group. **Encoded in:** `cost/roll.ts` `offerSetsOf`; `check/ops/crafted.ts`.
 
 ### Q100 · probe · open — where a copied item's `Corrupted` goes beside `Fractured Item`
 
@@ -377,7 +377,7 @@ only that it compares the first number.
 **Options:** false whatever the operator, `!=` included, so `not has "X" != 0` holds there
 (recommended: nothing compares); or refuse the condition when a row of the modifier has no
 number.
-**Assumed:** false. **Encoded in:** `exact/reference/conditions.ts` `holds`.
+**Assumed:** false. **Encoded in:** `check/reference/conditions.ts` `holds`.
 
 ### Q107 · probe · open — the multimod and its own three
 
@@ -386,8 +386,8 @@ number.
 [Crafting Bench](https://www.poewiki.net/wiki/Crafting_Bench) do not say.
 **Probe:** craft the multimod, then bench crafts until the bench refuses; record how many
 it took.
-**Assumed:** it counts, so two more fit. **Encoded in:** `check/ops.ts` `craftedBelowCap`;
-`exact/reference/item.ts` `craftedLimit`.
+**Assumed:** it counts, so two more fit. **Encoded in:** `check/ops/types.ts` `craftedBelowCap`;
+`check/reference/item.ts` `craftedLimit`.
 
 ### Q108 · probe · open — an Astrolabe Amulet and a fracture
 
@@ -396,7 +396,7 @@ having every influence. Can it be fractured, as an influenced item cannot?
 **Probe:** use a Fracturing Orb on a Rare Astrolabe Amulet with four modifiers; record the
 refusal or the result.
 **Assumed:** refused, as for any influenced item. **Encoded in:**
-`exact/reference/wellformed.ts` `violations`; `check/item-block.ts` `declareItem`.
+`check/reference/wellformed.ts` `violations`; `check/item-block.ts` `declareItem`.
 
 ### Q109 · probe · open — which veiled modifier a veiled orb places
 
@@ -407,7 +407,7 @@ Orb or a Veiled Exalted Orb adds.
 **Probe:** use a Veiled Chaos Orb on a Rare ring several times; record each veiled
 modifier's name in the advanced tooltip.
 **Assumed:** the plain placeholder of its side, never a member's. **Encoded in:**
-`exact/rows.ts` `candidateRows`.
+`check/rows.ts` `candidateRows`.
 
 ### Q110 · probe · open — a scour that leaves more than the lower rarity holds
 
@@ -417,7 +417,7 @@ rarity does the scour leave it?
 **Probe:** a Rare Simplex Amulet with "Prefixes Cannot Be Changed" and one prefix; scour;
 record the rarity.
 **Assumed:** it stays Rare, the next rarity up that holds what is left. **Encoded in:**
-`exact/ops/marks.ts`; `exact/reference/ops/marks.ts`.
+`check/ops/marks.ts`; `check/reference/ops/marks.ts`.
 
 ### Q111 · decision · open — an item's other implicits
 
@@ -427,8 +427,8 @@ The checker knows the eldritch implicits only, so it lets none, one or two of th
 on boots with no other implicit a Vaal Orb always takes one and the altar both.
 **Options:** track whether the item has another implicit (from the base, and a mark a
 Gilded Fossil sets), which makes the outcome exact (recommended); or keep the wider set.
-**Assumed:** the wider set. **Encoded in:** `exact/ops/marks.ts`;
-`exact/reference/ops/marks.ts`.
+**Assumed:** the wider set. **Encoded in:** `check/ops/marks.ts`;
+`check/reference/ops/marks.ts`.
 
 ### Q112 · probe · open — a Chaos Orb's count beside a protected side
 
@@ -440,7 +440,7 @@ to six in all; the cost layer takes the kept side to count toward four to six.
 re-crafting the metamod each time; record each total. The same with no prefix.
 **Assumed:** the checker admits both: a modifier is laid, or the total already reaches
 the reforge's least; the same for an Eldritch Chaos Orb's kept side. The cost layer reads
-four to six. **Encoded in:** `exact/reference/ops/fill.ts`, `exact/ops/fill.ts`;
+four to six. **Encoded in:** `check/reference/ops/fill.ts`, `check/ops/fill.ts`;
 `cost/roll.ts` `countCases`.
 
 ### Q113 · probe · open — a guaranteed modifier that has no place
@@ -452,7 +452,7 @@ essence's modifier, or a resonator whose forced row meets one?
 **Probe:** a Rare ring with a fractured life modifier and a Screaming Essence of Greed;
 record refused, or the modifiers after.
 **Assumed:** reforged without the guaranteed modifier. **Encoded in:**
-`exact/reference/ops/fill.ts`.
+`check/reference/ops/fill.ts`.
 
 ### Q114 · probe · open — an orb that adds a modifier when none can roll
 
@@ -464,7 +464,7 @@ item with an open slot that no modifier fits?
 Orb; record refused, or used up with no change.
 **Assumed:** the checks do not look at the pool, so the present checker accepts the step;
 the exact checker finds no outcome there. **Encoded in:** `check/library.ts`
-`currencyOps`; `exact/reference/ops/fill.ts`.
+`currencyOps`; `check/reference/ops/fill.ts`.
 
 ### Q115 · probe · open — a Divine Orb on a crafted modifier
 
@@ -472,7 +472,7 @@ the exact checker finds no outcome there. **Encoded in:** `check/library.ts`
 modifiers" and excepts fractured ones; it does not name a bench craft.
 **Probe:** a Rare with a bench craft of a value range; a Divine Orb; record whether the
 crafted value changes.
-**Assumed:** it is rerolled. **Encoded in:** `exact/reference/ops/misc.ts`.
+**Assumed:** it is rerolled. **Encoded in:** `check/reference/ops/misc.ts`.
 
 ### Q116 · probe · open — how far a Tainted Divine Teardrop moves a modifier
 
@@ -483,8 +483,8 @@ value?
 **Probe:** a corrupted Rare of item level 30 with a top-rollable resistance, and one with
 a fractured modifier; teardrops; record tiers and values before and after.
 **Assumed:** the whole ladder; a fractured modifier moves and stays fractured; an unmoved
-value kept, a moved one rolled anew. **Encoded in:** `exact/ops/misc.ts`;
-`exact/reference/ops/misc.ts`.
+value kept, a moved one rolled anew. **Encoded in:** `check/ops/misc.ts`;
+`check/reference/ops/misc.ts`.
 
 ### Q117 · decision · open — one held imprint
 
@@ -492,7 +492,7 @@ value kept, a moved one rolled anew. **Encoded in:** `exact/ops/misc.ts`;
 new imprint replaces it.
 **Options:** one, the latest (recommended: a craft that needs two is refused, never
 wrongly accepted); or a stack of imprints.
-**Assumed:** one. **Encoded in:** `exact/reference/ops/misc.ts`.
+**Assumed:** one. **Encoded in:** `check/reference/ops/misc.ts`.
 
 ### Q118 · probe · open — unveiling a fractured veiled modifier, or one with nothing to offer
 
@@ -504,7 +504,7 @@ modifier on the item?
 results are each blocked by a modifier on it; unveil; record refused, empty, or options
 that ignore the groups.
 **Assumed:** it stays fractured; with nothing to offer the veiled modifier stays and the
-step is accepted. **Encoded in:** `exact/reference/ops/crafted.ts`.
+step is accepted. **Encoded in:** `check/reference/ops/crafted.ts`.
 
 ### Q119 · probe · open — the Veiled Chaos Orb beside a veiled modifier it would keep
 
@@ -514,7 +514,7 @@ step is accepted. **Encoded in:** `exact/reference/ops/crafted.ts`.
 fractured unveiled modifier; a Veiled Chaos Orb on each.
 **Assumed:** refused where a veiled or unveiled modifier is fractured or on a protected
 side; protections honoured. **Encoded in:** `check/library.ts` `VEILED_CHAOS`;
-`exact/reference/ops/crafted.ts`.
+`check/reference/ops/crafted.ts`.
 
 ### Q120 · probe · open — the bench under a metamod, and an Aspect
 
@@ -526,7 +526,7 @@ remove crafted. A Rare with the cannot-roll metamod; craft an attack modifier. A
 an Aspect; bench-craft, then remove crafted.
 **Assumed:** every unfractured crafted modifier goes; the craft is not barred; an Aspect
 is not crafted. **Encoded in:** `check/library.ts` `BENCH_REMOVE`, `benchOps`,
-`beastAspectOps`; `exact/reference/ops/crafted.ts`.
+`beastAspectOps`; `check/reference/ops/crafted.ts`.
 
 ### Q121 · probe · open — an Orb of Dominance: its order, the item level, the other side
 
@@ -538,7 +538,7 @@ prefix and its top tier a suffix: with three prefixes, can the orb pick it?
 other became, and on which side.
 **Assumed:** removed first, then one of those left is upgraded, whatever the item level;
 a fractured one is out of reach; a modifier whose elevated row has no room is not picked.
-**Encoded in:** `exact/ops/remove.ts`; `exact/reference/ops/remove.ts`.
+**Encoded in:** `check/ops/remove.ts`; `check/reference/ops/remove.ts`.
 
 ### Q122 · probe · open — removals beside a metamod
 
@@ -553,7 +553,7 @@ corrupted Rare with the metamod and an attack modifier, tainted orbs. The page's
 recipe until it takes the metamod.
 **Assumed:** refused; not spared; the suffix goes first, so an attack prefix may follow.
 **Encoded in:** `check/library.ts` `eldritchAnnulOps`, `TAINTED_EXALT`, `beastAddOps`;
-`exact/ops/remove.ts`.
+`check/ops/remove.ts`.
 
 ### Q123 · probe · open — the tier of a modifier beside a tag another modifier adds
 
@@ -564,7 +564,7 @@ other modifiers adds. Does such a row have a tier, and does it renumber the othe
 wielding a Staff"; record the tier shown, annul the staff modifier, record it again.
 **Assumed:** a name and a tier are read on the base and the item's influences alone
 ([language.md](language.md) §2); a row that rolls only under an added tag has no tier.
-**Encoded in:** `check/resolve-pred.ts` `resolveHas`; `exact/conditions.ts`.
+**Encoded in:** `check/resolve-pred.ts` `resolveHas`; `check/conditions.ts`.
 
 ### Q124 · decision · open — what a `"random"` modifier may be beside the others
 
@@ -575,4 +575,4 @@ others can hold?
 modifier; a row gated by a tag needs the modifier that adds it); or any the item can hold
 (recommended: a bought item's history is unknown, the metamod may have come last).
 **Assumed:** as declared, a tag any row of the pool adds read wherever it admits a row.
-**Encoded in:** `check/ops.ts` `anonymousRows`; `exact/initial.ts` `anonymousRows`.
+**Encoded in:** `check/ops/types.ts` `anonymousRows`; `check/initial.ts` `anonymousRows`.

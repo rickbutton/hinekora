@@ -28,7 +28,7 @@ import type {
     PoolSpec,
     Selector,
     Transform,
-} from "./ops.js";
+} from "./ops/types.js";
 
 const require = (check: Check): Op => ({ kind: "require", check });
 const rarity = (rarity: Rarity | "survivors" | "lowest"): Transform => ({ kind: "rarity", rarity });

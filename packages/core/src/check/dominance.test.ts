@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "../exact/check.js";
-import * as v from "../exact/views.js";
-import { disjunctiveGuarantees, guaranteedTypes, isExcluded } from "../exact/views.js";
+import { check, type CheckContext } from "./check.js";
+import * as v from "./views.js";
+import { disjunctiveGuarantees, guaranteedTypes, isExcluded } from "./views.js";
 import { rowIds } from "../__fixtures__/views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, has, iff, item, op } from "../__fixtures__/ast.js";
@@ -143,7 +143,7 @@ describe("the Orb of Dominance", () => {
         expect(r.diagnostics).toEqual([]);
         expect(rowIds(r.finalState!, HUNTER_BOOTS_SUFFIX.type)).toEqual(new Set([HIGHER.id]));
         // Below that level the orb raises it all the same, as an elevation
-        // ignores the level (exact/ops/remove.ts `elevations`); the prefix,
+        // ignores the level (check/ops/remove.ts `elevations`); the prefix,
         // raised from its top, is the elevated row's type or gone.
         const low = check(craft(start(30), [op("dominance")]), { registry: tiered });
         expect(low.diagnostics).toEqual([]);

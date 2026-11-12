@@ -20,9 +20,9 @@ import { collectDefs, collectProcs, type Diag } from "../check/defs.js";
 import { findMethod, type Literal } from "../check/methods.js";
 import { carriedRows, resolvePred, type ResolveView } from "../check/resolve-pred.js";
 import { rollableGen } from "../resolve/tiers.js";
-import { methodItemOf } from "../exact/build.js";
-import type { CheckResult, TraceEntry } from "../exact/check.js";
-import type { XItem } from "../exact/state.js";
+import { methodItemOf } from "../check/build.js";
+import type { CheckResult, TraceEntry } from "../check/check.js";
+import type { XItem } from "../check/state.js";
 import {
     counts as countsOf,
     guaranteedTypes,
@@ -34,7 +34,7 @@ import {
     rowsOf,
     strandsRange,
     suffixRange,
-} from "../exact/views.js";
+} from "../check/views.js";
 import { certainty, chance } from "./chance.js";
 import { advance, type Chain, chain, type ChainState, type ChainStep } from "./chain.js";
 import { addPrices, inChaos, type Price, type Prices, unitCost } from "./prices.js";

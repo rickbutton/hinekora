@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { CheckContext } from "../exact/check.js";
-import { check } from "../exact/check.js";
+import type { CheckContext } from "../check/check.js";
+import { check } from "../check/check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import {
     bench,
@@ -29,8 +29,8 @@ import {
     VEILED_SUFFIX_MOD,
 } from "../__fixtures__/mods.js";
 import type { BenchCraft } from "../model/sources.js";
-import { generateCatalog } from "../exact/reference/catalog.js";
-import { countOutside, guaranteedTypes } from "../exact/views.js";
+import { generateCatalog } from "../check/reference/catalog.js";
+import { countOutside, guaranteedTypes } from "../check/views.js";
 import { itemDelta } from "./walkthrough.js";
 import {
     type ItemView,

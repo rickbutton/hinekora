@@ -3,7 +3,7 @@
  * modifier name to its type under the item's tags, a tier number to the rows
  * of its ladders, a value comparison to the rows the item may be at, a def
  * call to its body. What it reads of the item is a `ResolveView`: the checker
- * reads one case of its items (exact/conditions.ts), the cost layer the items
+ * reads one case of its items (check/conditions.ts), the cost layer the items
  * at a step.
  */
 import type { ParamRef, Pred } from "../ast/ast.js";

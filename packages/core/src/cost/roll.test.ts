@@ -11,11 +11,11 @@ import {
     VEILED_CATALOG,
 } from "../__fixtures__/mods.js";
 import { craft, item, op, unveil } from "../__fixtures__/ast.js";
-import { check } from "../exact/check.js";
+import { check } from "../check/check.js";
 import { currencyOps, unveilOps } from "../check/library.js";
 import { rollRange } from "../check/values.js";
-import type { CItem } from "../exact/item.js";
-import { fromItems } from "../exact/state.js";
+import type { CItem } from "../check/item.js";
+import { fromItems } from "../check/state.js";
 import { ModId } from "../model/ids.js";
 import { NO_INFLUENCE } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";

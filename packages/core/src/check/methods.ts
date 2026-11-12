@@ -66,7 +66,7 @@ import {
     VEILED_CHAOS,
     VEILED_EXALT,
 } from "./library.js";
-import type { Op } from "./ops.js";
+import type { Op } from "./ops/types.js";
 
 /** What a quoted name in an argument slot names in the catalog. */
 export type NameKind = "mod" | "essence" | "bench" | "fossil" | "aspect" | "tag";
@@ -92,7 +92,7 @@ export type Literal =
 
 /**
  * What a method's builder reads of the items the statement reaches, from the
- * checker's views (exact/build.ts `methodItemOf`). The fields are what the
+ * checker's views (check/build.ts `methodItemOf`). The fields are what the
  * items may be.
  */
 export interface MethodItem {

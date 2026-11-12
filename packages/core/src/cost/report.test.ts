@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check } from "../exact/check.js";
+import { check } from "../check/check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { pool } from "../pool/pool.js";
 import { emptyItem } from "../model/item.js";

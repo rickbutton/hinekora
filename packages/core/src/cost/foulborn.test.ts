@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { CATALOG, RING_BASE, SEVEN_TIER_ROWS } from "../__fixtures__/mods.js";
 import { craft, item } from "../__fixtures__/ast.js";
-import { check } from "../exact/check.js";
+import { check } from "../check/check.js";
 import { currencyOps, foulbornOps } from "../check/library.js";
-import type { Op } from "../check/ops.js";
+import type { Op } from "../check/ops/types.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { rollOf } from "./roll.js";
 

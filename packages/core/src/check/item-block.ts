@@ -2,7 +2,7 @@
  * The item block read and checked (language.md §1): the base, its level and
  * rarity, each declared affix resolved to the rows it may be, the marks; every
  * fault reported in the game's words. What it declares is construction-free:
- * the checker builds its first set of items from it (exact/initial.ts).
+ * the checker builds its first set of items from it (check/initial.ts).
  */
 import type { AffixDecl, EldritchDecl, ItemBlock, ItemField } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";

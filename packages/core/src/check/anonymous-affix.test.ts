@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "../exact/check.js";
+import { check, type CheckContext } from "./check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { bench, craft, has, iff, item, op } from "../__fixtures__/ast.js";
 import { BENCH_LIFE_ROW, CATALOG, CLASS_RING, RING_BASE } from "../__fixtures__/mods.js";

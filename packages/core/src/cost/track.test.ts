@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check } from "../exact/check.js";
+import { check } from "../check/check.js";
 import type { RPred } from "../check/pred.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, has, iff, item, op, stop } from "../__fixtures__/ast.js";
@@ -19,7 +19,7 @@ import { GroupId, ModId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import { costOf } from "./report.js";
 import { findMethod } from "../check/methods.js";
-import { methodItemOf } from "../exact/build.js";
+import { methodItemOf } from "../check/build.js";
 import type { ChainState } from "./chain.js";
 import { pruned, Tracker } from "./track.js";
 

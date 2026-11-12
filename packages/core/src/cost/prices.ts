@@ -12,8 +12,8 @@ import {
     isInfluence,
 } from "../model/marks.js";
 import type { Registry } from "../resolve/registry.js";
-import type { XItem } from "../exact/state.js";
-import { rarityOf } from "../exact/views.js";
+import type { XItem } from "../check/state.js";
+import { rarityOf } from "../check/views.js";
 import type { Literal, Method } from "../check/methods.js";
 import { capitalise } from "../words.js";
 

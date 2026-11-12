@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "../exact/check.js";
-import * as v from "../exact/views.js";
-import { fracturedTypes, guaranteedTypes } from "../exact/views.js";
+import { check, type CheckContext } from "./check.js";
+import * as v from "./views.js";
+import { fracturedTypes, guaranteedTypes } from "./views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, essence, fracturedP, iff, item, notp, op } from "../__fixtures__/ast.js";
 import { CATALOG, CLASS_RING, INCREASED_MANA, RING_BASE } from "../__fixtures__/mods.js";

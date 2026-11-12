@@ -19,12 +19,12 @@ import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
 import type { Registry } from "../resolve/registry.js";
 import { rollableGen, rollableTiers } from "../resolve/tiers.js";
 import { sideCap } from "../model/capacity.js";
-import type { FillCount, Op, PoolSpec } from "../check/ops.js";
-import { buildKey } from "../exact/build.js";
-import { effectsKey } from "../exact/rules.js";
-import type { Dd } from "../exact/dd.js";
-import { runMethod, type XTransferResult } from "../exact/method.js";
-import type { XItem } from "../exact/state.js";
+import type { FillCount, Op, PoolSpec } from "../check/ops/types.js";
+import { buildKey } from "../check/build.js";
+import { effectsKey } from "../check/rules.js";
+import type { Dd } from "../check/dd.js";
+import { runMethod, type TransferResult } from "../check/method.js";
+import type { XItem } from "../check/state.js";
 import {
     capsOver,
     counts as countsOf,
@@ -36,7 +36,7 @@ import {
     rowsOf,
     strandsRange,
     suffixRange,
-} from "../exact/views.js";
+} from "../check/views.js";
 import { splitDistribution } from "./race.js";
 
 /**
@@ -707,7 +707,7 @@ export function implicitWeights(
     });
 }
 
-const runs = new WeakMap<Dd, Map<string, XTransferResult>>();
+const runs = new WeakMap<Dd, Map<string, TransferResult>>();
 const opsKeys = new WeakMap<readonly Op[], string>();
 
 /**
@@ -719,13 +719,13 @@ const opsKeys = new WeakMap<readonly Op[], string>();
  * draw are read, and a re-check after an edit hands it the same diagrams, so
  * the runs are kept by the items' diagram and what the operations say.
  */
-export function ranOn(a: XItem, ops: readonly Op[], end = ops.length): XTransferResult {
+export function ranOn(a: XItem, ops: readonly Op[], end = ops.length): TransferResult {
     const steps = ops.slice(0, end);
     if (steps.length === 0) return { ok: true, state: a };
     let said = opsKeys.get(ops);
     if (said === undefined) opsKeys.set(ops, (said = buildKey(ops)));
     let byOps = runs.get(a.dd);
-    if (byOps === undefined) runs.set(a.dd, (byOps = new Map<string, XTransferResult>()));
+    if (byOps === undefined) runs.set(a.dd, (byOps = new Map<string, TransferResult>()));
     const key = `${end}:${said}`;
     const hit = byOps.get(key);
     if (hit !== undefined) return hit;

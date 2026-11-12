@@ -1,6 +1,6 @@
 import type { ModId, TypeId } from "../model/ids.js";
-import type { XItem } from "../exact/state.js";
-import { rowsOf } from "../exact/views.js";
+import type { XItem } from "../check/state.js";
+import { rowsOf } from "../check/views.js";
 
 /** The rows a type is at on the items that carry it, as ids: empty where no
  *  item carries it. */

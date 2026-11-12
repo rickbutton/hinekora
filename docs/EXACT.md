@@ -3,7 +3,7 @@
 A working document for the migration of the checker to an exact domain. It describes code
 that is being built; when the migration ends its content moves to
 [ARCHITECTURE.md](ARCHITECTURE.md) and this file is deleted. The code lives under
-packages/core/src/exact/; the tool's `check` is this checker, and the present one stays for
+packages/core/src/check/; the tool's `check` is this checker, and the present one stays for
 its own tests until package 12.
 
 ## 1. What exact means
@@ -48,9 +48,9 @@ undefined for a row with no number, where every value comparison is false. `craf
 mark of its own: a bench row always has it, and a natural row may (a Harvest change of a
 bench craft). The crafted limit is the bench's precondition, not a property of items: an
 annul can take the multimod and leave two crafted modifiers. A primitive
-(`Op` of `check/ops.ts`) is a function from one concrete item to the set of items it can
+(`Op` of `check/ops/types.ts`) is a function from one concrete item to the set of items it can
 leave, or a failure. The prose of [operations.md](operations.md) §2, the comments of
-`check/ops.ts` and the wiki sections they cite define these functions; the reference
+`check/ops/types.ts` and the wiki sections they cite define these functions; the reference
 interpreter states them as code. Where the present code is vaguer than a concrete rule
 needs (which total a reforge with a kept side may reach, what a removal may take), the
 wiki decides, and a rule the wiki does not settle goes to
@@ -86,7 +86,7 @@ the marks. Every state is a subset
 of it, and a transformation that could leave it is intersected with it, which is how "the
 pool excludes a modifier whose family is taken or whose side is full" is stated.
 
-**The engine** (packages/core/src/exact/dd.ts) is a reduced, hash-consed multi-valued
+**The engine** (packages/core/src/check/dd.ts) is a reduced, hash-consed multi-valued
 decision diagram over the slots. It knows nothing of the game. It gives set algebra
 (`and`, `or`, `diff`), restriction of a slot to values, forgetting slots, equality by
 identity, emptiness, a witness assignment, the values a slot takes, the least and greatest
@@ -146,16 +146,16 @@ check stops.
 ## 6. What the rest of the tool reads
 
 The renderer and the editors read the state through views computed from the diagram and
-cached by its identity (exact/views.ts): the count ranges, the rarities, the types sure,
+cached by its identity (check/views.ts): the count ranges, the rarities, the types sure,
 possible and excluded, the rows and value span a type may have, the crafted and fractured
 counts, the marks, the "at least k of these" groups. Where the items alone would say too
-much, the craft's own names bound a view (exact/names.ts).
+much, the craft's own names bound a view (check/names.ts).
 
 An error can name an item that breaks the step, taken from a witness of the failing set.
 
 ## 7. How correctness is held
 
-- **The reference interpreter** (packages/core/src/exact/reference/) holds explicit sets of
+- **The reference interpreter** (packages/core/src/check/reference/) holds explicit sets of
   concrete items over tiny catalogues, a dozen rows with spans of two or three values. It
   states each primitive and each condition the obvious way, one item at a time. It is the
   executable form of §2 and is reviewed against operations.md and the wiki before the

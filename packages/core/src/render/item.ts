@@ -13,14 +13,14 @@
  * single-line summary for diagnostics stays `renderState`; this is the full
  * view.
  *
- * The view reads the items only through the general views (exact/views.ts),
+ * The view reads the items only through the general views (check/views.ts),
  * never a handler per case: a new readable form is a new view there.
  */
 import type { Craft } from "../ast/ast.js";
 import type { Range } from "../check/domain.js";
 import { rollRange } from "../check/values.js";
-import { type CraftNames, craftNames } from "../exact/names.js";
-import type { XItem } from "../exact/state.js";
+import { type CraftNames, craftNames } from "../check/names.js";
+import type { XItem } from "../check/state.js";
 import {
     type CardinalityGuarantee,
     cardinalityGuarantees,
@@ -44,7 +44,7 @@ import {
     strandsRange,
     unnamedImplicit,
     valueSpan,
-} from "../exact/views.js";
+} from "../check/views.js";
 import type { Gen, Rarity, TypeId } from "../model/ids.js";
 import {
     ELDRITCH_SIDES,

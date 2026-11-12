@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CATALOG, RING_BASE } from "../__fixtures__/mods.js";
 import { craft, item } from "../__fixtures__/ast.js";
-import { check } from "../exact/check.js";
+import { check } from "../check/check.js";
 import { currencyOps, resonatorOps } from "../check/library.js";
 import { TagId } from "../model/ids.js";
 import type { FossilSpec } from "../model/sources.js";

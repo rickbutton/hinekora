@@ -92,7 +92,7 @@ const GRAMMAR = "editors/vscode/syntaxes/hinekora.tmLanguage.json";
 const VOCABULARY_FILE = "packages/parser/src/vocabulary.ts";
 const METHODS_FILE = "packages/core/src/check/methods.ts";
 const OPERATIONS = "docs/operations.md";
-const OPS_FILE = "packages/core/src/check/ops.ts";
+const OPS_FILE = "packages/core/src/check/ops/types.ts";
 
 function walk(dir, pred, out = []) {
     for (const name of readdirSync(dir)) {
@@ -186,7 +186,7 @@ function wordExists(word) {
 }
 
 /** Does a backticked path refer to something on disk? A bare name or a path relative
- *  to a package's src (`check/ops.ts`) resolves by suffix. */
+ *  to a package's src (`check/ops/types.ts`) resolves by suffix. */
 function pathExists(p) {
     if (existsSync(join(root, p)) || existsSync(join(root, "docs", p))) return true;
     const rel = p.replace(/^\.\//, "");

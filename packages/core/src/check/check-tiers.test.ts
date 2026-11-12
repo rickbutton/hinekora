@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "../exact/check.js";
-import { guaranteedTypes } from "../exact/views.js";
+import { check, type CheckContext } from "./check.js";
+import { guaranteedTypes } from "./views.js";
 import { rowIds } from "../__fixtures__/views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { rollableTiers, tierLadder } from "../resolve/tiers.js";

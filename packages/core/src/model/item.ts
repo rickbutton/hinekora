@@ -4,7 +4,7 @@
  * item (its counts, mod types and claimed families, which decide what may still
  * coexist), the tags a spawn table is matched against, and the active effects.
  * The pool reads nothing else. The checker reads its set of items onto this
- * record (exact/views.ts `guaranteedFacts`).
+ * record (check/views.ts `guaranteedFacts`).
  */
 import type { Base } from "./base.js";
 import type { Effect } from "./effects.js";

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { checkExact, type Craft } from "@hinekora/core";
+import { check, type Craft } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { parse } from "@hinekora/parser";
 
@@ -27,10 +27,10 @@ until has "maximum life" t1 {
     ${INNER}
     chaos
 }`);
-        const r = checkExact(craft, { registry });
+        const r = check(craft, { registry });
         expect(r.ok).toBe(false);
         // No item gets past the outer loop but by the recovery after the error.
-        const strict = checkExact(craft, { registry }, { strict: true });
+        const strict = check(craft, { registry }, { strict: true });
         expect(strict.finalState === undefined).toBe(true);
         const exits = r.diagnostics.filter((d) => d.message.startsWith("this loop can never exit"));
         // The outer loop's head holds the first item alone, which never
@@ -42,7 +42,7 @@ until has "maximum life" t1 {
     });
 
     it("refuses the inner loop alone", () => {
-        const r = checkExact(parsed(`${ITEM}\n${INNER}`), { registry });
+        const r = check(parsed(`${ITEM}\n${INNER}`), { registry });
         expect(r.diagnostics.map((d) => d.message)).toEqual([
             'this loop can never exit: has "maximum life" can never become true here',
             `the 'if' branch can never run: has "maximum mana" is impossible here`,

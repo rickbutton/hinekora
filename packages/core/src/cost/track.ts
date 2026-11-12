@@ -21,12 +21,12 @@ import {
 import type { Mod } from "../model/mod.js";
 import type { Range } from "../check/domain.js";
 import { narrowRange } from "../check/values.js";
-import type { Op } from "../check/ops.js";
+import type { Op } from "../check/ops/types.js";
 import type { Registry } from "../resolve/registry.js";
 import type { RPred } from "../check/pred.js";
-import type { Dd } from "../exact/dd.js";
-import { narrow as narrowTo, stateOf, type XItem } from "../exact/state.js";
-import type { ModValue, Universe } from "../exact/universe.js";
+import type { Dd } from "../check/dd.js";
+import { narrow as narrowTo, stateOf, type XItem } from "../check/state.js";
+import type { ModValue, Universe } from "../check/universe.js";
 import {
     capsOver,
     counts as countsOf,
@@ -46,7 +46,7 @@ import {
     strandsRange,
     unnamedImplicit,
     valueSpan,
-} from "../exact/views.js";
+} from "../check/views.js";
 import { lookupWeight } from "../pool/pool.js";
 import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
 import { rollableGen, rollableTiers } from "../resolve/tiers.js";
@@ -1036,7 +1036,7 @@ export class Tracker {
      * affected. Every pair of removed and raised is taken as likely as any
      * other (`ASSUMED_ODDS`, QUESTIONS.md Q61). Which
      * rows are an influence's, and which is the next one up, is read as the
-     * checker reads it (`check/ops.ts`, `upgradedSurvivor`). Undefined, with
+     * checker reads it (`check/ops/types.ts`, `upgradedSurvivor`). Undefined, with
      * the reason, where the state does not say which modifiers are influenced
      * or no source says what the raised one becomes.
      */
@@ -1892,7 +1892,7 @@ function lockedOn(s: XItem, type: TypeId): boolean | undefined {
 /**
  * Whether a row is an influence's: one no tag the items carry for sure but
  * their influences' admits, whose spawn table names an influence's tag (as
- * exact/ops/pools.ts `influenceRow` reads it).
+ * check/ops/pools.ts `influenceRow` reads it).
  */
 function influenceRowTest(s: XItem): (m: Mod) => boolean {
     const sure = influenceTagsOf(s).sure;

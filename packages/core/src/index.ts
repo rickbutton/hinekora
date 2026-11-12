@@ -12,17 +12,14 @@ export * from "./cost/index.js";
 export {
     check,
     type CheckResult,
-    checkExact,
-    type ExactCheckResult,
-    type ExactTuning,
+    type CheckTuning,
     type Finding,
     type FindingKind,
     traceAt,
     type TraceEntry,
-    type XTraceEntry,
-} from "./exact/check.js";
-export { methodItemOf } from "./exact/build.js";
-export { type CraftNames, craftNames } from "./exact/names.js";
-export type { XItem } from "./exact/state.js";
-export * from "./exact/views.js";
+} from "./check/check.js";
+export { methodItemOf } from "./check/build.js";
+export { type CraftNames, craftNames } from "./check/names.js";
+export type { XItem } from "./check/state.js";
+export * from "./check/views.js";
 export * from "./words.js";

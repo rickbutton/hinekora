@@ -34,7 +34,7 @@ function base(name: string): Base {
 
 describe("the longest ladder a base rolls", () => {
     it("is thirteen tiers, every influence on it: where the Foulborn cull's formula still agrees with the strands'", () => {
-        // `foulbornKept` (core, check/ops.ts) follows the Foulborn page's formula,
+        // `foulbornKept` (core, check/ops/types.ts) follows the Foulborn page's formula,
         // which keeps one tier fewer than the memory strands' from fifteen up.
         let longest = 0;
         const seen = new Set<string>();
@@ -646,7 +646,7 @@ describe("the grove's change lists", () => {
 
     it("name only modifiers whose rows all claim the same groups", () => {
         // A change is not blocked by a modifier of the changed one's group
-        // (core, check/ops.ts `typesSharingFamilyWithPresent`), which reads a
+        // (core, check/ops/types.ts `typesSharingFamilyWithPresent`), which reads a
         // type's groups as the union over its rows: exact only while they agree.
         const listed = new Set(
             Object.values(data.harvestChange).flatMap((byElement) =>
@@ -789,7 +789,7 @@ describe("what the exact checker takes of the data as given", () => {
     const armour = ["Titan Gauntlets", "Titan Greaves", "Royal Burgonet", "Vaal Regalia"].map(base);
 
     it("pairs every top-tier influence row the orb can reach with one elevated row", () => {
-        // exact/ops/remove.ts `elevations`: a row with no higher row of its type
+        // check/ops/remove.ts `elevations`: a row with no higher row of its type
         // under its own influence tags becomes its elevated row.
         let tops = 0;
         for (const b of armour) {
@@ -818,7 +818,7 @@ describe("what the exact checker takes of the data as given", () => {
     });
 
     it("has every eldritch implicit at every tier its side reaches on the base", () => {
-        // exact/ops/marks.ts `conflict`: an Orb of Conflict moves an implicit a
+        // check/ops/marks.ts `conflict`: an Orb of Conflict moves an implicit a
         // tier and keeps its wording, so the wording has a row at each tier.
         // An amulet takes them too (Ukatoa's Ducat § Mechanics).
         for (const b of [...armour, base("Onyx Amulet")]) {

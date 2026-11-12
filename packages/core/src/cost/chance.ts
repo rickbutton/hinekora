@@ -13,9 +13,9 @@
 import type { Cmp } from "../ast/ast.js";
 import type { Gen, ModId, TypeId } from "../model/ids.js";
 import type { RPred } from "../check/pred.js";
-import type { Dd } from "../exact/dd.js";
-import { narrow, predKey, type XItem } from "../exact/state.js";
-import { counts, guaranteedTypes, rowsOf, suffixRange } from "../exact/views.js";
+import type { Dd } from "../check/dd.js";
+import { narrow, predKey, type XItem } from "../check/state.js";
+import { counts, guaranteedTypes, rowsOf, suffixRange } from "../check/views.js";
 import type { Range } from "../check/domain.js";
 import { narrowRange } from "../check/values.js";
 import { amongSplitDistribution } from "./race.js";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "../exact/check.js";
-import { guaranteedTypes, isExcluded } from "../exact/views.js";
+import { check, type CheckContext } from "./check.js";
+import { guaranteedTypes, isExcluded } from "./views.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, has, iff, item, notp, op, restart, stop, until } from "../__fixtures__/ast.js";
 import { CATALOG, FIRE_RESIST, LIFE_T1, RING_BASE } from "../__fixtures__/mods.js";

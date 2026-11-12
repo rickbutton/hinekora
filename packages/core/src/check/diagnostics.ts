@@ -21,7 +21,7 @@ import { withArticle } from "../resolve/messages.js";
 import type { ItemView } from "../render/item.js";
 import { baseLabel } from "../render/render.js";
 import type { Range } from "./domain.js";
-import type { PreconditionFailure } from "./ops.js";
+import type { PreconditionFailure } from "./ops/types.js";
 import { capitalise, plural, RARITY_WORD, rangeText, rarityText } from "../words.js";
 
 export interface CheckDiagnostic {
@@ -33,7 +33,7 @@ export interface CheckDiagnostic {
 }
 
 /** What an error's words read of the items a step is used on
- *  (exact/views.ts `summaryOf`). */
+ *  (check/views.ts `summaryOf`). */
 export interface ItemSummary {
     readonly base: Base;
     readonly ilvl: number;

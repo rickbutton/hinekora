@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type Literal, METHODS, type MethodItem } from "./methods.js";
-import { type Op } from "./ops.js";
+import { type Op } from "./ops/types.js";
 import {
     BENCH_REMOVE,
     beastFractureOps,

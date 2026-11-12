@@ -10,8 +10,8 @@ import type { Arg, Craft, OperationArg, Pred, Stmt } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import { describePred } from "../check/diagnostics.js";
 import { findMethod } from "../check/methods.js";
-import type { CheckResult, TraceEntry } from "../exact/check.js";
-import type { XItem } from "../exact/state.js";
+import type { CheckResult, TraceEntry } from "../check/check.js";
+import type { XItem } from "../check/state.js";
 import type { Registry } from "../resolve/registry.js";
 import { criteria, type Criterion, type Wording } from "./conditions.js";
 import {

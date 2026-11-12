@@ -3,7 +3,7 @@ import { join, relative } from "node:path";
 import * as v8 from "node:v8";
 import * as vm from "node:vm";
 import { describe, expect, it, vi } from "vitest";
-import { checkExact, counts, type Craft } from "@hinekora/core";
+import { check, counts, type Craft } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { parse } from "@hinekora/parser";
 
@@ -280,7 +280,7 @@ dominance`,
 describe("the crafts read exactly", () => {
     for (const { name, checks, source } of AUDIT) {
         it(`${checks ? "accepts" : "refuses"} ${name}`, () => {
-            expect(checkExact(parsed(source), { registry }).ok).toBe(checks);
+            expect(check(parsed(source), { registry }).ok).toBe(checks);
         });
     }
 });
@@ -299,7 +299,7 @@ bench "chaos damage over time multiplier"
 `;
 
     it("is taken by a removal of a random suffix, so the item may be without it", () => {
-        const r = checkExact(
+        const r = check(
             parsed(`${bow}beast add prefix
 if has "chaos damage over time multiplier" {
     stop
@@ -325,7 +325,7 @@ if has "chaos damage over time multiplier" {
         stop
     }
 }`);
-        const r = checkExact(craft, { registry });
+        const r = check(craft, { registry });
         expect(r.diagnostics).toEqual([]);
         const inner = r.trace.find((e) => e.kind === "if" && e.span.start.line === 10)!;
         expect(counts(inner.before)).toEqual({ total: [1, 1], prefix: [0, 0], suffix: [1, 1] });
@@ -334,7 +334,7 @@ if has "chaos damage over time multiplier" {
 
 describe("a Fracturing Orb on modifiers the item block does not name", () => {
     it("may fracture any modifier the item can roll", () => {
-        const r = checkExact(
+        const r = check(
             parsed(`item {
     base:     "Amethyst Ring"
     ilvl:     84
@@ -358,7 +358,7 @@ describe("the exact checker's memory", () => {
         const gc = vm.runInNewContext("gc") as () => void;
         const crafts = corpus().map(({ source }) => parsed(source));
         const batch = (): number => {
-            for (const craft of crafts) checkExact(craft, { registry });
+            for (const craft of crafts) check(craft, { registry });
             gc();
             return process.memoryUsage().heapUsed;
         };
