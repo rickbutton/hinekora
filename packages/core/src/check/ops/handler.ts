@@ -149,17 +149,18 @@ export class InternalError extends Error {
 
 /** The rules with every field but `reads` made to throw when read. */
 export function restrictRules(rules: Rules, reads: readonly RuleField[], who: string): Rules {
-    const out = {} as Record<RuleField, unknown>;
-    for (const field of Object.keys(rules) as RuleField[]) {
-        Object.defineProperty(out, field, {
-            enumerable: true,
-            get: () => {
-                if (!reads.includes(field)) {
-                    throw new InternalError(`${who} reads the rule "${field}" it does not declare`);
-                }
-                return rules[field];
-            },
-        });
-    }
-    return out as unknown as Rules;
+    // One allocation: the reference interpreter restricts the rules once per
+    // item and step.
+    return new Proxy(rules, {
+        get(target, field, receiver) {
+            if (
+                typeof field === "string" &&
+                Object.hasOwn(target, field) &&
+                !reads.includes(field as RuleField)
+            ) {
+                throw new InternalError(`${who} reads the rule "${field}" it does not declare`);
+            }
+            return Reflect.get(target, field, receiver) as unknown;
+        },
+    });
 }
