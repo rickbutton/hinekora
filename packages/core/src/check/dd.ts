@@ -101,6 +101,15 @@ interface RelationTable {
     readonly touched: Uint8Array;
 }
 
+/** What a value of a slot adds to a sum, for `extent`. */
+export type DdWeight = (slot: number, value: number) => number;
+
+interface WeightTable {
+    readonly w: readonly (readonly number[])[];
+    readonly lowBefore: Float64Array;
+    readonly highBefore: Float64Array;
+}
+
 export class DdManager {
     readonly EMPTY: Dd;
     readonly ALL: Dd;
@@ -127,6 +136,8 @@ export class DdManager {
     /** What `mapOne` and `mapEach` read of each relation, while the relation lives. */
     private readonly oneTables = new WeakMap<DdRelation, RelationTable>();
     private readonly eachTables = new WeakMap<DdRelation, RelationTable>();
+    /** What `extent` read of each weight, while the weight lives. */
+    private readonly weightTables = new WeakMap<DdWeight, WeightTable>();
 
     constructor(domains: readonly number[], options: DdOptions = {}) {
         for (const d of domains) {
@@ -560,28 +571,14 @@ export class DdManager {
     /**
      * The least and greatest sum of `weight(slot, value)` over the assignments of `a`. The
      * weights must be integers whose sums stay safe integers: the sums over skipped slots are
-     * differences of running totals, exact only then.
+     * differences of running totals, exact only then. As a relation is, a weight is read once
+     * and kept for as long as the function lives, so it must answer the same every time.
      */
-    extent(a: Dd, weight: (slot: number, value: number) => number): [number, number] | undefined {
+    extent(a: Dd, weight: DdWeight): [number, number] | undefined {
         if (a === this.empty) return undefined;
-        const N = this.numSlots;
-        const w: number[][] = [];
-        const lowBefore = new Float64Array(N + 1);
-        const highBefore = new Float64Array(N + 1);
-        for (let s = 0; s < N; s++) {
-            const row: number[] = [];
-            let lo = Infinity;
-            let hi = -Infinity;
-            for (let v = 0; v < this.domains[s]!; v++) {
-                const x = weight(s, v);
-                row.push(x);
-                if (x < lo) lo = x;
-                if (x > hi) hi = x;
-            }
-            w.push(row);
-            lowBefore[s + 1] = lowBefore[s]! + lo;
-            highBefore[s + 1] = highBefore[s]! + hi;
-        }
+        let table = this.weightTables.get(weight);
+        if (table === undefined) this.weightTables.set(weight, (table = this.readWeight(weight)));
+        const { w, lowBefore, highBefore } = table;
         const memo = new Map<Node, [number, number]>();
         // Over the slots from `n`'s top to the end.
         const go = (n: Node): [number, number] => {
@@ -608,6 +605,30 @@ export class DdManager {
         const n = this.own(a);
         const [lo, hi] = go(n);
         return [lowBefore[n.slot]! + lo, highBefore[n.slot]! + hi];
+    }
+
+    /** The weight of each value of each slot, and the least and greatest sums over the slots
+     *  before each slot. */
+    private readWeight(weight: DdWeight): WeightTable {
+        const N = this.numSlots;
+        const w: number[][] = [];
+        const lowBefore = new Float64Array(N + 1);
+        const highBefore = new Float64Array(N + 1);
+        for (let s = 0; s < N; s++) {
+            const row: number[] = [];
+            let lo = Infinity;
+            let hi = -Infinity;
+            for (let v = 0; v < this.domains[s]!; v++) {
+                const x = weight(s, v);
+                row.push(x);
+                if (x < lo) lo = x;
+                if (x > hi) hi = x;
+            }
+            w.push(row);
+            lowBefore[s + 1] = lowBefore[s]! + lo;
+            highBefore[s + 1] = highBefore[s]! + hi;
+        }
+        return { w, lowBefore, highBefore };
     }
 
     /** The number of assignments of `a`. */

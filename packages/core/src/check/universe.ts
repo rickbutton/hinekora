@@ -41,7 +41,7 @@ import {
     NO_COMPARISONS,
     thresholdsOf,
 } from "./craft.js";
-import { type Dd, DdManager, type DdRelation } from "./dd.js";
+import { type Dd, DdManager, type DdRelation, type DdWeight } from "./dd.js";
 import { influenceKeysFor, influenceTagsOfKey } from "./influence.js";
 import type { CEldritch, CItem, CMod } from "./item.js";
 import { candidateRows, type RowSource } from "./rows.js";
@@ -193,6 +193,7 @@ export class Universe {
     private readonly anyMods = new Map<string, Dd>();
     private readonly extra = new Map<Mod, ReadonlySet<TagId>>();
     private readonly classMemo = new Map<string, readonly number[] | undefined>();
+    private readonly weights = new Map<string, DdWeight>();
     private withImprint: Dd | undefined;
 
     constructor(
@@ -547,8 +548,16 @@ export class Universe {
     }
 
     /** What a value adds to a count: 1 or 0 on the item's (or its copy's)
-     *  modifier slots, 0 everywhere else; for `extent` and automata. */
-    weight(kind: CountKind, copy = false): (slot: number, value: number) => number {
+     *  modifier slots, 0 everywhere else; for `extent` and automata. One
+     *  function per count, so the engine reads it once (dd.ts `extent`). */
+    weight(kind: CountKind, copy = false): DdWeight {
+        const key = `${kind}:${copy}`;
+        let w = this.weights.get(key);
+        if (w === undefined) this.weights.set(key, (w = this.countWeight(kind, copy)));
+        return w;
+    }
+
+    private countWeight(kind: CountKind, copy: boolean): DdWeight {
         return (slot, value) => {
             if (value === 0) return 0;
             const r = this.ref(slot);
