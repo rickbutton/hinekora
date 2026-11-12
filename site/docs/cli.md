@@ -32,8 +32,8 @@ On a usage error the tool prints the four command forms to standard error.
 For a craft that checks, it prints the final item in the layout of the game's item text, as
 [Getting started](./getting-started#check-it) shows.
 
-If every path ends in a [`stop`](./language/until), the line
-`(every path ends the craft before this point)` takes the item's place.
+If the craft reaches a [`stop`](./language/until) for every item, the line
+`(the craft ends for every item before this point)` takes the item's place.
 
 For a craft with errors, it prints each one with its position and source line, then a count.
 Where only some of the items reaching a step break it, and none got there past an earlier

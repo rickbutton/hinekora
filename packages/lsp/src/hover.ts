@@ -79,8 +79,8 @@ const KEYWORD_DOC: Record<string, string> = {
     if: "`if <pred> { … } else { … }` — branch on the item's state at this point. A branch that can never run is flagged.",
     else: "The alternative branch of an `if`.",
     restart: "`restart` — abandon this attempt and re-run the enclosing loop from the top.",
-    stop: "`stop` — end the craft on this path: keep the item as it is, or spend no more on it.",
-    has: '`has "<mod>" [t1] [>= <n>]` — true when the item is guaranteed to carry that mod (optionally at that tier, `t1` the game\'s Tier 1 for the modifier on this base, or with its value comparing so).',
+    stop: "`stop` — end the craft for this item: keep the item as it is, or spend no more on it.",
+    has: '`has "<mod>" [t1] [>= <n>]` — true when the item carries that mod (optionally at that tier, `t1` the game\'s Tier 1 for the modifier on this base, or with its value comparing so).',
     group: '`has group "<mod>"` — true when the item carries any modifier of that modifier\'s group; an item holds one per group, so `if not has group "<mod>" { bench "<mod>" }` guards a bench craft in one clause.',
     not: "`not <pred>` — logical negation of a predicate.",
     item: "`item { base: … ilvl: … rarity: … }` — the starting item this craft operates on.",
@@ -216,7 +216,7 @@ function defSignature(def: LocalDef): string {
     ].join("\n\n");
 }
 
-/** One statement, as a guide would write it, for a proc's hover. */
+/** One statement, as a player would write it, for a proc's hover. */
 function describeStmt(s: Stmt): string {
     switch (s.kind) {
         case "operation":
@@ -619,7 +619,7 @@ function callCostLine(
     return `${head}\n\n${lines.join("\n")}`;
 }
 
-/** Why the guide's spend is not known, where it is not. */
+/** Why the craft's spend is not known, where it is not. */
 export function notKnown(
     report: Pick<CostReport, "unknown" | "unjudged" | "failed">,
 ): string | undefined {
@@ -632,10 +632,10 @@ export function notKnown(
 }
 
 /**
- * What the step costs, in the guide's words: a loop's rounds and the chance each
+ * What the step costs, in the player's words: a loop's rounds and the chance each
  * ends it, a branch's chance, what an operation is expected to consume and its
  * price under the snapshot; on a call, what the steps it runs there are expected
- * to consume together; on the item block, the whole guide's total.
+ * to consume together; on the item block, the whole craft's total.
  */
 function costLine(
     entry: TraceEntry,
@@ -650,7 +650,7 @@ function costLine(
     };
     if (entry.kind === "item") {
         const missing = notKnown(report);
-        if (missing !== undefined) return `_Expected spend for the guide:_ ${missing}.`;
+        if (missing !== undefined) return `_Expected spend for the craft:_ ${missing}.`;
         if (report.total.length === 0) return undefined;
         const when =
             prices === undefined
@@ -663,7 +663,7 @@ function costLine(
                   (prices !== undefined && report.unpriced.length > 0
                       ? ` (no ${prices.league} price for ${report.unpriced.join(", ")})`
                       : "");
-        return `_Expected spend for the guide:_ ${total}.`;
+        return `_Expected spend for the craft:_ ${total}.`;
     }
     const at = report.steps.findIndex(
         (s: StepCost) => s.kind === entry.kind && s.span.start.offset === entry.span.start.offset,

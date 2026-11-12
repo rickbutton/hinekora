@@ -64,7 +64,7 @@ describe("a bench affix in the item block", () => {
             suffixes: ["FireResist1"],
         });
         expect(check(craft(natural, [benchRemove()]), ctx).diagnostics[0]!.message).toContain(
-            "No crafted modifier is guaranteed",
+            "The item may have no crafted modifier",
         );
     });
 

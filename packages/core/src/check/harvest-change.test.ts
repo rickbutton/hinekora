@@ -393,7 +393,7 @@ describe("harvest change", () => {
             craft(rareRing(), [harvestChange(FIRE_RESIST.id, COLD_RESIST.id)]),
             ctx,
         );
-        expect(absent.diagnostics[0]!.message).toContain("isn't guaranteed");
+        expect(absent.diagnostics[0]!.message).toContain("may not carry");
         const fractured = check(
             craft(rareRing([], [{ mod: FIRE_RESIST.id, fractured: true }]), [
                 harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
@@ -499,7 +499,7 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
         expect(isExcluded(r.finalState!, FIRE)).toBe(true);
     });
 
-    it("leaves a modifier a guide can test by its tier", () => {
+    it("leaves a modifier a craft can test by its tier", () => {
         // The level-26 cold resistance is the ladder's second tier, at any item
         // level. Seen in game: the changed modifier of a level-25 body armour
         // shows "Tier: 6", its place among the eight the base rolls.
@@ -522,7 +522,7 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
         );
     });
 
-    it("leaves a modifier a guide can test by its value", () => {
+    it("leaves a modifier a craft can test by its value", () => {
         // The cold resistance is +(18-23)%: at least 18 on every path.
         const r = known(25, "FireTiers24", "ColdTiers1", [
             iff(hasValue("ColdTiers1", ">=", 18), [], [stop()]),

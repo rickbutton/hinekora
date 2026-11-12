@@ -121,7 +121,7 @@ describe("the Orb of Dominance", () => {
         expect(disjunctiveGuarantees(s).map((c) => new Set(c))).toEqual([
             new Set([ELEVATED_BOOTS_PREFIX.type, HUNTER_BOOTS_SUFFIX.type]),
         ]);
-        // Exactly one is left, and a guide can name the elevated prefix.
+        // Exactly one is left, and a craft can name the elevated prefix.
         const both = craft(start, [
             op("dominance"),
             iff(has("Elevated hunter boots prefix"), [iff(has(HUNTER_BOOTS_SUFFIX.id), [])]),
@@ -191,7 +191,7 @@ describe("the Orb of Dominance", () => {
             influences: ["hunter"],
         });
         // Only the prefix is unprotected: too few to use the orb.
-        expect(messages(craft(guarded, [op("dominance")]))).toContain("only one is guaranteed");
+        expect(messages(craft(guarded, [op("dominance")]))).toContain("the item may have only one");
         const magic = item({
             base: "Iron Greaves",
             ilvl: 100,
@@ -209,13 +209,13 @@ describe("the Orb of Dominance", () => {
         expect(
             messages(craft(boots([HUNTER_BOOTS_PREFIX.id, "life"]), [op("dominance")])),
         ).toContain(
-            "needs 2 influenced modifiers on sides a metamod does not protect — only one is guaranteed",
+            "needs 2 influenced modifiers on sides a metamod does not protect — the item may have only one",
         );
         const guarded = boots(
             [HUNTER_BOOTS_PREFIX.id, PROTECT_SUFFIXES_CARRIER.id],
             [HUNTER_BOOTS_SUFFIX.id],
         );
-        expect(messages(craft(guarded, [op("dominance")]))).toContain("only one is guaranteed");
+        expect(messages(craft(guarded, [op("dominance")]))).toContain("the item may have only one");
     });
 
     it("counts an elevated modifier among the two, and may remove it", () => {

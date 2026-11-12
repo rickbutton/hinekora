@@ -147,7 +147,9 @@ describe("the steps that never run", () => {
         );
         expect(
             said(loop([op("chaos"), iff(has("Life1"), [restart()], [stop()]), op("exalt")])),
-        ).toContain("this step can never run: every path before it stops or restarts");
+        ).toContain(
+            "this step can never run: the craft always stops or the loop restarts before it",
+        );
         // At top level a restart ends the craft.
         expect(said(craft(ring(), [restart(), op("chaos")]))).toEqual([
             "this step can never run: the craft always stops before it",
@@ -503,7 +505,7 @@ describe("a step after", () => {
             ]),
         ]);
         expect(said(c)).toContain(
-            "this step can never run: every path before it stops or restarts",
+            "this step can never run: the craft always stops or the loop restarts before it",
         );
         agrees(c);
     });

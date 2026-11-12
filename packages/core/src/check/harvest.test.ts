@@ -192,7 +192,7 @@ describe("harvest reforge", () => {
             [harvest("reforge", "life")],
         );
         expect(check(locked, ctx).diagnostics[0]!.message).toContain(
-            "life modifier has no slot on some path",
+            "life modifier has no slot on some items",
         );
         // Anonymous prefixes instead: one of them may already be the life,
         // which blocks it before the side's room is asked.
@@ -201,7 +201,7 @@ describe("harvest reforge", () => {
             [harvest("reforge", "life")],
         );
         expect(check(anonymous, ctx).diagnostics[0]!.message).toContain(
-            "Every life modifier may be blocked on some path",
+            "Every life modifier may be blocked on some items",
         );
         // The augment adds before it removes, so a full item has no slot for it.
         const full = craft(
@@ -212,7 +212,7 @@ describe("harvest reforge", () => {
             [harvest("augment", "defence")],
         );
         expect(check(full, ctx).diagnostics[0]!.message).toContain(
-            "defences modifier has no slot on some path",
+            "defences modifier has no slot on some items",
         );
     });
 
@@ -225,7 +225,7 @@ describe("harvest reforge", () => {
             [harvest("augment", "fire")],
         );
         expect(check(fullSuffixes, ctx).diagnostics[0]!.message).toContain(
-            "fire modifier has no slot on some path",
+            "fire modifier has no slot on some items",
         );
         // A tag with rows on both sides still has none on a full item.
         const full = craft(
@@ -236,7 +236,7 @@ describe("harvest reforge", () => {
             [harvest("augment", "attack")],
         );
         expect(check(full, ctx).diagnostics[0]!.message).toContain(
-            "attack modifier has no slot on some path",
+            "attack modifier has no slot on some items",
         );
         // With a suffix open the fire modifier lands, and one of the others goes.
         const open = craft(rareRing(["T1 Life"], ["ColdResist1", "LightningResist1"]), [

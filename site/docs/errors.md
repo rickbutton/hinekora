@@ -96,7 +96,7 @@ remove, or none of the new modifier's group:
 
 - `Requires a Rare item — this item may be Normal or Rare.`
 - `Requires an open affix slot — the item may be full.`
-- `Requires an open prefix slot — none is guaranteed open here.`
+- `Requires an open prefix slot — the item may have none open.`
 - `Requires a removable affix — the item may have none.`
 - `The item may already carry a "cold resistance" modifier …`
 

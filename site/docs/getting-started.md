@@ -79,7 +79,7 @@ if not has group "movement speed" {
 
 ```txt
 first.craft:11:5: error: at this point the item is: Titan Greaves · Rare · 4–6 affixes · 1–3 prefixes · 1–3 suffixes · ilvl 84
-  Requires an open prefix slot — none is guaranteed open here.
+  Requires an open prefix slot — the item may have none open.
   11 |     bench "movement speed"
      |     ^
   For example, this item:

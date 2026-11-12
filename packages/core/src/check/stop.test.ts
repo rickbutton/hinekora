@@ -16,7 +16,7 @@ const ring = (prefixes: string[] = [], suffixes: string[] = []) =>
 
 describe("stop ends the craft on a path", () => {
     it("keeps only the paths that continue", () => {
-        // The annul may take the life; the guide stops there, so afterwards the
+        // The annul may take the life; the craft stops there, so afterwards the
         // life is sure.
         const c = craft(ring([LIFE_T1.id], [FIRE_RESIST.id]), [
             op("annul"),
@@ -80,7 +80,9 @@ describe("a step written where no path reaches it", () => {
                     op("exalt"),
                 ]),
             ]),
-        ).toEqual(["this step can never run: every path before it stops or restarts"]);
+        ).toEqual([
+            "this step can never run: the craft always stops or the loop restarts before it",
+        ]);
     });
 
     it("says the craft stops for a restart outside every loop", () => {

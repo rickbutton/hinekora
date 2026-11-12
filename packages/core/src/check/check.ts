@@ -502,7 +502,7 @@ class Checker {
                     const why = {
                         stops: "the craft always stops before it",
                         restarts: "the loop always restarts before it",
-                        both: "every path before it stops or restarts",
+                        both: "the craft always stops or the loop restarts before it",
                     }[unreached];
                     this.report(
                         "unreachable",

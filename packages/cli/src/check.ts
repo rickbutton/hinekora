@@ -29,7 +29,7 @@ import {
 import { parse } from "@hinekora/parser";
 import { formatDiagnostic } from "./format.js";
 
-/** The guide as Mermaid flowchart text; absent when it does not parse. */
+/** The craft as Mermaid flowchart text; absent when it does not parse. */
 export function chartSource(source: string, registry: Registry): string | undefined {
     const parsed = parse(source);
     if (!parsed.ok) return undefined;
@@ -77,7 +77,7 @@ function checked(source: string, file: string, registry: Registry): CheckOutput 
         // The final item in the game's copy-to-clipboard layout, indented under the verdict.
         const item = result.finalState
             ? indented(renderItemText(itemView(result.finalState, registry, parsed.craft)), 2)
-            : "  (every path ends the craft before this point)";
+            : "  (the craft ends for every item before this point)";
         return { ok: true, output: `✓ ${file} checks.\n\n${item}` };
     }
 
@@ -104,10 +104,10 @@ function errorText(source: string, file: string, d: CheckDiagnostic): string {
 }
 
 /**
- * The guide's expected cost, step by step: for each statement what it is
+ * The craft's expected cost, step by step: for each statement what it is
  * expected to consume, for a loop the chance a round ends it, for a branch how
  * often it is taken; then the total in each currency and, under the
- * economy snapshot, in Chaos and Divine Orbs. A guide with errors is still
+ * economy snapshot, in Chaos and Divine Orbs. A craft with errors is still
  * costed, as written, after a line saying so.
  */
 export function costSource(
@@ -161,7 +161,7 @@ export function costSource(
         out.push("Expected spend: nothing this report can count.");
     } else out.push(`Expected spend: ${priceText(report.total)}.`);
     if (report.unknown) {
-        // No total in Chaos Orbs stands for a guide with a loop left open.
+        // No total in Chaos Orbs stands for a craft with a loop left open.
     } else if (prices !== undefined && report.total.length > 0) {
         const date = prices.fetchedAt.slice(0, 10);
         if (report.chaos !== undefined && report.divine !== undefined) {

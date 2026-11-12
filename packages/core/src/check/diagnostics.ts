@@ -178,7 +178,7 @@ export function preconditionMessage(state: ItemSummary, failure: PreconditionFai
                     ? "a Normal item has none"
                     : failure.gen === undefined
                       ? "the item may be full"
-                      : "none is guaranteed open here";
+                      : "the item may have none open";
                 return failure.gen === undefined
                     ? `Requires an open affix slot — ${why}.`
                     : `Requires an open ${failure.gen} slot — ${why}.`;
@@ -202,7 +202,7 @@ export function preconditionMessage(state: ItemSummary, failure: PreconditionFai
             case "craftedLimit":
                 return `The item may already have ${failure.cap} crafted ${plural(failure.cap, "modifier")} — that is the limit here, so ${failure.refusal ?? "this can't be benched"}.`;
             case "noCraftedToRemove":
-                return "No crafted modifier is guaranteed on the item for the bench to remove.";
+                return "The item may have no crafted modifier for the bench to remove.";
             case "craftedFractured":
                 return "The item's crafted modifier may be fractured — the bench can't replace it.";
             case "craftedMultiple":
@@ -210,15 +210,15 @@ export function preconditionMessage(state: ItemSummary, failure: PreconditionFai
             case "harvestEmptyPool":
                 return `No ${failure.tag} modifier can appear on ${withArticle(state.base.name ?? "item")} at this item level.`;
             case "harvestNoRoom":
-                return `${capitalise(withArticle(`${failure.tag} modifier`))} has no slot on some path — the side it would take may be full.`;
+                return `${capitalise(withArticle(`${failure.tag} modifier`))} has no slot on some items — the side it would take may be full.`;
             case "harvestBlocked":
-                return `Every ${failure.tag} modifier may be blocked on some path — one of them, or one of its group, may already be on the item, or it needs an influence the item may not have.`;
+                return `Every ${failure.tag} modifier may be blocked on some items — one of them, or one of its group, may already be on the item, or it needs an influence the item may not have.`;
             case "harvestCannotRoll":
                 return `No ${failure.tag} modifier can be added while the item ${failure.tag === "attack" || failure.tag === "caster" ? `cannot roll ${failure.tag} modifiers` : "has a modifier that keeps them from rolling"} — remove that crafted modifier first.`;
             case "typeNotRemovable":
                 switch (failure.why) {
                     case "absent":
-                        return `"${failure.mod}" isn't guaranteed on the item, so it can't be changed.`;
+                        return `The item may not carry "${failure.mod}", so it can't be changed.`;
                     case "fractured":
                         return `"${failure.mod}" ${failure.sure ? "is" : "may be"} fractured, so it can't be changed.`;
                     case "protected":
@@ -226,7 +226,7 @@ export function preconditionMessage(state: ItemSummary, failure: PreconditionFai
                 }
                 break;
             case "noImprint":
-                return "No imprint of the item is held on every path — create one with 'beast imprint' first.";
+                return "The item may have no imprint — create one with 'beast imprint' first.";
             case "notImprintable":
                 return "The Bestiary imprints a Magic item or a Rare talisman, nothing else.";
             case "noMetamodFits":
@@ -254,7 +254,7 @@ export function preconditionMessage(state: ItemSummary, failure: PreconditionFai
             case "notDominant":
                 return `${failure.what} needs an item where ${failure.side === "exarch" ? "The Searing Exarch" : "The Eater of Worlds"} is dominant — this item has ${eldritchLabel(state.eldritch)}.`;
             case "tooFewInfluenced":
-                return `An Orb of Dominance needs ${failure.needed} influenced modifiers on sides a metamod does not protect — ${failure.have === 0 ? "none is" : failure.have === 1 ? "only one is" : `only ${failure.have} are`} guaranteed here.`;
+                return `An Orb of Dominance needs ${failure.needed} influenced modifiers on sides a metamod does not protect — the item may have ${failure.have === 0 ? "none" : `only ${failure.have === 1 ? "one" : failure.have}`}.`;
             case "sideProtected":
                 return `${failure.what} removes a ${failure.gen}, but the ${failure.gen}es cannot be changed here.`;
             case "notBothEldritch":

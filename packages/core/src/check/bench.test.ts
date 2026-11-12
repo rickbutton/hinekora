@@ -75,12 +75,12 @@ describe("bench remove", () => {
 
     it("needs a crafted modifier the bench can reach", () => {
         const none = check(craft(rareRing(["T1 Life"]), [benchRemove()]), ctx);
-        expect(none.diagnostics[0]!.message).toContain("No crafted modifier");
+        expect(none.diagnostics[0]!.message).toContain("may have no crafted modifier");
         const locked = check(
             craft(rareRing([{ mod: BENCH_LIFE_ROW.id, fractured: true }]), [benchRemove()]),
             ctx,
         );
-        expect(locked.diagnostics[0]!.message).toContain("No crafted modifier");
+        expect(locked.diagnostics[0]!.message).toContain("may have no crafted modifier");
     });
 
     it("a rolled modifier of the crafted row's type survives, pinned to its own tier", () => {
@@ -120,7 +120,7 @@ describe("bench remove under an unproven fracture", () => {
             rareRing([BENCH_LIFE_ROW.id, INCREASED_MANA.id], ["FireResist1", "random"]),
             [op("fracture"), benchRemove()],
         );
-        expect(check(c, ctx).diagnostics[0]!.message).toContain("No crafted modifier");
+        expect(check(c, ctx).diagnostics[0]!.message).toContain("may have no crafted modifier");
     });
 
     it("removes one or both of two crafted modifiers, whichever the fracture spared", () => {
@@ -281,8 +281,8 @@ describe("a bench craft's group clash names the modifiers that may clash", () =>
     });
 });
 
-describe("a bench craft named the way a guide writes it", () => {
-    // The game's wording is "+(16-20)% to Fire and Chaos Resistances"; a guide
+describe("a bench craft named the way a player writes it", () => {
+    // The game's wording is "+(16-20)% to Fire and Chaos Resistances"; a player
     // says "fire and chaos resistance" or "fire chaos res".
     const hybridRow = {
         ...FIRE_CHAOS_RESIST,
@@ -297,7 +297,7 @@ describe("a bench craft named the way a guide writes it", () => {
         benchCrafts: [benchOf(hybridRow.id)],
     });
 
-    it("says a Normal item has no slot rather than that none is guaranteed", () => {
+    it("says a Normal item has no slot rather than that it may have none open", () => {
         const normal = item({ base: "Iron Ring", ilvl: 100, rarity: "normal" });
         expect(
             check(craft(normal, [bench("maximum life")]), ctx).diagnostics[0]!.message,

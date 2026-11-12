@@ -44,7 +44,7 @@ after each statement.
 | `until <condition> { … }`         | repeat the block while the condition is false | [Loops](./language/until)     |
 | `if <condition> { … } else { … }` | run one block or the other                    | [Branches](./language/if)     |
 | `restart`                         | return to the test of the enclosing `until`   | [Loops](./language/until)     |
-| `stop`                            | end the craft on this path                    | [Loops](./language/until)     |
+| `stop`                            | end the craft for this item                   | [Loops](./language/until)     |
 | `name(args)`                      | run a definition's steps                      | [Definitions](./language/def) |
 
 An operation is one or two words, such as `exalt` or `harvest reforge`. Its arguments follow

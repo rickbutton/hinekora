@@ -500,7 +500,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["conflict"],
         args: [],
-        doc: "conflict — Orb of Conflict: on an item with both eldritch implicits, raise one a tier and lower the other; a lowered Lesser is removed, and which is dominant may differ between paths.",
+        doc: "conflict — Orb of Conflict: on an item with both eldritch implicits, raise one a tier and lower the other; a lowered Lesser is removed, and which is dominant may differ from item to item.",
         build: () => CONFLICT,
     },
     {
@@ -671,7 +671,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["beast", "metamod"],
         args: [],
-        doc: "beast metamod — craft a random metamod among those that fit under the crafted-modifier limit; on every path the item needs an open slot that a metamod not yet on it can take.",
+        doc: "beast metamod — craft a random metamod among those that fit under the crafted-modifier limit; every item needs an open slot that a metamod not yet on it can take.",
         build: () => BEAST_METAMOD,
     },
     {
