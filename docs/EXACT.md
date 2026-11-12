@@ -135,12 +135,12 @@ values, a value comparison is the cells on the right side of the threshold, a co
 automaton, `and`, `or` and `not` are the set operations. Narrowing by it is an
 intersection, in both polarities, with nothing to tighten afterwards.
 
-The driver threads one state. An `if` narrows it both ways and unites the arms that fall
-through. A loop unites the entry with the states that come back to its head until the
-diagram stops changing, which identity detects; the exit is the head states narrowed by
-the condition. There are no parts, no part key, no count tightening, no widening. A loop
-that has not settled within the round limit, or a diagram past the node budget, is an
-error at that statement.
+The driver threads one state. An `if` narrows it both ways and unites the arms. A loop's
+head unites the entry with what the body returns from the head's items that fail the
+condition, until it stops changing; the exit is the head narrowed by the condition. No
+widening. Parts built alike run as one: a refusal's recovery reads its items together. A
+loop past the round limit, or a diagram past the node budget, is an error there, and the
+check stops.
 
 ## 6. What the rest of the tool reads
 
