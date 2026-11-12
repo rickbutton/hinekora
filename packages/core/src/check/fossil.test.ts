@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { guaranteedTypes, hasFracture, isExcluded } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { bench, callStmt, craft, fossil, item, op, param, procDef } from "../__fixtures__/ast.js";
@@ -76,14 +76,14 @@ describe("a resonator", () => {
             fossils: [...FOSSILS, opulent],
         });
         const under = (name: string) =>
-            check(craft(rareRing(), [fossil(name)]), { registry: withTagless }).finalState!;
+            checkPresent(craft(rareRing(), [fossil(name)]), { registry: withTagless }).finalState!;
         expect(under("opulent").possible.has(tagless.type)).toBe(false);
         expect(under("opulent").possible.has(INCREASED_MANA.type)).toBe(true);
         expect(under("dense").possible.has(tagless.type)).toBe(true);
     });
 
     it("reforges without the modifiers of a blocked tag", () => {
-        const r = check(craft(rareRing(["T1 Life"]), [fossil("dense")]), ctx);
+        const r = checkPresent(craft(rareRing(["T1 Life"]), [fossil("dense")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.counts.total).toEqual([4, 6]);
         expect(r.finalState!.possible.has(LIFE)).toBe(false);
@@ -91,7 +91,7 @@ describe("a resonator", () => {
     });
 
     it("adds a fossil's own rows and guarantees a forced one within the count", () => {
-        const r = check(craft(rareRing(), [fossil("faceted", "hollow")]), ctx);
+        const r = checkPresent(craft(rareRing(), [fossil("faceted", "hollow")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.possible.has(DELVE_RING_ROW.type)).toBe(true);
         expect(guaranteedTypes(r.finalState!).has(DELVE_SOCKET_ROW.type)).toBe(true);
@@ -99,31 +99,31 @@ describe("a resonator", () => {
     });
 
     it("guarantees a corrupted essence's modifier for the Glyphic; the Tangled rolls none", () => {
-        const glyphic = check(craft(rareRing(), [fossil("glyphic")]), ctx);
+        const glyphic = checkPresent(craft(rareRing(), [fossil("glyphic")]), ctx);
         expect(glyphic.diagnostics).toEqual([]);
         expect(guaranteedTypes(glyphic.finalState!).has(CORRUPTED_ESSENCE_ROW.type)).toBe(true);
         // Since 3.16.0 the Tangled Fossil gives no fossil's own modifiers and no
         // corrupted essence's: a reforge the checker reads whole.
-        const tangled = check(craft(rareRing(), [fossil("tangled")]), ctx);
+        const tangled = checkPresent(craft(rareRing(), [fossil("tangled")]), ctx);
         expect(tangled.diagnostics).toEqual([]);
         expect(tangled.finalState!.possible.has(CORRUPTED_ESSENCE_ROW.type)).toBe(false);
         expect(tangled.finalState!.possible.has(DELVE_RING_ROW.type)).toBe(false);
-        const plain = check(craft(rareRing(), [fossil("dense")]), ctx);
+        const plain = checkPresent(craft(rareRing(), [fossil("dense")]), ctx);
         expect(plain.finalState!.possible.has(CORRUPTED_ESSENCE_ROW.type)).toBe(false);
     });
 
     it("a blocked tag also keeps the Glyphic's essence modifier out, without a contradiction", () => {
-        const r = check(craft(rareRing(), [fossil("glyphic", "aberrant")]), ctx);
+        const r = checkPresent(craft(rareRing(), [fossil("glyphic", "aberrant")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.possible.has(CORRUPTED_ESSENCE_ROW.type)).toBe(false);
         expect(r.finalState!.presence).not.toBe(r.finalState!.bdd.FALSE);
     });
 
     it("the Fractured Fossil fractures a rolled modifier and needs an item without one", () => {
-        const r = check(craft(rareRing(), [fossil("fractured")]), ctx);
+        const r = checkPresent(craft(rareRing(), [fossil("fractured")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(hasFracture(r.finalState!)).toBe(true);
-        const locked = check(
+        const locked = checkPresent(
             craft(rareRing([{ mod: "IncreasedLife1", fractured: true }]), [fossil("fractured")]),
             ctx,
         );
@@ -137,7 +137,7 @@ describe("a resonator", () => {
             rarity: "rare",
             influences: ["hunter"],
         });
-        const r = check(craft(hunter, [fossil("fractured")]), ctx);
+        const r = checkPresent(craft(hunter, [fossil("fractured")]), ctx);
         expect(r.diagnostics[0]!.message).toContain(
             "A Fractured Fossil cannot be used on an influenced item",
         );
@@ -145,67 +145,70 @@ describe("a resonator", () => {
 
     it("takes a Normal or Rare item without a blocking metamod, on a base its fossils allow", () => {
         const magic = item({ base: "Iron Ring", ilvl: 100, rarity: "magic" });
-        expect(check(craft(magic, [fossil("dense")]), ctx).diagnostics[0]!.message).toContain(
-            "Requires a Normal or Rare item",
-        );
-        const normal = check(
+        expect(
+            checkPresent(craft(magic, [fossil("dense")]), ctx).diagnostics[0]!.message,
+        ).toContain("Requires a Normal or Rare item");
+        const normal = checkPresent(
             craft(item({ base: "Iron Ring", ilvl: 100, rarity: "normal" }), [fossil("dense")]),
             ctx,
         );
         expect(normal.diagnostics).toEqual([]);
         expect(normal.finalState!.rarities).toEqual(new Set(["rare"]));
-        const locked = check(
+        const locked = checkPresent(
             craft(rareRing(), [bench("prefixes cannot be changed"), fossil("dense")]),
             ctx,
         );
         expect(locked.diagnostics[0]!.message).toContain("metacraft modifier");
-        const wrongBase = check(craft(rareRing(), [fossil("pendant")]), ctx);
+        const wrongBase = checkPresent(craft(rareRing(), [fossil("pendant")]), ctx);
         expect(wrongBase.diagnostics[0]!.message).toContain("cannot be used on a");
         const amulet = item({ base: "Coral Amulet", ilvl: 100, rarity: "rare" });
-        expect(check(craft(amulet, [fossil("pendant")]), ctx).diagnostics).toEqual([]);
+        expect(checkPresent(craft(amulet, [fossil("pendant")]), ctx).diagnostics).toEqual([]);
     });
 
     it("admits a fossil's own row only where it rolls", () => {
         // The fossil-only ring row has no weight on an amulet.
         const amulet = item({ base: "Coral Amulet", ilvl: 100, rarity: "rare" });
-        const r = check(craft(amulet, [fossil("faceted")]), ctx);
+        const r = checkPresent(craft(amulet, [fossil("faceted")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.possible.has(DELVE_RING_ROW.type)).toBe(false);
     });
 
     it("takes a fossil name from a proc parameter", () => {
         const p = procDef("reso", ["f"], [fossil(param("f"))]);
-        const r = check(craft(rareRing(["T1 Life"]), [callStmt("reso", ["dense"])], [], [p]), ctx);
+        const r = checkPresent(
+            craft(rareRing(["T1 Life"]), [callStmt("reso", ["dense"])], [], [p]),
+            ctx,
+        );
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.possible.has(LIFE)).toBe(false);
     });
 
     it("reports a fossil row the catalog lacks instead of dropping it", () => {
-        const r = check(craft(rareRing(), [fossil("stale")]), ctx);
+        const r = checkPresent(craft(rareRing(), [fossil("stale")]), ctx);
         expect(r.diagnostics[0]!.message).toContain('no modifier "NoSuchRow1"');
     });
 
     it("corrupts the item with a Bloodstained Fossil, so nothing crafts it afterwards", () => {
-        const r = check(craft(rareRing(), [fossil("bloodstained"), op("exalt")]), ctx);
+        const r = checkPresent(craft(rareRing(), [fossil("bloodstained"), op("exalt")]), ctx);
         expect(r.finalState!.corrupted).toEqual(new Set([true]));
         expect(r.diagnostics.map((d) => d.message).join("\n")).toContain("The item is corrupted");
     });
 
     it("holds distinct fossils, at most four", () => {
-        const twice = check(craft(rareRing(), [fossil("dense", "dense")]), ctx);
+        const twice = checkPresent(craft(rareRing(), [fossil("dense", "dense")]), ctx);
         expect(twice.diagnostics[0]!.message).toContain("same fossil twice");
-        const five = check(
+        const five = checkPresent(
             craft(rareRing(), [fossil("dense", "aberrant", "faceted", "hollow", "glyphic")]),
             ctx,
         );
         expect(five.diagnostics[0]!.message).toContain("at most four");
-        const unknown = check(craft(rareRing(), [fossil("amber")]), ctx);
+        const unknown = checkPresent(craft(rareRing(), [fossil("amber")]), ctx);
         expect(unknown.diagnostics[0]!.message).toContain("Unknown fossil");
     });
 
     it("keeps a declared rolled modifier's exclusion where the pool offers nothing", () => {
         // A life excluded before the reforge stays out when Dense blocks life.
-        const r = check(craft(rareRing([INCREASED_MANA.id]), [fossil("dense")]), ctx);
+        const r = checkPresent(craft(rareRing([INCREASED_MANA.id]), [fossil("dense")]), ctx);
         expect(isExcluded(r.finalState!, LIFE) || !r.finalState!.possible.has(LIFE)).toBe(true);
     });
 });

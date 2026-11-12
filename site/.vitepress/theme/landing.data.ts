@@ -94,7 +94,7 @@ function finding(registry: Registry): Finding {
         line: step.span.start.line,
         step: step.text,
         message: need.join("\n"),
-        card: itemCardHtml(itemView(step.before, registry)),
+        card: itemCardHtml(itemView(step.before, registry, parsed.craft)),
     };
 }
 
@@ -124,7 +124,7 @@ function cost(registry: Registry): Cost {
         rows,
         total: `${approx(report.chaos)} chaos, ${approx(report.divine)} divine`,
         prices: `${prices.league} prices of ${prices.fetchedAt.slice(0, 10)}`,
-        card: itemCardHtml(itemView(result.finalState, registry)),
+        card: itemCardHtml(itemView(result.finalState, registry, parsed.craft)),
     };
 }
 

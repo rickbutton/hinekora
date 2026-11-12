@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, harvest, has as hasT, iff, influencedP, item, until } from "../__fixtures__/ast.js";
@@ -52,7 +52,7 @@ const wordArg = (ws: string[], w: string): OperationStmt => ({
     args: [{ kind: "word", value: w, span: words().span }],
 });
 
-const run = (c: ReturnType<typeof craft>) => check(c, ctx);
+const run = (c: ReturnType<typeof craft>) => checkPresent(c, ctx);
 const messages = (c: ReturnType<typeof craft>) =>
     run(c)
         .diagnostics.map((d) => d.message)
@@ -313,7 +313,7 @@ describe("an influence exalt on an item too low-level for any influence modifier
             baseAliases: { "Iron Ring": "IronRing" },
         });
         const low = item({ base: "Iron Ring", ilvl: 50, rarity: "rare" });
-        const r = check(craft(low, [words("exalt", "hunter")]), { registry: high });
+        const r = checkPresent(craft(low, [words("exalt", "hunter")]), { registry: high });
         expect(r.diagnostics.map((d) => d.message).join("\n")).toContain(
             "No influence modifier can appear",
         );
@@ -321,7 +321,7 @@ describe("an influence exalt on an item too low-level for any influence modifier
         expect(r.finalState!.counts.total).toEqual([1, 1]);
         const fine = item({ base: "Iron Ring", ilvl: 68, rarity: "rare" });
         expect(
-            check(craft(fine, [words("exalt", "hunter")]), { registry: high }).diagnostics,
+            checkPresent(craft(fine, [words("exalt", "hunter")]), { registry: high }).diagnostics,
         ).toEqual([]);
     });
 });
@@ -333,9 +333,9 @@ describe("the Astrolabe Amulet", () => {
             mods: [...CATALOG, PROTECT_SUFFIXES_CARRIER, HUNTER_AMULET_SUFFIX],
         });
         const amulet = item({ base: "Astrolabe Amulet", ilvl: 100, rarity: "rare" });
-        const r = check(craft(amulet, [words("exalt", "hunter")]), { registry: astrolabe });
+        const r = checkPresent(craft(amulet, [words("exalt", "hunter")]), { registry: astrolabe });
         expect(r.diagnostics[0]!.message).toContain("cannot be used on an influenced item");
-        const plain = check(craft(amulet, []), { registry: astrolabe });
+        const plain = checkPresent(craft(amulet, []), { registry: astrolabe });
         expect([...plain.finalState!.influences]).toEqual([
             "shaper+elder+crusader+hunter+redeemer+warlord",
         ]);
@@ -346,7 +346,7 @@ describe("the Astrolabe Amulet", () => {
             influences: ["hunter"],
         });
         expect(
-            check(craft(declared, []), { registry: astrolabe }).diagnostics[0]!.message,
+            checkPresent(craft(declared, []), { registry: astrolabe }).diagnostics[0]!.message,
         ).toContain("leave `influences:` out");
     });
 
@@ -358,9 +358,12 @@ describe("the Astrolabe Amulet", () => {
         const amulet = item({ base: "Astrolabe Amulet", ilvl: 100, rarity: "rare" });
         // The Hunter row spawns only on an influenced amulet's tag, so a loop on it
         // can exit only if the item's influences reach the pool.
-        const r = check(craft(amulet, [until(hasT(HUNTER_AMULET_SUFFIX.id), [words("chaos")])]), {
-            registry: astrolabe,
-        });
+        const r = checkPresent(
+            craft(amulet, [until(hasT(HUNTER_AMULET_SUFFIX.id), [words("chaos")])]),
+            {
+                registry: astrolabe,
+            },
+        );
         expect(r.diagnostics).toEqual([]);
         const fractured = item({
             base: "Astrolabe Amulet",
@@ -369,7 +372,7 @@ describe("the Astrolabe Amulet", () => {
             prefixes: [{ mod: "IncreasedLife1", fractured: true }],
         });
         expect(
-            check(craft(fractured, []), { registry: astrolabe }).diagnostics[0]!.message,
+            checkPresent(craft(fractured, []), { registry: astrolabe }).diagnostics[0]!.message,
         ).toContain("An influenced item cannot have a fractured modifier");
         const eldritch = item({
             base: "Astrolabe Amulet",
@@ -378,7 +381,7 @@ describe("the Astrolabe Amulet", () => {
             exarch: "lesser",
         });
         expect(
-            check(craft(eldritch, []), { registry: astrolabe })
+            checkPresent(craft(eldritch, []), { registry: astrolabe })
                 .diagnostics.map((d) => d.message)
                 .join("\n"),
         ).toContain("An influenced item cannot have an eldritch implicit");

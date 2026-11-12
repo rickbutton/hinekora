@@ -21,7 +21,7 @@ import {
     until,
 } from "../__fixtures__/ast.js";
 import type { Craft, ProcDef, Stmt } from "../ast/ast.js";
-import { check } from "../check/check.js";
+import { checkPresent } from "../check/check.js";
 import { renderState } from "../check/diagnostics.js";
 import { TypeId } from "../model/ids.js";
 import { checkExact, exactDetail, type ExactTuning } from "./check.js";
@@ -43,7 +43,7 @@ const said = (c: Craft, tuning?: ExactTuning): string[] =>
     exact(c, tuning).diagnostics.map((d) => d.message);
 
 const presentSaid = (c: Craft): string[] =>
-    check(c, { registry: HAND_REGISTRY }).diagnostics.map((d) => d.message);
+    checkPresent(c, { registry: HAND_REGISTRY }).diagnostics.map((d) => d.message);
 
 /** The exact driver against the reference on the hand catalogue's ring. */
 const agrees = (c: Craft, tuning?: ExactTuning): void => {
@@ -54,7 +54,8 @@ describe("the exact driver's words", () => {
     it("word an item's summary as the present checker does", () => {
         const block = ring({ prefixes: ["Life1", { mod: "random" }], suffixes: ["Fire1"] });
         const start = startOf(HAND_REGISTRY, craft(block, []), () => {})!;
-        const present = check(craft(block, []), { registry: HAND_REGISTRY }).trace[0]!.before;
+        const present = checkPresent(craft(block, []), { registry: HAND_REGISTRY }).trace[0]!
+            .before;
         expect(renderState(summaryOf(start.state!))).toBe(renderState(present));
     });
 
@@ -288,6 +289,31 @@ describe("a call", () => {
         agrees(c);
         expect(isGuaranteed(r.finalState!, TypeId("TypeMana"))).toBe(true);
         expect(r.trace[1]!.inlined!.trace.at(-1)!.kind).toBe("until");
+    });
+});
+
+describe("the item an error shows", () => {
+    it("is one that breaks the step, where only some of the items do", () => {
+        // Scoured where it has the life, so a Chaos Orb meets a Normal item there.
+        const c = craft(ring({ prefixes: ["random"], suffixes: ["Fire1"] }), [
+            iff(has("Life1"), [op("scour")]),
+            op("chaos"),
+        ]);
+        const [d] = exact(c).diagnostics;
+        expect(d!.example?.rarities).toEqual(["normal"]);
+        expect(d!.example?.prefixes).toEqual([]);
+        expect(d!.example?.suffixes).toEqual([]);
+    });
+
+    it("is left out where the step is used on one item, which the message describes", () => {
+        const [d] = exact(craft(ring({ rarity: "magic" }), [op("chaos")])).diagnostics;
+        expect(d!.message).toContain("Rare");
+        expect(d!.example).toBeUndefined();
+    });
+
+    it("is left out where the error is no refused step", () => {
+        const c = craft(ring({ prefixes: ["Life1"] }), [iff(notp(has("Life1")), [op("chaos")])]);
+        expect(exact(c).diagnostics.map((d) => d.example)).toEqual([undefined]);
     });
 });
 

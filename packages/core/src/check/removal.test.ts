@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { cardinalityGuarantees, guaranteedTypes, isExcluded } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, has, iff, item, notp, op, stop } from "../__fixtures__/ast.js";
@@ -16,7 +16,7 @@ const ring = (prefixes: string[] = [], suffixes: string[] = []) =>
 
 describe("a random removal and the modifiers it could reach", () => {
     it("leaves all but one of the named modifiers", () => {
-        const r = check(
+        const r = checkPresent(
             craft(ring([LIFE_T1.id], [FIRE_RESIST.id, COLD_RESIST.id]), [op("annul")]),
             ctx,
         );
@@ -34,7 +34,7 @@ describe("a random removal and the modifiers it could reach", () => {
     it("may have taken an unnamed modifier, so a named one beside it is neither sure nor gone", () => {
         // The Exalted Orb's modifier is of either side: the sides' most together
         // exceed what the item holds, which is what the removal counts by.
-        const r = check(craft(ring([LIFE_T1.id]), [op("exalt"), op("annul")]), ctx);
+        const r = checkPresent(craft(ring([LIFE_T1.id]), [op("exalt"), op("annul")]), ctx);
         expect(r.diagnostics).toEqual([]);
         const s = r.finalState!;
         expect(s.counts.total).toEqual([1, 1]);
@@ -48,7 +48,7 @@ describe("a random removal and the modifiers it could reach", () => {
             op("annul"),
             iff(notp(has(LIFE_T1.id)), [stop()]),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         const s = r.finalState!;
         expect(guaranteedTypes(s).has(LIFE_T1.type)).toBe(true);
@@ -60,7 +60,7 @@ describe("a random removal and the modifiers it could reach", () => {
             op("annul"),
             iff(notp(has(LIFE_T1.id)), [stop()]),
         ]);
-        const s = check(c, ctx).finalState!;
+        const s = checkPresent(c, ctx).finalState!;
         expect(guaranteedTypes(s).has(LIFE_T1.type)).toBe(true);
         expect(isExcluded(s, FIRE_RESIST.type)).toBe(false);
     });

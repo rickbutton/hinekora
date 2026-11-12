@@ -45,6 +45,24 @@ exalt`);
         expect(r.output).toContain("✗ 1 error");
     });
 
+    it("shows under an error an item that breaks the step, where the items differ", () => {
+        // An annul leaves two or three prefixes: the bench is refused where three are left.
+        const r =
+            run(`item { base: "Vaal Regalia" ilvl: 84 rarity: rare prefixes: [ "random", "random", "random" ] suffixes: [ "random", "random" ] }
+annul
+bench "maximum life"`);
+        expect(r.output).toContain(
+            '  3 | bench "maximum life"\n    | ^\n  For example, this item:\n    Item Class: Body Armours\n    Rarity: Rare\n    Vaal Regalia\n',
+        );
+        const example = r.output.slice(r.output.indexOf("For example"));
+        expect(example.match(/\{ (Master Crafted )?Prefix Modifier/g)).toHaveLength(3);
+        expect(example).not.toContain("additional");
+        // One item: the message describes it, and no example follows.
+        const one = run(`item { base: "Iron Ring" ilvl: 84 rarity: magic }
+exalt`);
+        expect(one.output).not.toContain("For example");
+    });
+
     it("points an item block's error at the field or the modifier it is about", () => {
         const r = run(`item {
     base: "Iron Ring"

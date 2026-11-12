@@ -14,8 +14,8 @@ pnpm install
 pnpm build
 ```
 
-The build writes the command-line tool to `packages/cli/dist/cli.js`. The game data ships in
-the repository, so the tool makes no network request.
+The build writes the command-line tool to `packages/cli/dist/cli.js`. The game data ships
+with it.
 
 ## A first craft
 
@@ -33,10 +33,10 @@ until has "fire resistance" t1 {
 }
 ```
 
-The [item block](./language/item) declares a pair of Normal boots. The
-[`essence`](/docs/operations/essence) step reforges them into a Rare item with maximum Life
-and other random modifiers. The [`until`](./language/until) loop repeats it while the boots
-have no tier 1 fire resistance.
+The [item block](./language/item) declares Normal boots. The
+[`essence`](/docs/operations/essence) step makes them Rare with maximum Life and random
+modifiers, and the [`until`](./language/until) loop repeats it until they have tier 1 fire
+resistance.
 
 ## Check it
 
@@ -62,9 +62,8 @@ data: repoe-fork/repoe @ aa9fa7c394 (poe1, game 3.29.3.4)
   { 2-4 additional prefix or suffix modifiers }
 ```
 
-The first line names the game data. The item under the verdict is what the checker knows at
-the end of the craft, laid out as the game's item text. The two named modifiers are on every
-finished item. The last line counts the modifiers the checker cannot name.
+The first line names the game data. Under the verdict is the finished item, laid out as the
+game's item text: the two named modifiers are on every one, and the last line counts the rest.
 
 ## A step the checker rejects
 
@@ -81,13 +80,27 @@ first.craft:10:1: error: at this point the item is: Titan Greaves · Rare · 4�
   Requires an open prefix slot — none is guaranteed open here.
   10 | bench "movement speed"
      | ^
+  For example, this item:
+    Item Class: Boots
+    Rarity: Rare
+    Titan Greaves
+    --------
+    Item Level: 84
+    --------
+    { Prefix Modifier "Essences" — Resource, Life }
+    +(91-105) to maximum Life
+    { Prefix Modifier "Pirate's" (Tier: 1) — Drop }
+    (13-18)% increased Rarity of Items found
+    { Prefix Modifier "Cheetah's" (Tier: 2) — Speed }
+    30% increased Movement Speed
+    { Suffix Modifier "of Tzteosh" (Tier: 1) — Elemental, Fire, Resistance }
+    +(46-48)% to Fire Resistance
 
 ✗ 1 error
 ```
 
-The error gives the position, the item at that step and what the step needed. Movement speed
-is a prefix and boots hold three. The essence can fill all three, so on some paths the bench
-craft has no slot.
+The error gives the position, the item at that step, what the step needed and an item that
+breaks it. Movement speed is a prefix, and the essence can fill all three.
 
 A [branch](./language/if) restricts the step to the items that can take it:
 
@@ -106,8 +119,8 @@ if prefixCount <= 2 and not has group "movement speed" {
 }
 ```
 
-This craft checks. The craft needs the second test because the essence can roll a
-movement speed modifier itself.
+This craft checks. The second test is there because the essence can roll movement speed
+itself.
 
 ## Next
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { guaranteedTypes, isExcluded } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { bench, benchRemove, craft, has, iff, item, op } from "../__fixtures__/ast.js";
@@ -49,7 +49,7 @@ describe("a bench craft refused for want of a slot", () => {
             op("annul"),
             op("exalt"),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics.map((d) => d.message)).toEqual([
             expect.stringContaining("Requires an open suffix slot"),
         ]);
@@ -62,7 +62,7 @@ describe("bench remove", () => {
         const c = craft(rareRing([BENCH_LIFE_ROW.id, INCREASED_MANA.id], ["FireResist1"]), [
             benchRemove(),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         const s = r.finalState!;
         expect(s.crafted).toEqual([0, 0]);
@@ -73,9 +73,9 @@ describe("bench remove", () => {
     });
 
     it("needs a crafted modifier the bench can reach", () => {
-        const none = check(craft(rareRing(["T1 Life"]), [benchRemove()]), ctx);
+        const none = checkPresent(craft(rareRing(["T1 Life"]), [benchRemove()]), ctx);
         expect(none.diagnostics[0]!.message).toContain("No crafted modifier");
-        const locked = check(
+        const locked = checkPresent(
             craft(rareRing([{ mod: BENCH_LIFE_ROW.id, fractured: true }]), [benchRemove()]),
             ctx,
         );
@@ -84,7 +84,7 @@ describe("bench remove", () => {
 
     it("a rolled modifier of the crafted row's type survives, pinned to its own tier", () => {
         const c = craft(rareRing(["T1 Life"], [PROTECT_PREFIXES_CARRIER.id]), [benchRemove()]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteedTypes(r.finalState!).has(LIFE)).toBe(true);
         expect(r.finalState!.crafted).toEqual([0, 0]);
@@ -99,14 +99,14 @@ describe("bench remove reaches the crafted types only", () => {
             rareRing([BENCH_LIFE_ROW.id], [PROTECT_PREFIXES_CARRIER.id, FIRE_RESIST.id]),
             [op("annul"), iff(has(PROTECT_PREFIXES_CARRIER.id), [benchRemove()])],
         );
-        expect(check(c, ctx).diagnostics).toEqual([]);
+        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
     });
 
     it("cannot cost a suffix for a crafted prefix", () => {
         const c = craft(rareRing([BENCH_LIFE_ROW.id], [FIRE_RESIST.id, COLD_RESIST.id]), [
             benchRemove(),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.counts.prefix).toEqual([0, 0]);
         expect(r.finalState!.counts.suffix).toEqual([2, 2]);
@@ -119,7 +119,7 @@ describe("bench remove under an unproven fracture", () => {
             rareRing([BENCH_LIFE_ROW.id, INCREASED_MANA.id], ["FireResist1", "random"]),
             [op("fracture"), benchRemove()],
         );
-        expect(check(c, ctx).diagnostics[0]!.message).toContain("No crafted modifier");
+        expect(checkPresent(c, ctx).diagnostics[0]!.message).toContain("No crafted modifier");
     });
 
     it("removes one or both of two crafted modifiers, whichever the fracture spared", () => {
@@ -129,7 +129,7 @@ describe("bench remove under an unproven fracture", () => {
             rareRing([BENCH_LIFE_ROW.id, INCREASED_MANA.id], [MULTIMOD_CARRIER.id, "random"]),
             [op("fracture"), benchRemove()],
         );
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.crafted).toEqual([0, 1]);
         expect(r.finalState!.counts.total).toEqual([2, 3]);
@@ -146,7 +146,7 @@ describe("bench remove with a fractured crafted modifier", () => {
             ),
             [benchRemove(), bench("prefixes cannot be changed")],
         );
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics.map((d) => d.message)).toEqual([
             expect.stringContaining("may be fractured"),
         ]);
@@ -156,14 +156,14 @@ describe("bench remove with a fractured crafted modifier", () => {
 describe("a bench craft on an item with a crafted modifier", () => {
     it("replaces it, freeing the slot it held", () => {
         const full = rareRing([BENCH_LIFE_ROW.id, INCREASED_MANA.id, INCREASED_ARMOUR.id]);
-        const r = check(craft(full, [bench("maximum life")]), ctx);
+        const r = checkPresent(craft(full, [bench("maximum life")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.crafted).toEqual([1, 1]);
         expect(r.finalState!.counts.prefix).toEqual([3, 3]);
         expect(guaranteedTypes(r.finalState!).has(LIFE)).toBe(true);
         // The same prefixes rolled, not crafted, leave no slot to take.
         const rolled = rareRing(["T1 Life", INCREASED_MANA.id, INCREASED_ARMOUR.id]);
-        const refused = check(craft(rolled, [bench("maximum life")]), ctx);
+        const refused = checkPresent(craft(rolled, [bench("maximum life")]), ctx);
         expect(refused.diagnostics[0]!.message).toContain("open prefix slot");
     });
 
@@ -171,7 +171,7 @@ describe("a bench craft on an item with a crafted modifier", () => {
         const c = craft(rareRing([{ mod: BENCH_LIFE_ROW.id, fractured: true }]), [
             bench("maximum life"),
         ]);
-        expect(check(c, ctx).diagnostics[0]!.message).toContain("may be fractured");
+        expect(checkPresent(c, ctx).diagnostics[0]!.message).toContain("may be fractured");
     });
 
     it("may not be able to replace one an unproven fracture may have locked", () => {
@@ -179,7 +179,7 @@ describe("a bench craft on an item with a crafted modifier", () => {
             rareRing([BENCH_LIFE_ROW.id, INCREASED_MANA.id], ["FireResist1", "random"]),
             [op("fracture"), bench("maximum life")],
         );
-        expect(check(c, ctx).diagnostics[0]!.message).toContain("may be fractured");
+        expect(checkPresent(c, ctx).diagnostics[0]!.message).toContain("may be fractured");
     });
 
     it("is refused while the multimod may be on the item, since it would then add instead", () => {
@@ -190,12 +190,12 @@ describe("a bench craft on an item with a crafted modifier", () => {
             op("annul"),
             bench("maximum life"),
         ]);
-        expect(check(c, ctx).diagnostics[0]!.message).toContain("can have up to 3");
+        expect(checkPresent(c, ctx).diagnostics[0]!.message).toContain("can have up to 3");
     });
 
     it("cannot replace when more than one crafted modifier may be present", () => {
         const declared = rareRing([BENCH_LIFE_ROW.id], [PROTECT_PREFIXES_CARRIER.id]);
-        const r = check(craft(declared, [bench("maximum life")]), ctx);
+        const r = checkPresent(craft(declared, [bench("maximum life")]), ctx);
         expect(r.diagnostics[0]!.message).toContain("more than one crafted");
         // Two benched under the multimod, then an annul that may have taken the
         // multimod itself: one or two crafted remain beside the carrier.
@@ -205,14 +205,14 @@ describe("a bench craft on an item with a crafted modifier", () => {
             op("annul"),
             bench("prefixes cannot be changed"),
         ]);
-        expect(check(c, ctx).diagnostics[0]!.message).toContain("more than one crafted");
+        expect(checkPresent(c, ctx).diagnostics[0]!.message).toContain("more than one crafted");
     });
 
     it("adds beside the crafted modifiers under the multimod", () => {
         const c = craft(rareRing([BENCH_LIFE_ROW.id], [MULTIMOD_CARRIER.id]), [
             bench("prefixes cannot be changed"),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.crafted).toEqual([3, 3]);
         expect(guaranteedTypes(r.finalState!).has(LIFE)).toBe(true);
@@ -234,7 +234,7 @@ describe("a bench craft's group clash names the modifiers that may clash", () =>
         benchCrafts: [benchOf(benchFire.id)],
     });
     const message = (c: ReturnType<typeof craft>): string =>
-        check(c, { registry: fireBench })
+        checkPresent(c, { registry: fireBench })
             .diagnostics.map((d) => d.message)
             .join("\n");
     const hybrid = fireBench.typeLabel(FIRE_CHAOS_RESIST.type);
@@ -275,13 +275,13 @@ describe("a bench craft named the way a guide writes it", () => {
     it("says a Normal item has no slot rather than that none is guaranteed", () => {
         const normal = item({ base: "Iron Ring", ilvl: 100, rarity: "normal" });
         expect(
-            check(craft(normal, [bench("maximum life")]), ctx).diagnostics[0]!.message,
+            checkPresent(craft(normal, [bench("maximum life")]), ctx).diagnostics[0]!.message,
         ).toContain("Requires an open prefix slot — a Normal item has none.");
     });
 
     it("tolerates a singular and an abbreviation", () => {
         for (const name of ["fire and chaos resistance", "fire chaos res"]) {
-            const r = check(craft(rareRing(), [bench(name)]), { registry: named });
+            const r = checkPresent(craft(rareRing(), [bench(name)]), { registry: named });
             expect(r.diagnostics).toEqual([]);
             expect(guaranteedTypes(r.finalState!).has(FIRE_CHAOS_RESIST.type)).toBe(true);
         }

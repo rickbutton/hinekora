@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
     check,
+    checkPresent,
     costOf,
     emptyItem,
     findMethod,
@@ -108,7 +109,8 @@ function judged(
 ): { rows: Candidate[]; chance: number } {
     const parsed = parse(`${item}\n${steps.join("\n")}\nif ${condition} {\n    divine\n}\n`);
     if (!parsed.ok) throw new Error(parsed.error.message);
-    const result = check(parsed.craft, { registry });
+    // The roll is read off the present checker's items, as the cost layer reads it.
+    const result = checkPresent(parsed.craft, { registry });
     expect(result.diagnostics).toEqual([]);
     const stmt = parsed.craft.body[steps.length - 1]!;
     if (stmt.kind !== "operation") throw new Error("not a step");
@@ -126,7 +128,9 @@ function judged(
             : roll.kind === "unveil"
               ? roll.options.flatMap((m) => m.rows.map((r) => ({ ...r, gen: r.mod.gen })))
               : [];
-    const branch = costOf(parsed.craft, result, registry).steps.find((s) => s.kind === "if")!;
+    const branch = costOf(parsed.craft, check(parsed.craft, { registry }), registry).steps.find(
+        (s) => s.kind === "if",
+    )!;
     return { rows, chance: branch.branch! };
 }
 

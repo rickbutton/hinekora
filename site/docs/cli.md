@@ -11,8 +11,8 @@ hinekora chart <file.craft>
 hinekora cost <file.craft>
 ```
 
-Each command takes one file. The tool reads the game data and the prices that ship with
-it and makes no network request.
+Each command takes one file and reads the game data and the prices that ship with the tool,
+with no network request.
 
 ## Exit codes
 
@@ -49,13 +49,25 @@ For a craft that checks, it prints the final item in the layout of the game's it
 If every path ends in a [`stop`](./language/until), the line
 `(every path ends the craft before this point)` takes the item's place.
 
-For a craft with errors, it prints each one with its position and source line, then a count:
+For a craft with errors, it prints each one with its position and source line, then a count.
+Where more than one item reaches the step, one that breaks it follows:
 
 ```txt
-bad.craft:8:5: error: at this point the item is: Titan Greaves · Rare · 0–6 affixes · 0–3 prefixes · 0–3 suffixes · ilvl 84
+bad.craft:8:1: error: at this point the item is: Iron Ring · Magic · 1–2 affixes · 0–1 prefixes · 0–1 suffixes · ilvl 84
   Requires an open affix slot — the item may be full.
-  8 |     exalt
-    |     ^
+  8 | augment
+    | ^
+  For example, this item:
+    Item Class: Rings
+    Rarity: Magic
+    Iron Ring
+    --------
+    Item Level: 84
+    --------
+    { Prefix Modifier "Annealed" (Tier: 1) — Physical Damage, Damage, Physical, Attack }
+    Adds (6-9) to (13-15) Physical Damage to Attacks
+    { Suffix Modifier "of Nirvana" (Tier: 1) — Resource, Mana }
+    (60-69)% increased Mana Regeneration Rate
 
 ✗ 1 error
 ```
@@ -102,6 +114,5 @@ flowchart TD
 `cost` prints the expected spend of each step and of the whole craft.
 [Reading a cost report](./cost) explains the output.
 
-`cost` also reports on a craft that has errors. Its first line then gives the number of
-errors, and the figures take the steps as written. Run `check` first for a figure that means
-something.
+`cost` also reports on a craft with errors: its first line counts them, and the figures take
+the steps as written.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import {
     disjunctiveGuarantees,
     fracturedTypes,
@@ -62,7 +62,7 @@ describe("beast add", () => {
         const c = craft(rareRing(["T1 Life"], [FIRE_RESIST.id, COLD_RESIST.id]), [
             beast({ kind: "add", side: "prefix" }),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         const s = r.finalState!;
         expect(s.counts.prefix).toEqual([2, 2]);
@@ -75,7 +75,7 @@ describe("beast add", () => {
         const c = craft(rareRing([PROTECT_SUFFIXES_CARRIER.id], [FIRE_RESIST.id]), [
             beast({ kind: "add", side: "prefix" }),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.counts.total).toEqual([3, 3]);
         expect(guaranteedTypes(r.finalState!).has(FIRE_RESIST.type)).toBe(true);
@@ -84,7 +84,7 @@ describe("beast add", () => {
     it("draws the added modifier at the beast's level, not the item's", () => {
         // A level-20 beast cannot add T1 life (level 60); a level-100 beast on a
         // level-20 ring can.
-        const low = check(
+        const low = checkPresent(
             craft(rareRing([], [FIRE_RESIST.id]), [
                 beast({ kind: "add", side: "prefix", level: 20 }),
             ]),
@@ -92,7 +92,7 @@ describe("beast add", () => {
         );
         expect(low.finalState!.tiers.get(LIFE)).toBeUndefined();
         expect(low.finalState!.possible.has(LIFE)).toBe(false);
-        const high = check(
+        const high = checkPresent(
             craft(rareRing([], [FIRE_RESIST.id], 20), [
                 beast({ kind: "add", side: "prefix", level: 100 }),
             ]),
@@ -101,7 +101,7 @@ describe("beast add", () => {
         expect(high.finalState!.tiers.get(LIFE)).toEqual(new Set([LIFE_T1.id, "IncreasedLife2"]));
         // No level named: a beast of any level, so the top tier is possible on a
         // level-20 ring.
-        const any = check(
+        const any = checkPresent(
             craft(rareRing([], [FIRE_RESIST.id], 20), [beast({ kind: "add", side: "prefix" })]),
             ctx,
         );
@@ -118,12 +118,15 @@ describe("beast add", () => {
                 suffixes: [FIRE_RESIST.id],
             });
         // T1 life needs item level 60, whatever the beast's level.
-        const low = check(craft(hunter(20), [beast({ kind: "add", side: "hunter" })]), ctx);
+        const low = checkPresent(craft(hunter(20), [beast({ kind: "add", side: "hunter" })]), ctx);
         expect(low.diagnostics).toEqual([]);
         expect(low.finalState!.tiers.get(LIFE)?.has(LIFE_T1.id) ?? false).toBe(false);
-        const high = check(craft(hunter(100), [beast({ kind: "add", side: "hunter" })]), ctx);
+        const high = checkPresent(
+            craft(hunter(100), [beast({ kind: "add", side: "hunter" })]),
+            ctx,
+        );
         expect(high.finalState!.tiers.get(LIFE)?.has(LIFE_T1.id)).toBe(true);
-        const levelled = check(
+        const levelled = checkPresent(
             craft(hunter(100), [beast({ kind: "add", side: "hunter", level: 68 })]),
             ctx,
         );
@@ -131,14 +134,14 @@ describe("beast add", () => {
     });
 
     it("needs an open slot on the added side and a modifier to remove", () => {
-        const full = check(
+        const full = checkPresent(
             craft(rareRing(["T1 Life", "random", "random"], [FIRE_RESIST.id]), [
                 beast({ kind: "add", side: "prefix" }),
             ]),
             ctx,
         );
         expect(full.diagnostics[0]!.message).toContain("open prefix slot");
-        const empty = check(
+        const empty = checkPresent(
             craft(rareRing(["T1 Life"]), [beast({ kind: "add", side: "prefix" })]),
             ctx,
         );
@@ -157,24 +160,24 @@ describe("beast fracture", () => {
         });
 
     it("fractures one modifier of a Rare talisman with four", () => {
-        const r = check(craft(talisman(4), [beast({ kind: "fracture" })]), ctx);
+        const r = checkPresent(craft(talisman(4), [beast({ kind: "fracture" })]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(hasFracture(r.finalState!)).toBe(true);
     });
 
     it("needs a talisman, four modifiers and no fracture yet", () => {
-        const ring = check(
+        const ring = checkPresent(
             craft(rareRing(["random", "random"], ["random", "random"]), [
                 beast({ kind: "fracture" }),
             ]),
             ctx,
         );
         expect(ring.diagnostics[0]!.message).toContain("Needs a talisman");
-        const few = check(craft(talisman(3), [beast({ kind: "fracture" })]), ctx);
+        const few = checkPresent(craft(talisman(3), [beast({ kind: "fracture" })]), ctx);
         expect(few.diagnostics[0]!.message).toContain(
             "The Bestiary's fracture needs at least 4 modifiers",
         );
-        const twice = check(
+        const twice = checkPresent(
             craft(talisman(4), [beast({ kind: "fracture" }), beast({ kind: "fracture" })]),
             ctx,
         );
@@ -182,19 +185,22 @@ describe("beast fracture", () => {
     });
 
     it("fractures two modifiers of a talisman with six, which a scour leaves Rare", () => {
-        const r = check(craft(talisman(6), [beast({ kind: "fracture", n: 2 }), op("scour")]), ctx);
+        const r = checkPresent(
+            craft(talisman(6), [beast({ kind: "fracture", n: 2 }), op("scour")]),
+            ctx,
+        );
         expect(r.diagnostics).toEqual([]);
         const s = r.finalState!;
         expect(s.fractures).toEqual([2, 2]);
         expect(s.counts.total).toEqual([2, 2]);
         expect(s.rarities).toEqual(new Set(["rare"]));
-        const few = check(craft(talisman(5), [beast({ kind: "fracture", n: 2 })]), ctx);
+        const few = checkPresent(craft(talisman(5), [beast({ kind: "fracture", n: 2 })]), ctx);
         expect(few.diagnostics[0]!.message).toContain(
             "The Bestiary's fracture of two modifiers needs at least 6",
         );
         expect(
-            check(craft(talisman(6), [beast({ kind: "fracture", n: 3 })]), ctx).diagnostics[0]!
-                .message,
+            checkPresent(craft(talisman(6), [beast({ kind: "fracture", n: 3 })]), ctx)
+                .diagnostics[0]!.message,
         ).toContain("fractures one modifier or two");
     });
 
@@ -210,7 +216,7 @@ describe("beast fracture", () => {
             beast({ kind: "fracture", n: 2 }),
             iff(fracturedP("T1 Life"), [iff(fracturedP("mana"), [], [])], []),
         ]);
-        expect(check(both, ctx).diagnostics).toEqual([]);
+        expect(checkPresent(both, ctx).diagnostics).toEqual([]);
         const third = craft(named, [
             beast({ kind: "fracture", n: 2 }),
             iff(
@@ -220,7 +226,7 @@ describe("beast fracture", () => {
             ),
         ]);
         expect(
-            check(third, ctx)
+            checkPresent(third, ctx)
                 .diagnostics.map((d) => d.message)
                 .join("\n"),
         ).toContain("'if' branch can never run");
@@ -234,7 +240,7 @@ describe("beast fracture", () => {
             iff(has("T1 Life"), [beast({ kind: "fracture" })], []),
             beast({ kind: "fracture" }),
         ]);
-        const r = check(maybe, ctx);
+        const r = checkPresent(maybe, ctx);
         expect(r.diagnostics.map((d) => d.message).join("\n")).toContain(
             "already has a fractured modifier",
         );
@@ -243,7 +249,7 @@ describe("beast fracture", () => {
         const loop = craft(talisman(4), [
             until(fracturedP("T1 Life"), [beast({ kind: "fracture" })]),
         ]);
-        const l = check(loop, ctx);
+        const l = checkPresent(loop, ctx);
         // A fractured modifier is one of the item's four, so the count the refused
         // fractures pile up settles at four instead of growing every iteration.
         expect(l.finalState!.fractures[1]).toBeLessThanOrEqual(4);
@@ -251,7 +257,10 @@ describe("beast fracture", () => {
 
     it("counts both locks against what an annul may remove", () => {
         const annuls = Array.from({ length: 5 }, () => op("annul"));
-        const r = check(craft(talisman(6), [beast({ kind: "fracture", n: 2 }), ...annuls]), ctx);
+        const r = checkPresent(
+            craft(talisman(6), [beast({ kind: "fracture", n: 2 }), ...annuls]),
+            ctx,
+        );
         const text = r.diagnostics.map((d) => d.message).join("\n");
         expect(r.diagnostics).toHaveLength(1);
         expect(text).toContain("Requires a removable affix");
@@ -260,8 +269,14 @@ describe("beast fracture", () => {
     });
 
     it("joins the count where one path locked two and another one", () => {
-        const two = check(craft(talisman(6), [beast({ kind: "fracture", n: 2 })]), ctx).finalState!;
-        const one = check(craft(talisman(6), [beast({ kind: "fracture" })]), ctx).finalState!;
+        const two = checkPresent(
+            craft(talisman(6), [beast({ kind: "fracture", n: 2 })]),
+            ctx,
+        ).finalState!;
+        const one = checkPresent(
+            craft(talisman(6), [beast({ kind: "fracture" })]),
+            ctx,
+        ).finalState!;
         expect(join(two, one).fractures).toEqual([1, 2]);
     });
 
@@ -273,7 +288,7 @@ describe("beast fracture", () => {
             prefixes: [{ mod: "T1 Life", fractured: true }, "mana"],
             suffixes: [{ mod: "cold", fractured: true }],
         });
-        const r = check(craft(declared, [op("scour")]), ctx);
+        const r = checkPresent(craft(declared, [op("scour")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.fractures).toEqual([2, 2]);
         expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
@@ -286,7 +301,7 @@ describe("beast metamod", () => {
         const c = craft(rareRing([], [FIRE_RESIST.id, COLD_RESIST.id, "random"]), [
             beast({ kind: "metamod" }),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteedTypes(r.finalState!).has(PROTECT_SUFFIXES_CARRIER.type)).toBe(true);
         expect(r.finalState!.crafted).toEqual([1, 1]);
@@ -294,7 +309,7 @@ describe("beast metamod", () => {
     });
 
     it("is refused at the crafted-modifier limit, in the Bestiary's words", () => {
-        const twice = check(
+        const twice = checkPresent(
             craft(rareRing(["T1 Life"]), [beast({ kind: "metamod" }), beast({ kind: "metamod" })]),
             ctx,
         );
@@ -304,7 +319,7 @@ describe("beast metamod", () => {
     });
 
     it("leaves a disjunction over every fitting metamod on an open item", () => {
-        const r = check(craft(rareRing(["T1 Life"]), [beast({ kind: "metamod" })]), ctx);
+        const r = checkPresent(craft(rareRing(["T1 Life"]), [beast({ kind: "metamod" })]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteedTypes(r.finalState!).has(PROTECT_SUFFIXES_CARRIER.type)).toBe(false);
         expect(r.finalState!.possible.has(MULTIMOD_CARRIER.type)).toBe(true);
@@ -315,7 +330,7 @@ describe("beast metamod", () => {
     it("keeps every metamod a path may fit: an uncertain side, a possibly present carrier", () => {
         // The exalt may have landed a prefix, leaving a suffix slot on that path,
         // so no suffix metamod is ruled out and the prefix one is not guaranteed.
-        const uncertain = check(
+        const uncertain = checkPresent(
             craft(rareRing(["T1 Life"], [FIRE_RESIST.id, COLD_RESIST.id]), [
                 op("exalt"),
                 beast({ kind: "metamod" }),
@@ -330,7 +345,7 @@ describe("beast metamod", () => {
         // A carrier the annul may have removed is still in the pool: on the path
         // where it is gone the game may craft it, so the fill's "one of these"
         // names it beside the suffix metamods that fit on every path.
-        const maybe = check(
+        const maybe = checkPresent(
             craft(
                 item({
                     base: "Iron Ring",
@@ -360,7 +375,7 @@ describe("beast metamod", () => {
             rareRing([PROTECT_SUFFIXES_CARRIER.id], [MULTIMOD_CARRIER.id, FIRE_RESIST.id]),
             [op("exalt"), beast({ kind: "metamod" })],
         );
-        expect(check(c, ctx).diagnostics[0]!.message).toContain("No metamod fits");
+        expect(checkPresent(c, ctx).diagnostics[0]!.message).toContain("No metamod fits");
     });
 
     it("takes a different metamod on each path: whichever side the add left open", () => {
@@ -370,7 +385,7 @@ describe("beast metamod", () => {
             op("exalt"),
             beast({ kind: "metamod" }),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.counts.total).toEqual([6, 6]);
         expect(r.finalState!.crafted).toEqual([1, 1]);
@@ -403,7 +418,7 @@ describe("beast metamod", () => {
                 baseAliases: { "Iron Ring": "IronRing" },
             });
         const run = (carriers: readonly Mod[]) =>
-            check(craft(bought, [beast({ kind: "metamod" })]), {
+            checkPresent(craft(bought, [beast({ kind: "metamod" })]), {
                 registry: benched(carriers),
             }).diagnostics.map((d) => d.message);
         // Two suffix metamods it may be: one of them is free.
@@ -417,12 +432,12 @@ describe("beast metamod", () => {
     });
 
     it("stays within the crafted limit and needs a metamod that fits", () => {
-        const capped = check(
+        const capped = checkPresent(
             craft(rareRing([], [PROTECT_PREFIXES_CARRIER.id]), [beast({ kind: "metamod" })]),
             ctx,
         );
         expect(capped.diagnostics[0]!.message).toContain("limit");
-        const full = check(
+        const full = checkPresent(
             craft(rareRing(["random", "random", "random"], ["random", "random", "random"]), [
                 beast({ kind: "metamod" }),
             ]),
@@ -434,7 +449,7 @@ describe("beast metamod", () => {
 
 describe("beast aspect", () => {
     it("crafts the Aspect's suffix into an open slot", () => {
-        const r = check(
+        const r = checkPresent(
             craft(rareRing(["T1 Life"]), [beast({ kind: "aspect", name: "cat" })]),
             ctx,
         );
@@ -455,7 +470,7 @@ describe("beast aspect", () => {
             baseAliases: { "Iron Ring": "IronRing" },
         });
         const rows = (level?: number) =>
-            check(
+            checkPresent(
                 craft(rareRing(), [
                     beast({ kind: "aspect", name: "cat", ...(level !== undefined && { level }) }),
                 ]),
@@ -467,7 +482,7 @@ describe("beast aspect", () => {
     });
 
     it("allows one skill-granting modifier, needs an open suffix, and knows four animals", () => {
-        const two = check(
+        const two = checkPresent(
             craft(rareRing(), [
                 beast({ kind: "aspect", name: "cat" }),
                 beast({ kind: "aspect", name: "avian" }),
@@ -475,14 +490,17 @@ describe("beast aspect", () => {
             ctx,
         );
         expect(two.diagnostics[0]!.message).toContain("at most one per group");
-        const full = check(
+        const full = checkPresent(
             craft(rareRing([], ["random", "random", "random"]), [
                 beast({ kind: "aspect", name: "cat" }),
             ]),
             ctx,
         );
         expect(full.diagnostics[0]!.message).toContain("open suffix slot");
-        const wolf = check(craft(rareRing(), [beast({ kind: "aspect", name: "wolf" })]), ctx);
+        const wolf = checkPresent(
+            craft(rareRing(), [beast({ kind: "aspect", name: "wolf" })]),
+            ctx,
+        );
         expect(wolf.diagnostics[0]!.message).toContain("Unknown Aspect");
     });
 });

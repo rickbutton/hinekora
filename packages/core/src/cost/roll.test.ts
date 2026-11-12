@@ -11,7 +11,7 @@ import {
     VEILED_CATALOG,
 } from "../__fixtures__/mods.js";
 import { craft, item, op, unveil } from "../__fixtures__/ast.js";
-import { check } from "../check/check.js";
+import { checkPresent } from "../check/check.js";
 import { currencyOps, unveilOps } from "../check/library.js";
 import { ModId, TypeId } from "../model/ids.js";
 import { buildRegistry } from "../resolve/registry.js";
@@ -42,7 +42,7 @@ describe("a random removal's reach", () => {
             }),
             [],
         );
-        const a = check(open, { registry }).finalState!;
+        const a = checkPresent(open, { registry }).finalState!;
         for (const reading of ["estimate", "floors", "ceilings"] as const) {
             const roll = rollOf(a, currencyOps("annul"), registry, reading);
             if (roll.kind !== "removal") throw new Error("not a removal");
@@ -59,7 +59,7 @@ describe("a random removal's reach", () => {
             }),
             [],
         );
-        const b = check(kept, { registry: protecting }).finalState!;
+        const b = checkPresent(kept, { registry: protecting }).finalState!;
         const roll = rollOf(b, currencyOps("annul"), protecting);
         if (roll.kind !== "removal") throw new Error("not a removal");
         expect(roll.gen).toBe("suffix");
@@ -80,7 +80,7 @@ describe("a random removal's odds", () => {
             }),
             [],
         );
-        const a = check(c, { registry }).finalState!;
+        const a = checkPresent(c, { registry }).finalState!;
         const roll = rollOf(a, currencyOps("annul"), registry);
         if (roll.kind !== "removal") throw new Error("not a removal");
         expect(roll.sides.suffix.unnamed).toBe(0);
@@ -115,7 +115,7 @@ describe("memory strands in the pool", () => {
         ]);
         // Three Chaos Orbs may have used every strand: the estimate reads none
         // left and both life tiers roll; the ceilings reading keeps the 82.
-        const a = check(c, { registry }).finalState!;
+        const a = checkPresent(c, { registry }).finalState!;
         const rowsOf = (roll: ReturnType<typeof rollOf>): string[] => {
             if (roll.kind !== "draw") throw new Error("not a draw");
             const members = roll.variants[0]!.prefix.flatMap((g) => g.members);
@@ -145,7 +145,7 @@ describe("a modifier the item keeps through a roll", () => {
             item({ base: "Iron Ring", ilvl: 40, rarity: "rare", prefixes: ["IncreasedLife2"] }),
             [],
         );
-        const checked = check(c, { registry: benched }).finalState!;
+        const checked = checkPresent(c, { registry: benched }).finalState!;
         const a = {
             ...checked,
             tiers: new Map([...checked.tiers]).set(
@@ -181,7 +181,7 @@ describe("an unveil", () => {
             }),
             [unveil()],
         );
-        const a = check(c, { registry: veiled }).trace[0]!.before;
+        const a = checkPresent(c, { registry: veiled }).trace[0]!.before;
         const roll = rollOf(a, unveilOps(undefined), veiled);
         if (roll.kind !== "unveil") throw new Error("not an unveil");
         expect(roll.options.map((m) => m.rows[0]!.mod.gen)).toEqual(["suffix", "suffix"]);

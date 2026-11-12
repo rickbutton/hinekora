@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { disjunctiveGuarantees, guaranteedTypes, isExcluded } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, has, iff, item, op } from "../__fixtures__/ast.js";
@@ -44,7 +44,7 @@ const HIGHER: Mod = { ...HUNTER_BOOTS_SUFFIX, id: ModId("HunterBootsSuffix0"), m
 const three = buildRegistry({ bases: [BOOTS_BASE], mods: [...registry.catalog, THIRD] });
 const tiered = buildRegistry({ bases: [BOOTS_BASE], mods: [...registry.catalog, HIGHER] });
 
-const run = (c: ReturnType<typeof craft>) => check(c, ctx);
+const run = (c: ReturnType<typeof craft>) => checkPresent(c, ctx);
 const messages = (c: ReturnType<typeof craft>) =>
     run(c)
         .diagnostics.map((d) => d.message)
@@ -62,7 +62,7 @@ const boots = (prefixes: string[], suffixes: string[] = []) =>
 
 describe("the Orb of Dominance", () => {
     it("removes one of three influenced modifiers and may raise any other; the rest stay", () => {
-        const r = check(
+        const r = checkPresent(
             craft(boots([HUNTER_BOOTS_PREFIX.id, LIFE_T1.id], [HUNTER_BOOTS_SUFFIX.id, THIRD.id]), [
                 op("dominance"),
             ]),
@@ -127,11 +127,11 @@ describe("the Orb of Dominance", () => {
                 suffixes: [HUNTER_BOOTS_SUFFIX.id],
                 influences: ["hunter"],
             });
-        const r = check(craft(start(100), [op("dominance")]), { registry: tiered });
+        const r = checkPresent(craft(start(100), [op("dominance")]), { registry: tiered });
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.tiers.get(HUNTER_BOOTS_SUFFIX.type)).toEqual(new Set([HIGHER.id]));
         // Whether the orb raises a modifier past the item's level is not known.
-        const low = check(craft(start(30), [op("dominance")]), { registry: tiered });
+        const low = checkPresent(craft(start(30), [op("dominance")]), { registry: tiered });
         expect(low.diagnostics).toEqual([]);
         expect(low.finalState!.tiers.has(HUNTER_BOOTS_SUFFIX.type)).toBe(false);
         expect(low.finalState!.possible.has(HUNTER_BOOTS_PREFIX.type)).toBe(true);
@@ -159,7 +159,7 @@ describe("the Orb of Dominance", () => {
             suffixes: [HUNTER_BOOTS_SUFFIX.id],
             influences: ["elder", "hunter"],
         });
-        const r = check(craft(start, [op("dominance")]), { registry: dual });
+        const r = checkPresent(craft(start, [op("dominance")]), { registry: dual });
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.tiers.get(HUNTER_BOOTS_SUFFIX.type)).toEqual(
             new Set([ELEVATED_BOOTS_SUFFIX.id]),

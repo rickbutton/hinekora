@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, foulborn, item, op } from "../__fixtures__/ast.js";
 import {
@@ -30,17 +30,17 @@ const ctx: CheckContext = { registry };
 const ring = (rarity: "magic" | "rare", ilvl = 100) => item({ base: "Iron Ring", ilvl, rarity });
 
 /** The rows the final state allows for a type. */
-const rowsOf = (r: ReturnType<typeof check>, type: string): Set<string> =>
+const rowsOf = (r: ReturnType<typeof checkPresent>, type: string): Set<string> =>
     new Set(r.finalState!.tiers.get(TypeId(type)) ?? []);
 
 describe("foulborn orbs", () => {
     it("a foulborn exalt draws only the top tiers of each type", () => {
         // MaxLife has three eligible tiers at ilvl 100, so two can roll; the
         // plain exalt allows all three.
-        const r = check(craft(ring("rare"), [foulborn("exalt")]), ctx);
+        const r = checkPresent(craft(ring("rare"), [foulborn("exalt")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(rowsOf(r, "MaxLife")).toEqual(new Set(["MaxLifeHigh", "MaxLifeMid"]));
-        const plain = check(craft(ring("rare"), [op("exalt")]), ctx);
+        const plain = checkPresent(craft(ring("rare"), [op("exalt")]), ctx);
         expect(rowsOf(plain, "MaxLife")).toEqual(
             new Set(["MaxLifeHigh", "MaxLifeMid", "MaxLifeLow"]),
         );
@@ -49,11 +49,11 @@ describe("foulborn orbs", () => {
     it("keeps one more than half above six tiers", () => {
         // Seven eligible tiers keep four, eight would keep five (Foulborn
         // currency § Mechanics); at ilvl 55 only five are eligible, keeping three.
-        const r = check(craft(ring("rare"), [foulborn("exalt")]), ctx);
+        const r = checkPresent(craft(ring("rare"), [foulborn("exalt")]), ctx);
         expect(rowsOf(r, "SevenTier")).toEqual(
             new Set(["SevenTier7", "SevenTier6", "SevenTier5", "SevenTier4"]),
         );
-        const low = check(craft(ring("rare", 55), [foulborn("exalt")]), ctx);
+        const low = checkPresent(craft(ring("rare", 55), [foulborn("exalt")]), ctx);
         expect(rowsOf(low, "SevenTier")).toEqual(
             new Set(["SevenTier5", "SevenTier4", "SevenTier3"]),
         );
@@ -61,7 +61,7 @@ describe("foulborn orbs", () => {
 
     it("counts only the tiers eligible at the item's level", () => {
         // At ilvl 20 only the lowest tier is eligible, so it is the one that rolls.
-        const r = check(craft(ring("rare", 20), [foulborn("exalt")]), ctx);
+        const r = checkPresent(craft(ring("rare", 20), [foulborn("exalt")]), ctx);
         expect(rowsOf(r, "MaxLife")).toEqual(new Set(["MaxLifeLow"]));
     });
 
@@ -69,7 +69,7 @@ describe("foulborn orbs", () => {
         // After a chaos the tag adder may be on the ring, so StaffyTier has one
         // or two eligible tiers: with one, the sure row rolls; with two, only the
         // high one. The cull must keep both.
-        const r = check(craft(ring("rare"), [op("chaos"), foulborn("exalt")]), ctx);
+        const r = checkPresent(craft(ring("rare"), [op("chaos"), foulborn("exalt")]), ctx);
         expect(rowsOf(r, "StaffyTier")).toEqual(new Set(["StaffyTierSure1", "StaffyTierHigh1"]));
     });
 
@@ -79,26 +79,26 @@ describe("foulborn orbs", () => {
         // Seven tiers at 13 strands: the strands alone keep four, of which a
         // second Foulborn cut would keep two; 43 strands keep three, and
         // recorded Foulborn rolls land on that third tier.
-        const r = check(craft(stranded(13), [foulborn("exalt")]), ctx);
+        const r = checkPresent(craft(stranded(13), [foulborn("exalt")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(rowsOf(r, "SevenTier")).toEqual(new Set(["SevenTier7", "SevenTier6", "SevenTier5"]));
-        const plain = check(craft(stranded(13), [op("exalt")]), ctx);
+        const plain = checkPresent(craft(stranded(13), [op("exalt")]), ctx);
         expect(rowsOf(plain, "SevenTier")).toEqual(
             new Set(["SevenTier7", "SevenTier6", "SevenTier5", "SevenTier4"]),
         );
         // Once the strands may be used up, the orb's own cut is the wider one.
-        const spent = check(craft(stranded(13), [op("exalt"), foulborn("exalt")]), ctx);
+        const spent = checkPresent(craft(stranded(13), [op("exalt"), foulborn("exalt")]), ctx);
         expect(rowsOf(spent, "SevenTier")).toEqual(
             new Set(["SevenTier7", "SevenTier6", "SevenTier5", "SevenTier4"]),
         );
     });
 
     it("has the plain orb's needs and counts", () => {
-        const r = check(craft(ring("magic"), [foulborn("regal")]), ctx);
+        const r = checkPresent(craft(ring("magic"), [foulborn("regal")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
         expect(r.finalState!.counts.total).toEqual([1, 1]);
-        const refused = check(craft(ring("rare"), [foulborn("augment")]), ctx);
+        const refused = checkPresent(craft(ring("rare"), [foulborn("augment")]), ctx);
         expect(refused.diagnostics[0]!.message).toContain("Requires a Magic item");
     });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { craft, item, op } from "../../__fixtures__/ast.js";
-import { check } from "../../check/check.js";
+import { checkPresent } from "../../check/check.js";
 import { rollRange } from "../../check/values.js";
 import { effectsOf } from "../../model/effects.js";
 import type { Mod } from "../../model/mod.js";
@@ -157,7 +157,7 @@ describe("generateCatalog", () => {
             ["normal", ["alchemy"]],
             ["rare", ["chaos"]],
         ] as const) {
-            const r = check(craft(block(rarity), steps.map(op)), { registry: c.registry });
+            const r = checkPresent(craft(block(rarity), steps.map(op)), { registry: c.registry });
             expect(r.diagnostics.map((d) => d.message)).toEqual([]);
             expect(r.finalState).toBeDefined();
         }
@@ -170,7 +170,7 @@ describe("generateCatalog", () => {
                 const c = generateCatalog(seed, { base, bench: true, essenceOnly: "ladder" });
                 const steps = base === "flask" ? ["transmute"] : ["alchemy", "chaos"];
                 const block = item({ base: c.base.id, ilvl: c.ilvl, rarity: "normal" });
-                const r = check(craft(block, steps.map(op)), { registry: c.registry });
+                const r = checkPresent(craft(block, steps.map(op)), { registry: c.registry });
                 expect(r.diagnostics.map((d) => d.message)).toEqual([]);
             }
         },

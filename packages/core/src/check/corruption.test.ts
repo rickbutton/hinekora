@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { runMethod } from "./ops.js";
 import { buildRegistry } from "../resolve/registry.js";
@@ -31,7 +31,7 @@ const words = (...ws: string[]): OperationStmt => ({
     args: [],
     span: { start: { offset: 0, line: 1, column: 1 }, end: { offset: 0, line: 1, column: 1 } },
 });
-const run = (c: ReturnType<typeof craft>) => check(c, ctx);
+const run = (c: ReturnType<typeof craft>) => checkPresent(c, ctx);
 const messages = (c: ReturnType<typeof craft>) =>
     run(c)
         .diagnostics.map((d) => d.message)

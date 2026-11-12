@@ -8,6 +8,7 @@
  */
 import {
     type Base,
+    craftNames,
     type EldritchSide,
     excludedTypes,
     findMethod,
@@ -30,7 +31,7 @@ import {
     type TypeId,
 } from "@hinekora/core";
 import { type CompletionItem, CompletionItemKind } from "vscode-languageserver-types";
-import { checkCached } from "./analysis.js";
+import { checkCached, parseCached } from "./analysis.js";
 import { type Atom, methodAt } from "./method-at.js";
 
 const CONTROL_KEYWORDS = ["until", "if", "else", "restart", "stop"];
@@ -215,16 +216,21 @@ function itemContext(
 }
 
 /**
- * The ModTypes proven absent at `offset`. The source is usually mid-string
- * here, so also try a copy with the open string closed.
+ * The modifiers the guide names that no item can carry at `offset`: only
+ * those, since a modifier the item lacks is still one a step may add. The
+ * source is usually mid-string here, so also try a copy with the open string
+ * closed.
  */
 function excludedAt(source: string, offset: number, registry: Registry): ReadonlySet<TypeId> {
     const repaired = source.slice(0, offset) + '"' + source.slice(offset);
     for (const s of [source, repaired]) {
+        const parsed = parseCached(s);
         const result = checkCached(s, registry);
-        if (result === undefined) continue;
+        if (!parsed.ok || result === undefined) continue;
         const entry = traceAt(result.trace, offset);
-        if (entry) return excludedTypes(entry.before);
+        if (entry) {
+            return excludedTypes(entry.before, craftNames(parsed.craft, entry.before.u).types);
+        }
     }
     return new Set();
 }

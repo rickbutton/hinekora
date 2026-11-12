@@ -1,33 +1,50 @@
 /**
- * The abstract item as a player reads an item: a view model shaped like the
- * game's item tooltip, and its text form in the game's advanced
- * copy-to-clipboard layout (`Item Class:` / `Rarity:` / the base / `--------`
- * sections). Each modifier carries the header the advanced copy gives it, the
- * affix name, the tier or bench rank and the tags, when the state knows them.
+ * The items a point of the craft may hold, as a player reads an item: a view
+ * model shaped like the game's item tooltip, and its text form in the game's
+ * advanced copy-to-clipboard layout (`Item Class:` / `Rarity:` / the base /
+ * `--------` sections). Each modifier carries the header the advanced copy
+ * gives it, the affix name, the tier or bench rank and the tags, when every
+ * item agrees on them.
  *
- * Where a state is less than concrete the view extends the layout rather than
- * hiding the uncertainty: a tier range instead of a tier, a roll span across
- * the tiers the modifier may be, "one of" groups for a disjunction, a line for
- * the modifiers whose identity is unknown, "possibly" marks, and the modifiers
- * proven absent. The checker's single-line summary for diagnostics stays
- * `renderState`; this is the full view.
+ * Where the items differ the view extends the layout rather than hiding it: a
+ * tier range over the rows they hold, a roll span across those rows, "one of"
+ * groups for what every item has some of, a line for the modifiers no name
+ * covers, "possibly" marks, and the modifiers no item has. The checker's
+ * single-line summary for diagnostics stays `renderState`; this is the full
+ * view.
  *
- * The view reads presence only through the general views (unit facts, prime
- * implicates, "≥k of n"), never a handler per case: a new readable form is a
- * new view in `astate.ts`.
+ * The view reads the items only through the general views (exact/views.ts),
+ * never a handler per case: a new readable form is a new view there.
  */
-import {
-    type AItem,
-    cardinalityGuarantees,
-    disjunctiveTier,
-    excludedTypes,
-    guaranteedTypes,
-    isFractured,
-    suffixRange,
-} from "../check/astate.js";
+import type { Craft } from "../ast/ast.js";
 import type { Range } from "../check/domain.js";
-import { influenceTagsAny } from "../check/ops.js";
-import type { Gen, ModId, Rarity, TypeId } from "../model/ids.js";
+import { rollRange } from "../check/values.js";
+import { type CraftNames, craftNames } from "../exact/names.js";
+import type { XItem } from "../exact/state.js";
+import {
+    cardinalityGuarantees,
+    clauseRows,
+    corruptions,
+    countOutside,
+    counts,
+    eldritchPairs,
+    eldritchTypes,
+    excludedTypes,
+    fracturedCount,
+    guaranteedTypes,
+    influenceSets,
+    influenceTagsAny,
+    isCrafted,
+    isFractured,
+    possibleTypes,
+    presentAmong,
+    rarities,
+    rowsOf,
+    strandsRange,
+    unnamedImplicit,
+    valueSpan,
+} from "../exact/views.js";
+import type { Gen, Rarity, TypeId } from "../model/ids.js";
 import {
     ELDRITCH_SIDES,
     type EldritchSide,
@@ -79,7 +96,7 @@ export interface ImplicitView {
     readonly side: EldritchSide;
     /** The tier names the implicit may be at, best last. */
     readonly tiers: readonly string[];
-    /** The wordings it may be; one when known, empty when any. */
+    /** The wordings it may be; one when known, empty when the game data names none. */
     readonly texts: readonly string[];
     /** The category tags, when the wording is known. */
     readonly tags: readonly string[];
@@ -116,7 +133,7 @@ export interface ItemView {
     readonly either: readonly ModGroup[];
     readonly remainder?: Remainder;
     readonly marks: readonly Mark[];
-    /** The modifiers proven absent, by wording. */
+    /** The modifiers the craft names that no item carries, by wording. */
     readonly without: readonly string[];
 }
 
@@ -199,24 +216,34 @@ function withValue(text: string, value: Range): string {
     return text.replace(re, lo === hi ? String(lo) : `(${lo}-${hi})`);
 }
 
-/** The modifier view for a present type, pinned to `pin` when a disjunction names its tier. */
-function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: ModId): ModView {
-    const tags = influenceTagsAny(a, registry);
-    const rollable = rollableTiers(registry.catalog, a.base, a.ilvl, type, tags);
-    const pinned = pin !== undefined ? new Set([pin]) : a.tiers.get(type);
-    const mods: Mod[] =
-        pinned !== undefined && pinned.size > 0
-            ? [...pinned].flatMap((id) => {
-                  const r = registry.resolveMod(id);
-                  return r.ok ? [r.value] : [];
-              })
-            : [...rollable];
+/** The modifier view for a type some item carries, at the rows the items
+ *  hold it at, or at `pin` when a group rests on those rows. */
+function modView(
+    s: XItem,
+    type: TypeId,
+    gen: Gen,
+    registry: Registry,
+    pin: readonly Mod[] = [],
+): ModView {
+    const tags = influenceTagsAny(s);
+    const held = rowsOf(s, type);
+    const pinned = held.filter((m) => pin.includes(m));
+    const mods: readonly Mod[] =
+        pinned.length > 0
+            ? pinned
+            : held.length > 0
+              ? held
+              : [...rollableTiers(registry.catalog, s.u.base, s.u.ilvl, type, tags)];
     const texts = mods.map((m) => m.text).filter((t): t is string => t !== undefined);
-    // A value the guide has proven ("life 110 or more") narrows the first span.
-    const known = a.values.get(type);
     const span = texts.length > 0 ? rollSpan(texts) : registry.typeLabel(type);
-    const text = known === undefined ? span : withValue(span, known);
-    const ladders = tierLadders(registry.catalog, a.base, type, tags);
+    // A value narrower than the rows roll (a condition on it) narrows the first span.
+    const value =
+        pinned.length > 0 ? hull(pinned.map((m) => valueSpan(s, type, m.id))) : valueSpan(s, type);
+    const rolls = hull(mods.map((m) => (m.text === undefined ? undefined : rollRange(m.text))));
+    const narrowed =
+        value !== undefined && rolls !== undefined && (value[0] > rolls[0] || value[1] < rolls[1]);
+    const text = narrowed ? withValue(span, value) : span;
+    const ladders = tierLadders(registry.catalog, s.u.base, type, tags);
     const numbers = mods.map((m) => tierNumber(ladders, m.id)).filter((n) => n !== undefined);
     const tagSet = new Set<string>();
     for (const m of mods) for (const t of m.implicitTags) tagSet.add(tagLabel(t));
@@ -226,89 +253,154 @@ function modView(a: AItem, type: TypeId, gen: Gen, registry: Registry, pin?: Mod
     return {
         gen,
         text,
-        ...(mods.length === 1 && mods[0]!.name !== undefined && { name: mods[0]!.name }),
+        ...(one?.name !== undefined && { name: one.name }),
         ...(numbers.length > 0 && {
             tier: [Math.min(...numbers), Math.max(...numbers)] as Range,
         }),
         tags: [...tagSet],
-        fractured: isFractured(a, type),
-        crafted: mods.length > 0 && mods.every((m) => m.source === "bench"),
+        fractured: isFractured(s, type),
+        crafted: isCrafted(s, type),
         veiled: mods.length > 0 && mods.every(isUnveiledResult),
         ...(rank > 0 && { rank }),
     };
 }
 
-export function itemView(a: AItem, registry: Registry): ItemView {
-    const tags = influenceTagsAny(a, registry);
-    const genOf = (t: TypeId): Gen =>
-        rollableGen(registry.catalog, a.base, a.ilvl, t, tags) ?? "prefix";
+function hull(ranges: readonly (Range | undefined)[]): Range | undefined {
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (const r of ranges) {
+        if (r === undefined) return undefined;
+        lo = Math.min(lo, r[0]);
+        hi = Math.max(hi, r[1]);
+    }
+    return lo > hi ? undefined : [lo, hi];
+}
 
-    const known: Record<Gen, TypeId[]> = { prefix: [], suffix: [] };
-    for (const t of guaranteedTypes(a)) known[genOf(t)].push(t);
-    const genHi = { prefix: a.counts.prefix[1], suffix: suffixRange(a)[1] };
+interface Guarantee {
+    readonly atLeast: number;
+    readonly types: readonly TypeId[];
+    readonly gen: Gen | undefined;
+    /** No item carries more than `atLeast` of them. */
+    readonly exact: boolean;
+}
 
-    // A cardinality guarantee is ≥k; it is exactly k when no more could fit:
-    // its generation (or, spanning both, the whole item) has only k open slots.
-    const knownTotal = known.prefix.length + known.suffix.length;
-    const cardinalities = cardinalityGuarantees(a).map((c) => {
+/**
+ * The "at least k of these" groups: those the search over every item finds
+ * (`cardinalityGuarantees`, of a bounded size), then each group the craft
+ * waits for, asked of the items directly whatever its size, cut to the
+ * members it needs and left out where a group already shown implies it.
+ */
+function guarantees(
+    s: XItem,
+    names: CraftNames | undefined,
+    genOf: (t: TypeId) => Gen,
+): Guarantee[] {
+    const found: { atLeast: number; types: readonly TypeId[] }[] = [...cardinalityGuarantees(s)];
+    const sure = guaranteedTypes(s);
+    const possible = possibleTypes(s);
+    for (const group of names?.groups ?? []) {
+        if (group.some((t) => sure.has(t))) continue;
+        let members = group.filter((t) => possible.has(t));
+        const k = presentAmong(s, members)[0];
+        if (k < 1) continue;
+        for (const t of [...members]) {
+            const fewer = members.filter((x) => x !== t);
+            if (presentAmong(s, fewer)[0] >= k) members = fewer;
+        }
+        if (members.length < 2) continue;
+        // A guarantee of at least k of its types holds at least k less those
+        // outside the group of the group's.
+        const implied = found.some(
+            (f) => f.atLeast - f.types.filter((t) => !members.includes(t)).length >= k,
+        );
+        if (implied) continue;
+        found.push({ atLeast: k, types: members });
+    }
+    return found.map((c) => {
         const gens = new Set(c.types.map(genOf));
-        const gen = gens.size === 1 ? [...gens][0]! : undefined;
-        const slots = gen ? genHi[gen] - known[gen].length : a.counts.total[1] - knownTotal;
-        return { ...c, gen, exact: slots <= c.atLeast };
+        return {
+            ...c,
+            gen: gens.size === 1 ? [...gens][0]! : undefined,
+            exact: presentAmong(s, c.types)[1] === c.atLeast,
+        };
     });
-    const oneOf = (c: (typeof cardinalities)[number]): ModGroup => {
-        const pins = disjunctiveTier(a, c.types);
+}
+
+/**
+ * The items of the state as one tooltip: what every item carries by name, the
+ * groups every item carries some of, the rest as a count, the marks. With the
+ * craft, the modifiers it names that no item carries are listed as absent, and
+ * the groups its conditions wait for are shown however large.
+ */
+export function itemView(s: XItem, registry: Registry, craft?: Craft): ItemView {
+    const { base, ilvl } = s.u;
+    const names = craft === undefined ? undefined : craftNames(craft, s.u);
+    const tags = influenceTagsAny(s);
+    const genOf = (t: TypeId): Gen => {
+        const sides = new Set(rowsOf(s, t).map((m) => m.gen));
+        if (sides.size === 1) return [...sides][0]!;
+        return rollableGen(registry.catalog, base, ilvl, t, tags) ?? "prefix";
+    };
+
+    const sure = guaranteedTypes(s);
+    const known: Record<Gen, TypeId[]> = { prefix: [], suffix: [] };
+    for (const t of sure) known[genOf(t)].push(t);
+
+    const cardinalities = guarantees(s, names, genOf);
+    const oneOf = (c: Guarantee): ModGroup => {
+        const pins = clauseRows(s, c.types, c.atLeast);
         return {
             kind: "oneOf",
             atLeast: c.atLeast,
             exact: c.exact,
-            members: c.types.map((t) => modView(a, t, genOf(t), registry, pins.get(t))),
+            members: c.types.map((t) => modView(s, t, genOf(t), registry, pins.get(t))),
         };
     };
     const groups = (gen: Gen): ModGroup[] => [
-        ...known[gen].map((t): ModGroup => ({ kind: "mod", mod: modView(a, t, gen, registry) })),
+        ...known[gen].map((t): ModGroup => ({ kind: "mod", mod: modView(s, t, gen, registry) })),
         ...cardinalities.filter((c) => c.gen === gen).map(oneOf),
     ];
 
-    // The modifiers whose identity is unknown, counted once against the
-    // coupled total so they never read as independent per-side ranges.
-    const cardSlots = (g?: Gen): number =>
-        cardinalities.filter((x) => x.gen === g).reduce((s, x) => s + x.atLeast, 0);
-    const accounted = knownTotal + cardinalities.reduce((s, x) => s + x.atLeast, 0);
-    const extraHi = a.counts.total[1] - accounted;
+    // The modifiers of no type shown by name, counted over the items, so a
+    // group's members beyond its "at least" are never counted again here.
+    const shown = new Set([...sure, ...cardinalities.flatMap((c) => c.types)]);
+    const extra = countOutside(s, shown);
     let remainder: Remainder | undefined;
-    if (extraHi > 0) {
-        const extraLo = Math.max(0, a.counts.total[0] - accounted);
-        const prefCap = a.counts.prefix[1] - known.prefix.length - cardSlots("prefix");
-        const sufCap = genHi.suffix - known.suffix.length - cardSlots("suffix");
-        const where = sufCap <= 0 ? "prefix" : prefCap <= 0 ? "suffix" : "either";
-        remainder = { count: [extraLo, extraHi], where };
+    if (extra[1] > 0) {
+        const where =
+            countOutside(s, shown, "suffix")[1] === 0
+                ? "prefix"
+                : countOutside(s, shown, "prefix")[1] === 0
+                  ? "suffix"
+                  : "either";
+        remainder = { count: extra, where };
     }
 
+    const pairs = [...eldritchPairs(s)];
+    const sideTiers = (side: EldritchSide): number[] => pairs.map((k) => eldritchOf(k)[side]);
     const implicits: ImplicitView[] = [];
-    const sideTiers = (side: EldritchSide): number[] =>
-        [...a.eldritch].map((k) => eldritchOf(k)[side]);
     for (const side of ELDRITCH_SIDES) {
         const all = sideTiers(side);
         const tiers = [...new Set(all)].filter((n) => n > 0).sort((x, y) => x - y);
         if (tiers.length === 0) continue;
-        const types = a.eldritchTypes[side];
         // The wordings are the rows of the known tiers, since a family's text
         // changes with the tier; a type with no row at them keeps its wording.
         const texts = new Set<string>();
         const tagSet = new Set<string>();
-        if (types !== "any") {
-            for (const t of types) {
-                const rows = tiers.flatMap((n) =>
-                    registry.eldritchRows(a.base, side, n).filter((e) => e.type === t),
-                );
-                if (rows.length === 0) texts.add(registry.eldritchTextOf(t) ?? t);
-                for (const e of rows) {
-                    texts.add(e.text);
-                    for (const tag of e.implicitTags) tagSet.add(tagLabel(tag));
-                }
+        const types = eldritchTypes(s, side);
+        for (const t of types) {
+            const rows = tiers.flatMap((n) =>
+                registry.eldritchRows(base, side, n).filter((e) => e.type === t),
+            );
+            if (rows.length === 0) texts.add(registry.eldritchTextOf(t) ?? t);
+            for (const e of rows) {
+                texts.add(e.text);
+                for (const tag of e.implicitTags) tagSet.add(tagLabel(tag));
             }
         }
+        // An implicit the game data gives no wording for: alone it reads as
+        // any; beside named ones, as one more of them.
+        if (types.size > 0 && unnamedImplicit(s, side)) texts.add(UNNAMED_IMPLICIT);
         implicits.push({
             side,
             tiers: tiers.map(eldritchTierLabel),
@@ -320,14 +412,15 @@ export function itemView(a: AItem, registry: Registry): ItemView {
     }
 
     const marks: Mark[] = [];
-    const influenceSets = [...a.influences].filter((k) => k !== NO_INFLUENCE).sort();
-    const mayLackInfluence = a.influences.has(NO_INFLUENCE);
-    if (influenceSets.length === 1 && !mayLackInfluence) {
-        for (const i of influencesOf(influenceSets[0]!)) {
+    const influences = influenceSets(s);
+    const influenceKeys = [...influences].filter((k) => k !== NO_INFLUENCE).sort();
+    const mayLackInfluence = influences.has(NO_INFLUENCE);
+    if (influenceKeys.length === 1 && !mayLackInfluence) {
+        for (const i of influencesOf(influenceKeys[0]!)) {
             marks.push({ kind: "influence", text: `${INFLUENCE_NAME[i]} Item`, maybe: false });
         }
-    } else if (influenceSets.length > 0) {
-        const named = influenceSets.map((k) => `${influenceSetLabel(k)} Item`).join(", or ");
+    } else if (influenceKeys.length > 0) {
+        const named = influenceKeys.map((k) => `${influenceSetLabel(k)} Item`).join(", or ");
         const text = `${named}${mayLackInfluence ? ", or no influence" : ""}`;
         marks.push({ kind: "influence", text, maybe: true });
     }
@@ -338,28 +431,42 @@ export function itemView(a: AItem, registry: Registry): ItemView {
             marks.push({ kind: "eldritch", text: `${SIDE_NAME[side]} Item`, maybe });
         }
     }
-    if (a.fractures[1] > 0) {
-        marks.push({ kind: "fractured", text: "Fractured Item", maybe: a.fractures[0] === 0 });
+    const fractures = fracturedCount(s);
+    if (fractures[1] > 0) {
+        marks.push({ kind: "fractured", text: "Fractured Item", maybe: fractures[0] === 0 });
     }
-    if (a.corrupted.has(true)) {
-        marks.push({ kind: "corrupted", text: "Corrupted", maybe: a.corrupted.has(false) });
+    const corrupted = corruptions(s);
+    if (corrupted.has(true)) {
+        marks.push({ kind: "corrupted", text: "Corrupted", maybe: corrupted.has(false) });
     }
 
+    const strands = strandsRange(s);
+    const held = rarities(s);
     return {
-        base: baseLabel(a.base),
-        itemClass: itemClassLabel(a.base.itemClass),
-        ilvl: a.ilvl,
-        ...(a.strands[1] > 0 && { strands: a.strands }),
-        rarities: RARITY_ORDER.filter((r) => a.rarities.has(r)),
+        base: baseLabel(base),
+        itemClass: itemClassLabel(base.itemClass),
+        ilvl,
+        ...(strands[1] > 0 && { strands }),
+        rarities: RARITY_ORDER.filter((r) => held.has(r)),
         implicits,
         prefixes: groups("prefix"),
         suffixes: groups("suffix"),
         either: cardinalities.filter((c) => c.gen === undefined).map(oneOf),
         ...(remainder !== undefined && { remainder }),
         marks,
-        without: [...excludedTypes(a)].map((t) => registry.typeLabel(t)),
+        // An item with no modifiers lacks every one; the line would say only that.
+        without:
+            names === undefined || counts(s).total[1] === 0
+                ? []
+                : [...excludedTypes(s, names.types)].map((t) => registry.typeLabel(t)),
     };
 }
+
+/** The words an item that breaks a step is shown under. */
+export const EXAMPLE_LEAD = "For example, this item:";
+
+/** The line for an eldritch implicit the game data has no wording for. */
+export const UNNAMED_IMPLICIT = "an implicit the game data has no wording for";
 
 // --- the text form ------------------------------------------------------------
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { isGuaranteed } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { bench, craft, has, iff, item, op } from "../__fixtures__/ast.js";
@@ -35,7 +35,7 @@ describe("an add where paths meet", () => {
             }),
             [op("exalt"), iff(has(LIFE_T1.id), [], [op("annul")]), bench("maximum life")],
         );
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(isGuaranteed(r.finalState!, FIRE_RESIST.type)).toBe(false);
         expect(isGuaranteed(r.finalState!, LIFE_T1.type)).toBe(true);
     });

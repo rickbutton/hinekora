@@ -3,7 +3,7 @@ import { join, relative } from "node:path";
 import * as v8 from "node:v8";
 import * as vm from "node:vm";
 import { describe, expect, it, vi } from "vitest";
-import { check, checkExact, type CheckDiagnostic, type Craft } from "@hinekora/core";
+import { checkExact, type CheckDiagnostic, checkPresent, type Craft } from "@hinekora/core";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { parse } from "@hinekora/parser";
 
@@ -379,7 +379,7 @@ describe("the exact checker against the present one", () => {
     for (const { name, source } of [...corpus(), ...AUDIT]) {
         it(`answers ${name} as the table says`, () => {
             const craft = parsed(source);
-            const present = check(craft, { registry }).diagnostics;
+            const present = checkPresent(craft, { registry }).diagnostics;
             const exact = checkExact(craft, { registry }).diagnostics;
             const expected = (DIFFERENCES[name] ?? []).map(({ line, present, exact }) => ({
                 line,

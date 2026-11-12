@@ -153,9 +153,21 @@ function expectViews(s: XItem, items: readonly CItem[], types: readonly TypeId[]
         expect(V.isFractured(s, t)).toBe(items.every((x) => modOf(x, t)?.fractured === true));
         expect(V.mayBeFractured(s, t)).toBe(present.some((m) => m.fractured));
         expect(V.craftedTypes(s).has(t)).toBe(present.some((m) => m.crafted));
+        expect(V.isCrafted(s, t)).toBe(present.length > 0 && present.every((m) => m.crafted));
     }
-    const named = V.fracturedTypes(s).size;
-    expect(V.unprovenFractures(s)).toEqual(range(counts.map((c) => c.fractured - named)));
+    // The modifiers outside a named few, on each side and on both.
+    const named = new Set(types.filter((_, i) => i % 2 === 0));
+    const outside = (x: CItem, gen?: "prefix" | "suffix"): number =>
+        x.mods.filter((m) => {
+            const row = rowOf(ctx, m);
+            return !named.has(row.type) && (gen === undefined || row.gen === gen);
+        }).length;
+    expect(V.countOutside(s, named)).toEqual(range(items.map((x) => outside(x))));
+    for (const gen of ["prefix", "suffix"] as const) {
+        expect(V.countOutside(s, named, gen)).toEqual(range(items.map((x) => outside(x, gen))));
+    }
+    const pinned = V.fracturedTypes(s).size;
+    expect(V.unprovenFractures(s)).toEqual(range(counts.map((c) => c.fractured - pinned)));
 
     expect(V.influenceSets(s)).toEqual(new Set(items.map((x) => x.influences)));
     expect(V.corruptions(s)).toEqual(new Set(items.map((x) => x.corrupted)));
@@ -200,6 +212,20 @@ function expectViews(s: XItem, items: readonly CItem[], types: readonly TypeId[]
         const tiers = V.disjunctiveTier(s, c);
         if (tiers.size === 0) continue;
         expect(items.every((x) => c.some((t) => modOf(x, t)?.row === tiers.get(t)))).toBe(true);
+    }
+    // The rows a guarantee rests on hold it, and each is needed on some item
+    // that carries no more of its types than it asks.
+    for (const g of V.cardinalityGuarantees(s)) {
+        const rows = V.clauseRows(s, g.types, g.atLeast);
+        if (rows.size === 0) continue;
+        const at = (x: CItem, t: TypeId) => rows.get(t)!.some((r) => r.id === modOf(x, t)?.row);
+        expect(items.every((x) => g.types.filter((t) => at(x, t)).length >= g.atLeast)).toBe(true);
+        const tight = items.filter((x) => g.types.filter((t) => has(x, t)).length === g.atLeast);
+        for (const t of g.types) {
+            const needed = new Set(tight.flatMap((x) => modOf(x, t)?.row ?? []));
+            if (needed.size === 0) continue;
+            expect(new Set(rows.get(t)!.map((r) => r.id))).toEqual(needed);
+        }
     }
 }
 

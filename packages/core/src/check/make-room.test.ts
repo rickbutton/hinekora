@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { suffixRange } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { andp, cmp, craft, item, op, until } from "../__fixtures__/ast.js";
@@ -30,7 +30,7 @@ describe("checker — annulling down to open slots", () => {
             op("exalt"),
             op("exalt"),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
     });
 
@@ -38,7 +38,7 @@ describe("checker — annulling down to open slots", () => {
         // Annulling one at a time from three suffixes, the loop leaves at the first
         // state with one suffix, so exactly one: the bound is kept and exact.
         const c = craft(fullRing(), [until(cmp("suffixCount", "<=", 1), [op("annul")])]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(suffixRange(r.finalState!)).toEqual([1, 1]);
     });

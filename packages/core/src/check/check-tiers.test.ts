@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { rollableTiers, tierLadder } from "../resolve/tiers.js";
@@ -48,16 +48,16 @@ describe("fuzzy resolution + tier ranking (unit)", () => {
 describe("checker — fuzzy names in predicates and item blocks", () => {
     it("pins a declared mod's tier from a stat description + `t1`", () => {
         const c = craft(rareRing([{ mod: "maximum life", tier: 1 }]), []);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteedTypes(r.finalState!).has(MAXLIFE_T1.type)).toBe(true);
     });
 
     it("errors on a declared stat description with no tier", () => {
         const c = craft(rareRing(["maximum life"]), []);
-        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("declare the tier"))).toBe(
-            true,
-        );
+        expect(
+            checkPresent(c, ctx).diagnostics.some((d) => d.message.includes("declare the tier")),
+        ).toBe(true);
     });
 
     it("accepts a bare name whose modifier rolls a single tier here", () => {
@@ -67,7 +67,7 @@ describe("checker — fuzzy names in predicates and item blocks", () => {
             rarity: "rare",
             suffixes: ["fire resistance"],
         });
-        const r = check(craft(one, []), ctx);
+        const r = checkPresent(craft(one, []), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.tiers.get(FIRE_RES_TIERED.type)).toEqual(
             new Set([FIRE_RES_TIERED.id]),
@@ -76,9 +76,9 @@ describe("checker — fuzzy names in predicates and item blocks", () => {
 
     it("errors on a tier that doesn't roll on this item", () => {
         const c = craft(rareRing(), [op("exalt"), iff(has("maximum life", 9), [op("annul")])]);
-        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("out of range"))).toBe(
-            true,
-        );
+        expect(
+            checkPresent(c, ctx).diagnostics.some((d) => d.message.includes("out of range")),
+        ).toBe(true);
     });
 });
 
@@ -98,7 +98,10 @@ describe("tier numbers, whatever the item's level", () => {
             "MaxLifeLow",
         ]);
         for (const ilvl of [40, 100]) {
-            const r = check(craft(ringAt(ilvl, [{ mod: "maximum life", tier: 2 }]), []), ctx);
+            const r = checkPresent(
+                craft(ringAt(ilvl, [{ mod: "maximum life", tier: 2 }]), []),
+                ctx,
+            );
             expect(r.diagnostics).toEqual([]);
             expect(r.finalState!.tiers.get(LIFE)).toEqual(new Set(["MaxLifeMid"]));
         }
@@ -107,7 +110,7 @@ describe("tier numbers, whatever the item's level", () => {
     it("takes a declared tier above the item's level, by number or by id", () => {
         // An essence or a Harvest change leaves such a row on a real item.
         for (const declared of [{ mod: "maximum life", tier: 1 }, "MaxLifeHigh"]) {
-            const r = check(craft(ringAt(40, [declared]), []), ctx);
+            const r = checkPresent(craft(ringAt(40, [declared]), []), ctx);
             expect(r.diagnostics).toEqual([]);
             expect(r.finalState!.tiers.get(LIFE)).toEqual(new Set(["MaxLifeHigh"]));
         }
@@ -118,7 +121,7 @@ describe("tier numbers, whatever the item's level", () => {
             op("chaos"),
             until(has("maximum life", 1), [op("chaos")]),
         ]);
-        expect(check(c, ctx).diagnostics.map((d) => d.message)).toEqual([
+        expect(checkPresent(c, ctx).diagnostics.map((d) => d.message)).toEqual([
             'this loop can never exit: has "maximum life" t1 can never become true here — Tier 1 "maximum life" needs item level 60; this item is level 40',
         ]);
     });
@@ -129,47 +132,47 @@ describe("tier numbers, whatever the item's level", () => {
             bases: [RING_BASE],
             mods: TIERED_CATALOG.map((m) => (m.id === "MaxLifeLow" ? low : m)),
         });
-        const r = check(craft(ringAt(10, ["maximum life"]), []), { registry: high });
+        const r = checkPresent(craft(ringAt(10, ["maximum life"]), []), { registry: high });
         expect(r.diagnostics.map((d) => d.message)).toEqual([
             'declare the tier of "maximum life" (e.g. `"maximum life" t3`), a starting item\'s mods must name a specific tier and none of its 3 rolls at this item level.',
         ]);
     });
 
     it("refuses a tier beyond the ladder", () => {
-        const r = check(craft(ringAt(40, [{ mod: "maximum life", tier: 4 }]), []), ctx);
+        const r = checkPresent(craft(ringAt(40, [{ mod: "maximum life", tier: 4 }]), []), ctx);
         expect(r.diagnostics[0]!.message).toContain(
             'tier 4 is out of range for "maximum life" (it has 3 tiers on this base)',
         );
     });
 
     it("reads a bare name as the one tier the item's level rolls", () => {
-        const r = check(craft(ringAt(10, ["maximum life"]), []), ctx);
+        const r = checkPresent(craft(ringAt(10, ["maximum life"]), []), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.tiers.get(LIFE)).toEqual(new Set(["MaxLifeLow"]));
-        const two = check(craft(ringAt(40, ["maximum life"]), []), ctx);
+        const two = checkPresent(craft(ringAt(40, ["maximum life"]), []), ctx);
         expect(two.diagnostics[0]!.message).toContain('(e.g. `"maximum life" t2`)');
     });
 
     it("says a loop waiting on a tier no currency rolls here can never exit, and why", () => {
         const c = craft(ringAt(40), [until(has("maximum life", 1), [op("chaos")])]);
-        expect(check(c, ctx).diagnostics.map((d) => d.message)).toEqual([
+        expect(checkPresent(c, ctx).diagnostics.map((d) => d.message)).toEqual([
             'this loop can never exit: has "maximum life" t1 can never become true here — Tier 1 "maximum life" needs item level 60; this item is level 40',
         ]);
         // The best tier the level rolls is reached.
         const best = craft(ringAt(40), [until(has("maximum life", 2), [op("chaos")])]);
-        expect(check(best, ctx).diagnostics).toEqual([]);
+        expect(checkPresent(best, ctx).diagnostics).toEqual([]);
     });
 
     it("gives the level as the reason only where the tier is waited for", () => {
         const never = craft(ringAt(40), [op("exalt"), iff(has("maximum life", 1), [op("annul")])]);
-        expect(check(never, ctx).diagnostics[0]!.message).toContain(
+        expect(checkPresent(never, ctx).diagnostics[0]!.message).toContain(
             'is impossible here — Tier 1 "maximum life" needs item level 60',
         );
         const absent = craft(ringAt(40), [
             op("exalt"),
             iff(notp(has("maximum life", 1)), [], [op("annul")]),
         ]);
-        const messages = check(absent, ctx).diagnostics.map((d) => d.message);
+        const messages = checkPresent(absent, ctx).diagnostics.map((d) => d.message);
         expect(messages).toHaveLength(1);
         expect(messages[0]).toContain("always holds here");
         expect(messages[0]).not.toContain("item level");
@@ -185,14 +188,14 @@ describe("the item level as the reason a tier cannot be met", () => {
         const held = craft(ringAt(40, [{ mod: "maximum life", tier: 2 }]), [
             iff(has("maximum life", 1), [op("annul")]),
         ]);
-        expect(check(held, ctx).diagnostics.map((d) => d.message)).toEqual([
+        expect(checkPresent(held, ctx).diagnostics.map((d) => d.message)).toEqual([
             `the 'if' branch can never run: has "maximum life" t1 is impossible here`,
         ]);
         // A loop that never rerolls the modifier cannot reach the tier either.
         const kept = craft(ringAt(40, [{ mod: "maximum life", tier: 2 }]), [
             until(has("maximum life", 1), [op("exalt")]),
         ]);
-        expect(check(kept, ctx).diagnostics[0]!.message).toBe(
+        expect(checkPresent(kept, ctx).diagnostics[0]!.message).toBe(
             `this loop can never exit: has "maximum life" t1 can never become true here`,
         );
     });
@@ -201,7 +204,7 @@ describe("the item level as the reason a tier cannot be met", () => {
         const rerolled = craft(ringAt(40, [{ mod: "maximum life", tier: 2 }]), [
             until(has("maximum life", 1), [op("chaos")]),
         ]);
-        expect(check(rerolled, ctx).diagnostics[0]!.message).toContain(
+        expect(checkPresent(rerolled, ctx).diagnostics[0]!.message).toContain(
             'Tier 1 "maximum life" needs item level 60; this item is level 40',
         );
     });
@@ -241,7 +244,7 @@ describe("tier numbers on an item with two influences", () => {
             influences: ["shaper", "redeemer"],
             suffixes,
         });
-    const run = (c: ReturnType<typeof craft>) => check(c, { registry: two });
+    const run = (c: ReturnType<typeof craft>) => checkPresent(c, { registry: two });
     const WARD_NAME = "ward against ailing enemies";
 
     it("reads a declared tier as either influence's row of that number", () => {
@@ -339,7 +342,7 @@ describe("checker — tier tracking through operations", () => {
             op("exalt"),
             iff(has("maximum life", 1), [iff(has("maximum life", 2), [op("annul")])]),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics.some((d) => d.message.includes("can never run"))).toBe(true);
     });
 
@@ -349,14 +352,14 @@ describe("checker — tier tracking through operations", () => {
             iff(has("maximum life", 1), [iff(has("maximum life", 1), [])]),
         ]);
         // The inner T1 narrow is redundant but not dead — no diagnostics.
-        expect(check(c, ctx).diagnostics).toEqual([]);
+        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
     });
 });
 
 describe("checker — one of several tiers, then the work after it", () => {
     /** The tiers the state before the last step, the `annul`, allows for `type`. */
     const tiersBeforeAnnul = (c: ReturnType<typeof craft>, type: TypeId) => {
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         const entry = r.trace.findLast((e) => e.kind === "operation" && e.before.tiers.has(type));
         return entry === undefined ? undefined : [...entry.before.tiers.get(type)!];
@@ -384,9 +387,9 @@ describe("checker — one of several tiers, then the work after it", () => {
             until(orp(has("maximum life", 1), has("maximum life", 2)), [op("chaos")]),
             iff(has("maximum life", 1), [iff(has("maximum life", 2), [op("annul")])]),
         ]);
-        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("can never run"))).toBe(
-            true,
-        );
+        expect(
+            checkPresent(c, ctx).diagnostics.some((d) => d.message.includes("can never run")),
+        ).toBe(true);
     });
 
     it("rules a branch dead when every tier the item could have is denied", () => {
@@ -394,9 +397,9 @@ describe("checker — one of several tiers, then the work after it", () => {
             until(orp(has("maximum life", 1), has("maximum life", 2)), [op("chaos")]),
             iff(andp(notp(has("maximum life", 1)), notp(has("maximum life", 2))), [op("annul")]),
         ]);
-        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("can never run"))).toBe(
-            true,
-        );
+        expect(
+            checkPresent(c, ctx).diagnostics.some((d) => d.message.includes("can never run")),
+        ).toBe(true);
     });
 
     it("excludes the other rows once the presence function alone pins a modifier", () => {
@@ -408,13 +411,13 @@ describe("checker — one of several tiers, then the work after it", () => {
             iff(notp(has("fire resistance")), [iff(has("maximum life", 2), [op("annul")])]),
         ]);
         expect(
-            check(pinned, ctx).diagnostics.some((d) => d.message.includes("can never run")),
+            checkPresent(pinned, ctx).diagnostics.some((d) => d.message.includes("can never run")),
         ).toBe(true);
         const open = craft(rareRing(), [
             until(orp(has("maximum life", 1), has("fire resistance", 1)), [op("chaos")]),
             iff(has("maximum life", 2), [op("annul")]),
         ]);
-        expect(check(open, ctx).diagnostics).toEqual([]);
+        expect(checkPresent(open, ctx).diagnostics).toEqual([]);
     });
 
     it("forgets the tier facts with the modifier when a removal may have taken it", () => {
@@ -425,9 +428,9 @@ describe("checker — one of several tiers, then the work after it", () => {
             op("annul"),
             iff(andp(notp(has("maximum life", 1)), notp(has("maximum life", 2))), [op("scour")]),
         ]);
-        expect(check(c, ctx).diagnostics.some((d) => d.message.includes("can never run"))).toBe(
-            false,
-        );
+        expect(
+            checkPresent(c, ctx).diagnostics.some((d) => d.message.includes("can never run")),
+        ).toBe(false);
     });
 });
 
@@ -448,8 +451,8 @@ describe("checker — two modifiers that share a type and a level", () => {
         bases: [RING_BASE],
         mods: [...TIERED_CATALOG, SKELETONS, ZOMBIES],
     });
-    const run = (c: ReturnType<typeof craft>) => check(c, { registry: twins });
-    const rows = (r: ReturnType<typeof check>) => [
+    const run = (c: ReturnType<typeof craft>) => checkPresent(c, { registry: twins });
+    const rows = (r: ReturnType<typeof checkPresent>) => [
         ...(r.finalState!.tiers.get(SKELETONS.type) ?? []),
     ];
     const zombies = "maximum number of raised zombies";

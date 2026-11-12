@@ -266,7 +266,7 @@ A predicate asks about the item's current state only; there are no history predi
   have one of those".
 - `influenced`, `corrupted` and `dominant` ask about the item's marks (§1); where paths with
   different marks meet, as after a `locus` or a `conflict`, a branch on them narrows to one.
-  The Eldritch orbs need the dominant side to be the same on every path.
+  An Eldritch orb reads each item's own dominant side.
 
 ---
 
@@ -279,9 +279,9 @@ at this point the item is: Iron Ring · Magic · 2 affixes · 1 prefix · 1 suff
 Requires a Rare item — this item is Magic.
 ```
 
-Hover, the CLI's final item and the playground's item card show the full item laid out as
-the game's copy-to-clipboard text is, with tier ranges, "one of these" groups and "possibly"
-marks where the item is not certain.
+Hover, the CLI and the playground lay out the item as the game's copy-to-clipboard text,
+with tier ranges, "one of these" groups and "possibly" marks. Where several items reach a
+rejected step, the CLI and hover add one that breaks it.
 
 - **Names**: an unknown or ambiguous base, mod, currency, essence, bench craft or harvest
   tag; a mod without a tier in the item block; a tier past the ladder.

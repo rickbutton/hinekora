@@ -44,7 +44,8 @@ import { levelReasonsOn, narrowBy, readCondition } from "./conditions.js";
 import { type Dd, DdBudgetError } from "./dd.js";
 import { startOf } from "./initial.js";
 import { runMethodTrace } from "./method.js";
-import { stateOf, type XItem } from "./state.js";
+import { type ItemView, itemView } from "../render/item.js";
+import { fromItems, stateOf, type XItem } from "./state.js";
 import type { Universe } from "./universe.js";
 import { summaryOf } from "./views.js";
 
@@ -177,6 +178,31 @@ export function checkExact(
     return new ExactChecker(ctx, tuning).run(craft);
 }
 
+/** The check the tool runs. */
+export const check = checkExact;
+export type CheckResult = ExactCheckResult;
+export type TraceEntry = XTraceEntry;
+
+/**
+ * The innermost (smallest-span) trace entry containing `offset`. Hovering a
+ * loop (whose span runs through its closing `}`) yields the loop entry, whose
+ * `after` is the items the loop lets out.
+ */
+export function traceAt<E extends { readonly span: SourceSpan }>(
+    trace: readonly E[],
+    offset: number,
+): E | undefined {
+    let best: E | undefined;
+    for (const e of trace) {
+        if (e.span.start.offset <= offset && offset < e.span.end.offset) {
+            const width = e.span.end.offset - e.span.start.offset;
+            if (best === undefined || width < best.span.end.offset - best.span.start.offset)
+                best = e;
+        }
+    }
+    return best;
+}
+
 class ExactChecker {
     private readonly diagnostics: CheckDiagnostic[] = [];
     private readonly findings: Finding[] = [];
@@ -267,9 +293,12 @@ class ExactChecker {
         message: string | undefined,
         span: SourceSpan,
         items: FindingItems = {},
+        example?: ItemView,
     ): void {
         if (this.quiet > 0) return;
-        if (message !== undefined) this.diagnostics.push({ message, span });
+        if (message !== undefined) {
+            this.diagnostics.push({ message, span, ...(example !== undefined && { example }) });
+        }
         const f: Finding = { kind, span };
         this.findings.push(f);
         this.items.set(f, items);
@@ -408,10 +437,15 @@ class ExactChecker {
         let fall = m.EMPTY;
         let unbuilt = m.EMPTY;
         let message: string | undefined;
+        /** The items that break the step the way its message says; null where
+         *  they are not items the step is used on, as an operation before the
+         *  failing one has changed them. */
+        let breaking: Dd | null | undefined;
         let stopped = false;
         const failing = new Map<string, Dd>();
         for (const { part, key } of together(buildMethod(s, method, literals))) {
             if ("refused" in part.built) {
+                breaking ??= part.state.dd;
                 message ??= part.built.refused;
                 unbuilt = m.or(unbuilt, part.state.dd);
                 if (this.recovering) fall = m.or(fall, part.state.dd);
@@ -421,7 +455,14 @@ class ExactChecker {
             const run = runMethodTrace(part.state, part.built);
             const { result } = run;
             for (const [i, dd] of run.failing) failing.set(`${key}#${i}`, dd);
-            if (!result.ok) message ??= this.refusal(s, result.failure, result.under);
+            if (!result.ok) {
+                if (breaking === undefined) {
+                    const first = firstOf(run.failing);
+                    breaking =
+                        first !== undefined && m.implies(first, part.state.dd) ? first : null;
+                }
+                message ??= this.refusal(s, result.failure, result.under);
+            }
             const recovers = result.recovered === true;
             if (run.reachedEnd || (!result.ok && !(recovers && this.recovering))) stopped = true;
             if (result.ended !== true && (!recovers || this.recovering)) {
@@ -429,15 +470,34 @@ class ExactChecker {
             }
         }
         if (message !== undefined) {
-            this.report("refused", message, stmt.span, {
-                ...(failing.size > 0 && { failing }),
-                ...(unbuilt !== m.EMPTY && { unbuilt }),
-            });
+            const example =
+                this.quiet === 0 &&
+                breaking !== undefined &&
+                breaking !== null &&
+                m.count(s.dd) > 1n
+                    ? this.example(breaking)
+                    : undefined;
+            this.report(
+                "refused",
+                message,
+                stmt.span,
+                {
+                    ...(failing.size > 0 && { failing }),
+                    ...(unbuilt !== m.EMPTY && { unbuilt }),
+                },
+                example,
+            );
         }
         const after = stateOf(this.u, fall);
         // A method that leaves no item on any outcome ends the path, as `stop` does.
         if (after === null && message === undefined) this.report("ended", undefined, stmt.span);
         return { fall: after, restarted: false, stopped };
+    }
+
+    /** One item of `items`, as an error shows it. */
+    private example(items: Dd): ItemView {
+        const one = this.u.decodeOne(this.u.dd.witness(items)!);
+        return itemView(fromItems(this.u, [one])!, this.ctx.registry);
     }
 
     private refusal(
@@ -638,6 +698,11 @@ class ExactChecker {
             if (this.quiet === 0) this.inlined.set(stmt, { body, trace });
         }
     }
+}
+
+/** The items failing at the method's earliest operation that fails. */
+function firstOf(failing: ReadonlyMap<number, Dd>): Dd | undefined {
+    return failing.size === 0 ? undefined : failing.get(Math.min(...failing.keys()));
 }
 
 /** The items all go on through a statement that does nothing to them. */

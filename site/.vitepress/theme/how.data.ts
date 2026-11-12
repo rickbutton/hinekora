@@ -78,7 +78,7 @@ export default defineLoader({
         if (!result.ok || w.start.item === undefined)
             throw new Error("landing.craft: the page expects this craft to check");
         const card = (state: Parameters<typeof itemView>[0]): string =>
-            itemCardHtml(itemView(state, registry));
+            itemCardHtml(itemView(state, registry, parsed.craft));
         const trace: TraceCard[] = [{ card: card(w.start.item) }];
         for (const s of w.steps) {
             if (s.after !== undefined) trace.push({ step: stepText(s), card: card(s.after) });

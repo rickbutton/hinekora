@@ -5,11 +5,12 @@
  */
 import {
     addPrices,
-    type AItem,
     bindingAt,
     bindingsOf,
     type Bounds,
     type CostReport,
+    counts,
+    EXAMPLE_LEAD,
     figure,
     percentage,
     priceText,
@@ -20,6 +21,7 @@ import {
     type GroupId,
     guaranteedTypes,
     itemView,
+    type ItemView,
     type Method,
     type Mod,
     type Price,
@@ -39,6 +41,7 @@ import {
     type TraceEntry,
     type TypeId,
     veiledPool,
+    type XItem,
     isCorruptedEssence,
     influenceTagsAny,
     plural,
@@ -82,9 +85,9 @@ const KEYWORD_DOC: Record<string, string> = {
     item: "`item { base: … ilvl: … rarity: … }` — the starting item this craft operates on.",
 };
 
-const PROJECTION: Record<string, { measures: string; of: (a: AItem) => Range }> = {
-    prefixCount: { measures: "the number of prefixes on the item", of: (a) => a.counts.prefix },
-    suffixCount: { measures: "the number of suffixes on the item", of: (a) => suffixRange(a) },
+const PROJECTION: Record<string, { measures: string; of: (s: XItem) => Range }> = {
+    prefixCount: { measures: "the number of prefixes on the item", of: (s) => counts(s).prefix },
+    suffixCount: { measures: "the number of suffixes on the item", of: (s) => suffixRange(s) },
 };
 
 // --- token lookup ----------------------------------------------------------
@@ -259,8 +262,8 @@ function tierToken(text: string): RegExpExecArray | null {
 // --- rendering -------------------------------------------------------------
 
 /** The item at this point, in the game's copy-to-clipboard layout, as a code block. */
-function tooltip(a: AItem, registry: Registry, caption?: string): string {
-    const text = renderItemText(itemView(a, registry));
+function tooltip(view: ItemView, caption?: string): string {
+    const text = renderItemText(view);
     return [caption ? `_${caption}_\n` : undefined, "```text", text, "```"]
         .filter((x): x is string => x !== undefined)
         .join("\n");
@@ -319,10 +322,10 @@ function signature(
  */
 function unveilOptionsHover(entry: TraceEntry | undefined, registry: Registry): string {
     if (!entry) return "_hover inside a craft to list the unveil options_";
-    const a = entry.before;
+    const s = entry.before;
     const families = new Set<GroupId>();
-    for (const t of guaranteedTypes(a)) for (const f of registry.familiesOfType(t)) families.add(f);
-    const pool = veiledPool(registry.catalog, a.base, a.ilvl, families);
+    for (const t of guaranteedTypes(s)) for (const f of registry.familiesOfType(t)) families.add(f);
+    const pool = veiledPool(registry.catalog, s.u.base, s.u.ilvl, families);
     if (pool.length === 0) return "_no unveil options on this item_";
 
     const label = (m: { text?: string; type: TypeId }): string =>
@@ -358,9 +361,9 @@ function modSignature(
 ): string {
     const ctx = entry
         ? {
-              base: entry.before.base,
-              ilvl: entry.before.ilvl,
-              tags: influenceTagsAny(entry.before, registry),
+              base: entry.before.u.base,
+              ilvl: entry.before.u.ilvl,
+              tags: influenceTagsAny(entry.before),
           }
         : undefined;
 
@@ -506,7 +509,7 @@ function essenceSignature(
             : "Upgrades a **Normal** item to Rare, guaranteeing one mod.",
     ];
     if (entry) {
-        const cls = entry.before.base.itemClass;
+        const cls = entry.before.u.base.itemClass;
         const modId = e.grants.get(cls);
         const mod = modId ? registry.catalog.find((m) => m.id === modId) : undefined;
         blocks.push(
@@ -525,7 +528,7 @@ function benchSignature(
     entry: TraceEntry | undefined,
     registry: Registry,
 ): string {
-    const res = registry.resolveBench(text, entry?.before.base.itemClass, tier);
+    const res = registry.resolveBench(text, entry?.before.u.base.itemClass, tier);
     if (!res.ok) {
         return res.error.kind === "ambiguous"
             ? `**"${text}"** — ambiguous bench mod (${res.error.candidates.length} match; be more specific).`
@@ -685,9 +688,10 @@ export function getHover(
     prices?: Prices,
 ): string | null {
     const parsed = parseCached(source);
+    const result = parsed.ok ? checkCached(source, registry) : undefined;
     const entry =
-        parsed.ok && !insideStepArgument(parsed.craft.body, offset)
-            ? traceAt(checkCached(source, registry)!.trace, offset)
+        parsed.ok && result !== undefined && !insideStepArgument(parsed.craft.body, offset)
+            ? traceAt(result.trace, offset)
             : undefined;
     const def = parsed.ok ? defAt(parsed.craft, offset) : undefined;
 
@@ -702,9 +706,17 @@ export function getHover(
 
     const blocks: string[] = [];
     if (sig) blocks.push(sig);
-    if (entry) {
+    // An error's item that breaks the step, on the step it is reported at.
+    for (const d of result?.diagnostics ?? []) {
+        if (d.example === undefined) continue;
+        if (offset < d.span.start.offset || offset >= d.span.end.offset) continue;
+        blocks.push(tooltip(d.example, EXAMPLE_LEAD));
+    }
+    if (entry && parsed.ok) {
         const caption = entry.kind === "until" && entry.after ? "after the loop" : undefined;
-        blocks.push(tooltip(entry.after ?? entry.before, registry, caption));
+        blocks.push(
+            tooltip(itemView(entry.after ?? entry.before, registry, parsed.craft), caption),
+        );
         const report = costCached(source, registry, prices);
         const cost = report === undefined ? undefined : costLine(entry, report, prices, source);
         if (cost !== undefined) blocks.push(cost);

@@ -17,7 +17,7 @@ import {
     TAG_DEFAULT,
 } from "../__fixtures__/mods.js";
 import type { AffixDecl } from "../ast/ast.js";
-import { check } from "../check/check.js";
+import { checkPresent } from "../check/check.js";
 import { declareItem } from "../check/item-block.js";
 import { anonymousRows as presentAnonymousRows } from "../check/ops.js";
 import { TagId } from "../model/ids.js";
@@ -53,7 +53,7 @@ function expectItems(registry: Registry, spec: Spec): number {
     const expected = atCells(u, initialItems(ctx, block));
     const listed = state === null ? atCells(u, []) : listItems(u, state.dd, { lowest: true });
     expect(diffSets(expected, listed), JSON.stringify(spec)).toBe("");
-    const before = check(craft(block, []), { registry }).trace[0]!.before;
+    const before = checkPresent(craft(block, []), { registry }).trace[0]!.before;
     for (const gen of ["prefix", "suffix"] as const) {
         const ids = (rows: readonly { id: string }[]) => rows.map((m) => m.id).sort();
         expect(ids(anonymousRows(registry, decl, gen))).toEqual(
@@ -391,7 +391,7 @@ describe("the item block's faults", () => {
             ).toBe(true);
             // The present checker reports the same: the validation is one code.
             expect(said).toEqual(
-                check(craft(item(spec), []), { registry: FAULTS }).diagnostics.map(
+                checkPresent(craft(item(spec), []), { registry: FAULTS }).diagnostics.map(
                     (d) => d.message,
                 ),
             );

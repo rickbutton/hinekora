@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { fracturedTypes, guaranteedTypes, hasFracture } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, essence, fracturedP, iff, item, notp, op } from "../__fixtures__/ast.js";
@@ -49,7 +49,7 @@ const fracturedRing = (fillers: number) =>
         suffixes: Array.from({ length: fillers }, () => "random"),
     });
 
-const guaranteed = (r: ReturnType<typeof check>): Set<string> =>
+const guaranteed = (r: ReturnType<typeof checkPresent>): Set<string> =>
     new Set([...guaranteedTypes(r.finalState!)]);
 
 describe("a fractured anonymous affix", () => {
@@ -63,13 +63,13 @@ describe("a fractured anonymous affix", () => {
         });
 
     it("still marks the item fractured, so a Fracturing Orb is refused", () => {
-        const r = check(craft(anonymousLock(), [op("fracture")]), ctx);
+        const r = checkPresent(craft(anonymousLock(), [op("fracture")]), ctx);
         expect(hasFracture(r.trace[0]!.after!)).toBe(true);
         expect(r.diagnostics[0]?.message).toContain("fractured");
     });
 
     it("keeps the lock through a chaos reforge", () => {
-        const r = check(craft(anonymousLock(), [op("chaos")]), ctx);
+        const r = checkPresent(craft(anonymousLock(), [op("chaos")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(hasFracture(r.finalState!)).toBe(true);
         expect(fracturedTypes(r.finalState!).size).toBe(0);
@@ -78,7 +78,7 @@ describe("a fractured anonymous affix", () => {
 
 describe("declared fractured mod is locked", () => {
     it("survives a chaos reforge, which still lays down its full 4–6 mods", () => {
-        const r = check(craft(fracturedRing(2), [op("chaos")]), ctx);
+        const r = checkPresent(craft(fracturedRing(2), [op("chaos")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.rarities).toEqual(new Set(["rare"]));
         expect(guaranteed(r)).toContain("IncreasedLife");
@@ -90,7 +90,7 @@ describe("declared fractured mod is locked", () => {
         // Scour leaves a 1-mod Magic item with the fractured life; alteration
         // rerolls the rest but never the lock, so the item stays fractured and the
         // orb, which refuses fractured items, is rejected after regal and exalts.
-        const r = check(
+        const r = checkPresent(
             craft(fracturedRing(2), [
                 op("scour"),
                 op("alteration"),
@@ -109,7 +109,7 @@ describe("declared fractured mod is locked", () => {
     });
 
     it("survives an essence reforge, which still forces its own mod", () => {
-        const r = check(craft(fracturedRing(2), [essence("mana", 1)]), ctx);
+        const r = checkPresent(craft(fracturedRing(2), [essence("mana", 1)]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(hasFracture(r.finalState!)).toBe(true);
         expect(guaranteed(r)).toContain("IncreasedLife");
@@ -118,19 +118,19 @@ describe("declared fractured mod is locked", () => {
     });
 
     it("a scour clears the crafted count when the fractured mod is a natural one", () => {
-        const r = check(craft(fracturedRing(2), [op("scour")]), ctx);
+        const r = checkPresent(craft(fracturedRing(2), [op("scour")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.crafted).toEqual([0, 0]);
     });
 
     it("survives an annul (a filler suffix is removed instead)", () => {
-        const r = check(craft(fracturedRing(2), [op("annul")]), ctx);
+        const r = checkPresent(craft(fracturedRing(2), [op("annul")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(guaranteed(r)).toContain("IncreasedLife");
     });
 
     it("scours to a 1-mod Magic item, keeping the fracture", () => {
-        const r = check(craft(fracturedRing(2), [op("scour")]), ctx);
+        const r = checkPresent(craft(fracturedRing(2), [op("scour")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.rarities).toEqual(new Set(["magic"]));
         expect(r.finalState!.counts.total).toEqual([1, 1]);
@@ -138,7 +138,7 @@ describe("declared fractured mod is locked", () => {
     });
 
     it("makes annul fail when the fractured mod is the only one", () => {
-        const r = check(craft(fracturedRing(0), [op("annul")]), ctx);
+        const r = checkPresent(craft(fracturedRing(0), [op("annul")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("removable");
     });
@@ -147,7 +147,7 @@ describe("declared fractured mod is locked", () => {
 describe("the fractured predicate", () => {
     it("proves the declared fractured mod (then-branch is live)", () => {
         const c = craft(fracturedRing(2), [iff(fracturedP("maximum life"), [op("chaos")])]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
     });
 
@@ -155,7 +155,7 @@ describe("the fractured predicate", () => {
         // "not fractured maximum life" is impossible on this item — life IS the
         // fracture — so the branch is unreachable.
         const c = craft(fracturedRing(2), [iff(notp(fracturedP("maximum life")), [op("chaos")])]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toMatch(/never run|impossible/);
     });
@@ -169,13 +169,13 @@ describe("the Fracturing Orb", () => {
             rarity: "rare",
             prefixes: ["life", "mana", "armour"],
         });
-        const r = check(craft(three, [op("fracture")]), ctx);
+        const r = checkPresent(craft(three, [op("fracture")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("at least 4");
     });
 
     it("fractures at four modifiers, pinning no specific mod yet", () => {
-        const r = check(craft(fourModRing(), [op("fracture")]), ctx);
+        const r = checkPresent(craft(fourModRing(), [op("fracture")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(hasFracture(r.finalState!)).toBe(true);
         expect(fracturedTypes(r.finalState!).size).toBe(0); // random until a branch proves it
@@ -183,7 +183,7 @@ describe("the Fracturing Orb", () => {
 
     it("keeps the item Magic-or-better through a later reforge (the fracture is permanent)", () => {
         const c = craft(fourModRing(), [op("fracture"), op("chaos"), op("scour")]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         // Even with no proof of which mod, one survives, so scour can't reach Normal.
         expect(r.finalState!.rarities).toEqual(new Set(["magic"]));
@@ -198,7 +198,7 @@ describe("the Fracturing Orb", () => {
             prefixes: [{ mod: "life", fractured: true }, "mana", "armour"],
             suffixes: ["cold"],
         });
-        const r = check(craft(declared, [op("fracture")]), ctx);
+        const r = checkPresent(craft(declared, [op("fracture")]), ctx);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("already");
     });
@@ -208,7 +208,7 @@ describe("the Fracturing Orb", () => {
             op("fracture"),
             iff(fracturedP("life"), [iff(fracturedP("mana"), [op("chaos")])]),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics.some((d) => /never run|impossible/.test(d.message))).toBe(true);
     });
 });

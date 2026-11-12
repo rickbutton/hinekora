@@ -22,7 +22,8 @@ One language service backs two editors: a VS Code extension and the browser
 ### Hover
 
 Hover on a step shows three things: what the operation does and needs, the item after the
-step, and the expected cost of a repeated step. The item has the layout of the game's item text:
+step, and the expected cost of a repeated step. On a refused step it adds an item that breaks
+it. The item has the layout of the game's item text:
 
 ```txt
 Item Class: Boots
@@ -45,7 +46,7 @@ expected spend.
 
 Inside quotes, completion offers the names that fit the position: bases, modifiers,
 essences, fossils, bench crafts or Harvest tags. For a modifier it leaves out the ones the
-base cannot roll and the ones the checker knows are absent at that point. Typing `"` opens
+base cannot roll and those the craft names that no item has at that point. Typing `"` opens
 the list.
 
 ## VS Code

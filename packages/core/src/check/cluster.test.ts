@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { cmp, craft, harvest, has, iff, item, op, until } from "../__fixtures__/ast.js";
 import {
@@ -47,22 +47,25 @@ describe("a cluster jewel's enchant", () => {
         const c = craft(jewel({ passives: 8, text: "lightning damage" }), [
             until(has("sadist"), [op("chaos")]),
         ]);
-        expect(check(c, ctx).diagnostics).toEqual([]);
+        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
     });
 
     it("makes one base of the jewel and its enchantment, shared between checks", () => {
         // What is cached by the base (its pool) is then found again.
-        const once = check(craft(jewel({ passives: 8, text: "lightning damage" }), []), ctx);
-        const again = check(craft(jewel({ passives: 9, text: "lightning damage" }), []), ctx);
+        const once = checkPresent(craft(jewel({ passives: 8, text: "lightning damage" }), []), ctx);
+        const again = checkPresent(
+            craft(jewel({ passives: 9, text: "lightning damage" }), []),
+            ctx,
+        );
         expect(once.finalState!.base).toBe(again.finalState!.base);
         expect(once.finalState!.base.tags.has(TAG_ENCHANT_LIGHTNING)).toBe(true);
     });
 
     it("is required, and its passive count must fit the size", () => {
-        expect(check(craft(jewel(), [op("chaos")]), ctx).diagnostics[0]?.message).toContain(
+        expect(checkPresent(craft(jewel(), [op("chaos")]), ctx).diagnostics[0]?.message).toContain(
             "depend on its enchant",
         );
-        const few = check(craft(jewel({ passives: 3, text: "lightning damage" }), []), ctx);
+        const few = checkPresent(craft(jewel({ passives: 3, text: "lightning damage" }), []), ctx);
         expect(few.diagnostics[0]?.message).toContain("adds 8 to 12 passive skills");
         const ring = item({
             base: "Iron Ring",
@@ -70,7 +73,7 @@ describe("a cluster jewel's enchant", () => {
             rarity: "rare",
             enchant: { passives: 8, text: "x" },
         });
-        expect(check(craft(ring, []), ctx).diagnostics[0]?.message).toContain(
+        expect(checkPresent(craft(ring, []), ctx).diagnostics[0]?.message).toContain(
             "Only a cluster jewel",
         );
     });
@@ -85,11 +88,13 @@ describe("a cluster jewel's enchant and its size", () => {
 
     it("refuses an enchantment of another size's jewels", () => {
         const small = jewel({ passives: 2, text: "lightning damage" }, [], "Small Cluster Jewel");
-        expect(check(craft(small, []), { registry: sized }).diagnostics[0]?.message).toContain(
+        expect(
+            checkPresent(craft(small, []), { registry: sized }).diagnostics[0]?.message,
+        ).toContain(
             'A small cluster jewel cannot have the "lightning damage" enchant — it is a large cluster jewel\'s',
         );
         const large = jewel({ passives: 8, text: "lightning damage" });
-        expect(check(craft(large, []), { registry: sized }).diagnostics).toEqual([]);
+        expect(checkPresent(craft(large, []), { registry: sized }).diagnostics).toEqual([]);
     });
 });
 
@@ -97,17 +102,17 @@ describe("a rare reforge on a jewel", () => {
     const lightning = { passives: 8, text: "lightning damage" };
 
     it("leaves three or four modifiers, so an exalt fits where it left three", () => {
-        const r = check(craft(jewel(lightning), [op("chaos")]), ctx);
+        const r = checkPresent(craft(jewel(lightning), [op("chaos")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.counts.total).toEqual([3, 4]);
         expect(r.finalState!.counts.prefix).toEqual([1, 2]);
-        const refused = check(craft(jewel(lightning), [op("chaos"), op("exalt")]), ctx);
+        const refused = checkPresent(craft(jewel(lightning), [op("chaos"), op("exalt")]), ctx);
         expect(refused.diagnostics[0]?.message).toContain("the item may be full");
         const narrowed = craft(jewel(lightning), [
             op("chaos"),
             iff(cmp("prefixCount", "==", 1), [op("exalt")]),
         ]);
-        expect(check(narrowed, ctx).diagnostics).toEqual([]);
+        expect(checkPresent(narrowed, ctx).diagnostics).toEqual([]);
     });
 
     it("holds for an alchemy", () => {
@@ -117,20 +122,22 @@ describe("a rare reforge on a jewel", () => {
             rarity: "normal",
             enchant: lightning,
         });
-        const alchemy = check(craft(normal, [op("alchemy")]), ctx);
+        const alchemy = checkPresent(craft(normal, [op("alchemy")]), ctx);
         expect(alchemy.diagnostics).toEqual([]);
         expect(alchemy.finalState!.counts.total).toEqual([3, 4]);
     });
 
     it("holds for a Harvest reforge", () => {
-        const r = check(craft(jewel(lightning), [harvest("reforge", "lightning")]), ctx);
+        const r = checkPresent(craft(jewel(lightning), [harvest("reforge", "lightning")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.counts.total).toEqual([3, 4]);
     });
 
     it("a ring still takes four to six", () => {
         const ring = item({ base: "Iron Ring", ilvl: 84, rarity: "rare" });
-        expect(check(craft(ring, [op("chaos")]), ctx).finalState!.counts.total).toEqual([4, 6]);
+        expect(checkPresent(craft(ring, [op("chaos")]), ctx).finalState!.counts.total).toEqual([
+            4, 6,
+        ]);
     });
 });
 
@@ -139,13 +146,13 @@ describe("a cluster jewel's notables", () => {
         // Every notable adds a tag on which its generation table is zero below
         // Medium, so with one on a Small jewel no exalt can add another.
         const lightning = { passives: 2, text: "lightning damage" };
-        const small = check(
+        const small = checkPresent(
             craft(jewel(lightning, ["sadist"], "Small Cluster Jewel"), [op("exalt")]),
             ctx,
         );
         expect(small.diagnostics).toEqual([]);
         expect(small.finalState!.possible.has(NOTABLE_OVERSHOCK.type)).toBe(false);
-        const medium = check(
+        const medium = checkPresent(
             craft(
                 jewel(
                     { passives: 4, text: "lightning damage" },
@@ -158,7 +165,7 @@ describe("a cluster jewel's notables", () => {
         );
         expect(medium.diagnostics).toEqual([]);
         expect(medium.finalState!.possible.has(NOTABLE_OVERSHOCK.type)).toBe(true);
-        const large = check(
+        const large = checkPresent(
             craft(jewel({ passives: 8, text: "lightning damage" }, ["sadist"]), [op("exalt")]),
             ctx,
         );
@@ -171,6 +178,6 @@ describe("a cluster jewel's notables", () => {
             jewel({ passives: 2, text: "lightning damage" }, ["sadist"], "Small Cluster Jewel"),
             [until(has("overshock"), [op("exalt")])],
         );
-        expect(check(c, ctx).diagnostics.length).toBeGreaterThan(0);
+        expect(checkPresent(c, ctx).diagnostics.length).toBeGreaterThan(0);
     });
 });

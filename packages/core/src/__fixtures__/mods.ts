@@ -1160,6 +1160,22 @@ export const MAXMANA_TIERS: readonly Mod[] = [
 
 export const TIERED_CATALOG: readonly Mod[] = [MAXLIFE_T1, MAXLIFE_T2, MAXLIFE_T3, FIRE_RES_TIERED];
 
+/** Six prefixes and six suffixes of their own types and families, so a Rare
+ *  item of a small catalogue need not carry any one modifier. */
+export const FILLERS: readonly Mod[] = (["prefix", "suffix"] as const).flatMap((gen) =>
+    [1, 2, 3, 4, 5, 6].map((n) =>
+        mkMod({
+            id: `Filler${gen}${n}`,
+            type: `Filler${gen}${n}`,
+            gen,
+            minLevel: 1,
+            families: [`Filler${gen}${n}`],
+            spawn: [spawn(TAG_DEFAULT, 100)],
+            text: `${n}% filler ${gen}`,
+        }),
+    ),
+);
+
 /** The generation table of every cluster notable, as the data has it: full weight
  *  on a Large or Medium jewel, none on a Small one once a notable is on it. */
 const NOTABLE_GENERATION: readonly SpawnEntry[] = [

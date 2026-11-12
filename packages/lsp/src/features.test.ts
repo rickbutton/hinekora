@@ -213,6 +213,31 @@ if not has "maximum life" { bench "cold resistance" }`;
         expect(md).toMatch(/\nWithout: .*maximum life/i);
     });
 
+    it("shows on a refused step an item that breaks it", () => {
+        const src = `item { base: "Vaal Regalia" ilvl: 84 rarity: rare prefixes: [ "random", "random", "random" ] suffixes: [ "random", "random" ] }
+annul
+bench "maximum life"`;
+        const md = getHover(src, src.indexOf("bench") + 1, registry)!;
+        const example = md.indexOf("_For example, this item:_");
+        expect(example).toBeGreaterThan(0);
+        // Its own item, three prefixes and no room for the bench's, before the step's items.
+        const block = md.slice(example, md.indexOf("```", md.indexOf("```", example) + 3));
+        expect(block.match(/\{ Prefix Modifier/g)).toHaveLength(3);
+        expect(getHover(src, src.indexOf("annul") + 1, registry)!).not.toContain("For example");
+    });
+
+    it("shows a group the guide waits for however many modifiers it holds", () => {
+        const src = `item { base: "Titan Greaves" ilvl: 84 rarity: normal }
+until has "fire resistance" t1 or has "cold resistance" t1 or has "lightning resistance" t1 or has "chaos resistance" t1 {
+  essence "greed" t1
+}`;
+        const md = getHover(src, src.indexOf("until") + 1, registry)!;
+        const group = md.slice(md.indexOf("{ At least one of these suffix modifiers }"));
+        for (const r of ["Fire", "Cold", "Lightning", "Chaos"]) {
+            expect(group).toContain(`to ${r} Resistance`);
+        }
+    });
+
     it("shows a disjunctive guarantee as 'at least one of'", () => {
         const src = `item { base: "Titan Greaves" ilvl: 84 rarity: normal }
 until has "fire resistance" t1 or has "cold resistance" t1 or has "lightning resistance" t1 {

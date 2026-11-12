@@ -15,7 +15,13 @@ import type { Gen, ModId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 import type { Registry } from "../resolve/registry.js";
 import { type AItem, type RPred, refine } from "../check/astate.js";
-import { type CheckResult, predicateResolver, type TraceEntry } from "../check/check.js";
+import {
+    predicateResolver,
+    type PresentCheckResult,
+    type PresentTraceEntry as TraceEntry,
+} from "../check/check.js";
+import type { CheckResult } from "../exact/check.js";
+import { presentResultOf } from "./bridge.js";
 import { findMethod, type Literal } from "../check/methods.js";
 import { rollableGen } from "../resolve/tiers.js";
 import { influenceTagsAny } from "../check/ops.js";
@@ -147,10 +153,11 @@ interface Walk {
 
 export function costOf(
     craft: Craft,
-    result: CheckResult,
+    checked: CheckResult,
     registry: Registry,
     snapshot?: Prices,
 ): CostReport {
+    const result = presentResultOf(craft, checked, registry);
     const estimate = walk(craft, result, registry, snapshot, "estimate");
     // The two ends of what the checker allows, for the spread beside the
     // estimate. A walk the tracker followed throughout reads no open range but
@@ -197,7 +204,7 @@ export function costOf(
 
 function walk(
     craft: Craft,
-    result: CheckResult,
+    result: PresentCheckResult,
     registry: Registry,
     snapshot: Prices | undefined,
     reading: Reading,
@@ -430,7 +437,7 @@ class Walker {
 
     constructor(
         craft: Craft,
-        result: CheckResult,
+        result: PresentCheckResult,
         private readonly registry: Registry,
         private readonly reading: Reading,
     ) {
@@ -445,7 +452,7 @@ class Walker {
 
     /** Every condition and bench craft of the guide, read on the checker's
      *  item where it stands, names what the tracker follows. */
-    private trackerFor(craft: Craft, result: CheckResult): Tracker | undefined {
+    private trackerFor(craft: Craft, result: PresentCheckResult): Tracker | undefined {
         const first = result.trace[0]?.before;
         if (first === undefined) return undefined;
         const items: AItem[] = [];

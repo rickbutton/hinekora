@@ -19,6 +19,7 @@ import {
     NO_INFLUENCE,
 } from "../model/marks.js";
 import { withArticle } from "../resolve/messages.js";
+import type { ItemView } from "../render/item.js";
 import { baseLabel } from "../render/render.js";
 import { CountDomain, type Counts } from "./counts.js";
 import type { Range } from "./domain.js";
@@ -28,6 +29,9 @@ import { capitalise, plural, RARITY_WORD, rangeText, rarityText } from "../words
 export interface CheckDiagnostic {
     readonly message: string;
     readonly span: SourceSpan;
+    /** A refused step's item that breaks it, where the step is used on more
+     *  than one item and the message alone cannot say which. */
+    readonly example?: ItemView;
 }
 
 /**

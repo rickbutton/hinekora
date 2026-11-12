@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { guaranteedTypes } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { benchRemove, craft, has, iff, item, notp, op } from "../__fixtures__/ast.js";
@@ -26,7 +26,7 @@ describe("a bench affix in the item block", () => {
             }),
             [],
         );
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.crafted).toEqual([1, 1]);
         expect(guaranteedTypes(r.finalState!).has(BENCH_LIFE_ROW.type)).toBe(true);
@@ -40,7 +40,7 @@ describe("a bench affix in the item block", () => {
             prefixes: [{ mod: "random", bench: true }],
             suffixes: ["FireResist1"],
         });
-        const r = check(craft(start, [benchRemove()]), ctx);
+        const r = checkPresent(craft(start, [benchRemove()]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.counts.total).toEqual([1, 1]);
         expect(r.finalState!.crafted).toEqual([0, 0]);
@@ -52,9 +52,9 @@ describe("a bench affix in the item block", () => {
             prefixes: ["random"],
             suffixes: ["FireResist1"],
         });
-        expect(check(craft(natural, [benchRemove()]), ctx).diagnostics[0]!.message).toContain(
-            "No crafted modifier is guaranteed",
-        );
+        expect(
+            checkPresent(craft(natural, [benchRemove()]), ctx).diagnostics[0]!.message,
+        ).toContain("No crafted modifier is guaranteed");
     });
 
     it("anonymous, may still be the bench's row after an add drew its type's natural rows", () => {
@@ -73,7 +73,7 @@ describe("a bench affix in the item block", () => {
                 iff(notp(has("maximum life", 1)), [iff(notp(has("maximum life", 2)), [])]),
             ]),
         ]);
-        expect(check(c, ctx).diagnostics).toEqual([]);
+        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
     });
 
     it("anonymous, may still be the bench's row after an add that could draw one row only", () => {
@@ -95,6 +95,6 @@ describe("a bench affix in the item block", () => {
             op("exalt"),
             iff(has("maximum life"), [iff(notp(has("maximum life", 1)), [])]),
         ]);
-        expect(check(c, { registry: narrow }).diagnostics).toEqual([]);
+        expect(checkPresent(c, { registry: narrow }).diagnostics).toEqual([]);
     });
 });

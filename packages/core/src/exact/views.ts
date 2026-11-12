@@ -215,6 +215,31 @@ export function craftedTypes(s: XItem): ReadonlySet<TypeId> {
     );
 }
 
+/** Is the type crafted on every item that carries it (and on some)? */
+export function isCrafted(s: XItem, type: TypeId): boolean {
+    const at = presentValues(s, type);
+    return at !== undefined && at.values.length > 0 && at.values.every((v) => v.crafted);
+}
+
+/**
+ * The least and greatest number of modifiers whose type is not one of
+ * `named`, on the `gen` side when given (a value counts on its own row's
+ * side): what a view that names `named` leaves unnamed.
+ */
+export function countOutside(s: XItem, named: ReadonlySet<TypeId>, gen?: Gen): Range {
+    const key = `outside:${gen ?? "*"}:${[...named].sort().join(",")}`;
+    return memo(s, key, () => {
+        const counted = new Set(
+            s.u.modSlots().filter((slot) => !named.has(s.u.modSlot(slot)!.type)),
+        );
+        const weight = (slot: number, value: number): number => {
+            if (value === 0 || !counted.has(slot)) return 0;
+            return gen === undefined || s.u.modSlot(slot)!.values[value]!.row.gen === gen ? 1 : 0;
+        };
+        return s.u.dd.extent(s.dd, weight) ?? [0, 0];
+    });
+}
+
 /** Is the type present and fractured on every item? */
 export function isFractured(s: XItem, type: TypeId): boolean {
     const at = presentValues(s, type);
@@ -534,6 +559,56 @@ export function disjunctiveTier(s: XItem, types: readonly TypeId[]): Map<TypeId,
         }
     }
     return chosen ?? new Map<TypeId, ModId>();
+}
+
+/**
+ * For "at least `atLeast` of these types", the rows of each member the
+ * guarantee rests on: those it is at on the items that carry no more members
+ * than the guarantee asks, where each member present is needed. Empty when
+ * the items do not carry `atLeast` members at those rows, so the guarantee
+ * names no rows; a member no such item needs keeps every row.
+ */
+export function clauseRows(
+    s: XItem,
+    types: readonly TypeId[],
+    atLeast = 1,
+): ReadonlyMap<TypeId, readonly Mod[]> {
+    return memo(s, `clauseRows:${atLeast}:${[...types].sort().join(",")}`, () => {
+        const u = s.u;
+        const m = u.dd;
+        const members = types.flatMap((t) => {
+            const slot = u.slotOfType(t);
+            return slot === undefined ? [] : [{ t, slot }];
+        });
+        const slots = new Set(members.map((x) => x.slot));
+        const tight = m.and(
+            s.dd,
+            m.automaton<number>({
+                init: 0,
+                slots: [...slots].sort((a, b) => a - b),
+                step: (_slot, value, c) => (value === 0 ? c : c + 1 > atLeast ? undefined : c + 1),
+                accept: (c) => c === atLeast,
+                key: (c) => c,
+            }),
+        );
+        const out = new Map<TypeId, readonly Mod[]>();
+        const pinned = new Map<number, ReadonlySet<ModId>>();
+        for (const { t, slot } of members) {
+            const ms = u.modSlot(slot)!;
+            const needed = new Set(
+                m.valuesOf(tight, slot).flatMap((v) => (v === 0 ? [] : [ms.values[v]!.row.id])),
+            );
+            const rows = rowsOf(s, t).filter((r) => needed.size === 0 || needed.has(r.id));
+            out.set(t, rows);
+            pinned.set(slot, new Set(rows.map((r) => r.id)));
+        }
+        const weight = (slot: number, value: number): number =>
+            value !== 0 && pinned.get(slot)?.has(u.modSlot(slot)!.values[value]!.row.id) === true
+                ? 1
+                : 0;
+        const fewest = m.extent(s.dd, weight)?.[0] ?? 0;
+        return fewest >= atLeast ? out : new Map<TypeId, readonly Mod[]>();
+    });
 }
 
 // --- pool facts ------------------------------------------------------------------

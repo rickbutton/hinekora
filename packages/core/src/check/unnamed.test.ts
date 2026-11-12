@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { bench, cmp, craft, iff, item, notp, op, stop } from "../__fixtures__/ast.js";
 import {
@@ -28,7 +28,7 @@ describe("a side the named modifiers fill", () => {
             item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes: [LIFE_T1.id] }),
             [op("exalt"), iff(notp(cmp("prefixCount", "==", 1)), [stop()])],
         );
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         const possible = r.finalState!.possible;
         expect(possible.has(LIFE_T1.type)).toBe(true);
@@ -41,6 +41,6 @@ describe("a side the named modifiers fill", () => {
             item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes: [INCREASED_MANA.id] }),
             [op("exalt"), iff(notp(cmp("prefixCount", "==", 1)), [stop()]), bench("maximum life")],
         );
-        expect(check(c, ctx).diagnostics).toEqual([]);
+        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
     });
 });

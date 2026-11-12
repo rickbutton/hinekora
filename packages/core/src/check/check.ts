@@ -76,7 +76,7 @@ const cmpAtLeast = (projection: "prefixCount" | "suffixCount", value: number): R
 });
 
 /** The abstract item state before and after a statement (or the item block). */
-export interface TraceEntry {
+export interface PresentTraceEntry {
     readonly span: SourceSpan;
     /** What produced this entry, the statement kind, or "item" for the block. */
     readonly kind: Stmt["kind"] | "item";
@@ -87,10 +87,13 @@ export interface TraceEntry {
      *  run as several (a step parameter used twice). */
     readonly stmt?: Stmt;
     /** A call's body with its arguments bound, and its own trace. */
-    readonly inlined?: { readonly body: readonly Stmt[]; readonly trace: readonly TraceEntry[] };
+    readonly inlined?: {
+        readonly body: readonly Stmt[];
+        readonly trace: readonly PresentTraceEntry[];
+    };
 }
 
-export interface CheckResult {
+export interface PresentCheckResult {
     readonly ok: boolean;
     readonly diagnostics: readonly CheckDiagnostic[];
     /** The abstract item state after the last fall-through statement, if any. */
@@ -100,24 +103,7 @@ export interface CheckResult {
      * ("what is my item here"). Populated on the real pass only, so each source
      * statement appears once.
      */
-    readonly trace: readonly TraceEntry[];
-}
-
-/**
- * The innermost (smallest-span) trace entry containing `offset`. Hovering a
- * loop (whose span runs through its closing `}`) yields the loop entry, whose
- * `after` is the proven post-loop state.
- */
-export function traceAt(trace: readonly TraceEntry[], offset: number): TraceEntry | undefined {
-    let best: TraceEntry | undefined;
-    for (const e of trace) {
-        if (e.span.start.offset <= offset && offset < e.span.end.offset) {
-            const width = e.span.end.offset - e.span.start.offset;
-            if (best === undefined || width < best.span.end.offset - best.span.start.offset)
-                best = e;
-        }
-    }
-    return best;
+    readonly trace: readonly PresentTraceEntry[];
 }
 
 /** The rounds a loop's invariant is given to settle. Every round is exact, and
@@ -273,7 +259,11 @@ function initialAItem(bdd: BddManager, registry: Registry, decl: ItemDecl): AIte
     return { ...start, possible, tiers };
 }
 
-export function check(craft: Craft, ctx: CheckContext, tuning: CheckTuning = {}): CheckResult {
+export function checkPresent(
+    craft: Craft,
+    ctx: CheckContext,
+    tuning: CheckTuning = {},
+): PresentCheckResult {
     return new Checker(ctx.registry, tuning.maxRounds, tuning.maxParts).run(craft);
 }
 
@@ -285,7 +275,7 @@ class Checker {
     /** How many diagnostics the quiet passes held back: a quiet run of a step
      *  that moves it found something to report. */
     private unsaid = 0;
-    private readonly trace: TraceEntry[] = [];
+    private readonly trace: PresentTraceEntry[] = [];
     /** One BDD manager per check, shared by all states so `presence` ids compare. */
     private readonly bdd = new BddManager();
     /** Local predicate defs. */
@@ -296,8 +286,8 @@ class Checker {
     private readonly env: PredEnv;
     /** Where statements are recorded: the trace, or a call's own while its
      *  body runs, so hover sees a call as one step. */
-    private sink: TraceEntry[] = this.trace;
-    private readonly inlined = new WeakMap<Stmt, NonNullable<TraceEntry["inlined"]>>();
+    private sink: PresentTraceEntry[] = this.trace;
+    private readonly inlined = new WeakMap<Stmt, NonNullable<PresentTraceEntry["inlined"]>>();
     /** Stack of `restart` back-edge collectors, innermost loop last. A `restart`
      *  re-enters the innermost enclosing loop, so its state is a loop-head state
      *  that must join into that loop's invariant. */
@@ -342,7 +332,7 @@ class Checker {
         });
     }
 
-    run(craft: Craft): CheckResult {
+    run(craft: Craft): PresentCheckResult {
         this.collectDefs(craft.defs);
         this.collectProcs(craft.procs);
         const initial = this.elaborateItem(craft.item);
@@ -351,7 +341,7 @@ class Checker {
         }
         this.trace.push({ span: craft.item.span, kind: "item", before: initial, after: initial });
         const flow = this.checkSeq([initial], craft.body);
-        const result: CheckResult = {
+        const result: PresentCheckResult = {
             ok: this.diagnostics.length === 0,
             diagnostics: this.diagnostics,
             trace: this.trace,
@@ -854,7 +844,7 @@ class Checker {
         // pass and its invariant is found again (`settled`).
         const body = this.bodies.get(stmt) ?? substituteStmts(proc.body, env);
         this.bodies.set(stmt, body);
-        const trace: TraceEntry[] = [];
+        const trace: PresentTraceEntry[] = [];
         const outer = this.sink;
         this.sink = trace;
         try {

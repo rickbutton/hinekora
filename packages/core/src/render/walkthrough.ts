@@ -8,10 +8,10 @@
  */
 import type { Arg, Craft, OperationArg, Pred, Stmt } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
-import type { AItem } from "../check/astate.js";
-import { type CheckResult, type TraceEntry } from "../check/check.js";
 import { describePred } from "../check/diagnostics.js";
 import { findMethod } from "../check/methods.js";
+import type { CheckResult, TraceEntry } from "../exact/check.js";
+import type { XItem } from "../exact/state.js";
 import type { Registry } from "../resolve/registry.js";
 import { criteria, type Criterion, type Wording } from "./conditions.js";
 import {
@@ -27,9 +27,9 @@ import { pluralRange, rangeText, rarityText } from "../words.js";
 interface StepBase {
     readonly span: SourceSpan;
     /** The item entering the step; absent when the step was never reached. */
-    readonly before?: AItem;
+    readonly before?: XItem;
     /** The item after it; absent when every path through it ends the craft. */
-    readonly after?: AItem;
+    readonly after?: XItem;
     /** The checker's findings on this very statement, in the game's words. */
     readonly problems: readonly string[];
 }
@@ -67,7 +67,7 @@ export type Step =
 
 export interface Walkthrough {
     /** The item block and the item it declares. */
-    readonly start: { readonly span: SourceSpan; readonly item?: AItem };
+    readonly start: { readonly span: SourceSpan; readonly item?: XItem };
     readonly steps: readonly Step[];
 }
 
@@ -152,7 +152,7 @@ export function walkthrough(craft: Craft, result: CheckResult, registry: Registr
     const start = result.trace.find((e) => e.kind === "item");
     const startItem = start?.after ?? start?.before;
     const wording: Wording | undefined =
-        startItem === undefined ? undefined : { base: startItem.base, ilvl: craft.item.ilvl };
+        startItem === undefined ? undefined : { base: startItem.u.base, ilvl: craft.item.ilvl };
     const check = (pred: Pred): Criterion => criteria(pred, craft, registry, wording);
 
     const steps = (stmts: readonly Stmt[]): Step[] => stmts.flatMap((s) => step(s));
@@ -261,8 +261,13 @@ export function itemDelta(before: ItemView, after: ItemView): ItemDelta {
     };
 }
 
-/** `itemDelta` over the states of a step, when both are known. */
-export function stepDelta(step: StepBase, registry: Registry): ItemDelta | undefined {
+/** `itemDelta` over the items of a step, when both are known; with the
+ *  craft, its groups are read as `itemView` reads them. */
+export function stepDelta(
+    step: StepBase,
+    registry: Registry,
+    craft?: Craft,
+): ItemDelta | undefined {
     if (step.before === undefined || step.after === undefined) return undefined;
-    return itemDelta(itemView(step.before, registry), itemView(step.after, registry));
+    return itemDelta(itemView(step.before, registry, craft), itemView(step.after, registry, craft));
 }

@@ -5,7 +5,9 @@
  */
 import {
     check,
+    type CheckDiagnostic,
     costOf,
+    EXAMPLE_LEAD,
     flowchart,
     figure,
     inChaos,
@@ -53,20 +55,30 @@ export function checkSource(source: string, file: string, registry: Registry): C
     if (result.ok) {
         // The final item in the game's copy-to-clipboard layout, indented under the verdict.
         const item = result.finalState
-            ? renderItemText(itemView(result.finalState, registry))
-                  .split("\n")
-                  .map((l) => `  ${l}`)
-                  .join("\n")
+            ? indented(renderItemText(itemView(result.finalState, registry, parsed.craft)), 2)
             : "  (every path ends the craft before this point)";
         return { ok: true, output: `✓ ${file} checks.\n\n${item}` };
     }
 
-    const blocks = result.diagnostics.map((d) => formatDiagnostic(source, file, d.message, d.span));
+    const blocks = result.diagnostics.map((d) => errorText(source, file, d));
     const n = result.diagnostics.length;
     return {
         ok: false,
         output: `${blocks.join("\n\n")}\n\n✗ ${n} ${plural(n, "error")}`,
     };
+}
+
+const indented = (text: string, by: number): string =>
+    text
+        .split("\n")
+        .map((l) => `${" ".repeat(by)}${l}`)
+        .join("\n");
+
+/** An error, and under it the item that breaks the step where it names one. */
+function errorText(source: string, file: string, d: CheckDiagnostic): string {
+    const head = formatDiagnostic(source, file, d.message, d.span);
+    if (d.example === undefined) return head;
+    return `${head}\n  ${EXAMPLE_LEAD}\n${indented(renderItemText(d.example), 4)}`;
 }
 
 /**

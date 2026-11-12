@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { narrowRange, rollRange } from "./values.js";
 import {
@@ -55,7 +55,7 @@ describe("a value condition where paths left different items", () => {
             iff(notp(has("maximum life")), [op("annul")]),
             iff(hasValue("maximum life", ">=", 100), [op("annul")]),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         const inside = r.trace.filter((e) => e.kind === "operation").at(-1)!;
         expect(inside.before.counts.total).toEqual([1, 1]);
@@ -103,7 +103,7 @@ describe("has <mod> t<n> <cmp> <n>, on a modifier at another tier", () => {
         const c = craft(ring([{ mod: "maximum life", tier: 2 }]), [
             iff(hasValue("maximum life", ">=", 120, 1), [op("annul")], [op("exalt")]),
         ]);
-        expect(check(c, ctx).diagnostics.map((d) => d.message)).toEqual([
+        expect(checkPresent(c, ctx).diagnostics.map((d) => d.message)).toEqual([
             `the 'if' branch can never run: has "maximum life" t1 >= 120 is impossible here`,
         ]);
     });
@@ -119,7 +119,7 @@ describe("has <mod> t<n> <cmp> <n>, on a modifier at another tier", () => {
                 [iff(has("maximum life", 2), [op("annul")])],
             ),
         ]);
-        expect(check(c, ctx).diagnostics).toEqual([]);
+        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
     });
 
     it("leaves the tiers it does not name where the item may be at several", () => {
@@ -127,7 +127,7 @@ describe("has <mod> t<n> <cmp> <n>, on a modifier at another tier", () => {
             until(orp(has("maximum life", 1), has("maximum life", 2)), [op("chaos")]),
             iff(hasValue("maximum life", ">=", 120, 1), [stop()]),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.tiers.get(LIFE)).toEqual(new Set(["MaxLifeHigh", "MaxLifeMid"]));
         expect(r.finalState!.values.get(LIFE)).toBeUndefined();
@@ -140,7 +140,7 @@ describe("has <mod> <cmp> <n>", () => {
         const c = craft(ring([{ mod: "maximum life", tier: 1 }]), [
             until(hasValue("maximum life", ">=", 120), [op("divine")]),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.values.get(LIFE)).toEqual([120, 129]);
     });
@@ -149,7 +149,7 @@ describe("has <mod> <cmp> <n>", () => {
         const c = craft(ring([{ mod: "maximum life", tier: 3 }]), [
             iff(hasValue("maximum life", ">=", 50), [op("exalt")]),
         ]);
-        expect(check(c, ctx).diagnostics.map((d) => d.message)).toEqual([
+        expect(checkPresent(c, ctx).diagnostics.map((d) => d.message)).toEqual([
             expect.stringContaining("can never run"),
         ]);
     });
@@ -160,7 +160,7 @@ describe("has <mod> <cmp> <n>", () => {
             op("chaos"),
             until(hasValue("maximum life", ">=", 100), [op("chaos")]),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.tiers.get(LIFE)).toEqual(new Set([MAXLIFE_T1.id]));
         expect(r.finalState!.values.get(LIFE)).toEqual([115, 129]);
@@ -173,7 +173,7 @@ describe("has <mod> <cmp> <n>", () => {
         const c = craft(ring([{ mod: "maximum life", tier: 1 }]), [
             until(notp(hasValue("maximum life", ">=", 120)), [op("divine")]),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.values.get(LIFE)).toEqual([115, 119]);
     });
@@ -183,7 +183,7 @@ describe("has <mod> <cmp> <n>", () => {
             until(hasValue("maximum life", ">=", 120), [op("divine")]),
             op("chaos"),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.values.has(LIFE)).toBe(false);
     });
@@ -200,7 +200,7 @@ describe("has <mod> <cmp> <n>", () => {
             bench("maximum life"),
             until(hasValue("maximum life", ">=", 20), [op("divine")]),
         ]);
-        const r = check(c, { registry: benched });
+        const r = checkPresent(c, { registry: benched });
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.values.get(LIFE)).toEqual([20, 25]);
     });
@@ -211,9 +211,12 @@ describe("has <mod> <cmp> <n>", () => {
             mods: [...TIERED_CATALOG, MAXLIFE_BLANK],
         });
         const guarded = (pred: Parameters<typeof iff>[0]) =>
-            check(craft(ring(), [until(has("maximum life"), [op("chaos")]), iff(pred, [stop()])]), {
-                registry: blank,
-            });
+            checkPresent(
+                craft(ring(), [until(has("maximum life"), [op("chaos")]), iff(pred, [stop()])]),
+                {
+                    registry: blank,
+                },
+            );
         // What continues past `if has >= 115 { stop }` is the negative branch.
         const below = guarded(hasValue("maximum life", ">=", 115));
         expect(below.diagnostics).toEqual([]);
@@ -241,13 +244,16 @@ describe("has <mod> <cmp> <n>", () => {
             rarity: "rare",
             prefixes: [{ mod: "maximum life", tier: 1 }],
         });
-        const r = check(craft(amulet, [iff(notp(hasValue("maximum life", ">=", 120)), [stop()])]), {
-            registry: simplex,
-        });
+        const r = checkPresent(
+            craft(amulet, [iff(notp(hasValue("maximum life", ">=", 120)), [stop()])]),
+            {
+                registry: simplex,
+            },
+        );
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.values.get(LIFE)).toEqual([120, 129]);
         // What the item shows (twice the row) is beyond the row's span: the implicit is not applied.
-        const shown = check(
+        const shown = checkPresent(
             craft(amulet, [iff(hasValue("maximum life", ">=", 240), [op("divine")])]),
             { registry: simplex },
         );
@@ -262,7 +268,7 @@ describe("has <mod> <cmp> <n>", () => {
             iff(notp(hasValue("maximum life", ">=", 80)), [stop()]),
             iff(notp(has("maximum life", 1)), [stop()]),
         ]);
-        const r = check(reached, ctx);
+        const r = checkPresent(reached, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.values.get(LIFE)).toEqual([115, 129]);
     });
@@ -286,7 +292,7 @@ describe("has <mod> <cmp> <n>", () => {
                 iff(has("energy shield"), [op("annul")], [essence("Shrieking Essence of Woe")]),
             ]),
         ]);
-        const r = check(c, { registry: placed });
+        const r = checkPresent(c, { registry: placed });
         expect(r.diagnostics).toEqual([]);
         expect([...(r.finalState!.tiers.get(AMULET_ES_ROW.type) ?? [])]).toEqual([
             AMULET_ES_ROW.id,
@@ -311,7 +317,7 @@ describe("has <mod> <cmp> <n>", () => {
             essence("Shrieking Essence of Woe"),
             iff(hasValue("energy shield", ">=", 35), [op("divine")]),
         ]);
-        expect(check(c, { registry: placed }).diagnostics).toEqual([]);
+        expect(checkPresent(c, { registry: placed }).diagnostics).toEqual([]);
     });
 
     it("reads a row that rolls only under a tag an unnamed modifier may add", () => {
@@ -329,7 +335,7 @@ describe("has <mod> <cmp> <n>", () => {
             suffixes: ["random"],
         });
         const c = craft(anonymous, [iff(hasValue(STAFFY_VALUE.id, ">=", 15), [stop()])]);
-        expect(check(c, { registry: gated }).diagnostics).toEqual([]);
+        expect(checkPresent(c, { registry: gated }).diagnostics).toEqual([]);
     });
 
     it("reads only the rows the item may carry, so another base's row is out of reach", () => {
@@ -340,7 +346,7 @@ describe("has <mod> <cmp> <n>", () => {
         const c = craft(ring([{ mod: "maximum life", tier: 1 }]), [
             iff(hasValue("maximum life", ">=", 200), [op("exalt")]),
         ]);
-        expect(check(c, { registry: armour }).diagnostics.map((d) => d.message)).toEqual([
+        expect(checkPresent(c, { registry: armour }).diagnostics.map((d) => d.message)).toEqual([
             expect.stringContaining("can never run"),
         ]);
     });
@@ -351,7 +357,7 @@ describe("has <mod> <cmp> <n>", () => {
             mods: [...TIERED_CATALOG, PROTECT_PREFIXES_CARRIER],
         });
         const inRange = (suffixes: string[]) =>
-            check(
+            checkPresent(
                 craft(
                     item({
                         base: "IronRing",
@@ -371,7 +377,7 @@ describe("has <mod> <cmp> <n>", () => {
     });
 
     it("the Divine Orb is refused on a Normal item", () => {
-        const r = check(craft(ring([], "normal"), [op("divine")]), ctx);
+        const r = checkPresent(craft(ring([], "normal"), [op("divine")]), ctx);
         expect(r.diagnostics[0]?.message).toContain("Requires a Magic or Rare item");
     });
 });
@@ -398,9 +404,9 @@ describe("a Tainted Divine Teardrop on a low item level", () => {
             corrupted: true,
         });
         const branch = iff(hasValue("maximum life", ">=", 70), [stop()]);
-        const before = check(craft(low, [branch]), ctx).diagnostics.map((d) => d.message);
+        const before = checkPresent(craft(low, [branch]), ctx).diagnostics.map((d) => d.message);
         expect(before).toEqual([expect.stringContaining("can never run")]);
-        const after = check(craft(low, [teardrop, branch]), ctx).diagnostics;
+        const after = checkPresent(craft(low, [teardrop, branch]), ctx).diagnostics;
         expect(after).toEqual([]);
     });
 });

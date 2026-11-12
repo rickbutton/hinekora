@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { andp, cmp, craft, has, iff, isRarity, item, op, until } from "../__fixtures__/ast.js";
 import { RING_BASE, TIERED_CATALOG } from "../__fixtures__/mods.js";
@@ -22,7 +22,7 @@ describe("checker — a loop whose exit takes several iterations", () => {
         const c = craft(fullRing(), [
             until(andp(cmp("prefixCount", "<=", 2), cmp("suffixCount", "<=", 2)), [op("annul")]),
         ]);
-        expect(check(c, ctx).diagnostics).toEqual([]);
+        expect(checkPresent(c, ctx).diagnostics).toEqual([]);
     });
 
     it("still reports an exit the body only moves away from", () => {
@@ -32,7 +32,7 @@ describe("checker — a loop whose exit takes several iterations", () => {
             item({ base: "IronRing", ilvl: 100, rarity: "rare", prefixes: ["maximum life"] }),
             [until(cmp("prefixCount", "==", 0), [op("exalt")])],
         );
-        const messages = check(c, ctx).diagnostics.map((d) => d.message);
+        const messages = checkPresent(c, ctx).diagnostics.map((d) => d.message);
         expect(messages.some((m) => m.includes("can never exit"))).toBe(true);
         expect(messages.some((m) => m.includes("has"))).toBe(false);
     });
@@ -51,7 +51,7 @@ describe("checker — the body runs only where the exit predicate is false", () 
             }),
             [until(cmp("prefixCount", "==", 3), [op("exalt")])],
         );
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect(r.finalState!.counts.total).toEqual([6, 6]);
     });
@@ -61,7 +61,7 @@ describe("checker — the body runs only where the exit predicate is false", () 
             item({ base: "IronRing", ilvl: 100, rarity: "rare", prefixes: ["random"] }),
             [until(cmp("prefixCount", "<=", 3), [op("annul")])],
         );
-        const messages = check(c, ctx).diagnostics.map((d) => d.message);
+        const messages = checkPresent(c, ctx).diagnostics.map((d) => d.message);
         expect(messages).toEqual([expect.stringContaining("this loop's body never runs")]);
     });
 
@@ -77,7 +77,7 @@ describe("checker — the body runs only where the exit predicate is false", () 
             }),
             [until(cmp("prefixCount", "==", 3), [op("exalt"), op("exalt")])],
         );
-        const messages = check(c, ctx).diagnostics.map((d) => d.message);
+        const messages = checkPresent(c, ctx).diagnostics.map((d) => d.message);
         expect(messages.some((m) => m.includes("open affix slot"))).toBe(true);
     });
 });
@@ -90,7 +90,7 @@ describe("checker — a modifier the item is known to carry rules out Normal", (
             until(has("maximum life"), [iff(isRarity("normal"), [op("alchemy")], [op("scour")])]),
             op("chaos"),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect([...r.finalState!.rarities]).toEqual(["rare"]);
     });
@@ -103,7 +103,7 @@ describe("checker — a modifier the item is known to carry rules out Normal", (
             ]),
             op("chaos"),
         ]);
-        const r = check(c, ctx);
+        const r = checkPresent(c, ctx);
         expect(r.diagnostics).toEqual([]);
         expect([...r.finalState!.rarities]).toEqual(["rare"]);
     });

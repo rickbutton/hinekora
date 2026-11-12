@@ -18,8 +18,8 @@
  * item's text as the game writes it. Nothing here keeps a position of its own.
  */
 import {
-    type AItem,
     type Bounds,
+    type Craft,
     type CostReport,
     type Criterion,
     figure,
@@ -42,6 +42,7 @@ import {
     type Stmt,
     type Walkthrough,
     walkthrough,
+    type XItem,
     pluralRange,
     rangeText,
     rarityText,
@@ -424,6 +425,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
     };
 
     const build = (
+        craft: Craft,
         w: Walkthrough,
         registry: Registry,
         report: CostReport | undefined,
@@ -543,13 +545,13 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
          * the rarity did, nothing when it did not change at all.
          */
         const result = (
-            state: AItem | undefined,
+            state: XItem | undefined,
             full: boolean,
             changed: boolean,
             caption?: string,
         ): HTMLElement | undefined => {
             if (state === undefined) return undefined;
-            const view = itemView(state, registry);
+            const view = itemView(state, registry, craft);
             const text = renderItemText(view);
             if (!full && text === last) return undefined;
             last = text;
@@ -577,7 +579,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
             switch (s.kind) {
                 case "operation":
                 case "call": {
-                    const delta = stepDelta(s, registry);
+                    const delta = stepDelta(s, registry, craft);
                     const changes = delta === undefined ? undefined : named(delta);
                     const changed =
                         changes !== undefined &&
@@ -845,6 +847,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
             root.classList.remove("stale");
             root.replaceChildren(
                 ...build(
+                    parsed.craft,
                     walkthrough(parsed.craft, result, registry),
                     registry,
                     costCached(source, registry, prices),

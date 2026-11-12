@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { type AItem, join, refine } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, item, op } from "../__fixtures__/ast.js";
@@ -12,7 +12,9 @@ const ctx: CheckContext = { registry };
  *  share what a join needs them to. */
 function around(prefixes: string[], step: string): { before: AItem; after: AItem } {
     const start = item({ base: "IronRing", ilvl: 100, rarity: "rare", prefixes });
-    const entry = check(craft(start, [op(step)]), ctx).trace.find((e) => e.kind === "operation")!;
+    const entry = checkPresent(craft(start, [op(step)]), ctx).trace.find(
+        (e) => e.kind === "operation",
+    )!;
     return { before: entry.before, after: entry.after! };
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "../check/check.js";
+import type { CheckContext } from "../check/check.js";
+import { check } from "../exact/check.js";
 import { buildRegistry } from "../resolve/registry.js";
 import {
     bench,
@@ -16,8 +17,11 @@ import {
 } from "../__fixtures__/ast.js";
 import {
     BENCH_LIFE_ROW,
+    BOOTS_BASE,
     CATALOG,
     CLASS_RING,
+    ELDRITCH_ROWS,
+    FILLERS,
     MAXLIFE_T2,
     RING_BASE,
     TIERED_CATALOG,
@@ -34,9 +38,12 @@ import {
     remainderText,
     renderItemText,
     rollSpan,
+    UNNAMED_IMPLICIT,
 } from "./item.js";
 
-const registry = buildRegistry({ bases: [RING_BASE], mods: TIERED_CATALOG });
+// More types than the tiered life and fire resistance alone, which a Rare ring
+// would always carry both of.
+const registry = buildRegistry({ bases: [RING_BASE], mods: [...TIERED_CATALOG, ...FILLERS] });
 const ctx: CheckContext = { registry };
 const ring = (prefixes: readonly (string | { mod: string; tier?: number })[] = []) =>
     item({ base: "IronRing", ilvl: 100, rarity: "rare", prefixes });
@@ -115,7 +122,7 @@ describe("the item in the game's copy layout", () => {
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
         const inBranch = r.trace.find((e) => e.kind === "operation")!;
-        expect(renderItemText(itemView(inBranch.before, registry))).toMatch(
+        expect(renderItemText(itemView(inBranch.before, registry, c))).toMatch(
             /--------\nWithout: maximum life$/,
         );
     });
@@ -331,5 +338,57 @@ describe("the tier numbers of an item whose level stops short of the best tier",
         expect(renderItemText(itemView(r.finalState!, essenced))).toContain(
             '{ Prefix Modifier "Robust" (Tier: 2) }',
         );
+    });
+});
+
+describe("what the guide names", () => {
+    const fill = (n: number) => has(`Fillerprefix${n}`);
+
+    it("shows a group the guide waits for, however many modifiers it holds", () => {
+        const c = craft(ring(), [
+            until(orp(fill(1), orp(fill(2), orp(fill(3), fill(4)))), [op("chaos")]),
+        ]);
+        const r = check(c, ctx);
+        expect(r.diagnostics).toEqual([]);
+        const named = renderItemText(itemView(r.finalState!, registry, c));
+        expect(named).toContain("{ At least one of these prefix modifiers }");
+        for (const n of [1, 2, 3, 4]) expect(named).toContain(`    ${n}% filler prefix`);
+        // Without the guide, a group of four is past what the items are searched for.
+        expect(renderItemText(itemView(r.finalState!, registry))).not.toContain("one of these");
+    });
+
+    it("lists no modifier as absent from an item that has none", () => {
+        const c = craft(item({ base: "IronRing", ilvl: 100, rarity: "normal" }), [
+            iff(has("maximum life"), [op("scour")]),
+        ]);
+        const r = check(c, ctx);
+        expect(itemView(r.trace[0]!.before, registry, c).without).toEqual([]);
+    });
+});
+
+describe("an eldritch implicit the game data has no wording for", () => {
+    const boots = buildRegistry({ bases: [BOOTS_BASE], mods: CATALOG, eldritch: ELDRITCH_ROWS });
+
+    it("is one of the wordings beside those it names", () => {
+        // The catalogue has no Lesser Exarch implicit; an ember of Greater has one.
+        const ember = {
+            ...op("ember"),
+            args: [{ kind: "word" as const, value: "greater", span: op("ember").span }],
+        };
+        const c = craft(
+            item({
+                base: "Iron Greaves",
+                ilvl: 100,
+                rarity: "rare",
+                prefixes: ["random"],
+                exarch: "lesser",
+            }),
+            [iff(has("IncreasedLife1"), [ember])],
+        );
+        const r = check(c, { registry: boots });
+        expect(r.diagnostics).toEqual([]);
+        const [implicit] = itemView(r.finalState!, boots, c).implicits;
+        expect(implicit!.texts).toEqual(["8% increased Movement Speed", UNNAMED_IMPLICIT]);
+        expect(implicit!.tiers).toEqual(["Lesser", "Greater"]);
     });
 });

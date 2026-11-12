@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { check } from "../check/check.js";
+import { checkPresent } from "../check/check.js";
+import { check } from "../exact/check.js";
 import type { RPred } from "../check/astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { craft, has, iff, item, op, stop } from "../__fixtures__/ast.js";
@@ -34,7 +35,7 @@ const registry = buildRegistry({
 describe("the tracked state", () => {
     it("a method whose every outcome ends the craft ends it", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 84, rarity: "rare" }), []);
-        const before = check(c, { registry }).finalState!;
+        const before = checkPresent(c, { registry }).finalState!;
         const tracker = new Tracker(registry, before, [before], [], []);
         const ends = tracker.transition(
             before,
@@ -48,7 +49,7 @@ describe("the tracked state", () => {
 
     it("a modifier held at a tier no condition names is not read back at a named one", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 84, rarity: "rare" }), [op("chaos")]);
-        const after = check(c, { registry }).trace.at(-1)!.after!;
+        const after = checkPresent(c, { registry }).trace.at(-1)!.after!;
         const top: RPred = { kind: "has", type: LIFE_T1.type, gen: "prefix", tierMod: LIFE_T1.id };
         const tracker = new Tracker(registry, after, [after], [top], []);
         const i = tracker.index.get(LIFE_T1.type)!;
@@ -74,7 +75,7 @@ describe("the tracked state", () => {
             }),
             [op("chaos")],
         );
-        const first = check(c, { registry }).trace.at(-1)!.before;
+        const first = checkPresent(c, { registry }).trace.at(-1)!.before;
         const tracker = new Tracker(registry, first, [first], [], []);
         const states = tracker.statesIn(first)!;
         expect(states).toHaveLength(1);
@@ -87,7 +88,7 @@ describe("the tracked state", () => {
 
     it("a reforge's outcomes from a state sum to one", () => {
         const c = craft(item({ base: "Iron Ring", ilvl: 84, rarity: "rare" }), [op("chaos")]);
-        const entry = check(c, { registry }).trace.at(-1)!;
+        const entry = checkPresent(c, { registry }).trace.at(-1)!;
         const top: RPred = { kind: "has", type: LIFE_T1.type, gen: "prefix", tierMod: LIFE_T1.id };
         const tracker = new Tracker(registry, entry.before, [entry.after!], [top], []);
         const built = findMethod(["chaos"])!.build([], entry.before, registry);
@@ -127,7 +128,7 @@ describe("the tracked state", () => {
             }),
             [op("dominance")],
         );
-        const entry = check(c, { registry: boots }).trace.at(-1)!;
+        const entry = checkPresent(c, { registry: boots }).trace.at(-1)!;
         const tracker = new Tracker(boots, entry.before, [entry.before], [], []);
         const built = findMethod(["dominance"])!.build([], entry.before, boots);
         if ("refused" in built) throw new Error(built.refused);
@@ -169,7 +170,7 @@ describe("a step's outcomes", () => {
             item({ base: "Iron Ring", ilvl: 84, rarity: "rare", prefixes: ["IncreasedLife1"] }),
             [op("annul")],
         );
-        const entry = check(c, { registry }).trace.at(-1)!;
+        const entry = checkPresent(c, { registry }).trace.at(-1)!;
         const tracker = new Tracker(registry, entry.before, [entry.before], [], []);
         const built = findMethod(["annul"])!.build([], entry.before, registry);
         if ("refused" in built) throw new Error(built.refused);

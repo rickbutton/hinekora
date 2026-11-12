@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, type CheckContext } from "./check.js";
+import { checkPresent, type CheckContext } from "./check.js";
 import { join, stateEqual, widenRanges } from "./astate.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { cmp, craft, item, op, until } from "../__fixtures__/ast.js";
@@ -19,7 +19,9 @@ const ring = item({
 describe("widening the numeric ranges of a loop's invariant", () => {
     // One round of a loop whose body is an Exalted Orb: the item before it,
     // and the two joined, as the fixpoint iteration sees them.
-    const step = check(craft(ring, [op("exalt")]), ctx).trace.find((e) => e.kind === "operation")!;
+    const step = checkPresent(craft(ring, [op("exalt")]), ctx).trace.find(
+        (e) => e.kind === "operation",
+    )!;
     const before = step.before;
     const round = join(before, step.after!);
 
@@ -43,8 +45,8 @@ describe("widening the numeric ranges of a loop's invariant", () => {
 
     it("driven from the first round, ends, and allows every item the exact invariant does", () => {
         const loop = craft(ring, [until(cmp("prefixCount", ">=", 3), [op("exalt")])]);
-        const exact = check(loop, ctx);
-        const wide = check(loop, ctx, { maxRounds: 0 });
+        const exact = checkPresent(loop, ctx);
+        const wide = checkPresent(loop, ctx, { maxRounds: 0 });
         const [e, w] = [exact.finalState!, wide.finalState!];
         const pairs = [
             [e.counts.total, w.counts.total],
@@ -65,12 +67,17 @@ describe("widening the numeric ranges of a loop's invariant", () => {
 
     it("driven from the first round, still refuses the step a later round refuses", () => {
         const fills = craft(ring, [until(cmp("prefixCount", ">=", 4), [op("exalt")])]);
-        const messages = check(fills, ctx, { maxRounds: 0 }).diagnostics.map((d) => d.message);
+        const messages = checkPresent(fills, ctx, { maxRounds: 0 }).diagnostics.map(
+            (d) => d.message,
+        );
         expect(messages.some((m) => !m.includes("still changing"))).toBe(true);
     });
 
     it("leaves a loop that converges on its own exact", () => {
-        const r = check(craft(ring, [until(cmp("prefixCount", ">=", 3), [op("exalt")])]), ctx);
+        const r = checkPresent(
+            craft(ring, [until(cmp("prefixCount", ">=", 3), [op("exalt")])]),
+            ctx,
+        );
         expect(r.finalState!.counts.prefix).toEqual([3, 3]);
         expect(r.finalState!.strands[1]).toBe(100);
     });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { check } from "../check/check.js";
+import { check } from "../exact/check.js";
+import { ModId } from "../model/ids.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { pool } from "../pool/pool.js";
 import { emptyItem } from "../model/item.js";
@@ -1083,10 +1084,21 @@ describe("the counts the checker leaves open", () => {
 });
 
 describe("the eldritch implicits", () => {
+    // Each implicit at every tier, as the game's data has them: an Orb of
+    // Conflict moves one a tier and keeps its wording, and a tier its wording
+    // has no row at holds no item.
+    const spanning = [...ELDRITCH_ROWS];
+    for (const r of ELDRITCH_ROWS) {
+        for (let tier = 1; tier <= 6; tier++) {
+            if (spanning.some((x) => x.side === r.side && x.type === r.type && x.tier === tier))
+                continue;
+            spanning.push({ ...r, id: ModId(`${r.id}Tier${tier}`), tier });
+        }
+    }
     const boots = buildRegistry({
         bases: [BOOTS_BASE],
         mods: [...CATALOG],
-        eldritch: ELDRITCH_ROWS,
+        eldritch: spanning,
     });
     const at = (words: string[], tier: string) => {
         const o = op(words[0]!);
