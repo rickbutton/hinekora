@@ -138,7 +138,7 @@ intersection, in both polarities, with nothing to tighten afterwards.
 The driver threads one state. An `if` narrows it both ways and unites the arms. A loop's
 head unites the entry with what the body returns from the head's items that fail the
 condition, until it stops changing; the exit is the head narrowed by the condition. No
-widening. Parts built alike run as one: a refusal's recovery reads its items together. A
+widening. Recovery (§4) feeds the reporting pass only, never a loop's rounds. A
 loop past the round limit, or a diagram past the node budget, is an error there, and the
 check stops.
 
@@ -196,6 +196,6 @@ An error can name an item that breaks the step, taken from a witness of the fail
 | 7   | Removing: `strip`, `remove`, protections, `unprotect`, `keep`, metamod cases  | done  |
 | 8   | `lock`, bench crafts and crafted removal, veiled and unveil                   | done  |
 | 9   | `reroll`, `relax`, Harvest change, `strands`, `imprint`, `restore`            | done  |
-| 10  | The driver on one state; whole-craft exactness tests; the switch              | open  |
+| 10  | The driver on one state; whole-craft exactness tests; the switch              | done  |
 | 11  | Messages with a witness; renderer, cost layer, editors on the views           | open  |
 | 12  | Delete the present domain; docs; the soundness faults re-probed; limits tuned | open  |

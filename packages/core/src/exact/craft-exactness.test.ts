@@ -33,9 +33,12 @@ import {
 } from "../__fixtures__/ast.js";
 import type { AffixDecl, Cmp, Craft, ItemBlock, Pred, ProcDef, Stmt } from "../ast/ast.js";
 import { declareItem } from "../check/item-block.js";
+import { rollRange } from "../check/values.js";
 import { describePred } from "../check/diagnostics.js";
+import type { Rarity } from "../model/ids.js";
 import { ELDRITCH_TIERS, type EldritchTierName } from "../model/marks.js";
 import { generateCatalog, type Catalog, type CatalogOptions } from "./reference/catalog.js";
+import { exactDetail } from "./check.js";
 import { compareCraft } from "./reference/craft.js";
 import { initialItems } from "./reference/initial.js";
 import { rng, type Rng } from "./reference/rng.js";
@@ -79,8 +82,21 @@ interface Space {
     readonly flavour: Flavour;
     /** Names a condition may use: rows' ids and natural rows' stat words. */
     readonly names: readonly string[];
-    readonly ops: readonly (() => Stmt)[];
+    /** Names a value comparison may use: rows of types whose every row has a
+     *  number, so whether it reads does not hang on the row an item is at. */
+    readonly numbered: readonly string[];
+    readonly ops: readonly OpSpec[];
     readonly procs: readonly ProcDef[];
+    /** The rarity the item likely has at the step being generated. */
+    readonly level: { rarity: Rarity };
+}
+
+function numberedOf(cat: Catalog): string[] {
+    const types = new Set(cat.natural.map((m) => m.type));
+    for (const m of cat.mods) {
+        if (m.text === undefined || rollRange(m.text) === undefined) types.delete(m.type);
+    }
+    return cat.natural.filter((m) => types.has(m.type)).map((m) => m.id);
 }
 
 function namesOf(cat: Catalog): string[] {
@@ -94,42 +110,78 @@ function namesOf(cat: Catalog): string[] {
     return [...out].sort();
 }
 
-function operationsOf(cat: Catalog, flavour: Flavour, r: Rng): (() => Stmt)[] {
-    const plain = [
-        "transmute",
-        "augment",
-        "alteration",
-        "regal",
-        "alchemy",
-        "chaos",
-        "exalt",
-        "annul",
-        "scour",
-        "divine",
-        "fracture",
-        "vaal",
+/** A step, the rarities it is used on, and the rarity it leaves. */
+interface OpSpec {
+    readonly on: readonly Rarity[];
+    readonly to?: Rarity;
+    readonly make: () => Stmt;
+}
+
+const MAGIC_OR_RARE: readonly Rarity[] = ["magic", "rare"];
+
+function operationsOf(cat: Catalog, flavour: Flavour, r: Rng): OpSpec[] {
+    const plain = (w: string, on: readonly Rarity[], to?: Rarity): OpSpec => ({
+        on,
+        ...(to !== undefined && { to }),
+        make: () => op(w),
+    });
+    const out: OpSpec[] = [
+        plain("transmute", ["normal"], "magic"),
+        plain("alchemy", ["normal"], "rare"),
+        plain("augment", ["magic"]),
+        plain("alteration", ["magic"]),
+        plain("alteration", ["magic"]),
+        plain("regal", ["magic"], "rare"),
+        plain("chaos", ["rare"]),
+        plain("chaos", ["rare"]),
+        plain("chaos", ["rare"]),
+        plain("exalt", ["rare"]),
+        plain("exalt", ["rare"]),
+        plain("annul", MAGIC_OR_RARE),
+        plain("annul", MAGIC_OR_RARE),
+        plain("scour", MAGIC_OR_RARE, "normal"),
+        plain("divine", MAGIC_OR_RARE),
+        // Refused on most items, or ending every craft after them: rare.
+        plain("fracture", []),
+        plain("vaal", []),
     ];
-    const out: (() => Stmt)[] = plain.map((w) => () => op(w));
-    // The common ones twice, so loops reforge and add more than they corrupt.
-    for (const w of ["chaos", "exalt", "annul", "augment", "alteration"]) out.push(() => op(w));
     const benchRow = cat.bench ?? cat.mods.find((m) => m.source === "bench");
     if (benchRow !== undefined) {
-        out.push(() => benchStep(benchRow.id));
-        out.push(() => benchRemove());
+        out.push({ on: MAGIC_OR_RARE, make: () => benchStep(benchRow.id) });
+        out.push({ on: [], make: () => benchRemove() });
     }
-    if (cat.essence !== undefined) out.push(() => essence("Deafening Essence of Testing"));
-    out.push(() => harvest("reforge", r.pick(["attack", "caster"])));
-    out.push(() => harvest("augment", r.pick(["attack", "caster"])));
+    if (cat.essence !== undefined) {
+        out.push({
+            on: ["normal"],
+            to: "rare",
+            make: () => essence("Deafening Essence of Testing"),
+        });
+    }
+    out.push({ on: ["rare"], make: () => harvest("reforge", r.pick(["attack", "caster"])) });
+    out.push({ on: ["rare"], make: () => harvest("augment", r.pick(["attack", "caster"])) });
     if (flavour === "harvest") {
-        out.push(() => harvestChange("fire resistance", "cold resistance"));
-        out.push(() => harvestChange("cold resistance", "lightning resistance"));
+        out.push({ on: ["rare"], make: () => harvestChange("fire resistance", "cold resistance") });
+        out.push({
+            on: ["rare"],
+            make: () => harvestChange("cold resistance", "lightning resistance"),
+        });
     }
     if (flavour === "eldritch") {
-        out.push(() => op2("eldritch", "chaos"));
-        out.push(() => op2("eldritch", "annul"));
-        out.push(() => op2("eldritch", "exalt"));
+        out.push({ on: ["rare"], make: () => op2("eldritch", "chaos") });
+        out.push({ on: MAGIC_OR_RARE, make: () => op2("eldritch", "annul") });
+        out.push({ on: ["rare"], make: () => op2("eldritch", "exalt") });
     }
     return out;
+}
+
+/** A step, mostly one the item's likely rarity takes, so that most paths go
+ *  on past it; the likely rarity follows it. */
+function pickOp(sp: Space): Stmt {
+    const { r, level } = sp;
+    const fits = sp.ops.filter((o) => o.on.includes(level.rarity));
+    const o = r.chance(0.85) && fits.length > 0 ? r.pick(fits) : r.pick(sp.ops);
+    if (o.to !== undefined) level.rarity = o.to;
+    return o.make();
 }
 
 /** A two-word method with no arguments. */
@@ -166,7 +218,14 @@ function randomPred(sp: Space, depth = 2): Pred {
         case "tier":
             return has(name, r.int(1, 3));
         case "value":
-            return hasValue(name, r.pick(CMPS), r.int(0, 20), r.chance(0.3) ? 1 : undefined);
+            return sp.numbered.length === 0
+                ? has(name)
+                : hasValue(
+                      r.pick(sp.numbered),
+                      r.pick(CMPS),
+                      r.int(0, 20),
+                      r.chance(0.3) ? 1 : undefined,
+                  );
         case "group":
             return { ...has(name), group: true };
         case "fractured":
@@ -208,8 +267,8 @@ function randomStmt(sp: Space, shape: Shape): Stmt {
     const { r } = sp;
     const control = shape.depth < 3;
     const roll = r.int(0, 99);
-    if (control && roll < 6) return growingLoop(sp, shape);
-    if (control && roll < 14) {
+    if (control && roll < 9) return growingLoop(sp, shape);
+    if (control && roll < 13) {
         return until(
             randomPred(sp, 1),
             randomBody(
@@ -228,7 +287,7 @@ function randomStmt(sp: Space, shape: Shape): Stmt {
         );
     }
     if (roll < 34 && shape.inLoop) return restart();
-    if (roll < 36) return stop();
+    if (roll < 35) return stop();
     if (roll < 41 && shape.calls && sp.procs.length > 0) {
         const p = r.pick(sp.procs);
         return p.params[0] === "m"
@@ -243,7 +302,7 @@ function randomStmt(sp: Space, shape: Shape): Stmt {
                   ),
               ]);
     }
-    return r.pick(sp.ops)();
+    return pickOp(sp);
 }
 
 /** A loop that takes a round for each modifier it adds or takes: a count to
@@ -251,16 +310,26 @@ function randomStmt(sp: Space, shape: Shape): Stmt {
 function growingLoop(sp: Space, shape: Shape): Stmt {
     const { r } = sp;
     const add = r.chance(0.6);
+    const gen = r.pick(["prefix", "suffix"] as const);
+    // As many as the side can hold of the types that roll here, three at most.
+    const most = new Set(
+        sp.cat.natural.filter((m) => m.gen === gen && m.minLevel <= sp.cat.ilvl).map((m) => m.type),
+    ).size;
     const pred = r.chance(0.6)
-        ? cmp(
-              r.pick(["prefixCount", "suffixCount"] as const),
-              add ? ">=" : "<=",
-              add ? r.int(1, 3) : r.int(0, 1),
-          )
+        ? cmp(`${gen}Count`, add ? ">=" : "<=", add ? Math.max(1, Math.min(3, most)) : 0)
         : add
           ? has(r.pick(sp.names))
           : notp(has(r.pick(sp.names)));
-    const step = add ? r.pick(["exalt", "augment", "exalt"]) : "annul";
+    const rarity = sp.level.rarity;
+    const step = !add
+        ? rarity === "normal"
+            ? "transmute"
+            : "annul"
+        : rarity === "rare"
+          ? "exalt"
+          : rarity === "magic"
+            ? "augment"
+            : "transmute";
     const body: Stmt[] = [op(step)];
     if (r.chance(0.3)) {
         const inner = { ...shape, inLoop: true, depth: shape.depth + 1, stepParam: undefined };
@@ -288,7 +357,7 @@ function randomProcs(sp: Omit<Space, "procs">): ProcDef[] {
         "withMod",
         ["m"],
         [
-            iff(hasP(param("m")), randomBody(space, plain(), r.int(1, 2)), [r.pick(sp.ops)()]),
+            iff(hasP(param("m")), randomBody(space, plain(), r.int(1, 2)), [pickOp(space)]),
             ...randomBody(space, plain(), r.int(0, 1)),
         ],
     );
@@ -303,7 +372,7 @@ function randomProcs(sp: Omit<Space, "procs">): ProcDef[] {
 
 function randomBlock(sp: Omit<Space, "procs">): ItemBlock {
     const { r, cat } = sp;
-    const rarity = r.pick(["normal", "magic", "magic", "rare", "rare", "rare"] as const);
+    const rarity = r.pick(["normal", "magic", "magic", "rare", "rare", "rare", "rare"] as const);
     const most = rarity === "normal" ? 0 : rarity === "magic" ? 1 : 3;
     const side = (gen: "prefix" | "suffix"): AffixDecl[] => {
         const rows = cat.natural.filter((m) => m.gen === gen && m.minLevel <= cat.ilvl);
@@ -333,7 +402,7 @@ function randomBlock(sp: Omit<Space, "procs">): ItemBlock {
         prefixes: side("prefix"),
         suffixes: side("suffix"),
         ...(cat.influence !== undefined && r.chance(0.3) && { influences: ["hunter"] as const }),
-        ...(r.chance(0.03) && { corrupted: true }),
+        ...(r.chance(0.01) && { corrupted: true }),
         ...(eldritch && { exarch: tier(), eater: tier() }),
     });
 }
@@ -349,7 +418,16 @@ function generate(seed: number): Generated {
     const flavour: Flavour = seed % 7 === 3 ? "harvest" : seed % 4 === 1 ? "eldritch" : "plain";
     const cat = catalogueFor(seed, flavour);
     const r = rng(seed * 7919 + 1);
-    const base = { r, cat, flavour, names: namesOf(cat), ops: operationsOf(cat, flavour, r) };
+    const level = { rarity: "normal" as Rarity };
+    const base = {
+        r,
+        cat,
+        flavour,
+        names: namesOf(cat),
+        numbered: numberedOf(cat),
+        ops: operationsOf(cat, flavour, r),
+        level,
+    };
     let block = randomBlock(base);
     for (let tries = 0; ; tries++) {
         let faults = 0;
@@ -360,9 +438,14 @@ function generate(seed: number): Generated {
                 ? randomBlock(base)
                 : item({ base: cat.base.id, ilvl: cat.ilvl, rarity: "normal" });
     }
+    level.rarity = "rare";
     const procs = randomProcs(base);
+    level.rarity = block.rarity;
     const sp: Space = { ...base, procs };
-    const body = randomBody(sp, { inLoop: false, depth: 0, calls: true }, r.int(1, 8));
+    const shape: Shape = { inLoop: false, depth: 0, calls: true };
+    // A loop that takes several rounds, early, before most paths have ended.
+    const opening = r.chance(0.4) ? [growingLoop(sp, shape)] : [];
+    const body = [...opening, ...randomBody(sp, shape, r.int(1, 8))];
     return {
         seed,
         cat,
@@ -467,7 +550,7 @@ interface Tally {
 
 /** Enough crafts for every kind of finding and a few loops past their round
  *  limit, in about half a minute. */
-const SEEDS = 300;
+const SEEDS = 330;
 
 describe("a whole craft, run exactly", () => {
     it("reports what the reference finds and holds the items it holds, statement by statement", () => {
@@ -490,10 +573,12 @@ describe("a whole craft, run exactly", () => {
             tally.statements += c.statements;
             tally.largest = Math.max(tally.largest, c.largest);
             tally.items += c.items;
-            for (const f of c.exact.findings) {
-                tally.findings.set(f.kind, (tally.findings.get(f.kind) ?? 0) + 1);
+            for (const f of c.strict.findings) {
+                const why = exactDetail(c.strict)?.items.get(f)?.unreached;
+                const kind = why === undefined ? f.kind : `${f.kind} (${why})`;
+                tally.findings.set(kind, (tally.findings.get(kind) ?? 0) + 1);
             }
-            for (const n of c.reference?.rounds ?? []) {
+            for (const n of exactDetail(c.strict)?.rounds ?? []) {
                 tally.rounds.set(n, (tally.rounds.get(n) ?? 0) + 1);
             }
         }
@@ -516,13 +601,17 @@ describe("a whole craft, run exactly", () => {
             "deadElse",
             "neverRuns",
             "neverExits",
-            "unreachable",
+            "unreachable (stops)",
+            "unreachable (restarts)",
+            "unreachable (both)",
             "unsettled",
         ]) {
             expect(tally.findings.get(kind) ?? 0, kind).toBeGreaterThan(0);
         }
-        const looping = [...tally.rounds].filter(([n]) => n >= 3).reduce((a, [, k]) => a + k, 0);
-        expect(looping).toBeGreaterThan(20);
-        expect(tally.largest).toBeGreaterThan(100);
+        const runs = (least: number): number =>
+            [...tally.rounds].filter(([n]) => n >= least).reduce((a, [, k]) => a + k, 0);
+        expect(runs(2)).toBeGreaterThan(80);
+        expect(runs(3)).toBeGreaterThan(4);
+        expect(tally.largest).toBeGreaterThan(50);
     });
 });

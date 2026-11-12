@@ -16,7 +16,7 @@
  * loop report and trace nothing; the body's last run from the settled head
  * does.
  */
-import type { Craft, Def, ProcDef, Stmt } from "../ast/ast.js";
+import type { Craft, Def, Pred, ProcDef, Stmt } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
 import type { CheckContext } from "../check/check.js";
 import {
@@ -35,8 +35,10 @@ import {
     unknownOperation,
 } from "../check/diagnostics.js";
 import { findMethod, type Literal } from "../check/methods.js";
+import type { Resolved } from "../check/resolve-pred.js";
 import type { PreconditionFailure } from "../check/ops.js";
 import type { TypeId } from "../model/ids.js";
+import { plural } from "../words.js";
 import { type BuiltPart, buildKey, buildMethod } from "./build.js";
 import { levelReasonsOn, narrowBy, readCondition } from "./conditions.js";
 import { type Dd, DdBudgetError } from "./dd.js";
@@ -52,6 +54,13 @@ export interface ExactTuning {
     readonly maxRounds?: number;
     /** The engine's node budget. */
     readonly maxNodes?: number;
+    /**
+     * Take no recovery: after a refused step, or a loop that never exits, no
+     * item goes on. Every state is then the items the game can reach, which
+     * is what the exactness tests compare; the default goes on from a
+     * recovery, after reporting it, so one error does not hide the next.
+     */
+    readonly strict?: boolean;
 }
 
 /** The items before and after a statement (or the item block). */
@@ -83,11 +92,37 @@ export interface Finding {
     readonly kind: FindingKind;
     /** The statement the finding is about (the next one, for `unreachable`). */
     readonly span: SourceSpan;
+}
+
+/** Why a step can never run: every path before it stopped, every one went
+ *  back to the loop's head, or some of each. */
+export type Unreached = "stops" | "restarts" | "both";
+
+/** What the exactness tests read of a finding beyond its kind and place. */
+export interface FindingItems {
     /** A refused step's items that broke a check or that an operation could
      *  not act on, by `buildKey` and operation index: `${key}#${index}`. */
     readonly failing?: ReadonlyMap<string, Dd>;
     /** A refused step's items its builder gave no operations. */
     readonly unbuilt?: Dd;
+    readonly unreached?: Unreached;
+}
+
+/** What the exactness tests read of a check beyond its result. */
+export interface ExactDetail {
+    readonly items: ReadonlyMap<Finding, FindingItems>;
+    /** How many loop heads were worked out, and how many found again. */
+    readonly settled: number;
+    readonly reused: number;
+    /** The body's runs each head took, outside the rounds of another loop. */
+    readonly rounds: readonly number[];
+}
+
+const details = new WeakMap<ExactCheckResult, ExactDetail>();
+
+/** The detail of a check, for the exactness tests. */
+export function exactDetail(r: ExactCheckResult): ExactDetail | undefined {
+    return details.get(r);
 }
 
 export interface ExactCheckResult {
@@ -100,16 +135,21 @@ export interface ExactCheckResult {
 }
 
 /** The rounds a loop is given to settle. Every round is exact and the items
- *  are finite, so a loop settles; one that has not by here is refused, as the
- *  present checker refuses it. */
+ *  are finite, so a loop settles; one that has not by here is refused, and
+ *  the check stops there. */
 const MAX_ROUNDS = 256;
 
 /** How a statement leaves: the items that fall through it, none when it ends
- *  the path, and whether some item went back to the enclosing loop's head. */
+ *  the path; whether some item went back to an enclosing loop's head, and
+ *  whether some item's path ended in it (a `stop`, a refused or ending step,
+ *  a loop no item leaves). */
 interface Flow {
     readonly fall: XItem | null;
     readonly restarted: boolean;
+    readonly stopped: boolean;
 }
+
+const ENDS: Flow = { fall: null, restarted: false, stopped: true };
 
 /** The check stops at a limit: the message, and the statement it is at. */
 class Abandoned extends Error {
@@ -144,6 +184,10 @@ class ExactChecker {
     private sink: XTraceEntry[] = this.trace;
     /** Above 0 while a loop's rounds run: nothing is reported or traced. */
     private quiet = 0;
+    private readonly items = new Map<Finding, FindingItems>();
+    private settles = 0;
+    private reused = 0;
+    private readonly rounds: number[] = [];
     private readonly defs = new Map<string, DefEntry>();
     private readonly procs = new Map<string, ProcEntry>();
     private readonly predDefs: PredDefs = { defs: this.defs, procs: this.procs };
@@ -154,7 +198,7 @@ class ExactChecker {
      *  an entry met again is the same diagram, and the head depends on nothing
      *  else. An outer loop's rounds enter an inner loop with the same items
      *  most rounds. */
-    private readonly settled = new WeakMap<readonly Stmt[], Map<Dd, XItem>>();
+    private readonly settled = new WeakMap<readonly Stmt[], Map<Dd, Settled>>();
     /** One body per call site, so a loop in it is the same loop every pass. */
     private readonly bodies = new WeakMap<Stmt, readonly Stmt[]>();
     private readonly inlined = new WeakMap<Stmt, NonNullable<XTraceEntry["inlined"]>>();
@@ -169,13 +213,22 @@ class ExactChecker {
 
     run(craft: Craft): ExactCheckResult {
         this.collect(craft.defs, craft.procs);
-        const done = (finalState?: XItem): ExactCheckResult => ({
-            ok: this.diagnostics.length === 0,
-            diagnostics: this.diagnostics,
-            trace: this.trace,
-            findings: this.findings,
-            ...(finalState !== undefined && { finalState }),
-        });
+        const done = (finalState?: XItem): ExactCheckResult => {
+            const r: ExactCheckResult = {
+                ok: this.diagnostics.length === 0,
+                diagnostics: this.diagnostics,
+                trace: this.trace,
+                findings: this.findings,
+                ...(finalState !== undefined && { finalState }),
+            };
+            details.set(r, {
+                items: this.items,
+                settled: this.settles,
+                reused: this.reused,
+                rounds: this.rounds,
+            });
+            return r;
+        };
         try {
             const start = startOf(
                 this.ctx.registry,
@@ -209,10 +262,24 @@ class ExactChecker {
         if (this.quiet === 0) this.diagnostics.push({ message, span });
     }
 
-    private report(kind: FindingKind, message: string, span: SourceSpan, more = {}): void {
+    private report(
+        kind: FindingKind,
+        message: string | undefined,
+        span: SourceSpan,
+        items: FindingItems = {},
+    ): void {
         if (this.quiet > 0) return;
-        this.diagnostics.push({ message, span });
-        this.findings.push({ kind, span, ...more });
+        if (message !== undefined) this.diagnostics.push({ message, span });
+        const f: Finding = { kind, span };
+        this.findings.push(f);
+        this.items.set(f, items);
+    }
+
+    /** A recovery feeds the steps after an error on the reporting pass only:
+     *  a round that settles a loop works out what the game can do, so in it
+     *  an item that cannot go on goes nowhere. */
+    private get recovering(): boolean {
+        return this.quiet === 0 && this.tuning.strict !== true;
     }
 
     private quietly<T>(fn: () => T): T {
@@ -233,9 +300,11 @@ class ExactChecker {
     private seq(entry: XItem, stmts: readonly Stmt[]): Flow {
         let s = entry;
         let restarted = false;
+        let stopped = false;
         for (const [i, stmt] of stmts.entries()) {
             const flow = this.stmt(s, stmt);
             restarted ||= flow.restarted;
+            stopped ||= flow.stopped;
             if (this.quiet === 0) {
                 const inlined = this.inlined.get(stmt);
                 this.sink.push({
@@ -250,19 +319,25 @@ class ExactChecker {
             if (flow.fall === null) {
                 const next = stmts[i + 1];
                 if (next !== undefined) {
-                    const why =
-                        !flow.restarted || this.frames.length === 0
-                            ? "the craft always stops before it"
-                            : stmt.kind === "restart"
-                              ? "the loop always restarts before it"
-                              : "every path before it stops or restarts";
-                    this.report("unreachable", `this step can never run: ${why}`, next.span);
+                    const unreached: Unreached = !restarted
+                        ? "stops"
+                        : stopped
+                          ? "both"
+                          : "restarts";
+                    const why = {
+                        stops: "the craft always stops before it",
+                        restarts: "the loop always restarts before it",
+                        both: "every path before it stops or restarts",
+                    }[unreached];
+                    this.report("unreachable", `this step can never run: ${why}`, next.span, {
+                        unreached,
+                    });
                 }
-                return { fall: null, restarted };
+                return { fall: null, restarted, stopped };
             }
             s = flow.fall;
         }
-        return { fall: s, restarted };
+        return { fall: s, restarted, stopped };
     }
 
     /** One statement, its diagram operations sharing the engine's cache. A
@@ -284,12 +359,12 @@ class ExactChecker {
             case "restart": {
                 // At top level a restart ends the craft (language.md §4.3).
                 const frame = this.frames[this.frames.length - 1];
-                if (frame === undefined) return { fall: null, restarted: false };
+                if (frame === undefined) return ENDS;
                 frame.back = this.u.dd.or(frame.back, s.dd);
-                return { fall: null, restarted: true };
+                return { fall: null, restarted: true, stopped: false };
             }
             case "stop":
-                return { fall: null, restarted: false };
+                return ENDS;
             case "if":
                 return this.branch(s, stmt);
             case "until":
@@ -298,7 +373,7 @@ class ExactChecker {
                 return this.call(s, stmt);
             case "paramStep":
                 this.diag(`parameter "${stmt.param}" was never given a value`, stmt.span);
-                return { fall: s, restarted: false };
+                return goesOn(s);
         }
     }
 
@@ -309,12 +384,13 @@ class ExactChecker {
      * some part refuses, the step is reported once, worded over every item
      * the step is used on, by the earliest part that refuses: the parts come
      * in a fixed order (by influence, row, dominant side), so the message is
-     * stable, and two refusals of different kinds have no one wording. A part
-     * the builder refuses goes on unchanged; a refused run goes on from what
-     * the run leaves (exact/method.ts).
+     * stable, and two refusals of different kinds have no one wording. The
+     * refused items go no further; where no item of a part goes on, the
+     * reporting pass recovers (`recovering`): a part the builder refuses goes
+     * on unchanged, a refused run from its recovery (exact/method.ts).
      */
     private operation(s: XItem, stmt: Extract<Stmt, { kind: "operation" }>): Flow {
-        const keep: Flow = { fall: s, restarted: false };
+        const keep = goesOn(s);
         const method = findMethod(stmt.words);
         if (method === undefined) {
             this.diag(unknownOperation(stmt.words), stmt.span);
@@ -332,18 +408,25 @@ class ExactChecker {
         let fall = m.EMPTY;
         let unbuilt = m.EMPTY;
         let message: string | undefined;
+        let stopped = false;
         const failing = new Map<string, Dd>();
         for (const { part, key } of together(buildMethod(s, method, literals))) {
             if ("refused" in part.built) {
                 message ??= part.built.refused;
                 unbuilt = m.or(unbuilt, part.state.dd);
-                fall = m.or(fall, part.state.dd);
+                if (this.recovering) fall = m.or(fall, part.state.dd);
+                else stopped = true;
                 continue;
             }
-            const { result, failing: refused } = runMethodTrace(part.state, part.built);
-            for (const [i, dd] of refused) failing.set(`${key}#${i}`, dd);
+            const run = runMethodTrace(part.state, part.built);
+            const { result } = run;
+            for (const [i, dd] of run.failing) failing.set(`${key}#${i}`, dd);
             if (!result.ok) message ??= this.refusal(s, result.failure, result.under);
-            if (result.ended !== true) fall = m.or(fall, result.state.dd);
+            const recovers = result.recovered === true;
+            if (run.reachedEnd || (!result.ok && !(recovers && this.recovering))) stopped = true;
+            if (result.ended !== true && (!recovers || this.recovering)) {
+                fall = m.or(fall, result.state.dd);
+            }
         }
         if (message !== undefined) {
             this.report("refused", message, stmt.span, {
@@ -353,9 +436,8 @@ class ExactChecker {
         }
         const after = stateOf(this.u, fall);
         // A method that leaves no item on any outcome ends the path, as `stop` does.
-        if (after === null && this.quiet === 0)
-            this.findings.push({ kind: "ended", span: stmt.span });
-        return { fall: after, restarted: false };
+        if (after === null && message === undefined) this.report("ended", undefined, stmt.span);
+        return { fall: after, restarted: false, stopped };
     }
 
     private refusal(
@@ -377,8 +459,8 @@ class ExactChecker {
         const resolved = readCondition(s, stmt.pred, this.predDefs, (m, span) =>
             this.diag(m, span),
         );
-        const yes = narrowBy(s, stmt.pred, true, this.predDefs);
-        const no = narrowBy(s, stmt.pred, false, this.predDefs);
+        const yes = this.cut(s, stmt.pred, true, resolved);
+        const no = this.cut(s, stmt.pred, false, resolved);
         if (yes === null) {
             this.report(
                 "deadIf",
@@ -395,6 +477,7 @@ class ExactChecker {
         }
         let fall = this.u.dd.EMPTY;
         let restarted = false;
+        let stopped = false;
         for (const [entry, body] of [
             [yes, stmt.body],
             [no, stmt.elseBody ?? []],
@@ -403,33 +486,41 @@ class ExactChecker {
             const f = this.seq(entry, body);
             fall = this.u.dd.or(fall, this.dd(f.fall));
             restarted ||= f.restarted;
+            stopped ||= f.stopped;
         }
-        return { fall: stateOf(this.u, fall), restarted };
+        return { fall: stateOf(this.u, fall), restarted, stopped };
+    }
+
+    /** The items on which the condition holds (or fails): all of them where
+     *  its reading was refused, as the present checker narrows by nothing
+     *  there, so a reported fault is not followed by a branch or loop error. */
+    private cut(s: XItem, pred: Pred, positive: boolean, resolved: Resolved | null): XItem | null {
+        return resolved === null ? s : narrowBy(s, pred, positive, this.predDefs);
     }
 
     // --- until -----------------------------------------------------------------
 
     /**
-     * The loop's head settled (`settle`), then the body run once more from
-     * its items that go on, for its errors and its trace. The exit is the head
-     * narrowed by the condition. A loop that can never exit goes on from its
-     * whole head: no item leaves it, and the steps after it are judged on the
-     * items it works on, so one error is not followed by one at every step.
+     * The loop's head settled (`settle`), then, on the reporting pass, the
+     * body run once more from its items that go on, for its errors and its
+     * trace. The exit is the head narrowed by the condition. Where no item
+     * ever leaves, the reporting pass recovers: the craft goes on from the
+     * whole head, so one error is not followed by one at every step after it.
      */
     private loop(entry: XItem, stmt: Extract<Stmt, { kind: "until" }>): Flow {
         const resolved = readCondition(entry, stmt.pred, this.predDefs, (m, span) =>
             this.diag(m, span),
         );
-        const head = this.settle(entry, stmt);
-        const going = narrowBy(head, stmt.pred, false, this.predDefs);
-        const exit = narrowBy(head, stmt.pred, true, this.predDefs);
+        const { head, stopped } = this.settle(entry, stmt, resolved !== null);
+        const going = this.cut(head, stmt.pred, false, resolved);
+        const exit = this.cut(head, stmt.pred, true, resolved);
         if (going === null) {
             this.report(
                 "neverRuns",
                 `this loop's body never runs: ${describePred(stmt.pred)} already holds here`,
                 stmt.pred.span,
             );
-            return { fall: entry, restarted: false };
+            return goesOn(entry);
         }
         if (exit === null) {
             this.report(
@@ -438,55 +529,76 @@ class ExactChecker {
                 stmt.pred.span,
             );
         }
-        if (this.quiet === 0) this.back(going, stmt.body);
-        return { fall: exit ?? head, restarted: false };
+        const body = this.quiet === 0 ? this.back(going, stmt.body).stopped : stopped;
+        if (exit !== null) return { fall: exit, restarted: false, stopped: body };
+        return this.recovering ? goesOn(head) : ENDS;
     }
 
     /**
-     * The least head the rounds reach: the entry, then each round the head
-     * united with what the body brings back from the head's items that do not
-     * meet the condition, until a round adds nothing. Each round runs the body
-     * on all of them, not on the new ones alone: a refused step's recovery
-     * reads the items it is used on together. A loop past the round limit is
-     * refused and the check stops there: a head short of the fixpoint would
-     * leave later rounds of the body unjudged, and no sound head is known to
-     * judge the rest of the craft from.
+     * The least head closed under the body: the entry, then each round what
+     * the body brings back from the head's new items that do not meet the
+     * condition, until a round adds nothing. No recovery is taken in these
+     * rounds (`recovering`), so the body is an image item by item and a round
+     * runs on the new items alone. A loop past the round limit is refused and
+     * the check stops there: a head short of the fixpoint would leave later
+     * rounds unjudged, and no sound head is known to go on from.
      */
-    private settle(entry: XItem, stmt: Extract<Stmt, { kind: "until" }>): XItem {
+    private settle(
+        entry: XItem,
+        stmt: Extract<Stmt, { kind: "until" }>,
+        readable: boolean,
+    ): Settled {
         let known = this.settled.get(stmt.body);
-        if (known === undefined) this.settled.set(stmt.body, (known = new Map<Dd, XItem>()));
+        if (known === undefined) this.settled.set(stmt.body, (known = new Map<Dd, Settled>()));
         const hit = known.get(entry.dd);
-        if (hit !== undefined) return hit;
+        if (hit !== undefined) {
+            this.reused++;
+            return hit;
+        }
+        this.settles++;
+        const outermost = this.quiet === 0;
+        let runs = 0;
         const m = this.u.dd;
-        const head = this.quietly(() => {
+        const goingOf = (s: XItem): XItem | null =>
+            readable ? narrowBy(s, stmt.pred, false, this.predDefs) : s;
+        const settled = this.quietly((): Settled => {
             let at = entry;
+            let fresh = entry;
+            let stopped = false;
             for (let round = 1; ; round++) {
-                const going = narrowBy(at, stmt.pred, false, this.predDefs);
-                if (going === null) return at;
-                const next = m.or(at.dd, this.back(going, stmt.body));
-                if (next === at.dd) return at;
+                const going = goingOf(fresh);
+                if (going === null) return { head: at, stopped };
+                const back = this.back(going, stmt.body);
+                runs++;
+                stopped ||= back.stopped;
+                const next = m.or(at.dd, back.dd);
+                if (next === at.dd) return { head: at, stopped };
                 if (round > this.maxRounds) {
+                    const n = this.maxRounds;
                     throw new Abandoned(
                         stmt.span,
-                        `The item this loop works on is still changing after ${this.maxRounds} rounds, too many to follow.`,
+                        `The item this loop works on is still changing after ${n} ${plural(n, "round")}, too many to follow, so the steps from here on are not checked.`,
                         "unsettled",
                     );
                 }
+                fresh = { u: this.u, dd: m.diff(next, at.dd) };
                 at = { u: this.u, dd: next };
             }
         });
-        known.set(entry.dd, head);
-        return head;
+        known.set(entry.dd, settled);
+        if (outermost) this.rounds.push(runs);
+        return settled;
     }
 
-    /** The items the body brings back to the loop's head from `entry`: those
-     *  falling off its end and those a `restart` sends. */
-    private back(entry: XItem, body: readonly Stmt[]): Dd {
+    /** The items the body brings back to the loop's head from `entry`, those
+     *  falling off its end and those a `restart` sends, and whether some
+     *  item's path ended in it. */
+    private back(entry: XItem, body: readonly Stmt[]): { dd: Dd; stopped: boolean } {
         const frame = { back: this.u.dd.EMPTY };
         this.frames.push(frame);
         try {
             const flow = this.seq(entry, body);
-            return this.u.dd.or(this.dd(flow.fall), frame.back);
+            return { dd: this.u.dd.or(this.dd(flow.fall), frame.back), stopped: flow.stopped };
         } finally {
             this.frames.pop();
         }
@@ -497,7 +609,7 @@ class ExactChecker {
     /** The body inlined, so a `restart` in it re-enters the caller's loop; the
      *  call is traced as one step, its body's trace hanging off it. */
     private call(s: XItem, stmt: Extract<Stmt, { kind: "call" }>): Flow {
-        const keep: Flow = { fall: s, restarted: false };
+        const keep = goesOn(s);
         const entry = this.procs.get(stmt.name);
         if (entry === undefined) {
             this.diag(
@@ -526,6 +638,17 @@ class ExactChecker {
             if (this.quiet === 0) this.inlined.set(stmt, { body, trace });
         }
     }
+}
+
+/** The items all go on through a statement that does nothing to them. */
+function goesOn(s: XItem): Flow {
+    return { fall: s, restarted: false, stopped: false };
+}
+
+/** A loop's head, and whether some item's path ended in its body. */
+interface Settled {
+    readonly head: XItem;
+    readonly stopped: boolean;
 }
 
 /** The parts with their build keys, those given the same operations as one:

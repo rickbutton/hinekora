@@ -50,6 +50,8 @@ export interface RefMethodRun {
     readonly failing: ReadonlyMap<number, ItemSet>;
     /** As `XTransferResult.under`. */
     readonly under?: readonly TypeId[];
+    /** Some item's path was consumed by an `end`. */
+    readonly reachedEnd: boolean;
 }
 
 type Check = Extract<Step, { kind: "require" }>;
@@ -132,6 +134,7 @@ export function refRunMethod(
             state: passed.size > 0 ? passed : start,
             ended: passed.size === 0 && run.reachedEnd,
             failing,
+            reachedEnd: run.reachedEnd,
         };
     }
     const all = [...cases.values()];
@@ -146,6 +149,7 @@ export function refRunMethod(
     const refusal = {
         ok: false,
         failing,
+        reachedEnd: run.reachedEnd,
         ...(all.some((c) => c.refusedAt.size === 0) && under.length > 0 && { under }),
     };
     if (passed.size > 0) return { ...refusal, state: passed, ended: false };

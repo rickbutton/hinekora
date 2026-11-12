@@ -69,6 +69,9 @@ export type XTransferResult = (
 ) & {
     /** Every item that passed the checks was consumed by an `end`. */
     readonly ended?: true;
+    /** No item passed, and the state is the recovery's, read over the items
+     *  together: the image of a union is then not the union of the images. */
+    readonly recovered?: true;
 };
 
 export interface MethodRun {
@@ -77,6 +80,8 @@ export interface MethodRun {
      *  operation (a compound run's first, an `either`'s own), the items it
      *  could not act on, over every case; absent where none. */
     readonly failing: ReadonlyMap<number, Dd>;
+    /** Some item's path was consumed by an `end`. */
+    readonly reachedEnd: boolean;
 }
 
 export function runMethod(
@@ -218,9 +223,15 @@ export function runMethodTrace(
     const first = failing.size === 0 ? undefined : Math.min(...failing.keys());
     const ended = out === m.EMPTY && reachedEnd ? ({ ended: true } as const) : {};
     if (first === undefined) {
+        // An operation with no outcome on an item refuses it; a run with no
+        // refusal that leaves nothing has lost its items.
+        if (out === m.EMPTY && !reachedEnd) {
+            throw new InternalError("a method leaves no item, refuses none and ends none");
+        }
         return {
             result: { ok: true, state: out === m.EMPTY ? state : { u, dd: out }, ...ended },
             failing,
+            reachedEnd,
         };
     }
     const j = judged.get(first)!;
@@ -236,18 +247,24 @@ export function runMethodTrace(
         failure,
         ...(passedCase && under.length > 0 && { under }),
     };
-    if (out !== m.EMPTY) return { result: { ...refusal, state: { u, dd: out } }, failing };
-    if (reachedEnd) return { result: { ...refusal, state, ...ended }, failing };
+    if (out !== m.EMPTY) {
+        return { result: { ...refusal, state: { u, dd: out } }, failing, reachedEnd };
+    }
+    if (reachedEnd) return { result: { ...refusal, state, ...ended }, failing, reachedEnd };
     const repaired = j.repair?.(j.failing) ?? m.EMPTY;
-    if (repaired === m.EMPTY) return { result: { ...refusal, state }, failing };
+    if (repaired === m.EMPTY) {
+        return { result: { ...refusal, state, recovered: true }, failing, reachedEnd };
+    }
     const rest = runMethodTrace({ u, dd: repaired }, ops.slice(first + 1), handlers).result;
     return {
         result: {
             ...refusal,
             state: rest.state,
+            recovered: true,
             ...(rest.ended === true && { ended: true as const }),
         },
         failing,
+        reachedEnd,
     };
 }
 

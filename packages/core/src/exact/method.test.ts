@@ -240,6 +240,7 @@ describe("the method frame", () => {
             ok: false,
             failure: { kind: "corrupted", sure: true },
             state: all,
+            recovered: true,
         });
         // A repair the modifiers do not fit: the state as it was, and no end.
         const full = fromItems(u, [
@@ -348,6 +349,7 @@ describe("the method frame", () => {
             ok: false,
             failure: { kind: "noOutcome", op: "corrupt", sure: true },
             state: all,
+            recovered: true,
         });
     });
 

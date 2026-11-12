@@ -8,6 +8,7 @@ import {
     has,
     hasP,
     iff,
+    influencedP,
     isRarity,
     item,
     notp,
@@ -23,7 +24,7 @@ import type { Craft, ProcDef, Stmt } from "../ast/ast.js";
 import { check } from "../check/check.js";
 import { renderState } from "../check/diagnostics.js";
 import { TypeId } from "../model/ids.js";
-import { checkExact, type ExactTuning } from "./check.js";
+import { checkExact, exactDetail, type ExactTuning } from "./check.js";
 import { startOf } from "./initial.js";
 import { generateCatalog } from "./reference/catalog.js";
 import { compareCraft } from "./reference/craft.js";
@@ -184,6 +185,19 @@ describe("a loop", () => {
         agrees(exits);
     });
 
+    it("and an if whose condition names nothing report that alone, and narrow nothing", () => {
+        const life = ring({ prefixes: ["Life1"] });
+        const crafts = [
+            craft(life, [until(has("no such modifier"), [op("divine")]), op("annul")]),
+            craft(life, [iff(has("no such modifier"), [op("annul")], [op("divine")])]),
+        ];
+        for (const c of crafts) {
+            expect(said(c)).toEqual(presentSaid(c));
+            expect(said(c).length).toBe(1);
+            agrees(c);
+        }
+    });
+
     it("judges every round: an item the body fills on a later round refuses it", () => {
         const c = craft(ring({ prefixes: ["Life1"] }), [until(has("Fire1"), [op("exalt")])]);
         const r = exact(c);
@@ -201,7 +215,7 @@ describe("a loop", () => {
         ]);
         const r = exact(c, { maxRounds: 1 });
         expect(r.diagnostics.map((d) => d.message)).toEqual([
-            "The item this loop works on is still changing after 1 rounds, too many to follow.",
+            "The item this loop works on is still changing after 1 round, too many to follow, so the steps from here on are not checked.",
         ]);
         expect(r.diagnostics[0]!.span).toBe(c.body[0]!.span);
         expect(r.finalState).toBeUndefined();
@@ -285,7 +299,8 @@ describe("the engine's limit", () => {
             op("exalt"),
             op("regal"),
         ]);
-        const start = startOf(HAND_REGISTRY, c, () => {})!;
+        // A budget gives the check a universe of its own, as this one is.
+        const start = startOf(HAND_REGISTRY, c, () => {}, { maxNodes: 2_000_000 })!;
         const made = start.u.dd.nodeCount;
         // The smallest budget past the item block's own diagrams.
         let r = exact(c, { maxNodes: made });
@@ -299,4 +314,151 @@ describe("the engine's limit", () => {
         expect(r.finalState).toBeUndefined();
         expect(r.findings.map((f) => f.kind)).toEqual(["limit"]);
     });
+});
+
+describe("the rounds that settle a loop", () => {
+    // A loop no item leaves yields nothing in them: its items are no head's.
+    const cat = generateCatalog(11, {
+        types: 4,
+        oneValue: true,
+        sharedFamily: false,
+        unnumbered: false,
+        ilvl: 84,
+    });
+    const magic = item({
+        base: cat.base.id,
+        ilvl: cat.ilvl,
+        rarity: "magic",
+        prefixes: ["Alpha1"],
+    });
+    const inner = () => until(has("Delta1"), [iff(has("Charlie1"), [op("alteration")])]);
+    const run = (body: Stmt[]) => {
+        const c = craft(magic, body);
+        expect(compareCraft(c, cat.registry, cat.ctx).diff).toBe("");
+        return checkExact(c, { registry: cat.registry });
+    };
+    const neverExits = (r: ReturnType<typeof run>) =>
+        r.diagnostics.filter((d) => d.message.startsWith("this loop can never exit"));
+
+    it("take no recovery from a loop that never exits on an early round", () => {
+        const loop = inner();
+        const outer = until(has("Bravo1"), [loop, op("alteration")]);
+        const r = run([outer]);
+        expect(r.ok).toBe(false);
+        // The item can never leave the inner loop, so none comes back to the
+        // outer loop's head: both are reported.
+        expect(neverExits(r).map((d) => d.span)).toEqual([outer.pred.span, loop.pred.span]);
+    });
+
+    it("leave the inner loop alone refused as never exiting", () => {
+        const loop = inner();
+        const r = run([loop]);
+        expect(neverExits(r).map((d) => d.span)).toEqual([loop.pred.span]);
+    });
+
+    it("are worked out once for an entry met again", () => {
+        const c = craft(ring({ suffixes: ["Fire1"] }), [
+            until(isRarity("normal"), [until(has("Fire1"), [op("chaos")])]),
+        ]);
+        const r = exact(c);
+        expect(exactDetail(r)!.reused).toBeGreaterThan(0);
+        agrees(c);
+    });
+});
+
+describe("a step after", () => {
+    it("a call whose every path stops", () => {
+        const ender = procDef("ender", [], [stop()]);
+        const c = craft(ring(), [callStmt("ender"), op("chaos")], [], [ender]);
+        expect(said(c)).toEqual(["this step can never run: the craft always stops before it"]);
+        agrees(c);
+    });
+
+    it("a nested if whose arms restart and stop", () => {
+        const c = craft(ring({ prefixes: ["Life1"], suffixes: [{ mod: "random" }] }), [
+            until(has("Mana1"), [
+                op("divine"),
+                iff(has("Life1"), [iff(has("Fire1"), [restart()], [stop()])], [restart()]),
+                op("exalt"),
+            ]),
+        ]);
+        expect(said(c)).toContain(
+            "this step can never run: every path before it stops or restarts",
+        );
+        agrees(c);
+    });
+
+    it("an arm that restarts, and one that restarts too", () => {
+        const c = craft(ring({ prefixes: ["Life1"] }), [
+            until(has("Mana1"), [
+                op("divine"),
+                iff(has("Life1"), [restart()], [restart()]),
+                op("exalt"),
+            ]),
+        ]);
+        expect(said(c)).toContain("this step can never run: the loop always restarts before it");
+        agrees(c);
+    });
+});
+
+describe("a proc", () => {
+    it("defined outside a loop and called in it restarts that loop", () => {
+        const again = procDef("again", [], [iff(notp(has("Fire1")), [restart()])]);
+        const c = craft(
+            ring({ rarity: "magic", prefixes: ["Life1"] }),
+            [until(has("Mana1"), [op("alteration"), callStmt("again"), op("augment")])],
+            [],
+            [again],
+        );
+        const r = exact(c);
+        expect(r.diagnostics.filter((d) => d.message.includes("never run"))).toEqual([]);
+        agrees(c);
+    });
+
+    it("called twice is traced at each call", () => {
+        const twice = procDef("twice", ["m"], [iff(hasP(param("m")), [op("annul")])]);
+        const c = craft(
+            ring({ prefixes: ["Life1"], suffixes: ["Fire1"] }),
+            [callStmt("twice", ["Life1"]), callStmt("twice", ["Fire1"])],
+            [],
+            [twice],
+        );
+        const r = exact(c);
+        expect(r.trace.filter((e) => e.kind === "call").length).toBe(2);
+        agrees(c);
+    });
+});
+
+describe("a method built in parts", () => {
+    it("runs the parts built alike as one", () => {
+        // The change's parts by influence build the same operations; run apart,
+        // the part no item of which passes would recover on its own.
+        const cat = generateCatalog(2, { types: 2, harvest: true, influence: true });
+        const c = craft(
+            item({
+                base: cat.base.id,
+                ilvl: cat.ilvl,
+                rarity: "rare",
+                suffixes: ["FireRes1", { mod: "random" }],
+            }),
+            [
+                iff(has("cold resistance"), [{ ...op("exalt"), words: ["exalt", "hunter"] }]),
+                {
+                    ...op("harvest"),
+                    words: ["harvest", "change"],
+                    args: [
+                        { kind: "string", value: "fire resistance", span: op("x").span },
+                        { kind: "string", value: "cold resistance", span: op("x").span },
+                    ],
+                },
+                iff(influencedP(), [op("divine")]),
+            ],
+        );
+        const r = checkExact(c, { registry: cat.registry });
+        expect(r.findings.map((f) => f.kind)).toEqual(["refused", "deadIf"]);
+        expect(compareCraft(c, cat.registry, cat.ctx).diff).toBe("");
+    });
+
+    // No method of the table ends the craft on every item (a `locus` destroys
+    // some outcomes only), so the `ended` finding is reached by no craft here.
 });
