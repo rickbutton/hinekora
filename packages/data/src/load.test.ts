@@ -265,6 +265,35 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         ]);
     });
 
+    it("names a bench craft by its whole wording where its words fit another", () => {
+        const ring = ClassId("Ring");
+        for (const [wording, mod] of [
+            [
+                "+(41-45) to maximum Life\nRegenerate 4 Mana per second",
+                "JunMaster2BaseLifeAndManaRegen3",
+            ],
+            [
+                "+(41-45) to maximum Mana\nRegenerate 25 Life per second",
+                "JunMaster2BaseManaAndLifeRegen3",
+            ],
+        ] as const) {
+            const r = registry.resolveBench(wording, ring);
+            expect(r.ok && r.value.mod).toBe(mod);
+        }
+        const words = registry.resolveBench("maximum life regenerate mana per second", ring);
+        expect(!words.ok && words.error.kind).toBe("ambiguous");
+    });
+
+    it("leaves a modifier, an eldritch implicit or a bench name tied at the top ambiguous", () => {
+        // One wording has the word, the other a longer word it begins.
+        const blind = registry.resolveModType("blind");
+        expect(!blind.ok && blind.error.kind).toBe("ambiguous");
+        const poison = registry.resolveEldritch("poison", "eater");
+        expect(!poison.ok && poison.error.kind).toBe("ambiguous");
+        const chill = registry.resolveBench("chill", ClassId("Boots"));
+        expect(!chill.ok && chill.error.kind).toBe("ambiguous");
+    });
+
     it("stamps a source on every mod, and isolates natural from essence", () => {
         expect(data.mods.every((m) => m.source !== undefined)).toBe(true);
         const bySource = (s: string) => data.mods.filter((m) => m.source === s).length;

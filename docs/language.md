@@ -1,8 +1,7 @@
 # The hinekora language
 
-The language a player writes a craft in. Where a construct rests on a game
-rule, the rule is linked to its wiki section rather than restated; what is not built yet is
-in [ROADMAP.md](ROADMAP.md).
+The language a player writes a craft in; game rules are linked to the wiki, and what is
+not built yet is in [ROADMAP.md](ROADMAP.md).
 
 ---
 
@@ -99,8 +98,7 @@ An unknown or ambiguous name is reported on the item block before any step is ch
 
 ## 2. Names
 
-**Currencies** are written by their short name (`chaos`, `alteration`), as completion offers
-them.
+**Currencies** are written by their short name (`chaos`, `alteration`).
 
 **Mods** are written as a stat description and name a modifier type, every tier of it. A
 query word matches an entry word exactly or as a prefix of at least three letters, so
@@ -116,6 +114,9 @@ rank by the share of a type's wording the query covers; a tie at the top is an e
 Ambiguous name "res" — candidates: +(6-11)% to Fire Resistance, +(6-11)% to Cold Resistance, +(6-11)% to Lightning Resistance, +(5-10)% to Chaos Resistance.
 ```
 
+A bench name ranks so among the crafts of the item's class, but a craft's whole wording,
+typed out, names it despite a tie.
+
 **Tiers.** `t<n>` is the tier the game's advanced tooltip shows, `t1` the modifier's Tier 1
 on that base: its rows that roll on the base, counted best first by
 [mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level), whatever the item's level. An
@@ -129,11 +130,10 @@ Harvest change leaves one; in a condition no currency meets it.
 ## 3. Operations
 
 Each statement applies one operation to the current item: a currency, an essence, a bench,
-Harvest, Bestiary or Eldritch craft, a fossil resonator, an unveil. Completion lists them
-all, and hovering a step shows what it does and what the item needs for it. Every item
-the craft can have there must meet them; a failure is reported as in §6, and checking goes
-on from the items the step fits, else as the craft meant it, so one wrong step is reported
-once.
+Harvest, Bestiary or Eldritch craft, a fossil resonator, an unveil; hovering a step shows
+what the item needs. Every item the craft can have there must meet that; a failure is
+reported as in §6, and checking goes on from the items the step fits, else as the craft
+meant it, so one wrong step is reported once.
 
 So a slot is open only if it is open on every item the craft can have there, and a
 modifier is removable only if every such item has one not locked (fractured, or shielded

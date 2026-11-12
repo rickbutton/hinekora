@@ -82,7 +82,9 @@ craft can leave one on an item.
 | [`harvest reforge "life"`](/docs/operations/harvest-reforge) | one of a fixed list of tags                                   |
 
 An essence tier counts from the best: `t1` is Deafening and `t7` is Whispering. A `bench`
-step takes the best craft the bench has for the item, or the one `t<n>` picks.
+step takes the best craft the bench has for the item, or the one `t<n>` picks. Where two
+crafts fit the words equally, as the bench's life-and-mana and mana-and-life crafts do,
+the craft's whole wording names it: `bench "+(41-45) to maximum Mana Regenerate 25 Life per second"`.
 
 ```hinekora
 item {

@@ -33,7 +33,6 @@ import {
 } from "../model/sources.js";
 import {
     buildTypeIndex,
-    matchScore,
     matchTypes,
     normalizeText,
     queryTokens,
@@ -674,7 +673,7 @@ export function buildRegistry(data: RegistryData): Registry {
                 for (const [type, rows] of variedRows(domain)) {
                     const matched = rows
                         .filter(({ tokens }) => q.every((w) => tokenMatches(w, tokens)))
-                        .map(({ mod, tokens }) => ({ mod, score: matchScore(q, tokens) }));
+                        .map(({ mod, tokens }) => ({ mod, score: q.length / tokens.size }));
                     if (matched.length > 0) hit.push({ type, rows: matched });
                 }
             }
@@ -785,7 +784,7 @@ export function buildRegistry(data: RegistryData): Registry {
             const entry = byWording.get(key) ?? {
                 text: e.text,
                 types: new Set<TypeId>(),
-                score: matchScore(q, set),
+                score: q.length / set.size,
             };
             entry.types.add(e.type);
             byWording.set(key, entry);
@@ -945,7 +944,7 @@ export function buildRegistry(data: RegistryData): Registry {
             const scored = enchants.flatMap((e) => {
                 const tokens = new Set(normalizeText(e.words));
                 return q.every((w) => tokenMatches(w, tokens))
-                    ? [{ e, score: matchScore(q, tokens) }]
+                    ? [{ e, score: q.length / tokens.size }]
                     : [];
             });
             if (scored.length === 0) return fail({ kind: "unknownEnchant", name });
@@ -1125,12 +1124,21 @@ export function buildRegistry(data: RegistryData): Registry {
                 if (!mod?.text) continue;
                 const tokens = new Set(normalizeText(mod.text));
                 if (q.every((w) => tokenMatches(w, tokens))) {
-                    scored.push({ craft, mod, score: matchScore(q, tokens) });
+                    scored.push({ craft, mod, score: q.length / tokens.size });
                 }
             }
             if (scored.length === 0) return fail({ kind: "unknownBench", name });
             const top = Math.max(...scored.map((s) => s.score));
-            const best = scored.filter((s) => s.score === top);
+            let best = scored.filter((s) => s.score === top);
+            // Numbers are not words, so "1 Prefix Modifier cannot be changed"
+            // ties with "2 Prefix Modifiers …"; a craft's whole wording, typed
+            // out, names that craft alone.
+            const wording = (s: string): string => s.trim().replace(/\s+/g, " ").toLowerCase();
+            const whole = best.filter((s) => wording(s.mod.text ?? "") === wording(name));
+            if (new Set(whole.map((s) => s.mod.type)).size === 1) {
+                const type = whole[0]!.mod.type;
+                best = best.filter((s) => s.mod.type === type);
+            }
             const sorted = best.sort((a, b) => b.craft.tier - a.craft.tier);
             // A modifier's tiers are one candidate, named by its best.
             const byType = new Map<TypeId, string>();

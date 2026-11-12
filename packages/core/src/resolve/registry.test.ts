@@ -41,14 +41,17 @@ describe("a bench craft named by its whole wording", () => {
         benchCrafts: [one, two].map((m) => benchCraft(m, RING_BASE.itemClass)),
     });
 
-    it("is its own craft, not one whose word it abbreviates", () => {
-        // The numbers are not words: only "Modifier" against "Modifiers" tells
-        // the two wordings apart.
+    it("is its own craft, though the numbers are not words", () => {
         for (const m of [one, two]) {
             const r = registry.resolveBench(m.text!, RING_BASE.itemClass);
             expect(r.ok && r.value.mod).toBe(m.id);
+            const shouted = registry.resolveBench(` ${m.text!.toUpperCase()} `);
+            expect(shouted.ok && shouted.value.mod).toBe(m.id);
         }
-        const short = registry.resolveBench("prefix modifier cannot", RING_BASE.itemClass);
-        expect(short.ok && short.value.mod).toBe(one.id);
+    });
+
+    it("leaves words short of a whole wording ambiguous", () => {
+        const r = registry.resolveBench("prefix modifier cannot", RING_BASE.itemClass);
+        expect(!r.ok && r.error.kind).toBe("ambiguous");
     });
 });

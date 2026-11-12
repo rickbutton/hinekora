@@ -137,17 +137,6 @@ export function tokenMatches(w: string, tokens: ReadonlySet<string>): boolean {
     return false;
 }
 
-/** How tightly the query's words, each matching one of the wording's
- *  (`tokenMatches`), cover the wording. At equal cover a query whose words are
- *  the wording's own outranks one that abbreviates them: numbers are not
- *  words, so "1 Prefix Modifier …" covers "2 Prefix Modifiers …" as fully as
- *  its own row, and only its exact "modifier" tells them apart. The tie-break
- *  is far below any difference two covers can make. */
-export function matchScore(q: readonly string[], tokens: ReadonlySet<string>): number {
-    const exact = q.filter((w) => tokens.has(w)).length;
-    return q.length / tokens.size + (exact / q.length) * 1e-6;
-}
-
 /** A query's words as they are matched: aliases expanded, each word once. */
 export function queryTokens(query: string, aliases: WordingAliases = new Map()): string[] {
     return [...new Set(expandAliases(normalizeText(query), aliases))];
@@ -188,7 +177,7 @@ export function matchTypes(
     const out: TypeMatch[] = [];
     for (const entry of index.values()) {
         if (q.every((w) => tokenMatches(w, entry.tokens))) {
-            out.push({ type: entry.type, entry, score: matchScore(q, entry.tokens) });
+            out.push({ type: entry.type, entry, score: q.length / entry.tokens.size });
         }
     }
     out.sort((a, b) => b.score - a.score);
