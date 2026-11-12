@@ -36,9 +36,8 @@ import { HANDLERS } from "./registry.js";
 const req = (check: Check): Op => ({ kind: "require", check });
 const strip: Transform = { kind: "strip" };
 const remove = (selector: Selector): Transform => ({ kind: "remove", selector });
-const random = (honourCannotRoll: boolean, gen?: Gen): Selector & { kind: "random" } => ({
+const random = (gen?: Gen): Selector & { kind: "random" } => ({
     kind: "random",
-    honourCannotRoll,
     ...(gen !== undefined && { gen }),
 });
 const removes = (sel: Selector): Op[] => [req({ kind: "removable", selector: sel }), remove(sel)];
@@ -219,13 +218,13 @@ describe("a crafted suffix of a type whose natural rows are prefixes", () => {
     });
 
     it("is in reach of a suffix's removal and out of a prefix's", () => {
-        expect(sorted(rowsOf(outcomes(w, [item], removes(random(false, "suffix")))))).toEqual(
+        expect(sorted(rowsOf(outcomes(w, [item], removes(random("suffix")))))).toEqual(
             sorted([
                 ["DotBench", "Pre"],
                 ["Pre", "Suf"],
             ]),
         );
-        expect(rowsOf(outcomes(w, [item], removes(random(false, "prefix"))))).toEqual([
+        expect(rowsOf(outcomes(w, [item], removes(random("prefix"))))).toEqual([
             ["DotBench", "Suf"],
         ]);
     });
@@ -261,7 +260,9 @@ describe("a random removal", () => {
         expect(out.every((x) => x.rarity === "rare")).toBe(true);
     });
 
-    it("of the Orb of Annulment spares what a cannot-roll metamod shields; the others do not", () => {
+    it("of the Orb of Annulment takes a modifier a cannot-roll metamod bars from rolling", () => {
+        // Version 3.30.0 (Item Changes): the metamod no longer keeps an Orb of
+        // Annulment off the modifiers it bars.
         const item = cItem({
             rarity: "rare",
             mods: [on(w, "Atk"), on(w, "Suf"), on(w, shield, { crafted: true })],
@@ -269,12 +270,13 @@ describe("a random removal", () => {
         expect(sorted(rowsOf(outcomes(w, [item], L.currencyOps("annul"))))).toEqual(
             sorted(
                 [
+                    ["Suf", shield],
                     ["Atk", shield],
                     ["Atk", "Suf"],
                 ].map((r) => r.sort()),
             ),
         );
-        expect(outcomes(w, [item], removes(random(false)))).toHaveLength(3);
+        expect(outcomes(w, [item], removes(random()))).toHaveLength(3);
     });
 
     it("limited to a protected side leaves the item as it was", () => {
@@ -282,7 +284,7 @@ describe("a random removal", () => {
             rarity: "rare",
             mods: [on(w, "Pre"), on(w, "Suf"), on(w, sides, { crafted: true })],
         });
-        expect(outcomes(w, [item], removes(random(false, "suffix")))).toEqual([lowest(w)(item)]);
+        expect(outcomes(w, [item], removes(random("suffix")))).toEqual([lowest(w)(item)]);
         // The beastcraft adds without removing (Metamod § Rules and Exceptions).
         const out = outcomes(w, [item], L.beastAddOps("prefix", 100));
         expect(out.every((x) => x.mods.length === 4)).toBe(true);
@@ -298,7 +300,7 @@ describe("a random removal", () => {
             ],
         });
         expect(refusal(w, [item], L.currencyOps("annul"))).toEqual({ kind: "nothingToRemove" });
-        const end: Op = { kind: "either", branches: [[remove(random(true))], [{ kind: "end" }]] };
+        const end: Op = { kind: "either", branches: [[remove(random())], [{ kind: "end" }]] };
         const r = runMethod(fromItems(w.u, [item])!, [end]);
         expect(r.ended).toBe(true);
     });
@@ -313,7 +315,7 @@ describe("an add, then a removal sparing it", () => {
         BOOTS_BASE,
     );
     const pool: PoolSpec = { kind: "rows", mods: [w.ctx.rows.get(ModId("Fast"))!] };
-    const run = (sel = random(false)): Op[] => [
+    const run = (sel = random()): Op[] => [
         req({ kind: "poolNonEmpty", pool, tag: TagId("speed") }),
         req({ kind: "removable", selector: sel }),
         { kind: "fill", pool, count: { kind: "add", n: [1, 1] } },
@@ -337,7 +339,7 @@ describe("an add, then a removal sparing it", () => {
         // Unreached behind the Harvest augment's checks, which take a Rare.
         const ops: Op[] = [
             { kind: "fill", pool, count: { kind: "add", n: [1, 1] } },
-            remove({ ...random(false), sparing: pool }),
+            remove({ ...random(), sparing: pool }),
         ];
         expect(refusal(w, [cItem()], ops)).toMatchObject({ kind: "noOutcome" });
     });

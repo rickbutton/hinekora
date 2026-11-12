@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+    ATTACK_PREFIX,
     BENCH_LIFE_ROW,
+    CANNOT_ROLL_ATTACK_CARRIER,
     CATALOG,
     FIRE_RES_TIERED,
     MAXLIFE_T1,
@@ -90,6 +92,33 @@ describe("a random removal's odds", () => {
         if (roll.kind !== "removal") throw new Error("not a removal");
         expect(roll.sides.suffix.unnamed).toBe(0);
         expect(roll.candidates.map((x) => x.prob)).toEqual([0.5, 0.5]);
+    });
+
+    it("take a modifier a cannot-roll metamod bars as likely as the metamod", () => {
+        // Version 3.30.0 (Item Changes): the metamod keeps no Orb of Annulment
+        // off the attack modifier.
+        const barring = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...CATALOG, ATTACK_PREFIX, CANNOT_ROLL_ATTACK_CARRIER],
+            baseAliases: { "Iron Ring": "IronRing" },
+        });
+        const c = craft(
+            item({
+                base: "Iron Ring",
+                ilvl: 84,
+                rarity: "rare",
+                prefixes: [ATTACK_PREFIX.id],
+                suffixes: [CANNOT_ROLL_ATTACK_CARRIER.id],
+            }),
+            [],
+        );
+        const a = check(c, { registry: barring }).finalState!;
+        const roll = rollOf(a, currencyOps("annul"), barring);
+        if (roll.kind !== "removal") throw new Error("not a removal");
+        expect(roll.candidates.map((x) => [x.type, x.prob])).toEqual([
+            [ATTACK_PREFIX.type, 0.5],
+            [CANNOT_ROLL_ATTACK_CARRIER.type, 0.5],
+        ]);
     });
 });
 

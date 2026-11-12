@@ -181,15 +181,17 @@ describe("the Eldritch orbs act on the dominant implicit's side", () => {
         expect(guaranteedTypes(r.finalState!).has(PROTECT_PREFIXES_CARRIER.type)).toBe(true);
     });
 
-    it("annul spares what a cannot-roll metamod shields, and refuses a protected side", () => {
-        const shielded = boots({
+    it("annul takes what a cannot-roll metamod bars from rolling, and refuses a protected side", () => {
+        // Version 3.30.0 (Item Changes) names the Orb of Annulment; the eldritch
+        // orb is taken alike (QUESTIONS.md Q122).
+        const barred = boots({
             exarch: "grand",
             prefixes: [ATTACK_PREFIX.id],
             suffixes: [CANNOT_ROLL_ATTACK_CARRIER.id],
         });
-        expect(messages(craft(shielded, [words("eldritch", "annul")]))).toContain(
-            "Requires a removable affix",
-        );
+        const r = run(craft(barred, [words("eldritch", "annul")]));
+        expect(r.diagnostics).toEqual([]);
+        expect(v.counts(r.finalState!).prefix).toEqual([0, 0]);
         const guarded = boots({
             eater: "grand",
             prefixes: [PROTECT_SUFFIXES_CARRIER.id],

@@ -275,6 +275,35 @@ dominance`,
 }
 dominance`,
     },
+    {
+        // The metamod keeps no Orb of Annulment off the caster modifier it
+        // bars from rolling (Version 3.30.0, Item Changes): the annul may take it.
+        name: "an annul beside cannot roll caster modifiers, then a change of the caster modifier",
+        checks: false,
+        source: `item {
+    base:     "Prophecy Wand"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "fire damage to spells" t1 ]
+    suffixes: [ bench "cannot roll caster modifiers" ]
+}
+annul
+harvest change "fire damage to spells" "cold damage to spells"`,
+    },
+    {
+        // The prefixes cannot be changed, so the annul takes the metamod.
+        name: "an annul beside prefixes cannot be changed, then a change of the kept prefix",
+        checks: true,
+        source: `item {
+    base:     "Prophecy Wand"
+    ilvl:     84
+    rarity:   rare
+    prefixes: [ "fire damage to spells" t1 ]
+    suffixes: [ bench "prefixes cannot be changed" ]
+}
+annul
+harvest change "fire damage to spells" "cold damage to spells"`,
+    },
 ];
 
 describe("the crafts read exactly", () => {

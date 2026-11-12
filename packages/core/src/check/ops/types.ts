@@ -88,13 +88,13 @@ export type FillCount =
 
 /** Which present modifiers a removal may reach. */
 export type Selector =
-    /** One random modifier, of one side when `gen` is given; only the Orb of
-     *  Annulment honours a cannot-roll metamod's shield. A side-limited removal
-     *  whose side is protected is skipped rather than refused (Metamod § Rules
-     *  and Exceptions: "will add without removing"). */
+    /** One random modifier, of one side when `gen` is given. No removal spares
+     *  what a cannot-roll metamod bars from rolling (Version 3.30.0: it no
+     *  longer keeps an Orb of Annulment off a caster or attack modifier). A
+     *  side-limited removal whose side is protected is skipped rather than
+     *  refused (Metamod § Rules and Exceptions: "will add without removing"). */
     | {
           readonly kind: "random";
-          readonly honourCannotRoll: boolean;
           readonly gen?: Gen;
           /** The pool the method filled from just before: the modifier that fill
            *  laid down is out of the removal's reach ("remove another"). */

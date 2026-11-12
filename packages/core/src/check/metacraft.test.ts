@@ -19,7 +19,6 @@ import {
 } from "../__fixtures__/ast.js";
 import {
     ATTACK_PREFIX,
-    ATTACK_SPEED,
     CANNOT_ROLL_ATTACK_CARRIER,
     CATALOG,
     CLASS_RING,
@@ -32,8 +31,7 @@ import {
     VEILED_CATALOG,
 } from "../__fixtures__/mods.js";
 import type { BenchCraft, EssenceSpec } from "../model/sources.js";
-import { GroupId, ModId, TypeId } from "../model/ids.js";
-import type { Mod } from "../model/mod.js";
+import { ModId, TypeId } from "../model/ids.js";
 
 const benchOf = (mod: ModId): BenchCraft => ({
     mod,
@@ -223,7 +221,7 @@ describe("a metamod that may or may not be on the item", () => {
         expect(v.rarities(scoured.finalState!)).toEqual(new Set(["normal", "magic"]));
     });
 
-    it("a cannot-roll metamod that may be there shields nothing for sure", () => {
+    it("a cannot-roll metamod that may be there keeps nothing from an annul", () => {
         const c = craft(rareRing(["AddedAttack1"], ["random"]), [
             iff(has("FireResist1"), [bench("cannot roll attack modifiers")]),
             op("annul"),
@@ -348,17 +346,17 @@ describe("reforge respects protection (Stage B)", () => {
     });
 });
 
-describe("cannot roll attack modifiers shields attack mods from removal", () => {
+describe("cannot roll attack modifiers keeps no attack modifier from removal", () => {
     const attackRing = () => rareRing(["AddedAttack1"], []);
 
-    it("an annul never removes the attack prefix, so its guarantee survives", () => {
+    it("an annul may remove the attack prefix (Version 3.30.0, Item Changes)", () => {
         const c = craft(attackRing(), [bench("cannot roll attack modifiers"), op("annul")]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(guaranteed(r)).toContain("AddedAttackDamage");
+        expect(guaranteed(r)).not.toContain("AddedAttackDamage");
     });
 
-    it("the veiled exalt and the harvest augment removals ignore the shield", () => {
+    it("the veiled exalt and the harvest augment removals take it too", () => {
         // Metamod § Rules and Exceptions: the Veiled Orb's and the harvest augment's
         // removals ignore cannot-roll, so the attack guarantee may be lost, and the
         // attack prefix being the only prefix is no obstacle to either.
@@ -376,46 +374,6 @@ describe("cannot roll attack modifiers shields attack mods from removal", () => 
             expect(r.diagnostics).toEqual([]);
             expect(guaranteed(r)).not.toContain("AddedAttackDamage");
         }
-    });
-
-    it("an unproven lock may sit on the one modifier that would prove a removal", () => {
-        // Every other modifier is an attack modifier the metamod shields, so after
-        // the Fracturing Orb the lock may be on the carrier and nothing is removable.
-        const attackPrefix2: Mod = {
-            ...ATTACK_PREFIX,
-            id: ModId("AddedAttack2"),
-            type: TypeId("AddedAttackDamage2"),
-            families: new Set([GroupId("AddedAttack2")]),
-        };
-        const attacks: CheckContext = {
-            registry: buildRegistry({
-                bases: [RING_BASE],
-                mods: [
-                    ...CATALOG,
-                    ATTACK_PREFIX,
-                    attackPrefix2,
-                    ATTACK_SPEED,
-                    CANNOT_ROLL_ATTACK_CARRIER,
-                ],
-                baseAliases: { "Iron Ring": "IronRing" },
-                benchCrafts: [benchOf(CANNOT_ROLL_ATTACK_CARRIER.id)],
-            }),
-        };
-        const c = craft(rareRing(["AddedAttack1", "AddedAttack2"], ["AttackSpeed1"]), [
-            bench("cannot roll attack modifiers"),
-            op("fracture"),
-            op("annul"),
-        ]);
-        const r = check(c, attacks);
-        expect(r.diagnostics[0]?.message).toContain("removable");
-        // The ring's random suffixes are never attack modifiers, so one of two is
-        // always removable whichever modifier the lock is on.
-        const unshielded = craft(rareRing(["AddedAttack1"], ["random", "random"]), [
-            bench("cannot roll attack modifiers"),
-            op("fracture"),
-            op("annul"),
-        ]);
-        expect(check(unshielded, ctx).diagnostics).toEqual([]);
     });
 });
 
@@ -555,17 +513,15 @@ describe("a declared bench-crafted mod counts toward the crafted limit", () => {
         expect(guaranteed(r)).not.toContain(PROTECT_PREFIXES_CARRIER.type);
     });
 
-    it("an annul under a cannot-roll metamod takes nothing off a side it cannot reach", () => {
-        // The one prefix is an attack modifier the metamod shields, so only the
-        // metamod itself can go: the prefix count stands, the suffix empties.
+    it("an annul under a cannot-roll metamod may take the attack modifier or the metamod", () => {
         const c = craft(rareRing([ATTACK_PREFIX.id], [CANNOT_ROLL_ATTACK_CARRIER.id]), [
             op("annul"),
         ]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
-        expect(v.counts(r.finalState!).prefix).toEqual([1, 1]);
-        expect(v.counts(r.finalState!).suffix).toEqual([0, 0]);
-        expect(guaranteed(r)).toContain(ATTACK_PREFIX.type);
+        expect(v.counts(r.finalState!).prefix).toEqual([0, 1]);
+        expect(v.counts(r.finalState!).suffix).toEqual([0, 1]);
+        expect(v.counts(r.finalState!).total).toEqual([1, 1]);
     });
 
     it("the declared metamod's effect is active from the start", () => {

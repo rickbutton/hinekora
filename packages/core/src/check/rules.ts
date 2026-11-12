@@ -15,19 +15,18 @@ export type CannotRoll = Extract<Effect, { kind: "poolRestrict" }>;
 export interface Rules {
     /** Sides shielded from removal and reroll by "cannot be changed". */
     readonly protected: ReadonlySet<Gen>;
-    /** The cannot-roll metamods the item carried: an Orb of Annulment's
-     *  shield (Orb of Annulment § Mechanics). A fill honours instead the
-     *  carriers on the item as it draws: one a reforge strips restricts
-     *  nothing (Metamod § Rules and Exceptions, the Chaos Orb's row). */
-    readonly cannotRoll: readonly CannotRoll[];
     /** The crafted-modifier limit (one, or three under the multimod). */
     readonly craftedCap: number;
-    /** A protection or cannot-roll metamod prevents an essence or a fossil. */
+    /** A protection or cannot-roll metamod prevents an essence or a fossil.
+     *  No other rule reads a cannot-roll metamod: a fill honours the carriers
+     *  on the item as it draws (one a reforge strips restricts nothing, Metamod
+     *  § Rules and Exceptions, the Chaos Orb's row), and no removal spares
+     *  what one bars (`Selector`). */
     readonly blocksSourced: boolean;
     /** Whether the metamods govern the method: false after `unprotect`, which
-     *  then also empties `protected` and `cannotRoll` (a Tainted Chaos Orb,
-     *  `QUESTIONS.md` Q33). It says nothing to a fill, which reads the
-     *  carriers on the item as it draws either way. */
+     *  then also empties `protected` (a Tainted Chaos Orb, `QUESTIONS.md`
+     *  Q33). It says nothing to a fill, which reads the carriers on the item
+     *  as it draws either way. */
     readonly governed: boolean;
     /** The method uses memory strands up, so its fills lay down only the
      *  tiers the strands allow (Memory strand § Crafting methods consuming
@@ -41,12 +40,10 @@ export type RuleField = keyof Rules;
 export function rulesOf(effects: readonly Effect[], ops: readonly Op[]): Rules {
     const protectedGens = new Set<Gen>();
     for (const e of effects) if (e.kind === "protect") protectedGens.add(e.gen);
-    const cannotRoll = effects.filter((e): e is CannotRoll => e.kind === "poolRestrict");
     return {
         protected: protectedGens,
-        cannotRoll,
         craftedCap: craftedCapOf(effects),
-        blocksSourced: protectedGens.size > 0 || cannotRoll.length > 0,
+        blocksSourced: protectedGens.size > 0 || effects.some((e) => e.kind === "poolRestrict"),
         governed: true,
         strands: usesStrands(ops),
     };
@@ -60,18 +57,13 @@ function usesStrands(ops: readonly Op[]): boolean {
 
 /** After `unprotect`. */
 export function unprotected(r: Rules): Rules {
-    return { ...r, protected: new Set(), cannotRoll: [], governed: false };
+    return { ...r, protected: new Set(), governed: false };
 }
 
 /** After `keep`: that side alone is kept, in place of the item's protections
  *  (Metamod § Rules and Exceptions: the Eldritch Chaos Orb). */
 export function keeping(r: Rules, gen: Gen): Rules {
     return { ...r, protected: new Set([gen]) };
-}
-
-/** Does a cannot-roll metamod in force shield this row? */
-export function shielded(r: Rules, row: Mod): boolean {
-    return r.cannotRoll.some((e) => !e.allows(row));
 }
 
 // --- what a method reads -------------------------------------------------------------
@@ -87,7 +79,7 @@ export function relevantEffects(
             case "protect":
                 return reads.has("protected") || sourced;
             case "poolRestrict":
-                return reads.has("cannotRoll") || sourced;
+                return sourced;
             case "craftedCap":
                 return reads.has("craftedCap");
         }

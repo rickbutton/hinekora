@@ -541,18 +541,19 @@ a fractured one is out of reach; a modifier whose elevated row has no room is no
 
 ### Q122 · probe · open — removals beside a metamod
 
-**Q:** [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions): is an Eldritch
-Orb of Annulment on a protected side refused, or used up for nothing? Does a Tainted
-Exalted Orb's removal spare attack modifiers under "Cannot roll Attack Modifiers"? Under
-that metamod, [§ Examples](https://www.poewiki.net/wiki/Metamod#Examples) has the Bestiary's "add prefix remove
-suffix" add only what can roll even when the suffix it takes is the metamod: is the prefix
-added first?
-**Probe:** boots with the Exarch dominant and "Prefixes Cannot Be Changed", one orb. A
-corrupted Rare with the metamod and an attack modifier, tainted orbs. The page's bow, the
-recipe until it takes the metamod.
-**Assumed:** refused; not spared; the suffix goes first, so an attack prefix may follow.
-**Encoded in:** `check/library.ts` `eldritchAnnulOps`, `TAINTED_EXALT`, `beastAddOps`;
-`check/ops/remove.ts`.
+**Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) (Item Changes): the
+cannot-roll metamods no longer keep "some Currencies that remove Modifiers, such as Orbs
+of Annulment" off what they bar. Are the Eldritch Orb of Annulment and Tainted Exalted
+Orb? Is an Eldritch Orb of Annulment on a protected side refused, or used up for
+nothing? Under "Cannot roll Attack Modifiers", [Metamod § Examples](https://www.poewiki.net/wiki/Metamod#Examples)
+has the Bestiary's "add prefix remove suffix" add only what can roll even when the suffix
+it takes is the metamod: is the prefix added first?
+**Probe:** boots, the Exarch dominant, the caster metamod and a caster prefix, orbs; then
+"Prefixes Cannot Be Changed", one orb. A corrupted Rare with the attack metamod and an
+attack modifier, tainted orbs. The page's bow, the recipe until it takes the metamod.
+**Assumed:** neither spares it; refused; the suffix goes first, so an attack prefix may
+follow. **Encoded in:** `check/library.ts` `eldritchAnnulOps`, `TAINTED_EXALT`,
+`beastAddOps`; `check/ops/remove.ts`.
 
 ### Q123 · probe · open — the tier of a modifier beside a tag another modifier adds
 

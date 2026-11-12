@@ -53,7 +53,6 @@ const end: Transform = { kind: "end" };
 const either = (...branches: Transform[][]): Op => ({ kind: "either", branches });
 const ALL_FIELDS: readonly RuleField[] = [
     "protected",
-    "cannotRoll",
     "craftedCap",
     "blocksSourced",
     "governed",
@@ -78,16 +77,6 @@ describe("the families", () => {
         }
         // A handler reading by its operation is read on a real one of each
         // shape it may hold; a list ignores it.
-        const random = [true, false].map((honourCannotRoll) => ({
-            kind: "random",
-            honourCannotRoll,
-        }));
-        const selectors = [
-            ...random,
-            { kind: "crafted", replacing: true },
-            { kind: "type", type: TypeId("TypeX") },
-            { kind: "influenced" },
-        ];
         const fillOf = (pool: string, count: string): unknown => ({
             kind: "fill",
             pool: { kind: pool },
@@ -97,16 +86,6 @@ describe("the families", () => {
             if (typeof reads !== "function") return [undefined];
             if (k.startsWith("fill:")) {
                 return ["add", "reforge", "within"].map((count) => fillOf(k.slice(5), count));
-            }
-            if (k === "remove:random")
-                return random.map((selector) => ({ kind: "remove", selector }));
-            if (k === "removable") return selectors.map((selector) => ({ kind: k, selector }));
-            if (k === "addAnother") {
-                return random.map((selector) => ({
-                    kind: k,
-                    fill: fillOf("tagged", "add"),
-                    remove: { kind: "remove", selector },
-                }));
             }
             throw new Error(`no sample operation for ${k}, whose reads are by operation`);
         };
@@ -474,7 +453,6 @@ describe("the method frame", () => {
 const code = (r: Rules): number =>
     (r.protected.has("prefix") ? 1 : 0) +
     (r.protected.has("suffix") ? 2 : 0) +
-    (r.cannotRoll.length > 0 ? 4 : 0) +
     (r.craftedCap > 1 ? 8 : 0) +
     (r.governed ? 16 : 0) +
     (r.blocksSourced ? 32 : 0);
@@ -671,7 +649,6 @@ describe("the steps of a method", () => {
                     kind: "remove",
                     selector: {
                         kind: "random",
-                        honourCannotRoll: false,
                         sparing: { kind: "natural" },
                     },
                 },

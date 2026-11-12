@@ -16,7 +16,7 @@ import { effectsOf } from "../../model/effects.js";
 import { lookupWeight } from "../../pool/pool.js";
 import type { Dd, DdRelation } from "../dd.js";
 import { influenceTagsOfKey } from "../influence.js";
-import { type RuleField, type Rules, shielded } from "../rules.js";
+import type { RuleField, Rules } from "../rules.js";
 import type { ItemSet } from "../state.js";
 import { isFresh, type ModValue, RARITIES, type Universe } from "../universe.js";
 import { addDraws } from "./fill.js";
@@ -40,23 +40,10 @@ export function reachSides(gen: Gen | undefined, rules: Rules): Gen[] {
     return (gen === undefined ? BOTH : [gen]).filter((g) => !rules.protected.has(g));
 }
 
-const PROTECTED: readonly RuleField[] = ["protected"];
-const SHIELDED: readonly RuleField[] = ["protected", "cannotRoll"];
+/** What a removal, or a check holding one, reads. */
+export const PROTECTED: readonly RuleField[] = ["protected"];
 
-/** A removal reads the protections, and the Orb of Annulment's the
- *  cannot-roll shield too. */
-export function readsOfRemove(sel: Selector): readonly RuleField[] {
-    return sel.kind === "random" && sel.honourCannotRoll ? SHIELDED : PROTECTED;
-}
-
-/** What a removal, a run or a check holding one reads. */
-export const removalReads = (holder: { readonly selector: Selector }): readonly RuleField[] =>
-    readsOfRemove(holder.selector);
-
-export const augmentReads = (run: CompoundOf<"addAnother">): readonly RuleField[] => [
-    "strands",
-    ...removalReads(run.remove),
-];
+export const AUGMENT_READS: readonly RuleField[] = ["strands", "protected"];
 
 // --- influenced modifiers ---------------------------------------------------------
 
@@ -206,8 +193,7 @@ const onSides =
         !v.fractured && sides.includes(v.row.gen);
 
 function randomReach(sel: Random, rules: Rules): (v: ModValue) => boolean {
-    const side = onSides(reachSides(sel.gen, rules));
-    return sel.honourCannotRoll ? (v) => side(v) && !shielded(rules, v.row) : side;
+    return onSides(reachSides(sel.gen, rules));
 }
 
 /** A side-limited removal whose side is protected does nothing (Metamod §
@@ -353,7 +339,7 @@ export const transforms: TransformTable = {
             u.dd.mapEach(state, goneWhere(u, onSides(reachSides(undefined, rules)))),
     },
     "remove:random": {
-        reads: removalReads,
+        reads: PROTECTED,
         apply: (op, state, { u, rules }) => removeRandom(u, state, op.selector, rules),
     },
     "remove:influenced": {
@@ -382,7 +368,7 @@ export const transforms: TransformTable = {
 
 export const compounds: CompoundTable = {
     addAnother: {
-        reads: augmentReads,
+        reads: AUGMENT_READS,
         apply: (run, state, ctx) => ctx.u.dd.batch(() => addAnother(run, state, ctx)),
     },
 };
@@ -443,7 +429,7 @@ const constant = (u: Universe, yes: boolean): Dd => (yes ? u.dd.ALL : u.dd.EMPTY
 
 export const checks: CheckTable = {
     removable: {
-        reads: removalReads,
+        reads: PROTECTED,
         verdict: (check, state, { u, rules }) => {
             const sel = check.selector;
             let pass: Dd;

@@ -138,7 +138,7 @@ in [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_
 Three kinds cover the five real metamods ([Metamod](https://www.poewiki.net/wiki/Metamod)):
 
 - `PoolRestrict(category)`, "Cannot roll Attack / Caster Modifiers": bars rows of the
-  category from being added and shields present ones from removal.
+  category from being added, not present ones from removal ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0)).
 - `ProtectGeneration(generation)`, "Prefixes / Suffixes Cannot Be Changed": shields whatever
   occupies that side from removal and reroll.
 - `CraftedCap(cap)`, "Can have up to 3 Crafted Modifiers": raises the crafted-mod limit; the

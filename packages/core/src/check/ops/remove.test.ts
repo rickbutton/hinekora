@@ -25,9 +25,8 @@ vi.setConfig({ testTimeout: 60_000 });
 const req = (check: Check): Op => ({ kind: "require", check });
 const strip: Transform = { kind: "strip" };
 const remove = (selector: Selector): Transform => ({ kind: "remove", selector });
-const random = (honourCannotRoll: boolean, gen?: Gen): Selector & { kind: "random" } => ({
+const random = (gen?: Gen): Selector & { kind: "random" } => ({
     kind: "random",
-    honourCannotRoll,
     ...(gen !== undefined && { gen }),
 });
 const keep = (gen: Gen): Op => ({ kind: "keep", gen });
@@ -36,7 +35,7 @@ const natural: PoolSpec = { kind: "natural" };
 /** A removal on the items it can act on: elsewhere it refuses the method. */
 const removes = (sel: Selector): Op[] => [req({ kind: "removable", selector: sel }), remove(sel)];
 /** The Harvest augment's run: an add from the pool, then a removal sparing it. */
-const augment = (pool: PoolSpec, sel = random(false)): Op[] => [
+const augment = (pool: PoolSpec, sel = random()): Op[] => [
     req({ kind: "poolNonEmpty", pool, tag: TagId("any") }),
     req({ kind: "removable", selector: sel }),
     { kind: "fill", pool, count: { kind: "add", n: [1, 1] } },
@@ -172,27 +171,25 @@ describe("a strip", () => {
 });
 
 describe("a random removal", () => {
-    it("is exact whether it honours a cannot-roll metamod or not, of either side or one", () => {
+    it("is exact of either side or one, beside cannot-roll metamods", () => {
         for (const p of plans(9600, { fractured: true })) {
-            for (const honour of [true, false]) {
-                exactOn(p, () => removes(random(honour)));
-                exactOn(p, () => removes(random(honour, "prefix")));
-                exactOn(p, () => removes(random(honour, "suffix")));
-            }
+            exactOn(p, () => removes(random()));
+            exactOn(p, () => removes(random("prefix")));
+            exactOn(p, () => removes(random("suffix")));
         }
     });
 
     it("is exact over value cells, held imprints and crafted marks", () => {
         for (const p of plans(9620, { rows: 3 }).slice(0, 6)) {
-            exactOn({ ...p, values: true }, () => removes(random(true)));
-            exactOn({ ...p, imprint: true, rarities: ["rare"] }, () => removes(random(false)));
-            exactOn({ ...p, crafted: true, fractured: true }, () => removes(random(true)));
+            exactOn({ ...p, values: true }, () => removes(random()));
+            exactOn({ ...p, imprint: true, rarities: ["rare"] }, () => removes(random()));
+            exactOn({ ...p, crafted: true, fractured: true }, () => removes(random()));
         }
     });
 
     it("in a branch, leaves nothing where nothing is in reach", () => {
         for (const p of plans(9640, { fractured: true }).slice(0, 6)) {
-            exactOn(p, () => [{ kind: "either", branches: [[remove(random(true))], []] }]);
+            exactOn(p, () => [{ kind: "either", branches: [[remove(random())], []] }]);
         }
     });
 });
@@ -207,10 +204,10 @@ describe("an add, then a removal sparing it", () => {
         }
     });
 
-    it("is exact with a side-limited or shielded removal, and over fractures", () => {
+    it("is exact with a side-limited removal, and over fractures", () => {
         for (const p of plans(9720, { rows: 3, fractured: true }).slice(0, 6)) {
-            exactOn(p, () => augment(natural, random(true)));
-            exactOn(p, () => augment(natural, random(false, "suffix")));
+            exactOn(p, () => augment(natural, random()));
+            exactOn(p, () => augment(natural, random("suffix")));
         }
     });
 });
@@ -308,7 +305,7 @@ describe("the removal checks", () => {
             exactOn(p, () => [
                 req({ kind: "strippable" }),
                 req({ kind: "unprotectedSide", gen: "prefix", what: "An orb" }),
-                req({ kind: "removable", selector: random(true, "suffix") }),
+                req({ kind: "removable", selector: random("suffix") }),
             ]);
             exactOn(p, () => [keep("suffix"), req({ kind: "strippable" })]);
         }

@@ -62,10 +62,8 @@ const openSlot = (gen?: Gen): Op =>
     require(gen === undefined ? { kind: "openSlot" } : { kind: "openSlot", gen });
 const removable = (selector: Selector): Op => require({ kind: "removable", selector });
 
-/** A random removal that ignores a cannot-roll metamod (every one but the Orb of Annulment). */
-const anyMod: Selector & { kind: "random" } = { kind: "random", honourCannotRoll: false };
-/** The Orb of Annulment's removal, which spares a cannot-roll metamod's tagged mods. */
-const unshielded: Selector = { kind: "random", honourCannotRoll: true };
+/** A random removal; a cannot-roll metamod spares nothing from one (`Selector`). */
+const anyMod: Selector & { kind: "random" } = { kind: "random" };
 
 /** A rare reforge lays down four to six modifiers (Chaos Orb § Mechanics); on
  *  a base whose Rare holds four the fill reads it as three or four. */
@@ -144,7 +142,7 @@ export function currencyOps(kind: CurrencyKind): readonly Op[] {
         case "annul":
             // No rarity gate: it works on anything with a removable mod, and a
             // Normal item already fails the check with the accurate reason.
-            return [notCorrupted, removable(unshielded), remove(unshielded)];
+            return [notCorrupted, removable(anyMod), remove(anyMod)];
         case "scour":
             return [notCorrupted, require({ kind: "strippable" }), strip(), rarity("survivors")];
         case "divine":
@@ -484,11 +482,12 @@ export function eldritchExaltOps(side: EldritchSide): readonly Op[] {
 /** An Eldritch Orb of Annulment: a modifier removed from the dominant
  *  implicit's side, on a Magic or Rare item. */
 export function eldritchAnnulOps(side: EldritchSide): readonly Op[] {
-    // Every metamod is respected (Metamod § Rules and Exceptions), the
-    // cannot-roll shield as for the plain orb; a protected side is refused
-    // rather than left alone, since the orb would be spent for nothing.
+    // A protection is respected (Metamod § Rules and Exceptions); a protected
+    // side is refused rather than left alone, since the orb would be spent for
+    // nothing. A cannot-roll metamod spares nothing, as for the plain orb
+    // (QUESTIONS.md Q122).
     const gen = SIDE_OF[side];
-    const victim: Selector = { kind: "random", honourCannotRoll: true, gen };
+    const victim: Selector = { kind: "random", gen };
     return [
         notCorrupted,
         dominantOrb("Eldritch Orb of Annulment", side),
@@ -544,7 +543,7 @@ export const ANY_BEAST_LEVEL = 100;
  *  (Metamod § Rules and Exceptions). */
 export function beastAddOps(gen: Gen, level: number): readonly Op[] {
     const other: Gen = gen === "prefix" ? "suffix" : "prefix";
-    const victim: Selector = { kind: "random", honourCannotRoll: false, gen: other };
+    const victim: Selector = { kind: "random", gen: other };
     return [
         notCorrupted,
         isRare,

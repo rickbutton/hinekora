@@ -8,14 +8,18 @@
  *   Exceptions). A modifier's side is its row's.
  * - `strip`: every other modifier goes; the rarity is the next operation's.
  * - `remove` "random": one modifier goes, any one in reach: on its side (both
- *   without `gen`), not fractured, and with `honourCannotRoll` not one a
- *   cannot-roll metamod shields (Orb of Annulment § Mechanics; `shielded`).
- *   Assumed, the wiki silent: a Tainted Exalted Orb's removal does not honour
- *   that shield. A removal limited to a protected side leaves the item as it
- *   is: the Metamod table's rule for the two beastcraft recipes ("Will add
- *   without removing"); the Eldritch Orb of Annulment, the other removal of
- *   one side, the library refuses there (`unprotectedSide`). With nothing in
- *   reach the item is stuck (`removable` is the library's check).
+ *   without `gen`) and not fractured. A cannot-roll metamod spares nothing:
+ *   it does not keep an Orb of Annulment off a caster or attack modifier
+ *   (Version 3.30.0, Item Changes), and the Metamod table's "Ignored" and
+ *   "Does not protect" say the same of the Orb of Dominance, the Veiled Orb,
+ *   the Harvest augment's removal and the beastcraft recipes; for the
+ *   Eldritch Orb of Annulment and the Tainted Exalted Orb, which neither
+ *   names, it is assumed (QUESTIONS.md Q122). A removal limited to a
+ *   protected side leaves the item as it is: the Metamod table's rule for
+ *   the two beastcraft recipes ("Will add without removing"); the Eldritch
+ *   Orb of Annulment, the other removal of one side, the library refuses
+ *   there (`unprotectedSide`). With nothing in reach the item is stuck
+ *   (`removable` is the library's check).
  * - `addAnother`: one draw as `add` lays it (reference/ops/fill.ts), on the
  *   item as it stands, then one modifier in reach goes that is not the one
  *   just laid (Harvest crafting, the lead; Metamod § Rules and Exceptions:
@@ -43,11 +47,11 @@ import {
     influenceView,
     type InfluenceView,
     isInfluenced,
-    removalReads,
-    augmentReads,
+    PROTECTED,
+    AUGMENT_READS,
     reachSides,
 } from "../../ops/remove.js";
-import { type Rules, shielded } from "../../rules.js";
+import type { Rules } from "../../rules.js";
 import { type CItem, type CMod, type RefCtx, rowOf } from "../item.js";
 import { isWellFormed } from "../wellformed.js";
 import type { RefCheckTable, RefCompoundTable, RefTransformTable } from "./handler.js";
@@ -76,12 +80,7 @@ function inReach(ctx: RefCtx, m: CMod, sides: readonly Gen[]): boolean {
 /** The modifiers a random removal reaches on the item, `spared` excepted. */
 function randomReach(ctx: RefCtx, item: CItem, sel: Random, rules: Rules, spared?: CMod): CMod[] {
     const sides = reachSides(sel.gen, rules);
-    return item.mods.filter(
-        (m) =>
-            m !== spared &&
-            inReach(ctx, m, sides) &&
-            !(sel.honourCannotRoll && shielded(rules, rowOf(ctx, m))),
-    );
+    return item.mods.filter((m) => m !== spared && inReach(ctx, m, sides));
 }
 
 const without = (item: CItem, m: CMod): CItem => ({
@@ -141,7 +140,7 @@ export const transforms: RefTransformTable = {
         },
     },
     "remove:random": {
-        reads: removalReads,
+        reads: PROTECTED,
         apply: (op, item, { ctx, rules }) => removeRandom(ctx, item, op.selector, rules),
     },
     "remove:influenced": {
@@ -157,7 +156,7 @@ export const transforms: RefTransformTable = {
 
 export const compounds: RefCompoundTable = {
     addAnother: {
-        reads: augmentReads,
+        reads: AUGMENT_READS,
         apply: (run, item, { ctx, rules, pools }) => {
             const n = run.fill.count.n;
             if (n[0] !== 1 || n[1] !== 1) {
@@ -176,7 +175,7 @@ export const compounds: RefCompoundTable = {
 
 export const checks: RefCheckTable = {
     removable: {
-        reads: removalReads,
+        reads: PROTECTED,
         pass: (check, item, { ctx, rules }) => {
             const sel = check.selector;
             switch (sel.kind) {
