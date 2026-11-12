@@ -7,7 +7,7 @@ bounded change. The protocol is in `../CLAUDE.md` (Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q127.
+keeps it. New entries continue from Q128.
 
 ```
 ### Qn · probe|decision · open — title
@@ -603,3 +603,15 @@ output, a Betrayal drop); copy it with Ctrl+Alt+C; record the two headers and th
 under them, and whether `Veiled` leads the header as it does on an unveiled modifier.
 **Assumed:** the header of any affix, `{ Prefix Modifier "Veiled" }`, over the table's
 text. **Encoded in:** `render/item.ts` `modHeader`, `textless`.
+
+### Q127 · probe · open — the lifeforce of a Harvest change
+
+**Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) (Harvest): a change of
+a resistance or a damage modifier into another element's costs "300 Lifeforce of two
+different types", a damage change a Crystallised Rancour besides. Which two types, for
+each pair of elements? [List of harvest crafting options](https://www.poewiki.net/wiki/List_of_harvest_crafting_options)
+still gives 500 of one, the target's colour.
+**Probe:** at the Horticrafting Station, read the cost of each of the six resistance
+changes and one damage change.
+**Assumed:** the colours of the element left and the element taken, fire Wild, cold Vivid,
+lightning Primal, 300 each. **Encoded in:** `cost/prices.ts` `unitCost`.

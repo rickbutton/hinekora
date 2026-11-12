@@ -234,20 +234,26 @@ export function unitCost(
                 return [{ item: "Primal Crystallised Lifeforce", amount: 1000 }];
             }
             if (second === "change") {
-                // Priced by the element the modifier becomes: 500 Wild for fire,
-                // Vivid for cold, Primal for lightning (`harvest_crafting_options`).
+                // 300 lifeforce of two types, a damage change a Crystallised
+                // Rancour besides (Version 3.30.0, Harvest). Which two types is
+                // not stated: taken as the colours of the element the modifier
+                // leaves and the one it becomes, fire Wild, cold Vivid and
+                // lightning Primal as the reforges have them (QUESTIONS.md Q127).
                 const target = text(args[1]).toLowerCase();
-                const element = ["fire", "cold", "lightning"].find((e) => target.includes(e));
-                const colour = element === undefined ? undefined : HARVEST_REFORGE[element];
-                if (colour === undefined) return undefined;
-                // A damage change takes a Crystallised Rancour besides.
+                const to = ["fire", "cold", "lightning"].find((e) => target.includes(e));
                 const from = registry.resolveModType(text(args[0]), {
                     base: a.u.base,
                     ilvl: a.u.ilvl,
                 });
-                const damage = from.ok && registry.harvestChangeOf(from.value)?.kind === "damage";
-                const lifeforce = { item: colour.item, amount: 500 };
-                return damage ? [lifeforce, rancour(1)] : [lifeforce];
+                const change = from.ok ? registry.harvestChangeOf(from.value) : undefined;
+                const colours = [change?.element, to].map((e) =>
+                    e === undefined ? undefined : HARVEST_REFORGE[e]?.item,
+                );
+                if (colours.some((c) => c === undefined) || colours[0] === colours[1]) {
+                    return undefined;
+                }
+                const lifeforce = colours.map((item) => ({ item: item!, amount: 300 }));
+                return change?.kind === "damage" ? [...lifeforce, rancour(1)] : lifeforce;
             }
             const tagName = text(args[0]).trim().toLowerCase();
             if (second === "reforge" && tagName === "influence") {

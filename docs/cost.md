@@ -169,19 +169,20 @@ out has no figure, nor have its steps or the craft's total.
 ## 7. The economy
 
 Prices come from a **snapshot committed with the data**,
-`packages/data/data/poe1/economy.json`, for one league on one day, never live, so a figure is reproducible. `fetch-economy.mjs`
+`packages/data/data/poe1/economy.json`, of one league and day, so a figure is reproducible. `fetch-economy.mjs`
 refreshes it from poe.ninja's economy endpoints, which its
 [API reference](https://poe.ninja/docs/api) supports without promising them stable.
 
 What the snapshot cannot price (a bench craft, a Harvest craft's lifeforce, a Bestiary
-recipe's beasts) `cost/prices.ts` carries from the catalog and the wiki's tables.
+recipe's beasts) `cost/prices.ts` carries from the catalog and the wiki's tables, a Harvest
+change's from [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) (Q127).
 
 ---
 
 ## 8. Known differences from craftofexile
 
-craftofexile is the yardstick, not the truth: where the two part, the
-wiki and the game data decide. It differs in that:
+craftofexile is the yardstick, not the truth: where they part, the
+wiki and the game data decide. It differs:
 
 - its calculator **extrapolates** at ten or more eligible types on a side, an average
   depletion standing for the draws not asked for, a few per cent optimistic;

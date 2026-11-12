@@ -155,17 +155,19 @@ describe("harvest change", () => {
         expect(none.diagnostics[0]!.message).toContain("has no lightning modifier to change");
     });
 
-    it("costs 500 lifeforce of the new element's colour, a damage change a Crystallised Rancour besides", () => {
+    it("costs 300 lifeforce of the old and the new element's colours, a damage change a Crystallised Rancour besides", () => {
         const unit = (from: string, to: string) => {
             const before = check(craft(rareRing([FIRE_DAMAGE.id], [FIRE_RESIST.id]), []), ctx);
             const args = [from, to].map((value) => ({ kind: "string" as const, value }));
             return unitCost(findMethod(["harvest", "change"])!, args, before.finalState!, registry);
         };
         expect(unit(FIRE_RESIST.id, "cold resistance")).toEqual([
-            { item: "Vivid Crystallised Lifeforce", amount: 500 },
+            { item: "Wild Crystallised Lifeforce", amount: 300 },
+            { item: "Vivid Crystallised Lifeforce", amount: 300 },
         ]);
         expect(unit(FIRE_DAMAGE.id, "adds cold damage")).toEqual([
-            { item: "Vivid Crystallised Lifeforce", amount: 500 },
+            { item: "Wild Crystallised Lifeforce", amount: 300 },
+            { item: "Vivid Crystallised Lifeforce", amount: 300 },
             { item: "Crystallised Rancour", amount: 1 },
         ]);
     });
