@@ -100,8 +100,8 @@ Three readings matter to the model:
 - **Spawn table**, in table order: the first entry whose tag the item carries decides, so an
   early zero disables the row for that tag
   ([spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag)).
-- **Added tags**, the data's `adds_tags`, which the item gains while the row is on it (the
-  wiki does not describe them). An added tag can disable rows (a weapon-specific jewel
+- **Added tags**, the data's `adds_tags`, which the item gains while the row is on it. An
+  added tag can disable rows (a weapon-specific jewel
   modifier adds `specific_weapon`, zeroing every other such modifier) or enable them (one
   staff modifier on a Strength jewel lets the others roll, within one Chaos Orb too:
   confirmed in game); the checker reads the tags each item carries, its rows' added ones
@@ -123,7 +123,7 @@ Rules every row satisfies:
   (an [elevated modifier](https://www.poewiki.net/wiki/Elevated_modifier), which rolls
   nowhere and only an Orb of Dominance makes); else domain `crafted` ⇒ bench,
   `veiled`/`unveiled` ⇒ veiled, `delve` ⇒ fossil; else any positive spawn weight ⇒ natural,
-  none ⇒ other. (This is the adapter's `classifySource`.)
+  none ⇒ other.
 - **Essence-only rows never roll**: every spawn weight is zero.
 - **Carriers are bench metamods**: in PoE1 every row with effects is a bench craft.
 
@@ -163,7 +163,8 @@ affixes of each side (order within a side carries no meaning), and its marks:
 - **Fractured** affixes, locked against removal and reroll
   ([Fractured item](https://www.poewiki.net/wiki/Fractured_item#Mechanics)).
 - **Corrupted**, never cleared
-  ([Corrupted](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items)).
+  ([Corrupted](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items)), and twice
+  corrupted after a Corruption Altar ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0)).
 - **Eldritch implicits**, the Searing Exarch's and the Eater of Worlds', each a tier and which
   implicit it is ([Eldritch implicit modifier](https://www.poewiki.net/wiki/Eldritch_implicit_modifier)).
 

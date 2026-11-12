@@ -166,6 +166,18 @@ describe("parser — item block", () => {
             influences: [],
             corrupted: false,
         });
+        const twice = parseOk('item { base: "R" ilvl: 1 rarity: rare twice corrupted } exalt');
+        expect(twice.item.corrupted).toBe("twice");
+    });
+
+    it("refuses twice without corrupted, and a second corruption flag", () => {
+        expect(parseErr('item { base: "R" ilvl: 1 rarity: rare twice } exalt').message).toMatch(
+            /expected 'corrupted'/,
+        );
+        expect(
+            parseErr('item { base: "R" ilvl: 1 rarity: rare corrupted twice corrupted } exalt')
+                .message,
+        ).toMatch(/duplicate item field 'twice corrupted'/);
     });
 
     it("accepts a comma between influences and refuses a value on the corrupted flag", () => {

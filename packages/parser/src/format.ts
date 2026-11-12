@@ -386,7 +386,11 @@ class Printer {
         for (const [key, value] of fields) {
             this.line(1, `${`${key}:`.padEnd(width)} ${value}`, this.fieldLine(item, key));
         }
-        if (item.corrupted) this.line(1, "corrupted", this.fieldLine(item, "corrupted"));
+        if (item.corrupted === "twice") {
+            this.line(1, "twice corrupted", this.fieldLine(item, "twice"));
+        } else if (item.corrupted) {
+            this.line(1, "corrupted", this.fieldLine(item, "corrupted"));
+        }
         this.line(0, "}", item.span.end.line);
     }
 

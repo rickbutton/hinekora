@@ -18,6 +18,7 @@ import type { Base } from "../model/base.js";
 import { canBeRare, maxTotal, sideCap } from "../model/capacity.js";
 import type { Gen, GroupId, ModId, Rarity, TagId, TypeId } from "../model/ids.js";
 import {
+    CORRUPTIONS,
     AMULET_ELDRITCH_TOP_TIER,
     canHaveEldritch,
     ELDRITCH_ITEM_LEVEL,
@@ -212,7 +213,7 @@ export class Universe {
         };
         const sizes: Record<ScalarKind, number> = {
             rarity: RARITIES.length,
-            corrupted: 2,
+            corrupted: CORRUPTIONS.length,
             influences: this.influenceKeys.length,
             exarchTier: NUM_TIERS,
             exarchType: this.eldritchTypeList.exarch.length,
@@ -699,7 +700,7 @@ export class Universe {
             out[this.slot(this.scalarAt.get(kind)!, copy)] = value;
         };
         put("rarity", this.rarityValue(item.rarity), `rarity ${item.rarity}`);
-        put("corrupted", item.corrupted ? 1 : 0, "corruption");
+        put("corrupted", CORRUPTIONS.indexOf(item.corrupted), "corruption");
         put("influences", this.influenceValue(item.influences), `influences "${item.influences}"`);
         for (const side of ["exarch", "eater"] as const) {
             const e: CEldritch = item[side];
@@ -773,7 +774,7 @@ export class Universe {
             rarity: RARITIES[at("rarity")]!,
             mods,
             influences: this.influenceKeys[at("influences")]!,
-            corrupted: at("corrupted") === 1,
+            corrupted: CORRUPTIONS[at("corrupted")]!,
             exarch: eldritch("exarch"),
             eater: eldritch("eater"),
             strands: at("strands"),

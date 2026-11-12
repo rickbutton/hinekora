@@ -10,6 +10,7 @@ import {
     type CallPred,
     type CallStmt,
     type Cmp,
+    type Corruption,
     type Craft,
     type Def,
     findMethod,
@@ -257,7 +258,7 @@ class Parser {
         let suffixes: readonly AffixDecl[] | undefined;
         let influences: readonly Influence[] | undefined;
         let strands: number | undefined;
-        let corrupted = false;
+        let corrupted: Corruption = false;
         let exarch: EldritchDecl | undefined;
         let eater: EldritchDecl | undefined;
         let enchant: ClusterEnchantDecl | undefined;
@@ -276,13 +277,18 @@ class Parser {
         while (!this.at("rbrace")) {
             const keyTok = this.expect("ident", "an item field name or '}'");
             const key = keyTok.text;
-            // The one bare flag: `corrupted`, with no value.
-            if (key === "corrupted") {
+            // The one bare flag: `corrupted` or `twice corrupted`, with no value.
+            if (key === "corrupted" || key === "twice") {
+                const twice = key === "twice";
+                if (twice) this.expectKeyword("corrupted");
+                const flag = twice ? "twice corrupted" : "corrupted";
                 if (this.at("colon")) {
-                    throw this.error("'corrupted' is a bare flag and takes no value", keyTok.span);
+                    throw this.error(`'${flag}' is a bare flag and takes no value`, keyTok.span);
                 }
-                if (corrupted) throw this.error(`duplicate item field '${key}'`, keyTok.span);
-                corrupted = true;
+                if (corrupted !== false) {
+                    throw this.error(`duplicate item field '${flag}'`, keyTok.span);
+                }
+                corrupted = twice ? "twice" : true;
                 if (this.at("comma")) this.advance();
                 continue;
             }

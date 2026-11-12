@@ -3,7 +3,7 @@ import { check, type CheckContext } from "./check.js";
 import * as v from "./views.js";
 import { guaranteedTypes } from "./views.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { corruptedP, craft, has, iff, influencedP, item, notp, op } from "../__fixtures__/ast.js";
+import { corruptedP, craft, has, iff, item, notp, op } from "../__fixtures__/ast.js";
 import type { OperationStmt } from "../ast/ast.js";
 import {
     BENCH_LIFE_ROW,
@@ -16,7 +16,7 @@ import {
     PROTECT_SUFFIXES_CARRIER,
     RING_BASE,
 } from "../__fixtures__/mods.js";
-import { influenceKey, INFLUENCES } from "../model/marks.js";
+import { influenceKey } from "../model/marks.js";
 import { rowIds } from "../__fixtures__/views.js";
 
 const registry = buildRegistry({
@@ -128,42 +128,47 @@ describe("the Vaal Orb", () => {
 });
 
 describe("the Corruption Altar", () => {
-    it("takes weapons, armour, jewellery, quivers and jewels only", () => {
-        const flask = item({ base: "Life Flask", ilvl: 100, rarity: "magic" });
+    it("takes corrupted weapons, armour, jewellery, quivers and jewels only", () => {
+        const flask = item({ base: "Life Flask", ilvl: 100, rarity: "magic", corrupted: true });
         expect(messages(craft(flask, [op("locus")]))).toContain(
             "Needs a weapon, armour, piece of jewellery, quiver or jewel",
         );
-        const jewel = item({ base: "Cobalt Jewel", ilvl: 100, rarity: "rare" });
-        const r = run(craft(jewel, [op("locus")]));
-        expect(r.diagnostics).toEqual([]);
-        expect(v.influenceSets(r.finalState!)).toEqual(new Set([influenceKey([])]));
+        const jewel = item({ base: "Cobalt Jewel", ilvl: 100, rarity: "rare", corrupted: true });
+        expect(run(craft(jewel, [op("locus")])).diagnostics).toEqual([]);
+        expect(messages(craft(ring(), [op("locus")]))).toContain(
+            "The Corruption Altar needs a corrupted item — this item is not corrupted.",
+        );
     });
 
-    it("may make an influenced Rare, or destroy the item", () => {
-        const r = run(craft(ring(), [op("locus")]));
+    it("makes the item twice corrupted, its modifiers kept, or destroys it", () => {
+        const start = ring({ corrupted: true, prefixes: ["life"], suffixes: ["cold"] });
+        const r = run(craft(start, [op("locus")]));
         expect(r.diagnostics).toEqual([]);
         const s = r.finalState!;
-        expect(v.corruptions(s)).toEqual(new Set([true]));
-        expect(v.influenceSets(s)).toEqual(
-            new Set([influenceKey([]), ...INFLUENCES.map((i) => influenceKey([i]))]),
+        expect(v.corruptions(s)).toEqual(new Set(["twice"]));
+        expect(v.counts(s).total).toEqual([2, 2]);
+        expect(v.influenceSets(s)).toEqual(new Set([influenceKey([])]));
+        // A twice-corrupted item takes the altar no more, and the Tainted currency still.
+        expect(messages(craft(start, [op("locus"), op("locus")]))).toContain(
+            "The Corruption Altar takes no twice-corrupted item — this item is twice corrupted.",
         );
-        // Both arms are reachable: the item kept its state or was reforged with an influence.
-        expect(messages(craft(ring(), [op("locus"), iff(influencedP(), [], [])]))).not.toContain(
-            "never run",
+        expect(messages(craft(start, [op("locus"), words("tainted", "exalt")]))).toBe("");
+    });
+
+    it("refuses an item that may already be twice corrupted, in words of the some", () => {
+        const start = ring({ corrupted: true, prefixes: ["life"], suffixes: ["random"] });
+        expect(messages(craft(start, [iff(has("cold"), [op("locus")]), op("locus")]))).toContain(
+            "takes no twice-corrupted item — this item may be twice corrupted.",
         );
     });
 });
 
 describe("a corruption's reforge", () => {
-    const full = () => {
-        const three = ["random", "random", "random"];
-        return ring({ prefixes: three, suffixes: three });
-    };
-
-    it("rolls six modifiers from a Vaal Orb, four to six from the altar", () => {
+    it("rolls six modifiers from a Vaal Orb", () => {
         // Each item held six, so the lower bound is the reforge's own.
-        expect(v.counts(run(craft(full(), [op("vaal")])).finalState!).total).toEqual([6, 6]);
-        expect(v.counts(run(craft(full(), [op("locus")])).finalState!).total).toEqual([4, 6]);
+        const three = ["random", "random", "random"];
+        const full = ring({ prefixes: three, suffixes: three });
+        expect(v.counts(run(craft(full, [op("vaal")])).finalState!).total).toEqual([6, 6]);
     });
 });
 

@@ -27,6 +27,7 @@ import type { Effect } from "../model/effects.js";
 import type { Gen, GroupId, TagId, TypeId } from "../model/ids.js";
 import type { ItemFacts } from "../model/item.js";
 import {
+    CORRUPTIONS,
     AMULET_ELDRITCH_TOP_TIER,
     canHaveEldritch,
     ELDRITCH_ITEM_LEVEL,
@@ -260,7 +261,7 @@ function scalars(u: Universe, decl: ItemDecl, influence: number, influenced: boo
     const rarity = decl.rarity === "rare" && !canBeRare(base) ? "magic" : decl.rarity;
     let dd = m.and(
         m.slotIn(u.scalar("rarity"), [u.rarityValue(rarity)]),
-        m.slotIn(u.scalar("corrupted"), [decl.corrupted ? 1 : 0]),
+        m.slotIn(u.scalar("corrupted"), [CORRUPTIONS.indexOf(decl.corrupted)]),
     );
     dd = m.and(dd, m.slotIn(u.scalar("influences"), [influence]));
     dd = m.and(dd, m.slotIn(u.scalar("strands"), [decl.strands ?? 0]));

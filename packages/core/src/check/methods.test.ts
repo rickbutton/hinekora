@@ -91,7 +91,7 @@ describe("every method refuses a corrupted item first", () => {
             veiledChaos: VEILED_CHAOS,
             veiledExalt: VEILED_EXALT,
             vaal: vaalOps(RING_BASE),
-            locus: locusOps(RING_BASE),
+            locus: locusOps(),
             taintedChaos: TAINTED_CHAOS,
             taintedExalt: TAINTED_EXALT,
             taintedDivine: TAINTED_DIVINE,

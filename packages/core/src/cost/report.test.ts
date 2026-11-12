@@ -914,26 +914,21 @@ describe("the cost of a craft", () => {
         expect(loop.unknown).toBe(true);
     });
 
-    it("the Corruption Altar's four outcomes are each as likely, one of them the item destroyed", () => {
-        const r = report(
-            craft(ring("rare", ["IncreasedLife1"], ["FireResist1"]), [
-                op("locus"),
-                iff(has("maximum life", 1), [stop()]),
-                iff(cmp("suffixCount", "==", 1), [stop()]),
-            ]),
-        );
-        const [kept, untouched] = r.steps.filter((s) => s.kind === "if");
-        expect(r.steps[0]!.note).toMatch(/25% of the time the Corruption Altar destroys the item/);
-        // The craft goes on three times in four: two outcomes leave the life,
-        // and the reforge rolls it now and then.
-        expect(kept!.reached).toBeCloseTo(3 / 4, 9);
-        expect(kept!.note).toBeUndefined();
-        expect(kept!.branch).toBeGreaterThan(2 / 3);
-        expect(kept!.branch).toBeLessThan(1);
-        // What is left without the life is the reforge, of four modifiers or more.
-        expect(untouched!.branch).toBeLessThan(0.5);
-        expect(r.stopped).toBeGreaterThan(1 / 4 + 2 / 4);
-        expect(r.stopped).toBeLessThan(1);
+    it("the Corruption Altar destroys the item two times in four, and otherwise keeps its modifiers", () => {
+        const corrupted = item({
+            base: "Iron Ring",
+            ilvl: 84,
+            rarity: "rare",
+            prefixes: ["IncreasedLife1"],
+            suffixes: ["FireResist1"],
+            corrupted: true,
+        });
+        const r = report(craft(corrupted, [op("locus"), iff(has("maximum life", 1), [stop()])]));
+        const [kept] = r.steps.filter((s) => s.kind === "if");
+        expect(r.steps[0]!.note).toMatch(/50% of the time the Corruption Altar destroys the item/);
+        expect(r.steps[0]!.note).toMatch(/two times in four.*no source states/);
+        expect(kept!.reached).toBeCloseTo(1 / 2, 9);
+        expect(kept!.branch).toBeCloseTo(1, 9);
     });
 
     it("a Vaal Orb's four outcomes are each as likely, one of them a reforge", () => {
@@ -1004,7 +999,8 @@ describe("the cost of a craft", () => {
     });
 
     it("a step whose price is not known is reported, not priced", () => {
-        const c = craft(ring("rare", ["IncreasedLife1"]), [op("locus")]);
+        const corrupted = item({ base: "Iron Ring", ilvl: 84, rarity: "rare", corrupted: true });
+        const c = craft(corrupted, [op("locus")]);
         const r = report(c);
         expect(r.steps[0]!.unit).toBeUndefined();
         expect(r.steps[0]!.note).toContain("no price");

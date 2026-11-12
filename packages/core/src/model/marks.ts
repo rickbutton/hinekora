@@ -8,6 +8,12 @@ import type { Base } from "./base.js";
 import { TagId } from "./ids.js";
 import { capitalise } from "../words.js";
 
+/** Whether an item is corrupted: `"twice"` once a Corruption Altar has
+ *  corrupted it a second time (Version 3.30.0, Incursion: the item shows
+ *  "Twice Corrupted"). `CORRUPTIONS` orders them as the checker numbers them. */
+export type Corruption = boolean | "twice";
+export const CORRUPTIONS: readonly Corruption[] = [false, true, "twice"];
+
 /** The six influences, in the game's order (Influenced item § Mechanics). */
 export const INFLUENCES = ["shaper", "elder", "crusader", "hunter", "redeemer", "warlord"] as const;
 export type Influence = (typeof INFLUENCES)[number];

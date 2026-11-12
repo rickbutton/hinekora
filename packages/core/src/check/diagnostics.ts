@@ -8,6 +8,7 @@ import type { SourceSpan } from "../ast/span.js";
 import type { Base } from "../model/base.js";
 import type { Rarity } from "../model/ids.js";
 import {
+    type Corruption,
     type EldritchKey,
     eldritchLabel,
     influenceKey,
@@ -45,7 +46,7 @@ export interface ItemSummary {
         readonly suffix: Range;
     };
     readonly influences: ReadonlySet<InfluenceKey>;
-    readonly corrupted: ReadonlySet<boolean>;
+    readonly corrupted: ReadonlySet<Corruption>;
     readonly eldritch: ReadonlySet<EldritchKey>;
 }
 
@@ -84,10 +85,18 @@ export function marksLabel(a: ItemSummary): string[] {
     if (!(a.influences.size === 1 && a.influences.has(NO_INFLUENCE))) {
         out.push(influenceLabel(a.influences));
     }
-    if (a.corrupted.has(true)) out.push(a.corrupted.has(false) ? "maybe corrupted" : "corrupted");
+    const corrupted = corruptionLabel(a.corrupted);
+    if (corrupted !== undefined) out.push(corrupted);
     if (!(a.eldritch.size === 1 && a.eldritch.has(NO_ELDRITCH)))
         out.push(eldritchLabel(a.eldritch));
     return out;
+}
+
+function corruptionLabel(c: ReadonlySet<Corruption>): string | undefined {
+    if (!c.has(true) && !c.has("twice")) return undefined;
+    if (c.has(false)) return "maybe corrupted";
+    if (!c.has(true)) return "twice corrupted";
+    return c.has("twice") ? "corrupted, maybe twice" : "corrupted";
 }
 
 /** Human description of a surface predicate, for diagnostics and hover. */
@@ -255,6 +264,8 @@ export function preconditionMessage(
                 return `${failure.what} needs item level ${failure.level} or more — this item is item level ${state.ilvl}.`;
             case "notCorruptedItem":
                 return `${failure.what} needs a corrupted item — this item ${sure ? "is not" : "may not be"} corrupted.`;
+            case "twiceCorrupted":
+                return `${failure.what} takes no twice-corrupted item — this item ${is} twice corrupted.`;
             case "fossilBaseRestricted":
                 return `A ${failure.fossil} cannot be used on ${withArticle(state.base.name ?? "base like this")}.`;
             case "metamodBlocks":
@@ -266,7 +277,7 @@ export function preconditionMessage(
                     ? `The item ${sure ? "already has" : "may already have"} a fractured modifier — nothing fractures an item twice.`
                     : `The item ${has} a fractured modifier — ${failure.what}.`;
             case "corrupted":
-                return `The item ${is} corrupted — a corrupted item takes only the Tainted currency and an unveil.`;
+                return `The item ${is} corrupted — a corrupted item takes only the Tainted currency, an unveil and the Corruption Altar.`;
             case "eldritchPresent":
                 return `${failure.what} cannot be used on an item with an eldritch implicit — this item ${has} ${eldritchLabel(state.eldritch)}.`;
             case "notDominant":

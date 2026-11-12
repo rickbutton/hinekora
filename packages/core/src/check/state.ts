@@ -149,7 +149,8 @@ function buildCondition(u: Universe, pred: RPred): Dd {
             return m.slotIn(u.scalar("influences"), values);
         }
         case "corrupted":
-            return m.slotIn(u.scalar("corrupted"), [1]);
+            // Once or twice (`Corruption`).
+            return m.not(m.slotIn(u.scalar("corrupted"), [0]));
         case "eldritch": {
             const tierSlot = u.scalar(`${pred.side}Tier`);
             const tiers: number[] = [];

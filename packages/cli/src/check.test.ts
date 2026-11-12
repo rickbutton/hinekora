@@ -646,7 +646,7 @@ until has "maximum life" {
 
     it("names what the snapshot cannot price and still sums the rest", () => {
         const r = costSource(
-            `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] }\nlocus`,
+            `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] corrupted }\nlocus`,
             "test.craft",
             registry,
             prices,

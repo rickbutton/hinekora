@@ -17,6 +17,7 @@ import {
     type TypeId,
 } from "../model/ids.js";
 import {
+    type Corruption,
     AMULET_ELDRITCH_TOP_TIER,
     canHaveEldritch,
     ELDRITCH_ITEM_LEVEL,
@@ -97,7 +98,7 @@ export interface ItemDecl {
     readonly affixes: readonly DeclaredAffix[];
     /** Every influence on the Astrolabe Amulet. */
     readonly influences: readonly Influence[];
-    readonly corrupted: boolean;
+    readonly corrupted: Corruption;
     readonly exarch?: DeclaredImplicit;
     readonly eater?: DeclaredImplicit;
     /** Within 0 to 100; absent for none. */

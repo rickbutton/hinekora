@@ -16,7 +16,6 @@ import {
     type EldritchSide,
     type Influence,
     INFLUENCE_ORB,
-    INFLUENCE_STEMS,
     influenceKey,
 } from "../model/marks.js";
 import type { Range } from "./range.js";
@@ -323,22 +322,17 @@ const either = (...branches: readonly (readonly Transform[])[]): Op => ({
 });
 const corruptedItem = (what: string): Op => require({ kind: "corruptedItem", what });
 
-/** A corruption's one outcome that touches the modifiers: the item reforged
- *  Rare, the metamods respected; the implicit and socket outcomes and "no
- *  effect" leave the modifiers as they are. A Vaal Orb rolls six (Vaal Orb §
- *  Equipment); the altar's "random affix modifiers" state no count (Locus of
- *  Corruption § Possible outcomes), so it takes the rare reforge's range
- *  (`QUESTIONS.md` Q32). */
-function brickBranch(base: Base, altar: boolean): readonly Transform[] {
+/** A corruption implicit takes the place of one of the item's implicits, an
+ *  eldritch one among them (Vaal Orb § Equipment, Eldritch implicit modifier). */
+const corruptionImplicit: Transform = { kind: "eldritch", change: { kind: "replaced" } };
+
+/** A Vaal Orb's one outcome that touches the modifiers: the item reforged Rare
+ *  with six modifiers, the metamods respected (Vaal Orb § Equipment); the
+ *  implicit and socket outcomes and "no effect" leave the modifiers as they
+ *  are. */
+function brickBranch(base: Base): readonly Transform[] {
     if (!canBeRareBase(base)) return [];
-    // A class no influence can mark is reforged without one.
-    const marks = altar && INFLUENCE_STEMS[base.itemClass] !== undefined;
-    return [
-        strip(),
-        rarity("rare"),
-        ...(marks ? [influence({ kind: "anyOne" })] : []),
-        fill(natural, reforge(altar ? RARE_REFORGE : [6, 6])),
-    ];
+    return [strip(), rarity("rare"), fill(natural, reforge([6, 6]))];
 }
 
 /** The three jewels a Vaal Orb may turn into a corruption-exclusive unique
@@ -349,14 +343,9 @@ const UNIQUE_JEWELS = new Set(["Cobalt Jewel", "Crimson Jewel", "Viridian Jewel"
  *  tracks or reforged Rare with six modifiers (Vaal Orb § Equipment); one of
  *  the three basic jewels may become a unique instead (Vaal Orb § Jewels). */
 export function vaalOps(base: Base): readonly Op[] {
-    const brick = brickBranch(base, false);
+    const brick = brickBranch(base);
     const unique = UNIQUE_JEWELS.has(base.name ?? "") ? [end] : [];
-    // The implicit outcome replaces one of the item's implicits, an eldritch
-    // one among them (Eldritch implicit modifier).
-    const implicit: readonly Transform[] = [
-        { kind: "eldritch", change: { kind: "replaced", count: 1 } },
-    ];
-    const outcomes = [implicit, ...(brick.length > 0 ? [brick] : []), ...unique];
+    const outcomes = [[corruptionImplicit], ...(brick.length > 0 ? [brick] : []), ...unique];
     return [notCorrupted, corrupt, either([], ...outcomes)];
 }
 
@@ -364,28 +353,26 @@ export function vaalOps(base: Base): readonly Op[] {
  *  quivers and jewels (Locus of Corruption § Corruption Altar). */
 const ALTAR_TAGS = ["weapon", "armour", "ring", "amulet", "belt", "quiver", "jewel"].map(TagId);
 
-/** The Corruption Altar (Locus of Corruption § Possible outcomes): as a Vaal
- *  Orb, but the reforge makes an influenced Rare, and one outcome destroys the
- *  item, ending the craft on that path. The influence is any one of the six;
- *  what an item that already had one keeps is open, so it may also have what
- *  it had (`QUESTIONS.md` Q32). */
-export function locusOps(base: Base): readonly Op[] {
-    const brick = brickBranch(base, true);
+/** The Corruption Altar corrupts a corrupted item a second time, making it
+ *  twice corrupted, so the altar takes it no more; where it would have made an
+ *  influenced Rare it destroys the item, and its corruption implicit replaces
+ *  an earlier one where the item has two (Version 3.30.0, Incursion). The
+ *  outcomes: no change to what the checker tracks (the sockets, no effect), a
+ *  corruption implicit, or the item destroyed, ending the craft there. That
+ *  it refuses an uncorrupted item, and that its implicit may replace an
+ *  eldritch one, are assumed (`QUESTIONS.md` Q32). */
+export function locusOps(): readonly Op[] {
+    const what = "The Corruption Altar";
     return [
-        notCorrupted,
+        corruptedItem(what),
+        require({ kind: "notTwiceCorrupted", what }),
         require({
             kind: "baseHasAnyTag",
             tags: ALTAR_TAGS,
             what: "weapon, armour, piece of jewellery, quiver or jewel",
         }),
         corrupt,
-        // The double corruption replaces two implicits, both eldritch ones among them.
-        either(
-            [],
-            [{ kind: "eldritch", change: { kind: "replaced", count: 2 } }],
-            ...(brick.length > 0 ? [brick] : []),
-            end,
-        ),
+        either([], [corruptionImplicit], end),
     ];
 }
 
@@ -652,13 +639,6 @@ export interface Resonator {
     /** The corrupted essences' modifiers for the item's class. */
     readonly corrupted: readonly Mod[];
 }
-
-/** A corruption implicit takes the place of one of the item's implicits, an
- *  eldritch one among them, as a Vaal Orb's implicit outcome does. */
-const corruptionImplicit: Transform = {
-    kind: "eldritch",
-    change: { kind: "replaced", count: 1 },
-};
 
 /** A resonator: a rare reforge shaped by its fossils (Fossil § Mechanics,
  *  Resonator § Mechanics): blocked category tags leave the pool, the fossils'

@@ -8,6 +8,7 @@ import type { EldritchImplicitSpec } from "../../model/sources.js";
 import { buildRegistry } from "../../resolve/registry.js";
 import { ModId, type Rarity, TagId } from "../../model/ids.js";
 import {
+    type Corruption,
     type EldritchSide,
     INFLUENCES,
     type InfluenceKey,
@@ -40,12 +41,9 @@ const req = (check: Check): Op => ({ kind: "require", check });
 const rarity = (r: Rarity | "survivors" | "lowest"): Transform => ({ kind: "rarity", rarity: r });
 const influence = (change: InfluenceChange): Transform => ({ kind: "influence", change });
 const corrupt: Transform = { kind: "corrupt" };
-const replaced = (count: 1 | 2): Transform => ({
-    kind: "eldritch",
-    change: { kind: "replaced", count },
-});
+const replaced: Transform = { kind: "eldritch", change: { kind: "replaced" } };
+const ALL_CORRUPTIONS: Corruption[] = [false, true, "twice"];
 const conflict: Transform = { kind: "eldritch", change: { kind: "conflict" } };
-const either = (...branches: Transform[][]): Op => ({ kind: "either", branches });
 const hunter = influenceKey(["hunter"]);
 
 interface Setup {
@@ -118,6 +116,7 @@ const CHECKS: readonly Check[] = [
     { kind: "canBeRare" },
     { kind: "notCorrupted" },
     { kind: "corruptedItem", what: "A Tainted Orb" },
+    { kind: "notTwiceCorrupted", what: "The Corruption Altar" },
     { kind: "noInfluence", what: "An orb" },
     { kind: "influenced", what: "The grove" },
     { kind: "influenced", what: "The Bestiary", influence: "hunter" },
@@ -154,64 +153,30 @@ describe("the marks over tiny catalogues", () => {
             : {};
 
         it(`${base}: a strip's rarity, by what is left`, () => {
-            const bounds = { fractured: true, corrupted: [false, true] };
+            const bounds = { fractured: true, corrupted: ALL_CORRUPTIONS };
             exact(s, seed, bounds, [rarity("survivors")]);
             exact(s, seed + 1, bounds, [rarity("lowest")]);
             exact(s, seed + 2, bounds, [req({ kind: "notNormal" }), rarity("survivors")]);
         });
 
         it(`${base}: every check refuses the same items`, () => {
-            const bounds = { influences, corrupted: [false, true], ...eldritch };
+            const bounds = { influences, corrupted: ALL_CORRUPTIONS, ...eldritch };
             for (const c of CHECKS) exact(s, seed + 3, bounds, [req(c), corrupt]);
         });
 
         it(`${base}: the corruption implicits`, () => {
             const bounds = { influences, ...eldritch };
-            exact(s, seed + 4, bounds, [replaced(1)]);
-            exact(s, seed + 5, bounds, [replaced(2)]);
-            exact(s, seed + 6, bounds, [
-                req({ kind: "notCorrupted" }),
-                corrupt,
-                either([], [replaced(2)], [{ kind: "end" }]),
-            ]);
+            exact(s, seed + 4, bounds, [replaced]);
+            exact(s, seed + 6, { ...bounds, corrupted: ALL_CORRUPTIONS }, L.locusOps());
         });
 
-        it(`${base}: randomise and anyOne`, () => {
+        it(`${base}: randomise`, () => {
             const bounds = { influences, fractured: true, ...eldritch };
-            exact(s, seed + 7, bounds, [influence({ kind: "anyOne" })]);
             exact(s, seed + 8, bounds, [influence({ kind: "randomise" })]);
-            exact(s, seed + 9, bounds, [influence({ kind: "one", influence: "hunter" })]);
-        });
-
-        it(`${base}: anyOne is the six one's together with the item as it came`, () => {
-            const m = s.u.dd;
-            const states = harnessStates(s.u, s.cat.ctx, seed + 10, {
-                bounds: { rows: s.rows, influences, fractured: true, ...eldritch },
-                random: 12,
-                maxSize: 30,
-            });
-            for (const items of states) {
-                const state = fromItems(s.u, items.items())!;
-                const after = (c: InfluenceChange) => runMethod(state, [influence(c)]).state.dd;
-                const any = after({ kind: "anyOne" });
-                let union = state.dd;
-                for (const i of INFLUENCES) {
-                    const one = after({ kind: "one", influence: i });
-                    expect(m.implies(one, any)).toBe(true);
-                    union = m.or(union, one);
-                }
-                expect(m.implies(union, any) && m.implies(any, union)).toBe(true);
-            }
         });
 
         if (flags.influence) {
             it(`${base}: the influence changes`, () => {
-                const bounds = { influences, fractured: true, ...eldritch };
-                exact(s, seed + 7, bounds, [
-                    req({ kind: "noInfluence", what: "An orb" }),
-                    req({ kind: "noEldritch", what: "An orb" }),
-                    influence({ kind: "anyOne" }),
-                ]);
                 const plain = { influences: [NO_INFLUENCE, hunter] };
                 exact(s, seed + 7, plain, [influence({ kind: "add", influence: "elder" })]);
                 exact(s, seed + 8, plain, [
@@ -222,7 +187,7 @@ describe("the marks over tiny catalogues", () => {
 
         if (flags.eldritch) {
             it(`${base}: the eldritch changes`, () => {
-                const bounds = { ...eldritch, corrupted: [false, true] };
+                const bounds = { ...eldritch, corrupted: ALL_CORRUPTIONS };
                 exact(s, seed + 7, bounds, [req({ kind: "bothEldritch" }), conflict]);
                 exact(s, seed + 8, bounds, L.CONFLICT);
                 if (amulet) {
@@ -259,10 +224,6 @@ describe("the marks over tiny catalogues", () => {
         expect(s.u.influenceKeys).toEqual([all]);
         const bounds = { influences: [all] };
         exact(s, 7111, bounds, [influence({ kind: "randomise" })]);
-        exact(s, 7112, bounds, [influence({ kind: "anyOne" })]);
-        expect(outcomes(s, cItem({ influences: all }), [influence({ kind: "anyOne" })])).toEqual([
-            cItem({ influences: all }),
-        ]);
     });
 
     it("every pair of tiers and two implicits a side under conflict", () => {
@@ -274,7 +235,7 @@ describe("the marks over tiny catalogues", () => {
             rarities: ["rare"] as Rarity[],
         };
         exact(s, 7121, bounds, L.CONFLICT);
-        exact(s, 7122, bounds, [replaced(2)]);
+        exact(s, 7122, bounds, [replaced]);
         for (const e of bounds.exarch.filter((x) => x.tier > 0)) {
             for (const f of bounds.eater.filter((x) => x.tier > 0)) {
                 const out = outcomes(s, cItem({ exarch: e, eater: f }), L.CONFLICT);
@@ -294,15 +255,15 @@ describe("the marks over tiny catalogues", () => {
         const bounds = { exarch: some, eater: some };
         exact(s, 7131, bounds, L.CONFLICT);
         exact(s, 7132, bounds, L.eldritchImplicitOps("eater", 2, []));
-        exact(s, 7133, bounds, [replaced(1)]);
+        exact(s, 7133, bounds, [replaced]);
         for (const c of CHECKS) exact(s, 7134, bounds, [req(c)]);
     });
 
     it("the library's corruptions on a base that cannot be Rare", () => {
         const s = setup(7100, "flask", {});
         expect(s.cat.base).toBe(FLASK_BASE);
-        exact(s, 7101, { corrupted: [false, true] }, L.vaalOps(s.cat.base));
-        exact(s, 7102, { corrupted: [false, true] }, L.locusOps(s.cat.base));
+        exact(s, 7101, { corrupted: ALL_CORRUPTIONS }, L.vaalOps(s.cat.base));
+        exact(s, 7102, { corrupted: ALL_CORRUPTIONS }, L.locusOps());
     });
 });
 
@@ -408,52 +369,6 @@ describe("the influence changes", () => {
         ]);
     });
 
-    it("anyOne gives any one influence or keeps the item's own set", () => {
-        const pair = influenceKey(["shaper", "elder"]);
-        const out = outcomes(s, cItem({ influences: pair }), [influence({ kind: "anyOne" })]);
-        expect(keys(out)).toEqual([pair, ...INFLUENCES.map((i) => influenceKey([i]))].sort());
-    });
-
-    it("anyOne leaves an item with an eldritch implicit uninfluenced, as the game allows no both", () => {
-        const type = s.cat.eldritch.find((e) => e.side === "exarch")!.type;
-        const item = cItem({ exarch: { tier: 2, type } });
-        expect(outcomes(s, item, [influence({ kind: "anyOne" })])).toEqual([item]);
-    });
-
-    it("one gives that influence in place of the item's own", () => {
-        const pair = influenceKey(["shaper", "elder"]);
-        const out = outcomes(s, cItem({ influences: pair }), [
-            influence({ kind: "one", influence: "hunter" }),
-        ]);
-        expect(keys(out)).toEqual([hunter]);
-    });
-
-    it("no one gives back an item that can take an influence as it came, as anyOne may", () => {
-        for (const own of [NO_INFLUENCE, influenceKey(["shaper", "elder"])]) {
-            const item = cItem({ influences: own });
-            const ones = INFLUENCES.flatMap((i) =>
-                keys(outcomes(s, item, [influence({ kind: "one", influence: i })])),
-            );
-            expect(ones).not.toContain(own);
-            expect(keys(outcomes(s, item, [influence({ kind: "anyOne" })]))).toContain(own);
-        }
-    });
-
-    it("one leaves an item with a fracture or an eldritch implicit as it was", () => {
-        const id = s.rows.find((r) => r !== s.cat.influence?.id)!;
-        const fractured = cItem({
-            rarity: "rare",
-            mods: [cMod(id, valueIn(s, id), { fractured: true })],
-        });
-        const type = s.cat.eldritch.find((e) => e.side === "eater")!.type;
-        const implicit = cItem({ eater: { tier: 2, type } });
-        for (const item of [fractured, implicit]) {
-            expect(outcomes(s, item, [influence({ kind: "one", influence: "hunter" })])).toEqual([
-                item,
-            ]);
-        }
-    });
-
     it("leaves the modifiers as they are", () => {
         const id = s.cat.influence!.id;
         const item = cItem({
@@ -510,9 +425,25 @@ describe("the eldritch changes", () => {
         expect(out.map((x) => x.exarch.type).sort()).toEqual([...new Set(pool)].sort());
     });
 
-    it("a corruption implicit may replace one eldritch implicit, the altar's two any", () => {
-        expect(pairs(outcomes(s, item(3, 2), [replaced(1)]))).toEqual(["0/2", "3/0", "3/2"]);
-        expect(pairs(outcomes(s, item(3, 2), [replaced(2)]))).toEqual(["0/0", "0/2", "3/0", "3/2"]);
+    it("a corruption implicit may replace one eldritch implicit, the altar's too", () => {
+        expect(pairs(outcomes(s, item(3, 2), [replaced]))).toEqual(["0/2", "3/0", "3/2"]);
+        const altar = outcomes(s, { ...item(3, 2), corrupted: true }, L.locusOps());
+        expect(pairs(altar)).toEqual(["0/2", "3/0", "3/2"]);
+        expect(altar.every((x) => x.corrupted === "twice")).toBe(true);
+    });
+
+    it("the altar takes a corrupted item once, and leaves it twice corrupted", () => {
+        const took = (corrupted: Corruption): boolean =>
+            runMethod(fromItems(s.u, [{ ...item(3, 2), corrupted }])!, L.locusOps()).ok;
+        expect(took(false)).toBe(false);
+        expect(took(true)).toBe(true);
+        expect(took("twice")).toBe(false);
+        // A twice-corrupted item still takes the Tainted currency.
+        const tainted = runMethod(
+            fromItems(s.u, [{ ...item(3, 2), rarity: "rare", corrupted: "twice" }])!,
+            [req({ kind: "corruptedItem", what: "A Tainted Orb" })],
+        );
+        expect(tainted.ok).toBe(true);
     });
 
     it("dominance is the higher tier, none on equal tiers", () => {

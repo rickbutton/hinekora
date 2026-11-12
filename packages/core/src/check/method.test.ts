@@ -810,7 +810,7 @@ describe("the placement of checks", () => {
             ...INFLUENCES.map(L.influenceExaltOps),
             ...INFLUENCES.map(L.beastAddInfluenceOps),
             L.vaalOps(cat.base),
-            L.locusOps(cat.base),
+            L.locusOps(),
             L.TAINTED_CHAOS,
             L.TAINTED_EXALT,
             L.TAINTED_DIVINE,

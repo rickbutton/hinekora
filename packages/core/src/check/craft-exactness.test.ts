@@ -46,7 +46,7 @@ import { declareItem } from "./item-block.js";
 import { rollRange } from "./values.js";
 import { describePred } from "./diagnostics.js";
 import type { Rarity } from "../model/ids.js";
-import { ELDRITCH_TIERS, type EldritchTierName } from "../model/marks.js";
+import { type Corruption, ELDRITCH_TIERS, type EldritchTierName } from "../model/marks.js";
 import { generateCatalog, type Catalog, type CatalogOptions } from "./reference/catalog.js";
 import { check, checkDetail, type TraceEntry } from "./check.js";
 import type { Dd } from "./dd.js";
@@ -155,6 +155,7 @@ function operationsOf(cat: Catalog, flavour: Flavour, r: Rng): OpSpec[] {
         // Refused on most items, or ending every craft after them: rare.
         plain("fracture", []),
         plain("vaal", []),
+        plain("locus", []),
     ];
     const benchRow = cat.bench ?? cat.mods.find((m) => m.source === "bench");
     if (benchRow !== undefined) {
@@ -418,7 +419,7 @@ function randomBlock(sp: Omit<Space, "procs">): ItemBlock {
         prefixes: side("prefix"),
         suffixes: side("suffix"),
         ...(cat.influence !== undefined && r.chance(0.3) && { influences: ["hunter"] as const }),
-        ...(r.chance(0.01) && { corrupted: true }),
+        ...(r.chance(0.01) && { corrupted: r.pick<Corruption>([true, "twice"]) }),
         ...(eldritch && { exarch: tier(), eater: tier() }),
     });
 }
@@ -493,7 +494,11 @@ function blockText(b: ItemBlock): string {
         `    prefixes: [ ${b.prefixes.map(affix).join(", ")} ]`,
         `    suffixes: [ ${b.suffixes.map(affix).join(", ")} ]`,
         ...(b.influences.length > 0 ? [`    influences: ${b.influences.join(" ")}`] : []),
-        ...(b.corrupted ? ["    corrupted"] : []),
+        ...(b.corrupted === "twice"
+            ? ["    twice corrupted"]
+            : b.corrupted
+              ? ["    corrupted"]
+              : []),
         ...(b.exarch !== undefined ? [`    exarch: ${b.exarch.tier}`] : []),
         ...(b.eater !== undefined ? [`    eater: ${b.eater.tier}`] : []),
         "}",

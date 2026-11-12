@@ -68,20 +68,21 @@ not.
 **Assumed:** a Rare with an open slot. **Encoded in:** `check/library.ts`
 `beastAddInfluenceOps`.
 
-### Q32 · probe · open — the counts of a corruption reforge, and the altar on a marked item
+### Q32 · probe · open — the Corruption Altar
 
-**Q:** how many affixes does the altar's reforge roll
-([Locus of Corruption § Possible outcomes](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes)
-states no count; players report four to six, or always six), on a jewel, and what does the altar make of an item with an influence
-or an eldritch implicit? **Probe:** a Rare ring and jewel, an influenced ring, boots with an eldritch
-implicit, a ring below item level 68 (reported to get no influence); record counts and marks.
-**Assumed:** the altar four to six, a Vaal Orb six, a jewel three or four without an
-influence; an influenced item any one influence or its own; an item with an eldritch implicit or a
-fracture no influence
-([Influenced item § Mechanics](https://www.poewiki.net/wiki/Influenced_item#Mechanics)),
-its implicits kept; a kept modifier of a lost influence stays; in the cost, each influence
-alike, never the own set where one fits. **Encoded in:** `check/library.ts` `locusOps`, `vaalOps`, `brickBranch`;
-`check/ops/marks.ts`; `cost/track.ts` `byInfluence`.
+**Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0) (Incursion): the
+altar corrupts an item "a second time", destroys it where it made an influenced Rare, and
+its implicit replaces an earlier corruption implicit where the item has two. Does it still
+take an uncorrupted item? How likely is each outcome? May its implicit replace an eldritch
+implicit? Does the advanced copy (Ctrl+Alt+C) show `Twice Corrupted` in place of
+`Corrupted`?
+**Probe:** corrupted Rares, boots with an eldritch and a Vaal implicit among them, and an
+uncorrupted ring; use the altar some forty times; record refusals, each outcome, which
+implicit went, and the copy's lines.
+**Assumed:** a corrupted item only; no change, an implicit, or destroyed at 1:1:2, the
+destruction taking the old reforge's share; either eldritch implicit may go; `Twice
+Corrupted` alone. **Encoded in:** `check/library.ts` `locusOps`; `cost/track.ts`
+`OUTCOME_ODDS`; `render/item.ts`.
 
 ### Q33 · probe · open — the Tainted Chaos Orb under a protection, and its rarity
 
@@ -422,9 +423,9 @@ record the rarity.
 ### Q111 · decision · open — an item's other implicits
 
 **Q:** a corruption implicit replaces one of an item's implicits
-([Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment)), the altar two.
-The checker knows the eldritch implicits only, so it lets none, one or two of them go;
-on boots with no other implicit a Vaal Orb always takes one and the altar both.
+([Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment)), the altar's an
+earlier one (Q32). The checker knows the eldritch implicits only, so it lets none or one
+of them go; on boots with no other implicit a Vaal Orb always takes one.
 **Options:** track whether the item has another implicit (from the base, and a mark a
 Gilded Fossil sets), which makes the outcome exact (recommended); or keep the wider set.
 **Assumed:** the wider set. **Encoded in:** `check/ops/marks.ts`;

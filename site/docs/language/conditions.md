@@ -85,5 +85,5 @@ if has "cold resistance" or has "fire resistance" {
 A value comparison rules out every tier that cannot reach the value.
 
 `influenced`, `corrupted` and the eldritch tests read the item's marks. They matter after a
-step that marks only some of the items. A [`locus`](/docs/operations/locus) leaves some
-items influenced, and `if influenced` separates them.
+step that marks only some of the items. A [`vaal`](/docs/operations/vaal) may take an
+eldritch implicit from some items, and `if exarch` separates them.

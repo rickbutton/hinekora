@@ -240,6 +240,19 @@ until has "a" {}
 `);
     });
 
+    it("prints twice corrupted last, as one flag", () => {
+        const src = `item { twice   corrupted base: "Iron Ring" ilvl: 84 rarity: rare }
+chaos`;
+        expect(fmt(src)).toBe(`item {
+    base:   "Iron Ring"
+    ilvl:   84
+    rarity: rare
+    twice corrupted
+}
+chaos
+`);
+    });
+
     it("keeps Windows line endings when the source uses them", () => {
         const src =
             'item { base: "Iron Ring" ilvl: 84 rarity: rare }\r\n# note\r\nuntil has "a" {\r\nchaos\r\n}\r\n';

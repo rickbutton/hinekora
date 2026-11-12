@@ -1,7 +1,7 @@
 # The item block
 
 A craft opens with one item block. It declares the starting item, the only state a craft
-declares. The checker infers the item after every step from it.
+declares; the checker infers the rest.
 
 ```hinekora
 item {
@@ -29,14 +29,13 @@ A block must have `base`, `ilvl` and `rarity`.
 | `exarch`, `eater`      | an eldritch tier, then a wording  | no such implicit  |
 | `enchant`              | a passive count and a quoted stat | no enchantment    |
 | `strands`              | memory strands, 0 to 100          | none              |
-| `corrupted`            | no value                          | not corrupted     |
+| `corrupted`            | no value, or `twice corrupted`    | not corrupted     |
 
 `base` names an item a craft can work on: equipment, a jewel, a flask and similar. No step
 changes `base` or `ilvl`.
 
 The checker rejects a block that lists more modifiers than the base holds at its
-[rarity](https://www.poewiki.net/wiki/Rarity), or a modifier on the wrong side. It reports
-item block errors before it checks any step.
+[rarity](https://www.poewiki.net/wiki/Rarity), or a modifier on the wrong side.
 
 ## Modifiers
 
@@ -95,4 +94,6 @@ the stat of its small passives. A cluster jewel requires it.
 
 `corrupted` declares a [corrupted item](https://www.poewiki.net/wiki/Corrupted). The checker
 then rejects every step except the Tainted currencies, such as
-[`tainted exalt`](/docs/operations/tainted-exalt), and [`unveil`](/docs/operations/unveil).
+[`tainted exalt`](/docs/operations/tainted-exalt), [`unveil`](/docs/operations/unveil) and
+[`locus`](/docs/operations/locus). `twice corrupted` declares one the altar has corrupted
+again, which it then refuses.

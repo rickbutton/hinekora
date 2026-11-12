@@ -57,7 +57,7 @@ export function holds(pred: RPred, item: CItem, ctx: RefCtx): boolean {
                 ? item.influences !== NO_INFLUENCE
                 : influencesOf(item.influences).includes(pred.influence);
         case "corrupted":
-            return item.corrupted;
+            return item.corrupted !== false;
         case "eldritch": {
             const { tier, type } = item[pred.side];
             if (tier === 0 || (pred.tier !== undefined && tier !== pred.tier)) return false;

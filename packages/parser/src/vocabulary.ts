@@ -30,7 +30,8 @@ export const PROJECTIONS = ["prefixCount", "suffixCount"] as const;
 /** The marks an item-block affix may carry before its name. */
 export const AFFIX_MARKS = ["fractured", "bench"] as const;
 
-/** The item block's fields; `corrupted` is also the predicate of that name. */
+/** The item block's fields; `corrupted` is also the predicate of that name, and
+ *  `twice` is only ever the start of the flag `twice corrupted`. */
 export const ITEM_FIELDS = [
     "base",
     "ilvl",
@@ -40,6 +41,7 @@ export const ITEM_FIELDS = [
     "suffixes",
     "influences",
     "corrupted",
+    "twice",
     "exarch",
     "eater",
     "enchant",

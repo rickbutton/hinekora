@@ -58,6 +58,7 @@ export const CHECK_OWNERS = {
     canBeRare: "marks",
     notCorrupted: "marks",
     corruptedItem: "marks",
+    notTwiceCorrupted: "marks",
     noInfluence: "marks",
     influenced: "marks",
     influenceable: "marks",

@@ -544,9 +544,16 @@ export function itemView(s: ItemSet, registry: Registry, craft?: Craft): ItemVie
     if (fractures[1] > 0) {
         marks.push({ kind: "fractured", text: "Fractured Item", maybe: fractures[0] === 0 });
     }
+    // A second corruption shows as "Twice Corrupted" (Corrupted § Twice
+    // Corrupted items).
     const corrupted = corruptions(s);
-    if (corrupted.has(true)) {
-        marks.push({ kind: "corrupted", text: "Corrupted", maybe: corrupted.has(false) });
+    const corruptedAs = [
+        ...(corrupted.has(true) ? ["Corrupted"] : []),
+        ...(corrupted.has("twice") ? ["Twice Corrupted"] : []),
+    ];
+    if (corruptedAs.length > 0) {
+        const maybe = corrupted.has(false) || corruptedAs.length > 1;
+        marks.push({ kind: "corrupted", text: corruptedAs.join(", or "), maybe });
     }
 
     const strands = strandsRange(s);

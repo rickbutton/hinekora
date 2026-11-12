@@ -5,7 +5,7 @@
  */
 import { maxTotal } from "../../model/capacity.js";
 import type { ModId, Rarity } from "../../model/ids.js";
-import { type InfluenceKey, NO_INFLUENCE } from "../../model/marks.js";
+import { type Corruption, type InfluenceKey, NO_INFLUENCE } from "../../model/marks.js";
 import { rollRange } from "../values.js";
 import { rng } from "./rng.js";
 import {
@@ -126,7 +126,7 @@ export interface Bounds {
     /** Default: no influence. */
     readonly influences?: readonly InfluenceKey[];
     /** Default: not corrupted. */
-    readonly corrupted?: readonly boolean[];
+    readonly corrupted?: readonly Corruption[];
     /** Default: none. */
     readonly exarch?: readonly CEldritch[];
     readonly eater?: readonly CEldritch[];

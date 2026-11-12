@@ -129,8 +129,10 @@ export type Check =
     /** No item is corrupted; every method but the Tainted
      *  currency and an unveil requires it (Corrupted § Modifying corrupted items). */
     | { readonly kind: "notCorrupted" }
-    /** Every item is corrupted (the Tainted currency). */
+    /** Every item is corrupted (the Tainted currency, the Corruption Altar). */
     | { readonly kind: "corruptedItem"; readonly what: string }
+    /** No item is twice corrupted (the Corruption Altar). */
+    | { readonly kind: "notTwiceCorrupted"; readonly what: string }
     /** No item has an influence (a fracture, an influence orb). */
     | { readonly kind: "noInfluence"; readonly what: string }
     /** No item has an eldritch implicit (an influence orb). */
@@ -213,6 +215,8 @@ export type Op =
      *  ends, so does the method. */
     | { readonly kind: "either"; readonly branches: readonly (readonly Transform[])[] }
     | { readonly kind: "end" }
+    /** The item is corrupted once more: an uncorrupted one corrupted, a
+     *  corrupted one twice corrupted. */
     | { readonly kind: "corrupt" }
     /** Forget which tier each present modifier is; a crafted one keeps its tier
      *  when `crafted` is false. */
@@ -255,21 +259,15 @@ export type EldritchChange =
     /** One implicit up a tier, the other down; a Lesser lowered is removed
      *  (Orb of Conflict). */
     | { readonly kind: "conflict" }
-    /** A corruption implicit replaces one of the item's implicits (a Vaal Orb)
-     *  or two (the Corruption Altar): that many eldritch implicits may go. */
-    | { readonly kind: "replaced"; readonly count: 1 | 2 };
+    /** A corruption implicit replaces one of the item's implicits (a Vaal
+     *  Orb, the Corruption Altar): an eldritch implicit may go. */
+    | { readonly kind: "replaced" };
 
 export type InfluenceChange =
     | { readonly kind: "set"; readonly key: InfluenceKey }
     | { readonly kind: "add"; readonly influence: Influence }
     /** Every set of the size the item has (the grove's randomise). */
-    | { readonly kind: "randomise" }
-    /** Any one influence, whatever the item had (the Corruption Altar). */
-    | { readonly kind: "anyOne" }
-    /** That influence in place of the item's own, or its own set where it can
-     *  take none: one of `anyOne`'s outcomes, which the cost layer weighs
-     *  apart. */
-    | { readonly kind: "one"; readonly influence: Influence };
+    | { readonly kind: "randomise" };
 
 /** Why an operation's precondition fails on the current state. */
 export type PreconditionFailure =
@@ -327,6 +325,7 @@ export type PreconditionFailure =
     | { readonly kind: "alreadyFractured"; readonly what?: string }
     | { readonly kind: "corrupted" }
     | { readonly kind: "notCorruptedItem"; readonly what: string }
+    | { readonly kind: "twiceCorrupted"; readonly what: string }
     | { readonly kind: "influenced"; readonly what: string }
     | {
           readonly kind: "notInfluenced";

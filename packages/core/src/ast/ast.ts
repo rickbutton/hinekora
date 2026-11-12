@@ -5,7 +5,7 @@
  * strings, keeping the parser a pure syntax-to-tree transform.
  */
 import type { Rarity } from "../model/ids.js";
-import type { EldritchSide, EldritchTierName, Influence } from "../model/marks.js";
+import type { Corruption, EldritchSide, EldritchTierName, Influence } from "../model/marks.js";
 import type { SourceSpan } from "./span.js";
 
 /** A whole craft file: an item block, then a body. */
@@ -113,8 +113,8 @@ export interface ItemBlock {
     readonly suffixes: readonly AffixDecl[];
     /** `influences: hunter` or `influences: shaper elder`; none when absent. */
     readonly influences: readonly Influence[];
-    /** The bare `corrupted` flag. */
-    readonly corrupted: boolean;
+    /** The bare `corrupted` or `twice corrupted` flag. */
+    readonly corrupted: Corruption;
     /** `exarch: grand` and `eater: lesser "<wording>"`, the eldritch implicits. */
     readonly exarch?: EldritchDecl;
     readonly eater?: EldritchDecl;

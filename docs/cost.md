@@ -10,9 +10,8 @@
 ## 1. Beside the checker, not in it
 
 The cost layer reads the same method table and op sequences the checker runs, and
-consumes the checker's output, the trace with the item before every statement, without
-touching a transfer function. Nothing it computes can make the checker accept or refuse
-a step.
+consumes the checker's output, the trace with the item before every statement. Nothing it
+computes can make the checker accept or refuse a step.
 ---
 
 ## 2. How the game rolls
@@ -30,10 +29,9 @@ of the veiled modifier's side where the item says which; the player takes the cr
 target if offered, else a modifier its conditions ask for, else one no one names. A
 value falls as
 [Modifier § Mechanics overview](https://www.poewiki.net/wiki/Modifier#Mechanics_overview)
-has it, a corruption's outcomes as
-[Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment),
-[§ Jewels](https://www.poewiki.net/wiki/Vaal_Orb#Jewels) and
-[Locus of Corruption § Possible outcomes](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes),
+has it, a Vaal Orb's outcomes as
+[Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment) and
+[§ Jewels](https://www.poewiki.net/wiki/Vaal_Orb#Jewels),
 the craft ending where the item is destroyed or becomes a unique, a Sanctified
 Fossil's weights as
 [Sanctified Fossil § Further analysis](https://www.poewiki.net/wiki/Sanctified_Fossil#Further_analysis),
@@ -55,7 +53,8 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
   unveil draws its options as a reforge draws modifiers (Q99).
 - **Tainted Exalted Orb.** It adds or removes at even odds, and removes from a full item
   (Q95).
-- **Corruption Altar.** Its reforge gives each of the six influences alike (Q32).
+- **Corruption Altar.** No change, an implicit, or the item destroyed two times in four,
+  its old reforge now destroying it ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0), Q32).
 - **Orb of Conflict.** The line of
   [Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)
   is carried past the gap it states, neither side below one in a hundred (Q96).

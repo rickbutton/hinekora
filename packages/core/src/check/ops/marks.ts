@@ -6,8 +6,9 @@ import type { Base } from "../../model/base.js";
 import { canBeRare, maxTotal, sideCap } from "../../model/capacity.js";
 import type { Rarity, TypeId } from "../../model/ids.js";
 import {
+    type Corruption,
+    CORRUPTIONS,
     type EldritchSide,
-    INFLUENCES,
     type InfluenceKey,
     influenceKey,
     influencesOf,
@@ -27,7 +28,12 @@ import {
 } from "./handler.js";
 
 const rarityIs = (u: Universe, r: Rarity) => u.dd.slotIn(u.scalar("rarity"), [u.rarityValue(r)]);
-const corrupted = (u: Universe) => u.dd.slotIn(u.scalar("corrupted"), [1]);
+const corruptedAs = (u: Universe, ...cs: Corruption[]) =>
+    u.dd.slotIn(
+        u.scalar("corrupted"),
+        cs.map((c) => CORRUPTIONS.indexOf(c)),
+    );
+const corrupted = (u: Universe) => corruptedAs(u, true, "twice");
 
 /** Every method sets a mark only where the item can carry it: its checks
  *  refuse the rest. */
@@ -184,7 +190,13 @@ function conflict(u: Universe, state: Dd): Outcome {
 export const transforms: TransformTable = {
     corrupt: {
         reads: [],
-        apply: (_op, state, { u }) => u.dd.set(state, u.scalar("corrupted"), 1),
+        apply: (_op, state, { u }) => {
+            const slot = u.scalar("corrupted");
+            const last = CORRUPTIONS.length - 1;
+            return u.dd.mapEach(state, (at, from) =>
+                at === slot ? [Math.min(from + 1, last)] : undefined,
+            );
+        },
     },
     rarity: {
         reads: [],
@@ -238,27 +250,6 @@ export const transforms: TransformTable = {
                     const rel = onInfluence(u, (from) => bySize.get(size(from))!);
                     return wellFormed(u, m.mapEach(state, rel), "a randomised influence");
                 }
-                case "anyOne": {
-                    // Its own set, or any one influence it can then have
-                    // (QUESTIONS.md Q32): an item with an eldritch implicit or a
-                    // fracture takes none (Influenced item � Mechanics: such an
-                    // item "cannot be given influences under any circumstances";
-                    // Fractured item � Mechanics).
-                    const singles = INFLUENCES.flatMap(
-                        (i) => u.influenceValue(influenceKey([i])) ?? [],
-                    );
-                    const rel = onInfluence(u, (from) => [...new Set([from, ...singles])]);
-                    return m.and(m.mapEach(state, rel), u.wf);
-                }
-                case "one": {
-                    // Whether an item can take it rests on more than its
-                    // influence (a fracture, an eldritch implicit), so the
-                    // items that can are those well formed with it.
-                    const v = u.influenceValue(influenceKey([c.influence]));
-                    if (v === undefined) return state;
-                    const can = m.forget(m.and(u.wf, m.slotIn(slot, [v])), [slot]);
-                    return m.or(m.set(m.and(state, can), slot, v), m.diff(state, can));
-                }
             }
         },
     },
@@ -284,15 +275,13 @@ export const transforms: TransformTable = {
                 case "conflict":
                     return conflict(u, state);
                 case "replaced": {
-                    // Up to `count` of the item's implicits are replaced (Vaal Orb
-                    // � Equipment; Locus of Corruption � Possible outcomes). The
-                    // model does not track an item's other implicits, so none of
-                    // the eldritch ones need go.
+                    // One of the item's implicits is replaced (Vaal Orb §
+                    // Equipment; the Corruption Altar's, QUESTIONS.md Q32). The
+                    // model does not track an item's other implicits, so
+                    // neither eldritch one need go.
                     const exarch = withoutImplicit(u, state, "exarch");
                     const eater = withoutImplicit(u, state, "eater");
-                    let out = m.or(state, m.or(exarch, eater));
-                    if (c.count === 2) out = m.or(out, withoutImplicit(u, exarch, "eater"));
-                    return out;
+                    return m.or(state, m.or(exarch, eater));
                 }
             }
         },
@@ -365,6 +354,13 @@ export const checks: CheckTable = {
         verdict: (check, _state, { u }) => ({
             pass: corrupted(u),
             word: () => ({ kind: "notCorruptedItem", what: check.what }),
+        }),
+    },
+    notTwiceCorrupted: {
+        reads: [],
+        verdict: (check, _state, { u }) => ({
+            pass: u.dd.not(corruptedAs(u, "twice")),
+            word: () => ({ kind: "twiceCorrupted", what: check.what }),
         }),
     },
     noInfluence: {

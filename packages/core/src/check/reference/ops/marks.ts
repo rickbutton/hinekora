@@ -102,7 +102,10 @@ function stepped(e: CEldritch, up: boolean): CEldritch {
 }
 
 export const transforms: RefTransformTable = {
-    corrupt: { reads: [], apply: (_op, item) => [{ ...item, corrupted: true }] },
+    corrupt: {
+        reads: [],
+        apply: (_op, item) => [{ ...item, corrupted: item.corrupted === false ? true : "twice" }],
+    },
     rarity: {
         reads: [],
         apply: (op, item, { ctx }) => {
@@ -137,23 +140,6 @@ export const transforms: RefTransformTable = {
                     return setsOfSize(influencesOf(item.influences).length).map((key) =>
                         wellFormed({ ...item, influences: key }, ctx, "a randomised influence"),
                     );
-                case "anyOne":
-                    // Its own set, or any one influence it can then have
-                    // (QUESTIONS.md Q32): an item with an eldritch implicit or a
-                    // fracture takes none (Influenced item � Mechanics: such an
-                    // item "cannot be given influences under any circumstances";
-                    // Fractured item � Mechanics).
-                    return [
-                        item,
-                        ...INFLUENCES.map((i) => ({
-                            ...item,
-                            influences: influenceKey([i]),
-                        })).filter((x) => x.influences !== item.influences && isWellFormed(x, ctx)),
-                    ];
-                case "one": {
-                    const x = { ...item, influences: influenceKey([c.influence]) };
-                    return [isWellFormed(x, ctx) ? x : item];
-                }
             }
         },
     },
@@ -185,16 +171,15 @@ export const transforms: RefTransformTable = {
                     );
                 }
                 case "replaced": {
-                    // Up to `count` of the item's implicits are replaced (Vaal Orb
-                    // � Equipment; Locus of Corruption � Possible outcomes). The
-                    // model does not track an item's other implicits, so none of
-                    // the eldritch ones need go.
+                    // A corruption implicit replaces one of the item's implicits
+                    // (Vaal Orb § Equipment); the Corruption Altar's replaces an
+                    // earlier corruption implicit where the item has two
+                    // (Version 3.30.0, Incursion). The item's other implicits
+                    // are not known, so it may take either eldritch one or
+                    // neither (QUESTIONS.md Q32, Q111).
                     const out = [item];
                     if (item.exarch.tier > 0) out.push({ ...item, exarch: NO_IMPLICIT });
                     if (item.eater.tier > 0) out.push({ ...item, eater: NO_IMPLICIT });
-                    if (c.count === 2 && item.exarch.tier > 0 && item.eater.tier > 0) {
-                        out.push({ ...item, exarch: NO_IMPLICIT, eater: NO_IMPLICIT });
-                    }
                     return out;
                 }
             }
@@ -218,8 +203,9 @@ export const checks: RefCheckTable = {
     notMagic: { reads: [], pass: (_check, item) => item.rarity !== "magic" },
     notNormal: { reads: [], pass: (_check, item) => item.rarity !== "normal" },
     canBeRare: { reads: [], pass: (_check, _item, { ctx }) => canBeRare(ctx.base) },
-    notCorrupted: { reads: [], pass: (_check, item) => !item.corrupted },
-    corruptedItem: { reads: [], pass: (_check, item) => item.corrupted },
+    notCorrupted: { reads: [], pass: (_check, item) => item.corrupted === false },
+    corruptedItem: { reads: [], pass: (_check, item) => item.corrupted !== false },
+    notTwiceCorrupted: { reads: [], pass: (_check, item) => item.corrupted !== "twice" },
     noInfluence: { reads: [], pass: (_check, item) => item.influences === NO_INFLUENCE },
     influenced: {
         reads: [],

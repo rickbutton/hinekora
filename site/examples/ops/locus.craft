@@ -4,6 +4,7 @@ item {
     rarity:   rare
     prefixes: [ "maximum life" t1 ]
     suffixes: [ "fire resistance" t1 ]
+    corrupted
 }
 
 locus

@@ -323,7 +323,7 @@ describe("which implicit an ember gave", () => {
 });
 
 describe("corruption may replace an eldritch implicit", () => {
-    it("a Vaal Orb one of them, the Corruption Altar both", () => {
+    it("a Vaal Orb one of them, and the Corruption Altar one", () => {
         const start = boots({ exarch: "grand", eater: "lesser" });
         const vaal = run(craft(start, [op("vaal")]));
         expect(v.eldritchPairs(vaal.finalState!)).toEqual(
@@ -332,10 +332,10 @@ describe("corruption may replace an eldritch implicit", () => {
         expect(
             messages(craft(start, [op("vaal"), iff(eldritchP("exarch"), [], [])])),
         ).not.toContain("never run");
-        // Up to two implicits go, and the base's own may be among them.
-        const l = run(craft(start, [op("locus")]));
+        // The altar's implicit may take either eldritch one (QUESTIONS.md Q32).
+        const l = run(craft({ ...start, corrupted: true }, [op("locus")]));
         expect(v.eldritchPairs(l.finalState!)).toEqual(
-            new Set([eldritchKey(3, 1), eldritchKey(0, 1), eldritchKey(3, 0), eldritchKey(0, 0)]),
+            new Set([eldritchKey(3, 1), eldritchKey(0, 1), eldritchKey(3, 0)]),
         );
     });
 

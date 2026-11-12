@@ -57,7 +57,7 @@ A state (`ItemSet`) is a set of items, one decision diagram over the slots of it
 | Slot                      | Its values                                                         |
 | ------------------------- | ------------------------------------------------------------------ |
 | `rarity`                  | Normal, Magic, Rare                                                |
-| `corrupted`               | no, yes                                                            |
+| `corrupted`               | no, once, twice                                                    |
 | `influences`              | each influence set the base can have                               |
 | `exarchTier`, `eaterTier` | none, then Lesser to Perfect                                       |
 | `exarchType`, `eaterType` | which implicit of those the catalogue names, or one it does not    |

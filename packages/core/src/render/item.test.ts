@@ -117,6 +117,19 @@ describe("the item in the game's copy layout", () => {
         expect(text).toContain("--------\nPossibly: Corrupted");
     });
 
+    it("shows a second corruption as Twice Corrupted", () => {
+        const corrupted = item({
+            base: "IronRing",
+            ilvl: 100,
+            rarity: "rare",
+            prefixes: ["random"],
+            corrupted: true,
+        });
+        expect(after(craft(corrupted, [op("locus")]))).toMatch(/--------\nTwice Corrupted$/);
+        const some = craft(corrupted, [iff(has("maximum life"), [op("locus")])]);
+        expect(after(some)).toContain("Possibly: Corrupted, or Twice Corrupted");
+    });
+
     it("names what is proven absent", () => {
         // Inside the branch the life modifier is ruled out; the text of the
         // state there is what hover shows on the step.

@@ -138,36 +138,20 @@ describe("the cost of any craft the check reads", () => {
     });
 });
 
-describe("the Corruption Altar on an item that takes no influence", () => {
-    // A fractured item or one with an eldritch implicit takes no influence
-    // (Fractured item § Mechanics; Influenced item § Mechanics), so its reforge
-    // leaves it uninfluenced in the cost walk as in the check, and the step
-    // claims nothing of which influence it gives.
-    const altar = (item: string) => costed(`item {\n    ${item}\n}\n\nlocus\n`);
-    const greaves = (...lines: string[]): string =>
-        [
-            'base: "Titan Greaves"',
-            "ilvl: 84",
-            "rarity: rare",
-            ...lines,
-            'prefixes: [ "maximum life" t1 ]',
-            'suffixes: [ "random" ]',
-        ].join("\n    ");
-    const influenceNote = (report: CostReport) =>
-        report.steps.some((s) => s.note?.includes("each of the six influences") === true);
+describe("the Corruption Altar on a corrupted item", () => {
+    // Its outcomes leave the modifiers as they are, or destroy the item.
+    const altar = (item: string) =>
+        costed(`item {\n    ${item}\n    corrupted\n}\n\nlocus\ntainted exalt\n`);
 
-    it("is costed as the check reads it", () => {
-        for (const item of [ITEMS[8]!, greaves("exarch: grand")]) {
+    it("is costed as the check reads it, the destruction's share named", () => {
+        for (const item of [ITEMS[2]!, ITEMS[8]!, `${ITEMS[8]!}\n    exarch: grand`]) {
             const { result, report } = altar(item);
             expect(result.ok, item).toBe(true);
             expect(report.failed, item).toBeUndefined();
             expect(report.unjudged, item).toBeUndefined();
-            expect(influenceNote(report), item).toBe(false);
+            const note = report.steps[0]!.note ?? "";
+            expect(note, item).toContain("50% of the time the Corruption Altar destroys the item");
         }
-    });
-
-    it("says which influence it gives only where the item can take one", () => {
-        expect(influenceNote(altar(greaves()).report)).toBe(true);
     });
 });
 
@@ -206,7 +190,7 @@ describe("a branch the check finds open", () => {
         ['essence "greed"'],
         ["vaal"],
         ['bench "prefixes cannot be changed"', "vaal"],
-        ["locus"],
+        ["vaal", "locus"],
         ["vaal", "tainted exalt"],
         ["vaal", "tainted chaos"],
     ];

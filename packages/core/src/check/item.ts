@@ -5,7 +5,7 @@
  * breaks a step.
  */
 import type { ModId, Rarity, TypeId } from "../model/ids.js";
-import type { InfluenceKey } from "../model/marks.js";
+import type { Corruption, InfluenceKey } from "../model/marks.js";
 
 /** One modifier on the item. `value` is the first number of the row's text
  *  (`check/values.ts`), undefined for a row whose text has none. `crafted` is a
@@ -31,7 +31,7 @@ export interface CItem {
     /** Order carries no meaning. */
     readonly mods: readonly CMod[];
     readonly influences: InfluenceKey;
-    readonly corrupted: boolean;
+    readonly corrupted: Corruption;
     readonly exarch: CEldritch;
     readonly eater: CEldritch;
     readonly strands: number;

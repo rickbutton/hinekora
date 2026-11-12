@@ -86,6 +86,7 @@ const FIELDS = new Set([
     "suffixes",
     "influences",
     "corrupted",
+    "twice",
     "exarch",
     "eater",
     "enchant",

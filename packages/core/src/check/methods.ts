@@ -506,14 +506,14 @@ export const METHODS: readonly Method[] = [
     {
         words: ["vaal"],
         args: [],
-        doc: "vaal — Vaal Orb: corrupt the item; it may stay as it is or become a Rare with six modifiers, and takes no craft but the Tainted currency and an unveil afterwards.",
+        doc: "vaal — Vaal Orb: corrupt the item; it may stay as it is, gain a corruption implicit or become a Rare with six modifiers, and takes no craft but the Tainted currency, an unveil and the Corruption Altar afterwards.",
         build: (_args, a) => vaalOps(a.base),
     },
     {
         words: ["locus"],
         args: [],
-        doc: "locus — the Corruption Altar: corrupt the item; it may stay as it is, be reforged into a Rare with any one influence and four to six new modifiers, or be destroyed, ending the craft.",
-        build: (_args, a) => locusOps(a.base),
+        doc: "locus — the Corruption Altar: corrupt a corrupted weapon, armour piece, piece of jewellery, quiver or jewel a second time, making it twice corrupted; it may stay as it is, gain a corruption implicit, or be destroyed, ending the craft. A twice-corrupted item takes the altar no more, only the Tainted currency and an unveil.",
+        build: () => locusOps(),
     },
     {
         words: ["tainted", "chaos"],

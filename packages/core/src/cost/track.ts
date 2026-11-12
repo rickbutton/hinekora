@@ -14,7 +14,6 @@ import {
     dominantOf,
     eldritchKey,
     eldritchOf,
-    INFLUENCES,
     influenceOfTag,
     NO_ELDRITCH,
 } from "../model/marks.js";
@@ -40,7 +39,6 @@ import {
     influenceTagsOf,
     isExcluded,
     isFractured,
-    mayTakeInfluence,
     possibleTypes,
     rarities,
     rowsOf,
@@ -171,9 +169,11 @@ const OUTCOME_ODDS: Readonly<
     // Vaal Orb § Equipment, § Jewels: a new implicit, the reforge, and on the
     // three basic jewels a unique jewel, on which the craft ends.
     vaal: fourAlike,
-    // Locus of Corruption § Possible outcomes: two new implicits, the
-    // influenced reforge, and the item destroyed, on which the craft ends.
-    locus: fourAlike,
+    // The Corruption Altar keeps the four outcomes of Locus of Corruption §
+    // Possible outcomes, its reforge now destroying the item (Version 3.30.0,
+    // Incursion): no change one in four, a corruption implicit one in four,
+    // the item destroyed two in four (`ASSUMED_ODDS`, QUESTIONS.md Q32).
+    locus: (branches) => branches.map((b) => (endsCraft(b) ? 2 : 1)),
     // No source gives the odds: adding and removing are taken alike, and a
     // full item, with nothing to add, as losing a modifier (`ASSUMED_ODDS`).
     "tainted exalt": (branches, item) => {
@@ -186,20 +186,14 @@ const OUTCOME_ODDS: Readonly<
 const ASSUMED_ODDS: Readonly<Record<string, string>> = {
     "tainted exalt":
         "a Tainted Exalted Orb is taken to add or remove a modifier at even odds, and to remove one from a full item; no source states its odds",
-    locus: "the Corruption Altar's reforge is taken to give each of the six influences alike; no source states which it gives",
+    locus: "the Corruption Altar is taken to destroy the item two times in four, as its old reforge and destruction did together; no source states its odds",
     dominance:
         "an Orb of Dominance is taken to remove each influenced modifier it can reach alike, and to raise each of the others alike; no source states its odds",
 };
 
-/** The note of a step that, as built, rests on odds no source states on the
- *  item it is used on. */
-export function assumedOdds(method: string, ops: readonly Op[], item: ItemSet): string | undefined {
-    const marks =
-        mayTakeInfluence(item) &&
-        ops.some(
-            (op) => op.kind === "either" && op.branches.some((b) => byInfluence(b).length > 1),
-        );
-    return method === "locus" && !marks ? undefined : ASSUMED_ODDS[method];
+/** The note of a step that rests on odds no source states. */
+export function assumedOdds(method: string): string | undefined {
+    return ASSUMED_ODDS[method];
 }
 
 /** How a step ends the craft on one of its outcomes, for its note. */
@@ -234,25 +228,6 @@ export function ending(
         if (endsCraft(b)) ends += odds[i]!;
     });
     return ends > 0 ? { share: ends / total, note } : undefined;
-}
-
-/**
- * An outcome that marks the item with "any one influence" (the Corruption
- * Altar's reforge) as one outcome an influence, each alike (`ASSUMED_ODDS`),
- * so each reforge draws from the pool its influence gives. The checker also
- * lets an item that can take an influence keep its own set (QUESTIONS.md Q32),
- * which this split gives no weight: the page has the reforge make "an
- * influenced" item (Locus of Corruption § Possible outcomes), and the kept set
- * is allowed only so the check stays sound while that is unprobed.
- */
-function byInfluence(branch: readonly Op[]): (readonly Op[])[] {
-    const at = branch.findIndex((op) => op.kind === "influence" && op.change.kind === "anyOne");
-    if (at < 0) return [branch];
-    return INFLUENCES.map((influence) => [
-        ...branch.slice(0, at),
-        { kind: "influence", change: { kind: "one", influence } },
-        ...branch.slice(at + 1),
-    ]);
 }
 
 /** Rows a condition tells apart: one named tier, or the rest of a ladder. */
@@ -648,14 +623,10 @@ export class Tracker {
                 out.push({ state, prob: share, ends: true });
                 continue;
             }
-            const ways = byInfluence(either.branches[b]!);
-            for (const way of ways) {
-                const taken = [...ops.slice(0, at), ...way, ...ops.slice(at + 1)];
-                const next = this.outcomesOn(item, taken, state, reading);
-                if (next === undefined) return undefined;
-                for (const o of next)
-                    out.push({ state: o.state, prob: (o.prob * share) / ways.length });
-            }
+            const taken = [...ops.slice(0, at), ...either.branches[b]!, ...ops.slice(at + 1)];
+            const next = this.outcomesOn(item, taken, state, reading);
+            if (next === undefined) return undefined;
+            for (const o of next) out.push({ state: o.state, prob: o.prob * share });
         }
         return out;
     }

@@ -39,7 +39,7 @@ import type {
 } from "../ast/index.js";
 import type { Cmp } from "../ast/ast.js";
 import type { Rarity } from "../model/ids.js";
-import type { EldritchSide, EldritchTierName, Influence } from "../model/marks.js";
+import type { Corruption, EldritchSide, EldritchTierName, Influence } from "../model/marks.js";
 
 /** Each node gets a span of its own: a consumer that finds a statement by its
  *  start offset, as the trace and the cost report do, must tell them apart. */
@@ -64,7 +64,7 @@ interface ItemSpec {
     readonly prefixes?: readonly AffixSpec[];
     readonly suffixes?: readonly AffixSpec[];
     readonly influences?: readonly Influence[];
-    readonly corrupted?: boolean;
+    readonly corrupted?: Corruption;
     readonly exarch?: EldritchTierName | EldritchDecl;
     readonly eater?: EldritchTierName | EldritchDecl;
 }

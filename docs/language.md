@@ -88,11 +88,10 @@ item {
   cluster jewel without it, or with another size's, is an error.
 - `corrupted` marks a
   [corrupted item](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items), which
-  takes no craft but the Tainted currency and an `unveil`
-  ([Veiled modifier § Version history](https://www.poewiki.net/wiki/Veiled_modifier#Version_history)).
-  After a step that may corrupt the item (`vaal`,
-  `locus`), the craft continues under every outcome at once (§5); one that destroys the
-  item ends the craft for it.
+  takes no craft but the Tainted currency, an `unveil`
+  ([Veiled modifier § Version history](https://www.poewiki.net/wiki/Veiled_modifier#Version_history))
+  and a `locus`, which may destroy it; `twice corrupted` one a `locus` has corrupted again,
+  which the altar takes no more.
 
 An unknown or ambiguous name is reported on the item block before any step is checked.
 
@@ -234,7 +233,7 @@ pred := isRare | isMagic | isNormal
       | has group "<mod>"                   # some modifier of that modifier's group is present
       | fractured "<mod>"                   # that modifier is fractured
       | influenced [<influence>]            # the item has that influence (any, when none is named)
-      | corrupted                           # the item is corrupted
+      | corrupted                           # the item is corrupted, once or twice
       | exarch ["<wording>"] [<tier>]       # that eldritch implicit is present (that one, at that tier;
       | eater ["<wording>"] [<tier>]        #   the wording and the tier in either order)
       | dominant exarch | dominant eater    # that implicit's tier is the higher
@@ -262,7 +261,7 @@ A predicate asks about the item's current state only; there are no history predi
   `if not has group "spell damage" { bench "spell damage" }` is a player's "unless you already
   have one of those".
 - `influenced`, `corrupted` and `dominant` ask about the item's marks (§1); where the items
-  differ in their marks, as after a `locus` or a `conflict`, a branch on them narrows to one.
+  differ in their marks, as after a `vaal` or a `conflict`, a branch on them narrows to one.
   An Eldritch orb reads each item's own dominant side.
 
 ---
