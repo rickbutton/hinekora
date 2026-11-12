@@ -36,7 +36,7 @@ describe("imprint and restore", () => {
 
     it("restores only an imprint held on every item", () => {
         const none = check(craft(magicRing(["T1 Life"]), [restore()]), ctx);
-        expect(none.diagnostics[0]!.message).toContain("may have no imprint");
+        expect(none.diagnostics[0]!.message).toContain("The item has no imprint");
         const onePath = craft(magicRing(["T1 Life"]), [
             op("augment"),
             iff(has(FIRE_RESIST.id), [beast({ kind: "imprint" })]),

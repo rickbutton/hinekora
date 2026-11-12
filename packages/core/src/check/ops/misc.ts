@@ -323,14 +323,19 @@ export const checks: CheckTable = {
                     const present =
                         slot === undefined ? m.EMPTY : m.slotIn(slot, u.valuesWhere(slot));
                     if (!m.implies(all.dd, present)) {
-                        return { kind: "typeNotRemovable", mod, why: "absent" };
+                        return {
+                            kind: "typeNotRemovable",
+                            mod,
+                            why: "absent",
+                            ...(m.and(all.dd, present) === m.EMPTY && { every: true as const }),
+                        };
                     }
                     const fractured = m.slotIn(
                         slot!,
                         u.valuesWhere(slot!, (v) => v.fractured),
                     );
                     if (m.implies(all.dd, fractured)) {
-                        return { kind: "typeNotRemovable", mod, why: "fractured", sure: true };
+                        return { kind: "typeNotRemovable", mod, why: "fractured", every: true };
                     }
                     if (m.and(all.dd, fractured) !== m.EMPTY) {
                         return { kind: "typeNotRemovable", mod, why: "fractured" };

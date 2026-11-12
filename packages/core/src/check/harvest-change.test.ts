@@ -393,7 +393,7 @@ describe("harvest change", () => {
             craft(rareRing(), [harvestChange(FIRE_RESIST.id, COLD_RESIST.id)]),
             ctx,
         );
-        expect(absent.diagnostics[0]!.message).toContain("may not carry");
+        expect(absent.diagnostics[0]!.message).toContain("The item does not carry");
         const fractured = check(
             craft(rareRing([], [{ mod: FIRE_RESIST.id, fractured: true }]), [
                 harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
@@ -408,6 +408,20 @@ describe("harvest change", () => {
             ctx,
         );
         expect(shielded.diagnostics[0]!.message).toContain("metamod protects");
+    });
+
+    it("words the modifier absent as fact only where no item carries it", () => {
+        // The annul may have taken the fire resistance, or the life.
+        const some = check(
+            craft(rareRing(["T1 Life"], [FIRE_RESIST.id]), [
+                op("annul"),
+                harvestChange(FIRE_RESIST.id, COLD_RESIST.id),
+            ]),
+            ctx,
+        );
+        expect(some.diagnostics[0]!.message).toContain(
+            'The item may not carry "fire resistance", so it can\'t be changed.',
+        );
     });
 
     it("offers only the elemental resistances among themselves and the elemental damages likewise", () => {

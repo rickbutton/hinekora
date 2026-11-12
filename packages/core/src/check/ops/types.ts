@@ -284,8 +284,6 @@ export type PreconditionFailure =
     | {
           readonly kind: "modConflict";
           readonly group: string;
-          /** One of them is on every item. */
-          readonly sure: boolean;
           /** The other modifiers of the group the item may carry, named so a craft
            *  can rule them out one by one. */
           readonly among: readonly string[];
@@ -303,10 +301,12 @@ export type PreconditionFailure =
     | { readonly kind: "craftedLimit"; readonly cap: number; readonly refusal?: string }
     | { readonly kind: "noCraftedToRemove" }
     | { readonly kind: "craftedFractured" }
-    | { readonly kind: "craftedMultiple" }
+    /** `every`: every item breaking the check has more than one. */
+    | { readonly kind: "craftedMultiple"; readonly every?: true }
     | { readonly kind: "harvestEmptyPool"; readonly tag: TagId }
     | { readonly kind: "harvestNoRoom"; readonly tag: TagId }
-    | { readonly kind: "harvestBlocked"; readonly tag: TagId }
+    /** `every`: every item breaking the check is blocked. */
+    | { readonly kind: "harvestBlocked"; readonly tag: TagId; readonly every?: true }
     /** Every tagged row is one a cannot-roll metamod on the item bars. */
     | { readonly kind: "harvestCannotRoll"; readonly tag: TagId }
     | { readonly kind: "metamodBlocks" }
@@ -320,23 +320,23 @@ export type PreconditionFailure =
           readonly kind: "typeNotRemovable";
           readonly mod: string;
           readonly why: "absent" | "fractured" | "protected";
-          readonly sure?: true;
+          /** The reason holds on every item reaching the check. */
+          readonly every?: true;
       }
     | { readonly kind: "tooFewMods"; readonly needed: number; readonly what?: string }
-    | { readonly kind: "alreadyFractured"; readonly sure: boolean; readonly what?: string }
-    | { readonly kind: "corrupted"; readonly sure: boolean }
-    | { readonly kind: "notCorruptedItem"; readonly what: string; readonly sure: boolean }
-    | { readonly kind: "influenced"; readonly what: string; readonly sure: boolean }
+    | { readonly kind: "alreadyFractured"; readonly what?: string }
+    | { readonly kind: "corrupted" }
+    | { readonly kind: "notCorruptedItem"; readonly what: string }
+    | { readonly kind: "influenced"; readonly what: string }
     | {
           readonly kind: "notInfluenced";
           readonly what: string;
           readonly influence?: Influence;
-          readonly sure: boolean;
       }
     | { readonly kind: "notInfluenceable"; readonly influence: Influence; readonly what: string }
-    | { readonly kind: "eldritchPresent"; readonly what: string; readonly sure: boolean }
+    | { readonly kind: "eldritchPresent"; readonly what: string }
     | { readonly kind: "notDominant"; readonly side: EldritchSide; readonly what: string }
-    | { readonly kind: "notBothEldritch"; readonly sure: boolean }
+    | { readonly kind: "notBothEldritch" }
     | { readonly kind: "sideProtected"; readonly gen: Gen; readonly what: string }
     | { readonly kind: "tooFewInfluenced"; readonly needed: number; readonly have: number }
     | { readonly kind: "influencedOnProtected"; readonly what: string; readonly gen: Gen }
@@ -346,6 +346,6 @@ export type PreconditionFailure =
     | { readonly kind: "unveilNotAvailable"; readonly mod: string }
     | { readonly kind: "unveilNotGuaranteed"; readonly mod: string; readonly options: number }
     /** The operation can do nothing on some item it reaches (`op` its kind:
-     *  a fill with no modifier left that fits, a removal with none in reach);
-     *  `sure` when it can on none. Reported by the exact checker. */
-    | { readonly kind: "noOutcome"; readonly op: string; readonly sure: boolean };
+     *  a fill with no modifier left that fits, a removal with none in reach).
+     *  Reported by the exact checker. */
+    | { readonly kind: "noOutcome"; readonly op: string };

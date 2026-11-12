@@ -330,9 +330,8 @@ export const checks: CheckTable = {
         reads: [],
         verdict: (check, _state, { u }) => ({
             pass: u.dd.not(isFractured(u)),
-            word: (failing, all) => ({
+            word: () => ({
                 kind: "alreadyFractured",
-                sure: failing.dd === all.dd,
                 ...(check.what !== undefined && { what: check.what }),
             }),
         }),
@@ -372,7 +371,10 @@ export const checks: CheckTable = {
                 ),
                 word: (failing) =>
                     m.and(failing.dd, many) !== m.EMPTY
-                        ? { kind: "craftedMultiple" }
+                        ? {
+                              kind: "craftedMultiple",
+                              ...(m.implies(failing.dd, many) && { every: true as const }),
+                          }
                         : { kind: "craftedFractured" },
             };
         },
@@ -406,7 +408,6 @@ export const checks: CheckTable = {
                     return {
                         kind: "modConflict",
                         group: u.registry.typeLabel(check.mod.type),
-                        sure: sure !== undefined,
                         among: among
                             .filter((c) => c.type !== check.mod.type)
                             .map((c) => u.registry.typeLabel(c.type)),

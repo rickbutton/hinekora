@@ -191,7 +191,7 @@ describe("the Orb of Dominance", () => {
             influences: ["hunter"],
         });
         // Only the prefix is unprotected: too few to use the orb.
-        expect(messages(craft(guarded, [op("dominance")]))).toContain("the item may have only one");
+        expect(messages(craft(guarded, [op("dominance")]))).toContain("the item has only one");
         const magic = item({
             base: "Iron Greaves",
             ilvl: 100,
@@ -209,13 +209,22 @@ describe("the Orb of Dominance", () => {
         expect(
             messages(craft(boots([HUNTER_BOOTS_PREFIX.id, "life"]), [op("dominance")])),
         ).toContain(
-            "needs 2 influenced modifiers on sides a metamod does not protect — the item may have only one",
+            "needs 2 influenced modifiers on sides a metamod does not protect — the item has only one",
         );
         const guarded = boots(
             [HUNTER_BOOTS_PREFIX.id, PROTECT_SUFFIXES_CARRIER.id],
             [HUNTER_BOOTS_SUFFIX.id],
         );
-        expect(messages(craft(guarded, [op("dominance")]))).toContain("the item may have only one");
+        expect(messages(craft(guarded, [op("dominance")]))).toContain("the item has only one");
+    });
+
+    it("words the count as fact only where every item has too few", () => {
+        const one = craft(boots([HUNTER_BOOTS_PREFIX.id, "life"], [HUNTER_BOOTS_SUFFIX.id]), [
+            op("annul"),
+            op("dominance"),
+        ]);
+        // The annul may have taken either influenced modifier, or the life.
+        expect(messages(one)).toContain("the item may have only one.");
     });
 
     it("counts an elevated modifier among the two, and may remove it", () => {

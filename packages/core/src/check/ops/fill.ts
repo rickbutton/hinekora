@@ -6,9 +6,9 @@
  * for a reforge whose pool holds still while it is laid (`poolHoldsStill`),
  * every number of its rows laid at once, which reaches the same items.
  */
-import type { FillCount, PoolSpec } from "./types.js";
+import type { FillCount, PoolSpec, PreconditionFailure } from "./types.js";
 import { holdsFour, maxTotal } from "../../model/capacity.js";
-import type { Rarity } from "../../model/ids.js";
+import type { Rarity, TagId } from "../../model/ids.js";
 import type { Mod } from "../../model/mod.js";
 import type { Dd } from "../dd.js";
 import type { ItemSet } from "../state.js";
@@ -305,7 +305,10 @@ function takenBy(u: Universe, row: Mod): Dd {
     return r;
 }
 
-type HarvestFailure = "harvestEmptyPool" | "harvestCannotRoll" | "harvestBlocked" | "harvestNoRoom";
+type HarvestFailure = Extract<
+    PreconditionFailure,
+    { kind: "harvestEmptyPool" | "harvestCannotRoll" | "harvestBlocked" | "harvestNoRoom" }
+>;
 
 /**
  * Why no row of a tagged or influence pool lands on the items, the most basic
@@ -313,10 +316,11 @@ type HarvestFailure = "harvestEmptyPool" | "harvestCannotRoll" | "harvestBlocked
  * tag; a cannot-roll metamod on the item bars every one; a present
  * modifier's type or group takes every one; no room on their sides.
  */
-function whyEmpty(failing: Dd, pool: PoolSpec, dc: DrawCtx): HarvestFailure {
+function whyEmpty(failing: Dd, pool: PoolSpec, dc: DrawCtx, tag: TagId): HarvestFailure {
     const { u } = dc;
     const m = u.dd;
-    if (pool.kind !== "tagged" && pool.kind !== "influence") return "harvestEmptyPool";
+    if (pool.kind !== "tagged" && pool.kind !== "influence")
+        return { kind: "harvestEmptyPool", tag };
     const offered = (cases: readonly DrawCase[]): Dd =>
         unionOf(
             u,
@@ -324,16 +328,17 @@ function whyEmpty(failing: Dd, pool: PoolSpec, dc: DrawCtx): HarvestFailure {
         );
     const cases = drawCases(failing, pool, dc);
     if (offered(drawCases(failing, pool, { ...dc, unrestricted: true })) !== failing) {
-        return "harvestEmptyPool";
+        return { kind: "harvestEmptyPool", tag };
     }
-    if (offered(cases) !== failing) return "harvestCannotRoll";
+    if (offered(cases) !== failing) return { kind: "harvestCannotRoll", tag };
     let taken = failing;
     for (const c of cases) {
         let all = m.ALL;
         for (const r of c.rows) all = m.and(all, takenBy(u, r));
         taken = m.diff(taken, m.diff(c.dd, all));
     }
-    return taken !== m.EMPTY ? "harvestBlocked" : "harvestNoRoom";
+    if (taken === m.EMPTY) return { kind: "harvestNoRoom", tag };
+    return { kind: "harvestBlocked", tag, ...(taken === failing && { every: true as const }) };
 }
 
 export const checks: CheckTable = {
@@ -357,10 +362,7 @@ export const checks: CheckTable = {
             const dc = drawCtxOf(ctx);
             return {
                 pass: ctx.u.dd.batch(() => canDraw(state, check.pool, dc)),
-                word: (failing: ItemSet) => ({
-                    kind: whyEmpty(failing.dd, check.pool, dc),
-                    tag: check.tag,
-                }),
+                word: (failing: ItemSet) => whyEmpty(failing.dd, check.pool, dc, check.tag),
             };
         },
     },

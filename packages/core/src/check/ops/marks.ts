@@ -357,29 +357,21 @@ export const checks: CheckTable = {
         reads: [],
         verdict: (_check, _state, { u }) => ({
             pass: u.dd.not(corrupted(u)),
-            word: (failing, all) => ({ kind: "corrupted", sure: failing.dd === all.dd }),
+            word: () => ({ kind: "corrupted" }),
         }),
     },
     corruptedItem: {
         reads: [],
         verdict: (check, _state, { u }) => ({
             pass: corrupted(u),
-            word: (failing, all) => ({
-                kind: "notCorruptedItem",
-                what: check.what,
-                sure: failing.dd === all.dd,
-            }),
+            word: () => ({ kind: "notCorruptedItem", what: check.what }),
         }),
     },
     noInfluence: {
         reads: [],
         verdict: (check, _state, { u }) => ({
             pass: influenceValues(u, (k) => k === NO_INFLUENCE),
-            word: (failing, all) => ({
-                kind: "influenced",
-                what: check.what,
-                sure: failing.dd === all.dd,
-            }),
+            word: () => ({ kind: "influenced", what: check.what }),
         }),
     },
     influenced: {
@@ -390,11 +382,10 @@ export const checks: CheckTable = {
                 pass: influenceValues(u, (k) =>
                     wanted === undefined ? k !== NO_INFLUENCE : influencesOf(k).includes(wanted),
                 ),
-                word: (failing, all) => ({
+                word: () => ({
                     kind: "notInfluenced",
                     what: check.what,
                     ...(wanted !== undefined && { influence: wanted }),
-                    sure: failing.dd === all.dd,
                 }),
             };
         },
@@ -418,11 +409,7 @@ export const checks: CheckTable = {
                 tierIn(u, "exarch", (t) => t === 0),
                 tierIn(u, "eater", (t) => t === 0),
             ),
-            word: (failing, all) => ({
-                kind: "eldritchPresent",
-                what: check.what,
-                sure: failing.dd === all.dd,
-            }),
+            word: () => ({ kind: "eldritchPresent", what: check.what }),
         }),
     },
     dominant: {
@@ -439,7 +426,7 @@ export const checks: CheckTable = {
                 tierIn(u, "exarch", (t) => t > 0),
                 tierIn(u, "eater", (t) => t > 0),
             ),
-            word: (failing, all) => ({ kind: "notBothEldritch", sure: failing.dd === all.dd }),
+            word: () => ({ kind: "notBothEldritch" }),
         }),
     },
     baseHasTag: {

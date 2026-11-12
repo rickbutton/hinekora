@@ -75,12 +75,12 @@ describe("bench remove", () => {
 
     it("needs a crafted modifier the bench can reach", () => {
         const none = check(craft(rareRing(["T1 Life"]), [benchRemove()]), ctx);
-        expect(none.diagnostics[0]!.message).toContain("may have no crafted modifier");
+        expect(none.diagnostics[0]!.message).toContain("The item has no crafted modifier");
         const locked = check(
             craft(rareRing([{ mod: BENCH_LIFE_ROW.id, fractured: true }]), [benchRemove()]),
             ctx,
         );
-        expect(locked.diagnostics[0]!.message).toContain("may have no crafted modifier");
+        expect(locked.diagnostics[0]!.message).toContain("The item has no crafted modifier");
     });
 
     it("a rolled modifier of the crafted row's type survives, pinned to its own tier", () => {
@@ -149,7 +149,7 @@ describe("bench remove with a fractured crafted modifier", () => {
         );
         const r = check(c, ctx);
         expect(r.diagnostics.map((d) => d.message)).toEqual([
-            expect.stringContaining("may be fractured"),
+            expect.stringContaining("crafted modifier is fractured"),
         ]);
     });
 });
@@ -172,7 +172,7 @@ describe("a bench craft on an item with a crafted modifier", () => {
         const c = craft(rareRing([{ mod: BENCH_LIFE_ROW.id, fractured: true }]), [
             bench("maximum life"),
         ]);
-        expect(check(c, ctx).diagnostics[0]!.message).toContain("may be fractured");
+        expect(check(c, ctx).diagnostics[0]!.message).toContain("crafted modifier is fractured");
     });
 
     it("may not be able to replace one an unproven fracture may have locked", () => {
@@ -180,7 +180,9 @@ describe("a bench craft on an item with a crafted modifier", () => {
             rareRing([BENCH_LIFE_ROW.id, INCREASED_MANA.id], ["FireResist1", "random"]),
             [op("fracture"), bench("maximum life")],
         );
-        expect(check(c, ctx).diagnostics[0]!.message).toContain("may be fractured");
+        expect(check(c, ctx).diagnostics[0]!.message).toContain(
+            "crafted modifier may be fractured",
+        );
     });
 
     it("replaces the crafted life where the annul took the multimod, and adds beside it elsewhere", () => {

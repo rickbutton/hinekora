@@ -154,7 +154,7 @@ describe("veiled orbs", () => {
             suffixes: ["SharedVeilUnveiled1", "random"],
         });
         const r = check(craft(start, [op("fracture"), veiled("chaos")]), ctx);
-        expect(r.diagnostics[0]!.message).toContain("would survive the reforge");
+        expect(r.diagnostics[0]!.message).toContain("may survive the reforge");
     });
 
     it("has no word for Aisling's retired safehouse bench", () => {

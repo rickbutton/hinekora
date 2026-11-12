@@ -221,7 +221,7 @@ describe("the method frame", () => {
         expect(listItems(u, r.result.state.dd).items()).toEqual([
             cItem({ rarity: "magic", corrupted: true }),
         ]);
-        if (!r.result.ok) expect(r.result.failure).toEqual({ kind: "corrupted", sure: false });
+        expect(r.result).toMatchObject({ failure: { kind: "corrupted" }, sure: false });
     });
 
     it("recovers from the refused items as the craft meant them, else from the state unchanged", () => {
@@ -236,7 +236,8 @@ describe("the method frame", () => {
         const all = fromItems(u, [cItem({ corrupted: true })])!;
         expect(runMethod(all, [req({ kind: "notCorrupted" }), rarity("magic")])).toEqual({
             ok: false,
-            failure: { kind: "corrupted", sure: true },
+            failure: { kind: "corrupted" },
+            sure: true,
             state: all,
             recovered: true,
         });
@@ -278,7 +279,7 @@ describe("the method frame", () => {
         };
         const two = fromItems(u, [cItem({ corrupted: true }), cItem({ rarity: "magic" })])!;
         const w = runMethod(two, [req({ kind: "notCorrupted" }), corrupt], split);
-        expect(w.ok === false && w.failure).toEqual({ kind: "corrupted", sure: false });
+        expect(w).toMatchObject({ failure: { kind: "corrupted" }, sure: false });
     });
 
     it("unites the branches of either, an ending branch adding nothing", () => {
@@ -339,13 +340,15 @@ describe("the method frame", () => {
         const r = runMethodTrace(two()!, [corrupt], picky.exact);
         expect(r.result).toMatchObject({
             ok: false,
-            failure: { kind: "noOutcome", op: "corrupt", sure: false },
+            failure: { kind: "noOutcome", op: "corrupt" },
+            sure: false,
         });
         expect(listItems(u, r.failing.get(0)!).items()).toEqual([cItem()]);
         const all = fromItems(u, [cItem()])!;
         expect(runMethod(all, [corrupt], picky.exact)).toEqual({
             ok: false,
-            failure: { kind: "noOutcome", op: "corrupt", sure: true },
+            failure: { kind: "noOutcome", op: "corrupt" },
+            sure: true,
             state: all,
             recovered: true,
         });
@@ -362,11 +365,7 @@ describe("the method frame", () => {
         const s = two()!;
         expect(runMethod(s, [either([corrupt], [])], picky.exact).ok).toBe(true);
         const both = runMethod(s, [either([corrupt], [corrupt])], picky.exact);
-        expect(both.ok === false && both.failure).toEqual({
-            kind: "noOutcome",
-            op: "either",
-            sure: false,
-        });
+        expect(both).toMatchObject({ failure: { kind: "noOutcome", op: "either" }, sure: false });
         expect(
             runMethod(fromItems(u, [cItem()])!, [either([corrupt], [end])], picky.exact).ended,
         ).toBe(true);
@@ -439,7 +438,7 @@ describe("the method frame", () => {
                     reads: [],
                     verdict: (_c, _d, { u: v }) => ({
                         pass: v.dd.EMPTY,
-                        word: () => ({ kind: "corrupted", sure: true }),
+                        word: () => ({ kind: "corrupted" }),
                     }),
                 },
             },

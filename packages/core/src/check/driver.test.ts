@@ -85,9 +85,21 @@ describe("the exact driver's words", () => {
             ['Unknown currency "zzz".'],
             ['Unknown operation "beast zzz".'],
             [
-                "at this point the item is: IronRing · Rare · 6 affixes · 3 prefixes · 3 suffixes · ilvl 84\nRequires an open affix slot — the item may be full.",
+                "at this point the item is: IronRing · Rare · 6 affixes · 3 prefixes · 3 suffixes · ilvl 84\nRequires an open affix slot — the item is full.",
             ],
         ]);
+    });
+
+    it("state a refusal as fact where every item the step is used on breaks it, else as may be", () => {
+        const need = (c: Craft): string => said(c)[0]!.split("\n")[1]!;
+        const magic = ring({ rarity: "magic", prefixes: ["Life1"], suffixes: ["Fire1"] });
+        expect(need(craft(magic, [op("augment")]))).toBe(
+            "Requires an open affix slot — the item is full.",
+        );
+        // A transmute lays one modifier or two.
+        expect(need(craft(ring({ rarity: "normal" }), [op("transmute"), op("augment")]))).toBe(
+            "Requires an open affix slot — the item may be full.",
+        );
     });
 
     it("say which metamod a step is refused under, where some items carry it", () => {

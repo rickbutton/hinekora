@@ -137,7 +137,8 @@ describe("how many modifiers a fill lays", () => {
         // Outside an either, the add refuses the method on it.
         expect(runMethod(fromItems(w.u, [full])!, [fill(natural, add())])).toMatchObject({
             ok: false,
-            failure: { kind: "noOutcome", op: "fill", sure: true },
+            failure: { kind: "noOutcome", op: "fill" },
+            sure: true,
         });
     });
 

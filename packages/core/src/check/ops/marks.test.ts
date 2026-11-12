@@ -537,23 +537,29 @@ describe("the checks' words", () => {
         const what = "An orb";
         expect(run([plain, marked], { kind: "noInfluence", what })).toMatchObject({
             ok: false,
-            failure: { kind: "influenced", what, sure: false },
+            failure: { kind: "influenced", what },
+            sure: false,
         });
         expect(run([marked], { kind: "noInfluence", what })).toMatchObject({
-            failure: { kind: "influenced", what, sure: true },
+            failure: { kind: "influenced", what },
+            sure: true,
         });
         expect(run([plain], { kind: "influenced", what, influence: "hunter" })).toMatchObject({
-            failure: { kind: "notInfluenced", what, influence: "hunter", sure: true },
+            failure: { kind: "notInfluenced", what, influence: "hunter" },
+            sure: true,
         });
         const implicit = cItem({ exarch: { tier: 1, type } });
         expect(run([plain, implicit], { kind: "noEldritch", what })).toMatchObject({
-            failure: { kind: "eldritchPresent", what, sure: false },
+            failure: { kind: "eldritchPresent", what },
+            sure: false,
         });
         expect(run([implicit], { kind: "bothEldritch" })).toMatchObject({
-            failure: { kind: "notBothEldritch", sure: true },
+            failure: { kind: "notBothEldritch" },
+            sure: true,
         });
         expect(run([plain], { kind: "dominant", side: "eater", what })).toMatchObject({
             failure: { kind: "notDominant", side: "eater", what },
+            sure: true,
         });
     });
 
@@ -645,17 +651,21 @@ describe("the rarity and corruption checks' words", () => {
     it("say whether every item is, or is not, corrupted", () => {
         const corrupted = cItem({ corrupted: true });
         expect(run([corrupted, normal], { kind: "notCorrupted" })).toMatchObject({
-            failure: { kind: "corrupted", sure: false },
+            failure: { kind: "corrupted" },
+            sure: false,
         });
         expect(run([corrupted], { kind: "notCorrupted" })).toMatchObject({
-            failure: { kind: "corrupted", sure: true },
+            failure: { kind: "corrupted" },
+            sure: true,
         });
         const what = "A Tainted Chaos Orb";
         expect(run([corrupted, normal], { kind: "corruptedItem", what })).toMatchObject({
-            failure: { kind: "notCorruptedItem", what, sure: false },
+            failure: { kind: "notCorruptedItem", what },
+            sure: false,
         });
         expect(run([normal], { kind: "corruptedItem", what })).toMatchObject({
-            failure: { kind: "notCorruptedItem", what, sure: true },
+            failure: { kind: "notCorruptedItem", what },
+            sure: true,
         });
     });
 });

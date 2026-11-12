@@ -232,7 +232,7 @@ describe("beast fracture", () => {
         ]);
         const r = check(maybe, ctx);
         expect(r.diagnostics.map((d) => d.message).join("\n")).toContain(
-            "already has a fractured modifier",
+            "may already have a fractured modifier",
         );
         // The craft goes on from the items the fracture could act on, each with one lock.
         expect(v.fracturedCount(r.finalState!)).toEqual([1, 1]);
@@ -366,7 +366,7 @@ describe("beast metamod", () => {
             rareRing([PROTECT_SUFFIXES_CARRIER.id], [MULTIMOD_CARRIER.id, FIRE_RESIST.id]),
             [op("exalt"), beast({ kind: "metamod" })],
         );
-        expect(check(c, ctx).diagnostics[0]!.message).toContain("No metamod fits");
+        expect(check(c, ctx).diagnostics[0]!.message).toContain("A metamod may not fit");
     });
 
     it("takes a different metamod on each item: whichever side the add left open", () => {

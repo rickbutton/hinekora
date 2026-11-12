@@ -519,7 +519,6 @@ describe("the Orb of Dominance on an elevated row of the other side", () => {
         expect(refusal(w, [item("HunterP", "HunterQ", "S1", "S2", "S3")], L.DOMINANCE)).toEqual({
             kind: "noOutcome",
             op: "elevate",
-            sure: false,
         });
     });
 

@@ -618,7 +618,7 @@ describe("the Harvest change's rules", () => {
             kind: "typeNotRemovable",
             mod: "fire",
             why: "fractured",
-            sure: true,
+            every: true,
         });
         expect(failureOf(s, [fr, plain], ops)).toEqual({
             kind: "typeNotRemovable",
@@ -797,7 +797,7 @@ describe("a Harvest change with no row for the removed one", () => {
         expect(d, d).toBe("");
         const r = runMethod(fromItems(s.u, items)!, ops);
         expect(r.ok).toBe(false);
-        if (!r.ok) expect(r.failure).toMatchObject({ kind: "noOutcome", sure: false });
+        expect(r).toMatchObject({ failure: { kind: "noOutcome" }, sure: false });
         expect(rowsAt(listItems(s.u, r.state.dd).items())).toEqual(["ColdRes1"]);
         const ref = refRunMethod(CItemSet.of(items), ops, s.cat.ctx);
         expect(ref.ok).toBe(false);

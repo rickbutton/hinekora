@@ -64,6 +64,9 @@ export type TransferResult = (
           readonly ok: false;
           readonly failure: PreconditionFailure;
           readonly state: ItemSet;
+          /** Every item reaching the refusing step breaks it, and no item
+           *  leaves the method: the failure's words state it as fact. */
+          readonly sure: boolean;
           /** The metamods every refused case carries and some other case does
            *  not, when some case goes through. */
           readonly under?: readonly TypeId[];
@@ -274,6 +277,7 @@ export function runMethodTrace(
     const refusal = {
         ok: false as const,
         failure,
+        sure: j.failing === j.reached && out === m.EMPTY && !reachedEnd,
         ...(passedCase && under.length > 0 && { under }),
     };
     if (out !== m.EMPTY) {
@@ -430,11 +434,7 @@ function runCase(
                 run.judged.set(step.at, {
                     reached: cur,
                     failing: r.stuck,
-                    word: (failing, all) => ({
-                        kind: "noOutcome",
-                        op,
-                        sure: failing.dd === all.dd,
-                    }),
+                    word: () => ({ kind: "noOutcome", op }),
                 });
                 cur = r.image;
             }

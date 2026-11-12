@@ -256,7 +256,7 @@ describe("the grove's influence crafts", () => {
             influences: ["hunter"],
         });
         expect(messages(craft(full, [harvest("reforge", "influence")]))).toContain(
-            "An influence modifier has no slot on some items",
+            "An influence modifier has no slot — the side it would take is full.",
         );
     });
 

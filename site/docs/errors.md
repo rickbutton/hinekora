@@ -88,8 +88,8 @@ Requires a Magic item — this item is Rare.
 ```
 
 The first line gives the item's base, rarities, modifier counts and item level. The second
-says how many items break the step: "this item is Rare" means all, "the item may be full"
-some, one of which [`check`](./cli#check) can print.
+says how many items break the step: all where it states a fact, some where it says "may",
+one of which [`check`](./cli#check) can print.
 
 Other steps need one rarity on every item, an open slot, room on one side, a modifier to
 remove, or none of the new modifier's group:

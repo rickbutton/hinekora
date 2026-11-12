@@ -178,7 +178,7 @@ describe("harvest reforge", () => {
             { registry: boots },
         );
         expect(r.diagnostics).toHaveLength(1);
-        expect(r.diagnostics[0]!.message).toContain("Every speed modifier may be blocked");
+        expect(r.diagnostics[0]!.message).toContain("Every speed modifier is blocked —");
     });
 
     it("rejects a side-only tag when that side may be full after the strip", () => {
@@ -192,7 +192,7 @@ describe("harvest reforge", () => {
             [harvest("reforge", "life")],
         );
         expect(check(locked, ctx).diagnostics[0]!.message).toContain(
-            "life modifier has no slot on some items",
+            "A life modifier has no slot — the side it would take is full.",
         );
         // Anonymous prefixes instead: one of them may already be the life,
         // which blocks it before the side's room is asked.
@@ -212,7 +212,22 @@ describe("harvest reforge", () => {
             [harvest("augment", "defence")],
         );
         expect(check(full, ctx).diagnostics[0]!.message).toContain(
-            "defences modifier has no slot on some items",
+            "A defences modifier has no slot — the side it would take is full.",
+        );
+    });
+
+    it("words a full side as fact only where every item has it full", () => {
+        // The annul freed a prefix or a suffix: only the items it freed a
+        // suffix on have room for a fire modifier, every one a suffix.
+        const some = craft(
+            rareRing(
+                ["T1 Life", INCREASED_MANA.id, INCREASED_ARMOUR.id],
+                ["ColdResist1", "LightningResist1", ATTACK_SPEED.id],
+            ),
+            [op("annul"), harvest("augment", "fire")],
+        );
+        expect(check(some, ctx).diagnostics[0]!.message).toContain(
+            "A fire modifier has no slot on some items — the side it would take may be full.",
         );
     });
 
@@ -225,7 +240,7 @@ describe("harvest reforge", () => {
             [harvest("augment", "fire")],
         );
         expect(check(fullSuffixes, ctx).diagnostics[0]!.message).toContain(
-            "fire modifier has no slot on some items",
+            "A fire modifier has no slot — the side it would take is full.",
         );
         // A tag with rows on both sides still has none on a full item.
         const full = craft(
@@ -236,7 +251,7 @@ describe("harvest reforge", () => {
             [harvest("augment", "attack")],
         );
         expect(check(full, ctx).diagnostics[0]!.message).toContain(
-            "attack modifier has no slot on some items",
+            "An attack modifier has no slot — the side it would take is full.",
         );
         // With a suffix open the fire modifier lands, and one of the others goes.
         const open = craft(rareRing(["T1 Life"], ["ColdResist1", "LightningResist1"]), [
@@ -341,7 +356,7 @@ describe("harvest augment (add tagged, remove a random other)", () => {
             craft(rareRing(["T1 Life"], ["FireResist1"]), [harvest("augment", "fire")]),
             ctx,
         );
-        expect(closed.diagnostics[0]!.message).toContain("Every fire modifier may be blocked");
+        expect(closed.diagnostics[0]!.message).toContain("Every fire modifier is blocked —");
     });
 
     it("has the grove's eleven augments only", () => {

@@ -354,7 +354,6 @@ describe("a bench craft", () => {
         const item = rareWith(at(natural));
         expect(outcomes(s, [item], L.benchOps(bench)).failure).toMatchObject({
             kind: "modConflict",
-            sure: true,
             among: [],
         });
         // The crafted one of the group is replaced first, so it is no conflict.
@@ -485,7 +484,7 @@ describe("a fracture", () => {
         const plain = cItem({ rarity: "rare", mods: nat.slice(0, 4).map((m) => at(m)) });
         expect(
             outcomes(s, [done, plain], [req({ kind: "noFracture", what: "no" })]).failure,
-        ).toEqual({ kind: "alreadyFractured", sure: false, what: "no" });
+        ).toEqual({ kind: "alreadyFractured", what: "no" });
         const marked = cItem({ ...plain, influences: hunter });
         expect(outcomes(s, [marked], L.currencyOps("fracture")).failure).toMatchObject({
             kind: "influenced",
@@ -695,7 +694,6 @@ describe("an Aspect", () => {
         const crab = cItem({ rarity: "rare", mods: [at(byId(cat, "CrabAspect30"))] });
         expect(outcomes(s, [crab], L.beastAspectOps(cat30)).failure).toMatchObject({
             kind: "modConflict",
-            sure: true,
             refusal: "the Aspect can't be crafted",
         });
     });

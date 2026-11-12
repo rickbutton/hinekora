@@ -614,7 +614,9 @@ class Checker {
             if (!result.ok) {
                 const first = firstOf(run.failing);
                 firstBreak(first !== undefined && m.implies(first, part.state.dd) ? first : null);
-                message ??= this.refusal(s, result.failure, result.under);
+                // Worded as fact where every item the step is used on breaks it.
+                const sure = result.sure && part.state.dd === s.dd;
+                message ??= this.refusal(s, result.failure, sure, result.under);
             }
             const recovers = result.recovered === true;
             if (recovers && this.recovering) this.recovered = true;
@@ -654,6 +656,7 @@ class Checker {
     private refusal(
         s: ItemSet,
         failure: PreconditionFailure,
+        sure: boolean,
         under: readonly TypeId[] | undefined,
     ): string {
         const carriers = (under ?? []).map((t) => `"${this.ctx.registry.typeLabel(t)}"`);
@@ -661,7 +664,7 @@ class Checker {
             carriers.length > 0
                 ? `\nThis is so where the item has ${carriers.join(" and ")}, which it may have here — settle it with an 'if has' first.`
                 : "";
-        return preconditionMessage(summaryOf(s), failure) + where;
+        return preconditionMessage(summaryOf(s), failure, sure) + where;
     }
 
     // --- if / else -----------------------------------------------------------
