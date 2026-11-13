@@ -86,11 +86,11 @@ item {
   notables it can roll (`enchant: 8 "lightning damage"` makes `has "sadist"` possible). A
   cluster jewel without it, or with another size's, is an error.
 - `corrupted` marks a
-  [corrupted item](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items), which
-  takes no craft but an `unveil`
+  [corrupted item](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items), on
+  which a craft can use only an `unveil`
   ([Veiled modifier § Version history](https://www.poewiki.net/wiki/Veiled_modifier#Version_history))
   and a `locus`, which may destroy it; `twice corrupted` one a `locus` has corrupted again,
-  which takes no further craft (`QUESTIONS.md` Q32).
+  on which it can use neither (`QUESTIONS.md` Q32).
 
 An unknown or ambiguous name is reported on the item block before any step is checked.
 

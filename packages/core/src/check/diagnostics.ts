@@ -282,7 +282,7 @@ export function preconditionMessage(
                 if (!state.corrupted.has(true)) {
                     return `The item ${is} twice corrupted — a twice-corrupted item takes no further craft.`;
                 }
-                return `The item ${is} corrupted — a corrupted item takes only an unveil and the Corruption Altar${state.corrupted.has("twice") ? ", and a twice-corrupted one neither of them" : ""}.`;
+                return `The item ${is} corrupted — of the steps a craft can use, a corrupted item takes only an unveil and the Corruption Altar${state.corrupted.has("twice") ? ", and a twice-corrupted one neither" : ""}.`;
             case "eldritchPresent":
                 return `${failure.what} cannot be used on an item with an eldritch implicit — this item ${has} ${eldritchLabel(state.eldritch)}.`;
             case "notDominant":

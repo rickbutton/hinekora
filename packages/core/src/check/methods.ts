@@ -503,7 +503,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["vaal"],
         args: [],
-        doc: "vaal — Vaal Orb: corrupt the item; it may stay as it is, gain a corruption implicit or become a Rare with six modifiers, and takes no craft but an unveil and the Corruption Altar afterwards.",
+        doc: "vaal — Vaal Orb: corrupt the item; it may stay as it is, gain a corruption implicit or become a Rare with six modifiers; of the steps a craft can use, only an unveil and the Corruption Altar take it afterwards.",
         build: (_args, a) => vaalOps(a.base),
     },
     {

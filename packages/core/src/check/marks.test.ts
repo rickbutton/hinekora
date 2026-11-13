@@ -127,7 +127,22 @@ describe("influence", () => {
 describe("corruption", () => {
     it("refuses every craft on a corrupted item", () => {
         expect(messages(craft(ring({ corrupted: true }), [op("exalt")])).join("\n")).toContain(
-            "The item is corrupted — a corrupted item takes only an unveil and the Corruption Altar.",
+            "The item is corrupted — of the steps a craft can use, a corrupted item takes only an unveil and the Corruption Altar.",
+        );
+    });
+
+    it("says so of a twice-corrupted item among the corrupted ones", () => {
+        const start = item({
+            base: "Iron Ring",
+            ilvl: 100,
+            rarity: "rare",
+            corrupted: true,
+            prefixes: ["life"],
+            suffixes: ["random"],
+        });
+        const c = craft(start, [iff(has("cold"), [op("locus")]), op("exalt")]);
+        expect(messages(c).join("\n")).toContain(
+            "The item is corrupted — of the steps a craft can use, a corrupted item takes only an unveil and the Corruption Altar, and a twice-corrupted one neither.",
         );
     });
 
