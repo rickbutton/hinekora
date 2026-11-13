@@ -12,12 +12,24 @@ import { fileURLToPath } from "node:url";
 
 const here = fileURLToPath(new URL("../..", import.meta.url));
 
+/** The environment without the variables that point git at a repository: inside a
+ *  git hook they name the repository the hook runs for, not the one this file is in. */
+export function ownRepositoryEnv() {
+    const keep = ([name]) => !name.startsWith("GIT_") || name === "GIT_CEILING_DIRECTORIES";
+    return Object.fromEntries(Object.entries(process.env).filter(keep));
+}
+
 function mainCheckout() {
     try {
         const common = execFileSync(
             "git",
             ["rev-parse", "--path-format=absolute", "--git-common-dir"],
-            { cwd: here, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+            {
+                cwd: here,
+                env: ownRepositoryEnv(),
+                encoding: "utf8",
+                stdio: ["ignore", "pipe", "ignore"],
+            },
         ).trim();
         if (basename(common) === ".git") return dirname(common);
     } catch {
