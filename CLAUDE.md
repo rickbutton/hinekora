@@ -44,6 +44,8 @@ outcomes in the checker outside `check/reference/`; it won't scale.
 - **User-facing text speaks the game's language.** Errors, hover, and completion talk
   about items, mods, tiers, and slots, never type-system vocabulary (proofs, predicates
   "holding", abstract state).
+- **The language is "hinekora"**, lowercase except opening a sentence; Hinekora's Lock
+  and the deity keep the capital.
 - **Comments and commit messages stand alone**, understandable from the repo with no
   memory of the session that produced them: no task references ("audit findings", "1/3",
   "as discussed", "per the plan"), progress notes, or point-in-time artifacts (a test
@@ -95,8 +97,8 @@ The user is not always present. Work runs autonomously and the repo carries the 
   probe outputs and data snapshots do not go under `docs/`: keep them out of the tree
   (scratch, a branch or a tag) and land only the conclusions.
 - **Commits.** One logical change per commit; a refactor and a behaviour change are
-  separate commits; each commit passes the gate on its own; the message stands alone (the
-  convention above). Commit as you go; do not push.
+  separate commits; each commit passes the gate on its own. Commit as you go; push
+  `main` after each batch.
 - **Review.** After each batch of commits, run `/review <range>` (the `reviewer` agent, a
   fresh context, `.claude/agents/reviewer.md`). Fix `blocking` and `should-fix` findings
   in follow-up commits before reporting the batch done; a finding you disagree with goes
