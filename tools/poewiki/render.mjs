@@ -19,7 +19,7 @@ if (flags.has("where")) {
     process.exit(0);
 }
 if (!positional.length) {
-    console.error("usage: render.mjs [--force|--stdout|--wikitext|--exists] <title>...");
+    console.error("usage: render.mjs [--force|--stdout|--wikitext|--exists] <title>... | --where");
     process.exit(2);
 }
 

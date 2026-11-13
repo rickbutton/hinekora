@@ -9,7 +9,7 @@
         "node": ">=22"
     },
     "scripts": {
-        "prepare": "git config core.hooksPath .githooks",
+        "prepare": "git config core.hooksPath .githooks || exit 0",
         "build": "tsc -b",
         "clean": "tsc -b --clean",
         "typecheck": "tsc -b",
