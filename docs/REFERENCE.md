@@ -100,3 +100,14 @@ set algebra, the images and a witness item for an error, and stays pure TypeScri
 SMT solver such as Z3 was weighed and set aside: a heavy asynchronous dependency that
 breaks core's purity, diagnostics from unsat cores rather than from the items, and a
 loop's fixpoint still to drive by hand.
+
+---
+
+## 7. The site's voice
+
+The site is written for developers who know type checkers, not for players, and it is
+not a product: no pitch, no call to action. The landing page shows a craft that checks,
+with its cost, before one that is refused, each paragraph beside the block it describes
+and item cards in place of terminal text. A figure names game currencies (an exalt, an
+annul), never the tool's own words; an arrow's label says what happened; a table is
+motivated before it is shown.
