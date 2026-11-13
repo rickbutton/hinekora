@@ -99,10 +99,10 @@ The user is not always present. Work runs autonomously and the repo carries the 
 - **Commits.** One logical change per commit; a refactor and a behaviour change are
   separate commits; each commit passes the gate on its own. Commit as you go; push
   `main` after each batch.
-- **Review.** After each batch of commits, run `/review <range>` (the `reviewer` agent, a
-  fresh context, `.pi/agents/reviewer.md`). Fix `blocking` and `should-fix` findings
-  in follow-up commits before reporting the batch done; a finding you disagree with goes
-  to `docs/QUESTIONS.md` with both positions.
+- **Review.** After each batch of commits, run `/review <range>` (the `reviewer` agent,
+  fresh, with the fronts in `.pi/review.md`). Fix `blocking` and `should-fix` findings
+  in follow-up commits before reporting the batch done; a disputed finding goes to
+  `docs/QUESTIONS.md` with both positions.
 
 ## Working style
 
