@@ -115,7 +115,7 @@ const CHECKS: readonly Check[] = [
     { kind: "notNormal" },
     { kind: "canBeRare" },
     { kind: "notCorrupted" },
-    { kind: "corruptedItem", what: "A Tainted Orb" },
+    { kind: "corruptedItem", what: "The Corruption Altar" },
     { kind: "notTwiceCorrupted", what: "The Corruption Altar" },
     { kind: "noInfluence", what: "An orb" },
     { kind: "influenced", what: "The grove" },
@@ -438,9 +438,11 @@ describe("the eldritch changes", () => {
         expect(took(false)).toBe(false);
         expect(took(true)).toBe(true);
         expect(took("twice")).toBe(false);
-        // A twice-corrupted item takes no Tainted orb either (QUESTIONS.md Q32).
+        // A twice-corrupted item takes no unveil either (QUESTIONS.md Q32).
         const twice = fromItems(s.u, [{ ...item(3, 2), rarity: "rare", corrupted: "twice" }])!;
-        expect(runMethod(twice, L.TAINTED_EXALT).ok).toBe(false);
+        expect(runMethod(twice, L.unveilOps(undefined))).toMatchObject({
+            failure: { kind: "twiceCorrupted", what: "An unveil" },
+        });
         const once = fromItems(s.u, [{ ...item(3, 2), rarity: "rare", corrupted: true }])!;
         expect(runMethod(once, [req({ kind: "notTwiceCorrupted", what: "An orb" })]).ok).toBe(true);
     });
@@ -588,7 +590,7 @@ describe("the rarity and corruption checks' words", () => {
             failure: { kind: "corrupted" },
             sure: true,
         });
-        const what = "A Tainted Chaos Orb";
+        const what = "The Corruption Altar";
         expect(run([corrupted, normal], { kind: "corruptedItem", what })).toMatchObject({
             failure: { kind: "notCorruptedItem", what },
             sure: false,

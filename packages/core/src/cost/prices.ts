@@ -203,18 +203,6 @@ export function unitCost(
             return [{ item: "Orb of Conflict", amount: 1 }];
         case "vaal":
             return [{ item: "Vaal Orb", amount: 1 }];
-        case "tainted":
-            return [
-                {
-                    item:
-                        second === "chaos"
-                            ? "Tainted Chaos Orb"
-                            : second === "exalt"
-                              ? "Tainted Exalted Orb"
-                              : "Tainted Divine Teardrop",
-                    amount: 1,
-                },
-            ];
         case "essence": {
             const spec = registry.resolveEssence(text(args[0]), tierArg(args[1]));
             return spec.ok ? [{ item: spec.value.name, amount: 1 }] : undefined;

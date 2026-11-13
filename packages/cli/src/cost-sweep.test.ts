@@ -190,8 +190,6 @@ describe("a branch the check finds open", () => {
         ["vaal"],
         ['bench "prefixes cannot be changed"', "vaal"],
         ["vaal", "locus"],
-        ["vaal", "tainted exalt"],
-        ["vaal", "tainted chaos"],
     ];
     for (const [i, item] of ITEMS.entries()) {
         it(

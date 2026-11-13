@@ -41,7 +41,7 @@ const FAMILIES = [
         ],
     ],
     ["Influence and the Eldritch", ["ember", "ichor", "eldritch", "dominance", "conflict"]],
-    ["Corruption", ["vaal", "locus", "tainted"]],
+    ["Corruption", ["vaal", "locus"]],
     ["Crafting bench", ["bench"]],
     ["Essences and fossils", ["essence", "fossil"]],
     ["Harvest", ["harvest"]],

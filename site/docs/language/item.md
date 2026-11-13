@@ -93,7 +93,6 @@ the stat of its small passives. A cluster jewel requires it.
 ## Corruption
 
 `corrupted` declares a [corrupted item](https://www.poewiki.net/wiki/Corrupted). The checker
-then rejects every step except the Tainted currencies, such as
-[`tainted exalt`](/docs/operations/tainted-exalt), [`unveil`](/docs/operations/unveil) and
+then rejects every step except [`unveil`](/docs/operations/unveil) and
 [`locus`](/docs/operations/locus). `twice corrupted` declares one the altar has corrupted
 again, which then takes no step.

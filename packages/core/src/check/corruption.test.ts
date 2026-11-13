@@ -154,23 +154,18 @@ describe("the Corruption Altar", () => {
         expect(messages(craft(start, [op("locus"), op("locus")]))).toContain(
             "The Corruption Altar takes no twice-corrupted item — this item is twice corrupted.",
         );
-        expect(messages(craft(start, [op("locus"), words("tainted", "exalt")]))).toContain(
-            "A Tainted Exalted Orb takes no twice-corrupted item — this item is twice corrupted.",
+        expect(messages(craft(start, [op("locus"), words("unveil")]))).toContain(
+            "An unveil takes no twice-corrupted item — this item is twice corrupted.",
         );
         expect(messages(craft(start, [op("locus"), op("chaos")]))).toContain(
             "The item is twice corrupted — a twice-corrupted item takes no further craft.",
         );
     });
 
-    it.each([
-        [["tainted", "chaos"], "A Tainted Chaos Orb"],
-        [["tainted", "exalt"], "A Tainted Exalted Orb"],
-        [["tainted", "divine"], "A Tainted Divine Teardrop"],
-        [["unveil"], "An unveil"],
-    ])("refuses %j on a twice-corrupted item", (step, what) => {
+    it("refuses an unveil on a twice-corrupted item", () => {
         const twice = ring({ corrupted: "twice", prefixes: ["life"], suffixes: ["cold"] });
-        expect(messages(craft(twice, [words(...step)]))).toContain(
-            `${what} takes no twice-corrupted item — this item is twice corrupted.`,
+        expect(messages(craft(twice, [words("unveil")]))).toContain(
+            "An unveil takes no twice-corrupted item — this item is twice corrupted.",
         );
     });
 
@@ -201,102 +196,16 @@ describe("a corruption's reforge", () => {
     });
 });
 
-describe("the Tainted currency", () => {
-    const corruptedRing = ring({ corrupted: true, prefixes: ["life"], suffixes: ["cold"] });
-
-    it("needs a corrupted item", () => {
-        expect(messages(craft(ring(), [words("tainted", "chaos")]))).toContain(
-            "A Tainted Chaos Orb needs a corrupted item — this item is not corrupted",
-        );
-    });
-
-    it("chaos: reforges, or strips to the rarity the survivors allow", () => {
-        const r = run(craft(corruptedRing, [words("tainted", "chaos")]));
-        expect(r.diagnostics).toEqual([]);
-        expect(v.rarities(r.finalState!)).toEqual(new Set(["normal", "rare"]));
-        expect(v.counts(r.finalState!).total).toEqual([0, 6]);
-    });
-
-    it("exalt: adds a modifier or removes one", () => {
-        const r = run(craft(corruptedRing, [words("tainted", "exalt")]));
-        expect(r.diagnostics).toEqual([]);
-        expect(v.counts(r.finalState!).total).toEqual([1, 3]);
-        expect(guaranteedTypes(r.finalState!).has(LIFE_T1.type)).toBe(false);
-    });
-
-    it("exalt: a full item takes it, and is left one modifier short", () => {
-        const three = ["random", "random", "random"];
-        const full = ring({ corrupted: true, prefixes: three, suffixes: three });
-        const r = run(craft(full, [words("tainted", "exalt")]));
-        expect(r.diagnostics).toEqual([]);
-        expect(v.counts(r.finalState!).total).toEqual([5, 5]);
-    });
-
-    it("chaos: a protected side is not kept, and a fractured modifier leaves a Magic item", () => {
-        const guarded = ring({
-            corrupted: true,
-            prefixes: [PROTECT_SUFFIXES_CARRIER.id],
-            suffixes: ["cold"],
-        });
-        const r = run(craft(guarded, [words("tainted", "chaos")]));
-        expect(r.diagnostics).toEqual([]);
-        expect(guaranteedTypes(r.finalState!).has(COLD_RESIST.type)).toBe(false);
-        expect(v.rarities(r.finalState!)).toEqual(new Set(["normal", "rare"]));
-
-        const locked = ring({ corrupted: true, suffixes: [{ mod: "cold", fractured: true }] });
-        const f = run(craft(locked, [words("tainted", "chaos")]));
-        expect(v.rarities(f.finalState!)).toEqual(new Set(["magic", "rare"]));
-    });
-
-    it("chaos: a fractured prefix beside a fractured suffix may leave Magic, which a second refuses", () => {
-        const locked = ring({
-            corrupted: true,
-            prefixes: [{ mod: "life", fractured: true }],
-            suffixes: [{ mod: "cold", fractured: true }],
-        });
-        const r = run(craft(locked, [words("tainted", "chaos")]));
-        expect(r.diagnostics).toEqual([]);
-        expect(v.rarities(r.finalState!)).toEqual(new Set(["magic", "rare"]));
-        expect(
-            messages(craft(locked, [words("tainted", "chaos"), words("tainted", "chaos")])),
-        ).toContain("Requires a Rare item — this item may be");
-        // The plain scour keeps the survivor-count rule: two survivors stay Rare.
-        const scoured = run(craft(ring({ ...locked, corrupted: false }), [op("scour")]));
-        expect(v.rarities(scoured.finalState!)).toEqual(new Set(["rare"]));
-    });
-
-    it("needs the corruption on every item", () => {
+describe("a step that needs a corrupted item", () => {
+    it("is refused where only some items are corrupted", () => {
         // Whether the reforge rolled T1 life is unknown, so only some items are
         // corrupted.
-        const c = craft(ring(), [
-            op("chaos"),
-            iff(has("life", 1), [op("vaal")]),
-            words("tainted", "exalt"),
-        ]);
+        const c = craft(ring(), [op("chaos"), iff(has("life", 1), [op("vaal")]), op("locus")]);
         expect(messages(c)).toContain("may not be corrupted");
     });
 
-    it("divine: forgets a tier fact about a modifier that may be natural", () => {
-        // A life modifier may be the bench row or a natural one; a negative tier
-        // fact about it must not survive the Teardrop.
-        const c = craft(ring({ corrupted: true, prefixes: ["life"] }), [
-            iff(notp(has("life", 1)), [], []),
-            words("tainted", "divine"),
-            iff(has("life", 1), [], []),
-        ]);
-        const text = messages(c);
-        expect(text).not.toContain("'if' branch can never run: has \"life\" t1");
-    });
-
-    it("divine: forgets every tier but a crafted modifier's", () => {
-        const benched = ring({ corrupted: true, prefixes: ["life", PROTECT_SUFFIXES_CARRIER.id] });
-        const before = run(craft(benched, [])).finalState!;
-        expect(rowIds(before, LIFE_T1.type)).toEqual(new Set([LIFE_T1.id]));
-        const r = run(craft(benched, [words("tainted", "divine")]));
-        expect(r.diagnostics).toEqual([]);
-        expect(rowIds(r.finalState!, LIFE_T1.type)).toEqual(new Set([LIFE_T1.id, LIFE_T2.id]));
-        expect(rowIds(r.finalState!, PROTECT_SUFFIXES_CARRIER.type)).toEqual(
-            new Set([PROTECT_SUFFIXES_CARRIER.id]),
-        );
+    it("cannot be a Tainted orb, which is not a method", () => {
+        const c = craft(ring({ corrupted: true }), [words("tainted", "chaos")]);
+        expect(messages(c)).toBe('Unknown operation "tainted chaos".');
     });
 });

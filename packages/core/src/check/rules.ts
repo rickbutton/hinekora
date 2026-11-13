@@ -50,8 +50,8 @@ export interface Rules {
      *  what one bars (`Selector`). */
     readonly blocksSourced: boolean;
     /** Whether the metamods govern the method: false after `unprotect`, which
-     *  then also empties `protected` (a Tainted Chaos Orb, `QUESTIONS.md`
-     *  Q33). It says nothing to a fill, which reads the carriers on the item
+     *  then also empties `protected` (a Tainted Chaos Orb). It
+     *  says nothing to a fill, which reads the carriers on the item
      *  as it draws either way. */
     readonly governed: boolean;
     /** The method uses memory strands up, so its fills lay down only the

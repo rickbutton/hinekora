@@ -188,7 +188,7 @@ describe("the Divine Orb's reroll", () => {
     }
 });
 
-describe("the Tainted Divine Teardrop's tier shift", () => {
+describe("the tier shift either way", () => {
     const catalogues: readonly Plan[] = [
         { seed: 9100, opts: { types: 4 }, values: true, fractured: true, include: longestLadder },
         {
@@ -224,7 +224,6 @@ describe("the Tainted Divine Teardrop's tier shift", () => {
         it(`is exact on catalogue ${plan.seed}`, () => {
             exactOn(plan, () => [relax(false)]);
             exactOn(plan, () => [relax(true)]);
-            exactOn({ ...plan, corrupted: true }, () => L.TAINTED_DIVINE);
         });
     }
 });
@@ -429,7 +428,7 @@ describe("the reroll's rules", () => {
     });
 });
 
-describe("the teardrop's rules", () => {
+describe("the tier shift's rules", () => {
     const s = setup({
         seed: 9600,
         opts: { types: 2, harvest: true, essenceOnly: true },
@@ -439,16 +438,16 @@ describe("the teardrop's rules", () => {
         cItem({ rarity: "rare", corrupted: true, mods: [on(s.cat, id, marks)] });
 
     it("moves a tier up, down or not at all, never past an end", () => {
-        expect(rowsAt(outcomes(s, one("FireRes2"), L.TAINTED_DIVINE))).toEqual([
+        expect(rowsAt(outcomes(s, one("FireRes2"), [relax(false)]))).toEqual([
             "FireRes1",
             "FireRes2",
             "FireRes3",
         ]);
-        expect(rowsAt(outcomes(s, one("FireRes1"), L.TAINTED_DIVINE))).toEqual([
+        expect(rowsAt(outcomes(s, one("FireRes1"), [relax(false)]))).toEqual([
             "FireRes1",
             "FireRes2",
         ]);
-        expect(rowsAt(outcomes(s, one("FireRes3"), L.TAINTED_DIVINE))).toEqual([
+        expect(rowsAt(outcomes(s, one("FireRes3"), [relax(false)]))).toEqual([
             "FireRes2",
             "FireRes3",
         ]);
@@ -456,12 +455,12 @@ describe("the teardrop's rules", () => {
 
     it("keeps the value of a modifier it does not move", () => {
         const item = one("FireRes2", { value: lowest(rowNamed(s.cat, "FireRes2"))! + 1 });
-        const out = outcomes(s, item, L.TAINTED_DIVINE);
+        const out = outcomes(s, item, [relax(false)]);
         expect(out.filter((x) => x.mods[0]!.row === "FireRes2")).toEqual([item]);
     });
 
     it("leaves a crafted modifier, unless told to move them", () => {
-        expect(outcomes(s, one("BenchFireRes", { crafted: true }), L.TAINTED_DIVINE)).toEqual([
+        expect(outcomes(s, one("BenchFireRes", { crafted: true }), [relax(false)])).toEqual([
             one("BenchFireRes", { crafted: true }),
         ]);
         const natural = one("FireRes2", { crafted: true });
@@ -480,7 +479,7 @@ describe("the teardrop's rules", () => {
             corrupted: true,
             mods: [cMod(essence.id, lowest(essence))],
         });
-        expect(outcomes(s, item, L.TAINTED_DIVINE)).toEqual([item]);
+        expect(outcomes(s, item, [relax(false)])).toEqual([item]);
     });
 
     it("moves each modifier on its own", () => {
@@ -489,7 +488,7 @@ describe("the teardrop's rules", () => {
             corrupted: true,
             mods: [on(s.cat, "FireRes2"), on(s.cat, "ColdRes2")],
         });
-        const pairs = outcomes(s, item, L.TAINTED_DIVINE).map((x) =>
+        const pairs = outcomes(s, item, [relax(false)]).map((x) =>
             x.mods
                 .map((m) => m.row)
                 .sort()
@@ -692,7 +691,7 @@ function rebuilt(cat: Catalog, base = cat.base, more: readonly Mod[] = []): Cata
 const corruptRare = (mods: readonly CMod[], influences: InfluenceKey = NO_INFLUENCE): CItem =>
     cItem({ rarity: "rare", corrupted: true, mods, influences });
 
-describe("the teardrop's ladders", () => {
+describe("the tier shift's ladders", () => {
     it("is exact where a ladder depends on the item's influences", () => {
         exactOn(
             {
@@ -703,23 +702,23 @@ describe("the teardrop's ladders", () => {
                 rows: 4,
                 corrupted: true,
             },
-            () => L.TAINTED_DIVINE,
+            () => [relax(false)],
         );
     });
 
     it("moves an influence's row only on an item of that influence", () => {
         const s = setup({ seed: 9160, opts: { types: 2, influence: true, elevated: true } });
         const a1 = [on(s.cat, "HunterA1")];
-        expect(rowsAt(outcomes(s, corruptRare(a1), L.TAINTED_DIVINE))).toEqual(["HunterA1"]);
+        expect(rowsAt(outcomes(s, corruptRare(a1), [relax(false)]))).toEqual(["HunterA1"]);
         const hunter = influenceKey(["hunter"]);
-        expect(rowsAt(outcomes(s, corruptRare(a1, hunter), L.TAINTED_DIVINE))).toEqual([
+        expect(rowsAt(outcomes(s, corruptRare(a1, hunter), [relax(false)]))).toEqual([
             "HunterA1",
             "HunterA2",
         ]);
         // The Shaper's row of the type is a ladder of its own.
         const both = influenceKey(["hunter", "shaper"]);
         const shaper = [on(s.cat, "ShaperA1")];
-        expect(rowsAt(outcomes(s, corruptRare(shaper, both), L.TAINTED_DIVINE))).toEqual([
+        expect(rowsAt(outcomes(s, corruptRare(shaper, both), [relax(false)]))).toEqual([
             "ShaperA1",
         ]);
     });
@@ -743,12 +742,12 @@ describe("the teardrop's ladders", () => {
         const u = harnessUniverse(cat);
         const s: Setup = { cat, u, states: [] };
         const one = (id: string) => corruptRare([on(cat, id)]);
-        expect(rowsAt(outcomes(s, one("Twin1"), L.TAINTED_DIVINE))).toEqual([
+        expect(rowsAt(outcomes(s, one("Twin1"), [relax(false)]))).toEqual([
             "Twin1",
             "Twin2a",
             "Twin2b",
         ]);
-        expect(rowsAt(outcomes(s, one("Twin2a"), L.TAINTED_DIVINE))).toEqual([
+        expect(rowsAt(outcomes(s, one("Twin2a"), [relax(false)]))).toEqual([
             "Twin1",
             "Twin2a",
             "Twin3",
@@ -763,17 +762,15 @@ describe("the teardrop's ladders", () => {
     it("moves a modifier above the item's level", () => {
         const s = setup({ seed: 9180, opts: { types: 2, harvest: true, ilvl: 40 } });
         expect(s.cat.ilvl).toBeLessThan(rowNamed(s.cat, "FireRes2").minLevel);
-        const out = outcomes(s, corruptRare([on(s.cat, "FireRes1")]), L.TAINTED_DIVINE);
+        const out = outcomes(s, corruptRare([on(s.cat, "FireRes1")]), [relax(false)]);
         expect(rowsAt(out)).toEqual(["FireRes1", "FireRes2"]);
     });
 
     it("moves a fractured modifier, fractured still", () => {
         const s = setup({ seed: 9190, opts: { types: 2, harvest: true } });
-        const out = outcomes(
-            s,
-            corruptRare([on(s.cat, "FireRes2", { fractured: true })]),
-            L.TAINTED_DIVINE,
-        );
+        const out = outcomes(s, corruptRare([on(s.cat, "FireRes2", { fractured: true })]), [
+            relax(false),
+        ]);
         expect(rowsAt(out)).toEqual(["FireRes1", "FireRes2", "FireRes3"]);
         expect(out.every((x) => x.mods.every((m) => m.fractured))).toBe(true);
     });
@@ -844,7 +841,7 @@ describe("the internal errors", () => {
     };
     const fire2 = cItem({ rarity: "rare", corrupted: true, mods: [on(cat, "FireRes2")] });
 
-    it("a teardrop's row the universe has no value for", () => {
+    it("a tier shift's row the universe has no value for", () => {
         const u = lacking("FireRes3");
         expect(() => runMethod(fromItems(u, [fire2])!, [relax(false)])).toThrow(InternalError);
     });

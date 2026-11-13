@@ -343,7 +343,13 @@ describe("the library's methods that remove", () => {
         }
     });
 
-    it("are exact end to end: the Harvest, the Bestiary and the Tainted orbs", () => {
+    it("are exact end to end: the Harvest, the Bestiary, an add or a removal, an unprotected reforge", () => {
+        const add: Transform = { kind: "fill", pool: natural, count: { kind: "add", n: [1, 1] } };
+        const reforge: Transform = {
+            kind: "fill",
+            pool: natural,
+            count: { kind: "reforge", n: [4, 6] },
+        };
         for (const p of few(plans(10100, { rows: 3, rarities: rare }))) {
             exactOn(p, () => L.harvestReforgeOps(TagId("attack")));
             exactOn(p, () => L.harvestAugmentOps(TagId("caster")));
@@ -351,10 +357,19 @@ describe("the library's methods that remove", () => {
             exactOn(p, () => L.beastAddOps("suffix", 45));
             exactOn({ ...p, fractured: true }, () => [
                 req({ kind: "rarity", rarity: "rare" }),
-                { kind: "corrupt" },
-                ...L.TAINTED_EXALT,
+                { kind: "either", branches: [[add], [remove(random())]] },
             ]);
-            exactOn({ ...p, fractured: true }, () => [{ kind: "corrupt" }, ...L.TAINTED_CHAOS]);
+            exactOn({ ...p, fractured: true }, () => [
+                req({ kind: "rarity", rarity: "rare" }),
+                unprotect,
+                {
+                    kind: "either",
+                    branches: [
+                        [strip, reforge],
+                        [strip, { kind: "rarity", rarity: "lowest" }],
+                    ],
+                },
+            ]);
         }
     });
 

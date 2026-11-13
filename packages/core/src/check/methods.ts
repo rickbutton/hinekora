@@ -57,9 +57,6 @@ import {
     influenceExaltOps,
     locusOps,
     resonatorOps,
-    TAINTED_CHAOS,
-    TAINTED_DIVINE,
-    TAINTED_EXALT,
     vaalOps,
     RESTORE,
     unveilOps,
@@ -506,7 +503,7 @@ export const METHODS: readonly Method[] = [
     {
         words: ["vaal"],
         args: [],
-        doc: "vaal — Vaal Orb: corrupt the item; it may stay as it is, gain a corruption implicit or become a Rare with six modifiers, and takes no craft but the Tainted currency, an unveil and the Corruption Altar afterwards.",
+        doc: "vaal — Vaal Orb: corrupt the item; it may stay as it is, gain a corruption implicit or become a Rare with six modifiers, and takes no craft but an unveil and the Corruption Altar afterwards.",
         build: (_args, a) => vaalOps(a.base),
     },
     {
@@ -514,24 +511,6 @@ export const METHODS: readonly Method[] = [
         args: [],
         doc: "locus — the Corruption Altar: corrupt a corrupted weapon, armour piece, piece of jewellery or quiver a second time, making it twice corrupted; it may stay as it is, gain a corruption implicit, or be destroyed, ending the craft. The checker refuses every further step on a twice-corrupted item.",
         build: () => locusOps(),
-    },
-    {
-        words: ["tainted", "chaos"],
-        args: [],
-        doc: "tainted chaos — Tainted Chaos Orb: reforge a corrupted Rare, or strip it to the rarity its survivors allow.",
-        build: () => TAINTED_CHAOS,
-    },
-    {
-        words: ["tainted", "exalt"],
-        args: [],
-        doc: "tainted exalt — Tainted Exalted Orb: add a modifier to a corrupted Rare, or remove one.",
-        build: () => TAINTED_EXALT,
-    },
-    {
-        words: ["tainted", "divine"],
-        args: [],
-        doc: "tainted divine — Tainted Divine Teardrop: each modifier of a corrupted Rare may move a tier either way, the crafted ones excepted.",
-        build: () => TAINTED_DIVINE,
     },
     {
         words: ["essence"],

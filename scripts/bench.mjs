@@ -45,9 +45,7 @@ const WIDE = {
 }
 vaal
 if has "maximum life" {
-    tainted divine
-} else {
-    tainted chaos
+    locus
 }`,
     "wide: strands": `item {
     base: "Vermillion Ring"

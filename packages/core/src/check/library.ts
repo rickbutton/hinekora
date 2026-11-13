@@ -45,9 +45,8 @@ const veiledPlaceholder: PoolSpec = { kind: "veiledPlaceholder" };
 const influencePool: PoolSpec = { kind: "influence" };
 const influence = (change: InfluenceChange): Transform => ({ kind: "influence", change });
 
-/** A corrupted item takes no craft but the Tainted currency (Corrupted §
- *  Modifying corrupted items), so every other method but an unveil and the
- *  altar opens with this. */
+/** A corrupted item takes almost no craft (Corrupted § Modifying corrupted
+ *  items), so every method but an unveil and the altar opens with this. */
 const notCorrupted = require({ kind: "notCorrupted" });
 /** An influenced item cannot be fractured (Influenced item § Mechanics). */
 const noInfluence = (what: string): Op => require({ kind: "noInfluence", what });
@@ -73,12 +72,10 @@ const MAGIC_REFORGE: Range = [1, 2];
  *  methods consuming memory strands). An Exalted Orb's depends on the modifiers
  *  on the item. The page's rows are read one count lower than it prints them:
  *  recorded orbs used up 33 strands at four modifiers and 38 at five, where
- *  it gives 32 and 34, and 38 for the Tainted orb's six; a ceiling too high is
- *  the safe side. The Foulborn Exalted Orb's is known at five modifiers only
+ *  it gives 32 and 34; a ceiling too high is the safe side. The Foulborn Exalted Orb's is known at five modifiers only
  *  and taken the same below (QUESTIONS.md Q68). */
 const strands = (consume: number | readonly number[]): Op => ({ kind: "strands", consume });
 const EXALT_STRANDS: readonly number[] = [16, 22, 26, 32, 34, 38];
-const TAINTED_EXALT_STRANDS = EXALT_STRANDS;
 const FOULBORN_STRANDS = { augment: 32, regal: 48, exalt: 62 } as const;
 
 /** The currencies by name (Currency § Currency items). */
@@ -323,8 +320,8 @@ const either = (...branches: readonly (readonly Transform[])[]): Op => ({
 const corruptedItem = (what: string): Op => require({ kind: "corruptedItem", what });
 /** A twice-corrupted item takes no further craft: the sources name only the
  *  altar's refusal of one (Version 3.30.0, Incursion and Atziri), none lets
- *  the Tainted currency or an unveil act on one, and refusing them cannot
- *  accept a craft the game refuses (`QUESTIONS.md` Q32). */
+ *  an unveil act on one, and refusing it cannot accept a craft the game
+ *  refuses (`QUESTIONS.md` Q32). */
 const onceCorrupted = (what: string): Op => require({ kind: "notTwiceCorrupted", what });
 
 /** A corruption implicit takes the place of one of the item's implicits, an
@@ -384,39 +381,6 @@ export function locusOps(): readonly Op[] {
         either([], [corruptionImplicit], end),
     ];
 }
-
-/** A Tainted Chaos Orb: a corrupted Rare is reforged, or stripped to the
- *  rarity its survivors allow; a protected side is not kept, since the wiki
- *  names the fractured modifier as the one survivor (Tainted Chaos Orb §
- *  Mechanics; the reforge half is `QUESTIONS.md` Q33). A fractured prefix
- *  beside a fractured suffix is Magic by that page and Rare by the Orb of
- *  Scouring's, so the strip leaves either. */
-export const TAINTED_CHAOS: readonly Op[] = [
-    corruptedItem("A Tainted Chaos Orb"),
-    onceCorrupted("A Tainted Chaos Orb"),
-    isRare,
-    { kind: "unprotect" },
-    either([strip(), fill(natural, reforge(RARE_REFORGE))], [strip(), rarity("lowest")]),
-    strands(60),
-];
-
-export const TAINTED_EXALT: readonly Op[] = [
-    corruptedItem("A Tainted Exalted Orb"),
-    onceCorrupted("A Tainted Exalted Orb"),
-    isRare,
-    either([fill(natural, add([1, 1]))], [remove(anyMod)]),
-    strands(TAINTED_EXALT_STRANDS),
-];
-
-/** A Tainted Divine Teardrop: each modifier of a corrupted Rare may move a
- *  tier either way, the crafted ones excepted (Tainted Divine Teardrop §
- *  Mechanics); the checker forgets their tiers. */
-export const TAINTED_DIVINE: readonly Op[] = [
-    corruptedItem("A Tainted Divine Teardrop"),
-    onceCorrupted("A Tainted Divine Teardrop"),
-    isRare,
-    { kind: "relax", crafted: false },
-];
 
 const ELDRITCH_NAME: Readonly<Record<EldritchSide, string>> = {
     exarch: "Eldritch Ember",

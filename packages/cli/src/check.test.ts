@@ -71,15 +71,15 @@ exalt`);
         expect(r.output).toContain("✗ 1 error");
     });
 
-    it("refuses a Tainted orb on an item the Corruption Altar corrupted again", () => {
+    it("refuses a second Corruption Altar on an item it corrupted again", () => {
         const r =
             run(`item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] corrupted }
 locus
-tainted chaos`);
+locus`);
         expect(r.ok).toBe(false);
         expect(r.output).toContain("test.craft:3:1: error:");
         expect(r.output).toContain(
-            "A Tainted Chaos Orb takes no twice-corrupted item — this item is twice corrupted.",
+            "The Corruption Altar takes no twice-corrupted item — this item is twice corrupted.",
         );
     });
 

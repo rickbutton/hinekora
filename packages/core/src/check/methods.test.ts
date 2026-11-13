@@ -20,9 +20,6 @@ import {
     harvestReforgeOps,
     locusOps,
     resonatorOps,
-    TAINTED_CHAOS,
-    TAINTED_DIVINE,
-    TAINTED_EXALT,
     unveilOps,
     vaalOps,
 } from "./library.js";
@@ -64,7 +61,7 @@ const registry = buildRegistry({
 });
 
 /** Every method but an unveil settles corruption first: refused on a corrupted
- *  item, or, for the Tainted currency, required. */
+ *  item, or, for the Corruption Altar, required. */
 const opensWithCorruptionCheck = (ops: readonly Op[]): boolean =>
     ops[0]?.kind === "require" &&
     (ops[0].check.kind === "notCorrupted" || ops[0].check.kind === "corruptedItem");
@@ -92,9 +89,6 @@ describe("every method refuses a corrupted item first", () => {
             veiledExalt: VEILED_EXALT,
             vaal: vaalOps(RING_BASE),
             locus: locusOps(),
-            taintedChaos: TAINTED_CHAOS,
-            taintedExalt: TAINTED_EXALT,
-            taintedDivine: TAINTED_DIVINE,
         };
         for (const [name, ops] of Object.entries(sequences)) {
             expect(opensWithCorruptionCheck(ops), name).toBe(true);

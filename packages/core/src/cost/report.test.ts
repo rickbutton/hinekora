@@ -951,35 +951,6 @@ describe("the cost of a craft", () => {
         expect(bricked!.branch).toBeCloseTo(1, 9);
     });
 
-    it("a Tainted Exalted Orb is taken at even odds, and its step says so", () => {
-        const tainted = { ...op("tainted"), words: ["tainted", "exalt"] };
-        const on = (prefixes: string[], suffixes: string[]) =>
-            report(
-                craft(
-                    item({
-                        base: "Iron Ring",
-                        ilvl: 84,
-                        rarity: "rare",
-                        prefixes,
-                        suffixes,
-                        corrupted: true,
-                    }),
-                    [tainted, iff(has("IncreasedLife1"), [stop()])],
-                ),
-            );
-        // Two modifiers: removed half the time, the life half of those.
-        const r = on(["IncreasedLife1"], ["FireResist1"]);
-        expect(r.steps[0]!.note).toMatch(/even odds.*no source states/);
-        expect(r.steps[1]!.note).toBeUndefined();
-        expect(r.steps[1]!.branch).toBeCloseTo(3 / 4, 9);
-        // A full item has nothing to add: one of its six goes.
-        const full = on(
-            ["IncreasedLife1", "IncreasedMana1", "IncreasedArmour1"],
-            ["FireResist1", "ColdResist1", "LightningResist1"],
-        );
-        expect(full.steps[1]!.branch).toBeCloseTo(5 / 6, 9);
-    });
-
     it("the snapshot prices the total in chaos and divine", () => {
         const prices: Prices = {
             league: "Test",

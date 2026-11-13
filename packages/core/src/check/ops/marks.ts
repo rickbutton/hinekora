@@ -73,7 +73,7 @@ function lowestRarity(base: Base, had: number, prefix: number, suffix: number): 
 type RarityRule = (base: Base, had: number, prefix: number, suffix: number) => readonly number[];
 
 const SURVIVORS: RarityRule = (b, h, p, s) => [survivorsRarity(b, h, p, s)];
-// The scour's rarity or the lowest eligible one: the pages disagree (QUESTIONS.md Q33).
+// The scour's rarity or the lowest eligible one: the pages disagree.
 const LOWEST: RarityRule = (b, h, p, s) => [survivorsRarity(b, h, p, s), lowestRarity(b, h, p, s)];
 
 /** Past every cap a base has: a count beyond it holds at no rarity. */

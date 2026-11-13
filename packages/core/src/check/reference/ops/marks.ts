@@ -111,7 +111,7 @@ export const transforms: RefTransformTable = {
         apply: (op, item, { ctx }) => {
             if (op.rarity === "survivors") return [{ ...item, rarity: survivorsRarity(ctx, item) }];
             if (op.rarity === "lowest") {
-                // The scour's rarity or the lowest eligible one: the pages disagree (QUESTIONS.md Q33).
+                // The scour's rarity or the lowest eligible one: the pages disagree.
                 return [
                     { ...item, rarity: survivorsRarity(ctx, item) },
                     { ...item, rarity: lowestRarity(ctx, item) },

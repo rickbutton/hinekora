@@ -10,8 +10,8 @@
  *   a suffix or both; Exalted Orb, Regal Orb: one), each held to what the
  *   rarity holds on the base. Draws that run dry after the least leave the
  *   item as they found it; before it, the item cannot take the currency and
- *   has no outcome (ops/handler.ts), as a full item under a Tainted Exalted
- *   Orb's add. A transmuted Magic Simplex holds none and keeps none (Simplex
+ *   has no outcome (ops/handler.ts), as a full item under an add, which in
+ *   an `either` leaves only the other branches. A transmuted Magic Simplex holds none and keeps none (Simplex
  *   Amulet § Special Crafting Considerations).
  * - `reforge`: the total it leaves is one of ops/fill.ts `reforgeTotals`,
  *   what the strip left counting toward it (Chaos Orb § Mechanics: "a rare

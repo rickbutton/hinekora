@@ -27,7 +27,6 @@ import type { Dd } from "../check/dd.js";
 import { narrow as narrowTo, stateOf, type ItemSet } from "../check/state.js";
 import type { ModValue, Universe } from "../check/universe.js";
 import {
-    capsOver,
     counts as countsOf,
     eldritchPairs,
     eldritchTypes,
@@ -174,18 +173,10 @@ const OUTCOME_ODDS: Readonly<
     // Incursion and Atziri): no change one in four, a corruption implicit one in four,
     // the item destroyed two in four (`ASSUMED_ODDS`, QUESTIONS.md Q32).
     locus: (branches) => branches.map((b) => (endsCraft(b) ? 2 : 1)),
-    // No source gives the odds: adding and removing are taken alike, and a
-    // full item, with nothing to add, as losing a modifier (`ASSUMED_ODDS`).
-    "tainted exalt": (branches, item) => {
-        const full = countsOf(item).total[0] >= capsOver(item, Math.max).total;
-        return branches.map((b) => (full && b.some((op) => op.kind === "fill") ? 0 : 1));
-    },
 };
 
 /** What a step whose odds no source states is taken to do, for its note. */
 const ASSUMED_ODDS: Readonly<Record<string, string>> = {
-    "tainted exalt":
-        "a Tainted Exalted Orb is taken to add or remove a modifier at even odds, and to remove one from a full item; no source states its odds",
     locus: "the Corruption Altar is taken to destroy the item two times in four, as its old reforge and destruction did together; no source states its odds",
     dominance:
         "an Orb of Dominance is taken to remove each influenced modifier it can reach alike, and to raise each of the others alike; no source states its odds",

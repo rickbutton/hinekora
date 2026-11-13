@@ -127,7 +127,7 @@ describe("influence", () => {
 describe("corruption", () => {
     it("refuses every craft on a corrupted item", () => {
         expect(messages(craft(ring({ corrupted: true }), [op("exalt")])).join("\n")).toContain(
-            "The item is corrupted — a corrupted item takes only the Tainted currency",
+            "The item is corrupted — a corrupted item takes only an unveil and the Corruption Altar.",
         );
     });
 

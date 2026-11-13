@@ -37,7 +37,6 @@ import {
     STAFFY_VALUE,
     TIERED_CATALOG,
 } from "../__fixtures__/mods.js";
-import type { OperationStmt } from "../ast/ast.js";
 import type { Rarity } from "../model/ids.js";
 import type { EssenceSpec } from "../model/sources.js";
 
@@ -380,34 +379,5 @@ describe("has <mod> <cmp> <n>", () => {
     it("the Divine Orb is refused on a Normal item", () => {
         const r = check(craft(ring([], "normal"), [op("divine")]), ctx);
         expect(r.diagnostics[0]?.message).toContain("Requires a Magic or Rare item");
-    });
-});
-
-describe("a Tainted Divine Teardrop on a low item level", () => {
-    it("may raise a value past the tiers the item level rolls", () => {
-        // The Teardrop is bounded by the base, not the item level (Tainted
-        // Divine Teardrop § Mechanics), so a value no tier at item level 20
-        // reaches becomes possible.
-        const teardrop: OperationStmt = {
-            kind: "operation",
-            words: ["tainted", "divine"],
-            args: [],
-            span: {
-                start: { offset: 0, line: 1, column: 1 },
-                end: { offset: 0, line: 1, column: 1 },
-            },
-        };
-        const low = item({
-            base: "IronRing",
-            ilvl: 20,
-            rarity: "rare",
-            prefixes: [MAXLIFE_T3.id],
-            corrupted: true,
-        });
-        const branch = iff(hasValue("maximum life", ">=", 70), [stop()]);
-        const before = check(craft(low, [branch]), ctx).diagnostics.map((d) => d.message);
-        expect(before).toEqual([expect.stringContaining("can never run")]);
-        const after = check(craft(low, [teardrop, branch]), ctx).diagnostics;
-        expect(after).toEqual([]);
     });
 });

@@ -126,10 +126,10 @@ export type Check =
     /** No item has a fractured modifier; `what` says, for a craft that is not
      *  itself a fracture, why it refuses one. */
     | { readonly kind: "noFracture"; readonly what?: string }
-    /** No item is corrupted; every method but the Tainted
-     *  currency and an unveil requires it (Corrupted § Modifying corrupted items). */
+    /** No item is corrupted; every method but an unveil and the Corruption
+     *  Altar requires it (Corrupted § Modifying corrupted items). */
     | { readonly kind: "notCorrupted" }
-    /** Every item is corrupted (the Tainted currency, the Corruption Altar). */
+    /** Every item is corrupted (the Corruption Altar). */
     | { readonly kind: "corruptedItem"; readonly what: string }
     /** No item is twice corrupted (the Corruption Altar). */
     | { readonly kind: "notTwiceCorrupted"; readonly what: string }
@@ -200,7 +200,7 @@ export type Op =
     /** Every modifier goes but the protected sides' and the fractured one. */
     | { readonly kind: "strip" }
     /** The metamods no longer govern the rest of the method (a Tainted Chaos
-     *  Orb ignores them, `QUESTIONS.md` Q33). */
+     *  Orb ignores them). */
     | { readonly kind: "unprotect" }
     /** That side alone is kept through the rest of the method, in place of
      *  the item's own protections (an Eldritch Chaos Orb rerolls the other). */
@@ -234,7 +234,7 @@ export type Op =
     | { readonly kind: "remove"; readonly selector: Selector }
     /** `survivors`: the rarity a scour leaves, by how many modifiers remain.
      *  `lowest`: that, or the lowest rarity that holds them (a Tainted Chaos
-     *  Orb's strip, `QUESTIONS.md` Q33). */
+     *  Orb's strip). */
     | { readonly kind: "rarity"; readonly rarity: Rarity | "survivors" | "lowest" }
     /** `n` random present modifiers become fractured. */
     | { readonly kind: "lock"; readonly n: number }

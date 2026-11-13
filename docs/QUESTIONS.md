@@ -72,31 +72,14 @@ the altar corrupts "an Equipment Item" a second time, and a twice-corrupted item
 [be] Corrupted further using these devices". Does it take an uncorrupted item, or a jewel
 (the old Locus of Corruption page lists them)? How likely is each outcome? May its
 implicit replace an eldritch one? Does the copy show `Twice Corrupted` alone? Does a
-twice-corrupted item take the Tainted currency or an unveil?
-[Corrupted § Modifying corrupted items](https://www.poewiki.net/wiki/Corrupted#Modifying_corrupted_items)
-leans to yes: Tainted currency "can be used on corrupted … items".
+twice-corrupted item take an unveil?
 **Probe:** corrupted Rares, a jewel, boots with eldritch and Vaal implicits, an
-uncorrupted ring; the altar forty times, then Tainted orbs, an unveil; record
-refusals, outcomes, implicits lost, the copy.
+uncorrupted ring; the altar forty times, then an unveil; record refusals, outcomes,
+implicits lost, the copy.
 **Assumed:** corrupted equipment only, no jewel; 1:1:2 to no change, an implicit,
 destroyed; either eldritch implicit may go; `Twice Corrupted` alone; it
 takes nothing. **Encoded in:** `check/library.ts` `locusOps`, `onceCorrupted`;
 `cost/track.ts`; `render/item.ts`.
-
-### Q33 · probe · open — the Tainted Chaos Orb under a protection, and its rarity
-
-**Q:** does its reforge respect a protection?
-[Tainted Chaos Orb § Mechanics](https://www.poewiki.net/wiki/Tainted_Chaos_Orb#Mechanics)
-names only the fractured modifier as surviving. What rarity does its strip leave with a
-fractured prefix and a fractured suffix: Magic ("the lowest eligible rarity"), or Rare, as
-[Orb of Scouring](https://www.poewiki.net/wiki/Orb_of_Scouring) has two modifiers?
-**Probe:** a corrupted Rare with "Suffixes Cannot Be Changed", and one with a fractured
-prefix and a fractured suffix; Tainted Chaos Orbs; apply until each outcome shows; record
-whether the suffixes survived, and the second item's rarity when stripped.
-**Assumed:** both halves ignore the protection; the strip leaves a scour's rarity, and
-with a fractured prefix beside a fractured suffix Magic or Rare, so a second orb is
-refused. **Encoded in:** `check/library.ts` `TAINTED_CHAOS`, `unprotect`;
-`check/ops/marks.ts` `LOWEST`; `check/reference/ops/marks.ts` `lowestRarity`.
 
 ### Q52 · probe · open — what a Harvest-changed essence, fossil or unveiled modifier becomes
 
@@ -270,17 +253,6 @@ carry one in the game's data (the top life craft's is 80).
 record refused or applied.
 **Assumed:** applied at any item level, in a step and in the item block. **Encoded in:**
 `check/library.ts` `benchOps` (no level check), `check/item-block.ts` `declareItem`.
-
-### Q95 · probe · open — a Tainted Exalted Orb's odds
-
-**Q:** how often does a Tainted Exalted Orb add, and what does it do to a full item?
-[Tainted Exalted Orb](https://www.poewiki.net/wiki/Tainted_Exalted_Orb) says only that it
-"unpredictably adds or removes a modifier".
-**Probe:** corrupted Rares with four modifiers and with six, Tainted Exalted Orbs; apply
-one to each; record added or removed, and whether a full item ever comes back unchanged.
-**Assumed:** even odds; a full item loses a modifier. **Encoded in:** `cost/track.ts`
-`OUTCOME_ODDS`, `ASSUMED_ODDS`; `check/reference/ops/fill.ts`; `check/library.ts`
-`TAINTED_EXALT`.
 
 ### Q96 · probe · open — an Orb of Conflict over a wide gap
 
@@ -459,18 +431,6 @@ modifiers" and excepts fractured ones; it does not name a bench craft.
 crafted value changes.
 **Assumed:** it is rerolled. **Encoded in:** `check/reference/ops/misc.ts`.
 
-### Q116 · probe · open — how far a Tainted Divine Teardrop moves a modifier
-
-**Q:** [Tainted Divine Teardrop § Mechanics](https://www.poewiki.net/wiki/Tainted_Divine_Teardrop#Mechanics) stops
-at "a tier usually obtainable on that base type". The base's whole ladder, or the rows the
-item's level allows? Does a fractured modifier move? Does one that "does nothing" keep its
-value?
-**Probe:** a corrupted Rare of item level 30 with a top-rollable resistance, one with a
-fractured modifier; teardrops; record tiers and values.
-**Assumed:** the whole ladder; a fractured modifier moves and stays fractured; an unmoved
-value kept, a moved one rolled anew. **Encoded in:** `check/ops/misc.ts`;
-`check/reference/ops/misc.ts`.
-
 ### Q117 · decision · open — one held imprint
 
 **Q:** an imprint is an item, and a craft may hold several; the checker holds one, and a
@@ -526,19 +486,14 @@ a fractured one is out of reach; a modifier whose elevated row has no room is no
 
 ### Q122 · probe · open — removals beside a metamod
 
-**Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Item_Changes): the
-cannot-roll metamods no longer keep "some Currencies that remove Modifiers, such as Orbs
-of Annulment" off what they bar. Is the Tainted Exalted Orb among them? Is the Eldritch
-Orb of Annulment refused on a protected side, or used up? Under
+**Q:** is the Eldritch Orb of Annulment refused on a protected side, or used up? Under
 "Cannot roll Attack Modifiers", [Metamod § Examples](https://www.poewiki.net/wiki/Metamod#Examples)
 has the Bestiary's "add prefix remove suffix" add only what can roll even when the suffix
 it takes is the metamod: is the prefix added first?
 **Probe:** boots, the Exarch dominant, "Prefixes Cannot Be Changed", an Eldritch Orb of
-Annulment. A corrupted Rare with the attack metamod and an attack modifier, tainted orbs.
-The page's bow, the recipe until it takes the metamod.
-**Assumed:** it spares nothing; refused; the suffix goes first, so an attack prefix may
-follow. **Encoded in:** `check/library.ts` `eldritchAnnulOps`, `TAINTED_EXALT`,
-`beastAddOps`; `check/ops/remove.ts`.
+Annulment. The page's bow, the recipe until it takes the metamod.
+**Assumed:** refused; the suffix goes first, so an attack prefix may follow.
+**Encoded in:** `check/library.ts` `eldritchAnnulOps`, `beastAddOps`; `check/ops/remove.ts`.
 
 ### Q123 · probe · open — the tier of a modifier beside a tag another modifier adds
 

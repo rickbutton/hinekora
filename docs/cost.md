@@ -51,8 +51,6 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
   is which an Orb of Dominance raises (Q61).
 - **Veiled orbs.** The veiled modifier lands on either side with room alike (Q76); an
   unveil draws its options as a reforge draws modifiers (Q99).
-- **Tainted Exalted Orb.** It adds or removes at even odds, and removes from a full item
-  (Q95).
 - **Corruption Altar.** No change, an implicit, or the item destroyed two times in four,
   its old reforge now destroying it ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Incursion_and_Atziri), Q32).
 - **Orb of Conflict.** The line of

@@ -141,7 +141,7 @@ describe("the method frame", () => {
     it("is exact on the marks and their checks", () => {
         exact([corrupt]);
         exact([req({ kind: "notCorrupted" }), corrupt]);
-        exact([req({ kind: "corruptedItem", what: "A Tainted Orb" })]);
+        exact([req({ kind: "corruptedItem", what: "The Corruption Altar" })]);
         exact([req({ kind: "rarity", rarity: "normal" }), rarity("magic")]);
         exact([req({ kind: "rarity", rarity: "magic" }), corrupt]);
         exact([req({ kind: "notMagic" }), req({ kind: "notNormal" }), corrupt]);
@@ -811,9 +811,6 @@ describe("the placement of checks", () => {
             ...INFLUENCES.map(L.beastAddInfluenceOps),
             L.vaalOps(cat.base),
             L.locusOps(),
-            L.TAINTED_CHAOS,
-            L.TAINTED_EXALT,
-            L.TAINTED_DIVINE,
             L.eldritchImplicitOps("exarch", 1, []),
             L.eldritchChaosOps("eater"),
             L.eldritchExaltOps("exarch"),
