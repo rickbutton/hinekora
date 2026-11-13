@@ -30,7 +30,8 @@ worktree reads the main checkout's wiki cache on its own, so never link or copy
    item and drops it silently instead of refusing; recovery after a refused step
    leaking into a loop's settling rounds or into a verdict; an approximation in place
    of the errors that stop a check (the round limit, the node budget). The core
-   invariant: never enumerate outcome unions outside the reference interpreter.
+   invariant: never enumerate outcome unions outside the reference interpreter. A false
+   accept is `blocking`; a false refusal is `should-fix`.
 3. **Docs agree with the code, and stay small.** A behaviour change without its doc
    change in the same commit is a finding (`blocking` when a doc now contradicts the
    code). So is doc growth that `AGENTS.md`'s docs rules exclude: an inventory of files
@@ -49,7 +50,8 @@ worktree reads the main checkout's wiki cache on its own, so never link or copy
    is not evidence that a handler is exact. Where you can, mutate the code and confirm a
    test fails. Tests use the fixtures in `packages/core/src/__fixtures__`.
 6. **Commits.** One logical change per commit; refactors separate from behaviour
-   changes; `pnpm gate` passes at every commit.
+   changes; each message explains the change and its why; `pnpm gate` passes at every
+   commit.
 7. **Questions.** An assumption the change makes where the user, or an in-game probe,
    is the authority must be recorded in `docs/QUESTIONS.md` with the files that encode
    it. Check that answered questions were applied and then deleted from the ledger.
