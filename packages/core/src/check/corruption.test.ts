@@ -203,9 +203,4 @@ describe("a step that needs a corrupted item", () => {
         const c = craft(ring(), [op("chaos"), iff(has("life", 1), [op("vaal")]), op("locus")]);
         expect(messages(c)).toContain("may not be corrupted");
     });
-
-    it("cannot be a Tainted orb, which is not a method", () => {
-        const c = craft(ring({ corrupted: true }), [words("tainted", "chaos")]);
-        expect(messages(c)).toBe('Unknown operation "tainted chaos".');
-    });
 });

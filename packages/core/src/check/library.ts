@@ -72,8 +72,9 @@ const MAGIC_REFORGE: Range = [1, 2];
  *  methods consuming memory strands). An Exalted Orb's depends on the modifiers
  *  on the item. The page's rows are read one count lower than it prints them:
  *  recorded orbs used up 33 strands at four modifiers and 38 at five, where
- *  it gives 32 and 34; a ceiling too high is the safe side. The Foulborn Exalted Orb's is known at five modifiers only
- *  and taken the same below (QUESTIONS.md Q68). */
+ *  it gives 32 and 34; a ceiling too high is the safe side. The Foulborn
+ *  Exalted Orb's is known at five modifiers only and taken the same below
+ *  (QUESTIONS.md Q68). */
 const strands = (consume: number | readonly number[]): Op => ({ kind: "strands", consume });
 const EXALT_STRANDS: readonly number[] = [16, 22, 26, 32, 34, 38];
 const FOULBORN_STRANDS = { augment: 32, regal: 48, exalt: 62 } as const;

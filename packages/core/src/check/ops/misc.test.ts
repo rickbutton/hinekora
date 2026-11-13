@@ -420,9 +420,9 @@ describe("the imprint's rules", () => {
     });
 
     it("keeps each item paired with its own imprint", () => {
-        // After an imprint, a step with several outcomes and a narrowing, the
-        // restore gives back exactly the items whose outcomes met the condition:
-        // the fire resistance kept or removed, and kept wanted.
+        // After an imprint, a reroll and a narrowing by the rolled value, the
+        // restore gives back exactly the items whose outcomes met the condition,
+        // some of which did not meet it themselves.
         const plan: Plan = {
             seed: 9810,
             opts: { types: 3, harvest: true },
@@ -434,23 +434,25 @@ describe("the imprint's rules", () => {
         };
         const p = setup(plan);
         const fire2 = rowNamed(p.cat, "FireRes2");
+        const fireRows = p.cat.mods.filter((m) => m.type === fire2.type && m.text !== undefined);
+        const [lo, hi] = rollRange(fire2.text!)!;
         const pred: RPred = {
-            kind: "has",
+            kind: "hasValue",
             type: fire2.type,
             gen: fire2.gen,
-            tierMod: fire2.id,
-        };
-        const keptOrRemoved: Transform = {
-            kind: "either",
-            branches: [[], [{ kind: "remove", selector: { kind: "type", type: fire2.type } }]],
+            op: ">",
+            value: Math.floor((lo + hi) / 2),
+            rows: new Map(fireRows.map((m) => [m.id, rollRange(m.text!)!])),
+            unnumbered: new Set(),
         };
         let fewer = false;
+        let raised = false;
         for (const start of p.states) {
             const plain = CItemSet.of(start.items().map((x) => ({ ...x, imprint: undefined })));
             const state = fromItems(p.u, plain)!;
-            const held = runMethod(state, [imprint, keptOrRemoved]);
+            const held = runMethod(state, [imprint, reroll]);
             const narrowed: ItemSet | null = narrow(held.state, pred);
-            const ref = refRunMethod(plain, [imprint, keptOrRemoved], p.cat.ctx).state.filter((x) =>
+            const ref = refRunMethod(plain, [imprint, reroll], p.cat.ctx).state.filter((x) =>
                 holds(pred, x, p.cat.ctx),
             );
             if (narrowed === null) {
@@ -465,8 +467,10 @@ describe("the imprint's rules", () => {
             expect(back.keys()).toEqual(expected.keys());
             expect(expected.size).toBeLessThanOrEqual(plain.size);
             fewer ||= expected.size < plain.size;
+            raised ||= expected.items().some((x) => !holds(pred, x, p.cat.ctx));
         }
         expect(fewer).toBe(true);
+        expect(raised).toBe(true);
     });
 });
 

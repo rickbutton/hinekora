@@ -607,7 +607,6 @@ export class Tracker {
         const total = odds.reduce((sum, w) => sum + w, 0);
         const out: Outcome[] = [];
         for (let b = 0; b < either.branches.length; b++) {
-            if (!(odds[b]! > 0)) continue;
             const share = odds[b]! / total;
             if (endsCraft(either.branches[b]!)) {
                 out.push({ state, prob: share, ends: true });
