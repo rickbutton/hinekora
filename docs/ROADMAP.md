@@ -2,15 +2,20 @@
 
 > Forward-looking work only. Completed work is not tracked here; that is what
 > `git log` is for, and the design that resulted lives in the code,
-> `ARCHITECTURE.md` and `operations.md`. The order below is the plan; each step is one
-> or more commits that pass the gate, reviewed by the `reviewer` agent, with any decision
-> or in-game probe it needs recorded in `QUESTIONS.md` rather than waited on.
+> `ARCHITECTURE.md` and `operations.md`.
 
 ## The goal
 
 Cover the whole PoE1 crafting surface. Every method in `operations.md` §3 not marked
 **out** is a library entry the checker interprets; what is left is the work below, which
 waits until a craft calls for it.
+
+## Waiting on game data
+
+The rules are 3.30's; the catalog is a 3.29 export and the prices are the Allflame
+league's. When repoe-fork publishes 3.30, re-ingest and refresh
+`packages/data/data/poe1/economy.json`. The same commit names the partial protections'
+ids in `PARTIAL_PROTECTION_EFFECTS`.
 
 ## Deferred by design (don't build until called for)
 
