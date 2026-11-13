@@ -8,11 +8,16 @@
  *   node tools/poewiki/render.mjs --stdout "Modifier"       # print the Markdown instead
  *   node tools/poewiki/render.mjs --wikitext "Modifier"     # local wikitext, no network
  *   node tools/poewiki/render.mjs --exists "Affix"          # is it in the snapshot? (follows redirects)
+ *   node tools/poewiki/render.mjs --where                   # the cache directory
  */
 import { readFileSync } from "node:fs";
-import { log, parseArgs, readPage, renderPage, requestCount } from "./lib.mjs";
+import { CACHE, log, parseArgs, readPage, renderPage, requestCount } from "./lib.mjs";
 
 const { flags, positional } = parseArgs(process.argv.slice(2));
+if (flags.has("where")) {
+    console.log(CACHE);
+    process.exit(0);
+}
 if (!positional.length) {
     console.error("usage: render.mjs [--force|--stdout|--wikitext|--exists] <title>...");
     process.exit(2);

@@ -279,8 +279,8 @@ for (const k of opKinds) {
 
 // --- 3. wiki links resolve in the local cache ----------------------------------
 
-const cacheDir = join(root, ".cache/poewiki/xml/index.json");
-if (!existsSync(cacheDir)) {
+const { CACHE } = await import("../tools/poewiki/cache.mjs");
+if (!existsSync(join(CACHE, "xml/index.json"))) {
     notes.push("wiki cache absent; wiki links not checked (see the poewiki-sync skill)");
 } else {
     const { readPage } = await import("../tools/poewiki/lib.mjs");

@@ -3,7 +3,8 @@
  * client that respects the wiki's rate limits, the XML page index, Cargo table
  * export, and the HTML-to-Markdown conversion used when rendering pages.
  *
- * The cache root is `POEWIKI_CACHE` or `<repo>/.cache/poewiki`:
+ * The cache root is `POEWIKI_CACHE` or the main checkout's `.cache/poewiki`
+ * (cache.mjs):
  *   xml/ns<N>/batch-NNNN.xml   full snapshot, 500 pages per file (export.mjs)
  *   xml/updates/<pageid>.xml   pages re-exported since the snapshot (sync.mjs)
  *   xml/index.json             title -> { ns, id, file }
@@ -24,7 +25,7 @@ import {
     writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { CACHE } from "./cache.mjs";
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
 
@@ -33,8 +34,7 @@ export const API = `${WIKI}/w/api.php`;
 const INDEX_PHP = `${WIKI}/index.php`;
 const UA = `hinekora-research/0.1 (${process.env.POEWIKI_CONTACT ?? "no contact set"})`;
 
-export const CACHE =
-    process.env.POEWIKI_CACHE ?? fileURLToPath(new URL("../../.cache/poewiki", import.meta.url));
+export { CACHE };
 export const paths = {
     xml: join(CACHE, "xml"),
     updates: join(CACHE, "xml", "updates"),
