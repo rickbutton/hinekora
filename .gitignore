@@ -5,7 +5,6 @@ coverage/
 *.log
 .DS_Store
 .cache/
-.claude/worktrees/
 
 # The site's build output and what its build generates from the code.
 site/.vitepress/cache/

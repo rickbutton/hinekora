@@ -180,7 +180,7 @@ const languageWords = new Set([...vocabulary, ...methodWords, ...currencies, ...
 // --- 1. backticked tokens: paths, symbols, language words ------------------------
 
 const PATH_RE =
-    /^(?:\.\/)?(?:packages|docs|examples|scripts|tools|editors|\.claude|\.github|\.githooks|\.pi|\.agents)\/[\w./-]+$|^[\w-]+(?:\/[\w.-]+)*\.(?:md|mjs|json|ts|craft|yaml)$/;
+    /^(?:\.\/)?(?:packages|docs|examples|scripts|tools|editors|\.github|\.githooks|\.pi|\.agents)\/[\w./-]+$|^[\w-]+(?:\/[\w.-]+)*\.(?:md|mjs|json|ts|craft|yaml)$/;
 const IDENT = /^[A-Za-z_$][\w$]*$/;
 const isCodeLike = (s) => IDENT.test(s) && /[A-Z]/.test(s) && s.length >= 3;
 
