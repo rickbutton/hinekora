@@ -12,7 +12,7 @@ subject:
   and the theory behind the checker (exact sets of items).
 - `docs/REFERENCE.md`: the checker's slots, the gotchas no single comment can hold
   (packaging, editors, build), and the standing design notes (TypeScript, the decision
-  diagram).
+  diagram, the site's voice).
 - `docs/ROADMAP.md`: work not built (deferred, future). Not history.
 - `docs/item-model.md`: the item and modifier model the code is audited against, each rule
   linked to its wiki section.

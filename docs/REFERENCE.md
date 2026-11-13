@@ -3,8 +3,8 @@
 > The layout is the repo: read the code. Package roles are in each `package.json`, a
 > module's purpose in its header comment, and the reason behind a single line of code in
 > a comment at that line. This file holds only what the code cannot show: the checker's
-> slots in one place, the gotchas that bite across files, and the standing
-> design note on the decision diagram. The shape of the implementation and the
+> slots in one place, the gotchas that bite across files, the standing
+> design note on the decision diagram, and the site's voice. The shape of the implementation and the
 > theory behind the checker are `ARCHITECTURE.md`; the item model is `item-model.md`; the
 > operations model is `operations.md`; the cost layer is `cost.md`; conventions and the gate are `../CLAUDE.md`.
 > Game rules are linked to their poewiki.net section, never restated.
@@ -106,8 +106,7 @@ loop's fixpoint still to drive by hand.
 ## 7. The site's voice
 
 The site is written for developers who know type checkers, not for players, and it is
-not a product: no pitch, no call to action. The landing page shows a craft that checks,
-with its cost, before one that is refused, each paragraph beside the block it describes
-and item cards in place of terminal text. A figure names game currencies (an exalt, an
+not a product: no pitch, no call to action. A craft that checks is shown before one
+that is refused. A figure names game currencies (an exalt, an
 annul), never the tool's own words; an arrow's label says what happened; a table is
 motivated before it is shown.

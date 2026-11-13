@@ -83,13 +83,11 @@ A background tab throttles `setTimeout` to one call a second, and to one a minut
 five minutes. Slice the loop through a `MessageChannel` instead; the page then runs about
 6,000 actions a second.
 
-## Where the simulator is known to differ
+## Reading a difference
 
-A difference from hinekora is a finding only when it is not one of these:
-
-- its Recombinator picks modifiers uniformly, and its table of counts differs from the
-  wiki's;
-- its simulator and its own calculator disagree on a Pristine fossil (9.8% against 9.0%).
+`docs/cost.md` §8 lists where craftofexile is known to differ from hinekora; a difference
+is a finding only when it is not one of those. Its simulator and its own calculator can
+also disagree with each other, so say which of the two a figure came from.
 
 A figure that differs for another reason is checked against the wiki cache first
 (`poewiki-render`), since the wiki, not the simulator, is the source of the game's rules.
