@@ -46,14 +46,6 @@ export function survivorsRarity(ctx: RefCtx, item: CItem): Rarity {
     return RARITIES[r]!;
 }
 
-/** The lowest rarity that holds what is left, never above the one it had
- *  ("the lowest eligible rarity", Tainted Chaos Orb § Mechanics). */
-export function lowestRarity(ctx: RefCtx, item: CItem): Rarity {
-    let r = 0;
-    while (r < rank(item.rarity) && !holds(ctx, item, RARITIES[r]!)) r++;
-    return RARITIES[r]!;
-}
-
 /** Every canonical set of `n` influences. */
 function setsOfSize(n: number): InfluenceKey[] {
     const out: InfluenceKey[] = [];
@@ -110,13 +102,6 @@ export const transforms: RefTransformTable = {
         reads: [],
         apply: (op, item, { ctx }) => {
             if (op.rarity === "survivors") return [{ ...item, rarity: survivorsRarity(ctx, item) }];
-            if (op.rarity === "lowest") {
-                // The scour's rarity or the lowest eligible one: the pages disagree.
-                return [
-                    { ...item, rarity: survivorsRarity(ctx, item) },
-                    { ...item, rarity: lowestRarity(ctx, item) },
-                ];
-            }
             const out = { ...item, rarity: op.rarity };
             if (!isWellFormed(out, ctx)) {
                 throw new InternalError(`an item holds more than a ${op.rarity} item can`);

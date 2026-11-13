@@ -199,9 +199,6 @@ export type Op =
     | { readonly kind: "require"; readonly check: Check }
     /** Every modifier goes but the protected sides' and the fractured one. */
     | { readonly kind: "strip" }
-    /** The metamods no longer govern the rest of the method (a Tainted Chaos
-     *  Orb ignores them). */
-    | { readonly kind: "unprotect" }
     /** That side alone is kept through the rest of the method, in place of
      *  the item's own protections (an Eldritch Chaos Orb rerolls the other). */
     | { readonly kind: "keep"; readonly gen: Gen }
@@ -209,7 +206,7 @@ export type Op =
      *  Conflict's raise-one-lower-the-other. */
     | { readonly kind: "eldritch"; readonly change: EldritchChange }
     /** One of several outcomes: the items each branch leaves, together. It
-     *  holds effects only (a check or an `unprotect` belongs before it, at
+     *  holds effects only (a check or a `keep` belongs before it, at
      *  method level). A branch with an `end` is an outcome on which the item
      *  is gone and the craft stops, so it leaves no item; where every branch
      *  ends, so does the method. */
@@ -218,9 +215,6 @@ export type Op =
     /** The item is corrupted once more: an uncorrupted one corrupted, a
      *  corrupted one twice corrupted. */
     | { readonly kind: "corrupt" }
-    /** Forget which tier each present modifier is; a crafted one keeps its tier
-     *  when `crafted` is false. */
-    | { readonly kind: "relax"; readonly crafted: boolean }
     /** Every present modifier's value is rolled again within its tier, the
      *  fractured ones excepted (the Divine Orb). */
     | { readonly kind: "reroll" }
@@ -232,10 +226,8 @@ export type Op =
     | { readonly kind: "influence"; readonly change: InfluenceChange }
     | { readonly kind: "fill"; readonly pool: PoolSpec; readonly count: FillCount }
     | { readonly kind: "remove"; readonly selector: Selector }
-    /** `survivors`: the rarity a scour leaves, by how many modifiers remain.
-     *  `lowest`: that, or the lowest rarity that holds them (a Tainted Chaos
-     *  Orb's strip). */
-    | { readonly kind: "rarity"; readonly rarity: Rarity | "survivors" | "lowest" }
+    /** `survivors`: the rarity a scour leaves, by how many modifiers remain. */
+    | { readonly kind: "rarity"; readonly rarity: Rarity | "survivors" }
     /** `n` random present modifiers become fractured. */
     | { readonly kind: "lock"; readonly n: number }
     /** A list `consume` is indexed by the modifier count before the method, its
@@ -246,7 +238,7 @@ export type Op =
     | { readonly kind: "restore" };
 
 /** An operation that changes the state: everything but a check or a rule change. */
-export type Transform = Exclude<Op, { kind: "require" | "unprotect" | "keep" }>;
+export type Transform = Exclude<Op, { kind: "require" | "keep" }>;
 
 export type EldritchChange =
     /** That implicit set to a tier, one of `types` (the ember's pool). */

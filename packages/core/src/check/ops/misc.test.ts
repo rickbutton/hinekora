@@ -5,24 +5,14 @@ import { findMethod, type MethodItem } from "../methods.js";
 import type { Check, Op, PreconditionFailure, Transform } from "./types.js";
 import { rollRange } from "../values.js";
 import { type ModId, type Rarity, TypeId } from "../../model/ids.js";
-import {
-    CORRUPTIONS,
-    type InfluenceKey,
-    influenceKey,
-    NO_ELDRITCH,
-    NO_INFLUENCE,
-} from "../../model/marks.js";
+import { CORRUPTIONS, NO_ELDRITCH, NO_INFLUENCE } from "../../model/marks.js";
+import type { Base } from "../../model/base.js";
 import type { Mod } from "../../model/mod.js";
 import { TALISMAN_BASE } from "../../__fixtures__/mods.js";
 import { buildRegistry } from "../../resolve/registry.js";
 import { type Comparisons, NO_COMPARISONS } from "../craft.js";
 import { runMethod } from "../method.js";
-import {
-    type CatalogOptions,
-    type Catalog,
-    generateCatalog,
-    modRow,
-} from "../reference/catalog.js";
+import { type CatalogOptions, type Catalog, generateCatalog } from "../reference/catalog.js";
 import { holds } from "../reference/conditions.js";
 import {
     atCells,
@@ -31,7 +21,6 @@ import {
     harnessStates,
     harnessUniverse,
     pickRows,
-    someInfluences,
 } from "../reference/harness.js";
 import { type CItem, type CMod, cItem, cMod, refCtx } from "../reference/item.js";
 import { listItems } from "../reference/listing.js";
@@ -45,13 +34,12 @@ import { Universe } from "../universe.js";
 import { InternalError } from "./handler.js";
 import { transforms } from "./misc.js";
 
-// Each comparison lists every item a reroll or a tier shift leaves, over value
+// Each comparison lists every item a reroll leaves, over value
 // cells and held imprints; beside the rest of the suite they run slower.
 vi.setConfig({ testTimeout: 60_000 });
 
 const req = (check: Check): Op => ({ kind: "require", check });
 const reroll: Transform = { kind: "reroll" };
-const relax = (crafted: boolean): Transform => ({ kind: "relax", crafted });
 const strands = (consume: number | readonly number[]): Transform => ({ kind: "strands", consume });
 const imprint: Transform = { kind: "imprint" };
 const restore: Transform = { kind: "restore" };
@@ -68,7 +56,6 @@ interface Plan {
     readonly fractured?: boolean;
     readonly crafted?: boolean;
     readonly imprint?: boolean;
-    readonly influences?: boolean;
     readonly corrupted?: boolean;
     readonly strands?: readonly number[];
     readonly rarities?: readonly Rarity[];
@@ -90,12 +77,10 @@ function setup(plan: Plan): Setup {
         ...(plan.imprint && { imprint: true }),
     });
     const rows = pickRows(u, plan.seed, plan.rows ?? 3, plan.include?.(cat, u) ?? []);
-    const influences: InfluenceKey[] | undefined = plan.influences ? someInfluences(u) : undefined;
     const states = harnessStates(u, cat.ctx, plan.seed, {
         bounds: {
             rows,
             ...(plan.rarities && { rarities: plan.rarities }),
-            ...(influences && { influences }),
             ...(plan.strands && { strands: plan.strands }),
             ...(plan.fractured && { fractured: true }),
             ...(plan.crafted && { crafted: true }),
@@ -115,16 +100,6 @@ function exactOn(plan: Plan, ops: (cat: Catalog, u: Universe) => readonly Op[]):
     const s = setup(plan);
     const d = compareMethodOn(s.u, s.cat.ctx, s.states, ops(s.cat, s.u));
     expect(d, `catalogue ${plan.seed} ${JSON.stringify(plan.opts)}\n${d}`).toBe("");
-}
-
-/** Every candidate row of the natural type with the longest ladder. */
-function longestLadder(cat: Catalog, u: Universe): ModId[] {
-    const byType = new Map<TypeId, Mod[]>();
-    for (const m of cat.natural) {
-        if (u.rows.has(m)) byType.set(m.type, [...(byType.get(m.type) ?? []), m]);
-    }
-    const best = [...byType.values()].sort((a, b) => b.length - a.length)[0]!;
-    return best.map((m) => m.id);
 }
 
 const rowsOf = (cat: Catalog, ...ids: string[]): ModId[] =>
@@ -184,46 +159,6 @@ describe("the Divine Orb's reroll", () => {
         it(`is exact on catalogue ${plan.seed}`, () => {
             exactOn(plan, () => [reroll]);
             exactOn({ ...plan, corrupted: true }, () => L.currencyOps("divine"));
-        });
-    }
-});
-
-describe("the tier shift either way", () => {
-    const catalogues: readonly Plan[] = [
-        { seed: 9100, opts: { types: 4 }, values: true, fractured: true, include: longestLadder },
-        {
-            seed: 9110,
-            opts: { types: 3, influence: true },
-            influences: true,
-            include: (cat, u) => [...longestLadder(cat, u), cat.influence!.id],
-            rows: 4,
-        },
-        {
-            seed: 9120,
-            opts: { types: 3, essenceOnly: "ladder", zeroWeight: true },
-            include: (cat, u) => [cat.essence!.id, ...longestLadder(cat, u)],
-            rows: 4,
-        },
-        {
-            seed: 9130,
-            opts: { types: 3, twoSided: true },
-            include: (cat) => rowsOf(cat, "Both1", "Both2", "Both3"),
-            rows: 4,
-            values: true,
-        },
-        {
-            seed: 9140,
-            opts: { types: 3, bench: true },
-            crafted: true,
-            include: (cat, u) => [cat.bench!.id, ...longestLadder(cat, u)],
-            rows: 4,
-            imprint: true,
-        },
-    ];
-    for (const plan of catalogues) {
-        it(`is exact on catalogue ${plan.seed}`, () => {
-            exactOn(plan, () => [relax(false)]);
-            exactOn(plan, () => [relax(true)]);
         });
     }
 });
@@ -428,76 +363,6 @@ describe("the reroll's rules", () => {
     });
 });
 
-describe("the tier shift's rules", () => {
-    const s = setup({
-        seed: 9600,
-        opts: { types: 2, harvest: true, essenceOnly: true },
-        values: true,
-    });
-    const one = (id: string, marks: Partial<CMod> = {}): CItem =>
-        cItem({ rarity: "rare", corrupted: true, mods: [on(s.cat, id, marks)] });
-
-    it("moves a tier up, down or not at all, never past an end", () => {
-        expect(rowsAt(outcomes(s, one("FireRes2"), [relax(false)]))).toEqual([
-            "FireRes1",
-            "FireRes2",
-            "FireRes3",
-        ]);
-        expect(rowsAt(outcomes(s, one("FireRes1"), [relax(false)]))).toEqual([
-            "FireRes1",
-            "FireRes2",
-        ]);
-        expect(rowsAt(outcomes(s, one("FireRes3"), [relax(false)]))).toEqual([
-            "FireRes2",
-            "FireRes3",
-        ]);
-    });
-
-    it("keeps the value of a modifier it does not move", () => {
-        const item = one("FireRes2", { value: lowest(rowNamed(s.cat, "FireRes2"))! + 1 });
-        const out = outcomes(s, item, [relax(false)]);
-        expect(out.filter((x) => x.mods[0]!.row === "FireRes2")).toEqual([item]);
-    });
-
-    it("leaves a crafted modifier, unless told to move them", () => {
-        expect(outcomes(s, one("BenchFireRes", { crafted: true }), [relax(false)])).toEqual([
-            one("BenchFireRes", { crafted: true }),
-        ]);
-        const natural = one("FireRes2", { crafted: true });
-        expect(outcomes(s, natural, [relax(false)])).toEqual([natural]);
-        expect(rowsAt(outcomes(s, natural, [relax(true)]))).toEqual([
-            "FireRes1C",
-            "FireRes2C",
-            "FireRes3C",
-        ]);
-    });
-
-    it("leaves a modifier that cannot normally roll on the item", () => {
-        const essence = s.cat.essence!;
-        const item = cItem({
-            rarity: "rare",
-            corrupted: true,
-            mods: [cMod(essence.id, lowest(essence))],
-        });
-        expect(outcomes(s, item, [relax(false)])).toEqual([item]);
-    });
-
-    it("moves each modifier on its own", () => {
-        const item = cItem({
-            rarity: "rare",
-            corrupted: true,
-            mods: [on(s.cat, "FireRes2"), on(s.cat, "ColdRes2")],
-        });
-        const pairs = outcomes(s, item, [relax(false)]).map((x) =>
-            x.mods
-                .map((m) => m.row)
-                .sort()
-                .join(),
-        );
-        expect(new Set(pairs).size).toBe(9);
-    });
-});
-
 describe("the strands' rules", () => {
     const s = setup({ seed: 9700, opts: { types: 2, harvest: true } });
     const strandsOf = (xs: readonly CItem[]): number[] =>
@@ -556,7 +421,8 @@ describe("the imprint's rules", () => {
 
     it("keeps each item paired with its own imprint", () => {
         // After an imprint, a step with several outcomes and a narrowing, the
-        // restore gives back exactly the items whose outcomes met the condition.
+        // restore gives back exactly the items whose outcomes met the condition:
+        // the fire resistance kept or removed, and kept wanted.
         const plan: Plan = {
             seed: 9810,
             opts: { types: 3, harvest: true },
@@ -567,20 +433,24 @@ describe("the imprint's rules", () => {
             rarities: ["rare"],
         };
         const p = setup(plan);
-        const fire3 = rowNamed(p.cat, "FireRes3");
+        const fire2 = rowNamed(p.cat, "FireRes2");
         const pred: RPred = {
             kind: "has",
-            type: fire3.type,
-            gen: fire3.gen,
-            tierMod: fire3.id,
+            type: fire2.type,
+            gen: fire2.gen,
+            tierMod: fire2.id,
+        };
+        const keptOrRemoved: Transform = {
+            kind: "either",
+            branches: [[], [{ kind: "remove", selector: { kind: "type", type: fire2.type } }]],
         };
         let fewer = false;
         for (const start of p.states) {
             const plain = CItemSet.of(start.items().map((x) => ({ ...x, imprint: undefined })));
             const state = fromItems(p.u, plain)!;
-            const held = runMethod(state, [imprint, relax(false)]);
+            const held = runMethod(state, [imprint, keptOrRemoved]);
             const narrowed: ItemSet | null = narrow(held.state, pred);
-            const ref = refRunMethod(plain, [imprint, relax(false)], p.cat.ctx).state.filter((x) =>
+            const ref = refRunMethod(plain, [imprint, keptOrRemoved], p.cat.ctx).state.filter((x) =>
                 holds(pred, x, p.cat.ctx),
             );
             if (narrowed === null) {
@@ -676,9 +546,9 @@ describe("the Harvest change's rules", () => {
 
 // --- the shared rules, each branch -------------------------------------------------
 
-/** The catalogue on another base, or with more rows. */
-function rebuilt(cat: Catalog, base = cat.base, more: readonly Mod[] = []): Catalog {
-    const registry = buildRegistry({ bases: [base], mods: [...cat.mods, ...more] });
+/** The catalogue on another base. */
+function rebuilt(cat: Catalog, base: Base): Catalog {
+    const registry = buildRegistry({ bases: [base], mods: cat.mods });
     return {
         ...cat,
         registry,
@@ -687,94 +557,6 @@ function rebuilt(cat: Catalog, base = cat.base, more: readonly Mod[] = []): Cata
         ctx: refCtx(registry, base, cat.ilvl),
     };
 }
-
-const corruptRare = (mods: readonly CMod[], influences: InfluenceKey = NO_INFLUENCE): CItem =>
-    cItem({ rarity: "rare", corrupted: true, mods, influences });
-
-describe("the tier shift's ladders", () => {
-    it("is exact where a ladder depends on the item's influences", () => {
-        exactOn(
-            {
-                seed: 9150,
-                opts: { types: 2, influence: true, elevated: true },
-                influences: true,
-                include: (cat) => rowsOf(cat, "HunterA1", "HunterA2", "ShaperA1", "HunterB1"),
-                rows: 4,
-                corrupted: true,
-            },
-            () => [relax(false)],
-        );
-    });
-
-    it("moves an influence's row only on an item of that influence", () => {
-        const s = setup({ seed: 9160, opts: { types: 2, influence: true, elevated: true } });
-        const a1 = [on(s.cat, "HunterA1")];
-        expect(rowsAt(outcomes(s, corruptRare(a1), [relax(false)]))).toEqual(["HunterA1"]);
-        const hunter = influenceKey(["hunter"]);
-        expect(rowsAt(outcomes(s, corruptRare(a1, hunter), [relax(false)]))).toEqual([
-            "HunterA1",
-            "HunterA2",
-        ]);
-        // The Shaper's row of the type is a ladder of its own.
-        const both = influenceKey(["hunter", "shaper"]);
-        const shaper = [on(s.cat, "ShaperA1")];
-        expect(rowsAt(outcomes(s, corruptRare(shaper, both), [relax(false)]))).toEqual([
-            "ShaperA1",
-        ]);
-    });
-
-    it("takes either row of a tier of two rows at one mod level", () => {
-        const twin = (id: string, minLevel: number, k: number): Mod =>
-            modRow({
-                id,
-                type: "TypeTwin",
-                gen: "suffix",
-                minLevel,
-                families: ["FamTwin"],
-                text: `+(${2 + 3 * k}-${3 + 3 * k}) to Twin`,
-            });
-        const cat = rebuilt(generateCatalog(9170, { types: 2, ilvl: 84 }), undefined, [
-            twin("Twin1", 1, 0),
-            twin("Twin2a", 40, 1),
-            twin("Twin2b", 40, 2),
-            twin("Twin3", 70, 3),
-        ]);
-        const u = harnessUniverse(cat);
-        const s: Setup = { cat, u, states: [] };
-        const one = (id: string) => corruptRare([on(cat, id)]);
-        expect(rowsAt(outcomes(s, one("Twin1"), [relax(false)]))).toEqual([
-            "Twin1",
-            "Twin2a",
-            "Twin2b",
-        ]);
-        expect(rowsAt(outcomes(s, one("Twin2a"), [relax(false)]))).toEqual([
-            "Twin1",
-            "Twin2a",
-            "Twin3",
-        ]);
-        const states = harnessStates(u, cat.ctx, 9171, {
-            bounds: { rows: rowsOf(cat, "Twin1", "Twin2a", "Twin2b", "Twin3") },
-        });
-        const d = compareMethodOn(u, cat.ctx, states, [relax(false)]);
-        expect(d, d).toBe("");
-    });
-
-    it("moves a modifier above the item's level", () => {
-        const s = setup({ seed: 9180, opts: { types: 2, harvest: true, ilvl: 40 } });
-        expect(s.cat.ilvl).toBeLessThan(rowNamed(s.cat, "FireRes2").minLevel);
-        const out = outcomes(s, corruptRare([on(s.cat, "FireRes1")]), [relax(false)]);
-        expect(rowsAt(out)).toEqual(["FireRes1", "FireRes2"]);
-    });
-
-    it("moves a fractured modifier, fractured still", () => {
-        const s = setup({ seed: 9190, opts: { types: 2, harvest: true } });
-        const out = outcomes(s, corruptRare([on(s.cat, "FireRes2", { fractured: true })]), [
-            relax(false),
-        ]);
-        expect(rowsAt(out)).toEqual(["FireRes1", "FireRes2", "FireRes3"]);
-        expect(out.every((x) => x.mods.every((m) => m.fractured))).toBe(true);
-    });
-});
 
 describe("an imprint of a talisman", () => {
     it("is made of a Rare talisman", () => {
@@ -839,20 +621,14 @@ describe("the internal errors", () => {
         );
         return new Universe(cat.registry, cat.base, cat.ilvl, rows, NO_COMPARISONS, false);
     };
-    const fire2 = cItem({ rarity: "rare", corrupted: true, mods: [on(cat, "FireRes2")] });
-
-    it("a tier shift's row the universe has no value for", () => {
-        const u = lacking("FireRes3");
-        expect(() => runMethod(fromItems(u, [fire2])!, [relax(false)])).toThrow(InternalError);
-    });
+    const fire2 = cItem({ rarity: "rare", mods: [on(cat, "FireRes2")] });
 
     it("a Harvest change's row the universe has no value for", () => {
         const u = lacking("ColdRes2");
         const ops = harvestOps(cat, "fire resistance", "cold resistance").filter(
             (op) => op.kind !== "require" || op.check.kind === "typeRemovable",
         );
-        const item = { ...fire2, corrupted: false };
-        expect(() => runMethod(fromItems(u, [item])!, ops)).toThrow(/no candidate/);
+        expect(() => runMethod(fromItems(u, [fire2])!, ops)).toThrow(/no candidate/);
     });
 
     it("an imprint or a restore where the universe holds no imprint", () => {

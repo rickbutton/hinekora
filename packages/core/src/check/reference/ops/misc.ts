@@ -7,19 +7,6 @@
  *   § Mechanics) and so does one on a side a metamod protects (Metamod § Rules
  *   and Exceptions: "Respected"). Assumed, the wiki silent ("the random
  *   modifiers"): a crafted one is rerolled too.
- * - `relax` (Tainted Divine Teardrop § Mechanics): each modifier, on its own,
- *   stays or moves one tier up or down its ladder (ops/misc.ts
- *   `teardropMoves`), never past either end; one moved rolls a value of its
- *   new row. A row on no ladder of the item ("can't normally roll", the
- *   3.16.1 note) stays, and so does a crafted modifier ("It cannot modify
- *   crafted modifiers"); `crafted` moves them, which no method asks for.
- *   Metamods are ignored (Metamod § Rules and Exceptions: "Ignored").
- *   Assumed, the wiki silent:
- *   - the ladder runs above the item's level ("a tier usually obtainable on
- *     that base type");
- *   - a fractured modifier moves like any other;
- *   - an unmoved modifier keeps its value, a moved one rolls a value of its
- *     new row.
  * - `strands` (Memory strand § Crafting methods consuming memory strands): a
  *   use takes from none up to its figure, read at the modifier count of the
  *   item the method started on (ops/misc.ts `strandsTaken`), never below none.
@@ -42,7 +29,7 @@
 import { rollRange } from "../../values.js";
 import type { TypeId } from "../../../model/ids.js";
 import type { Mod } from "../../../model/mod.js";
-import { changeRows, strandsTaken, TALISMAN, teardropMoves } from "../../ops/misc.js";
+import { changeRows, strandsTaken, TALISMAN } from "../../ops/misc.js";
 import type { Rules } from "../../rules.js";
 import { keeps } from "../rules.js";
 import { type CItem, type CMod, modOfType, type RefCtx, rowOf } from "../item.js";
@@ -101,20 +88,6 @@ export const transforms: RefTransformTable = {
                     return spanValues(row).map((v) => at(m, row, v));
                 }),
             ),
-    },
-    relax: {
-        reads: [],
-        apply: (op, item, { ctx }) =>
-            product(
-                item,
-                item.mods.map((m) => {
-                    if (m.crafted && !op.crafted) return [m];
-                    const row = rowOf(ctx, m);
-                    const moves = teardropMoves(ctx.registry, ctx.base, row, item.influences);
-                    if (moves === undefined) return [m];
-                    return [m, ...moves.flatMap((t) => spanValues(t).map((v) => at(m, t, v)))];
-                }),
-            ).filter((x) => isWellFormed(x, ctx)),
     },
     strands: {
         reads: [],

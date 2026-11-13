@@ -38,7 +38,7 @@ import type { Universe } from "../universe.js";
 vi.setConfig({ testTimeout: 30_000 });
 
 const req = (check: Check): Op => ({ kind: "require", check });
-const rarity = (r: Rarity | "survivors" | "lowest"): Transform => ({ kind: "rarity", rarity: r });
+const rarity = (r: Rarity | "survivors"): Transform => ({ kind: "rarity", rarity: r });
 const influence = (change: InfluenceChange): Transform => ({ kind: "influence", change });
 const corrupt: Transform = { kind: "corrupt" };
 const replaced: Transform = { kind: "eldritch", change: { kind: "replaced" } };
@@ -155,7 +155,6 @@ describe("the marks over tiny catalogues", () => {
         it(`${base}: a strip's rarity, by what is left`, () => {
             const bounds = { fractured: true, corrupted: ALL_CORRUPTIONS };
             exact(s, seed, bounds, [rarity("survivors")]);
-            exact(s, seed + 1, bounds, [rarity("lowest")]);
             exact(s, seed + 2, bounds, [req({ kind: "notNormal" }), rarity("survivors")]);
         });
 
@@ -282,29 +281,21 @@ function outcomes(s: Setup, item: CItem, ops: readonly Op[]): CItem[] {
 
 const rarities = (xs: readonly CItem[]): Rarity[] => xs.map((x) => x.rarity).sort();
 
-/** Natural rows: a prefix and two suffixes, of distinct families. */
-function sides(s: Setup): { prefix: ModId; suffix: ModId; suffix2: ModId } {
+/** Natural rows: a prefix and a suffix, of distinct families. */
+function sides(s: Setup): { prefix: ModId; suffix: ModId } {
     const rows = [...s.u.rows.keys()].filter((m) => m.source === undefined);
     const apart = (a: Mod, b: Mod) => ![...a.families].some((f) => b.families.has(f));
     const prefix = rows.find((m) => m.gen === "prefix");
     const suffix = rows.find((m) => m.gen === "suffix" && (!prefix || apart(m, prefix)))!;
-    const suffix2 = rows.find(
-        (m) =>
-            m.gen === "suffix" &&
-            m.type !== suffix.type &&
-            apart(m, suffix) &&
-            (!prefix || apart(m, prefix)),
-    );
     return {
         prefix: prefix?.id ?? ModId(""),
         suffix: suffix.id,
-        suffix2: suffix2?.id ?? ModId(""),
     };
 }
 
 describe("the rarity a strip leaves", () => {
     const s = setup(7200, "ring", {}, 8);
-    const { prefix, suffix, suffix2 } = sides(s);
+    const { prefix, suffix } = sides(s);
     const value = (id: ModId): number | undefined => {
         const m = [...s.u.rows.keys()].find((r) => r.id === id)!;
         return m.text === undefined ? undefined : rollRange(m.text)?.[0];
@@ -325,15 +316,6 @@ describe("the rarity a strip leaves", () => {
         expect(rarities(outcomes(s, magic, [rarity("survivors")]))).toEqual(["magic"]);
     });
 
-    it("with `lowest`, is Magic or Rare for one a side, Rare for two of a side", () => {
-        expect(rarities(outcomes(s, rare(prefix, suffix), [rarity("lowest")]))).toEqual([
-            "magic",
-            "rare",
-        ]);
-        expect(rarities(outcomes(s, rare(suffix, suffix2), [rarity("lowest")]))).toEqual(["rare"]);
-        expect(rarities(outcomes(s, rare(prefix), [rarity("lowest")]))).toEqual(["magic"]);
-    });
-
     it("goes up to a rarity that holds what is left, where a base's delta closes a side", () => {
         // A Simplex Amulet's Magic holds no affix at all.
         const t = setup(7210, "simplex", {});
@@ -344,7 +326,6 @@ describe("the rarity a strip leaves", () => {
             mods: [cMod(id, valueIn(t, id), { fractured: true })],
         });
         expect(rarities(outcomes(t, item, [rarity("survivors")]))).toEqual(["rare"]);
-        expect(rarities(outcomes(t, item, [rarity("lowest")]))).toEqual(["rare"]);
     });
 });
 

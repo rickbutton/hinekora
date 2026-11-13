@@ -55,7 +55,6 @@ export type Single = Exclude<Transform, { kind: "either" | "end" }>;
 
 export type Step =
     | { readonly kind: "require"; readonly check: Check; readonly at: number }
-    | { readonly kind: "unprotect"; readonly at: number }
     | { readonly kind: "keep"; readonly op: Extract<Op, { kind: "keep" }>; readonly at: number }
     | { readonly kind: "end"; readonly at: number }
     | {
@@ -85,9 +84,6 @@ export function stepsOf(ops: readonly Op[]): Step[] {
         switch (op.kind) {
             case "require":
                 out.push({ kind: "require", check: op.check, at: i });
-                continue;
-            case "unprotect":
-                out.push({ kind: "unprotect", at: i });
                 continue;
             case "keep":
                 out.push({ kind: "keep", op, at: i });
@@ -195,7 +191,7 @@ export function checkPlacement(ops: readonly Op[]): void {
                     `the check "${op.check.kind}" follows "${after}", which can leave more than one item`,
                 );
             }
-        } else if (op.kind !== "unprotect" && op.kind !== "keep" && !deterministic(op)) {
+        } else if (op.kind !== "keep" && !deterministic(op)) {
             after ??= op.kind;
         }
     }
@@ -213,7 +209,7 @@ function deterministic(op: Transform): boolean {
         case "influence":
             return op.change.kind === "set" || op.change.kind === "add";
         case "rarity":
-            return op.rarity !== "survivors" && op.rarity !== "lowest";
+            return op.rarity !== "survivors";
         case "eldritch":
             return op.change.kind === "set";
         default:

@@ -720,7 +720,7 @@ class Walker {
             "refused" in built ? undefined : unmodelled(built, entry.before, this.registry);
         // An outcome that destroys the item or turns it into another ends the
         // craft on its share of the uses, followed by state or not.
-        const end = "refused" in built ? undefined : ending(words, built, entry.before);
+        const end = "refused" in built ? undefined : ending(words, built);
         const assumed = "refused" in built ? undefined : assumedOdds(words);
         const notes = [
             ...(unit === undefined ? [`${words}: no price is known for this step`] : []),

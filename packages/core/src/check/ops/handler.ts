@@ -55,7 +55,7 @@ export function dispatchKey(op: Single): DispatchKey {
 
 export interface MethodCtx {
     readonly u: Universe;
-    /** The rules in force for these items, as `unprotect` and `keep` left
+    /** The rules in force for these items, as `keep` left
      *  them; only the fields the handler declares may be read. */
     readonly rules: Rules;
     /** The items of this case when the method started, uniform in every

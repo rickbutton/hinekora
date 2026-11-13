@@ -2,7 +2,7 @@
  * The rules the metamods impose on a method (operations.md §2, Metamod §
  * Rules and Exceptions): read once, from the modifiers an item carries when
  * the method starts, and changed for the rest of the method only by
- * `unprotect` and `keep`. The reference states them apart
+ * `keep`. The reference states them apart
  * (reference/rules.ts), so its exactness tests check these too.
  */
 import type { Op } from "./ops/types.js";
@@ -26,8 +26,6 @@ export interface Protection {
     readonly partial: ReadonlyMap<Gen, readonly number[]>;
 }
 
-export const UNPROTECTED: Protection = { sides: new Set(), types: new Set(), partial: new Map() };
-
 /** Does a protection keep the modifier on this row? */
 export function keeps(p: Protection, row: Mod): boolean {
     return p.sides.has(row.gen) || p.types.has(row.type);
@@ -49,11 +47,6 @@ export interface Rules {
      *  § Rules and Exceptions, the Chaos Orb's row), and no removal spares
      *  what one bars (`Selector`). */
     readonly blocksSourced: boolean;
-    /** Whether the metamods govern the method: false after `unprotect`, which
-     *  then also empties `protected` (a Tainted Chaos Orb). It
-     *  says nothing to a fill, which reads the carriers on the item
-     *  as it draws either way. */
-    readonly governed: boolean;
     /** The method uses memory strands up, so its fills lay down only the
      *  tiers the strands allow (Memory strand § Crafting methods consuming
      *  memory strands). */
@@ -82,7 +75,6 @@ export function rulesOf(effects: readonly Effect[], ops: readonly Op[], choice =
         craftedCap: craftedCapOf(effects),
         // A partial protection prevents what a full one does (QUESTIONS.md Q128).
         blocksSourced: effects.some((e) => e.kind !== "craftedCap"),
-        governed: true,
         strands: usesStrands(ops),
     };
 }
@@ -115,11 +107,6 @@ function usesStrands(ops: readonly Op[]): boolean {
     return ops.some(
         (op) => op.kind === "strands" || (op.kind === "either" && op.branches.some(usesStrands)),
     );
-}
-
-/** After `unprotect`. */
-export function unprotected(r: Rules): Rules {
-    return { ...r, protected: UNPROTECTED, governed: false };
 }
 
 /** After `keep`: that side alone is kept, in place of the item's protections

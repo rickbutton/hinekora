@@ -1,18 +1,13 @@
 /**
- * The rest: `reroll`, `relax`, `strands`, `imprint`, `restore`, a removal of
+ * The rest: `reroll`, `strands`, `imprint`, `restore`, a removal of
  * one type, the Harvest change (that removal and the rows replacing it) and
  * their checks. The rules are reference/ops/misc.ts's, each cited there.
  */
 import { keeps, keptKey, type Protection } from "../rules.js";
 import type { PoolSpec } from "./types.js";
-import type { Base } from "../../model/base.js";
 import { type ModId, TagId, type TypeId } from "../../model/ids.js";
-import type { InfluenceKey } from "../../model/marks.js";
 import type { Mod } from "../../model/mod.js";
-import type { Registry } from "../../resolve/registry.js";
-import { tierLadders } from "../../resolve/tiers.js";
 import type { Dd, DdRelation } from "../dd.js";
-import { influenceTagsOfKey } from "../influence.js";
 import type { ModValue, Universe } from "../universe.js";
 import {
     type CheckTable,
@@ -29,42 +24,6 @@ import type { RemoveOf } from "./steps.js";
 
 /** The base tag of a talisman, the one Rare the Bestiary imprints. */
 export const TALISMAN = TagId("talisman");
-
-const movesCache = new WeakMap<Registry, WeakMap<Base, Map<string, readonly Mod[] | undefined>>>();
-
-/**
- * The rows a Tainted Divine Teardrop may move a row to: those of the tier
- * above and of the tier below on its own ladder (resolve/tiers.ts
- * `tierLadders`, under the base's tags and those of the item's influences),
- * rows of one mod level being one tier. Undefined for a row on no ladder: one
- * that cannot normally roll on the item stays.
- */
-export function teardropMoves(
-    registry: Registry,
-    base: Base,
-    row: Mod,
-    influences: InfluenceKey,
-): readonly Mod[] | undefined {
-    let byBase = movesCache.get(registry);
-    if (byBase === undefined) movesCache.set(registry, (byBase = new WeakMap()));
-    let byKey = byBase.get(base);
-    if (byKey === undefined)
-        byBase.set(base, (byKey = new Map<string, readonly Mod[] | undefined>()));
-    const key = `${influences}|${row.id}`;
-    if (byKey.has(key)) return byKey.get(key);
-    const tags = influenceTagsOfKey(registry, base, influences);
-    let out: readonly Mod[] | undefined;
-    for (const ladder of tierLadders(registry.catalog, base, row.type, tags).values()) {
-        if (!ladder.some((m) => m.id === row.id)) continue;
-        const levels = [...new Set(ladder.map((m) => m.minLevel))];
-        const at = levels.indexOf(row.minLevel);
-        const near = new Set([levels[at - 1], levels[at + 1]]);
-        out = ladder.filter((m) => near.has(m.minLevel));
-        break;
-    }
-    byKey.set(key, out);
-    return out;
-}
 
 /** The most strands a use takes, by the modifier count of the item the method
  *  started on: a list's last entry stands for every count beyond it. */
@@ -169,36 +128,6 @@ function rerollRelation(u: Universe, p: Protection): DdRelation {
     return rel;
 }
 
-const relaxRelations = new WeakMap<Universe, Map<string, DdRelation>>();
-
-/** The teardrop's relation on the item's modifier slots for items of one
- *  influence set. */
-function relaxRelation(u: Universe, influence: number, crafted: boolean): DdRelation {
-    let byKey = relaxRelations.get(u);
-    if (byKey === undefined) relaxRelations.set(u, (byKey = new Map<string, DdRelation>()));
-    const key = `${influence}|${crafted}`;
-    const hit = byKey.get(key);
-    if (hit !== undefined) return hit;
-    const influences = u.influenceKeys[influence]!;
-    const rel = u.modRelation((s, from, at) => {
-        const v = s.values[from];
-        if (v === undefined || (v.crafted && !crafted)) return undefined;
-        const moves = teardropMoves(u.registry, u.base, v.row, influences);
-        if (moves === undefined) return undefined;
-        const out = [from];
-        for (const t of moves) {
-            const r = u.asRow(at, from, t.id);
-            if (r === undefined) {
-                throw new InternalError(`the teardrop's row ${t.id} is no candidate`);
-            }
-            out.push(...r.values);
-        }
-        return out;
-    });
-    byKey.set(key, rel);
-    return rel;
-}
-
 const pairsCache = new WeakMap<Universe, Dd>();
 
 /** The items whose copy slots equal their own. */
@@ -248,21 +177,6 @@ export const transforms: TransformTable = {
         reads: ["protected"],
         apply: (_op, state, { u, rules }) =>
             u.dd.mapEach(state, rerollRelation(u, rules.protected)),
-    },
-    // `crafted: true` moves crafted modifiers too; no method asks for it.
-    relax: {
-        reads: [],
-        apply: (op, state, { u }) => {
-            const m = u.dd;
-            const slot = u.scalar("influences");
-            let out = m.EMPTY;
-            for (const i of m.valuesOf(state, slot)) {
-                const part = m.and(state, m.slotIn(slot, [i]));
-                out = m.or(out, m.mapEach(part, relaxRelation(u, i, op.crafted)));
-            }
-            // A type with rows on both sides may move a modifier to the other.
-            return m.and(out, u.wf);
-        },
     },
     strands: {
         reads: [],

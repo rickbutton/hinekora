@@ -20,7 +20,7 @@ import { HANDLERS } from "../ops/registry.js";
 import { checkPlacement, type CompoundKind, type Step, stepsOf } from "../ops/steps.js";
 import { type Choice, effectsKey, NO_CHOICE, relevantEffects, type RuleField } from "../rules.js";
 import { type CItem, effectsOn, type RefCtx, rowOf } from "./item.js";
-import { choicesFor, refKeeping, refRulesOf, refUnprotected } from "./rules.js";
+import { choicesFor, refKeeping, refRulesOf } from "./rules.js";
 import type {
     RefCheckHandler,
     RefCompoundHandler,
@@ -217,9 +217,6 @@ function runItem(
                 cur = pass;
                 break;
             }
-            case "unprotect":
-                mctx = { ...mctx, rules: refUnprotected(mctx.rules) };
-                break;
             case "keep":
                 mctx = { ...mctx, rules: refKeeping(mctx.rules, step.op.gen) };
                 break;

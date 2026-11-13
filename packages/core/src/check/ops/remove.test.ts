@@ -30,7 +30,6 @@ const random = (gen?: Gen): Selector & { kind: "random" } => ({
     ...(gen !== undefined && { gen }),
 });
 const keep = (gen: Gen): Op => ({ kind: "keep", gen });
-const unprotect: Op = { kind: "unprotect" };
 const natural: PoolSpec = { kind: "natural" };
 /** A removal on the items it can act on: elsewhere it refuses the method. */
 const removes = (sel: Selector): Op[] => [req({ kind: "removable", selector: sel }), remove(sel)];
@@ -157,12 +156,11 @@ const plans = (seed: number, extra: Partial<Plan> = {}): Plan[] =>
     );
 
 describe("a strip", () => {
-    it("is exact under every protection, kept side and unprotect", () => {
+    it("is exact under every protection and kept side", () => {
         for (const p of plans(9500, { fractured: true })) {
             exactOn(p, () => [strip]);
             exactOn(p, () => [keep("prefix"), strip]);
             exactOn(p, () => [keep("suffix"), strip]);
-            exactOn(p, () => [unprotect, strip]);
         }
     });
 
@@ -343,13 +341,9 @@ describe("the library's methods that remove", () => {
         }
     });
 
-    it("are exact end to end: the Harvest, the Bestiary, an add or a removal, an unprotected reforge", () => {
+    it("are exact end to end: the Harvest, the Bestiary, and an add or a removal", () => {
+        // A full item has no room for the add, so only the removal acts on it.
         const add: Transform = { kind: "fill", pool: natural, count: { kind: "add", n: [1, 1] } };
-        const reforge: Transform = {
-            kind: "fill",
-            pool: natural,
-            count: { kind: "reforge", n: [4, 6] },
-        };
         for (const p of few(plans(10100, { rows: 3, rarities: rare }))) {
             exactOn(p, () => L.harvestReforgeOps(TagId("attack")));
             exactOn(p, () => L.harvestAugmentOps(TagId("caster")));
@@ -358,17 +352,6 @@ describe("the library's methods that remove", () => {
             exactOn({ ...p, fractured: true }, () => [
                 req({ kind: "rarity", rarity: "rare" }),
                 { kind: "either", branches: [[add], [remove(random())]] },
-            ]);
-            exactOn({ ...p, fractured: true }, () => [
-                req({ kind: "rarity", rarity: "rare" }),
-                unprotect,
-                {
-                    kind: "either",
-                    branches: [
-                        [strip, reforge],
-                        [strip, { kind: "rarity", rarity: "lowest" }],
-                    ],
-                },
             ]);
         }
     });

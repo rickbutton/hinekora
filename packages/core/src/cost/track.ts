@@ -159,12 +159,10 @@ const fourAlike = (branches: Outcomes): readonly number[] =>
 
 /**
  * How likely each outcome of a method with several is, by the method's words,
- * as weights over its `either` branches on the item it is used on; undefined
- * where the odds are not known.
+ * as weights over its `either` branches; undefined where the odds are not
+ * known.
  */
-const OUTCOME_ODDS: Readonly<
-    Record<string, (branches: Outcomes, item: ItemSet) => readonly number[] | undefined>
-> = {
+const OUTCOME_ODDS: Readonly<Record<string, (branches: Outcomes) => readonly number[]>> = {
     // Vaal Orb § Equipment, § Jewels: a new implicit, the reforge, and on the
     // three basic jewels a unique jewel, on which the craft ends.
     vaal: fourAlike,
@@ -205,11 +203,10 @@ function endsCraft(branch: readonly Op[]): boolean {
 export function ending(
     method: string,
     ops: readonly Op[],
-    item: ItemSet,
 ): { readonly share: number; readonly note: string } | undefined {
     const either = ops.find((op) => op.kind === "either");
     if (either?.kind !== "either") return undefined;
-    const odds = OUTCOME_ODDS[method]?.(either.branches, item);
+    const odds = OUTCOME_ODDS[method]?.(either.branches);
     const note = ENDINGS[method];
     if (odds === undefined || note === undefined) return undefined;
     let ends = 0;
@@ -605,7 +602,7 @@ export class Tracker {
             return [{ state, prob: 1, ends: true }];
         // A method of several outcomes whose odds are known: each outcome's
         // steps read in the method's place, by its share.
-        const odds = OUTCOME_ODDS[method]?.(either.branches, item);
+        const odds = OUTCOME_ODDS[method]?.(either.branches);
         if (odds === undefined) return this.counted(undefined);
         const total = odds.reduce((sum, w) => sum + w, 0);
         const out: Outcome[] = [];

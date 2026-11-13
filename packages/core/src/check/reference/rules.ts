@@ -110,16 +110,8 @@ export function refRulesOf(
         // Any metamod but the multimod prevents an essence or a fossil
         // (Metamod § Rules and Exceptions; a partial one as a full one, Q128).
         blocksSourced: effects.some((e) => e.kind !== "craftedCap"),
-        governed: true,
         strands: usesStrands(ops),
     };
-}
-
-const NONE: Protection = { sides: new Set(), types: new Set(), partial: new Map() };
-
-/** After `unprotect`: nothing kept, and the metamods govern nothing more. */
-export function refUnprotected(r: Rules): Rules {
-    return { ...r, protected: NONE, governed: false };
 }
 
 /** After `keep`: that side alone is kept. */

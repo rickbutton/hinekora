@@ -30,7 +30,7 @@ import type {
 } from "./ops/types.js";
 
 const require = (check: Check): Op => ({ kind: "require", check });
-const rarity = (rarity: Rarity | "survivors" | "lowest"): Transform => ({ kind: "rarity", rarity });
+const rarity = (rarity: Rarity | "survivors"): Transform => ({ kind: "rarity", rarity });
 const strip = (): Transform => ({ kind: "strip" });
 const fill = (pool: PoolSpec, count: FillCount): Transform => ({ kind: "fill", pool, count });
 const remove = (selector: Selector): Transform => ({ kind: "remove", selector });

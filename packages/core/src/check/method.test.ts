@@ -51,13 +51,7 @@ const corrupt: Transform = { kind: "corrupt" };
 const rarity = (r: "normal" | "magic" | "rare"): Transform => ({ kind: "rarity", rarity: r });
 const end: Transform = { kind: "end" };
 const either = (...branches: Transform[][]): Op => ({ kind: "either", branches });
-const ALL_FIELDS: readonly RuleField[] = [
-    "protected",
-    "craftedCap",
-    "blocksSourced",
-    "governed",
-    "strands",
-];
+const ALL_FIELDS: readonly RuleField[] = ["protected", "craftedCap", "blocksSourced", "strands"];
 
 describe("the families", () => {
     it("own every operation, run and check", () => {
@@ -454,7 +448,6 @@ const code = (r: Rules): number =>
     (r.protected.sides.has("prefix") ? 1 : 0) +
     (r.protected.sides.has("suffix") ? 2 : 0) +
     (r.craftedCap > 1 ? 8 : 0) +
-    (r.governed ? 16 : 0) +
     (r.blocksSourced ? 32 : 0);
 
 const sideFree = (gen: Gen, r: Rules): boolean => !r.protected.sides.has(gen);
@@ -527,9 +520,8 @@ describe("the rules in force", () => {
         const ran = runMethod(fromItems(u, states[1]!)!, [lock], EXACT_FAKE);
         // Items with and without each metamod run under different rules.
         expect(u.dd.valuesOf(ran.state.dd, u.scalar("strands")).length).toBeGreaterThan(4);
-        exact([lock, { kind: "unprotect" }, lock]);
         exact([{ kind: "keep", gen: "suffix" }, lock]);
-        exact([{ kind: "unprotect" }, { kind: "keep", gen: "prefix" }, lock]);
+        exact([lock, { kind: "keep", gen: "prefix" }, lock]);
         exact([either([lock], [{ kind: "corrupt" }])]);
     });
 

@@ -63,30 +63,15 @@ function survivorsRarity(base: Base, had: number, prefix: number, suffix: number
     return r;
 }
 
-/** The lowest rarity that holds them (Tainted Chaos Orb § Mechanics). */
-function lowestRarity(base: Base, had: number, prefix: number, suffix: number): number {
-    let r = 0;
-    while (r < had && !holds(base, RARITIES[r]!, prefix, suffix)) r++;
-    return r;
-}
-
-type RarityRule = (base: Base, had: number, prefix: number, suffix: number) => readonly number[];
-
-const SURVIVORS: RarityRule = (b, h, p, s) => [survivorsRarity(b, h, p, s)];
-// The scour's rarity or the lowest eligible one: the pages disagree.
-const LOWEST: RarityRule = (b, h, p, s) => [survivorsRarity(b, h, p, s), lowestRarity(b, h, p, s)];
-
 /** Past every cap a base has: a count beyond it holds at no rarity. */
 const SATURATED = 7;
 
-const rarityCases = new WeakMap<Universe, Map<RarityRule, readonly Dd[]>>();
+const rarityCases = new WeakMap<Universe, readonly Dd[]>();
 
-/** By target rarity, the items the rule takes to it: read from the item's
+/** By target rarity, the items a scour takes to it: read from the item's
  *  rarity and its count on each side. */
-function casesOf(u: Universe, rule: RarityRule): readonly Dd[] {
-    let byRule = rarityCases.get(u);
-    if (byRule === undefined) rarityCases.set(u, (byRule = new Map<RarityRule, readonly Dd[]>()));
-    const hit = byRule.get(rule);
+function casesOf(u: Universe): readonly Dd[] {
+    const hit = rarityCases.get(u);
     if (hit !== undefined) return hit;
     const raritySlot = u.scalar("rarity");
     type S = readonly [number, number, number];
@@ -103,20 +88,20 @@ function casesOf(u: Universe, rule: RarityRule): readonly Dd[] {
                     ? [had, Math.min(p + 1, SATURATED), s]
                     : [had, p, Math.min(s + 1, SATURATED)];
             },
-            accept: ([had, p, s]) => rule(u.base, had, p, s).includes(target),
+            accept: ([had, p, s]) => survivorsRarity(u.base, had, p, s) === target,
             // The side counts are at most SATURATED, below 8.
             key: ([had, p, s]) => (had * 8 + p) * 8 + s,
         }),
     );
-    byRule.set(rule, out);
+    rarityCases.set(u, out);
     return out;
 }
 
-function byRule(u: Universe, state: Dd, rule: RarityRule): Dd {
+function survivors(u: Universe, state: Dd): Dd {
     const m = u.dd;
     const slot = u.scalar("rarity");
     let out = m.EMPTY;
-    casesOf(u, rule).forEach((c, r) => {
+    casesOf(u).forEach((c, r) => {
         const part = m.and(state, c);
         if (part !== m.EMPTY) out = m.or(out, m.set(part, slot, r));
     });
@@ -202,8 +187,7 @@ export const transforms: TransformTable = {
     rarity: {
         reads: [],
         apply: (op, state, { u }) => {
-            if (op.rarity === "survivors") return byRule(u, state, SURVIVORS);
-            if (op.rarity === "lowest") return byRule(u, state, LOWEST);
+            if (op.rarity === "survivors") return survivors(u, state);
             const out = u.dd.set(state, u.scalar("rarity"), u.rarityValue(op.rarity));
             // Every method sets a rarity only where the item fits it: after a
             // strip, or up from a lower one.

@@ -175,10 +175,6 @@ describe("a strip", () => {
         ]);
     });
 
-    it("after `unprotect`, keeps the fractured modifier alone", () => {
-        expect(rowsOf(outcomes(w, [item], [{ kind: "unprotect" }, strip]))).toEqual([["Suf"]]);
-    });
-
     it("leaves the rarity to the method", () => {
         expect(outcomes(w, [item], [strip])[0]!.rarity).toBe("rare");
     });

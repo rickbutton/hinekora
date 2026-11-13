@@ -2,18 +2,17 @@
  * Which family implements each operation (a fill by its pool, a removal by
  * its selector), each compound run and each check, in the symbolic frame
  * (check/ops/) and the reference (check/reference/ops/) alike. The frame
- * itself runs `require`, `unprotect`, `keep`, `either` and `end`.
+ * itself runs `require`, `keep`, `either` and `end`.
  */
 import type { Check } from "./types.js";
 import type { DispatchKey } from "./handler.js";
 import type { CompoundKind } from "./steps.js";
 
 export type Family = "frame" | "marks" | "fill" | "remove" | "crafted" | "misc";
-export type FrameKind = "require" | "unprotect" | "keep" | "either" | "end";
+export type FrameKind = "require" | "keep" | "either" | "end";
 
 export const OP_OWNERS = {
     require: "frame",
-    unprotect: "frame",
     keep: "frame",
     either: "frame",
     end: "frame",
@@ -39,7 +38,6 @@ export const OP_OWNERS = {
     elevate: "remove",
     "remove:type": "misc",
     reroll: "misc",
-    relax: "misc",
     strands: "misc",
     imprint: "misc",
     restore: "misc",

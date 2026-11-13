@@ -8,7 +8,7 @@
  * - The rules are read once, per item, from the metamods it carries when the
  *   method starts. The state is split by the carriers that decide a rule some
  *   handler of this method reads, each case runs under its own rules, and the
- *   results are united. `unprotect` and `keep` change a case's rules. A
+ *   results are united. `keep` changes a case's rules. A
  *   partial protection splits a case again by its choice
  *   (ops/remove.ts `partialChoices`).
  * - A `require` is judged on the items the method has reached; those that
@@ -58,7 +58,6 @@ import {
     type RuleField,
     type Rules,
     rulesOf,
-    unprotected,
 } from "./rules.js";
 import type { ItemSet } from "./state.js";
 import type { Universe } from "./universe.js";
@@ -433,9 +432,6 @@ function runCase(
                 cur = m.and(cur, verdict.pass);
                 break;
             }
-            case "unprotect":
-                ctx = { ...ctx, rules: unprotected(ctx.rules) };
-                break;
             case "keep":
                 ctx = { ...ctx, rules: keeping(ctx.rules, step.op.gen) };
                 break;

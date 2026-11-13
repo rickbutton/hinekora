@@ -14,7 +14,7 @@ import type { CItem, RefCtx } from "../item.js";
 export interface RefMethodCtx {
     readonly ctx: RefCtx;
     /** The rules the item's own metamods set when the method started, as
-     *  `unprotect` and `keep` left them. */
+     *  `keep` left them. */
     readonly rules: Rules;
     /** The item the method started on. */
     readonly start: CItem;

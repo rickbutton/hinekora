@@ -522,7 +522,7 @@ export function atLeast(u: Universe, reach: (v: ModValue) => boolean, n: number)
 /**
  * The fewest influenced modifiers in reach over the items, each under the
  * protections its own metamods set: the refusal words the items of every
- * metamod case together. The check comes before any `keep` or `unprotect`
+ * metamod case together. The check comes before any `keep`
  * in the library (`DOMINANCE`), so the items' metamods are the rules. A
  * partial protection's side is counted as kept whole, the fewest its choice
  * can leave where it keeps every influenced modifier there.
