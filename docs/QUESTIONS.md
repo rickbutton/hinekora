@@ -2,7 +2,7 @@
 
 Decisions and in-game probes only the user can settle. Work never waits on one: each
 entry names the assumption the code proceeds under and where, so an answer is a bounded
-change (`../CLAUDE.md`, Asking without blocking).
+change (`../AGENTS.md`, Asking without blocking).
 
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change

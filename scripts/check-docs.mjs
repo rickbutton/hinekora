@@ -1,6 +1,6 @@
 /**
  * Keep the docs honest against the code. Fails (exit 1) when a doc under docs/ or
- * the root CLAUDE.md:
+ * the root AGENTS.md:
  *
  *   - names a repo path in backticks that does not exist (bare file names and
  *     paths relative to a package's src resolve by suffix);
@@ -42,7 +42,7 @@ const fail = (file, line, msg) => problems.push(`${file}:${line}: ${msg}`);
 /** The word budget of every doc (whitespace-separated words, as `wc -w` counts). A new
  *  doc, or a raised budget, is a change to this table. */
 const BUDGETS = {
-    "CLAUDE.md": 1100,
+    "AGENTS.md": 1100,
     "docs/ARCHITECTURE.md": 2200,
     "docs/QUESTIONS.md": 5500,
     "docs/REFERENCE.md": 1300,
@@ -73,14 +73,14 @@ const SITE_GENERATED = "site/docs/operations/";
 const QUESTION_BUDGET = 150;
 const QUESTIONS = "docs/QUESTIONS.md";
 
-const DOCS = ["CLAUDE.md", ...readdirSync(join(root, "docs")).map((f) => `docs/${f}`)].filter((f) =>
+const DOCS = ["AGENTS.md", ...readdirSync(join(root, "docs")).map((f) => `docs/${f}`)].filter((f) =>
     f.endsWith(".md"),
 );
 /** Docs whose backticked identifiers must exist in the code. The item model uses its own
  *  spec vocabulary on purpose and is exempt; language.md is held to the language's
  *  vocabulary instead. */
 const SYMBOL_DOCS = new Set([
-    "CLAUDE.md",
+    "AGENTS.md",
     "docs/REFERENCE.md",
     "docs/ARCHITECTURE.md",
     "docs/ROADMAP.md",

@@ -6,7 +6,7 @@
 > slots in one place, the gotchas that bite across files, the standing
 > design note on the decision diagram, and the site's voice. The shape of the implementation and the
 > theory behind the checker are `ARCHITECTURE.md`; the item model is `item-model.md`; the
-> operations model is `operations.md`; the cost layer is `cost.md`; conventions and the gate are `../CLAUDE.md`.
+> operations model is `operations.md`; the cost layer is `cost.md`; conventions and the gate are `../AGENTS.md`.
 > Game rules are linked to their poewiki.net section, never restated.
 
 ---
@@ -16,7 +16,7 @@
 TypeScript (settled): the design needed fast iteration, the tool wants a browser
 playground, and the data is JSON-heavy. Performance never separates the languages here: a
 step is operations on decision diagrams (§6), never a list of outcomes (the core invariant,
-`../CLAUDE.md`), and that is an algorithm choice, not a language choice.
+`../AGENTS.md`), and that is an algorithm choice, not a language choice.
 
 The name: the deity Hinekora foresees the future, and the currency _Hinekora's Lock_ lets
 an item foresee the result of the next currency used on it. The language generalizes that

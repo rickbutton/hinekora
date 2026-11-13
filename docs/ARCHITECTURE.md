@@ -1,7 +1,7 @@
 # hinekora: Implementation Architecture
 
 > The **shape** of the implementation: the layers, how they compose, and the theory
-> behind the checker. The other docs are listed in [../CLAUDE.md](../CLAUDE.md); where
+> behind the checker. The other docs are listed in [../AGENTS.md](../AGENTS.md); where
 > this doc names a symbol, it is to locate a concept, and the detail is the code.
 
 ---
@@ -95,7 +95,7 @@ What resolution provides to the checker:
 
 A craft is a program over an item, with loops and branches, and every operation's
 precondition must hold on every item the craft can have there. Simulating each run is hopeless (the
-[core invariant](../CLAUDE.md)): a currency has hundreds of outcomes, and a chain of them
+[core invariant](../AGENTS.md)): a currency has hundreds of outcomes, and a chain of them
 multiplies. So the checker runs the craft once over a _set_ of items: the state at a point
 of the craft is exactly the set of items the game can produce there, and each operation
 maps it to exactly the set of items it can leave, taken over every item of the state

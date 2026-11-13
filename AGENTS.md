@@ -1,4 +1,4 @@
-# hinekora — project guide for Claude
+# hinekora — project guide for agents
 
 Hinekora is a **statically-checked DSL for Path of Exile crafts**. A checker
 proves each currency operation's precondition holds on every item the craft can reach

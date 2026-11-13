@@ -3,7 +3,7 @@
  * of an item, which mods can be added, at what weight. It returns candidate
  * descriptors, (mod, weight) pairs, a cheap bounded scan, not item states;
  * the outcome union stays a symbolic delta over this list (the
- * intensional-union rule, CLAUDE.md). The catalog is passed in because the
+ * intensional-union rule, AGENTS.md). The catalog is passed in because the
  * core is pure and takes loaded data as input.
  */
 import { maxTotal, sideCap } from "../model/capacity.js";
