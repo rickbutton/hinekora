@@ -17,6 +17,15 @@ league's. When repoe-fork publishes 3.30, re-ingest and refresh
 `packages/data/data/poe1/economy.json`. The same commit names the partial protections'
 ids in `PARTIAL_PROTECTION_EFFECTS`.
 
+## The price list leaves the package
+
+The snapshot ships in `@hinekora/data`, so new prices need a release. Settled design: a
+`prices` command fetches poe.ninja's current league into the user's cache directory; the
+CLI and the LSP read it, or a file an environment variable names, for pinning. Nothing
+fetches unasked; without a file, figures stay in currency units and the cost report names
+the command. The committed snapshot becomes a fixture for the tests, the site and the
+playground, which cannot read a cache directory. `cost.md` §7 changes with it.
+
 ## Deferred by design (don't build until called for)
 
 - the **cost layer's** finer points (`cost.md` has what is built): the
