@@ -100,7 +100,7 @@ The user is not always present. Work runs autonomously and the repo carries the 
   separate commits; each commit passes the gate on its own. Commit as you go; push
   `main` after each batch.
 - **Review.** After each batch of commits, run `/review <range>` (the `reviewer` agent, a
-  fresh context, `.claude/agents/reviewer.md`). Fix `blocking` and `should-fix` findings
+  fresh context, `.pi/agents/reviewer.md`). Fix `blocking` and `should-fix` findings
   in follow-up commits before reporting the batch done; a finding you disagree with goes
   to `docs/QUESTIONS.md` with both positions.
 
