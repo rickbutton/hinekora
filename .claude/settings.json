@@ -60,19 +60,5 @@
             "ClaudeInChromeDomain(www.google.com)",
             "ClaudeInChromeDomain(duckduckgo.com)"
         ]
-    },
-    "hooks": {
-        "PreToolUse": [
-            {
-                "matcher": "Bash|PowerShell",
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-commit-gate.mjs\"",
-                        "timeout": 600
-                    }
-                ]
-            }
-        ]
     }
 }

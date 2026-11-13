@@ -7,5 +7,5 @@ agent: reviewer
 background: false
 ---
 
-Review the commit range `$ARGUMENTS` in c:/git/hinekora. If no range was given, review
+Review the commit range `$ARGUMENTS` in this repository. If no range was given, review
 `HEAD~1..HEAD`. Follow your review protocol and produce the report in your report format.

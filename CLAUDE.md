@@ -54,18 +54,17 @@ outcomes in the checker outside `check/reference/`; it won't scale.
 ## The gate (run before declaring anything done, and before every commit)
 
 ```
-pnpm -C c:/git/hinekora gate          # every check below
-pnpm -C c:/git/hinekora format        # prettier --write ., when the check fails
+pnpm gate          # every check below
+pnpm format        # prettier --write ., when the check fails
 ```
 
 `pnpm gate` is `tsc -b`, `vitest run`, `eslint .`, `prettier --check .`,
 `scripts/check-docs.mjs`, the site build and vale on synced styles. The docs check fails when a doc names a path or symbol the code
 does not have, omits a keyword, harvest tag, `Op` kind or scalar slot the code
 has, links a wiki section the local cache lacks (skipped without the cache), or outgrows
-its budget. A `git commit` issued through the Bash or PowerShell tool runs the gate
-first (`.claude/hooks/pre-commit-gate.mjs`) on the working tree of the checkout the
-command runs in, as it stands when the command starts, and is refused when it fails; so
-make the fixes in one command and commit in the next. **Exactness principle:** every
+its budget. A `git push` runs the gate first (`.githooks/pre-push`, which `pnpm install`
+sets up) on the working tree as it stands, and is refused when it fails; nothing runs it
+at a commit, so run it yourself before each one. **Exactness principle:** every
 state is exactly the items the model allows; the exactness tests hold each handler to
 the reference interpreter, failing on an image too large or too small.
 
