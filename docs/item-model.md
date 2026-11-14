@@ -139,7 +139,7 @@ Four kinds cover the metamods ([Metamod](https://www.poewiki.net/wiki/Metamod),
 
 - `PoolRestrict(category)`, "Cannot roll Attack / Caster Modifiers": bars rows of the
   category from being added, not present ones from removal ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Item_Changes)).
-- `ProtectGeneration(generation)`, "Prefixes / Suffixes Cannot Be Changed": shields whatever
+- `ProtectGeneration(generation)`, "Prefix / Suffix Modifiers cannot be changed": shields whatever
   occupies that side from removal and reroll.
 - `ProtectSome(generation, n)`, "1 Prefix Modifier cannot be changed" and its siblings:
   shields n of that side's modifiers, chosen at random each use, every one where the side
@@ -230,7 +230,7 @@ True of the ingested PoE1 data, and pinned by the catalog-level tests of
 - **A ladder shares its families.** Every row of a ModType claims the same groups, so a
   modifier named without a tier resolves to its groups from any row.
 - The facts of §2 and §5: a ModType is not one side, essence-only rows never roll, and the
-  five metamods are the only effect carriers the data holds.
+  metamods' bench rows are the only effect carriers the data holds.
 - What a Harvest change makes of each modifier is a shipped table, generated from the
   game's lists (`packages/data/data/poe1/harvest_change.json`).
 

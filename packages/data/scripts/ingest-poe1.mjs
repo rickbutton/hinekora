@@ -12,6 +12,7 @@
  *   REPOE_MODS_FILE / REPOE_BASES_FILE local files to use instead of fetching
  *   REPOE_GEMS_URL / REPOE_GEMS_FILE   the gems export, read for the names of granted effects
  *   REPOE_COMMIT / REPOE_COMMIT_DATE / REPOE_PUBLISHED_AT   provenance overrides
+ *   REPOE_BUILD                        what an export built from a game install was built with
  *   REPOE_GAME_VERSION                 the PoE patch (default: the export's version.txt)
  *
  * The other ingest scripts add their own files to the manifest
@@ -320,6 +321,7 @@ async function main() {
                 mods.lastModified ??
                 bases.lastModified ??
                 "unknown",
+            ...(process.env.REPOE_BUILD && { build: process.env.REPOE_BUILD }),
         },
         gameVersion: await resolveGameVersion(),
         gameVersionNote: GAME_VERSION_NOTE,

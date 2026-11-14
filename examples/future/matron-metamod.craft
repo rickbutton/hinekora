@@ -1,3 +1,7 @@
+# WAITS ON: whether the Bestiary's metamod recipe can craft a partial
+# protection, "1 Suffix Modifier cannot be changed" among them (QUESTIONS.md
+# Q128). The checker reads that it can, so the recipe no longer proves the lock.
+#
 # The Wild Bristle Matron trick: a random metamod made deterministic.
 #
 # The Bestiary recipe adds one of the five metamods at random, among those

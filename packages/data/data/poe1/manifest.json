@@ -4,51 +4,52 @@
         "name": "repoe-fork/repoe",
         "url": "https://repoe-fork.github.io/",
         "repoUrl": "https://github.com/repoe-fork/repoe",
-        "commit": "aa9fa7c394b18a7a89f913f86703112b3f9d20f1",
-        "commitDate": "2026-10-25T03:48:01Z",
-        "publishedAt": "Fri, 06 Nov 2026 16:49:17 GMT"
+        "commit": "509bdf7afe04e926442b20fe71cca01a03e18e7a",
+        "commitDate": "2026-11-14T03:15:22Z",
+        "publishedAt": "not published",
+        "build": "Exported from a Steam install at patch 3.30.0.1.3 with repoe-fork/pypoe 9530adb2ecf26859085c6717166cfcae956bc7b5 and poe-tool-dev/dat-schema 1416c40f38cc14dda55115e29f675e963c04a320."
     },
-    "gameVersion": "3.29.3.4",
-    "gameVersionNote": "The repoe-fork export's version.txt when this was ingested, or REPOE_GAME_VERSION where an older dump was given; source.commit is the exporter's code, not the game data.",
-    "retrievedAt": "2026-11-10",
+    "gameVersion": "3.30.0.1.3",
+    "gameVersionNote": "The repoe-fork export's version.txt when this was ingested, or REPOE_GAME_VERSION where a dump was given as a local file; source.commit is the exporter's code, not the game data.",
+    "retrievedAt": "2026-11-14",
     "extent": {
         "description": "Full PoE1 catalog projected to the fields the core model uses: all prefix/suffix mods, all released named bases, plus the essence, bench (mod-adding) and fossil catalogs.",
-        "bases": 4796,
-        "mods": 12788,
-        "essences": 105,
-        "benchCrafts": 732,
+        "bases": 5003,
+        "mods": 12897,
+        "essences": 106,
+        "benchCrafts": 748,
         "fossils": 25,
         "eldritch": 4032
     },
     "files": {
         "mods.json": {
-            "sha256": "caea66b5c8b95052b0fb857a17379684dc5bfd753e8933f42ed86bc8badccec5",
-            "count": 12788
+            "sha256": "e8cf5e6e23586b6430c318f7ea5a5299961c8246658ca98faed2c7d6b42bc989",
+            "count": 12897
         },
         "base_items.json": {
-            "sha256": "1f0fd3bc82bc9ea1592509b9b9f1dc5249e2198f3450d976255184117397b932",
-            "count": 4796
+            "sha256": "6e569283313540f90219862fe5792ec3f8f24982d65f676d456431106ccf67e2",
+            "count": 5003
         },
         "essences.json": {
-            "sha256": "2e4b9b547dd8954f632e62af6676fb5b2adf69ce7b75593095336899b3f031d9",
-            "count": 105
+            "sha256": "0c715b58f3f4c37ef478ea75bacfd412fc4582a8385b64a764628387055ac9dc",
+            "count": 106
         },
         "bench.json": {
-            "sha256": "ae0a75c2d1ee22d3063f61f1b1e07a3e182e022035b66a704d525e353ff5e830",
-            "count": 732
+            "sha256": "b25ee601d264c0a3bda8641bc7548102888df33aada64e2e8ac2aa48760c1568",
+            "count": 748
         },
         "fossils.json": {
             "sha256": "b8d2161803924ea74a3b8fce52b65899454d5584b2f32d802df1fbb36ae764c4",
             "count": 25
         },
         "eldritch.json": {
-            "sha256": "8afc3ee0ea7a28ff3f34d19c8ad0934df8a408fe26224d3b24cf35292fc151ef",
+            "sha256": "5b0065339d8a4324bed30698f18a7f7fe1b186ee73e5f00f20c737576dbafd87",
             "count": 4032,
             "provenance": {
-                "commit": "aa9fa7c394b18a7a89f913f86703112b3f9d20f1",
-                "commitDate": "2026-10-25T03:48:01Z",
-                "publishedAt": "Mon, 09 Nov 2026 07:43:39 GMT",
-                "gameVersion": "3.29.3.5"
+                "commit": "509bdf7afe04e926442b20fe71cca01a03e18e7a",
+                "commitDate": "2026-11-14T03:15:22Z",
+                "publishedAt": "not published",
+                "gameVersion": "3.30.0.1.3"
             }
         },
         "harvest_change.json": {
@@ -57,17 +58,17 @@
             "origin": {
                 "table": "HarvestCraftOptions",
                 "url": "https://ggpk.exposed/poe1/data/harvestcraftoptions.datc64",
-                "gameVersion": "3.29.3.5"
+                "gameVersion": "3.30.0.1.3"
             }
         },
         "cluster_enchants.json": {
             "sha256": "5e502bbf6fcf13cc403331cfe6e99939053ba615bceab89660de5593cfd797c3",
             "count": 54,
             "provenance": {
-                "commit": "aa9fa7c394b18a7a89f913f86703112b3f9d20f1",
-                "commitDate": "2026-10-25T03:48:01Z",
-                "publishedAt": "Mon, 09 Nov 2026 07:47:13 GMT",
-                "gameVersion": "3.29.3.5"
+                "commit": "509bdf7afe04e926442b20fe71cca01a03e18e7a",
+                "commitDate": "2026-11-14T03:15:22Z",
+                "publishedAt": "not published",
+                "gameVersion": "3.30.0.1.3"
             }
         }
     }

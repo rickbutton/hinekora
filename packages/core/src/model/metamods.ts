@@ -14,13 +14,30 @@ import type { Mod } from "./mod.js";
 const ATTACK = TagId("attack");
 const CASTER = TagId("caster");
 
-/** Real RePoE metamod id → the effects that mod carries. */
+const carrying =
+    (effects: readonly Effect[]) =>
+    (id: string): readonly [ModId, readonly Effect[]] => [ModId(id), effects];
+
+/**
+ * Real RePoE metamod id → the effects that mod carries. Each full protection
+ * has a bench row per group of item classes, each its own cost (Version
+ * 3.30.0 § Endgame Changes): weapons, then armour and quivers (`B`), then
+ * jewellery (`C`).
+ */
 export const METAMOD_EFFECTS: ReadonlyMap<ModId, readonly Effect[]> = new Map<
     ModId,
     readonly Effect[]
 >([
-    [ModId("StrMasterItemGenerationCannotChangePrefixes"), [{ kind: "protect", gen: "prefix" }]],
-    [ModId("DexMasterItemGenerationCannotChangeSuffixes"), [{ kind: "protect", gen: "suffix" }]],
+    ...[
+        "StrMasterItemGenerationCannotChangePrefixes",
+        "StrMasterItemGenerationCannotChangePrefixesB",
+        "StrMasterItemGenerationCannotChangePrefixesC",
+    ].map(carrying([{ kind: "protect", gen: "prefix" }])),
+    ...[
+        "DexMasterItemGenerationCannotChangeSuffixes",
+        "DexMasterItemGenerationCannotChangeSuffixesB",
+        "DexMasterItemGenerationCannotChangeSuffixesC",
+    ].map(carrying([{ kind: "protect", gen: "suffix" }])),
     [
         ModId("IntMasterItemGenerationCannotRollAttackAffixes"),
         [{ kind: "poolRestrict", allows: (m) => !m.implicitTags.has(ATTACK) }],
@@ -37,20 +54,40 @@ export const METAMOD_EFFECTS: ReadonlyMap<ModId, readonly Effect[]> = new Map<
 
 /**
  * The partial protections, "1 Prefix Modifier cannot be changed" and its three
- * siblings (Version 3.30.0, Endgame Changes), by their mod ids. The game data this
- * repository holds predates them, so the table names none yet; the load tests
- * fail on a bench craft of theirs that it does not list, so a data refresh
- * cannot load one as a plain crafted modifier. Each entry is
- * `[{ kind: "protectSome", gen, count }]`, `gen` the side it protects.
+ * siblings (Version 3.30.0 § Endgame Changes), by their mod ids, in the full
+ * protections' three groups of item classes. The load tests fail on a bench
+ * craft of theirs that this table does not list, so a data refresh cannot
+ * load one as a plain crafted modifier.
  */
 export const PARTIAL_PROTECTION_EFFECTS: ReadonlyMap<ModId, readonly Effect[]> = new Map<
     ModId,
     readonly Effect[]
->([]);
+>([
+    ...[
+        "StrMasterItemGenerationCannotChangeOnePrefixes",
+        "StrMasterItemGenerationCannotChangeOnePrefixesB",
+        "StrMasterItemGenerationCannotChangeOnePrefixesC",
+    ].map(carrying([{ kind: "protectSome", gen: "prefix", count: 1 }])),
+    ...[
+        "StrMasterItemGenerationCannotChangeTwoPrefixes",
+        "StrMasterItemGenerationCannotChangeTwoPrefixesB",
+        "StrMasterItemGenerationCannotChangeTwoPrefixesC",
+    ].map(carrying([{ kind: "protectSome", gen: "prefix", count: 2 }])),
+    ...[
+        "DexMasterItemGenerationCannotChangeOneSuffixes",
+        "DexMasterItemGenerationCannotChangeOneSuffixesB",
+        "DexMasterItemGenerationCannotChangeOneSuffixesC",
+    ].map(carrying([{ kind: "protectSome", gen: "suffix", count: 1 }])),
+    ...[
+        "DexMasterItemGenerationCannotChangeTwoSuffixes",
+        "DexMasterItemGenerationCannotChangeTwoSuffixesB",
+        "DexMasterItemGenerationCannotChangeTwoSuffixesC",
+    ].map(carrying([{ kind: "protectSome", gen: "suffix", count: 2 }])),
+]);
 
 /** The bench craft text of a partial protection: a count, in digits or words,
- *  then the side. The data's wording is not known yet, so the variants a
- *  refresh may bring match; the full protection, which names no count, does not. */
+ *  then the side, so a refresh that rewords one still matches; the full
+ *  protection, which names no count, does not. */
 export const PARTIAL_PROTECTION_TEXT =
     /\b(?:\d+|an?|one|two|three) (?:Prefix(?:es)?|Suffix(?:es)?)(?: Modifiers?)? cannot be changed/i;
 

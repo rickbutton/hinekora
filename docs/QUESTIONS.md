@@ -7,7 +7,7 @@ change (`../AGENTS.md`, Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q130.
+keeps it. New entries continue from Q131.
 
 ```
 ### Qn · probe|decision · open — title
@@ -556,17 +556,17 @@ lightning Primal, 300 each. **Encoded in:** `cost/prices.ts` `unitCost`.
 
 **Q:** [§ Endgame Changes](https://www.poewiki.net/wiki/Version_3.30.0#Endgame_Changes)
 adds "1 Prefix Modifier cannot be changed" and its siblings, the kept modifiers chosen at
-random each use ([FAQ](https://www.pathofexile.com/forum/view-thread/4013527), ruled). Does
-one block what the full protection blocks? Can the Bestiary's metamod recipe craft one?
-May the choice fall on a fractured modifier? Is a Harvest augment's removal chosen before
-its add or after, and with nothing to take, is it refused or does it only add?
+random each use ([FAQ](https://www.pathofexile.com/forum/view-thread/4013527)). Does one
+block what the full protection does? Can the Bestiary's metamod recipe craft one (its game
+table names no modifiers)? May the choice fall on a fractured modifier? Is a Harvest
+augment's removal chosen after its add, and with nothing to take, refused?
 Do two on one side keep either count, or both?
 **Probe:** "1 Prefix Modifier cannot be changed": an essence; three prefixes, one
 fractured, annuls; one prefix, augments; with "2 Prefix…" too, scours; the recipe twenty
 times; record refusals, what went.
-**Assumed:** as the full protection; the recipe may craft one; any modifier; after,
-refused; any reading. In the cost, each choice alike; two on one side leave a removal's
-odds unread. **Encoded in:** `check/rules.ts` `partialProtections`;
+**Assumed:** as the full protection; the recipe may craft one
+(`examples/future/matron-metamod.craft` waits on this); any modifier; after, refused; any
+reading. In the cost, each choice alike; two on one side leave a removal's odds unread. **Encoded in:** `check/rules.ts` `partialProtections`;
 `check/ops/remove.ts` `partialChoices`; `check/reference/rules.ts`; `cost/roll.ts`.
 
 ### Q129 · probe · open — Merrick's Ducat on a Rare Abyss Jewel
@@ -579,3 +579,13 @@ metamods?
 **Probe:** Rare Abyss Jewels with two prefixes and two suffixes, one with "Prefixes Cannot
 Be Changed"; a ducat each, some ten; record the sides after.
 **Assumed:** not built (`operations.md` §3.2). **Encoded in:** nothing yet.
+
+### Q130 · probe · open — the 3.30 wording of a granted skill
+
+**Q:** does a modifier that grants a skill read "Grants Level 22 Wrath", as the client
+string `ModGrantsEffectWithLevel` ("Grants Level {1} {0}") builds it, or "Grants Level 22
+Wrath Skill", as the 3.29 export wrote it?
+**Probe:** an item with a granted-skill modifier (Elder "Grants Level 22 Wrath",
+`GrantsWrathAuraUber1`); read the modifier and its advanced copy in game.
+**Assumed:** the client string's wording. **Encoded in:**
+`packages/data/scripts/mod-text.mjs` `skillLine`; `packages/data/data/poe1/mods.json`.

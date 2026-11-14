@@ -67,7 +67,7 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
 
     it("carries dump provenance in the manifest", () => {
         expect(data.manifest.game).toBe("poe1");
-        expect(data.manifest.source.commit).toBe("aa9fa7c394b18a7a89f913f86703112b3f9d20f1");
+        expect(data.manifest.source.commit).toBe("509bdf7afe04e926442b20fe71cca01a03e18e7a");
         // publishedAt is the gh-pages republish timestamp — it changes on rebuilds
         // even for the same commit, so assert only that provenance is present.
         expect(data.manifest.source.publishedAt).toBeTruthy();
@@ -85,9 +85,41 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
         expect(data.benchCrafts.length).toBeGreaterThan(500);
         // An essence grants a specific mod per item class.
         expect(data.essences.every((e) => e.grants.size > 0)).toBe(true);
-        // A craft carries its price in the currency the bench names.
-        const lock = registry.resolveBench("suffixes cannot be changed", ClassId("Ring"));
-        expect(lock.ok && [...(lock.value.cost ?? [])]).toEqual([["Divine Orb", 2]]);
+        // A craft carries its price in the currency the bench names, and the
+        // full protections cost by item class (Version 3.30.0 § Endgame Changes).
+        const lock = (name: string, cls: string) => {
+            const r = registry.resolveBench(name, ClassId(cls));
+            return r.ok && [r.value.mod, [...(r.value.cost ?? [])]];
+        };
+        expect(lock("suffixes cannot be changed", "Ring")).toEqual([
+            "DexMasterItemGenerationCannotChangeSuffixesC",
+            [
+                ["Divine Orb", 4],
+                ["Exalted Orb", 8],
+            ],
+        ]);
+        expect(lock("prefixes cannot be changed", "Boots")).toEqual([
+            "StrMasterItemGenerationCannotChangePrefixesB",
+            [
+                ["Divine Orb", 4],
+                ["Blessed Orb", 4],
+            ],
+        ]);
+        expect(lock("Prefix Modifiers cannot be changed", "Wand")).toEqual([
+            "StrMasterItemGenerationCannotChangePrefixes",
+            [
+                ["Divine Orb", 4],
+                ["Sacred Orb", 1],
+            ],
+        ]);
+        expect(lock("1 Prefix Modifier cannot be changed", "Amulet")).toEqual([
+            "StrMasterItemGenerationCannotChangeOnePrefixesC",
+            [["Divine Orb", 1]],
+        ]);
+        expect(lock("2 suffix modifiers cannot be changed", "Helmet")).toEqual([
+            "DexMasterItemGenerationCannotChangeTwoSuffixesB",
+            [["Divine Orb", 2]],
+        ]);
     });
 
     it("loads the fossil catalog and resolves a fossil by its first word", () => {
@@ -570,22 +602,31 @@ describe("catalog-level facts of the item model", () => {
         expect(others.length).toBeGreaterThan(0);
     });
 
-    it("the five metamods are the only effect carriers, all bench-placed", () => {
+    it("the metamods are the only effect carriers, all bench-placed", () => {
+        // Each protection has a row per group of item classes (Version 3.30.0 §
+        // Endgame Changes): weapons, armour and quivers (B), jewellery (C).
+        const byClass = (id: string) => [id, `${id}B`, `${id}C`];
         const carriers = registry.catalog.filter((m) => (m.effects?.length ?? 0) > 0);
-        expect(carriers.map((m) => m.id).sort()).toEqual([
-            "DexMasterItemGenerationCannotChangeSuffixes",
-            "IntMasterItemGenerationCannotRollAttackAffixes",
-            "StrDexMasterItemGenerationCannotRollCasterAffixes",
-            "StrIntMasterItemGenerationCanHaveMultipleCraftedMods",
-            "StrMasterItemGenerationCannotChangePrefixes",
-        ]);
+        expect(carriers.map((m) => m.id).sort()).toEqual(
+            [
+                ...byClass("DexMasterItemGenerationCannotChangeSuffixes"),
+                ...byClass("DexMasterItemGenerationCannotChangeOneSuffixes"),
+                ...byClass("DexMasterItemGenerationCannotChangeTwoSuffixes"),
+                "IntMasterItemGenerationCannotRollAttackAffixes",
+                "StrDexMasterItemGenerationCannotRollCasterAffixes",
+                "StrIntMasterItemGenerationCanHaveMultipleCraftedMods",
+                ...byClass("StrMasterItemGenerationCannotChangePrefixes"),
+                ...byClass("StrMasterItemGenerationCannotChangeOnePrefixes"),
+                ...byClass("StrMasterItemGenerationCannotChangeTwoPrefixes"),
+            ].sort(),
+        );
         expect(carriers.every((m) => m.source === "bench")).toBe(true);
     });
 
     it("loads no partial protection as a plain bench craft", () => {
         // "1 Prefix Modifier cannot be changed" and its siblings (Version 3.30.0)
         // carry their effect only through the curated table; a data refresh that
-        // brings their rows fails here until the table lists each.
+        // brings a row of theirs fails here until the table lists it.
         for (const text of [
             "1 Prefix Modifier cannot be changed",
             "2 Suffix Modifiers cannot be changed",
@@ -595,19 +636,26 @@ describe("catalog-level facts of the item model", () => {
         ]) {
             expect(PARTIAL_PROTECTION_TEXT.test(text), text).toBe(true);
         }
-        expect(PARTIAL_PROTECTION_TEXT.test("Prefixes Cannot Be Changed")).toBe(false);
-        expect(PARTIAL_PROTECTION_TEXT.test("Suffixes Cannot Be Changed")).toBe(false);
+        for (const text of ["Prefix Modifiers cannot be changed", "Prefixes Cannot Be Changed"])
+            expect(PARTIAL_PROTECTION_TEXT.test(text), text).toBe(false);
         // The scan reads the bench rows' texts, as the full protections' show.
-        const full = registry.catalog.filter((m) => m.text === "Prefixes Cannot Be Changed");
-        expect(full.map((m) => m.source)).toEqual(["bench"]);
+        const full = registry.catalog.filter(
+            (m) => m.text === "Prefix Modifiers cannot be changed",
+        );
+        expect(full.map((m) => m.source)).toEqual(["bench", "bench", "bench"]);
         const partial = registry.catalog.filter(
             (m) => m.source === "bench" && PARTIAL_PROTECTION_TEXT.test(m.text ?? ""),
         );
+        expect(partial).toHaveLength(12);
+        const bench = new Map(data.benchCrafts.map((c) => [c.mod, c]));
         for (const m of partial) {
             expect(PARTIAL_PROTECTION_EFFECTS.has(m.id), `${m.id}: ${m.text}`).toBe(true);
-            // A guide names it by its wording, which a sibling's must not shadow.
-            const named = registry.resolveBench(m.text!);
-            expect(named.ok && named.value.mod, `${m.id}: ${m.text}`).toBe(m.id);
+            // A guide names it by its wording, which a sibling's must not
+            // shadow: on each class the bench crafts it on, that class's row.
+            for (const cls of bench.get(m.id)!.itemClasses) {
+                const named = registry.resolveBench(m.text!, cls);
+                expect(named.ok && named.value.mod, `${m.id}: ${m.text} on ${cls}`).toBe(m.id);
+            }
         }
         const listed = [...PARTIAL_PROTECTION_EFFECTS.keys()];
         expect(listed.filter((id) => !partial.some((m) => m.id === id))).toEqual([]);

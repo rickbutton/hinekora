@@ -125,10 +125,10 @@ export type MetamodKind =
     | "oneSuffixCannotChange"
     | "twoSuffixesCannotChange";
 
-/** The five metamods by the data's ids, types and sides; the registry attaches
- *  their effects by id (model/metamods.ts). The four partial protections the
- *  data does not hold yet carry theirs on the row, each on the side opposite
- *  the one it protects, as the full protections sit. */
+/** The five metamods by one of the data's ids for each, its type and side; the
+ *  registry attaches their effects by id (model/metamods.ts). The four partial
+ *  protections carry theirs on the row, under test ids, each on the side
+ *  opposite the one it protects, as the full protections sit. */
 const METAMOD_ROWS: Readonly<Record<MetamodKind, Mod>> = {
     multimod: metamodRow(
         "StrIntMasterItemGenerationCanHaveMultipleCraftedMods",

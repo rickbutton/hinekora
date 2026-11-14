@@ -12,10 +12,11 @@ waits until a craft calls for it.
 
 ## Waiting on game data
 
-The rules are 3.30's; the catalog is a 3.29 export and the prices are the Allflame
-league's. When repoe-fork publishes 3.30, re-ingest and refresh
-`packages/data/data/poe1/economy.json`. The same commit names the partial protections'
-ids in `PARTIAL_PROTECTION_EFFECTS`.
+The catalog is 3.30's, exported from a game install with the repoe-fork exporter
+(`packages/data/data/poe1/manifest.json` `source.build`), since repoe-fork has not published 3.30. When it does,
+re-ingest from the published export, so the provenance is the published dump. The prices
+are still the Allflame league's: refresh `packages/data/data/poe1/economy.json` once the
+Covens of Umbra league's prices settle.
 
 ## The price list leaves the package
 

@@ -45,7 +45,7 @@ node packages/cli/dist/cli.js check first.craft
 ```
 
 ```txt
-data: repoe-fork/repoe @ aa9fa7c394 (poe1, game 3.29.3.4)
+data: repoe-fork/repoe @ 509bdf7afe (poe1, game 3.30.0.1.3)
 
 ✓ first.craft checks.
 

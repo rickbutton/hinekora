@@ -18,6 +18,9 @@ export interface ManifestSource {
     readonly commitDate: string;
     /** When the dump was published (the exports' Last-Modified). */
     readonly publishedAt: string;
+    /** Set when the dump was not published but built from a game install with
+     *  the exporter at `commit`: the other tools' versions it was built with. */
+    readonly build?: string;
 }
 
 export interface ManifestFile {

@@ -21,4 +21,8 @@ export const COMMUNITY_ALIASES: Readonly<Record<string, WordingAliasEntry>> = {
     armor: "armour",
     flat: "adds",
     gems: { to: "level of all skill gems", unless: ["socketed"] },
+    // The bench's full protections read "Prefix Modifiers cannot be changed"
+    // since 3.30; players and guides keep the older "Prefixes Cannot Be Changed".
+    prefixes: "prefix modifiers",
+    suffixes: "suffix modifiers",
 };
