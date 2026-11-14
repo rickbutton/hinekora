@@ -68,6 +68,15 @@ const HARVEST_REFORGE_RANCOUR: Readonly<Record<string, number>> = {
 };
 const rancour = (amount: number): Price => ({ item: "Crystallised Rancour", amount });
 
+/** The lifeforce a change takes for each of its two elements. Cold and
+ *  lightning are not the reforges' colours: the `Change…` rows of the game's
+ *  `HarvestCraftOptions` table at 3.30.0.1.3 list these in `LifeforceTypes`. */
+const HARVEST_CHANGE_LIFEFORCE: Readonly<Record<string, string>> = {
+    fire: "Wild Crystallised Lifeforce",
+    cold: "Primal Crystallised Lifeforce",
+    lightning: "Vivid Crystallised Lifeforce",
+};
+
 /** The augment crafts: the same colours, a Sacred Crystallised Lifeforce besides. */
 const HARVEST_AUGMENT: Readonly<Record<string, number>> = {
     fire: 15000,
@@ -222,11 +231,9 @@ export function unitCost(
                 return [{ item: "Primal Crystallised Lifeforce", amount: 1000 }];
             }
             if (second === "change") {
-                // 300 lifeforce of two types, a damage change a Crystallised
-                // Rancour besides (Version 3.30.0, Harvest). Which two types is
-                // not stated: taken as the colours of the element the modifier
-                // leaves and the one it becomes, fire Wild, cold Vivid and
-                // lightning Primal as the reforges have them (QUESTIONS.md Q127).
+                // 300 lifeforce for the element the modifier leaves and 300 for
+                // the one it becomes, a damage change a Crystallised Rancour
+                // besides (Version 3.30.0, Harvest).
                 const target = text(args[1]).toLowerCase();
                 const to = ["fire", "cold", "lightning"].find((e) => target.includes(e));
                 const from = registry.resolveModType(text(args[0]), {
@@ -235,7 +242,7 @@ export function unitCost(
                 });
                 const change = from.ok ? registry.harvestChangeOf(from.value) : undefined;
                 const colours = [change?.element, to].map((e) =>
-                    e === undefined ? undefined : HARVEST_REFORGE[e]?.item,
+                    e === undefined ? undefined : HARVEST_CHANGE_LIFEFORCE[e],
                 );
                 if (colours.some((c) => c === undefined) || colours[0] === colours[1]) {
                     return undefined;

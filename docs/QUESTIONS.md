@@ -540,18 +540,6 @@ under them, and whether `Veiled` leads the header as it does on an unveiled modi
 **Assumed:** the header of any affix, `{ Prefix Modifier "Veiled" }`, over the table's
 text. **Encoded in:** `render/item.ts` `modHeader`, `textless`.
 
-### Q127 · probe · open — the lifeforce of a Harvest change
-
-**Q:** [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Harvest): a change of
-a resistance or damage modifier to another element costs "300 Lifeforce of two different
-types" (a damage change a Crystallised Rancour besides). Which two, for each pair?
-[List of harvest crafting options](https://www.poewiki.net/wiki/List_of_harvest_crafting_options)
-still gives 500 of the target's colour.
-**Probe:** at the Horticrafting Station, read the cost of each of the six resistance
-changes and one damage change.
-**Assumed:** the colours of the element left and the element taken, fire Wild, cold Vivid,
-lightning Primal, 300 each. **Encoded in:** `cost/prices.ts` `unitCost`.
-
 ### Q128 · probe · open — the partial protections
 
 **Q:** [§ Endgame Changes](https://www.poewiki.net/wiki/Version_3.30.0#Endgame_Changes)
