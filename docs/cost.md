@@ -174,7 +174,8 @@ refreshes it from poe.ninja's economy endpoints, which its
 
 What the snapshot cannot price (a bench craft, a Harvest craft's lifeforce, a Bestiary
 recipe's beasts) `cost/prices.ts` carries from the catalog and the wiki's tables, a Harvest
-change's amounts from [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Harvest) and its colours from the game's own table.
+change's amounts from [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Harvest)
+and its colours from the game's `HarvestCraftOptions` table.
 
 ---
 
