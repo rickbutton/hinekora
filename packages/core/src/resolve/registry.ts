@@ -1113,7 +1113,7 @@ export function buildRegistry(data: RegistryData): Registry {
         },
 
         resolveBench(name, itemClass, tier) {
-            const q = normalizeText(name);
+            const q = queryTokens(name, wordings);
             if (q.length === 0) return fail({ kind: "unknownBench", name });
             // Score by how tightly the query covers the mod's wording, so
             // "maximum life" prefers the flat life mod over "minions have … life".

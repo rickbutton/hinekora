@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildRegistry } from "./registry.js";
 import { BaseId, ClassId } from "../model/ids.js";
 import type { Base } from "../model/base.js";
+import type { Mod } from "../model/mod.js";
 import { CATALOG, RING_BASE } from "../__fixtures__/mods.js";
 import { benchCraft, metamod } from "../check/reference/catalog.js";
 
@@ -53,5 +54,25 @@ describe("a bench craft named by its whole wording", () => {
     it("leaves words short of a whole wording ambiguous", () => {
         const r = registry.resolveBench("prefix modifier cannot", RING_BASE.itemClass);
         expect(!r.ok && r.error.kind).toBe("ambiguous");
+    });
+});
+
+describe("a bench craft named in a community wording", () => {
+    const lock = metamod("prefixesCannotChange");
+    const reworded: Mod = { ...lock, text: "Prefix Modifiers cannot be changed" };
+    const registry = buildRegistry({
+        bases: [RING_BASE],
+        mods: [...CATALOG, reworded],
+        benchCrafts: [benchCraft(reworded, RING_BASE.itemClass)],
+        wordingAliases: { prefixes: "prefix modifiers" },
+    });
+
+    it("reads the wording as the game's, as a modifier's name is", () => {
+        const r = registry.resolveBench("prefixes cannot be changed", RING_BASE.itemClass);
+        expect(r.ok && r.value.mod).toBe(reworded.id);
+        expect(registry.resolveModType("prefixes cannot be changed")).toEqual({
+            ok: true,
+            value: reworded.type,
+        });
     });
 });
