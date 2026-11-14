@@ -12,6 +12,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { resolveGameVersion } from "./game-version.mjs";
+import { stripMarkup } from "./mod-text.mjs";
 
 const OUT_DIR = fileURLToPath(new URL("../data/poe1", import.meta.url));
 const MODS_URL = process.env.REPOE_MODS_URL ?? "https://repoe-fork.github.io/mods.min.json";
@@ -80,7 +81,7 @@ export function projectEldritch(raw) {
             weights,
             ...(unrollable && { unrollable: true }),
             implicit_tags: m.implicit_tags ?? [],
-            text: presenceText(id, m.text ?? ""),
+            text: presenceText(id, stripMarkup(m.text ?? "")),
         };
     }
     // An implicit with no rollable tier at all is on no item, whatever is lowered.

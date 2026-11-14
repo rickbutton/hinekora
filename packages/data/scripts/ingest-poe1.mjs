@@ -10,6 +10,7 @@
  * Reproducible: run `node packages/data/scripts/ingest-poe1.mjs`. Env overrides:
  *   REPOE_MODS_URL / REPOE_BASES_URL   source URLs (default: the .min exports)
  *   REPOE_MODS_FILE / REPOE_BASES_FILE local files to use instead of fetching
+ *   REPOE_GEMS_URL / REPOE_GEMS_FILE   the gems export, read for the names of granted effects
  *   REPOE_COMMIT / REPOE_COMMIT_DATE / REPOE_PUBLISHED_AT   provenance overrides
  *   REPOE_GAME_VERSION                 the PoE patch (default: the export's version.txt)
  *
@@ -21,6 +22,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { GAME_VERSION_NOTE, resolveGameVersion } from "./game-version.mjs";
+import { modText } from "./mod-text.mjs";
 
 const OUT_DIR = fileURLToPath(new URL("../data/poe1", import.meta.url));
 const MODS_URL = process.env.REPOE_MODS_URL ?? "https://repoe-fork.github.io/mods.min.json";
@@ -31,6 +33,7 @@ const BENCH_URL =
     process.env.REPOE_BENCH_URL ?? "https://repoe-fork.github.io/crafting_bench_options.min.json";
 const FOSSILS_URL =
     process.env.REPOE_FOSSILS_URL ?? "https://repoe-fork.github.io/fossils.min.json";
+const GEMS_URL = process.env.REPOE_GEMS_URL ?? "https://repoe-fork.github.io/gems.min.json";
 
 const AFFIX_GENS = new Set(["prefix", "suffix"]);
 
@@ -68,7 +71,7 @@ async function resolveCommit() {
     }
 }
 
-function projectMods(raw) {
+export function projectMods(raw, gems) {
     const out = {};
     for (const [id, m] of Object.entries(raw)) {
         if (!AFFIX_GENS.has(m.generation_type)) continue;
@@ -88,7 +91,7 @@ function projectMods(raw) {
             is_essence_only: m.is_essence_only ?? false, // for source classification
             // Human-readable fields, kept for fuzzy name resolution.
             name: m.name ?? "",
-            text: m.text ?? "",
+            text: modText(m, gems),
         };
     }
     return out;
@@ -292,8 +295,9 @@ async function main() {
     const essences = await getSource(ESSENCES_URL, "REPOE_ESSENCES_FILE");
     const bench = await getSource(BENCH_URL, "REPOE_BENCH_FILE");
     const fossils = await getSource(FOSSILS_URL, "REPOE_FOSSILS_FILE");
+    const gems = await getSource(GEMS_URL, "REPOE_GEMS_FILE");
 
-    const modsFile = writeJson("mods.json", projectMods(mods.json));
+    const modsFile = writeJson("mods.json", projectMods(mods.json, gems.json));
     const basesFile = writeJson("base_items.json", projectBases(bases.json, mods.json));
     const essencesFile = writeJson("essences.json", projectEssences(essences.json));
     const benchFile = writeJson("bench.json", projectBench(bench.json, bases.json));
