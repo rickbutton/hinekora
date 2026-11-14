@@ -9,9 +9,8 @@
 
 ## 1. Beside the checker, not in it
 
-The cost layer reads the same method table and op sequences the checker runs, and
-consumes the checker's output, the trace with the item before every statement. Nothing it
-computes can make the checker accept or refuse a step.
+The cost layer reads the checker's method table, op sequences and trace (the item before
+every statement); nothing it computes can make the checker accept or refuse a step.
 ---
 
 ## 2. How the game rolls
@@ -58,9 +57,10 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
   is carried past the gap it states, neither side below one in a hundred (Q96).
 - **Memory strands.** The share used up is not stated; the estimate reads the floor
   (Q68).
-- **Partial protections.** Each choice of kept modifiers is as likely, as a random
-  removal's odds weigh it; an add and the bench's removal are read beside one, no other
-  step (Q128).
+- **Partial protections.** A random removal weighs each choice of kept modifiers alike
+  (Q128). Beside one no reforge, strip, Divine Orb, Orb of Dominance, Harvest change or
+  augment is read, nor a random removal beside two of a side or an unsettled count. The
+  bench's removal takes all crafted (Q120).
 - **Bestiary metamod.** Each that fits alike, unread beside one maybe held (Q131).
 
 ---

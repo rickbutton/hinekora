@@ -470,7 +470,8 @@ remove crafted. A Rare with the cannot-roll metamod; craft an attack modifier. A
 an Aspect; bench-craft, then remove crafted.
 **Assumed:** every unfractured crafted modifier goes; the craft is not barred; an Aspect
 is not crafted. **Encoded in:** `check/library.ts` `BENCH_REMOVE`, `benchOps`,
-`beastAspectOps`; `check/reference/ops/crafted.ts`; `cost/roll.ts` `removes`.
+`beastAspectOps`; `check/reference/ops/crafted.ts`; `cost/roll.ts` `removes`,
+`keepsBeyondRemoval`.
 
 ### Q121 · probe · open — an Orb of Dominance: its order, the item level, the other side
 
