@@ -15,8 +15,8 @@ waits until a craft calls for it.
 The catalog is 3.30's, exported from a game install with the repoe-fork exporter
 (`packages/data/data/poe1/manifest.json` `source.build`), since repoe-fork has not published 3.30. When it does,
 re-ingest from the published export, so the provenance is the published dump. The prices
-are still the Allflame league's: refresh `packages/data/data/poe1/economy.json` once the
-Covens of Umbra league's prices settle.
+are the Covens league's from its first day, when few beasts and fossils were listed:
+refresh `packages/data/data/poe1/economy.json` once they settle.
 
 ## The price list leaves the package
 

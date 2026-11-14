@@ -19,12 +19,12 @@ if prefixCount <= 2 and not has group "movement speed" {
 
 ```txt
     7  until has "fire resistance" t1 {                          1/26 chance
-    8  essence "greed" t1                                        ×25.5: 25.5 Deafening Essence of Greed  (72.4 chaos)
+    8  essence "greed" t1                                        ×25.5: 25.5 Deafening Essence of Greed  (87.7 chaos)
    10  if prefixCount <= 2 and not has group "movement speed" {  taken 62%
    11  bench "movement speed"                                    ×0.62: 2.49 Chaos Orb  (2.49 chaos)
 
 Expected spend: 25.5 Deafening Essence of Greed, 2.49 Chaos Orb.
-~74.9 Chaos Orbs (~0.16 Divine Orbs) at Allflame prices of 2026-11-09.
+~90.2 Chaos Orbs (~1 Divine Orbs) at Covens prices of 2026-11-14.
 ```
 
 ## Lines
@@ -76,7 +76,7 @@ until has "maximum life" t1 {
     9  chaos                          ×30.2 [11.4 to 30.2]: 30.2 Chaos Orb  (30.2 chaos)
 
 Expected spend: 30.2 Chaos Orb.
-~30.2 Chaos Orbs (~0.06 Divine Orbs), 11.4 to 30.2 by what the item may hold, at Allflame prices of 2026-11-09.
+~30.2 Chaos Orbs (~0.33 Divine Orbs), 11.4 to 30.2 by what the item may hold, at Covens prices of 2026-11-14.
 ```
 
 ## Not known

@@ -8,7 +8,7 @@
  * are not documented and may move, in which case this script is what changes.
  *
  * Usage: node packages/data/scripts/fetch-economy.mjs [league]
- *   league   poe.ninja's league name (default "Allflame"; see
+ *   league   poe.ninja's league name (default "Covens"; see
  *            https://poe.ninja/poe1/api/data/index-state, `economyLeagues[].name`)
  */
 import { writeFileSync } from "node:fs";
@@ -33,7 +33,7 @@ async function fetchType(endpoint, league, type) {
 const pause = () => new Promise((r) => setTimeout(r, 1500));
 
 async function main() {
-    const league = process.argv[2] ?? "Allflame";
+    const league = process.argv[2] ?? "Covens";
     const prices = {};
     let chaosPerDivine;
     for (const type of TYPES) {
