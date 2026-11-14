@@ -391,23 +391,42 @@ bench "adds fire damage to attacks"`);
 
     it("tells the partial protections apart by their counts, and from the full one", () => {
         // One modifier type holds both counts (Version 3.30.0 § Endgame Changes).
-        const names = [
-            "1 Prefix Modifier cannot be changed",
-            "2 Prefix Modifiers cannot be changed",
-            "prefixes cannot be changed",
+        // A protection of one side is crafted on the other.
+        const sides = [
+            {
+                base: "Iron Ring",
+                on: "suffixes",
+                names: [
+                    "1 Prefix Modifier cannot be changed",
+                    "2 Prefix Modifiers cannot be changed",
+                    "prefixes cannot be changed",
+                ],
+            },
+            {
+                base: "Titan Greaves",
+                on: "prefixes",
+                names: [
+                    "1 Suffix Modifier cannot be changed",
+                    "2 Suffix Modifiers cannot be changed",
+                    "suffixes cannot be changed",
+                ],
+            },
         ];
-        for (const held of names) {
-            const r = run(`item {
-    base: "Iron Ring"
+        for (const { base, on, names } of sides) {
+            for (const held of names) {
+                const r = run(`item {
+    base: "${base}"
     ilvl: 84
     rarity: rare
-    prefixes: [ "maximum life" t1 ]
-    suffixes: [ bench "${held}" ]
+    ${on}: [ bench "${held}" ]
 }
 ${names.map((n) => `if has "${n}" { exalt }`).join("\n")}`);
-            const dead = names.filter((n) => n !== held);
-            expect(r.output, held).not.toContain(`has "${held}" is impossible`);
-            for (const n of dead) expect(r.output, held).toContain(`has "${n}" is impossible here`);
+                const dead = names.filter((n) => n !== held);
+                expect(r.output, held).not.toContain(`has "${held}" is impossible`);
+                for (const n of dead) {
+                    expect(r.output, held).toContain(`has "${n}" is impossible here`);
+                }
+            }
         }
     });
 

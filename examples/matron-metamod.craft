@@ -1,10 +1,9 @@
 # The Wild Bristle Matron trick: a random metamod, retried until it is the lock.
 #
 # The Bestiary recipe adds one metamod at random, among those that fit. With
-# the suffixes full only a crafted prefix fits, which used to leave one choice,
-# "Suffixes Cannot Be Changed". Since 3.30 the recipe can also craft "1 Suffix
-# Modifier cannot be changed" and "2 Suffix Modifiers cannot be changed", which
-# are prefixes too and keep only some of the suffixes. So the craft removes
+# the suffixes full only a crafted prefix fits: "Suffixes Cannot Be Changed",
+# or "1 Suffix Modifier cannot be changed" or "2 Suffix Modifiers cannot be
+# changed", which keep only some of the suffixes. So the craft removes
 # anything but the full lock and uses another beast, and only then reforges.
 # Each round needs a prefix slot for the metamod; when the reforge fills the
 # prefixes, an Eldritch Orb of Annulment under the Exarch's dominance opens one
