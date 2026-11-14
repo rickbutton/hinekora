@@ -25,6 +25,7 @@ import { buildKey } from "../check/build.js";
 import { effectKey, effectsKey, partialProtections } from "../check/rules.js";
 import type { Dd } from "../check/dd.js";
 import { runMethod, type TransferResult } from "../check/method.js";
+import { metamodRows } from "../check/ops/crafted-rows.js";
 import type { ItemSet } from "../check/state.js";
 import {
     capsOver,
@@ -479,14 +480,17 @@ export function unmodelled(
     return undefined;
 }
 
-/** Does the method take or replace any modifier? */
+/** Does the method take or replace a modifier a protection may keep? The
+ *  bench's removal takes the crafted modifiers whatever the protections keep
+ *  (QUESTIONS.md Q120, as the checker reads it), so what it leaves does not
+ *  rest on which modifiers a partial protection chose, nor on how many. */
 function removes(ops: readonly Op[]): boolean {
     return ops.some(
         (op) =>
             op.kind === "strip" ||
             op.kind === "reroll" ||
             op.kind === "elevate" ||
-            op.kind === "remove" ||
+            (op.kind === "remove" && op.selector.kind !== "crafted") ||
             (op.kind === "either" && removes(op.branches.flat())),
     );
 }
@@ -501,6 +505,7 @@ function keepsBeyondRemoval(ops: readonly Op[]): boolean {
             op.kind === "reroll" ||
             op.kind === "elevate" ||
             (op.kind === "remove" &&
+                op.selector.kind !== "crafted" &&
                 (op.selector.kind !== "random" || op.selector.sparing !== undefined)) ||
             (op.kind === "either" && keepsBeyondRemoval(op.branches.flat())),
     );
@@ -649,8 +654,16 @@ function poolRows(
             const of = (gen: Gen): number => rows.filter((m) => m.gen === gen).length;
             return rows.map((mod) => ({ mod, weight: 1 / of(mod.gen) }));
         }
-        case "metamods":
-            return [];
+        case "metamods": {
+            // Each metamod that fits as likely as any other: Beastcrafting says
+            // only "Randomly crafts" (QUESTIONS.md Q131).
+            const held = guaranteedTypes(a);
+            const families = new Set<GroupId>();
+            for (const t of held) for (const f of registry.familiesOfType(t)) families.add(f);
+            return metamodRows({ registry, base: a.u.base, ilvl: a.u.ilvl })
+                .filter((m) => !held.has(m.type) && ![...m.families].some((f) => families.has(f)))
+                .map((mod) => ({ mod, weight: 1 }));
+        }
     }
 }
 
@@ -821,8 +834,7 @@ interface FillPlan {
  * Read a method's operations into its roll on the item `a`: the random fill with
  * the pools and counts it draws, the forced rows placed beside it, or a random
  * removal, fracture, unveil or implicit. A method whose randomness this model
- * does not read (a Vaal Orb's outcomes, a Bestiary's random metamod) is
- * `none`.
+ * does not read (a Vaal Orb's outcomes) is `none`.
  */
 export function rollOf(
     a: ItemSet,

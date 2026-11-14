@@ -52,6 +52,21 @@ describe("the example crafts' costs", () => {
         },
     );
 
+    it(
+        "matron-metamod.craft: per reforge, two bench removals and three beasts",
+        { timeout: 60_000 },
+        () => {
+            const reforges = runsAt("matron-metamod.craft", 31);
+            expect(reforges).toBeGreaterThan(470);
+            expect(reforges).toBeLessThan(500);
+            expect(runsAt("matron-metamod.craft", 28) / reforges).toBeCloseTo(2, 6);
+            expect(
+                (runsAt("matron-metamod.craft", 26) + runsAt("matron-metamod.craft", 29)) /
+                    reforges,
+            ).toBeCloseTo(3, 6);
+        },
+    );
+
     it("example.craft: the first loop annuls about thirty-six times", () => {
         expect(runsAt("example.craft", 11)).toBeGreaterThan(35.5);
         expect(runsAt("example.craft", 11)).toBeLessThan(37.5);

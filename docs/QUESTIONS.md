@@ -7,7 +7,7 @@ change (`../AGENTS.md`, Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q131.
+keeps it. New entries continue from Q132.
 
 ```
 ### Qn · probe|decision · open — title
@@ -470,7 +470,7 @@ remove crafted. A Rare with the cannot-roll metamod; craft an attack modifier. A
 an Aspect; bench-craft, then remove crafted.
 **Assumed:** every unfractured crafted modifier goes; the craft is not barred; an Aspect
 is not crafted. **Encoded in:** `check/library.ts` `BENCH_REMOVE`, `benchOps`,
-`beastAspectOps`; `check/reference/ops/crafted.ts`.
+`beastAspectOps`; `check/reference/ops/crafted.ts`; `cost/roll.ts` `removes`.
 
 ### Q121 · probe · open — an Orb of Dominance: its order, the item level, the other side
 
@@ -582,3 +582,12 @@ wiki "… Critical Strike". No other line differs but by "Skill". Is " Support" 
 Critical and Fortify supports, advanced copies too.
 **Assumed:** (a), without " Support". **Encoded in:** `packages/data/scripts/mod-text.mjs`
 `skillLine`, `supportLine`, `effectName`; `packages/data/data/poe1/mods.json`.
+
+### Q131 · probe · open — which metamod the Bestiary crafts
+
+**Q:** [Beastcrafting](https://www.poewiki.net/wiki/Beastcrafting)'s "Add a crafted
+Meta-modifier" row says only "Randomly crafts" one. How does it choose among the metamods
+that fit, the partial protections among them?
+**Probe:** an item with its suffixes full; the recipe some thirty times, removing the
+crafted modifier between uses; count each result.
+**Assumed:** each alike. **Encoded in:** `cost/roll.ts` `poolRows`.

@@ -8,14 +8,17 @@ import {
     MAXLIFE_T1,
     MAXLIFE_T2,
     MAXLIFE_T3,
+    MULTIMOD_CARRIER,
     PROTECT_ONE_PREFIX_CARRIER,
     PROTECT_PREFIXES_CARRIER,
+    PROTECT_SUFFIXES_CARRIER,
+    PROTECT_TWO_SUFFIXES_CARRIER,
     RING_BASE,
     VEILED_CATALOG,
 } from "../__fixtures__/mods.js";
-import { craft, item, op, unveil } from "../__fixtures__/ast.js";
+import { beast, craft, item, op, unveil } from "../__fixtures__/ast.js";
 import { check } from "../check/check.js";
-import { currencyOps, unveilOps } from "../check/library.js";
+import { BEAST_METAMOD, BENCH_REMOVE, currencyOps, unveilOps } from "../check/library.js";
 import { rollRange } from "../check/values.js";
 import type { CItem } from "../check/item.js";
 import { fromItems } from "../check/state.js";
@@ -163,6 +166,12 @@ describe("a random removal beside a partial protection", () => {
         expect(unmodelled(currencyOps("annul"), a, partial)).toBeUndefined();
     });
 
+    it("reads the bench's removal, which takes the crafted modifiers whatever it keeps", () => {
+        const a = check(c, { registry: partial }).finalState!;
+        expect(unmodelled(BENCH_REMOVE, a, partial)).toBeUndefined();
+        expect(unmodelled(currencyOps("scour"), a, partial)).toMatch(/chosen at random each use/);
+    });
+
     it("leaves a removal's chances unknown where two keep some of one side", () => {
         const twoPrefixes: Mod = {
             ...PROTECT_ONE_PREFIX_CARRIER,
@@ -241,6 +250,66 @@ describe("partial protections of one type", () => {
         );
         const a = check(c, { registry: counted }).finalState!;
         expect(unmodelled(currencyOps("annul"), a, counted)).toMatch(/how many is not settled/);
+        expect(unmodelled(currencyOps("chaos"), a, counted)).toMatch(/chosen at random each use/);
+        expect(unmodelled(currencyOps("scour"), a, counted)).toMatch(/chosen at random each use/);
+        // What the bench's removal leaves rests on no count.
+        expect(unmodelled(BENCH_REMOVE, a, counted)).toBeUndefined();
+    });
+});
+
+describe("the Bestiary's metamod", () => {
+    const metamods = buildRegistry({
+        bases: [RING_BASE],
+        mods: [
+            ...CATALOG,
+            PROTECT_SUFFIXES_CARRIER,
+            PROTECT_TWO_SUFFIXES_CARRIER,
+            PROTECT_PREFIXES_CARRIER,
+            MULTIMOD_CARRIER,
+        ],
+        baseAliases: { "Iron Ring": "IronRing" },
+    });
+
+    it("draws each metamod that fits as likely as the others", () => {
+        // The suffixes full: the two prefix metamods alone fit.
+        const c = craft(
+            item({
+                base: "Iron Ring",
+                ilvl: 84,
+                rarity: "rare",
+                prefixes: ["IncreasedLife1"],
+                suffixes: ["FireResist1", "ColdResist1", "LightningResist1"],
+            }),
+            [beast({ kind: "metamod" })],
+        );
+        const a = check(c, { registry: metamods }).trace[0]!.before;
+        const roll = rollOf(a, BEAST_METAMOD, metamods);
+        if (roll.kind !== "draw") throw new Error("not a draw");
+        const [v] = roll.variants;
+        const prefixes = v!.prefix.flatMap((g) => g.members.map((m) => [m.type, m.weight]));
+        expect(prefixes.sort()).toEqual([
+            [PROTECT_SUFFIXES_CARRIER.type, 1],
+            [PROTECT_TWO_SUFFIXES_CARRIER.type, 1],
+        ]);
+        expect(v!.room.suffix).toBe(0);
+    });
+
+    it("leaves out a metamod the item holds", () => {
+        const c = craft(
+            item({
+                base: "Iron Ring",
+                ilvl: 84,
+                rarity: "rare",
+                prefixes: ["IncreasedLife1"],
+                suffixes: [MULTIMOD_CARRIER.id],
+            }),
+            [beast({ kind: "metamod" })],
+        );
+        const a = check(c, { registry: metamods }).trace[0]!.before;
+        const roll = rollOf(a, BEAST_METAMOD, metamods);
+        if (roll.kind !== "draw") throw new Error("not a draw");
+        const types = roll.variants[0]!.suffix.flatMap((g) => g.members.map((m) => m.type));
+        expect(types).toEqual([PROTECT_PREFIXES_CARRIER.type]);
     });
 });
 

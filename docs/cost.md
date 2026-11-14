@@ -58,8 +58,10 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
   is carried past the gap it states, neither side below one in a hundred (Q96).
 - **Memory strands.** The share used up is not stated; the estimate reads the floor
   (Q68).
-- **Partial protections.** Each choice of the modifiers kept is as likely; a removal's
-  odds weigh them so, and other steps' chances under one are not known (Q128).
+- **Partial protections.** Each choice of kept modifiers is as likely, as a random
+  removal's odds weigh it; an add and the bench's removal are read beside one, no other
+  step (Q128).
+- **Bestiary metamod.** Each fitting metamod alike (Q131).
 
 ---
 

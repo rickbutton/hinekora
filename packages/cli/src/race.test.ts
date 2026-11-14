@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
     check,
+    ClassId,
     costOf,
     emptyItem,
     findMethod,
@@ -324,5 +325,55 @@ describe("the race against the draw played out", { timeout: LONG }, () => {
             200_000,
         );
         expect(Math.abs(single.chance / singleExact - 1)).toBeLessThan(0.02);
+    });
+});
+
+describe("the Bestiary's metamod retried, against the recipe played out", () => {
+    it("crafts the full lock one time in three, two removals and three beasts in all", () => {
+        const source = `item {
+    base: "Titan Greaves"
+    ilvl: 86
+    rarity: rare
+    prefixes: [ "maximum life" t1 ]
+    suffixes: [ "fire resistance" t1, "cold resistance" t1, "chaos resistance" t2 ]
+}
+beast metamod
+until has "suffixes cannot be changed" {
+    bench remove
+    beast metamod
+}
+`;
+        const parsed = parse(source);
+        if (!parsed.ok) throw new Error(parsed.error.message);
+        const result = check(parsed.craft, { registry });
+        expect(result.diagnostics).toEqual([]);
+        const steps = costOf(parsed.craft, result, registry).steps;
+        const runs = (line: number): number => steps.find((s) => s.span.start.line === line)!.runs;
+
+        // The suffixes full, the recipe crafts one of the bench's boots
+        // metamods that take a prefix, each alike (QUESTIONS.md Q131).
+        const boots = registry.benchModsFor(ClassId("Boots"));
+        const fitting = registry.catalog.filter(
+            (m) => boots.has(m.id) && m.gen === "prefix" && (m.effects ?? []).length > 0,
+        );
+        expect(fitting).toHaveLength(3);
+        const random = seeded(20261114);
+        const trials = 200_000;
+        let removed = 0;
+        let beasts = 0;
+        for (let k = 0; k < trials; k++) {
+            let crafted = fitting[Math.floor(random() * fitting.length)]!;
+            beasts++;
+            while (crafted.text !== "Suffix Modifiers cannot be changed") {
+                removed++;
+                crafted = fitting[Math.floor(random() * fitting.length)]!;
+                beasts++;
+            }
+        }
+        expect(runs(8)).toBeCloseTo(1, 9);
+        const loop = steps.find((s) => s.span.start.line === 9)!;
+        expect(loop.attempts?.chance).toBeCloseTo(1 / 3, 6);
+        expect(Math.abs(runs(10) / (removed / trials) - 1)).toBeLessThan(0.01);
+        expect(Math.abs((runs(8) + runs(11)) / (beasts / trials) - 1)).toBeLessThan(0.01);
     });
 });
