@@ -12,7 +12,7 @@ import type { Base } from "../model/base.js";
 import type { ItemFacts } from "../model/item.js";
 import type { EldritchSide } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
-import { type Effect, effectKey, effectsKey, effectsOf } from "../model/effects.js";
+import { type Effect, effectKey, effectsKey, effectsOf, metamodKey } from "../model/effects.js";
 import { lookupWeight, pool } from "../pool/pool.js";
 import { veiledPool } from "../pool/veiled.js";
 import { FOULBORN_AS_STRANDS } from "../model/strands.js";
@@ -465,6 +465,14 @@ export function unmodelled(
     if (tangled) {
         return "a Tangled Fossil makes one kind of modifier, picked at random, far likelier and bars another, which is not modelled, so the chances after it are not known";
     }
+    if (
+        item !== undefined &&
+        registry !== undefined &&
+        ops.some((op) => op.kind === "fill" && op.pool.kind === "metamods") &&
+        metamodUnsettled(item, registry)
+    ) {
+        return "the item may or may not hold a metamod that changes which metamods the Bestiary can craft, so the chances after it are not known";
+    }
     if (item !== undefined && registry !== undefined && removes(ops)) {
         const partial = partialProtections(effectsAmong(item, possibleTypes(item)));
         if (keepsBeyondRemoval(ops) && partial.size > 0) {
@@ -523,6 +531,32 @@ function sureEffects(a: ItemSet, type: TypeId): Effect[] {
     if (first === undefined) return [];
     const keys = rest.map((r) => new Set(effectsOf(r).map(effectKey)));
     return effectsOf(first).filter((e) => keys.every((k) => k.has(effectKey(e))));
+}
+
+/**
+ * Does the item maybe hold a metamod that changes which the Bestiary's recipe
+ * can craft? Held, it closes its group, its own metamod among it, and takes a
+ * slot of its side; one sharing no group with a metamod that fits on a side
+ * some item has room on changes neither (`poolRows` "metamods" reads only
+ * the sure ones).
+ */
+function metamodUnsettled(a: ItemSet, registry: Registry): boolean {
+    const held = guaranteedTypes(a);
+    const rarity = rarityOf(a) ?? "rare";
+    const fewest = { prefix: countsOf(a).prefix[0], suffix: suffixRange(a)[0] };
+    const room = (g: Gen): boolean => fewest[g] < sideCap(g, rarity, a.u.base);
+    const closed = new Set<GroupId>();
+    for (const t of held) for (const f of registry.familiesOfType(t)) closed.add(f);
+    const fitting = metamodRows({ registry, base: a.u.base, ilvl: a.u.ilvl }).filter(
+        (m) => !held.has(m.type) && ![...m.families].some((f) => closed.has(f)) && room(m.gen),
+    );
+    return [...possibleTypes(a)].some((t) => {
+        if (held.has(t)) return false;
+        const rows = rowsOf(a, t).filter((m) => metamodKey(m) !== undefined);
+        if (rows.length === 0) return false;
+        const groups = registry.familiesOfType(t);
+        return fitting.some((m) => [...m.families].some((f) => groups.has(f)));
+    });
 }
 
 /** Does a type's rows on the items of `a` keep different counts of a side? */

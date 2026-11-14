@@ -61,7 +61,7 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
 - **Partial protections.** Each choice of kept modifiers is as likely, as a random
   removal's odds weigh it; an add and the bench's removal are read beside one, no other
   step (Q128).
-- **Bestiary metamod.** Each fitting metamod alike (Q131).
+- **Bestiary metamod.** Each that fits alike, unread beside one maybe held (Q131).
 
 ---
 
@@ -118,10 +118,9 @@ unveil's three draws are played out (`unveilOffers`), not raced.
 
 ## 5. From a method to a roll, from a roll to a chance
 
-`cost/roll.ts` reads a method's op sequence into its **roll**: the random `fill` with
-the pool it draws from (the checker's own `pool` on the sure facts), the count of draws
-and the modifiers present for certain (kept, or placed first), or else a removal, a
-fracture, an unveil, an implicit or a reroll.
+`cost/roll.ts` reads a method's op sequence into its **roll**: a draw from the checker's
+own `pool` on the sure facts, with its count and the modifiers present for certain (kept,
+or placed first), or a removal, fracture, unveil, implicit or reroll.
 
 `cost/chance.ts` evaluates the condition, read under every influence the items have, against
 the roll. A `has`

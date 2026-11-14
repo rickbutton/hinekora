@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { check, possibleTypes, rowsOf } from "@hinekora/core";
+import { check, costOf, possibleTypes, rowsOf } from "@hinekora/core";
 import { loadDefaultEconomy, loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { parse } from "@hinekora/parser";
 import { chartSource, checkSource, costSource, unjudgedText } from "./check.js";
@@ -647,6 +647,55 @@ ${steps}
             ]);
         },
     );
+});
+
+describe("the Bestiary's metamod costed on the real catalog", () => {
+    /** Each step of a craft on Titan Greaves with maximum life, by its line. */
+    const steps = (block: string, body: string) => {
+        const parsed = parse(`item {
+    base: "Titan Greaves"
+    ilvl: 84
+    rarity: rare
+    prefixes: [ "maximum life" t1 ]
+${block}
+}
+${body}
+if has "cannot roll attack modifiers" {
+    bench remove
+}
+`);
+        if (!parsed.ok) throw new Error(parsed.error.message);
+        const result = check(parsed.craft, { registry });
+        expect(result.diagnostics).toEqual([]);
+        const report = costOf(parsed.craft, result, registry);
+        return (line: number) => report.steps.find((s) => s.span.start.line === line)!;
+    };
+
+    it("draws one of nine metamods, each one row, where both sides have room", () => {
+        // Each metamod's three class rows drawn apart would give one in 21.
+        const at = steps("", "beast metamod");
+        expect(at(8).note).toBeUndefined();
+        expect(at(9).branch).toBeCloseTo(1 / 9, 9);
+    });
+
+    it("leaves out a metamod the item surely holds", () => {
+        const at = steps(
+            `    suffixes: [ bench "can have up to 3 crafted modifiers" ]`,
+            "beast metamod",
+        );
+        expect(at(8).note).toBeUndefined();
+        expect(at(9).branch).toBeCloseTo(1 / 8, 9);
+    });
+
+    it("does not know the draw beside a metamod the item may hold", () => {
+        const at = steps(
+            "",
+            `bench "can have up to 3 crafted modifiers"\nbeast metamod\nbeast metamod`,
+        );
+        expect(at(9).note).toBeUndefined();
+        expect(at(10).note).toMatch(/may or may not hold a metamod/);
+        expect(at(11).note).toMatch(/chance of this condition is not known/);
+    });
 });
 
 describe("costSource — what a craft is expected to spend", () => {
