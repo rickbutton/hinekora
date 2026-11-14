@@ -18,7 +18,8 @@ import type { ItemDecl } from "../item-block.js";
 import { declareItem } from "../item-block.js";
 import { rollRange } from "../values.js";
 import { maxTotal, sideCap } from "../../model/capacity.js";
-import type { Effect } from "../../model/effects.js";
+import { type Effect, effectsOf } from "../../model/effects.js";
+import { effectKey } from "../rules.js";
 import type { Gen, GroupId, TagId, TypeId } from "../../model/ids.js";
 import { type EldritchSide, influenceKey } from "../../model/marks.js";
 import type { Mod } from "../../model/mod.js";
@@ -51,7 +52,18 @@ function offeredBy(ctx: RefCtx, decl: ItemDecl): (row: Mod, gen: Gen) => boolean
         count[rollableGen(registry.catalog, base, ilvl, t) ?? "prefix"]++;
         for (const f of registry.familiesOfType(t)) families.add(f);
         for (const tag of registry.addsTagsOfType(t)) tags.add(tag);
-        for (const e of registry.effectsOfType(t)) if (e.kind === "poolRestrict") restricts.push(e);
+    }
+    // A declared metamod restricts the pool where every row it may be does.
+    for (const a of decl.affixes) {
+        if (a.type === undefined || !types.has(a.type)) continue;
+        const [first, ...rest] = a.rows ?? [];
+        for (const e of first === undefined ? [] : effectsOf(first)) {
+            if (
+                e.kind === "poolRestrict" &&
+                rest.every((r) => effectsOf(r).some((x) => effectKey(x) === effectKey(e)))
+            )
+                restricts.push(e);
+        }
     }
     const room = (gen: Gen): boolean =>
         count[gen] < sideCap(gen, "rare", base) &&

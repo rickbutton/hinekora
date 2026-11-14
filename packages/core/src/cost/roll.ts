@@ -12,6 +12,7 @@ import type { Base } from "../model/base.js";
 import type { ItemFacts } from "../model/item.js";
 import type { EldritchSide } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
+import { type Effect, effectsOf } from "../model/effects.js";
 import { lookupWeight, pool } from "../pool/pool.js";
 import { veiledPool } from "../pool/veiled.js";
 import { FOULBORN_AS_STRANDS } from "../model/strands.js";
@@ -21,7 +22,7 @@ import { rollableGen, rollableTiers } from "../resolve/tiers.js";
 import { sideCap } from "../model/capacity.js";
 import type { FillCount, Op, PoolSpec } from "../check/ops/types.js";
 import { buildKey } from "../check/build.js";
-import { effectsKey, partialProtections } from "../check/rules.js";
+import { effectKey, effectsKey, partialProtections } from "../check/rules.js";
 import type { Dd } from "../check/dd.js";
 import { runMethod, type TransferResult } from "../check/method.js";
 import type { ItemSet } from "../check/state.js";
@@ -464,9 +465,12 @@ export function unmodelled(
         return "a Tangled Fossil makes one kind of modifier, picked at random, far likelier and bars another, which is not modelled, so the chances after it are not known";
     }
     if (item !== undefined && registry !== undefined && removes(ops)) {
-        const partial = partialReadings(registry, possibleTypes(item));
+        const partial = partialProtections(effectsAmong(item, possibleTypes(item)));
         if (keepsBeyondRemoval(ops) && partial.size > 0) {
             return "a metamod keeps some of a side's modifiers, chosen at random each use, which this step's chances are not read under, so the chances after it are not known";
+        }
+        if (countUnsettled(item, possibleTypes(item))) {
+            return "a metamod keeps some modifiers of one side, and how many is not settled at this step, so the chances after it are not known";
         }
         if ([...partial.values()].some((counts) => counts.length > 1)) {
             return "two metamods each keep some modifiers of one side, and how many they keep together is not known, so the chances after this step are not known";
@@ -502,13 +506,30 @@ function keepsBeyondRemoval(ops: readonly Op[]): boolean {
     );
 }
 
-/** By side, every count of modifiers the checker reads the partial
- *  protections among `types` as keeping. */
-function partialReadings(
-    registry: Registry,
-    types: Iterable<TypeId>,
-): ReadonlyMap<Gen, readonly number[]> {
-    return partialProtections([...types].flatMap((t) => [...registry.effectsOfType(t)]));
+/** The effects the rows `types` are at on the items of `a` carry, each row
+ *  read for its own: one type's rows may keep different counts. */
+function effectsAmong(a: ItemSet, types: Iterable<TypeId>): Effect[] {
+    return [...types].flatMap((t) => rowsOf(a, t).flatMap((r) => [...effectsOf(r)]));
+}
+
+/** The effects every row a type is at on the items of `a` carries. */
+function sureEffects(a: ItemSet, type: TypeId): Effect[] {
+    const [first, ...rest] = rowsOf(a, type);
+    if (first === undefined) return [];
+    const keys = rest.map((r) => new Set(effectsOf(r).map(effectKey)));
+    return effectsOf(first).filter((e) => keys.every((k) => k.has(effectKey(e))));
+}
+
+/** Does a type's rows on the items of `a` keep different counts of a side? */
+function countUnsettled(a: ItemSet, types: Iterable<TypeId>): boolean {
+    return [...types].some((t) => {
+        const counts = new Set(
+            rowsOf(a, t).flatMap((r) =>
+                effectsOf(r).flatMap((e) => (e.kind === "protectSome" ? [e.count] : [])),
+            ),
+        );
+        return counts.size > 1;
+    });
 }
 
 /**
@@ -916,15 +937,14 @@ function removalRoll(
     // of the removal's reach.
     const protectedSides = new Set<Gen>();
     for (const t of guaranteedTypes(before)) {
-        for (const e of registry.effectsOfType(t))
-            if (e.kind === "protect") protectedSides.add(e.gen);
+        for (const e of sureEffects(before, t)) if (e.kind === "protect") protectedSides.add(e.gen);
     }
     // A partial protection keeps that many of its side's modifiers, each
     // choice of them as likely (QUESTIONS.md Q128): a modifier of the side is
     // out of reach in that share of the uses, and the side holds that many
     // fewer to take.
     // A side with several readings never gets here (`unmodelled`).
-    const partial = partialReadings(registry, guaranteedTypes(before));
+    const partial = partialProtections(effectsAmong(before, guaranteedTypes(before)));
     const free = (g: Gen): number => {
         const n = partial.get(g)?.[0] ?? 0;
         return n === 0 ? 1 : Math.max(0, mid(g) - n) / Math.max(mid(g), 1);

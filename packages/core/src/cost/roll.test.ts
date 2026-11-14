@@ -193,6 +193,57 @@ describe("a random removal beside a partial protection", () => {
     });
 });
 
+describe("partial protections of one type", () => {
+    // The game's "1 Prefix Modifier" and "2 Prefix Modifiers cannot be changed"
+    // share a modifier type: each row keeps its own count.
+    const shared = TypeId("MetaPrefixesCountCannotChange");
+    const one: Mod = { ...PROTECT_ONE_PREFIX_CARRIER, type: shared };
+    const two: Mod = {
+        ...one,
+        id: ModId("MetaTwoPrefixesCannotChange"),
+        effects: [{ kind: "protectSome", gen: "prefix", count: 2 }],
+        text: "2 prefix modifiers cannot be changed",
+    };
+    const counted = buildRegistry({
+        bases: [RING_BASE],
+        mods: [...CATALOG, one, two],
+        baseAliases: { "Iron Ring": "IronRing" },
+        benchCrafts: [one, two].map((m, i) => ({
+            mod: m.id,
+            tier: i + 1,
+            itemClasses: new Set([RING_BASE.itemClass]),
+        })),
+    });
+    const prefixes = ["IncreasedLife1", "IncreasedMana1", "IncreasedArmour1"];
+
+    it("reads the count of the row the item holds", () => {
+        const c = craft(
+            item({ base: "Iron Ring", ilvl: 84, rarity: "rare", prefixes, suffixes: [one.id] }),
+            [],
+        );
+        const a = check(c, { registry: counted }).finalState!;
+        const roll = rollOf(a, currencyOps("annul"), counted);
+        if (roll.kind !== "removal") throw new Error("not a removal");
+        for (const x of roll.candidates)
+            if (x.type !== shared) expect(x.prob).toBeCloseTo(2 / 9, 9);
+    });
+
+    it("leaves a removal's chances unknown where the item may hold either", () => {
+        const c = craft(
+            item({
+                base: "Iron Ring",
+                ilvl: 84,
+                rarity: "rare",
+                prefixes,
+                suffixes: [{ mod: "random", bench: true }],
+            }),
+            [],
+        );
+        const a = check(c, { registry: counted }).finalState!;
+        expect(unmodelled(currencyOps("annul"), a, counted)).toMatch(/how many is not settled/);
+    });
+});
+
 describe("the Foulborn cull", () => {
     it("keeps a type's top tiers at the weight of all of them", () => {
         // Three life tiers at 800/400/200: the top two stay, scaled by 3/2 so

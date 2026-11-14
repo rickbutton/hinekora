@@ -11,7 +11,7 @@
  */
 import type { Craft, Pred, Stmt } from "../ast/ast.js";
 import type { SourceSpan } from "../ast/span.js";
-import type { Gen, ModId, TagId, TypeId } from "../model/ids.js";
+import type { Gen, ModId, TagId } from "../model/ids.js";
 import { sideCap } from "../model/capacity.js";
 import type { Mod } from "../model/mod.js";
 import type { Registry } from "../resolve/registry.js";
@@ -508,7 +508,7 @@ class Walker {
         };
         collect(result.trace);
         const preds: RPred[] = [];
-        const crafted: TypeId[] = [];
+        const crafted: Mod[] = [];
         const visit = (stmts: readonly Stmt[]): void => {
             for (const s of stmts) {
                 const e = this.traced(s);
@@ -524,7 +524,7 @@ class Walker {
                     const literals: Literal[] = [];
                     for (const arg of s.args) if (arg.kind !== "param") literals.push(arg);
                     const mod = this.benchMod(literals, e.before);
-                    if (mod !== undefined) crafted.push(mod.type);
+                    if (mod !== undefined) crafted.push(mod);
                 }
             }
         };

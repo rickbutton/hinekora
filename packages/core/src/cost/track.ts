@@ -18,6 +18,7 @@ import {
     NO_ELDRITCH,
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
+import { effectsOf } from "../model/effects.js";
 import type { Range } from "../check/range.js";
 import { narrowRange } from "../check/values.js";
 import type { Op } from "../check/ops/types.js";
@@ -274,7 +275,7 @@ export class Tracker {
         first: ItemSet,
         items: readonly ItemSet[],
         preds: readonly RPred[],
-        crafted: readonly TypeId[],
+        crafted: readonly Mod[],
     ) {
         this.locks = items.some((a) => fracturedCount(a)[1] > 0);
         this.implicits = items.some((a) => [...eldritchPairs(a)].some((k) => k !== NO_ELDRITCH));
@@ -302,15 +303,28 @@ export class Tracker {
                 }
             }
         }
+        // A type protects a side where every row of it the items may hold, or
+        // the bench crafts, does.
+        const carried = new Map<TypeId, Set<Mod>>();
+        const carry = (t: TypeId, rows: readonly Mod[]): void => {
+            const known = carried.get(t);
+            if (known === undefined) carried.set(t, new Set(rows));
+            else for (const r of rows) known.add(r);
+        };
+        for (const item of items) for (const t of possibleTypes(item)) carry(t, rowsOf(item, t));
+        for (const m of crafted) carry(m.type, [m]);
         const protecting: { type: TypeId; side: Gen }[] = [];
-        const seen = new Set<TypeId>();
-        for (const item of items) {
-            for (const t of [...guaranteedTypes(item), ...possibleTypes(item), ...crafted]) {
-                if (seen.has(t)) continue;
-                seen.add(t);
-                for (const e of registry.effectsOfType(t)) {
-                    if (e.kind === "protect") protecting.push({ type: t, side: e.gen });
-                }
+        for (const [t, rows] of carried) {
+            const [first, ...rest] = [...rows];
+            for (const e of first === undefined ? [] : effectsOf(first)) {
+                if (e.kind !== "protect") continue;
+                const side = e.gen;
+                if (
+                    rest.every((r) =>
+                        effectsOf(r).some((x) => x.kind === "protect" && x.gen === side),
+                    )
+                )
+                    protecting.push({ type: t, side });
             }
         }
         const tags = new Set<TagId>();

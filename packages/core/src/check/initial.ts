@@ -23,7 +23,8 @@ import type { Craft } from "../ast/ast.js";
 import type { Diag } from "./defs.js";
 import { declareItem, type DeclaredAffix, type ItemDecl } from "./item-block.js";
 import { canBeRare } from "../model/capacity.js";
-import type { Effect } from "../model/effects.js";
+import { type Effect, effectsOf } from "../model/effects.js";
+import { effectKey } from "./rules.js";
 import type { Gen, GroupId, TagId, TypeId } from "../model/ids.js";
 import type { ItemFacts } from "../model/item.js";
 import {
@@ -71,14 +72,13 @@ export function anonymousRows(
     for (const i of decl.influences) for (const t of registry.influenceTags(base, i)) tags.add(t);
     let prefixCount = 0;
     let suffixCount = 0;
-    const effects: Effect[] = [];
     for (const t of types) {
         if ((rollableGen(registry.catalog, base, ilvl, t) ?? "prefix") === "prefix") prefixCount++;
         else suffixCount++;
         for (const f of registry.familiesOfType(t)) families.add(f);
         for (const tag of registry.addsTagsOfType(t)) tags.add(tag);
-        effects.push(...registry.effectsOfType(t));
     }
+    const effects = declaredEffects(decl, types);
     const facts: ItemFacts = {
         base,
         ilvl,
@@ -99,6 +99,19 @@ export function anonymousRows(
         candidates = pool(registry.catalog, facts, maybe);
     }
     return candidates.map((c) => c.mod).filter((m) => m.gen === gen);
+}
+
+/** The effects the declared modifiers of `types` carry on every row each may be. */
+function declaredEffects(decl: ItemDecl, types: ReadonlySet<TypeId>): Effect[] {
+    const effects: Effect[] = [];
+    for (const a of decl.affixes) {
+        if (a.type === undefined || !types.has(a.type)) continue;
+        const [first, ...rest] = a.rows ?? [];
+        for (const e of first === undefined ? [] : effectsOf(first))
+            if (rest.every((r) => effectsOf(r).some((x) => effectKey(x) === effectKey(e))))
+                effects.push(e);
+    }
+    return effects;
 }
 
 /** The bench's rows for the item's class on the side: what `bench "random"` may be. */

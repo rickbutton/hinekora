@@ -6,7 +6,6 @@
  */
 import type { Base } from "../model/base.js";
 import { isCraftedOn } from "../model/capacity.js";
-import type { Effect } from "../model/effects.js";
 import type { ClassId, Gen, GroupId, ModId, TypeId } from "../model/ids.js";
 import { Domain, TagId } from "../model/ids.js";
 import {
@@ -54,7 +53,6 @@ const EMPTY_TAGS: ReadonlySet<TagId> = new Set();
 const CLUSTER_DOMAIN = Domain("affliction_jewel");
 const EMPTY_SIDES: ReadonlySet<Gen> = new Set();
 const EMPTY_FAMILIES: ReadonlySet<GroupId> = new Set();
-const EMPTY_EFFECTS: readonly Effect[] = [];
 
 export type ClusterSize = "small" | "medium" | "large";
 
@@ -317,8 +315,6 @@ export interface Registry {
     addsTagsOfType(type: TypeId): ReadonlySet<TagId>;
     /** The tags an influence adds to a base, the ones its rows' spawn tables name. */
     influenceTags(base: Base, influence: Influence): ReadonlySet<TagId>;
-    /** The effects a ModType carries (non-empty only for metamod carriers). */
-    effectsOfType(type: TypeId): readonly Effect[];
     /** Canonical range-stripped wording for a ModType ("maximum life"), for
      *  hover/diagnostics; falls back to the raw TypeId. */
     typeLabel(type: TypeId): string;
@@ -594,12 +590,6 @@ export function buildRegistry(data: RegistryData): Registry {
         if (!fams) typeFamilies.set(m.type, (fams = new Set()));
         for (const f of m.families) fams.add(f);
     }
-
-    // Effects per ModType, from the effect-carrying mods (metamods). A carrier's
-    // type is unique to it, so a plain last-wins map is exact.
-    const typeEffects = new Map<TypeId, readonly Effect[]>();
-    for (const m of catalog)
-        if (m.effects && m.effects.length > 0) typeEffects.set(m.type, m.effects);
 
     // Veiled result types: referenceable (an unveil can produce them) even though
     // the domain gate makes them non-rollable, so `resolveModType` must keep them
@@ -1203,10 +1193,6 @@ export function buildRegistry(data: RegistryData): Registry {
         },
         influenceTags(base, influence) {
             return influenceTags(base, influence, spawnTags);
-        },
-
-        effectsOfType(type) {
-            return typeEffects.get(type) ?? EMPTY_EFFECTS;
         },
 
         typeLabel(type) {
