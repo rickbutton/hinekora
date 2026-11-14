@@ -12,11 +12,15 @@ import {
     influenceOfTag,
     influenceTags,
     isCorruptedEssence,
+    isCraftedOn,
     type ItemFacts,
     PARTIAL_PROTECTION_EFFECTS,
     PARTIAL_PROTECTION_TEXT,
+    normalizeText,
     pool,
     rollableTiers,
+    tierLadder,
+    veiledPool,
     TagId,
     ModId,
     TypeId,
@@ -681,6 +685,80 @@ describe("fuzzy mod resolution against real data", () => {
             ok: true,
             value: "IncreasedLife",
         });
+    });
+
+    it("names the modifier the base rolls by a wording another item's modifier shares", () => {
+        // Each wording is also a row of a type that spawns only on other items
+        // (a percent regeneration, the wand's socketed gems, elder gloves' block).
+        for (const [name, on, type] of [
+            ["Regenerate (0.4-0.5)% of Life per second", "Iron Ring", "LifeRegeneration"],
+            [
+                "+1 to Level of Socketed Gems",
+                "Splintered Tower Shield",
+                "LocalIncreaseSocketedMeleeGemLevel",
+            ],
+            ["(2-3)% Chance to Block Attack Damage", "Gnarled Branch", "AdditionalBlock"],
+        ] as const) {
+            const b = base(on);
+            expect(tierLadder(data.mods, b, TypeId(type)).length, type).toBeGreaterThan(0);
+            expect(registry.resolveModType(name, { base: b, ilvl: 84 }), name).toEqual({
+                ok: true,
+                value: type,
+            });
+        }
+    });
+
+    it("names by a modifier's wording only a modifier the base can carry", () => {
+        const typesWorded = new Map<string, Set<TypeId>>();
+        for (const m of data.mods) {
+            if (m.text === undefined) continue;
+            const types = typesWorded.get(m.text);
+            if (types) types.add(m.type);
+            else typesWorded.set(m.text, new Set([m.type]));
+        }
+        const firstOfClass = new Map<string, Base>();
+        for (const b of data.bases)
+            if (isCraftedOn(b) && !firstOfClass.has(b.itemClass)) firstOfClass.set(b.itemClass, b);
+        const offBase: string[] = [];
+        for (const b of firstOfClass.values()) {
+            const unveils = new Set(veiledPool(data.mods, b, 100, new Set()).map((m) => m.type));
+            const carries = (t: TypeId): boolean =>
+                tierLadder(data.mods, b, t).length > 0 ||
+                registry.benchTypesFor(b.itemClass).has(t) ||
+                unveils.has(t);
+            const names = new Set<string>();
+            for (const m of data.mods)
+                if (
+                    m.text &&
+                    m.domain === b.domain &&
+                    normalizeText(m.text).length > 0 &&
+                    carries(m.type)
+                )
+                    names.add(m.text);
+            for (const name of names) {
+                const r = registry.resolveModType(name, { base: b, ilvl: 100 });
+                const where = `${b.itemClass}: ${name}`;
+                if (r.ok) {
+                    if (!carries(r.value)) offBase.push(`${where} -> ${r.value}`);
+                } else if (r.error.kind === "ambiguous") {
+                    for (const c of r.error.candidates)
+                        if (![...(typesWorded.get(c) ?? [])].some(carries))
+                            offBase.push(`${where} ~ ${c}`);
+                } else offBase.push(`${where} -> ${r.error.kind}`);
+            }
+        }
+        // Names the narrowing keeps among candidates because it reads what any
+        // item can unveil, not this one.
+        const spellBlock = "(4-5)% Chance to Block Spell Damage";
+        const attackBlock = "(2-3)% Chance to Block Attack Damage";
+        const known = ["Two Hand Axe", "Two Hand Sword", "Two Hand Mace"].flatMap((cls) => [
+            ...["8-9", "10-11", "12-13", "14-15"].map(
+                (r) => `${cls}: +(${r})% Chance to Block Spell Damage ~ ${spellBlock}`,
+            ),
+            `${cls}: +(8-9)% Chance to Block Attack Damage ~ ${attackBlock}`,
+        ]);
+        known.push("Helmet: +1 to maximum number of Spectres -> MaximumSpectreCount");
+        expect(offBase.sort()).toEqual(known.sort());
     });
 
     it("reports a genuinely ambiguous description with candidates", () => {

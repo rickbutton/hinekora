@@ -56,6 +56,9 @@ playground, which cannot read a cache directory. `cost.md` §7 changes with it.
   like `poolNonEmpty` would word it as the harvest crafts' is.
 - **the cost layer's split of a reforge between the sides**, which undercounts a type
   with rows on both.
+- **a name's unveil narrowing by base**: it reads what any item unveils, so a two-handed
+  weapon's block names tie with types it cannot roll, and a helmet's Spectre name finds
+  a type only Catarina unveils.
 - **a first check's speed**: a flatter node layout, a prebuilt data snapshot, a bundled
   command line.
 - English negation sugar (`doesn't have` → `not has`); a power-user annotation tier for

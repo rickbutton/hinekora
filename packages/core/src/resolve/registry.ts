@@ -18,6 +18,7 @@ import { withMetamodEffects } from "../model/metamods.js";
 import { emptyItem } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
 import { pool } from "../pool/pool.js";
+import { veiledPool } from "../pool/veiled.js";
 import {
     type BenchCraft,
     CORRUPTED_ESSENCE_TIER,
@@ -677,6 +678,19 @@ export function buildRegistry(data: RegistryData): Registry {
         return hit;
     };
 
+    // Any level: as with a tier ladder, the base decides what a name can mean.
+    const unveilable = new WeakMap<Base, ReadonlySet<TypeId>>();
+    const unveilsOn = (base: Base): ReadonlySet<TypeId> => {
+        let types = unveilable.get(base);
+        if (types === undefined) {
+            types = new Set(
+                veiledPool(catalog, base, Number.POSITIVE_INFINITY, new Set()).map((m) => m.type),
+            );
+            unveilable.set(base, types);
+        }
+        return types;
+    };
+
     let typesBySpelling: Map<string, Set<TypeId>> | undefined;
     const typesSpelling = (name: string): ReadonlySet<TypeId> => {
         if (typesBySpelling === undefined) {
@@ -743,15 +757,16 @@ export function buildRegistry(data: RegistryData): Registry {
         // A row's whole wording, numbers kept, names its type, as a bench
         // craft's does: "2 Prefix Modifiers cannot be changed" shares every
         // word with the full protection, and its own type is worded by the
-        // "1 Prefix Modifier" row.
+        // "1 Prefix Modifier" row. Only a type this item can carry: many
+        // wordings are shared by a type of another class or influence.
         const [spelled, ...others] = typesSpelling(name);
         if (spelled !== undefined && others.length === 0 && typeIndex.has(spelled)) {
-            const reachable =
+            const carried =
                 ctx === undefined ||
-                veiledTypes.has(spelled) ||
                 benchTypesByClass.get(ctx.base.itemClass)?.has(spelled) === true ||
-                tierLadder(catalog, ctx.base, spelled, ctx.tags).length > 0;
-            if (reachable) return found(spelled);
+                tierLadder(catalog, ctx.base, spelled, ctx.tags).length > 0 ||
+                unveilsOn(ctx.base).has(spelled);
+            if (carried) return found(spelled);
         }
         if (matches.length === 0) return fail({ kind: "unknownMod", name });
 

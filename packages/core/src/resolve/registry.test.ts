@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildRegistry } from "./registry.js";
-import { BaseId, ClassId, TypeId } from "../model/ids.js";
+import { BaseId, ClassId, Domain, GroupId, ModId, TagId, TypeId } from "../model/ids.js";
 import type { Base } from "../model/base.js";
 import type { Mod } from "../model/mod.js";
-import { CATALOG, RING_BASE } from "../__fixtures__/mods.js";
+import { AMULET_BASE, CATALOG, RING_BASE } from "../__fixtures__/mods.js";
 import { benchCraft, metamod } from "../check/reference/catalog.js";
 
 describe("a base name two bases share", () => {
@@ -115,6 +115,56 @@ describe("a modifier named by a row's whole wording", () => {
     it("leaves words short of a whole wording to the type's", () => {
         const rows = registry.catalog.filter((m) => m.type === shared);
         expect(registry.rowsNamed("prefix modifier cannot", rows)).toHaveLength(2);
+    });
+});
+
+describe("a whole wording another item's modifier shares", () => {
+    const row = (id: string, type: string, tag: TagId, text: string, veiled = false): Mod => ({
+        id: ModId(id),
+        type: TypeId(type),
+        families: new Set([GroupId(type)]),
+        gen: "suffix",
+        domain: veiled ? Domain("unveiled") : RING_BASE.domain,
+        minLevel: 1,
+        addsTags: new Set(),
+        implicitTags: new Set(),
+        spawn: [{ tag, weight: 1000 }],
+        generation: [],
+        ...(veiled && { source: "veiled" as const }),
+        text,
+    });
+    const percent = "Regenerate (0.4-0.5)% of Life per second";
+    const flat = row("FlatRegen1", "FlatRegen", TagId("ring"), "Regenerate (1-2) Life per second");
+    const amulets = row("PercentRegen1", "PercentRegen", TagId("amulet"), percent);
+    const unveiledOn = (tag: string) =>
+        buildRegistry({
+            bases: [RING_BASE, AMULET_BASE],
+            mods: [
+                flat,
+                amulets,
+                row("PercentRegenVeiled", "PercentRegen", TagId(tag), percent, true),
+            ],
+        });
+
+    it("names the modifier the item rolls, where only another item's carries that wording", () => {
+        // The percent type unveils somewhere, on amulets only.
+        const registry = unveiledOn("amulet");
+        expect(registry.resolveModType(percent, { base: RING_BASE, ilvl: 84 })).toEqual({
+            ok: true,
+            value: flat.type,
+        });
+        expect(registry.resolveModType(percent, { base: AMULET_BASE, ilvl: 84 })).toEqual({
+            ok: true,
+            value: amulets.type,
+        });
+    });
+
+    it("names the wording's own modifier where this item can unveil it", () => {
+        const registry = unveiledOn("ring");
+        expect(registry.resolveModType(percent, { base: RING_BASE, ilvl: 84 })).toEqual({
+            ok: true,
+            value: amulets.type,
+        });
     });
 });
 

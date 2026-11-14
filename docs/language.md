@@ -115,7 +115,7 @@ Ambiguous name "res" — candidates: +(6-11)% to Fire Resistance, +(6-11)% to Co
 ```
 
 A bench name ranks so among the crafts of the item's class. A modifier's or craft's whole
-wording, typed out with its numbers, names it despite a tie.
+wording, numbers kept, names it over a tie wherever the item can carry it.
 
 **Tiers.** `t<n>` is the tier the game's advanced tooltip shows, `t1` the modifier's Tier 1
 on that base: its rows that roll on the base, counted best first by
