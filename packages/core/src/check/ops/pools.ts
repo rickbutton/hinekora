@@ -20,7 +20,7 @@
  */
 import type { PoolSpec } from "./types.js";
 import type { Base } from "../../model/base.js";
-import { effectsOf } from "../../model/effects.js";
+import { effectKey, effectsOf } from "../../model/effects.js";
 import type { Gen, TagId, TypeId } from "../../model/ids.js";
 import { type InfluenceKey, influenceOfTag } from "../../model/marks.js";
 import type { Mod } from "../../model/mod.js";
@@ -29,7 +29,7 @@ import { lookupWeight } from "../../pool/pool.js";
 import type { Registry } from "../../resolve/registry.js";
 import type { Dd, DdRelation } from "../dd.js";
 import { influenceTagsOfKey } from "../influence.js";
-import { type CannotRoll, effectKey } from "../rules.js";
+import type { CannotRoll } from "../rules.js";
 import { isFresh, type Universe } from "../universe.js";
 import { InternalError, type MethodCtx, NotImplementedError } from "./handler.js";
 

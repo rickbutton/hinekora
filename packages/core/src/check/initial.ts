@@ -23,8 +23,7 @@ import type { Craft } from "../ast/ast.js";
 import type { Diag } from "./defs.js";
 import { declareItem, type DeclaredAffix, type ItemDecl } from "./item-block.js";
 import { canBeRare } from "../model/capacity.js";
-import { type Effect, effectsOf } from "../model/effects.js";
-import { effectKey } from "./rules.js";
+import { type Effect, effectKey, effectsOf } from "../model/effects.js";
 import type { Gen, GroupId, TagId, TypeId } from "../model/ids.js";
 import type { ItemFacts } from "../model/item.js";
 import {

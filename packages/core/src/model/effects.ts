@@ -45,3 +45,27 @@ export function poolRestrictPredicate(es: readonly Effect[]): (m: Mod) => boolea
 export function craftedCapOf(es: readonly Effect[]): number {
     return ofKind(es, "craftedCap").reduce((cap, e) => Math.max(cap, e.cap), 1);
 }
+
+const restricts = new WeakMap<(m: Mod) => boolean, number>();
+let restrictCount = 0;
+
+/** A name for an effect by what it does: two rows carrying equal effects share it. */
+export function effectKey(e: Effect): string {
+    switch (e.kind) {
+        case "protect":
+            return `protect:${e.gen}`;
+        case "protectSome":
+            return `protect:${e.gen}:${e.count}`;
+        case "craftedCap":
+            return `cap:${e.cap}`;
+        case "poolRestrict": {
+            let id = restricts.get(e.allows);
+            if (id === undefined) restricts.set(e.allows, (id = ++restrictCount));
+            return `restrict:${id}`;
+        }
+    }
+}
+
+export function effectsKey(effects: readonly Effect[]): string {
+    return [...new Set(effects.map(effectKey))].sort().join("|");
+}

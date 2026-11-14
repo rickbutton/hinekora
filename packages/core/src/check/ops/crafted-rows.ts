@@ -5,13 +5,12 @@
  * (ops/crafted.ts) and the reference (reference/ops/crafted.ts).
  */
 import type { Base } from "../../model/base.js";
-import { craftedCapOf, effectsOf } from "../../model/effects.js";
+import { craftedCapOf, effectsKey, effectsOf } from "../../model/effects.js";
 import { type ClassId, type Gen, TagId } from "../../model/ids.js";
 import type { Mod } from "../../model/mod.js";
 import { isVeiledPlaceholder } from "../../model/veiled.js";
 import { veiledPool } from "../../pool/veiled.js";
 import type { Registry } from "../../resolve/registry.js";
-import { effectsKey } from "../rules.js";
 import type { Where } from "./pools.js";
 
 /** The category tag of a bench row that is the craftable version of a veiled

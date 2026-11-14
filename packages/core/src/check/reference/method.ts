@@ -18,7 +18,7 @@ import {
 import type { PoolTable } from "../ops/pools.js";
 import { HANDLERS } from "../ops/registry.js";
 import { checkPlacement, type CompoundKind, type Step, stepsOf } from "../ops/steps.js";
-import { type Choice, effectsKey, NO_CHOICE, relevantEffects, type RuleField } from "../rules.js";
+import { type Choice, NO_CHOICE, relevantEffects, type RuleField } from "../rules.js";
 import { type CItem, effectsOn, type RefCtx, rowOf } from "./item.js";
 import { choicesFor, refKeeping, refRulesOf } from "./rules.js";
 import type {
@@ -30,7 +30,7 @@ import type {
 } from "./ops/handler.js";
 import { REF_HANDLERS } from "./ops/registry.js";
 import { CItemSet } from "./sets.js";
-import { effectsOf } from "../../model/effects.js";
+import { effectsKey, effectsOf } from "../../model/effects.js";
 
 export interface RefMethodRun {
     /** No item breaks a check. */

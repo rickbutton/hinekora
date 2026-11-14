@@ -28,7 +28,7 @@
  *   wrong step does not refuse every step after it.
  */
 import type { Op, PreconditionFailure } from "./ops/types.js";
-import { type Effect, effectsOf } from "../model/effects.js";
+import { type Effect, effectsKey, effectsOf } from "../model/effects.js";
 import type { TypeId } from "../model/ids.js";
 import type { Dd } from "./dd.js";
 import {
@@ -50,7 +50,6 @@ import { HANDLERS } from "./ops/registry.js";
 import { checkPlacement, type CompoundKind, type Step, stepsOf } from "./ops/steps.js";
 import { partialChoices } from "./ops/remove.js";
 import {
-    effectsKey,
     keeping,
     NO_CHOICE,
     partialProtections,
