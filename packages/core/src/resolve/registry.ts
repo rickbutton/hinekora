@@ -14,6 +14,7 @@ import {
     influenceOfTag,
     influenceTags,
 } from "../model/marks.js";
+import { metamodKey } from "../model/effects.js";
 import { withMetamodEffects } from "../model/metamods.js";
 import { emptyItem } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
@@ -238,8 +239,8 @@ export interface Registry {
      */
     resolveModType(name: string, ctx?: ModTypeContext): Resolved<TypeId>;
     /**
-     * Of rows of one ModType, the ones a name means: the row whose id it is,
-     * the rows whose whole wording it spells out, numbers kept, or else the
+     * Of rows of one ModType, the ones a name means: the row whose id it is
+     * (every row of its metamod, for a bench metamod's id), the rows whose whole wording it spells out, numbers kept, or else the
      * rows whose own wording has every word of it. All of them where the name
      * tells none apart.
      */
@@ -959,7 +960,14 @@ export function buildRegistry(data: RegistryData): Registry {
             if (rows.length < 2) return rows;
             const key = norm(name);
             const exact = modById.get(key) ?? modById.get(modAlias.get(key) ?? "");
-            if (exact) return rows.includes(exact) ? [exact] : rows;
+            if (exact) {
+                // A metamod's rows on other classes are the same modifier.
+                const key = metamodKey(exact);
+                const same = rows.filter((m) =>
+                    key === undefined ? m === exact : metamodKey(m) === key,
+                );
+                return same.length > 0 ? same : rows;
+            }
             const q = queryTokens(name, wordings);
             const named = rows.filter((m) => {
                 const tokens = new Set(normalizeText(m.text ?? ""));

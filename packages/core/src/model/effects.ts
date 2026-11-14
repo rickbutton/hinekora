@@ -69,3 +69,12 @@ export function effectKey(e: Effect): string {
 export function effectsKey(effects: readonly Effect[]): string {
     return [...new Set(effects.map(effectKey))].sort().join("|");
 }
+
+/** Which metamod a bench row is, undefined for a row that carries no effect.
+ *  The bench crafts one metamod by a row per group of item classes, rows that
+ *  differ only in id, classes and cost, so nothing on an item tells them
+ *  apart; the key holds all else the model reads of a row. */
+export function metamodKey(m: Mod): string | undefined {
+    if (m.source !== "bench" || effectsOf(m).length === 0) return undefined;
+    return [m.type, m.gen, [...m.families].sort().join(","), effectsKey(effectsOf(m))].join("|");
+}

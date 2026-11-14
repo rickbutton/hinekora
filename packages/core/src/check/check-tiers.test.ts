@@ -520,6 +520,15 @@ describe("checker — two modifiers that share a type and a level", () => {
         }
     });
 
+    it("a condition on one's id is not met by the other", () => {
+        const other = run(craft(rareRing([zombies]), [iff(has(SKELETONS.id), [op("annul")])]));
+        expect(other.diagnostics.map((d) => d.message)).toEqual([
+            expect.stringContaining("the 'if' branch can never run"),
+        ]);
+        const same = run(craft(rareRing([zombies]), [iff(has(ZOMBIES.id), [op("annul")])]));
+        expect(same.diagnostics).toEqual([]);
+    });
+
     it("a loop on one ends on that one, and on either where the name words both", () => {
         const one = run(craft(rareRing(), [until(has(zombies), [op("chaos")])]));
         expect(one.diagnostics).toEqual([]);

@@ -102,13 +102,14 @@ An unknown or ambiguous name is reported on the item block before any step is ch
 
 **Mods** are written as a stat description and name a modifier type, every tier of it. A
 query word matches an entry word exactly or as a prefix of at least three letters, so
-`"max life"` finds "maximum Life". Only types that roll on the base at its item level are
-candidates, then those its level stops short of, then those an unveil or the bench puts on
-its class, as a metamod is (`has "suffixes cannot be changed"`). Players' spellings are read as
-the game's first (`"max es"`, `"+1 gems"`); the table is `packages/data/src/aliases.ts`. An
-exact mod id (`IncreasedLife5`) always resolves. Where modifiers of one type share a tier
-(an Elder amulet's Skeletons and Raised Zombies), a name means the one it words. Matches
-rank by the share of a type's wording the query covers; a tie at the top is an error:
+`"max life"` finds "maximum Life". Candidates are the types that roll on the base at its level,
+then those it stops short of, then those an unveil or the bench puts on its class, as a
+metamod is (`has "suffixes cannot be changed"`). Players' spellings read as the game's
+first (`"max es"`, `"+1 gems"`), from `packages/data/src/aliases.ts`. An exact mod id
+(`IncreasedLife5`) always resolves, a metamod's naming its rows of every class. Where one
+type's modifiers share a tier (an Elder amulet's Skeletons and Raised Zombies), a name
+means the one it words. Matches rank by the share of a type's wording the query covers; a
+top tie is an error:
 
 ```
 Ambiguous name "res" — candidates: +(6-11)% to Fire Resistance, +(6-11)% to Cold Resistance, +(6-11)% to Lightning Resistance, +(5-10)% to Chaos Resistance.

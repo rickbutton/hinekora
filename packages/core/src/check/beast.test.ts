@@ -456,6 +456,18 @@ describe("beast metamod", () => {
         expect(crafted("Coral Amulet", "rare")).toEqual([onAmulet.id]);
         // A class the bench serves not, as a jewel: the row listed first.
         expect(crafted("Cobalt Jewel", "magic")).toEqual([PROTECT_SUFFIXES_CARRIER.id]);
+        // Either row's id names the metamod, whichever row the item carries.
+        for (const id of [PROTECT_SUFFIXES_CARRIER.id, onAmulet.id]) {
+            const named = check(
+                craft(item({ base: "Coral Amulet", ilvl: 100, rarity: "rare" }), [
+                    beast({ kind: "metamod" }),
+                    until(has(id), [op("annul"), beast({ kind: "metamod" })]),
+                ]),
+                { registry: classed },
+            );
+            expect(named.diagnostics, id).toEqual([]);
+            expect([...rowIds(named.finalState!, onAmulet.type)]).toEqual([onAmulet.id]);
+        }
     });
 
     it("stays within the crafted limit and needs a metamod that fits", () => {

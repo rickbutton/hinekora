@@ -570,6 +570,83 @@ suffixes: [ "random", "random" ]`);
             "DexMasterItemGenerationCannotChangeTwoSuffixes",
         ]);
     });
+
+    /** The errors of a craft on Titan Greaves with these modifiers and steps. */
+    const errors = (prefixes: string, suffixes: string, steps: string): string[] =>
+        run(`item {
+    base: "Titan Greaves"
+    ilvl: 84
+    rarity: rare
+    prefixes: [ ${prefixes} ]
+    suffixes: [ ${suffixes} ]
+}
+${steps}
+`)
+            .output.split("\n")
+            .filter((l) => l.includes("error:"));
+    const SUFFIXES_FULL = `"fire resistance" t1, "cold resistance" t1, "chaos resistance" t2`;
+
+    it.each(["", "B", "C"])(
+        "reads the id of any class's row of the full lock as the boots' (%s)",
+        (variant) => {
+            expect(
+                errors(
+                    "",
+                    SUFFIXES_FULL,
+                    `beast metamod\nif has "DexMasterItemGenerationCannotChangeSuffixes${variant}" {\n    bench remove\n}`,
+                ),
+            ).toEqual([]);
+        },
+    );
+
+    it("reads one row of a metamod as another, declared or crafted", () => {
+        const either = (id: string) => `if has "${id}" { stop } else { stop }`;
+        expect(
+            errors(
+                `"DexMasterItemGenerationCannotChangeSuffixesC"`,
+                `"fire resistance" t1`,
+                either("DexMasterItemGenerationCannotChangeSuffixesB"),
+            ),
+        ).toEqual([expect.stringContaining("'else' branch can never run")]);
+        expect(
+            errors(
+                `"maximum life" t1`,
+                `"fire resistance" t1`,
+                `bench "suffixes cannot be changed"\n${either("DexMasterItemGenerationCannotChangeSuffixes")}`,
+            ),
+        ).toEqual([expect.stringContaining("'else' branch can never run")]);
+        expect(
+            errors(
+                `"maximum life" t1`,
+                `"fire resistance" t1`,
+                `if not has "DexMasterItemGenerationCannotChangeSuffixesC" { stop } else { stop }`,
+            ),
+        ).toEqual([expect.stringContaining("'else' branch can never run")]);
+    });
+
+    it.each([
+        ["Suffixes", "prefixes", `"fire resistance" t1`],
+        ["Prefixes", "suffixes", `"maximum life" t1`],
+    ] as const)(
+        "does not read a One row's id as the Two row or the full lock (%s)",
+        (side, holds, other) => {
+            const lead = side === "Suffixes" ? "Dex" : "Str";
+            const one = `${lead}MasterItemGenerationCannotChangeOne${side}C`;
+            for (const held of [`Two${side}B`, `${side}B`]) {
+                const row = `"${lead}MasterItemGenerationCannotChange${held}"`;
+                const [prefixes, suffixes] = holds === "prefixes" ? [row, other] : [other, row];
+                expect(errors(prefixes, suffixes, `if has "${one}" { stop }`), held).toEqual([
+                    expect.stringContaining("'if' branch can never run"),
+                ]);
+            }
+            const two = `"${lead}MasterItemGenerationCannotChangeTwo${side}"`;
+            const [prefixes, suffixes] = holds === "prefixes" ? [two, other] : [other, two];
+            const full = `${lead}MasterItemGenerationCannotChange${side}C`;
+            expect(errors(prefixes, suffixes, `if has "${full}" { stop }`)).toEqual([
+                expect.stringContaining("'if' branch can never run"),
+            ]);
+        },
+    );
 });
 
 describe("costSource — what a craft is expected to spend", () => {

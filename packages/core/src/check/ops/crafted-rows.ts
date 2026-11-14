@@ -5,7 +5,7 @@
  * (ops/crafted.ts) and the reference (reference/ops/crafted.ts).
  */
 import type { Base } from "../../model/base.js";
-import { craftedCapOf, effectsKey, effectsOf } from "../../model/effects.js";
+import { craftedCapOf, effectsOf, metamodKey } from "../../model/effects.js";
 import { type ClassId, type Gen, TagId } from "../../model/ids.js";
 import type { Mod } from "../../model/mod.js";
 import { isVeiledPlaceholder } from "../../model/veiled.js";
@@ -34,10 +34,10 @@ export const capOf = (row: Mod): number => craftedCapOf(effectsOf(row));
 const metamodCache = new WeakMap<Registry, Map<ClassId, readonly Mod[]>>();
 
 /** The metamods the Bestiary crafts: the bench's effect carriers, on any class
- *  (Beastcrafting, "Add a crafted Meta-modifier"), one row for each. The bench
- *  rows of one metamod differ only in the classes they are crafted on, so on
- *  an item they are the same modifier; which stands for it is a choice: the
- *  row the bench crafts on the item's class, else the first listed. */
+ *  (Beastcrafting, "Add a crafted Meta-modifier"), one row for each (`metamodKey`):
+ *  the row the bench crafts on the item's class, else the first listed. A
+ *  name reads any row of a metamod as each of them (`rowsNamed`), so which
+ *  one stands for it is not seen by a craft. */
 export function metamodRows(w: Where): readonly Mod[] {
     let byClass = metamodCache.get(w.registry);
     if (byClass === undefined)
@@ -48,8 +48,8 @@ export function metamodRows(w: Where): readonly Mod[] {
     const own = w.registry.benchModsFor(cls);
     const chosen = new Map<string, Mod>();
     for (const m of w.registry.catalog) {
-        if (m.source !== "bench" || effectsOf(m).length === 0) continue;
-        const key = `${m.type}|${effectsKey(effectsOf(m))}`;
+        const key = metamodKey(m);
+        if (key === undefined) continue;
         const was = chosen.get(key);
         if (was === undefined || (!own.has(was.id) && own.has(m.id))) chosen.set(key, m);
     }
