@@ -173,9 +173,9 @@ describe("harvest change", () => {
             { item: "Vivid Crystallised Lifeforce", amount: 300 },
         ]);
         // The element left comes first.
-        expect(unit(COLD_RESIST.id, "lightning resistance")).toEqual([
-            { item: "Primal Crystallised Lifeforce", amount: 300 },
+        expect(unit(LIGHTNING_RESIST.id, "cold resistance")).toEqual([
             { item: "Vivid Crystallised Lifeforce", amount: 300 },
+            { item: "Primal Crystallised Lifeforce", amount: 300 },
         ]);
         expect(unit(FIRE_DAMAGE.id, "adds cold damage")).toEqual([
             { item: "Wild Crystallised Lifeforce", amount: 300 },
