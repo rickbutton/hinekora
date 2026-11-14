@@ -263,15 +263,15 @@ class Resolver {
      */
     private rowsOnly(name: string, type: TypeId): readonly Mod[] | undefined {
         const ladders = tierLadders(this.registry.catalog, this.view.base, type, this.view.tags);
-        let apart = false;
+        const all = this.registry.catalog.filter((m) => m.type === type);
+        const named = this.registry.rowsNamed(name, all);
+        // A type no roll lays down (a bench craft's) has no tiers to tell
+        // its rows apart by: its rows' wordings do.
+        let apart = tierCount(ladders) === 0 && named.length < all.length;
         for (let n = 1; n <= tierCount(ladders) && !apart; n++) {
             apart = this.rowsAt(ladders, n, name).length < tierRows(ladders, n).length;
         }
-        if (!apart) return undefined;
-        return this.registry.rowsNamed(
-            name,
-            this.registry.catalog.filter((m) => m.type === type),
-        );
+        return apart ? named : undefined;
     }
 
     private resolveCall(pred: Extract<Pred, { kind: "call" }>): Resolved | null {

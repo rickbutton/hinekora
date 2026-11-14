@@ -77,6 +77,47 @@ describe("a bench craft named by its whole wording", () => {
     });
 });
 
+describe("a modifier named by a row's whole wording", () => {
+    // The game's partial protections of a side share a type, worded by one
+    // count; each count's wording has every word of the full protection.
+    const shared = TypeId("CannotChangePrefixesCount");
+    const full: Mod = {
+        ...metamod("prefixesCannotChange"),
+        text: "Prefix Modifiers cannot be changed",
+    };
+    const [one, two] = [metamod("onePrefixCannotChange"), metamod("twoPrefixesCannotChange")].map(
+        (m) => ({ ...m, type: shared }),
+    ) as [Mod, Mod];
+    const registry = buildRegistry({
+        bases: [RING_BASE],
+        mods: [...CATALOG, full, one, two],
+        benchCrafts: [full, one, two].map((m) => benchCraft(m, RING_BASE.itemClass)),
+        wordingAliases: { prefixes: "prefix modifiers" },
+    });
+    const ctx = { base: RING_BASE, ilvl: 84 };
+
+    it("names its type, and the rows of that wording", () => {
+        for (const [name, type, row] of [
+            ["1 prefix modifier cannot be changed", shared, one.id],
+            ["2 Prefix Modifiers cannot be changed", shared, two.id],
+            ["prefixes cannot be changed", full.type, full.id],
+        ] as const) {
+            const r = registry.resolveModType(name, ctx);
+            expect(r, name).toEqual({ ok: true, value: type });
+            const rows = registry.catalog.filter((m) => m.type === type);
+            expect(
+                registry.rowsNamed(name, rows).map((m) => m.id),
+                name,
+            ).toEqual([row]);
+        }
+    });
+
+    it("leaves words short of a whole wording to the type's", () => {
+        const rows = registry.catalog.filter((m) => m.type === shared);
+        expect(registry.rowsNamed("prefix modifier cannot", rows)).toHaveLength(2);
+    });
+});
+
 describe("a bench craft named in a community wording", () => {
     const lock = metamod("prefixesCannotChange");
     const reworded: Mod = { ...lock, text: "Prefix Modifiers cannot be changed" };

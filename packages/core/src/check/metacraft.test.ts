@@ -33,6 +33,7 @@ import {
 } from "../__fixtures__/mods.js";
 import type { BenchCraft, EssenceSpec } from "../model/sources.js";
 import { ModId, TypeId } from "../model/ids.js";
+import type { Mod } from "../model/mod.js";
 
 const benchOf = (mod: ModId): BenchCraft => ({
     mod,
@@ -656,5 +657,44 @@ describe("a partial protection on the item", () => {
             essence("greed", 1),
         ]);
         expect(check(c, ctx).diagnostics[0]?.message).toContain("metacraft modifier");
+    });
+});
+
+describe("partial protections that share a type", () => {
+    // The game's "1 Prefix Modifier" and "2 Prefix Modifiers cannot be changed"
+    // are one modifier type; a condition tells them apart by their wordings.
+    const shared = TypeId("MetaPrefixesCountCannotChange");
+    const one: Mod = { ...PROTECT_ONE_PREFIX_CARRIER, type: shared };
+    const two: Mod = {
+        ...one,
+        id: ModId("MetaTwoPrefixesCannotChange"),
+        effects: [{ kind: "protectSome", gen: "prefix", count: 2 }],
+        text: "2 prefix modifiers cannot be changed",
+    };
+    const counted: CheckContext = {
+        registry: buildRegistry({
+            bases: [RING_BASE],
+            mods: [...CATALOG, one, two],
+            modAliases: { "T1 Life": "IncreasedLife1" },
+            baseAliases: { "Iron Ring": "IronRing" },
+            benchCrafts: [one, two].map((m, i) => ({ ...benchOf(m.id), tier: i + 1 })),
+        }),
+    };
+
+    it("reads each count's condition on its own row", () => {
+        for (const [held, other] of [
+            [one, two],
+            [two, one],
+        ] as const) {
+            const c = craft(rareRing(["T1 Life"]), [
+                bench(held.text!),
+                iff(has(held.text!), [op("chaos")]),
+                iff(has(other.text!), [op("exalt")]),
+            ]);
+            const r = check(c, counted);
+            expect(r.diagnostics.map((d) => d.message)).toEqual([
+                `the 'if' branch can never run: has "${other.text!}" is impossible here`,
+            ]);
+        }
     });
 });

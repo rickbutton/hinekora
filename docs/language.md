@@ -114,8 +114,8 @@ rank by the share of a type's wording the query covers; a tie at the top is an e
 Ambiguous name "res" — candidates: +(6-11)% to Fire Resistance, +(6-11)% to Cold Resistance, +(6-11)% to Lightning Resistance, +(5-10)% to Chaos Resistance.
 ```
 
-A bench name ranks so among the crafts of the item's class, but a craft's whole wording,
-typed out, names it despite a tie.
+A bench name ranks so among the crafts of the item's class. A modifier's or craft's whole
+wording, typed out with its numbers, names it despite a tie.
 
 **Tiers.** `t<n>` is the tier the game's advanced tooltip shows, `t1` the modifier's Tier 1
 on that base: its rows that roll on the base, counted best first by

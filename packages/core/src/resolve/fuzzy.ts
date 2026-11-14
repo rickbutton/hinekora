@@ -140,21 +140,27 @@ export function tokenMatches(w: string, tokens: ReadonlySet<string>): boolean {
 /** A wording's words in order, its numbers kept: what tells "1 Prefix
  *  Modifier cannot be changed" from "2 Prefix Modifiers …" and both from
  *  "Prefix Modifiers cannot be changed", which `normalizeText` reads alike. */
-function spelledWords(s: string): string[] {
+export function spelledKey(s: string): string {
     return s
         .toLowerCase()
         .replace(/[+\-#%(),.]/g, " ")
         .replace(/(\d+)/g, " $1 ")
         .split(/\s+/)
-        .filter((w) => w.length > 0 && !STOPWORDS.has(w));
+        .filter((w) => w.length > 0 && !STOPWORDS.has(w))
+        .join(" ");
 }
 
-/** Does the name spell out the whole wording, numbers included, as typed or
- *  in the game's words for a player's? */
+/** The wordings a name spells out: as typed, and in the game's words for a
+ *  player's. */
+export function spelledForms(name: string, aliases: WordingAliases): readonly string[] {
+    const typed = spelledKey(name);
+    const expanded = expandAliases(typed.split(" "), aliases).join(" ");
+    return expanded === typed ? [typed] : [typed, expanded];
+}
+
+/** Does the name spell out the whole wording, numbers included? */
 export function spellsOut(name: string, wording: string, aliases: WordingAliases): boolean {
-    const text = spelledWords(wording).join(" ");
-    const typed = spelledWords(name);
-    return typed.join(" ") === text || expandAliases(typed, aliases).join(" ") === text;
+    return spelledForms(name, aliases).includes(spelledKey(wording));
 }
 
 /** A query's words as they are matched: aliases expanded, each word once. */

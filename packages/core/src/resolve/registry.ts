@@ -37,6 +37,8 @@ import {
     queryTokens,
     rowWordings,
     singular,
+    spelledForms,
+    spelledKey,
     spellsOut,
     tokenMatches,
     type TypeMatch,
@@ -236,8 +238,9 @@ export interface Registry {
     resolveModType(name: string, ctx?: ModTypeContext): Resolved<TypeId>;
     /**
      * Of rows of one ModType, the ones a name means: the row whose id it is,
-     * or the rows whose own wording has every word of it. All of them where
-     * the name tells none apart.
+     * the rows whose whole wording it spells out, numbers kept, or else the
+     * rows whose own wording has every word of it. All of them where the name
+     * tells none apart.
      */
     rowsNamed(name: string, rows: readonly Mod[]): readonly Mod[];
     resolveCurrency(name: string): Resolved<CurrencySpec>;
@@ -674,6 +677,24 @@ export function buildRegistry(data: RegistryData): Registry {
         return hit;
     };
 
+    let typesBySpelling: Map<string, Set<TypeId>> | undefined;
+    const typesSpelling = (name: string): ReadonlySet<TypeId> => {
+        if (typesBySpelling === undefined) {
+            typesBySpelling = new Map<string, Set<TypeId>>();
+            for (const m of catalog) {
+                if (m.text === undefined) continue;
+                const key = spelledKey(m.text);
+                const types = typesBySpelling.get(key);
+                if (types) types.add(m.type);
+                else typesBySpelling.set(key, new Set([m.type]));
+            }
+        }
+        const out = new Set<TypeId>();
+        for (const form of spelledForms(name, wordings))
+            for (const t of typesBySpelling.get(form) ?? []) out.add(t);
+        return out;
+    };
+
     function resolveModTypeOf(name: string, ctx: ModTypeContext | undefined): Resolved<TypeId> {
         const key = norm(name);
         const exact = modById.get(key) ?? modById.get(modAlias.get(key) ?? "");
@@ -718,6 +739,19 @@ export function buildRegistry(data: RegistryData): Registry {
             if (rollable.length > 0) matches = rollable;
             else if (onBase.length > 0) matches = onBase;
             else if (reachable.length > 0) matches = reachable;
+        }
+        // A row's whole wording, numbers kept, names its type, as a bench
+        // craft's does: "2 Prefix Modifiers cannot be changed" shares every
+        // word with the full protection, and its own type is worded by the
+        // "1 Prefix Modifier" row.
+        const [spelled, ...others] = typesSpelling(name);
+        if (spelled !== undefined && others.length === 0 && typeIndex.has(spelled)) {
+            const reachable =
+                ctx === undefined ||
+                veiledTypes.has(spelled) ||
+                benchTypesByClass.get(ctx.base.itemClass)?.has(spelled) === true ||
+                tierLadder(catalog, ctx.base, spelled, ctx.tags).length > 0;
+            if (reachable) return found(spelled);
         }
         if (matches.length === 0) return fail({ kind: "unknownMod", name });
 
@@ -916,7 +950,8 @@ export function buildRegistry(data: RegistryData): Registry {
                 const tokens = new Set(normalizeText(m.text ?? ""));
                 return q.every((w) => tokenMatches(w, tokens));
             });
-            return named.length > 0 ? named : rows;
+            const whole = named.filter((m) => spellsOut(name, m.text ?? "", wordings));
+            return whole.length > 0 ? whole : named.length > 0 ? named : rows;
         },
 
         resolveCurrency(name) {
