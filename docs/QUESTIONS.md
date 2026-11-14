@@ -580,12 +580,18 @@ metamods?
 Be Changed"; a ducat each, some ten; record the sides after.
 **Assumed:** not built (`operations.md` §3.2). **Encoded in:** nothing yet.
 
-### Q130 · probe · open — the 3.30 wording of a granted skill
+### Q130 · probe · open — the 3.30 wording of a granted skill or support
 
-**Q:** does a modifier that grants a skill read "Grants Level 22 Wrath", as the client
-string `ModGrantsEffectWithLevel` ("Grants Level {1} {0}") builds it, or "Grants Level 22
-Wrath Skill", as the 3.29 export wrote it?
-**Probe:** an item with a granted-skill modifier (Elder "Grants Level 22 Wrath",
-`GrantsWrathAuraUber1`); read the modifier and its advanced copy in game.
-**Assumed:** the client string's wording. **Encoded in:**
-`packages/data/scripts/mod-text.mjs` `skillLine`; `packages/data/data/poe1/mods.json`.
+**Q:** does a granted skill read "Grants Level 22 Wrath", as `ModGrantsEffectWithLevel`
+("Grants Level {1} {0}") builds it, or "… Wrath Skill", as 3.29's export has it? In
+3.30.0.1.3 a support line (`ModGrantsSupportEffectWithLevel`, "Socketed Gems are Supported
+by Level {1} {0}") has no exported text, its level stat undisplayed, so the ingest names
+the effect, " Support" dropped: seven rows (`SupportedByPowerChargeOnCritWeaponUber1`)
+granting "Power Charge On Critical Support" read "… Power Charge On Critical", 3.29 and the
+wiki "… Critical Strike". No other line differs but by "Skill". Is " Support" printed?
+**Options:** (a) the effect's name, 3.29's wording gone from the game, **recommended**; (b)
+3.29's for those seven, which a player typing it no longer matches.
+**Probe:** read Elder "Grants Level 22 Wrath" and Shaper weapons with the Power Charge On
+Critical and Fortify supports, advanced copies too.
+**Assumed:** (a), without " Support". **Encoded in:** `packages/data/scripts/mod-text.mjs`
+`skillLine`, `supportLine`, `effectName`; `packages/data/data/poe1/mods.json`.
