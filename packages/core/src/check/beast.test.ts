@@ -5,13 +5,16 @@ import { disjunctiveGuarantees, fracturedTypes, guaranteedTypes } from "./views.
 import { buildRegistry } from "../resolve/registry.js";
 import { beast, craft, fracturedP, has, iff, item, op, until } from "../__fixtures__/ast.js";
 import {
+    AMULET_BASE,
     ASPECT_AVIAN,
     ASPECT_CAT,
     CANNOT_ROLL_ATTACK_CARRIER,
+    CLASS_AMULET,
     CLASS_RING,
     CATALOG,
     COLD_RESIST,
     FIRE_RESIST,
+    JEWEL_BASE,
     LIFE_T1,
     MULTIMOD_CARRIER,
     PROTECT_PREFIXES_CARRIER,
@@ -420,6 +423,39 @@ describe("beast metamod", () => {
         expect(run([MULTIMOD_CARRIER, PROTECT_PREFIXES_CARRIER])).toEqual([
             expect.stringContaining("No metamod fits"),
         ]);
+    });
+
+    it("crafts each metamod by the bench's row for the item's class, else by its first", () => {
+        // One metamod in two bench rows that differ only by the classes they
+        // are crafted on, as the data's weapon, armour and jewellery rows do.
+        const onAmulet: Mod = { ...PROTECT_SUFFIXES_CARRIER, id: ModId("MetaSuffixesB") };
+        const classed = buildRegistry({
+            bases: [RING_BASE, AMULET_BASE, JEWEL_BASE],
+            mods: [...CATALOG, PROTECT_SUFFIXES_CARRIER, onAmulet, MULTIMOD_CARRIER],
+            benchCrafts: [
+                { mod: PROTECT_SUFFIXES_CARRIER.id, tier: 1, itemClasses: new Set([CLASS_RING]) },
+                { mod: onAmulet.id, tier: 1, itemClasses: new Set([CLASS_AMULET]) },
+            ],
+            baseAliases: {
+                "Iron Ring": "IronRing",
+                "Coral Amulet": "CoralAmulet",
+                "Cobalt Jewel": "CobaltJewel",
+            },
+        });
+        const crafted = (base: string, rarity: "rare" | "magic") => {
+            const r = check(
+                craft(item({ base, ilvl: 100, rarity }), [beast({ kind: "metamod" })]),
+                {
+                    registry: classed,
+                },
+            );
+            expect(r.diagnostics).toEqual([]);
+            return [...rowIds(r.finalState!, PROTECT_SUFFIXES_CARRIER.type)];
+        };
+        expect(crafted("Iron Ring", "rare")).toEqual([PROTECT_SUFFIXES_CARRIER.id]);
+        expect(crafted("Coral Amulet", "rare")).toEqual([onAmulet.id]);
+        // A class the bench serves not, as a jewel: the row listed first.
+        expect(crafted("Cobalt Jewel", "magic")).toEqual([PROTECT_SUFFIXES_CARRIER.id]);
     });
 
     it("stays within the crafted limit and needs a metamod that fits", () => {

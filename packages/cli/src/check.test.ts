@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { check, possibleTypes, rowsOf } from "@hinekora/core";
 import { loadDefaultEconomy, loadDefaultPoe1, registryOf } from "@hinekora/data";
+import { parse } from "@hinekora/parser";
 import { chartSource, checkSource, costSource, unjudgedText } from "./check.js";
 
 // Built once against the real bundled catalog — the CLI's actual data path.
@@ -507,6 +509,66 @@ ${body}`;
             expect(other.ok).toBe(false);
             expect(other.output).toContain("the 'if' branch can never run");
         });
+    });
+});
+
+describe("the Bestiary's metamod on the real catalog", () => {
+    /** The bench rows the recipe can leave, by type, on the item the block declares. */
+    const crafted = (block: string): Map<string, string[]> => {
+        const parsed = parse(`item {\n${block}\n}\nbeast metamod\n`);
+        if (!parsed.ok) throw new Error(parsed.error.message);
+        const r = check(parsed.craft, { registry });
+        expect(r.diagnostics).toEqual([]);
+        const out = new Map<string, string[]>();
+        for (const type of possibleTypes(r.finalState!)) {
+            const rows = rowsOf(r.finalState!, type).filter((m) => m.source === "bench");
+            if (rows.length > 0) out.set(type, rows.map((m) => m.id as string).sort());
+        }
+        return out;
+    };
+
+    it("crafts the boots' row of each suffix protection on Titan Greaves with three suffixes", () => {
+        const rows = crafted(`base: "Titan Greaves"
+ilvl: 86
+rarity: rare
+prefixes: [ "maximum life" t1 ]
+suffixes: [ "fire resistance" t1, "cold resistance" t1, "chaos resistance" t2 ]`);
+        expect([...rows.values()].flat().sort()).toEqual([
+            "DexMasterItemGenerationCannotChangeOneSuffixesB",
+            "DexMasterItemGenerationCannotChangeSuffixesB",
+            "DexMasterItemGenerationCannotChangeTwoSuffixesB",
+        ]);
+    });
+
+    it("crafts each metamod once on a ring, by its jewellery row or its only one", () => {
+        const rows = crafted(`base: "Iron Ring"
+ilvl: 84
+rarity: rare
+prefixes: [ "maximum life" t1 ]`);
+        expect([...rows.values()].flat().sort()).toEqual([
+            "DexMasterItemGenerationCannotChangeOneSuffixesC",
+            "DexMasterItemGenerationCannotChangeSuffixesC",
+            "DexMasterItemGenerationCannotChangeTwoSuffixesC",
+            "IntMasterItemGenerationCannotRollAttackAffixes",
+            "StrDexMasterItemGenerationCannotRollCasterAffixes",
+            "StrIntMasterItemGenerationCanHaveMultipleCraftedMods",
+            "StrMasterItemGenerationCannotChangeOnePrefixesC",
+            "StrMasterItemGenerationCannotChangePrefixesC",
+            "StrMasterItemGenerationCannotChangeTwoPrefixesC",
+        ]);
+    });
+
+    it("crafts the first row of each on a class the bench crafts nothing on", () => {
+        const rows = crafted(`base: "Cobalt Jewel"
+ilvl: 84
+rarity: rare
+prefixes: [ "random" ]
+suffixes: [ "random", "random" ]`);
+        expect([...rows.values()].flat().sort()).toEqual([
+            "DexMasterItemGenerationCannotChangeOneSuffixes",
+            "DexMasterItemGenerationCannotChangeSuffixes",
+            "DexMasterItemGenerationCannotChangeTwoSuffixes",
+        ]);
     });
 });
 

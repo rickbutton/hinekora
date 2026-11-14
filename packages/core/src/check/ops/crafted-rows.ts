@@ -6,11 +6,12 @@
  */
 import type { Base } from "../../model/base.js";
 import { craftedCapOf, effectsOf } from "../../model/effects.js";
-import { type Gen, TagId } from "../../model/ids.js";
+import { type ClassId, type Gen, TagId } from "../../model/ids.js";
 import type { Mod } from "../../model/mod.js";
 import { isVeiledPlaceholder } from "../../model/veiled.js";
 import { veiledPool } from "../../pool/veiled.js";
 import type { Registry } from "../../resolve/registry.js";
+import { effectsKey } from "../rules.js";
 import type { Where } from "./pools.js";
 
 /** The category tag of a bench row that is the craftable version of a veiled
@@ -31,10 +32,31 @@ export function isVeiledRow(row: Mod, craftable: boolean): boolean {
 /** The crafted-modifier limit a row sets while on the item, 1 for most. */
 export const capOf = (row: Mod): number => craftedCapOf(effectsOf(row));
 
+const metamodCache = new WeakMap<Registry, Map<ClassId, readonly Mod[]>>();
+
 /** The metamods the Bestiary crafts: the bench's effect carriers, on any class
- *  (Beastcrafting, "Add a crafted Meta-modifier"). */
-export function metamodRows(w: Where): Mod[] {
-    return w.registry.catalog.filter((m) => m.source === "bench" && effectsOf(m).length > 0);
+ *  (Beastcrafting, "Add a crafted Meta-modifier"), one row for each. The bench
+ *  rows of one metamod differ only in the classes they are crafted on, so on
+ *  an item they are the same modifier; which stands for it is a choice: the
+ *  row the bench crafts on the item's class, else the first listed. */
+export function metamodRows(w: Where): readonly Mod[] {
+    let byClass = metamodCache.get(w.registry);
+    if (byClass === undefined)
+        metamodCache.set(w.registry, (byClass = new Map<ClassId, readonly Mod[]>()));
+    const cls = w.base.itemClass;
+    const hit = byClass.get(cls);
+    if (hit !== undefined) return hit;
+    const own = w.registry.benchModsFor(cls);
+    const chosen = new Map<string, Mod>();
+    for (const m of w.registry.catalog) {
+        if (m.source !== "bench" || effectsOf(m).length === 0) continue;
+        const key = `${m.type}|${effectsKey(effectsOf(m))}`;
+        const was = chosen.get(key);
+        if (was === undefined || (!own.has(was.id) && own.has(m.id))) chosen.set(key, m);
+    }
+    const rows = [...chosen.values()];
+    byClass.set(cls, rows);
+    return rows;
 }
 
 /** The plain placeholder of each side, never a Syndicate member's (Veiled
