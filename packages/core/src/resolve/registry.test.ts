@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildRegistry } from "./registry.js";
-import { BaseId, ClassId } from "../model/ids.js";
+import { BaseId, ClassId, TypeId } from "../model/ids.js";
 import type { Base } from "../model/base.js";
 import type { Mod } from "../model/mod.js";
 import { CATALOG, RING_BASE } from "../__fixtures__/mods.js";
@@ -55,6 +55,26 @@ describe("a bench craft named by its whole wording", () => {
         const r = registry.resolveBench("prefix modifier cannot", RING_BASE.itemClass);
         expect(!r.ok && r.error.kind).toBe("ambiguous");
     });
+
+    it("is its own craft where the counts share a modifier type", () => {
+        // The game's partial protections of a side are one type, two bench tiers.
+        const shared = TypeId("CannotChangePrefixesCount");
+        const rows = [one, two].map((m) => ({ ...m, type: shared }));
+        const counted = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...CATALOG, ...rows],
+            benchCrafts: rows.map((m, i) => ({
+                ...benchCraft(m, RING_BASE.itemClass),
+                tier: i + 1,
+            })),
+        });
+        for (const m of rows) {
+            const r = counted.resolveBench(m.text!, RING_BASE.itemClass);
+            expect(r.ok && r.value.mod).toBe(m.id);
+        }
+        const loose = counted.resolveBench("prefix modifier cannot", RING_BASE.itemClass);
+        expect(loose.ok && loose.value.mod).toBe(two.id);
+    });
 });
 
 describe("a bench craft named in a community wording", () => {
@@ -74,5 +94,24 @@ describe("a bench craft named in a community wording", () => {
             ok: true,
             value: reworded.type,
         });
+    });
+
+    it("names the full protection beside a count of the same words", () => {
+        // "2 Prefix Modifiers cannot be changed" has every word of the full one.
+        const two = metamod("twoPrefixesCannotChange");
+        const both = buildRegistry({
+            bases: [RING_BASE],
+            mods: [...CATALOG, reworded, two],
+            benchCrafts: [reworded, two].map((m) => benchCraft(m, RING_BASE.itemClass)),
+            wordingAliases: { prefixes: "prefix modifiers" },
+        });
+        for (const [name, id] of [
+            ["prefixes cannot be changed", reworded.id],
+            ["Prefix Modifiers cannot be changed", reworded.id],
+            ["2 prefix modifiers cannot be changed", two.id],
+        ] as const) {
+            const r = both.resolveBench(name, RING_BASE.itemClass);
+            expect(r.ok && r.value.mod, name).toBe(id);
+        }
     });
 });

@@ -38,6 +38,7 @@ import {
     queryTokens,
     rowWordings,
     singular,
+    spellsOut,
     tokenMatches,
     type TypeMatch,
     type WordingAliasEntry,
@@ -1131,14 +1132,11 @@ export function buildRegistry(data: RegistryData): Registry {
             const top = Math.max(...scored.map((s) => s.score));
             let best = scored.filter((s) => s.score === top);
             // Numbers are not words, so "1 Prefix Modifier cannot be changed"
-            // ties with "2 Prefix Modifiers …"; a craft's whole wording, typed
-            // out, names that craft alone.
-            const wording = (s: string): string => s.trim().replace(/\s+/g, " ").toLowerCase();
-            const whole = best.filter((s) => wording(s.mod.text ?? "") === wording(name));
-            if (new Set(whole.map((s) => s.mod.type)).size === 1) {
-                const type = whole[0]!.mod.type;
-                best = best.filter((s) => s.mod.type === type);
-            }
+            // ties with "2 Prefix Modifiers …", a craft of the same type; a
+            // craft's whole wording, typed out, names the crafts of that
+            // wording alone.
+            const whole = best.filter((s) => spellsOut(name, s.mod.text ?? "", wordings));
+            if (whole.length > 0) best = whole;
             const sorted = best.sort((a, b) => b.craft.tier - a.craft.tier);
             // A modifier's tiers are one candidate, named by its best.
             const byType = new Map<TypeId, string>();

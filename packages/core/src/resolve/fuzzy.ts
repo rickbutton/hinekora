@@ -137,6 +137,26 @@ export function tokenMatches(w: string, tokens: ReadonlySet<string>): boolean {
     return false;
 }
 
+/** A wording's words in order, its numbers kept: what tells "1 Prefix
+ *  Modifier cannot be changed" from "2 Prefix Modifiers …" and both from
+ *  "Prefix Modifiers cannot be changed", which `normalizeText` reads alike. */
+function spelledWords(s: string): string[] {
+    return s
+        .toLowerCase()
+        .replace(/[+\-#%(),.]/g, " ")
+        .replace(/(\d+)/g, " $1 ")
+        .split(/\s+/)
+        .filter((w) => w.length > 0 && !STOPWORDS.has(w));
+}
+
+/** Does the name spell out the whole wording, numbers included, as typed or
+ *  in the game's words for a player's? */
+export function spellsOut(name: string, wording: string, aliases: WordingAliases): boolean {
+    const text = spelledWords(wording).join(" ");
+    const typed = spelledWords(name);
+    return typed.join(" ") === text || expandAliases(typed, aliases).join(" ") === text;
+}
+
 /** A query's words as they are matched: aliases expanded, each word once. */
 export function queryTokens(query: string, aliases: WordingAliases = new Map()): string[] {
     return [...new Set(expandAliases(normalizeText(query), aliases))];
