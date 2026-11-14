@@ -555,8 +555,10 @@ export const RESTORE: readonly Op[] = [
     { kind: "restore" },
 ];
 
-/** Beastcraft "add a crafted meta-modifier": one of the five metamods, random
- *  among those that fit, within the crafted limit (Beastcrafting). */
+/** Beastcraft "add a crafted meta-modifier": one of the bench's metamods,
+ *  random among those that fit, within the crafted limit (Beastcrafting). The
+ *  partial protections are among them: seen in game at 3.30, where the wiki's
+ *  recipe row still lists the five older ones. */
 export const BEAST_METAMOD: readonly Op[] = [
     notCorrupted,
     require({ kind: "craftedBelowCap", refusal: "the Bestiary can't craft a metamod onto it" }),

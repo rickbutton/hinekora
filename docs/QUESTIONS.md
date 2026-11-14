@@ -545,17 +545,16 @@ text. **Encoded in:** `render/item.ts` `modHeader`, `textless`.
 **Q:** [§ Endgame Changes](https://www.poewiki.net/wiki/Version_3.30.0#Endgame_Changes)
 adds "1 Prefix Modifier cannot be changed" and its siblings, the kept modifiers chosen at
 random each use ([FAQ](https://www.pathofexile.com/forum/view-thread/4013527)). Does one
-block what the full protection does? Can the Bestiary's metamod recipe craft one (its game
-table names no modifiers)? May the choice fall on a fractured modifier? Is a Harvest
-augment's removal chosen after its add, and with nothing to take, refused?
-Do two on one side keep either count, or both?
+block what the full protection does? May the choice fall on a fractured modifier? Is a
+Harvest augment's removal chosen after its add, and with nothing to take, refused? Do two
+on one side keep either count, or both?
 **Probe:** "1 Prefix Modifier cannot be changed": an essence; three prefixes, one
-fractured, annuls; one prefix, augments; with "2 Prefix…" too, scours; the recipe twenty
-times; record refusals, what went.
-**Assumed:** as the full protection; the recipe may craft one
-(`examples/future/matron-metamod.craft` waits on this); any modifier; after, refused; any
-reading. In the cost, each choice alike; two on one side leave a removal's odds unread. **Encoded in:** `check/rules.ts` `partialProtections`;
-`check/ops/remove.ts` `partialChoices`; `check/reference/rules.ts`; `cost/roll.ts`.
+fractured, annuls; one prefix, augments; with "2 Prefix…" too, scours; record refusals,
+what went.
+**Assumed:** as the full protection; any modifier; after, refused; any reading. In the
+cost, each choice alike; two on one side leave a removal's odds unread. **Encoded in:**
+`check/rules.ts` `partialProtections`; `check/ops/remove.ts` `partialChoices`;
+`check/reference/rules.ts`; `cost/roll.ts`.
 
 ### Q129 · probe · open — Merrick's Ducat on a Rare Abyss Jewel
 
