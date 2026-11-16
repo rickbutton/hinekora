@@ -1163,7 +1163,8 @@ describe("the eldritch implicits", () => {
 
     it("the Corruption Altar's implicit takes the only implicit boots have, or a corruption implicit", () => {
         // Half the items are destroyed. Of the implicit branch, the share that
-        // replaces a corruption implicit the item may not hold is not known.
+        // replaces a corruption implicit the item may not hold is not known,
+        // and the branch is taken at an assumed even chance.
         const r = on({ exarch: "greater", corrupted: true }, [
             op("locus"),
             iff(eldritchP("exarch"), [stop()]),
@@ -1171,6 +1172,7 @@ describe("the eldritch implicits", () => {
         const branch = r.steps.find((s) => s.kind === "if")!;
         expect(branch.reached).toBeCloseTo(1 / 2, 9);
         expect(branch.note).toMatch(/not known/);
+        expect(branch.branch).toBeCloseTo(1 / 2, 6);
     });
 
     it("an Orb of Conflict takes a lowered Lesser implicit off and keeps a raised Perfect one", () => {

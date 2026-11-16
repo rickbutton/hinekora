@@ -425,7 +425,6 @@ describe("the eldritch changes", () => {
         expect(pairs(outcomes(s, corrupted(3, 2), [altarReplaced]))).toEqual(["0/2", "3/0", "3/2"]);
         expect(pairs(outcomes(s, corrupted(3, 0), [altarReplaced]))).toEqual(["0/0", "3/0"]);
         expect(pairs(outcomes(s, corrupted(0, 0), [altarReplaced]))).toEqual(["0/0"]);
-        // The altar's may replace a corruption implicit the checker does not track.
         const altar = outcomes(s, { ...item(3, 2), corrupted: true }, L.locusOps());
         expect(pairs(altar)).toEqual(["0/2", "3/0", "3/2"]);
         expect(altar.every((x) => x.corrupted === "twice")).toBe(true);
