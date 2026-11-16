@@ -99,6 +99,15 @@ const IMPLICIT_CLASS: Readonly<Record<ItemView["implicits"][number]["kind"], str
     corruption: "implicit-corruption",
 };
 
+/** A wording among others on a line of its own, its later lines set in, so a
+ *  wording of several lines reads as one choice. */
+function listedWording(text: string): string {
+    return text
+        .split("\n")
+        .map((l, k) => `<br>${k === 0 ? statText(l) : h("span", "continued", statText(l))}`)
+        .join("");
+}
+
 function implicitRow(i: ItemView["implicits"][number]): string {
     const tier = implicitTierText(i, "–");
     const who = IMPLICIT_SHORT[i.kind];
@@ -112,7 +121,7 @@ function implicitRow(i: ItemView["implicits"][number]): string {
               ? esc(`any ${what} implicit`)
               : i.texts.length > IMPLICIT_LIST_LIMIT
                 ? esc(`one of ${i.count} ${who} implicits`)
-                : h("span", "label", "one of") + i.texts.map((t) => `<br>${statText(t)}`).join("");
+                : h("span", "label", "one of") + i.texts.map(listedWording).join("");
     const listed =
         i.texts.length > 1
             ? `: ${i.texts

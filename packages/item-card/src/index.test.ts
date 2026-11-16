@@ -142,6 +142,29 @@ describe("the item card's markup", () => {
         expect(html).toContain('title="Base implicit"');
     });
 
+    it("sets a listed wording's later lines in, so each wording of several lines is one choice", () => {
+        const html = itemCardHtml(
+            view({
+                implicits: [
+                    {
+                        kind: "base",
+                        tiers: [],
+                        texts: ["+(8-10)% to Fire Resistance\n+(8-10)% to Cold Resistance", "a"],
+                        count: 2,
+                        tags: [],
+                        maybe: false,
+                    },
+                ],
+            }),
+        );
+        expect(html).toContain(
+            '<span class="label">one of</span>' +
+                '<br>+<span class="roll">(8-10)</span>% to Fire Resistance' +
+                '<br><span class="continued">+<span class="roll">(8-10)</span>% to Cold Resistance</span>' +
+                "<br>a</span>",
+        );
+    });
+
     it("escapes each member of a group of alternatives", () => {
         const html = itemCardHtml(
             view({

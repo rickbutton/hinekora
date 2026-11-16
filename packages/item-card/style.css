@@ -93,6 +93,11 @@
     color: var(--explicit);
 }
 
+/* A listed wording's later lines, set in under its first. */
+.item-card .mod .continued {
+    padding-left: 1em;
+}
+
 .item-card .meta {
     display: flex;
     gap: 6px;
