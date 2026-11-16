@@ -194,6 +194,15 @@ describe("a resonator", () => {
         expect(r.diagnostics.map((d) => d.message).join("\n")).toContain("The item is corrupted");
     });
 
+    it("refuses a Gilded Fossil, alone or beside a Bloodstained one", () => {
+        for (const fossils of [["gilded"], ["bloodstained", "gilded"]]) {
+            const r = check(craft(rareRing(), [fossil(...fossils)]), ctx);
+            expect(r.diagnostics.map((d) => d.message)).toEqual([
+                "A Gilded Fossil adds an implicit of its own, which hinekora does not track yet.",
+            ]);
+        }
+    });
+
     it("holds distinct fossils, at most four", () => {
         const twice = check(craft(rareRing(), [fossil("dense", "dense")]), ctx);
         expect(twice.diagnostics[0]!.message).toContain("same fossil twice");

@@ -5,6 +5,7 @@
  */
 import {
     addPrices,
+    addsOwnImplicit,
     bindingAt,
     bindingsOf,
     type Bounds,
@@ -472,6 +473,8 @@ function fossilSignature(names: readonly string[], registry: Registry): string {
                 "corrupts the item and may put a corruption implicit in place of one of its implicits",
             );
         if (f.allowedTags) effects.push(`only on: ${words(f.allowedTags)}`);
+        if (addsOwnImplicit(f))
+            effects.push("adds an implicit of its own, which hinekora does not track yet");
         const effect =
             effects.length > 0
                 ? effects.join("; ")

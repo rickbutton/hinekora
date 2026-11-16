@@ -7,7 +7,7 @@ change (`../AGENTS.md`, Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q133.
+keeps it. New entries continue from Q134.
 
 ```
 ### Qn · probe|decision · open — title
@@ -602,3 +602,13 @@ corruption implicit? The wiki's patch notes say both "Corruption Implicit Modifi
 implicit, with Ctrl+Alt+C; record each implicit's header.
 **Assumed:** `{ Implicit Modifier — … }` and `{ Corruption Implicit Modifier — … }`.
 **Encoded in:** `render/item.ts` `IMPLICIT_NAME`, `IMPLICIT_SHORT`.
+
+### Q133 · decision · open — the Gilded Fossil's implicit
+
+**Q:** a Gilded Fossil adds an implicit of its own, which a later corruption may take
+instead of the others ([Gilded Fossil § Mechanics](https://www.poewiki.net/wiki/Gilded_Fossil#Mechanics)).
+**Options:** (a) track it with a slot, so a craft can use it to keep a base implicit
+through a Vaal Orb, once corruption implicits are tracked, **recommended**; (b) keep
+refusing it.
+**Assumed:** refused. **Encoded in:** `model/sources.ts` `addsOwnImplicit`;
+`check/methods.ts` `resonator`.

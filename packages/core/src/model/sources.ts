@@ -87,6 +87,14 @@ export interface FossilSpec {
     readonly corrupts: boolean;
 }
 
+/** The Gilded Fossil adds an implicit of its own beside the item's others,
+ *  which a later corruption may take instead of them (Gilded Fossil §
+ *  Mechanics); the checker does not hold that implicit, so takes no resonator
+ *  with the fossil (`QUESTIONS.md` Q133). */
+export function addsOwnImplicit(f: FossilSpec): boolean {
+    return f.name === "Gilded Fossil";
+}
+
 export const ELEMENTS = ["fire", "cold", "lightning"] as const;
 export type Element = (typeof ELEMENTS)[number];
 export type HarvestChangeKind = "resistance" | "damage";

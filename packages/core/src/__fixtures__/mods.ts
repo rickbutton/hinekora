@@ -1071,6 +1071,8 @@ export const FOSSIL_FRACTURED = fossilSpec("FossilFractured", "Fractured Fossil"
 export const FOSSIL_AMULET_ONLY = fossilSpec("FossilPendant", "Pendant Fossil", {
     allowedTags: new Set([TAG_AMULET]),
 });
+/** The Gilded Fossil: an implicit of its own, nothing the pool reads. */
+export const FOSSIL_GILDED = fossilSpec("FossilGilded", "Gilded Fossil", {});
 export const FOSSILS: readonly FossilSpec[] = [
     FOSSIL_NO_LIFE,
     FOSSIL_NO_CHAOS,
@@ -1082,6 +1084,7 @@ export const FOSSILS: readonly FossilSpec[] = [
     FOSSIL_AMULET_ONLY,
     FOSSIL_BLOODSTAINED,
     FOSSIL_STALE,
+    FOSSIL_GILDED,
 ];
 
 /** The Bestiary's Aspect rows: suffixes of one group, so an item holds one. Not in `CATALOG`. */

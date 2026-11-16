@@ -25,7 +25,7 @@ import {
     isInfluence,
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
-import { type FossilSpec, isCorruptedEssence } from "../model/sources.js";
+import { addsOwnImplicit, type FossilSpec, isCorruptedEssence } from "../model/sources.js";
 import { lookupWeight } from "../pool/pool.js";
 import { resolveMessage } from "../resolve/messages.js";
 import { HARVEST_AUGMENT_TAGS, type Registry, STANDARD_CURRENCIES } from "../resolve/registry.js";
@@ -405,6 +405,11 @@ function resonator(
         return refuse("A resonator cannot hold the same fossil twice.");
     }
     if (fossils.length > 4) return refuse("A resonator holds at most four fossils.");
+    if (fossils.some(addsOwnImplicit)) {
+        return refuse(
+            "A Gilded Fossil adds an implicit of its own, which hinekora does not track yet.",
+        );
+    }
     let missing: string | undefined;
     const rows = (ids: readonly ModId[]): Mod[] =>
         ids.flatMap((id) => {

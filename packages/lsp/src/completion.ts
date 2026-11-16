@@ -7,6 +7,7 @@
  * filter degrading to "all mods" when the source can't be read, never to nothing.
  */
 import {
+    addsOwnImplicit,
     type Base,
     craftNames,
     type EldritchSide,
@@ -262,7 +263,10 @@ function namesOf(of: NameKind, registry: Registry, augment = false): readonly st
         case "bench":
             return registry.benchNames;
         case "fossil":
-            return registry.fossilNames;
+            return registry.fossilNames.filter((name) => {
+                const f = registry.resolveFossil(name);
+                return !f.ok || !addsOwnImplicit(f.value);
+            });
         case "aspect":
             return registry.aspectNames;
         case "tag":

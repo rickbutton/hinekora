@@ -84,6 +84,10 @@ describe("hover", () => {
         expect(line).toContain("one random modifier type much more likely and blocks another");
         expect(line).not.toContain("corrupted-essence");
         expect(line).not.toContain("fossil-only");
+        const gilded = `item { base: "Iron Ring" ilvl: 84 rarity: rare }\nfossil "gilded"`;
+        expect(getHover(gilded, gilded.indexOf("gilded") + 1, registry)!).toContain(
+            "adds an implicit of its own, which hinekora does not track yet",
+        );
     });
 
     it("hovers an essence name with its tier and the mod it guarantees here", () => {
@@ -348,6 +352,13 @@ until has "maximum life" {
 });
 
 describe("completion", () => {
+    it("offers no Gilded Fossil, whose implicit the checker does not track", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }\nfossil "`;
+        const labels = getCompletions(src, src.length, registry).map((c) => c.label);
+        expect(labels).toContain("Dense Fossil");
+        expect(labels).not.toContain("Gilded Fossil");
+    });
+
     it("offers inside a loop's condition what no item entering the loop has", () => {
         // Inside the branch the life is ruled out; the loop waits for it all the same.
         const head = `item { base: "Iron Ring" ilvl: 84 rarity: rare prefixes: ["random"] }
