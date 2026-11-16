@@ -289,6 +289,14 @@ const LOCKED_SIMPLEX: Base = {
     implicitLocked: true,
 };
 
+const LOCKED_COGWORK: Base = {
+    ...RING_BASE,
+    id: BaseId("CogworkRing"),
+    name: "Cogwork Ring",
+    implicits: [LOCKED_IMPLICIT.id],
+    implicitLocked: true,
+};
+
 /** A catalogue with every base a fault of the block is about. */
 const FAULTS = buildRegistry({
     bases: [
@@ -302,6 +310,7 @@ const FAULTS = buildRegistry({
         CLUSTER_BASE,
         SMALL_CLUSTER_BASE,
         LOCKED_SIMPLEX,
+        LOCKED_COGWORK,
     ],
     implicits: [LOCKED_IMPLICIT],
     mods: [...HAND_MODS, NOTABLE_SADIST, NOTABLE_OVERSHOCK, CLUSTER_EFFECT],
@@ -453,6 +462,19 @@ describe("the item block's faults", () => {
                 expect(start?.state, JSON.stringify(spec)).not.toBeNull();
             }
         }
+    });
+
+    it("name a locked implicit only where the base could otherwise take an eldritch one", () => {
+        const said = (base: string) =>
+            check(craft(item({ base, ilvl: 84, rarity: "rare", exarch: "lesser" }), []), {
+                registry: FAULTS,
+            }).diagnostics.map((d) => d.message);
+        expect(said("Cogwork Ring")).toEqual([
+            "Only a body armour, boots, gloves, a helmet or an amulet can have an eldritch implicit.",
+        ]);
+        expect(said("Simplex Amulet")).toEqual([
+            "A Simplex Amulet's implicit cannot be changed, so it has no eldritch implicit.",
+        ]);
     });
 
     it("leave a block past its caps holding the affixes within them", () => {

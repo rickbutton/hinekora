@@ -459,16 +459,13 @@ export function declareItem(item: ItemBlock, registry: Registry, diag: Diag): It
     if (influences.length > 0 && (item.exarch !== undefined || item.eater !== undefined)) {
         diag("An influenced item cannot have an eldritch implicit.", at("exarch", "eater"));
     }
-    if ((item.exarch !== undefined || item.eater !== undefined) && !canHaveEldritch(base)) {
+    const eldritchDeclared = item.exarch !== undefined || item.eater !== undefined;
+    if (eldritchDeclared && !canHaveEldritch(base)) {
         diag(
             "Only a body armour, boots, gloves, a helmet or an amulet can have an eldritch implicit.",
             at("exarch", "eater"),
         );
-    }
-    if (
-        (item.exarch !== undefined || item.eater !== undefined) &&
-        baseImplicitOf(registry, base).locked
-    ) {
+    } else if (eldritchDeclared && baseImplicitOf(registry, base).locked) {
         // Ukatoa's Ducat § Mechanics: an implicit that cannot be changed takes none.
         diag(
             `${capitalise(withArticle(base.name ?? "amulet"))}'s implicit cannot be changed, so it has no eldritch implicit.`,
