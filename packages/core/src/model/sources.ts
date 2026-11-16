@@ -3,7 +3,7 @@
  * source-specific crafting. Only `natural` mods roll via chaos/exalt;
  * essence/bench/veiled/fossil mods come from their own mechanic.
  */
-import type { ClassId, ModId, TagId, TypeId } from "./ids.js";
+import type { ClassId, GroupId, ModId, TagId, TypeId } from "./ids.js";
 import type { EldritchSide } from "./marks.js";
 
 export type ModSource =
@@ -110,6 +110,17 @@ export interface HarvestChangePair {
 export type HarvestChangeTable = Readonly<
     Record<HarvestChangeKind, Readonly<Partial<Record<Element, readonly HarvestChangePair[]>>>>
 >;
+
+/** One implicit row a base is made with (`Base.implicits`). */
+export interface ImplicitSpec {
+    readonly id: ModId;
+    readonly type: TypeId;
+    readonly groups: ReadonlySet<GroupId>;
+    readonly implicitTags: ReadonlySet<TagId>;
+    readonly text: string;
+    /** The row reads "Implicit Modifiers Cannot Be Changed". */
+    readonly locked?: true;
+}
 
 /**
  * One eldritch implicit row (Eldritch implicit modifier): which implicit, at

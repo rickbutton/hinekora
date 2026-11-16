@@ -46,6 +46,7 @@ export interface ManifestFile {
 export interface ManifestExtent {
     readonly description: string;
     readonly bases: number;
+    readonly implicits?: number;
     readonly mods: number;
     readonly essences?: number;
     readonly benchCrafts?: number;

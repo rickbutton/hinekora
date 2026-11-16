@@ -64,3 +64,100 @@ describe("the game version an ingest records", () => {
         expect(loadDefaultPoe1().manifest.gameVersionNote).toBe(GAME_VERSION_NOTE);
     });
 });
+
+interface Projected {
+    readonly projectBases: (
+        raw: Readonly<Record<string, object>>,
+        mods: Readonly<Record<string, object>>,
+    ) => Readonly<Record<string, { readonly implicits?: readonly string[] }>>;
+    readonly projectImplicits: (
+        bases: Readonly<Record<string, { readonly implicits?: readonly string[] }>>,
+        mods: Readonly<Record<string, object>>,
+        gems: Readonly<Record<string, object>>,
+    ) => Readonly<
+        Record<
+            string,
+            {
+                readonly type: string;
+                readonly groups: readonly string[];
+                readonly tags: readonly string[];
+                readonly text: string;
+                readonly locked?: true;
+            }
+        >
+    >;
+}
+const { projectBases, projectImplicits } = (await import(/* @vite-ignore */ url)) as Projected;
+
+describe("the implicits the main ingest keeps", () => {
+    const ring = (implicits?: readonly string[]) => ({
+        name: "Ring",
+        item_class: "Ring",
+        domain: "item",
+        tags: ["ring", "default"],
+        release_state: "released",
+        ...(implicits && { implicits }),
+    });
+    const mods = {
+        Life: {
+            type: "MaximumLifeIncreasePercent",
+            groups: ["MaximumLifeIncreasePercent"],
+            implicit_tags: ["resource", "life"],
+            stats: [{ id: "maximum_life_+%", min: 5, max: 7 }],
+            text: "(5-7)% increased maximum Life",
+        },
+        Dash: {
+            type: "FlameDash",
+            groups: ["FlameDash"],
+            implicit_tags: [],
+            stats: [],
+            text: "Trigger Level 10 [FlameDash::10|Flame Dash] when you use a Socketed Skill",
+        },
+        Locked: {
+            type: "HasEveryInfluenceType",
+            groups: ["HasEveryInfluenceType"],
+            implicit_tags: [],
+            stats: [
+                { id: "local_item_can_roll_all_influences", min: 1, max: 1 },
+                { id: "local_implicit_mod_cannot_be_changed", min: 1, max: 1 },
+            ],
+            text: "Has Elder, Shaper and all Conqueror Influences\nImplicit Modifiers Cannot Be Changed",
+        },
+    };
+    const bases = projectBases(
+        {
+            Vermillion: ring(["Life"]),
+            Plain: ring(),
+            Dashing: ring(["Dash"]),
+            Astrolabe: ring(["Locked"]),
+        },
+        mods,
+    );
+    const implicits = projectImplicits(bases, mods, {});
+
+    it("keeps a base's implicit ids, and none where it has none", () => {
+        expect(bases["Vermillion"]?.implicits).toEqual(["Life"]);
+        expect(bases["Plain"]).not.toHaveProperty("implicits");
+    });
+
+    it("writes each named row with its type, groups, tags and text", () => {
+        expect(implicits["Life"]).toEqual({
+            type: "MaximumLifeIncreasePercent",
+            groups: ["MaximumLifeIncreasePercent"],
+            tags: ["resource", "life"],
+            text: "(5-7)% increased maximum Life",
+        });
+        expect(Object.keys(implicits).sort()).toEqual(["Dash", "Life", "Locked"]);
+    });
+
+    it("strips the tooltip markup from a row's text", () => {
+        expect(implicits["Dash"]?.text).toBe(
+            "Trigger Level 10 Flame Dash when you use a Socketed Skill",
+        );
+    });
+
+    it("marks the row that cannot be changed, and no other", () => {
+        expect(implicits["Locked"]?.locked).toBe(true);
+        expect(implicits["Life"]).not.toHaveProperty("locked");
+    });
+});

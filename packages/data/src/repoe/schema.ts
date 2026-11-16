@@ -59,6 +59,8 @@ export interface RepoeBase {
     /** Projected at ingest from `local_item_can_roll_all_influences`: the base
      * counts as having every influence (the Astrolabe Amulet). */
     readonly allInfluences?: boolean;
+    /** The base's own implicit rows, ids into `implicits.json`; absent ⇒ none. */
+    readonly implicits?: readonly string[];
 }
 
 /** `base_items.json`: metadata-path key → base. */
@@ -136,6 +138,18 @@ export interface RepoeEldritch {
     readonly text: string;
 }
 export type RepoeEldritchRows = Readonly<Record<string, RepoeEldritch>>;
+
+/** `implicits.json` entry (projected): an implicit row a base is made with. */
+export interface RepoeImplicit {
+    readonly type: string;
+    readonly groups: readonly string[];
+    /** The row's category tags, as a modifier's `implicit_tags`. */
+    readonly tags: readonly string[];
+    readonly text: string;
+    /** The row reads "Implicit Modifiers Cannot Be Changed". */
+    readonly locked?: true;
+}
+export type RepoeImplicits = Readonly<Record<string, RepoeImplicit>>;
 
 /** `bench.json` entry (projected): a mod-adding crafting-bench option. */
 export interface RepoeBench {

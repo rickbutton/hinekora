@@ -143,7 +143,11 @@ function capDeltaOf(base, mods) {
     return prefix || suffix ? { prefix, suffix } : undefined;
 }
 
-function projectBases(raw, mods) {
+/** The stat of an implicit nothing replaces: no corruption, ember or ichor takes it
+ *  (Simplex Amulet: "Implicit Modifiers Cannot Be Changed"). */
+const LOCKED_STAT = "local_implicit_mod_cannot_be_changed";
+
+export function projectBases(raw, mods) {
     const out = {};
     for (const [key, b] of Object.entries(raw)) {
         if (b.release_state !== "released" || !b.name) continue; // skip unreleased / nameless internals
@@ -158,10 +162,30 @@ function projectBases(raw, mods) {
             domain: b.domain,
             tags: b.tags,
             release_state: b.release_state,
+            ...(b.implicits?.length && { implicits: b.implicits }),
             ...(capDelta && { capDelta }),
             ...(magnitude && { magnitude }),
             ...(allInfluencesOf(b, mods) && { allInfluences: true }),
         };
+    }
+    return out;
+}
+
+/** The implicit rows the kept bases name, by id. */
+export function projectImplicits(bases, mods, gems) {
+    const out = {};
+    for (const b of Object.values(bases)) {
+        for (const id of b.implicits ?? []) {
+            const m = mods[id];
+            if (m === undefined || id in out) continue;
+            out[id] = {
+                type: m.type,
+                groups: m.groups,
+                tags: m.implicit_tags ?? [],
+                text: modText(m, gems),
+                ...((m.stats ?? []).some((s) => s.id === LOCKED_STAT) && { locked: true }),
+            };
+        }
     }
     return out;
 }
@@ -299,7 +323,12 @@ async function main() {
     const gems = await getSource(GEMS_URL, "REPOE_GEMS_FILE");
 
     const modsFile = writeJson("mods.json", projectMods(mods.json, gems.json));
-    const basesFile = writeJson("base_items.json", projectBases(bases.json, mods.json));
+    const projectedBases = projectBases(bases.json, mods.json);
+    const basesFile = writeJson("base_items.json", projectedBases);
+    const implicitsFile = writeJson(
+        "implicits.json",
+        projectImplicits(projectedBases, mods.json, gems.json),
+    );
     const essencesFile = writeJson("essences.json", projectEssences(essences.json));
     const benchFile = writeJson("bench.json", projectBench(bench.json, bases.json));
     const fossilsFile = writeJson("fossils.json", projectFossils(fossils.json));
@@ -330,6 +359,7 @@ async function main() {
             description:
                 "Full PoE1 catalog projected to the fields the core model uses: all prefix/suffix mods, all released named bases, plus the essence, bench (mod-adding) and fossil catalogs.",
             bases: basesFile.count,
+            implicits: implicitsFile.count,
             mods: modsFile.count,
             essences: essencesFile.count,
             benchCrafts: benchFile.count,
@@ -338,6 +368,7 @@ async function main() {
         files: {
             "mods.json": modsFile,
             "base_items.json": basesFile,
+            "implicits.json": implicitsFile,
             "essences.json": essencesFile,
             "bench.json": benchFile,
             "fossils.json": fossilsFile,
@@ -347,7 +378,7 @@ async function main() {
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 4) + "\n");
 
     console.log(
-        `wrote ${modsFile.count} mods, ${basesFile.count} bases, ${essencesFile.count} essences, ${benchFile.count} bench crafts, ${fossilsFile.count} fossils to ${OUT_DIR}`,
+        `wrote ${modsFile.count} mods, ${basesFile.count} bases, ${implicitsFile.count} implicits, ${essencesFile.count} essences, ${benchFile.count} bench crafts, ${fossilsFile.count} fossils to ${OUT_DIR}`,
     );
     console.log(`source commit ${commit.sha}, published ${manifest.source.publishedAt}`);
 }

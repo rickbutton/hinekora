@@ -15,6 +15,7 @@ import {
     type FossilSpec,
     type HarvestChangeTable,
     type Gen,
+    type ImplicitSpec,
     GroupId,
     type Mod,
     ModId,
@@ -29,6 +30,8 @@ import type {
     RepoeEldritch,
     RepoeEssence,
     RepoeFossil,
+    RepoeImplicit,
+    RepoeImplicits,
     RepoeMod,
 } from "./repoe/schema.js";
 
@@ -110,6 +113,17 @@ export function adaptEldritch(id: string, e: RepoeEldritch): EldritchImplicitSpe
     };
 }
 
+export function adaptImplicit(id: string, i: RepoeImplicit): ImplicitSpec {
+    return {
+        id: ModId(id),
+        type: TypeId(i.type),
+        groups: new Set(i.groups.map((g) => GroupId(g))),
+        implicitTags: new Set(i.tags.map((t) => TagId(t))),
+        text: i.text,
+        ...(i.locked && { locked: true as const }),
+    };
+}
+
 function tagWeights(weights: Readonly<Record<string, number>> | undefined): Map<TagId, number> {
     return new Map(Object.entries(weights ?? {}).map(([tag, w]) => [TagId(tag), w]));
 }
@@ -160,7 +174,9 @@ export function adaptBench(b: RepoeBench): BenchCraft {
     };
 }
 
-export function adaptBase(key: string, b: RepoeBase): Base {
+/** `implicits` is the catalog the base's implicit ids index, read for whether one is locked. */
+export function adaptBase(key: string, b: RepoeBase, implicits: RepoeImplicits = {}): Base {
+    const own = b.implicits ?? [];
     // The metadata-path key is the id (unique); the display name is separate,
     // because names collide across the full catalog (maps, gems, …).
     return {
@@ -172,5 +188,7 @@ export function adaptBase(key: string, b: RepoeBase): Base {
         ...(b.capDelta && { capDelta: b.capDelta }),
         ...(b.magnitude && { magnitude: b.magnitude }),
         ...(b.allInfluences && { allInfluences: true as const }),
+        ...(own.length > 0 && { implicits: own.map((id) => ModId(id)) }),
+        ...(own.some((id) => implicits[id]?.locked) && { implicitLocked: true as const }),
     };
 }

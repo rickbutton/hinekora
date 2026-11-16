@@ -344,6 +344,67 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
     });
 });
 
+describe("a base's own implicits", () => {
+    const crafted = data.bases.filter(isCraftedOn);
+    const implicitCount = (domain: string): number =>
+        crafted.filter((b) => b.domain === domain && b.implicits?.length === 1).length;
+
+    it("loads every row a base names, matching the manifest count", () => {
+        expect(data.implicits.length).toBe(data.manifest.extent.implicits);
+        const ids = new Set(data.implicits.map((i) => i.id));
+        expect(data.bases.flatMap((b) => b.implicits ?? []).every((id) => ids.has(id))).toBe(true);
+    });
+
+    it("is one implicit at most on a base a craft is modelled on", () => {
+        expect(crafted.every((b) => (b.implicits?.length ?? 0) <= 1)).toBe(true);
+        expect(implicitCount("item")).toBe(564);
+        expect(implicitCount("flask")).toBe(5);
+    });
+
+    it("is the Vermillion Ring's increased maximum life, and none on a Vaal Regalia", () => {
+        expect(registry.baseImplicits(base("Vermillion Ring"))).toEqual([
+            [
+                expect.objectContaining({
+                    id: "MaximumLifeImplicitAtlasRing",
+                    text: "(5-7)% increased maximum Life",
+                }),
+            ],
+        ]);
+        expect(base("Vaal Regalia").implicits).toBeUndefined();
+        expect(registry.baseImplicits(base("Vaal Regalia"))).toEqual([[]]);
+    });
+
+    it("cannot be changed on the nine experimented bases, and only there", () => {
+        const locked = data.bases.filter((b) => b.implicitLocked).map((b) => b.name);
+        expect(locked.sort()).toEqual([
+            "Astrolabe Amulet",
+            "Cogwork Ring",
+            "Composite Ring",
+            "Focused Amulet",
+            "Geodesic Ring",
+            "Helical Ring",
+            "Manifold Ring",
+            "Ratcheting Ring",
+            "Simplex Amulet",
+        ]);
+    });
+
+    it("is each variant's where a name stands for bases that differ only by implicit", () => {
+        const twoStone = registry.baseImplicits(base("Two-Stone Ring"));
+        expect(twoStone.map((v) => v.map((i) => i.id)).sort()).toEqual([
+            ["ColdAndLightningResistImplicitRing1"],
+            ["FireAndColdResistImplicitRing1"],
+            ["FireAndLightningResistImplicitRing1"],
+        ]);
+        // One Black Maw Talisman has a socket implicit; the other has none.
+        const blackMaw = registry.baseImplicits(base("Black Maw Talisman"));
+        expect(blackMaw.map((v) => v.map((i) => i.id)).sort()).toEqual([
+            [],
+            ["TalismanHasOneSocket_"],
+        ]);
+    });
+});
+
 describe("registry resolution against real data", () => {
     it("resolves equipment/jewel bases by their (unique) display name", () => {
         expect(registry.resolveBase("Cobalt Jewel").ok).toBe(true);

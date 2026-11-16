@@ -17,6 +17,7 @@ import type {
     RepoeEssences,
     RawHarvestChange,
     RepoeFossils,
+    RepoeImplicits,
     RepoeMods,
 } from "./repoe/schema.js";
 
@@ -30,6 +31,7 @@ export function loadPoe1(dir: string): LoadedData {
         manifest: readJson<DataManifest>(`${dir}/${POE1_FILES.manifest}`),
         mods: readJson<RepoeMods>(`${dir}/${POE1_FILES.mods}`),
         bases: readJson<RepoeBases>(`${dir}/${POE1_FILES.bases}`),
+        implicits: readJson<RepoeImplicits>(`${dir}/${POE1_FILES.implicits}`),
         essences: readJson<RepoeEssences>(`${dir}/${POE1_FILES.essences}`),
         bench: readJson<RepoeBenches>(`${dir}/${POE1_FILES.bench}`),
         fossils: readJson<RepoeFossils>(`${dir}/${POE1_FILES.fossils}`),

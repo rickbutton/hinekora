@@ -11,6 +11,7 @@ import {
     type EssenceSpec,
     type FossilSpec,
     type HarvestChangeTable,
+    type ImplicitSpec,
     type Mod,
     type Registry,
 } from "@hinekora/core";
@@ -21,6 +22,7 @@ import {
     adaptEssence,
     adaptFossil,
     adaptHarvestChange,
+    adaptImplicit,
     adaptMod,
 } from "./adapter.js";
 import type { DataManifest } from "./manifest.js";
@@ -33,12 +35,14 @@ import type {
     RepoeEssences,
     RawHarvestChange,
     RepoeFossils,
+    RepoeImplicits,
     RepoeMods,
 } from "./repoe/schema.js";
 
 export interface LoadedData {
     readonly mods: readonly Mod[];
     readonly bases: readonly Base[];
+    readonly implicits: readonly ImplicitSpec[];
     readonly essences: readonly EssenceSpec[];
     readonly benchCrafts: readonly BenchCraft[];
     readonly fossils: readonly FossilSpec[];
@@ -48,11 +52,12 @@ export interface LoadedData {
     readonly manifest: DataManifest;
 }
 
-/** The nine files of a PoE1 data directory, parsed but not yet adapted. */
+/** The ten files of a PoE1 data directory, parsed but not yet adapted. */
 export interface RawPoe1 {
     readonly manifest: DataManifest;
     readonly mods: RepoeMods;
     readonly bases: RepoeBases;
+    readonly implicits: RepoeImplicits;
     readonly essences: RepoeEssences;
     readonly bench: RepoeBenches;
     readonly fossils: RepoeFossils;
@@ -61,11 +66,12 @@ export interface RawPoe1 {
     readonly clusterEnchants: RawClusterEnchants;
 }
 
-/** The names of the nine files, by `RawPoe1` field. */
+/** The names of the ten files, by `RawPoe1` field. */
 export const POE1_FILES: Readonly<Record<keyof RawPoe1, string>> = {
     manifest: "manifest.json",
     mods: "mods.json",
     bases: "base_items.json",
+    implicits: "implicits.json",
     essences: "essences.json",
     bench: "bench.json",
     fossils: "fossils.json",
@@ -79,7 +85,8 @@ export function adaptPoe1(raw: RawPoe1): LoadedData {
     const mods = Object.entries(raw.mods)
         .map(([id, m]) => adaptMod(id, m))
         .filter((m): m is Mod => m !== null);
-    const bases = Object.entries(raw.bases).map(([key, b]) => adaptBase(key, b));
+    const bases = Object.entries(raw.bases).map(([key, b]) => adaptBase(key, b, raw.implicits));
+    const implicits = Object.entries(raw.implicits).map(([id, i]) => adaptImplicit(id, i));
     const essences = Object.entries(raw.essences).map(([id, e]) => adaptEssence(id, e));
     const benchCrafts = raw.bench.map(adaptBench);
     const fossils = Object.entries(raw.fossils).map(([id, f]) => adaptFossil(id, f));
@@ -88,6 +95,7 @@ export function adaptPoe1(raw: RawPoe1): LoadedData {
     return {
         mods,
         bases,
+        implicits,
         essences,
         benchCrafts,
         fossils,
@@ -104,6 +112,7 @@ export function registryOf(data: LoadedData): Registry {
     return buildRegistry({
         bases: data.bases,
         mods: data.mods,
+        implicits: data.implicits,
         wordingAliases: COMMUNITY_ALIASES,
         essences: data.essences,
         benchCrafts: data.benchCrafts,

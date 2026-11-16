@@ -15,6 +15,7 @@ import baseItemsUrl from "@hinekora/data/data/poe1/base_items.json?url";
 import benchUrl from "@hinekora/data/data/poe1/bench.json?url";
 import clusterEnchantsUrl from "@hinekora/data/data/poe1/cluster_enchants.json?url";
 import eldritchUrl from "@hinekora/data/data/poe1/eldritch.json?url";
+import implicitsUrl from "@hinekora/data/data/poe1/implicits.json?url";
 import harvestChangeUrl from "@hinekora/data/data/poe1/harvest_change.json?url";
 import essencesUrl from "@hinekora/data/data/poe1/essences.json?url";
 import fossilsUrl from "@hinekora/data/data/poe1/fossils.json?url";
@@ -37,6 +38,7 @@ const DATA_URLS: Readonly<Record<keyof RawPoe1, string>> = {
     manifest: manifestUrl,
     mods: modsUrl,
     bases: baseItemsUrl,
+    implicits: implicitsUrl,
     essences: essencesUrl,
     bench: benchUrl,
     fossils: fossilsUrl,

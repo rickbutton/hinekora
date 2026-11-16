@@ -33,6 +33,51 @@ describe("a base name two bases share", () => {
     });
 });
 
+describe("a base's implicits", () => {
+    const life = {
+        id: ModId("RingLife"),
+        type: TypeId("MaximumLife"),
+        groups: new Set([GroupId("MaximumLife")]),
+        implicitTags: new Set([TagId("life")]),
+        text: "(5-7)% increased maximum Life",
+    };
+    const mana = { ...life, id: ModId("RingMana"), text: "+(20-30) to maximum Mana" };
+    const ring = (id: string, implicits: readonly ModId[]): Base => ({
+        ...RING_BASE,
+        id: BaseId(id),
+        name: "Twin",
+        ...(implicits.length > 0 && { implicits }),
+    });
+    const withLife = ring("TwinLife", [life.id]);
+    const withMana = ring("TwinMana", [mana.id]);
+    const bare = ring("TwinBare", []);
+    const other: Base = { ...RING_BASE, id: BaseId("Other"), name: "Other", implicits: [life.id] };
+    const registry = buildRegistry({
+        bases: [withLife, withMana, bare, other],
+        mods: CATALOG,
+        implicits: [life, mana],
+    });
+
+    it("is the base's own rows", () => {
+        expect(registry.baseImplicits(other)).toEqual([[life]]);
+    });
+
+    it("is each variant's, its own first, where one name stands for several bases", () => {
+        expect(registry.baseImplicits(withMana)).toEqual([[mana], [life], []]);
+        expect(registry.baseImplicits(bare)).toEqual([[], [life], [mana]]);
+    });
+
+    it("leaves out a namesake the model reads as another base", () => {
+        const wide: Base = { ...withMana, tags: new Set([...withMana.tags, TagId("wide")]) };
+        const r = buildRegistry({
+            bases: [withLife, wide],
+            mods: CATALOG,
+            implicits: [life, mana],
+        });
+        expect(r.baseImplicits(wide)).toEqual([[mana]]);
+    });
+});
+
 describe("a bench craft named by its whole wording", () => {
     const one = metamod("onePrefixCannotChange");
     const two = metamod("twoPrefixesCannotChange");

@@ -31,6 +31,7 @@ import {
     type HarvestChangeKind,
     type HarvestChangePair,
     type HarvestChangeTable,
+    type ImplicitSpec,
 } from "../model/sources.js";
 import {
     buildTypeIndex,
@@ -268,6 +269,10 @@ export interface Registry {
     benchModsFor(itemClass: ClassId): ReadonlySet<ModId>;
     /** Resolve a fossil by name, in full ("Pristine Fossil") or by its first word. */
     resolveFossil(name: string): Resolved<FossilSpec>;
+    /** The implicits an item of this base is made with, one entry per base it may
+     *  be: its own first, then each variant of its name the model reads as the
+     *  same base (a Two-Stone Ring's three), each possibly none. */
+    baseImplicits(base: Base): readonly (readonly ImplicitSpec[])[];
     /** The eldritch implicit rows an ember or ichor of that tier can give a base. */
     eldritchPool(base: Base, side: EldritchSide, tier: number): readonly EldritchImplicitSpec[];
     /** The rows an eldritch implicit of that tier on a base may be: the pool's,
@@ -417,6 +422,8 @@ export const STANDARD_CURRENCIES: readonly CurrencySpec[] = [
 export interface RegistryData {
     readonly bases: readonly Base[];
     readonly mods: readonly Mod[];
+    /** The rows `Base.implicits` names. */
+    readonly implicits?: readonly ImplicitSpec[];
     /** Optional human aliases → mod id (e.g. "T1 Life" → "IncreasedLife1"). */
     readonly modAliases?: Readonly<Record<string, string>>;
     readonly baseAliases?: Readonly<Record<string, string>>;
@@ -505,6 +512,10 @@ export function buildRegistry(data: RegistryData): Registry {
             rows.add(mod.id);
         }
     }
+    const implicitById = new Map((data.implicits ?? []).map((i) => [i.id, i] as const));
+    const implicitsOf = (b: Base): readonly ImplicitSpec[] =>
+        (b.implicits ?? []).flatMap((id) => implicitById.get(id) ?? []);
+    const variantImplicits = new WeakMap<Base, readonly (readonly ImplicitSpec[])[]>();
     const eldritch = data.eldritch ?? [];
     const aspects = new Map(
         Object.entries(data.aspects ?? ASPECTS).map(
@@ -1097,6 +1108,20 @@ export function buildRegistry(data: RegistryData): Registry {
             if (matches.length === 1) return found(matches[0]!);
             if (matches.length === 0) return fail({ kind: "unknownFossil", name });
             return fail({ kind: "ambiguous", name, candidates: matches.map((f) => f.name) });
+        },
+
+        baseImplicits(base) {
+            let hit = variantImplicits.get(base);
+            if (hit === undefined) {
+                const named =
+                    base.name === undefined ? [] : (baseByName.get(norm(base.name)) ?? []);
+                const others = named.filter(
+                    (b) => b !== base && isCraftedOn(b) && sameToTheModel(base, b),
+                );
+                hit = [base, ...others].map(implicitsOf);
+                variantImplicits.set(base, hit);
+            }
+            return hit;
         },
 
         eldritchPool(base, side, tier) {

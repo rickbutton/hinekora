@@ -19,7 +19,8 @@
         "essences": 106,
         "benchCrafts": 748,
         "fossils": 25,
-        "eldritch": 4032
+        "eldritch": 4032,
+        "implicits": 500
     },
     "files": {
         "mods.json": {
@@ -27,7 +28,7 @@
             "count": 12897
         },
         "base_items.json": {
-            "sha256": "6e569283313540f90219862fe5792ec3f8f24982d65f676d456431106ccf67e2",
+            "sha256": "2cd80eef77ddaf0a3a7722493724d3e3ce01da28b7f522247e92fd1575ef7b88",
             "count": 5003
         },
         "essences.json": {
@@ -70,6 +71,10 @@
                 "publishedAt": "not published",
                 "gameVersion": "3.30.0.1.3"
             }
+        },
+        "implicits.json": {
+            "sha256": "c77f749b444be0460233db6d399301dbd4037a114a1f4e5b5ee828c77ba8c495",
+            "count": 500
         }
     }
 }

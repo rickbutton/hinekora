@@ -5,7 +5,7 @@
  * Tags here play the eligibility role, they are matched against each mod's
  * spawn table to decide whether (and how heavily) a mod can roll on this base.
  */
-import type { BaseId, ClassId, Domain, TagId } from "./ids.js";
+import type { BaseId, ClassId, Domain, ModId, TagId } from "./ids.js";
 
 export interface Base {
     /**
@@ -42,4 +42,9 @@ export interface Base {
     readonly magnitude?: { readonly prefix: number; readonly suffix: number };
     /** The Astrolabe Amulet's implicit: the item counts as having every influence. */
     readonly allInfluences?: true;
+    /** The base's own implicit rows (`ImplicitSpec`), in the data's order. Absent ⇒ none. */
+    readonly implicits?: readonly ModId[];
+    /** An implicit of the base reads "Implicit Modifiers Cannot Be Changed"
+     *  ([Simplex Amulet](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)). */
+    readonly implicitLocked?: true;
 }

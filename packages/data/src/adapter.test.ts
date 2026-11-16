@@ -139,6 +139,25 @@ describe("adaptBase", () => {
             domain: "misc",
         });
         expect(b.tags.size).toBe(5);
+        expect("implicits" in b || "implicitLocked" in b).toBe(false);
+    });
+
+    it("keeps the base's implicit ids, and whether one cannot be changed", () => {
+        const ring: RepoeBase = {
+            name: "Helical Ring",
+            item_class: "Ring",
+            domain: "item",
+            tags: ["ring", "default"],
+            implicits: ["Locked"],
+        };
+        const implicits = {
+            Locked: { type: "T", groups: [], tags: [], text: "", locked: true as const },
+        };
+        expect(adaptBase("Metadata/Ring", ring, implicits)).toMatchObject({
+            implicits: ["Locked"],
+            implicitLocked: true,
+        });
+        expect("implicitLocked" in adaptBase("Metadata/Ring", ring)).toBe(false);
     });
 });
 
