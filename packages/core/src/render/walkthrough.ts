@@ -20,7 +20,7 @@ import {
     itemView,
     type ModGroup,
     type ModView,
-    SIDE_SHORT,
+    IMPLICIT_SHORT,
 } from "./item.js";
 import { pluralRange, rangeText, rarityText } from "../words.js";
 
@@ -245,7 +245,11 @@ export function itemDelta(before: ItemView, after: ItemView): ItemDelta {
     const lines = (v: ItemView): string[] => [
         ...v.rarities.map((r) => rarityText([r])),
         ...modLines(v),
-        ...v.implicits.map((i) => `${implicitTierText(i, "–")} ${SIDE_SHORT[i.side]} implicit`),
+        ...v.implicits.map((i) =>
+            [implicitTierText(i, "–"), IMPLICIT_SHORT[i.kind], "implicit"]
+                .filter((w) => w !== "")
+                .join(" "),
+        ),
         ...v.marks.map((m) => (m.maybe ? `possibly ${m.text}` : m.text)),
         ...(v.remainder !== undefined
             ? [

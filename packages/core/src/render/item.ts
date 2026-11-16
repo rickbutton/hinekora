@@ -95,9 +95,12 @@ export type ModGroup =
           readonly members: readonly ModView[];
       };
 
+/** Where an implicit comes from: the base, an eldritch side, or a corruption. */
+export type ImplicitKind = "base" | EldritchSide | "corruption";
+
 export interface ImplicitView {
-    readonly side: EldritchSide;
-    /** The tier names the implicit may be at, best last. */
+    readonly kind: ImplicitKind;
+    /** The tier names the implicit may be at, best last; none for an untiered implicit. */
     readonly tiers: readonly string[];
     /** The wordings it may be; one when known, empty when the game data names none. */
     readonly texts: readonly string[];
@@ -510,7 +513,7 @@ export function itemView(s: ItemSet, registry: Registry, craft?: Craft): ItemVie
         const unnamed = types.size > 0 && unnamedImplicit(s, side);
         if (unnamed) texts.add(UNNAMED_IMPLICIT);
         implicits.push({
-            side,
+            kind: side,
             tiers: tiers.map(eldritchTierLabel),
             texts: [...texts],
             count: types.size + (unnamed ? 1 : 0),
@@ -605,11 +608,26 @@ export const SIDE_SHORT: Readonly<Record<EldritchSide, string>> = {
     eater: "Eater",
 };
 
+/** An implicit's kind as its advanced-copy header names it, before "Implicit Modifier". */
+export const IMPLICIT_NAME: Readonly<Record<ImplicitKind, string>> = {
+    base: "",
+    ...SIDE_NAME,
+    corruption: "Corruption",
+};
+
+/** An implicit's kind in a player's short words ("a Grand Exarch implicit"). */
+export const IMPLICIT_SHORT: Readonly<Record<ImplicitKind, string>> = {
+    base: "Base",
+    ...SIDE_SHORT,
+    corruption: "Corruption",
+};
+
 /** Past this many wordings an implicit is summarised as "one of n" rather than listed. */
 export const IMPLICIT_LIST_LIMIT = 6;
 
 /** "Grand", or "Lesser to Grand": the tier names an implicit may be at, in words. */
 export function implicitTierText(i: ImplicitView, dash = " to "): string {
+    if (i.tiers.length === 0) return "";
     return i.tiers.length === 1
         ? i.tiers[0]!
         : `${i.tiers[0]!}${dash}${i.tiers[i.tiers.length - 1]!}`;
@@ -682,12 +700,15 @@ function groupLines(gen: Gen | undefined, g: ModGroup): string[] {
 function implicitLines(i: ImplicitView): string[] {
     const tier = implicitTierText(i);
     const maybe = i.maybe ? "Possibly: " : "";
-    const name = SIDE_NAME[i.side];
-    const head = `{ ${maybe}${name} Implicit Modifier (${tier})${tagsText(i.tags)} }`;
+    const name = IMPLICIT_NAME[i.kind];
+    const named = (w: string): string => (name === "" ? w : `${name} ${w}`);
+    const tiered = tier === "" ? "" : ` (${tier})`;
+    const head = `{ ${maybe}${named("Implicit Modifier")}${tiered}${tagsText(i.tags)} }`;
     if (i.texts.length === 1) return [head, ...lines(i.texts[0]!)];
-    if (i.texts.length === 0) return [head, `any ${tier} ${name} implicit`];
+    if (i.texts.length === 0)
+        return [head, `any ${tier === "" ? "" : `${tier} `}${named("implicit")}`];
     if (i.texts.length > IMPLICIT_LIST_LIMIT) {
-        return [head, `one of ${i.count} ${name} implicits`];
+        return [head, `one of ${i.count} ${named("implicits")}`];
     }
     return [head, `one of ${i.texts.length}:`, ...i.texts.flatMap(lines).map(indent)];
 }

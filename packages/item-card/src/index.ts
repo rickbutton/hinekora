@@ -19,8 +19,8 @@ import {
     type ModView,
     remainderText,
     totalText,
-    SIDE_NAME,
-    SIDE_SHORT,
+    IMPLICIT_NAME,
+    IMPLICIT_SHORT,
     rarityText,
 } from "@hinekora/core";
 
@@ -92,14 +92,15 @@ function group(g: ModGroup): string {
 
 function implicitRow(i: ItemView["implicits"][number]): string {
     const tier = implicitTierText(i, "–");
-    const who = SIDE_SHORT[i.side];
+    const who = IMPLICIT_SHORT[i.kind];
+    const what = [tier, who].filter((w) => w !== "").join(" ");
     // The wording when known; a few wordings listed; a whole pool
     // summarised, since nothing in it is worth reading yet.
     const text =
         i.texts.length === 1
             ? statText(i.texts[0]!)
             : i.texts.length === 0
-              ? esc(`any ${tier} ${who} implicit`)
+              ? esc(`any ${what} implicit`)
               : i.texts.length > IMPLICIT_LIST_LIMIT
                 ? esc(`one of ${i.count} ${who} implicits`)
                 : h("span", "label", "one of") + i.texts.map((t) => `<br>${statText(t)}`).join("");
@@ -112,10 +113,10 @@ function implicitRow(i: ItemView["implicits"][number]): string {
             : "";
     return h(
         "div",
-        `mod implicit ${i.side}${i.maybe ? " maybe" : ""}`,
+        `mod implicit ${i.kind}${i.maybe ? " maybe" : ""}`,
         h("span", "text", text) +
             h("span", "meta", h("span", "side", esc(who)) + h("span", "tier pinned", esc(tier))),
-        `${SIDE_NAME[i.side]} implicit, ${tier}${listed}`,
+        `${IMPLICIT_NAME[i.kind] || IMPLICIT_SHORT[i.kind]} implicit${tier === "" ? "" : `, ${tier}`}${listed}`,
     );
 }
 

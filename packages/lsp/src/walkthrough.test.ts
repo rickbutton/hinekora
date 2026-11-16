@@ -135,7 +135,7 @@ until has "fire res" t1 or has "cold res" t1 or has "light res" t1 { annul exalt
             `item { base: "Iron Gauntlets" ilvl: 84 rarity: rare exarch: grand "increased attack speed" }\nexalt`,
         );
         const [implicit] = itemView(known.start.item!, registry).implicits;
-        expect(implicit!.side).toBe("exarch");
+        expect(implicit!.kind).toBe("exarch");
         expect(implicit!.tiers).toEqual(["Grand"]);
         // The wording names the plain implicit at the Grand row's value; its
         // presence variants are wordings of their own.

@@ -76,7 +76,7 @@ describe("the item card's markup", () => {
 
     it("escapes an implicit's wording, alone or among several, and its hover title", () => {
         const implicit = (texts: readonly string[]): ItemView["implicits"][number] => ({
-            side: "exarch",
+            kind: "exarch",
             tiers: ["Lesser"],
             texts,
             count: texts.length,

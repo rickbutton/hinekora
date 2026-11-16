@@ -277,7 +277,7 @@ describe("the marks and the crafted flag", () => {
             rarities: ["rare"],
             implicits: [
                 {
-                    side: "exarch",
+                    kind: "exarch",
                     tiers: ["Grand"],
                     texts: ["10% increased Attack Speed"],
                     count: 1,
