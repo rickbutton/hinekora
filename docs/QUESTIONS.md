@@ -603,11 +603,17 @@ refusing it.
 **Assumed:** refused. **Encoded in:** `model/sources.ts` `addsOwnImplicit`;
 `check/methods.ts` `resonator`.
 
-### Q134 · probe · open — a Vaal Orb on an implicit that cannot be changed
+### Q134 · probe · open — a corruption implicit on an implicit that cannot be changed
 
 **Q:** [Simplex Amulet § Mechanics](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)
 says the implicit "cannot be turned into a corrupted implicit". Does the Vaal Orb's
-implicit outcome then do nothing, or is another outcome rolled in its place?
-**Probe:** forty Vaal Orbs on Cogwork Rings; count each outcome.
-**Assumed:** it does nothing, one time in four. **Encoded in:** `check/ops/marks.ts`
-`replaced`; `cost/track.ts` `OUTCOME_ODDS`.
+implicit outcome then do nothing, or is another outcome rolled in its place? Does a
+Bloodstained Fossil or the Corruption Altar add one beside it? Elsewhere, does a
+Bloodstained Fossil always add one, as its "Has a Corrupted implicit modifier" says, or only
+"attempt" to ([§ Mechanics](https://www.poewiki.net/wiki/Bloodstained_Fossil#Mechanics))?
+**Probe:** forty Vaal Orbs on Cogwork Rings, a Bloodstained Fossil on one and on boots;
+record each outcome and implicit.
+**Assumed:** on a locked base nothing changes, the Vaal Orb's outcome one time in four;
+elsewhere a Bloodstained Fossil always replaces an implicit. **Encoded in:**
+`check/ops/marks.ts` `replaced`; `check/reference/ops/marks.ts`; `check/library.ts`;
+`cost/track.ts` `OUTCOME_ODDS`.

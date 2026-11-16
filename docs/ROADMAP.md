@@ -68,6 +68,9 @@ playground, which cannot read a cache directory. `cost.md` §7 changes with it.
   names only "+1 gem" modifiers), and catalyst quality. Meanwhile a value compares on its
   row's own span: on a Simplex Amulet `has "maximum life" >= 240` never holds though the
   item shows twice the row.
+- **the implicits the item does not track**: corruption implicits, a Gilded Fossil's (Q133)
+  and a starting item's synthesised ones; the item records only its base's implicit and
+  its eldritch ones.
 - **legacy base-implicit variants** of the experimented bases, whose own caps and magnitudes one catalog id cannot carry and
   no collected recipe starts from; a Magic
   Simplex Amulet with modifiers no longer exists since 3.27.0

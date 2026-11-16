@@ -669,7 +669,7 @@ export function resonatorOps(r: Resonator): readonly Op[] {
         ...(fractures ? [lock()] : []),
         // The Bloodstained Fossil corrupts the item and "will also attempt to add
         // a corrupted implicit modifier similar to the outcome of using a Vaal
-        // Orb" (Bloodstained Fossil § Mechanics).
+        // Orb" (Bloodstained Fossil § Mechanics), read as always (QUESTIONS.md Q134).
         ...(corrupts ? [corrupt, corruptionImplicit] : []),
     ];
 }
