@@ -303,6 +303,15 @@ export function corruptions(s: ItemSet): ReadonlySet<Corruption> {
     );
 }
 
+/** Whether the items still hold their base's implicit: some do, some do not, or both. */
+export function baseImplicitHeld(s: ItemSet): ReadonlySet<boolean> {
+    return memo(
+        s,
+        "baseImplicit",
+        () => new Set(valuesAt(s, s.u.scalar("baseImplicit")).map((v) => v === 1)),
+    );
+}
+
 /** The pairs of eldritch tiers the items have, as `eldritchKey`s. */
 export function eldritchPairs(s: ItemSet): ReadonlySet<EldritchKey> {
     return memo(s, "eldritch", () => {

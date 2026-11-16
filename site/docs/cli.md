@@ -1,8 +1,7 @@
 # Command line
 
-The command-line tool is `packages/cli/dist/cli.js` after a build
-([Getting started](./getting-started)). The examples below write it as `hinekora`, which
-stands for `node packages/cli/dist/cli.js`.
+The examples write the command-line tool as `hinekora`, for `node packages/cli/dist/cli.js`
+after a build ([Getting started](./getting-started)).
 
 ```txt
 hinekora check <file.craft>
@@ -11,8 +10,7 @@ hinekora chart <file.craft>
 hinekora cost <file.craft>
 ```
 
-Each command takes one file and reads the game data and the prices that ship with the tool,
-with no network request.
+Each command takes one file and reads only the game data and prices shipped with the tool.
 
 ## Exit codes
 
@@ -27,7 +25,7 @@ On a usage error the tool prints the four command forms to standard error.
 
 ## check
 
-`check` parses the craft and runs the checker. It prints the game data's source first.
+`check` parses and checks the craft, printing the game data's source first.
 
 For a craft that checks, it prints the final item in the layout of the game's item text, as
 [Getting started](./getting-started#check-it) shows.
@@ -51,6 +49,9 @@ bad.craft:8:1: error: at this point the item is: Iron Ring · Magic · 1–2 aff
     Iron Ring
     --------
     Item Level: 84
+    --------
+    { Implicit Modifier — Physical Damage, Damage, Physical, Attack }
+    Adds 1 to 4 Physical Damage to Attacks
     --------
     { Prefix Modifier "Annealed" (Tier: 1) — Physical Damage, Damage, Physical, Attack }
     Adds (6-9) to (13-15) Physical Damage to Attacks

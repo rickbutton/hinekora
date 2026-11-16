@@ -22,6 +22,7 @@ import { rollRange } from "../check/values.js";
 import { type CraftNames, craftNames } from "../check/names.js";
 import type { ItemSet } from "../check/state.js";
 import {
+    baseImplicitHeld,
     type CardinalityGuarantee,
     cardinalityGuarantees,
     clauseRows,
@@ -488,7 +489,8 @@ export function itemView(s: ItemSet, registry: Registry, craft?: Craft): ItemVie
 
     const pairs = [...eldritchPairs(s)];
     const sideTiers = (side: EldritchSide): number[] => pairs.map((k) => eldritchOf(k)[side]);
-    const implicits: ImplicitView[] = [];
+    const own = baseImplicitView(s, registry);
+    const implicits: ImplicitView[] = own === undefined ? [] : [own];
     for (const side of ELDRITCH_SIDES) {
         const all = sideTiers(side);
         const tiers = [...new Set(all)].filter((n) => n > 0).sort((x, y) => x - y);
@@ -580,10 +582,38 @@ export function itemView(s: ItemSet, registry: Registry, craft?: Craft): ItemVie
 
 const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
+/**
+ * The base's own implicit, where some item still holds it. A name that stands
+ * for several bases differing only by their implicit (a Two-Stone Ring's
+ * three) gives an item one of them, so they are its wordings; a name whose
+ * bases differ by having one or not (a Black Maw Talisman) holds it only on
+ * the items made with one.
+ */
+function baseImplicitView(s: ItemSet, registry: Registry): ImplicitView | undefined {
+    const held = baseImplicitHeld(s);
+    if (!held.has(true)) return undefined;
+    const texts = new Set<string>();
+    const tagSet = new Set<string>();
+    for (const variant of registry.baseImplicits(s.u.base)) {
+        if (variant.length === 0) continue;
+        const text = variant.map((i) => i.text).filter((t) => t !== "");
+        texts.add(text.length > 0 ? text.join("\n") : UNNAMED_IMPLICIT);
+        for (const i of variant) for (const tag of i.implicitTags) tagSet.add(tagLabel(tag));
+    }
+    return {
+        kind: "base",
+        tiers: [],
+        texts: [...texts],
+        count: texts.size,
+        tags: texts.size === 1 ? [...tagSet] : [],
+        maybe: held.has(false),
+    };
+}
+
 /** The words an item that breaks a step is shown under. */
 export const EXAMPLE_LEAD = "For example, this item:";
 
-/** The line for an eldritch implicit the game data has no wording for. */
+/** The line for an implicit the game data has no wording for. */
 export const UNNAMED_IMPLICIT = "an implicit the game data has no wording for";
 
 // --- the text form ------------------------------------------------------------
@@ -712,7 +742,9 @@ function implicitLines(i: ImplicitView): string[] {
     if (i.texts.length > IMPLICIT_LIST_LIMIT) {
         return [head, `one of ${i.count} ${named("implicits")}`];
     }
-    return [head, `one of ${i.texts.length}:`, ...i.texts.flatMap(lines).map(indent)];
+    // A wording's later lines go deeper, so each wording of several lines reads as one.
+    const listed = i.texts.flatMap((t) => lines(t).map((l, k) => indent(k === 0 ? l : indent(l))));
+    return [head, `one of ${i.texts.length}:`, ...listed];
 }
 
 /**

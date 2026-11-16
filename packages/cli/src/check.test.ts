@@ -53,6 +53,36 @@ describe("the modifiers an item is listed without", () => {
     });
 });
 
+describe("the base's own implicit, against real data", () => {
+    const implicits = (src: string): string => {
+        const r = run(src);
+        expect(r.ok).toBe(true);
+        return r.output.split("\n  --------\n")[2] ?? "";
+    };
+
+    it("shows a Vermillion Ring's, possibly once a Vaal Orb may have taken it", () => {
+        const ring = `item { base: "Vermillion Ring" ilvl: 84 rarity: normal }`;
+        expect(implicits(ring)).toBe(
+            "  { Implicit Modifier — Resource, Life }\n  (5-7)% increased maximum Life",
+        );
+        expect(implicits(`${ring}\nvaal`)).toBe(
+            "  { Possibly: Implicit Modifier — Resource, Life }\n  (5-7)% increased maximum Life",
+        );
+    });
+
+    it("shows a Two-Stone Ring's as one of its three", () => {
+        expect(implicits(`item { base: "Two-Stone Ring" ilvl: 84 rarity: normal }`)).toBe(
+            [
+                "  { Implicit Modifier }",
+                "  one of 3:",
+                "      +(12-16)% to Fire and Lightning Resistances",
+                "      +(12-16)% to Cold and Lightning Resistances",
+                "      +(12-16)% to Fire and Cold Resistances",
+            ].join("\n"),
+        );
+    });
+});
+
 describe("checkSource — end to end against real data", () => {
     it("passes a valid craft and reports the final item", () => {
         const r = run(`item { base: "Iron Ring" ilvl: 84 rarity: normal }

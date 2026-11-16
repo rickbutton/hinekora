@@ -124,7 +124,12 @@ function implicitRow(i: ItemView["implicits"][number]): string {
         "div",
         `mod implicit ${IMPLICIT_CLASS[i.kind]}${i.maybe ? " maybe" : ""}`,
         h("span", "text", text) +
-            h("span", "meta", h("span", "side", esc(who)) + h("span", "tier pinned", esc(tier))),
+            h(
+                "span",
+                "meta",
+                h("span", "side", esc(who)) +
+                    (tier === "" ? "" : h("span", "tier pinned", esc(tier))),
+            ),
         `${IMPLICIT_NAME[i.kind] || IMPLICIT_SHORT[i.kind]} implicit${tier === "" ? "" : `, ${tier}`}${listed}`,
     );
 }

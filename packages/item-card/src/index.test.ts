@@ -120,6 +120,28 @@ describe("the item card's markup", () => {
         }
     });
 
+    it("shows a base's implicit with no tier, and as possible where some items lack it", () => {
+        const html = itemCardHtml(
+            view({
+                implicits: [
+                    {
+                        kind: "base",
+                        tiers: [],
+                        texts: ["(5-7)% increased maximum Life"],
+                        count: 1,
+                        tags: ["Life"],
+                        maybe: true,
+                    },
+                ],
+            }),
+        );
+        expect(html).toContain('class="mod implicit implicit-base maybe"');
+        expect(html).toContain('<span class="roll">(5-7)</span>% increased maximum Life');
+        expect(html).toContain('<span class="side">Base</span></span>');
+        expect(html).not.toContain("tier pinned");
+        expect(html).toContain('title="Base implicit"');
+    });
+
     it("escapes each member of a group of alternatives", () => {
         const html = itemCardHtml(
             view({

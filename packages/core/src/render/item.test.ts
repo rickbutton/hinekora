@@ -28,7 +28,9 @@ import {
     VEILED_A,
     VEILED_SUFFIX_MOD,
 } from "../__fixtures__/mods.js";
-import type { BenchCraft } from "../model/sources.js";
+import type { Base } from "../model/base.js";
+import { BaseId, GroupId, ModId, TagId, TypeId } from "../model/ids.js";
+import type { BenchCraft, ImplicitSpec } from "../model/sources.js";
 import { generateCatalog } from "../check/reference/catalog.js";
 import { countOutside, guaranteedTypes } from "../check/views.js";
 import { itemDelta } from "./walkthrough.js";
@@ -485,6 +487,117 @@ describe("an eldritch implicit the game data has no wording for", () => {
         const [implicit] = itemView(r.finalState!, boots, c).implicits;
         expect(implicit!.texts).toEqual(["8% increased Movement Speed", UNNAMED_IMPLICIT]);
         expect(implicit!.tiers).toEqual(["Lesser", "Greater"]);
+    });
+});
+
+describe("the base's own implicit", () => {
+    const implicit = (id: string, text: string, tags: string[] = []): ImplicitSpec => ({
+        id: ModId(id),
+        type: TypeId(id),
+        groups: new Set([GroupId(id)]),
+        implicitTags: new Set(tags.map(TagId)),
+        text,
+    });
+    const LIFE = implicit("RingLife", "(5-7)% increased maximum Life", ["resource", "life"]);
+    const FIRE = implicit("RingFireCold", "+(12-16)% to Fire and Cold Resistances");
+    const COLD = implicit("RingColdLight", "+(12-16)% to Cold and Lightning Resistances");
+    const BLANK = implicit("RingBlank", "");
+    const ringOf = (id: string, own: readonly ImplicitSpec[]): Base => ({
+        ...RING_BASE,
+        id: BaseId(id),
+        name: "Test Ring",
+        ...(own.length > 0 && { implicits: own.map((i) => i.id) }),
+    });
+    /** The item text of a Normal Test Ring after the steps, the catalogue's
+     *  bases all named alike. */
+    const textOf = (bases: readonly Base[], steps: Parameters<typeof craft>[1] = []) => {
+        const reg = buildRegistry({
+            bases: [...bases],
+            mods: [...TIERED_CATALOG, ...FILLERS],
+            implicits: [LIFE, FIRE, COLD, BLANK],
+        });
+        const c = craft(item({ base: bases[0]!.id, ilvl: 84, rarity: "normal" }), steps);
+        const r = check(c, { registry: reg });
+        expect(r.diagnostics).toEqual([]);
+        const v = itemView(r.finalState!, reg, c);
+        return { v, text: renderItemText(v) };
+    };
+    const implicitSection = (text: string): string => text.split("\n--------\n")[2] ?? "";
+
+    it("is shown with its wording and tags and no tier, where every item holds it", () => {
+        const { v, text } = textOf([ringOf("LifeRing", [LIFE])]);
+        expect(implicitSection(text)).toBe(
+            ["{ Implicit Modifier — Resource, Life }", "(5-7)% increased maximum Life"].join("\n"),
+        );
+        expect(v.implicits).toEqual([
+            {
+                kind: "base",
+                tiers: [],
+                texts: ["(5-7)% increased maximum Life"],
+                count: 1,
+                tags: ["Resource", "Life"],
+                maybe: false,
+            },
+        ]);
+    });
+
+    it("is possible after a Vaal Orb, which may take it", () => {
+        const { v, text } = textOf([ringOf("LifeRing", [LIFE])], [op("vaal")]);
+        expect(v.implicits.map((i) => [i.kind, i.maybe])).toEqual([["base", true]]);
+        expect(text).toContain("{ Possibly: Implicit Modifier — Resource, Life }");
+    });
+
+    it("is one of a name's variants, without their tags", () => {
+        const { text } = textOf([ringOf("FireRing", [FIRE]), ringOf("ColdRing", [COLD])]);
+        expect(implicitSection(text)).toBe(
+            [
+                "{ Implicit Modifier }",
+                "one of 2:",
+                "    +(12-16)% to Fire and Cold Resistances",
+                "    +(12-16)% to Cold and Lightning Resistances",
+            ].join("\n"),
+        );
+    });
+
+    it("is possible where a name's variants differ by having one", () => {
+        const { v } = textOf([ringOf("LifeRing", [LIFE]), ringOf("BareRing", [])]);
+        expect(v.implicits).toHaveLength(1);
+        expect(v.implicits[0]!.maybe).toBe(true);
+        expect(v.implicits[0]!.texts).toEqual(["(5-7)% increased maximum Life"]);
+    });
+
+    it("is not shown on a base made with none", () => {
+        const { v, text } = textOf([ringOf("BareRing", [])]);
+        expect(v.implicits).toEqual([]);
+        expect(text).not.toContain("Implicit");
+    });
+
+    it("with no wording in the game data reads as such, not as an empty line", () => {
+        const { text } = textOf([ringOf("BlankRing", [BLANK])]);
+        expect(implicitSection(text)).toBe(["{ Implicit Modifier }", UNNAMED_IMPLICIT].join("\n"));
+    });
+
+    it("is a line an ember takes away", () => {
+        const greaves: Base = { ...BOOTS_BASE, implicits: [LIFE.id] };
+        const reg = buildRegistry({
+            bases: [greaves],
+            mods: CATALOG,
+            eldritch: ELDRITCH_ROWS,
+            implicits: [LIFE],
+        });
+        const ember = {
+            ...op("ember"),
+            args: [{ kind: "word" as const, value: "greater", span: op("ember").span }],
+        };
+        const view = (steps: Parameters<typeof craft>[1]) => {
+            const c = craft(item({ base: "Iron Greaves", ilvl: 100, rarity: "rare" }), steps);
+            const r = check(c, { registry: reg });
+            expect(r.diagnostics).toEqual([]);
+            return itemView(r.finalState!, reg, c);
+        };
+        const delta = itemDelta(view([]), view([ember]));
+        expect(delta.removed).toEqual(["Base implicit"]);
+        expect(delta.added).toEqual(["Greater Exarch implicit", "Searing Exarch Item"]);
     });
 });
 

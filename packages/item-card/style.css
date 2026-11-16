@@ -88,6 +88,10 @@
 .item-card .mod.implicit.eater {
     color: #b19cd9;
 }
+/* A base's implicit in the modifiers' colour, set apart by its section. */
+.item-card .mod.implicit.implicit-base {
+    color: var(--explicit);
+}
 
 .item-card .meta {
     display: flex;
