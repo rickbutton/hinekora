@@ -104,7 +104,7 @@ const IMPLICIT_CLASS: Readonly<Record<ItemView["implicits"][number]["kind"], str
 function listedWording(text: string): string {
     return text
         .split("\n")
-        .map((l, k) => `<br>${k === 0 ? statText(l) : h("span", "continued", statText(l))}`)
+        .map((l, k) => (k === 0 ? `<br>${statText(l)}` : h("span", "continued", statText(l))))
         .join("");
 }
 

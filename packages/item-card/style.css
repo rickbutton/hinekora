@@ -93,8 +93,10 @@
     color: var(--explicit);
 }
 
-/* A listed wording's later lines, set in under its first. */
+/* A listed wording's later lines, set in under its first; a block, so a line
+   that wraps stays set in. */
 .item-card .mod .continued {
+    display: block;
     padding-left: 1em;
 }
 

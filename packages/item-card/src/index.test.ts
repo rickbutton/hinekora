@@ -160,7 +160,7 @@ describe("the item card's markup", () => {
         expect(html).toContain(
             '<span class="label">one of</span>' +
                 '<br>+<span class="roll">(8-10)</span>% to Fire Resistance' +
-                '<br><span class="continued">+<span class="roll">(8-10)</span>% to Cold Resistance</span>' +
+                '<span class="continued">+<span class="roll">(8-10)</span>% to Cold Resistance</span>' +
                 "<br>a</span>",
         );
     });
