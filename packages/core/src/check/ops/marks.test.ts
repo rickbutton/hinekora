@@ -42,6 +42,10 @@ const rarity = (r: Rarity | "survivors"): Transform => ({ kind: "rarity", rarity
 const influence = (change: InfluenceChange): Transform => ({ kind: "influence", change });
 const corrupt: Transform = { kind: "corrupt" };
 const replaced: Transform = { kind: "eldritch", change: { kind: "replaced" } };
+const altarReplaced: Transform = {
+    kind: "eldritch",
+    change: { kind: "replaced", untracked: true },
+};
 const ALL_CORRUPTIONS: Corruption[] = [false, true, "twice"];
 const conflict: Transform = { kind: "eldritch", change: { kind: "conflict" } };
 const hunter = influenceKey(["hunter"]);
@@ -171,6 +175,7 @@ describe("the marks over tiny catalogues", () => {
         it(`${base}: the corruption implicits`, () => {
             const bounds = { influences, ...eldritch };
             exact(s, seed + 4, bounds, [replaced]);
+            exact(s, seed + 5, { ...bounds, corrupted: [true] }, [altarReplaced]);
             exact(s, seed + 6, { ...bounds, corrupted: ALL_CORRUPTIONS }, L.locusOps());
         });
 
@@ -240,6 +245,7 @@ describe("the marks over tiny catalogues", () => {
         };
         exact(s, 7121, bounds, L.CONFLICT);
         exact(s, 7122, bounds, [replaced]);
+        exact(s, 7123, { ...bounds, corrupted: [true] as Corruption[] }, [altarReplaced]);
         for (const e of bounds.exarch.filter((x) => x.tier > 0)) {
             for (const f of bounds.eater.filter((x) => x.tier > 0)) {
                 const out = outcomes(s, cItem({ exarch: e, eater: f }), L.CONFLICT);
@@ -415,6 +421,11 @@ describe("the eldritch changes", () => {
         expect(pairs(outcomes(s, item(3, 2), [replaced]))).toEqual(["0/2", "3/0"]);
         expect(pairs(outcomes(s, item(0, 0), [replaced]))).toEqual(["0/0"]);
         // The altar's may replace a corruption implicit the checker does not track.
+        const corrupted = (a: number, e: number): CItem => ({ ...item(a, e), corrupted: true });
+        expect(pairs(outcomes(s, corrupted(3, 2), [altarReplaced]))).toEqual(["0/2", "3/0", "3/2"]);
+        expect(pairs(outcomes(s, corrupted(3, 0), [altarReplaced]))).toEqual(["0/0", "3/0"]);
+        expect(pairs(outcomes(s, corrupted(0, 0), [altarReplaced]))).toEqual(["0/0"]);
+        // The altar's may replace a corruption implicit the checker does not track.
         const altar = outcomes(s, { ...item(3, 2), corrupted: true }, L.locusOps());
         expect(pairs(altar)).toEqual(["0/2", "3/0", "3/2"]);
         expect(altar.every((x) => x.corrupted === "twice")).toBe(true);
@@ -576,6 +587,9 @@ describe("the base's implicit", () => {
         expect(outcomes(s, held, [replaced]).map((x) => x.baseImplicit)).toEqual([false]);
         const altar = outcomes(s, { ...held, corrupted: true }, L.locusOps());
         expect(altar.map((x) => x.baseImplicit).sort()).toEqual([false, true]);
+        const taken = outcomes(s, { ...held, corrupted: true }, [altarReplaced]);
+        expect(taken.map((x) => x.baseImplicit).sort()).toEqual([false, true]);
+        exact(s, 7944, { baseImplicit: [false, true], corrupted: [true] }, [altarReplaced]);
         const bounds = { baseImplicit: [false, true], corrupted: ALL_CORRUPTIONS };
         exact(s, 7941, bounds, [replaced]);
         exact(s, 7942, bounds, L.vaalOps(s.cat.base));
