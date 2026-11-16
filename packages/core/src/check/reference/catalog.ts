@@ -603,12 +603,15 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
     });
     const byId = new Map(registry.catalog.map((m) => [m.id, m]));
     const held = (m: Mod): Mod => byId.get(m.id)!;
+    // Variants are one base under the name they share, which the item names.
+    const named = options.implicit === "variants" ? registry.resolveBase(base.name!) : undefined;
+    const itemBase = named?.ok === true ? named.value : base;
     return {
         seed,
         registry,
-        base,
+        base: itemBase,
         ilvl,
-        ctx: refCtx(registry, base, ilvl),
+        ctx: refCtx(registry, itemBase, ilvl),
         mods: registry.catalog,
         natural: natural.map(held),
         bench: bench && held(bench),

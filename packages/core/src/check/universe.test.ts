@@ -162,6 +162,21 @@ describe("the universe's well-formed items", () => {
         });
     });
 
+    it("are exactly the reference's on each variant of a name, named by its id", () => {
+        const cat = generateCatalog(1090, { base: "boots", eldritch: true, implicit: "variants" });
+        expect(cat.base.namesakes).toHaveLength(2);
+        const held = (id: string): boolean[] => {
+            const r = cat.registry.resolveBase(id);
+            if (!r.ok) throw new Error(id);
+            const u = buildUniverse(cat.registry, r.value, cat.ilvl, undefined);
+            const items = expectExact(u, refCtx(cat.registry, r.value, cat.ilvl), false);
+            return [...new Set([...items].map((x) => x.baseImplicit))].sort();
+        };
+        const [own, bare] = cat.base.namesakes!;
+        expect(held(bare!)).toEqual([false]);
+        expect(held(own!)).toEqual([false, true]);
+    });
+
     it("are exactly the reference's where the craft compares values", () => {
         // Every value of every cell is listed, so the cells' reading is checked.
         const registry = buildRegistry({

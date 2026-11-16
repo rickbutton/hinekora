@@ -404,6 +404,28 @@ describe("a base's own implicits", () => {
         ]);
     });
 
+    it("is the one base's own where an id names it", () => {
+        const own = (id: string) => {
+            const r = registry.resolveBase(id);
+            if (!r.ok) throw new Error(id);
+            return registry.baseImplicits(r.value).map((v) => v.map((i) => i.id));
+        };
+        expect(own("Metadata/Items/Rings/Ring12")).toEqual([
+            ["FireAndLightningResistImplicitRing1"],
+        ]);
+        expect(own("Metadata/Items/Amulets/Talismans/TalismanBlackMaw")).toEqual([[]]);
+        expect(own("Metadata/Items/Amulets/Talismans/Talisman1_1")).toEqual([
+            ["TalismanHasOneSocket_"],
+        ]);
+    });
+
+    it("stands for no other base where it cannot be changed", () => {
+        for (const b of data.bases.filter((x) => x.implicitLocked)) {
+            const r = registry.resolveBase(b.name!);
+            expect(r.ok && r.value, b.name).toBe(b);
+        }
+    });
+
     it("is a tincture's one implicit, its Affliction namesake gone", () => {
         const r = registry.resolveBase("Rosethorn Tincture");
         expect(r.ok && r.value.id).toBe("Metadata/Items/Tinctures/Tincture2");

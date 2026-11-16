@@ -269,8 +269,14 @@ describe("the base's implicit", () => {
         bad(cItem({ baseImplicit: true }), "no implicit of its own", at(BOOTS_BASE));
     });
     it("is held or not where the name stands for bases with and without one", () => {
-        ok(cItem({ baseImplicit: true }), at(bareTwin));
-        ok(cItem(), at(named));
+        const twin = registry.resolveBase("Twin Greaves");
+        if (!twin.ok) throw new Error("the name stands for one base");
+        ok(cItem({ baseImplicit: true }), at(twin.value));
+        ok(cItem(), at(twin.value));
+    });
+    it("is never held on the variant without one, named by its id", () => {
+        bad(cItem({ baseImplicit: true }), "no implicit of its own", at(bareTwin));
+        ok(cItem({ baseImplicit: true }), at(named));
     });
     it("is never beside an eldritch implicit, which replaces it", () => {
         ok(cItem({ exarch: speed }), at(ownBoots));

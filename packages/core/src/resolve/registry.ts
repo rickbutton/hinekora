@@ -270,9 +270,8 @@ export interface Registry {
     /** Resolve a fossil by name, in full ("Pristine Fossil") or by its first word. */
     resolveFossil(name: string): Resolved<FossilSpec>;
     /** The implicits an item of this base is made with, one entry per base it may
-     *  be: this one and each namesake the model reads as the same base (a
-     *  Two-Stone Ring's three), each possibly none, in the catalog's order
-     *  whichever of them is given: a name resolves to any one of them. */
+     *  be, each possibly none: each of its `namesakes` (a Two-Stone Ring named
+     *  by name, its three), else the base alone. */
     baseImplicits(base: Base): readonly (readonly ImplicitSpec[])[];
     /** The eldritch implicit rows an ember or ichor of that tier can give a base. */
     eldritchPool(base: Base, side: EldritchSide, tier: number): readonly EldritchImplicitSpec[];
@@ -516,7 +515,8 @@ export function buildRegistry(data: RegistryData): Registry {
     const implicitById = new Map((data.implicits ?? []).map((i) => [i.id, i] as const));
     const implicitsOf = (b: Base): readonly ImplicitSpec[] =>
         (b.implicits ?? []).flatMap((id) => implicitById.get(id) ?? []);
-    const variantImplicits = new WeakMap<Base, readonly (readonly ImplicitSpec[])[]>();
+    // The base a shared name resolves to, kept so the name gives one object.
+    const nameBases = new Map<string, Base>();
     const eldritch = data.eldritch ?? [];
     const aspects = new Map(
         Object.entries(data.aspects ?? ASPECTS).map(
@@ -941,8 +941,14 @@ export function buildRegistry(data: RegistryData): Registry {
                 // base to the checker, so any of them serves: a talisman's implicit
                 // variants.
                 const [first, ...rest] = byName;
-                if (crafted.length === 0 || rest.every((b) => sameToTheModel(first!, b))) {
-                    return admit(first!);
+                if (crafted.length === 0) return admit(first!);
+                if (rest.every((b) => sameToTheModel(first!, b))) {
+                    let named = nameBases.get(key);
+                    if (named === undefined) {
+                        named = { ...first!, namesakes: byName.map((b) => b.id) };
+                        nameBases.set(key, named);
+                    }
+                    return found(named);
                 }
                 return fail({ kind: "ambiguous", name, candidates: byName.map((b) => b.id) });
             }
@@ -1112,17 +1118,11 @@ export function buildRegistry(data: RegistryData): Registry {
         },
 
         baseImplicits(base) {
-            let hit = variantImplicits.get(base);
-            if (hit === undefined) {
-                const named =
-                    base.name === undefined ? [] : (baseByName.get(norm(base.name)) ?? []);
-                const same = named.filter(
-                    (b) => b === base || (isCraftedOn(b) && sameToTheModel(base, b)),
-                );
-                hit = (same.includes(base) ? same : [base, ...same]).map(implicitsOf);
-                variantImplicits.set(base, hit);
-            }
-            return hit;
+            if (base.namesakes === undefined) return [implicitsOf(base)];
+            return base.namesakes.map((id) => {
+                const row = baseById.get(norm(id));
+                return row === undefined ? [] : implicitsOf(row);
+            });
         },
 
         eldritchPool(base, side, tier) {

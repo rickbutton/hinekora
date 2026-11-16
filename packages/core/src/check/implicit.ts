@@ -7,7 +7,7 @@ import type { Base } from "../model/base.js";
 import type { Registry } from "../resolve/registry.js";
 
 /** What an item of the base may hold of an implicit of its own: `has`, some
- *  base its name stands for is made with one; `every`, each is; `locked`, it
+ *  base it stands for (`Base.namesakes`) is made with one; `every`, each is; `locked`, it
  *  "cannot be changed", so it always stays (Simplex Amulet § Mechanics). */
 export interface BaseImplicit {
     readonly has: boolean;

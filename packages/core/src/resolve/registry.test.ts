@@ -62,28 +62,42 @@ describe("a base's implicits", () => {
         expect(registry.baseImplicits(other)).toEqual([[life]]);
     });
 
-    it("is each variant's, in the catalog's order, where one name stands for several bases", () => {
-        expect(registry.baseImplicits(withMana)).toEqual([[life], [mana], []]);
-        expect(registry.baseImplicits(bare)).toEqual([[life], [mana], []]);
+    it("is each variant's, in the catalog's order, where the base is named by the name they share", () => {
+        const r = registry.resolveBase("Twin");
+        expect(r.ok && r.value.namesakes).toEqual(["TwinLife", "TwinMana", "TwinBare"]);
+        expect(r.ok && registry.baseImplicits(r.value)).toEqual([[life], [mana], []]);
     });
 
-    it("is only its own where the base has no name", () => {
-        const { name: _, ...nameless } = withMana;
-        const r = buildRegistry({
-            bases: [withLife, nameless],
-            mods: CATALOG,
-            implicits: [life, mana],
-        });
-        expect(r.baseImplicits(nameless)).toEqual([[mana]]);
+    it("is only its own where the base is named by its id", () => {
+        for (const [id, own] of [
+            ["TwinMana", [mana]],
+            ["TwinBare", []],
+        ] as const) {
+            const r = registry.resolveBase(id);
+            expect(r.ok && r.value.namesakes).toBeUndefined();
+            expect(r.ok && registry.baseImplicits(r.value)).toEqual([own]);
+        }
+        expect(registry.baseImplicits(withMana)).toEqual([[mana]]);
     });
 
-    it("leaves out a namesake the model reads as another base", () => {
+    it("names one base, the first variant's row but for its namesakes, each time it is resolved", () => {
+        const once = registry.resolveBase("Twin");
+        const again = registry.resolveBase("twin");
+        expect(once.ok && again.ok && once.value === again.value).toBe(true);
+        const { namesakes: _, ...row } = once.ok ? once.value : withLife;
+        expect(row).toEqual(withLife);
+        // A name with one row stands for nothing else, so it is that row.
+        expect(registry.resolveBase("Other")).toEqual({ ok: true, value: other });
+    });
+
+    it("is not a variant list where the name stands for bases the model reads apart", () => {
         const wide: Base = { ...withMana, tags: new Set([...withMana.tags, TagId("wide")]) };
         const r = buildRegistry({
             bases: [withLife, wide],
             mods: CATALOG,
             implicits: [life, mana],
         });
+        expect(r.resolveBase("Twin").ok).toBe(false);
         expect(r.baseImplicits(wide)).toEqual([[mana]]);
     });
 });

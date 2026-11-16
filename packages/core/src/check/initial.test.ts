@@ -166,6 +166,9 @@ describe("the item block's items", () => {
         expect(held([BOOTS_BASE], boots)).toEqual([false]);
         // One name, two bases: one made with the implicit, one without.
         expect(held([own, bare], { ...boots, base: "Iron Greaves" })).toEqual([false, true]);
+        // Named by its id, an item is that one base.
+        expect(held([own, bare], { ...boots, base: "BareGreaves" })).toEqual([false]);
+        expect(held([own, bare], boots)).toEqual([true]);
         const amulet = { base: "Simplex Amulet", ilvl: 84, rarity: "rare" as const };
         expect(held([locked], amulet)).toEqual([true]);
     });

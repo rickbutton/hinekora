@@ -82,6 +82,23 @@ describe("the base's own implicit, against real data", () => {
         );
     });
 
+    it("shows a base named by its id with that base's own implicit only", () => {
+        expect(
+            implicits(`item { base: "Metadata/Items/Rings/Ring12" ilvl: 84 rarity: normal }`),
+        ).toBe(
+            [
+                "  { Implicit Modifier — Elemental, Fire, Lightning, Resistance }",
+                "  +(12-16)% to Fire and Lightning Resistances",
+            ].join("\n"),
+        );
+        const maw = run(
+            `item { base: "Metadata/Items/Amulets/Talismans/TalismanBlackMaw" ilvl: 84 rarity: normal }`,
+        );
+        expect(maw.ok).toBe(true);
+        expect(maw.output).not.toContain("Implicit");
+        expect(maw.output).not.toContain("Socket");
+    });
+
     it("sets in a Shadowed Ring's second line of each of its three wordings", () => {
         expect(implicits(`item { base: "Shadowed Ring" ilvl: 84 rarity: normal }`)).toBe(
             [

@@ -47,4 +47,10 @@ export interface Base {
     /** An implicit of the base reads "Implicit Modifiers Cannot Be Changed"
      *  ([Simplex Amulet](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)). */
     readonly implicitLocked?: true;
+    /**
+     * Every row a shared display name stands for, this one first, on the base
+     * that name resolves to: an item named so may be any of them. Absent on a
+     * catalogue row, which an id names, and on a name with one row.
+     */
+    readonly namesakes?: readonly BaseId[];
 }

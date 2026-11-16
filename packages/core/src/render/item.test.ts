@@ -509,7 +509,7 @@ describe("the base's own implicit", () => {
         ...(own.length > 0 && { implicits: own.map((i) => i.id) }),
     });
     /** The item text of a Normal Test Ring after the steps, the catalogue's
-     *  bases all named alike. */
+     *  bases all named alike: named by its id where it is one, else by the name. */
     const textOf = (
         bases: readonly Base[],
         steps: Parameters<typeof craft>[1] = [],
@@ -520,7 +520,8 @@ describe("the base's own implicit", () => {
             mods: [...TIERED_CATALOG, ...FILLERS],
             implicits: [LIFE, FIRE, COLD, BLANK],
         });
-        const c = craft(item({ base: bases[0]!.id, ilvl: 84, rarity: "normal", corrupted }), steps);
+        const base = bases.length > 1 ? "Test Ring" : bases[0]!.id;
+        const c = craft(item({ base, ilvl: 84, rarity: "normal", corrupted }), steps);
         const r = check(c, { registry: reg });
         expect(r.diagnostics).toEqual([]);
         const v = itemView(r.finalState!, reg, c);
