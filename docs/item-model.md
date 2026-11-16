@@ -25,8 +25,7 @@ as an influence orb, the Fracturing Orb and the Fractured Fossil do.
 
 ## 2. Identifiers
 
-Each family of identifier is a distinct type (`model/ids.ts`). Two carry meaning beyond
-their name:
+Two identifiers (`model/ids.ts`) carry meaning beyond their name:
 
 - A **mod type** is the tier bucket of a row of the `Mods` table
   ([Mod Level](https://www.poewiki.net/wiki/Modifier#Mod_Level)). Rows of one type never
@@ -92,27 +91,26 @@ which the checker reads as a tag of the base.
 
 One tier of one modifier: one row of the `Mods` table
 ([Conditions](https://www.poewiki.net/wiki/Modifier#Conditions)), identified by its row id
-(`model/mod.ts`). Most fields are the data's own (type, groups, side, domain, the
-[mod level](https://www.poewiki.net/wiki/Modifier#Mod_Level), category tags, display text).
-Three readings matter to the model:
+(`model/mod.ts`). Most fields are the data's own; three readings matter to the model:
 
 - **Spawn table**, in table order: the first entry whose tag the item carries decides, so an
   early zero disables the row for that tag
   ([spawn weight tag](https://www.poewiki.net/wiki/Modifier#Spawn_weight_tag)).
-- **Added tags**, the data's `adds_tags`, which the item gains while the row is on it. An added tag can disable rows (a weapon-specific jewel
+- **Added tags**, the data's `adds_tags`, which the item gains while the row is on it (the
+  wiki does not describe them). An added tag can disable rows (a weapon-specific jewel
   modifier adds `specific_weapon`, zeroing every other such modifier) or enable them (one
   staff modifier on a Strength jewel lets the others roll, within one Chaos Orb too:
   confirmed in game); the checker reads the tags each item carries, its rows' added ones
   among them.
 - **Generation table**, the data's `generation_weights`, read as the spawn table is, the
   matching entry scaling the weight in percent
-  ([RePoE's mod reference](https://github.com/brather1ng/RePoE/blob/master/RePoE/docs/mods.md)). They hold a Small
+  ([RePoE's mod reference](https://github.com/brather1ng/RePoE/blob/master/RePoE/docs/mods.md);
+  only this reading gives the data's two tables their known results). They hold a Small
   [cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel#Mechanics) to one notable
   and halve a caster weapon's attack rows.
 
-A row's **effects** are the rule changes it carries while on the item (§6), empty for every
-row but the metamods. A row is **essence-only** when the data says so
-([Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting)).
+A row's **effects** are the rule changes it carries while on the item (§6). A row is
+**essence-only** when the data says so ([Essence § Crafting](https://www.poewiki.net/wiki/Essence#Crafting)).
 
 Rules every row satisfies:
 
@@ -229,7 +227,8 @@ True of the ingested PoE1 data, and pinned by the catalog-level tests of
 
 - **A ladder shares its families.** Every row of a ModType claims the same groups, so a
   modifier named without a tier resolves to its groups from any row.
-- The facts of §2 and §5.
+- The facts of §2 and §5: a ModType is not one side, essence-only rows never roll, and the
+  metamods' bench rows are the only effect carriers the data holds.
 - What a Harvest change makes of each modifier is a shipped table, generated from the
   game's lists (`packages/data/data/poe1/harvest_change.json`).
 
@@ -239,6 +238,5 @@ True of the ingested PoE1 data, and pinned by the catalog-level tests of
 
 The checker's set of items is the implementation's only item: a declared item is a
 set with no uncertainty beyond its `"random"` affixes, and the marks of §7 live there.
-The pool reads a projection of it, the facts of §7 a roll depends on: base, level, rarity,
-counts, present types and families, tags, active effects (`ItemFacts` in
+The pool reads a projection of it, the facts of §7 a roll depends on (`ItemFacts` in
 `packages/core/src/model/item.ts`).
