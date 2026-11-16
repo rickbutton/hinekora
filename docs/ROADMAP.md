@@ -69,9 +69,8 @@ playground, which cannot read a cache directory. `cost.md` §7 changes with it.
   row's own span: on a Simplex Amulet `has "maximum life" >= 240` never holds though the
   item shows twice the row.
 - **the implicits the item does not track**: corruption implicits, a Gilded Fossil's (Q133)
-  and a starting item's synthesised ones; the item records only its base's implicit and
-  its eldritch ones.
-- **legacy base-implicit variants**: the experimented bases', whose caps and magnitudes one catalog id cannot carry
+  and a starting item's synthesised ones.
+- **legacy base-implicit variants**: the experimented bases', whose caps and magnitudes one catalog id cannot carry and no collected recipe starts from
   ([Simplex Amulet § Version history](https://www.poewiki.net/wiki/Simplex_Amulet#Version_history)); a Standard-only
   Black Maw Talisman socketed by implicit, so the name's socket reads "Possibly"
   ([Black Maw Talisman § Version history](https://www.poewiki.net/wiki/Black_Maw_Talisman#Version_history)).
