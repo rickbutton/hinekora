@@ -160,4 +160,14 @@ describe("the implicits the main ingest keeps", () => {
         expect(implicits["Locked"]?.locked).toBe(true);
         expect(implicits["Life"]).not.toHaveProperty("locked");
     });
+
+    it("writes a row two bases name once, and none for a row the export lacks", () => {
+        const twice = projectImplicits(
+            { A: { implicits: ["Life"] }, B: { implicits: ["Life", "Missing"] } },
+            mods,
+            {},
+        );
+        expect(Object.keys(twice)).toEqual(["Life"]);
+        expect(twice["Life"]).toEqual(implicits["Life"]);
+    });
 });

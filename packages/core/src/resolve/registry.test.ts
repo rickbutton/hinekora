@@ -67,6 +67,16 @@ describe("a base's implicits", () => {
         expect(registry.baseImplicits(bare)).toEqual([[], [life], [mana]]);
     });
 
+    it("is only its own where the base has no name", () => {
+        const { name: _, ...nameless } = withMana;
+        const r = buildRegistry({
+            bases: [withLife, nameless],
+            mods: CATALOG,
+            implicits: [life, mana],
+        });
+        expect(r.baseImplicits(nameless)).toEqual([[mana]]);
+    });
+
     it("leaves out a namesake the model reads as another base", () => {
         const wide: Base = { ...withMana, tags: new Set([...withMana.tags, TagId("wide")]) };
         const r = buildRegistry({

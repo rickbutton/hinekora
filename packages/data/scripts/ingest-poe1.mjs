@@ -12,6 +12,7 @@
  *   REPOE_MODS_FILE / REPOE_BASES_FILE local files to use instead of fetching
  *   REPOE_GEMS_URL / REPOE_GEMS_FILE   the gems export, read for the names of granted effects
  *   REPOE_COMMIT / REPOE_COMMIT_DATE / REPOE_PUBLISHED_AT   provenance overrides
+ *   REPOE_RETRIEVED_AT                 the date the local files were retrieved (default: today)
  *   REPOE_BUILD                        what an export built from a game install was built with
  *   REPOE_GAME_VERSION                 the PoE patch (default: the export's version.txt)
  *
@@ -354,10 +355,10 @@ async function main() {
         },
         gameVersion: await resolveGameVersion(),
         gameVersionNote: GAME_VERSION_NOTE,
-        retrievedAt: new Date().toISOString().slice(0, 10),
+        retrievedAt: process.env.REPOE_RETRIEVED_AT ?? new Date().toISOString().slice(0, 10),
         extent: {
             description:
-                "Full PoE1 catalog projected to the fields the core model uses: all prefix/suffix mods, all released named bases, plus the essence, bench (mod-adding) and fossil catalogs.",
+                "Full PoE1 catalog projected to the fields the core model uses: all prefix/suffix mods, all released named bases and the bases' implicits, plus the essence, bench (mod-adding) and fossil catalogs.",
             bases: basesFile.count,
             implicits: implicitsFile.count,
             mods: modsFile.count,
