@@ -81,6 +81,44 @@ describe("the base's own implicit, against real data", () => {
             ].join("\n"),
         );
     });
+
+    it("sets in a Shadowed Ring's second line of each of its three wordings", () => {
+        expect(implicits(`item { base: "Shadowed Ring" ilvl: 84 rarity: normal }`)).toBe(
+            [
+                "  { Implicit Modifier }",
+                "  one of 3:",
+                "      Left ring slot: 25% of Cold Damage from Hits taken as Fire Damage",
+                "          Right ring slot: 25% of Fire Damage from Hits taken as Cold Damage",
+                "      Left ring slot: 25% of Fire Damage from Hits taken as Lightning Damage",
+                "          Right ring slot: 25% of Lightning Damage from Hits taken as Fire Damage",
+                "      Left ring slot: 25% of Lightning Damage from Hits taken as Cold Damage",
+                "          Right ring slot: 25% of Cold Damage from Hits taken as Lightning Damage",
+            ].join("\n"),
+        );
+    });
+
+    it("prints a Rare Vermillion Ring after a Vaal Orb whole", () => {
+        const r = run(`item { base: "Vermillion Ring" ilvl: 84 rarity: rare }\nvaal`);
+        expect(r.ok).toBe(true);
+        expect(r.output).toBe(
+            [
+                "✓ test.craft checks.",
+                "",
+                "  Item Class: Rings",
+                "  Rarity: Rare",
+                "  Vermillion Ring",
+                "  --------",
+                "  Item Level: 84",
+                "  --------",
+                "  { Possibly: Implicit Modifier — Resource, Life }",
+                "  (5-7)% increased maximum Life",
+                "  --------",
+                "  { 0-6 additional prefix or suffix modifiers }",
+                "  --------",
+                "  Corrupted",
+            ].join("\n"),
+        );
+    });
 });
 
 describe("checkSource — end to end against real data", () => {
