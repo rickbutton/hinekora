@@ -629,7 +629,9 @@ export class Tracker {
             const taken = [...ops.slice(0, at), ...either.branches[b]!, ...ops.slice(at + 1)];
             const next = this.outcomesOn(item, taken, state, reading);
             if (next === undefined) return undefined;
-            for (const o of next) out.push({ state: o.state, prob: o.prob * share });
+            // An outcome that leaves the implicits keeps them as they were.
+            const kept = touchesImplicits(taken) ? next : this.keepImplicits(state, next);
+            for (const o of kept) out.push({ state: o.state, prob: o.prob * share });
         }
         return out;
     }
@@ -639,13 +641,23 @@ export class Tracker {
         ops: readonly Op[],
         out: readonly Outcome[],
     ): readonly Outcome[] {
-        const touched = touchesImplicits(ops);
-        const implicitAtoms = touched
-            ? []
-            : ELDRITCH_SIDES.map((side) => this.index.get(IMPLICIT_ATOM[side])).filter(
-                  (i) => i !== undefined,
-              );
-        return keepAcross(state, out, implicitAtoms);
+        return keepAcross(state, out, touchesImplicits(ops) ? [] : this.implicitAtoms());
+    }
+
+    private keepImplicits(state: ChainState, out: readonly Outcome[]): readonly Outcome[] {
+        const atoms = this.implicitAtoms();
+        if (atoms.length === 0) return out;
+        return out.map((o) => {
+            const rows = [...o.state.rows];
+            for (const i of atoms) rows[i] = state.rows[i] ?? null;
+            return { ...o, state: { ...o.state, rows } };
+        });
+    }
+
+    private implicitAtoms(): number[] {
+        return ELDRITCH_SIDES.map((side) => this.index.get(IMPLICIT_ATOM[side])).filter(
+            (i) => i !== undefined,
+        );
     }
 
     /**
@@ -1536,11 +1548,15 @@ function keepAcross(
     });
 }
 
-/** Whether a method changes an eldritch implicit. One that may in only some
- *  of its outcomes (a Vaal Orb) is not asked: with an implicit on the item
- *  that outcome cannot be read back as a state, and the step is not followed. */
+/** Whether a method may change an eldritch implicit, in any of its outcomes
+ *  (a Vaal Orb's corruption implicit takes one): its states then hold the
+ *  implicits its outcomes leave, not those it started from. */
 function touchesImplicits(ops: readonly Op[]): boolean {
-    return ops.some((op) => op.kind === "eldritch");
+    return ops.some(
+        (op) =>
+            op.kind === "eldritch" ||
+            (op.kind === "either" && op.branches.some((b) => touchesImplicits(b))),
+    );
 }
 
 function implicitSide(type: TypeId): EldritchSide | undefined {

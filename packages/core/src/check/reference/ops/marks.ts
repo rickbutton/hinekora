@@ -158,15 +158,18 @@ export const transforms: RefTransformTable = {
                 }
                 case "replaced": {
                     // A corruption implicit replaces one of the item's implicits
-                    // (Vaal Orb § Equipment); the Corruption Altar's replaces an
-                    // earlier corruption implicit where the item has two
-                    // (Version 3.30.0, Incursion and Atziri). The item's other implicits
-                    // are not known, so it may take either eldritch one or
-                    // neither (QUESTIONS.md Q32, Q111).
-                    const out = [item];
+                    // at random, and with none is added (Vaal Orb § Equipment);
+                    // one that cannot be changed stays, and keeps the others
+                    // (Cogwork Ring § Mechanics). An untracked corruption
+                    // implicit the altar's may replace instead (QUESTIONS.md Q32).
+                    const own = ctx.registry.baseImplicits(ctx.base).some((v) => v.length > 0);
+                    if (own && ctx.base.implicitLocked === true) return [item];
+                    const out: CItem[] = [];
+                    if (item.baseImplicit) out.push({ ...item, baseImplicit: false });
                     if (item.exarch.tier > 0) out.push({ ...item, exarch: NO_IMPLICIT });
                     if (item.eater.tier > 0) out.push({ ...item, eater: NO_IMPLICIT });
-                    return out;
+                    if (out.length === 0 || c.untracked === true) out.push(item);
+                    return out.map((x) => wellFormed(x, ctx, "a corruption"));
                 }
             }
         },

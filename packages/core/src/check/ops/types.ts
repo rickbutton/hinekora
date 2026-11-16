@@ -251,9 +251,12 @@ export type EldritchChange =
     /** One implicit up a tier, the other down; a Lesser lowered is removed
      *  (Orb of Conflict). */
     | { readonly kind: "conflict" }
-    /** A corruption implicit replaces one of the item's implicits (a Vaal
-     *  Orb, the Corruption Altar): an eldritch implicit may go. */
-    | { readonly kind: "replaced" };
+    /** A corruption implicit replaces one of the item's implicits, the
+     *  base's or an eldritch one, where it has any (a Vaal Orb, the
+     *  Bloodstained Fossil, the Corruption Altar). `untracked`: the item may
+     *  hold a corruption implicit the checker does not, which it may replace
+     *  instead, so none of the others need go. */
+    | { readonly kind: "replaced"; readonly untracked?: true };
 
 export type InfluenceChange =
     | { readonly kind: "set"; readonly key: InfluenceKey }

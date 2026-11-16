@@ -7,7 +7,7 @@ change (`../AGENTS.md`, Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q134.
+keeps it. New entries continue from Q135.
 
 ```
 ### Qn · probe|decision · open — title
@@ -77,9 +77,9 @@ twice-corrupted item take an unveil?
 uncorrupted ring; the altar forty times, then an unveil; record refusals, outcomes,
 implicits lost, the copy.
 **Assumed:** corrupted equipment only, no jewel; 1:1:2 to no change, an implicit,
-destroyed; either eldritch implicit may go; `Twice Corrupted` alone; it
-takes nothing. **Encoded in:** `check/library.ts` `locusOps`, `onceCorrupted`;
-`cost/track.ts`; `render/item.ts`.
+destroyed; its implicit replaces the base's, an eldritch one, or a corruption implicit the
+checker does not track; `Twice Corrupted` alone; it takes nothing. **Encoded in:** `check/library.ts` `locusOps`, `onceCorrupted`;
+`check/ops/marks.ts` `replaced`; `cost/track.ts`; `render/item.ts`.
 
 ### Q52 · probe · open — what a Harvest-changed essence, fossil or unveiled modifier becomes
 
@@ -378,17 +378,6 @@ record the rarity.
 **Assumed:** it stays Rare, the next rarity up that holds what is left. **Encoded in:**
 `check/ops/marks.ts`; `check/reference/ops/marks.ts`.
 
-### Q111 · decision · open — an item's other implicits
-
-**Q:** a corruption implicit replaces one of an item's implicits
-([Vaal Orb § Equipment](https://www.poewiki.net/wiki/Vaal_Orb#Equipment)), the altar's an
-earlier one (Q32). The checker knows the eldritch implicits only, so it lets none or one
-of them go; on boots with no other implicit a Vaal Orb always takes one.
-**Options:** track whether the item has another implicit (from the base, and a mark a
-Gilded Fossil sets), which makes the outcome exact (recommended); or keep the wider set.
-**Assumed:** the wider set. **Encoded in:** `check/ops/marks.ts`;
-`check/reference/ops/marks.ts`.
-
 ### Q112 · probe · open — a Chaos Orb's count beside a protected side
 
 **Q:** with "Prefixes Cannot Be Changed", how many modifiers does a reforge add?
@@ -612,3 +601,12 @@ through a Vaal Orb, once corruption implicits are tracked, **recommended**; (b) 
 refusing it.
 **Assumed:** refused. **Encoded in:** `model/sources.ts` `addsOwnImplicit`;
 `check/methods.ts` `resonator`.
+
+### Q134 · probe · open — a Vaal Orb on an implicit that cannot be changed
+
+**Q:** [Simplex Amulet § Mechanics](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)
+says the implicit "cannot be turned into a corrupted implicit". Does the Vaal Orb's
+implicit outcome then do nothing, or is another outcome rolled in its place?
+**Probe:** forty Vaal Orbs on Cogwork Rings; count each outcome.
+**Assumed:** it does nothing, one time in four. **Encoded in:** `check/ops/marks.ts`
+`replaced`; `cost/track.ts` `OUTCOME_ODDS`.

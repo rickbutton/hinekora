@@ -15,6 +15,7 @@ import {
     NO_INFLUENCE,
 } from "../../model/marks.js";
 import type { Dd } from "../dd.js";
+import { baseImplicitOf } from "../implicit.js";
 import { dominance } from "../state.js";
 import { RARITIES, type Universe } from "../universe.js";
 import { rarities } from "../views.js";
@@ -173,6 +174,36 @@ function conflict(u: Universe, state: Dd): Outcome {
     return outcome(wellFormed(u, out, "an Orb of Conflict"), m.diff(state, both));
 }
 
+/**
+ * A corruption implicit in place of one of the item's implicits: "If it has
+ * more than one, one of them will be replaced at random" (Vaal Orb §
+ * Equipment), so each implicit present is a case of its own, and with none it
+ * is added. An implicit that "cannot be changed" stays, and keeps any other
+ * (Cogwork Ring § Mechanics); the outcome is assumed to do nothing there
+ * (QUESTIONS.md Q134). With `untracked` the item may already hold a
+ * corruption implicit (the Corruption Altar's, on a corrupted item), which
+ * the new one may replace instead (Corrupted § Corrupted implicit modifiers;
+ * Version 3.30.0 § Incursion and Atziri; QUESTIONS.md Q32), so the item may
+ * also keep the others.
+ */
+function replaced(u: Universe, state: Dd, untracked: boolean): Dd {
+    if (baseImplicitOf(u.registry, u.base).locked) return state;
+    const m = u.dd;
+    const base = u.scalar("baseImplicit");
+    const held = {
+        base: m.slotIn(base, [1]),
+        exarch: m.not(m.slotIn(u.scalar("exarchTier"), [0])),
+        eater: m.not(m.slotIn(u.scalar("eaterTier"), [0])),
+    };
+    const none = m.not(m.or(held.base, m.or(held.exarch, held.eater)));
+    let out = untracked ? state : m.and(state, none);
+    out = m.or(out, m.set(m.and(state, held.base), base, 0));
+    for (const side of ["exarch", "eater"] as const) {
+        out = m.or(out, withoutImplicit(u, m.and(state, held[side]), side));
+    }
+    return out;
+}
+
 export const transforms: TransformTable = {
     corrupt: {
         reads: [],
@@ -261,15 +292,8 @@ export const transforms: TransformTable = {
                 }
                 case "conflict":
                     return conflict(u, state);
-                case "replaced": {
-                    // One of the item's implicits is replaced (Vaal Orb §
-                    // Equipment; the Corruption Altar's, QUESTIONS.md Q32). The
-                    // model does not track an item's other implicits, so
-                    // neither eldritch one need go.
-                    const exarch = withoutImplicit(u, state, "exarch");
-                    const eater = withoutImplicit(u, state, "eater");
-                    return m.or(state, m.or(exarch, eater));
-                }
+                case "replaced":
+                    return wellFormed(u, replaced(u, state, c.untracked === true), "a corruption");
             }
         },
     },

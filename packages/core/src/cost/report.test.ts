@@ -1139,11 +1139,11 @@ describe("the eldritch implicits", () => {
     });
 
     it("a step that cannot be followed ends what the roll before it says of the item", () => {
-        // A Vaal Orb may replace the implicit, which no state can then hold,
-        // or reforge the item: the Chaos Orb's roll no longer says whether it
-        // has the life.
+        // A Vaal Orb may replace either implicit, which no one state then
+        // holds, or reforge the item: the Chaos Orb's roll no longer says
+        // whether it has the life.
         const after = (...steps: string[]) =>
-            on({ exarch: "greater" }, [
+            on({ exarch: "greater", eater: "lesser" }, [
                 ...steps.map((s) => op(s)),
                 iff(has("IncreasedLife1"), [stop()]),
             ]).steps.find((s) => s.kind === "if")!;
@@ -1154,9 +1154,11 @@ describe("the eldritch implicits", () => {
         expect(altered.branch).not.toBeCloseTo(rolled.branch!, 6);
     });
 
-    it("an implicit a Vaal Orb may replace is not taken as kept", () => {
+    it("a Vaal Orb's implicit takes the only implicit boots have, one time in four", () => {
         const r = on({ exarch: "greater" }, [op("vaal"), iff(eldritchP("exarch"), [stop()])]);
-        expect(r.steps.find((s) => s.kind === "if")!.branch).toBeLessThan(1);
+        const branch = r.steps.find((s) => s.kind === "if")!;
+        expect(branch.note).toBeUndefined();
+        expect(branch.branch).toBeCloseTo(3 / 4, 9);
     });
 
     it("an Orb of Conflict takes a lowered Lesser implicit off and keeps a raised Perfect one", () => {

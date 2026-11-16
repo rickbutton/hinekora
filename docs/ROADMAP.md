@@ -32,9 +32,8 @@ playground, which cannot read a cache directory. `cost.md` §7 changes with it.
 - the **cost layer's** finer points (`cost.md` has what is built): the
   Orb of Unravelling's tier upgrade (its rule is not stated), a loop whose exit rests on a
   value no roll in its body changes. Left unmodelled by choice, their steps read on the
-  checker's item: the Tangled Fossil's random tags, an Orb of Dominance
-  on an item that may hold influenced modifiers the craft does not name, and a corruption
-  that may replace an eldritch implicit.
+  checker's item: the Tangled Fossil's random tags, and an Orb of Dominance
+  on an item that may hold influenced modifiers the craft does not name.
 - **multi-item crafts**, which need a second item named in the craft, a design to be
   worked out first: the Recombinator, whose result pools both items' modifiers (an
   earlier form, and the evidence on how it picks, are in the git history before the
@@ -47,8 +46,6 @@ playground, which cannot read a cache directory. `cost.md` §7 changes with it.
 - **Merrick's Ducat on an Abyss Jewel** (Q129) and **Gwennen's "Take a Chance"**, whose
   crafts the wiki does not list yet.
 - **choice over an operation's outcomes** (Hinekora's Lock).
-- **an item's other implicits**: a corruption that replaces one is read as maybe taking
-  an eldritch implicit, since the base's own are not tracked.
 - **several held imprints**: the checker holds one at a time.
 - **`"random"` as any modifier the item can hold**, not a natural roll alone.
 - **the Bestiary's add-and-remove order** under a cannot-roll metamod, unprobed.

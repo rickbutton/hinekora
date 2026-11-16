@@ -325,9 +325,16 @@ const corruptedItem = (what: string): Op => require({ kind: "corruptedItem", wha
  *  refuses (`QUESTIONS.md` Q32). */
 const onceCorrupted = (what: string): Op => require({ kind: "notTwiceCorrupted", what });
 
-/** A corruption implicit takes the place of one of the item's implicits, an
- *  eldritch one among them (Vaal Orb § Equipment, Eldritch implicit modifier). */
+/** A corruption implicit takes the place of one of the item's implicits, the
+ *  base's or an eldritch one (Vaal Orb § Equipment, Eldritch implicit
+ *  modifier). */
 const corruptionImplicit: Transform = { kind: "eldritch", change: { kind: "replaced" } };
+/** The altar's, on a corrupted item, which may hold a corruption implicit the
+ *  checker does not track. */
+const secondCorruptionImplicit: Transform = {
+    kind: "eldritch",
+    change: { kind: "replaced", untracked: true },
+};
 
 /** A Vaal Orb's one outcome that touches the modifiers: the item reforged Rare
  *  with six modifiers, the metamods respected (Vaal Orb § Equipment); the
@@ -366,8 +373,8 @@ const ALTAR_TAGS = ["weapon", "armour", "ring", "amulet", "belt", "quiver"].map(
  *  Atziri). The
  *  outcomes: no change to what the checker tracks (the sockets, no effect), a
  *  corruption implicit, or the item destroyed, ending the craft there. That
- *  it refuses an uncorrupted item, and that its implicit may replace an
- *  eldritch one, are assumed (`QUESTIONS.md` Q32). */
+ *  it refuses an uncorrupted item, and that its implicit may replace the
+ *  base's or an eldritch one, are assumed (`QUESTIONS.md` Q32). */
 export function locusOps(): readonly Op[] {
     const what = "The Corruption Altar";
     return [
@@ -379,7 +386,7 @@ export function locusOps(): readonly Op[] {
             what: "weapon, armour, piece of jewellery or quiver",
         }),
         corrupt,
-        either([], [corruptionImplicit], end),
+        either([], [secondCorruptionImplicit], end),
     ];
 }
 
@@ -662,7 +669,7 @@ export function resonatorOps(r: Resonator): readonly Op[] {
         ...(fractures ? [lock()] : []),
         // The Bloodstained Fossil corrupts the item and "will also attempt to add
         // a corrupted implicit modifier similar to the outcome of using a Vaal
-        // Orb" (Bloodstained Fossil § Mechanics), which may replace an eldritch one.
+        // Orb" (Bloodstained Fossil § Mechanics).
         ...(corrupts ? [corrupt, corruptionImplicit] : []),
     ];
 }

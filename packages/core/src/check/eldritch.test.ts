@@ -322,8 +322,8 @@ describe("which implicit an ember gave", () => {
     });
 });
 
-describe("corruption may replace an eldritch implicit", () => {
-    it("a Vaal Orb one of them, and the Corruption Altar one", () => {
+describe("a corruption implicit replaces one of the item's implicits", () => {
+    it("a Vaal Orb's one of them, and the Corruption Altar's one or neither", () => {
         const start = boots({ exarch: "grand", eater: "lesser" });
         const vaal = run(craft(start, [op("vaal")]));
         expect(v.eldritchPairs(vaal.finalState!)).toEqual(
@@ -332,19 +332,20 @@ describe("corruption may replace an eldritch implicit", () => {
         expect(
             messages(craft(start, [op("vaal"), iff(eldritchP("exarch"), [], [])])),
         ).not.toContain("never run");
-        // The altar's implicit may take either eldritch one (QUESTIONS.md Q32).
+        // The altar's implicit may take either eldritch one, or a corruption
+        // implicit the checker does not track (QUESTIONS.md Q32).
         const l = run(craft({ ...start, corrupted: true }, [op("locus")]));
         expect(v.eldritchPairs(l.finalState!)).toEqual(
             new Set([eldritchKey(3, 1), eldritchKey(0, 1), eldritchKey(3, 0)]),
         );
     });
 
-    it("a Bloodstained Fossil one of them, as a Vaal Orb's implicit does", () => {
+    it("a Bloodstained Fossil's always one of them, on boots with no other", () => {
         const r = run(craft(boots({ exarch: "grand", eater: "lesser" }), [fossil("bloodstained")]));
         expect(r.diagnostics).toEqual([]);
         expect(v.corruptions(r.finalState!)).toEqual(new Set([true]));
         expect(v.eldritchPairs(r.finalState!)).toEqual(
-            new Set([eldritchKey(3, 1), eldritchKey(0, 1), eldritchKey(3, 0)]),
+            new Set([eldritchKey(0, 1), eldritchKey(3, 0)]),
         );
     });
 });

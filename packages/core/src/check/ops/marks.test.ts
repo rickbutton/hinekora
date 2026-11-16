@@ -411,8 +411,10 @@ describe("the eldritch changes", () => {
         expect(out.map((x) => x.exarch.type).sort()).toEqual([...new Set(pool)].sort());
     });
 
-    it("a corruption implicit may replace one eldritch implicit, the altar's too", () => {
-        expect(pairs(outcomes(s, item(3, 2), [replaced]))).toEqual(["0/2", "3/0", "3/2"]);
+    it("a corruption implicit replaces one eldritch implicit; the altar's may replace neither", () => {
+        expect(pairs(outcomes(s, item(3, 2), [replaced]))).toEqual(["0/2", "3/0"]);
+        expect(pairs(outcomes(s, item(0, 0), [replaced]))).toEqual(["0/0"]);
+        // The altar's may replace a corruption implicit the checker does not track.
         const altar = outcomes(s, { ...item(3, 2), corrupted: true }, L.locusOps());
         expect(pairs(altar)).toEqual(["0/2", "3/0", "3/2"]);
         expect(altar.every((x) => x.corrupted === "twice")).toBe(true);
@@ -568,6 +570,29 @@ describe("the base's implicit", () => {
         eldritchExact(s, 7921);
     });
 
+    it("is the one implicit a corruption takes where there is no other", () => {
+        const s = setup(7940, "ring", { implicit: "own" });
+        const held = cItem({ baseImplicit: true });
+        expect(outcomes(s, held, [replaced]).map((x) => x.baseImplicit)).toEqual([false]);
+        const altar = outcomes(s, { ...held, corrupted: true }, L.locusOps());
+        expect(altar.map((x) => x.baseImplicit).sort()).toEqual([false, true]);
+        const bounds = { baseImplicit: [false, true], corrupted: ALL_CORRUPTIONS };
+        exact(s, 7941, bounds, [replaced]);
+        exact(s, 7942, bounds, L.vaalOps(s.cat.base));
+        exact(s, 7943, bounds, L.locusOps());
+    });
+
+    it("goes or one eldritch implicit does, beside both", () => {
+        const s = setup(7950, "boots", { eldritch: true, implicit: "variants" });
+        const ex = s.cat.eldritch.find((e) => e.side === "exarch")!.type;
+        const ea = s.cat.eldritch.find((e) => e.side === "eater")!.type;
+        const both = cItem({ exarch: { tier: 2, type: ex }, eater: { tier: 1, type: ea } });
+        const out = outcomes(s, both, [replaced]);
+        expect(out.map((x) => `${x.exarch.tier}/${x.eater.tier}`).sort()).toEqual(["0/1", "2/0"]);
+        const bare = outcomes(s, cItem({ baseImplicit: true }), [replaced]);
+        expect(bare.map((x) => x.baseImplicit)).toEqual([false]);
+    });
+
     it("always stays where it cannot be changed", () => {
         const s = setup(7930, "simplex", { eldritch: true, implicit: "locked" });
         const bounds = {
@@ -584,6 +609,9 @@ describe("the base's implicit", () => {
         exact(s, 7935, bounds, L.eldritchImplicitOps("exarch", 2, []));
         const state = fromItems(s.u, [cItem({ baseImplicit: true })])!;
         expect(runMethod(state, L.eldritchImplicitOps("exarch", 2, [])).ok).toBe(false);
+        // A corruption changes no implicit on it (Simplex Amulet § Mechanics).
+        const held = cItem({ baseImplicit: true });
+        expect(outcomes(s, held, [replaced])).toEqual([held]);
     });
 });
 
