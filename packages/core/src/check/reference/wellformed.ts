@@ -154,6 +154,18 @@ export function violations(item: CItem, ctx: RefCtx): string[] {
         out.push("an amulet has one eldritch implicit");
     }
 
+    // item-model.md §8 "The base's implicit": only a base made with one holds
+    // it, an eldritch implicit replaces it, and a locked one always stays.
+    const own = ctx.registry.baseImplicits(base).some((v) => v.length > 0);
+    if (item.baseImplicit) {
+        if (!own) out.push("this base has no implicit of its own");
+        if (item.exarch.tier > 0 || item.eater.tier > 0) {
+            out.push("an eldritch implicit replaces the base's implicit");
+        }
+    } else if (own && base.implicitLocked === true) {
+        out.push("the base's implicit cannot be changed");
+    }
+
     // item-model.md §7 "Memory strands", 0 to 100 (Memory strand § Mechanics).
     if (!Number.isInteger(item.strands) || item.strands < 0 || item.strands > MAX_STRANDS) {
         out.push(`${item.strands} memory strands, 0 to ${MAX_STRANDS}`);

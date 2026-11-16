@@ -31,6 +31,8 @@ export interface CItem {
     /** Order carries no meaning. */
     readonly mods: readonly CMod[];
     readonly influences: InfluenceKey;
+    /** The item still holds the implicit its base is made with. */
+    readonly baseImplicit: boolean;
     readonly corrupted: Corruption;
     readonly exarch: CEldritch;
     readonly eater: CEldritch;

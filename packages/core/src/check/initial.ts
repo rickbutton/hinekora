@@ -43,6 +43,7 @@ import { rollableGen } from "../resolve/tiers.js";
 import { craftReach, shapeKey } from "./craft.js";
 import type { Dd } from "./dd.js";
 import { stateOf, type ItemSet } from "./state.js";
+import { baseImplicitOf } from "./implicit.js";
 import {
     buildUniverse,
     type ModValue,
@@ -277,7 +278,11 @@ function scalars(u: Universe, decl: ItemDecl, influence: number, influenced: boo
     );
     dd = m.and(dd, m.slotIn(u.scalar("influences"), [influence]));
     dd = m.and(dd, m.slotIn(u.scalar("strands"), [decl.strands ?? 0]));
-    const takes = canHaveEldritch(base) && ilvl >= ELDRITCH_ITEM_LEVEL && !influenced;
+    const own = baseImplicitOf(registry, base);
+    // A locked implicit takes no eldritch one (Ukatoa's Ducat § Mechanics); the
+    // declared one is reported and dropped.
+    const takes =
+        canHaveEldritch(base) && ilvl >= ELDRITCH_ITEM_LEVEL && !influenced && !own.locked;
     for (const side of ["exarch", "eater"] as const satisfies readonly EldritchSide[]) {
         const implicit = decl[side];
         let tier = takes && implicit !== undefined ? implicit.tier : 0;
@@ -303,7 +308,12 @@ function scalars(u: Universe, decl: ItemDecl, influence: number, influenced: boo
             dd = m.and(dd, m.slotIn(u.scalar(`${side}Type`), values));
         }
     }
-    return dd;
+    // The base's implicit stays unless an eldritch one replaced it; where the
+    // name stands for variants with and without one, either.
+    const eldritch = takes && (decl.exarch !== undefined || decl.eater !== undefined);
+    const present = own.has && !eldritch;
+    const values = present ? (own.every ? [1] : [0, 1]) : [0];
+    return m.and(dd, m.slotIn(u.scalar("baseImplicit"), values));
 }
 
 /** The universe and the first state of a craft. */

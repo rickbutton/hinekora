@@ -34,6 +34,7 @@ export function cItem(fields: Partial<CItem> = {}): CItem {
         rarity: "normal",
         mods: [],
         influences: NO_INFLUENCE,
+        baseImplicit: false,
         corrupted: false,
         exarch: NO_IMPLICIT,
         eater: NO_IMPLICIT,
@@ -125,7 +126,7 @@ export function itemKey(item: CItem): string {
     const imprint = item.imprint === undefined ? "" : ` imprint(${itemKey(item.imprint)})`;
     return (
         `${item.rarity} [${mods}] inf=${item.influences === NO_INFLUENCE ? "-" : item.influences}` +
-        `${corruptionKey(item.corrupted)} exarch=${implicitKey(item.exarch)}` +
+        `${item.baseImplicit ? " base-implicit" : ""}${corruptionKey(item.corrupted)} exarch=${implicitKey(item.exarch)}` +
         ` eater=${implicitKey(item.eater)} strands=${item.strands}${imprint}`
     );
 }

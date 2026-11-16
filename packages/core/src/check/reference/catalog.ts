@@ -16,7 +16,16 @@ import {
     TAG_DEFAULT,
 } from "../../__fixtures__/mods.js";
 import type { Base } from "../../model/base.js";
-import { type ClassId, Domain, type Gen, GroupId, ModId, TagId, TypeId } from "../../model/ids.js";
+import {
+    BaseId,
+    type ClassId,
+    Domain,
+    type Gen,
+    GroupId,
+    ModId,
+    TagId,
+    TypeId,
+} from "../../model/ids.js";
 import {
     canHaveEldritch,
     ELDRITCH_ITEM_LEVEL,
@@ -32,6 +41,7 @@ import type {
     EssenceSpec,
     HarvestChangePair,
     HarvestChangeTable,
+    ImplicitSpec,
     ModSource,
 } from "../../model/sources.js";
 import { VEILED_PREFIX, VEILED_SUFFIX } from "../../model/veiled.js";
@@ -261,6 +271,9 @@ export interface CatalogOptions {
     /** Every row's span one value: a reforge of many modifiers then has one
      *  outcome per choice of rows, not one per choice of values too. */
     readonly oneValue?: boolean;
+    /** The base is made with an implicit (`BaseImplicit1`): its own; one that
+     *  cannot be changed; or one of two namesakes, the other made with none. */
+    readonly implicit?: "own" | "locked" | "variants";
 }
 
 export interface Catalog {
@@ -308,7 +321,7 @@ interface TypeSpec {
 export function generateCatalog(seed: number, options: CatalogOptions = {}): Catalog {
     const r = rng(seed);
     const kind = options.base ?? "ring";
-    const base = BASES[kind];
+    const { base, bases, implicits } = withImplicit(BASES[kind], kind, options.implicit);
     const ilvl = options.ilvl ?? (options.eldritch ? r.pick([75, 84]) : r.pick([40, 75, 84]));
     const n = options.types ?? r.int(4, 8);
     if (n < 2 || n > STATS.length) throw new Error(`2 to ${STATS.length} types, not ${n}`);
@@ -579,7 +592,8 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
         extra.splice(0, extra.length, ...extra.map(one));
     }
     const registry = buildRegistry({
-        bases: [base],
+        bases,
+        implicits,
         mods: [...natural, ...extra],
         benchCrafts,
         essences,
@@ -605,6 +619,38 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
         eldritch,
         fossil: fossils[0],
         fossilRows: fossils.length > 0 ? extra.filter((m) => m.id === "Delve1").map(held) : [],
+    };
+}
+
+/** The base of the `implicit` option, the bases the registry holds for it,
+ *  and the implicit row. */
+function withImplicit(
+    plain: Base,
+    kind: BaseKind,
+    implicit: CatalogOptions["implicit"],
+): { base: Base; bases: Base[]; implicits: ImplicitSpec[] } {
+    if (implicit === undefined) return { base: plain, bases: [plain], implicits: [] };
+    const locked = implicit === "locked";
+    const spec: ImplicitSpec = {
+        id: ModId("BaseImplicit1"),
+        type: TypeId("TypeBaseImplicit"),
+        groups: new Set([GroupId("BaseImplicit")]),
+        implicitTags: new Set<TagId>(),
+        text: locked ? "Implicit Modifiers Cannot Be Changed" : "+(1-2) to Implicitness",
+        ...(locked && { locked: true as const }),
+    };
+    const name = plain.name ?? `Test ${kind}`;
+    const base: Base = {
+        ...plain,
+        name,
+        implicits: [spec.id],
+        ...(locked && { implicitLocked: true as const }),
+    };
+    const bare: Base = { ...plain, id: BaseId(`${plain.id}Bare`), name };
+    return {
+        base,
+        bases: implicit === "variants" ? [base, bare] : [base],
+        implicits: [spec],
     };
 }
 

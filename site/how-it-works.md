@@ -36,8 +36,8 @@ exist here? A toy ring with three axes shows the shape:
 A real item has an axis for each modifier the craft can put on the base. Its positions are
 "absent" and each tier. A tier also carries the fractured or crafted mark where the craft can
 give one, and splits at a number the craft compares, as in `has "maximum life" >= 110`. The
-item adds an axis each for rarity, corruption, influences and memory strands, and two for each
-eldritch implicit.
+item adds an axis each for rarity, corruption, influences, its base's implicit and strands,
+and two for each eldritch implicit.
 
 <HowAxes />
 

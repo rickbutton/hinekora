@@ -134,9 +134,10 @@ export const transforms: RefTransformTable = {
             const c = op.change;
             switch (c.kind) {
                 case "set":
+                    // It replaces the base's implicit (Eldritch implicit modifier).
                     return emberTypes(ctx, c.side, c.tier, c.types).map((type) =>
                         wellFormed(
-                            { ...item, [c.side]: { tier: c.tier, type } },
+                            { ...item, baseImplicit: false, [c.side]: { tier: c.tier, type } },
                             ctx,
                             "an eldritch implicit",
                         ),

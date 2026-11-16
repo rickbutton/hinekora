@@ -40,8 +40,9 @@ import {
     tierLadders,
     tierRows,
 } from "../resolve/tiers.js";
-import { plural } from "../words.js";
+import { capitalise, plural } from "../words.js";
 import type { Diag } from "./defs.js";
+import { baseImplicitOf } from "./implicit.js";
 
 /** Item-block affix names that mean "some unspecified affix". */
 export const PLACEHOLDERS = /^random\b|^\?$/;
@@ -461,6 +462,16 @@ export function declareItem(item: ItemBlock, registry: Registry, diag: Diag): It
     if ((item.exarch !== undefined || item.eater !== undefined) && !canHaveEldritch(base)) {
         diag(
             "Only a body armour, boots, gloves, a helmet or an amulet can have an eldritch implicit.",
+            at("exarch", "eater"),
+        );
+    }
+    if (
+        (item.exarch !== undefined || item.eater !== undefined) &&
+        baseImplicitOf(registry, base).locked
+    ) {
+        // Ukatoa's Ducat § Mechanics: an implicit that cannot be changed takes none.
+        diag(
+            `${capitalise(withArticle(base.name ?? "amulet"))}'s implicit cannot be changed, so it has no eldritch implicit.`,
             at("exarch", "eater"),
         );
     }

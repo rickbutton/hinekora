@@ -13,13 +13,16 @@ import {
     NOTABLE_SADIST,
     RATCHETING_BASE,
     RING_BASE,
+    SIMPLEX_BASE,
     SMALL_CLUSTER_BASE,
     TAG_DEFAULT,
 } from "../__fixtures__/mods.js";
 import type { AffixDecl } from "../ast/ast.js";
 import { check } from "./check.js";
 import { declareItem } from "./item-block.js";
-import { TagId } from "../model/ids.js";
+import type { Base } from "../model/base.js";
+import { BaseId, ModId, TagId, TypeId } from "../model/ids.js";
+import type { ImplicitSpec } from "../model/sources.js";
 import type { Mod } from "../model/mod.js";
 import type { Registry } from "../resolve/registry.js";
 import { buildRegistry } from "../resolve/registry.js";
@@ -129,6 +132,44 @@ describe("the item block's items", () => {
         });
     });
 
+    it("hold the base's implicit unless an eldritch one replaced it", () => {
+        const life: ImplicitSpec = {
+            id: ModId("BaseLife"),
+            type: TypeId("TypeBaseLife"),
+            groups: new Set(),
+            implicitTags: new Set(),
+            text: "+(20-30) to maximum Life",
+        };
+        const own: Base = { ...BOOTS_BASE, implicits: [life.id] };
+        const bare: Base = { ...BOOTS_BASE, id: BaseId("BareGreaves") };
+        const locked: Base = {
+            ...SIMPLEX_BASE,
+            name: "Simplex Amulet",
+            implicits: [life.id],
+            implicitLocked: true,
+        };
+        const held = (bases: Base[], spec: Spec): boolean[] => {
+            const registry = buildRegistry({
+                bases,
+                mods: HAND_MODS,
+                implicits: [life],
+                eldritch: eldritchLadders("exarch", ["MoveSpeed"], "boots"),
+            });
+            expectItems(registry, spec);
+            const start = startOf(registry, craft(item(spec), []), () => {})!;
+            const items = listItems(start.u, start.state!.dd, { lowest: true }).items();
+            return [...new Set(items.map((x) => x.baseImplicit))].sort();
+        };
+        const boots = { base: "IronGreaves", ilvl: 84, rarity: "rare" as const };
+        expect(held([own], boots)).toEqual([true]);
+        expect(held([own], { ...boots, exarch: "lesser" })).toEqual([false]);
+        expect(held([BOOTS_BASE], boots)).toEqual([false]);
+        // One name, two bases: one made with the implicit, one without.
+        expect(held([own, bare], { ...boots, base: "Iron Greaves" })).toEqual([false, true]);
+        const amulet = { base: "Simplex Amulet", ilvl: 84, rarity: "rare" as const };
+        expect(held([locked], amulet)).toEqual([true]);
+    });
+
     it("hold a tier two declared influences share, a bare name, a tier above the level", () => {
         const row = (id: string, stem: string, minLevel: number, text: string): Mod =>
             modRow({
@@ -233,6 +274,21 @@ describe("the item block's items", () => {
     });
 });
 
+const LOCKED_IMPLICIT: ImplicitSpec = {
+    id: ModId("SimplexImplicit"),
+    type: TypeId("TypeSimplexImplicit"),
+    groups: new Set(),
+    implicitTags: new Set(),
+    text: "Implicit Modifiers Cannot Be Changed",
+    locked: true,
+};
+const LOCKED_SIMPLEX: Base = {
+    ...SIMPLEX_BASE,
+    name: "Simplex Amulet",
+    implicits: [LOCKED_IMPLICIT.id],
+    implicitLocked: true,
+};
+
 /** A catalogue with every base a fault of the block is about. */
 const FAULTS = buildRegistry({
     bases: [
@@ -245,7 +301,9 @@ const FAULTS = buildRegistry({
         RATCHETING_BASE,
         CLUSTER_BASE,
         SMALL_CLUSTER_BASE,
+        LOCKED_SIMPLEX,
     ],
+    implicits: [LOCKED_IMPLICIT],
     mods: [...HAND_MODS, NOTABLE_SADIST, NOTABLE_OVERSHOCK, CLUSTER_EFFECT],
     benchCrafts: [BENCH_LIFE, BENCH_MANA, BENCH_COLD, MULTIMOD].flatMap((m) => [
         benchCraft(m, RING_BASE.itemClass),
@@ -331,6 +389,10 @@ describe("the item block's faults", () => {
         [
             { base: "CoralAmulet", ilvl: 84, rarity: "rare", exarch: "grand", eater: "lesser" },
             "not both",
+        ],
+        [
+            { base: "Simplex Amulet", ilvl: 84, rarity: "rare", exarch: "lesser" },
+            "implicit cannot be changed",
         ],
         [ring({ strands: 150 }), "0 to 100 memory strands"],
         [ring({ enchant: lightning }), "Only a cluster jewel has an enchant"],

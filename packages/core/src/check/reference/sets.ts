@@ -125,6 +125,8 @@ export interface Bounds {
     readonly rarities?: readonly Rarity[];
     /** Default: no influence. */
     readonly influences?: readonly InfluenceKey[];
+    /** Whether the base's implicit is held; default: not. */
+    readonly baseImplicit?: readonly boolean[];
     /** Default: not corrupted. */
     readonly corrupted?: readonly Corruption[];
     /** Default: none. */
@@ -189,20 +191,23 @@ export function allItems(ctx: RefCtx, bounds: Bounds): CItemSet {
     for (const rarity of rarities) {
         for (const mods of modLists) {
             for (const influences of bounds.influences ?? [NO_INFLUENCE]) {
-                for (const corrupted of bounds.corrupted ?? [false]) {
-                    for (const exarch of bounds.exarch ?? [NO_IMPLICIT]) {
-                        for (const eater of bounds.eater ?? [NO_IMPLICIT]) {
-                            for (const strands of bounds.strands ?? [0]) {
-                                const item = cItem({
-                                    rarity,
-                                    mods,
-                                    influences,
-                                    corrupted,
-                                    exarch,
-                                    eater,
-                                    strands,
-                                });
-                                if (isWellFormed(item, ctx)) out.push(item);
+                for (const baseImplicit of bounds.baseImplicit ?? [false]) {
+                    for (const corrupted of bounds.corrupted ?? [false]) {
+                        for (const exarch of bounds.exarch ?? [NO_IMPLICIT]) {
+                            for (const eater of bounds.eater ?? [NO_IMPLICIT]) {
+                                for (const strands of bounds.strands ?? [0]) {
+                                    const item = cItem({
+                                        rarity,
+                                        mods,
+                                        influences,
+                                        baseImplicit,
+                                        corrupted,
+                                        exarch,
+                                        eater,
+                                        strands,
+                                    });
+                                    if (isWellFormed(item, ctx)) out.push(item);
+                                }
                             }
                         }
                     }

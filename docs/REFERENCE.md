@@ -59,6 +59,7 @@ A state (`ItemSet`) is a set of items, one decision diagram over the slots of it
 | `rarity`                  | Normal, Magic, Rare                                                |
 | `corrupted`               | no, once, twice                                                    |
 | `influences`              | each influence set the base can have                               |
+| `baseImplicit`            | gone, present: the implicit the base is made with                  |
 | `exarchTier`, `eaterTier` | none, then Lesser to Perfect                                       |
 | `exarchType`, `eaterType` | which implicit of those the catalogue names, or one it does not    |
 | `strands`                 | the memory strands, 0 to 100                                       |

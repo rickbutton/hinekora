@@ -55,7 +55,12 @@ interface Setup {
 function setup(
     seed: number,
     base: BaseKind,
-    flags: { influence?: boolean; eldritch?: boolean; ilvl?: number },
+    flags: {
+        influence?: boolean;
+        eldritch?: boolean;
+        ilvl?: number;
+        implicit?: "own" | "locked" | "variants";
+    },
     types = 4,
     rows = 3,
 ): Setup {
@@ -514,6 +519,71 @@ describe("an influence added where the game forbids one", () => {
         refused(cItem({ rarity: "magic", mods: [cMod(id, valueIn(s, id), { fractured: true })] }));
         const type = s.cat.eldritch.find((e) => e.side === "eater")!.type;
         refused(cItem({ eater: { tier: 2, type } }));
+    });
+});
+
+describe("the base's implicit", () => {
+    const BOTH = [false, true];
+    /** The eldritch changes on a base, the base's implicit held or not. */
+    function eldritchExact(s: Setup, seed: number): void {
+        const bounds = {
+            baseImplicit: BOTH,
+            exarch: implicits(s, "exarch", 4),
+            eater: implicits(s, "eater", 4),
+            corrupted: ALL_CORRUPTIONS,
+        };
+        exact(s, seed, bounds, L.CONFLICT);
+        exact(s, seed + 1, bounds, [replaced]);
+        exact(s, seed + 2, bounds, L.vaalOps(s.cat.base));
+        exact(s, seed + 3, bounds, L.locusOps());
+        for (const side of ["exarch", "eater"] as const) {
+            const types = s.cat.registry.eldritchPool(s.cat.base, side, 2).map((e) => e.type);
+            exact(s, seed + 4, bounds, L.eldritchImplicitOps(side, 2, types));
+        }
+    }
+
+    it("is replaced by an ember or ichor, on boots made with one", () => {
+        const s = setup(7900, "boots", { eldritch: true, implicit: "own" });
+        eldritchExact(s, 7901);
+        const type = s.cat.eldritch.find((e) => e.side === "eater")!.type;
+        const pool = s.cat.registry.eldritchPool(s.cat.base, "eater", 1).map((e) => e.type);
+        const out = outcomes(
+            s,
+            cItem({ baseImplicit: true }),
+            L.eldritchImplicitOps("eater", 1, [type]),
+        );
+        expect(out.map((x) => [x.baseImplicit, x.eater.tier])).toEqual([[false, 1]]);
+        expect(pool).toContain(type);
+    });
+
+    it("is never held on boots made with none", () => {
+        const s = setup(7910, "boots", { eldritch: true });
+        expect(s.cat.registry.baseImplicits(s.cat.base)).toEqual([[]]);
+        eldritchExact(s, 7911);
+    });
+
+    it("is held or not on a name that stands for bases with and without one", () => {
+        const s = setup(7920, "boots", { eldritch: true, implicit: "variants" });
+        expect(s.cat.registry.baseImplicits(s.cat.base).map((v) => v.length)).toEqual([1, 0]);
+        eldritchExact(s, 7921);
+    });
+
+    it("always stays where it cannot be changed", () => {
+        const s = setup(7930, "simplex", { eldritch: true, implicit: "locked" });
+        const bounds = {
+            baseImplicit: BOTH,
+            exarch: implicits(s, "exarch", 4),
+            eater: implicits(s, "eater", 4),
+            corrupted: ALL_CORRUPTIONS,
+        };
+        exact(s, 7931, bounds, [replaced]);
+        exact(s, 7932, bounds, L.vaalOps(s.cat.base));
+        exact(s, 7933, bounds, L.locusOps());
+        exact(s, 7934, bounds, L.CONFLICT);
+        // No ember takes an amulet: its check refuses it before the implicit.
+        exact(s, 7935, bounds, L.eldritchImplicitOps("exarch", 2, []));
+        const state = fromItems(s.u, [cItem({ baseImplicit: true })])!;
+        expect(runMethod(state, L.eldritchImplicitOps("exarch", 2, [])).ok).toBe(false);
     });
 });
 

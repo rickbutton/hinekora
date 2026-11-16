@@ -42,6 +42,7 @@ import {
     thresholdsOf,
 } from "./craft.js";
 import { type Dd, DdManager, type DdRelation, type DdWeight } from "./dd.js";
+import { baseImplicitOf } from "./implicit.js";
 import { influenceKeysFor, influenceTagsOfKey } from "./influence.js";
 import type { CEldritch, CItem, CMod } from "./item.js";
 import { candidateRows, type RowSource } from "./rows.js";
@@ -52,6 +53,7 @@ export type ScalarKind =
     | "rarity"
     | "corrupted"
     | "influences"
+    | "baseImplicit"
     | "exarchTier"
     | "exarchType"
     | "eaterTier"
@@ -127,6 +129,7 @@ const SCALARS_BEFORE: readonly ScalarKind[] = [
     "rarity",
     "corrupted",
     "influences",
+    "baseImplicit",
     "exarchTier",
     "exarchType",
     "eaterTier",
@@ -216,6 +219,7 @@ export class Universe {
             rarity: RARITIES.length,
             corrupted: CORRUPTIONS.length,
             influences: this.influenceKeys.length,
+            baseImplicit: 2,
             exarchTier: NUM_TIERS,
             exarchType: this.eldritchTypeList.exarch.length,
             eaterTier: NUM_TIERS,
@@ -523,6 +527,8 @@ export class Universe {
                 return `${prefix}${RARITIES[value]}`;
             case "influences":
                 return `${prefix}influences ${this.influenceKeys[value] || "none"}`;
+            case "baseImplicit":
+                return `${prefix}base implicit ${value === 1 ? "present" : "gone"}`;
             case "exarchType":
                 return `${prefix}exarch ${this.eldritchTypeList.exarch[value] ?? "unnamed"}`;
             case "eaterType":
@@ -712,6 +718,7 @@ export class Universe {
         put("rarity", this.rarityValue(item.rarity), `rarity ${item.rarity}`);
         put("corrupted", CORRUPTIONS.indexOf(item.corrupted), "corruption");
         put("influences", this.influenceValue(item.influences), `influences "${item.influences}"`);
+        put("baseImplicit", item.baseImplicit ? 1 : 0, "the base's implicit");
         for (const side of ["exarch", "eater"] as const) {
             const e: CEldritch = item[side];
             put(`${side}Tier`, e.tier, `${side} tier ${e.tier}`);
@@ -784,6 +791,7 @@ export class Universe {
             rarity: RARITIES[at("rarity")]!,
             mods,
             influences: this.influenceKeys[at("influences")]!,
+            baseImplicit: at("baseImplicit") === 1,
             corrupted: CORRUPTIONS[at("corrupted")]!,
             exarch: eldritch("exarch"),
             eater: eldritch("eater"),
@@ -834,9 +842,12 @@ export class Universe {
         const types = this.eldritchTypeList;
         const toLogical = (slot: number): number => (this.imprint ? slot >> 1 : slot);
 
+        const own = baseImplicitOf(registry, base);
+
         interface S {
             readonly room: readonly [number, number, number];
             readonly influenced: boolean;
+            readonly baseImplicit: boolean;
             /** The tier of the side being read, until its type is. */
             readonly tier: number;
             readonly exarch: boolean;
@@ -846,6 +857,7 @@ export class Universe {
         const init: S = {
             room: [0, 0, 0],
             influenced: false,
+            baseImplicit: false,
             tier: 0,
             exarch: false,
             veiled: false,
@@ -855,6 +867,8 @@ export class Universe {
             if (tier === 0) return true;
             // item-model.md §8 "Eldritch implicits" (Eldritch implicit modifier).
             if (!canHaveEldritch(base) || ilvl < ELDRITCH_ITEM_LEVEL || s.influenced) return false;
+            // item-model.md §8 "The base's implicit": an eldritch implicit replaces it.
+            if (s.baseImplicit) return false;
             // An amulet's implicit is Lesser to Exceptional (Ukatoa's Ducat § Mechanics).
             if (isEldritchAmulet(base) && tier > AMULET_ELDRITCH_TOP_TIER) return false;
             // An amulet has one implicit of either pool (Ukatoa's Ducat § Mechanics).
@@ -887,6 +901,12 @@ export class Universe {
                     }
                     case "influences":
                         return { ...s, influenced: this.influenceKeys[value] !== NO_INFLUENCE };
+                    case "baseImplicit": {
+                        // item-model.md §8 "The base's implicit".
+                        const present = value === 1;
+                        if (present ? !own.has : own.locked) return undefined;
+                        return { ...s, baseImplicit: present };
+                    }
                     case "exarchTier":
                     case "eaterTier": {
                         const side = at.kind === "exarchTier" ? "exarch" : "eater";
@@ -898,7 +918,7 @@ export class Universe {
                         if (!typeOk(side, s.tier, value)) return undefined;
                         return side === "exarch"
                             ? { ...s, tier: 0, exarch: s.tier > 0 }
-                            : { ...s, tier: 0, exarch: false };
+                            : { ...s, tier: 0, exarch: false, baseImplicit: false };
                     }
                     case "mod": {
                         const keep = liveAfter[i]!;
@@ -939,7 +959,7 @@ export class Universe {
             },
             accept: () => true,
             key: (s: S) =>
-                `${s.room.join(",")}|${s.influenced ? 1 : 0}${s.exarch ? 1 : 0}${s.veiled ? 1 : 0}|${s.tier}|${s.claimed.join(",")}`,
+                `${s.room.join(",")}|${s.influenced ? 1 : 0}${s.baseImplicit ? 1 : 0}${s.exarch ? 1 : 0}${s.veiled ? 1 : 0}|${s.tier}|${s.claimed.join(",")}`,
         };
     }
 }

@@ -121,6 +121,11 @@ export function initialItems(ctx: RefCtx, block: ItemBlock): CItemSet {
         const named = d.types === undefined ? types : types.filter((t) => d.types!.has(t));
         return (named.length > 0 ? named : types).map((type) => ({ tier: d.tier, type }));
     };
+    // The base's implicit stays unless an eldritch one replaced it; a name
+    // standing for variants with and without one holds either.
+    const variants = ctx.registry.baseImplicits(decl.base).map((v) => v.length > 0);
+    const declaresEldritch = decl.exarch !== undefined || decl.eater !== undefined;
+    const baseImplicits = [...new Set(variants.map((has) => has && !declaresEldritch))];
     const offered = offeredBy(c, decl);
     /** Each `"random"` of the list a row the declared item's pool offers. */
     const randomsOffered = (mods: readonly CMod[]): boolean =>
@@ -136,18 +141,21 @@ export function initialItems(ctx: RefCtx, block: ItemBlock): CItemSet {
     const out: CItem[] = [];
     for (const mods of lists) {
         if (!randomsOffered(mods)) continue;
-        for (const exarch of implicits("exarch")) {
-            for (const eater of implicits("eater")) {
-                const item = cItem({
-                    rarity: decl.rarity,
-                    mods,
-                    influences: influenceKey(decl.influences),
-                    corrupted: decl.corrupted,
-                    exarch,
-                    eater,
-                    strands: decl.strands ?? 0,
-                });
-                if (isWellFormed(item, c)) out.push(item);
+        for (const baseImplicit of baseImplicits) {
+            for (const exarch of implicits("exarch")) {
+                for (const eater of implicits("eater")) {
+                    const item = cItem({
+                        rarity: decl.rarity,
+                        mods,
+                        influences: influenceKey(decl.influences),
+                        baseImplicit,
+                        corrupted: decl.corrupted,
+                        exarch,
+                        eater,
+                        strands: decl.strands ?? 0,
+                    });
+                    if (isWellFormed(item, c)) out.push(item);
+                }
             }
         }
     }

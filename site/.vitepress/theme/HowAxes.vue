@@ -12,6 +12,7 @@ const ITEM = [
         name: "influences",
         positions: ["none", "Shaper", "Elder", "…", "Warlord", "any two of the six"],
     },
+    { name: "base implicit", positions: ["gone", "present"] },
     { name: "Exarch implicit tier", positions: ELDRITCH_TIERS },
     { name: "Exarch implicit", positions: ["none: a ring has no such implicit"] },
     { name: "Eater implicit tier", positions: ELDRITCH_TIERS },

@@ -8,7 +8,11 @@ import {
     RATCHETING_BASE,
     SIMPLEX_BASE,
 } from "../../__fixtures__/mods.js";
-import { ModId, TypeId } from "../../model/ids.js";
+import type { Base } from "../../model/base.js";
+import { BaseId, ModId, TypeId } from "../../model/ids.js";
+import type { ImplicitSpec } from "../../model/sources.js";
+import { buildRegistry } from "../../resolve/registry.js";
+import { eldritchLadders } from "./catalog.js";
 import { INFLUENCES, type InfluenceKey, influenceKey } from "../../model/marks.js";
 import {
     ARMOUR,
@@ -30,7 +34,7 @@ import {
     VEILED_P,
     VEILED_S,
 } from "./hand.js";
-import { type CItem, cItem, cMod, type RefCtx } from "./item.js";
+import { type CItem, cItem, cMod, type RefCtx, refCtx } from "./item.js";
 import { violations } from "./wellformed.js";
 
 const ring = handCtx();
@@ -229,6 +233,52 @@ describe("eldritch implicits", () => {
         ok(cItem({ eater: at(2, "Eater") }), amulet);
         bad(cItem({ exarch: at(5, "Exarch") }), "at most tier 4", amulet);
         bad(cItem({ exarch: at(1, "Exarch"), eater: at(1, "Eater") }), "one eldritch", amulet);
+    });
+});
+
+describe("the base's implicit", () => {
+    const implicit: ImplicitSpec = {
+        id: ModId("BaseLife"),
+        type: TypeId("TypeBaseLife"),
+        groups: new Set(),
+        implicitTags: new Set(),
+        text: "+(20-30) to maximum Life",
+    };
+    const locked: ImplicitSpec = { ...implicit, id: ModId("BaseLocked"), locked: true };
+    const made = (base: Base, spec: ImplicitSpec): Base => ({
+        ...base,
+        implicits: [spec.id],
+        ...(spec.locked && { implicitLocked: true as const }),
+    });
+    const ownBoots = { ...made(BOOTS_BASE, implicit), id: BaseId("OwnBoots"), name: "Own Boots" };
+    const lockedAmulet = made(SIMPLEX_BASE, locked);
+    const named = { ...ownBoots, id: BaseId("TwinOwn"), name: "Twin Greaves" };
+    const bareTwin: Base = { ...BOOTS_BASE, id: BaseId("TwinBare"), name: "Twin Greaves" };
+    const registry = buildRegistry({
+        bases: [ownBoots, BOOTS_BASE, lockedAmulet, named, bareTwin],
+        mods: [LIFE1],
+        implicits: [implicit, locked],
+        eldritch: eldritchLadders("exarch", ["MoveSpeed"], "boots"),
+    });
+    const at = (base: Base) => refCtx(registry, base, 84);
+    const speed = { tier: 1, type: TypeId("ImplicitMoveSpeed") };
+
+    it("is held only on a base made with one, and may be gone", () => {
+        ok(cItem({ baseImplicit: true }), at(ownBoots));
+        ok(cItem(), at(ownBoots));
+        bad(cItem({ baseImplicit: true }), "no implicit of its own", at(BOOTS_BASE));
+    });
+    it("is held or not where the name stands for bases with and without one", () => {
+        ok(cItem({ baseImplicit: true }), at(bareTwin));
+        ok(cItem(), at(named));
+    });
+    it("is never beside an eldritch implicit, which replaces it", () => {
+        ok(cItem({ exarch: speed }), at(ownBoots));
+        bad(cItem({ baseImplicit: true, exarch: speed }), "replaces the base's", at(ownBoots));
+    });
+    it("always stays where it cannot be changed", () => {
+        ok(cItem({ baseImplicit: true }), at(lockedAmulet));
+        bad(cItem(), "cannot be changed", at(lockedAmulet));
     });
 });
 

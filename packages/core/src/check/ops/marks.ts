@@ -251,9 +251,11 @@ export const transforms: TransformTable = {
                         m.slotIn(tier, [c.tier]),
                         m.slotIn(type, emberValues(u, c.side, c.tier, c.types)),
                     );
+                    // It replaces the base's implicit (Eldritch implicit modifier).
+                    const replaced = m.set(state, u.scalar("baseImplicit"), 0);
                     return wellFormed(
                         u,
-                        m.and(m.forget(state, [tier, type]), fixed),
+                        m.and(m.forget(replaced, [tier, type]), fixed),
                         "an eldritch implicit",
                     );
                 }

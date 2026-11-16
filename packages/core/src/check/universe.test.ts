@@ -86,6 +86,7 @@ function restrict(
             rows: [...u.rows.keys()].map((row) => row.id),
             rarities: RARITIES,
             influences,
+            baseImplicit: [false, true],
             corrupted,
             exarch: implicits.exarch,
             eater: implicits.eater,
@@ -142,8 +143,12 @@ const LIGHT: CatalogOptions[] = [
     { base: "simplex", eldritch: true },
     { base: "amulet", influence: true, metamods: ["multimod", "suffixesCannotChange"] },
     { types: 3, bench: true, metamods: ["twoPrefixesCannotChange", "oneSuffixCannotChange"] },
+    { base: "boots", eldritch: true, implicit: "own" },
+    { base: "simplex", eldritch: true, implicit: "locked" },
+    { base: "boots", eldritch: true, implicit: "variants" },
+    { influence: true, implicit: "own" },
 ];
-for (let i = 0; i < 26; i++) {
+for (let i = 0; i < 36; i++) {
     PLANS.push({ opts: { types: 3 + (i % 2), ...LIGHT[i % LIGHT.length] }, full: false });
 }
 

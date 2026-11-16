@@ -383,6 +383,7 @@ describe("a modifier the item keeps through a roll", () => {
                 },
             ],
             influences: NO_INFLUENCE,
+            baseImplicit: false,
             corrupted: false,
             exarch: { tier: 0, type: undefined },
             eater: { tier: 0, type: undefined },
