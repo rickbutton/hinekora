@@ -608,14 +608,16 @@ export const SIDE_SHORT: Readonly<Record<EldritchSide, string>> = {
     eater: "Eater",
 };
 
-/** An implicit's kind as its advanced-copy header names it, before "Implicit Modifier". */
+/** An implicit's kind before "Implicit Modifier" in its advanced-copy header: the
+ *  eldritch sides' as the game writes them, the base's and corruption's assumed (Q132). */
 export const IMPLICIT_NAME: Readonly<Record<ImplicitKind, string>> = {
     base: "",
     ...SIDE_NAME,
     corruption: "Corruption",
 };
 
-/** An implicit's kind in a player's short words ("a Grand Exarch implicit"). */
+/** An implicit's kind in short words ("a Grand Exarch implicit"); "Base" and
+ *  "Corruption" follow the headers assumed in Q132. */
 export const IMPLICIT_SHORT: Readonly<Record<ImplicitKind, string>> = {
     base: "Base",
     ...SIDE_SHORT,

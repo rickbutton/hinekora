@@ -7,7 +7,7 @@ change (`../AGENTS.md`, Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q132.
+keeps it. New entries continue from Q133.
 
 ```
 ### Qn · probe|decision · open — title
@@ -592,3 +592,13 @@ that fit, the partial protections among them?
 **Probe:** an item with its suffixes full; the recipe some thirty times, removing the
 crafted modifier between uses; count each result.
 **Assumed:** each alike. **Encoded in:** `cost/roll.ts` `poolRows`.
+
+### Q132 · probe · open — the advanced-copy header of a base or corruption implicit
+
+**Q:** what header does the advanced copy (Ctrl+Alt+C) give a base's own implicit and a
+corruption implicit? The wiki's patch notes say both "Corruption Implicit Modifier" and
+"Corrupted Implicit Modifier".
+**Probe:** copy a ring with its base implicit, and a corrupted ring with a corruption
+implicit, with Ctrl+Alt+C; record each implicit's header.
+**Assumed:** `{ Implicit Modifier — … }` and `{ Corruption Implicit Modifier — … }`.
+**Encoded in:** `render/item.ts` `IMPLICIT_NAME`, `IMPLICIT_SHORT`.
