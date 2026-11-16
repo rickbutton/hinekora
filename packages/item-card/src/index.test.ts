@@ -94,6 +94,32 @@ describe("the item card's markup", () => {
         );
     });
 
+    it("classes each kind of implicit apart from the header's base name", () => {
+        const expected = {
+            base: "mod implicit implicit-base",
+            exarch: "mod implicit exarch",
+            eater: "mod implicit eater",
+            corruption: "mod implicit implicit-corruption",
+        } as const;
+        for (const [kind, cls] of Object.entries(expected)) {
+            const html = itemCardHtml(
+                view({
+                    implicits: [
+                        {
+                            kind: kind as keyof typeof expected,
+                            tiers: [],
+                            texts: ["a"],
+                            count: 1,
+                            tags: [],
+                            maybe: false,
+                        },
+                    ],
+                }),
+            );
+            expect(html, kind).toContain(`class="${cls}"`);
+        }
+    });
+
     it("escapes each member of a group of alternatives", () => {
         const html = itemCardHtml(
             view({

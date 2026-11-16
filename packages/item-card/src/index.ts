@@ -90,6 +90,15 @@ function group(g: ModGroup): string {
     );
 }
 
+/** Each kind's class beside `implicit`; the base's is prefixed, since `base` is the
+ *  header's base name. */
+const IMPLICIT_CLASS: Readonly<Record<ItemView["implicits"][number]["kind"], string>> = {
+    base: "implicit-base",
+    exarch: "exarch",
+    eater: "eater",
+    corruption: "implicit-corruption",
+};
+
 function implicitRow(i: ItemView["implicits"][number]): string {
     const tier = implicitTierText(i, "–");
     const who = IMPLICIT_SHORT[i.kind];
@@ -113,7 +122,7 @@ function implicitRow(i: ItemView["implicits"][number]): string {
             : "";
     return h(
         "div",
-        `mod implicit ${i.kind}${i.maybe ? " maybe" : ""}`,
+        `mod implicit ${IMPLICIT_CLASS[i.kind]}${i.maybe ? " maybe" : ""}`,
         h("span", "text", text) +
             h("span", "meta", h("span", "side", esc(who)) + h("span", "tier pinned", esc(tier))),
         `${IMPLICIT_NAME[i.kind] || IMPLICIT_SHORT[i.kind]} implicit${tier === "" ? "" : `, ${tier}`}${listed}`,
