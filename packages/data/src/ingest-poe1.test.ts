@@ -161,6 +161,23 @@ describe("the implicits the main ingest keeps", () => {
         expect(implicits["Life"]).not.toHaveProperty("locked");
     });
 
+    it("drops Affliction's tinctures, which have no mana burn, and keeps the ones beside them", () => {
+        const tincture = (properties: object) => ({
+            ...ring(),
+            name: "Rosethorn Tincture",
+            item_class: "Tincture",
+            properties,
+        });
+        const kept = projectBases(
+            {
+                Old: tincture({ mana_burn_ms: null, cooldown_ms: null }),
+                New: tincture({ mana_burn_ms: 700, cooldown_ms: 8000 }),
+            },
+            mods,
+        );
+        expect(Object.keys(kept)).toEqual(["New"]);
+    });
+
     it("writes a row two bases name once, and none for a row the export lacks", () => {
         const twice = projectImplicits(
             { A: { implicits: ["Life"] }, B: { implicits: ["Life", "Missing"] } },

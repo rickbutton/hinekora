@@ -148,6 +148,13 @@ function capDeltaOf(base, mods) {
  *  (Simplex Amulet: "Implicit Modifiers Cannot Be Changed"). */
 const LOCKED_STAT = "local_implicit_mod_cannot_be_changed";
 
+/** Affliction's tinctures, which had "no Mana Burn mechanic" and were deleted at
+ *  3.23.2c (Tincture § Version history); each shares its name with the 3.25.0
+ *  tincture that replaced it, which is the one an item can be. */
+function deletedTincture(b) {
+    return b.item_class === "Tincture" && b.properties?.mana_burn_ms == null;
+}
+
 export function projectBases(raw, mods) {
     const out = {};
     for (const [key, b] of Object.entries(raw)) {
@@ -155,6 +162,7 @@ export function projectBases(raw, mods) {
         // Royale's bases share a name with the main game's (Opal Ring, Heavy
         // Belt), which would leave the name standing for two bases.
         if (/Royale/.test(key)) continue;
+        if (deletedTincture(b)) continue;
         const capDelta = capDeltaOf(b, mods);
         const magnitude = magnitudeOf(b, mods);
         out[key] = {

@@ -62,9 +62,9 @@ describe("a base's implicits", () => {
         expect(registry.baseImplicits(other)).toEqual([[life]]);
     });
 
-    it("is each variant's, its own first, where one name stands for several bases", () => {
-        expect(registry.baseImplicits(withMana)).toEqual([[mana], [life], []]);
-        expect(registry.baseImplicits(bare)).toEqual([[], [life], [mana]]);
+    it("is each variant's, in the catalog's order, where one name stands for several bases", () => {
+        expect(registry.baseImplicits(withMana)).toEqual([[life], [mana], []]);
+        expect(registry.baseImplicits(bare)).toEqual([[life], [mana], []]);
     });
 
     it("is only its own where the base has no name", () => {

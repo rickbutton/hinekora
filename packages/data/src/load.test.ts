@@ -403,6 +403,17 @@ describe("a base's own implicits", () => {
             ["TalismanHasOneSocket_"],
         ]);
     });
+
+    it("is a tincture's one implicit, its Affliction namesake gone", () => {
+        const r = registry.resolveBase("Rosethorn Tincture");
+        expect(r.ok && r.value.id).toBe("Metadata/Items/Tinctures/Tincture2");
+        expect(r.ok && registry.baseImplicits(r.value).map((v) => v.map((i) => i.id))).toEqual([
+            ["TinctureCriticalStrikeChanceImplicit1"],
+        ]);
+        const tinctures = data.bases.filter((b) => b.itemClass === "Tincture");
+        expect(tinctures).toHaveLength(10);
+        expect(tinctures.every((b) => b.implicits?.length === 1)).toBe(true);
+    });
 });
 
 describe("registry resolution against real data", () => {
@@ -412,9 +423,8 @@ describe("registry resolution against real data", () => {
     });
 
     it("resolves a colliding base name when the bases are one to the checker", () => {
-        // A tincture's old and new id, a talisman's implicit variants: same class,
-        // domain, tags and caps, so a craft's name for them needs no id.
-        expect(registry.resolveBase("Ashbark Tincture").ok).toBe(true);
+        // A talisman's implicit variants: same class, domain, tags and caps, so a
+        // craft's name for them needs no id.
         expect(registry.resolveBase("Black Maw Talisman").ok).toBe(true);
         expect(registry.resolveBase("Avian Twins Talisman").ok).toBe(true);
     });

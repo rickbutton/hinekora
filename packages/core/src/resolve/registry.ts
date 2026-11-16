@@ -270,8 +270,9 @@ export interface Registry {
     /** Resolve a fossil by name, in full ("Pristine Fossil") or by its first word. */
     resolveFossil(name: string): Resolved<FossilSpec>;
     /** The implicits an item of this base is made with, one entry per base it may
-     *  be: its own first, then each variant of its name the model reads as the
-     *  same base (a Two-Stone Ring's three), each possibly none. */
+     *  be: this one and each namesake the model reads as the same base (a
+     *  Two-Stone Ring's three), each possibly none, in the catalog's order
+     *  whichever of them is given: a name resolves to any one of them. */
     baseImplicits(base: Base): readonly (readonly ImplicitSpec[])[];
     /** The eldritch implicit rows an ember or ichor of that tier can give a base. */
     eldritchPool(base: Base, side: EldritchSide, tier: number): readonly EldritchImplicitSpec[];
@@ -938,7 +939,7 @@ export function buildRegistry(data: RegistryData): Registry {
             if (byName.length > 1) {
                 // Variants that share a name and everything the model reads are one
                 // base to the checker, so any of them serves: a talisman's implicit
-                // variants, a tincture's old and new id.
+                // variants.
                 const [first, ...rest] = byName;
                 if (crafted.length === 0 || rest.every((b) => sameToTheModel(first!, b))) {
                     return admit(first!);
@@ -1115,10 +1116,10 @@ export function buildRegistry(data: RegistryData): Registry {
             if (hit === undefined) {
                 const named =
                     base.name === undefined ? [] : (baseByName.get(norm(base.name)) ?? []);
-                const others = named.filter(
-                    (b) => b !== base && isCraftedOn(b) && sameToTheModel(base, b),
+                const same = named.filter(
+                    (b) => b === base || (isCraftedOn(b) && sameToTheModel(base, b)),
                 );
-                hit = [base, ...others].map(implicitsOf);
+                hit = (same.includes(base) ? same : [base, ...same]).map(implicitsOf);
                 variantImplicits.set(base, hit);
             }
             return hit;
