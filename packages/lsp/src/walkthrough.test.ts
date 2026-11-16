@@ -190,6 +190,14 @@ bench "cold resistance"`);
         const v = itemView(w.start.item!, registry);
         expect(itemDelta(v, v)).toEqual({ added: [], removed: [] });
     });
+
+    it("tells that a Vaal Orb may take the base's implicit", () => {
+        const w = walk(`item { base: "Vermillion Ring" ilvl: 84 rarity: rare }\nvaal`);
+        expect(stepDelta(w.steps[0]!, registry)).toEqual({
+            added: ["possibly Base implicit", "Corrupted", "0–6 unknown modifiers"],
+            removed: ["Base implicit"],
+        });
+    });
 });
 
 describe("a condition in the player's words", () => {

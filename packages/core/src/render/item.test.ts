@@ -510,13 +510,17 @@ describe("the base's own implicit", () => {
     });
     /** The item text of a Normal Test Ring after the steps, the catalogue's
      *  bases all named alike. */
-    const textOf = (bases: readonly Base[], steps: Parameters<typeof craft>[1] = []) => {
+    const textOf = (
+        bases: readonly Base[],
+        steps: Parameters<typeof craft>[1] = [],
+        corrupted = false,
+    ) => {
         const reg = buildRegistry({
             bases: [...bases],
             mods: [...TIERED_CATALOG, ...FILLERS],
             implicits: [LIFE, FIRE, COLD, BLANK],
         });
-        const c = craft(item({ base: bases[0]!.id, ilvl: 84, rarity: "normal" }), steps);
+        const c = craft(item({ base: bases[0]!.id, ilvl: 84, rarity: "normal", corrupted }), steps);
         const r = check(c, { registry: reg });
         expect(r.diagnostics).toEqual([]);
         const v = itemView(r.finalState!, reg, c);
@@ -598,6 +602,31 @@ describe("the base's own implicit", () => {
         const delta = itemDelta(view([]), view([ember]));
         expect(delta.removed).toEqual(["Base implicit"]);
         expect(delta.added).toEqual(["Greater Exarch implicit", "Searing Exarch Item"]);
+    });
+
+    describe("in what a step changes", () => {
+        const lifeRing = [ringOf("LifeRing", [LIFE])];
+        const deltaOf = (steps: Parameters<typeof craft>[1], corrupted = false) =>
+            itemDelta(textOf(lifeRing, [], corrupted).v, textOf(lifeRing, steps, corrupted).v);
+
+        it("is possibly gone after a Vaal Orb", () => {
+            const delta = deltaOf([op("vaal")]);
+            expect(delta.removed).toEqual(["Base implicit"]);
+            expect(delta.added).toContain("possibly Base implicit");
+        });
+
+        it("is possibly gone after the Corruption Altar", () => {
+            const delta = deltaOf([op("locus")], true);
+            expect(delta.removed).toContain("Base implicit");
+            expect(delta.added).toContain("possibly Base implicit");
+        });
+
+        it("is not mentioned by a Chaos Orb, which leaves it", () => {
+            const delta = deltaOf([op("alchemy"), op("chaos")]);
+            expect(
+                [...delta.added, ...delta.removed].filter((l) => l.includes("implicit")),
+            ).toEqual([]);
+        });
     });
 });
 
