@@ -68,17 +68,18 @@ not.
 ### Q32 · probe · open — the Corruption Altar
 
 **Q:** [§ Incursion and Atziri](https://www.poewiki.net/wiki/Version_3.30.0#Incursion_and_Atziri):
-the altar corrupts "an Equipment Item" a second time, and a twice-corrupted item "cannot
-[be] Corrupted further using these devices". Does it take an uncorrupted item, or a jewel
-(the old Locus of Corruption page lists them)? How likely is each outcome? May its
-implicit replace an eldritch one? Does the copy show `Twice Corrupted` alone? Does a
-twice-corrupted item take an unveil?
-**Probe:** corrupted Rares, a jewel, boots with eldritch and Vaal implicits, an
-uncorrupted ring; the altar forty times, then an unveil; record refusals, outcomes,
-implicits lost, the copy.
-**Assumed:** corrupted equipment only, no jewel; 1:1:2 to no change, an implicit,
-destroyed; its implicit replaces the base's, an eldritch one, or a corruption implicit the
-checker does not track; `Twice Corrupted` alone; it takes nothing. **Encoded in:** `check/library.ts` `locusOps`, `onceCorrupted`;
+the altar corrupts "an Equipment Item" a second time; a twice-corrupted item "cannot [be]
+Corrupted further". Does it take an uncorrupted item, or a jewel (the old Locus page)? Each
+outcome's odds? Does its implicit replace an eldritch one, and one or two?
+[Corrupted § Corrupted implicit modifiers](https://www.poewiki.net/wiki/Corrupted#Corrupted_implicit_modifiers)
+and [Locus of Corruption § Possible outcomes](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes)
+say two; the newer 3.30.0 notes, one, a corruption implicit where there are two. Does the
+copy show `Twice Corrupted` alone? Does it then take an unveil?
+**Probe:** corrupted Rares, a jewel, boots with both eldritch implicits, an uncorrupted
+ring; the altar forty times, then an unveil; record what changes.
+**Assumed:** corrupted equipment only; 1:1:2 to no change, an implicit, destroyed; its
+implicit replaces one: the base's, an eldritch one or an untracked corruption implicit;
+`Twice Corrupted` alone; no unveil. **Encoded in:** `check/library.ts` `locusOps`, `onceCorrupted`;
 `check/ops/marks.ts` `replaced`; `cost/track.ts`; `render/item.ts`.
 
 ### Q52 · probe · open — what a Harvest-changed essence, fossil or unveiled modifier becomes
