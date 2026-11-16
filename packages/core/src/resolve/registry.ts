@@ -937,9 +937,9 @@ export function buildRegistry(data: RegistryData): Registry {
             const byName = crafted.length > 0 ? crafted : named;
             if (byName.length === 1) return admit(byName[0]!);
             if (byName.length > 1) {
-                // Variants that share a name and everything the model reads are one
-                // base to the checker, so any of them serves: a talisman's implicit
-                // variants.
+                // Variants that share a name and differ only by implicit are one
+                // base that may be any of them, which `namesakes` lists: a
+                // talisman's implicit variants.
                 const [first, ...rest] = byName;
                 if (crafted.length === 0) return admit(first!);
                 if (rest.every((b) => sameToTheModel(first!, b))) {
