@@ -23,7 +23,7 @@ const GEMS_URL = process.env.REPOE_GEMS_URL ?? "https://repoe-fork.github.io/gem
 /** Equipment, jewels (cluster jewels among them) and abyss jewels: the item
  *  lists of List of item / jewel / abyss jewel corruption implicit modifiers.
  *  Maps, relics, grafts and the rest take no craft the checker models. */
-const DOMAINS = new Set(["item", "misc", "abyss_jewel"]);
+const DOMAINS = new Set(["item", "jewel", "abyss_jewel"]);
 
 /**
  * A row no tag gives a weight is legacy: List of item corruption implicit

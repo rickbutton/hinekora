@@ -47,8 +47,8 @@ are the implicit layer ([Generation type](https://www.poewiki.net/wiki/Modifier#
 **Rarity**: normal, magic, rare ([Rarities](https://www.poewiki.net/wiki/Rarity#Rarity_as_an_item_property)).
 
 **Domain**: the data's partitions, as the data spells them
-([Domain](https://www.poewiki.net/wiki/Modifier#Domain); `misc` is the wiki's "Jewel",
-`affliction_jewel` the cluster jewels). Bench, fossil-only, veiled and unveiled rows live in
+([Domain](https://www.poewiki.net/wiki/Modifier#Domain); the cluster jewels' is
+`affliction_jewel`, the other jewels' `jewel`). Bench, fossil-only, veiled and unveiled rows live in
 partitions no base has (`crafted`, `delve`, `veiled`, `unveiled`) and are placed directly.
 
 **Source**: which mechanic places a modifier (`ModSource` in `model/sources.ts`), a reading

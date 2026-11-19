@@ -71,7 +71,7 @@ describe("loadPoe1 — the full committed PoE1 catalog", () => {
 
     it("carries dump provenance in the manifest", () => {
         expect(data.manifest.game).toBe("poe1");
-        expect(data.manifest.source.commit).toBe("509bdf7afe04e926442b20fe71cca01a03e18e7a");
+        expect(data.manifest.source.commit).toBe("3cb0a0f56532dcf4392748d23343d81f7c65ae98");
         // publishedAt is the gh-pages republish timestamp — it changes on rebuilds
         // even for the same commit, so assert only that provenance is present.
         expect(data.manifest.source.publishedAt).toBeTruthy();
@@ -446,7 +446,7 @@ describe("the corruption implicits", () => {
         expect(data.corruption.length).toBe(data.manifest.extent.corruption);
         const byDomain = (d: string) => data.corruption.filter((c) => c.domain === d);
         expect(byDomain("item")).toHaveLength(238);
-        expect(byDomain("misc")).toHaveLength(21);
+        expect(byDomain("jewel")).toHaveLength(21);
         expect(byDomain("abyss_jewel")).toHaveLength(21);
         // The live equipment rows are the V2 ones (List of item corruption
         // implicit modifiers); the others the export keeps at no weight.
@@ -949,7 +949,7 @@ describe("real pool — a Cobalt Jewel draws its jewel mods", () => {
     const jewelBase = base("Cobalt Jewel");
     const empty = (b: Base): ItemFacts => emptyItem(b, 82, "rare");
 
-    it("computes a non-trivial pool, all in the jewel (misc) domain", () => {
+    it("computes a non-trivial pool, all in the jewel domain", () => {
         const candidates = pool(data.mods, empty(jewelBase));
         expect(candidates.length).toBeGreaterThan(50);
         expect(candidates.every((c) => c.mod.domain === jewelBase.domain)).toBe(true);

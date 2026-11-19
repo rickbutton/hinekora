@@ -59,7 +59,7 @@ const ladderOf = (tier: number): number => 8 - tier;
 const EMPTY_TAGS: ReadonlySet<TagId> = new Set();
 /** The cluster jewels' domain, whose notables roll under their enchantment's tag. */
 const CLUSTER_DOMAIN = Domain("affliction_jewel");
-const JEWEL_DOMAIN = Domain("misc");
+const JEWEL_DOMAIN = Domain("jewel");
 const EMPTY_SIDES: ReadonlySet<Gen> = new Set();
 const EMPTY_FAMILIES: ReadonlySet<GroupId> = new Set();
 

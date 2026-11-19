@@ -4,14 +4,13 @@
         "name": "repoe-fork/repoe",
         "url": "https://repoe-fork.github.io/",
         "repoUrl": "https://github.com/repoe-fork/repoe",
-        "commit": "509bdf7afe04e926442b20fe71cca01a03e18e7a",
-        "commitDate": "2026-11-14T03:15:22Z",
-        "publishedAt": "not published",
-        "build": "Exported from a Steam install at patch 3.30.0.1.3 with repoe-fork/pypoe 9530adb2ecf26859085c6717166cfcae956bc7b5 and poe-tool-dev/dat-schema 1416c40f38cc14dda55115e29f675e963c04a320."
+        "commit": "3cb0a0f56532dcf4392748d23343d81f7c65ae98",
+        "commitDate": "2026-11-19T09:55:16Z",
+        "publishedAt": "Thu, 19 Nov 2026 11:04:05 GMT"
     },
-    "gameVersion": "3.30.0.1.3",
+    "gameVersion": "3.30.0.3",
     "gameVersionNote": "The repoe-fork export's version.txt when this was ingested, or REPOE_GAME_VERSION where a dump was given as a local file; source.commit is the exporter's code, not the game data.",
-    "retrievedAt": "2026-11-14",
+    "retrievedAt": "2026-11-19",
     "extent": {
         "description": "Full PoE1 catalog projected to the fields the core model uses: all prefix/suffix mods, all released named bases and the bases' implicits, plus the essence, bench (mod-adding) and fossil catalogs.",
         "bases": 4995,
@@ -25,11 +24,11 @@
     },
     "files": {
         "mods.json": {
-            "sha256": "e8cf5e6e23586b6430c318f7ea5a5299961c8246658ca98faed2c7d6b42bc989",
+            "sha256": "cdd0d53841aa0e37ed82dcf655429e117342ecb2aa16742134039eab1df5a1ce",
             "count": 12897
         },
         "base_items.json": {
-            "sha256": "afba760c7a40f9601564d3f70d9a5d122254e2e2bd554a87e359cb36c1f8dfef",
+            "sha256": "f9f7d2e220410f11a57cc35b01ef5a0dce4b63a9535cf48c8efbd89cf2dcf7b4",
             "count": 4995
         },
         "essences.json": {
@@ -48,10 +47,10 @@
             "sha256": "5b0065339d8a4324bed30698f18a7f7fe1b186ee73e5f00f20c737576dbafd87",
             "count": 4032,
             "provenance": {
-                "commit": "509bdf7afe04e926442b20fe71cca01a03e18e7a",
-                "commitDate": "2026-11-14T03:15:22Z",
-                "publishedAt": "not published",
-                "gameVersion": "3.30.0.1.3"
+                "commit": "3cb0a0f56532dcf4392748d23343d81f7c65ae98",
+                "commitDate": "2026-11-19T09:55:16Z",
+                "publishedAt": "Thu, 19 Nov 2026 11:04:05 GMT",
+                "gameVersion": "3.30.0.3"
             }
         },
         "harvest_change.json": {
@@ -67,10 +66,10 @@
             "sha256": "5e502bbf6fcf13cc403331cfe6e99939053ba615bceab89660de5593cfd797c3",
             "count": 54,
             "provenance": {
-                "commit": "509bdf7afe04e926442b20fe71cca01a03e18e7a",
-                "commitDate": "2026-11-14T03:15:22Z",
-                "publishedAt": "not published",
-                "gameVersion": "3.30.0.1.3"
+                "commit": "3cb0a0f56532dcf4392748d23343d81f7c65ae98",
+                "commitDate": "2026-11-19T09:55:16Z",
+                "publishedAt": "Thu, 19 Nov 2026 11:04:05 GMT",
+                "gameVersion": "3.30.0.3"
             }
         },
         "implicits.json": {
@@ -78,13 +77,13 @@
             "count": 500
         },
         "corruption.json": {
-            "sha256": "385647c6122a21caabbb6bcdad537213c8dfe3e2f2d4690c716c42136127fdc1",
+            "sha256": "6aaa807eae254cd24196c12e640b9879fbbf2ff3eb94562c60ec1fe7fbb4b315",
             "count": 280,
             "provenance": {
-                "commit": "509bdf7afe04e926442b20fe71cca01a03e18e7a",
-                "commitDate": "2026-11-14T03:15:22Z",
-                "publishedAt": "not published",
-                "gameVersion": "3.30.0.1.3"
+                "commit": "3cb0a0f56532dcf4392748d23343d81f7c65ae98",
+                "commitDate": "2026-11-19T09:55:16Z",
+                "publishedAt": "Thu, 19 Nov 2026 11:04:05 GMT",
+                "gameVersion": "3.30.0.3"
             }
         }
     }

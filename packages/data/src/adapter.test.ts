@@ -127,7 +127,7 @@ describe("adaptBase", () => {
         const jewel: RepoeBase = {
             name: "Cobalt Jewel",
             item_class: "Jewel",
-            domain: "misc",
+            domain: "jewel",
             tags: ["jewel", "not_dex", "not_str", "intjewel", "default"],
             release_state: "released",
         };
@@ -136,7 +136,7 @@ describe("adaptBase", () => {
             id: "Metadata/Items/Jewels/JewelInt", // metadata key is the id
             name: "Cobalt Jewel", // display name is separate
             itemClass: "Jewel",
-            domain: "misc",
+            domain: "jewel",
         });
         expect(b.tags.size).toBe(5);
         expect("implicits" in b || "implicitLocked" in b).toBe(false);

@@ -10,12 +10,6 @@ Cover the whole PoE1 crafting surface. Every method in `operations.md` §3 not m
 **out** is a library entry the checker interprets; what is left is the work below, which
 waits until a craft calls for it.
 
-## Waiting on game data
-
-The catalog is 3.30's, exported from a game install with the repoe-fork exporter
-(`packages/data/data/poe1/manifest.json` `source.build`), since repoe-fork has not published 3.30. When it does,
-re-ingest from the published export, so the provenance is the published dump.
-
 ## Deferred by design (don't build until called for)
 
 - the **cost layer's** finer points (`cost.md` has what is built): the

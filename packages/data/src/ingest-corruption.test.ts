@@ -49,7 +49,7 @@ describe("the corruption implicits the ingest keeps", () => {
                 text: "Cannot be [Blind|Blinded]",
             }),
             V2JewelRow: row({
-                domain: "misc",
+                domain: "jewel",
                 type: "J",
                 spawn_weights: [{ tag: "jewel", weight: 1000 }],
                 text: "j",
@@ -120,6 +120,6 @@ describe("the corruption implicits the ingest keeps", () => {
         const only = {
             V2Ring: row({ type: "R", spawn_weights: [{ tag: "ring", weight: 1000 }], text: "r" }),
         };
-        expect(() => projectCorruption(only)).toThrow(/misc, abyss_jewel/);
+        expect(() => projectCorruption(only)).toThrow(/jewel, abyss_jewel/);
     });
 });
