@@ -115,4 +115,11 @@ describe("the corruption implicits the ingest keeps", () => {
             "Socketed Gems are Supported by Level 10 Additional Accuracy",
         );
     });
+
+    it("fails where a domain yields no row, as a renamed one would", () => {
+        const only = {
+            V2Ring: row({ type: "R", spawn_weights: [{ tag: "ring", weight: 1000 }], text: "r" }),
+        };
+        expect(() => projectCorruption(only)).toThrow(/misc, abyss_jewel/);
+    });
 });

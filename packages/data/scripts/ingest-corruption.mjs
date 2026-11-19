@@ -48,6 +48,9 @@ export function projectCorruption(raw, gems = {}) {
             text: modText(m, gems),
         };
     }
+    // An export that renames a domain would otherwise drop its rows unseen.
+    const empty = [...DOMAINS].filter((d) => !Object.values(out).some((c) => c.domain === d));
+    if (empty.length > 0) throw new Error(`no corruption implicits in domain ${empty.join(", ")}`);
     return out;
 }
 
