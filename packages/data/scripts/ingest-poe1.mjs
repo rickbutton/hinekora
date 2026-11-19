@@ -60,6 +60,11 @@ async function getSource(url, fileEnv) {
     return { json: await res.json(), lastModified: res.headers.get("last-modified") ?? undefined };
 }
 
+/** What a manifest says of `source.commit`: the export does not record which
+ *  exporter commit built it, so the commit is inferred. */
+export const COMMIT_NOTE =
+    "source.commit and commitDate are the head of repoe-fork/repoe when the export was published (REPOE_COMMIT) or else when this was ingested; the export does not record the exporter commit that built it.";
+
 async function resolveCommit() {
     if (process.env.REPOE_COMMIT) {
         return { sha: process.env.REPOE_COMMIT, date: process.env.REPOE_COMMIT_DATE ?? "unknown" };
@@ -354,6 +359,7 @@ async function main() {
             repoUrl: "https://github.com/repoe-fork/repoe",
             commit: commit.sha,
             commitDate: commit.date,
+            commitNote: COMMIT_NOTE,
             publishedAt:
                 process.env.REPOE_PUBLISHED_AT ??
                 mods.lastModified ??

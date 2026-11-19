@@ -65,6 +65,16 @@ describe("the game version an ingest records", () => {
     });
 });
 
+describe("the exporter commit an ingest records", () => {
+    it("is what the committed manifest's note says of it", async () => {
+        const { COMMIT_NOTE } = (await import(/* @vite-ignore */ url)) as {
+            readonly COMMIT_NOTE: string;
+        };
+        const { loadDefaultPoe1 } = await import("./load.js");
+        expect(loadDefaultPoe1().manifest.source.commitNote).toBe(COMMIT_NOTE);
+    });
+});
+
 interface Projected {
     readonly projectBases: (
         raw: Readonly<Record<string, object>>,

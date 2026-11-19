@@ -5,17 +5,18 @@
  * WHICH RePoE dump the catalog came from (commit + publish date) and WHICH game
  * version it targets, so a checked craft can always be traced to a concrete data
  * snapshot. (`gameVersion` is the patch the export's `version.txt` states,
- * "unknown" where it could not be read; the commit + `publishedAt` are the
- * hard identity.)
+ * "unknown" where it could not be read; `publishedAt` and the files' sha256
+ * are the hard identity.)
  */
 
 export interface ManifestSource {
     readonly name: string;
     readonly url: string;
     readonly repoUrl: string;
-    /** The repoe-fork commit that produced this dump — the precise dump identity. */
+    /** The repoe-fork exporter commit taken to have built this dump; see `commitNote`. */
     readonly commit: string;
     readonly commitDate: string;
+    readonly commitNote?: string;
     /** When the dump was published (the exports' Last-Modified). */
     readonly publishedAt: string;
     /** Set when the dump was not published but built from a game install with
