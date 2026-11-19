@@ -106,7 +106,7 @@ export interface ItemDecl {
     /** The corruption implicits, each wording the rows of it the item's level
      *  reaches; absent where none is declared or a wording did not resolve.
      *  Which may sit together is the well-formed items' to say
-     *  (check/initial.ts `corruptionRefusals`). */
+     *  (check/initial.ts `corruptionRefusal`). */
     readonly corruption?: readonly (readonly CorruptionImplicitSpec[])[];
     /** Within 0 to 100; absent for none. */
     readonly strands?: number;

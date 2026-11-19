@@ -1,5 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
-import { beast, craft, fossil, hasValue, iff, item, op, until } from "../__fixtures__/ast.js";
+import {
+    beast,
+    callStmt,
+    craft,
+    fossil,
+    hasValue,
+    iff,
+    item,
+    op,
+    param,
+    procDef,
+    until,
+} from "../__fixtures__/ast.js";
+import type { Craft } from "../ast/ast.js";
 import { BOOTS_BASE, CATALOG, CORRUPTION_ROWS, FOSSILS, RING_BASE } from "../__fixtures__/mods.js";
 import { maxTotal, sideCap } from "../model/capacity.js";
 import { Domain, type Gen, ModId, TagId, TypeId } from "../model/ids.js";
@@ -317,13 +330,12 @@ describe("the corruption implicit slots", () => {
             corruption: CORRUPTION_ROWS,
             fossils: FOSSILS,
         });
-        const slots = (...fossils: string[]) => {
-            const c = craft(item({ base: RING_BASE.id, ilvl: 84, rarity: "rare" }), [
-                fossil(...fossils),
-            ]);
+        const slotsOf = (c: Craft) => {
             const u = universeFor(registry, RING_BASE, 84, c);
             return [u.scalar("corruption1"), u.scalar("corruption2")].map((s) => u.dd.domains[s]);
         };
+        const ring = item({ base: RING_BASE.id, ilvl: 84, rarity: "rare" });
+        const slots = (...fossils: string[]) => slotsOf(craft(ring, [fossil(...fossils)]));
         const rows = registry.corruptionPool(RING_BASE, 84).length;
         expect(rows).toBeGreaterThan(1);
         expect(slots("dense")).toEqual([1, 1]);
@@ -331,6 +343,14 @@ describe("the corruption implicit slots", () => {
         expect(slots("dense", "bloodstained")).toEqual([rows + 1, rows + 1]);
         // A fossil the catalog cannot name may be the Bloodstained one.
         expect(slots("amber")).toEqual([rows + 1, rows + 1]);
+        // So may a fossil an operation function takes as a parameter.
+        const byParam = craft(
+            ring,
+            [callStmt("resonate", ["dense"])],
+            [],
+            [procDef("resonate", ["f"], [fossil(param("f"))])],
+        );
+        expect(slotsOf(byParam)).toEqual([rows + 1, rows + 1]);
     });
 });
 
