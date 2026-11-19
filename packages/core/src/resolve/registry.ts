@@ -23,6 +23,7 @@ import { veiledPool } from "../pool/veiled.js";
 import {
     type BenchCraft,
     CORRUPTED_ESSENCE_TIER,
+    type CorruptionImplicitSpec,
     type EldritchImplicitSpec,
     type Element,
     ELEMENTS,
@@ -58,6 +59,7 @@ const ladderOf = (tier: number): number => 8 - tier;
 const EMPTY_TAGS: ReadonlySet<TagId> = new Set();
 /** The cluster jewels' domain, whose notables roll under their enchantment's tag. */
 const CLUSTER_DOMAIN = Domain("affliction_jewel");
+const JEWEL_DOMAIN = Domain("misc");
 const EMPTY_SIDES: ReadonlySet<Gen> = new Set();
 const EMPTY_FAMILIES: ReadonlySet<GroupId> = new Set();
 
@@ -118,6 +120,16 @@ export type ResolveError =
     | { readonly kind: "unknownEssence"; readonly name: string }
     | { readonly kind: "unknownFossil"; readonly name: string }
     | { readonly kind: "unknownEldritch"; readonly name: string; readonly side: EldritchSide }
+    /** No corruption implicit of the base reads so; `base` is its name. */
+    | { readonly kind: "unknownCorruption"; readonly name: string; readonly base: string }
+    /** The wording's rows on the base all need a higher item level than the item's. */
+    | {
+          readonly kind: "corruptionLevel";
+          readonly base: string;
+          readonly text: string;
+          readonly level: number;
+          readonly ilvl: number;
+      }
     | { readonly kind: "unknownAspect"; readonly name: string }
     | { readonly kind: "unknownBench"; readonly name: string }
     | { readonly kind: "unknownHarvestTag"; readonly name: string }
@@ -222,6 +234,12 @@ export type Resolved<T> =
 const found = <T>(value: T): Resolved<T> => ({ ok: true, value });
 const fail = <T>(error: ResolveError): Resolved<T> => ({ ok: false, error });
 
+/** A corruption implicit row a base can be given, with its weight there. */
+export interface CorruptionCandidate {
+    readonly row: CorruptionImplicitSpec;
+    readonly weight: number;
+}
+
 /** Item context that lets fuzzy mod-type resolution filter by rollability. */
 export interface ModTypeContext {
     readonly base: Base;
@@ -283,6 +301,16 @@ export interface Registry {
     /** Resolve an eldritch implicit's wording to every type it covers on that side
      *  (the "presence" variants share a wording), narrowed to the base when given. */
     resolveEldritch(name: string, side: EldritchSide, base?: Base): Resolved<readonly TypeId[]>;
+    /** The corruption implicits a corruption can give an item of the base at
+     *  that item level, each with its spawn weight there. */
+    corruptionPool(base: Base, ilvl: number): readonly CorruptionCandidate[];
+    /** Resolve a corruption implicit's wording to its rows on the base at that
+     *  item level: the tiers of one wording are one name. */
+    resolveCorruption(
+        name: string,
+        base: Base,
+        ilvl: number,
+    ): Resolved<readonly CorruptionImplicitSpec[]>;
     /** The eldritch implicits' texts of that side, each once, for completion. */
     eldritchNames(side: EldritchSide): readonly string[];
     /** The wording of an eldritch implicit type, the most common text among its rows. */
@@ -437,6 +465,7 @@ export interface RegistryData {
     readonly benchCrafts?: readonly BenchCraft[];
     readonly fossils?: readonly FossilSpec[];
     readonly eldritch?: readonly EldritchImplicitSpec[];
+    readonly corruption?: readonly CorruptionImplicitSpec[];
     readonly harvestChange?: HarvestChangeTable;
     /** The enchantment tags a cluster jewel of each size can have. */
     readonly clusterEnchants?: Readonly<Partial<Record<ClusterSize, readonly string[]>>>;
@@ -520,6 +549,7 @@ export function buildRegistry(data: RegistryData): Registry {
     // The base a shared name resolves to, kept so the name gives one object.
     const nameBases = new Map<string, Base>();
     const eldritch = data.eldritch ?? [];
+    const corruption = data.corruption ?? [];
     const aspects = new Map(
         Object.entries(data.aspects ?? ASPECTS).map(
             ([name, id]) => [norm(name), norm(id)] as const,
@@ -830,6 +860,31 @@ export function buildRegistry(data: RegistryData): Registry {
         }
     }
 
+    /** A base's corruption implicits at any item level, by the first spawn tag
+     *  it carries (Modifier § Spawn weight tag). A cluster jewel takes the
+     *  jewels' rows, which the data keeps in the jewels' domain: List of jewel
+     *  corruption implicit modifiers names cluster jewels among them. */
+    const corruptionMemo = new WeakMap<Base, readonly CorruptionCandidate[]>();
+    const corruptionRowsOf = (base: Base): readonly CorruptionCandidate[] => {
+        let out = corruptionMemo.get(base);
+        if (out === undefined) {
+            const domain = base.domain === CLUSTER_DOMAIN ? JEWEL_DOMAIN : base.domain;
+            out = corruption.flatMap((row) => {
+                if (row.domain !== domain) return [];
+                const weight = row.spawn.find((e) => base.tags.has(e.tag))?.weight ?? 0;
+                return weight > 0 ? [{ row, weight }] : [];
+            });
+            corruptionMemo.set(base, out);
+        }
+        return out;
+    };
+    const corruptionWords = new Map<CorruptionImplicitSpec, ImplicitWording>();
+    const corruptionWordsOf = (c: CorruptionImplicitSpec): ImplicitWording => {
+        let w = corruptionWords.get(c);
+        if (w === undefined) corruptionWords.set(c, (w = wordingOf(c.text)));
+        return w;
+    };
+
     // --- precompute completion lists ---
     const currencies = [...new Set(currencyByName.values())];
     const currencyNames = currencies.map((c) => c.name);
@@ -1138,6 +1193,34 @@ export function buildRegistry(data: RegistryData): Registry {
                 memo.set(key, (r = resolveEldritchOf(name, side, base)));
             }
             return r;
+        },
+
+        corruptionPool(base, ilvl) {
+            return corruptionRowsOf(base).filter((c) => c.row.level <= ilvl);
+        },
+
+        resolveCorruption(name, base, ilvl) {
+            const rows = corruptionRowsOf(base).map((c) => c.row);
+            const what = base.name ?? base.id;
+            const hit = matchWordings(name, rows, corruptionWordsOf, (c) => c.text);
+            switch (hit.kind) {
+                case "none":
+                    return fail({ kind: "unknownCorruption", name, base: what });
+                case "ambiguous":
+                    return fail({ kind: "ambiguous", name, candidates: hit.candidates });
+                case "found": {
+                    const reached = hit.rows.filter((c) => c.level <= ilvl);
+                    if (reached.length > 0) return found(reached);
+                    const lowest = hit.rows.reduce((a, b) => (b.level < a.level ? b : a));
+                    return fail({
+                        kind: "corruptionLevel",
+                        base: what,
+                        text: lowest.text,
+                        level: lowest.level,
+                        ilvl,
+                    });
+                }
+            }
         },
 
         eldritchNames(side) {

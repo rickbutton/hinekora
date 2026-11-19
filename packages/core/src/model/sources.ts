@@ -3,8 +3,9 @@
  * source-specific crafting. Only `natural` mods roll via chaos/exalt;
  * essence/bench/veiled/fossil mods come from their own mechanic.
  */
-import type { ClassId, GroupId, ModId, TagId, TypeId } from "./ids.js";
+import type { ClassId, Domain, GroupId, ModId, TagId, TypeId } from "./ids.js";
 import type { EldritchSide } from "./marks.js";
+import type { SpawnEntry } from "./mod.js";
 
 export type ModSource =
     | "natural" // rolls via chaos/exalt (nonzero spawn weight on an item base)
@@ -154,6 +155,24 @@ export interface EldritchImplicitSpec {
      *  Mechanics says only that the tier decreases. `classes` are then the
      *  classes it is a tier on. */
     readonly unrollable?: true;
+    readonly implicitTags: ReadonlySet<TagId>;
+    readonly text: string;
+}
+
+/**
+ * One corruption implicit row (Corrupted § Corrupted implicit modifiers): the
+ * implicit a Vaal Orb, a Bloodstained Fossil or the Corruption Altar may add.
+ * Its own catalogue, never the modifiers': many share a type id with an affix.
+ */
+export interface CorruptionImplicitSpec {
+    readonly id: ModId;
+    readonly domain: Domain;
+    readonly type: TypeId;
+    readonly groups: ReadonlySet<GroupId>;
+    /** The item level the row needs. */
+    readonly level: number;
+    /** Ordered, first match wins, as a modifier's `spawn`. */
+    readonly spawn: readonly SpawnEntry[];
     readonly implicitTags: ReadonlySet<TagId>;
     readonly text: string;
 }

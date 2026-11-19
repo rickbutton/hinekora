@@ -7,6 +7,7 @@ import {
     type Base,
     type BenchCraft,
     buildRegistry,
+    type CorruptionImplicitSpec,
     type EldritchImplicitSpec,
     type EssenceSpec,
     type FossilSpec,
@@ -18,6 +19,7 @@ import {
 import {
     adaptBase,
     adaptBench,
+    adaptCorruption,
     adaptEldritch,
     adaptEssence,
     adaptFossil,
@@ -31,6 +33,7 @@ import type {
     RawClusterEnchants,
     RepoeBases,
     RepoeBenches,
+    RepoeCorruptionRows,
     RepoeEldritchRows,
     RepoeEssences,
     RawHarvestChange,
@@ -47,12 +50,13 @@ export interface LoadedData {
     readonly benchCrafts: readonly BenchCraft[];
     readonly fossils: readonly FossilSpec[];
     readonly eldritch: readonly EldritchImplicitSpec[];
+    readonly corruption: readonly CorruptionImplicitSpec[];
     readonly harvestChange: HarvestChangeTable;
     readonly clusterEnchants: RawClusterEnchants;
     readonly manifest: DataManifest;
 }
 
-/** The ten files of a PoE1 data directory, parsed but not yet adapted. */
+/** The eleven files of a PoE1 data directory, parsed but not yet adapted. */
 export interface RawPoe1 {
     readonly manifest: DataManifest;
     readonly mods: RepoeMods;
@@ -62,11 +66,12 @@ export interface RawPoe1 {
     readonly bench: RepoeBenches;
     readonly fossils: RepoeFossils;
     readonly eldritch: RepoeEldritchRows;
+    readonly corruption: RepoeCorruptionRows;
     readonly harvestChange: RawHarvestChange;
     readonly clusterEnchants: RawClusterEnchants;
 }
 
-/** The names of the ten files, by `RawPoe1` field. */
+/** The names of the eleven files, by `RawPoe1` field. */
 export const POE1_FILES: Readonly<Record<keyof RawPoe1, string>> = {
     manifest: "manifest.json",
     mods: "mods.json",
@@ -76,6 +81,7 @@ export const POE1_FILES: Readonly<Record<keyof RawPoe1, string>> = {
     bench: "bench.json",
     fossils: "fossils.json",
     eldritch: "eldritch.json",
+    corruption: "corruption.json",
     harvestChange: "harvest_change.json",
     clusterEnchants: "cluster_enchants.json",
 };
@@ -91,6 +97,7 @@ export function adaptPoe1(raw: RawPoe1): LoadedData {
     const benchCrafts = raw.bench.map(adaptBench);
     const fossils = Object.entries(raw.fossils).map(([id, f]) => adaptFossil(id, f));
     const eldritch = Object.entries(raw.eldritch).map(([id, e]) => adaptEldritch(id, e));
+    const corruption = Object.entries(raw.corruption).map(([id, c]) => adaptCorruption(id, c));
     const harvestChange = adaptHarvestChange(raw.harvestChange);
     return {
         mods,
@@ -100,6 +107,7 @@ export function adaptPoe1(raw: RawPoe1): LoadedData {
         benchCrafts,
         fossils,
         eldritch,
+        corruption,
         harvestChange,
         clusterEnchants: raw.clusterEnchants,
         manifest: raw.manifest,
@@ -118,6 +126,7 @@ export function registryOf(data: LoadedData): Registry {
         benchCrafts: data.benchCrafts,
         fossils: data.fossils,
         eldritch: data.eldritch,
+        corruption: data.corruption,
         harvestChange: data.harvestChange,
         clusterEnchants: data.clusterEnchants,
     });

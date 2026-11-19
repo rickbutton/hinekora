@@ -20,7 +20,8 @@
         "benchCrafts": 748,
         "fossils": 25,
         "eldritch": 4032,
-        "implicits": 500
+        "implicits": 500,
+        "corruption": 280
     },
     "files": {
         "mods.json": {
@@ -75,6 +76,16 @@
         "implicits.json": {
             "sha256": "c77f749b444be0460233db6d399301dbd4037a114a1f4e5b5ee828c77ba8c495",
             "count": 500
+        },
+        "corruption.json": {
+            "sha256": "385647c6122a21caabbb6bcdad537213c8dfe3e2f2d4690c716c42136127fdc1",
+            "count": 280,
+            "provenance": {
+                "commit": "509bdf7afe04e926442b20fe71cca01a03e18e7a",
+                "commitDate": "2026-11-14T03:15:22Z",
+                "publishedAt": "not published",
+                "gameVersion": "3.30.0.1.3"
+            }
         }
     }
 }

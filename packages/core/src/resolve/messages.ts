@@ -23,6 +23,10 @@ export function resolveMessage(error: ResolveError): string {
             return `Unknown fossil "${error.name}".`;
         case "unknownEldritch":
             return `No ${error.side === "exarch" ? "Searing Exarch" : "Eater of Worlds"} implicit reads "${error.name}".`;
+        case "unknownCorruption":
+            return `No corruption implicit of ${withArticle(error.base)} reads "${error.name}".`;
+        case "corruptionLevel":
+            return `${capitalised(withArticle(error.base))} needs item level ${error.level} for "${error.text}" — this item is item level ${error.ilvl}.`;
         case "unknownAspect":
             return `Unknown Aspect "${error.name}" — the Bestiary crafts cat, avian, spider or crab.`;
         case "unknownHarvestTag":
@@ -37,6 +41,10 @@ export function resolveMessage(error: ResolveError): string {
             // A hybrid modifier's wording is two lines.
             return `Ambiguous name "${error.name}" — candidates: ${error.candidates.map((c) => c.replace(/\s*\n\s*/g, " / ")).join(", ")}.`;
     }
+}
+
+function capitalised(s: string): string {
+    return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 export function withArticle(noun: string): string {

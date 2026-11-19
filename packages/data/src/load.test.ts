@@ -438,6 +438,87 @@ describe("a base's own implicits", () => {
     });
 });
 
+describe("the corruption implicits", () => {
+    const pool = (name: string, ilvl: number) => registry.corruptionPool(base(name), ilvl);
+    const total = (p: readonly { weight: number }[]) => p.reduce((a, c) => a + c.weight, 0);
+
+    it("loads every live row of equipment, jewels and abyss jewels, matching the manifest", () => {
+        expect(data.corruption.length).toBe(data.manifest.extent.corruption);
+        const byDomain = (d: string) => data.corruption.filter((c) => c.domain === d);
+        expect(byDomain("item")).toHaveLength(238);
+        expect(byDomain("misc")).toHaveLength(21);
+        expect(byDomain("abyss_jewel")).toHaveLength(21);
+        // The live equipment rows are the V2 ones (List of item corruption
+        // implicit modifiers); the others the export keeps at no weight.
+        expect(byDomain("item").every((c) => c.id.startsWith("V2"))).toBe(true);
+        expect(data.corruption.every((c) => c.spawn.some((e) => e.weight > 0))).toBe(true);
+        expect(data.corruption.some((c) => /[[\]]/.test(c.text) || c.text === "")).toBe(false);
+    });
+
+    it("stays out of the modifier catalogue, many sharing an affix's type", () => {
+        const ids = new Set(data.mods.map((m) => m.id));
+        expect(data.corruption.some((c) => ids.has(c.id))).toBe(false);
+        const types = new Set(data.mods.map((m) => m.type));
+        expect(data.corruption.filter((c) => types.has(c.type)).length).toBeGreaterThan(50);
+    });
+
+    it("is a Vermillion Ring's pool by item level, with its weights", () => {
+        const at84 = pool("Vermillion Ring", 84);
+        expect(at84).toHaveLength(39);
+        expect(total(at84)).toBe(31400);
+        expect(new Set(at84.map((c) => c.row.type)).size).toBe(33);
+        const endurance = at84.find((c) => c.row.id === "V2MaximumEnduranceChargesCorruption");
+        expect(endurance?.weight).toBe(50);
+        expect(endurance?.row.level).toBe(75);
+        const at60 = pool("Vermillion Ring", 60);
+        expect(at60).toHaveLength(33);
+        expect(total(at60)).toBe(30500);
+        expect(at60.some((c) => c.row.type === endurance?.row.type)).toBe(false);
+    });
+
+    it("weighs a row by the first spawn tag the base carries", () => {
+        const boots = pool("Sorcerer Boots", 86);
+        expect(boots).toHaveLength(25);
+        expect(total(boots)).toBe(21500);
+        expect(boots.find((c) => c.row.type === "MaximumEnduranceCharges")?.weight).toBe(1000);
+        // A wand's zero comes before the one-handed weapons' weight.
+        const speed = "V2LocalIncreasedAttackSpeed1hCorrupted";
+        expect(pool("Imbued Wand", 86).some((c) => c.row.id === speed)).toBe(false);
+        expect(pool("Jewelled Foil", 86).some((c) => c.row.id === speed)).toBe(true);
+    });
+
+    it("is the jewels' pool on a jewel and a cluster jewel, and the abyss jewels' on one", () => {
+        const jewel = pool("Cobalt Jewel", 84).map((c) => c.row.id);
+        expect(jewel).toHaveLength(21);
+        expect(pool("Large Cluster Jewel", 84).map((c) => c.row.id)).toEqual(jewel);
+        const abyss = pool("Murderous Eye Jewel", 84);
+        expect(abyss).toHaveLength(21);
+        expect(abyss.every((c) => c.row.domain === "abyss_jewel")).toBe(true);
+    });
+
+    it("names a corruption implicit by its wording on the base, its tiers one name", () => {
+        const ring = base("Vermillion Ring");
+        const charges = registry.resolveCorruption("endurance charges", ring, 84);
+        expect(charges.ok && charges.value.map((c) => c.id)).toEqual([
+            "V2MaximumEnduranceChargesCorruption",
+        ]);
+        expect(registry.resolveCorruption("endurance charges", ring, 60)).toMatchObject({
+            ok: false,
+            error: { kind: "corruptionLevel", level: 75, ilvl: 60 },
+        });
+        expect(registry.resolveCorruption("level of socketed gems", ring, 84)).toMatchObject({
+            ok: false,
+            error: { kind: "unknownCorruption", base: "Vermillion Ring" },
+        });
+        const cold = registry.resolveCorruption("adds cold damage", base("Imperial Claw"), 86);
+        expect(cold.ok && cold.value.map((c) => c.level).sort((a, b) => a - b)).toEqual([
+            1, 31, 84,
+        ]);
+        const low = registry.resolveCorruption("adds cold damage", base("Imperial Claw"), 40);
+        expect(low.ok && low.value.map((c) => c.level).sort((a, b) => a - b)).toEqual([1, 31]);
+    });
+});
+
 describe("registry resolution against real data", () => {
     it("resolves equipment/jewel bases by their (unique) display name", () => {
         expect(registry.resolveBase("Cobalt Jewel").ok).toBe(true);

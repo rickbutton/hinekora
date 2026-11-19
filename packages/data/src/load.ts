@@ -13,6 +13,7 @@ import type {
     RawClusterEnchants,
     RepoeBases,
     RepoeBenches,
+    RepoeCorruptionRows,
     RepoeEldritchRows,
     RepoeEssences,
     RawHarvestChange,
@@ -36,6 +37,7 @@ export function loadPoe1(dir: string): LoadedData {
         bench: readJson<RepoeBenches>(`${dir}/${POE1_FILES.bench}`),
         fossils: readJson<RepoeFossils>(`${dir}/${POE1_FILES.fossils}`),
         eldritch: readJson<RepoeEldritchRows>(`${dir}/${POE1_FILES.eldritch}`),
+        corruption: readJson<RepoeCorruptionRows>(`${dir}/${POE1_FILES.corruption}`),
         harvestChange: readJson<RawHarvestChange>(`${dir}/${POE1_FILES.harvestChange}`),
         clusterEnchants: readJson<RawClusterEnchants>(`${dir}/${POE1_FILES.clusterEnchants}`),
     };

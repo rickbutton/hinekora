@@ -8,6 +8,7 @@ import {
     BaseId,
     type BenchCraft,
     ClassId,
+    type CorruptionImplicitSpec,
     Domain,
     type EldritchImplicitSpec,
     ELEMENTS,
@@ -27,6 +28,7 @@ import type {
     RawHarvestChange,
     RepoeBase,
     RepoeBench,
+    RepoeCorruption,
     RepoeEldritch,
     RepoeEssence,
     RepoeFossil,
@@ -121,6 +123,19 @@ export function adaptImplicit(id: string, i: RepoeImplicit): ImplicitSpec {
         implicitTags: new Set(i.tags.map((t) => TagId(t))),
         text: i.text,
         ...(i.locked && { locked: true as const }),
+    };
+}
+
+export function adaptCorruption(id: string, c: RepoeCorruption): CorruptionImplicitSpec {
+    return {
+        id: ModId(id),
+        domain: Domain(c.domain),
+        type: TypeId(c.type),
+        groups: new Set(c.groups.map((g) => GroupId(g))),
+        level: c.level,
+        spawn: c.spawn.map(([tag, weight]) => ({ tag: TagId(tag), weight })),
+        implicitTags: new Set(c.tags.map((t) => TagId(t))),
+        text: c.text,
     };
 }
 

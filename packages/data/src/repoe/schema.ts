@@ -151,6 +151,19 @@ export interface RepoeImplicit {
 }
 export type RepoeImplicits = Readonly<Record<string, RepoeImplicit>>;
 
+/** `corruption.json` entry (projected): one corruption implicit row. */
+export interface RepoeCorruption {
+    readonly domain: string;
+    readonly type: string;
+    readonly groups: readonly string[];
+    readonly level: number;
+    /** The spawn table in order, `[tag, weight]`. */
+    readonly spawn: readonly (readonly [string, number])[];
+    readonly tags: readonly string[];
+    readonly text: string;
+}
+export type RepoeCorruptionRows = Readonly<Record<string, RepoeCorruption>>;
+
 /** `bench.json` entry (projected): a mod-adding crafting-bench option. */
 export interface RepoeBench {
     readonly mod: string;
