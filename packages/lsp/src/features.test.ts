@@ -157,6 +157,13 @@ describe("hover", () => {
         );
     });
 
+    it("shows a declared corruption implicit's wording and the item level it needs", () => {
+        const src = `item { base: "Vermillion Ring" ilvl: 84 rarity: rare implicits: [ "endurance charges" ] corrupted }\nlocus`;
+        const h = getHover(src, src.indexOf("endurance") + 1, registry)!;
+        expect(h).toContain("+1 to Maximum Endurance Charges");
+        expect(h).toContain("needs item level 75.");
+    });
+
     it("names the item's marks in the tooltip", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare influences: hunter corrupted }\nexalt`;
         const h = getHover(src, src.indexOf("exalt"), registry)!;
@@ -610,6 +617,17 @@ harvest augment "`;
         expect(at(84).some((l) => /maximum Life/.test(l))).toBe(true);
         expect(at(60)).not.toContain("+1 to Maximum Endurance Charges");
         expect(at(84)).not.toContain("maximum life");
+    });
+
+    it("offers inside `implicits: [` the corruption implicits at the item's level", () => {
+        const at = (ilvl: number, tail: string) => {
+            const src = `item { base: "Vermillion Ring" ilvl: ${ilvl} rarity: rare corrupted implicits: [ ${tail}"`;
+            return getCompletions(src, src.length, registry).map((c) => c.label);
+        };
+        expect(at(84, "")).toContain("+1 to Maximum Endurance Charges");
+        expect(at(84, `"life", `)).toContain("+1 to Maximum Endurance Charges");
+        expect(at(60, "")).not.toContain("+1 to Maximum Endurance Charges");
+        expect(at(84, "").some((l) => /maximum Life/i.test(l))).toBe(false);
     });
 
     it('offers Aspect names inside a `beast aspect "` string', () => {

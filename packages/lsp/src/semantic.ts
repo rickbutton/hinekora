@@ -90,6 +90,7 @@ const FIELDS = new Set([
     "twice",
     "exarch",
     "eater",
+    "implicits",
     "enchant",
 ]);
 

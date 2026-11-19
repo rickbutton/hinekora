@@ -262,6 +262,7 @@ class Parser {
         let exarch: EldritchDecl | undefined;
         let eater: EldritchDecl | undefined;
         let enchant: ClusterEnchantDecl | undefined;
+        let implicits: readonly string[] | undefined;
         const fields: Partial<Record<ItemField, SourceSpan>> = {};
 
         const setOnce = <T>(
@@ -328,6 +329,9 @@ class Parser {
                 case "eater":
                     eater = setOnce(eater, key, this.parseEldritchTier(key), keyTok.span);
                     break;
+                case "implicits":
+                    implicits = setOnce(implicits, key, this.parseImplicitList(), keyTok.span);
+                    break;
                 case "enchant": {
                     const passives = this.expect("int", "the passive count after 'enchant:'");
                     const text = this.expect(
@@ -367,6 +371,7 @@ class Parser {
             ...(strands !== undefined && { strands }),
             ...(exarch !== undefined && { exarch }),
             ...(eater !== undefined && { eater }),
+            ...(implicits !== undefined && { implicits }),
             ...(enchant !== undefined && { enchant }),
             fields,
             span: span(start, close.span.end),
@@ -429,6 +434,18 @@ class Parser {
             );
         }
         return word as Rarity;
+    }
+
+    /** `[ "<wording>", … ]`: one or more quoted wordings. */
+    private parseImplicitList(): readonly string[] {
+        this.expect("lbracket", "'[' to open a list");
+        const items = [this.expect("string", "a corruption implicit's quoted wording").text];
+        while (this.at("comma")) {
+            this.advance();
+            items.push(this.expect("string", "a corruption implicit's quoted wording").text);
+        }
+        this.expect("rbracket", "']' to close the list");
+        return items;
     }
 
     /**

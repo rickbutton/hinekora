@@ -238,6 +238,24 @@ describe("parser — item block", () => {
         ).toMatch(/expected 'exarch' or 'eater' after 'dominant', not 'life'/);
     });
 
+    it("reads the corruption implicits, and refuses an eldritch or implicits field given twice", () => {
+        const c = parseOk(
+            'item { base: "R" ilvl: 1 rarity: rare implicits: [ "endurance charges", "life" ] corrupted } locus',
+        );
+        expect(c.item.implicits).toEqual(["endurance charges", "life"]);
+        expect(parseOk('item { base: "R" ilvl: 1 rarity: rare } exalt').item.implicits).toBe(
+            undefined,
+        );
+        expect(
+            parseErr('item { base: "R" ilvl: 1 rarity: rare implicits: [ ] } exalt').message,
+        ).toMatch(/expected a corruption implicit's quoted wording/);
+        for (const field of ["exarch: grand", "eater: lesser", 'implicits: [ "life" ]']) {
+            expect(
+                parseErr(`item { base: "R" ilvl: 1 rarity: rare ${field} ${field} } exalt`).message,
+            ).toBe(`duplicate item field '${field.split(":")[0]!}'`);
+        }
+    });
+
     it("parses the implicit predicate, which takes a wording", () => {
         const c = parseOk(
             'item { base: "R" ilvl: 1 rarity: rare } vaal if implicit "endurance charges" and not implicit "life" { stop }',

@@ -125,6 +125,8 @@ type Context =
     | { readonly kind: "eldritchName"; readonly side: EldritchSide }
     /** After `implicit`: the implicits an item of the base can hold. */
     | { readonly kind: "implicitName" }
+    /** Inside `implicits: [`: the base's corruption implicits at its level. */
+    | { readonly kind: "corruptionName" }
     | { readonly kind: "word"; readonly oneOf: readonly string[] };
 
 /** Infer what should be completed at `offset` from the line before it. */
@@ -136,6 +138,7 @@ function contextAt(source: string, offset: number): Context {
     if (open) {
         // A field's string (`base: "…"`, an affix list) is a base or a mod.
         const before = line.slice(0, line.lastIndexOf('"')).trimEnd();
+        if (/\bimplicits\s*:\s*\[[^\]]*$/.test(before)) return { kind: "corruptionName" };
         if (before.endsWith(":")) {
             return before.replace(/:$/, "").trimEnd().endsWith("base")
                 ? { kind: "base" }
@@ -358,6 +361,12 @@ function completionsAt(source: string, offset: number, registry: Registry): Comp
             return tierItems(source, ctx.mod, registry);
         case "eldritchName":
             return registry.eldritchNames(ctx.side).map(value);
+        case "corruptionName": {
+            const item = itemContext(source, registry);
+            if (item === undefined) return [];
+            const texts = registry.corruptionPool(item.base, item.ilvl).map((c) => c.row.text);
+            return [...new Set(texts)].map(value);
+        }
         case "implicitName": {
             const item = itemContext(source, registry);
             return item === undefined

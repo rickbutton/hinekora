@@ -30,9 +30,9 @@ A block must have `base`, `ilvl` and `rarity`.
 | `enchant`              | a passive count and a quoted stat | no enchantment    |
 | `strands`              | memory strands, 0 to 100          | none              |
 | `corrupted`            | no value, or `twice corrupted`    | not corrupted     |
+| `implicits`            | one or two corruption implicits   | none              |
 
-`base` names an item a craft can work on: equipment, a jewel, a flask and similar. No step
-changes `base` or `ilvl`.
+No step changes `base` or `ilvl`.
 
 The checker rejects a block that lists more modifiers than the base holds at its
 [rarity](https://www.poewiki.net/wiki/Rarity), or a modifier on the wrong side.
@@ -75,9 +75,8 @@ Two marks go before a name, alone or together:
 ## Influences and implicits
 
 `influences: hunter` declares an
-[influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics). The words are
-`shaper`, `elder`, `crusader`, `hunter`, `redeemer` and `warlord`. An influenced item rolls
-its influence's modifiers, and a craft names them like any other. The checker rejects an
+[influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics), whose influence
+modifiers a craft names like any other. The checker rejects an
 influence beside a fractured modifier, and one on a class that takes no influence.
 
 `exarch: grand` and `eater: lesser` declare
@@ -95,4 +94,5 @@ the stat of its small passives. A cluster jewel requires it.
 `corrupted` declares a [corrupted item](https://www.poewiki.net/wiki/Corrupted). The checker
 then rejects every step except [`unveil`](/docs/operations/unveil) and
 [`locus`](/docs/operations/locus). `twice corrupted` declares one the altar has corrupted
-again, which then takes no step.
+again, which then takes no step. `implicits: [ "maximum endurance charges" ]` lists its
+corruption implicits, two at most. The checker rejects a list no corruption could leave.

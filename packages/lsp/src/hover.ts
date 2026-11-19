@@ -318,6 +318,7 @@ function signature(
         if (prev?.kind === "ident" && prev.text === "implicit") {
             return implicitSignature(tok.text, entry, registry);
         }
+        if (inImplicitsField(tokens, i)) return implicitSignature(tok.text, entry, registry);
         return modSignature(tok.text, tierAfter(tokens, i), entry, registry);
     }
 
@@ -447,6 +448,17 @@ function modSignature(
         `| tier | id | name | roll | ilvl |\n|---|---|---|---|---|\n${rows.join("\n")}${more}`,
     );
     return blocks.join("\n\n");
+}
+
+/** Is the string at `i` a wording of the item block's `implicits: [ … ]`. */
+function inImplicitsField(tokens: readonly Token[], i: number): boolean {
+    for (let j = i - 1; j >= 0; j--) {
+        const t = tokens[j]!;
+        if (t.kind === "string" || t.kind === "comma") continue;
+        if (t.kind !== "lbracket") return false;
+        return tokens[j - 1]?.kind === "colon" && tokens[j - 2]?.text === "implicits";
+    }
+    return false;
 }
 
 /** The highest item level, at which every corruption implicit row is reached. */

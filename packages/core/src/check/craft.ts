@@ -264,6 +264,7 @@ export function craftReach(craft: Craft, registry: Registry): CraftReach {
         if (a.bench === true) sources.add("bench");
         fractures ||= a.fractured === true;
     }
+    corrupts ||= (craft.item.implicits ?? []).length > 0;
     return { sources, fractures, changes, corrupts };
 }
 

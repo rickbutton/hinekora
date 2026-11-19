@@ -380,6 +380,9 @@ class Printer {
                 ]);
             }
         }
+        if (item.implicits !== undefined) {
+            fields.push(["implicits", `[ ${item.implicits.map(quote).join(", ")} ]`]);
+        }
         if (item.enchant !== undefined) {
             fields.push(["enchant", `${item.enchant.passives} ${quote(item.enchant.text)}`]);
         }

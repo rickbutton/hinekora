@@ -99,6 +99,7 @@ export type ItemField =
     | "influences"
     | "exarch"
     | "eater"
+    | "implicits"
     | "enchant";
 
 /** The item declaration, the only place state is given rather than inferred. */
@@ -118,6 +119,9 @@ export interface ItemBlock {
     /** `exarch: grand` and `eater: lesser "<wording>"`, the eldritch implicits. */
     readonly exarch?: EldritchDecl;
     readonly eater?: EldritchDecl;
+    /** `implicits: [ "maximum endurance charges" ]`, the corruption implicits
+     *  of a corrupted item, by wording. */
+    readonly implicits?: readonly string[];
     /** `enchant: 8 "lightning damage"`, a cluster jewel's two enchantments. */
     readonly enchant?: ClusterEnchantDecl;
     /** Each written field's value, so an error points at the field it is about. */

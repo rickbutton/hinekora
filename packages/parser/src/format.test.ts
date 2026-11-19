@@ -50,6 +50,27 @@ chaos
 `);
     });
 
+    it("prints the corruption implicits after the eldritch ones, before the enchant", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare corrupted implicits:["endurance charges","life"] exarch: grand }
+locus`;
+        const out = fmt(src);
+        expect(out).toBe(`item {
+    base:      "Iron Ring"
+    ilvl:      84
+    rarity:    rare
+    exarch:    grand
+    implicits: [ "endurance charges", "life" ]
+    corrupted
+}
+locus
+`);
+        expect(fmt(out)).toBe(out);
+        expect((shape(out) as { item: { implicits: unknown } }).item.implicits).toEqual([
+            "endurance charges",
+            "life",
+        ]);
+    });
+
     it("prints the implicit predicate with its wording", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
 vaal

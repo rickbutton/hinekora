@@ -19,7 +19,7 @@ import { declareItem } from "../item-block.js";
 import { rollRange } from "../values.js";
 import { maxTotal, sideCap } from "../../model/capacity.js";
 import { type Effect, effectKey, effectsOf } from "../../model/effects.js";
-import type { Gen, GroupId, TagId, TypeId } from "../../model/ids.js";
+import type { Gen, GroupId, ModId, TagId, TypeId } from "../../model/ids.js";
 import { type EldritchSide, influenceKey } from "../../model/marks.js";
 import type { Mod } from "../../model/mod.js";
 import { lookupWeight } from "../../pool/pool.js";
@@ -121,11 +121,18 @@ export function initialItems(ctx: RefCtx, block: ItemBlock): CItemSet {
         const named = d.types === undefined ? types : types.filter((t) => d.types!.has(t));
         return (named.length > 0 ? named : types).map((type) => ({ tier: d.tier, type }));
     };
-    // The base's implicit stays unless an eldritch one replaced it; a name
-    // standing for variants with and without one holds either.
+    // The base's implicit stays unless an eldritch or a corruption implicit
+    // replaced it; a name standing for variants with and without one holds
+    // either.
     const variants = ctx.registry.baseImplicits(decl.base).map((v) => v.length > 0);
-    const declaresEldritch = decl.exarch !== undefined || decl.eater !== undefined;
-    const baseImplicits = [...new Set(variants.map((has) => has && !declaresEldritch))];
+    const replaced =
+        decl.exarch !== undefined || decl.eater !== undefined || decl.corruption !== undefined;
+    const baseImplicits = [...new Set(variants.map((has) => has && !replaced))];
+    // One row of each declared corruption implicit's wording.
+    let corruptions: ModId[][] = [[]];
+    for (const rows of decl.corruption ?? []) {
+        corruptions = corruptions.flatMap((held) => rows.map((r) => [...held, r.id]));
+    }
     const offered = offeredBy(c, decl);
     /** Each `"random"` of the list a row the declared item's pool offers. */
     const randomsOffered = (mods: readonly CMod[]): boolean =>
@@ -144,17 +151,20 @@ export function initialItems(ctx: RefCtx, block: ItemBlock): CItemSet {
         for (const baseImplicit of baseImplicits) {
             for (const exarch of implicits("exarch")) {
                 for (const eater of implicits("eater")) {
-                    const item = cItem({
-                        rarity: decl.rarity,
-                        mods,
-                        influences: influenceKey(decl.influences),
-                        baseImplicit,
-                        corrupted: decl.corrupted,
-                        exarch,
-                        eater,
-                        strands: decl.strands ?? 0,
-                    });
-                    if (isWellFormed(item, c)) out.push(item);
+                    for (const corruption of corruptions) {
+                        const item = cItem({
+                            rarity: decl.rarity,
+                            mods,
+                            influences: influenceKey(decl.influences),
+                            baseImplicit,
+                            corrupted: decl.corrupted,
+                            exarch,
+                            eater,
+                            corruption,
+                            strands: decl.strands ?? 0,
+                        });
+                        if (isWellFormed(item, c)) out.push(item);
+                    }
                 }
             }
         }

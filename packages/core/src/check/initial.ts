@@ -37,7 +37,10 @@ import {
     NO_INFLUENCE,
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
+import type { CorruptionImplicitSpec } from "../model/sources.js";
 import { pool } from "../pool/pool.js";
+import { withArticle } from "../resolve/messages.js";
+import { capitalise } from "../words.js";
 import type { Registry } from "../resolve/registry.js";
 import { rollableGen } from "../resolve/tiers.js";
 import { craftReach, shapeKey } from "./craft.js";
@@ -308,18 +311,93 @@ function scalars(u: Universe, decl: ItemDecl, influence: number, influenced: boo
             dd = m.and(dd, m.slotIn(u.scalar(`${side}Type`), values));
         }
     }
-    // The base's implicit stays unless an eldritch one replaced it; where the
-    // name stands for variants with and without one, either.
+    // The base's implicit stays unless an eldritch or a corruption implicit
+    // replaced it; where the name stands for variants with and without one,
+    // either.
     const eldritch = takes && (decl.exarch !== undefined || decl.eater !== undefined);
-    const present = own.has && !eldritch;
+    const present = own.has && !eldritch && decl.corruption === undefined;
     const values = present ? (own.every ? [1] : [0, 1]) : [0];
     dd = m.and(dd, m.slotIn(u.scalar("baseImplicit"), values));
-    // The item block declares no corruption implicit; a corrupted item is
-    // taken at its word to hold none.
-    return m.and(
-        m.and(dd, m.slotIn(u.scalar("corruption1"), [0])),
-        m.slotIn(u.scalar("corruption2"), [0]),
-    );
+    return m.and(dd, corruptionSlots(u, decl.corruption ?? []));
+}
+
+/** The corruption implicit slots holding one row of each declared wording,
+ *  the pair in the slots' order; none where none is declared. */
+function corruptionSlots(
+    u: Universe,
+    declared: readonly (readonly CorruptionImplicitSpec[])[],
+): Dd {
+    const m = u.dd;
+    const [first, second] = [u.scalar("corruption1"), u.scalar("corruption2")];
+    const valuesOf = (rows: readonly CorruptionImplicitSpec[]): number[] =>
+        rows.map((r) => u.corruptionRows.indexOf(r)).filter((v) => v > 0);
+    const [a, b] = declared;
+    if (a === undefined) return m.and(m.slotIn(first, [0]), m.slotIn(second, [0]));
+    if (b === undefined) return m.and(m.slotIn(first, valuesOf(a)), m.slotIn(second, [0]));
+    let out = m.EMPTY;
+    for (const x of valuesOf(a)) {
+        for (const y of valuesOf(b)) {
+            const [lo, hi] = x < y ? [x, y] : [y, x];
+            out = m.or(out, m.and(m.slotIn(first, [lo]), m.slotIn(second, [hi])));
+        }
+    }
+    return out;
+}
+
+/**
+ * Why the well-formed items admit no item with the block's corruption
+ * implicits, or undefined where they admit one. The well-formed items alone
+ * decide (check/universe.ts `vaalRoom`); each reason is the first change to
+ * the block that would make them admit one, read off the same items. Where
+ * the rule rests on an open question, the message says hinekora takes it so
+ * rather than that the game forbids it.
+ */
+export function corruptionRefusal(u: Universe, decl: ItemDecl): string | undefined {
+    const declared = decl.corruption;
+    if (declared === undefined || declared.length === 0) return undefined;
+    const admits = (d: ItemDecl): boolean => {
+        const influence = influenceValue(u, d);
+        const marks = scalars(u, d, influence, u.influenceKeys[influence] !== NO_INFLUENCE);
+        return !u.dd.isEmpty(u.dd.and(marks, u.wf));
+    };
+    if (admits(decl)) return undefined;
+    // A fault elsewhere in the block (reported there) leaves nothing to explain.
+    const { corruption: _, ...none } = decl;
+    if (!admits(none)) return undefined;
+    const { exarch: _a, eater: _e, ...plain } = decl;
+    const twice: ItemDecl = { ...plain, corrupted: "twice" };
+    const name = (rows: readonly CorruptionImplicitSpec[]): string => `"${rows[0]!.text}"`;
+    const what = capitalise(withArticle(u.base.name ?? u.base.id));
+
+    if (decl.corrupted === false) {
+        return "Only a corrupted item has a corruption implicit — add `corrupted` or `twice corrupted`.";
+    }
+    // A base none of whose declared implicits any corrupted item of it holds.
+    if (!declared.some((rows) => admits({ ...twice, corruption: [rows] }))) {
+        // Simplex Amulet § Mechanics: the implicit "cannot be turned into a
+        // corrupted implicit"; that none is added beside it is QUESTIONS.md Q134.
+        return baseImplicitOf(u.registry, u.base).locked
+            ? `${what}'s implicit cannot be changed, and hinekora takes it that no corruption adds an implicit beside it.`
+            : `${what} cannot hold a corruption implicit.`;
+    }
+    // Modifier § Group/family: two of one group never share an item.
+    const [a, b] = declared;
+    if (a !== undefined && b !== undefined && !admits(twice)) {
+        return `${name(a)} and ${name(b)} cannot be on one item.`;
+    }
+    // Corrupted § Twice Corrupted: the second needs a second corruption.
+    if (b !== undefined && decl.corrupted === true) {
+        return "Two corruption implicits need a twice-corrupted item — this one is corrupted once.";
+    }
+    // Too many implicits beside the eldritch ones. A real item holds them where
+    // a corruption took a Gilded Fossil's implicit instead (Corrupted §
+    // Corrupted implicit modifiers), which hinekora does not track
+    // (QUESTIONS.md Q133), so the game is not said to forbid it.
+    const untracked =
+        "an item holds them only where a corruption took another implicit, such as a Gilded Fossil's, which hinekora does not track yet.";
+    return isEldritchAmulet(u.base)
+        ? `An amulet's eldritch implicit and a corruption implicit together: ${untracked}`
+        : `These eldritch and corruption implicits together: ${untracked}`;
 }
 
 /** The universe and the first state of a craft. */
@@ -343,8 +421,17 @@ export function startOf(
     diag: Diag,
     options: UniverseOptions = {},
 ): CraftStart | null {
-    const decl = declareItem(craft.item, registry, diag);
-    if (decl === null) return null;
+    const declared = declareItem(craft.item, registry, diag);
+    if (declared === null) return null;
+    let decl = declared;
+    const admitted = (u: Universe): ItemDecl => {
+        const refusal = corruptionRefusal(u, declared);
+        if (refusal === undefined) return declared;
+        diag(refusal, craft.item.fields?.implicits ?? craft.item.span);
+        // Recovery: the item is read as holding none of them.
+        const { corruption: _, ...none } = declared;
+        return none;
+    };
     if (options.maxNodes !== undefined || options.imprint !== undefined) {
         const reach = craftReach(craft, registry);
         const u = buildUniverse(registry, decl.base, decl.ilvl, craft, {
@@ -353,9 +440,11 @@ export function startOf(
             corrupts: reach.corrupts,
             ...options,
         });
+        decl = admitted(u);
         return { u, decl, state: initialItem(u, decl) };
     }
     const u = universeFor(registry, decl.base, decl.ilvl, craft);
+    decl = admitted(u);
     let byBlock = initials.get(u);
     if (byBlock === undefined) initials.set(u, (byBlock = new Map<string, ItemSet | null>()));
     const key = shapeKey(craft.item);

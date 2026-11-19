@@ -30,6 +30,7 @@ import {
     isEldritchAmulet,
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
+import type { CorruptionImplicitSpec } from "../model/sources.js";
 import { MAX_STRANDS } from "../model/strands.js";
 import { resolveMessage, withArticle } from "../resolve/messages.js";
 import type { ClusterSize, Registry } from "../resolve/registry.js";
@@ -102,6 +103,11 @@ export interface ItemDecl {
     readonly corrupted: Corruption;
     readonly exarch?: DeclaredImplicit;
     readonly eater?: DeclaredImplicit;
+    /** The corruption implicits, each wording the rows of it the item's level
+     *  reaches; absent where none is declared or a wording did not resolve.
+     *  Which may sit together is the well-formed items' to say
+     *  (check/initial.ts `corruptionRefusals`). */
+    readonly corruption?: readonly (readonly CorruptionImplicitSpec[])[];
     /** Within 0 to 100; absent for none. */
     readonly strands?: number;
     /** The affixes of each side as counted, held to the rarity's caps. */
@@ -517,6 +523,7 @@ export function declareItem(item: ItemBlock, registry: Registry, diag: Diag): It
             : { tier: eldritchTierOf(decl.tier), ...(types !== undefined && { types }) };
     const exarch = implicit(item.exarch, exarchTypes);
     const eater = implicit(item.eater, eaterTypes);
+    const corruption = declaredCorruption(item, base, registry, (m) => diag(m, at("implicits")));
     return {
         base,
         ilvl: item.ilvl,
@@ -526,6 +533,7 @@ export function declareItem(item: ItemBlock, registry: Registry, diag: Diag): It
         corrupted: item.corrupted,
         ...(exarch !== undefined && { exarch }),
         ...(eater !== undefined && { eater }),
+        ...(corruption !== undefined && { corruption }),
         ...(item.strands !== undefined && {
             strands: Math.max(0, Math.min(MAX_STRANDS, item.strands)),
         }),
@@ -540,4 +548,40 @@ export function declareItem(item: ItemBlock, registry: Registry, diag: Diag): It
         craftedTypes,
         anonymousBy,
     };
+}
+
+/** Corrupted § Twice Corrupted: a second corruption adds the second. */
+const MAX_CORRUPTION_IMPLICITS = 2;
+
+/** The block's corruption implicits resolved on the base at its level, each
+ *  wording once; undefined, with the fault reported, where one does not
+ *  resolve. */
+function declaredCorruption(
+    item: ItemBlock,
+    base: Base,
+    registry: Registry,
+    diag: (message: string) => void,
+): CorruptionImplicitSpec[][] | undefined {
+    const texts = item.implicits;
+    if (texts === undefined) return undefined;
+    if (texts.length > MAX_CORRUPTION_IMPLICITS) {
+        diag(
+            `An item holds at most ${MAX_CORRUPTION_IMPLICITS} corruption implicits, not ${texts.length}.`,
+        );
+        return undefined;
+    }
+    const out: CorruptionImplicitSpec[][] = [];
+    for (const text of texts) {
+        const rows = registry.resolveCorruption(text, base, item.ilvl);
+        if (!rows.ok) {
+            diag(resolveMessage(rows.error));
+            return undefined;
+        }
+        if (out.some((held) => held.some((r) => rows.value.includes(r)))) {
+            diag(`"${rows.value[0]!.text}" is listed twice; an item holds it once.`);
+            return undefined;
+        }
+        out.push([...rows.value]);
+    }
+    return out;
 }

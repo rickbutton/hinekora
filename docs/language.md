@@ -40,10 +40,8 @@ item {
 ```
 
 - `base` resolves by display name; where several bases share it, the id
-  (`Metadata/Items/...`) picks one. It is an item a craft is modelled on: a weapon, a
-  piece of armour or jewellery, a quiver, a jewel (abyss and cluster jewels too), a flask,
-  a tincture, a charm, a relic, an idol, a Thief's Trinket or a piece of Rogue's
-  equipment. Currency, gems, maps and the rest are refused.
+  (`Metadata/Items/...`) picks one. Currency, gems, maps and other bases no craft is
+  modelled on are refused.
 - `ilvl` is the [item level](https://www.poewiki.net/wiki/Item_level); it never changes.
 - `rarity` is `normal`, `magic` or `rare`. A base that can never be Rare (flasks, tinctures)
   is rejected at `rare` ([Rarity § Rare](https://www.poewiki.net/wiki/Rarity#Rare)).
@@ -90,7 +88,9 @@ item {
   which a craft can use only an `unveil`
   ([Veiled modifier § Version history](https://www.poewiki.net/wiki/Veiled_modifier#Version_history))
   and a `locus`, which may destroy it; `twice corrupted` one a `locus` has corrupted again,
-  on which it can use neither (`QUESTIONS.md` Q32).
+  on which it can use neither (`QUESTIONS.md` Q32). `implicits: [ "<wording>" ]` lists its
+  corruption implicits, matched as `implicit` (§5); the base's implicit is then gone.
+  Without it a corrupted item holds none. A set no corruption leaves is refused.
 
 An unknown or ambiguous name is reported on the item block before any step is checked.
 

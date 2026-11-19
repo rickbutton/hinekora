@@ -45,6 +45,7 @@ export const ITEM_FIELDS = [
     "twice",
     "exarch",
     "eater",
+    "implicits",
     "enchant",
 ] as const;
 export const RARITY_WORDS = ["normal", "magic", "rare"] as const;

@@ -57,8 +57,9 @@ re-ingest from the published export, so the provenance is the published dump.
   names only "+1 gem" modifiers), and catalyst quality. Meanwhile a value compares on its
   row's own span: on a Simplex Amulet `has "maximum life" >= 240` never holds though the
   item shows twice the row.
-- **the implicits the item does not track**: a Gilded Fossil's (Q133) and a starting
-  item's synthesised ones.
+- **the implicits the item does not track**: a Gilded Fossil's (Q133), so a starting item
+  holding a corruption implicit beside its base's or two eldritch ones cannot be declared,
+  and a starting item's synthesised ones.
 - **legacy base-implicit variants**: the experimented bases', whose caps and magnitudes one catalog id cannot carry and no collected recipe starts from
   ([Simplex Amulet § Version history](https://www.poewiki.net/wiki/Simplex_Amulet#Version_history)); a Standard-only
   Black Maw Talisman socketed by implicit, so the name's socket reads "Possibly"
