@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { RawEconomy } from "./economy.js";
-import { fakeNinja } from "./ninja-fake.js";
+import { fakeNinja, NINJA_ANSWERS } from "./ninja-fake.js";
 import type { FetchLike, NinjaClient } from "./ninja.js";
 import {
     loadPricesFile,
@@ -163,6 +163,31 @@ describe("the price cache", () => {
         expect(result.prices).toBeUndefined();
         expect(result.note).toBe(
             "poe.ninja could not be reached (leagues: HTTP 503) and no prices are saved, so costs stay in currency units",
+        );
+    });
+
+    it("says poe.ninja answered, not that it could not be reached, when its answer is unusable", async () => {
+        const noRate = fakeNinja({
+            ...NINJA_ANSWERS,
+            Currency: { items: [], lines: [] },
+            Essence: { items: [], lines: [] },
+        }).fetch;
+        const cache = new PriceCache(dir, client(noRate));
+        save(cache, snapshot("Standard", Date.parse("2026-11-12T08:00:00Z")));
+        const result = await cache.current("Standard");
+        expect(result.prices?.league).toBe("Standard");
+        expect(result.note).toBe(
+            "poe.ninja's answer could not be read (Standard: the answer has no Divine Orb rate); using Standard prices of 2026-11-12",
+        );
+        const html: FetchLike = () =>
+            Promise.resolve({
+                ok: true,
+                status: 200,
+                json: () => Promise.reject(new SyntaxError("Unexpected token '<'")),
+            });
+        const unread = await new PriceCache(join(dir, "empty"), client(html)).current(undefined);
+        expect(unread.note).toBe(
+            "poe.ninja's answer could not be read (leagues: the answer is not JSON) and no prices are saved, so costs stay in currency units",
         );
     });
 

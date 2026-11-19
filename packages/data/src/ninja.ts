@@ -39,6 +39,14 @@ export interface NinjaClient {
 /** poe.ninja did not answer, or answered in a shape this reading does not know. */
 export class NinjaError extends Error {
     override readonly name = "NinjaError";
+
+    /** `answered` is true when poe.ninja replied, but not with what this reading needs. */
+    constructor(
+        message: string,
+        readonly answered = true,
+    ) {
+        super(message);
+    }
 }
 
 async function getJson(client: NinjaClient, url: string, what: string): Promise<unknown> {
@@ -50,9 +58,9 @@ async function getJson(client: NinjaClient, url: string, what: string): Promise<
         });
     } catch (error) {
         const reason = error instanceof Error ? error.message : String(error);
-        throw new NinjaError(`${what}: ${reason}`);
+        throw new NinjaError(`${what}: ${reason}`, false);
     }
-    if (!res.ok) throw new NinjaError(`${what}: HTTP ${res.status}`);
+    if (!res.ok) throw new NinjaError(`${what}: HTTP ${res.status}`, false);
     try {
         return await res.json();
     } catch {

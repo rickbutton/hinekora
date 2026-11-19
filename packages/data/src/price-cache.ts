@@ -12,7 +12,7 @@ import { homedir } from "node:os";
 import { dirname, join, posix, win32 } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { adaptEconomy, type EconomySnapshot, type RawEconomy } from "./economy.js";
-import { fetchEconomy, fetchLeagues, type NinjaClient } from "./ninja.js";
+import { fetchEconomy, fetchLeagues, NinjaError, type NinjaClient } from "./ninja.js";
 
 /** How long fetched prices are used before they are fetched again. */
 export const PRICES_FRESH_MS = 60 * 60 * 1000;
@@ -227,7 +227,11 @@ export class PriceCache {
             raw = await this.fetchLeague(name, league !== undefined);
         } catch (error) {
             if (error instanceof UnknownLeague) throw error;
-            const why = `poe.ninja could not be reached (${reasonOf(error)})`;
+            const what =
+                error instanceof NinjaError && error.answered
+                    ? "poe.ninja's answer could not be read"
+                    : "poe.ninja could not be reached";
+            const why = `${what} (${reasonOf(error)})`;
             const saved = this.saved(league);
             if (saved === undefined) {
                 return {
