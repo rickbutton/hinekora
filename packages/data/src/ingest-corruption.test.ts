@@ -112,7 +112,7 @@ describe("the corruption implicits the ingest keeps", () => {
     it("strips the tooltip markup, and words a granted support", () => {
         expect(projected["V2BlindImmunity"]?.["text"]).toBe("Cannot be Blinded");
         expect(projected["V2Support"]?.["text"]).toBe(
-            "Socketed Gems are Supported by Level 10 Additional Accuracy",
+            "Socketed Gems are Supported by Level 10 Additional Accuracy Support",
         );
     });
 

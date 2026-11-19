@@ -23,9 +23,7 @@ export function stripMarkup(text) {
  *  none: an effect that only triggers another, which the game prints no line for. */
 function effectName(gem) {
     if (gem === undefined) return undefined;
-    // A stat description names a support without the word: "Supported by Level
-    // {0} Bonespire" for the gem Bonespire Support.
-    if (gem.is_support) return gem.display_name?.replace(/ Support$/, "") || undefined;
+    if (gem.is_support) return gem.display_name || undefined;
     return gem.active_skill?.display_name || gem.display_name || undefined;
 }
 
@@ -46,9 +44,12 @@ export function modText(mod, gems = {}) {
         const gem = gems[g.granted_effect_id];
         const name = effectName(gem);
         if (name === undefined) continue;
+        // An older stat description names a support without the word: "Supported
+        // by Level {0} Bonespire" for the gem Bonespire Support.
+        const named = name.replace(/ Support$/, "").toLowerCase();
         const stated = lines.some((l) => {
             const w = words(l);
-            return w.includes(`level ${g.level} `) && w.includes(name.toLowerCase());
+            return w.includes(`level ${g.level} `) && w.includes(named);
         });
         if (stated) continue;
         lines.push(gem.is_support ? supportLine(name, g.level) : skillLine(name, g.level));

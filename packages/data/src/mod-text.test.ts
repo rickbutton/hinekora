@@ -50,7 +50,7 @@ describe("the text of a modifier that grants an effect", () => {
             text: null,
             grants_effects: [{ granted_effect_id: "SupportFortify", level: 20 }],
         };
-        expect(modText(mod, gems)).toBe("Socketed Gems are Supported by Level 20 Fortify");
+        expect(modText(mod, gems)).toBe("Socketed Gems are Supported by Level 20 Fortify Support");
     });
 
     it("adds the line after the modifier's own", () => {
@@ -59,8 +59,19 @@ describe("the text of a modifier that grants an effect", () => {
             grants_effects: [{ granted_effect_id: "SupportFortify", level: 16 }],
         };
         expect(modText(mod, gems)).toBe(
-            "(101-115)% increased Physical Damage\nSocketed Gems are Supported by Level 16 Fortify",
+            "(101-115)% increased Physical Damage\nSocketed Gems are Supported by Level 16 Fortify Support",
         );
+    });
+
+    it("keeps the export's line for a support, with or without the word", () => {
+        const grants = [{ granted_effect_id: "SupportFortify", level: 20 }];
+        const worded =
+            "Socketed Gems are Supported by Level 20 [SupportFortify::20|Fortify Support]";
+        expect(modText({ text: worded, grants_effects: grants }, gems)).toBe(
+            "Socketed Gems are Supported by Level 20 Fortify Support",
+        );
+        const bare = "Socketed Gems are Supported by Level 20 Fortify";
+        expect(modText({ text: bare, grants_effects: grants }, gems)).toBe(bare);
     });
 
     it("names a granted skill", () => {
@@ -86,7 +97,7 @@ describe("the text of a modifier that grants an effect", () => {
             ],
         };
         expect(modText(mod, gems)).toBe(
-            "Socketed Gems are Supported by Level 18 Cast On Critical Strike",
+            "Socketed Gems are Supported by Level 18 Cast On Critical Strike Support",
         );
     });
 
