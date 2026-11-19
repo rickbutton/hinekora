@@ -20,6 +20,7 @@ export const OP_OWNERS = {
     rarity: "marks",
     influence: "marks",
     eldritch: "marks",
+    corruptionImplicit: "marks",
     "fill:natural": "fill",
     "fill:tagged": "fill",
     "fill:fossil": "fill",

@@ -1,5 +1,5 @@
 /**
- * The marks: rarity, corruption, influence and the eldritch implicits, and
+ * The marks: rarity, corruption, influence and the implicits, and
  * the checks that read them.
  */
 import { canBeRare, maxTotal, sideCap } from "../../../model/capacity.js";
@@ -156,22 +156,25 @@ export const transforms: RefTransformTable = {
                         ),
                     );
                 }
-                case "replaced": {
-                    // A corruption implicit replaces one of the item's implicits
-                    // at random, and with none is added (Vaal Orb § Equipment);
-                    // one that cannot be changed stays, and keeps the others
-                    // (Cogwork Ring § Mechanics). An untracked corruption
-                    // implicit the altar's may replace instead (QUESTIONS.md Q32).
-                    const own = ctx.registry.baseImplicits(ctx.base).some((v) => v.length > 0);
-                    if (own && ctx.base.implicitLocked === true) return [item];
-                    const out: CItem[] = [];
-                    if (item.baseImplicit) out.push({ ...item, baseImplicit: false });
-                    if (item.exarch.tier > 0) out.push({ ...item, exarch: NO_IMPLICIT });
-                    if (item.eater.tier > 0) out.push({ ...item, eater: NO_IMPLICIT });
-                    if (out.length === 0 || c.untracked === true) out.push(item);
-                    return out.map((x) => wellFormed(x, ctx, "a corruption"));
-                }
             }
+        },
+    },
+    corruptionImplicit: {
+        reads: [],
+        apply: (op, item, { ctx }) => {
+            // A corruption implicit replaces one of the item's implicits
+            // at random, and with none is added (Vaal Orb § Equipment);
+            // one that cannot be changed stays, and keeps the others
+            // (Cogwork Ring § Mechanics). An untracked corruption
+            // implicit the altar's may replace instead (QUESTIONS.md Q32).
+            const own = ctx.registry.baseImplicits(ctx.base).some((v) => v.length > 0);
+            if (own && ctx.base.implicitLocked === true) return [item];
+            const out: CItem[] = [];
+            if (item.baseImplicit) out.push({ ...item, baseImplicit: false });
+            if (item.exarch.tier > 0) out.push({ ...item, exarch: NO_IMPLICIT });
+            if (item.eater.tier > 0) out.push({ ...item, eater: NO_IMPLICIT });
+            if (out.length === 0 || op.untracked === true) out.push(item);
+            return out.map((x) => wellFormed(x, ctx, "a corruption"));
         },
     },
 };

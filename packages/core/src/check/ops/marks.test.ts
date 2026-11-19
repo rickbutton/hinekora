@@ -41,11 +41,8 @@ const req = (check: Check): Op => ({ kind: "require", check });
 const rarity = (r: Rarity | "survivors"): Transform => ({ kind: "rarity", rarity: r });
 const influence = (change: InfluenceChange): Transform => ({ kind: "influence", change });
 const corrupt: Transform = { kind: "corrupt" };
-const replaced: Transform = { kind: "eldritch", change: { kind: "replaced" } };
-const altarReplaced: Transform = {
-    kind: "eldritch",
-    change: { kind: "replaced", untracked: true },
-};
+const replaced: Transform = { kind: "corruptionImplicit" };
+const altarReplaced: Transform = { kind: "corruptionImplicit", untracked: true };
 const ALL_CORRUPTIONS: Corruption[] = [false, true, "twice"];
 const conflict: Transform = { kind: "eldritch", change: { kind: "conflict" } };
 const hunter = influenceKey(["hunter"]);

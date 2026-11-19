@@ -328,13 +328,10 @@ const onceCorrupted = (what: string): Op => require({ kind: "notTwiceCorrupted",
 /** A corruption implicit takes the place of one of the item's implicits, the
  *  base's or an eldritch one (Vaal Orb § Equipment, Eldritch implicit
  *  modifier). */
-const corruptionImplicit: Transform = { kind: "eldritch", change: { kind: "replaced" } };
+const corruptionImplicit: Transform = { kind: "corruptionImplicit" };
 /** The altar's, on a corrupted item, which may hold a corruption implicit the
  *  checker does not track. */
-const secondCorruptionImplicit: Transform = {
-    kind: "eldritch",
-    change: { kind: "replaced", untracked: true },
-};
+const secondCorruptionImplicit: Transform = { kind: "corruptionImplicit", untracked: true };
 
 /** A Vaal Orb's one outcome that touches the modifiers: the item reforged Rare
  *  with six modifiers, the metamods respected (Vaal Orb § Equipment); the

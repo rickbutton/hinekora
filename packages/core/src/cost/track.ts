@@ -1555,6 +1555,7 @@ function touchesImplicits(ops: readonly Op[]): boolean {
     return ops.some(
         (op) =>
             op.kind === "eldritch" ||
+            op.kind === "corruptionImplicit" ||
             (op.kind === "either" && op.branches.some((b) => touchesImplicits(b))),
     );
 }

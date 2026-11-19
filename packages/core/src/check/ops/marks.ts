@@ -1,5 +1,5 @@
 /**
- * The marks: rarity, corruption, influence and the eldritch implicits, and
+ * The marks: rarity, corruption, influence and the implicits, and
  * the checks that read them.
  */
 import type { Base } from "../../model/base.js";
@@ -292,10 +292,13 @@ export const transforms: TransformTable = {
                 }
                 case "conflict":
                     return conflict(u, state);
-                case "replaced":
-                    return wellFormed(u, replaced(u, state, c.untracked === true), "a corruption");
             }
         },
+    },
+    corruptionImplicit: {
+        reads: [],
+        apply: (op, state, { u }) =>
+            wellFormed(u, replaced(u, state, op.untracked === true), "a corruption"),
     },
 };
 

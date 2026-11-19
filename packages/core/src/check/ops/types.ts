@@ -205,6 +205,12 @@ export type Op =
     /** Change the eldritch mark: one implicit set to a tier, or an Orb of
      *  Conflict's raise-one-lower-the-other. */
     | { readonly kind: "eldritch"; readonly change: EldritchChange }
+    /** A corruption implicit replaces one of the item's implicits, the
+     *  base's or an eldritch one, where it has any (a Vaal Orb, the
+     *  Bloodstained Fossil, the Corruption Altar). `untracked`: the item may
+     *  hold a corruption implicit the checker does not, which it may replace
+     *  instead, so none of the others need go. */
+    | { readonly kind: "corruptionImplicit"; readonly untracked?: true }
     /** One of several outcomes: the items each branch leaves, together. It
      *  holds effects only (a check or a `keep` belongs before it, at
      *  method level). A branch with an `end` is an outcome on which the item
@@ -250,13 +256,7 @@ export type EldritchChange =
       }
     /** One implicit up a tier, the other down; a Lesser lowered is removed
      *  (Orb of Conflict). */
-    | { readonly kind: "conflict" }
-    /** A corruption implicit replaces one of the item's implicits, the
-     *  base's or an eldritch one, where it has any (a Vaal Orb, the
-     *  Bloodstained Fossil, the Corruption Altar). `untracked`: the item may
-     *  hold a corruption implicit the checker does not, which it may replace
-     *  instead, so none of the others need go. */
-    | { readonly kind: "replaced"; readonly untracked?: true };
+    | { readonly kind: "conflict" };
 
 export type InfluenceChange =
     | { readonly kind: "set"; readonly key: InfluenceKey }
