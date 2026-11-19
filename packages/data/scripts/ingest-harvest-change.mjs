@@ -9,10 +9,8 @@
  * each other element (`pairHarvestChange`), kind → element → rows. Every name
  * must be a `type` of the committed `mods.json`.
  *
- * The table is read from the compiled `.datc64` (a row count, fixed-width
- * rows, then a data section opened by eight 0xBB bytes; a string column holds
- * an offset into that section, UTF-16). The column offsets are those of the
- * poe-tool-dev dat-schema for `HarvestCraftOptions`.
+ * The table is read from the compiled `.datc64` (`dat.mjs`), at the column
+ * offsets of the poe-tool-dev dat-schema for `HarvestCraftOptions`.
  *
  * Run `node packages/data/scripts/ingest-harvest-change.mjs`. Env overrides:
  *   HARVEST_DAT_URL / HARVEST_DAT_FILE   the table's URL, or a local copy
@@ -21,40 +19,15 @@
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { datTable, readStringColumns } from "./dat.mjs";
 
 const OUT_DIR = fileURLToPath(new URL("../data/poe1", import.meta.url));
 const DAT_URL =
     process.env.HARVEST_DAT_URL ?? "https://ggpk.exposed/poe1/data/harvestcraftoptions.datc64";
 
-const ID_AT = 0;
-const COMMAND_AT = 32;
-const PARAMETERS_AT = 40;
-
-async function table() {
-    if (process.env.HARVEST_DAT_FILE) return readFileSync(process.env.HARVEST_DAT_FILE);
-    const res = await fetch(DAT_URL);
-    if (!res.ok) throw new Error(`fetch ${DAT_URL} failed: ${res.status}`);
-    return Buffer.from(await res.arrayBuffer());
-}
-
 /** The table's rows as { id, command, parameters }. */
 export function readRows(buf) {
-    const count = buf.readUInt32LE(0);
-    const data = buf.indexOf(Buffer.alloc(8, 0xbb), 4);
-    if (data < 0) throw new Error("no data section in the table");
-    const width = (data - 4) / count;
-    const text = (offset) => {
-        const start = data + offset;
-        let end = start;
-        while (end + 1 < buf.length && !(buf[end] === 0 && buf[end + 1] === 0)) end += 2;
-        return buf.toString("utf16le", start, end);
-    };
-    const column = (row, at) => text(Number(buf.readBigUInt64LE(4 + row * width + at)));
-    return Array.from({ length: count }, (_unused, row) => ({
-        id: column(row, ID_AT),
-        command: column(row, COMMAND_AT),
-        parameters: column(row, PARAMETERS_AT),
-    }));
+    return readStringColumns(buf, { id: 0, command: 32, parameters: 40 });
 }
 
 /** kind → element changed from → the modifier types the craft takes. */
@@ -195,7 +168,7 @@ export function renderHarvestChange(pairs) {
 }
 
 async function main() {
-    const lists = projectHarvestChange(readRows(await table()));
+    const lists = projectHarvestChange(readRows(await datTable(DAT_URL, "HARVEST_DAT_FILE")));
     const mods = JSON.parse(readFileSync(`${OUT_DIR}/mods.json`, "utf8"));
     const known = new Set(Object.values(mods).map((m) => m.type));
     const names = Object.values(lists).flatMap((byElement) => Object.values(byElement).flat());
