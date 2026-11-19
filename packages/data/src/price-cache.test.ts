@@ -183,6 +183,26 @@ describe("the price cache", () => {
         expect(new PriceCache(dir, client(offline)).saved("Standard")).toBeDefined();
     });
 
+    it("returns fetched prices it cannot save, and says so", async () => {
+        const notADir = join(dir, "hinekora");
+        writeFileSync(notADir, "a file where the cache directory should be");
+        const { fetch, urls } = fakeNinja();
+        const result = await new PriceCache(notADir, client(fetch)).current("Standard");
+        expect(urls).toHaveLength(5);
+        expect(result.prices?.chaosPerDivine).toBe(80);
+        expect(result.note).toMatch(/^the prices could not be saved in .*hinekora \(.+\)$/);
+    });
+
+    it("still prices the default league when its list cannot be saved", async () => {
+        const notADir = join(dir, "hinekora");
+        writeFileSync(notADir, "a file where the cache directory should be");
+        const { fetch, urls } = fakeNinja();
+        const result = await new PriceCache(notADir, client(fetch)).current(undefined);
+        expect(urls[0]).toBe("https://poe.ninja/poe1/api/data/index-state");
+        expect(result.prices?.league).toBe("Covens");
+        expect(result.prices?.chaosPerDivine).toBe(80);
+    });
+
     it("runs one refresh at a time however many ask", async () => {
         const { fetch, urls } = fakeNinja();
         const cache = new PriceCache(dir, client(fetch));
