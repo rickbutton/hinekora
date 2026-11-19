@@ -72,8 +72,9 @@ has it corrupt "an Equipment Item" a second time;
 [Corrupted § Twice Corrupted](https://www.poewiki.net/wiki/Corrupted#Twice_Corrupted)
 adds jewels. Does it take one, or an uncorrupted item? Are the odds and the implicit rule
 of [Locus of Corruption § Possible outcomes](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes),
-marked as awaiting 3.30, current? Does the copy show `Twice Corrupted`
-alone? Does it then take an unveil?
+marked as awaiting 3.30, current, or does its implicit replace two, as
+[Corrupted § Corrupted implicit modifiers](https://www.poewiki.net/wiki/Corrupted#Corrupted_implicit_modifiers)
+says? Does the copy show `Twice Corrupted` alone? Does it then take an unveil?
 **Probe:** corrupted Rares, a jewel, boots with an eldritch and a corruption implicit, an
 uncorrupted ring; the altar forty times, then an unveil; record what changes.
 **Assumed:** corrupted equipment only; 1:1:2 to no change, an implicit, destroyed; its

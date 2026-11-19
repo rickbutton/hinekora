@@ -35,8 +35,7 @@ Two identifiers (`model/ids.ts`) carry meaning beyond their name:
 - A **tag** plays three roles under one type: a base's tags, the tags a modifier adds to its
   item, and a modifier's own category tags ([Tags](https://www.poewiki.net/wiki/Modifier#Tags)).
 
-A mod family is an [exclusion group](https://www.poewiki.net/wiki/Modifier#Group/family). A
-spawn weight of zero discards the modifier.
+A mod family is an [exclusion group](https://www.poewiki.net/wiki/Modifier#Group/family).
 
 ---
 
@@ -102,7 +101,8 @@ One tier of one modifier: one row of the `Mods` table
   Chaos Orb too: confirmed in game).
 - **Generation table**, the data's `generation_weights`, read as the spawn table is, the
   matching entry scaling the weight in percent
-  ([RePoE's mod reference](https://github.com/brather1ng/RePoE/blob/master/RePoE/docs/mods.md)). They hold a Small
+  ([RePoE's mod reference](https://github.com/brather1ng/RePoE/blob/master/RePoE/docs/mods.md);
+  only this reading gives the data's two tables their known results). They hold a Small
   [cluster jewel](https://www.poewiki.net/wiki/Cluster_jewel#Mechanics) to one notable
   and halve a caster weapon's attack rows.
 
@@ -124,7 +124,8 @@ Rules every row satisfies:
 ## 6. Effects
 
 A change to the crafting rules, active exactly while its carrier is on the item. Effects
-are read off the modifiers present, never recorded on the item. Which currency honours which effect is the table
+are read off the modifiers present, never recorded on the item, so removing the carrier
+withdraws its effect with no bookkeeping. Which currency honours which effect is the table
 in [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions).
 Four kinds cover the metamods ([Metamod](https://www.poewiki.net/wiki/Metamod),
 [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Endgame_Changes) for the partial protections):
@@ -166,8 +167,7 @@ affixes of each side (order within a side carries no meaning), and its marks:
 - **The base's implicit**, held or gone.
 - **Corruption implicits**, none to two.
 
-Derived: the affix counts by side and by source; the present types and families (the
-coexistence facts); the tags a roll matches, the base's ∪ the influence tags ∪ every present
+Derived: the affix counts by side and by source; the tags a roll matches, the base's ∪ the influence tags ∪ every present
 affix's added tags; and the active effects of the modifiers present.
 
 **Affix capacity.** [Rarities](https://www.poewiki.net/wiki/Rarity#Rarity_as_an_item_property) gives the
@@ -213,7 +213,7 @@ not what can coexist.
 | Influence limit                              | `influences.count ≤ 2`                                                                                                                                                                                                                                                                                                 | [Influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics)                                                                                                   |
 | Influence excludes fracture                  | influenced ⇒ not fractured                                                                                                                                                                                                                                                                                             | [Fractured item](https://www.poewiki.net/wiki/Fractured_item#Mechanics)                                                                                                     |
 | The base's implicit                          | held only where the base is made with one, never beside an eldritch implicit, which replaces it; always where it "cannot be changed"                                                                                                                                                                                   | [Eldritch implicit modifier](https://www.poewiki.net/wiki/Eldritch_implicit_modifier), [Simplex Amulet](https://www.poewiki.net/wiki/Simplex_Amulet#Mechanics)              |
-| Corruption implicits                         | one on a corrupted item, two on a twice-corrupted one, of two groups; never beside the base's implicit or two others (`check/universe.ts` `vaalRoom`)                                                                                                                                                                  | [Corrupted](https://www.poewiki.net/wiki/Corrupted#Corrupted_implicit_modifiers), [Locus of Corruption](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes) |
+| Corruption implicits                         | at most one on a corrupted item and two on a twice-corrupted one, of the base's pool at its item level, of two groups; never beside the base's implicit or two others (`check/universe.ts` `vaalRoom`)                                                                                                                 | [Corrupted](https://www.poewiki.net/wiki/Corrupted#Corrupted_implicit_modifiers), [Locus of Corruption](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes) |
 | Eldritch implicits                           | only on helmets, gloves, boots and body armours (an ember or ichor marks no other) and, one alone and Exceptional at most, on amulets ([Ukatoa's Ducat](https://www.poewiki.net/wiki/Ukatoa%27s_Ducat#Mechanics)); of item level 75 or more (the data's level), never beside an influence; the higher tier is dominant | [Eldritch implicit modifier](https://www.poewiki.net/wiki/Eldritch_implicit_modifier)                                                                                       |
 
 ---
@@ -236,5 +236,3 @@ True of the ingested PoE1 data, and pinned by the catalog-level tests of
 
 The checker's set of items is the implementation's only item: a declared item is a
 set with no uncertainty beyond its `"random"` affixes, and the marks of §7 live there.
-The pool reads a projection of it, the facts of §7 a roll depends on (`ItemFacts` in
-`packages/core/src/model/item.ts`).
