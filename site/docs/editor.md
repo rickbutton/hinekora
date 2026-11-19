@@ -63,8 +63,8 @@ pnpm -C editors/vscode build
 Open the repository in VS Code and start the launch configuration `Run hinekora Extension`.
 A second window opens with the extension loaded. It treats every `.craft` file as hinekora.
 
-The extension starts the language server as a Node process. The server loads the game data
-and the price snapshot from the repository.
+The extension starts the language server as a Node process. It loads the game data,
+and prices as [`cost`](./cli#cost) does without waiting on poe.ninja.
 
 ## Playground
 

@@ -10,3 +10,4 @@ export * from "./browser.js";
 export * from "./economy.js";
 export * from "./load.js";
 export * from "./ninja.js";
+export * from "./price-cache.js";

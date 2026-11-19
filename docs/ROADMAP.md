@@ -14,18 +14,7 @@ waits until a craft calls for it.
 
 The catalog is 3.30's, exported from a game install with the repoe-fork exporter
 (`packages/data/data/poe1/manifest.json` `source.build`), since repoe-fork has not published 3.30. When it does,
-re-ingest from the published export, so the provenance is the published dump. The prices
-are the Covens league's from its first day, when most beasts and some fossils had no price:
-refresh `packages/data/data/poe1/economy.json` once they settle.
-
-## The price list leaves the package
-
-The snapshot ships in `@hinekora/data`, so new prices need a release. Settled design: a
-`prices` command fetches poe.ninja's current league into the user's cache directory; the
-CLI and the LSP read it, or a file an environment variable names, for pinning. Nothing
-fetches unasked; without a file, figures stay in currency units and the cost report names
-the command. The committed snapshot becomes a fixture for the tests, the site and the
-playground, which cannot read a cache directory. `cost.md` §7 changes with it.
+re-ingest from the published export, so the provenance is the published dump.
 
 ## Deferred by design (don't build until called for)
 

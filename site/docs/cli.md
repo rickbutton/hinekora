@@ -1,16 +1,15 @@
 # Command line
 
-The examples write the command-line tool as `hinekora`, for `node packages/cli/dist/cli.js`
-after a build ([Getting started](./getting-started)).
+The examples write `hinekora` for `node packages/cli/dist/cli.js` after a build ([Getting started](./getting-started)).
 
 ```txt
 hinekora check <file.craft>
 hinekora fmt [--check] <file.craft>
 hinekora chart <file.craft>
-hinekora cost <file.craft>
+hinekora cost [--league <name>] <file.craft>
 ```
 
-Each command takes one file and reads only the game data and prices shipped with the tool.
+Each command takes one file. Only `cost` uses the network, for prices.
 
 ## Exit codes
 
@@ -18,23 +17,22 @@ Each command takes one file and reads only the game data and prices shipped with
 | ---- | ------------------------------------------------------------------------------------------------ |
 | 0    | `check`: the craft checks. `fmt`: the file has the standard layout. `chart`, `cost`: printed.    |
 | 1    | `check`: the craft has errors. `fmt --check`: the file needs formatting. Any: it does not parse. |
-| 2    | wrong arguments, or the file cannot be read                                                      |
+| 2    | wrong arguments, a league poe.ninja lacks, or a file that cannot be read                         |
 | 3    | any: the tool could not judge the craft, a fault of its own to report                            |
 
-On a usage error the tool prints the four command forms to standard error.
+A usage error prints the command forms to standard error.
 
 ## check
 
-`check` parses and checks the craft, printing the game data's source first.
+`check` prints the game data's source, then checks the craft.
 
-For a craft that checks, it prints the final item in the layout of the game's item text, as
-[Getting started](./getting-started#check-it) shows.
+For a craft that checks, it prints the final item as the game's item text
+([Getting started](./getting-started#check-it)).
 
-If the craft ends for every item, at a [`stop`](./language/until), a `restart` outside any
-loop or a step that ends it, the line
-`(the craft ends for every item before this point)` takes the item's place.
+If every item ends at a [`stop`](./language/until), a `restart` outside any loop or a step
+that ends it, `(the craft ends for every item before this point)` takes the item's place.
 
-For a craft with errors, it prints each one with its position and source line, then a count.
+For a craft with errors, it prints each with its position and line, then a count.
 Where only some of the items reaching a step break it, and none got there past an earlier
 error, one that does can follow:
 
@@ -61,25 +59,24 @@ bad.craft:8:1: error: at this point the item is: Iron Ring · Magic · 1–2 aff
 ✗ 1 error
 ```
 
-A syntax error stops the parser, so `check` then reports that one error alone.
+`check` reports a syntax error alone.
 [Errors](./errors) lists the kinds.
 
 ## fmt
 
-`fmt` rewrites the file in the standard layout and prints `formatted <file>`. It prints
-nothing when the file already has that layout. The layout indents by four spaces, aligns the
-values of the item block and keeps comments and single blank lines.
+`fmt` rewrites the file in the standard layout and prints `formatted <file>`, or nothing
+when the file already has it. The layout indents by four spaces, aligns the item block's
+values and keeps comments and single blank lines.
 
-`fmt --check` changes nothing. It prints `<file> needs formatting` and exits with 1 when
-`fmt` would change the file.
+`fmt --check` changes nothing; it prints `<file> needs formatting` and exits 1 when `fmt`
+would change the file.
 
-A file that does not parse is left alone, with a message on standard error.
+A file that does not parse is left alone, with a message.
 
 ## chart
 
 `chart` prints the craft as a [Mermaid](https://mermaid.js.org/) flowchart. A step is a box,
-a loop is a `repeat` group with its condition drawn before the body, and a branch is a
-decision.
+a loop a `repeat` group with its condition before the body, and a branch a decision.
 
 ```txt
 flowchart TD
@@ -100,8 +97,12 @@ flowchart TD
 
 ## cost
 
-`cost` prints the expected spend of each step and of the whole craft.
-[Reading a cost report](./cost) explains the output.
+`cost` prints the expected spend of each step and the craft
+([Reading a cost report](./cost)).
 
-`cost` also reports on a craft with errors: its first line counts them, and the figures take
-the steps as written.
+On a craft with errors, its first line counts them and the figures take the steps as written.
+
+`cost` fetches [poe.ninja](https://poe.ninja/)'s prices for the current challenge league,
+or the one `--league` or `HINEKORA_LEAGUE` names, and keeps them an hour in the user's cache
+folder (`~/.cache/hinekora`). Offline, it uses the last prices kept and says so.
+`HINEKORA_PRICES` names a prices file to use instead, or `none` for none.

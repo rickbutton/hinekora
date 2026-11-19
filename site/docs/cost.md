@@ -110,5 +110,5 @@ A note in parentheses under a line says why a figure is missing.
 
 ## Prices
 
-Prices come from a snapshot of [poe.ninja](https://poe.ninja/) for one league on one day. The
-snapshot ships with the game data, so the same craft always gives the same figure.
+`cost` fetches [poe.ninja](https://poe.ninja/)'s prices, at most once an hour
+([Command line](./cli#cost)). This page's figures use the snapshot shipped with the game data.

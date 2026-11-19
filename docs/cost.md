@@ -157,10 +157,9 @@ unit price (`cost/prices.ts`, in the step's own currency).
   one ends in the exit or a `stop`; the expected rounds is its reciprocal, the share
   ending in a stop ending the craft.
 - An **`if`** splits each branch by its condition's chance; a `restart` is back at
-  its loop's head with the item as it is; a `stop`, or a
-  `restart` outside every loop, ends the craft.
+  its loop's head with the item as it is.
 
-Where the model cannot say, the step's note says why. A loop the check refuses, whose
+A loop the check refuses, whose
 exit no round reaches or the item sticks short of, or whose rounds were not worked
 out has no figure, nor have its steps or the craft's total.
 
@@ -168,12 +167,14 @@ out has no figure, nor have its steps or the craft's total.
 
 ## 7. The economy
 
-Prices come from a **snapshot committed with the data**,
-`packages/data/data/poe1/economy.json`, of one league and day, so a figure is reproducible. `fetch-economy.mjs`
-refreshes it from poe.ninja's economy endpoints, which its
-[API reference](https://poe.ninja/docs/api) supports without promising them stable.
+Prices are **poe.ninja's, fetched** from endpoints its
+[API reference](https://poe.ninja/docs/api) supports without promising them stable, kept
+an hour per league in the user's cache. Offline, the last fetch serves however
+old, never the bundled snapshot, a past league. The language server refreshes
+in the background; `HINEKORA_PRICES` pins a file. The committed `packages/data/data/poe1/economy.json` is the
+tests', site's and playground's fixture.
 
-What the snapshot cannot price (a bench craft, a Harvest craft's lifeforce, a Bestiary
+What poe.ninja cannot price (a bench craft, a Harvest craft's lifeforce, a Bestiary
 recipe's beasts) `cost/prices.ts` carries from the catalog and the wiki's tables, a Harvest
 change's amounts from [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Harvest)
 and its colours from the game's `HarvestCraftOptions` table.
