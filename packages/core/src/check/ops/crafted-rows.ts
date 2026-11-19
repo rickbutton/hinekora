@@ -13,8 +13,9 @@ import { veiledPool } from "../../pool/veiled.js";
 import type { Registry } from "../../resolve/registry.js";
 import type { Where } from "./pools.js";
 
-/** The category tag of a bench row that is the craftable version of a veiled
- *  modifier (the data's; every such row is one of Jun's crafts). */
+/** The category tag of a row that is a veiled modifier's craftable version,
+ *  one of Jun's crafts; the unveiled results carry it too, which `isVeiledRow`
+ *  leaves to their source. */
 const UNVEILED_CRAFT = TagId("unveiled_mod");
 
 /** A veiled placeholder or an unveiled result; with `craftable`, a bench row
