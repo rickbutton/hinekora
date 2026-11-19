@@ -12,11 +12,22 @@
 import { writeFileSync } from "node:fs";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
-import { fetchEconomy, fetchLeagues } from "../dist/ninja.js";
 
 const OUT = fileURLToPath(new URL("../data/poe1/economy.json", import.meta.url));
+const NINJA = new URL("../dist/ninja.js", import.meta.url);
+
+async function loadNinja() {
+    try {
+        return await import(NINJA.href);
+    } catch (error) {
+        if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
+        console.error(`${fileURLToPath(NINJA)} is not built: run \`pnpm build\` first`);
+        process.exit(1);
+    }
+}
 
 async function main() {
+    const { fetchEconomy, fetchLeagues } = await loadNinja();
     const client = { fetch: (url, init) => fetch(url, init), pause: sleep, now: Date.now };
     const league = process.argv[2] ?? (await fetchLeagues(client))[0];
     const snapshot = await fetchEconomy(client, league);
