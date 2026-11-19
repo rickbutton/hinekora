@@ -46,13 +46,13 @@ function heldNinja(): { fetch: FetchLike; release: () => void; requests: () => n
     return { fetch, release, requests: () => requests };
 }
 
-function saveOld(cache: PriceCache): void {
+function saveOld(cache: PriceCache, fetchedAt = START - 5 * PRICES_FRESH_MS): void {
     writeFileSync(
         cache.fileOf("Standard"),
         JSON.stringify({
             source: { name: "poe.ninja", endpoint: "x", types: [] },
             league: "Standard",
-            fetchedAt: new Date(START - 5 * PRICES_FRESH_MS).toISOString(),
+            fetchedAt: new Date(fetchedAt).toISOString(),
             chaosPerDivine: 50,
             prices: { "Chaos Orb": 1 },
         }),
@@ -135,6 +135,27 @@ describe("the language server's prices", () => {
         expect(logged).toEqual([
             "hinekora: poe.ninja could not be reached (Currency: offline); using Standard prices of 2026-11-19",
         ]);
+    });
+
+    it("refreshes saved prices dated in the future", async () => {
+        const ninja = heldNinja();
+        const cache = new PriceCache(dir, {
+            fetch: ninja.fetch,
+            pause: () => Promise.resolve(),
+            now: () => START,
+        });
+        saveOld(cache, START + 24 * PRICES_FRESH_MS);
+        const prices = livePrices(
+            priceSetting({ HINEKORA_LEAGUE: "Standard" }),
+            () => cache,
+            () => START,
+            () => undefined,
+        );
+        expect(prices.get()?.chaosPerDivine).toBe(50);
+        ninja.release();
+        await prices.settled();
+        expect(ninja.requests()).toBe(5);
+        expect(prices.get()?.chaosPerDivine).toBe(100);
     });
 
     it("makes no request with HINEKORA_PRICES set to none", () => {

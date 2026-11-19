@@ -100,6 +100,17 @@ describe("the price cache", () => {
         );
     });
 
+    it("refetches prices and the league list dated in the future", async () => {
+        const { fetch, urls } = fakeNinja();
+        const cache = new PriceCache(dir, client(fetch));
+        saveLeagues(NOW + 10 * MINUTE);
+        save(cache, snapshot("Covens", NOW + 10 * MINUTE));
+        const result = await cache.current(undefined);
+        expect(urls[0]).toBe("https://poe.ninja/poe1/api/data/index-state");
+        expect(urls).toHaveLength(6);
+        expect(result.prices?.fetchedAt).toBe(new Date(NOW).toISOString());
+    });
+
     it("takes the default league from poe.ninja's first, and saves the list", async () => {
         const { fetch, urls } = fakeNinja();
         const cache = new PriceCache(dir, client(fetch));

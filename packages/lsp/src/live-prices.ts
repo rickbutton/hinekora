@@ -8,6 +8,7 @@ import type { Prices } from "@hinekora/core";
 import {
     loadPricesFile,
     PRICES_FRESH_MS,
+    pricesFresh,
     type PriceCache,
     type PriceSetting,
 } from "@hinekora/data";
@@ -66,8 +67,7 @@ export function livePrices(
             });
     };
 
-    const stale = (): boolean =>
-        current === undefined || now() - Date.parse(current.fetchedAt) >= PRICES_FRESH_MS;
+    const stale = (): boolean => current === undefined || !pricesFresh(current.fetchedAt, now());
     // A failed refresh is tried again an hour later, so a server offline for a
     // day asks poe.ninja once an hour, not once per hover.
     const get = (): Prices | undefined => {

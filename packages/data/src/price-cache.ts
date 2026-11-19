@@ -17,6 +17,14 @@ import { fetchEconomy, fetchLeagues, type NinjaClient } from "./ninja.js";
 /** How long fetched prices are used before they are fetched again. */
 export const PRICES_FRESH_MS = 60 * 60 * 1000;
 
+/** Whether prices fetched at `fetchedAt` are still used at `now`. A time in the
+ *  future means a clock that was wrong when the file was written; trusting it
+ *  would keep those prices until that date. */
+export function pricesFresh(fetchedAt: string, now: number): boolean {
+    const age = now - Date.parse(fetchedAt);
+    return age >= 0 && age < PRICES_FRESH_MS;
+}
+
 export type Env = Readonly<Record<string, string | undefined>>;
 
 /** The user's cache directory for hinekora, by each platform's convention. */
@@ -152,7 +160,7 @@ export class PriceCache {
     }
 
     private isFresh(fetchedAt: string): boolean {
-        return this.client.now() - Date.parse(fetchedAt) < PRICES_FRESH_MS;
+        return pricesFresh(fetchedAt, this.client.now());
     }
 
     /** The league list poe.ninja last gave, however old. */
