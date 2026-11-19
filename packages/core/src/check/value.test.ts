@@ -3,7 +3,7 @@ import { check, type CheckContext } from "./check.js";
 import * as v from "./views.js";
 import { rowIds } from "../__fixtures__/views.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { narrowRange, rollRange, valueNumber } from "./values.js";
+import { isGrantedEffectLine, narrowRange, rollRange, valueNumber } from "./values.js";
 import {
     andp,
     bench,
@@ -99,6 +99,11 @@ describe("a modifier's value", () => {
 
     it("is read from a skill a line triggers, which is no granted line", () => {
         expect(rollRange("Trigger Level 20 Fire Burst on Hit")).toEqual([20, 20]);
+    });
+
+    it("is read from a line that grants life, which is no granted skill", () => {
+        expect(isGrantedEffectLine("Grants (2-3) Life per Enemy Hit")).toBe(false);
+        expect(rollRange("Grants (2-3) Life per Enemy Hit\n+(10-15) to Strength")).toEqual([2, 3]);
     });
 
     it("is read past a support line whose level spans several tiers", () => {
