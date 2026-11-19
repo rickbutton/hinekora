@@ -17,8 +17,6 @@ exalt
 
 ## Fields
 
-A block must have `base`, `ilvl` and `rarity`.
-
 | Field                  | Value                             | When absent       |
 | ---------------------- | --------------------------------- | ----------------- |
 | `base`                 | a quoted base name                | an error          |
@@ -95,4 +93,5 @@ the stat of its small passives. A cluster jewel requires it.
 then rejects every step except [`unveil`](/docs/operations/unveil) and
 [`locus`](/docs/operations/locus). `twice corrupted` declares one the altar has corrupted
 again, which then takes no step. `implicits: [ "maximum endurance charges" ]` lists its
-corruption implicits, two at most. The checker rejects a list no corruption could leave.
+corruption implicits, two at most. The checker rejects a list no corruption could leave,
+and a few it does not track yet.

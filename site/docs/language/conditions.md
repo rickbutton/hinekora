@@ -24,8 +24,8 @@ The comparison operators are `==`, `!=`, `<`, `<=`, `>` and `>=`.
 
 A value is the first number of the modifier's text, past a granted skill or support
 line. An eldritch test also takes a quoted wording. An item holds one modifier of a
-[group](https://www.poewiki.net/wiki/Modifier#Group/family) at most. [Names](./names)
-covers names.
+[group](https://www.poewiki.net/wiki/Modifier#Group/family) at most.
+[Names and tiers](./names) covers the quoted names.
 
 ## Combining
 
@@ -61,7 +61,7 @@ set a condition has one of three answers.
 | true for some of them | the checker follows both arms          | the loop runs                 |
 
 Where a condition splits the set, the checker narrows it. Inside an `if` arm, and after an
-`until`, the condition is true of the item. Inside `else` the condition is false. A step there must apply to every item left in the narrowed set.
+`until`, the condition is true of the item. Inside `else` the condition is false. A step there must apply to every item left.
 
 The checker keeps what the outer condition established. Here the inner arm holds only
 items with a fire resistance and no cold resistance, which is what

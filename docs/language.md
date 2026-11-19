@@ -65,9 +65,9 @@ item {
   [those the wiki lists](https://www.poewiki.net/wiki/Memory_strand#Crafting_methods_consuming_memory_strands)
   (`QUESTIONS.md` Q68). The checker follows the strands each item has left.
 - `influences: hunter` (or two, `influences: shaper elder`) marks an
-  [influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics); the six are
-  `shaper`, `elder`, `crusader`, `hunter`, `redeemer` and `warlord`; its influence
-  modifiers roll and are named like any other. An influence with a fracture is an error,
+  [influenced item](https://www.poewiki.net/wiki/Influenced_item#Mechanics) (`shaper`,
+  `elder`, `crusader`, `hunter`, `redeemer`, `warlord`), whose influence modifiers are named
+  like any other. An influence with a fracture is an error,
   and so is one on a class no influence marks (a jewel, a flask). The
   [Astrolabe Amulet](https://www.poewiki.net/wiki/Astrolabe_Amulet) counts as having every
   influence, so its block lists none.
@@ -90,9 +90,10 @@ item {
   and a `locus`, which may destroy it; `twice corrupted` one a `locus` has corrupted again,
   on which it can use neither (`QUESTIONS.md` Q32). `implicits: [ "<wording>" ]` lists its
   corruption implicits, matched as `implicit` (§5); the base's implicit is then gone.
-  Without it a corrupted item holds none. A set no corruption leaves is refused.
+  Without it a corrupted item holds none. A set no corruption leaves is refused, as are a
+  few hinekora does not track (ROADMAP).
 
-An unknown or ambiguous name is reported on the item block before any step is checked.
+An unknown or ambiguous name is reported on the item block before any step.
 
 ---
 
@@ -173,7 +174,7 @@ inside one, a bare parameter standing for the steps bound to it.
 ### 4.1 `until <pred> { … }`
 
 Run the body until the predicate holds; later lines may rely on it. The body must be safe on
-every round, not just the first (`until has "X" { exalt }` is reported: some item fills before
+every round (`until has "X" { exalt }` is reported: some item fills before
 it has X). A loop that can never exit, or never runs, is reported.
 
 ### 4.2 `if <pred> { … } [else { … }]`
@@ -187,7 +188,7 @@ go on together, so a fact true after each, such as "one of these three is presen
 `restart` re-enters the innermost enclosing `until` from its start (at top level it ends the
 craft); typically after a removal that may have taken a wanted modifier.
 
-`stop` ends the craft for the item: it is kept, or is not worth more currency. What
+`stop` ends the craft for the item: kept, or not worth more currency. What
 follows is judged only on the items that continue, so "if the life was removed, start over
 with a new base" is `if not has "maximum life" { stop }`, after which every item has it. A
 craft that stops for every item has no finished item.
@@ -245,14 +246,14 @@ cmp  := == | != | < | <= | > | >=
 ```
 
 Precedence, loosest first: `or`, `and`, `not`, atom; binary operators are left-associative.
-A predicate asks about the item's current state only; there are no history predicates.
+A predicate asks about the item as it is now, never its history.
 
 - `has "X"` means any tier of X; `has "X" t1` the specific tier, which the checker tracks
   through every step.
 - `has "X" >= 110` compares the modifier's **value**, the first number of its text past a
-  granted skill or support line. Values that miss it are ruled out, and a value holds until
-  a reforge or a `divine` rolls it again: `until has "maximum life" >= 110 { divine }` is
-  "divine the life into range". An experimented base's "increased modifier magnitudes" implicit is not applied.
+  granted skill or support line, or that line's level where it is all the row has. Values
+  that miss it are ruled out; a value holds until a reforge or a `divine` rolls it again:
+  `until has "maximum life" >= 110 { divine }` divines the life into range. An experimented base's "increased modifier magnitudes" implicit is not applied.
 - `has group "X"` asks for any modifier of X's
   [group](https://www.poewiki.net/wiki/Modifier#Group/family), read across every base:
   `if not has group "spell damage" { bench "spell damage" }` is a player's "unless you already
