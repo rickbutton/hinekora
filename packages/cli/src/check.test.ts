@@ -66,7 +66,12 @@ describe("the base's own implicit, against real data", () => {
             "  { Implicit Modifier — Resource, Life }\n  (5-7)% increased maximum Life",
         );
         expect(implicits(`${ring}\nvaal`)).toBe(
-            "  { Possibly: Implicit Modifier — Resource, Life }\n  (5-7)% increased maximum Life",
+            [
+                "  { Possibly: Implicit Modifier — Resource, Life }",
+                "  (5-7)% increased maximum Life",
+                "  { Possibly: Corruption Implicit Modifier }",
+                "  one of 39 Corruption implicits",
+            ].join("\n"),
         );
     });
 
@@ -114,6 +119,24 @@ describe("the base's own implicit, against real data", () => {
         );
     });
 
+    it("shows a declared corruption implicit, and one the Corruption Altar may add", () => {
+        const ring = `item { base: "Vermillion Ring" ilvl: 84 rarity: rare implicits: [ "endurance charges" ] corrupted }`;
+        expect(implicits(ring)).toBe(
+            [
+                "  { Corruption Implicit Modifier — Endurance Charge }",
+                "  +1 to Maximum Endurance Charges",
+            ].join("\n"),
+        );
+        expect(implicits(`${ring}\nlocus`)).toBe(
+            [
+                "  { Corruption Implicit Modifier — Endurance Charge }",
+                "  +1 to Maximum Endurance Charges",
+                "  { Possibly: Corruption Implicit Modifier }",
+                "  one of 38 Corruption implicits",
+            ].join("\n"),
+        );
+    });
+
     it("prints a Rare Vermillion Ring after a Vaal Orb whole", () => {
         const r = run(`item { base: "Vermillion Ring" ilvl: 84 rarity: rare }\nvaal`);
         expect(r.ok).toBe(true);
@@ -129,6 +152,8 @@ describe("the base's own implicit, against real data", () => {
                 "  --------",
                 "  { Possibly: Implicit Modifier — Resource, Life }",
                 "  (5-7)% increased maximum Life",
+                "  { Possibly: Corruption Implicit Modifier }",
+                "  one of 39 Corruption implicits",
                 "  --------",
                 "  { 0-6 additional prefix or suffix modifiers }",
                 "  --------",

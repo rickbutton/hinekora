@@ -245,10 +245,11 @@ export function itemDelta(before: ItemView, after: ItemView): ItemDelta {
     const lines = (v: ItemView): string[] => [
         ...v.rarities.map((r) => rarityText([r])),
         ...modLines(v),
-        // The base's implicit has no mark to say it may be gone, so its line does.
+        // The base's implicit has no mark to say it may be gone, nor a
+        // corruption implicit that it may have come, so their lines do.
         ...v.implicits.map((i) =>
             [
-                i.kind === "base" && i.maybe ? "possibly" : "",
+                (i.kind === "base" || i.kind === "corruption") && i.maybe ? "possibly" : "",
                 implicitTierText(i, "–"),
                 IMPLICIT_SHORT[i.kind],
                 "implicit",

@@ -38,6 +38,7 @@ import { itemDelta } from "./walkthrough.js";
 import {
     type ItemView,
     itemClassLabel,
+    IMPLICIT_LIST_LIMIT,
     itemView,
     type ModView,
     remainderText,
@@ -550,7 +551,10 @@ describe("the base's own implicit", () => {
 
     it("is possible after a Vaal Orb, which may take it", () => {
         const { v, text } = textOf([ringOf("LifeRing", [LIFE])], [op("vaal")]);
-        expect(v.implicits.map((i) => [i.kind, i.maybe])).toEqual([["base", true]]);
+        expect(v.implicits.map((i) => [i.kind, i.maybe])).toEqual([
+            ["base", true],
+            ["corruption", true],
+        ]);
         expect(text).toContain("{ Possibly: Implicit Modifier — Resource, Life }");
     });
 
@@ -630,6 +634,102 @@ describe("the base's own implicit", () => {
                 [...delta.added, ...delta.removed].filter((l) => l.includes("implicit")),
             ).toEqual([]);
         });
+    });
+});
+
+describe("the corruption implicits", () => {
+    // The fixture's ring pool: two Movement Speed rows of one wording each,
+    // at item levels 1 and 30, and the Endurance Charge at 75.
+    const reg = buildRegistry({ bases: [RING_BASE], mods: CATALOG, corruption: CORRUPTION_ROWS });
+    const viewOf = (
+        steps: Parameters<typeof craft>[1],
+        decl: Partial<Parameters<typeof item>[0]> & { implicits?: string[] } = {},
+    ) => {
+        const { implicits, ...rest } = decl;
+        const c = craft(
+            {
+                ...item({ base: "IronRing", ilvl: 84, rarity: "rare", ...rest }),
+                ...(implicits !== undefined && { implicits }),
+            },
+            steps,
+        );
+        const r = check(c, { registry: reg });
+        expect(r.diagnostics).toEqual([]);
+        const v = itemView(r.finalState!, reg, c);
+        return { v, text: renderItemText(v) };
+    };
+    const section = (text: string): string => text.split("\n--------\n")[2] ?? "";
+
+    it("are not shown on an item no corruption touched", () => {
+        expect(viewOf([op("chaos")]).v.implicits).toEqual([]);
+        expect(viewOf([], { corrupted: true }).v.implicits).toEqual([]);
+    });
+
+    it("show one held on every item plainly, its rows of one wording one line", () => {
+        const { v, text } = viewOf([], { corrupted: true, implicits: ["endurance"] });
+        expect(v.implicits).toEqual([
+            {
+                kind: "corruption",
+                tiers: [],
+                texts: ["+1 to Maximum Endurance Charges"],
+                count: 1,
+                tags: [],
+                maybe: false,
+            },
+        ]);
+        expect(section(text)).toBe(
+            ["{ Corruption Implicit Modifier }", "+1 to Maximum Endurance Charges"].join("\n"),
+        );
+    });
+
+    it("show one a Vaal Orb may add as possible, one of the pool's wordings", () => {
+        const { v, text } = viewOf([op("vaal")]);
+        expect(v.implicits.map((i) => [i.kind, i.maybe, i.count])).toEqual([
+            ["corruption", true, 3],
+        ]);
+        expect(section(text)).toBe(
+            [
+                "{ Possibly: Corruption Implicit Modifier }",
+                "one of 3:",
+                "    5% increased Movement Speed",
+                "    10% increased Movement Speed",
+                "    +1 to Maximum Endurance Charges",
+            ].join("\n"),
+        );
+    });
+
+    it("show a held one beside a second the Corruption Altar may add", () => {
+        const { v } = viewOf([op("locus")], { corrupted: true, implicits: ["endurance"] });
+        expect(v.implicits.map((i) => [i.texts, i.maybe])).toEqual([
+            [["+1 to Maximum Endurance Charges"], false],
+            [["5% increased Movement Speed", "10% increased Movement Speed"], true],
+        ]);
+    });
+
+    it("read as a count past the list's limit", () => {
+        const many = Array.from({ length: IMPLICIT_LIST_LIMIT + 1 }, (_, i) => ({
+            ...CORRUPTION_ROWS[0]!,
+            id: ModId(`Many${i}`),
+            type: TypeId(`Many${i}`),
+            groups: new Set([GroupId(`Many${i}`)]),
+            text: `+${i + 1} to Many`,
+        }));
+        const big = buildRegistry({ bases: [RING_BASE], mods: CATALOG, corruption: many });
+        const c = craft(item({ base: "IronRing", ilvl: 84, rarity: "rare" }), [op("vaal")]);
+        const r = check(c, { registry: big });
+        const text = renderItemText(itemView(r.finalState!, big, c));
+        expect(text).toContain(`one of ${IMPLICIT_LIST_LIMIT + 1} Corruption implicits`);
+    });
+
+    it("are a line a Vaal Orb may add, in what a step changes", () => {
+        const delta = itemDelta(viewOf([]).v, viewOf([op("vaal")]).v);
+        expect(delta.added).toContain("possibly Corruption implicit");
+        const altar = itemDelta(
+            viewOf([], { corrupted: true, implicits: ["endurance"] }).v,
+            viewOf([op("locus")], { corrupted: true, implicits: ["endurance"] }).v,
+        );
+        expect(altar.added).toEqual(["possibly Corruption implicit", "Twice Corrupted"]);
+        expect(altar.removed).toEqual(["Corrupted"]);
     });
 });
 

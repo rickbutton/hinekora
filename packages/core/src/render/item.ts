@@ -23,6 +23,7 @@ import { type CraftNames, craftNames } from "../check/names.js";
 import type { ItemSet } from "../check/state.js";
 import {
     baseImplicitHeld,
+    corruptionImplicits,
     type CardinalityGuarantee,
     cardinalityGuarantees,
     clauseRows,
@@ -58,6 +59,7 @@ import {
     NO_INFLUENCE,
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
+import type { CorruptionImplicitSpec } from "../model/sources.js";
 import { isUnveiledResult } from "../model/veiled.js";
 import type { Registry } from "../resolve/registry.js";
 import { rollableGen, rollableTiers, tierLadders, tierNumber } from "../resolve/tiers.js";
@@ -491,6 +493,7 @@ export function itemView(s: ItemSet, registry: Registry, craft?: Craft): ItemVie
     const sideTiers = (side: EldritchSide): number[] => pairs.map((k) => eldritchOf(k)[side]);
     const own = baseImplicitView(s, registry);
     const implicits: ImplicitView[] = own === undefined ? [] : [own];
+    implicits.push(...corruptionImplicitViews(s));
     for (const side of ELDRITCH_SIDES) {
         const all = sideTiers(side);
         const tiers = [...new Set(all)].filter((n) => n > 0).sort((x, y) => x - y);
@@ -608,6 +611,35 @@ function baseImplicitView(s: ItemSet, registry: Registry): ImplicitView | undefi
         tags: texts.size === 1 ? [...tagSet] : [],
         maybe: held.has(false),
     };
+}
+
+/**
+ * The item's corruption implicits: a line for each one every item holds, then
+ * one for each further one an item may hold, as the wordings it may be (after
+ * a Vaal Orb any of the pool's, which reads as a count). The rows of one
+ * wording at several item levels are one line.
+ */
+function corruptionImplicitViews(s: ItemSet): ImplicitView[] {
+    const { sure, others, extra } = corruptionImplicits(s);
+    const tagsOf = (rows: readonly CorruptionImplicitSpec[]): string[] => [
+        ...new Set(rows.flatMap((r) => [...r.implicitTags].map(tagLabel))),
+    ];
+    const view = (rows: readonly CorruptionImplicitSpec[], maybe: boolean): ImplicitView => {
+        const texts = [...new Set(rows.map((r) => r.text))];
+        return {
+            kind: "corruption",
+            tiers: [],
+            texts,
+            count: texts.length,
+            tags: texts.length === 1 ? tagsOf(rows) : [],
+            maybe,
+        };
+    };
+    const out = sure.map((r) => view([r], false));
+    if (others.length > 0) {
+        for (let k = 1; k <= extra[1]; k++) out.push(view(others, k > extra[0]));
+    }
+    return out;
 }
 
 /** The words an item that breaks a step is shown under. */

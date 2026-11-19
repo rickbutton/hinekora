@@ -20,6 +20,7 @@ import {
     influencesOf,
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
+import type { CorruptionImplicitSpec } from "../model/sources.js";
 import type { Dd } from "./dd.js";
 import type { ItemSet } from "./state.js";
 import { type CountKind, type ModValue, RARITIES, type Universe } from "./universe.js";
@@ -310,6 +311,36 @@ export function baseImplicitHeld(s: ItemSet): ReadonlySet<boolean> {
         "baseImplicit",
         () => new Set(valuesAt(s, s.u.scalar("baseImplicit")).map((v) => v === 1)),
     );
+}
+
+/** The items' corruption implicits: the rows every item holds, the rows only
+ *  some may hold, and how many of those an item holds beside the first. */
+export interface CorruptionImplicits {
+    readonly sure: readonly CorruptionImplicitSpec[];
+    readonly others: readonly CorruptionImplicitSpec[];
+    readonly extra: Range;
+}
+
+/** The corruption implicits, read by row across both slots: the pair is held
+ *  in one order (REFERENCE.md §4), so a row an item keeps may change slot. */
+export function corruptionImplicits(s: ItemSet): CorruptionImplicits {
+    return memo(s, "corruptionImplicits", () => {
+        const m = s.u.dd;
+        const [first, second] = [s.u.scalar("corruption1"), s.u.scalar("corruption2")];
+        const sure: CorruptionImplicitSpec[] = [];
+        const others: CorruptionImplicitSpec[] = [];
+        const values = new Set([...valuesAt(s, first), ...valuesAt(s, second)]);
+        for (const v of [...values].filter((x) => x > 0).sort((a, b) => a - b)) {
+            const holds = m.or(m.slotIn(first, [v]), m.slotIn(second, [v]));
+            (m.implies(s.dd, holds) ? sure : others).push(s.u.corruptionRows[v]!);
+        }
+        const none = m.slotIn(first, [0]);
+        const two = m.not(m.slotIn(second, [0]));
+        const one = m.and(m.not(none), m.not(two));
+        const held = [none, one, two].flatMap((d, n) => (m.isEmpty(m.and(s.dd, d)) ? [] : [n]));
+        const extra: Range = [Math.min(...held) - sure.length, Math.max(...held) - sure.length];
+        return { sure, others, extra };
+    });
 }
 
 /** The pairs of eldritch tiers the items have, as `eldritchKey`s. */
