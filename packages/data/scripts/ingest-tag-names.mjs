@@ -1,8 +1,10 @@
 /**
  * Ingest the names the game shows for modifier category tags
  * (`tag_names.json`) from its own `Tags` table: tag id → the `Name` column,
- * for the tags that have one. An advanced item tooltip lists a modifier's
- * tags by these names, and a tag with no name is not shown.
+ * for the tags that have one. The game shows a modifier's tags by their
+ * `Name` and does not show a tag whose `Name` is empty ("resource"). An item
+ * copied before 3.21.1 shows fewer: that patch fixed armour, energy shield
+ * and evasion tags not being displayed (Version 3.21.1).
  *
  * The table is read from the compiled `.datc64` (`dat.mjs`), at the column
  * offsets of the poe-tool-dev dat-schema for `Tags` (`Id` at 0, `Name` at 20,
