@@ -47,6 +47,17 @@ vaal
 if has "maximum life" {
     locus
 }`,
+    "wide: corruption implicits": `item {
+    base: "Vermillion Ring"
+    ilvl: 84
+    rarity: rare
+    prefixes: [ "random", "random", "random" ]
+    suffixes: [ "random", "random", "random" ]
+}
+vaal
+if has "maximum life" {
+    locus
+}`,
     "wide: strands": `item {
     base: "Vermillion Ring"
     ilvl: 84
