@@ -137,6 +137,58 @@ export function tokenMatches(w: string, tokens: ReadonlySet<string>): boolean {
     return false;
 }
 
+/** An implicit's words, and the key its tiers share: a tier that changes a
+ *  number also changes a plural, so the key folds plurals. */
+export interface ImplicitWording {
+    readonly words: ReadonlySet<string>;
+    readonly key: string;
+}
+
+export function wordingOf(text: string): ImplicitWording {
+    const tokens = normalizeText(text);
+    return { words: new Set(tokens), key: [...new Set(tokens.map(singular))].sort().join(" ") };
+}
+
+/** What a query names among implicit rows: the rows of the one wording it
+ *  names best, or the tied wordings' texts. */
+export type WordingMatch<R> =
+    | { readonly kind: "none" }
+    | { readonly kind: "ambiguous"; readonly candidates: readonly string[] }
+    | { readonly kind: "found"; readonly rows: readonly R[] };
+
+/**
+ * Every query word must be a word (or a prefix of one) of the row's text.
+ * Rows of one wording (the tiers) are one candidate, ranked by how much of the
+ * wording the query covers, so a short query names the plain implicit over a
+ * longer variant of it; a tie at the top is ambiguous.
+ */
+export function matchWordings<R>(
+    query: string,
+    rows: Iterable<R>,
+    wording: (row: R) => ImplicitWording,
+    text: (row: R) => string,
+): WordingMatch<R> {
+    const q = normalizeText(query);
+    if (q.length === 0) return { kind: "none" };
+    const byWording = new Map<string, { text: string; rows: R[]; score: number }>();
+    for (const row of rows) {
+        const { words, key } = wording(row);
+        if (!q.every((w) => tokenMatches(w, words))) continue;
+        const entry = byWording.get(key) ?? {
+            text: text(row),
+            rows: [],
+            score: q.length / words.size,
+        };
+        entry.rows.push(row);
+        byWording.set(key, entry);
+    }
+    if (byWording.size === 0) return { kind: "none" };
+    const best = Math.max(...[...byWording.values()].map((c) => c.score));
+    const top = [...byWording.values()].filter((c) => c.score === best);
+    if (top.length > 1) return { kind: "ambiguous", candidates: top.map((c) => c.text) };
+    return { kind: "found", rows: top[0]!.rows };
+}
+
 /** A wording's words in order, its numbers kept: what tells "1 Prefix
  *  Modifier cannot be changed" from "2 Prefix Modifiers …" and both from
  *  "Prefix Modifiers cannot be changed", which `normalizeText` reads alike. */

@@ -39,14 +39,16 @@ import {
     normalizeText,
     queryTokens,
     rowWordings,
-    singular,
     spelledForms,
     spelledKey,
     spellsOut,
     tokenMatches,
     type TypeMatch,
+    type ImplicitWording,
     type WordingAliasEntry,
     wordingAliases,
+    wordingOf,
+    matchWordings,
 } from "./fuzzy.js";
 import { rollableTiers, tierLadder } from "./tiers.js";
 
@@ -798,14 +800,10 @@ export function buildRegistry(data: RegistryData): Registry {
         return m;
     };
     /** Each implicit's words, read once. */
-    const eldritchWords = new Map<EldritchImplicitSpec, { set: Set<string>; key: string }>();
-    const wordsOf = (e: EldritchImplicitSpec): { set: Set<string>; key: string } => {
+    const eldritchWords = new Map<EldritchImplicitSpec, ImplicitWording>();
+    const wordsOf = (e: EldritchImplicitSpec): ImplicitWording => {
         let w = eldritchWords.get(e);
-        if (w === undefined) {
-            const tokens = normalizeText(e.text);
-            w = { set: new Set(tokens), key: [...new Set(tokens.map(singular))].sort().join(" ") };
-            eldritchWords.set(e, w);
-        }
+        if (w === undefined) eldritchWords.set(e, (w = wordingOf(e.text)));
         return w;
     };
 
@@ -814,41 +812,22 @@ export function buildRegistry(data: RegistryData): Registry {
         side: EldritchSide,
         base: Base | undefined,
     ): Resolved<readonly TypeId[]> {
-        const q = normalizeText(name);
-        if (q.length === 0) return fail({ kind: "unknownEldritch", name, side });
         const rows = eldritch.filter(
             (e) =>
                 e.side === side &&
                 (base === undefined || [...e.classes].some((t) => base.tags.has(t))),
         );
-        // Every query word must be a word (or a prefix of one) of the text.
-        // Rows of one wording (the tiers) are one candidate, ranked by how much
-        // of the wording the query covers, so "attack speed" names the plain
-        // implicit and its presence variants are reached by their condition's
-        // words; a tie at the top is ambiguous. A tier that changes a number
-        // also changes a plural, so plurals are folded.
-        const byWording = new Map<string, { text: string; types: Set<TypeId>; score: number }>();
-        for (const e of rows) {
-            const { set, key } = wordsOf(e);
-            const hit = q.every(
-                (w) => set.has(w) || [...set].some((t) => w.length >= 3 && t.startsWith(w)),
-            );
-            if (!hit) continue;
-            const entry = byWording.get(key) ?? {
-                text: e.text,
-                types: new Set<TypeId>(),
-                score: q.length / set.size,
-            };
-            entry.types.add(e.type);
-            byWording.set(key, entry);
+        // A presence variant shares the plain implicit's words and adds its
+        // condition's, so "attack speed" names the plain one.
+        const hit = matchWordings(name, rows, wordsOf, (e) => e.text);
+        switch (hit.kind) {
+            case "none":
+                return fail({ kind: "unknownEldritch", name, side });
+            case "ambiguous":
+                return fail({ kind: "ambiguous", name, candidates: hit.candidates });
+            case "found":
+                return found([...new Set(hit.rows.map((e) => e.type))]);
         }
-        if (byWording.size === 0) return fail({ kind: "unknownEldritch", name, side });
-        const best = Math.max(...[...byWording.values()].map((c) => c.score));
-        const top = [...byWording.values()].filter((c) => c.score === best);
-        if (top.length > 1) {
-            return fail({ kind: "ambiguous", name, candidates: top.map((c) => c.text) });
-        }
-        return found([...top[0]!.types]);
     }
 
     // --- precompute completion lists ---
@@ -1168,7 +1147,7 @@ export function buildRegistry(data: RegistryData): Registry {
             const out: string[] = [];
             for (const e of eldritch) {
                 if (e.side !== side) continue;
-                const key = [...new Set(normalizeText(e.text).map(singular))].sort().join(" ");
+                const { key } = wordsOf(e);
                 if (seen.has(key)) continue;
                 seen.add(key);
                 out.push(e.text);
