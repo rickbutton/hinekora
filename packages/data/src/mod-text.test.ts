@@ -45,6 +45,12 @@ describe("the tooltip markup of a stat description", () => {
         );
     });
 
+    it("decodes the entities the export writes for a placeholder", () => {
+        expect(stripMarkup("&lt;random Fishing Lure&gt;")).toBe("<random Fishing Lure>");
+        expect(stripMarkup("Fire &amp; Ice")).toBe("Fire & Ice");
+        expect(stripMarkup("&amp;lt;")).toBe("&lt;");
+    });
+
     it("leaves text without any as it is", () => {
         expect(stripMarkup("+(10-24) to maximum Life")).toBe("+(10-24) to maximum Life");
     });

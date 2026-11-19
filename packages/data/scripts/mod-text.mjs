@@ -19,8 +19,16 @@ export const skillLine = (name, level) => `Grants Level ${level} ${name}`;
 
 const MARKUP = /\[(?:[^\]|]*\|)?([^\]]*)\]/g;
 
+/** The HTML entities the export writes for a placeholder the game fills in,
+ *  "&lt;random Fishing Lure&gt;"; `&amp;` goes last, so "&amp;lt;" stays "&lt;". */
+const ENTITIES = [
+    [/&lt;/g, "<"],
+    [/&gt;/g, ">"],
+    [/&amp;/g, "&"],
+];
+
 export function stripMarkup(text) {
-    return text.replace(MARKUP, "$1");
+    return ENTITIES.reduce((t, [entity, ch]) => t.replace(entity, ch), text.replace(MARKUP, "$1"));
 }
 
 /** The name a granted effect goes by, or `undefined` where the export has
