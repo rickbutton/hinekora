@@ -4,7 +4,7 @@
  * Every reading errs wide: a threshold too many costs a cell, one too few
  * would leave a comparison the state cannot answer.
  */
-import type { Arg, Craft, Pred, Stmt } from "../ast/ast.js";
+import type { Arg, Craft, OperationStmt, Pred, Stmt } from "../ast/ast.js";
 import { PLACEHOLDERS } from "./item-block.js";
 import type { Base } from "../model/base.js";
 import type { TagId, TypeId } from "../model/ids.js";
@@ -184,7 +184,9 @@ export type ReachSource =
 
 /** By a method's words, what it can put on an item beyond the natural pool:
  *  every other method draws from that pool alone or adds nothing. A test
- *  pins it against the operations each method builds. */
+ *  pins it against the operations each method builds. A `fossil` step
+ *  corrupts only with a Bloodstained Fossil, which `craftReach` reads of its
+ *  arguments. */
 export const REACH: Readonly<Record<string, Partial<CraftReach>>> = {
     bench: { sources: new Set(["bench"]) },
     "beast metamod": { sources: new Set(["metamod"]) },
@@ -210,9 +212,20 @@ export const ALL_REACH: CraftReach = {
     corrupts: true,
 };
 
+/** Whether a resonator step may corrupt: one of its fossils does
+ *  (`FossilSpec.corrupts`, as `resonatorOps` reads it), or a fossil it names
+ *  by a parameter or a name the catalog cannot resolve may be one. */
+function fossilStepCorrupts(s: OperationStmt, registry: Registry): boolean {
+    return s.args.some((a) => {
+        if (a.kind !== "string") return true;
+        const f = registry.resolveFossil(a.value);
+        return !f.ok || f.value.corrupts;
+    });
+}
+
 /** What the craft's steps, in its body, its procs and its step arguments, and
  *  its item block can put on the item. */
-export function craftReach(craft: Craft): CraftReach {
+export function craftReach(craft: Craft, registry: Registry): CraftReach {
     const sources = new Set<ReachSource>();
     let fractures = false;
     let changes = false;
@@ -225,7 +238,9 @@ export function craftReach(craft: Craft): CraftReach {
                     for (const x of r?.sources ?? []) sources.add(x);
                     fractures ||= r?.fractures === true;
                     changes ||= r?.changes === true;
-                    corrupts ||= r?.corrupts === true;
+                    corrupts ||=
+                        r?.corrupts === true &&
+                        (s.words.join(" ") !== "fossil" || fossilStepCorrupts(s, registry));
                     break;
                 }
                 case "if":

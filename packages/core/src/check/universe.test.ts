@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { beast, craft, hasValue, iff, item, op, until } from "../__fixtures__/ast.js";
-import { BOOTS_BASE, RING_BASE } from "../__fixtures__/mods.js";
+import { beast, craft, fossil, hasValue, iff, item, op, until } from "../__fixtures__/ast.js";
+import { BOOTS_BASE, CATALOG, CORRUPTION_ROWS, FOSSILS, RING_BASE } from "../__fixtures__/mods.js";
 import { maxTotal, sideCap } from "../model/capacity.js";
 import { Domain, type Gen, ModId, TagId, TypeId } from "../model/ids.js";
 import { type Corruption, CORRUPTIONS, type InfluenceKey } from "../model/marks.js";
@@ -308,6 +308,29 @@ describe("the corruption implicit slots", () => {
         expect(rows).toBeGreaterThan(1);
         for (const step of ["vaal", "locus"])
             expect(sizes([op(step)], true)).toEqual([rows + 1, rows + 1]);
+    });
+
+    it("hold each row only on a fossil craft with a Bloodstained Fossil", () => {
+        const registry = buildRegistry({
+            bases: [RING_BASE],
+            mods: CATALOG,
+            corruption: CORRUPTION_ROWS,
+            fossils: FOSSILS,
+        });
+        const slots = (...fossils: string[]) => {
+            const c = craft(item({ base: RING_BASE.id, ilvl: 84, rarity: "rare" }), [
+                fossil(...fossils),
+            ]);
+            const u = universeFor(registry, RING_BASE, 84, c);
+            return [u.scalar("corruption1"), u.scalar("corruption2")].map((s) => u.dd.domains[s]);
+        };
+        const rows = registry.corruptionPool(RING_BASE, 84).length;
+        expect(rows).toBeGreaterThan(1);
+        expect(slots("dense")).toEqual([1, 1]);
+        expect(slots("dense", "aberrant")).toEqual([1, 1]);
+        expect(slots("dense", "bloodstained")).toEqual([rows + 1, rows + 1]);
+        // A fossil the catalog cannot name may be the Bloodstained one.
+        expect(slots("amber")).toEqual([rows + 1, rows + 1]);
     });
 });
 

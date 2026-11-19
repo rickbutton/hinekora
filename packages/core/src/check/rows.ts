@@ -71,7 +71,7 @@ export function candidateRows(
     ilvl: number,
     craft: Craft | undefined,
 ): Map<Mod, RowSource> {
-    const reach = craft === undefined ? ALL_REACH : craftReach(craft);
+    const reach = craft === undefined ? ALL_REACH : craftReach(craft, registry);
     const common = commonRows(registry, base);
     const reached = reachedRows(registry, base, common, reach);
     const out = new Map(reached);

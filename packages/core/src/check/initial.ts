@@ -346,7 +346,7 @@ export function startOf(
     const decl = declareItem(craft.item, registry, diag);
     if (decl === null) return null;
     if (options.maxNodes !== undefined || options.imprint !== undefined) {
-        const reach = craftReach(craft);
+        const reach = craftReach(craft, registry);
         const u = buildUniverse(registry, decl.base, decl.ilvl, craft, {
             fractures: reach.fractures,
             craftedNatural: reach.changes,

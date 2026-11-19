@@ -1225,7 +1225,7 @@ export function universeFor(registry: Registry, base: Base, ilvl: number, craft:
     const rows = candidateRows(registry, base, ilvl, craft);
     const comparisons = comparisonsOf(craft, registry, base, ilvl);
     const imprint = craftImprints(craft);
-    const reach = craftReach(craft);
+    const reach = craftReach(craft, registry);
     const key = [
         ilvl,
         imprint ? 1 : 0,
