@@ -1,4 +1,12 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+    linkSync,
+    mkdtempSync,
+    readdirSync,
+    readFileSync,
+    rmSync,
+    statSync,
+    writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -225,6 +233,18 @@ describe("writing a cache file", () => {
         writeAtomic(path, "second");
         expect(readFileSync(path, "utf8")).toBe("second");
         expect(readdirSync(join(dir, "nested"))).toEqual(["prices-Standard.json"]);
+    });
+
+    it("replaces the file by a rename, never writing into it", () => {
+        const path = join(dir, "prices-Standard.json");
+        writeAtomic(path, "old");
+        // A hard link stands for a reader holding the old file: a write into the
+        // file shows through it, a rename puts a new file at the path instead.
+        const reader = join(dir, "reader");
+        linkSync(path, reader);
+        writeAtomic(path, "new");
+        expect(readFileSync(path, "utf8")).toBe("new");
+        expect(readFileSync(reader, "utf8")).toBe("old");
     });
 
     it("leaves the old file whole when the write fails", () => {
