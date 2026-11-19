@@ -132,6 +132,8 @@ export interface Bounds {
     /** Default: none. */
     readonly exarch?: readonly CEldritch[];
     readonly eater?: readonly CEldritch[];
+    /** The corruption implicits held; default: none. */
+    readonly corruption?: readonly (readonly ModId[])[];
     /** Default: 0. */
     readonly strands?: readonly number[];
     /** Every value of each row's span; otherwise its lowest. */
@@ -195,18 +197,21 @@ export function allItems(ctx: RefCtx, bounds: Bounds): CItemSet {
                     for (const corrupted of bounds.corrupted ?? [false]) {
                         for (const exarch of bounds.exarch ?? [NO_IMPLICIT]) {
                             for (const eater of bounds.eater ?? [NO_IMPLICIT]) {
-                                for (const strands of bounds.strands ?? [0]) {
-                                    const item = cItem({
-                                        rarity,
-                                        mods,
-                                        influences,
-                                        baseImplicit,
-                                        corrupted,
-                                        exarch,
-                                        eater,
-                                        strands,
-                                    });
-                                    if (isWellFormed(item, ctx)) out.push(item);
+                                for (const corruption of bounds.corruption ?? [[]]) {
+                                    for (const strands of bounds.strands ?? [0]) {
+                                        const item = cItem({
+                                            rarity,
+                                            mods,
+                                            influences,
+                                            baseImplicit,
+                                            corrupted,
+                                            exarch,
+                                            eater,
+                                            corruption,
+                                            strands,
+                                        });
+                                        if (isWellFormed(item, ctx)) out.push(item);
+                                    }
                                 }
                             }
                         }

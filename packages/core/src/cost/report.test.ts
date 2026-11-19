@@ -43,6 +43,7 @@ import {
     PROTECT_PREFIXES_CARRIER,
     RING_BASE,
     VEILED_CATALOG,
+    CORRUPTION_ROWS,
 } from "../__fixtures__/mods.js";
 import { costOf, openNote } from "./report.js";
 import type { Prices } from "./prices.js";
@@ -1079,6 +1080,7 @@ describe("the eldritch implicits", () => {
         bases: [BOOTS_BASE],
         mods: [...CATALOG],
         eldritch: ELDRITCH_ROWS_EVERY_TIER,
+        corruption: CORRUPTION_ROWS,
     });
     const at = (words: string[], tier: string) => {
         const o = op(words[0]!);
@@ -1161,18 +1163,18 @@ describe("the eldritch implicits", () => {
         expect(branch.branch).toBeCloseTo(3 / 4, 9);
     });
 
-    it("the Corruption Altar's implicit takes the only implicit boots have, or a corruption implicit", () => {
-        // Half the items are destroyed. Of the implicit branch, the share that
-        // replaces a corruption implicit the item may not hold is not known,
-        // and the branch is taken at an assumed even chance.
+    it("the Corruption Altar's implicit takes the only implicit boots have", () => {
+        // Half the items are destroyed. The boots hold no corruption implicit,
+        // so the altar's implicit replaces the eldritch one: of the items
+        // left, the half that took the implicit outcome lose it.
         const r = on({ exarch: "greater", corrupted: true }, [
             op("locus"),
             iff(eldritchP("exarch"), [stop()]),
         ]);
         const branch = r.steps.find((s) => s.kind === "if")!;
         expect(branch.reached).toBeCloseTo(1 / 2, 9);
-        expect(branch.note).toMatch(/not known/);
-        expect(branch.branch).toBeCloseTo(1 / 2, 6);
+        expect(branch.note).toBeUndefined();
+        expect(branch.branch).toBeCloseTo(1 / 2, 9);
     });
 
     it("an Orb of Conflict takes a lowered Lesser implicit off and keeps a raised Perfect one", () => {

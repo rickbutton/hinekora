@@ -3,7 +3,7 @@ import { beast, craft, hasValue, iff, item, op, until } from "../__fixtures__/as
 import { BOOTS_BASE, RING_BASE } from "../__fixtures__/mods.js";
 import { maxTotal, sideCap } from "../model/capacity.js";
 import { Domain, type Gen, ModId, TagId, TypeId } from "../model/ids.js";
-import type { InfluenceKey } from "../model/marks.js";
+import { type Corruption, CORRUPTIONS, type InfluenceKey } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import { buildRegistry, type Registry } from "../resolve/registry.js";
 import { benchCraft } from "./reference/catalog.js";
@@ -27,7 +27,14 @@ import {
 import { type CEldritch, type CItem, countsOf, type RefCtx, refCtx } from "./reference/item.js";
 import { assignmentsOf, decode, listItems } from "./reference/listing.js";
 import { allItems, type Bounds, diffSets, CItemSet } from "./reference/sets.js";
-import { buildUniverse, isFresh, RARITIES, type Universe, UniverseError } from "./universe.js";
+import {
+    buildUniverse,
+    isFresh,
+    RARITIES,
+    type Universe,
+    UniverseError,
+    universeFor,
+} from "./universe.js";
 import { METHODS } from "./methods.js";
 import type { Op } from "./ops/types.js";
 
@@ -49,6 +56,13 @@ interface Plan {
     readonly full: boolean;
 }
 
+/** Every holding of the universe's corruption implicits: none, each alone,
+ *  each pair in either order, and a row twice. */
+function corruptionSets(u: Universe): ModId[][] {
+    const rows = u.corruptionRows.flatMap((c) => (c === undefined ? [] : [c.id]));
+    return [[], ...rows.map((a) => [a]), ...rows.flatMap((a) => rows.map((b) => [a, b]))];
+}
+
 /** The listing's restriction and the reference bounds it matches. */
 function restrict(
     u: Universe,
@@ -57,7 +71,9 @@ function restrict(
 ): { dd: Dd; bounds: Bounds } {
     const m = u.dd;
     const influences = someInfluences(u);
-    const corrupted = full ? [false] : [false, true];
+    // Twice corrupted differs from once only in the corruption implicits it holds.
+    const twice: Corruption[] = u.corruptionRows.length > 1 ? ["twice"] : [];
+    const corrupted: Corruption[] = full ? [false] : [false, true, ...twice];
     const strands = full ? [0] : [0, 100];
     let r = m.and(
         m.slotIn(
@@ -66,7 +82,7 @@ function restrict(
         ),
         m.slotIn(
             u.scalar("corrupted"),
-            corrupted.map((c) => (c ? 1 : 0)),
+            corrupted.map((c) => CORRUPTIONS.indexOf(c)),
         ),
     );
     r = m.and(r, m.slotIn(u.scalar("strands"), strands));
@@ -90,6 +106,7 @@ function restrict(
             corrupted,
             exarch: implicits.exarch,
             eater: implicits.eater,
+            corruption: corruptionSets(u),
             strands,
             values: full,
             fractured: full,
@@ -150,6 +167,17 @@ const LIGHT: CatalogOptions[] = [
 ];
 for (let i = 0; i < 36; i++) {
     PLANS.push({ opts: { types: 3 + (i % 2), ...LIGHT[i % LIGHT.length] }, full: false });
+}
+// The corruption implicits, over two modifier types: their slots multiply
+// what the listing holds.
+for (const opts of [
+    { base: "boots", eldritch: true, implicit: "own" },
+    { base: "amulet", eldritch: true },
+    { base: "simplex", implicit: "locked" },
+    { base: "ring", ilvl: 40 },
+    { base: "jewel" },
+] as const) {
+    PLANS.push({ opts: { types: 2, corruption: true, ...opts }, full: false });
 }
 
 describe("the universe's well-formed items", () => {
@@ -260,6 +288,26 @@ describe("the universe's well-formed items", () => {
                 expect(u.dd.contains(u.wfWithImprint, u.encode(it))).toBe(true);
             }
         }
+    });
+});
+
+describe("the corruption implicit slots", () => {
+    const cat = generateCatalog(1300, { base: "ring", corruption: true, ilvl: 84 });
+    const sizes = (steps: Parameters<typeof craft>[1], corrupted = false) => {
+        const c = craft(item({ base: cat.base.id, ilvl: 84, rarity: "rare", corrupted }), steps);
+        const u = universeFor(cat.registry, cat.base, 84, c);
+        return [u.scalar("corruption1"), u.scalar("corruption2")].map((s) => u.dd.domains[s]);
+    };
+
+    it("hold none alone on a craft that never corrupts, whatever the pool", () => {
+        expect(sizes([op("chaos"), op("exalt")])).toEqual([1, 1]);
+    });
+
+    it("hold each row of the pool on a craft that corrupts", () => {
+        const rows = cat.registry.corruptionPool(cat.base, 84).length;
+        expect(rows).toBeGreaterThan(1);
+        for (const step of ["vaal", "locus"])
+            expect(sizes([op(step)], true)).toEqual([rows + 1, rows + 1]);
     });
 });
 
@@ -739,6 +787,7 @@ describe("building a universe", () => {
             const sources = new Set<ReachSource>();
             let fractures = false;
             let changes = false;
+            let corrupts = false;
             const visit = (x: unknown): void => {
                 if (typeof x !== "object" || x === null) return;
                 if (Array.isArray(x)) return x.forEach(visit);
@@ -747,6 +796,7 @@ describe("building a universe", () => {
                     const source = sourceOf[o.kind];
                     if (source !== undefined) sources.add(source);
                     if (o.kind === "lock") fractures = true;
+                    if (o.kind === "corruptionImplicit") corrupts = true;
                     if (o.kind === "rows" && o.replacing !== undefined) changes = true;
                 }
                 for (const v of Object.values(o)) visit(v);
@@ -757,6 +807,7 @@ describe("building a universe", () => {
             for (const x of sources) expect(reach?.sources?.has(x), `${words}: ${x}`).toBe(true);
             if (fractures) expect(reach?.fractures, `${words} fractures`).toBe(true);
             if (changes) expect(reach?.changes, `${words} changes`).toBe(true);
+            if (corrupts) expect(reach?.corrupts, `${words} corrupts`).toBe(true);
         }
     });
 

@@ -38,6 +38,7 @@ export function cItem(fields: Partial<CItem> = {}): CItem {
         corrupted: false,
         exarch: NO_IMPLICIT,
         eater: NO_IMPLICIT,
+        corruption: [],
         strands: 0,
         imprint: undefined,
         ...fields,
@@ -115,6 +116,9 @@ const implicitKey = (e: CEldritch): string => `${e.tier}:${e.type ?? "?"}`;
 const corruptionKey = (c: Corruption): string =>
     c === false ? "" : c === "twice" ? " twice-corrupted" : " corrupted";
 
+const corruptionImplicitsKey = (item: CItem): string =>
+    item.corruption.length === 0 ? "" : ` vaal=${[...item.corruption].sort().join(",")}`;
+
 /** Code-unit order, independent of the locale. */
 export function compareStrings(a: string, b: string): number {
     return a < b ? -1 : a > b ? 1 : 0;
@@ -127,7 +131,7 @@ export function itemKey(item: CItem): string {
     return (
         `${item.rarity} [${mods}] inf=${item.influences === NO_INFLUENCE ? "-" : item.influences}` +
         `${item.baseImplicit ? " base-implicit" : ""}${corruptionKey(item.corrupted)} exarch=${implicitKey(item.exarch)}` +
-        ` eater=${implicitKey(item.eater)} strands=${item.strands}${imprint}`
+        ` eater=${implicitKey(item.eater)}${corruptionImplicitsKey(item)} strands=${item.strands}${imprint}`
     );
 }
 
@@ -138,6 +142,7 @@ export function canonical(item: CItem): CItem {
     return {
         ...item,
         mods,
+        corruption: [...item.corruption].sort(compareStrings),
         imprint: item.imprint === undefined ? undefined : canonical(item.imprint),
     };
 }

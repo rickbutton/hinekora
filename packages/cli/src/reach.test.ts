@@ -143,10 +143,24 @@ const CASES: readonly (readonly [string, readonly string[], string])[] = [
         ["eldritch chaos"],
         'has "maximum life" or suffixCount >= 2',
     ],
+    // A corruption implicit, from the base's pool. A corrupted item takes no
+    // step the other cases' arms run (`craftOf`).
+    [RING, ["vaal"], "suffixCount >= 3"],
+    [
+        block("Iron Ring", "rare", 'suffixes: [ "random" ]', "corrupted"),
+        ["locus"],
+        'has "fire resistance"',
+    ],
 ];
 
-const craftOf = (item: string, steps: readonly string[], condition: string, defs = ""): string =>
-    `item {\n    ${item}\n}\n${defs}${steps.join("\n")}\nif ${condition} {\n    divine\n} else {\n    scour\n}\n`;
+const craftOf = (item: string, steps: readonly string[], condition: string, defs = ""): string => {
+    const [yes, no] = steps.includes("vaal")
+        ? ["locus", "stop"]
+        : steps.includes("locus")
+          ? ["stop", "stop"]
+          : ["divine", "scour"];
+    return `item {\n    ${item}\n}\n${defs}${steps.join("\n")}\nif ${condition} {\n    ${yes}\n} else {\n    ${no}\n}\n`;
+};
 
 function checked(source: string): CheckResult {
     const parsed = parse(source);

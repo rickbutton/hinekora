@@ -313,7 +313,13 @@ function scalars(u: Universe, decl: ItemDecl, influence: number, influenced: boo
     const eldritch = takes && (decl.exarch !== undefined || decl.eater !== undefined);
     const present = own.has && !eldritch;
     const values = present ? (own.every ? [1] : [0, 1]) : [0];
-    return m.and(dd, m.slotIn(u.scalar("baseImplicit"), values));
+    dd = m.and(dd, m.slotIn(u.scalar("baseImplicit"), values));
+    // The item block declares no corruption implicit; a corrupted item is
+    // taken at its word to hold none.
+    return m.and(
+        m.and(dd, m.slotIn(u.scalar("corruption1"), [0])),
+        m.slotIn(u.scalar("corruption2"), [0]),
+    );
 }
 
 /** The universe and the first state of a craft. */
@@ -344,6 +350,7 @@ export function startOf(
         const u = buildUniverse(registry, decl.base, decl.ilvl, craft, {
             fractures: reach.fractures,
             craftedNatural: reach.changes,
+            corrupts: reach.corrupts,
             ...options,
         });
         return { u, decl, state: initialItem(u, decl) };

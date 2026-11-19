@@ -325,13 +325,10 @@ const corruptedItem = (what: string): Op => require({ kind: "corruptedItem", wha
  *  refuses (`QUESTIONS.md` Q32). */
 const onceCorrupted = (what: string): Op => require({ kind: "notTwiceCorrupted", what });
 
-/** A corruption implicit takes the place of one of the item's implicits, the
- *  base's or an eldritch one (Vaal Orb § Equipment, Eldritch implicit
- *  modifier). */
+/** A corruption implicit added, or in the place of one of the item's
+ *  implicits (Vaal Orb § Equipment, Eldritch implicit modifier, Locus of
+ *  Corruption § Possible outcomes). */
 const corruptionImplicit: Transform = { kind: "corruptionImplicit" };
-/** The altar's, on a corrupted item, which may hold a corruption implicit the
- *  checker does not track. */
-const secondCorruptionImplicit: Transform = { kind: "corruptionImplicit", untracked: true };
 
 /** A Vaal Orb's one outcome that touches the modifiers: the item reforged Rare
  *  with six modifiers, the metamods respected (Vaal Orb § Equipment); the
@@ -358,20 +355,17 @@ export function vaalOps(base: Base): readonly Op[] {
 
 /** The item types the Corruption Altar takes: "an Equipment Item" (Version
  *  3.30.0, Incursion and Atziri), which Equipment reads as weapons, off-hands,
- *  armour and jewellery. Locus of Corruption § Corruption Altar, written
- *  before 3.30, adds jewels; refusing them cannot accept a craft the game
- *  refuses (`QUESTIONS.md` Q32). */
+ *  armour and jewellery. Corrupted § Twice Corrupted adds jewels; refusing
+ *  them cannot accept a craft the game refuses (`QUESTIONS.md` Q32). */
 const ALTAR_TAGS = ["weapon", "armour", "ring", "amulet", "belt", "quiver"].map(TagId);
 
 /** The Corruption Altar corrupts a corrupted item a second time, making it
  *  twice corrupted, so the altar takes it no more; where it would have made an
- *  influenced Rare it destroys the item, and its corruption implicit replaces
- *  an earlier one where the item has two (Version 3.30.0, Incursion and
- *  Atziri). The
- *  outcomes: no change to what the checker tracks (the sockets, no effect), a
- *  corruption implicit, or the item destroyed, ending the craft there. That
- *  it refuses an uncorrupted item, and that its implicit may replace the
- *  base's or an eldritch one, are assumed (`QUESTIONS.md` Q32). */
+ *  influenced Rare it destroys the item (Version 3.30.0, Incursion and
+ *  Atziri). The outcomes: no change to what the checker tracks (the sockets,
+ *  no effect), a corruption implicit, or the item destroyed, ending the craft
+ *  there (Locus of Corruption § Possible outcomes). That it refuses an
+ *  uncorrupted item is assumed (`QUESTIONS.md` Q32). */
 export function locusOps(): readonly Op[] {
     const what = "The Corruption Altar";
     return [
@@ -383,7 +377,7 @@ export function locusOps(): readonly Op[] {
             what: "weapon, armour, piece of jewellery or quiver",
         }),
         corrupt,
-        either([], [secondCorruptionImplicit], end),
+        either([], [corruptionImplicit], end),
     ];
 }
 

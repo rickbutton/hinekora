@@ -31,6 +31,7 @@ import {
 import type { Mod } from "../model/mod.js";
 import { MAX_STRANDS } from "../model/strands.js";
 import { isVeiledPlaceholder } from "../model/veiled.js";
+import type { CorruptionImplicitSpec } from "../model/sources.js";
 import type { Registry } from "../resolve/registry.js";
 import { type Cell, cellCompare, cellHas, cellLabel, cellSample, cellsOf } from "./cells.js";
 import {
@@ -58,6 +59,8 @@ export type ScalarKind =
     | "exarchType"
     | "eaterTier"
     | "eaterType"
+    | "corruption1"
+    | "corruption2"
     | "strands";
 
 /**
@@ -134,6 +137,8 @@ const SCALARS_BEFORE: readonly ScalarKind[] = [
     "exarchType",
     "eaterTier",
     "eaterType",
+    "corruption1",
+    "corruption2",
     "strands",
 ];
 
@@ -147,6 +152,9 @@ export interface UniverseOptions {
     /** A natural row may carry the crafted mark, which only a Harvest change
      *  of a bench craft gives it (`CraftReach.changes`). */
     readonly craftedNatural?: boolean;
+    /** A corruption implicit may be added (`CraftReach.corrupts`); else the
+     *  corruption implicit slots hold none alone. */
+    readonly corrupts?: boolean;
 }
 
 export class UniverseError extends Error {
@@ -187,6 +195,9 @@ export class Universe {
     private readonly eldritchTypeList: Readonly<
         Record<EldritchSide, readonly (TypeId | undefined)[]>
     >;
+    /** The corruption implicits by slot value, value 0 none: the base's pool
+     *  at the item level, where a corruption can add one. */
+    readonly corruptionRows: readonly (CorruptionImplicitSpec | undefined)[];
     private readonly scalarAt = new Map<ScalarKind, number>();
     private readonly typeAt = new Map<TypeId, number>();
     private readonly valueByRow = new Map<ModId, { logical: number; values: number[] }>();
@@ -215,6 +226,12 @@ export class Universe {
             exarch: eldritchTypesFor(registry, base, "exarch"),
             eater: eldritchTypesFor(registry, base, "eater"),
         };
+        this.corruptionRows = [
+            undefined,
+            ...((options.corrupts ?? true)
+                ? registry.corruptionPool(base, ilvl).map((c) => c.row)
+                : []),
+        ];
         const sizes: Record<ScalarKind, number> = {
             rarity: RARITIES.length,
             corrupted: CORRUPTIONS.length,
@@ -224,6 +241,8 @@ export class Universe {
             exarchType: this.eldritchTypeList.exarch.length,
             eaterTier: NUM_TIERS,
             eaterType: this.eldritchTypeList.eater.length,
+            corruption1: this.corruptionRows.length,
+            corruption2: this.corruptionRows.length,
             strands: MAX_STRANDS + 1,
         };
         const logical: LogicalSlot[] = SCALARS_BEFORE.map((kind) => ({ kind, size: sizes[kind] }));
@@ -533,6 +552,9 @@ export class Universe {
                 return `${prefix}exarch ${this.eldritchTypeList.exarch[value] ?? "unnamed"}`;
             case "eaterType":
                 return `${prefix}eater ${this.eldritchTypeList.eater[value] ?? "unnamed"}`;
+            case "corruption1":
+            case "corruption2":
+                return `${prefix}corruption implicit ${this.corruptionRows[value]?.id ?? "none"}`;
             default:
                 return `${prefix}${s.kind} ${value}`;
         }
@@ -725,6 +747,18 @@ export class Universe {
             const t = this.eldritchTypeList[side].indexOf(e.type);
             put(`${side}Type`, t < 0 ? undefined : t, `${side} implicit ${e.type}`);
         }
+        // The pair is held in one order, the lower value first.
+        const held = item.corruption.map((id) =>
+            this.corruptionRows.findIndex((c) => c?.id === id),
+        );
+        if (held.length > 2 || held.some((v) => v < 1)) {
+            throw new UniverseError(
+                `corruption implicits ${item.corruption.join(", ")} are outside this universe`,
+            );
+        }
+        const [first = 0, second = 0] = [...held].sort((a, b) => a - b);
+        put("corruption1", first, "a corruption implicit");
+        put("corruption2", second, "a corruption implicit");
         put("strands", item.strands, `${item.strands} memory strands`);
         const seen = new Set<number>();
         for (const m of item.mods) {
@@ -795,6 +829,10 @@ export class Universe {
             corrupted: CORRUPTIONS[at("corrupted")]!,
             exarch: eldritch("exarch"),
             eater: eldritch("eater"),
+            corruption: [at("corruption1"), at("corruption2")].flatMap((v) => {
+                const row = this.corruptionRows[v];
+                return row === undefined ? [] : [row.id];
+            }),
             strands: at("strands"),
             imprint: undefined,
         };
@@ -843,11 +881,21 @@ export class Universe {
         const toLogical = (slot: number): number => (this.imprint ? slot >> 1 : slot);
 
         const own = baseImplicitOf(registry, base);
+        const corruptionRows = this.corruptionRows;
+        const groupsMeet = (a: number, b: number): boolean =>
+            [...corruptionRows[a]!.groups].some((g) => corruptionRows[b]!.groups.has(g));
 
         interface S {
             readonly room: readonly [number, number, number];
             readonly influenced: boolean;
             readonly baseImplicit: boolean;
+            /** The corruption, until the corruption implicits are read. */
+            readonly corrupted: number;
+            /** How many corruption implicits the item may hold, from its
+             *  corruption and its other implicits; then, past the first, its
+             *  value. */
+            readonly vaal: number;
+            readonly first: number;
             /** The tier of the side being read, until its type is. */
             readonly tier: number;
             readonly exarch: boolean;
@@ -858,6 +906,9 @@ export class Universe {
             room: [0, 0, 0],
             influenced: false,
             baseImplicit: false,
+            corrupted: 0,
+            vaal: 0,
+            first: 0,
             tier: 0,
             exarch: false,
             veiled: false,
@@ -899,6 +950,8 @@ export class Universe {
                         if (rarity === "rare" && !canBeRare(base)) return undefined;
                         return { ...s, room: this.capsOf(rarity) };
                     }
+                    case "corrupted":
+                        return { ...s, corrupted: value };
                     case "influences":
                         return { ...s, influenced: this.influenceKeys[value] !== NO_INFLUENCE };
                     case "baseImplicit": {
@@ -916,10 +969,29 @@ export class Universe {
                     case "eaterType": {
                         const side = at.kind === "exarchType" ? "exarch" : "eater";
                         if (!typeOk(side, s.tier, value)) return undefined;
-                        return side === "exarch"
-                            ? { ...s, tier: 0, exarch: s.tier > 0 }
-                            : { ...s, tier: 0, exarch: false, baseImplicit: false };
+                        if (side === "exarch") return { ...s, tier: 0, exarch: s.tier > 0 };
+                        const eldritch = (s.exarch ? 1 : 0) + (s.tier > 0 ? 1 : 0);
+                        return {
+                            ...s,
+                            tier: 0,
+                            exarch: false,
+                            baseImplicit: false,
+                            corrupted: 0,
+                            vaal: vaalRoom(base, s.corrupted, s.baseImplicit, eldritch),
+                        };
                     }
+                    case "corruption1":
+                        if (value > 0 && s.vaal < 1) return undefined;
+                        return { ...s, vaal: value > 0 && s.vaal === 2 ? 2 : 0, first: value };
+                    case "corruption2":
+                        // The pair in one order, of two groups (Corrupted § Corrupted
+                        // implicit modifiers; QUESTIONS.md Q32).
+                        if (
+                            value > 0 &&
+                            (s.vaal < 2 || value <= s.first || groupsMeet(s.first, value))
+                        )
+                            return undefined;
+                        return { ...s, vaal: 0, first: 0 };
                     case "mod": {
                         const keep = liveAfter[i]!;
                         const v = at.values[value];
@@ -959,9 +1031,32 @@ export class Universe {
             },
             accept: () => true,
             key: (s: S) =>
-                `${s.room.join(",")}|${s.influenced ? 1 : 0}${s.baseImplicit ? 1 : 0}${s.exarch ? 1 : 0}${s.veiled ? 1 : 0}|${s.tier}|${s.claimed.join(",")}`,
+                `${s.room.join(",")}|${s.influenced ? 1 : 0}${s.baseImplicit ? 1 : 0}${s.exarch ? 1 : 0}${s.veiled ? 1 : 0}|${s.tier}|${s.corrupted}${s.vaal}:${s.first}|${s.claimed.join(",")}`,
         };
     }
+}
+
+/**
+ * How many corruption implicits an item may hold beside its other implicits:
+ * what the corruptions leave (item-model.md §8 "Corruption implicits"). A
+ * Vaal Orb or a Bloodstained Fossil, on an uncorrupted item, replaces one
+ * implicit, or is added where there is none (Vaal Orb § Equipment;
+ * Bloodstained Fossil § Mechanics). The Corruption Altar, on a corrupted
+ * item, is added beside a lone corruption implicit and otherwise replaces
+ * one implicit (Locus of Corruption § Possible outcomes; Version 3.30.0 §
+ * Incursion and Atziri). No step adds a base or eldritch implicit to a
+ * corrupted item. So one corruption implicit needs a corrupted item and two a
+ * twice-corrupted one; the base's implicit is never beside one, since an
+ * eldritch implicit replaced it first or the corruption did; and an item
+ * holds two implicits at most once it holds one, the most it had before. An
+ * amulet holds one eldritch implicit at most (Ukatoa's Ducat § Mechanics), so
+ * none stays beside a corruption implicit there.
+ */
+function vaalRoom(base: Base, corrupted: number, baseImplicit: boolean, eldritch: number): number {
+    if (corrupted === 0 || baseImplicit) return 0;
+    if (eldritch > 0 && isEldritchAmulet(base)) return 0;
+    const room = Math.min(CORRUPTIONS[corrupted] === "twice" ? 2 : 1, 2 - eldritch);
+    return Math.max(room, 0);
 }
 
 const marksKey = (row: ModId, fractured: boolean, crafted: boolean): string =>
@@ -1136,6 +1231,7 @@ export function universeFor(registry: Registry, base: Base, ilvl: number, craft:
         imprint ? 1 : 0,
         reach.fractures ? 1 : 0,
         reach.changes ? 1 : 0,
+        reach.corrupts ? 1 : 0,
         [...rows.keys()]
             .map((m) => m.id)
             .sort()
@@ -1156,6 +1252,7 @@ export function universeFor(registry: Registry, base: Base, ilvl: number, craft:
         : new Universe(registry, base, ilvl, rows, comparisons, imprint, {
               fractures: reach.fractures,
               craftedNatural: reach.changes,
+              corrupts: reach.corrupts,
           });
     if (reused) u.dd.beginRun();
     list.push({ base, key, u });

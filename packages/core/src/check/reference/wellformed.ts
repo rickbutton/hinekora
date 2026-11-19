@@ -166,6 +166,41 @@ export function violations(item: CItem, ctx: RefCtx): string[] {
         out.push("the base's implicit cannot be changed");
     }
 
+    // item-model.md §8 "Corruption implicits" (check/universe.ts `vaalRoom`):
+    // rows of the base's pool at its item level, of two groups, one on a
+    // corrupted item and two on a twice-corrupted one, never beside the base's
+    // implicit, two implicits at most in all, none beside an amulet's
+    // eldritch implicit.
+    const vaal = item.corruption;
+    if (vaal.length > 0) {
+        const pool = new Map(
+            ctx.registry.corruptionPool(base, ctx.ilvl).map((c) => [c.row.id, c.row]),
+        );
+        const groups = new Set<GroupId>();
+        for (const id of vaal) {
+            const row = pool.get(id);
+            if (row === undefined) {
+                out.push(`${id} is no corruption implicit of this base at its item level`);
+                continue;
+            }
+            for (const g of row.groups) {
+                if (groups.has(g)) out.push(`two corruption implicits of group ${g}`);
+                groups.add(g);
+            }
+        }
+        if (vaal.length > 2) out.push(`${vaal.length} corruption implicits, at most two`);
+        if (item.corrupted === false) out.push("a corruption implicit on an uncorrupted item");
+        if (vaal.length === 2 && item.corrupted !== "twice") {
+            out.push("two corruption implicits on an item corrupted once");
+        }
+        if (item.baseImplicit) out.push("a corruption implicit replaces the base's implicit");
+        const eldritch = (item.exarch.tier > 0 ? 1 : 0) + (item.eater.tier > 0 ? 1 : 0);
+        if (vaal.length + eldritch > 2) out.push("more than two implicits beside a corruption one");
+        if (eldritch > 0 && isEldritchAmulet(base)) {
+            out.push("a corruption implicit replaces an amulet's eldritch implicit");
+        }
+    }
+
     // item-model.md §7 "Memory strands", 0 to 100 (Memory strand § Mechanics).
     if (!Number.isInteger(item.strands) || item.strands < 0 || item.strands > MAX_STRANDS) {
         out.push(`${item.strands} memory strands, 0 to ${MAX_STRANDS}`);

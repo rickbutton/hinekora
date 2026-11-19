@@ -14,6 +14,7 @@ import {
     type Base,
     BaseId,
     ClassId,
+    type CorruptionImplicitSpec,
     Domain,
     type Effect,
     type Gen,
@@ -236,6 +237,33 @@ export const ELDRITCH_ROWS: readonly EldritchImplicitSpec[] = [
     ),
     eldritchRow("EldritchSpeed2", "exarch", 2, "ImplicitMoveSpeed", "8% increased Movement Speed"),
     eldritchRow("EldritchChaosRes3", "eater", 3, "ImplicitChaosRes", "+15% to Chaos Resistance"),
+];
+
+const corruptionRow = (
+    id: string,
+    group: string,
+    level: number,
+    text: string,
+): CorruptionImplicitSpec => ({
+    id: ModId(id),
+    domain: DOMAIN_ITEM,
+    type: TypeId(group),
+    groups: new Set([mkGroup(group)]),
+    level,
+    spawn: [
+        { tag: TagId("boots"), weight: 1000 },
+        { tag: TAG_RING, weight: 500 },
+        { tag: TAG_DEFAULT, weight: 0 },
+    ],
+    implicitTags: new Set(),
+    text,
+});
+/** A small corruption implicit pool of boots and rings: two rows of one group
+ *  and one needing item level 75. */
+export const CORRUPTION_ROWS: readonly CorruptionImplicitSpec[] = [
+    corruptionRow("VaalSpeed1", "VaalSpeed", 1, "5% increased Movement Speed"),
+    corruptionRow("VaalSpeed2", "VaalSpeed", 30, "10% increased Movement Speed"),
+    corruptionRow("VaalEndurance", "VaalEndurance", 75, "+1 to Maximum Endurance Charges"),
 ];
 
 /** `ELDRITCH_ROWS` with each implicit at every tier, as the game's data has

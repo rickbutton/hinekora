@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import * as L from "../library.js";
 import { rollRange } from "../values.js";
 import type { Check, InfluenceChange, Op, Transform } from "./types.js";
-import { ASTROLABE_BASE, FLASK_BASE } from "../../__fixtures__/mods.js";
+import { ASTROLABE_BASE, FLASK_BASE, FOSSIL_BLOODSTAINED } from "../../__fixtures__/mods.js";
 import type { Base } from "../../model/base.js";
 import type { EldritchImplicitSpec } from "../../model/sources.js";
 import { buildRegistry } from "../../resolve/registry.js";
@@ -41,8 +41,9 @@ const req = (check: Check): Op => ({ kind: "require", check });
 const rarity = (r: Rarity | "survivors"): Transform => ({ kind: "rarity", rarity: r });
 const influence = (change: InfluenceChange): Transform => ({ kind: "influence", change });
 const corrupt: Transform = { kind: "corrupt" };
-const replaced: Transform = { kind: "corruptionImplicit" };
-const altarReplaced: Transform = { kind: "corruptionImplicit", untracked: true };
+const vaalImplicit: Transform = { kind: "corruptionImplicit" };
+/** A corruption implicit, after the corruption the method gives it first. */
+const replaced: readonly Transform[] = [corrupt, vaalImplicit];
 const ALL_CORRUPTIONS: Corruption[] = [false, true, "twice"];
 const conflict: Transform = { kind: "eldritch", change: { kind: "conflict" } };
 const hunter = influenceKey(["hunter"]);
@@ -61,6 +62,7 @@ function setup(
         eldritch?: boolean;
         ilvl?: number;
         implicit?: "own" | "locked" | "variants";
+        corruption?: boolean;
     },
     types = 4,
     rows = 3,
@@ -88,6 +90,14 @@ function twoTypesASide(seed: number): Catalog {
             new Set(cat.eldritch.filter((e) => e.side === side).map((e) => e.type)).size;
         if (named("exarch") === 2 && named("eater") === 2) return cat;
     }
+}
+
+/** None, each row of the catalogue's corruption pool alone, and each pair. */
+function corruptionSets(s: Setup): ModId[][] {
+    const rows = s.cat.registry.corruptionPool(s.cat.base, 100).map((c) => c.row.id);
+    const out: ModId[][] = [[], ...rows.map((r) => [r])];
+    rows.forEach((a, i) => rows.slice(i + 1).forEach((b) => out.push([a, b])));
+    return out;
 }
 
 /** Every implicit of the side at every tier, and none. */
@@ -148,7 +158,7 @@ describe("the marks over tiny catalogues", () => {
     ];
     configs.forEach(([base, flags], i) => {
         const seed = 7000 + 10 * i;
-        const s = setup(seed, base, flags);
+        const s = setup(seed, base, { ...flags, corruption: true });
         const influences = flags.influence ? someInfluences(s.u) : [NO_INFLUENCE];
         const amulet = base === "amulet";
         const eldritch = flags.eldritch
@@ -170,10 +180,11 @@ describe("the marks over tiny catalogues", () => {
         });
 
         it(`${base}: the corruption implicits`, () => {
-            const bounds = { influences, ...eldritch };
-            exact(s, seed + 4, bounds, [replaced]);
-            exact(s, seed + 5, { ...bounds, corrupted: [true] }, [altarReplaced]);
+            const bounds = { influences, ...eldritch, corruption: corruptionSets(s) };
+            exact(s, seed + 4, bounds, replaced);
+            exact(s, seed + 5, { ...bounds, corrupted: [true, "twice"] }, replaced);
             exact(s, seed + 6, { ...bounds, corrupted: ALL_CORRUPTIONS }, L.locusOps());
+            exact(s, seed + 6, { ...bounds, corrupted: ALL_CORRUPTIONS }, L.vaalOps(s.cat.base));
         });
 
         it(`${base}: randomise`, () => {
@@ -241,8 +252,8 @@ describe("the marks over tiny catalogues", () => {
             rarities: ["rare"] as Rarity[],
         };
         exact(s, 7121, bounds, L.CONFLICT);
-        exact(s, 7122, bounds, [replaced]);
-        exact(s, 7123, { ...bounds, corrupted: [true] as Corruption[] }, [altarReplaced]);
+        exact(s, 7122, bounds, replaced);
+        exact(s, 7123, { ...bounds, corrupted: [true] as Corruption[] }, replaced);
         for (const e of bounds.exarch.filter((x) => x.tier > 0)) {
             for (const f of bounds.eater.filter((x) => x.tier > 0)) {
                 const out = outcomes(s, cItem({ exarch: e, eater: f }), L.CONFLICT);
@@ -262,7 +273,7 @@ describe("the marks over tiny catalogues", () => {
         const bounds = { exarch: some, eater: some };
         exact(s, 7131, bounds, L.CONFLICT);
         exact(s, 7132, bounds, L.eldritchImplicitOps("eater", 2, []));
-        exact(s, 7133, bounds, [replaced]);
+        exact(s, 7133, bounds, replaced);
         for (const c of CHECKS) exact(s, 7134, bounds, [req(c)]);
     });
 
@@ -381,7 +392,7 @@ describe("the influence changes", () => {
 });
 
 describe("the eldritch changes", () => {
-    const s = setup(7400, "boots", { eldritch: true });
+    const s = setup(7400, "boots", { eldritch: true, corruption: true, ilvl: 84 });
     const ex = s.cat.eldritch.find((e) => e.side === "exarch")!.type;
     const ea = s.cat.eldritch.find((e) => e.side === "eater")!.type;
     const item = (a: number, e: number) =>
@@ -414,17 +425,55 @@ describe("the eldritch changes", () => {
         expect(out.map((x) => x.exarch.type).sort()).toEqual([...new Set(pool)].sort());
     });
 
-    it("a corruption implicit replaces one eldritch implicit; the altar's may replace neither", () => {
-        expect(pairs(outcomes(s, item(3, 2), [replaced]))).toEqual(["0/2", "3/0"]);
-        expect(pairs(outcomes(s, item(0, 0), [replaced]))).toEqual(["0/0"]);
-        // The altar's may replace a corruption implicit the checker does not track.
-        const corrupted = (a: number, e: number): CItem => ({ ...item(a, e), corrupted: true });
-        expect(pairs(outcomes(s, corrupted(3, 2), [altarReplaced]))).toEqual(["0/2", "3/0", "3/2"]);
-        expect(pairs(outcomes(s, corrupted(3, 0), [altarReplaced]))).toEqual(["0/0", "3/0"]);
-        expect(pairs(outcomes(s, corrupted(0, 0), [altarReplaced]))).toEqual(["0/0"]);
-        const altar = outcomes(s, { ...item(3, 2), corrupted: true }, L.locusOps());
-        expect(pairs(altar)).toEqual(["0/2", "3/0", "3/2"]);
-        expect(altar.every((x) => x.corrupted === "twice")).toBe(true);
+    it("a corruption implicit replaces one eldritch implicit, or is added beside none", () => {
+        const out = outcomes(s, item(3, 2), replaced);
+        expect([...new Set(pairs(out))]).toEqual(["0/2", "3/0"]);
+        expect(out.every((x) => x.corruption.length === 1)).toBe(true);
+        const bare = outcomes(s, item(0, 0), replaced);
+        expect(pairs(bare).every((p) => p === "0/0")).toBe(true);
+        // One outcome per row of the pool at the item level.
+        expect(bare.map((x) => x.corruption.join())).toEqual([
+            "VaalA1",
+            "VaalA2",
+            "VaalB",
+            "VaalHigh",
+        ]);
+    });
+
+    it("the altar's replaces any implicit beside an eldritch one, and is added to a lone one", () => {
+        const twice = (x: CItem, ops: readonly Op[] = replaced) =>
+            [
+                ...new Set(
+                    outcomes(s, { ...x, corrupted: "twice" }, ops).map(
+                        (y) =>
+                            `${y.exarch.tier}/${y.eater.tier} ${[...y.corruption].sort().join("+")}`,
+                    ),
+                ),
+            ].sort();
+        const vaalB = [ModId("VaalB")];
+        // Beside an eldritch implicit: either goes; a new row of any group
+        // where the corruption implicit went, of another group where it stays.
+        expect(twice({ ...item(3, 0), corruption: vaalB })).toEqual([
+            "0/0 VaalA1+VaalB",
+            "0/0 VaalA2+VaalB",
+            "0/0 VaalB+VaalHigh",
+            "3/0 VaalA1",
+            "3/0 VaalA2",
+            "3/0 VaalB",
+            "3/0 VaalHigh",
+        ]);
+        // Alone: added, never of its group.
+        expect(twice({ ...item(0, 0), corruption: [ModId("VaalA1")] })).toEqual([
+            "0/0 VaalA1+VaalB",
+            "0/0 VaalA1+VaalHigh",
+        ]);
+        // Two held: one of them goes.
+        expect(twice({ ...item(0, 0), corruption: [ModId("VaalA1"), ModId("VaalB")] })).toEqual([
+            "0/0 VaalA1+VaalB",
+            "0/0 VaalA1+VaalHigh",
+            "0/0 VaalA2+VaalB",
+            "0/0 VaalB+VaalHigh",
+        ]);
     });
 
     it("the altar takes a corrupted item once, and leaves it twice corrupted", () => {
@@ -540,9 +589,10 @@ describe("the base's implicit", () => {
             exarch: implicits(s, "exarch", 4),
             eater: implicits(s, "eater", 4),
             corrupted: ALL_CORRUPTIONS,
+            corruption: corruptionSets(s),
         };
         exact(s, seed, bounds, L.CONFLICT);
-        exact(s, seed + 1, bounds, [replaced]);
+        exact(s, seed + 1, bounds, replaced);
         exact(s, seed + 2, bounds, L.vaalOps(s.cat.base));
         exact(s, seed + 3, bounds, L.locusOps());
         for (const side of ["exarch", "eater"] as const) {
@@ -552,7 +602,7 @@ describe("the base's implicit", () => {
     }
 
     it("is replaced by an ember or ichor, on boots made with one", () => {
-        const s = setup(7900, "boots", { eldritch: true, implicit: "own" });
+        const s = setup(7900, "boots", { eldritch: true, implicit: "own", corruption: true });
         eldritchExact(s, 7901);
         const type = s.cat.eldritch.find((e) => e.side === "eater")!.type;
         const pool = s.cat.registry.eldritchPool(s.cat.base, "eater", 1).map((e) => e.type);
@@ -566,52 +616,61 @@ describe("the base's implicit", () => {
     });
 
     it("is never held on boots made with none", () => {
-        const s = setup(7910, "boots", { eldritch: true });
+        const s = setup(7910, "boots", { eldritch: true, corruption: true });
         expect(s.cat.registry.baseImplicits(s.cat.base)).toEqual([[]]);
         eldritchExact(s, 7911);
     });
 
     it("is held or not on a name that stands for bases with and without one", () => {
-        const s = setup(7920, "boots", { eldritch: true, implicit: "variants" });
+        const s = setup(7920, "boots", { eldritch: true, implicit: "variants", corruption: true });
         expect(s.cat.registry.baseImplicits(s.cat.base).map((v) => v.length)).toEqual([1, 0]);
         eldritchExact(s, 7921);
     });
 
     it("is the one implicit a corruption takes where there is no other", () => {
-        const s = setup(7940, "ring", { implicit: "own" });
+        const s = setup(7940, "ring", { implicit: "own", corruption: true });
         const held = cItem({ baseImplicit: true });
-        expect(outcomes(s, held, [replaced]).map((x) => x.baseImplicit)).toEqual([false]);
+        const gone = (xs: CItem[]) => [...new Set(xs.map((x) => x.baseImplicit))].sort();
+        expect(gone(outcomes(s, held, replaced))).toEqual([false]);
+        // The altar's on a corrupted ring holding it, and so no corruption
+        // implicit: it goes, or nothing changes on the altar's other outcomes.
         const altar = outcomes(s, { ...held, corrupted: true }, L.locusOps());
-        expect(altar.map((x) => x.baseImplicit).sort()).toEqual([false, true]);
-        const taken = outcomes(s, { ...held, corrupted: true }, [altarReplaced]);
-        expect(taken.map((x) => x.baseImplicit).sort()).toEqual([false, true]);
-        exact(s, 7944, { baseImplicit: [false, true], corrupted: [true] }, [altarReplaced]);
-        const bounds = { baseImplicit: [false, true], corrupted: ALL_CORRUPTIONS };
-        exact(s, 7941, bounds, [replaced]);
+        expect(gone(altar)).toEqual([false, true]);
+        expect(altar.filter((x) => x.baseImplicit).every((x) => x.corruption.length === 0)).toBe(
+            true,
+        );
+        const bounds = {
+            baseImplicit: [false, true],
+            corrupted: ALL_CORRUPTIONS,
+            corruption: corruptionSets(s),
+        };
+        exact(s, 7941, bounds, replaced);
         exact(s, 7942, bounds, L.vaalOps(s.cat.base));
         exact(s, 7943, bounds, L.locusOps());
     });
 
     it("goes or one eldritch implicit does, beside both", () => {
-        const s = setup(7950, "boots", { eldritch: true, implicit: "variants" });
+        const s = setup(7950, "boots", { eldritch: true, implicit: "variants", corruption: true });
         const ex = s.cat.eldritch.find((e) => e.side === "exarch")!.type;
         const ea = s.cat.eldritch.find((e) => e.side === "eater")!.type;
         const both = cItem({ exarch: { tier: 2, type: ex }, eater: { tier: 1, type: ea } });
-        const out = outcomes(s, both, [replaced]);
-        expect(out.map((x) => `${x.exarch.tier}/${x.eater.tier}`).sort()).toEqual(["0/1", "2/0"]);
-        const bare = outcomes(s, cItem({ baseImplicit: true }), [replaced]);
-        expect(bare.map((x) => x.baseImplicit)).toEqual([false]);
+        const out = outcomes(s, both, replaced);
+        const pair = (x: CItem) => `${x.exarch.tier}/${x.eater.tier}`;
+        expect([...new Set(out.map(pair))].sort()).toEqual(["0/1", "2/0"]);
+        const bare = outcomes(s, cItem({ baseImplicit: true }), replaced);
+        expect([...new Set(bare.map((x) => x.baseImplicit))]).toEqual([false]);
     });
 
     it("always stays where it cannot be changed", () => {
-        const s = setup(7930, "simplex", { eldritch: true, implicit: "locked" });
+        const s = setup(7930, "simplex", { eldritch: true, implicit: "locked", corruption: true });
         const bounds = {
             baseImplicit: BOTH,
             exarch: implicits(s, "exarch", 4),
             eater: implicits(s, "eater", 4),
             corrupted: ALL_CORRUPTIONS,
+            corruption: corruptionSets(s),
         };
-        exact(s, 7931, bounds, [replaced]);
+        exact(s, 7931, bounds, replaced);
         exact(s, 7932, bounds, L.vaalOps(s.cat.base));
         exact(s, 7933, bounds, L.locusOps());
         exact(s, 7934, bounds, L.CONFLICT);
@@ -621,7 +680,7 @@ describe("the base's implicit", () => {
         expect(runMethod(state, L.eldritchImplicitOps("exarch", 2, [])).ok).toBe(false);
         // A corruption changes no implicit on it (Simplex Amulet § Mechanics).
         const held = cItem({ baseImplicit: true });
-        expect(outcomes(s, held, [replaced])).toEqual([held]);
+        expect(outcomes(s, held, replaced)).toEqual([{ ...held, corrupted: true }]);
     });
 });
 
@@ -688,5 +747,96 @@ describe("the rarity and corruption checks' words", () => {
             failure: { kind: "notCorruptedItem", what },
             sure: true,
         });
+    });
+});
+
+describe("the corruption implicits a corruption leaves", () => {
+    const bloodstained = L.resonatorOps({
+        fossils: [{ ...FOSSIL_BLOODSTAINED }],
+        added: [],
+        forced: [],
+        corrupted: [],
+    });
+    /** A Vaal Orb, a Bloodstained Fossil and the Corruption Altar over every
+     *  well-formed holding of the implicits. */
+    function corruptions(s: Setup, seed: number, bounds: Omit<Bounds, "rows">): void {
+        const all = { ...bounds, corrupted: ALL_CORRUPTIONS, corruption: corruptionSets(s) };
+        exact(s, seed, all, L.vaalOps(s.cat.base));
+        exact(s, seed + 1, all, bloodstained);
+        exact(s, seed + 2, all, L.locusOps());
+        exact(s, seed + 3, all, replaced);
+    }
+    const eldritchOf = (s: Setup) => ({
+        exarch: implicits(s, "exarch", 4),
+        eater: implicits(s, "eater", 4),
+    });
+
+    it("on a ring made with an implicit", () => {
+        const s = setup(8000, "ring", { implicit: "own", corruption: true });
+        corruptions(s, 8001, { baseImplicit: [false, true] });
+    });
+
+    it("on boots with no, one or both eldritch implicits", () => {
+        const s = setup(8010, "boots", { eldritch: true, corruption: true, ilvl: 84 });
+        corruptions(s, 8011, eldritchOf(s));
+    });
+
+    it("on an amulet, whose one eldritch implicit a corruption replaces", () => {
+        const s = setup(8015, "amulet", { eldritch: true, corruption: true, ilvl: 84 });
+        corruptions(s, 8016, eldritchOf(s));
+    });
+
+    it("on a base whose implicit cannot be changed", () => {
+        const s = setup(8020, "simplex", { implicit: "locked", corruption: true });
+        corruptions(s, 8021, { baseImplicit: [true] });
+        const held = cItem({ baseImplicit: true });
+        expect(outcomes(s, held, replaced)).toEqual([{ ...held, corrupted: true }]);
+    });
+
+    it("on a jewel", () => {
+        const s = setup(8030, "jewel", { corruption: true });
+        corruptions(s, 8031, {});
+    });
+
+    it("on a base whose pool grows with the item level", () => {
+        const pools = [40, 84].map((ilvl) => {
+            const s = setup(8040, "boots", { corruption: true, ilvl });
+            corruptions(s, 8041, {});
+            return [...new Set(outcomes(s, cItem(), replaced).flatMap((x) => x.corruption))];
+        });
+        expect(pools).toEqual([
+            ["VaalA1", "VaalA2", "VaalB"],
+            ["VaalA1", "VaalA2", "VaalB", "VaalHigh"],
+        ]);
+    });
+
+    it("on a base with no pool, which no corruption implicit reaches", () => {
+        const s = setup(8050, "ring", { implicit: "own" });
+        const held = cItem({ baseImplicit: true });
+        expect(outcomes(s, held, replaced)).toEqual([{ ...held, corrupted: true }]);
+        exact(s, 8051, { baseImplicit: [true], corrupted: ALL_CORRUPTIONS }, L.locusOps());
+    });
+
+    it("the altar on items with none, one and two corruption implicits", () => {
+        const s = setup(8060, "ring", { implicit: "own", corruption: true, ilvl: 40 });
+        const on = (x: CItem) =>
+            [
+                ...new Set(
+                    outcomes(s, { ...x, corrupted: true }, L.locusOps()).map(
+                        (y) =>
+                            `${y.baseImplicit ? "base " : ""}${[...y.corruption].sort().join("+")}`,
+                    ),
+                ),
+            ].sort();
+        expect(on(cItem({ baseImplicit: true }))).toEqual(["VaalA1", "VaalA2", "VaalB", "base "]);
+        expect(on(cItem({ corruption: [ModId("VaalA1")] }))).toEqual(["VaalA1", "VaalA1+VaalB"]);
+        // An item corrupted once holds one; two need the altar's own second,
+        // which leaves it twice corrupted and so out of the altar's reach.
+        const two = cItem({ corruption: [ModId("VaalA1"), ModId("VaalB")], corrupted: "twice" });
+        // Either goes; where VaalB stays, a row of the other group.
+        const pairs = outcomes(s, two, [vaalImplicit]).map((y) =>
+            [...y.corruption].sort().join("+"),
+        );
+        expect([...new Set(pairs)].sort()).toEqual(["VaalA1+VaalB", "VaalA2+VaalB"]);
     });
 });

@@ -161,20 +161,45 @@ export const transforms: RefTransformTable = {
     },
     corruptionImplicit: {
         reads: [],
-        apply: (op, item, { ctx }) => {
-            // A corruption implicit replaces one of the item's implicits
-            // at random, and with none is added (Vaal Orb § Equipment);
-            // one that cannot be changed stays, and keeps the others
-            // (Cogwork Ring § Mechanics). An untracked corruption
-            // implicit the altar's may replace instead (QUESTIONS.md Q32).
+        apply: (_op, item, { ctx }) => {
+            // A row of the base's pool at its item level (Corrupted § Corrupted
+            // implicit modifiers). With two corruption implicits, or beside
+            // another implicit, one implicit the item holds is replaced at
+            // random; otherwise the new one is added (Vaal Orb § Equipment;
+            // Locus of Corruption § Possible outcomes; Version 3.30.0 §
+            // Incursion and Atziri; QUESTIONS.md Q32). It never shares a group
+            // with a corruption implicit that stays. One that cannot be
+            // changed stays, and keeps the others (Cogwork Ring § Mechanics;
+            // QUESTIONS.md Q134).
+            const pool = ctx.registry.corruptionPool(ctx.base, ctx.ilvl).map((c) => c.row);
             const own = ctx.registry.baseImplicits(ctx.base).some((v) => v.length > 0);
-            if (own && ctx.base.implicitLocked === true) return [item];
-            const out: CItem[] = [];
-            if (item.baseImplicit) out.push({ ...item, baseImplicit: false });
-            if (item.exarch.tier > 0) out.push({ ...item, exarch: NO_IMPLICIT });
-            if (item.eater.tier > 0) out.push({ ...item, eater: NO_IMPLICIT });
-            if (out.length === 0 || op.untracked === true) out.push(item);
-            return out.map((x) => wellFormed(x, ctx, "a corruption"));
+            if ((own && ctx.base.implicitLocked === true) || pool.length === 0) return [item];
+            const others =
+                (item.baseImplicit ? 1 : 0) +
+                (item.exarch.tier > 0 ? 1 : 0) +
+                (item.eater.tier > 0 ? 1 : 0);
+            const left: CItem[] = [];
+            if (item.corruption.length === 2 || others > 0) {
+                for (const id of item.corruption) {
+                    left.push({ ...item, corruption: item.corruption.filter((x) => x !== id) });
+                }
+                if (item.baseImplicit) left.push({ ...item, baseImplicit: false });
+                if (item.exarch.tier > 0) left.push({ ...item, exarch: NO_IMPLICIT });
+                if (item.eater.tier > 0) left.push({ ...item, eater: NO_IMPLICIT });
+            } else left.push(item);
+            const byId = new Map(pool.map((c) => [c.id, c]));
+            return left.flatMap((x) => {
+                const kept = new Set(x.corruption.flatMap((id) => [...byId.get(id)!.groups]));
+                return pool
+                    .filter((c) => ![...c.groups].some((g) => kept.has(g)))
+                    .map((c) =>
+                        wellFormed(
+                            { ...x, corruption: [...x.corruption, c.id] },
+                            ctx,
+                            "a corruption implicit",
+                        ),
+                    );
+            });
         },
     },
 };

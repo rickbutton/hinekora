@@ -36,6 +36,7 @@ import type { Mod, SpawnEntry } from "../../model/mod.js";
 import type {
     FossilSpec,
     BenchCraft,
+    CorruptionImplicitSpec,
     EldritchImplicitSpec,
     Element,
     EssenceSpec,
@@ -274,6 +275,9 @@ export interface CatalogOptions {
     /** The base is made with an implicit (`BaseImplicit1`): its own; one that
      *  cannot be changed; or one of two namesakes, the other made with none. */
     readonly implicit?: "own" | "locked" | "variants";
+    /** A corruption implicit pool on the base: two rows of one group, one of
+     *  another, and one needing item level 80. */
+    readonly corruption?: boolean;
 }
 
 export interface Catalog {
@@ -591,9 +595,11 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
         natural.splice(0, natural.length, ...natural.map(one));
         extra.splice(0, extra.length, ...extra.map(one));
     }
+    const corruption = options.corruption ? corruptionPool(base) : [];
     const registry = buildRegistry({
         bases,
         implicits,
+        corruption,
         mods: [...natural, ...extra],
         benchCrafts,
         essences,
@@ -623,6 +629,27 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
         fossil: fossils[0],
         fossilRows: fossils.length > 0 ? extra.filter((m) => m.id === "Delve1").map(held) : [],
     };
+}
+
+/** The `corruption` option's rows, weighed by the base's own tag. */
+function corruptionPool(base: Base): CorruptionImplicitSpec[] {
+    const tag = [...base.tags].find((t) => t !== "default")!;
+    const row = (id: string, group: string, level: number): CorruptionImplicitSpec => ({
+        id: ModId(id),
+        domain: base.domain,
+        type: TypeId(group),
+        groups: new Set([GroupId(group)]),
+        level,
+        spawn: [{ tag, weight: 100 }],
+        implicitTags: new Set<TagId>(),
+        text: `Vaal ${id}`,
+    });
+    return [
+        row("VaalA1", "VaalA", 1),
+        row("VaalA2", "VaalA", 1),
+        row("VaalB", "VaalB", 1),
+        row("VaalHigh", "VaalHigh", 80),
+    ];
 }
 
 /** The base of the `implicit` option, the bases the registry holds for it,

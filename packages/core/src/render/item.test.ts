@@ -27,6 +27,7 @@ import {
     TIERED_CATALOG,
     VEILED_A,
     VEILED_SUFFIX_MOD,
+    CORRUPTION_ROWS,
 } from "../__fixtures__/mods.js";
 import type { Base } from "../model/base.js";
 import { BaseId, GroupId, ModId, TagId, TypeId } from "../model/ids.js";
@@ -519,6 +520,7 @@ describe("the base's own implicit", () => {
             bases: [...bases],
             mods: [...TIERED_CATALOG, ...FILLERS],
             implicits: [LIFE, FIRE, COLD, BLANK],
+            corruption: CORRUPTION_ROWS,
         });
         const base = bases.length > 1 ? "Test Ring" : bases[0]!.id;
         const c = craft(item({ base, ilvl: 84, rarity: "normal", corrupted }), steps);

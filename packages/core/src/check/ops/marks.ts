@@ -174,32 +174,86 @@ function conflict(u: Universe, state: Dd): Outcome {
     return outcome(wellFormed(u, out, "an Orb of Conflict"), m.diff(state, both));
 }
 
-/**
- * A corruption implicit in place of one of the item's implicits: "If it has
- * more than one, one of them will be replaced at random" (Vaal Orb §
- * Equipment), so each implicit present is a case of its own, and with none it
- * is added. An implicit that "cannot be changed" stays, and keeps any other
- * (Cogwork Ring § Mechanics); the outcome is assumed to do nothing there
- * (QUESTIONS.md Q134). With `untracked` the item may already hold a
- * corruption implicit (the Corruption Altar's, on a corrupted item), which
- * the new one may replace instead (Corrupted § Corrupted implicit modifiers;
- * Version 3.30.0 § Incursion and Atziri; QUESTIONS.md Q32), so the item may
- * also keep the others.
- */
-function replaced(u: Universe, state: Dd, untracked: boolean): Dd {
-    if (baseImplicitOf(u.registry, u.base).locked) return state;
+const pairsMemo = new WeakMap<Universe, Map<number, Dd>>();
+
+/** The corruption implicit slots holding the row `k` and one more row of the
+ *  pool that shares no group with it, the pair in its one order. */
+function pairedWith(u: Universe, k: number): Dd {
+    let memo = pairsMemo.get(u);
+    if (memo === undefined) pairsMemo.set(u, (memo = new Map<number, Dd>()));
+    const hit = memo.get(k);
+    if (hit !== undefined) return hit;
     const m = u.dd;
+    const [first, second] = [u.scalar("corruption1"), u.scalar("corruption2")];
+    const rows = u.corruptionRows;
+    const groups = rows[k]!.groups;
+    let out = m.EMPTY;
+    for (let r = 1; r < rows.length; r++) {
+        if ([...rows[r]!.groups].some((g) => groups.has(g))) continue;
+        const [lo, hi] = r < k ? [r, k] : [k, r];
+        out = m.or(out, m.and(m.slotIn(first, [lo]), m.slotIn(second, [hi])));
+    }
+    memo.set(k, out);
+    return out;
+}
+
+/**
+ * A corruption implicit added to the item (a Vaal Orb, a Bloodstained Fossil,
+ * the Corruption Altar), drawn from the base's pool at its item level
+ * (Corrupted § Corrupted implicit modifiers). With two corruption implicits,
+ * or beside any other implicit, it replaces one implicit the item holds at
+ * random, each a case; otherwise it is added (Vaal Orb § Equipment; Locus of
+ * Corruption § Possible outcomes; Version 3.30.0 § Incursion and Atziri;
+ * QUESTIONS.md Q32). A row never shares a group with a corruption implicit
+ * that stays. An implicit that "cannot be changed" stays and keeps the
+ * others (Cogwork Ring § Mechanics); the outcome is assumed to do nothing
+ * there (QUESTIONS.md Q134), nor where the base has no pool.
+ */
+function corruptionImplicit(u: Universe, state: Dd): Dd {
+    const rows = u.corruptionRows;
+    if (baseImplicitOf(u.registry, u.base).locked || rows.length < 2) return state;
+    const m = u.dd;
+    const first = u.scalar("corruption1");
+    const second = u.scalar("corruption2");
+    const vaal = [first, second];
     const base = u.scalar("baseImplicit");
-    const held = {
+    const others = {
         base: m.slotIn(base, [1]),
         exarch: m.not(m.slotIn(u.scalar("exarchTier"), [0])),
         eater: m.not(m.slotIn(u.scalar("eaterTier"), [0])),
     };
-    const none = m.not(m.or(held.base, m.or(held.exarch, held.eater)));
-    let out = untracked ? state : m.and(state, none);
-    out = m.or(out, m.set(m.and(state, held.base), base, 0));
-    for (const side of ["exarch", "eater"] as const) {
-        out = m.or(out, withoutImplicit(u, m.and(state, held[side]), side));
+    const anyOther = m.or(others.base, m.or(others.exarch, others.eater));
+    const takeOther = (part: Dd, which: keyof typeof others): Dd =>
+        which === "base"
+            ? m.set(m.and(part, others.base), base, 0)
+            : withoutImplicit(u, m.and(part, others[which]), which);
+    const all = Array.from({ length: rows.length - 1 }, (_, i) => i + 1);
+    const single = m.and(m.slotIn(first, all), m.slotIn(second, [0]));
+    /** The part's items with the row `k` staying and a new row beside it. */
+    const besides = (part: Dd, k: number): Dd => m.and(m.forget(part, vaal), pairedWith(u, k));
+
+    const two = m.and(state, m.not(m.slotIn(second, [0])));
+    const one = m.and(m.and(state, m.not(m.slotIn(first, [0]))), m.slotIn(second, [0]));
+    const none = m.and(state, m.slotIn(first, [0]));
+    let out = m.EMPTY;
+    for (const k of all) {
+        // Two held: either goes, the other stays.
+        out = m.or(out, besides(m.and(two, m.slotIn(first, [k])), k));
+        out = m.or(out, besides(m.and(two, m.slotIn(second, [k])), k));
+        // One held, alone: the new one is added beside it.
+        const lone = m.and(one, m.slotIn(first, [k]));
+        out = m.or(out, besides(m.diff(lone, anyOther), k));
+        // One held beside another implicit: that other goes, it stays.
+        for (const which of ["base", "exarch", "eater"] as const) {
+            out = m.or(out, besides(takeOther(lone, which), k));
+        }
+    }
+    // One held beside another implicit: it goes instead.
+    out = m.or(out, m.and(m.forget(m.and(one, anyOther), vaal), single));
+    // None held: one other implicit goes, or with none the new one is added.
+    out = m.or(out, m.and(m.forget(m.diff(none, anyOther), vaal), single));
+    for (const which of ["base", "exarch", "eater"] as const) {
+        out = m.or(out, m.and(m.forget(takeOther(none, which), vaal), single));
     }
     return out;
 }
@@ -297,8 +351,8 @@ export const transforms: TransformTable = {
     },
     corruptionImplicit: {
         reads: [],
-        apply: (op, state, { u }) =>
-            wellFormed(u, replaced(u, state, op.untracked === true), "a corruption"),
+        apply: (_op, state, { u }) =>
+            wellFormed(u, corruptionImplicit(u, state), "a corruption implicit"),
     },
 };
 

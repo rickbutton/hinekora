@@ -3,13 +3,14 @@ import {
     AMULET_BASE,
     ASTROLABE_BASE,
     BOOTS_BASE,
+    CORRUPTION_ROWS,
     FLASK_BASE,
     JEWEL_BASE,
     RATCHETING_BASE,
     SIMPLEX_BASE,
 } from "../../__fixtures__/mods.js";
 import type { Base } from "../../model/base.js";
-import { BaseId, ModId, TypeId } from "../../model/ids.js";
+import { BaseId, ModId, TagId, TypeId } from "../../model/ids.js";
 import type { ImplicitSpec } from "../../model/sources.js";
 import { buildRegistry } from "../../resolve/registry.js";
 import { eldritchLadders } from "./catalog.js";
@@ -34,7 +35,7 @@ import {
     VEILED_P,
     VEILED_S,
 } from "./hand.js";
-import { type CItem, cItem, cMod, type RefCtx, refCtx } from "./item.js";
+import { type CItem, cItem, cMod, NO_IMPLICIT, type RefCtx, refCtx } from "./item.js";
 import { violations } from "./wellformed.js";
 
 const ring = handCtx();
@@ -285,6 +286,65 @@ describe("the base's implicit", () => {
     it("always stays where it cannot be changed", () => {
         ok(cItem({ baseImplicit: true }), at(lockedAmulet));
         bad(cItem(), "cannot be changed", at(lockedAmulet));
+    });
+});
+
+describe("the corruption implicits", () => {
+    const implicit: ImplicitSpec = {
+        id: ModId("BaseLife"),
+        type: TypeId("TypeBaseLife"),
+        groups: new Set(),
+        implicitTags: new Set(),
+        text: "+(20-30) to maximum Life",
+    };
+    const ownBoots: Base = { ...BOOTS_BASE, id: BaseId("OwnBoots"), implicits: [implicit.id] };
+    const registry = buildRegistry({
+        bases: [ownBoots, AMULET_BASE],
+        mods: [LIFE1],
+        implicits: [implicit],
+        corruption: [
+            ...CORRUPTION_ROWS,
+            {
+                ...CORRUPTION_ROWS[0]!,
+                id: ModId("VaalAmulet"),
+                spawn: [{ tag: TagId("amulet"), weight: 1 }],
+            },
+        ],
+        eldritch: [
+            ...eldritchLadders("exarch", ["MoveSpeed"], "boots"),
+            ...eldritchLadders("eater", ["ChaosRes"], "boots"),
+            ...eldritchLadders("exarch", ["Mana"], "amulet"),
+        ],
+    });
+    const at = (base: Base, ilvl = 84) => refCtx(registry, base, ilvl);
+    const boots = at(ownBoots);
+    const [speed1, speed2, endurance] = CORRUPTION_ROWS.map((c) => c.id);
+    const exarch = { tier: 1, type: TypeId("ImplicitMoveSpeed") };
+    const eater = { tier: 1, type: TypeId("ImplicitChaosRes") };
+    const vaal = (corruption: ModId[], fields: Partial<CItem> = {}) =>
+        cItem({ corrupted: true, corruption, ...fields });
+
+    it("is held only on a corrupted item, two only on a twice-corrupted one", () => {
+        ok(vaal([speed1!]), boots);
+        bad(vaal([speed1!], { corrupted: false }), "uncorrupted", boots);
+        bad(vaal([speed1!, endurance!]), "corrupted once", boots);
+        ok(vaal([speed1!, endurance!], { corrupted: "twice" }), boots);
+    });
+    it("is a row of the base's pool at its item level, two of two groups", () => {
+        bad(vaal([endurance!]), "no corruption implicit", at(ownBoots, 60));
+        bad(vaal([speed1!, speed2!], { corrupted: "twice" }), "group VaalSpeed", boots);
+    });
+    it("never sits beside the base's implicit, nor beside two other implicits", () => {
+        bad(vaal([speed1!], { baseImplicit: true }), "replaces the base's", boots);
+        ok(vaal([speed1!], { exarch, eater: NO_IMPLICIT }), boots);
+        bad(vaal([speed1!], { exarch, eater }), "more than two implicits", boots);
+        bad(vaal([speed1!, endurance!], { corrupted: "twice", exarch }), "more than two", boots);
+    });
+    it("replaces an amulet's one eldritch implicit", () => {
+        const mana = { tier: 1, type: TypeId("ImplicitMana") };
+        const amulet = [ModId("VaalAmulet")];
+        ok(vaal(amulet), at(AMULET_BASE));
+        bad(vaal(amulet, { exarch: mana }), "amulet's eldritch implicit", at(AMULET_BASE));
     });
 });
 

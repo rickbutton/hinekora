@@ -30,6 +30,7 @@ import {
     PROTECT_PREFIXES_CARRIER,
     PROTECT_SUFFIXES_CARRIER,
     RING_BASE,
+    CORRUPTION_ROWS,
 } from "../__fixtures__/mods.js";
 import { eldritchKey } from "../model/marks.js";
 
@@ -45,6 +46,7 @@ const registry = buildRegistry({
     modAliases: { life: "IncreasedLife1", cold: "ColdResist1", mana: "IncreasedMana1" },
     baseAliases: { "Iron Ring": "IronRing" },
     eldritch: ELDRITCH_ROWS,
+    corruption: CORRUPTION_ROWS,
     fossils: [FOSSIL_BLOODSTAINED],
 });
 const ctx: CheckContext = { registry };

@@ -7,7 +7,7 @@ change (`../AGENTS.md`, Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q135.
+keeps it. New entries continue from Q136.
 
 ```
 ### Qn · probe|decision · open — title
@@ -67,20 +67,28 @@ not.
 
 ### Q32 · probe · open — the Corruption Altar
 
-**Q:** [§ Incursion and Atziri](https://www.poewiki.net/wiki/Version_3.30.0#Incursion_and_Atziri):
-the altar corrupts "an Equipment Item" a second time; a twice-corrupted item "cannot [be]
-Corrupted further". Does it take an uncorrupted item, or a jewel (the old Locus page)? Each
-outcome's odds? Does its implicit replace an eldritch one, and one or two?
-[Corrupted § Corrupted implicit modifiers](https://www.poewiki.net/wiki/Corrupted#Corrupted_implicit_modifiers)
-and [Locus of Corruption § Possible outcomes](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes)
-say two; the newer 3.30.0 notes, one, a corruption implicit where there are two. Does the
-copy show `Twice Corrupted` alone? Does it then take an unveil?
-**Probe:** corrupted Rares, a jewel, boots with both eldritch implicits, an uncorrupted
-ring; the altar forty times, then an unveil; record what changes.
+**Q:** [Version 3.30.0 § Incursion and Atziri](https://www.poewiki.net/wiki/Version_3.30.0#Incursion_and_Atziri)
+has it corrupt "an Equipment Item" a second time;
+[Corrupted § Twice Corrupted](https://www.poewiki.net/wiki/Corrupted#Twice_Corrupted)
+adds jewels. Does it take one, or an uncorrupted item? Are the odds and the implicit rule
+of [Locus of Corruption § Possible outcomes](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes),
+marked as awaiting 3.30, current? Does the copy show `Twice Corrupted`
+alone? Does it then take an unveil?
+**Probe:** corrupted Rares, a jewel, boots with an eldritch and a corruption implicit, an
+uncorrupted ring; the altar forty times, then an unveil; record what changes.
 **Assumed:** corrupted equipment only; 1:1:2 to no change, an implicit, destroyed; its
-implicit replaces one: the base's, an eldritch one or an untracked corruption implicit;
-`Twice Corrupted` alone; no unveil. **Encoded in:** `check/library.ts` `locusOps`, `onceCorrupted`;
-`check/ops/marks.ts` `replaced`; `cost/track.ts`; `render/item.ts`.
+implicit is added beside a lone corruption implicit, else replaces any one implicit
+([Version 3.30.0c](https://www.poewiki.net/wiki/Version_3.30.0c) fixed a unique's case);
+`Twice Corrupted` alone; no unveil. **Encoded in:** `check/library.ts` `locusOps`;
+`check/ops/marks.ts` `corruptionImplicit`; `cost/track.ts`; `render/item.ts`.
+
+### Q135 · probe · open — which corruption implicit a corruption gives
+
+**Q:** is it drawn by spawn weight from the base's rows at or below its item level, never
+of a group a kept one has? Does a cluster jewel draw the jewels' rows?
+**Probe:** forty Vaal Orbs on rings of item level 60; record each implicit.
+**Assumed:** yes to both. **Encoded in:** `resolve/registry.ts` `corruptionPool`;
+`check/ops/marks.ts` `corruptionImplicit`.
 
 ### Q52 · probe · open — what a Harvest-changed essence, fossil or unveiled modifier becomes
 
@@ -614,6 +622,6 @@ Bloodstained Fossil always add one, as its "Has a Corrupted implicit modifier" s
 **Probe:** forty Vaal Orbs on Cogwork Rings, a Bloodstained Fossil on one and on boots;
 record each outcome and implicit.
 **Assumed:** on a locked base nothing changes, the Vaal Orb's outcome one time in four;
-elsewhere a Bloodstained Fossil always replaces an implicit. **Encoded in:**
-`check/ops/marks.ts` `replaced`; `check/reference/ops/marks.ts`; `check/library.ts`;
+elsewhere a Bloodstained Fossil always adds one. **Encoded in:**
+`check/ops/marks.ts` `corruptionImplicit`; `check/reference/ops/marks.ts`; `check/library.ts`;
 `cost/track.ts` `OUTCOME_ODDS`.

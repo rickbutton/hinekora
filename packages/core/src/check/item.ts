@@ -36,6 +36,8 @@ export interface CItem {
     readonly corrupted: Corruption;
     readonly exarch: CEldritch;
     readonly eater: CEldritch;
+    /** The corruption implicits held, none to two, in no meaningful order. */
+    readonly corruption: readonly ModId[];
     readonly strands: number;
     /** The held imprint, itself an item with no imprint. */
     readonly imprint: CItem | undefined;

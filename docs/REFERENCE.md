@@ -54,16 +54,17 @@ to the whole craft.
 A state (`ItemSet`) is a set of items, one decision diagram over the slots of its universe
 (`check/universe.ts`, `ARCHITECTURE.md` §4.2), in this order:
 
-| Slot                      | Its values                                                         |
-| ------------------------- | ------------------------------------------------------------------ |
-| `rarity`                  | Normal, Magic, Rare                                                |
-| `corrupted`               | no, once, twice                                                    |
-| `influences`              | each influence set the base can have                               |
-| `baseImplicit`            | gone, present: the implicit the base is made with                  |
-| `exarchTier`, `eaterTier` | none, then Lesser to Perfect                                       |
-| `exarchType`, `eaterType` | which implicit of those the catalogue names, or one it does not    |
-| `strands`                 | the memory strands, 0 to 100                                       |
-| one per modifier type     | absent, or a row, its value cell, fractured or not, crafted or not |
+| Slot                         | Its values                                                                                                                 |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `rarity`                     | Normal, Magic, Rare                                                                                                        |
+| `corrupted`                  | no, once, twice                                                                                                            |
+| `influences`                 | each influence set the base can have                                                                                       |
+| `baseImplicit`               | gone, present: the implicit the base is made with                                                                          |
+| `exarchTier`, `eaterTier`    | none, then Lesser to Perfect                                                                                               |
+| `exarchType`, `eaterType`    | which implicit of those the catalogue names, or one it does not                                                            |
+| `corruption1`, `corruption2` | none, or a corruption implicit of the base's pool at its item level; the pair in one order, the second only with the first |
+| `strands`                    | the memory strands, 0 to 100                                                                                               |
+| one per modifier type        | absent, or a row, its value cell, fractured or not, crafted or not                                                         |
 
 When the craft imprints, every slot has a copy beside it for the held imprint, and a last
 slot says whether one is held. A modifier type's values are only those the craft can

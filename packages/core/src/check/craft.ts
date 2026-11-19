@@ -175,6 +175,8 @@ export interface CraftReach {
     /** A Harvest change may turn a row into another, a crafted one into a
      *  crafted natural row among them. */
     readonly changes: boolean;
+    /** A corruption implicit may be added. */
+    readonly corrupts: boolean;
 }
 
 export type ReachSource =
@@ -188,7 +190,9 @@ export const REACH: Readonly<Record<string, Partial<CraftReach>>> = {
     "beast metamod": { sources: new Set(["metamod"]) },
     "beast aspect": { sources: new Set(["aspect"]) },
     essence: { sources: new Set(["essence"]) },
-    fossil: { sources: new Set(["fossil", "essence"]), fractures: true },
+    fossil: { sources: new Set(["fossil", "essence"]), fractures: true, corrupts: true },
+    vaal: { corrupts: true },
+    locus: { corrupts: true },
     "veiled chaos": { sources: new Set(["veiled"]) },
     "veiled exalt": { sources: new Set(["veiled"]) },
     unveil: { sources: new Set(["veiled"]) },
@@ -203,6 +207,7 @@ export const ALL_REACH: CraftReach = {
     sources: new Set(["bench", "metamod", "essence", "veiled", "fossil", "elevated", "aspect"]),
     fractures: true,
     changes: true,
+    corrupts: true,
 };
 
 /** What the craft's steps, in its body, its procs and its step arguments, and
@@ -211,6 +216,7 @@ export function craftReach(craft: Craft): CraftReach {
     const sources = new Set<ReachSource>();
     let fractures = false;
     let changes = false;
+    let corrupts = false;
     const visit = (stmts: readonly Stmt[]): void => {
         for (const s of stmts) {
             switch (s.kind) {
@@ -219,6 +225,7 @@ export function craftReach(craft: Craft): CraftReach {
                     for (const x of r?.sources ?? []) sources.add(x);
                     fractures ||= r?.fractures === true;
                     changes ||= r?.changes === true;
+                    corrupts ||= r?.corrupts === true;
                     break;
                 }
                 case "if":
@@ -242,7 +249,7 @@ export function craftReach(craft: Craft): CraftReach {
         if (a.bench === true) sources.add("bench");
         fractures ||= a.fractured === true;
     }
-    return { sources, fractures, changes };
+    return { sources, fractures, changes, corrupts };
 }
 
 /** The rows the item block may declare: a row named by id, a bench row named
