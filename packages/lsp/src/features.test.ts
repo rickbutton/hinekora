@@ -143,6 +143,20 @@ describe("hover", () => {
         expect(h).toContain("Searing Exarch Item");
     });
 
+    it("shows an implicit's wording, and the item level a corruption implicit needs", () => {
+        const src = `item { base: "Vermillion Ring" ilvl: 60 rarity: rare }\nvaal\nif implicit "endurance charges" { stop }\nif implicit "life" { stop }`;
+        const charges = getHover(src, src.indexOf("endurance") + 1, registry)!;
+        expect(charges).toContain("+1 to Maximum Endurance Charges");
+        expect(charges).toContain(
+            "needs item level 75; this item is item level 60, so no corruption gives it",
+        );
+        const life = getHover(src, src.indexOf('"life"') + 1, registry)!;
+        expect(life).toContain("The implicit Vermillion Ring is made with.");
+        expect(getHover(src, src.indexOf("implicit"), registry)).toContain(
+            "true when the item holds that implicit",
+        );
+    });
+
     it("names the item's marks in the tooltip", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare influences: hunter corrupted }\nexalt`;
         const h = getHover(src, src.indexOf("exalt"), registry)!;
@@ -585,6 +599,17 @@ harvest augment "`;
         const predLabels = getCompletions(pred, pred.length, registry).map((c) => c.label);
         expect(predLabels.length).toBeGreaterThan(50);
         expect(predLabels).not.toContain("maximum life");
+    });
+
+    it("offers after `implicit` the implicits the base can hold at its level", () => {
+        const at = (ilvl: number) => {
+            const src = `item { base: "Vermillion Ring" ilvl: ${ilvl} rarity: rare }\nvaal\nif implicit "`;
+            return getCompletions(src, src.length, registry).map((c) => c.label);
+        };
+        expect(at(84)).toContain("+1 to Maximum Endurance Charges");
+        expect(at(84).some((l) => /maximum Life/.test(l))).toBe(true);
+        expect(at(60)).not.toContain("+1 to Maximum Endurance Charges");
+        expect(at(84)).not.toContain("maximum life");
     });
 
     it('offers Aspect names inside a `beast aspect "` string', () => {

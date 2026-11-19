@@ -37,6 +37,15 @@ const PLANS: CatalogOptions[] = [
     { types: 3, metamods: ["multimod"] },
     { types: 4, sharedFamily: true },
     { types: 3, veiled: true },
+    { types: 2, corruption: true, implicit: "own" },
+    { types: 2, base: "boots", eldritch: true, corruption: true },
+];
+
+/** None, each corruption implicit alone, and each pair. */
+const corruptionSets = (rows: readonly ModId[]): ModId[][] => [
+    [],
+    ...rows.map((r) => [r]),
+    ...rows.flatMap((a, i) => rows.slice(i + 1).map((b) => [a, b])),
 ];
 
 describe("narrowing by a condition", () => {
@@ -70,6 +79,8 @@ describe("narrowing by a condition", () => {
                     eater: implicits("eater"),
                     values: true,
                     fractured: true,
+                    baseImplicit: [false, true],
+                    corruption: corruptionSets(space.corruption),
                 }),
             ).items();
             expect(pool.length).toBeGreaterThan(10);

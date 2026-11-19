@@ -27,6 +27,12 @@ export function resolveMessage(error: ResolveError): string {
             return `No corruption implicit of ${withArticle(error.base)} reads "${error.name}".`;
         case "corruptionLevel":
             return `${capitalised(withArticle(error.base))} needs item level ${error.level} for "${error.text}" — this item is item level ${error.ilvl}.`;
+        case "unknownImplicit":
+            return `No implicit ${withArticle(error.base)} can hold reads "${error.name}".`;
+        case "lockedImplicit":
+            return `${capitalised(withArticle(error.base))}'s implicit cannot be changed, and hinekora takes it that no corruption adds "${error.text}" beside it.`;
+        case "namesakeImplicit":
+            return `Only some of the bases named "${error.base}" are made with "${error.text}" — name the base by its id to pick one: ${error.ids.join(", ")}.`;
         case "unknownAspect":
             return `Unknown Aspect "${error.name}" — the Bestiary crafts cat, avian, spider or crab.`;
         case "unknownHarvestTag":

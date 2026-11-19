@@ -253,6 +253,7 @@ function notePredUses(u: ParamUses, p: Pred): void {
         case "influenced":
         case "corrupted":
         case "eldritch":
+        case "implicit":
         case "dominant":
             return;
     }
@@ -394,6 +395,7 @@ export function substitute(pred: Pred, env: ReadonlyMap<string, Arg>): Pred {
         case "influenced":
         case "corrupted":
         case "eldritch":
+        case "implicit":
         case "dominant":
             return pred;
         case "call":

@@ -275,8 +275,9 @@ export interface CatalogOptions {
     /** The base is made with an implicit (`BaseImplicit1`): its own; one that
      *  cannot be changed; or one of two namesakes, the other made with none. */
     readonly implicit?: "own" | "locked" | "variants";
-    /** A corruption implicit pool on the base: two rows of one group, one of
-     *  another, and one needing item level 80. */
+    /** A corruption implicit pool on the base: two rows of one group and one
+     *  wording, the second needing item level 30; one of another group; and
+     *  one needing item level 80. */
     readonly corruption?: boolean;
 }
 
@@ -642,11 +643,11 @@ function corruptionPool(base: Base): CorruptionImplicitSpec[] {
         level,
         spawn: [{ tag, weight: 100 }],
         implicitTags: new Set<TagId>(),
-        text: `Vaal ${id}`,
+        text: `Vaal ${group}`,
     });
     return [
         row("VaalA1", "VaalA", 1),
-        row("VaalA2", "VaalA", 1),
+        row("VaalA2", "VaalA", 30),
         row("VaalB", "VaalB", 1),
         row("VaalHigh", "VaalHigh", 80),
     ];

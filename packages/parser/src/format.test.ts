@@ -50,6 +50,18 @@ chaos
 `);
     });
 
+    it("prints the implicit predicate with its wording", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
+vaal
+if implicit   "endurance charges" or not implicit "life" { stop }`;
+        const out = fmt(src);
+        expect(out).toContain(`if implicit "endurance charges" or not implicit "life" {`);
+        expect(fmt(out)).toBe(out);
+        expect((shape(out) as { body: unknown }).body).toEqual(
+            (shape(src) as { body: unknown }).body,
+        );
+    });
+
     it("indents bodies, keeps a one-line block inline, and keeps the blank-line grouping", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
 transmute

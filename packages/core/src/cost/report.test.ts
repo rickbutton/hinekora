@@ -19,6 +19,7 @@ import {
     has,
     hasValue,
     iff,
+    implicitP,
     isRarity,
     item,
     notp,
@@ -1154,6 +1155,13 @@ describe("the eldritch implicits", () => {
         const altered = after("chaos", "vaal");
         expect(altered.note).toMatch(/not known/);
         expect(altered.branch).not.toBeCloseTo(rolled.branch!, 6);
+    });
+
+    it("a condition on a corruption implicit is not known, and half is assumed", () => {
+        const r = on({}, [op("vaal"), iff(implicitP("movement speed"), [stop()])]);
+        const branch = r.steps.find((s) => s.kind === "if")!;
+        expect(branch.note).toBe("the chance of this condition is not known; half is assumed");
+        expect(branch.branch).toBeCloseTo(1 / 2, 9);
     });
 
     it("a Vaal Orb's implicit takes the only implicit boots have, one time in four", () => {

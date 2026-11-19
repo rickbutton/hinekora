@@ -168,6 +168,17 @@ function buildCondition(u: Universe, pred: RPred): Dd {
             }
             return r;
         }
+        case "implicit": {
+            let r = pred.base ? m.slotIn(u.scalar("baseImplicit"), [1]) : m.EMPTY;
+            const rows: number[] = [];
+            u.corruptionRows.forEach((c, i) => {
+                if (c !== undefined && pred.corruption.has(c.id)) rows.push(i);
+            });
+            for (const slot of ["corruption1", "corruption2"] as const) {
+                r = m.or(r, m.slotIn(u.scalar(slot), rows));
+            }
+            return r;
+        }
         case "dominant":
             return dominance(u, pred.side);
         case "not":
@@ -252,6 +263,8 @@ export function predKey(p: RPred): string {
             return "corrupted";
         case "eldritch":
             return `eldritch(${p.side} ${p.tier ?? ""} ${p.types === undefined ? "*" : sorted(p.types)})`;
+        case "implicit":
+            return `implicit(${p.base ? "base " : ""}${sorted(p.corruption)})`;
         case "dominant":
             return `dominant(${p.side})`;
         case "not":

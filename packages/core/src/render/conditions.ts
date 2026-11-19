@@ -126,6 +126,8 @@ export function clause(pred: Pred, craft: Craft, registry: Registry, wording?: W
             ]
                 .filter((x) => x !== undefined)
                 .join(" ");
+        case "implicit":
+            return `the implicit "${p.text}"`;
         case "dominant":
             return `the ${p.side === "exarch" ? "Exarch" : "Eater"} implicit dominant`;
         case "compare": {

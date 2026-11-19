@@ -238,6 +238,22 @@ describe("parser — item block", () => {
         ).toMatch(/expected 'exarch' or 'eater' after 'dominant', not 'life'/);
     });
 
+    it("parses the implicit predicate, which takes a wording", () => {
+        const c = parseOk(
+            'item { base: "R" ilvl: 1 rarity: rare } vaal if implicit "endurance charges" and not implicit "life" { stop }',
+        );
+        expect(c.body[1]).toMatchObject({
+            pred: {
+                kind: "and",
+                left: { kind: "implicit", text: "endurance charges" },
+                right: { kind: "not", inner: { kind: "implicit", text: "life" } },
+            },
+        });
+        expect(
+            parseErr('item { base: "R" ilvl: 1 rarity: rare } if implicit { stop }').message,
+        ).toMatch(/expected an implicit's wording after 'implicit'/);
+    });
+
     it("rejects an unknown, repeated or third influence", () => {
         expect(
             parseErr('item { base: "R" ilvl: 1 rarity: rare influences: hunters } exalt').message,

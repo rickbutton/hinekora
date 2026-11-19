@@ -174,12 +174,7 @@ inside one, a bare parameter standing for the steps bound to it.
 
 Run the body until the predicate holds; later lines may rely on it. The body must be safe on
 every round, not just the first (`until has "X" { exalt }` is reported: some item fills before
-it has X). A loop that can never exit, or never runs, is reported:
-
-```
-this loop can never exit: has "fire resistance" can never become true here
-this loop's body never runs: prefixCount <= 3 already holds here
-```
+it has X). A loop that can never exit, or never runs, is reported.
 
 ### 4.2 `if <pred> { … } [else { … }]`
 
@@ -237,6 +232,7 @@ pred := isRare | isMagic | isNormal
       | corrupted                           # the item is corrupted, once or twice
       | exarch ["<wording>"] [<tier>]       # that eldritch implicit is present (that one, at that tier;
       | eater ["<wording>"] [<tier>]        #   the wording and the tier in either order)
+      | implicit "<wording>"                # its own or a corruption implicit is held
       | dominant exarch | dominant eater    # that implicit's tier is the higher
       | prefixCount <cmp> <int>
       | suffixCount <cmp> <int>
@@ -264,6 +260,10 @@ A predicate asks about the item's current state only; there are no history predi
 - `influenced`, `corrupted` and `dominant` ask about the item's marks (§1); where the items
   differ in their marks, as after a `vaal` or a `conflict`, a branch on them narrows to one.
   An Eldritch orb reads each item's own dominant side.
+- `implicit "<wording>"` asks for the base's own implicit or a
+  [corruption implicit](https://www.poewiki.net/wiki/Corrupted#Corrupted_implicit_modifiers),
+  matched as an eldritch wording (§1); where only some bases of a shared name are made
+  with it, name the base by its id.
 
 ---
 
@@ -276,10 +276,8 @@ at this point the item is: Iron Ring · Magic · 2 affixes · 1 prefix · 1 suff
 Requires a Rare item — this item is Magic.
 ```
 
-Hover, the CLI and the playground lay out the item as the game's copy-to-clipboard text,
-with tier ranges, "one of these" groups and "possibly" marks. Where only some items reaching
-a rejected step break it, and none came past an earlier error, the CLI and hover can add one
-that does.
+Where only some items reaching a rejected step break it, and none came past an earlier
+error, the CLI and hover can add one that does.
 
 - **Names**: an unknown or ambiguous base, mod, currency, essence, bench craft or harvest
   tag; a mod without a tier in the item block; a tier past the ladder.

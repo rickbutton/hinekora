@@ -132,6 +132,8 @@ export function describePred(pred: Pred): string {
                 ...(pred.text !== undefined ? [`"${pred.text}"`] : []),
                 ...(pred.tier !== undefined ? [pred.tier] : []),
             ].join(" ");
+        case "implicit":
+            return `implicit "${pred.text}"`;
         case "dominant":
             return `dominant ${pred.side}`;
         case "compare":

@@ -229,6 +229,8 @@ function opLabel(op: Op): string {
 export interface PredSpace {
     readonly rows: ReadonlyMap<TypeId, readonly Mod[]>;
     readonly eldritch: Readonly<Record<EldritchSide, readonly TypeId[]>>;
+    /** The base's corruption implicit rows at any item level. */
+    readonly corruption: readonly ModId[];
 }
 
 export function predSpace(cat: Catalog, rows: Iterable<Mod>): PredSpace {
@@ -237,7 +239,11 @@ export function predSpace(cat: Catalog, rows: Iterable<Mod>): PredSpace {
     const side = (s: EldritchSide): TypeId[] => [
         ...new Set(cat.eldritch.filter((e) => e.side === s).map((e) => e.type)),
     ];
-    return { rows: byType, eldritch: { exarch: side("exarch"), eater: side("eater") } };
+    return {
+        rows: byType,
+        eldritch: { exarch: side("exarch"), eater: side("eater") },
+        corruption: cat.registry.corruptionPool(cat.base, 100).map((c) => c.row.id),
+    };
 }
 
 const CMPS: readonly Cmp[] = ["==", "!=", "<", "<=", ">", ">="];
@@ -259,6 +265,7 @@ export function randomPred(space: PredSpace, r: Rng, depth = 2): RPred {
         "influenced",
         "corrupted",
         "eldritch",
+        "implicit",
         "dominant",
         ...(depth > 0 ? ["not", "and", "or"] : []),
     ] as const;
@@ -329,6 +336,12 @@ export function randomPred(space: PredSpace, r: Rng, depth = 2): RPred {
                 }),
             };
         }
+        case "implicit":
+            return {
+                kind,
+                base: r.chance(0.5),
+                corruption: new Set(r.sample(space.corruption, r.int(0, 2))),
+            };
         case "dominant":
             return { kind, side: r.pick(["exarch", "eater"] as const) };
         case "not":

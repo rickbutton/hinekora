@@ -131,6 +131,8 @@ function pred(p: Pred, source: string, depth: number): string {
             return [p.side, p.tier, p.text !== undefined ? quote(p.text) : undefined]
                 .filter((x) => x !== undefined)
                 .join(" ");
+        case "implicit":
+            return `implicit ${quote(p.text)}`;
         case "dominant":
             return `dominant ${p.side}`;
         case "compare":

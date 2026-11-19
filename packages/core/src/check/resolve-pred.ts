@@ -172,6 +172,22 @@ class Resolver {
                     ...(types !== undefined && { types }),
                 });
             }
+            case "implicit": {
+                const found = this.registry.resolveImplicit(
+                    pred.text,
+                    this.view.base,
+                    this.view.ilvl,
+                );
+                if (!found.ok) {
+                    this.diag(resolveMessage(found.error), pred.span);
+                    return this.atom(null);
+                }
+                return plain({
+                    kind: "implicit",
+                    base: found.value.base,
+                    corruption: new Set(found.value.corruption.map((c) => c.id)),
+                });
+            }
             case "dominant":
                 return plain({ kind: "dominant", side: pred.side });
             case "compare": {

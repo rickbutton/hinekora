@@ -1,8 +1,7 @@
 # Conditions
 
 A condition is a test of the current item. [`until`](./until) and [`if`](./if) take one, and a
-[definition](./def) can name one. A condition reads the current item only. It cannot ask what an
-earlier step did.
+[definition](./def) can name one. It cannot ask what an earlier step did.
 
 ## Forms
 
@@ -18,12 +17,13 @@ earlier step did.
 | `corrupted`                            | the item has the corrupted mark                            |
 | `influenced`, `influenced hunter`      | the item has an influence, or that one                     |
 | `exarch`, `eater grand`                | the item has that eldritch implicit, at that tier if given |
+| `implicit "endurance charges"`         | the base's implicit or a corruption implicit reads so      |
 | `dominant exarch`, `dominant eater`    | that implicit has the higher tier                          |
 
 The comparison operators are `==`, `!=`, `<`, `<=`, `>` and `>=`.
 
 A value is the first number of the modifier's text. An eldritch test also takes a quoted
-wording, which names one implicit. A [group](https://www.poewiki.net/wiki/Modifier#Group/family) is the
+wording. A [group](https://www.poewiki.net/wiki/Modifier#Group/family) is the
 set of modifiers of which an item holds one. [Names and tiers](./names) covers the quoted
 names.
 
@@ -84,6 +84,6 @@ if has "cold resistance" or has "fire resistance" {
 
 A value comparison rules out every tier that cannot reach the value.
 
-`influenced`, `corrupted` and the eldritch tests read the item's marks. They matter after a
-step that marks only some of the items. A [`vaal`](/docs/operations/vaal) may take an
-eldritch implicit from some items, and `if exarch` separates them.
+The mark and implicit tests matter after a step that changes only some items. A
+[`vaal`](/docs/operations/vaal) may take an eldritch implicit or add a corruption implicit,
+and `if exarch` or `if implicit` separates them.

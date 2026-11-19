@@ -222,6 +222,7 @@ export type Pred =
     | InfluencedPred
     | CorruptedPred
     | EldritchPred
+    | ImplicitPred
     | DominantPred
     | ComparePred
     | NotPred
@@ -248,6 +249,14 @@ export interface EldritchPred {
     readonly side: EldritchSide;
     readonly tier?: EldritchTierName;
     readonly text?: string;
+    readonly span: SourceSpan;
+}
+
+/** `implicit "<wording>"`: the item holds that implicit, its base's own or a
+ *  corruption implicit; an eldritch implicit is `exarch`'s or `eater`'s. */
+export interface ImplicitPred {
+    readonly kind: "implicit";
+    readonly text: string;
     readonly span: SourceSpan;
 }
 

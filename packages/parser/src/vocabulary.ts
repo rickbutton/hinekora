@@ -16,6 +16,7 @@ export const PREDICATE_WORDS = [
     "group",
     "fractured",
     "influenced",
+    "implicit",
     "dominant",
     "not",
     "and",

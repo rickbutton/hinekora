@@ -54,6 +54,13 @@ export type RPred =
           readonly tier?: number;
           readonly types?: ReadonlySet<TypeId>;
       }
+    /** The item holds the base's own implicit (`base`) or one of the
+     *  corruption implicit rows. */
+    | {
+          readonly kind: "implicit";
+          readonly base: boolean;
+          readonly corruption: ReadonlySet<ModId>;
+      }
     /** That implicit is the dominant one. */
     | { readonly kind: "dominant"; readonly side: EldritchSide }
     | { readonly kind: "not"; readonly inner: RPred }

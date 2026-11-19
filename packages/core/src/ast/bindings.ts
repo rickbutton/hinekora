@@ -81,6 +81,7 @@ class Collector {
             case "influenced":
             case "corrupted":
             case "eldritch":
+            case "implicit":
             case "dominant":
                 return;
         }

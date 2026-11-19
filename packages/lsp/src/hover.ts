@@ -31,6 +31,7 @@ import {
     type Range,
     type Registry,
     renderItemText,
+    resolveMessage,
     slotAt,
     type StepCost,
     type Stmt,
@@ -84,6 +85,8 @@ const KEYWORD_DOC: Record<string, string> = {
     has: '`has "<mod>" [t1] [>= <n>]` — true when the item carries that mod (optionally at that tier, `t1` the game\'s Tier 1 for the modifier on this base, or with its value comparing so).',
     group: '`has group "<mod>"` — true when the item carries any modifier of that modifier\'s group; an item holds one per group, so `if not has group "<mod>" { bench "<mod>" }` guards a bench craft in one clause.',
     not: "`not <pred>` — logical negation of a predicate.",
+    implicit:
+        '`implicit "<wording>"` — true when the item holds that implicit: the one its base is made with, or a corruption implicit. An eldritch implicit is `exarch "<wording>"` or `eater "<wording>"`.',
     item: "`item { base: … ilvl: … rarity: … }` — the starting item this craft operates on.",
 };
 
@@ -311,6 +314,10 @@ function signature(
             if (!b.ok) return `**"${tok.text}"** — unknown base.`;
             return `**${b.value.name ?? b.value.id}** — base item · class \`${b.value.itemClass}\``;
         }
+        const prev = tokens[i - 1];
+        if (prev?.kind === "ident" && prev.text === "implicit") {
+            return implicitSignature(tok.text, entry, registry);
+        }
         return modSignature(tok.text, tierAfter(tokens, i), entry, registry);
     }
 
@@ -440,6 +447,32 @@ function modSignature(
         `| tier | id | name | roll | ilvl |\n|---|---|---|---|---|\n${rows.join("\n")}${more}`,
     );
     return blocks.join("\n\n");
+}
+
+/** The highest item level, at which every corruption implicit row is reached. */
+const EVERY_LEVEL = 100;
+
+/** What an `implicit` wording names on the item's base: the implicit's text,
+ *  whether the base is made with it, and the item level each corruption
+ *  implicit row of it needs. */
+function implicitSignature(
+    text: string,
+    entry: TraceEntry | undefined,
+    registry: Registry,
+): string {
+    if (!entry) return `**"${text}"** — _hover inside a craft to see the implicit on this base._`;
+    const { base, ilvl } = entry.before.u;
+    const found = registry.resolveImplicit(text, base, EVERY_LEVEL);
+    if (!found.ok) return `**"${text}"** — ${resolveMessage(found.error)}`;
+    const baseName = base.name ?? base.id;
+    const lines = [`**"${text}"** → ${found.value.text.replace(/\n/g, " / ")}`];
+    if (found.value.base) lines.push(`The implicit ${baseName} is made with.`);
+    for (const c of found.value.corruption) {
+        const reach =
+            c.level > ilvl ? `; this item is item level ${ilvl}, so no corruption gives it` : "";
+        lines.push(`Corruption implicit ${rollText(c)}, needs item level ${c.level}${reach}.`);
+    }
+    return lines.join("\n\n");
 }
 
 /** What each fossil of a resonator does to the reforge. */

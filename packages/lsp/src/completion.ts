@@ -53,6 +53,11 @@ const PREDICATE_KEYWORDS: { label: string; detail: string; kind: CompletionItemK
     { label: "corrupted", detail: "the item is corrupted", kind: CompletionItemKind.Keyword },
     { label: "exarch", detail: "exarch [<tier>]", kind: CompletionItemKind.Keyword },
     { label: "eater", detail: "eater [<tier>]", kind: CompletionItemKind.Keyword },
+    {
+        label: "implicit",
+        detail: 'implicit "<wording>" — its own or a corruption implicit',
+        kind: CompletionItemKind.Keyword,
+    },
     { label: "dominant", detail: "dominant exarch|eater", kind: CompletionItemKind.Keyword },
     { label: "prefixCount", detail: "prefixCount <op> N", kind: CompletionItemKind.Variable },
     { label: "suffixCount", detail: "suffixCount <op> N", kind: CompletionItemKind.Variable },
@@ -118,6 +123,8 @@ type Context =
      *  types than its reforge. */
     | { readonly kind: "name"; readonly of: NameKind; readonly augment?: true }
     | { readonly kind: "eldritchName"; readonly side: EldritchSide }
+    /** After `implicit`: the implicits an item of the base can hold. */
+    | { readonly kind: "implicitName" }
     | { readonly kind: "word"; readonly oneOf: readonly string[] };
 
 /** Infer what should be completed at `offset` from the line before it. */
@@ -148,6 +155,7 @@ function contextAt(source: string, offset: number): Context {
         ) {
             return { kind: "eldritchName", side: sideWord.text as EldritchSide };
         }
+        if (last?.kind === "word" && last.text === "implicit") return { kind: "implicitName" };
         const found = methodAt(closed.map(atomOf), closed.length);
         if (found) {
             const slot = slotAt(found.method, closed.length - found.start - found.words);
@@ -350,6 +358,12 @@ function completionsAt(source: string, offset: number, registry: Registry): Comp
             return tierItems(source, ctx.mod, registry);
         case "eldritchName":
             return registry.eldritchNames(ctx.side).map(value);
+        case "implicitName": {
+            const item = itemContext(source, registry);
+            return item === undefined
+                ? []
+                : registry.implicitNames(item.base, item.ilvl).map(value);
+        }
         case "nothing":
             return [];
         case "statement":

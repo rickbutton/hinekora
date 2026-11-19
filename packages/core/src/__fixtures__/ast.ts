@@ -21,6 +21,7 @@ import type {
     Def,
     HasPred,
     IfStmt,
+    ImplicitPred,
     InfluencedPred,
     ItemBlock,
     NotPred,
@@ -242,6 +243,7 @@ export const eldritchP = (
     ...(text !== undefined && { text }),
     span: ds(),
 });
+export const implicitP = (text: string): ImplicitPred => ({ kind: "implicit", text, span: ds() });
 export const dominantP = (side: EldritchSide): DominantPred => ({
     kind: "dominant",
     side,

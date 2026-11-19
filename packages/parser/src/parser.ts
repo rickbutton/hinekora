@@ -780,6 +780,15 @@ class Parser {
             return { kind: "corrupted", span: t.span };
         }
 
+        if (t.text === "implicit") {
+            this.advance();
+            const text = this.expect(
+                "string",
+                "an implicit's wording after 'implicit' (implicit \"<wording>\")",
+            );
+            return { kind: "implicit", text: text.text, span: span(t.span.start, text.span.end) };
+        }
+
         if (isEldritchSide(t.text)) {
             this.advance();
             // A wording and a tier, either or both, in either order.

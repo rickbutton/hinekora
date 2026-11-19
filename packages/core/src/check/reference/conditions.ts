@@ -63,6 +63,11 @@ export function holds(pred: RPred, item: CItem, ctx: RefCtx): boolean {
             if (tier === 0 || (pred.tier !== undefined && tier !== pred.tier)) return false;
             return pred.types === undefined || (type !== undefined && pred.types.has(type));
         }
+        case "implicit":
+            return (
+                (pred.base && item.baseImplicit) ||
+                item.corruption.some((id) => pred.corruption.has(id))
+            );
         case "dominant":
             return dominantOf(eldritchKey(item.exarch.tier, item.eater.tier)) === pred.side;
         case "not":

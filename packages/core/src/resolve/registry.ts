@@ -130,6 +130,19 @@ export type ResolveError =
           readonly level: number;
           readonly ilvl: number;
       }
+    /** No implicit of the base, its own or a corruption implicit, reads so. */
+    | { readonly kind: "unknownImplicit"; readonly name: string; readonly base: string }
+    /** The base's implicit "cannot be changed", so no corruption implicit
+     *  ever joins it; `text` is the corruption implicit named. */
+    | { readonly kind: "lockedImplicit"; readonly base: string; readonly text: string }
+    /** Some of the bases a shared name stands for are made with the implicit
+     *  and some are not; `ids` are those that are. */
+    | {
+          readonly kind: "namesakeImplicit";
+          readonly base: string;
+          readonly text: string;
+          readonly ids: readonly string[];
+      }
     | { readonly kind: "unknownAspect"; readonly name: string }
     | { readonly kind: "unknownBench"; readonly name: string }
     | { readonly kind: "unknownHarvestTag"; readonly name: string }
@@ -240,6 +253,21 @@ export interface CorruptionCandidate {
     readonly weight: number;
 }
 
+/** What an implicit's wording names on a base: its own implicit, which an
+ *  item of the base holds until something takes it, and the corruption
+ *  implicit rows of that wording the item's level reaches. */
+export interface ImplicitMatch {
+    /** The wording, as the game writes it. */
+    readonly text: string;
+    readonly base: boolean;
+    readonly corruption: readonly CorruptionImplicitSpec[];
+}
+
+/** A row an `implicit` wording is matched against. */
+type ImplicitRow =
+    | { readonly kind: "base"; readonly spec: ImplicitSpec }
+    | { readonly kind: "corruption"; readonly spec: CorruptionImplicitSpec };
+
 /** Item context that lets fuzzy mod-type resolution filter by rollability. */
 export interface ModTypeContext {
     readonly base: Base;
@@ -311,6 +339,13 @@ export interface Registry {
         base: Base,
         ilvl: number,
     ): Resolved<readonly CorruptionImplicitSpec[]>;
+    /** Resolve an implicit's wording to the base's own implicit and the
+     *  corruption implicits at that item level that read so; an eldritch
+     *  implicit is `resolveEldritch`'s. */
+    resolveImplicit(name: string, base: Base, ilvl: number): Resolved<ImplicitMatch>;
+    /** The wordings of the implicits an item of the base at that item level
+     *  can hold, its own and its corruption implicits, each once. */
+    implicitNames(base: Base, ilvl: number): readonly string[];
     /** The eldritch implicits' texts of that side, each once, for completion. */
     eldritchNames(side: EldritchSide): readonly string[];
     /** The wording of an eldritch implicit type, the most common text among its rows. */
@@ -885,6 +920,13 @@ export function buildRegistry(data: RegistryData): Registry {
         return w;
     };
 
+    const implicitWords = new Map<string, ImplicitWording>();
+    const implicitWordsOf = (r: ImplicitRow): ImplicitWording => {
+        let w = implicitWords.get(r.spec.text);
+        if (w === undefined) implicitWords.set(r.spec.text, (w = wordingOf(r.spec.text)));
+        return w;
+    };
+
     // --- precompute completion lists ---
     const currencies = [...new Set(currencyByName.values())];
     const currencyNames = currencies.map((c) => c.name);
@@ -1221,6 +1263,75 @@ export function buildRegistry(data: RegistryData): Registry {
                     });
                 }
             }
+        },
+
+        resolveImplicit(name, base, ilvl) {
+            const what = base.name ?? base.id;
+            const variants = this.baseImplicits(base);
+            const own = [...new Map(variants.flat().map((i) => [i.id, i])).values()];
+            const candidates: ImplicitRow[] = [
+                ...own.map((spec) => ({ kind: "base" as const, spec })),
+                ...corruptionRowsOf(base).map((c) => ({
+                    kind: "corruption" as const,
+                    spec: c.row,
+                })),
+            ];
+            // A base's implicit and a corruption implicit of one wording are one
+            // name, as the tiers of one corruption implicit are.
+            const hit = matchWordings(name, candidates, implicitWordsOf, (r) => r.spec.text);
+            switch (hit.kind) {
+                case "none":
+                    return fail({ kind: "unknownImplicit", name, base: what });
+                case "ambiguous":
+                    return fail({ kind: "ambiguous", name, candidates: hit.candidates });
+                case "found":
+                    break;
+            }
+            const ids = new Set(hit.rows.flatMap((r) => (r.kind === "base" ? [r.spec.id] : [])));
+            const makes = variants.map((v) => v.some((i) => ids.has(i.id)));
+            const rows = hit.rows.flatMap((r) => (r.kind === "corruption" ? [r.spec] : []));
+            const text = hit.rows[0]!.spec.text;
+            if (makes.some((x) => x) && !makes.every((x) => x)) {
+                return fail({
+                    kind: "namesakeImplicit",
+                    base: what,
+                    text,
+                    ids: (base.namesakes ?? []).filter((_, i) => makes[i]),
+                });
+            }
+            // Simplex Amulet § Mechanics: such an implicit "cannot be turned into
+            // a corrupted implicit", and none is added beside it (QUESTIONS.md Q134).
+            if (ids.size === 0 && base.implicitLocked === true) {
+                return fail({ kind: "lockedImplicit", base: what, text });
+            }
+            const reached = rows.filter((c) => c.level <= ilvl);
+            if (ids.size === 0 && reached.length === 0) {
+                const lowest = rows.reduce((a, b) => (b.level < a.level ? b : a));
+                return fail({
+                    kind: "corruptionLevel",
+                    base: what,
+                    text: lowest.text,
+                    level: lowest.level,
+                    ilvl,
+                });
+            }
+            return found({ text, base: ids.size > 0, corruption: reached });
+        },
+
+        implicitNames(base, ilvl) {
+            const seen = new Set<string>();
+            const out: string[] = [];
+            const texts = [
+                ...this.baseImplicits(base).flatMap((v) => v.map((i) => i.text)),
+                ...this.corruptionPool(base, ilvl).map((c) => c.row.text),
+            ];
+            for (const text of texts) {
+                const { key } = wordingOf(text);
+                if (seen.has(key)) continue;
+                seen.add(key);
+                out.push(text);
+            }
+            return out;
         },
 
         eldritchNames(side) {
