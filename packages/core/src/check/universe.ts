@@ -1050,7 +1050,9 @@ export class Universe {
  * eldritch implicit replaced it first or the corruption did; and an item
  * holds two implicits at most once it holds one, the most it had before. An
  * amulet holds one eldritch implicit at most (Ukatoa's Ducat § Mechanics), so
- * none stays beside a corruption implicit there.
+ * none stays beside a corruption implicit there. All this rests on the Gilded
+ * Fossil being refused: a corruption may take its implicit and keep the base's
+ * (Corrupted § Corrupted implicit modifiers; QUESTIONS.md Q133).
  */
 function vaalRoom(base: Base, corrupted: number, baseImplicit: boolean, eldritch: number): number {
     if (corrupted === 0 || baseImplicit) return 0;

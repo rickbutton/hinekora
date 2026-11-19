@@ -603,13 +603,12 @@ implicit, with Ctrl+Alt+C; record each implicit's header.
 
 ### Q133 · decision · open — the Gilded Fossil's implicit
 
-**Q:** a Gilded Fossil adds an implicit of its own, which a later corruption may take
-instead of the others ([Gilded Fossil § Mechanics](https://www.poewiki.net/wiki/Gilded_Fossil#Mechanics)).
-**Options:** (a) track it with a slot, so a craft can use it to keep a base implicit
-through a Vaal Orb, once corruption implicits are tracked, **recommended**; (b) keep
-refusing it.
+**Q:** a corruption may take a Gilded Fossil's own implicit instead of the others
+([Gilded Fossil § Mechanics](https://www.poewiki.net/wiki/Gilded_Fossil#Mechanics)).
+**Options:** (a) track it, so a base implicit can stay beside a corruption implicit, which
+changes the implicits that may sit together, **recommended**; (b) keep refusing it.
 **Assumed:** refused. **Encoded in:** `model/sources.ts` `addsOwnImplicit`;
-`check/methods.ts` `resonator`.
+`check/methods.ts` `resonator`; `check/universe.ts` `vaalRoom`; `check/reference/wellformed.ts`.
 
 ### Q134 · probe · open — a corruption implicit on an implicit that cannot be changed
 
