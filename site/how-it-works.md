@@ -197,8 +197,8 @@ Solving the chain gives the expected number of rounds.
 
 <HowChain />
 
-The expected spend of a step is its expected number of runs times its price. Prices come from
-a market snapshot kept with the data, so the same craft always gives the same figure.
+The expected spend of a step is its expected number of runs times its price. `cost` and the
+editor use poe.ninja's current prices; this page's figures use a snapshot shipped with the data.
 
 The design in full is in the repository:
 [the checker](https://github.com/rickbutton/hinekora/blob/main/docs/ARCHITECTURE.md) and
