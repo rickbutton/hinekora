@@ -9,7 +9,9 @@
  */
 
 /** The game's client strings `ModGrantsSupportEffectWithLevel` and
- *  `ModGrantsEffectWithLevel`, by the effect's name and level. A modifier's
+ *  `ModGrantsEffectWithLevel`, by the effect's name and level, as the 3.30.0.3
+ *  export words them: "… Supported by Level 20 Fortify Support", "Grants Level
+ *  22 Wrath", the gem's whole name and no "Skill". A modifier's
  *  value is read past these lines (core `check/values.ts`
  *  `isGrantedEffectLine`), which a test holds to these shapes. */
 export const supportLine = (name, level) => `Socketed Gems are Supported by Level ${level} ${name}`;
