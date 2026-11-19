@@ -55,7 +55,7 @@ data: repoe-fork/repoe @ 3cb0a0f565 (poe1, game 3.30.0.3)
   --------
   Item Level: 84
   --------
-  { Prefix Modifier "Essences" — Resource, Life }
+  { Prefix Modifier "Essences" — Life }
   +(91-105) to maximum Life
   { Suffix Modifier "of Tzteosh" (Tier: 1) — Elemental, Fire, Resistance }
   +(46-48)% to Fire Resistance
@@ -94,7 +94,7 @@ first.craft:11:5: error: at this point the item is: Titan Greaves · Rare · 4�
     { Prefix Modifier "Mammoth's" (Tier: 1) — Defences, Armour }
     (39-42)% increased Armour
     (16-17)% increased Stun and Block Recovery
-    { Prefix Modifier "Essences" — Resource, Life }
+    { Prefix Modifier "Essences" — Life }
     +(91-105) to maximum Life
     { Suffix Modifier "of Tzteosh" (Tier: 1) — Elemental, Fire, Resistance }
     +(46-48)% to Fire Resistance

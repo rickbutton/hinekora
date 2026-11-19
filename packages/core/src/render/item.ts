@@ -47,7 +47,7 @@ import {
     unnamedImplicit,
     valueSpan,
 } from "../check/views.js";
-import type { Gen, Rarity, TypeId } from "../model/ids.js";
+import type { Gen, Rarity, TagId, TypeId } from "../model/ids.js";
 import {
     ELDRITCH_SIDES,
     type EldritchSide,
@@ -189,9 +189,16 @@ export function itemClassLabel(itemClass: string): string {
     return spaced.endsWith("s") ? spaced : `${spaced}s`;
 }
 
-/** A category tag as the tooltip writes it: `physical_damage` → `Physical Damage`. */
-function tagLabel(tag: string): string {
-    return tag.split("_").map(capitalise).join(" ");
+/** The names the tooltip shows for a modifier's category tags, in the
+ *  data's order, once each: a tag the game gives no name ("resource",
+ *  "endurance_charge") is not shown. */
+function shownTags(tags: Iterable<TagId>, registry: Registry): string[] {
+    const out = new Set<string>();
+    for (const tag of tags) {
+        const name = registry.tagName(tag);
+        if (name !== undefined) out.add(name);
+    }
+    return [...out];
 }
 
 /** A number of a modifier's text: a roll span "(a-b)", or a fixed number,
@@ -293,8 +300,10 @@ function modView(
     const text = narrowed && worded ? withValue(span, value) : span;
     const ladders = tierLadders(registry.catalog, s.u.base, type, tags);
     const numbers = mods.map((m) => tierNumber(ladders, m.id)).filter((n) => n !== undefined);
-    const tagSet = new Set<string>();
-    for (const m of mods) for (const t of m.implicitTags) tagSet.add(tagLabel(t));
+    const shown = shownTags(
+        mods.flatMap((m) => [...m.implicitTags]),
+        registry,
+    );
     const one = mods.length === 1 ? mods[0]! : undefined;
     // A bench craft of one rank (0) shows none, as does an unveiled row.
     const rank = one?.source === "bench" ? (registry.benchTierOf(one.id) ?? 0) : 0;
@@ -306,7 +315,7 @@ function modView(
         ...(numbers.length > 0 && {
             tier: [Math.min(...numbers), Math.max(...numbers)] as Range,
         }),
-        tags: [...tagSet],
+        tags: shown,
         fractured: isFractured(s, type),
         crafted,
         ...(!crafted && craftedTypes(s).has(type) && { possiblyCrafted: true as const }),
@@ -493,7 +502,7 @@ export function itemView(s: ItemSet, registry: Registry, craft?: Craft): ItemVie
     const sideTiers = (side: EldritchSide): number[] => pairs.map((k) => eldritchOf(k)[side]);
     const own = baseImplicitView(s, registry);
     const implicits: ImplicitView[] = own === undefined ? [] : [own];
-    implicits.push(...corruptionImplicitViews(s));
+    implicits.push(...corruptionImplicitViews(s, registry));
     for (const side of ELDRITCH_SIDES) {
         const all = sideTiers(side);
         const tiers = [...new Set(all)].filter((n) => n > 0).sort((x, y) => x - y);
@@ -501,7 +510,7 @@ export function itemView(s: ItemSet, registry: Registry, craft?: Craft): ItemVie
         // The wordings are the rows of the known tiers, since a family's text
         // changes with the tier; a type with no row at them keeps its wording.
         const texts = new Set<string>();
-        const tagSet = new Set<string>();
+        const tagIds: TagId[] = [];
         const types = eldritchTypes(s, side);
         for (const t of types) {
             const rows = tiers.flatMap((n) =>
@@ -510,7 +519,7 @@ export function itemView(s: ItemSet, registry: Registry, craft?: Craft): ItemVie
             if (rows.length === 0) texts.add(registry.eldritchTextOf(t) ?? t);
             for (const e of rows) {
                 texts.add(e.text);
-                for (const tag of e.implicitTags) tagSet.add(tagLabel(tag));
+                tagIds.push(...e.implicitTags);
             }
         }
         // An implicit the game data gives no wording for: alone it reads as
@@ -523,7 +532,7 @@ export function itemView(s: ItemSet, registry: Registry, craft?: Craft): ItemVie
             texts: [...texts],
             count: types.size + (unnamed ? 1 : 0),
             // Several wordings' tags together would describe no implicit.
-            tags: texts.size === 1 ? [...tagSet] : [],
+            tags: texts.size === 1 ? shownTags(tagIds, registry) : [],
             maybe: all.some((n) => n === 0),
         });
     }
@@ -596,19 +605,19 @@ function baseImplicitView(s: ItemSet, registry: Registry): ImplicitView | undefi
     const held = baseImplicitHeld(s);
     if (!held.has(true)) return undefined;
     const texts = new Set<string>();
-    const tagSet = new Set<string>();
+    const tagIds: TagId[] = [];
     for (const variant of registry.baseImplicits(s.u.base)) {
         if (variant.length === 0) continue;
         const text = variant.map((i) => i.text).filter((t) => t !== "");
         texts.add(text.length > 0 ? text.join("\n") : UNNAMED_IMPLICIT);
-        for (const i of variant) for (const tag of i.implicitTags) tagSet.add(tagLabel(tag));
+        for (const i of variant) tagIds.push(...i.implicitTags);
     }
     return {
         kind: "base",
         tiers: [],
         texts: [...texts],
         count: texts.size,
-        tags: texts.size === 1 ? [...tagSet] : [],
+        tags: texts.size === 1 ? shownTags(tagIds, registry) : [],
         maybe: held.has(false),
     };
 }
@@ -619,11 +628,13 @@ function baseImplicitView(s: ItemSet, registry: Registry): ImplicitView | undefi
  * a Vaal Orb any of the pool's, which reads as a count). The rows of one
  * wording at several item levels are one line.
  */
-function corruptionImplicitViews(s: ItemSet): ImplicitView[] {
+function corruptionImplicitViews(s: ItemSet, registry: Registry): ImplicitView[] {
     const { sure, others, extra } = corruptionImplicits(s);
-    const tagsOf = (rows: readonly CorruptionImplicitSpec[]): string[] => [
-        ...new Set(rows.flatMap((r) => [...r.implicitTags].map(tagLabel))),
-    ];
+    const tagsOf = (rows: readonly CorruptionImplicitSpec[]): string[] =>
+        shownTags(
+            rows.flatMap((r) => [...r.implicitTags]),
+            registry,
+        );
     const view = (rows: readonly CorruptionImplicitSpec[], maybe: boolean): ImplicitView => {
         const texts = [...new Set(rows.map((r) => r.text))];
         return {

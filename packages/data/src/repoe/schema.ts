@@ -122,6 +122,11 @@ export type RawClusterEnchants = Readonly<
     Partial<Record<"small" | "medium" | "large", readonly string[]>>
 >;
 
+/** `tag_names.json`: category tag → the name an item's tooltip shows for it,
+ *  for the tags that have one. Not RePoE's: the game's `Tags` table
+ *  (`scripts/ingest-tag-names.mjs`). */
+export type RawTagNames = Readonly<Record<string, string>>;
+
 /** `eldritch.json` entry (projected): one eldritch implicit row. */
 export interface RepoeEldritch {
     readonly side: "exarch" | "eater";

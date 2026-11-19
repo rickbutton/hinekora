@@ -32,7 +32,7 @@ Titan Greaves
 --------
 Item Level: 84
 --------
-{ Prefix Modifier "Essences" — Resource, Life }
+{ Prefix Modifier "Essences" — Life }
 +(91-105) to maximum Life
 { 3-5 additional prefix or suffix modifiers }
 ```

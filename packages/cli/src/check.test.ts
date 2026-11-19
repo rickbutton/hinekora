@@ -63,11 +63,11 @@ describe("the base's own implicit, against real data", () => {
     it("shows a Vermillion Ring's, possibly once a Vaal Orb may have taken it", () => {
         const ring = `item { base: "Vermillion Ring" ilvl: 84 rarity: normal }`;
         expect(implicits(ring)).toBe(
-            "  { Implicit Modifier — Resource, Life }\n  (5-7)% increased maximum Life",
+            "  { Implicit Modifier — Life }\n  (5-7)% increased maximum Life",
         );
         expect(implicits(`${ring}\nvaal`)).toBe(
             [
-                "  { Possibly: Implicit Modifier — Resource, Life }",
+                "  { Possibly: Implicit Modifier — Life }",
                 "  (5-7)% increased maximum Life",
                 "  { Possibly: Corruption Implicit Modifier }",
                 "  one of 39 Corruption implicits",
@@ -122,14 +122,11 @@ describe("the base's own implicit, against real data", () => {
     it("shows a declared corruption implicit, and one the Corruption Altar may add", () => {
         const ring = `item { base: "Vermillion Ring" ilvl: 84 rarity: rare implicits: [ "endurance charges" ] corrupted }`;
         expect(implicits(ring)).toBe(
-            [
-                "  { Corruption Implicit Modifier — Endurance Charge }",
-                "  +1 to Maximum Endurance Charges",
-            ].join("\n"),
+            ["  { Corruption Implicit Modifier }", "  +1 to Maximum Endurance Charges"].join("\n"),
         );
         expect(implicits(`${ring}\nlocus`)).toBe(
             [
-                "  { Corruption Implicit Modifier — Endurance Charge }",
+                "  { Corruption Implicit Modifier }",
                 "  +1 to Maximum Endurance Charges",
                 "  { Possibly: Corruption Implicit Modifier }",
                 "  one of 38 Corruption implicits",
@@ -150,7 +147,7 @@ describe("the base's own implicit, against real data", () => {
                 "  --------",
                 "  Item Level: 84",
                 "  --------",
-                "  { Possibly: Implicit Modifier — Resource, Life }",
+                "  { Possibly: Implicit Modifier — Life }",
                 "  (5-7)% increased maximum Life",
                 "  { Possibly: Corruption Implicit Modifier }",
                 "  one of 39 Corruption implicits",

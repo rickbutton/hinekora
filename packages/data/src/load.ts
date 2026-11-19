@@ -11,6 +11,7 @@ import { adaptEconomy, type EconomySnapshot, type RawEconomy } from "./economy.j
 import type { DataManifest } from "./manifest.js";
 import type {
     RawClusterEnchants,
+    RawTagNames,
     RepoeBases,
     RepoeBenches,
     RepoeCorruptionRows,
@@ -40,6 +41,7 @@ export function loadPoe1(dir: string): LoadedData {
         corruption: readJson<RepoeCorruptionRows>(`${dir}/${POE1_FILES.corruption}`),
         harvestChange: readJson<RawHarvestChange>(`${dir}/${POE1_FILES.harvestChange}`),
         clusterEnchants: readJson<RawClusterEnchants>(`${dir}/${POE1_FILES.clusterEnchants}`),
+        tagNames: readJson<RawTagNames>(`${dir}/${POE1_FILES.tagNames}`),
     };
     return adaptPoe1(raw);
 }

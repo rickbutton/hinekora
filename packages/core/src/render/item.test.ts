@@ -50,6 +50,8 @@ import {
 // More types than the tiered life and fire resistance alone, which a Rare ring
 // would always carry both of.
 const registry = buildRegistry({ bases: [RING_BASE], mods: [...TIERED_CATALOG, ...FILLERS] });
+/** The names the game shows for the fixtures' tags: "resource" has none. */
+const TAG_NAMES = { life: "Life", attack: "Attack", speed: "Speed", armour: "Armour" };
 const ctx: CheckContext = { registry };
 const ring = (prefixes: readonly (string | { mod: string; tier?: number })[] = []) =>
     item({ base: "IronRing", ilvl: 100, rarity: "rare", prefixes });
@@ -217,6 +219,7 @@ describe("the marks and the crafted flag", () => {
         bases: [RING_BASE],
         mods: [...CATALOG, BENCH_LIFE_ROW],
         benchCrafts: [BENCH_LIFE],
+        tagNames: TAG_NAMES,
     });
     const benchCtx: CheckContext = { registry: benchRegistry };
 
@@ -522,6 +525,7 @@ describe("the base's own implicit", () => {
             mods: [...TIERED_CATALOG, ...FILLERS],
             implicits: [LIFE, FIRE, COLD, BLANK],
             corruption: CORRUPTION_ROWS,
+            tagNames: TAG_NAMES,
         });
         const base = bases.length > 1 ? "Test Ring" : bases[0]!.id;
         const c = craft(item({ base, ilvl: 84, rarity: "normal", corrupted }), steps);
@@ -534,8 +538,9 @@ describe("the base's own implicit", () => {
 
     it("is shown with its wording and tags and no tier, where every item holds it", () => {
         const { v, text } = textOf([ringOf("LifeRing", [LIFE])]);
+        // "resource" has no name in the game, so the tooltip leaves it out.
         expect(implicitSection(text)).toBe(
-            ["{ Implicit Modifier — Resource, Life }", "(5-7)% increased maximum Life"].join("\n"),
+            ["{ Implicit Modifier — Life }", "(5-7)% increased maximum Life"].join("\n"),
         );
         expect(v.implicits).toEqual([
             {
@@ -543,7 +548,7 @@ describe("the base's own implicit", () => {
                 tiers: [],
                 texts: ["(5-7)% increased maximum Life"],
                 count: 1,
-                tags: ["Resource", "Life"],
+                tags: ["Life"],
                 maybe: false,
             },
         ]);
@@ -555,7 +560,7 @@ describe("the base's own implicit", () => {
             ["base", true],
             ["corruption", true],
         ]);
-        expect(text).toContain("{ Possibly: Implicit Modifier — Resource, Life }");
+        expect(text).toContain("{ Possibly: Implicit Modifier — Life }");
     });
 
     it("is one of a name's variants, without their tags", () => {
@@ -680,6 +685,37 @@ describe("the corruption implicits", () => {
         expect(section(text)).toBe(
             ["{ Corruption Implicit Modifier }", "+1 to Maximum Endurance Charges"].join("\n"),
         );
+    });
+
+    it("show the tags the game names, and no dash where it names none", () => {
+        const tagged = (row: (typeof CORRUPTION_ROWS)[number], tags: string[]) => ({
+            ...row,
+            implicitTags: new Set(tags.map(TagId)),
+        });
+        const named = buildRegistry({
+            bases: [RING_BASE],
+            mods: CATALOG,
+            corruption: [
+                tagged(CORRUPTION_ROWS[0]!, ["speed"]),
+                { ...tagged(CORRUPTION_ROWS[1]!, ["speed"]), text: CORRUPTION_ROWS[0]!.text },
+                tagged(CORRUPTION_ROWS[2]!, ["endurance_charge"]),
+            ],
+            tagNames: { speed: "Speed" },
+        });
+        const headerOf = (implicit: string): string => {
+            const c = craft(
+                {
+                    ...item({ base: "IronRing", ilvl: 84, rarity: "rare", corrupted: true }),
+                    implicits: [implicit],
+                },
+                [],
+            );
+            const r = check(c, { registry: named });
+            expect(r.diagnostics).toEqual([]);
+            return section(renderItemText(itemView(r.finalState!, named, c))).split("\n")[0]!;
+        };
+        expect(headerOf("endurance")).toBe("{ Corruption Implicit Modifier }");
+        expect(headerOf("movement speed")).toBe("{ Corruption Implicit Modifier — Speed }");
     });
 
     it("show one a Vaal Orb may add as possible, one of the pool's wordings", () => {

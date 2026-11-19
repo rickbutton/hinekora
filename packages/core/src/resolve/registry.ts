@@ -393,6 +393,9 @@ export interface Registry {
     /** Canonical range-stripped wording for a ModType ("maximum life"), for
      *  hover/diagnostics; falls back to the raw TypeId. */
     typeLabel(type: TypeId): string;
+    /** The name an item's tooltip shows for a category tag, or undefined where
+     *  the game shows none. */
+    tagName(tag: TagId): string | undefined;
 
     // --- completion lists (precomputed) ---
     readonly currencyNames: readonly string[];
@@ -506,6 +509,9 @@ export interface RegistryData {
     readonly clusterEnchants?: Readonly<Partial<Record<ClusterSize, readonly string[]>>>;
     /** Aspect name → the row the Bestiary crafts; the game's four by default. */
     readonly aspects?: Readonly<Record<string, string>>;
+    /** Category tag → the name an item's tooltip shows for it; a tag with none
+     *  is not shown. */
+    readonly tagNames?: Readonly<Record<string, string>>;
 }
 
 /** Do two bases agree on everything the model reads of a base: class, domain,
@@ -543,6 +549,7 @@ export function buildRegistry(data: RegistryData): Registry {
     // Attach curated metamod effects (protect / cannot-roll / multimod) to the
     // catalog; every downstream view reads this effect-bearing catalog.
     const catalog = withMetamodEffects(data.mods);
+    const tagNames = data.tagNames ?? {};
 
     const modById = new Map(catalog.map((m) => [norm(m.id), m] as const));
     const modAlias = new Map(
@@ -1161,6 +1168,10 @@ export function buildRegistry(data: RegistryData): Registry {
 
         harvestChangeOf(type) {
             return changeOf.get(type);
+        },
+
+        tagName(tag) {
+            return Object.hasOwn(tagNames, tag) ? tagNames[tag] : undefined;
         },
 
         harvestChangeTarget(type, element) {

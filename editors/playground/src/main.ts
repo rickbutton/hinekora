@@ -22,6 +22,7 @@ import essencesUrl from "@hinekora/data/data/poe1/essences.json?url";
 import fossilsUrl from "@hinekora/data/data/poe1/fossils.json?url";
 import manifestUrl from "@hinekora/data/data/poe1/manifest.json?url";
 import modsUrl from "@hinekora/data/data/poe1/mods.json?url";
+import tagNamesUrl from "@hinekora/data/data/poe1/tag_names.json?url";
 import { monaco } from "./monaco.js";
 // The package maps `monaco-editor/<path>.js` onto its ESM tree.
 import EditorWorker from "monaco-editor/editor/editor.worker.js?worker";
@@ -47,6 +48,7 @@ const DATA_URLS: Readonly<Record<keyof RawPoe1, string>> = {
     corruption: corruptionUrl,
     harvestChange: harvestChangeUrl,
     clusterEnchants: clusterEnchantsUrl,
+    tagNames: tagNamesUrl,
 };
 
 /** The example crafts checked into the repo, by file name. */

@@ -48,10 +48,10 @@ bad.craft:8:1: error: at this point the item is: Iron Ring · Magic · 1–2 aff
     --------
     Item Level: 84
     --------
-    { Implicit Modifier — Physical Damage, Damage, Physical, Attack }
+    { Implicit Modifier — Damage, Physical, Attack }
     Adds 1 to 4 Physical Damage to Attacks
     --------
-    { Prefix Modifier "Annealed" (Tier: 1) — Physical Damage, Damage, Physical, Attack }
+    { Prefix Modifier "Annealed" (Tier: 1) — Damage, Physical, Attack }
     Adds (6-9) to (13-15) Physical Damage to Attacks
     { Suffix Modifier "of the Gods" (Tier: 1) — Attribute }
     +(51-55) to Strength

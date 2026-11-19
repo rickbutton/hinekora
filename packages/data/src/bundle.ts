@@ -40,6 +40,7 @@ import type {
     RepoeFossils,
     RepoeImplicits,
     RepoeMods,
+    RawTagNames,
 } from "./repoe/schema.js";
 
 export interface LoadedData {
@@ -53,10 +54,11 @@ export interface LoadedData {
     readonly corruption: readonly CorruptionImplicitSpec[];
     readonly harvestChange: HarvestChangeTable;
     readonly clusterEnchants: RawClusterEnchants;
+    readonly tagNames: RawTagNames;
     readonly manifest: DataManifest;
 }
 
-/** The eleven files of a PoE1 data directory, parsed but not yet adapted. */
+/** The twelve files of a PoE1 data directory, parsed but not yet adapted. */
 export interface RawPoe1 {
     readonly manifest: DataManifest;
     readonly mods: RepoeMods;
@@ -69,9 +71,10 @@ export interface RawPoe1 {
     readonly corruption: RepoeCorruptionRows;
     readonly harvestChange: RawHarvestChange;
     readonly clusterEnchants: RawClusterEnchants;
+    readonly tagNames: RawTagNames;
 }
 
-/** The names of the eleven files, by `RawPoe1` field. */
+/** The names of the twelve files, by `RawPoe1` field. */
 export const POE1_FILES: Readonly<Record<keyof RawPoe1, string>> = {
     manifest: "manifest.json",
     mods: "mods.json",
@@ -84,6 +87,7 @@ export const POE1_FILES: Readonly<Record<keyof RawPoe1, string>> = {
     corruption: "corruption.json",
     harvestChange: "harvest_change.json",
     clusterEnchants: "cluster_enchants.json",
+    tagNames: "tag_names.json",
 };
 
 /** Normalize raw PoE1 (RePoE-shaped) data. */
@@ -110,6 +114,7 @@ export function adaptPoe1(raw: RawPoe1): LoadedData {
         corruption,
         harvestChange,
         clusterEnchants: raw.clusterEnchants,
+        tagNames: raw.tagNames,
         manifest: raw.manifest,
     };
 }
@@ -129,5 +134,6 @@ export function registryOf(data: LoadedData): Registry {
         corruption: data.corruption,
         harvestChange: data.harvestChange,
         clusterEnchants: data.clusterEnchants,
+        tagNames: data.tagNames,
     });
 }

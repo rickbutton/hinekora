@@ -18,7 +18,7 @@
  *
  * The other ingest scripts add their own files to the manifest
  * (`ingest-eldritch.mjs`, `ingest-corruption.mjs`, `ingest-harvest-change.mjs`,
- * `ingest-cluster.mjs`); this one keeps their entries.
+ * `ingest-cluster.mjs`, `ingest-tag-names.mjs`); this one keeps their entries.
  */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
