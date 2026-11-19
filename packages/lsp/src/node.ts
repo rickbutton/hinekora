@@ -8,5 +8,6 @@ import { createServer } from "./server.js";
 
 const connection = createConnection(ProposedFeatures.all);
 const registry = registryOf(loadDefaultPoe1());
-createServer(connection, registry, loadDefaultEconomy());
+const prices = loadDefaultEconomy();
+createServer(connection, registry, () => prices);
 connection.listen();

@@ -33,7 +33,13 @@ import { getFoldingRanges } from "./folding.js";
 import { getInlayHints } from "./inlay-hints.js";
 import { getFormattingEdits } from "./formatting.js";
 
-export function createServer(connection: Connection, registry: Registry, prices?: Prices): void {
+/** `prices` is asked on each request, so prices fetched after the server
+ *  starts are used from the next request on. */
+export function createServer(
+    connection: Connection,
+    registry: Registry,
+    prices: () => Prices | undefined = () => undefined,
+): void {
     const documents = new TextDocuments(TextDocument);
     setFaultReporter((feature, error) => {
         connection.console.error(`hinekora: ${feature} failed: ${messageOf(error)}`);
@@ -81,7 +87,7 @@ export function createServer(connection: Connection, registry: Registry, prices?
     connection.onHover((params) => {
         const doc = documents.get(params.textDocument.uri);
         if (!doc) return null;
-        const md = getHover(doc.getText(), doc.offsetAt(params.position), registry, prices);
+        const md = getHover(doc.getText(), doc.offsetAt(params.position), registry, prices());
         return md === null ? null : { contents: { kind: "markdown", value: md } };
     });
 
