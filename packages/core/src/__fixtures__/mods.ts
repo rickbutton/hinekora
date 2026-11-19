@@ -887,6 +887,28 @@ export const FIRE_RES_TIERED: Mod = mkMod({
     name: "of the Salamander",
 });
 
+/** Two tiers of a hybrid whose support line comes first, as the game prints
+ *  it, at levels 18 and 20, and of one at levels 12 and 13, whose level span
+ *  lies inside its value span. Not in `CATALOG`. */
+const supportedSpeed = (id: string, type: string, level: number, value: string): Mod =>
+    mkMod({
+        id,
+        type,
+        gen: "prefix",
+        minLevel: 1,
+        families: [type],
+        spawn: [spawn(TAG_DEFAULT, 500)],
+        text: `Socketed Gems are Supported by Level ${level} Faster Attacks Support\n${value}% increased Attack Speed`,
+    });
+export const SUPPORTED_SPEED: readonly Mod[] = [
+    supportedSpeed("SupportedSpeed1", "SupportedSpeed", 18, "(10-12)"),
+    supportedSpeed("SupportedSpeed2", "SupportedSpeed", 20, "(11-14)"),
+];
+export const SUPPORTED_SPEED_LOW: readonly Mod[] = [
+    supportedSpeed("SupportedSpeedLow1", "SupportedSpeedLow", 12, "(10-12)"),
+    supportedSpeed("SupportedSpeedLow2", "SupportedSpeedLow", 13, "(11-14)"),
+];
+
 /**
  * One ModType with a prefix row on rings and a suffix row on amulets: the side a
  * type occupies is only defined against the base it rolls on. Not in `CATALOG`.

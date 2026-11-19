@@ -18,7 +18,7 @@
  */
 import type { Craft } from "../ast/ast.js";
 import type { Range } from "../check/range.js";
-import { rollRange } from "../check/values.js";
+import { rollRange, valueNumber } from "../check/values.js";
 import { type CraftNames, craftNames } from "../check/names.js";
 import type { ItemSet } from "../check/state.js";
 import {
@@ -254,18 +254,20 @@ function wordings(texts: readonly string[]): string[] {
 }
 
 /**
- * The text with its first span narrowed to `value`: "+(70-84)" at [75, 90] is
- * "+(75-84)". The value is cut to the span shown, since the tiers can narrow
+ * The text with its value's span narrowed to `value`: "+(70-84)" at [75, 90]
+ * is "+(75-84)". The value is cut to the span shown, since the tiers can narrow
  * after the value was learnt and a value never widens what the rows roll.
  */
 function withValue(text: string, value: Range): string {
-    const re = /\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)/;
-    const m = re.exec(text);
-    if (m === null) return text;
+    const found = valueNumber(text);
+    if (found === undefined) return text;
+    const { match: m, at } = found;
+    if (m[1] === undefined || m[2] === undefined) return text;
     const lo = Math.max(value[0], Number(m[1]));
     const hi = Math.min(value[1], Number(m[2]));
     if (lo > hi) return text;
-    return text.replace(re, lo === hi ? String(lo) : `(${lo}-${hi})`);
+    const narrowed = lo === hi ? String(lo) : `(${lo}-${hi})`;
+    return text.slice(0, at) + narrowed + text.slice(at + m[0].length);
 }
 
 /** The modifier view for a type some item carries, at the rows the items

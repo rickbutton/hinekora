@@ -14,22 +14,29 @@ const FIRST_NUMBER = /\((\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)\)|(\d+(?:\.\d+)?)/;
  *  is fixed by the row and never rolled. The ingest builds the same shapes
  *  (`packages/data/scripts/mod-text.mjs`), and the game prints the support's
  *  line first on a hybrid ("… Level 18 Spell Totem Support\n(20-25)% increased
- *  Totem Damage"). */
-const GRANTED_LINE = /^(?:Socketed Gems are Supported by Level \d+ |Grants Level \d+ )/;
+ *  Totem Damage"). A level may be a span "(18-20)" in a text that spans
+ *  several tiers' rows, as the item display builds. */
+const GRANTED_LINE = /^(?:Socketed Gems are Supported by Level |Grants Level )(?:\d+|\(\d+-\d+\)) /;
 
 export function isGrantedEffectLine(line: string): boolean {
     return GRANTED_LINE.test(line);
 }
 
-/** The text past its granted-effect lines, or the whole of it where nothing
- *  else has a number: a support's level is the value of a row that is only
- *  the support. */
-function valueText(text: string): string {
-    const own = text
-        .split("\n")
-        .filter((l) => !isGrantedEffectLine(l))
-        .join("\n");
-    return FIRST_NUMBER.test(own) ? own : text;
+/** Where a row's value is written in its text: the first number past its
+ *  granted-effect lines, or the first of the whole text where nothing else
+ *  has a number, since a support's level is the value of a row that is only
+ *  the support. `at` is the offset of `match` in `text`. */
+export function valueNumber(text: string): { match: RegExpExecArray; at: number } | undefined {
+    let offset = 0;
+    for (const line of text.split("\n")) {
+        if (!isGrantedEffectLine(line)) {
+            const m = FIRST_NUMBER.exec(line);
+            if (m !== null) return { match: m, at: offset + m.index };
+        }
+        offset += line.length + 1;
+    }
+    const m = FIRST_NUMBER.exec(text);
+    return m === null ? undefined : { match: m, at: m.index };
 }
 
 /** The span of a row's value: "+(70-84) to maximum Life" is [70, 84], "+1 to
@@ -37,8 +44,8 @@ function valueText(text: string): string {
  *  (46-53) Lightning Damage"; a text with no number has none. A "reduced" row
  *  writes its span high to low, "(30-27)% reduced", which reads [27, 30]. */
 export function rollRange(text: string): Range | undefined {
-    const m = FIRST_NUMBER.exec(valueText(text));
-    if (m === null) return undefined;
+    const m = valueNumber(text)?.match;
+    if (m === undefined) return undefined;
     if (m[3] !== undefined) return [Number(m[3]), Number(m[3])];
     const a = Number(m[1]);
     const b = Number(m[2]);

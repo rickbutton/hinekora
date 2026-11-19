@@ -7,6 +7,7 @@ import {
     craft,
     essence,
     has,
+    hasValue,
     iff,
     item,
     notp,
@@ -24,12 +25,15 @@ import {
     FILLERS,
     MAXLIFE_T2,
     RING_BASE,
+    SUPPORTED_SPEED,
+    SUPPORTED_SPEED_LOW,
     TIERED_CATALOG,
     VEILED_A,
     VEILED_SUFFIX_MOD,
     CORRUPTION_ROWS,
 } from "../__fixtures__/mods.js";
 import type { Base } from "../model/base.js";
+import type { Mod } from "../model/index.js";
 import { BaseId, GroupId, ModId, TagId, TypeId } from "../model/ids.js";
 import type { BenchCraft, ImplicitSpec } from "../model/sources.js";
 import { generateCatalog } from "../check/reference/catalog.js";
@@ -397,6 +401,31 @@ describe("the tier numbers of an item whose level stops short of the best tier",
         expect(r.diagnostics).toEqual([]);
         expect(renderItemText(itemView(r.finalState!, essenced))).toContain(
             '{ Prefix Modifier "Robust" (Tier: 2) }',
+        );
+    });
+});
+
+describe("a value a condition learnt, on a modifier that grants a support", () => {
+    const reached = (rows: readonly Mod[]) => {
+        const hybrids = buildRegistry({ bases: [RING_BASE], mods: rows });
+        const r = check(craft(ring(), [until(hasValue("attack speed", ">=", 12), [op("chaos")])]), {
+            registry: hybrids,
+        });
+        expect(r.diagnostics).toEqual([]);
+        return renderItemText(itemView(r.finalState!, hybrids));
+    };
+
+    it("narrows the modifier's own roll, past the support's line", () => {
+        expect(reached(SUPPORTED_SPEED)).toContain(
+            "Socketed Gems are Supported by Level (18-20) Faster Attacks Support\n" +
+                "(12-14)% increased Attack Speed",
+        );
+    });
+
+    it("leaves the support's level where its span overlaps the value's", () => {
+        expect(reached(SUPPORTED_SPEED_LOW)).toContain(
+            "Socketed Gems are Supported by Level (12-13) Faster Attacks Support\n" +
+                "(12-14)% increased Attack Speed",
         );
     });
 });

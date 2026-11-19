@@ -3,7 +3,7 @@ import { check, type CheckContext } from "./check.js";
 import * as v from "./views.js";
 import { rowIds } from "../__fixtures__/views.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { narrowRange, rollRange } from "./values.js";
+import { narrowRange, rollRange, valueNumber } from "./values.js";
 import {
     andp,
     bench,
@@ -99,6 +99,14 @@ describe("a modifier's value", () => {
 
     it("is read from a skill a line triggers, which is no granted line", () => {
         expect(rollRange("Trigger Level 20 Fire Burst on Hit")).toEqual([20, 20]);
+    });
+
+    it("is read past a support line whose level spans several tiers", () => {
+        const text =
+            "Socketed Gems are Supported by Level (12-13) Faster Attacks Support\n" +
+            "(10-14)% increased Attack Speed";
+        expect(rollRange(text)).toEqual([10, 14]);
+        expect(valueNumber(text)?.at).toBe(text.indexOf("(10-14)"));
     });
 
     it("reads a span written high to low in order, so a comparison can hold", () => {
