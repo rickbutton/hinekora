@@ -36,7 +36,8 @@ export function processIo(): CliIo {
 }
 
 export const USAGE =
-    "usage: hinekora check <file.craft> | hinekora fmt [--check] <file.craft> | hinekora chart <file.craft> | hinekora cost [--league <name>] <file.craft>\n";
+    "usage: hinekora check <file.craft> | hinekora fmt [--check] <file.craft> | hinekora chart <file.craft> | hinekora cost [--league <name>] <file.craft>\n" +
+    "cost reads prices from poe.ninja; HINEKORA_PRICES=none keeps it offline\n";
 
 function tryRead(io: CliIo, file: string): string | undefined {
     try {

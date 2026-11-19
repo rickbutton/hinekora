@@ -44,15 +44,13 @@ expected spend.
 
 ### Completion
 
-Inside quotes, completion offers the names that fit the position: bases, modifiers,
-essences, fossils, bench crafts or Harvest tags. For a modifier it leaves out the ones the
-base cannot roll and those the craft names that no item has at that point. Typing `"` opens
-the list.
+Inside quotes, completion offers the names that fit: bases, modifiers, essences, fossils,
+bench crafts or Harvest tags. For a modifier it leaves out those the base cannot roll and
+those the craft names that no item has at that point. Typing `"` opens the list.
 
 ## VS Code
 
-The extension is not published to the marketplace. It runs from a checkout of the
-repository:
+The extension is not on the marketplace; it runs from a checkout of the repository:
 
 ```sh
 pnpm install
@@ -61,23 +59,23 @@ pnpm -C editors/vscode build
 ```
 
 Open the repository in VS Code and start the launch configuration `Run hinekora Extension`.
-A second window opens with the extension loaded. It treats every `.craft` file as hinekora.
+The window it opens treats every `.craft` file as hinekora.
 
-The extension starts the language server as a Node process. It loads the game data,
-and prices as [`cost`](./cli#cost) does without waiting on poe.ninja.
+The extension starts the language server in Node. It loads the game data and prices as
+[`cost`](./cli#cost) does: when it starts, it asks poe.ninja for prices if its saved ones
+are over an hour old, even if no cost is shown. `HINEKORA_PRICES=none` in the environment
+VS Code starts from keeps it offline.
 
 ## Playground
 
-The [playground](/playground/) is the same service in the browser, with no server. The
-editor has every feature in the table.
+The [playground](/playground/) is the same service in the browser, with no server.
 
 - The `example` list loads the crafts from the repository's `examples/` folder.
-- The side pane shows the craft step by step. Each step has the item after it and its
-  cost line. A loop is a bracketed group that ends in its condition, and a branch has one arm
-  per answer.
-- Pointing at a step in the pane highlights its statement in the editor. Clicking it moves
-  the cursor there.
-- Each item card has a `copy` button that copies the item as the game's item text.
-- Errors appear under the pane with their line and column. Clicking one moves the cursor
+- The side pane shows each step with the item after it and its cost line. A loop is a
+  bracketed group that ends in its condition, and a branch has one arm per answer.
+- Pointing at a step highlights its statement in the editor; clicking it moves the cursor
+  there.
+- An item card's `copy` button copies the item as the game's item text.
+- Errors appear under the pane with their line and column; clicking one moves the cursor
   to it.
 - The `format` button formats the craft.

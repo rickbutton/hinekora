@@ -15,9 +15,9 @@ Each command takes one file. Only `cost` uses the network, for prices.
 
 | Code | Meaning                                                                                          |
 | ---- | ------------------------------------------------------------------------------------------------ |
-| 0    | `check`: the craft checks. `fmt`: the file has the standard layout. `chart`, `cost`: printed.    |
+| 0    | `check`: the craft checks. `fmt`: the file is formatted. `chart`, `cost`: printed.               |
 | 1    | `check`: the craft has errors. `fmt --check`: the file needs formatting. Any: it does not parse. |
-| 2    | wrong arguments, a league poe.ninja lacks, or a file that cannot be read                         |
+| 2    | wrong arguments, a league poe.ninja lacks, or an unreadable file                                 |
 | 3    | any: the tool could not judge the craft, a fault of its own to report                            |
 
 A usage error prints the command forms to standard error.
@@ -103,6 +103,7 @@ flowchart TD
 On a craft with errors, its first line counts them and the figures take the steps as written.
 
 `cost` fetches [poe.ninja](https://poe.ninja/)'s prices for the current challenge league,
-or the one `--league` or `HINEKORA_LEAGUE` names, and keeps them an hour in the user's cache
-folder (`~/.cache/hinekora`). Offline, it uses the last prices kept and says so.
-`HINEKORA_PRICES` names a prices file to use instead, or `none` for none.
+or the one `--league` or `HINEKORA_LEAGUE` names, and keeps them an hour in
+`$XDG_CACHE_HOME/hinekora` (else `~/.cache/hinekora`; `~/Library/Caches/hinekora` on macOS,
+`%LOCALAPPDATA%\hinekora\Cache` on Windows). Offline, it uses the last prices kept and says
+so. `HINEKORA_PRICES` names a prices file instead; `none` means no prices and no request.
