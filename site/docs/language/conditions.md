@@ -22,10 +22,10 @@ A condition is a test of the current item. [`until`](./until) and [`if`](./if) t
 
 The comparison operators are `==`, `!=`, `<`, `<=`, `>` and `>=`.
 
-A value is the first number of the modifier's text. An eldritch test also takes a quoted
-wording. A [group](https://www.poewiki.net/wiki/Modifier#Group/family) is the
-set of modifiers of which an item holds one. [Names and tiers](./names) covers the quoted
-names.
+A value is the first number of the modifier's text, past a granted skill or support
+line. An eldritch test also takes a quoted wording. An item holds one modifier of a
+[group](https://www.poewiki.net/wiki/Modifier#Group/family) at most. [Names](./names)
+covers names.
 
 ## Combining
 

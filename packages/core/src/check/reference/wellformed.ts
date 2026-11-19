@@ -69,7 +69,7 @@ export function violations(item: CItem, ctx: RefCtx): string[] {
         if ((row.source ?? "natural") === "natural" && row.domain !== base.domain) {
             out.push(`${row.id} is of domain ${row.domain}, the base of ${base.domain}`);
         }
-        // The value is the first number of the row's text, within its span
+        // The value lies within the row's span
         // (check/values.ts `rollRange`); a whole span rolls whole numbers.
         const span = row.text === undefined ? undefined : rollRange(row.text);
         if (span === undefined) {

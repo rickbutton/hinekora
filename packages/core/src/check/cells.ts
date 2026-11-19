@@ -1,5 +1,5 @@
 /**
- * Value cells: the parts of a row's span (its first number, `check/values.ts`)
+ * Value cells: the parts of the span a row's value rolls in (`check/values.ts`)
  * on which every value comparison a craft makes is constant, so a modifier's
  * value is kept only as finely as some condition reads it.
  */

@@ -80,6 +80,27 @@ describe("a modifier's value", () => {
         ]);
     });
 
+    it("is read past the line of a granted support, wherever it stands", () => {
+        const support = "Socketed Gems are Supported by Level 18 Spell Totem Support";
+        expect(rollRange(`${support}\n(20-25)% increased Totem Damage`)).toEqual([20, 25]);
+        expect(rollRange(`(20-25)% increased Totem Damage\n${support}`)).toEqual([20, 25]);
+        expect(rollRange("Grants Level 22 Wrath\n+(10-15) to Strength")).toEqual([10, 15]);
+    });
+
+    it("is the level of a row that only grants an effect", () => {
+        expect(rollRange("Socketed Gems are Supported by Level 20 Fortify Support")).toEqual([
+            20, 20,
+        ]);
+        expect(rollRange("Grants Level 22 Wrath")).toEqual([22, 22]);
+        expect(
+            rollRange("Socketed Gems are Supported by Level 1 Lifetap Support\nHas no Sockets"),
+        ).toEqual([1, 1]);
+    });
+
+    it("is read from a skill a line triggers, which is no granted line", () => {
+        expect(rollRange("Trigger Level 20 Fire Burst on Hit")).toEqual([20, 20]);
+    });
+
     it("reads a span written high to low in order, so a comparison can hold", () => {
         const span = rollRange(
             "Instant Recovery when on Low Life\n(30-27)% reduced Amount Recovered",

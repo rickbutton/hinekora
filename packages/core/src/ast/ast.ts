@@ -292,7 +292,7 @@ export interface HasPred {
     readonly tier?: number | ParamRef;
     /** `has group "<mod>"`: any modifier of the named modifier's group. */
     readonly group?: true;
-    /** `has "<mod>" >= 110`: the modifier's value, its first number, compares so. */
+    /** `has "<mod>" >= 110`: the modifier's value (`check/values.ts`) compares so. */
     readonly value?: { readonly op: Cmp; readonly value: number };
     readonly span: SourceSpan;
 }

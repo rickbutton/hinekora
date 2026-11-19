@@ -7,8 +7,8 @@
 import type { ModId, Rarity, TypeId } from "../model/ids.js";
 import type { Corruption, InfluenceKey } from "../model/marks.js";
 
-/** One modifier on the item. `value` is the first number of the row's text
- *  (`check/values.ts`), undefined for a row whose text has none. `crafted` is a
+/** One modifier on the item. `value` is read from the row's text
+ *  (`check/values.ts`), undefined for a row whose text has no number. `crafted` is a
  *  mark of its own: a bench row is always crafted, and a Harvest change keeps
  *  the mark on the natural row it puts in a crafted modifier's place. */
 export interface CMod {

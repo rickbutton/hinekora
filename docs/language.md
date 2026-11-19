@@ -249,10 +249,10 @@ A predicate asks about the item's current state only; there are no history predi
 
 - `has "X"` means any tier of X; `has "X" t1` the specific tier, which the checker tracks
   through every step.
-- `has "X" >= 110` compares the modifier's **value**, the first number of its text. Values
-  that miss it are ruled out, and a value holds until a reforge or a `divine` rolls it
-  again: `until has "maximum life" >= 110 { divine }` is "divine the life into range". An
-  experimented base's "increased modifier magnitudes" implicit is not applied.
+- `has "X" >= 110` compares the modifier's **value**, the first number of its text past a
+  granted skill or support line. Values that miss it are ruled out, and a value holds until
+  a reforge or a `divine` rolls it again: `until has "maximum life" >= 110 { divine }` is
+  "divine the life into range". An experimented base's "increased modifier magnitudes" implicit is not applied.
 - `has group "X"` asks for any modifier of X's
   [group](https://www.poewiki.net/wiki/Modifier#Group/family), read across every base:
   `if not has group "spell damage" { bench "spell damage" }` is a player's "unless you already

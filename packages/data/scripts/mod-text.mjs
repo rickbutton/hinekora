@@ -9,9 +9,11 @@
  */
 
 /** The game's client strings `ModGrantsSupportEffectWithLevel` and
- *  `ModGrantsEffectWithLevel`, by the effect's name and level. */
-const supportLine = (name, level) => `Socketed Gems are Supported by Level ${level} ${name}`;
-const skillLine = (name, level) => `Grants Level ${level} ${name}`;
+ *  `ModGrantsEffectWithLevel`, by the effect's name and level. A modifier's
+ *  value is read past these lines (core `check/values.ts`
+ *  `isGrantedEffectLine`), which a test holds to these shapes. */
+export const supportLine = (name, level) => `Socketed Gems are Supported by Level ${level} ${name}`;
+export const skillLine = (name, level) => `Grants Level ${level} ${name}`;
 
 const MARKUP = /\[(?:[^\]|]*\|)?([^\]]*)\]/g;
 

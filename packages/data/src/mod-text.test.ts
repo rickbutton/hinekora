@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { isGrantedEffectLine, rollRange } from "@hinekora/core";
+import { loadDefaultPoe1 } from "./load.js";
 
 interface ExportMod {
     readonly text?: string | null;
@@ -10,12 +12,16 @@ interface ExportGem {
     readonly active_skill?: { readonly display_name?: string };
 }
 interface Script {
+    readonly supportLine: (name: string, level: number) => string;
+    readonly skillLine: (name: string, level: number) => string;
     readonly stripMarkup: (text: string) => string;
     readonly modText: (mod: ExportMod, gems?: Readonly<Record<string, ExportGem>>) => string;
 }
 // The ingest helper is plain JavaScript outside the package's sources.
 const url = new URL("../scripts/mod-text.mjs", import.meta.url).href;
-const { stripMarkup, modText } = (await import(/* @vite-ignore */ url)) as Script;
+const { supportLine, skillLine, stripMarkup, modText } = (await import(
+    /* @vite-ignore */ url
+)) as Script;
 
 const gems: Readonly<Record<string, ExportGem>> = {
     SupportFortify: { display_name: "Fortify Support", is_support: true },
@@ -106,5 +112,34 @@ describe("the text of a modifier that grants an effect", () => {
             "+(10-24) to maximum Life",
         );
         expect(modText({}, gems)).toBe("");
+    });
+});
+
+describe("a granted effect's line and a modifier's value", () => {
+    const data = loadDefaultPoe1();
+    const texts = [
+        ...data.mods.map((m) => m.text ?? ""),
+        ...data.implicits.map((i) => i.text),
+        ...data.corruption.map((c) => c.text),
+        ...data.eldritch.map((e) => e.text),
+    ];
+    const lines = texts.flatMap((t) => t.split("\n"));
+
+    it("is a line the ingest builds, which the value is read past", () => {
+        expect(isGrantedEffectLine(supportLine("Fortify Support", 20))).toBe(true);
+        expect(isGrantedEffectLine(skillLine("Wrath", 22))).toBe(true);
+        expect(isGrantedEffectLine("Trigger Level 20 Fire Burst on Hit")).toBe(false);
+    });
+
+    it("is every line of the catalogue that grants a support or a skill by level", () => {
+        const granting = lines.filter((l) => /Supported by Level \d|^Grants Level \d/.test(l));
+        expect(granting.length).toBeGreaterThan(0);
+        expect(granting.filter((l) => !isGrantedEffectLine(l))).toEqual([]);
+    });
+
+    it("leaves a hybrid's value its own roll, not the support's level", () => {
+        const totem = data.mods.find((m) => m.id === "TotemDamageSpellUber1");
+        expect(totem?.text).toMatch(/Spell Totem/);
+        expect(rollRange(totem!.text!)).toEqual([20, 25]);
     });
 });
