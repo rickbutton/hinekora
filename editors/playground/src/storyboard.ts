@@ -24,6 +24,8 @@ import {
     type Criterion,
     figure,
     percentage,
+    PER_FINISHED_UNPRICED,
+    perFinishedText,
     priceText,
     groupWords,
     addPrices,
@@ -806,6 +808,15 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                               "div",
                               "note",
                               `ends short of a finished item ${percentage(report.stopped)} of the time`,
+                          ),
+                      ]
+                    : []),
+                ...(report.perFinished !== undefined
+                    ? [
+                          h(
+                              "div",
+                              "note",
+                              `one finished item takes ${perFinishedText(report.perFinished)}, ${PER_FINISHED_UNPRICED}`,
                           ),
                       ]
                     : []),

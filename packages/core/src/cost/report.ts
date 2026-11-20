@@ -107,6 +107,11 @@ export interface CostReport {
     /** The chance the craft ends before its last step: on a `stop`, or on an
      *  outcome that destroys the item or turns it into another. */
     readonly stopped: number;
+    /** What one finished item takes where the craft can end short of one:
+     *  the attempts, one over the share that finishes, and what they spend
+     *  together. The items the attempts that end short use up are not priced.
+     *  Absent where every attempt finishes, none does, or the total is not known. */
+    readonly perFinished?: PerFinished;
     /** Some loop's rounds are not known: `total` leaves its steps out, and no
      *  figure in Chaos Orbs is given. */
     readonly unknown: boolean;
@@ -116,6 +121,14 @@ export interface CostReport {
     /** The cost walk itself failed on this craft, with the internal message
      *  for a bug report: no step has a figure. */
     readonly failed?: string;
+}
+
+export interface PerFinished {
+    readonly attempts: number;
+    readonly total: readonly Price[];
+    /** `total` under the snapshot, where every item has a price. */
+    readonly chaos?: number;
+    readonly divine?: number;
 }
 
 /** The conditions passed since the last roll, whose joint chance with the next
@@ -224,9 +237,26 @@ function costOfChecked(
                   estimate.chaos,
                   ends.map((w) => w.chaos),
               );
+    const finishes = 1 - estimate.stopped;
+    const chaos =
+        snapshot !== undefined && !unknown && estimate.chaos !== undefined
+            ? estimate.chaos
+            : undefined;
+    const perFinished: PerFinished | undefined =
+        unknown || estimate.stopped <= 0 || finishes <= 1e-12
+            ? undefined
+            : {
+                  attempts: 1 / finishes,
+                  total: estimate.total.map((p) => ({ ...p, amount: p.amount / finishes })),
+                  ...(chaos !== undefined && {
+                      chaos: chaos / finishes,
+                      divine: chaos / finishes / snapshot!.chaosPerDivine,
+                  }),
+              };
     return {
         steps,
         total: estimate.total,
+        ...(perFinished !== undefined && { perFinished }),
         ...(snapshot !== undefined &&
             !unknown &&
             estimate.chaos !== undefined && {

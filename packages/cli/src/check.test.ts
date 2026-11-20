@@ -1004,6 +1004,24 @@ until has "maximum life" {
         expect(r.output).toContain("Expected spend: nothing this report can count.");
     });
 
+    it("says what one finished item takes where the craft can end short of one", () => {
+        const ring = `item { base: "Vermillion Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] }`;
+        const out = costSource(
+            `${ring}\nvaal\nif not implicit "maximum endurance charges" { stop }`,
+            "test.craft",
+            registry,
+            prices,
+        ).output;
+        // 1 / (1/4 × 50/31,400) attempts, one Vaal Orb each.
+        expect(out).toContain("The craft ends short of a finished item 99.96% of the time.");
+        expect(out).toMatch(
+            /\nOne finished item takes ~2512 attempts: 2512 Vaal Orb, ~[\d.]+ Chaos Orbs \(~[\d.]+ Divine Orbs\), not counting the items the failed attempts use up\.$/,
+        );
+        expect(costSource(`${ring}\nvaal`, "test.craft", registry, prices).output).not.toContain(
+            "One finished item",
+        );
+    });
+
     it("ends the craft where a Vaal Orb turns a jewel into a unique one", () => {
         const vaal = (base: string) =>
             costSource(

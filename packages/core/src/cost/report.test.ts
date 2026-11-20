@@ -971,6 +971,29 @@ describe("the cost of a craft", () => {
         expect(bare.unpriced).toEqual(["Orb of Transmutation"]);
     });
 
+    it("what one finished item takes is the spend over the share that finishes", () => {
+        const prices: Prices = {
+            league: "Test",
+            fetchedAt: "2026-11-09T00:00:00Z",
+            chaosPerDivine: 400,
+            chaos: new Map([["Chaos Orb", 1]]),
+        };
+        const c = craft(ring("rare"), [op("chaos"), iff(notp(has("IncreasedLife1")), [stop()])]);
+        const r = report(c, prices);
+        const finishes = 1 - r.stopped;
+        expect(finishes).toBeGreaterThan(0);
+        expect(finishes).toBeLessThan(1);
+        expect(r.perFinished!.attempts).toBeCloseTo(1 / finishes, 9);
+        expect(r.perFinished!.total).toEqual([{ item: "Chaos Orb", amount: 1 / finishes }]);
+        expect(r.perFinished!.chaos).toBeCloseTo(1 / finishes, 9);
+        expect(r.perFinished!.divine).toBeCloseTo(1 / finishes / 400, 9);
+        // A craft that always finishes, or never does, has no such figure.
+        expect(report(craft(ring("rare"), [op("chaos")]), prices).perFinished).toBeUndefined();
+        expect(
+            report(craft(ring("rare"), [op("chaos"), stop()]), prices).perFinished,
+        ).toBeUndefined();
+    });
+
     it("a step whose price is not known is reported, not priced", () => {
         const corrupted = item({ base: "Iron Ring", ilvl: 84, rarity: "rare", corrupted: true });
         const c = craft(corrupted, [op("locus")]);

@@ -7,6 +7,8 @@ import {
     check,
     type CheckDiagnostic,
     costOf,
+    PER_FINISHED_UNPRICED,
+    perFinishedText,
     EXAMPLE_LEAD,
     flowchart,
     figure,
@@ -181,6 +183,11 @@ export function costSource(
     if (report.stopped > 0) {
         out.push(
             `The craft ends short of a finished item ${percentage(report.stopped)} of the time.`,
+        );
+    }
+    if (report.perFinished !== undefined) {
+        out.push(
+            `One finished item takes ${perFinishedText(report.perFinished)}, ${PER_FINISHED_UNPRICED}.`,
         );
     }
     return { ok: parsed.ok, output: out.join("\n") };

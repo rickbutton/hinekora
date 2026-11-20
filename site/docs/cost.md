@@ -1,6 +1,6 @@
 # Reading a cost report
 
-`hinekora cost <file>` estimates what a craft spends. [How it works](/how-it-works#cost) describes the method.
+`hinekora cost <file>` estimates what a craft spends; [how it works](/how-it-works#cost) gives the method.
 
 ```hinekora
 item {
@@ -38,19 +38,19 @@ Each line is a statement: its line number, its first source line and its figures
 | a step    | `×25.5: 25.5 Deafening …` | the expected number of runs, then what those runs consume |
 
 A chance of one half or more is a percentage. A step that consumes nothing reads `free`.
-The figure in parentheses is the step's spend in Chaos Orbs.
+In parentheses is the step's spend in Chaos Orbs.
 
-A bench craft costs its bench price, a Harvest craft its lifeforce, and a Bestiary craft its
-beast.
+A bench craft costs its bench price, a Harvest craft its lifeforce, a Bestiary craft its beast.
 
 ## Totals
 
-`Expected spend` sums the steps by currency. The next line converts the sum to Chaos Orbs and
+`Expected spend` sums the steps by currency. The next line converts it to Chaos Orbs and
 Divine Orbs and names the league and date of the prices. It names a currency that has no
 price in place of the converted total.
 
-If the craft can end at a [`stop`](./language/until), a last line gives how often, such as
-`The craft ends short of a finished item 18% of the time.`
+If the craft can end at a [`stop`](./language/until), a line gives how often, such as
+`The craft ends short of a finished item 18% of the time.` The next says what one finished
+item takes, without the failed attempts' items.
 
 ## Spreads
 

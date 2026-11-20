@@ -49,6 +49,8 @@ import {
     plural,
     rangeText,
     approx,
+    PER_FINISHED_UNPRICED,
+    perFinishedText,
     costIsObvious,
     oddsFigure,
     oddsText,
@@ -711,7 +713,11 @@ function costLine(
                   (prices !== undefined && report.unpriced.length > 0
                       ? ` (no ${prices.league} price for ${report.unpriced.join(", ")})`
                       : "");
-        return `_Expected spend for the craft:_ ${total}.`;
+        const finished =
+            report.perFinished === undefined
+                ? ""
+                : `\n\n_One finished item takes_ ${perFinishedText(report.perFinished)}, ${PER_FINISHED_UNPRICED}.`;
+        return `_Expected spend for the craft:_ ${total}.${finished}`;
     }
     const at = report.steps.findIndex(
         (s: StepCost) => s.kind === entry.kind && s.span.start.offset === entry.span.start.offset,

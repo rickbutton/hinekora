@@ -4,7 +4,7 @@
  * everywhere.
  */
 import { inChaos, type Price, type Prices } from "./prices.js";
-import type { StepCost } from "./report.js";
+import type { PerFinished, StepCost } from "./report.js";
 
 /** A figure as players quote it: "0.25", "8.8", "37", "473". */
 export function figure(n: number): string {
@@ -83,3 +83,17 @@ export function priceText(prices: readonly Price[], snapshot?: Prices): string {
     const chaos = snapshot === undefined ? undefined : inChaos(prices, snapshot);
     return chaos === undefined ? list : `${list} (${approx(chaos)} chaos)`;
 }
+
+/** What one finished item takes: "~2512 attempts: 2512 Vaal Orb, ~1557 Chaos
+ *  Orbs (~17.2 Divine Orbs)", the Chaos Orbs where the snapshot prices it all. */
+export function perFinishedText(p: PerFinished): string {
+    const priced =
+        p.chaos !== undefined && p.divine !== undefined
+            ? `, ${approx(p.chaos)} Chaos Orbs (${approx(p.divine)} Divine Orbs)`
+            : "";
+    const spend = p.total.length === 0 ? "" : `: ${priceText(p.total)}${priced}`;
+    return `${approx(p.attempts)} attempts${spend}`;
+}
+
+/** What `perFinishedText` leaves out. */
+export const PER_FINISHED_UNPRICED = "not counting the items the failed attempts use up";
