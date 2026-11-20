@@ -7,7 +7,7 @@ change (`../AGENTS.md`, Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q136.
+keeps it. New entries continue from Q137.
 
 ```
 ### Qn · probe|decision · open — title
@@ -610,3 +610,13 @@ record each outcome and implicit.
 elsewhere a Bloodstained Fossil always adds one. **Encoded in:**
 `check/ops/marks.ts` `corruptionImplicit`; `check/reference/ops/marks.ts`; `check/library.ts`;
 `cost/track.ts` `OUTCOME_ODDS`.
+
+### Q136 · decision · open — a `stop` that keeps the item
+
+**Q:** `stop` ends the craft for an item kept or not worth more currency (language.md
+§4.3), yet the cost report counts every `stop` as ending short, so `vaal` then
+`if implicit "maximum life" { stop }`, a keep, reads as four attempts per finished item.
+**Options:** (a) every `stop` ends short, as now; (b) a separate word says the item is
+kept, which the report counts as finished, **recommended**.
+**Assumed:** every `stop` ends short. **Encoded in:** `cost/report.ts` `walk` (the
+`stopped` share), `costOfChecked`; `cost/words.ts` `perFinishedText`.
