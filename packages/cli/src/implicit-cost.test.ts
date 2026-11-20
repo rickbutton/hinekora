@@ -115,11 +115,17 @@ describe("the chance of an implicit after the Corruption Altar, on the real pool
     });
 
     it("adds a second beside a lone corruption implicit, never of its group", () => {
-        const declared = ring(84, `corrupted implicits: [ "maximum endurance charges" ]`);
-        expect(
-            costed(`${declared}\nlocus\nif implicit "maximum endurance charges" { stop }`)
-                .branches[0],
-        ).toBeCloseTo(1, 12);
+        const declared = ring(84, `corrupted implicits: [ "hatred has" ]`);
+        // Hatred's group holds ten reservation rows of 1,000 each.
+        const { row, total } = pool("Vermillion Ring", 84, ENDURANCE);
+        const r = costed(
+            `${declared}\nlocus\nif implicit "hatred has" and implicit "wrath has" { stop }\nif implicit "maximum endurance charges" { stop }`,
+            [
+                `the 'if' branch can never run: (implicit "hatred has" and implicit "wrath has") is impossible here`,
+            ],
+        );
+        expect(r.branches[0]).toBe(0);
+        expect(r.branches[1]).toBeCloseTo((1 / 2) * (row / (total - 10_000)), 12);
     });
 
     it("replaces either the eldritch or the corruption implicit beside it", () => {
