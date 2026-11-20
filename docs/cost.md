@@ -49,10 +49,10 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
   is which an Orb of Dominance raises (Q61).
 - **Veiled orbs.** The veiled modifier lands on either side with room alike (Q76); an
   unveil draws its options as a reforge draws modifiers (Q99).
-- **Corruption implicits.** Drawn by spawn weight from the base's pool at its level, never
-  of a kept one's group (Q135); the implicit replaced is picked evenly, one alone beside
-  the altar's kept (Q32), whose outcomes are no change, an implicit, or the item destroyed
-  two times in four ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Incursion_and_Atziri)).
+- **Corruption implicits.** Drawn by spawn weight from the base's pool at its level, not
+  of a kept one's group (Q135); the implicit replaced is picked evenly, a lone corruption
+  implicit kept and the new one added (Q32); the altar's outcomes are no change, an
+  implicit, or destruction two times in four ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Incursion_and_Atziri)).
 - **Orb of Conflict.** The line of
   [Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)
   is carried past the gap it states, neither side below one in a hundred (Q96).

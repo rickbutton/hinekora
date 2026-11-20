@@ -86,8 +86,8 @@ export function priceText(prices: readonly Price[], snapshot?: Prices): string {
     return chaos === undefined ? list : `${list} (${approx(chaos)} chaos)`;
 }
 
-/** What one finished item takes: "~2512 attempts: 2512 Vaal Orb, ~1557 Chaos
- *  Orbs (~17.2 Divine Orbs)", the Chaos Orbs where the snapshot prices it all. */
+/** What one finished item takes: "~4 attempts: 4 Vaal Orb", then the Chaos
+ *  and Divine Orbs it comes to where the snapshot prices it all. */
 export function perFinishedText(p: PerFinished): string {
     const priced =
         p.chaos !== undefined && p.divine !== undefined
