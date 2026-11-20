@@ -28,6 +28,8 @@ import type { Dd } from "../check/dd.js";
 import { narrow as narrowTo, stateOf, type ItemSet } from "../check/state.js";
 import type { ModValue, Universe } from "../check/universe.js";
 import {
+    baseImplicitHeld,
+    corruptionImplicits,
     counts as countsOf,
     eldritchPairs,
     eldritchTypes,
@@ -53,6 +55,11 @@ import type { ChainAtom, ChainState, Outcome } from "./chain.js";
 import { pieces, sidesGivenSplit } from "./chance.js";
 import { amongFirstDistribution } from "./race.js";
 import {
+    corruptionCases,
+    corruptionDraw,
+    type CorruptionRow,
+    corruptionWeights,
+    heldCorruption,
     holdsNamed,
     implicitWeights,
     type Member,
@@ -76,6 +83,8 @@ export interface Carried {
     readonly locks?: boolean;
     /** The rows say which eldritch implicits the item carries. */
     readonly implicits?: boolean;
+    /** The rows say which of the base's and the corruption implicits it carries. */
+    readonly corruption?: boolean;
     /** The states passed a method of several outcomes, read on odds and
      *  counts of the walk's own (`OUTCOME_ODDS`, QUESTIONS.md Q112), which may
      *  leave out items the check reaches. */
@@ -134,6 +143,24 @@ const IMPLICIT_ATOM: Readonly<Record<EldritchSide, TypeId>> = {
 
 /** The implicit types no condition names, held as one. */
 const OTHER_IMPLICIT = TypeId("*");
+
+/** The atom that holds the base's own implicit, its row `BASE_HELD` while the
+ *  item has it. */
+const BASE_ATOM = TypeId("~base");
+const BASE_HELD = ModId("held");
+
+/** The atom that holds the corruption implicits: its row the rows a condition
+ *  names, and `*` for each one no condition names, sorted and joined by `+`. */
+const CORRUPTION_ATOM = TypeId("~corruption");
+const OTHER_CORRUPTION = "*";
+
+function corruptionRow(kinds: readonly string[]): ModId | null {
+    return kinds.length === 0 ? null : ModId([...kinds].sort().join("+"));
+}
+
+function readCorruption(row: ModId | null): string[] {
+    return row === null ? [] : row.split("+");
+}
 
 function implicitRow(tier: number, type: TypeId | undefined): ModId {
     return ModId(type === undefined ? `${tier}` : `${tier}:${type}`);
@@ -261,6 +288,12 @@ export class Tracker {
      *  and its type when a condition names one. */
     readonly implicits: boolean;
     private readonly implicitTypes: ReadonlySet<TypeId>;
+    /** Some step's item may carry a corruption implicit, or a condition asks
+     *  for an implicit, so a state says which of the base's and the
+     *  corruption implicits the item has. */
+    readonly corruption: boolean;
+    /** The corruption implicit rows a condition names, each held by its id. */
+    private readonly corruptionNamed: ReadonlySet<ModId>;
     /** The modifier types the craft's conditions ask to be present, in the
      *  order they first do: what a player takes when an unveil offers one. */
     private readonly asked: TypeId[] = [];
@@ -284,6 +317,21 @@ export class Tracker {
             for (const l of predLeaves(p))
                 if (l.kind === "eldritch") for (const t of l.types ?? []) implicitTypes.add(t);
         this.implicitTypes = implicitTypes;
+        const corruptionNamed = new Set<ModId>();
+        let asksImplicit = false;
+        for (const p of preds)
+            for (const l of predLeaves(p))
+                if (l.kind === "implicit") {
+                    asksImplicit = true;
+                    for (const id of l.corruption) corruptionNamed.add(id);
+                }
+        this.corruptionNamed = corruptionNamed;
+        this.corruption =
+            asksImplicit ||
+            items.some(
+                (a) =>
+                    corruptionImplicits(a).extra[1] > 0 || corruptionImplicits(a).sure.length > 0,
+            );
         for (const pred of preds)
             for (const t of askedFor(pred)) if (!this.asked.includes(t)) this.asked.push(t);
         const named = new Set<ModId>();
@@ -422,6 +470,15 @@ export class Tracker {
                 this.atoms.push({ gen: "prefix", rows: [], weight: 0 });
             }
         }
+        if (this.corruption) {
+            for (const type of [BASE_ATOM, CORRUPTION_ATOM]) {
+                this.index.set(type, this.atoms.length);
+                this.types.push(type);
+                this.classes.push([]);
+                this.classesOfRow.push(new Map());
+                this.atoms.push({ gen: "prefix", rows: [], weight: 0 });
+            }
+        }
         // A veiled modifier's side decides which side its unveil fills.
         if (
             items.some(
@@ -489,6 +546,7 @@ export class Tracker {
             valued: new Set(this.valueLeaves.keys()),
             locks: this.locks,
             implicits: this.implicits,
+            corruption: this.corruption,
             dist,
         };
     }
@@ -554,7 +612,11 @@ export class Tracker {
             // A removal after the fill reads the whole state, so its outcomes
             // are not shared by the fill's item.
             const item =
-                kind === "draw" && fillAt >= 0 && cut < 0 && removalAfterFill(ops) < 0
+                kind === "draw" &&
+                fillAt >= 0 &&
+                cut < 0 &&
+                removalAfterFill(ops) < 0 &&
+                !ops.some((op) => op.kind === "corruptionImplicit")
                     ? this.narrow(before, state)
                     : null;
             if (item !== null) {
@@ -655,9 +717,9 @@ export class Tracker {
     }
 
     private implicitAtoms(): number[] {
-        return ELDRITCH_SIDES.map((side) => this.index.get(IMPLICIT_ATOM[side])).filter(
-            (i) => i !== undefined,
-        );
+        return [...ELDRITCH_SIDES.map((side) => IMPLICIT_ATOM[side]), BASE_ATOM, CORRUPTION_ATOM]
+            .map((t) => this.index.get(t))
+            .filter((i) => i !== undefined);
     }
 
     /**
@@ -747,11 +809,31 @@ export class Tracker {
         if (this.locks) {
             for (const st of out) {
                 for (const [i, r] of st.rows.entries()) {
-                    if (r === null || implicitSide(this.types[i]!) !== undefined) continue;
+                    if (r === null || isImplicitAtom(this.types[i]!)) continue;
                     const locked = lockedOn(item, this.types[i]!);
                     if (locked === undefined) return undefined;
                     if (locked) st.rows[i] = lockedRow(r);
                 }
+            }
+        }
+        if (this.corruption) {
+            const base = baseIn(item);
+            const corruption = this.corruptionIn(item, undefined);
+            if (base === undefined || corruption === undefined) return undefined;
+            for (const [type, options] of [
+                [BASE_ATOM, base],
+                [CORRUPTION_ATOM, corruption],
+            ] as const) {
+                const i = this.index.get(type)!;
+                if (options.length === 0) continue;
+                const total = options.reduce((sum, o) => sum + o.weight, 0);
+                out = out.flatMap((st) =>
+                    options.map((o) => {
+                        const copy = [...st.rows];
+                        copy[i] = o.id;
+                        return { rows: copy, share: (st.share * o.weight) / total };
+                    }),
+                );
             }
         }
         if (this.implicits) {
@@ -771,6 +853,112 @@ export class Tracker {
             }
         }
         return out;
+    }
+
+    /** A corruption implicit row as a state holds it: a row a condition names,
+     *  or any other alike. */
+    private corruptionKind(id: ModId): string {
+        return this.corruptionNamed.has(id) ? id : OTHER_CORRUPTION;
+    }
+
+    /**
+     * The corruption implicits of an item the checker settles in how many it
+     * holds, as rows by weight: none for none, undefined where the items
+     * differ in how many. Where they may hold one of several, a row a
+     * condition names that the state already held stays; otherwise each set
+     * weighs by the rows' spawn weights, as a corruption drew it.
+     */
+    private corruptionIn(
+        item: ItemSet,
+        from: ChainState | undefined,
+    ): readonly { id: ModId; weight: number }[] | undefined {
+        const pool = corruptionWeights(this.registry, item.u.base, item.u.ilvl);
+        const held = heldCorruption(item, pool);
+        if (held === undefined) return undefined;
+        const byKind = new Map<ModId | null, number>();
+        for (const h of held) {
+            const id = corruptionRow(h.rows.map((r) => this.corruptionKind(r)));
+            byKind.set(id, (byKind.get(id) ?? 0) + h.prob);
+        }
+        const fromRow = from?.rows[this.index.get(CORRUPTION_ATOM)!] ?? null;
+        if (fromRow !== null && byKind.has(fromRow)) return [{ id: fromRow, weight: 1 }];
+        if (byKind.has(null)) return [];
+        return [...byKind].map(([id, weight]) => ({ id: id!, weight }));
+    }
+
+    /** The items whose corruption implicits are the kinds a state holds: each
+     *  named row by itself, each other one any row no condition names. */
+    private corruptionItems(u: Universe, kinds: readonly string[]): Dd {
+        const m = u.dd;
+        const [first, second] = [u.scalar("corruption1"), u.scalar("corruption2")];
+        const values = (kind: string): number[] => {
+            const out: number[] = [];
+            u.corruptionRows.forEach((r, v) => {
+                if (r !== undefined && this.corruptionKind(r.id) === kind) out.push(v);
+            });
+            return out;
+        };
+        if (kinds.length === 0) return m.slotIn(first, [0]);
+        if (kinds.length === 1)
+            return m.and(m.slotIn(first, values(kinds[0]!)), m.slotIn(second, [0]));
+        const [a, b] = [values(kinds[0]!), values(kinds[1]!)];
+        return m.or(
+            m.and(m.slotIn(first, a), m.slotIn(second, b)),
+            m.and(m.slotIn(first, b), m.slotIn(second, a)),
+        );
+    }
+
+    /**
+     * A corruption implicit on a state (a Vaal Orb's implicit outcome, a
+     * Bloodstained Fossil, the Corruption Altar): which implicit goes, as
+     * `corruptionCases` has it, and which row is added, by spawn weight among
+     * the pool's rows that share no group with a corruption implicit kept
+     * (QUESTIONS.md Q135). A kept row no condition names is one of the pool's
+     * by weight, which decides the groups it closes.
+     */
+    private corrupted(item: ItemSet, state: ChainState): readonly Outcome[] | undefined {
+        const pool = corruptionWeights(this.registry, item.u.base, item.u.ilvl);
+        if (pool.length === 0) return [{ state, prob: 1 }];
+        if (!this.corruption) return undefined;
+        const at = (t: TypeId): number => this.index.get(t)!;
+        const others: ("base" | EldritchSide)[] = [];
+        if ((state.rows[at(BASE_ATOM)] ?? null) !== null) others.push("base");
+        for (const side of ELDRITCH_SIDES) {
+            const i = this.index.get(IMPLICIT_ATOM[side]);
+            if (i !== undefined && (state.rows[i] ?? null) !== null) others.push(side);
+        }
+        // An eldritch implicit the item holds that no state follows.
+        if (!this.implicits && [...eldritchPairs(item)].some((k) => k !== NO_ELDRITCH))
+            return undefined;
+        const held = readCorruption(state.rows[at(CORRUPTION_ATOM)] ?? null);
+        const unnamed = pool.filter((r) => !this.corruptionNamed.has(r.id));
+        const out = new Map<string, Outcome>();
+        const put = (next: ChainState, prob: number): void => {
+            if (prob <= 0) return;
+            const key = stateKey(next);
+            out.set(key, { state: next, prob: (out.get(key)?.prob ?? 0) + prob });
+        };
+        for (const c of corruptionCases(others, held)) {
+            const rows = [...state.rows];
+            if (c.gone === "base") rows[at(BASE_ATOM)] = null;
+            else if (c.gone === "exarch" || c.gone === "eater")
+                rows[at(IMPLICIT_ATOM[c.gone])] = null;
+            const kept = c.kept[0];
+            // The row kept, by weight where the state holds it as any other.
+            const keptRows =
+                kept === undefined
+                    ? [{ row: undefined, prob: 1 }]
+                    : kept === OTHER_CORRUPTION
+                      ? shares(unnamed).map((r) => ({ row: r.row, prob: r.prob }))
+                      : [{ row: pool.find((r) => r.id === kept), prob: 1 }];
+            for (const k of keptRows) {
+                for (const [id, p] of corruptionDraw(pool, k.row)) {
+                    rows[at(CORRUPTION_ATOM)] = corruptionRow([...c.kept, this.corruptionKind(id)]);
+                    put({ ...state, rows: [...rows] }, c.prob * k.prob * p);
+                }
+            }
+        }
+        return [...out.values()];
     }
 
     /** An implicit's type as a state holds it: a type a condition names, or
@@ -903,17 +1091,26 @@ export class Tracker {
                 const fillAt = ops.findIndex((op) => op.kind === "fill");
                 const kept = this.stripped(item, ops, fillAt);
                 const keptTypes = guaranteedTypes(kept);
-                return this.counted(
-                    reforgeOutcomes(this.closed(roll), this.atoms, this.index, (i, id) =>
-                        this.classesOf(
-                            i,
-                            id,
-                            keptTypes.has(this.types[i]!)
-                                ? valueSpan(kept, this.types[i]!, id)
-                                : undefined,
-                        ),
+                const drawn = reforgeOutcomes(this.closed(roll), this.atoms, this.index, (i, id) =>
+                    this.classesOf(
+                        i,
+                        id,
+                        keptTypes.has(this.types[i]!)
+                            ? valueSpan(kept, this.types[i]!, id)
+                            : undefined,
                     ),
                 );
+                if (drawn === undefined || !ops.some((op) => op.kind === "corruptionImplicit"))
+                    return this.counted(drawn);
+                // A Bloodstained Fossil's implicit on each item the reforge leaves,
+                // its implicits as they were before it.
+                const out: Outcome[] = [];
+                for (const o of this.keepImplicits(state, drawn)) {
+                    const next = this.corrupted(item, o.state);
+                    if (next === undefined) return this.counted(undefined);
+                    for (const n of next) out.push({ state: n.state, prob: o.prob * n.prob });
+                }
+                return out;
             }
             case "removal": {
                 const out: Outcome[] = [];
@@ -942,9 +1139,12 @@ export class Tracker {
                     const kind = this.implicitTypes.size > 0 ? this.kindOf(o.type) : undefined;
                     byKind.set(kind, (byKind.get(kind) ?? 0) + o.prob);
                 }
+                // It takes the place of the base's implicit (Eldritch implicit modifier).
+                const base = this.index.get(BASE_ATOM);
                 return [...byKind].map(([kind, prob]) => {
                     const rows = [...state.rows];
                     rows[i] = implicitRow(roll.tier, kind);
+                    if (base !== undefined) rows[base] = null;
                     return { state: { ...state, rows }, prob };
                 });
             }
@@ -976,6 +1176,8 @@ export class Tracker {
                 const ran = ranOn(item, ops);
                 // A method this state cannot take leaves it as it was.
                 if (!ran.ok) return [{ state, prob: 1 }];
+                if (ops.some((op) => op.kind === "corruptionImplicit"))
+                    return this.counted(this.corrupted(item, state));
                 // The checker's items after an Orb of Dominance are every way
                 // a modifier went and one rose; the state says which.
                 if (ops.some((op) => op.kind === "elevate"))
@@ -1060,7 +1262,7 @@ export class Tracker {
         const reach: number[] = [];
         state.rows.forEach((row, i) => {
             const type = this.types[i]!;
-            if (row === null || implicitSide(type) !== undefined) return;
+            if (row === null || isImplicitAtom(type)) return;
             const gen = this.atoms[i]!.gen;
             unnamed[gen]--;
             if (influenced(type) && !shut.has(gen)) reach.push(i);
@@ -1182,7 +1384,7 @@ export class Tracker {
         const unnamed = { prefix: from.prefix, suffix: from.suffix };
         const named: number[] = [];
         from.rows.forEach((row, i) => {
-            if (row === null || implicitSide(this.types[i]!) !== undefined) return;
+            if (row === null || isImplicitAtom(this.types[i]!)) return;
             const gen = this.atoms[i]!.gen;
             unnamed[gen]--;
             if (!shut.has(gen) && !readRow(row).locked) named.push(i);
@@ -1323,6 +1525,12 @@ export class Tracker {
                 if (rows.length > 0) choose(i, rows);
                 continue;
             }
+            if (type === BASE_ATOM || type === CORRUPTION_ATOM) {
+                const rows = type === BASE_ATOM ? baseIn(item) : this.corruptionIn(item, from);
+                if (rows === undefined) return undefined;
+                if (rows.length > 0) choose(i, rows);
+                continue;
+            }
             if (guaranteed.has(type)) {
                 const fromRow = from?.rows[i] ?? null;
                 const locked =
@@ -1431,6 +1639,8 @@ export class Tracker {
     private atomItems(u: Universe, i: number, row: ModId | null): Dd {
         const m = u.dd;
         const type = this.types[i]!;
+        if (type === BASE_ATOM) return m.slotIn(u.scalar("baseImplicit"), [row === null ? 0 : 1]);
+        if (type === CORRUPTION_ATOM) return this.corruptionItems(u, readCorruption(row));
         const side = implicitSide(type);
         if (side !== undefined) {
             const tierSlot = u.scalar(`${side}Tier`);
@@ -1525,8 +1735,7 @@ export function pruned(out: readonly Outcome[]): readonly Outcome[] {
 }
 
 /** What no step but its own changes: a fractured modifier stays fractured, and
- *  the eldritch implicits stay as they were through a method that does not
- *  touch them. */
+ *  the implicits stay as they were through a method that does not touch them. */
 function keepAcross(
     from: ChainState,
     out: readonly Outcome[],
@@ -1548,9 +1757,9 @@ function keepAcross(
     });
 }
 
-/** Whether a method may change an eldritch implicit, in any of its outcomes
- *  (a Vaal Orb's corruption implicit takes one): its states then hold the
- *  implicits its outcomes leave, not those it started from. */
+/** Whether a method may change an implicit, in any of its outcomes (a Vaal
+ *  Orb's corruption implicit takes one): its states then hold the implicits
+ *  its outcomes leave, not those it started from. */
 function touchesImplicits(ops: readonly Op[]): boolean {
     return ops.some(
         (op) =>
@@ -1562,6 +1771,25 @@ function touchesImplicits(ops: readonly Op[]): boolean {
 
 function implicitSide(type: TypeId): EldritchSide | undefined {
     return ELDRITCH_SIDES.find((side) => IMPLICIT_ATOM[side] === type);
+}
+
+/** Whether the items hold their base's implicit, as a row: undefined where
+ *  some do and some do not. */
+function baseIn(item: ItemSet): readonly { id: ModId; weight: number }[] | undefined {
+    const held = baseImplicitHeld(item);
+    if (held.size !== 1) return undefined;
+    return held.has(true) ? [{ id: BASE_HELD, weight: 1 }] : [];
+}
+
+/** Rows by their share of the rows' weight. */
+function shares(rows: readonly CorruptionRow[]): { row: CorruptionRow; prob: number }[] {
+    const total = rows.reduce((s, r) => s + r.weight, 0);
+    return total > 0 ? rows.map((row) => ({ row, prob: row.weight / total })) : [];
+}
+
+/** Whether an atom holds an implicit rather than a modifier. */
+function isImplicitAtom(type: TypeId): boolean {
+    return implicitSide(type) !== undefined || type === BASE_ATOM || type === CORRUPTION_ATOM;
 }
 
 const stateKeys = new WeakMap<ChainState, string>();
@@ -1644,6 +1872,7 @@ export function splitCarried(
         if (leaf.kind === "hasValue" && c.valued?.has(leaf.type)) continue;
         if (leaf.kind === "fractured" && c.locks && index.has(leaf.type)) continue;
         if ((leaf.kind === "eldritch" || leaf.kind === "dominant") && c.implicits) continue;
+        if (leaf.kind === "implicit" && c.corruption) continue;
         return undefined;
     }
     const yes: Carried["dist"][number][] = [];
@@ -1866,6 +2095,13 @@ export function holdsOn(
             const i = atomIndex.get(pred.type);
             const row = i === undefined ? null : (s.rows[i] ?? null);
             return row !== null && readRow(row).locked === true;
+        }
+        case "implicit": {
+            const base = atomIndex.get(BASE_ATOM);
+            if (pred.base && base !== undefined && (s.rows[base] ?? null) !== null) return true;
+            const i = atomIndex.get(CORRUPTION_ATOM);
+            const row = i === undefined ? null : (s.rows[i] ?? null);
+            return readCorruption(row).some((k) => pred.corruption.has(ModId(k)));
         }
         default:
             return fixed.get(pred) ?? false;

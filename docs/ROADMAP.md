@@ -16,7 +16,8 @@ waits until a craft calls for it.
   Orb of Unravelling's tier upgrade (its rule is not stated), a loop whose exit rests on a
   value no roll in its body changes. Left unmodelled by choice, their steps read on the
   checker's item: the Tangled Fossil's random tags, and an Orb of Dominance
-  on an item that may hold influenced modifiers the craft does not name.
+  on an item that may hold influenced modifiers the craft does not name. An `implicit`
+  condition after such a step is taken as half.
 - **multi-item crafts**, which need a second item named in the craft, a design to be
   worked out first: the Recombinator, whose result pools both items' modifiers (an
   earlier form, and the evidence on how it picks, are in the git history before the

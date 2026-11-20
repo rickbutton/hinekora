@@ -7,7 +7,8 @@
  * modifiers, the influence). Nothing here lists outcomes; a roll is a few weighted
  * rows per side and a distribution of counts.
  */
-import type { Gen, GroupId, TypeId } from "../model/ids.js";
+import type { Gen, GroupId, ModId, TypeId } from "../model/ids.js";
+import { baseImplicitOf } from "../check/implicit.js";
 import type { Base } from "../model/base.js";
 import type { ItemFacts } from "../model/item.js";
 import type { EldritchSide } from "../model/marks.js";
@@ -823,6 +824,105 @@ export function implicitWeights(
         for (const [tag, w] of e.weights) if (base.tags.has(tag)) weight = Math.max(weight, w);
         return { type: e.type, weight };
     });
+}
+
+/** A corruption implicit a corruption may add, with the weight it is drawn at. */
+export interface CorruptionRow {
+    readonly id: ModId;
+    readonly groups: ReadonlySet<GroupId>;
+    readonly weight: number;
+}
+
+/** The corruption implicits a corruption draws from on the base at its item
+ *  level, by spawn weight (QUESTIONS.md Q135); none where it adds nothing, on a
+ *  base whose implicit cannot be changed or that has no pool (Q134), as the
+ *  checker reads it (check/ops/marks.ts `corruptionImplicit`). */
+export function corruptionWeights(
+    registry: Registry,
+    base: Base,
+    ilvl: number,
+): readonly CorruptionRow[] {
+    if (baseImplicitOf(registry, base).locked) return [];
+    return registry
+        .corruptionPool(base, ilvl)
+        .map((c) => ({ id: c.row.id, groups: c.row.groups, weight: c.weight }));
+}
+
+/** The row a corruption adds beside `kept`, by weight among the rows that
+ *  share no group with it (Corrupted § Corrupted implicit modifiers), each
+ *  with its chance; empty where no row is left. */
+export function corruptionDraw(
+    pool: readonly CorruptionRow[],
+    kept: CorruptionRow | undefined,
+): Map<ModId, number> {
+    const open = pool.filter(
+        (r) => kept === undefined || ![...r.groups].some((g) => kept.groups.has(g)),
+    );
+    const total = open.reduce((s, r) => s + r.weight, 0);
+    const out = new Map<ModId, number>();
+    if (total > 0) for (const r of open) out.set(r.id, (out.get(r.id) ?? 0) + r.weight / total);
+    return out;
+}
+
+/** One way a corruption implicit lands: the implicit it takes the place of
+ *  (none where it is added), and the corruption implicits that stay. */
+export interface CorruptionCase<K> {
+    readonly prob: number;
+    readonly gone?: "base" | EldritchSide | "corruption";
+    readonly kept: readonly K[];
+}
+
+/**
+ * Where a corruption implicit goes on an item holding `others` (its own and
+ * its eldritch implicits) and the corruption implicits `held`: with two
+ * corruption implicits, either goes; one alone stays and the new one is added
+ * beside it (QUESTIONS.md Q32); otherwise one of the implicits goes, each as
+ * likely ("one of them will be replaced at random", Vaal Orb § Equipment), or
+ * with none the new one is added. The checker's reading of the same rule is
+ * check/ops/marks.ts `corruptionImplicit`.
+ */
+export function corruptionCases<K>(
+    others: readonly ("base" | EldritchSide)[],
+    held: readonly K[],
+): CorruptionCase<K>[] {
+    if (held.length === 2)
+        return [
+            { prob: 1 / 2, gone: "corruption", kept: [held[1]!] },
+            { prob: 1 / 2, gone: "corruption", kept: [held[0]!] },
+        ];
+    if (others.length === 0) return [{ prob: 1, kept: held }];
+    const n = others.length + held.length;
+    return [
+        ...others.map((gone) => ({ prob: 1 / n, gone, kept: held })),
+        ...(held.length === 1 ? [{ prob: 1 / n, gone: "corruption" as const, kept: [] }] : []),
+    ];
+}
+
+/** The corruption implicits the items hold, each set with its chance by the
+ *  rows' spawn weights; undefined where the items differ in how many. */
+export function heldCorruption(
+    a: ItemSet,
+    pool: readonly CorruptionRow[],
+): { rows: ModId[]; prob: number }[] | undefined {
+    const m = a.u.dd;
+    const [first, second] = [a.u.scalar("corruption1"), a.u.scalar("corruption2")];
+    const weight = new Map(pool.map((r) => [r.id, r.weight]));
+    const out: { rows: ModId[]; prob: number }[] = [];
+    const counts = new Set<number>();
+    for (const v1 of m.valuesOf(a.dd, first)) {
+        const part = m.and(a.dd, m.slotIn(first, [v1]));
+        for (const v2 of m.valuesOf(part, second)) {
+            const rows = [v1, v2].flatMap((v) => {
+                const row = v === 0 ? undefined : a.u.corruptionRows[v];
+                return row === undefined ? [] : [row.id];
+            });
+            counts.add(rows.length);
+            out.push({ rows, prob: rows.reduce((p, id) => p * (weight.get(id) ?? 1), 1) });
+        }
+    }
+    if (counts.size !== 1) return undefined;
+    const total = out.reduce((s, h) => s + h.prob, 0);
+    return out.map((h) => ({ ...h, prob: h.prob / total }));
 }
 
 const runs = new WeakMap<Dd, Map<string, TransferResult>>();

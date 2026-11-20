@@ -1141,10 +1141,9 @@ describe("the eldritch implicits", () => {
         expect(loop.attempts!.chance).toBeCloseTo(1 / 3, 9);
     });
 
-    it("a step that cannot be followed ends what the roll before it says of the item", () => {
-        // A Vaal Orb may replace either implicit, which no one state then
-        // holds, or reforge the item: the Chaos Orb's roll no longer says
-        // whether it has the life.
+    it("a Vaal Orb on an item of two implicits is read one outcome at a time", () => {
+        // Its implicit takes either eldritch implicit and leaves the life; its
+        // reforge rolls six modifiers, the life always among them here.
         const after = (...steps: string[]) =>
             on({ exarch: "greater", eater: "lesser" }, [
                 ...steps.map((s) => op(s)),
@@ -1152,16 +1151,18 @@ describe("the eldritch implicits", () => {
             ]).steps.find((s) => s.kind === "if")!;
         const rolled = after("chaos");
         expect(rolled.note).toBeUndefined();
+        expect(after("vaal").branch).toBeCloseTo(1 / 4, 9);
         const altered = after("chaos", "vaal");
-        expect(altered.note).toMatch(/not known/);
-        expect(altered.branch).not.toBeCloseTo(rolled.branch!, 6);
+        expect(altered.note).toBeUndefined();
+        expect(altered.branch).toBeCloseTo((3 / 4) * rolled.branch! + 1 / 4, 9);
     });
 
-    it("a condition on a corruption implicit is not known, and half is assumed", () => {
+    it("a corruption implicit is drawn by spawn weight, one Vaal Orb in four", () => {
+        // Two of the boots' three rows, of equal weight, read "movement speed".
         const r = on({}, [op("vaal"), iff(implicitP("movement speed"), [stop()])]);
         const branch = r.steps.find((s) => s.kind === "if")!;
-        expect(branch.note).toBe("the chance of this condition is not known; half is assumed");
-        expect(branch.branch).toBeCloseTo(1 / 2, 9);
+        expect(branch.note).toBeUndefined();
+        expect(branch.branch).toBeCloseTo((1 / 4) * (2 / 3), 9);
     });
 
     it("a Vaal Orb's implicit takes the only implicit boots have, one time in four", () => {

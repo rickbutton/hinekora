@@ -1,16 +1,15 @@
 # hinekora: The Cost Layer
 
-> The checker proves; the cost layer estimates. It answers what every recipe quotes but
-> the checker cannot: how many tries a loop takes and what the craft is expected to
-> spend. The code is `packages/core/src/cost/`, the checker it reads
+> The checker proves; the cost layer estimates how many tries a loop takes and what the
+> craft is expected to spend. The code is `packages/core/src/cost/`, the checker it reads
 > [ARCHITECTURE.md](ARCHITECTURE.md) §4.
 
 ---
 
 ## 1. Beside the checker, not in it
 
-The cost layer reads the checker's method table, op sequences and trace (the item before
-every statement); nothing it computes can make the checker accept or refuse a step.
+The cost layer reads the checker's method table, op sequences and trace; nothing it
+computes can make the checker accept or refuse a step.
 ---
 
 ## 2. How the game rolls
@@ -50,13 +49,14 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
   is which an Orb of Dominance raises (Q61).
 - **Veiled orbs.** The veiled modifier lands on either side with room alike (Q76); an
   unveil draws its options as a reforge draws modifiers (Q99).
-- **Corruption Altar.** No change, an implicit, or the item destroyed two times in four,
-  its old reforge now destroying it ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Incursion_and_Atziri), Q32).
+- **Corruption implicits.** Drawn by spawn weight from the base's pool at its level, never
+  of a kept one's group (Q135); the implicit replaced is picked evenly, one alone beside
+  the altar's kept (Q32), whose outcomes are no change, an implicit, or the item destroyed
+  two times in four ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Incursion_and_Atziri)).
 - **Orb of Conflict.** The line of
   [Orb of Conflict § Mechanics](https://www.poewiki.net/wiki/Orb_of_Conflict#Mechanics)
   is carried past the gap it states, neither side below one in a hundred (Q96).
-- **Memory strands.** The share used up is not stated; the estimate reads the floor
-  (Q68).
+- **Memory strands.** The share used up is unstated; the estimate reads the floor (Q68).
 - **Partial protections.** A random removal weighs each choice of kept modifiers alike
   (Q128). Beside one no reforge, strip, Divine Orb, Orb of Dominance, Harvest change or
   augment is read, nor a random removal beside two of a side or an unsettled count. The
@@ -71,7 +71,8 @@ The checker's item at a step is a set of items; a probability needs to know how 
 each member is. The cost layer follows a **distribution over a small state**
 (`cost/track.ts`): the (prefix, suffix) counts and, for each modifier a condition names
 or the checker knows is there (declared, granted, crafted, a protecting metamod, a veiled
-placeholder; each eldritch implicit's tier, and its type where a condition names one), whether it is on the item, in which tier class (each tier a condition names
+placeholder; each eldritch implicit's tier, and its type where a condition names one; the
+base's implicit; the corruption implicits, a row a condition names apart), whether it is on the item, in which tier class (each tier a condition names
 on its own, the rest of the ladder together) and whether it is fractured (its row marked
 `!`); a modifier a condition compares by value is held per tier
 and value piece, cut at the condition's thresholds, and an imprint holds the state it was taken of. The distribution starts from the item
@@ -107,7 +108,7 @@ sides' order statistics. The dynamic program (`cost/race.ts`) carries a count, n
 
 It is exact for one group, for any set of one side jointly (by inclusion–exclusion), for
 the split with depletion, and for a side's groups jointly with the split, which the
-draw couples (a heavy group drawn early leaves its side slower to draw again). The
+draw couples. The
 sides are taken as independent given the split, which reads a condition on both within
 two hundredths. A group with rows on both sides (a jewel's) is a
 mixture, wholly a prefix or wholly a suffix by weight, and loses a draw the full side
@@ -183,11 +184,11 @@ and its colours from the game's `HarvestCraftOptions` table.
 
 ## 8. Known differences from craftofexile
 
-craftofexile is the yardstick, not the truth: where they part, the
-wiki and the game data decide. It differs:
+craftofexile is the yardstick, not the truth; where they part, the wiki and the game data
+decide:
 
-- its calculator **extrapolates** at ten or more eligible types on a side, an average
-  depletion standing for the draws not asked for, a few per cent optimistic;
+- its calculator **extrapolates** at ten or more eligible types on a side, a few per cent
+  optimistic;
 - its **side split** depletes crudely, by the heaviest modifier a draw;
 - its Orb of Alteration defaults to **Alt + Augment**, where hinekora prices the
   alteration alone (Q58);
@@ -195,6 +196,5 @@ wiki and the game data decide. It differs:
   as the wiki has it, and it has no **memory strands**;
 - it ignores **metamods** on essences and fossils, and the level caps of low-tier
   essences;
-- it does not halve attack rows on a **Convoking Wand**, as the data's generation weights
-  do;
+- it does not halve a **Convoking Wand**'s attack rows, as the data's generation weights do;
 - a base of five slots takes four or five modifiers at two to one there, 65:35 here.

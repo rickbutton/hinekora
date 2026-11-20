@@ -86,10 +86,11 @@ implicit is added beside a lone corruption implicit, else replaces any one impli
 ### Q135 · probe · open — which corruption implicit a corruption gives
 
 **Q:** is it drawn by spawn weight from the base's rows at or below its item level, never
-of a group a kept one has? Does a cluster jewel draw the jewels' rows?
+of a group a kept one has? Does a cluster jewel draw the jewels' rows? Is the implicit it
+replaces, of several, picked evenly?
 **Probe:** forty Vaal Orbs on rings of item level 60; record each implicit.
-**Assumed:** yes to both. **Encoded in:** `resolve/registry.ts` `corruptionPool`;
-`check/ops/marks.ts` `corruptionImplicit`.
+**Assumed:** yes to all three. **Encoded in:** `resolve/registry.ts` `corruptionPool`;
+`check/ops/marks.ts` `corruptionImplicit`; `cost/roll.ts` `corruptionCases`.
 
 ### Q52 · probe · open — what a Harvest-changed essence, fossil or unveiled modifier becomes
 

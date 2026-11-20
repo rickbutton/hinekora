@@ -1282,6 +1282,9 @@ class Walker {
                 case "dominant":
                     if (!tracker.implicits) return undefined;
                     break;
+                case "implicit":
+                    if (!tracker.corruption) return undefined;
+                    break;
                 default: {
                     // Only a leaf the item settles is fixed for every state.
                     const c = this.conditionChance(leaf, undefined, item);
