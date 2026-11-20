@@ -23,8 +23,10 @@ export function percentage(p: number): string {
         return `${Math.min(v, 99.99).toFixed(v < 99.95 ? 1 : 2)}%`;
     if (v >= 10) return `${Math.round(v)}%`;
     if (v >= 1) return `${v.toFixed(1)}%`;
-    // Nor is a chance above none written as none: 0.00004 is "0.01%".
-    if (v > 1e-9 && v.toFixed(2) === "0.00") return "0.01%";
+    // Nor is a chance above none written as none: 0.00004 is "0.01%", and
+    // none is "0%", as certain is "100%".
+    if (v <= 1e-9) return "0%";
+    if (v.toFixed(2) === "0.00") return "0.01%";
     return `${v.toFixed(2)}%`;
 }
 

@@ -35,8 +35,8 @@ describe("the cost report's words", () => {
         expect(percentage(0.0000001)).toBe("0.01%");
         expect(percentage(0.000149)).toBe("0.01%");
         expect(percentage(0.00016)).toBe("0.02%");
-        expect(percentage(0)).toBe("0.00%");
-        expect(percentage(1e-14)).toBe("0.00%");
+        expect(percentage(0)).toBe("0%");
+        expect(percentage(1e-14)).toBe("0%");
     });
 
     it("lists a spend, priced in chaos under a snapshot", () => {
