@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { check, costOf } from "@hinekora/core";
+import { check, costOf, GroupId } from "@hinekora/core";
 import { parse } from "@hinekora/parser";
 import { loadDefaultPoe1, registryOf } from "@hinekora/data";
 
@@ -9,12 +9,13 @@ import { loadDefaultPoe1, registryOf } from "@hinekora/data";
 // (QUESTIONS.md Q135), the implicit it replaces picked evenly.
 const registry = registryOf(loadDefaultPoe1());
 
-/** Each `if`'s chance and note, and the share of the craft that ends short. */
-function costed(source: string) {
+/** Each `if`'s chance and note, and the share of the craft that ends short;
+ *  the checker says only `refused`. */
+function costed(source: string, refused: readonly string[] = []) {
     const parsed = parse(source);
     if (!parsed.ok) throw new Error(parsed.error.message);
     const result = check(parsed.craft, { registry });
-    expect(result.diagnostics.map((d) => d.message)).toEqual([]);
+    expect(result.diagnostics.map((d) => d.message)).toEqual(refused);
     const report = costOf(parsed.craft, result, registry);
     const ifs = report.steps.filter((s) => s.kind === "if");
     for (const s of ifs) expect(s.note).toBeUndefined();
@@ -131,6 +132,43 @@ describe("the chance of an implicit after the Corruption Altar, on the real pool
             `${declared}\nlocus\nif implicit "maximum endurance charges" and exarch { stop }`,
         );
         expect(kept.branches[0]).toBeCloseTo(1 / 2 + (1 / 4) * (1000 / 21_500), 12);
+    });
+
+    it("keeps the declared implicit no condition names, closing its group", () => {
+        const b = registry.resolveBase("Vermillion Ring");
+        if (!b.ok) throw new Error("ring");
+        const rows = registry.corruptionPool(b.value, 84);
+        const anger = rows.find((c) => c.row.id === "V2ManaReservationEfficiencyAngerCorrupted")!;
+        const weigh = (keep: (c: (typeof rows)[number]) => boolean): number =>
+            rows.filter(keep).reduce((s, c) => s + c.weight, 0);
+        const open = weigh((c) => ![...c.row.groups].some((g) => anger.row.groups.has(g)));
+        const cold = weigh((c) => c.row.groups.has(GroupId("AddedColdDamageToSpellsAndAttacks")));
+        expect([weigh(() => true), open, cold]).toEqual([31_400, 21_400, 2_250]);
+        const declared = ring(84, `corrupted implicits: [ "anger has" ]`);
+        const r = costed(
+            `${declared}\nlocus\nif implicit "cold damage to spells and attacks" { stop }`,
+        );
+        expect(r.branches[0]).toBeCloseTo((1 / 2) * (cold / open), 12);
+        // Wrath shares Anger's group: the checker refuses it, and its chance is none.
+        const wrath = costed(`${declared}\nlocus\nif implicit "wrath has" { stop }`, [
+            `the 'if' branch can never run: implicit "wrath has" is impossible here`,
+        ]);
+        expect(wrath.branches[0]).toBe(0);
+    });
+
+    it("says the chance is not known where the items are not followed", () => {
+        // A Tangled Fossil's roll is not followed, so neither is which
+        // corruption implicits the items hold after the Vaal Orb.
+        const parsed = parse(
+            `${ring(84)}\nfossil "tangled"\nvaal\nif implicit "cold damage to spells and attacks" { stop }`,
+        );
+        if (!parsed.ok) throw new Error(parsed.error.message);
+        const report = costOf(parsed.craft, check(parsed.craft, { registry }), registry);
+        const step = report.steps.find((s) => s.kind === "if")!;
+        expect([step.branch, step.note]).toEqual([
+            0.5,
+            "the chance of this condition is not known; half is assumed",
+        ]);
     });
 
     it("follows a Vaal Orb's implicit into either place the altar may leave it", () => {

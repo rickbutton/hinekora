@@ -913,8 +913,9 @@ export class Tracker {
      * Bloodstained Fossil, the Corruption Altar): which implicit goes, as
      * `corruptionCases` has it, and which row is added, by spawn weight among
      * the pool's rows that share no group with a corruption implicit kept
-     * (QUESTIONS.md Q135). A kept row no condition names is one of the pool's
-     * by weight, which decides the groups it closes.
+     * (QUESTIONS.md Q135). A kept row no condition names is one the item,
+     * narrowed to the state, holds, by weight: the row declared, or any a
+     * corruption drew; it decides the groups it closes.
      */
     private corrupted(item: ItemSet, state: ChainState): readonly Outcome[] | undefined {
         const pool = corruptionWeights(this.registry, item.u.base, item.u.ilvl);
@@ -931,7 +932,24 @@ export class Tracker {
         if (!this.implicits && [...eldritchPairs(item)].some((k) => k !== NO_ELDRITCH))
             return undefined;
         const held = readCorruption(state.rows[at(CORRUPTION_ATOM)] ?? null);
-        const unnamed = pool.filter((r) => !this.corruptionNamed.has(r.id));
+        const sets = held.includes(OTHER_CORRUPTION) ? heldCorruption(item, pool) : [];
+        // The state settles how many the items hold; were it not so, the step
+        // is not followed and a condition after it is not known.
+        if (sets === undefined) return undefined;
+        // A held row may lie outside the pool at the item's level (declared, or
+        // drawn before a level it now lacks): its groups are the universe's.
+        const rowOf = (id: ModId): CorruptionRow => {
+            const spec = item.u.corruptionRows.find((r) => r?.id === id);
+            return { id, groups: spec?.groups ?? new Set(), weight: 0 };
+        };
+        const unnamed = new Map<ModId, { row: CorruptionRow; prob: number }>();
+        for (const s of sets) {
+            const rows = s.rows.filter((id) => !this.corruptionNamed.has(id));
+            for (const id of rows) {
+                const at = unnamed.get(id) ?? { row: rowOf(id), prob: 0 };
+                unnamed.set(id, { row: at.row, prob: at.prob + s.prob / rows.length });
+            }
+        }
         const out = new Map<string, Outcome>();
         const put = (next: ChainState, prob: number): void => {
             if (prob <= 0) return;
@@ -944,13 +962,12 @@ export class Tracker {
             else if (c.gone === "exarch" || c.gone === "eater")
                 rows[at(IMPLICIT_ATOM[c.gone])] = null;
             const kept = c.kept[0];
-            // The row kept, by weight where the state holds it as any other.
             const keptRows =
                 kept === undefined
                     ? [{ row: undefined, prob: 1 }]
                     : kept === OTHER_CORRUPTION
-                      ? shares(unnamed).map((r) => ({ row: r.row, prob: r.prob }))
-                      : [{ row: pool.find((r) => r.id === kept), prob: 1 }];
+                      ? [...unnamed.values()]
+                      : [{ row: rowOf(ModId(kept)), prob: 1 }];
             for (const k of keptRows) {
                 for (const [id, p] of corruptionDraw(pool, k.row)) {
                     rows[at(CORRUPTION_ATOM)] = corruptionRow([...c.kept, this.corruptionKind(id)]);
@@ -1779,12 +1796,6 @@ function baseIn(item: ItemSet): readonly { id: ModId; weight: number }[] | undef
     const held = baseImplicitHeld(item);
     if (held.size !== 1) return undefined;
     return held.has(true) ? [{ id: BASE_HELD, weight: 1 }] : [];
-}
-
-/** Rows by their share of the rows' weight. */
-function shares(rows: readonly CorruptionRow[]): { row: CorruptionRow; prob: number }[] {
-    const total = rows.reduce((s, r) => s + r.weight, 0);
-    return total > 0 ? rows.map((row) => ({ row, prob: row.weight / total })) : [];
 }
 
 /** Whether an atom holds an implicit rather than a modifier. */
