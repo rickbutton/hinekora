@@ -17,6 +17,10 @@ export function figure(n: number): string {
 /** A chance as players quote it: "56%", "4.5%", "0.25%". */
 export function percentage(p: number): string {
     const v = p * 100;
+    // Short of certain is never written as certain: 0.9996 is "99.96%". A
+    // shortfall of the sums' rounding error is none.
+    if (v < 100 - 1e-9 && Math.round(v) === 100)
+        return `${Math.min(v, 99.99).toFixed(v < 99.95 ? 1 : 2)}%`;
     if (v >= 10) return `${Math.round(v)}%`;
     if (v >= 1) return `${v.toFixed(1)}%`;
     return `${v.toFixed(2)}%`;

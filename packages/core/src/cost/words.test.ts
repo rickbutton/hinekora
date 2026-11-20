@@ -22,6 +22,13 @@ describe("the cost report's words", () => {
         expect(percentage(0.56)).toBe("56%");
         expect(percentage(0.045)).toBe("4.5%");
         expect(percentage(0.0025)).toBe("0.25%");
+        // Short of certain never reads as certain.
+        expect(percentage(0.9996)).toBe("99.96%");
+        expect(percentage(0.997)).toBe("99.7%");
+        expect(percentage(0.999999)).toBe("99.99%");
+        expect(percentage(0.994)).toBe("99%");
+        expect(percentage(1)).toBe("100%");
+        expect(percentage(1 - 1e-14)).toBe("100%");
     });
 
     it("lists a spend, priced in chaos under a snapshot", () => {
