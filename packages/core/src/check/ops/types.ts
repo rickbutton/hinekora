@@ -162,6 +162,13 @@ export type Check =
      *  reforges the rest away). */
     | { readonly kind: "noVeiledKept" }
     | { readonly kind: "noBlockingMetamod" }
+    /** The rows are not barred by the restriction of a base implicit the item
+     *  holds (the attack wands' "Cannot roll Caster Modifiers"): a bench
+     *  craft's row, or the essence's for the item's class. */
+    | (
+          | { readonly kind: "implicitAllows"; readonly how: "bench"; readonly mod: Mod }
+          | { readonly kind: "implicitAllows"; readonly how: "essence"; readonly spec: EssenceSpec }
+      )
     /** The modifier is guaranteed present, not fractured, and on an unprotected side. */
     | { readonly kind: "typeRemovable"; readonly type: TypeId; readonly label: string }
     | { readonly kind: "hasImprint" }
@@ -298,9 +305,21 @@ export type PreconditionFailure =
     | { readonly kind: "harvestNoRoom"; readonly tag: TagId }
     /** `every`: every item breaking the check is blocked. */
     | { readonly kind: "harvestBlocked"; readonly tag: TagId; readonly every?: true }
-    /** Every tagged row is one a cannot-roll metamod on the item bars. */
-    | { readonly kind: "harvestCannotRoll"; readonly tag: TagId }
+    /** Every tagged row is one a cannot-roll metamod or the base's implicit bars. */
+    | {
+          readonly kind: "harvestCannotRoll";
+          readonly tag: TagId;
+          /** The base's implicit, held, bars the tag's rows. */
+          readonly implicit?: true;
+      }
     | { readonly kind: "metamodBlocks" }
+    /** A base implicit the item holds bars the row's category. */
+    | {
+          readonly kind: "implicitBars";
+          readonly mod: string;
+          readonly tag: TagId;
+          readonly how: "bench" | "essence";
+      }
     | { readonly kind: "fossilBaseRestricted"; readonly fossil: string }
     | { readonly kind: "wrongBase"; readonly needed: string }
     | { readonly kind: "itemLevelTooLow"; readonly level: number; readonly what: string }

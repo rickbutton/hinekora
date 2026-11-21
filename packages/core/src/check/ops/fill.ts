@@ -6,9 +6,10 @@
  * for a reforge whose pool holds still while it is laid (`poolHoldsStill`),
  * every number of its rows laid at once, which reaches the same items.
  */
-import type { FillCount, PoolSpec, PreconditionFailure } from "./types.js";
+import type { Check, FillCount, PoolSpec, PreconditionFailure } from "./types.js";
 import { holdsFour, maxTotal } from "../../model/capacity.js";
-import type { Rarity, TagId } from "../../model/ids.js";
+import { type Rarity, TagId } from "../../model/ids.js";
+import { baseImplicitOf, implicitBars } from "../implicit.js";
 import type { Mod } from "../../model/mod.js";
 import type { Dd } from "../dd.js";
 import type { ItemSet } from "../state.js";
@@ -38,6 +39,7 @@ import {
     essenceRow,
     poolHoldsStill,
     unionOf,
+    type Where,
     whereOf,
 } from "./pools.js";
 import type { CompoundOf, FillOp } from "./steps.js";
@@ -305,6 +307,15 @@ function takenBy(u: Universe, row: Mod): Dd {
     return r;
 }
 
+/** The row an `implicitAllows` check asks after: the bench's, or the
+ *  essence's for the item's class. */
+export function implicitCheckedRow(
+    w: Where,
+    check: Extract<Check, { kind: "implicitAllows" }>,
+): Mod | undefined {
+    return check.how === "bench" ? check.mod : essenceRow(w, check.spec);
+}
+
 type HarvestFailure = Extract<
     PreconditionFailure,
     { kind: "harvestEmptyPool" | "harvestCannotRoll" | "harvestBlocked" | "harvestNoRoom" }
@@ -330,7 +341,11 @@ function whyEmpty(failing: Dd, pool: PoolSpec, dc: DrawCtx, tag: TagId): Harvest
     if (offered(drawCases(failing, pool, { ...dc, unrestricted: true })) !== failing) {
         return { kind: "harvestEmptyPool", tag };
     }
-    if (offered(cases) !== failing) return { kind: "harvestCannotRoll", tag };
+    if (offered(cases) !== failing) {
+        const own = baseImplicitOf(u.registry, u.base).restricts.some((e) => e.tag === tag);
+        const held = m.and(failing, m.slotIn(u.scalar("baseImplicit"), [1])) !== m.EMPTY;
+        return { kind: "harvestCannotRoll", tag, ...(own && held && { implicit: true as const }) };
+    }
     let taken = failing;
     for (const c of cases) {
         let all = m.ALL;
@@ -372,6 +387,25 @@ export const checks: CheckTable = {
             pass: rules.blocksSourced ? u.dd.EMPTY : u.dd.ALL,
             word: () => ({ kind: "metamodBlocks" }),
         }),
+    },
+    implicitAllows: {
+        reads: [],
+        verdict: (check, _state, { u }) => {
+            const row = implicitCheckedRow(whereOf(u), check);
+            const barred =
+                row === undefined
+                    ? undefined
+                    : implicitBars(baseImplicitOf(u.registry, u.base), row);
+            return {
+                pass: barred === undefined ? u.dd.ALL : u.dd.slotIn(u.scalar("baseImplicit"), [0]),
+                word: () => ({
+                    kind: "implicitBars",
+                    mod: row === undefined ? "" : u.registry.typeLabel(row.type),
+                    tag: barred?.tag ?? TagId(""),
+                    how: check.how,
+                }),
+            };
+        },
     },
     fossilAllowed: {
         reads: [],

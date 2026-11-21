@@ -160,6 +160,93 @@ describe("the base's own implicit, against real data", () => {
     });
 });
 
+describe('the attack wands\' "Cannot roll Caster Modifiers" implicit, against real data', () => {
+    const wand = (base: string, rarity: string, extra = "") =>
+        `item {\n    base: "${base}"\n    ilvl: 85\n    rarity: ${rarity}\n${extra}}\n`;
+    const errors = (src: string): string => run(src).output;
+    const metamod = '    suffixes: [ bench "cannot roll caster modifiers" ]\n';
+
+    it("is carried by exactly the Kinetic, Somatic and Blasting Wands", () => {
+        const bases = new Set<string>();
+        for (const b of loadDefaultPoe1().bases) {
+            const own = registry.baseImplicits(b).flat();
+            if (own.some((i) => (i.effects ?? []).some((e) => e.kind === "poolRestrict"))) {
+                bases.add(b.name ?? b.id);
+            }
+        }
+        expect([...bases].sort()).toEqual(["Blasting Wand", "Kinetic Wand", "Somatic Wand"]);
+    });
+
+    it("bars a caster modifier from a Chaos Orb's rolls, as on no Imbued Wand", () => {
+        const loop = `alchemy\nuntil has "increased spell damage" {\n    chaos\n}\n`;
+        expect(errors(wand("Kinetic Wand", "normal") + loop)).toMatch(/can never exit/);
+        expect(run(wand("Imbued Wand", "normal") + loop).ok).toBe(true);
+    });
+
+    // Seen in game: the bench crafts a caster modifier beside the metamod,
+    // and refuses one on these wands.
+    it("bars a caster bench craft, which the bench metamod does not", () => {
+        const bench = `bench "increased spell damage"\n`;
+        const suffix = '    suffixes: [ "attack speed" t1 ]\n';
+        expect(errors(wand("Kinetic Wand", "rare", suffix) + bench)).toContain(
+            '"increased spell damage" is a caster modifier, which a Kinetic Wand\'s implicit bars while the item holds it.',
+        );
+        const multimod =
+            '    suffixes: [ bench "cannot roll caster modifiers", bench "can have up to 3 crafted modifiers" ]\n';
+        expect(run(wand("Imbued Wand", "rare", multimod) + bench).ok).toBe(true);
+        expect(run(wand("Imbued Wand", "rare", suffix) + bench).ok).toBe(true);
+    });
+
+    it("refuses a declared caster modifier, and not once a corruption replaced the implicit", () => {
+        const caster = '    prefixes: [ "increased spell damage" t1 ]\n';
+        expect(errors(wand("Kinetic Wand", "rare", caster))).toContain(
+            'A Kinetic Wand\'s implicit bars rolling or bench-crafting a caster modifier, so it holds no "increased spell damage" while the implicit stays.',
+        );
+        expect(run(wand("Imbued Wand", "rare", caster)).ok).toBe(true);
+        const corrupted = wand(
+            "Kinetic Wand",
+            "rare",
+            `${caster}    corrupted\n    implicits: [ "increased attack speed" ]\n`,
+        );
+        expect(errors(corrupted)).not.toMatch(/implicit bars/);
+    });
+
+    // Seen in game: an unveil offers caster modifiers on these wands, as
+    // beside the metamod.
+    it("leaves an unveil's caster options as they are, the cost's chance unchanged", () => {
+        const veiled = '    prefixes: [ "VeiledPrefix" ]\n';
+        const unveil =
+            'unveil\nif has "JunMasterVeiledSpellDamageAndManaRegenerationRate1h" {\n    exalt\n}\n';
+        const prices = loadDefaultEconomy();
+        for (const src of [
+            wand("Kinetic Wand", "rare", veiled) + unveil,
+            wand("Imbued Wand", "rare", veiled + metamod) + unveil,
+        ]) {
+            expect(run(src).ok).toBe(true);
+            const r = costSource(src, "test.craft", registry, prices);
+            expect(r.output).toMatch(
+                /if has "JunMasterVeiledSpellDamageAndManaRegenerationRate1h" \{\s+taken 14%/,
+            );
+        }
+    });
+
+    it("refuses an essence whose modifier is a caster one, and words it as hinekora's reading", () => {
+        expect(errors(wand("Kinetic Wand", "normal") + 'essence "woe" t1\n')).toContain(
+            "hinekora takes the essence as refused",
+        );
+        expect(run(wand("Imbued Wand", "normal") + 'essence "woe" t1\n').ok).toBe(true);
+    });
+
+    it("bars a Harvest caster augment while it is held", () => {
+        const src =
+            wand("Kinetic Wand", "rare", '    prefixes: [ "random" ]\n') +
+            'harvest augment "caster"\n';
+        expect(errors(src)).toContain(
+            "No caster modifier can be added while the item holds a Kinetic Wand's implicit, which bars them.",
+        );
+    });
+});
+
 describe("checkSource — end to end against real data", () => {
     it("passes a valid craft and reports the final item", () => {
         const r = run(`item { base: "Iron Ring" ilvl: 84 rarity: normal }

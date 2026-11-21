@@ -29,6 +29,7 @@ import {
     INFLUENCES,
     isEldritchAmulet,
 } from "../model/marks.js";
+import { restrictionAllows } from "../model/effects.js";
 import type { Mod } from "../model/mod.js";
 import type { CorruptionImplicitSpec } from "../model/sources.js";
 import { MAX_STRANDS } from "../model/strands.js";
@@ -44,6 +45,7 @@ import {
 import { capitalise, plural } from "../words.js";
 import type { Diag } from "./defs.js";
 import { baseImplicitOf } from "./implicit.js";
+import type { CannotRoll } from "./rules.js";
 
 /** Item-block affix names that mean "some unspecified affix". */
 export const PLACEHOLDERS = /^random\b|^\?$/;
@@ -524,6 +526,23 @@ export function declareItem(item: ItemBlock, registry: Registry, diag: Diag): It
     const exarch = implicit(item.exarch, exarchTypes);
     const eater = implicit(item.eater, eaterTypes);
     const corruption = declaredCorruption(item, base, registry, (m) => diag(m, at("implicits")));
+    const restricts = heldRestrictions(registry, base, replacedOf({ exarch, eater, corruption }));
+    item.prefixes.concat(item.suffixes).forEach((decl, i) => {
+        const a = affixes[i];
+        if (a?.kind !== "named" || restricts.length === 0) return;
+        const barred = (a.rows ?? []).filter(
+            (r) =>
+                (r.source ?? "natural") !== "veiled" &&
+                (r.source ?? "natural") !== "essence" &&
+                restricts.some((e) => !restrictionAllows(e, r)),
+        );
+        if (barred.length === 0 || barred.length < (a.rows ?? []).length) return;
+        const tag = restricts.find((e) => !restrictionAllows(e, barred[0]!))!.tag;
+        diag(
+            `${capitalise(withArticle(base.name ?? "item"))}'s implicit bars rolling or bench-crafting ${withArticle(`${tag} modifier`)}, so it holds no "${decl.mod}" while the implicit stays.`,
+            decl.span ?? at(i < item.prefixes.length ? "prefixes" : "suffixes"),
+        );
+    });
     return {
         base,
         ilvl: item.ilvl,
@@ -549,6 +568,28 @@ export function declareItem(item: ItemBlock, registry: Registry, diag: Diag): It
         anonymousBy,
     };
 }
+
+/** The cannot-roll restrictions of the base's implicit on an item every
+ *  reading of which holds it: made with one on every base its name stands
+ *  for, and not `replaced` by a declared eldritch or corruption implicit. */
+export function heldRestrictions(
+    registry: Registry,
+    base: Base,
+    { replaced }: { readonly replaced: boolean },
+): readonly CannotRoll[] {
+    const own = baseImplicitOf(registry, base);
+    return own.every && !replaced ? own.restricts : [];
+}
+
+/** A declared eldritch or corruption implicit took the base's place. */
+export const replacedOf = (decl: {
+    readonly exarch?: DeclaredImplicit | undefined;
+    readonly eater?: DeclaredImplicit | undefined;
+    readonly corruption?: unknown;
+}): { readonly replaced: boolean } => ({
+    replaced:
+        decl.exarch !== undefined || decl.eater !== undefined || decl.corruption !== undefined,
+});
 
 /** Corrupted § Twice Corrupted: a second corruption adds the second. */
 const MAX_CORRUPTION_IMPLICITS = 2;

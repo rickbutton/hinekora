@@ -29,6 +29,10 @@ import {
 } from "./reference/harness.js";
 import type { RefHandlers } from "./reference/ops/handler.js";
 import { REF_HANDLERS } from "./reference/ops/registry.js";
+import { refRunMethod } from "./reference/method.js";
+import { listItems } from "./reference/listing.js";
+import { runMethod } from "./method.js";
+import { fromItems } from "./state.js";
 
 // Each comparison lists every item a reforge leaves, beside the reference
 // playing each draw out; beside the rest of the suite they run several times
@@ -74,6 +78,7 @@ interface Plan {
     readonly fractured?: boolean;
     readonly values?: boolean;
     readonly imprint?: boolean;
+    readonly baseImplicit?: readonly boolean[];
     readonly include?: (cat: ReturnType<typeof generateCatalog>) => readonly Mod[];
 }
 
@@ -101,6 +106,7 @@ function exactOn(
             ...(plan.strands && { strands: plan.strands }),
             ...(plan.fractured && { fractured: true }),
             ...(plan.values && { values: true }),
+            ...(plan.baseImplicit && { baseImplicit: plan.baseImplicit }),
         },
         random: 5,
         maxSize: 10,
@@ -191,6 +197,54 @@ describe("an add", () => {
             exactOn({ ...p, values: true }, () => adds(natural));
             exactOn({ ...p, fractured: true }, () => adds(natural));
             exactOn({ ...p, imprint: true, rarities: ["magic"] }, () => adds(natural));
+        }
+    });
+});
+
+describe("under a base implicit that bars caster modifiers", () => {
+    // Beside the metamod of the same words too, which bars what the implicit bars.
+    const plans = (seed: number, extra: Partial<Plan> = {}): Plan[] =>
+        [false, true].map((metamod) => ({
+            seed,
+            opts: {
+                types: 5,
+                implicit: "cannotRollCaster",
+                ...(metamod && { metamods: ["cannotRollCaster"] as const }),
+            },
+            baseImplicit: [false, true],
+            include: (cat) => cat.metamods,
+            ...extra,
+        }));
+
+    it("an add and a reforge draw no caster row while it is held, and any once it is gone", () => {
+        for (const p of plans(7050)) exactOn(p, () => adds(natural));
+        for (const p of plans(7051, { rarities: ["rare"], rows: 3 })) {
+            exactOn(p, () => [{ kind: "strip" }, fill(natural, reforge([4, 6]))]);
+        }
+        for (const p of plans(7052, { rows: 3 })) {
+            exactOn(p, () => adds({ kind: "tagged", tag: TagId("caster") }));
+        }
+    });
+
+    it("leaves a caster row out of the image exactly where the implicit is held", () => {
+        const cat = generateCatalog(7053, { types: 5, implicit: "cannotRollCaster" });
+        const u = harnessUniverse(cat);
+        const caster = cat.natural.filter((m) => m.implicitTags.has(TagId("caster")));
+        expect(caster.length).toBeGreaterThan(0);
+        for (const held of [true, false]) {
+            const items = allItems(cat.ctx, {
+                rows: [],
+                rarities: ["magic"],
+                baseImplicit: [held],
+            });
+            const r = refRunMethod(items, adds(natural), cat.ctx);
+            const laid = new Set(r.state.items().flatMap((x) => x.mods.map((m) => m.row)));
+            expect(caster.some((m) => laid.has(m.id))).toBe(!held);
+            const listed = listItems(
+                u,
+                runMethod(fromItems(u, items.items())!, adds(natural)).state.dd,
+            );
+            expect(listed.keys()).toEqual(r.state.keys());
         }
     });
 });

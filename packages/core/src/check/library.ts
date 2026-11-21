@@ -173,6 +173,9 @@ export function essenceOps(spec: EssenceSpec, ilvl: number): readonly Op[] {
         require({ kind: "essenceRarity", tier: spec.tier }),
         canBeRare,
         require({ kind: "essenceGrant", spec }),
+        // An essence's modifier the attack wands' implicit bars is taken as
+        // refused (QUESTIONS.md Q137).
+        require({ kind: "implicitAllows", how: "essence", spec }),
         strip(),
         rarity("rare"),
         fill({ kind: "natural", maxLevel }, reforge(RARE_REFORGE)),
@@ -191,6 +194,9 @@ export function benchOps(mod: Mod): readonly Op[] {
         openSlot(mod.gen),
         require({ kind: "craftedBelowCap" }),
         require({ kind: "noGroupConflict", mod }),
+        // A cannot-roll metamod does not bar a bench craft; the attack wands'
+        // implicit does (each seen in game).
+        require({ kind: "implicitAllows", how: "bench", mod }),
         fill({ kind: "bench", mod }, add([1, 1])),
     ];
 }

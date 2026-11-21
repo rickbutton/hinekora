@@ -10,6 +10,7 @@ import { maxTotal, sideCap } from "../../../model/capacity.js";
 import { effectsOf } from "../../../model/effects.js";
 import type { Gen, TagId } from "../../../model/ids.js";
 import type { Mod } from "../../../model/mod.js";
+import { baseImplicitOf } from "../../implicit.js";
 import { poolRows, type PoolTable, poolView, type PoolView } from "../../ops/pools.js";
 import type { CannotRoll } from "../../rules.js";
 import { type CItem, countsOf, modOfType, type RefCtx, rowOf } from "../item.js";
@@ -24,14 +25,18 @@ export function hasRoom(item: CItem, ctx: RefCtx, gen?: Gen): boolean {
     return gen === undefined ? room("prefix") || room("suffix") : room(gen);
 }
 
-/** What the pool reads of the item: its tags, the cannot-roll metamods on it,
+/** What the pool reads of the item: its tags, the cannot-roll metamods on it
+ *  and its base implicit's while it holds it,
  *  its strands where the draws are `cut` by them, its open sides. */
 export function viewOf(item: CItem, ctx: RefCtx, cut: boolean): PoolView {
     const rows = item.mods.map((m) => rowOf(ctx, m));
     const modTags = new Set<TagId>(rows.flatMap((r) => [...r.addsTags]));
-    const restrictions = rows.flatMap((r) =>
-        effectsOf(r).filter((e): e is CannotRoll => e.kind === "poolRestrict"),
-    );
+    const restrictions = [
+        ...rows.flatMap((r) =>
+            effectsOf(r).filter((e): e is CannotRoll => e.kind === "poolRestrict"),
+        ),
+        ...(item.baseImplicit ? baseImplicitOf(ctx.registry, ctx.base).restricts : []),
+    ];
     return poolView(ctx, item.influences, modTags, restrictions, cut ? item.strands : 0, {
         prefix: hasRoom(item, ctx, "prefix"),
         suffix: hasRoom(item, ctx, "suffix"),

@@ -239,6 +239,9 @@ export function preconditionMessage(
                     ? `Every ${failure.tag} modifier is blocked — one of them, or one of its group, is already on the item, or it needs an influence the item does not have.`
                     : `Every ${failure.tag} modifier may be blocked on some items — one of them, or one of its group, may already be on the item, or it needs an influence the item may not have.`;
             case "harvestCannotRoll":
+                if (failure.implicit === true) {
+                    return `No ${failure.tag} modifier can be added while the item ${sure ? "holds" : "may hold"} ${withArticle(state.base.name ?? "item")}'s implicit, which bars them.`;
+                }
                 return `No ${failure.tag} modifier can be added while the item ${failure.tag === "attack" || failure.tag === "caster" ? `cannot roll ${failure.tag} modifiers` : "has a modifier that keeps them from rolling"} — remove that crafted modifier first.`;
             case "typeNotRemovable": {
                 const every = sure && failure.every === true;
@@ -274,6 +277,13 @@ export function preconditionMessage(
                 return `A ${failure.fossil} cannot be used on ${withArticle(state.base.name ?? "base like this")}.`;
             case "metamodBlocks":
                 return "This currency can't be used while a metacraft modifier is on the item — remove it first.";
+            case "implicitBars": {
+                const base = state.base.name ?? "item";
+                const bars = `${withArticle(`${failure.tag} modifier`)}, which ${withArticle(base)}'s implicit bars`;
+                return failure.how === "bench"
+                    ? `"${failure.mod}" is ${bars} while the item ${sure ? "holds" : "may hold"} it.`
+                    : `This essence's "${failure.mod}" is ${bars}, and hinekora takes the essence as refused while the item ${sure ? "holds" : "may hold"} that implicit.`;
+            }
             case "tooFewMods":
                 return `${failure.what ?? "A Fracturing Orb"} needs at least ${failure.needed} modifiers on the item.`;
             case "alreadyFractured":

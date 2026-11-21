@@ -7,7 +7,7 @@ change (`../AGENTS.md`, Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q137.
+keeps it. New entries continue from Q138.
 
 ```
 ### Qn · probe|decision · open — title
@@ -620,3 +620,12 @@ elsewhere a Bloodstained Fossil always adds one. **Encoded in:**
 kept, which the report counts as finished, **recommended**.
 **Assumed:** every `stop` ends short. **Encoded in:** `cost/report.ts` `walk` (the
 `stopped` share), `costOfChecked`; `cost/words.ts` `perFinishedText`.
+
+### Q137 · probe · open — an essence's caster modifier on an attack wand
+
+**Q:** does an Essence of Woe, whose wand modifier is a caster one, apply to a Kinetic
+Wand? [Version 3.30.0 § Bug Fixes](https://www.poewiki.net/wiki/Version_3.30.0#Bug_Fixes)
+fixed how these wands showed "special Essence modifiers", which reads as yes.
+**Probe:** one on a Normal Kinetic Wand; record the refusal or the modifier.
+**Assumed:** refused while the wand holds its implicit. **Encoded in:** `check/library.ts`
+`essenceOps`; `check/ops/fill.ts`, `check/reference/ops/fill.ts` `implicitAllows`.

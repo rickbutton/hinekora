@@ -15,7 +15,7 @@
  */
 import type { ItemBlock } from "../../ast/ast.js";
 import type { ItemDecl } from "../item-block.js";
-import { declareItem } from "../item-block.js";
+import { declareItem, heldRestrictions, replacedOf } from "../item-block.js";
 import { rollRange } from "../values.js";
 import { maxTotal, sideCap } from "../../model/capacity.js";
 import { type Effect, effectKey, effectsOf, restrictionAllows } from "../../model/effects.js";
@@ -64,6 +64,7 @@ function offeredBy(ctx: RefCtx, decl: ItemDecl): (row: Mod, gen: Gen) => boolean
                 restricts.push(e);
         }
     }
+    restricts.push(...heldRestrictions(registry, base, replacedOf(decl)));
     const room = (gen: Gen): boolean =>
         count[gen] < sideCap(gen, "rare", base) &&
         count.prefix + count.suffix < maxTotal("rare", base);
@@ -95,12 +96,15 @@ export function initialItems(ctx: RefCtx, block: ItemBlock): CItemSet {
     }
     const c: RefCtx = { ...ctx, base: decl.base, ilvl: decl.ilvl };
     const bench = ctx.registry.benchModsFor(decl.base.itemClass);
+    const own = heldRestrictions(ctx.registry, decl.base, replacedOf(decl));
+    const benchable = (m: Mod): boolean =>
+        bench.has(m.id) && own.every((e) => restrictionAllows(e, m));
     const choices: CMod[][] = decl.affixes.map((a) => {
         const rows =
             a.kind === "named"
                 ? a.rows!
                 : ctx.registry.catalog.filter(
-                      (m) => m.gen === a.gen && (a.kind !== "bench" || bench.has(m.id)),
+                      (m) => m.gen === a.gen && (a.kind !== "bench" || benchable(m)),
                   );
         return rows.flatMap((row) =>
             valuesOf(row).map((value) => ({

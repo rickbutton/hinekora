@@ -28,6 +28,7 @@ import { FOULBORN_AS_STRANDS, foulbornKept, tiersWithStrands } from "../../model
 import { lookupWeight } from "../../pool/pool.js";
 import type { Registry } from "../../resolve/registry.js";
 import type { Dd, DdRelation } from "../dd.js";
+import { baseImplicitOf } from "../implicit.js";
 import { influenceTagsOfKey } from "../influence.js";
 import type { CannotRoll } from "../rules.js";
 import { isFresh, type Universe } from "../universe.js";
@@ -54,7 +55,8 @@ export interface PoolView {
     /** The tags less its influences': what admits a row besides them. */
     readonly ownTags: ReadonlySet<TagId>;
     /** The cannot-roll metamods on the item as it draws (Metamod § Rules and
-     *  Exceptions: one the reforge stripped restricts nothing). */
+     *  Exceptions: one the reforge stripped restricts nothing), and the base
+     *  implicit's restriction while the item holds it. */
     readonly restrictions: readonly CannotRoll[];
     /** Its memory strands where the method's draws are cut by them, else 0. */
     readonly strands: number;
@@ -673,7 +675,8 @@ function parts(
 
 interface Restriction {
     readonly effect: CannotRoll;
-    /** The items carrying a modifier with it. */
+    /** The items carrying a modifier with it, or holding a base implicit
+     *  with it. */
     readonly carriers: Dd;
 }
 
@@ -685,8 +688,8 @@ interface TypeAnalysis {
     /** The tags the rows' weights read that a present modifier may add, with
      *  the items on which one does. */
     readonly modTags: readonly (readonly [TagId, Dd])[];
-    /** The cannot-roll metamods the universe's modifiers carry that bar one of
-     *  the rows, one per effect. */
+    /** The cannot-roll restrictions the universe's modifiers or the base's
+     *  implicit carry that bar one of the rows, one per effect. */
     readonly restrictions: readonly Restriction[];
     /** The rows sit on both sides. */
     readonly twoSided: boolean;
@@ -730,6 +733,7 @@ function analyserOf(u: Universe): Analyser {
                 }
             }
         }
+        for (const e of baseImplicitOf(u.registry, u.base).restricts) effects.set(effectKey(e), e);
         a = {
             effects,
             carriers: new Map(),
@@ -762,6 +766,10 @@ function typeAnalysis(u: Universe, weighed: readonly Mod[], type: TypeId): TypeA
         let d = a.carriers.get(k);
         if (d === undefined) {
             d = u.anyMod((v) => effectsOf(v.row).some((e) => effectKey(e) === k));
+            const own = baseImplicitOf(u.registry, u.base).restricts;
+            if (own.some((e) => effectKey(e) === k)) {
+                d = m.or(d, m.slotIn(u.scalar("baseImplicit"), [1]));
+            }
             a.carriers.set(k, d);
         }
         return d;

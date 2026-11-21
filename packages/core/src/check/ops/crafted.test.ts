@@ -820,3 +820,51 @@ describe("the veiled orbs on the strip and removal they use", () => {
         ).toBe(true);
     });
 });
+
+describe("a base implicit that bars caster modifiers, as the attack wands'", () => {
+    const cat = generateCatalog(8900, {
+        types: 4,
+        bench: true,
+        veiled: true,
+        implicit: "cannotRollCaster",
+        metamods: ["multimod", "cannotRollCaster"],
+    });
+    const s = setupOf(cat);
+    const bench = cat.bench!;
+    const [multimod, guard] = cat.metamods;
+    const [vPrefix] = cat.veiled;
+    const casterResult = byId(cat, "UnveiledPrefix1");
+    const nat = naturals(cat, 3);
+
+    it("is exact on a bench craft, an unveil and the check itself, held or not", () => {
+        const states = statesOf(s, 8901, {
+            rows: ids([bench, multimod, guard, vPrefix, casterResult, nat[0]]),
+            rarities: ["magic", "rare"],
+            baseImplicit: [false, true],
+            crafted: true,
+        });
+        exact(s, states, L.benchOps(bench));
+        exact(s, states, L.unveilOps(undefined));
+        exact(s, states, [req({ kind: "implicitAllows", how: "bench", mod: bench }), corrupt]);
+    });
+
+    it("refuses a caster bench craft while the implicit is held, and not once it is gone", () => {
+        const held = cItem({ rarity: "rare", mods: [], baseImplicit: true });
+        const out = outcomes(s, [held], L.benchOps(bench));
+        expect(out.failure).toEqual({
+            kind: "implicitBars",
+            mod: cat.registry.typeLabel(bench.type),
+            tag: TagId("caster"),
+            how: "bench",
+        });
+        const gone = cItem({ rarity: "rare", mods: [] });
+        expect(outcomes(s, [gone], L.benchOps(bench)).failure).toBeUndefined();
+    });
+
+    it("does not bar an unveil's caster result, which stays a legal item", () => {
+        const held = cItem({ rarity: "rare", mods: [at(vPrefix!)], baseImplicit: true });
+        const out = outcomes(s, [held], L.unveilOps(undefined));
+        expect(out.items.some((x) => x.mods.some((m) => m.row === casterResult.id))).toBe(true);
+        expect(out.items.every((x) => x.baseImplicit)).toBe(true);
+    });
+});

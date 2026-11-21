@@ -273,8 +273,9 @@ export interface CatalogOptions {
      *  outcome per choice of rows, not one per choice of values too. */
     readonly oneValue?: boolean;
     /** The base is made with an implicit (`BaseImplicit1`): its own; one that
-     *  cannot be changed; or one of two namesakes, the other made with none. */
-    readonly implicit?: "own" | "locked" | "variants";
+     *  cannot be changed; one of two namesakes, the other made with none; or
+     *  "Cannot roll Caster Modifiers", as the attack wands are. */
+    readonly implicit?: "own" | "locked" | "variants" | "cannotRollCaster";
     /** A corruption implicit pool on the base: two rows of one group and one
      *  wording, the second needing item level 30; one of another group; and
      *  one needing item level 80. */
@@ -406,6 +407,11 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
     if (options.bench) {
         const of = r.pick(natural);
         bench = benchRow(`Bench${of.type}`, of, rowText(r, of.type.slice(4), 0, true));
+        // The attack wands' implicit bars a caster bench craft, so one is laid
+        // where it can be barred.
+        if (options.implicit === "cannotRollCaster") {
+            bench = { ...bench, implicitTags: new Set([TagId("caster")]) };
+        }
         extra.push(bench);
         benchCrafts.push(benchCraft(bench, base.itemClass));
     }
@@ -468,6 +474,9 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
                     domain: UNVEILED,
                     source: "veiled",
                     spawn: [{ tag: TAG_DEFAULT, weight: 100 }],
+                    // A caster result the attack wands' implicit does not bar.
+                    ...(options.implicit === "cannotRollCaster" &&
+                        gen === "prefix" && { implicitTags: ["caster"] }),
                 }),
             );
         }
@@ -662,13 +671,19 @@ function withImplicit(
 ): { base: Base; bases: Base[]; implicits: ImplicitSpec[] } {
     if (implicit === undefined) return { base: plain, bases: [plain], implicits: [] };
     const locked = implicit === "locked";
+    const caster = implicit === "cannotRollCaster";
     const spec: ImplicitSpec = {
         id: ModId("BaseImplicit1"),
         type: TypeId("TypeBaseImplicit"),
         groups: new Set([GroupId("BaseImplicit")]),
         implicitTags: new Set<TagId>(),
-        text: locked ? "Implicit Modifiers Cannot Be Changed" : "+(1-2) to Implicitness",
+        text: locked
+            ? "Implicit Modifiers Cannot Be Changed"
+            : caster
+              ? "Cannot roll Caster Modifiers"
+              : "+(1-2) to Implicitness",
         ...(locked && { locked: true as const }),
+        ...(caster && { effects: [{ kind: "poolRestrict" as const, tag: TagId("caster") }] }),
     };
     const name = plain.name ?? `Test ${kind}`;
     const base: Base = {

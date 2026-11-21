@@ -9,6 +9,7 @@
 import type { Effect } from "./effects.js";
 import { ModId, TagId } from "./ids.js";
 import type { Mod } from "./mod.js";
+import type { ImplicitSpec } from "./sources.js";
 
 const ATTACK = TagId("attack");
 const CASTER = TagId("caster");
@@ -101,3 +102,26 @@ export function withMetamodEffects(catalog: readonly Mod[]): readonly Mod[] {
         return effects && m.effects === undefined ? { ...m, effects } : m;
     });
 }
+
+/**
+ * The implicits with a cannot-roll metamod's words carrying its restriction:
+ * the attack wands' "Cannot roll Caster Modifiers" bars from a roll what the
+ * metamod bars. Matched on the text, so the implicit and the metamod share
+ * one effect.
+ */
+export function withImplicitEffects(
+    implicits: readonly ImplicitSpec[],
+    catalog: readonly Mod[],
+): readonly ImplicitSpec[] {
+    const byText = new Map<string, readonly Effect[]>();
+    for (const m of catalog) {
+        const restricts = (m.effects ?? []).filter((e) => e.kind === "poolRestrict");
+        if (m.text !== undefined && restricts.length > 0) byText.set(wordsOf(m.text), restricts);
+    }
+    return implicits.map((i) => {
+        const effects = byText.get(wordsOf(i.text));
+        return effects === undefined || i.effects !== undefined ? i : { ...i, effects };
+    });
+}
+
+const wordsOf = (text: string): string => text.trim().toLowerCase().replace(/\s+/g, " ");

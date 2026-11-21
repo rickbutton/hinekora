@@ -70,6 +70,7 @@ export const CHECK_OWNERS = {
     openSlot: "fill",
     poolNonEmpty: "fill",
     noBlockingMetamod: "fill",
+    implicitAllows: "fill",
     fossilAllowed: "fill",
     essenceRarity: "fill",
     essenceGrant: "fill",

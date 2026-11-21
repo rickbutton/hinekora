@@ -3,6 +3,7 @@
  * source-specific crafting. Only `natural` mods roll via chaos/exalt;
  * essence/bench/veiled/fossil mods come from their own mechanic.
  */
+import type { Effect } from "./effects.js";
 import type { ClassId, Domain, GroupId, ModId, TagId, TypeId } from "./ids.js";
 import type { EldritchSide } from "./marks.js";
 import type { SpawnEntry } from "./mod.js";
@@ -129,6 +130,9 @@ export interface ImplicitSpec {
     readonly text: string;
     /** The row reads "Implicit Modifiers Cannot Be Changed". */
     readonly locked?: true;
+    /** The cannot-roll restriction of the metamod whose words the row reads
+     *  (model/metamods.ts `withImplicitEffects`). */
+    readonly effects?: readonly Effect[];
 }
 
 /**

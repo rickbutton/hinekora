@@ -21,9 +21,15 @@
  */
 import type { Craft } from "../ast/ast.js";
 import type { Diag } from "./defs.js";
-import { declareItem, type DeclaredAffix, type ItemDecl } from "./item-block.js";
+import {
+    declareItem,
+    type DeclaredAffix,
+    heldRestrictions,
+    type ItemDecl,
+    replacedOf,
+} from "./item-block.js";
 import { canBeRare } from "../model/capacity.js";
-import { type Effect, effectKey, effectsOf } from "../model/effects.js";
+import { type Effect, effectKey, effectsOf, poolRestrictPredicate } from "../model/effects.js";
 import type { Gen, GroupId, TagId, TypeId } from "../model/ids.js";
 import type { ItemFacts } from "../model/item.js";
 import {
@@ -81,7 +87,10 @@ export function anonymousRows(
         for (const f of registry.familiesOfType(t)) families.add(f);
         for (const tag of registry.addsTagsOfType(t)) tags.add(tag);
     }
-    const effects = declaredEffects(decl, types);
+    const effects = [
+        ...declaredEffects(decl, types),
+        ...heldRestrictions(registry, base, replacedOf(decl)),
+    ];
     const facts: ItemFacts = {
         base,
         ilvl,
@@ -120,7 +129,8 @@ function declaredEffects(decl: ItemDecl, types: ReadonlySet<TypeId>): Effect[] {
 /** The bench's rows for the item's class on the side: what `bench "random"` may be. */
 export function benchRowsOf(registry: Registry, decl: ItemDecl, gen: Gen): readonly Mod[] {
     const ids = registry.benchModsFor(decl.base.itemClass);
-    return registry.catalog.filter((m) => ids.has(m.id) && m.gen === gen);
+    const allows = poolRestrictPredicate(heldRestrictions(registry, decl.base, replacedOf(decl)));
+    return registry.catalog.filter((m) => ids.has(m.id) && m.gen === gen && allows(m));
 }
 
 /**

@@ -22,6 +22,7 @@ import {
 import type { Mod } from "../model/mod.js";
 import type { CorruptionImplicitSpec } from "../model/sources.js";
 import type { Dd } from "./dd.js";
+import { baseImplicitOf } from "./implicit.js";
 import type { ItemSet } from "./state.js";
 import { type CountKind, type ModValue, RARITIES, type Universe } from "./universe.js";
 
@@ -719,7 +720,8 @@ export function clauseRows(
  * What every item carries, as the facts the pool reads at Rare caps (model/item.ts
  * `ItemFacts`): the guaranteed types, counted on a side where every
  * row they are at sits on it; their families and the tags they add; the
- * effects every item's carriers share; the fewest strands when `strands`.
+ * effects every item's carriers share, and the base implicit's where every
+ * item holds it; the fewest strands when `strands`.
  */
 export function guaranteedFacts(
     s: ItemSet,
@@ -746,6 +748,10 @@ export function guaranteedFacts(
         for (const e of effectsOf(rows[0]!)) {
             if (rows.every((r) => effectsOf(r).includes(e))) effects.push(e);
         }
+    }
+    const held = baseImplicitHeld(s);
+    if (held.size === 1 && held.has(true)) {
+        effects.push(...baseImplicitOf(s.u.registry, s.u.base).restricts);
     }
     const fewest = strandsRange(s)[0];
     return {

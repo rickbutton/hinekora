@@ -31,7 +31,8 @@
 import type { FillCount } from "../../ops/types.js";
 import type { DispatchKey } from "../../ops/handler.js";
 import { InternalError } from "../../ops/handler.js";
-import { addDraws, readsOfFill, reforgeTotals } from "../../ops/fill.js";
+import { addDraws, implicitCheckedRow, readsOfFill, reforgeTotals } from "../../ops/fill.js";
+import { baseImplicitOf, implicitBars } from "../../implicit.js";
 import { essenceRow } from "../../ops/pools.js";
 import type { FillOp } from "../../ops/steps.js";
 import { type CItem, countsOf, itemKey, type RefCtx } from "../item.js";
@@ -148,6 +149,17 @@ export const checks: RefCheckTable = {
     noBlockingMetamod: {
         reads: ["blocksSourced"],
         pass: (_c, _i, { rules }) => !rules.blocksSourced,
+    },
+    implicitAllows: {
+        reads: [],
+        pass: (check, item, { ctx }) => {
+            const row = implicitCheckedRow(ctx, check);
+            return (
+                !item.baseImplicit ||
+                row === undefined ||
+                implicitBars(baseImplicitOf(ctx.registry, ctx.base), row) === undefined
+            );
+        },
     },
     fossilAllowed: {
         reads: [],

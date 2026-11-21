@@ -15,7 +15,7 @@ import {
     influenceTags,
 } from "../model/marks.js";
 import { metamodKey } from "../model/effects.js";
-import { withMetamodEffects } from "../model/metamods.js";
+import { withImplicitEffects, withMetamodEffects } from "../model/metamods.js";
 import { emptyItem } from "../model/item.js";
 import type { Mod } from "../model/mod.js";
 import { pool } from "../pool/pool.js";
@@ -585,7 +585,9 @@ export function buildRegistry(data: RegistryData): Registry {
             rows.add(mod.id);
         }
     }
-    const implicitById = new Map((data.implicits ?? []).map((i) => [i.id, i] as const));
+    const implicitById = new Map(
+        withImplicitEffects(data.implicits ?? [], catalog).map((i) => [i.id, i] as const),
+    );
     const implicitsOf = (b: Base): readonly ImplicitSpec[] =>
         (b.implicits ?? []).flatMap((id) => implicitById.get(id) ?? []);
     // The base a shared name resolves to, kept so the name gives one object.
