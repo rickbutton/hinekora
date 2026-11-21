@@ -139,7 +139,7 @@ export type MetamodKind =
 /** The five metamods by one of the data's ids for each, its type and side; the
  *  registry attaches their effects by id (model/metamods.ts). The four partial
  *  protections carry theirs on the row, under test ids, each on the side
- *  opposite the one it protects, as the full protections sit. */
+ *  opposite the one it protects, as the full protections sit (`partialRow`). */
 const METAMOD_ROWS: Readonly<Record<MetamodKind, Mod>> = {
     multimod: metamodRow(
         "StrIntMasterItemGenerationCanHaveMultipleCraftedMods",
@@ -177,12 +177,24 @@ const METAMOD_ROWS: Readonly<Record<MetamodKind, Mod>> = {
     twoSuffixesCannotChange: partialRow("suffix", 2),
 };
 
+/** As in the data, the partial protections of a side are one type, in the
+ *  full protection's group, so an item holds one protection of a side. */
 function partialRow(gen: Gen, count: number): Mod {
     const side = gen === "prefix" ? "Prefix" : "Suffix";
     const id = `TestItemGenerationCannotChange${count}${side}`;
     const text = `${count} ${side} Modifier${count > 1 ? "s" : ""} cannot be changed`;
+    const group = `ItemGenerationCannotChange${side}es`;
     return {
-        ...metamodRow(id, id, gen === "prefix" ? "suffix" : "prefix", text),
+        ...modRow({
+            id,
+            type: `${group}Count`,
+            families: [group],
+            gen: gen === "prefix" ? "suffix" : "prefix",
+            text,
+            spawn: [],
+            domain: CRAFTED,
+            source: "bench",
+        }),
         effects: [{ kind: "protectSome", gen, count }],
     };
 }

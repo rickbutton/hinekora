@@ -547,13 +547,11 @@ text. **Encoded in:** `render/item.ts` `modHeader`, `textless`.
 adds "1 Prefix Modifier cannot be changed" and its siblings, the kept modifiers chosen at
 random each use ([FAQ](https://www.pathofexile.com/forum/view-thread/4013527)). Does one
 block what the full protection does? May the choice fall on a fractured modifier? Is a
-Harvest augment's removal chosen after its add, and with nothing to take, refused? Do two
-on one side keep either count, or both?
+Harvest augment's removal chosen after its add, and with nothing to take, refused?
 **Probe:** "1 Prefix Modifier cannot be changed": an essence; three prefixes, one
-fractured, annuls; one prefix, augments; with "2 Prefix…" too, scours; record refusals,
-what went.
-**Assumed:** as the full protection; any modifier; after, refused; any reading. In the
-cost, each choice alike; two on one side leave a removal's odds unread. **Encoded in:**
+fractured, annuls; one prefix, augments; record refusals, what went.
+**Assumed:** as the full protection; any modifier; after, refused. In the cost, each
+choice alike. **Encoded in:**
 `check/rules.ts` `partialProtections`; `check/ops/remove.ts` `partialChoices`;
 `check/reference/rules.ts`; `cost/roll.ts`.
 

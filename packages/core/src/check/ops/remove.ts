@@ -321,8 +321,8 @@ function raised(
 
 /**
  * Items by how one use of a method settles their partial protections, chosen
- * at random each use (`QUESTIONS.md` Q128): for each count a side may keep,
- * the items holding no more modifiers there keep the side whole, and on one
+ * at random each use (`QUESTIONS.md` Q128): the items holding no more
+ * modifiers on the side than it keeps keep the side whole, and on one
  * holding more each choice of that many of its modifiers is a part of its
  * own, an item lying in every part whose modifiers it holds. A per-item
  * split, never a list of outcomes.
@@ -330,11 +330,11 @@ function raised(
 export function partialChoices(
     u: Universe,
     dd: Dd,
-    partial: ReadonlyMap<Gen, readonly number[]>,
+    partial: ReadonlyMap<Gen, number>,
 ): { dd: Dd; choice: Choice }[] {
     const m = u.dd;
     let out: { dd: Dd; choice: Choice }[] = [{ dd, choice: NO_CHOICE }];
-    for (const [gen, counts] of partial) {
+    for (const [gen, count] of partial) {
         const slots = u
             .modSlots()
             .map((slot) => ({
@@ -350,18 +350,16 @@ export function partialChoices(
             const held = next.get(key);
             next.set(key, { dd: held === undefined ? dd : m.or(held.dd, dd), choice });
         };
-        for (const count of counts) {
-            const more = atLeast(u, (v) => v.row.gen === gen, count + 1);
-            for (const c of out) {
-                put(m.diff(c.dd, more), { ...c.choice, sides: [...c.choice.sides, gen] });
-                const rest = m.and(c.dd, more);
-                if (rest === m.EMPTY) continue;
-                for (const pick of subsetsOf(slots, count)) {
-                    put(
-                        pick.reduce((p, s) => m.and(p, m.slotIn(s.slot, s.values)), rest),
-                        { ...c.choice, types: [...c.choice.types, ...pick.map((s) => s.type)] },
-                    );
-                }
+        const more = atLeast(u, (v) => v.row.gen === gen, count + 1);
+        for (const c of out) {
+            put(m.diff(c.dd, more), { ...c.choice, sides: [...c.choice.sides, gen] });
+            const rest = m.and(c.dd, more);
+            if (rest === m.EMPTY) continue;
+            for (const pick of subsetsOf(slots, count)) {
+                put(
+                    pick.reduce((p, s) => m.and(p, m.slotIn(s.slot, s.values)), rest),
+                    { ...c.choice, types: [...c.choice.types, ...pick.map((s) => s.type)] },
+                );
             }
         }
         out = [...next.values()];

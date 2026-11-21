@@ -475,15 +475,14 @@ export function unmodelled(
         return "the item may or may not hold a metamod that changes which metamods the Bestiary can craft, so the chances after it are not known";
     }
     if (item !== undefined && registry !== undefined && removes(ops)) {
-        const partial = partialProtections(effectsAmong(item, possibleTypes(item)));
-        if (keepsBeyondRemoval(ops) && partial.size > 0) {
+        const partial = effectsAmong(item, possibleTypes(item)).some(
+            (e) => e.kind === "protectSome",
+        );
+        if (keepsBeyondRemoval(ops) && partial) {
             return "a metamod keeps some of a side's modifiers, chosen at random each use, which this step's chances are not read under, so the chances after it are not known";
         }
         if (countUnsettled(item, possibleTypes(item))) {
             return "a metamod keeps some modifiers of one side, and how many is not settled at this step, so the chances after it are not known";
-        }
-        if ([...partial.values()].some((counts) => counts.length > 1)) {
-            return "two metamods each keep some modifiers of one side, and how many they keep together is not known, so the chances after this step are not known";
         }
     }
     return undefined;
@@ -1089,10 +1088,11 @@ function removalRoll(
     // choice of them as likely (QUESTIONS.md Q128): a modifier of the side is
     // out of reach in that share of the uses, and the side holds that many
     // fewer to take.
-    // A side with several readings never gets here (`unmodelled`).
-    const partial = partialProtections(effectsAmong(before, guaranteedTypes(before)));
+    const partial = partialProtections(
+        [...guaranteedTypes(before)].flatMap((t) => sureEffects(before, t)),
+    );
     const free = (g: Gen): number => {
-        const n = partial.get(g)?.[0] ?? 0;
+        const n = partial.get(g) ?? 0;
         return n === 0 ? 1 : Math.max(0, mid(g) - n) / Math.max(mid(g), 1);
     };
     const reaches = (g: Gen): boolean =>

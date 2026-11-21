@@ -6,6 +6,7 @@
  * (reference/rules.ts), so its exactness tests check these too.
  */
 import type { Op } from "./ops/types.js";
+import { InternalError } from "./ops/handler.js";
 import { craftedCapOf, type Effect } from "../model/effects.js";
 import type { Gen, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
@@ -23,7 +24,7 @@ export interface Protection {
     /** The partial protections behind that choice (`partialProtections`): a
      *  removal after an add in the same method chooses afresh among the
      *  modifiers then present (`QUESTIONS.md` Q128). */
-    readonly partial: ReadonlyMap<Gen, readonly number[]>;
+    readonly partial: ReadonlyMap<Gen, number>;
 }
 
 /** Does a protection keep the modifier on this row? */
@@ -79,26 +80,18 @@ export function rulesOf(effects: readonly Effect[], ops: readonly Op[], choice =
     };
 }
 
-/** By side, the counts of modifiers the effects' partial protections may
- *  keep, ascending; none on a side a full protection keeps whole. Two on one
- *  side may keep the count of either or their sum: the wiki does not say, and
- *  each reading is an outcome (`QUESTIONS.md` Q128). */
-export function partialProtections(
-    effects: readonly Effect[],
-): ReadonlyMap<Gen, readonly number[]> {
+/** By side, the count of modifiers the effects' partial protection keeps;
+ *  none on a side a full protection keeps whole. A side holds one: the
+ *  protections of a side share a group (`ItemGenerationCannotChangePrefixes`,
+ *  `…Suffixes`), and an item holds one modifier of a group (Modifier §
+ *  Group/family). */
+export function partialProtections(effects: readonly Effect[]): ReadonlyMap<Gen, number> {
     const whole = new Set(effects.flatMap((e) => (e.kind === "protect" ? [e.gen] : [])));
-    const carried = new Map<Gen, number[]>();
+    const out = new Map<Gen, number>();
     for (const e of effects) {
         if (e.kind !== "protectSome" || whole.has(e.gen)) continue;
-        carried.set(e.gen, [...(carried.get(e.gen) ?? []), e.count]);
-    }
-    const out = new Map<Gen, readonly number[]>();
-    for (const [gen, counts] of carried) {
-        const sum = counts.length > 1 ? [counts.reduce((a, b) => a + b, 0)] : [];
-        out.set(
-            gen,
-            [...new Set([...counts, ...sum])].sort((a, b) => a - b),
-        );
+        if (out.has(e.gen)) throw new InternalError(`two partial protections of the ${e.gen}es`);
+        out.set(e.gen, e.count);
     }
     return out;
 }

@@ -762,30 +762,6 @@ describe("a partial protection", () => {
         );
     });
 
-    it("keeps one, two or all three under both on one side, each reading an outcome", () => {
-        // QUESTIONS.md Q128: either count, or their sum.
-        const both = cItem({
-            rarity: "rare",
-            mods: [
-                ...["P1", "P2", "P3"].map((id) => on(w, id)),
-                on(w, one, { crafted: true }),
-                on(w, two, { crafted: true }),
-            ],
-        });
-        const out = outcomes(w, [both], L.currencyOps("scour"));
-        expect(sorted(rowsOf(out))).toEqual(
-            sorted([
-                ["P1"],
-                ["P2"],
-                ["P3"],
-                ["P1", "P2"],
-                ["P1", "P3"],
-                ["P2", "P3"],
-                ["P1", "P2", "P3"],
-            ]),
-        );
-    });
-
     it("chooses for a removal after an add among the modifiers then present", () => {
         // QUESTIONS.md Q128: the one prefix, whole before the add, may go.
         const pool: PoolSpec = { kind: "rows", mods: [w.ctx.rows.get(ModId("P3"))!] };

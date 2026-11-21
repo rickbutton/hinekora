@@ -59,7 +59,7 @@ Where no source settles a rule, the code reads it so (each a `QUESTIONS.md` entr
 - **Memory strands.** The share used up is unstated; the estimate reads the floor (Q68).
 - **Partial protections.** A random removal weighs each choice of kept modifiers alike
   (Q128). Beside one no reforge, strip, Divine Orb, Orb of Dominance, Harvest change or
-  augment is read, nor a random removal beside two of a side or an unsettled count. The
+  augment is read, nor a random removal beside an unsettled count. The
   bench's removal takes all crafted (Q120).
 - **Bestiary metamod.** Each that fits alike, unread beside one maybe held (Q131).
 

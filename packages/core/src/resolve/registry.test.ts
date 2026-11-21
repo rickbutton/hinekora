@@ -103,8 +103,9 @@ describe("a base's implicits", () => {
 });
 
 describe("a bench craft named by its whole wording", () => {
-    const one = metamod("onePrefixCannotChange");
-    const two = metamod("twoPrefixesCannotChange");
+    // Of types apart here; the data's share one, read below.
+    const one = { ...metamod("onePrefixCannotChange"), type: TypeId("OnePrefixCannotChange") };
+    const two = { ...metamod("twoPrefixesCannotChange"), type: TypeId("TwoPrefixesCannotChange") };
     const registry = buildRegistry({
         bases: [RING_BASE],
         mods: [...CATALOG, one, two],

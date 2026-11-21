@@ -171,35 +171,6 @@ describe("a random removal beside a partial protection", () => {
         expect(unmodelled(BENCH_REMOVE, a, partial)).toBeUndefined();
         expect(unmodelled(currencyOps("scour"), a, partial)).toMatch(/chosen at random each use/);
     });
-
-    it("leaves a removal's chances unknown where two keep some of one side", () => {
-        const twoPrefixes: Mod = {
-            ...PROTECT_ONE_PREFIX_CARRIER,
-            id: ModId("MetaTwoPrefixesCannotChange"),
-            type: TypeId("MetaTwoPrefixesCannotChange"),
-            gen: "prefix",
-            effects: [{ kind: "protectSome", gen: "prefix", count: 2 }],
-            text: "2 prefix modifiers cannot be changed",
-        };
-        const both = buildRegistry({
-            bases: [RING_BASE],
-            mods: [...CATALOG, PROTECT_ONE_PREFIX_CARRIER, twoPrefixes],
-            baseAliases: { "Iron Ring": "IronRing" },
-        });
-        const two = craft(
-            item({
-                base: "Iron Ring",
-                ilvl: 84,
-                rarity: "rare",
-                prefixes: ["IncreasedLife1", "IncreasedMana1", twoPrefixes.id],
-                suffixes: [PROTECT_ONE_PREFIX_CARRIER.id],
-            }),
-            [],
-        );
-        const a = check(two, { registry: both }).finalState!;
-        expect(unmodelled(currencyOps("annul"), a, both)).toMatch(/how many they keep together/);
-        expect(unmodelled(currencyOps("exalt"), a, both)).toBeUndefined();
-    });
 });
 
 describe("partial protections of one type", () => {
