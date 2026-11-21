@@ -17,6 +17,8 @@ const ITEM = [
     { name: "Exarch implicit", positions: ["none: a ring has no such implicit"] },
     { name: "Eater implicit tier", positions: ELDRITCH_TIERS },
     { name: "Eater implicit", positions: ["none: a ring has no such implicit"] },
+    { name: "corruption implicit", positions: ["none: this craft never corrupts"] },
+    { name: "second corruption implicit", positions: ["none: this craft never corrupts"] },
     { name: "memory strands", positions: ["0", "1", "…", "100"] },
 ];
 const tiers = (n: number): string[] => ["absent", "tier 1", "tier 2", "…", `tier ${n}`];
