@@ -42,6 +42,8 @@ waits until a craft calls for it.
   a type only Catarina unveils.
 - **a first check's speed**: a flatter node layout, a prebuilt data snapshot, a bundled
   command line.
+- **the `baseImplicit` slot on every base**, about 12% of a first check's time and 14% of
+  a cost's: it could be left off a base with no implicit or one that cannot change.
 - English negation sugar (`doesn't have` → `not has`); a power-user annotation tier for
   reusable techniques; a way to name an unveiled modifier whose words a natural one
   shares other than by its mod id.
@@ -52,9 +54,10 @@ waits until a craft calls for it.
   names only "+1 gem" modifiers), and catalyst quality. Meanwhile a value compares on its
   row's own span: on a Simplex Amulet `has "maximum life" >= 240` never holds though the
   item shows twice the row.
-- **the implicits the item does not track**: a Gilded Fossil's (Q133), so a starting item
-  holding a corruption implicit beside its base's or two eldritch ones cannot be declared,
-  and a starting item's synthesised ones.
+- **the implicits the item does not track**: a Gilded Fossil's (Q133), so a resonator
+  holding one is refused, "a Gilded Fossil protects the base implicit from a corruption"
+  cannot be written, and a starting item holding a corruption implicit beside its base's
+  or two eldritch ones cannot be declared; and a starting item's synthesised ones.
 - **legacy base-implicit variants**: the experimented bases', whose caps and magnitudes one catalog id cannot carry and no collected recipe starts from
   ([Simplex Amulet § Version history](https://www.poewiki.net/wiki/Simplex_Amulet#Version_history)); a Standard-only
   Black Maw Talisman socketed by implicit, so the name's socket reads "Possibly"
