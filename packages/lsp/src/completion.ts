@@ -7,6 +7,7 @@
  * filter degrading to "all mods" when the source can't be read, never to nothing.
  */
 import {
+    type Gen,
     addsOwnImplicit,
     type Base,
     craftNames,
@@ -112,7 +113,9 @@ type Context =
     | { readonly kind: "statement" }
     | { readonly kind: "predicate" }
     | { readonly kind: "base" }
-    | { readonly kind: "mod" }
+    /** `side`: inside the item block's list of that side, where a veiled
+     *  modifier may be declared too. */
+    | { readonly kind: "mod"; readonly side?: Gen }
     /** After a modifier's name in an affix list or a `has`: its tiers. */
     | { readonly kind: "tier"; readonly mod: string }
     | { readonly kind: "nothing" }
@@ -139,6 +142,8 @@ function contextAt(source: string, offset: number): Context {
         // A field's string (`base: "…"`, an affix list) is a base or a mod.
         const before = line.slice(0, line.lastIndexOf('"')).trimEnd();
         if (/\bimplicits\s*:\s*\[[^\]]*$/.test(before)) return { kind: "corruptionName" };
+        const list = /\b(prefixes|suffixes)\s*:\s*\[[^\]]*$/.exec(before);
+        if (list) return { kind: "mod", side: list[1] === "prefixes" ? "prefix" : "suffix" };
         if (before.endsWith(":")) {
             return before.replace(/:$/, "").trimEnd().endsWith("base")
                 ? { kind: "base" }
@@ -356,7 +361,10 @@ function completionsAt(source: string, offset: number, registry: Registry): Comp
                 ? modItems(source, offset, registry)
                 : namesOf(ctx.of, registry, ctx.augment).map(value);
         case "mod":
-            return modItems(source, offset, registry);
+            return [
+                ...modItems(source, offset, registry),
+                ...(ctx.side === undefined ? [] : [veiledItem(ctx.side)]),
+            ];
         case "tier":
             return tierItems(source, ctx.mod, registry);
         case "eldritchName":
@@ -405,6 +413,15 @@ function tierItems(source: string, mod: string, registry: Registry): CompletionI
             sortText: String(i + 1).padStart(3, "0"),
         };
     });
+}
+
+/** A veiled modifier of the list's side, declared without a tier. */
+function veiledItem(side: Gen): CompletionItem {
+    return {
+        label: "veiled",
+        detail: `a veiled ${side}, for an \`unveil\``,
+        kind: CompletionItemKind.Value,
+    };
 }
 
 /** The item level every row of a ladder rolls at. */

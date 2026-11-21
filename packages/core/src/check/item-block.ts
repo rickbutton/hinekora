@@ -33,6 +33,7 @@ import { restrictionAllows } from "../model/effects.js";
 import type { Mod } from "../model/mod.js";
 import type { CorruptionImplicitSpec } from "../model/sources.js";
 import { MAX_STRANDS } from "../model/strands.js";
+import { veiledNamed } from "../model/veiled.js";
 import { resolveMessage, withArticle } from "../resolve/messages.js";
 import type { ClusterSize, Registry } from "../resolve/registry.js";
 import {
@@ -262,7 +263,7 @@ export function declareItem(item: ItemBlock, registry: Registry, diag: Diag): It
     // marker), or undefined when resolution failed.
     const craftedTypes = new Set<TypeId>();
     const pinAffix = (affix: AffixDecl, gen: Gen): TypeId | undefined => {
-        const byId = registry.resolveMod(affix.mod);
+        const byId = registry.resolveMod(veiledNamed(affix.mod, gen) ?? affix.mod);
         if (byId.ok) {
             const mod = byId.value;
             checkGen(affix.mod, mod.gen, gen);

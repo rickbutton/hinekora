@@ -32,6 +32,21 @@ describe("formatter — the example crafts", () => {
 });
 
 describe("formatter — layout", () => {
+    it("keeps a veiled modifier's words as written, with no tier", () => {
+        const src = `item {
+    base:     "Kinetic Wand"
+    ilvl:     85
+    rarity:   rare
+    prefixes: [ "veiled" ]
+    suffixes: [ "of the Veil" ]
+}
+
+unveil
+`;
+        expect(fmt(src)).toBe(src);
+        expect(shape(fmt(src))).toEqual(shape(src));
+    });
+
     it("aligns the item block's fields and keeps the affix lists on one line", () => {
         const src = `item{base:"Iron Ring" ilvl:84 rarity:rare
 prefixes:["maximum life" t2] suffixes:["fire resistance" t3,fractured "lightning resistance" t3,"random"] influences: hunter shaper corrupted exarch: grand "wording"}

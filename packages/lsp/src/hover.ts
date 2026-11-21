@@ -43,6 +43,8 @@ import {
     type TraceEntry,
     type TypeId,
     veiledPool,
+    veiledNamed,
+    type Gen,
     type ItemSet,
     isCorruptedEssence,
     influenceTagsAny,
@@ -321,6 +323,15 @@ function signature(
             return implicitSignature(tok.text, entry, registry);
         }
         if (inImplicitsField(tokens, i)) return implicitSignature(tok.text, entry, registry);
+        const side = affixListAt(tokens, i);
+        const veiled = side === undefined ? undefined : veiledNamed(tok.text, side);
+        if (veiled !== undefined) {
+            const gen = registry.genOfType(veiled) ?? side;
+            return [
+                `**"${tok.text}"** → a veiled ${gen}: an \`unveil\` offers three modifiers of its side and keeps the one named.`,
+                unveilOptionsHover(entry, registry),
+            ].join("\n\n");
+        }
         return modSignature(tok.text, tierAfter(tokens, i), entry, registry);
     }
 
@@ -450,6 +461,18 @@ function modSignature(
         `| tier | id | name | roll | ilvl |\n|---|---|---|---|---|\n${rows.join("\n")}${more}`,
     );
     return blocks.join("\n\n");
+}
+
+/** The side of the item block's affix list the string at `i` is in, if any. */
+function affixListAt(tokens: readonly Token[], i: number): Gen | undefined {
+    for (let j = i - 1; j >= 0; j--) {
+        const t = tokens[j]!;
+        if (t.kind !== "lbracket") continue;
+        if (tokens[j - 1]?.kind !== "colon") return undefined;
+        const field = tokens[j - 2]?.text;
+        return field === "prefixes" ? "prefix" : field === "suffixes" ? "suffix" : undefined;
+    }
+    return undefined;
 }
 
 /** Is the string at `i` a wording of the item block's `implicits: [ … ]`. */

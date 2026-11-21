@@ -6,6 +6,7 @@
  */
 import type { Arg, Craft, OperationStmt, Pred, Stmt } from "../ast/ast.js";
 import { PLACEHOLDERS } from "./item-block.js";
+import { veiledNamed } from "../model/veiled.js";
 import type { Base } from "../model/base.js";
 import type { TagId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
@@ -273,8 +274,18 @@ export function craftReach(craft: Craft, registry: Registry): CraftReach {
 export function declaredRows(craft: Craft, registry: Registry, base: Base, ilvl: number): Mod[] {
     const out = new Set<Mod>();
     const { prefixes, suffixes } = craft.item;
-    for (const affix of [...prefixes, ...suffixes]) {
+    const listed = [
+        ...prefixes.map((affix) => ({ affix, gen: "prefix" as const })),
+        ...suffixes.map((affix) => ({ affix, gen: "suffix" as const })),
+    ];
+    for (const { affix, gen } of listed) {
         if (PLACEHOLDERS.test(affix.mod.trim().toLowerCase())) continue;
+        const veiled = !affix.bench && veiledNamed(affix.mod, gen);
+        if (veiled) {
+            const row = registry.resolveMod(veiled);
+            if (row.ok) out.add(row.value);
+            continue;
+        }
         if (affix.bench) {
             const craftRes = registry.resolveBench(affix.mod, base.itemClass, affix.tier);
             const mod = craftRes.ok ? registry.resolveMod(craftRes.value.mod) : undefined;

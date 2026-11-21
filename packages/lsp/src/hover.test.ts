@@ -186,3 +186,20 @@ life()`;
         expect(line).not.toContain("expected");
     });
 });
+
+describe("hover: a veiled modifier in the item block", () => {
+    it("names the side it is listed under and lists what an unveil offers", () => {
+        const src = `item {
+    base: "Kinetic Wand"
+    ilvl: 85
+    rarity: rare
+    suffixes: [ "veiled" ]
+}
+unveil`;
+        const h = getHover(src, src.indexOf("veiled") + 1, registry)!;
+        expect(h).toContain(
+            '**"veiled"** → a veiled suffix: an `unveil` offers three modifiers of its side and keeps the one named.',
+        );
+        expect(h).toContain("**Unveil options");
+    });
+});

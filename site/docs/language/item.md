@@ -40,9 +40,12 @@ The checker rejects a block that lists more modifiers than the base holds at its
 Each entry of `prefixes` and `suffixes` is a [modifier name](./names) with a tier, such as
 `"maximum life" t2`. A name without a tier is an error unless the item level allows one tier.
 
+`"veiled"` declares a [veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) of
+its list's side, with no tier.
+
 `"random"`, or `"?"`, declares a modifier the craft does not name. The checker counts it
-and treats it as any natural modifier the item could roll on that side. A later step must be
-safe whatever that modifier turns out to be:
+as any natural modifier the item could roll on that side. A later step must be
+safe whatever it is:
 
 <!-- refused -->
 

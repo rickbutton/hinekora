@@ -214,7 +214,7 @@ describe('the attack wands\' "Cannot roll Caster Modifiers" implicit, against re
     // Seen in game: an unveil offers caster modifiers on these wands, as
     // beside the metamod.
     it("leaves an unveil's caster options as they are, the cost's chance unchanged", () => {
-        const veiled = '    prefixes: [ "VeiledPrefix" ]\n';
+        const veiled = '    prefixes: [ "veiled" ]\n';
         const unveil =
             'unveil\nif has "JunMasterVeiledSpellDamageAndManaRegenerationRate1h" {\n    exalt\n}\n';
         const prices = loadDefaultEconomy();

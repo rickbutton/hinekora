@@ -20,6 +20,7 @@ import {
     VEILED_SUFFIX_MOD,
 } from "../__fixtures__/mods.js";
 import { veiledPool } from "../pool/veiled.js";
+import { VEILED_PREFIX, VEILED_SUFFIX } from "../model/veiled.js";
 import { GroupId, ModId, TypeId } from "../model/ids.js";
 import type { Mod } from "../model/mod.js";
 
@@ -166,6 +167,39 @@ describe("veiled orbs", () => {
         const r = check(craft(rareRing(["random", "random"]), [veiled("exalt")]), ctx);
         expect(r.diagnostics).toEqual([]);
         expect(v.counts(r.finalState!).total).toEqual([2, 2]);
+    });
+});
+
+describe("a veiled modifier in the item block", () => {
+    const declared = (prefixes: string[], suffixes: string[] = []) =>
+        check(
+            craft(item({ base: "Iron Ring", ilvl: 100, rarity: "rare", prefixes, suffixes }), [
+                unveil(),
+            ]),
+            ctx,
+        );
+
+    it("is the side's placeholder by \"veiled\", and by the game's copied words", () => {
+        for (const [p, s] of [
+            [["veiled"], []],
+            [[], ["veiled"]],
+            [["Veiled Prefix"], []],
+            [[], ["Veiled Suffix"]],
+            [[], ["of the Veil"]],
+        ] as const) {
+            const r = declared([...p], [...s]);
+            expect(r.diagnostics, JSON.stringify([p, s])).toEqual([]);
+            const at = r.trace[0]!.before;
+            expect(guaranteedTypes(at).has(p.length > 0 ? VEILED_PREFIX : VEILED_SUFFIX)).toBe(
+                true,
+            );
+        }
+    });
+
+    it("refuses words of one side listed under the other", () => {
+        expect(declared(["Veiled Suffix"]).diagnostics[0]?.message).toBe(
+            '"Veiled Suffix" is a suffix, but it is listed under prefixes.',
+        );
     });
 });
 

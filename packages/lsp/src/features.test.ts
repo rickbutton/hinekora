@@ -442,6 +442,18 @@ if not has "maximum life" {
         expect(labels).toContain("has");
     });
 
+    it("offers a veiled modifier in an affix list, and not after a has", () => {
+        const head = `item { base: "Kinetic Wand" ilvl: 85 rarity: rare prefixes: [ "attack speed" t1, "`;
+        const veiled = getCompletions(head, head.length, registry).find(
+            (c) => c.label === "veiled",
+        );
+        expect(veiled?.detail).toBe("a veiled prefix, for an `unveil`");
+        const has = `item { base: "Kinetic Wand" ilvl: 85 rarity: rare }\nif has "`;
+        expect(getCompletions(has, has.length, registry).map((c) => c.label)).not.toContain(
+            "veiled",
+        );
+    });
+
     it("offers base names inside a base: string, of the classes that take modifiers", () => {
         const src = `item { base: "Iron`;
         const labels = getCompletions(src, src.length, registry).map((c) => c.label);

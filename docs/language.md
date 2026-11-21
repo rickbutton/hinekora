@@ -48,9 +48,10 @@ item {
 - `prefixes` / `suffixes` list the affixes. Each named affix **pins a tier**: a mod name
   with `t<n>` (§2) or an exact mod id; a bare name only where the item's level rolls a
   single tier. `"random"` (or `"?"`) is an anonymous affix:
-  counted, not named, and any natural modifier of its side the item could roll, so a `has`
-  may be it and a bench craft of its group may clash with it. More affixes than the base
-  allows at the rarity, or a mod on the wrong side, is an error.
+  counted, not named, any natural modifier of its side the item could roll, so a `has`
+  may be it and a bench craft of its group may clash with it. `"veiled"` is a
+  [veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) of its list's side, no
+  tier. Too many affixes, or one misplaced, is an error.
 - `fractured "<mod>" t<n>` marks a
   [fractured modifier](https://www.poewiki.net/wiki/Fractured_item#Mechanics);
   `fractured "random"` says the item is fractured without naming the modifier. An item may
