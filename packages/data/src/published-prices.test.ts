@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fakeNinja } from "./ninja-fake.js";
+import { fakeNinja, NINJA_ANSWERS } from "./ninja-fake.js";
 import { type FetchLike, NINJA_USER_AGENT, type NinjaClient } from "./ninja.js";
 import { pricesToPublish, publishedLine } from "./published-prices.js";
 
@@ -74,6 +74,32 @@ describe("the prices the site publishes", () => {
             url === LIVE ? w.fetch(url, init) : ninja.fetch(url, init);
         const result = await pricesToPublish(client(fetch), LIVE);
         expect(result.kind).toBe("republished");
+    });
+
+    it("are never a file that lists nothing, from poe.ninja or from the live site", async () => {
+        const empty = { items: [], lines: [] };
+        const ninja = fakeNinja({
+            index: NINJA_ANSWERS["index"],
+            Currency: { core: { rates: { divine: 0.0125 } }, ...empty },
+            Essence: empty,
+            Fossil: empty,
+            Resonator: empty,
+            Beast: { lines: [] },
+        });
+        const answering = (live: unknown): FetchLike => {
+            const w = world(200, { status: 200, body: live });
+            return (url, init) => (url === LIVE ? w.fetch(url, init) : ninja.fetch(url, init));
+        };
+        expect(await pricesToPublish(client(answering(LIVE_FILE)), LIVE)).toEqual({
+            kind: "republished",
+            raw: LIVE_FILE,
+            why: "poe.ninja could not be read (Covens: no prices listed)",
+        });
+        const none = await pricesToPublish(client(answering({ ...LIVE_FILE, prices: {} })), LIVE);
+        expect(none).toEqual({
+            kind: "none",
+            why: `poe.ninja could not be read (Covens: no prices listed); nor the live site's (${LIVE}: no prices listed)`,
+        });
     });
 
     it("are none when neither poe.ninja nor the live site gives a prices file", async () => {

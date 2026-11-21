@@ -17,11 +17,15 @@ function reasonOf(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
 }
 
+/** A file that lists nothing would hide the bundled snapshot's prices. */
+function listed(raw: RawEconomy, from: string): RawEconomy {
+    if (Object.keys(raw.prices).length === 0) throw new Error(`${from}: no prices listed`);
+    return raw;
+}
+
 async function fromNinja(client: NinjaClient): Promise<RawEconomy> {
     const league = (await fetchLeagues(client))[0]!;
-    const raw = await fetchEconomy(client, league);
-    if (Object.keys(raw.prices).length === 0) throw new Error(`${league}: no prices listed`);
-    return raw;
+    return listed(await fetchEconomy(client, league), league);
 }
 
 async function fromLiveSite(client: NinjaClient, url: string): Promise<RawEconomy> {
@@ -32,7 +36,7 @@ async function fromLiveSite(client: NinjaClient, url: string): Promise<RawEconom
     if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
     const raw = rawEconomyOf(await res.json());
     if (raw === undefined) throw new Error(`${url} is not a prices file`);
-    return raw;
+    return listed(raw, url);
 }
 
 /**
