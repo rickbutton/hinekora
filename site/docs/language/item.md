@@ -45,7 +45,7 @@ its list's side, with no tier.
 
 `"random"`, or `"?"`, declares a modifier the craft does not name. The checker counts it
 as any natural modifier the item could roll on that side. A later step must be
-safe whatever it is:
+safe whatever the modifier:
 
 <!-- refused -->
 
