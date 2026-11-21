@@ -6,12 +6,30 @@
  * tests run without a prior build step (esbuild transforms the TS on the fly).
  * `tsc -b` still uses the real package `exports` (dist .d.ts) for typechecking.
  */
+import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
+
+/** Every workspace directory with tests: each package and tool, and the playground. */
+const PROJECT_ROOTS = ["packages", "tools"]
+    .flatMap((dir) =>
+        readdirSync(new URL(`./${dir}`, import.meta.url), { withFileTypes: true })
+            .filter((e) => e.isDirectory())
+            .map((e) => `${dir}/${e.name}`),
+    )
+    .concat("editors/playground");
+
+function packageName(root: string): string {
+    const json = readFileSync(new URL(`./${root}/package.json`, import.meta.url), "utf8");
+    return (JSON.parse(json) as { name: string }).name;
+}
 
 export default defineConfig({
     resolve: {
         alias: {
+            "@hinekora/data/browser": fileURLToPath(
+                new URL("./packages/data/src/browser.ts", import.meta.url),
+            ),
             "@hinekora/core": fileURLToPath(
                 new URL("./packages/core/src/index.ts", import.meta.url),
             ),
@@ -27,7 +45,13 @@ export default defineConfig({
         },
     },
     test: {
-        projects: ["packages/*", "editors/playground", "tools/*"],
+        // A project named by its directory alone gets none of the options here,
+        // not even the aliases; `extends: true` gives each this whole config.
+        projects: PROJECT_ROOTS.map((root) => ({
+            extends: true,
+            root,
+            test: { name: packageName(root) },
+        })),
         coverage: {
             provider: "v8",
             reporter: ["text", "html", "lcov", "json-summary"],
