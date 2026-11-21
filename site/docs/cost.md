@@ -110,5 +110,6 @@ A note in parentheses under a line says why a figure is missing.
 
 ## Prices
 
-`cost` fetches [poe.ninja](https://poe.ninja/)'s prices, at most once an hour
-([Command line](./cli#cost)). This page's figures use the snapshot shipped with the game data.
+`cost` fetches [poe.ninja](https://poe.ninja/)'s prices hourly ([Command line](./cli#cost)),
+the [playground](/playground/) every six hours. This page uses the snapshot shipped with
+the game data.

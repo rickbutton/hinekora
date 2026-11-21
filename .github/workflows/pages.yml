@@ -1,12 +1,17 @@
 name: Site
 
 # Builds the website (the home page, the docs and the playground inside it)
-# and publishes it to GitHub Pages on every push to main. Pages must be set
-# to deploy from GitHub Actions in the repository settings once.
+# and publishes it to GitHub Pages on every push to main, and every six hours
+# so the playground's prices stay current. Pages must be set to deploy from
+# GitHub Actions in the repository settings once.
 on:
     push:
         branches: [main]
     workflow_dispatch:
+    # A scheduled run uses the default branch's copy of this file and deploys
+    # the site as main stands. Off the hour, when GitHub's queue is shortest.
+    schedule:
+        - cron: "17 */6 * * *"
 
 permissions:
     contents: read
@@ -41,12 +46,23 @@ jobs:
             - name: Build the packages
               run: pnpm build
 
+            - id: pages
+              uses: actions/configure-pages@v5
+
+            # poe.ninja allows no other site's page to read it, so the
+            # playground reads the prices this step publishes beside it. It
+            # falls back to the live site's copy, then to none, and never fails
+            # the deploy.
+            - name: Publish the playground's prices
+              run: node site/scripts/publish-prices.mjs
+              env:
+                  HINEKORA_SITE_URL: ${{ steps.pages.outputs.base_url }}
+
             # Builds the playground into the site, generates the operation
             # pages and runs the checker over every craft the pages show.
             - name: Build the site
               run: pnpm -C site build
 
-            - uses: actions/configure-pages@v5
             - uses: actions/upload-pages-artifact@v3
               with:
                   path: site/.vitepress/dist

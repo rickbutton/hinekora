@@ -168,12 +168,12 @@ out has no figure, nor have its steps or the craft's total.
 
 ## 7. The economy
 
-Prices are **poe.ninja's, fetched** from endpoints its
-[API reference](https://poe.ninja/docs/api) supports without promising them stable, kept
-an hour per league in the user's cache. Offline, the last fetch serves however
-old, never the bundled snapshot, a past league. The language server refreshes
-in the background; `HINEKORA_PRICES` pins a file. The committed `packages/data/data/poe1/economy.json` is the
-tests', site's and playground's fixture.
+Prices are **poe.ninja's**, from endpoints its [API reference](https://poe.ninja/docs/api)
+supports unpromised, cached an hour per league; offline, the last fetch serves, never the
+snapshot. The language server refreshes in the background; `HINEKORA_PRICES` pins a file.
+poe.ninja refuses other sites, so the site's deploy fetches the playground's prices every
+six hours; its fallback is `packages/data/data/poe1/economy.json`, the tests' and site's
+fixture.
 
 What poe.ninja cannot price (a bench craft, a Harvest craft's lifeforce, a Bestiary
 recipe's beasts) `cost/prices.ts` carries from the catalog and the wiki's tables, a Harvest
