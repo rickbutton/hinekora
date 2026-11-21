@@ -11,7 +11,7 @@ import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node
 import { homedir } from "node:os";
 import { dirname, join, posix, win32 } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
-import { adaptEconomy, type EconomySnapshot, type RawEconomy } from "./economy.js";
+import { adaptEconomy, type EconomySnapshot, type RawEconomy, rawEconomyOf } from "./economy.js";
 import { fetchEconomy, fetchLeagues, NinjaError, type NinjaClient } from "./ninja.js";
 
 /** How long fetched prices are used before they are fetched again. */
@@ -78,15 +78,7 @@ function readSnapshot(path: string): RawEconomy | undefined {
     } catch {
         return undefined;
     }
-    if (!isRecord(data)) return undefined;
-    const { league, fetchedAt, chaosPerDivine, prices, source } = data;
-    if (typeof league !== "string" || typeof fetchedAt !== "string") return undefined;
-    if (Number.isNaN(Date.parse(fetchedAt))) return undefined;
-    if (typeof chaosPerDivine !== "number" || !isRecord(prices) || !isRecord(source)) {
-        return undefined;
-    }
-    if (!Object.values(prices).every((p) => typeof p === "number")) return undefined;
-    return data as unknown as RawEconomy;
+    return rawEconomyOf(data);
 }
 
 /** The prices file `HINEKORA_PRICES` names; throws when it cannot be read as one. */

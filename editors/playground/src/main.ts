@@ -3,13 +3,7 @@
  * craft, and keep the storyboard and the problems panel in step with the
  * checker.
  */
-import {
-    adaptEconomy,
-    adaptPoe1,
-    type RawEconomy,
-    type RawPoe1,
-    registryOf,
-} from "@hinekora/data/browser";
+import { adaptPoe1, type RawPoe1, registryOf } from "@hinekora/data/browser";
 import economyUrl from "@hinekora/data/data/poe1/economy.json?url";
 import baseItemsUrl from "@hinekora/data/data/poe1/base_items.json?url";
 import benchUrl from "@hinekora/data/data/poe1/bench.json?url";
@@ -29,6 +23,7 @@ import EditorWorker from "monaco-editor/editor/editor.worker.js?worker";
 import type { SourceSpan } from "@hinekora/core";
 import { toMonacoPosition, toMonacoRange } from "./convert.js";
 import { LANGUAGE_ID, registerLanguage, THEME_ID } from "./language.js";
+import { loadPrices } from "./prices.js";
 import { publishDiagnostics, registerProviders } from "./providers.js";
 import { createStoryboard } from "./storyboard.js";
 
@@ -129,9 +124,7 @@ async function main(): Promise<void> {
     const [registry, prices] = await Promise.all([
         loadRegistry(),
         // Without prices the board still draws, only without its cost lines.
-        fetchJson<RawEconomy>(economyUrl)
-            .then(adaptEconomy)
-            .catch(() => undefined),
+        loadPrices((url) => fetch(url), economyUrl),
     ]);
     registerProviders(registry, prices);
     // A handle for the browser console: `hinekora.editor`, `hinekora.registry`,
