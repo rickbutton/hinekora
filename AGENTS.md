@@ -33,11 +33,12 @@ outcomes in the checker outside `check/reference/`; it won't scale.
 
 ## Conventions (firm; do not relitigate)
 
-- TypeScript with **all strict flags** (`strict`, `noUncheckedIndexedAccess`,
-  `exactOptionalPropertyTypes`, `noImplicitOverride`, `noFallthroughCasesInSwitch`).
+- **You own this codebase, and the language has no users.** Change a thing outright:
+  keep no alias, deprecation or error for the old form. A breaking change costs only
+  its tests.
+- TypeScript with **all strict flags**.
 - **pnpm** workspace monorepo under `@hinekora`; tsc project references (`tsc -b`).
 - **Hand-written** lexer + recursive-descent parser; no parser generators.
-- **ESLint + Prettier: 4-space indent, double quotes.**
 - **Comments are lean.** A comment earns its place only by stating a non-obvious _why_,
   a constraint the code can't show; never narrate what code does, recount history, or
   restate a signature.
@@ -50,7 +51,7 @@ outcomes in the checker outside `check/reference/`; it won't scale.
   memory of the session that produced them: no task references ("audit findings", "1/3",
   "as discussed", "per the plan"), progress notes, or point-in-time artifacts (a test
   count, "gate green"). Write the change and its why.
-- **Vitest**, with extensive tests. **PoE1 only**, with no provision for PoE2.
+- **Vitest**, with extensive tests. **PoE1 only.**
 - Surface syntax: C-style braces; a file opens with its item block, no header.
 
 ## The gate (run before declaring anything done, and before every commit)
@@ -60,12 +61,12 @@ pnpm gate          # every check below
 pnpm format        # prettier --write ., when the check fails
 ```
 
-`pnpm gate` is `tsc -b`, `vitest run`, `eslint .`, `prettier --check .`,
-`scripts/check-docs.mjs`, the site build and vale on synced styles. The docs check fails when a doc names a path or symbol the code
+`pnpm gate` runs the checks `package.json` lists. The docs check
+(`scripts/check-docs.mjs`) fails when a doc names a path or symbol the code
 does not have, omits a keyword, harvest tag, `Op` kind or scalar slot the code
 has, links a wiki section the local cache lacks (skipped without the cache), or outgrows
 its budget. A `git push` runs the gate first (`.githooks/pre-push`, which `pnpm install`
-sets up) on the working tree as it stands, and is refused when it fails; nothing runs it
+sets up) on the working tree, and is refused when it fails; nothing runs it
 at a commit, so run it yourself before each one. **Exactness principle:** every
 state is exactly the items the model allows; the exactness tests hold each handler to
 the reference interpreter, failing on an image too large or too small.
