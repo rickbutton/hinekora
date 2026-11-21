@@ -1,7 +1,6 @@
 /**
  * The bench meta-crafting modifiers ("metamods") and the effects they carry.
- * These effects cannot be ingested from data — a `poolRestrict` is a predicate,
- * not a datum — so they are curated here by mod id and attached to the catalog
+ * The data carries no effects, so they are curated here by mod id and attached to the catalog
  * when the registry is built. The effects are then derived from the present
  * mods (item-model.md §6) by the pool and the checker.
  *
@@ -40,11 +39,11 @@ export const METAMOD_EFFECTS: ReadonlyMap<ModId, readonly Effect[]> = new Map<
     ].map(carrying([{ kind: "protect", gen: "suffix" }])),
     [
         ModId("IntMasterItemGenerationCannotRollAttackAffixes"),
-        [{ kind: "poolRestrict", allows: (m) => !m.implicitTags.has(ATTACK) }],
+        [{ kind: "poolRestrict", tag: ATTACK }],
     ],
     [
         ModId("StrDexMasterItemGenerationCannotRollCasterAffixes"),
-        [{ kind: "poolRestrict", allows: (m) => !m.implicitTags.has(CASTER) }],
+        [{ kind: "poolRestrict", tag: CASTER }],
     ],
     [
         ModId("StrIntMasterItemGenerationCanHaveMultipleCraftedMods"),

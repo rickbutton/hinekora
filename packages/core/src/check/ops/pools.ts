@@ -20,7 +20,7 @@
  */
 import type { PoolSpec } from "./types.js";
 import type { Base } from "../../model/base.js";
-import { effectKey, effectsOf } from "../../model/effects.js";
+import { effectKey, effectsOf, restrictionAllows } from "../../model/effects.js";
 import type { Gen, TagId, TypeId } from "../../model/ids.js";
 import { type InfluenceKey, influenceOfTag } from "../../model/marks.js";
 import type { Mod } from "../../model/mod.js";
@@ -140,7 +140,7 @@ function naturalUncut(
         (m) =>
             m.minLevel <= level &&
             (view.open === undefined || view.open[m.gen]) &&
-            view.restrictions.every((e) => e.allows(m)) &&
+            view.restrictions.every((e) => restrictionAllows(e, m)) &&
             positive(m, view.tags),
     );
     b.memo.set(key, out);
@@ -782,7 +782,7 @@ function typeAnalysis(u: Universe, weighed: readonly Mod[], type: TypeId): TypeA
         if (by !== m.EMPTY) modTags.push([t, by]);
     }
     const restrictions = [...a.effects.entries()]
-        .filter(([, e]) => rows.some((r) => !e.allows(r)))
+        .filter(([, e]) => rows.some((r) => !restrictionAllows(e, r)))
         .sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0))
         .map(([k, effect]) => ({ effect, carriers: carriers(k) }));
     const made: TypeAnalysis = {

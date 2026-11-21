@@ -6,12 +6,13 @@
  * impossible. The ingested data carries no effects; the metamod effects are
  * curated in `metamods.ts` and attached to the catalog when the registry is built.
  */
-import type { Gen } from "./ids.js";
+import type { Gen, TagId } from "./ids.js";
 import type { Mod } from "./mod.js";
 
 /** What an effect does to the rules. */
 export type Effect =
-    | { readonly kind: "poolRestrict"; readonly allows: (m: Mod) => boolean } // shrink add-side pool
+    /** Bar the rows of a category from being added ("Cannot roll Caster Modifiers"). */
+    | { readonly kind: "poolRestrict"; readonly tag: TagId }
     | { readonly kind: "protect"; readonly gen: Gen } // shield a generation from removal and reroll
     /** Shield `count` of the side's modifiers, chosen at random each time a
      *  currency is used ("1 Prefix Modifier cannot be changed"). */
@@ -34,10 +35,15 @@ function ofKind<K extends Effect["kind"]>(
     return es.filter((e): e is Extract<Effect, { kind: K }> => e.kind === kind);
 }
 
+/** Does the restriction let the row be added: is it not of the category barred. */
+export function restrictionAllows(e: Extract<Effect, { kind: "poolRestrict" }>, m: Mod): boolean {
+    return !m.implicitTags.has(e.tag);
+}
+
 /** Combined pool-restrict predicate: active restricts AND together. */
 export function poolRestrictPredicate(es: readonly Effect[]): (m: Mod) => boolean {
     const restricts = ofKind(es, "poolRestrict");
-    return (m: Mod) => restricts.every((e) => e.allows(m));
+    return (m: Mod) => restricts.every((e) => restrictionAllows(e, m));
 }
 
 /** The crafted-mod limit under a set of effects: the max `craftedCap` if any
@@ -45,9 +51,6 @@ export function poolRestrictPredicate(es: readonly Effect[]): (m: Mod) => boolea
 export function craftedCapOf(es: readonly Effect[]): number {
     return ofKind(es, "craftedCap").reduce((cap, e) => Math.max(cap, e.cap), 1);
 }
-
-const restricts = new WeakMap<(m: Mod) => boolean, number>();
-let restrictCount = 0;
 
 /** A name for an effect by what it does: two rows carrying equal effects share it. */
 export function effectKey(e: Effect): string {
@@ -58,11 +61,8 @@ export function effectKey(e: Effect): string {
             return `protect:${e.gen}:${e.count}`;
         case "craftedCap":
             return `cap:${e.cap}`;
-        case "poolRestrict": {
-            let id = restricts.get(e.allows);
-            if (id === undefined) restricts.set(e.allows, (id = ++restrictCount));
-            return `restrict:${id}`;
-        }
+        case "poolRestrict":
+            return `restrict:${e.tag}`;
     }
 }
 

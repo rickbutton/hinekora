@@ -631,7 +631,7 @@ export const CANNOT_ROLL_ATTACK_CARRIER: Mod = mkMod({
     gen: "suffix",
     minLevel: 1,
     spawn: [spawn(TAG_DEFAULT, 0)],
-    effects: [{ kind: "poolRestrict", allows: (m) => !m.implicitTags.has(TagId("attack")) }],
+    effects: [{ kind: "poolRestrict", tag: TagId("attack") }],
     text: "cannot roll attack modifiers",
 });
 

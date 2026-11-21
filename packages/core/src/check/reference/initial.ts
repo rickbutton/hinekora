@@ -18,7 +18,7 @@ import type { ItemDecl } from "../item-block.js";
 import { declareItem } from "../item-block.js";
 import { rollRange } from "../values.js";
 import { maxTotal, sideCap } from "../../model/capacity.js";
-import { type Effect, effectKey, effectsOf } from "../../model/effects.js";
+import { type Effect, effectKey, effectsOf, restrictionAllows } from "../../model/effects.js";
 import type { Gen, GroupId, ModId, TagId, TypeId } from "../../model/ids.js";
 import { type EldritchSide, influenceKey } from "../../model/marks.js";
 import type { Mod } from "../../model/mod.js";
@@ -74,7 +74,7 @@ function offeredBy(ctx: RefCtx, decl: ItemDecl): (row: Mod, gen: Gen) => boolean
         !types.has(m.type) &&
         ![...m.families].some((f) => families.has(f)) &&
         room(m.gen) &&
-        restricts.every((e) => e.allows(m));
+        restricts.every((e) => restrictionAllows(e, m));
     const maybe = new Set<TagId>();
     const weighed = (m: Mod): boolean => (lookupWeight(m, tags, maybe) ?? 0) > 0;
     for (;;) {
