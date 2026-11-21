@@ -38,7 +38,12 @@ describe("the playground's prices", () => {
     });
 
     it("are the bundled ones when the published file is not a snapshot", async () => {
-        const fetch = serve({ [BUNDLED]: bundled, [PUBLISHED]: { league: "Covens", prices: [] } });
+        // Newer than the bundled one, so only its shape can turn it away.
+        const wrong = {
+            ...(snapshot("Covens", "2026-11-21T06:17:00.000Z") as object),
+            prices: { "Chaos Orb": "1" },
+        };
+        const fetch = serve({ [BUNDLED]: bundled, [PUBLISHED]: wrong });
         expect((await loadPrices(fetch, BUNDLED, PUBLISHED))?.fetchedAt).toBe(
             "2026-11-14T12:10:08.744Z",
         );
