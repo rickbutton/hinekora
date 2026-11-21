@@ -49,10 +49,8 @@ jobs:
             - id: pages
               uses: actions/configure-pages@v5
 
-            # poe.ninja allows no other site's page to read it, so the
-            # playground reads the prices this step publishes beside it. It
-            # falls back to the live site's copy, then to none, and never fails
-            # the deploy.
+            # The playground cannot read poe.ninja itself. This step never
+            # fails the deploy (packages/data/src/published-prices.ts).
             - name: Publish the playground's prices
               run: node site/scripts/publish-prices.mjs
               env:
