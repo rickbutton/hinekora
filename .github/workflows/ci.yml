@@ -45,9 +45,10 @@ jobs:
             - name: Test with coverage
               run: pnpm test:coverage
 
-            # Coverage slows the Monte Carlo tests past what the runner waits for
-            # a worker, and inflates the heap the memory test measures, so the
-            # coverage run leaves them out and they run plain.
+            # Coverage slows a Monte Carlo test, and the memory test's one long
+            # check without a yield, toward the minute a test may run, and
+            # inflates the heap the memory test measures, so the coverage run
+            # leaves them out and they run plain.
             - name: Simulation and memory tests
               run: pnpm exec vitest run packages/cli/src/race.test.ts packages/cli/src/memory.test.ts
 
