@@ -11,7 +11,7 @@ until <condition> {
 ```
 
 The loop tests its [condition](./conditions) before each pass and runs
-the body while it is false. After the loop the checker knows the condition is true.
+the body while it stays false. After the loop the checker knows the condition is true.
 
 ```hinekora
 item {
