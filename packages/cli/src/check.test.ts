@@ -261,6 +261,42 @@ describe('the attack wands\' "Cannot roll Caster Modifiers" implicit, against re
     });
 });
 
+// Seen in game: the attack metamod behaves as the caster one, with the attack
+// tag in its place.
+describe('the bench\'s "Cannot roll Attack Modifiers", against real data', () => {
+    const wand = (affixes: string) =>
+        `item {\n    base: "Imbued Wand"\n    ilvl: 85\n    rarity: rare\n${affixes}}\n`;
+    const metamod = 'bench "cannot roll attack modifiers"';
+
+    it("bars an attack modifier from an Exalted Orb's roll", () => {
+        const exalt = 'exalt\nif has "adds # to # physical damage" {\n    annul\n}\n';
+        const prefix = '    prefixes: [ "increased spell damage" t1 ]\n';
+        expect(run(wand(`${prefix}    suffixes: [ ${metamod} ]\n`) + exalt).output).toMatch(
+            /can never run/,
+        );
+        expect(run(wand(`${prefix}    suffixes: [ "attack speed" t1 ]\n`) + exalt).ok).toBe(true);
+    });
+
+    it("lets the bench craft an attack modifier beside it", () => {
+        const multimod = 'bench "can have up to 3 crafted modifiers"';
+        const src = wand(`    suffixes: [ ${metamod}, ${multimod} ]\n`) + 'bench "attack speed"\n';
+        expect(run(src).ok).toBe(true);
+    });
+
+    it("leaves an unveil's attack options as they are, the cost's chance unchanged", () => {
+        const unveil =
+            'unveil\nif has "JunMasterVeiledLocalIncreasedPhysicalDamageAndImpaleCrafted" {\n    exalt\n}\n';
+        const prices = loadDefaultEconomy();
+        for (const suffix of [metamod, '"attack speed" t1']) {
+            const src = wand(`    prefixes: [ "veiled" ]\n    suffixes: [ ${suffix} ]\n`) + unveil;
+            expect(run(src).ok).toBe(true);
+            expect(costSource(src, "test.craft", registry, prices).output).toMatch(
+                /if has "JunMasterVeiledLocalIncreasedPhysicalDamageAndImpaleCrafted" \{\s+taken 23%/,
+            );
+        }
+    });
+});
+
 describe("checkSource — end to end against real data", () => {
     it("passes a valid craft and reports the final item", () => {
         const r = run(`item { base: "Iron Ring" ilvl: 84 rarity: normal }

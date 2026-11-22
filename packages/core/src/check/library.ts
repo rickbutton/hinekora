@@ -194,8 +194,8 @@ export function benchOps(mod: Mod): readonly Op[] {
         openSlot(mod.gen),
         require({ kind: "craftedBelowCap" }),
         require({ kind: "noGroupConflict", mod }),
-        // A cannot-roll metamod does not bar a bench craft; the attack wands'
-        // implicit does (each seen in game).
+        // Neither cannot-roll metamod, attack or caster, bars a bench craft;
+        // the attack wands' implicit does (each seen in game).
         require({ kind: "implicitAllows", how: "bench", mod }),
         fill({ kind: "bench", mod }, add([1, 1])),
     ];

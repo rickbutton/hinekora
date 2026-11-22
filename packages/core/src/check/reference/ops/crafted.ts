@@ -55,7 +55,8 @@
  *
  * - The Veiled Chaos Orb refuses an item whose veiled modifier its strip
  *   keeps, fractured or kept by a metamod (Version 3.30.0b § Hotfix 4).
- * - A bench craft ignores the cannot-roll metamods (seen in game).
+ * - A bench craft ignores both cannot-roll metamods, the attack and the
+ *   caster one (seen in game).
  *
  * What the wiki does not settle, assumed here:
  * - a fractured placeholder unveils fractured, and carries its crafted mark;
