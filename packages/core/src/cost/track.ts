@@ -172,6 +172,19 @@ function readImplicit(row: ModId): { tier: number; type?: TypeId } {
     return { tier: Number(row.slice(0, at)), type: TypeId(row.slice(at + 1)) };
 }
 
+const elevatedOnly = new WeakMap<readonly Mod[], ReadonlySet<TypeId>>();
+
+/** The types whose every row an Orb of Dominance makes; one scan per catalogue. */
+function elevatedOnlyTypes(catalog: readonly Mod[]): ReadonlySet<TypeId> {
+    let made = elevatedOnly.get(catalog);
+    if (made === undefined) {
+        const types = new Set(catalog.map((m) => m.type));
+        for (const m of catalog) if (m.source !== "elevated") types.delete(m.type);
+        elevatedOnly.set(catalog, (made = types));
+    }
+    return made;
+}
+
 /** What each tier of lead takes off an implicit's chance to rise under an Orb
  *  of Conflict, and the least chance either side is given. */
 const CONFLICT_STEP = 0.11;
@@ -457,8 +470,7 @@ export class Tracker {
         for (const item of items) for (const t of guaranteedTypes(item)) add(t);
         // A modifier an Orb of Dominance made of another type stays one the
         // orb can pick, so it is followed by name.
-        const made = new Set(registry.catalog.map((m) => m.type));
-        for (const m of registry.catalog) if (m.source !== "elevated") made.delete(m.type);
+        const made = elevatedOnlyTypes(registry.catalog);
         for (const item of items) for (const t of possibleTypes(item)) if (made.has(t)) add(t);
         if (this.implicits) {
             for (const side of ELDRITCH_SIDES) {
