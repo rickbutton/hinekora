@@ -81,9 +81,9 @@ function restrict(
     u: Universe,
     full: boolean,
     tiers: readonly number[] = [0, 1, 4, 5],
+    influences: readonly InfluenceKey[] = someInfluences(u),
 ): { dd: Dd; bounds: Bounds } {
     const m = u.dd;
-    const influences = someInfluences(u);
     // Twice corrupted differs from once only in the corruption implicits it holds.
     const twice: Corruption[] = u.corruptionRows.length > 1 ? ["twice"] : [];
     const corrupted: Corruption[] = full ? [false] : [false, true, ...twice];
@@ -114,7 +114,7 @@ function restrict(
         bounds: {
             rows: [...u.rows.keys()].map((row) => row.id),
             rarities: RARITIES,
-            influences,
+            influences: [...influences],
             baseImplicit: [false, true],
             corrupted,
             exarch: implicits.exarch,
@@ -130,8 +130,14 @@ function restrict(
 
 /** The listing of `wf` under the restriction equals the reference's items, and
  *  each item is one assignment, which it encodes back to. */
-function expectExact(u: Universe, ctx: RefCtx, full: boolean, tiers?: readonly number[]): CItemSet {
-    const { dd, bounds } = restrict(u, full, tiers);
+function expectExact(
+    u: Universe,
+    ctx: RefCtx,
+    full: boolean,
+    tiers?: readonly number[],
+    influences?: readonly InfluenceKey[],
+): CItemSet {
+    const { dd, bounds } = restrict(u, full, tiers, influences);
     const within = u.dd.and(u.wf, dd);
     const listed = listItems(u, within, { lowest: !full });
     const diff = diffSets(allItems(ctx, bounds), listed);
@@ -868,29 +874,42 @@ describe("building a universe", () => {
             /internal: rows Odd1 and Odd2/,
         );
     });
+});
 
-    it("counts a modifier on its row's side where a type has rows of both", () => {
-        // As LifeGainPerTarget on a ring: the base's suffix, an influence's prefix.
-        const rows = [
-            modRow({ id: "Both1", type: "TypeBoth", gen: "suffix", text: "+(1-2) to Both" }),
-            modRow({
-                id: "Both2",
-                type: "TypeBoth",
-                gen: "prefix",
-                minLevel: 50,
-                text: "+(3-4) to Both",
-            }),
-            modRow({ id: "Pre1", type: "TypePre", gen: "prefix", text: "+(1-2) to Pre" }),
-            modRow({ id: "Pre2", type: "TypePre2", gen: "prefix", text: "+(1-2) to Pre2" }),
-            modRow({ id: "Suf1", type: "TypeSuf", gen: "suffix", text: "+(1-2) to Suf" }),
-        ];
-        const registry = buildRegistry({ bases: [RING_BASE], mods: rows });
-        const ctx = refCtx(registry, RING_BASE, 84);
-        const u = buildUniverse(registry, RING_BASE, 84, undefined);
+describe("a type with rows on both sides", () => {
+    // As LifeGainPerTarget on a ring: the base's suffix, an influence's prefix.
+    const rows = [
+        modRow({ id: "Both1", type: "TypeBoth", gen: "suffix", text: "+(1-2) to Both" }),
+        modRow({
+            id: "Both2",
+            type: "TypeBoth",
+            gen: "prefix",
+            minLevel: 50,
+            text: "+(3-4) to Both",
+        }),
+        modRow({ id: "Pre1", type: "TypePre", gen: "prefix", text: "+(1-2) to Pre" }),
+        modRow({ id: "Pre2", type: "TypePre2", gen: "prefix", text: "+(1-2) to Pre2" }),
+        modRow({ id: "Suf1", type: "TypeSuf", gen: "suffix", text: "+(1-2) to Suf" }),
+    ];
+    const registry = buildRegistry({ bases: [RING_BASE], mods: rows });
+    const ctx = refCtx(registry, RING_BASE, 84);
+    const u = buildUniverse(registry, RING_BASE, 84, undefined);
+
+    it("give the type's slot both sides", () => {
         expect(u.modSlot(u.slotOfType(TypeId("TypeBoth"))!)!.sides).toEqual(
             new Set(["suffix", "prefix"]),
         );
-        expectExact(u, ctx, true);
+    });
+
+    // The reference takes seconds to list each influence set in full, so each is
+    // its own test; together they are the whole listing.
+    for (const influences of someInfluences(u)) {
+        it(`have exactly the reference's items, influenced by ${influences || "none"}`, () => {
+            expectExact(u, ctx, true, undefined, [influences]);
+        });
+    }
+
+    it("count each modifier on its row's side", () => {
         const { dd } = restrict(u, true);
         const assignments = assignmentsOf(u, u.dd.and(u.wf, dd));
         expectCounts(u, ctx, assignments);
