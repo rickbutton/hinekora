@@ -895,6 +895,10 @@ export class Universe {
 
         const own = baseImplicitOf(registry, base);
         const corruptionRows = this.corruptionRows;
+        // The families still claimed, each list (sorted) by a number of its own.
+        const claimedIds = new Map<string, number>();
+        // A room only falls from a rarity's caps, and a step below zero is refused.
+        const roomBound = 1 + Math.max(...RARITIES.flatMap((r) => this.capsOf(r)));
         const groupsMeet = (a: number, b: number): boolean =>
             [...corruptionRows[a]!.groups].some((g) => corruptionRows[b]!.groups.has(g));
 
@@ -1049,8 +1053,30 @@ export class Universe {
                 }
             },
             accept: () => true,
-            key: (s: S) =>
-                `${s.room.join(",")}|${s.influenced ? 1 : 0}${s.baseImplicit ? 1 : 0}${s.exarch ? 1 : 0}${s.veiled ? 1 : 0}|${s.tier}|${s.corrupted}${s.vaal}:${s.first}|${s.claimed.join(",")}`,
+            key: (s: S) => {
+                const claimed = s.claimed.join(",");
+                let id = claimedIds.get(claimed);
+                if (id === undefined) claimedIds.set(claimed, (id = claimedIds.size));
+                // Each field below its bound, so the number names the state
+                // while it is one a double holds exactly.
+                let k = id;
+                const field = (value: number, bound: number): void => {
+                    k = k * bound + value;
+                };
+                for (const r of s.room) field(r, roomBound);
+                field(s.influenced ? 1 : 0, 2);
+                field(s.baseImplicit ? 1 : 0, 2);
+                field(s.exarch ? 1 : 0, 2);
+                field(s.veiled ? 1 : 0, 2);
+                field(s.tier, NUM_TIERS);
+                field(s.corrupted, CORRUPTIONS.length);
+                field(s.vaal, 3);
+                field(s.first, corruptionRows.length);
+                if (!Number.isSafeInteger(k)) {
+                    throw new RangeError("well-formedness has more states than its key holds");
+                }
+                return k;
+            },
         };
     }
 }
