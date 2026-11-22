@@ -28,6 +28,24 @@ import { bindArgs, type Diag, type PredDefs, substitute } from "./defs.js";
 import type { Range } from "./range.js";
 import { rollRange } from "./values.js";
 
+/** The catalogue's rows by type, in its order: a condition resolved per
+ *  name would otherwise scan the whole catalogue each time. */
+const typeIndex = new WeakMap<readonly Mod[], ReadonlyMap<TypeId, readonly Mod[]>>();
+
+function rowsOfType(catalog: readonly Mod[], type: TypeId): readonly Mod[] {
+    let index = typeIndex.get(catalog);
+    if (index === undefined) {
+        const made = new Map<TypeId, Mod[]>();
+        for (const m of catalog) {
+            const list = made.get(m.type);
+            if (list === undefined) made.set(m.type, [m]);
+            else list.push(m);
+        }
+        typeIndex.set(catalog, (index = made));
+    }
+    return index.get(type) ?? [];
+}
+
 /** What resolving a condition reads of the item it is read for. */
 export interface ResolveView {
     readonly base: Base;
@@ -279,7 +297,7 @@ class Resolver {
      */
     private rowsOnly(name: string, type: TypeId): readonly Mod[] | undefined {
         const ladders = tierLadders(this.registry.catalog, this.view.base, type, this.view.tags);
-        const all = this.registry.catalog.filter((m) => m.type === type);
+        const all = rowsOfType(this.registry.catalog, type);
         const named = this.registry.rowsNamed(name, all);
         // A type no roll lays down (a bench craft's) has no tiers to tell
         // its rows apart by: its rows' wordings do.
