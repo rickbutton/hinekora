@@ -1,4 +1,4 @@
-import { type Theme, withBase } from "vitepress";
+import { inBrowser, type Theme, withBase } from "vitepress";
 import DefaultTheme from "vitepress/theme";
 import HowAxes from "./HowAxes.vue";
 import HowCells from "./HowCells.vue";
@@ -31,6 +31,10 @@ declare module "vue" {
 export default {
     extends: DefaultTheme,
     enhanceApp({ app }) {
+        // Vue logs a component's render error and renders the page without it;
+        // thrown, the build fails instead of publishing the page so. (A
+        // rethrowing errorHandler would not do: Vue logs what it throws.)
+        if (!inBrowser) app.config.throwUnhandledErrorInProduction = true;
         app.config.globalProperties.$withBase = withBase;
         app.component("HowAxes", HowAxes);
         app.component("HowCells", HowCells);
