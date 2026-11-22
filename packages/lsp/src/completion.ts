@@ -39,7 +39,7 @@ import { checkCached, parseCached } from "./analysis.js";
 import { type Atom, methodAt } from "./method-at.js";
 import { guarded } from "./guard.js";
 
-const CONTROL_KEYWORDS = ["until", "if", "else", "restart", "stop"];
+const CONTROL_KEYWORDS = ["until", "if", "else", "restart", "fail"];
 
 /** The keywords that can START a predicate (after `if` / `until` / `not`). */
 const PREDICATE_KEYWORDS: { label: string; detail: string; kind: CompletionItemKind }[] = [
@@ -107,7 +107,7 @@ function piecesOf(line: string): Piece[] {
 }
 
 const atomOf = (p: Piece): Atom =>
-    p.kind === "word" ? { word: p.text } : p.kind === "punct" ? { stop: true } : {};
+    p.kind === "word" ? { word: p.text } : p.kind === "punct" ? { boundary: true } : {};
 
 type Context =
     | { readonly kind: "statement" }

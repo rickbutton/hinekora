@@ -75,8 +75,8 @@ Nothing is lost where the arms meet. If one arm ends with maximum Life on the it
 other with maximum Mana, every item afterwards has one of the two. A later test for
 "neither" is then an arm that never runs.
 
-An arm that ends in [`stop` or `restart`](./until) adds no item after the branch. After
-`if not has "maximum life" { stop }` the checker knows the item has maximum Life.
+An arm that ends in [`fail` or `restart`](./until) adds no item after the branch. After
+`if not has "maximum life" { fail }` the checker knows the item has maximum Life.
 
 ## Arms that never run
 

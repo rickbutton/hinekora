@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { craft, iff, implicitP, item, op, stop } from "../__fixtures__/ast.js";
+import { craft, iff, implicitP, item, op, fail } from "../__fixtures__/ast.js";
 import type { ItemBlock, Stmt } from "../ast/ast.js";
 import { CATALOG, CORRUPTION_ROWS, RING_BASE } from "../__fixtures__/mods.js";
 import { GroupId, ModId, TypeId } from "../model/ids.js";
@@ -67,7 +67,7 @@ describe("the item block's corruption implicits", () => {
         const base = s.u.scalar("baseImplicit");
         expect(s.u.dd.valuesOf(s.dd, base)).toEqual([0]);
         // Without the field a corrupted item holds its base's implicit and none.
-        expect(said(cat, {}, [iff(implicitP("VaalA"), [stop()])])).toEqual([
+        expect(said(cat, {}, [iff(implicitP("VaalA"), [fail()])])).toEqual([
             `the 'if' branch can never run: implicit "VaalA" is impossible here`,
         ]);
     });
@@ -88,7 +88,7 @@ describe("the item block's corruption implicits", () => {
         ] as const) {
             const cat = catalog(5202, options);
             for (const text of ["VaalA", "VaalB", "VaalHigh"]) {
-                const c = craft(block(cat, d), [op("locus"), iff(implicitP(text), [stop()])]);
+                const c = craft(block(cat, d), [op("locus"), iff(implicitP(text), [fail()])]);
                 expect(compareCraft(c, cat.registry, cat.ctx).diff).toBe("");
             }
         }

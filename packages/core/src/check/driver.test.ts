@@ -17,7 +17,7 @@ import {
     paramStep,
     procDef,
     restart,
-    stop,
+    fail,
     until,
 } from "../__fixtures__/ast.js";
 import type { Craft, ProcDef, Stmt } from "../ast/ast.js";
@@ -140,31 +140,31 @@ describe("the exact driver's words", () => {
 });
 
 describe("the steps that never run", () => {
-    it("after a stop", () => {
-        const c = craft(ring({ prefixes: ["Life1"] }), [stop(), op("chaos")]);
+    it("after a fail", () => {
+        const c = craft(ring({ prefixes: ["Life1"] }), [fail(), op("chaos")]);
         const r = exact(c);
         expect(r.diagnostics.map((d) => d.message)).toEqual([
-            "this step can never run: the craft always stops before it",
+            "this step can never run: the craft always ends before it",
         ]);
         expect(r.diagnostics[0]!.span).toBe(c.body[1]!.span);
-        expect(r.trace.map((e) => e.kind)).toEqual(["item", "stop"]);
+        expect(r.trace.map((e) => e.kind)).toEqual(["item", "fail"]);
         expect(r.finalState).toBeUndefined();
     });
 
-    it("after a restart, and after an arm that restarts and one that stops", () => {
+    it("after a restart, and after an arm that restarts and one that fails", () => {
         const loop = (body: Stmt[]) =>
             craft(ring({ prefixes: ["Life1"] }), [until(has("Mana1"), body)]);
         expect(said(loop([op("chaos"), restart(), op("exalt")]))).toContain(
             "this step can never run: the loop always restarts before it",
         );
         expect(
-            said(loop([op("chaos"), iff(has("Life1"), [restart()], [stop()]), op("exalt")])),
+            said(loop([op("chaos"), iff(has("Life1"), [restart()], [fail()]), op("exalt")])),
         ).toContain(
-            "this step can never run: the craft always stops or the loop restarts before it",
+            "this step can never run: the craft always ends or the loop restarts before it",
         );
         // At top level a restart ends the craft.
         expect(said(craft(ring(), [restart(), op("chaos")]))).toEqual([
-            "this step can never run: the craft always stops before it",
+            "this step can never run: the craft always ends before it",
         ]);
     });
 });
@@ -189,7 +189,7 @@ describe("the branches that never run", () => {
 
     it("unite the arms that fall through", () => {
         const c = craft(ring({ prefixes: ["Life1"], suffixes: [{ mod: "random" }] }), [
-            iff(has("Fire1"), [op("annul")], [stop()]),
+            iff(has("Fire1"), [op("annul")], [fail()]),
         ]);
         const r = exact(c);
         expect(r.diagnostics).toEqual([]);
@@ -501,23 +501,23 @@ describe("the rounds that settle a loop", () => {
 });
 
 describe("a step after", () => {
-    it("a call that stops for every item", () => {
-        const ender = procDef("ender", [], [stop()]);
+    it("a call that fails every item", () => {
+        const ender = procDef("ender", [], [fail()]);
         const c = craft(ring(), [callStmt("ender"), op("chaos")], [], [ender]);
-        expect(said(c)).toEqual(["this step can never run: the craft always stops before it"]);
+        expect(said(c)).toEqual(["this step can never run: the craft always ends before it"]);
         agrees(c);
     });
 
-    it("a nested if whose arms restart and stop", () => {
+    it("a nested if whose arms restart and fail", () => {
         const c = craft(ring({ prefixes: ["Life1"], suffixes: [{ mod: "random" }] }), [
             until(has("Mana1"), [
                 op("divine"),
-                iff(has("Life1"), [iff(has("Fire1"), [restart()], [stop()])], [restart()]),
+                iff(has("Life1"), [iff(has("Fire1"), [restart()], [fail()])], [restart()]),
                 op("exalt"),
             ]),
         ]);
         expect(said(c)).toContain(
-            "this step can never run: the craft always stops or the loop restarts before it",
+            "this step can never run: the craft always ends or the loop restarts before it",
         );
         agrees(c);
     });
@@ -618,7 +618,7 @@ describe("a condition only the items past an error can read", () => {
         });
         const c = craft(ring({ rarity: "magic", prefixes: [{ mod: "random" }] }), [
             iff(has("Life1"), [{ ...op("exalt"), words: ["exalt", "hunter"] }]),
-            iff(has("ex", 2), [op("scour")], [stop()]),
+            iff(has("ex", 2), [op("scour")], [fail()]),
         ]);
         const r = compareCraft(c, registry, refCtx(registry, RING_BASE, 84));
         expect(r.diff).toBe("");

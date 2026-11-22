@@ -199,7 +199,7 @@ function collect(craft: Craft, u: Universe): CraftNames {
                     break;
                 }
                 case "restart":
-                case "stop":
+                case "fail":
                 case "paramStep":
                     break;
             }

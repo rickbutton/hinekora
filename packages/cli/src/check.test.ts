@@ -934,7 +934,7 @@ ${steps}
     );
 
     it("reads one row of a metamod as another, declared or crafted", () => {
-        const either = (id: string) => `if has "${id}" { stop } else { stop }`;
+        const either = (id: string) => `if has "${id}" { fail } else { fail }`;
         expect(
             errors(
                 `"DexMasterItemGenerationCannotChangeSuffixesC"`,
@@ -953,7 +953,7 @@ ${steps}
             errors(
                 `"maximum life" t1`,
                 `"fire resistance" t1`,
-                `if not has "DexMasterItemGenerationCannotChangeSuffixesC" { stop } else { stop }`,
+                `if not has "DexMasterItemGenerationCannotChangeSuffixesC" { fail } else { fail }`,
             ),
         ).toEqual([expect.stringContaining("'else' branch can never run")]);
     });
@@ -969,14 +969,14 @@ ${steps}
             for (const held of [`Two${side}B`, `${side}B`]) {
                 const row = `"${lead}MasterItemGenerationCannotChange${held}"`;
                 const [prefixes, suffixes] = holds === "prefixes" ? [row, other] : [other, row];
-                expect(errors(prefixes, suffixes, `if has "${one}" { stop }`), held).toEqual([
+                expect(errors(prefixes, suffixes, `if has "${one}" { fail }`), held).toEqual([
                     expect.stringContaining("'if' branch can never run"),
                 ]);
             }
             const two = `"${lead}MasterItemGenerationCannotChangeTwo${side}"`;
             const [prefixes, suffixes] = holds === "prefixes" ? [two, other] : [other, two];
             const full = `${lead}MasterItemGenerationCannotChange${side}C`;
-            expect(errors(prefixes, suffixes, `if has "${full}" { stop }`)).toEqual([
+            expect(errors(prefixes, suffixes, `if has "${full}" { fail }`)).toEqual([
                 expect.stringContaining("'if' branch can never run"),
             ]);
         },
@@ -1122,7 +1122,7 @@ until has "maximum life" {
 bench "suffixes cannot be changed"
 harvest reforge "life"
 if has "maximum life" t1 {
-    stop
+    fail
 }`,
             "test.craft",
             registry,
@@ -1234,7 +1234,7 @@ until has "maximum life" {
     it("says what one finished item takes where the craft can end short of one", () => {
         const ring = `item { base: "Vermillion Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] }`;
         const out = costSource(
-            `${ring}\nvaal\nif not implicit "maximum endurance charges" { stop }`,
+            `${ring}\nvaal\nif not implicit "maximum endurance charges" { fail }`,
             "test.craft",
             registry,
             prices,

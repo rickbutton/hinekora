@@ -871,7 +871,7 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         })!;
         expect(solved.undecided).toBeGreaterThan(0.5);
         expect(solved.undecided).toBeLessThanOrEqual(1);
-        expect(solved.exit + solved.stop + solved.unresolved + solved.undecided).toBeCloseTo(1, 6);
+        expect(solved.exit + solved.fail + solved.unresolved + solved.undecided).toBeCloseTo(1, 6);
     });
 
     it("a loop cut short by the work of the loops inside is left undecided, not estimated", () => {
@@ -948,7 +948,7 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.stuckInside).toBeCloseTo(1, 6);
     });
 
-    it("an outcome that ends the craft counts as a stop", () => {
+    it("an outcome that ends the craft counts as a fail", () => {
         // Each round: the item destroyed one time in four, the exit as often.
         const solved = chain({
             atoms: [],
@@ -967,7 +967,7 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
             caps: CAPS,
             exit: (s) => s.prefix === 0,
         })!;
-        expect(solved.stop).toBeCloseTo(1 / 2, 9);
+        expect(solved.fail).toBeCloseTo(1 / 2, 9);
         expect(solved.exit).toBeCloseTo(1 / 2, 9);
         expect(solved.passes).toBeCloseTo(2, 9);
         expect(solved.unresolved).toBeCloseTo(0, 9);

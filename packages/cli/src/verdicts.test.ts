@@ -139,9 +139,9 @@ if fractured "maximum life" {
 bench "chaos damage over time multiplier"
 beast add prefix
 if has "chaos damage over time multiplier" {
-    stop
+    fail
 } else {
-    stop
+    fail
 }`,
     },
     {
@@ -157,12 +157,12 @@ if has "chaos damage over time multiplier" {
 chaos
 if prefixCount == 1 or prefixCount == 3 {
     if prefixCount == 2 {
-        stop
+        fail
     }
 }`,
     },
     {
-        name: "a value test after the items that pass it stopped",
+        name: "a value test after the items that pass it failed",
         checks: false,
         source: `item {
     base:     "Amethyst Ring"
@@ -172,7 +172,7 @@ if prefixCount == 1 or prefixCount == 3 {
     suffixes: [ "fire resistance" t1 ]
 }
 if has "maximum life" >= 110 {
-    stop
+    fail
 }
 if has "maximum life" >= 110 {
     annul
@@ -277,9 +277,9 @@ bench "chaos damage over time multiplier"
         const r = check(
             parsed(`${bow}beast add prefix
 if has "chaos damage over time multiplier" {
-    stop
+    fail
 } else {
-    stop
+    fail
 }`),
             { registry },
         );
@@ -297,7 +297,7 @@ bench "chaos damage over time multiplier"
 annul
 if has "chaos damage over time multiplier" {
     if prefixCount == 0 {
-        stop
+        fail
     }
 }`);
         const r = check(craft, { registry });
@@ -319,7 +319,7 @@ describe("a Fracturing Orb on modifiers the item block does not name", () => {
 }
 fracture
 if fractured "maximum life" {
-    stop
+    fail
 }`),
             { registry },
         );

@@ -178,7 +178,7 @@ function calledProcs(stmts: readonly Stmt[], out = new Set<string>()): Set<strin
                 break;
             case "operation":
             case "restart":
-            case "stop":
+            case "fail":
             case "paramStep":
                 break;
         }
@@ -288,7 +288,7 @@ function noteArgUses(u: ParamUses, args: readonly Arg[]): void {
 function noteStmtUses(u: ParamUses, s: Stmt): void {
     switch (s.kind) {
         case "restart":
-        case "stop":
+        case "fail":
             return;
         case "paramStep":
             noteSort(u, { param: s.param, span: s.span }, "block");
@@ -463,7 +463,7 @@ function copyStmt(stmt: Stmt): Stmt {
 function substituteStmt(stmt: Stmt, env: ReadonlyMap<string, Arg>): Stmt {
     switch (stmt.kind) {
         case "restart":
-        case "stop":
+        case "fail":
         case "paramStep":
             return { ...stmt };
         case "operation":

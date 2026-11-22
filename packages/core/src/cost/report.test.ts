@@ -28,7 +28,7 @@ import {
     paramStep,
     procDef,
     restart,
-    stop,
+    fail,
     until,
     unveil,
     veiled,
@@ -124,7 +124,7 @@ describe("the cost of a craft", () => {
                 ["IncreasedMana1", "IncreasedArmour1"],
                 ["FireResist1", "ColdResist1", "LightningResist1"],
             ),
-            [op("annul"), op("exalt"), iff(has("maximum life"), [stop()])],
+            [op("annul"), op("exalt"), iff(has("maximum life"), [fail()])],
         );
         const branch = report(c).steps.find((s) => s.kind === "if")!;
         // The exalt's chance of a life row on the item the annul left: the life
@@ -197,18 +197,18 @@ describe("the cost of a craft", () => {
         expect(loop.steps[0]!.attempts!.chance).toBeCloseTo(branch.branch!, 9);
     });
 
-    it("a stop inside a loop ends the craft on its share of the rounds", () => {
+    it("a fail inside a loop ends the craft on its share of the rounds", () => {
         const c = craft(ring("rare"), [
-            until(has("IncreasedLife1"), [op("chaos"), iff(notp(has("FireResist1")), [stop()])]),
+            until(has("IncreasedLife1"), [op("chaos"), iff(notp(has("FireResist1")), [fail()])]),
             op("exalt"),
         ]);
         const r = report(c);
-        expect(r.stopped).toBeGreaterThan(0);
-        expect(r.stopped).toBeLessThan(1);
+        expect(r.short).toBeGreaterThan(0);
+        expect(r.short).toBeLessThan(1);
         const exalt = r.steps.find(
             (s) => s.kind === "operation" && s.unit![0]!.item === "Exalted Orb",
         )!;
-        expect(exalt.runs).toBeCloseTo(1 - r.stopped, 9);
+        expect(exalt.runs).toBeCloseTo(1 - r.short, 9);
     });
 
     it("a restart goes back to the loop's head with the item as it is", () => {
@@ -235,7 +235,7 @@ describe("the cost of a craft", () => {
         expect(rounds(r)).toBeCloseTo(rounds(plain), 9);
         expect(kept(r)).toBeCloseTo(2 / 3, 9);
         expect(kept(plain)).toBeCloseTo(2 / 3, 9);
-        expect(r.stopped).toBe(0);
+        expect(r.short).toBe(0);
         // In a loop inside another it goes back to the inner loop's head.
         const nested = report(
             craft(full, [
@@ -261,7 +261,7 @@ describe("the cost of a craft", () => {
             op("exalt"),
         ]);
         const r = report(c);
-        expect(r.stopped).toBeCloseTo(1 / 2, 9);
+        expect(r.short).toBeCloseTo(1 / 2, 9);
         const steps = r.steps.filter((s) => s.kind === "operation");
         expect(steps[0]!.runs).toBeCloseTo(1, 9);
         expect(steps[1]!.runs).toBeCloseTo(1 / 2, 9);
@@ -278,7 +278,7 @@ describe("the cost of a craft", () => {
             ),
             [
                 until(cmp("prefixCount", "<=", 2), [op("annul")]),
-                iff(cmp("suffixCount", "==", 2), [stop()]),
+                iff(cmp("suffixCount", "==", 2), [fail()]),
             ],
         );
         const branch = report(c).steps.find((s) => s.kind === "if")!;
@@ -291,7 +291,7 @@ describe("the cost of a craft", () => {
         // the life by a stand-in row; a branch on the top tier cannot read it.
         const c = craft(ring("rare"), [
             until(has("maximum life"), [op("chaos")]),
-            iff(has("maximum life", 1), [stop()]),
+            iff(has("maximum life", 1), [fail()]),
         ]);
         const branch = report(c).steps.find((s) => s.kind === "if")!;
         expect(branch.branch).toBeGreaterThan(0);
@@ -366,7 +366,7 @@ describe("the cost of a craft", () => {
                 [
                     until(cmp("prefixCount", "<=", 2), [op("annul")]),
                     step,
-                    iff(cmp("suffixCount", "==", 2), [stop()]),
+                    iff(cmp("suffixCount", "==", 2), [fail()]),
                 ],
                 [],
                 procs,
@@ -384,7 +384,7 @@ describe("the cost of a craft", () => {
         const written = (steps: Parameters<typeof craft>[1], procs: ReturnType<typeof procDef>[]) =>
             craft(
                 ring("rare", ["IncreasedMana1"], ["FireResist1"]),
-                [...steps, iff(has("IncreasedLife1"), [stop()])],
+                [...steps, iff(has("IncreasedLife1"), [fail()])],
                 [],
                 procs,
             );
@@ -496,7 +496,7 @@ describe("the cost of a craft", () => {
                 ["IncreasedLife1", "IncreasedMana1", "IncreasedArmour1"],
                 ["FireResist1", "ColdResist1", "LightningResist1"],
             ),
-            [until(cmp("prefixCount", "<=", 2), [op("annul")]), iff(has("maximum life"), [stop()])],
+            [until(cmp("prefixCount", "<=", 2), [op("annul")]), iff(has("maximum life"), [fail()])],
         );
         const branch = report(c).steps.find((s) => s.kind === "if")!;
         expect(branch.note).toBeUndefined();
@@ -531,7 +531,7 @@ describe("the cost of a craft", () => {
                     beast({ kind: "imprint" }),
                     ...between.map((s) => op(s)),
                     op("regal"),
-                    iff(cmp("prefixCount", ">=", 2), [stop()]),
+                    iff(cmp("prefixCount", ">=", 2), [fail()]),
                 ]),
             ).steps.find((s) => s.kind === "if")!;
         const restored = steps("alteration", "restore");
@@ -596,7 +596,7 @@ describe("the cost of a craft", () => {
         // the time either way (Q76), so one prefix is left a quarter of the time.
         const c = craft(
             ring("rare", ["IncreasedMana1", "IncreasedArmour1"], ["FireResist1", "ColdResist1"]),
-            [veiled("exalt"), iff(cmp("prefixCount", "==", 1), [stop()])],
+            [veiled("exalt"), iff(cmp("prefixCount", "==", 1), [fail()])],
         );
         const branch = report(c).steps.find((s) => s.kind === "if")!;
         expect(branch.note).toBeUndefined();
@@ -608,7 +608,7 @@ describe("the cost of a craft", () => {
         // suffixes are two, both offered: the named one is taken.
         const c = craft(
             ring("rare", ["IncreasedMana1", "IncreasedArmour1"], ["FireResist1", "ColdResist1"]),
-            [veiled("exalt"), unveil(), iff(has("veiled double damage"), [stop()])],
+            [veiled("exalt"), unveil(), iff(has("veiled double damage"), [fail()])],
         );
         const branch = report(c).steps.find((s) => s.kind === "if")!;
         expect(branch.note).toBeUndefined();
@@ -619,7 +619,7 @@ describe("the cost of a craft", () => {
         const c = craft(ring("rare", ["IncreasedMana1"], ["FireResist1"]), [
             veiled("chaos"),
             unveil(),
-            iff(has("veiled double damage"), [stop()]),
+            iff(has("veiled double damage"), [fail()]),
         ]);
         const steps = report(c).steps;
         expect(steps.every((s) => s.note === undefined)).toBe(true);
@@ -631,7 +631,7 @@ describe("the cost of a craft", () => {
     it("an unveil does not take a modifier a condition asks to be absent", () => {
         const c = craft(
             ring("rare", ["IncreasedMana1", "IncreasedArmour1"], ["FireResist1", "ColdResist1"]),
-            [veiled("exalt"), unveil(), iff(notp(has("veiled double damage")), [stop()])],
+            [veiled("exalt"), unveil(), iff(notp(has("veiled double damage")), [fail()])],
         );
         expect(report(c).steps.find((s) => s.kind === "if")!.branch).toBeCloseTo(1, 9);
     });
@@ -642,7 +642,7 @@ describe("the cost of a craft", () => {
             [
                 veiled("exalt"),
                 unveil("veiled cast speed"),
-                iff(has("veiled double damage"), [stop()]),
+                iff(has("veiled double damage"), [fail()]),
             ],
         );
         const branch = report(c).steps.find((s) => s.kind === "if")!;
@@ -658,7 +658,7 @@ describe("the cost of a craft", () => {
                 op("fracture"),
                 iff(fracturedP("IncreasedMana1"), [op("exalt")]),
                 op("annul"),
-                iff(has("IncreasedMana1"), [stop()]),
+                iff(has("IncreasedMana1"), [fail()]),
             ],
         );
         const steps = report(c).steps.filter((s) => s.kind === "if");
@@ -692,7 +692,7 @@ describe("the cost of a craft", () => {
         // The removal takes one of three; life stays two times in three.
         const c = craft(ring("rare", ["IncreasedMana1", "IncreasedLife1"], ["FireResist1"]), [
             harvest("augment", "lightning"),
-            iff(has("IncreasedLife1"), [stop()]),
+            iff(has("IncreasedLife1"), [fail()]),
         ]);
         const branch = report(c).steps.find((s) => s.kind === "if")!;
         expect(branch.note).toBeUndefined();
@@ -704,7 +704,7 @@ describe("the cost of a craft", () => {
             report(
                 craft(ring("rare", ["IncreasedMana1"], ["FireResist1"]), [
                     harvest("augment", "life"),
-                    iff(pred, [stop()]),
+                    iff(pred, [fail()]),
                 ]),
             ).steps.find((s) => s.kind === "if")!;
         expect(after(has("IncreasedLife1")).branch).toBeCloseTo(1, 9);
@@ -719,7 +719,7 @@ describe("the cost of a craft", () => {
                 craft(ring("rare"), [
                     op("chaos"),
                     iff(andp(notp(has("maximum life")), cmp("prefixCount", "<=", 2)), steps),
-                    iff(has("maximum life"), [stop()]),
+                    iff(has("maximum life"), [fail()]),
                 ]),
             ).steps.at(-2)!;
         const plain = life([]);
@@ -873,8 +873,8 @@ describe("the cost of a craft", () => {
             const r = costs(
                 craft(ring("rare"), [
                     until(has("maximum life"), [op("chaos")]),
-                    iff(lowTier, [stop()]),
-                    iff(topTier, [stop()]),
+                    iff(lowTier, [fail()]),
+                    iff(topTier, [fail()]),
                 ]),
             );
             const [first, second] = r.steps.filter((s) => s.kind === "if");
@@ -889,7 +889,7 @@ describe("the cost of a craft", () => {
             const tier = costs(craft(ring("rare"), [until(has("maximum life", 2), [op("chaos")])]))
                 .steps[0]!.attempts!.chance;
             const r = costs(
-                craft(ring("rare"), [until(lowTier, [op("chaos")]), iff(topTier, [stop()])]),
+                craft(ring("rare"), [until(lowTier, [op("chaos")]), iff(topTier, [fail()])]),
             );
             expect(r.steps[0]!.attempts!.chance).toBeCloseTo((tier * 8) / 15, 9);
             // The check's items hold each life value in its part of the range,
@@ -925,7 +925,7 @@ describe("the cost of a craft", () => {
             suffixes: ["FireResist1"],
             corrupted: true,
         });
-        const r = report(craft(corrupted, [op("locus"), iff(has("maximum life", 1), [stop()])]));
+        const r = report(craft(corrupted, [op("locus"), iff(has("maximum life", 1), [fail()])]));
         const [kept] = r.steps.filter((s) => s.kind === "if");
         expect(r.steps[0]!.note).toMatch(/50% of the time the Corruption Altar destroys the item/);
         expect(r.steps[0]!.note).toMatch(/two times in four.*no source states/);
@@ -939,8 +939,8 @@ describe("the cost of a craft", () => {
         const r = report(
             craft(ring("rare", ["IncreasedLife1"], ["FireResist1"]), [
                 op("vaal"),
-                iff(has("maximum life", 1), [stop()]),
-                iff(cmp("suffixCount", "==", 3), [stop()]),
+                iff(has("maximum life", 1), [fail()]),
+                iff(cmp("suffixCount", "==", 3), [fail()]),
             ]),
         );
         const vaal = r.steps[0];
@@ -978,9 +978,9 @@ describe("the cost of a craft", () => {
             chaosPerDivine: 400,
             chaos: new Map([["Chaos Orb", 1]]),
         };
-        const c = craft(ring("rare"), [op("chaos"), iff(notp(has("IncreasedLife1")), [stop()])]);
+        const c = craft(ring("rare"), [op("chaos"), iff(notp(has("IncreasedLife1")), [fail()])]);
         const r = report(c, prices);
-        const finishes = 1 - r.stopped;
+        const finishes = 1 - r.short;
         expect(finishes).toBeGreaterThan(0);
         expect(finishes).toBeLessThan(1);
         expect(r.perFinished!.attempts).toBeCloseTo(1 / finishes, 9);
@@ -990,7 +990,7 @@ describe("the cost of a craft", () => {
         // A craft that always finishes, or never does, has no such figure.
         expect(report(craft(ring("rare"), [op("chaos")]), prices).perFinished).toBeUndefined();
         expect(
-            report(craft(ring("rare"), [op("chaos"), stop()]), prices).perFinished,
+            report(craft(ring("rare"), [op("chaos"), fail()]), prices).perFinished,
         ).toBeUndefined();
     });
 
@@ -1070,7 +1070,7 @@ describe("the counts the checker leaves open", () => {
         const c = craft(ring("rare"), [
             op("chaos"),
             op("exalt"),
-            iff(has("IncreasedLife1"), [stop()]),
+            iff(has("IncreasedLife1"), [fail()]),
         ]);
         const r = report(c);
         const branch = r.steps.find((s) => s.kind === "if")!;
@@ -1119,7 +1119,7 @@ describe("the eldritch implicits", () => {
         // Three Grand Exarch rows of equal weight, one of them life regeneration.
         const r = on({}, [
             at(["ember"], "grand"),
-            iff(eldritchP("exarch", "grand", "regenerate"), [stop()]),
+            iff(eldritchP("exarch", "grand", "regenerate"), [fail()]),
         ]);
         const branch = r.steps.find((s) => s.kind === "if")!;
         expect(branch.note).toBeUndefined();
@@ -1170,7 +1170,7 @@ describe("the eldritch implicits", () => {
         const after = (...steps: string[]) =>
             on({ exarch: "greater", eater: "lesser" }, [
                 ...steps.map((s) => op(s)),
-                iff(has("IncreasedLife1"), [stop()]),
+                iff(has("IncreasedLife1"), [fail()]),
             ]).steps.find((s) => s.kind === "if")!;
         const rolled = after("chaos");
         expect(rolled.note).toBeUndefined();
@@ -1182,14 +1182,14 @@ describe("the eldritch implicits", () => {
 
     it("a corruption implicit is drawn by spawn weight, one Vaal Orb in four", () => {
         // Two of the boots' three rows, of equal weight, read "movement speed".
-        const r = on({}, [op("vaal"), iff(implicitP("movement speed"), [stop()])]);
+        const r = on({}, [op("vaal"), iff(implicitP("movement speed"), [fail()])]);
         const branch = r.steps.find((s) => s.kind === "if")!;
         expect(branch.note).toBeUndefined();
         expect(branch.branch).toBeCloseTo((1 / 4) * (2 / 3), 9);
     });
 
     it("a Vaal Orb's implicit takes the only implicit boots have, one time in four", () => {
-        const r = on({ exarch: "greater" }, [op("vaal"), iff(eldritchP("exarch"), [stop()])]);
+        const r = on({ exarch: "greater" }, [op("vaal"), iff(eldritchP("exarch"), [fail()])]);
         const branch = r.steps.find((s) => s.kind === "if")!;
         expect(branch.note).toBeUndefined();
         expect(branch.branch).toBeCloseTo(3 / 4, 9);
@@ -1201,7 +1201,7 @@ describe("the eldritch implicits", () => {
         // left, the half that took the implicit outcome lose it.
         const r = on({ exarch: "greater", corrupted: true }, [
             op("locus"),
-            iff(eldritchP("exarch"), [stop()]),
+            iff(eldritchP("exarch"), [fail()]),
         ]);
         const branch = r.steps.find((s) => s.kind === "if")!;
         expect(branch.reached).toBeCloseTo(1 / 2, 9);
@@ -1214,7 +1214,7 @@ describe("the eldritch implicits", () => {
             decl: Partial<Parameters<typeof item>[0]>,
             pred: Parameters<typeof iff>[0],
         ) =>
-            on(decl, [op("conflict"), iff(pred, [stop()])]).steps.find((s) => s.kind === "if")!
+            on(decl, [op("conflict"), iff(pred, [fail()])]).steps.find((s) => s.kind === "if")!
                 .branch!;
         // Lesser Exarch, Grand Eater: two tiers behind, the Exarch is lowered
         // off 28 times in a hundred.
@@ -1239,7 +1239,7 @@ describe("the eldritch implicits", () => {
             { exarch: "lesser", prefixes: ["IncreasedLife1"], suffixes: ["FireResist1"] },
             [
                 { ...op("eldritch"), words: ["eldritch", "chaos"] },
-                iff(cmp("prefixCount", "==", 3), [stop()]),
+                iff(cmp("prefixCount", "==", 3), [fail()]),
             ],
         );
         expect(r.steps.find((s) => s.kind === "if")!.branch).toBeCloseTo(1, 9);
@@ -1253,20 +1253,20 @@ describe("the eldritch implicits", () => {
             },
             [
                 { ...op("eldritch"), words: ["eldritch", "chaos"] },
-                iff(cmp("prefixCount", "==", 2), [stop()]),
-                iff(cmp("prefixCount", "==", 3), [stop()]),
+                iff(cmp("prefixCount", "==", 2), [fail()]),
+                iff(cmp("prefixCount", "==", 3), [fail()]),
             ],
         );
         const [low, high] = two.steps.filter((s) => s.kind === "if");
         expect(low!.branch).toBeCloseTo(8 / 12, 9);
         expect(high!.branch).toBeCloseTo(1, 9);
-        expect(two.stopped).toBeCloseTo(1, 9);
+        expect(two.short).toBeCloseTo(1, 9);
     });
 
     it("a method that does not touch the implicits leaves them as they were", () => {
         const r = on({ exarch: "greater" }, [
             op("chaos"),
-            iff(eldritchP("exarch", "greater"), [stop()]),
+            iff(eldritchP("exarch", "greater"), [fail()]),
         ]);
         const branch = r.steps.find((s) => s.kind === "if")!;
         expect(branch.note).toBeUndefined();
@@ -1277,7 +1277,7 @@ describe("the eldritch implicits", () => {
         // Equal tiers rise alike (Orb of Conflict § Mechanics).
         const even = on({ exarch: "grand", eater: "grand" }, [
             op("conflict"),
-            iff(eldritchP("exarch", "exceptional"), [stop()]),
+            iff(eldritchP("exarch", "exceptional"), [fail()]),
         ]);
         expect(even.steps.find((s) => s.kind === "if")!.branch).toBeCloseTo(1 / 2, 9);
         // Greater Exarch, Grand Eater: the Exarch, a tier behind, rises to
@@ -1285,7 +1285,7 @@ describe("the eldritch implicits", () => {
         const r = on({ exarch: "greater", eater: "grand" }, [
             op("conflict"),
             iff(eldritchP("exarch", "grand"), [op("conflict")]),
-            iff(dominantP("eater"), [stop()]),
+            iff(dominantP("eater"), [fail()]),
         ]);
         const [raised, dominant] = r.steps.filter((s) => s.kind === "if");
         expect(raised!.branch).toBeCloseTo(0.61, 9);

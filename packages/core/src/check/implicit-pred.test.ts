@@ -9,7 +9,7 @@ import {
     notp,
     op,
     orp,
-    stop,
+    fail,
     until,
 } from "../__fixtures__/ast.js";
 import type { Craft, Stmt } from "../ast/ast.js";
@@ -54,7 +54,7 @@ describe("implicit, run exactly", () => {
             notp(implicitP("VaalB")),
             orp(implicitP("VaalHigh"), implicitP("implicitness")),
         ]) {
-            agrees(cat, craft(start(cat), [op("vaal"), iff(pred, [stop()])]));
+            agrees(cat, craft(start(cat), [op("vaal"), iff(pred, [fail()])]));
         }
     });
 
@@ -62,8 +62,8 @@ describe("implicit, run exactly", () => {
         const cat = catalog(5101, { base: "boots", eldritch: true, ilvl: 84 });
         const c = craft(start(cat, { exarch: "grand", eater: "lesser" }), [
             op("vaal"),
-            iff(andp(implicitP("VaalB"), eldritchP("exarch")), [stop()]),
-            iff(notp(implicitP("VaalA")), [stop()]),
+            iff(andp(implicitP("VaalB"), eldritchP("exarch")), [fail()]),
+            iff(notp(implicitP("VaalA")), [fail()]),
         ]);
         agrees(cat, c);
     });
@@ -73,7 +73,7 @@ describe("implicit, run exactly", () => {
         for (const text of ["VaalA", "VaalB", "VaalHigh", "implicitness"]) {
             agrees(
                 cat,
-                craft(start(cat), [op("vaal"), op("locus"), iff(implicitP(text), [stop()])]),
+                craft(start(cat), [op("vaal"), op("locus"), iff(implicitP(text), [fail()])]),
             );
         }
     });
@@ -83,8 +83,8 @@ describe("implicit, run exactly", () => {
             const cat = catalog(5103, { ilvl });
             const c = craft(start(cat), [
                 op("vaal"),
-                iff(implicitP("VaalA"), [stop()]),
-                iff(implicitP("VaalB"), [stop()]),
+                iff(implicitP("VaalA"), [fail()]),
+                iff(implicitP("VaalB"), [fail()]),
             ]);
             agrees(cat, c);
             const rows = cat.registry.resolveImplicit("VaalA", cat.base, ilvl);
@@ -96,7 +96,7 @@ describe("implicit, run exactly", () => {
 
     it("never holds on an item no corruption touches", () => {
         const cat = catalog(5104, { ilvl: 84 });
-        expect(said(cat, [op("chaos"), iff(implicitP("VaalA"), [stop()])])).toEqual([
+        expect(said(cat, [op("chaos"), iff(implicitP("VaalA"), [fail()])])).toEqual([
             `the 'if' branch can never run: implicit "VaalA" is impossible here`,
         ]);
     });
@@ -105,21 +105,21 @@ describe("implicit, run exactly", () => {
 describe("implicit, refused", () => {
     it("names no implicit the base can hold", () => {
         const cat = catalog(5110, { ilvl: 84 });
-        expect(said(cat, [op("vaal"), iff(implicitP("nothing like it"), [stop()])])).toEqual([
+        expect(said(cat, [op("vaal"), iff(implicitP("nothing like it"), [fail()])])).toEqual([
             'No implicit an IronRing can hold reads "nothing like it".',
         ]);
     });
 
     it("is ambiguous between two implicits a query covers alike", () => {
         const cat = catalog(5111, { ilvl: 84 });
-        expect(said(cat, [op("vaal"), iff(implicitP("vaal"), [stop()])])).toEqual([
+        expect(said(cat, [op("vaal"), iff(implicitP("vaal"), [fail()])])).toEqual([
             'Ambiguous name "vaal" — candidates: Vaal VaalA, Vaal VaalB, Vaal VaalHigh.',
         ]);
     });
 
     it("says the item level a corruption implicit needs", () => {
         const cat = catalog(5112, { ilvl: 40 });
-        expect(said(cat, [op("vaal"), iff(implicitP("VaalHigh"), [stop()])])).toEqual([
+        expect(said(cat, [op("vaal"), iff(implicitP("VaalHigh"), [fail()])])).toEqual([
             'An IronRing needs item level 80 for "Vaal VaalHigh" — this item is item level 40.',
         ]);
     });
@@ -127,7 +127,7 @@ describe("implicit, refused", () => {
     it("asks for the base by its id where only some of a name's bases are made with it", () => {
         const cat = catalog(5113, { implicit: "variants", ilvl: 84 });
         const c = craft(item({ base: "Test ring", ilvl: 84, rarity: "rare" }), [
-            iff(implicitP("implicitness"), [stop()]),
+            iff(implicitP("implicitness"), [fail()]),
         ]);
         expect(check(c, { registry: cat.registry }).diagnostics.map((d) => d.message)).toEqual([
             'Only some of the bases named "Test ring" are made with "+(1-2) to Implicitness" — name the base by its id to pick one: IronRing.',
@@ -135,14 +135,14 @@ describe("implicit, refused", () => {
         // A corruption implicit any of them can hold is no question of which.
         const vaal = craft(item({ base: "Test ring", ilvl: 84, rarity: "rare" }), [
             op("vaal"),
-            iff(implicitP("VaalA"), [stop()]),
+            iff(implicitP("VaalA"), [fail()]),
         ]);
         expect(check(vaal, { registry: cat.registry }).diagnostics).toEqual([]);
     });
 
     it("refuses a corruption implicit on a base whose implicit cannot be changed", () => {
         const cat = catalog(5114, { base: "simplex", implicit: "locked", ilvl: 84 });
-        expect(said(cat, [op("vaal"), iff(implicitP("VaalA"), [stop()])])).toEqual([
+        expect(said(cat, [op("vaal"), iff(implicitP("VaalA"), [fail()])])).toEqual([
             'A Test simplex\'s implicit cannot be changed, and hinekora takes it that no corruption adds "Vaal VaalA" beside it.',
         ]);
     });

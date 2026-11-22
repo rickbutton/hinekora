@@ -28,7 +28,7 @@ import {
     paramStep,
     procDef,
     restart,
-    stop,
+    fail,
     until,
 } from "../__fixtures__/ast.js";
 import type {
@@ -307,7 +307,7 @@ function randomStmt(sp: Space, shape: Shape): Stmt {
         );
     }
     if (roll < 34 && shape.inLoop) return restart();
-    if (roll < 35) return stop();
+    if (roll < 35) return fail();
     if (roll < 41 && shape.calls && sp.procs.length > 0) {
         const p = r.pick(sp.procs);
         return p.params[0] === "m"
@@ -536,7 +536,7 @@ function stmtText(s: Stmt, indent: string): string[] {
                 `${at}${[...s.words, ...s.args.map((a) => (a.kind === "string" ? `"${a.value}"` : a.kind === "param" ? a.param : String(a.value)))].join(" ")}${tag}`,
             ];
         case "restart":
-        case "stop":
+        case "fail":
             return [`${at}${s.kind}${tag}`];
         case "paramStep":
             return [`${at}${s.param}${tag}`];
@@ -658,7 +658,7 @@ describe("a whole craft, run exactly", () => {
             "deadElse",
             "neverRuns",
             "neverExits",
-            "unreachable (stops)",
+            "unreachable (ends)",
             "unreachable (restarts)",
             "unreachable (both)",
             "unsettled",

@@ -119,7 +119,7 @@ class Collector {
                     if (s.elseBody !== undefined) this.stmts(s.elseBody);
                     break;
                 case "restart":
-                case "stop":
+                case "fail":
                     break;
             }
         }

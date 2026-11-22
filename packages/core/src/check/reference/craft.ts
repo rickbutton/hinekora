@@ -17,7 +17,7 @@
  *   closed; an item never leaves a loop when no path from it meets the
  *   condition.
  * - A `restart` puts the item at the innermost loop enclosing it as written
- *   after inlining; at top level, and at a `stop`, the item's path ends.
+ *   after inlining; at top level, and at a `fail`, the item's path ends.
  * - A call runs its body with its arguments bound (check/defs.ts).
  *
  * The findings are properties of the reachable sets: a step is refused when
@@ -25,8 +25,8 @@
  * body never runs when no item at its head fails the condition, and the loop
  * never exits when items reach its head and none meets it; a step is
  * unreachable when the step before it is reached and no item gets past it,
- * because every item before it in its block stopped, went back to a loop's
- * head, or some of each (an item stops at a `stop`, a top-level `restart`, a
+ * because every item before it in its block ended, went back to a loop's
+ * head, or some of each (an item ends at a `fail`, a top-level `restart`, a
  * refused or ending step, and in a loop no item leaves).
  */
 import type { Craft, Pred, Stmt } from "../../ast/ast.js";
@@ -112,7 +112,7 @@ interface Node {
     body?: Block;
     entered: [boolean, boolean];
     faulty: boolean;
-    stops: boolean;
+    ends: boolean;
     restarts: boolean;
     readonly failing: Map<string, Map<string, CItem>>;
     readonly unbuilt: Map<string, CItem>;
@@ -148,7 +148,7 @@ export function refCheckCraft(
                 head: new Map(),
                 entered: [false, false],
                 faulty: false,
-                stops: false,
+                ends: false,
                 restarts: false,
                 failing: new Map(),
                 unbuilt: new Map(),
@@ -170,8 +170,8 @@ export function refCheckCraft(
         const o = n.block.owner;
         return o.kind === "top" ? undefined : o.node;
     };
-    const markStop = (n: Node): void => {
-        for (let at: Node | undefined = n; at !== undefined; at = parentOf(at)) at.stops = true;
+    const markEnd = (n: Node): void => {
+        for (let at: Node | undefined = n; at !== undefined; at = parentOf(at)) at.ends = true;
     };
     const markRestart = (n: Node, loop: Node): void => {
         for (let at: Node | undefined = n; at !== undefined && at !== loop; at = parentOf(at)) {
@@ -244,12 +244,12 @@ export function refCheckCraft(
                 return operation(n, stmt, x);
             case "restart": {
                 const loop = loopOf(n);
-                if (loop === undefined) return markStop(n);
+                if (loop === undefined) return markEnd(n);
                 markRestart(n, loop);
                 return toHead(loop, x);
             }
-            case "stop":
-                return markStop(n);
+            case "fail":
+                return markEnd(n);
             case "if": {
                 const arms = (n.arms ??= [
                     block(stmt.body, { kind: "arm", node: n }, n.path),
@@ -306,7 +306,7 @@ export function refCheckCraft(
         if ("refused" in ops) {
             n.refused = true;
             put(n.unbuilt, x);
-            return markStop(n);
+            return markEnd(n);
         }
         const key = buildKey(ops);
         const k = `${key}|${itemKey(x)}`;
@@ -318,10 +318,10 @@ export function refCheckCraft(
             if (m === undefined) n.failing.set(fk, (m = new Map<string, CItem>()));
             for (const y of xs) put(m, y);
         }
-        if (r.reachedEnd) markStop(n);
+        if (r.reachedEnd) markEnd(n);
         if (!r.ok) {
             n.refused = true;
-            return markStop(n);
+            return markEnd(n);
         }
         if (r.ended) return;
         for (const y of normalize(r.state)) leave(n, y);
@@ -337,7 +337,7 @@ export function refCheckCraft(
     const reached = (n: Node): boolean => n.before.size > 0;
     for (const n of nodes) {
         if (n.stmt.kind !== "until" || !reached(n) || n.faulty) continue;
-        if (n.entered[1] && n.after.size === 0) markStop(n);
+        if (n.entered[1] && n.after.size === 0) markEnd(n);
     }
     for (const n of nodes) {
         if (!reached(n)) continue;
@@ -368,13 +368,13 @@ export function refCheckCraft(
     }
     for (const b of blocks) {
         let restarts = false;
-        let stops = false;
+        let ends = false;
         for (const [i, n] of b.nodes.entries()) {
             const next = b.nodes[i + 1];
             restarts ||= n.restarts;
-            stops ||= n.stops;
+            ends ||= n.ends;
             if (next === undefined || !reached(n) || reached(next)) continue;
-            const unreached: Unreached = !restarts ? "stops" : stops ? "both" : "restarts";
+            const unreached: Unreached = !restarts ? "ends" : ends ? "both" : "restarts";
             findings.push({ kind: "unreachable", span: next.stmt.span, unreached });
         }
     }

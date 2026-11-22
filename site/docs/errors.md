@@ -108,7 +108,7 @@ See [Loops](./language/until) and [Branches](./language/if).
 - `this loop can never exit: <condition> can never become true here`
 - `the 'if' branch can never run: <condition> is impossible here`
 - `the 'else' branch can never run: <condition> always holds here`
-- `this step can never run: the craft always stops before it`
+- `this step can never run: the craft always ends before it`
 
 ## Where the checker stops
 

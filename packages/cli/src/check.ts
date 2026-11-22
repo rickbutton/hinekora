@@ -180,9 +180,9 @@ export function costSource(
     } else if (report.unpriced.length > 0) {
         out.push(`Not counted: ${report.unpriced.join(", ")}.`);
     }
-    if (report.stopped > 0) {
+    if (report.short > 0) {
         out.push(
-            `The craft ends short of a finished item ${percentage(report.stopped)} of the time.`,
+            `The craft ends short of a finished item ${percentage(report.short)} of the time.`,
         );
     }
     if (report.perFinished !== undefined) {

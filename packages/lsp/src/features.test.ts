@@ -26,7 +26,7 @@ describe("hover", () => {
     });
 
     it("lists a modifier's tiers by the game's numbers, those above the item's level marked", () => {
-        const src = `item { base: "Titan Greaves" ilvl: 84 rarity: rare }\nif has "movement speed" t1 { stop }`;
+        const src = `item { base: "Titan Greaves" ilvl: 84 rarity: rare }\nif has "movement speed" t1 { fail }`;
         const md = getHover(src, src.indexOf("movement") + 1, registry)!;
         expect(md).toContain("6 tiers on Titan Greaves; item level 84 rolls T2 and below:");
         expect(md).toMatch(/\| \*\*T1\*\* \|[^\n]*\| 86 \(above this item's level\) \|/);
@@ -37,7 +37,7 @@ describe("hover", () => {
     it("numbers each influence's rows apart on an item with two influences", () => {
         // An Elder and a Hunter body armour each roll two tiers of increased
         // maximum life, of the same levels.
-        const src = `item { base: "Vaal Regalia" ilvl: 86 rarity: rare influences: elder hunter }\nif has "MaximumLifeUber2" t1 { stop }`;
+        const src = `item { base: "Vaal Regalia" ilvl: 86 rarity: rare influences: elder hunter }\nif has "MaximumLifeUber2" t1 { fail }`;
         const md = getHover(src, src.indexOf("MaximumLifeUber2") + 1, registry)!;
         expect(md).toContain("2 tiers on Vaal Regalia @ ilvl 86:");
         expect(md).toMatch(/\| \*\*T1\*\* \| `MaximumLifeUber2` \|/);
@@ -144,7 +144,7 @@ describe("hover", () => {
     });
 
     it("shows an implicit's wording, and the item level a corruption implicit needs", () => {
-        const src = `item { base: "Vermillion Ring" ilvl: 60 rarity: rare }\nvaal\nif implicit "endurance charges" { stop }\nif implicit "life" { stop }`;
+        const src = `item { base: "Vermillion Ring" ilvl: 60 rarity: rare }\nvaal\nif implicit "endurance charges" { fail }\nif implicit "life" { fail }`;
         const charges = getHover(src, src.indexOf("endurance") + 1, registry)!;
         expect(charges).toContain("+1 to Maximum Endurance Charges");
         expect(charges).toContain(

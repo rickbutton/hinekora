@@ -1,4 +1,4 @@
-# Loops: until, restart, stop
+# Loops: until, restart, fail
 
 ## until
 
@@ -104,11 +104,11 @@ until has "maximum life" t1 and has "cold resistance" {
 ```
 
 Outside every `until`, `restart` ends the
-craft for that item, as `stop` does.
+craft for that item, as `fail` does.
 
-## stop
+## fail
 
-`stop` ends the craft for the item. The checker follows the statements after it only
+`fail` gives up on the item. The checker follows the statements after it only
 on the items that continue.
 
 ```hinekora
@@ -120,16 +120,16 @@ item {
 
 chaos
 if not has "maximum life" t1 {
-    stop
+    fail
 }
 until has "maximum life" >= 125 {
     divine
 }
 ```
 
-The checker runs the `divine` loop against items with tier 1 Life. A craft that stops for every item has no final item.
+The checker runs the `divine` loop against items with tier 1 Life. A craft that fails every item has no final item.
 
-A step written after a `stop` or `restart` in its block never runs, and the checker rejects
+A step written after a `fail` or `restart` in its block never runs, and the checker rejects
 it.
 
 ## Related

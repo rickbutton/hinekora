@@ -19,7 +19,7 @@ function costed(source: string, refused: readonly string[] = []) {
     const report = costOf(parsed.craft, result, registry);
     const ifs = report.steps.filter((s) => s.kind === "if");
     for (const s of ifs) expect(s.note).toBeUndefined();
-    return { branches: ifs.map((s) => s.branch!), stopped: report.stopped };
+    return { branches: ifs.map((s) => s.branch!), short: report.short };
 }
 
 const ring = (ilvl: number, extra = "") =>
@@ -44,45 +44,45 @@ describe("the chance of an implicit after a Vaal Orb, on the real pools", () => 
     it("is a quarter of the row's share of a ring's pool at item level 84", () => {
         const { row, total } = pool("Vermillion Ring", 84, ENDURANCE);
         expect([row, total]).toEqual([50, 31_400]);
-        const r = costed(`${ring(84)}\nvaal\nif not implicit "maximum endurance charges" { stop }`);
+        const r = costed(`${ring(84)}\nvaal\nif not implicit "maximum endurance charges" { fail }`);
         expect(1 - r.branches[0]!).toBeCloseTo((1 / 4) * (50 / 31_400), 12);
     });
 
     it("reads the pool at the item's level: a ring of level 60 draws from less", () => {
         const { row, total } = pool("Vermillion Ring", 60, "V2CannotBePoisonedCorrupted");
         expect([row, total]).toEqual([1000, 30_500]);
-        const r = costed(`${ring(60)}\nvaal\nif implicit "cannot be poisoned" { stop }`);
+        const r = costed(`${ring(60)}\nvaal\nif implicit "cannot be poisoned" { fail }`);
         expect(r.branches[0]).toBeCloseTo((1 / 4) * (1000 / 30_500), 12);
     });
 
     it("is a quarter of the row's share of a pair of boots' pool", () => {
         const { row, total } = pool("Sorcerer Boots", 86, ENDURANCE);
         expect([row, total]).toEqual([1000, 21_500]);
-        const r = costed(`${boots()}\nvaal\nif implicit "maximum endurance charges" { stop }`);
+        const r = costed(`${boots()}\nvaal\nif implicit "maximum endurance charges" { fail }`);
         expect(r.branches[0]).toBeCloseTo((1 / 4) * (1000 / 21_500), 12);
     });
 
     it("takes the ring's own implicit whenever it lands", () => {
-        const r = costed(`${ring(84)}\nvaal\nif implicit "maximum life" { stop }`);
+        const r = costed(`${ring(84)}\nvaal\nif implicit "maximum life" { fail }`);
         expect(r.branches[0]).toBeCloseTo(3 / 4, 12);
     });
 
     it("takes one of two eldritch implicits evenly, and only one", () => {
         const both = boots("exarch: grand eater: grand");
-        expect(costed(`${both}\nvaal\nif exarch and eater { stop }`).branches[0]).toBeCloseTo(
+        expect(costed(`${both}\nvaal\nif exarch and eater { fail }`).branches[0]).toBeCloseTo(
             3 / 4,
             12,
         );
         // The implicit outcome, then the Eater kept: one time in two.
         const kept = costed(
-            `${both}\nvaal\nif implicit "maximum endurance charges" and eater { stop }`,
+            `${both}\nvaal\nif implicit "maximum endurance charges" and eater { fail }`,
         );
         expect(kept.branches[0]).toBeCloseTo((1 / 4) * (1 / 2) * (1000 / 21_500), 12);
     });
 
     it("takes the only eldritch implicit boots have", () => {
         const r = costed(
-            `${boots("exarch: grand")}\nvaal\nif implicit "maximum endurance charges" or exarch { stop }`,
+            `${boots("exarch: grand")}\nvaal\nif implicit "maximum endurance charges" or exarch { fail }`,
         );
         expect(r.branches[0]).toBeCloseTo(3 / 4 + (1 / 4) * (1000 / 21_500), 12);
     });
@@ -90,7 +90,7 @@ describe("the chance of an implicit after a Vaal Orb, on the real pools", () => 
     it("finds the base's implicit gone once an ember replaced it", () => {
         const twoToned = `item { base: "Metadata/Items/Armours/Boots/BootsAtlas1" ilvl: 86 rarity: rare }`;
         const r = costed(
-            `${twoToned}\nchaos\nif has "maximum life" { ember grand }\nvaal\nif implicit "cold and lightning resistances" { stop }`,
+            `${twoToned}\nchaos\nif has "maximum life" { ember grand }\nvaal\nif implicit "cold and lightning resistances" { fail }`,
         );
         const [embered, kept] = r.branches;
         expect(kept).toBeCloseTo((1 - embered!) * (3 / 4), 12);
@@ -98,7 +98,7 @@ describe("the chance of an implicit after a Vaal Orb, on the real pools", () => 
 
     it("is drawn after a Bloodstained Fossil's reforge, on every use", () => {
         const r = costed(
-            `${ring(84)}\nfossil "bloodstained"\nif implicit "maximum endurance charges" { stop }`,
+            `${ring(84)}\nfossil "bloodstained"\nif implicit "maximum endurance charges" { fail }`,
         );
         expect(r.branches[0]).toBeCloseTo(50 / 31_400, 12);
     });
@@ -109,7 +109,7 @@ describe("the chance of an implicit after the Corruption Altar, on the real pool
     // half took the implicit outcome.
     it("replaces a corrupted ring's own implicit", () => {
         const r = costed(
-            `${ring(84, "corrupted")}\nlocus\nif implicit "maximum endurance charges" { stop }`,
+            `${ring(84, "corrupted")}\nlocus\nif implicit "maximum endurance charges" { fail }`,
         );
         expect(r.branches[0]).toBeCloseTo((1 / 2) * (50 / 31_400), 12);
     });
@@ -119,7 +119,7 @@ describe("the chance of an implicit after the Corruption Altar, on the real pool
         // Hatred's group holds ten reservation rows of 1,000 each.
         const { row, total } = pool("Vermillion Ring", 84, ENDURANCE);
         const r = costed(
-            `${declared}\nlocus\nif implicit "hatred has" and implicit "wrath has" { stop }\nif implicit "maximum endurance charges" { stop }`,
+            `${declared}\nlocus\nif implicit "hatred has" and implicit "wrath has" { fail }\nif implicit "maximum endurance charges" { fail }`,
             [
                 `the 'if' branch can never run: (implicit "hatred has" and implicit "wrath has") is impossible here`,
             ],
@@ -132,10 +132,10 @@ describe("the chance of an implicit after the Corruption Altar, on the real pool
         const declared = boots(
             `exarch: grand corrupted implicits: [ "maximum endurance charges" ]`,
         );
-        expect(costed(`${declared}\nlocus\nif exarch { stop }`).branches[0]).toBeCloseTo(3 / 4, 12);
+        expect(costed(`${declared}\nlocus\nif exarch { fail }`).branches[0]).toBeCloseTo(3 / 4, 12);
         // The endurance charges kept, or replaced by another draw of them.
         const kept = costed(
-            `${declared}\nlocus\nif implicit "maximum endurance charges" and exarch { stop }`,
+            `${declared}\nlocus\nif implicit "maximum endurance charges" and exarch { fail }`,
         );
         expect(kept.branches[0]).toBeCloseTo(1 / 2 + (1 / 4) * (1000 / 21_500), 12);
     });
@@ -152,11 +152,11 @@ describe("the chance of an implicit after the Corruption Altar, on the real pool
         expect([weigh(() => true), open, cold]).toEqual([31_400, 21_400, 2_250]);
         const declared = ring(84, `corrupted implicits: [ "anger has" ]`);
         const r = costed(
-            `${declared}\nlocus\nif implicit "cold damage to spells and attacks" { stop }`,
+            `${declared}\nlocus\nif implicit "cold damage to spells and attacks" { fail }`,
         );
         expect(r.branches[0]).toBeCloseTo((1 / 2) * (cold / open), 12);
         // Wrath shares Anger's group: the checker refuses it, and its chance is none.
-        const wrath = costed(`${declared}\nlocus\nif implicit "wrath has" { stop }`, [
+        const wrath = costed(`${declared}\nlocus\nif implicit "wrath has" { fail }`, [
             `the 'if' branch can never run: implicit "wrath has" is impossible here`,
         ]);
         expect(wrath.branches[0]).toBe(0);
@@ -166,7 +166,7 @@ describe("the chance of an implicit after the Corruption Altar, on the real pool
         // A Tangled Fossil's roll is not followed, so neither is which
         // corruption implicits the items hold after the Vaal Orb.
         const parsed = parse(
-            `${ring(84)}\nfossil "tangled"\nvaal\nif implicit "cold damage to spells and attacks" { stop }`,
+            `${ring(84)}\nfossil "tangled"\nvaal\nif implicit "cold damage to spells and attacks" { fail }`,
         );
         if (!parsed.ok) throw new Error(parsed.error.message);
         const report = costOf(parsed.craft, check(parsed.craft, { registry }), registry);
@@ -197,13 +197,13 @@ describe("the chance of an implicit after the Corruption Altar, on the real pool
             beside += (x.weight / total) * (1 / 2) * (50 / weight);
         }
         const r = costed(
-            `${ring(84)}\nvaal\nlocus\nif implicit "maximum endurance charges" { stop }`,
+            `${ring(84)}\nvaal\nlocus\nif implicit "maximum endurance charges" { fail }`,
         );
         expect(r.branches[0]).toBeCloseTo((3 / 4) * (1 / 2) * p + (1 / 4) * beside, 12);
     });
 
     it("leaves boots after a Vaal Orb with their eldritch implicit three times in eight", () => {
-        const r = costed(`${boots("exarch: grand")}\nvaal\nlocus\nif exarch { stop }`);
+        const r = costed(`${boots("exarch: grand")}\nvaal\nlocus\nif exarch { fail }`);
         expect(r.branches[0]).toBeCloseTo(3 / 8, 12);
     });
 });

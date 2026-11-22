@@ -6,7 +6,7 @@
  * body once over the chance one attempt reaches its exit, judged on the last
  * roll of the body and the conditions passed on the way to it (the attempts
  * taken as independent trials); a branch splits the mass by its condition's
- * chance; a `restart` goes back to its loop's head and a `stop` ends the craft (docs/cost.md
+ * chance; a `restart` goes back to its loop's head and a `fail` ends the craft (docs/cost.md
  * §3, §6).
  */
 import type { Craft, Pred, Stmt } from "../ast/ast.js";
@@ -104,9 +104,9 @@ export interface CostReport {
     /** The items the snapshot could not price; a step whose price is unknown says
      *  so in its own note. */
     readonly unpriced: readonly string[];
-    /** The chance the craft ends before its last step: on a `stop`, or on an
+    /** The chance the craft ends before its last step: on a `fail`, or on an
      *  outcome that destroys the item or turns it into another. */
-    readonly stopped: number;
+    readonly short: number;
     /** What one finished item takes where the craft can end short of one:
      *  the attempts, one over the share that finishes, and what they spend
      *  together. The items the attempts that end short use up are not priced.
@@ -159,8 +159,8 @@ const BRANCH_LIMIT = 12;
 interface Frame {
     /** The expected runs of one pass through the enclosing sequence. */
     readonly scale: number;
-    /** Mass ending the craft (a `stop`, an outcome that ends it), per pass. */
-    stopped: number;
+    /** Mass ending the craft short (a `fail`, an outcome that ends it), per pass. */
+    short: number;
     /** Mass a `restart` sent back to the head of the loop around it. */
     restarted: number;
     /** The ways of being at each `restart`, with the item the check has
@@ -174,7 +174,7 @@ interface Walk {
     readonly steps: readonly StepCost[];
     readonly total: readonly Price[];
     readonly chaos?: number;
-    readonly stopped: number;
+    readonly short: number;
     /** Every step was read on the tracker's states, none on the checker's item alone. */
     readonly followed: boolean;
 }
@@ -188,7 +188,7 @@ export function costOf(
     // The walk reads methods and conditions over the check's items thousands
     // of times, mostly over the same diagrams: the engine's operation cache is
     // kept for the whole of it.
-    const none = { steps: [], total: [], unpriced: [], stopped: 0, unknown: true } as const;
+    const none = { steps: [], total: [], unpriced: [], short: 0, unknown: true } as const;
     const dd = checked.trace[0]?.before.u.dd;
     if (dd === undefined) return { ...none, unjudged: true };
     // An estimate is no reason to stop an editor or the command line: a fault
@@ -237,13 +237,13 @@ function costOfChecked(
                   estimate.chaos,
                   ends.map((w) => w.chaos),
               );
-    const finishes = 1 - estimate.stopped;
+    const finishes = 1 - estimate.short;
     const chaos =
         snapshot !== undefined && !unknown && estimate.chaos !== undefined
             ? estimate.chaos
             : undefined;
     const perFinished: PerFinished | undefined =
-        unknown || estimate.stopped <= 0 || finishes <= 1e-12
+        unknown || estimate.short <= 0 || finishes <= 1e-12
             ? undefined
             : {
                   attempts: 1 / finishes,
@@ -265,7 +265,7 @@ function costOfChecked(
             }),
         ...(chaosRange !== undefined && { chaosRange }),
         unpriced: [...unpriced],
-        stopped: estimate.stopped,
+        short: estimate.short,
         unknown,
     };
 }
@@ -278,7 +278,7 @@ function walk(
     reading: Reading,
 ): Walk {
     const walker = new Walker(craft, result, registry, reading);
-    const top: Frame = { scale: 1, stopped: 0, restarted: 0 };
+    const top: Frame = { scale: 1, short: 0, restarted: 0 };
     walker.sequence(craft.body, [walker.start()], top);
     const steps = walker.steps;
     let total: Price[] = [];
@@ -294,7 +294,7 @@ function walk(
         total,
         ...(chaos !== undefined && { chaos }),
         // A restart outside every loop has no head to go back to: the craft ends.
-        stopped: Math.min(1, top.stopped + top.restarted),
+        short: Math.min(1, top.short + top.restarted),
         followed: !walker.lost && (walker.tracker?.misses ?? 1) === 0,
     };
 }
@@ -655,8 +655,8 @@ class Walker {
                 for (const branch of branches) frame.again?.push({ branch, at: entry?.before });
                 this.record(stmt, mass, frame, {});
                 return [];
-            case "stop":
-                frame.stopped += mass;
+            case "fail":
+                frame.short += mass;
                 this.record(stmt, mass, frame, {});
                 return [];
             case "paramStep":
@@ -767,7 +767,7 @@ class Walker {
             ...(notes.length > 0 && { note: notes.join("; ") }),
         });
         const ended = branches.map((_b, i) => moved?.[i]?.ended ?? end?.share ?? 0);
-        frame.stopped += branches.reduce((sum, b, i) => sum + b.mass * ended[i]!, 0);
+        frame.short += branches.reduce((sum, b, i) => sum + b.mass * ended[i]!, 0);
         const live = branches.map((b, i) => ({ ...b, mass: b.mass * (1 - ended[i]!) }));
         if ("refused" in built || entry.after === undefined) return withoutStates(live);
         const roll = rollOf(entry.before, built, this.registry, this.reading);
@@ -997,11 +997,11 @@ class Walker {
         // One attempt: the body from the head with mass one, in a frame of its
         // own, its steps discarded. A round ends where the body does or at a
         // restart, and the attempt ends there in the exit (its chance judged on
-        // each such branch's path), or in a stop, or goes another round.
+        // each such branch's path), or in a `fail`, or goes another round.
         // The head of a later attempt is where the one before left off, short of
         // the exit, so a condition at the top of the body reads the last roll.
         const round = (from: readonly Branch[]) => {
-            const own: Frame = { scale: 1, stopped: 0, restarted: 0, again: [] };
+            const own: Frame = { scale: 1, short: 0, restarted: 0, again: [] };
             const saved = this.steps.length;
             const fell = this.sequence(stmt.body, from, own);
             this.steps.length = saved;
@@ -1010,7 +1010,7 @@ class Walker {
                 ...fell.map((branch) => ({ branch, at: exitAfter })),
                 ...(own.again ?? []),
             ];
-            return { ends, stopped: own.stopped };
+            return { ends, short: own.short };
         };
         const first = round([{ mass: 1, path: undefined }]);
         const head = this.headAfter(
@@ -1042,8 +1042,8 @@ class Walker {
                 path: b.path === undefined ? undefined : extend(b.path, rpred!, true),
             });
         }
-        const stop = attempt.stopped;
-        if (exit === undefined || exit + stop <= 0) {
+        const failed = attempt.short;
+        if (exit === undefined || exit + failed <= 0) {
             return this.unknownLoop(
                 stmt,
                 branches,
@@ -1055,7 +1055,7 @@ class Walker {
                 head,
             );
         }
-        const ending = exit + stop;
+        const ending = exit + failed;
         const expected = 1 / ending;
         this.record(stmt, mass, frame, {
             attempts: { chance: exit, expected },
@@ -1063,12 +1063,12 @@ class Walker {
         });
         // The real pass: the body's steps, each run `expected` times per pass of
         // the enclosing frame, from the loop head with mass one.
-        const inner: Frame = { scale: frame.scale * mass * expected, stopped: 0, restarted: 0 };
+        const inner: Frame = { scale: frame.scale * mass * expected, short: 0, restarted: 0 };
         this.sequence(stmt.body, head, inner);
-        // Of all the loop's rounds, the share that ends in a stop ends the craft.
-        const stopShare = stop / ending;
-        frame.stopped += mass * stopShare;
-        const continuing = mass * (1 - stopShare);
+        // Of all the loop's rounds, the share that ends in a `fail` ends the craft.
+        const failShare = failed / ending;
+        frame.short += mass * failShare;
+        const continuing = mass * (1 - failShare);
         if (exits.length === 0 || exit <= 0) return [{ mass: continuing, path: undefined }];
         const scale = continuing / exit;
         return exits.map((b) => ({ mass: b.mass * scale, path: b.path }));
@@ -1116,7 +1116,7 @@ class Walker {
         const mass = massOf(branches);
         this.lost = true;
         this.record(stmt, mass, frame, { note, unknown: true });
-        const inner: Frame = { scale: frame.scale * mass, stopped: 0, restarted: 0 };
+        const inner: Frame = { scale: frame.scale * mass, short: 0, restarted: 0 };
         this.unknowable(() => this.sequence(stmt.body, head, inner));
         return [{ mass, path: undefined }];
     }
@@ -1137,7 +1137,7 @@ class Walker {
     /**
      * A loop whose body the tracker can follow (`chain.ts`): methods it reads
      * on the item as each state has it, and branches over them that restart,
-     * stop or craft, exiting on the counts and the named modifiers. Solved as
+     * fail or craft, exiting on the counts and the named modifiers. Solved as
      * a chain from the states the loop may enter with, including how often each
      * step inside runs; undefined for any other body, which takes the general
      * path.
@@ -1193,7 +1193,7 @@ class Walker {
         // so the figures stay finite: under half a hundredth it moves them
         // little and passes unremarked, above it the loop has no figure.
         const ending =
-            solved.exit + solved.stop + Math.min(1, solved.unresolved + solved.undecided);
+            solved.exit + solved.fail + Math.min(1, solved.unresolved + solved.undecided);
         const attempts = ending > 0 ? 1 / ending : 1;
         // Rounds, not attempts: an attempt here is as many rounds as the item
         // takes, and may be none when the loop is entered at its exit.
@@ -1230,7 +1230,7 @@ class Walker {
             stmts.forEach((s, i) => {
                 const step = steps[i]!;
                 const reached = perRound(solved.reached.get(step.id));
-                const inner: Frame = { scale, stopped: 0, restarted: 0 };
+                const inner: Frame = { scale, short: 0, restarted: 0 };
                 if (s.kind === "until" && step.kind === "loop") {
                     // An inner loop's rounds per time it is reached; the ones
                     // entered at its exit take none.
@@ -1259,7 +1259,7 @@ class Walker {
                         const body = e.inlined.body;
                         this.calling(() => this.within(e, () => emit(body, step.body)));
                     }
-                } else if (s.kind === "restart" || s.kind === "stop") {
+                } else if (s.kind === "restart" || s.kind === "fail") {
                     this.record(s, reached, inner, {});
                 } else {
                     this.statement(s, [{ mass: reached, path: undefined }], inner);
@@ -1268,9 +1268,9 @@ class Walker {
         };
         if (stuck) this.unknowable(() => emit(stmt.body, body));
         else emit(stmt.body, body);
-        const stopShare = ending > 0 ? solved.stop / ending : 0;
-        frame.stopped += mass * stopShare;
-        const leaving = mass * (1 - stopShare);
+        const failShare = ending > 0 ? solved.fail / ending : 0;
+        frame.short += mass * failShare;
+        const leaving = mass * (1 - failShare);
         if (!(solved.exit > 0)) return [{ mass: leaving, path: undefined }];
         return [
             {
@@ -1330,7 +1330,7 @@ class Walker {
      * The chain steps of statements, inside a loop or one at a time outside
      * one: a method is a transition the tracker reads on the checker's item (the
      * union over the rounds inside a loop), a branch its guard, a restart or a
-     * stop itself. Undefined for a statement the tracker cannot follow.
+     * `fail` itself. Undefined for a statement the tracker cannot follow.
      */
     private chainSteps(
         stmts: readonly Stmt[],
@@ -1341,7 +1341,7 @@ class Walker {
         for (const s of stmts) {
             const id = stepOf.size;
             stepOf.set(id, s);
-            if (s.kind === "restart" || s.kind === "stop") {
+            if (s.kind === "restart" || s.kind === "fail") {
                 out.push({ id, kind: s.kind });
                 continue;
             }

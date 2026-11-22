@@ -258,7 +258,7 @@ describe("parser — item block", () => {
 
     it("parses the implicit predicate, which takes a wording", () => {
         const c = parseOk(
-            'item { base: "R" ilvl: 1 rarity: rare } vaal if implicit "endurance charges" and not implicit "life" { stop }',
+            'item { base: "R" ilvl: 1 rarity: rare } vaal if implicit "endurance charges" and not implicit "life" { fail }',
         );
         expect(c.body[1]).toMatchObject({
             pred: {
@@ -268,7 +268,7 @@ describe("parser — item block", () => {
             },
         });
         expect(
-            parseErr('item { base: "R" ilvl: 1 rarity: rare } if implicit { stop }').message,
+            parseErr('item { base: "R" ilvl: 1 rarity: rare } if implicit { fail }').message,
         ).toMatch(/expected an implicit's wording after 'implicit'/);
     });
 
@@ -728,18 +728,18 @@ describe("item block — affix marks", () => {
     });
 });
 
-describe("parser — stop", () => {
-    it("parses a stop statement and formats it back", () => {
+describe("parser — fail", () => {
+    it("parses a fail statement and formats it back", () => {
         const text = [
             'item { base: "R" ilvl: 84 rarity: rare }',
             'if not has "maximum life" {',
-            "    stop",
+            "    fail",
             "}",
             "",
         ].join("\n");
         const s = parseOk(text).body[0] as IfStmt;
-        expect(s.body.map((x) => x.kind)).toEqual(["stop"]);
-        expect(formatCraft(text)).toContain('if not has "maximum life" {\n    stop\n}\n');
+        expect(s.body.map((x) => x.kind)).toEqual(["fail"]);
+        expect(formatCraft(text)).toContain('if not has "maximum life" {\n    fail\n}\n');
     });
 });
 
@@ -748,7 +748,7 @@ describe("parser — has group", () => {
         const text = [
             'item { base: "R" ilvl: 84 rarity: rare }',
             'if not has group "spell damage" {',
-            "    stop",
+            "    fail",
             "}",
             "",
         ].join("\n");
@@ -759,16 +759,16 @@ describe("parser — has group", () => {
         });
         expect(formatCraft(text)).toContain('if not has group "spell damage" {');
         expect(
-            parseErr('item { base: "R" ilvl: 84 rarity: rare }\nif has group "x" t1 { stop }')
+            parseErr('item { base: "R" ilvl: 84 rarity: rare }\nif has group "x" t1 { fail }')
                 .message,
         ).toMatch(/a group has no tier/);
     });
 
     it("points an error about a written tier or parameter at it, not at what follows", () => {
         const item = 'item { base: "R" ilvl: 84 rarity: rare }\n';
-        const tier = parseErr(`${item}if has group "x" t1 { stop }`);
+        const tier = parseErr(`${item}if has group "x" t1 { fail }`);
         expect([tier.span.start.line, tier.span.start.column]).toEqual([2, 18]);
-        const param = parseErr(`${item}def f(n) = has "x" >= n\n\nstop`);
+        const param = parseErr(`${item}def f(n) = has "x" >= n\n\nfail`);
         expect(param.message).toMatch(/not a parameter/);
         expect([param.span.start.line, param.span.start.column]).toEqual([2, 23]);
     });

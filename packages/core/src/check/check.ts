@@ -102,9 +102,9 @@ export interface Finding {
     readonly span: SourceSpan;
 }
 
-/** Why a step can never run: every item before it stopped, every one went
+/** Why a step can never run: every item before it ended, every one went
  *  back to the loop's head, or some of each. */
-export type Unreached = "stops" | "restarts" | "both";
+export type Unreached = "ends" | "restarts" | "both";
 
 /** What the exactness tests read of a finding beyond its kind and place. */
 export interface FindingItems {
@@ -149,15 +149,15 @@ const MAX_ROUNDS = 256;
 
 /** How a statement leaves: the items that fall through it, none when it ends
  *  the path; whether some item went back to an enclosing loop's head, and
- *  whether some item's path ended in it (a `stop`, a refused or ending step,
+ *  whether some item's path ended in it (a `fail`, a refused or ending step,
  *  a loop no item leaves). */
 interface Flow {
     readonly fall: ItemSet | null;
     readonly restarted: boolean;
-    readonly stopped: boolean;
+    readonly ended: boolean;
 }
 
-const ENDS: Flow = { fall: null, restarted: false, stopped: true };
+const ENDS: Flow = { fall: null, restarted: false, ended: true };
 
 /** The check stops at a limit: the message, and the statement it is at. */
 class Abandoned extends Error {
@@ -345,11 +345,11 @@ class Checker {
             const flow = this.seq(first, craft.body);
             return done(flow.fall ?? undefined);
         } catch (e) {
-            const stop =
+            const abandon =
                 e instanceof DdBudgetError ? new Abandoned(craft.item.span, TOO_MANY, "limit") : e;
-            if (!(stop instanceof Abandoned)) throw e;
-            this.diagnostics.push({ message: stop.words, span: stop.span });
-            this.findings.push({ kind: stop.kind, span: stop.span });
+            if (!(abandon instanceof Abandoned)) throw e;
+            this.diagnostics.push({ message: abandon.words, span: abandon.span });
+            this.findings.push({ kind: abandon.kind, span: abandon.span });
             return done();
         }
     }
@@ -475,7 +475,7 @@ class Checker {
     private seq(entry: ItemSet, stmts: readonly Stmt[]): Flow {
         let s = entry;
         let restarted = false;
-        let stopped = false;
+        let ended = false;
         for (const [i, stmt] of stmts.entries()) {
             if (this.quiet === 0) {
                 const key = stmtKey(stmt);
@@ -484,7 +484,7 @@ class Checker {
             }
             const flow = this.stmt(s, stmt);
             restarted ||= flow.restarted;
-            stopped ||= flow.stopped;
+            ended ||= flow.ended;
             if (this.quiet === 0) {
                 const inlined = this.inlined.get(stmt);
                 this.sink.push({
@@ -499,15 +499,11 @@ class Checker {
             if (flow.fall === null) {
                 const next = stmts[i + 1];
                 if (next !== undefined) {
-                    const unreached: Unreached = !restarted
-                        ? "stops"
-                        : stopped
-                          ? "both"
-                          : "restarts";
+                    const unreached: Unreached = !restarted ? "ends" : ended ? "both" : "restarts";
                     const why = {
-                        stops: "the craft always stops before it",
+                        ends: "the craft always ends before it",
                         restarts: "the loop always restarts before it",
-                        both: "the craft always stops or the loop restarts before it",
+                        both: "the craft always ends or the loop restarts before it",
                     }[unreached];
                     this.report(
                         "unreachable",
@@ -517,11 +513,11 @@ class Checker {
                         { unreached },
                     );
                 }
-                return { fall: null, restarted, stopped };
+                return { fall: null, restarted, ended };
             }
             s = flow.fall;
         }
-        return { fall: s, restarted, stopped };
+        return { fall: s, restarted, ended };
     }
 
     /** One statement, its diagram operations sharing the engine's cache. A
@@ -546,9 +542,9 @@ class Checker {
                 const frame = this.frames[this.frames.length - 1];
                 if (frame === undefined) return ENDS;
                 frame.back = this.u.dd.or(frame.back, s.dd);
-                return { fall: null, restarted: true, stopped: false };
+                return { fall: null, restarted: true, ended: false };
             }
-            case "stop":
+            case "fail":
                 return ENDS;
             case "if":
                 return this.branch(s, stmt);
@@ -600,7 +596,7 @@ class Checker {
         const firstBreak = (dd: Dd | null): void => {
             if (breaking === undefined) breaking = dd;
         };
-        let stopped = false;
+        let ended = false;
         const failing = new Map<string, Dd>();
         for (const { part, key } of together(buildMethod(s, method, literals))) {
             if ("refused" in part.built) {
@@ -610,7 +606,7 @@ class Checker {
                 if (this.recovering) {
                     fall = m.or(fall, part.state.dd);
                     this.recovered = true;
-                } else stopped = true;
+                } else ended = true;
                 continue;
             }
             const run = runMethodTrace(part.state, part.built);
@@ -625,7 +621,7 @@ class Checker {
             }
             const recovers = result.recovered === true;
             if (recovers && this.recovering) this.recovered = true;
-            if (run.reachedEnd || (!result.ok && !(recovers && this.recovering))) stopped = true;
+            if (run.reachedEnd || (!result.ok && !(recovers && this.recovering))) ended = true;
             if (result.ended !== true && (!recovers || this.recovering)) {
                 fall = m.or(fall, result.state.dd);
             }
@@ -645,11 +641,11 @@ class Checker {
             );
         }
         const after = stateOf(this.u, fall);
-        // A method that leaves no item on any outcome ends the path, as `stop` does.
+        // A method that leaves no item on any outcome ends the path, as `fail` does.
         if (after === null && message === undefined) {
             this.report("ended", undefined, stmt.span, at);
         }
-        return { fall: after, restarted: false, stopped };
+        return { fall: after, restarted: false, ended };
     }
 
     /** One item of `items`, as an error shows it. */
@@ -699,7 +695,7 @@ class Checker {
         }
         let fall = this.u.dd.EMPTY;
         let restarted = false;
-        let stopped = false;
+        let ended = false;
         for (const [entry, body] of [
             [yes, stmt.body],
             [no, stmt.elseBody ?? []],
@@ -708,9 +704,9 @@ class Checker {
             const f = this.seq(entry, body);
             fall = this.u.dd.or(fall, this.dd(f.fall));
             restarted ||= f.restarted;
-            stopped ||= f.stopped;
+            ended ||= f.ended;
         }
-        return { fall: stateOf(this.u, fall), restarted, stopped };
+        return { fall: stateOf(this.u, fall), restarted, ended };
     }
 
     /** The items on which the condition holds (or fails): all of them where
@@ -738,7 +734,7 @@ class Checker {
         const resolved = readCondition(entry, stmt.pred, this.predDefs, (m, span) =>
             this.diag(m, span),
         );
-        const { head, stopped } = this.settle(entry, stmt, resolved !== null);
+        const { head, ended } = this.settle(entry, stmt, resolved !== null);
         const going = this.cut(head, stmt.pred, false, resolved);
         const exit = this.cut(head, stmt.pred, true, resolved);
         const at = { key: stmtKey(stmt), entry: entry.dd };
@@ -753,7 +749,7 @@ class Checker {
         }
         const refusals = this.refusals;
         const back = this.quiet === 0 ? this.back(going, stmt.body) : undefined;
-        const body = back?.stopped ?? stopped;
+        const body = back?.ended ?? ended;
         if (exit === null) {
             this.report(
                 "neverExits",
@@ -762,7 +758,7 @@ class Checker {
                 { ...at, ...(this.refusals > refusals && { refusedBody: true as const }) },
             );
         }
-        if (exit !== null) return { fall: exit, restarted: false, stopped: body };
+        if (exit !== null) return { fall: exit, restarted: false, ended: body };
         if (!this.recovering) return ENDS;
         // No item leaves: the craft goes on from the items the body's recovery
         // brings back that meet the condition, else from the whole head.
@@ -775,7 +771,7 @@ class Checker {
         );
         return recovered === null
             ? goesOn(head)
-            : { fall: recovered, restarted: false, stopped: body };
+            : { fall: recovered, restarted: false, ended: body };
     }
 
     /**
@@ -808,15 +804,15 @@ class Checker {
         const settled = this.quietly((): Settled => {
             let at = entry;
             let fresh = entry;
-            let stopped = false;
+            let ended = false;
             for (let round = 1; ; round++) {
                 const going = goingOf(fresh);
-                if (going === null) return { head: at, stopped };
+                if (going === null) return { head: at, ended };
                 const back = this.back(going, stmt.body);
                 runs++;
-                stopped ||= back.stopped;
+                ended ||= back.ended;
                 const next = m.or(at.dd, back.dd);
-                if (next === at.dd) return { head: at, stopped };
+                if (next === at.dd) return { head: at, ended };
                 if (round > this.maxRounds) {
                     const n = this.maxRounds;
                     throw new Abandoned(
@@ -837,12 +833,12 @@ class Checker {
     /** The items the body brings back to the loop's head from `entry`, those
      *  falling off its end and those a `restart` sends, and whether some
      *  item's path ended in it. */
-    private back(entry: ItemSet, body: readonly Stmt[]): { dd: Dd; stopped: boolean } {
+    private back(entry: ItemSet, body: readonly Stmt[]): { dd: Dd; ended: boolean } {
         const frame = { back: this.u.dd.EMPTY };
         this.frames.push(frame);
         try {
             const flow = this.seq(entry, body);
-            return { dd: this.u.dd.or(this.dd(flow.fall), frame.back), stopped: flow.stopped };
+            return { dd: this.u.dd.or(this.dd(flow.fall), frame.back), ended: flow.ended };
         } finally {
             this.frames.pop();
         }
@@ -891,13 +887,13 @@ function firstOf(failing: ReadonlyMap<number, Dd>): Dd | undefined {
 
 /** The items all go on through a statement that does nothing to them. */
 function goesOn(s: ItemSet): Flow {
-    return { fall: s, restarted: false, stopped: false };
+    return { fall: s, restarted: false, ended: false };
 }
 
 /** A loop's head, and whether some item's path ended in its body. */
 interface Settled {
     readonly head: ItemSet;
-    readonly stopped: boolean;
+    readonly ended: boolean;
 }
 
 /** The parts with their build keys, those given the same operations as one:

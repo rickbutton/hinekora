@@ -155,8 +155,8 @@ unit price (`cost/prices.ts`, in the step's own currency).
   not worked out. States that cannot reach the exit hold the share that never
   leaves.
 - Any other `until` is independent attempts: the body is walked once for the chance
-  one ends in the exit or a `stop`; the expected rounds is its reciprocal, the share
-  ending in a stop ending the craft.
+  one ends in the exit or a `fail`; the expected rounds is its reciprocal, the share
+  ending in a `fail` ending the craft.
 - An **`if`** splits each branch by its condition's chance; a `restart` is back at
   its loop's head with the item as it is.
 

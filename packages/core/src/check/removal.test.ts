@@ -3,7 +3,7 @@ import { check, type CheckContext } from "./check.js";
 import * as v from "./views.js";
 import { cardinalityGuarantees, guaranteedTypes, isExcluded } from "./views.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, has, iff, item, notp, op, stop } from "../__fixtures__/ast.js";
+import { craft, has, iff, item, notp, op, fail } from "../__fixtures__/ast.js";
 import { CATALOG, COLD_RESIST, FIRE_RESIST, LIFE_T1, RING_BASE } from "../__fixtures__/mods.js";
 
 const registry = buildRegistry({
@@ -47,7 +47,7 @@ describe("a random removal and the modifiers it could reach", () => {
         // Two modifiers, both named: the one still there says which one went.
         const c = craft(ring([LIFE_T1.id], [FIRE_RESIST.id]), [
             op("annul"),
-            iff(notp(has(LIFE_T1.id)), [stop()]),
+            iff(notp(has(LIFE_T1.id)), [fail()]),
         ]);
         const r = check(c, ctx);
         expect(r.diagnostics).toEqual([]);
@@ -59,7 +59,7 @@ describe("a random removal and the modifiers it could reach", () => {
     it("may have taken an unnamed modifier instead", () => {
         const c = craft(ring([LIFE_T1.id, "random"], [FIRE_RESIST.id]), [
             op("annul"),
-            iff(notp(has(LIFE_T1.id)), [stop()]),
+            iff(notp(has(LIFE_T1.id)), [fail()]),
         ]);
         const s = check(c, ctx).finalState!;
         expect(guaranteedTypes(s).has(LIFE_T1.type)).toBe(true);

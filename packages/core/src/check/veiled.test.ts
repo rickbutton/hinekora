@@ -3,7 +3,7 @@ import { check, type CheckContext } from "./check.js";
 import * as v from "./views.js";
 import { guaranteedTypes } from "./views.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, has, iff, item, notp, op, orp, stop, unveil, veiled } from "../__fixtures__/ast.js";
+import { craft, has, iff, item, notp, op, orp, fail, unveil, veiled } from "../__fixtures__/ast.js";
 import {
     AMULET_BASE,
     CATALOG,
@@ -212,7 +212,7 @@ describe("a veiled modifier in the item block", () => {
 describe("unveil", () => {
     // A veiled modifier unveils into a result of its own side, so each craft
     // goes on only where the orb laid a veiled suffix.
-    const suffixOnly = iff(notp(has("VeiledSuffix")), [stop()]);
+    const suffixOnly = iff(notp(has("VeiledSuffix")), [fail()]);
 
     it("guarantees a target when the pool is 3 or fewer", () => {
         const r = check(
@@ -350,7 +350,7 @@ describe("a veiled orb after an unveiled modifier has provably gone", () => {
     it("is accepted when every affix of each side is a named one", () => {
         // Under the suffix lock the orb takes the life or the metamod; a bad
         // unveil is annulled away, and where the annul took the life or a
-        // resistance the craft stops. What continues has one prefix, the life,
+        // resistance the craft fails. What continues has one prefix, the life,
         // and the three resistances, so no unveiled modifier can remain.
         const locked = item({
             base: "Iron Ring",
@@ -365,10 +365,10 @@ describe("a veiled orb after an unveiled modifier has provably gone", () => {
         );
         const c = craft(locked, [
             veiled("exalt"),
-            iff(notp(has("IncreasedLife1")), [stop()]),
+            iff(notp(has("IncreasedLife1")), [fail()]),
             unveil(),
             op("annul"),
-            iff(bricked, [stop()]),
+            iff(bricked, [fail()]),
             veiled("exalt"),
         ]);
         expect(check(c, ctx).diagnostics).toEqual([]);

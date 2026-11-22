@@ -89,7 +89,7 @@ locus
     it("prints the implicit predicate with its wording", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
 vaal
-if implicit   "endurance charges" or not implicit "life" { stop }`;
+if implicit   "endurance charges" or not implicit "life" { fail }`;
         const out = fmt(src);
         expect(out).toContain(`if implicit "endurance charges" or not implicit "life" {`);
         expect(fmt(out)).toBe(out);
@@ -181,7 +181,7 @@ until anyEleRes(t1) { chaos }`;
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }
 until has "fire resistance" t1 or has "cold resistance" t1 or (has "lightning resistance" t1 and has "maximum life" t1) { # any
     chaos
-    if has "fire resistance" t1 and has "cold resistance" t1 and has "lightning resistance" t1 and has "life" { stop } else { annul }
+    if has "fire resistance" t1 and has "cold resistance" t1 and has "lightning resistance" t1 and has "life" { fail } else { annul }
 }`;
         const out = fmt(src);
         expect(out).toContain(`until has "fire resistance" t1
@@ -194,7 +194,7 @@ until has "fire resistance" t1 or has "cold resistance" t1 or (has "lightning re
         and has "lightning resistance" t1
         and has "life"
     {
-        stop
+        fail
     } else {
         annul
     }

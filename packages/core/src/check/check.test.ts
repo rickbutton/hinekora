@@ -33,7 +33,7 @@ import {
     paramStep,
     procDef,
     restart,
-    stop,
+    fail,
     tierArg,
     until,
 } from "../__fixtures__/ast.js";
@@ -945,7 +945,7 @@ describe("checker — items that differ by the path that made them", () => {
 
     it("keeps them apart through the steps after the branch", () => {
         const c = craft(rareRing([], ["random"]), [
-            until(life, [op("exalt"), undo, iff(has("FireResist1"), [stop()])]),
+            until(life, [op("exalt"), undo, iff(has("FireResist1"), [fail()])]),
         ]);
         expect(check(c, ctx).diagnostics).toEqual([]);
     });
@@ -1051,7 +1051,7 @@ describe("checker — items that differ by the path that made them", () => {
             op("exalt"),
             iff(cmp("prefixCount", "==", 2), [
                 op("annul"),
-                iff(cmp("suffixCount", "<=", 1), [stop()]),
+                iff(cmp("suffixCount", "<=", 1), [fail()]),
             ]),
             iff(fireOrBoth, [op("exalt"), op("exalt"), op("exalt")]),
         ]);

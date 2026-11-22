@@ -19,7 +19,7 @@ import {
     item,
     notp,
     op,
-    stop,
+    fail,
     until,
 } from "../__fixtures__/ast.js";
 import {
@@ -264,7 +264,7 @@ describe("harvest change", () => {
                 iff(
                     andp(has("FireTiersLow"), notp(has("ColdTiersLow"))),
                     [harvestChange("FireTiersLow", "ColdTiersLow")],
-                    [stop()],
+                    [fail()],
                 ),
             ]),
             ctx,
@@ -391,7 +391,7 @@ describe("harvest change", () => {
                 iff(
                     andp(has("fire resistance"), notp(has("cold resistance"))),
                     [harvestChange("fire resistance", "cold resistance")],
-                    [stop()],
+                    [fail()],
                 ),
             ]),
             { registry: reg },
@@ -542,7 +542,7 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
         // The level-26 cold resistance is the ladder's second tier, at any item
         // level. Seen in game: the changed modifier of a level-25 body armour
         // shows "Tier: 6", its place among the eight the base rolls.
-        const r = known(25, "FireTiers24", "ColdTiers1", [iff(has("ColdTiers1", 2), [], [stop()])]);
+        const r = known(25, "FireTiers24", "ColdTiers1", [iff(has("ColdTiers1", 2), [], [fail()])]);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("always holds here");
         expect(r.diagnostics[0]!.message).not.toContain("item level");
@@ -564,7 +564,7 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
     it("leaves a modifier a craft can test by its value", () => {
         // The cold resistance is +(18-23)%: at least 18 on every item.
         const r = known(25, "FireTiers24", "ColdTiers1", [
-            iff(hasValue("ColdTiers1", ">=", 18), [], [stop()]),
+            iff(hasValue("ColdTiers1", ">=", 18), [], [fail()]),
         ]);
         expect(r.diagnostics).toHaveLength(1);
         expect(r.diagnostics[0]!.message).toContain("always holds here");
@@ -589,7 +589,7 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
                 iff(
                     andp(has("FireTiers1"), notp(has("ColdTiers1"))),
                     [harvestChange("FireTiers1", "ColdTiers1")],
-                    [stop()],
+                    [fail()],
                 ),
             ]),
             { registry: offset },
@@ -647,7 +647,7 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
                 iff(
                     andp(has("fire resistance"), notp(has("ColdTiers1"))),
                     [harvestChange("fire resistance", "ColdTiers1")],
-                    [stop()],
+                    [fail()],
                 ),
             ]),
             { registry: benched },
@@ -688,7 +688,7 @@ describe("a Harvest change where the elements' tiers unlock at different levels"
                     [bench("fire resistance")],
                     [until(has("FireTiers1", 2), [op("chaos")])],
                 ),
-                iff(notp(has("ColdTiers1")), [harvestChange("FireTiers1", "ColdTiers1")], [stop()]),
+                iff(notp(has("ColdTiers1")), [harvestChange("FireTiers1", "ColdTiers1")], [fail()]),
             ]),
             { registry: benched },
         );
@@ -781,7 +781,7 @@ describe("a Harvest change into a modifier of the changed one's group", () => {
                 iff(
                     andp(has("LightningSpells1"), notp(has("FireSpells1"))),
                     [harvestChange("LightningSpells1", "FireSpells1")],
-                    [stop()],
+                    [fail()],
                 ),
             ]),
             { registry: grouped },
@@ -941,7 +941,7 @@ describe("a Harvest change of a natural row an essence placed", () => {
         const r = check(
             craft(item({ base, ilvl, rarity: "normal" }), [
                 essence(name),
-                base === "Vaal Hatchet" ? change : iff(notp(has(to)), [change], [stop()]),
+                base === "Vaal Hatchet" ? change : iff(notp(has(to)), [change], [fail()]),
             ]),
             { registry: essenced },
         );

@@ -225,7 +225,7 @@ export type Op =
     /** One of several outcomes: the items each branch leaves, together. It
      *  holds effects only (a check or a `keep` belongs before it, at
      *  method level). A branch with an `end` is an outcome on which the item
-     *  is gone and the craft stops, so it leaves no item; where every branch
+     *  is gone and the craft ends, so it leaves no item; where every branch
      *  ends, so does the method. */
     | { readonly kind: "either"; readonly branches: readonly (readonly Transform[])[] }
     | { readonly kind: "end" }

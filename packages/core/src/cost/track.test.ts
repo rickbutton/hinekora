@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { check } from "../check/check.js";
 import type { RPred } from "../check/pred.js";
 import { buildRegistry } from "../resolve/registry.js";
-import { craft, has, iff, item, op, stop } from "../__fixtures__/ast.js";
+import { craft, has, iff, item, op, fail } from "../__fixtures__/ast.js";
 import {
     BOOTS_BASE,
     CATALOG,
@@ -265,7 +265,7 @@ describe("the groups an unnamed modifier closes", () => {
                 prefixes: ["random", "random"],
                 suffixes: ["S0"],
             }),
-            [op("exalt"), iff(has("IncreasedLife1"), [stop()])],
+            [op("exalt"), iff(has("IncreasedLife1"), [fail()])],
         );
         const walked = costOf(c, check(c, { registry: reg }), reg).steps.find(
             (s) => s.kind === "if",

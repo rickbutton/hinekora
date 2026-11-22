@@ -29,7 +29,7 @@ A usage error prints the command forms to standard error.
 For a craft that checks, it prints the final item as the game's item text
 ([Getting started](./getting-started#check-it)).
 
-If every item ends at a [`stop`](./language/until), a `restart` outside any loop or a step
+If every item ends at a [`fail`](./language/until), a `restart` outside any loop or a step
 that ends it, `(the craft ends for every item before this point)` takes the item's place.
 
 For a craft with errors, it prints each with its position and line, then a count.

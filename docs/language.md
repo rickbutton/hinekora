@@ -184,15 +184,15 @@ Branch on what is now true of the item. Inside `if` the predicate holds; inside 
 negation. A branch that can never run is reported. After the branch the items of both arms
 go on together, so a fact true after each, such as "one of these three is present", holds.
 
-### 4.3 `restart` and `stop`
+### 4.3 `restart` and `fail`
 
 `restart` re-enters the innermost enclosing `until` from its start (at top level it ends the
 craft); typically after a removal that may have taken a wanted modifier.
 
-`stop` ends the craft for the item: kept, or not worth more currency. What
+`fail` ends the craft for the item: not worth more currency. What
 follows is judged only on the items that continue, so "if the life was removed, start over
-with a new base" is `if not has "maximum life" { stop }`, after which every item has it. A
-craft that stops for every item has no finished item.
+with a new base" is `if not has "maximum life" { fail }`, after which every item has it. A
+craft that fails every item has no finished item.
 
 ### 4.4 Definitions
 

@@ -134,8 +134,8 @@ export function flowchart(w: Walkthrough): Flowchart {
                 loop?.push(id);
                 return { entry: id, exits: [] };
             }
-            case "stop": {
-                const id = declare(fresh(), `([${label("stop here")}]):::stop`, node);
+            case "fail": {
+                const id = declare(fresh(), `([${label("give up on this item")}]):::fail`, node);
                 return { entry: id, exits: [] };
             }
             case "loop": {

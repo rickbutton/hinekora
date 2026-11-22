@@ -47,7 +47,7 @@ until has "maximum life" t1 {
 describe("hover: what one finished item takes", () => {
     it("follows the craft's spend where the craft can end short of a finished item", () => {
         const ring = `item { base: "Vermillion Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] }`;
-        const src = `${ring}\nvaal\nif not implicit "maximum endurance charges" { stop }`;
+        const src = `${ring}\nvaal\nif not implicit "maximum endurance charges" { fail }`;
         const total = getHover(src, src.indexOf("item") + 1, registry, snapshot)!;
         expect(total).toMatch(
             /\n\n_One finished item takes_ ~2512 attempts: 2512 Vaal Orb, ~[\d.]+ Chaos Orbs \(~[\d.]+ Divine Orbs\), not counting the items the failed attempts use up\./,

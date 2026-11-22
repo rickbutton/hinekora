@@ -13,7 +13,7 @@ import type { Token } from "@hinekora/parser";
  *  it ends a statement's reach (punctuation, a control or predicate word). */
 export interface Atom {
     readonly word?: string;
-    readonly stop?: boolean;
+    readonly boundary?: boolean;
 }
 
 export interface MethodAt {
@@ -25,7 +25,7 @@ export interface MethodAt {
 }
 
 /** Words that open a header, a control statement or a predicate; no method's argument. */
-const STOP_WORDS = new Set([
+const BOUNDARY_WORDS = new Set([
     "craft",
     "item",
     "def",
@@ -33,7 +33,7 @@ const STOP_WORDS = new Set([
     "until",
     "else",
     "restart",
-    "stop",
+    "fail",
     "has",
     "group",
     "fractured",
@@ -47,7 +47,7 @@ function argReach(method: Method): number {
     return method.args.reduce((n, s) => n + (s.kind === "names" ? s.max : 1), 0);
 }
 
-/** A token as the method lookup sees it: a word, an argument, or a stop. */
+/** A token as the method lookup sees it: a word, an argument, or a boundary. */
 export function atomOf(tok: Token): Atom {
     switch (tok.kind) {
         case "ident":
@@ -56,7 +56,7 @@ export function atomOf(tok: Token): Atom {
         case "int":
             return {};
         default:
-            return { stop: true };
+            return { boundary: true };
     }
 }
 
@@ -67,7 +67,7 @@ export function atomOf(tok: Token): Atom {
 export function methodAt(atoms: readonly Atom[], i: number): MethodAt | undefined {
     for (let s = Math.min(i, atoms.length - 1); s >= 0; s--) {
         const a = atoms[s]!;
-        if (a.stop || (a.word !== undefined && STOP_WORDS.has(a.word))) return undefined;
+        if (a.boundary || (a.word !== undefined && BOUNDARY_WORDS.has(a.word))) return undefined;
         if (a.word === undefined) continue;
         const found = methodStartingAt(atoms, s);
         if (found === undefined) continue;

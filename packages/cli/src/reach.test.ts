@@ -155,9 +155,9 @@ const CASES: readonly (readonly [string, readonly string[], string])[] = [
 
 const craftOf = (item: string, steps: readonly string[], condition: string, defs = ""): string => {
     const [yes, no] = steps.includes("vaal")
-        ? ["locus", "stop"]
+        ? ["locus", "fail"]
         : steps.includes("locus")
-          ? ["stop", "stop"]
+          ? ["fail", "fail"]
           : ["divine", "scour"];
     return `item {\n    ${item}\n}\n${defs}${steps.join("\n")}\nif ${condition} {\n    ${yes}\n} else {\n    ${no}\n}\n`;
 };

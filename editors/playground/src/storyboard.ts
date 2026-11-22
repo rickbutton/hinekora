@@ -319,7 +319,7 @@ const STMT_KIND: Readonly<Record<Step["kind"], Stmt["kind"]>> = {
     loop: "until",
     branch: "if",
     restart: "restart",
-    stop: "stop",
+    fail: "fail",
 };
 
 /** "Rare · 2–3 modifiers": the item in a line, when nothing named changed. */
@@ -636,7 +636,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                     return;
                 }
                 case "restart":
-                case "stop": {
+                case "fail": {
                     into.push(
                         anchor(
                             h(
@@ -654,7 +654,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                             "title",
                                             s.kind === "restart"
                                                 ? "back to the start of the repeat"
-                                                : "stop here: keep the item as it is",
+                                                : "give up on this item",
                                         ),
                                     ),
                                 ),
@@ -802,12 +802,12 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                 ...(chaosEnds === undefined
                     ? []
                     : [h("div", "note", `${chaosEnds} chaos by what the item may hold`)]),
-                ...(report.stopped > 0
+                ...(report.short > 0
                     ? [
                           h(
                               "div",
                               "note",
-                              `ends short of a finished item ${percentage(report.stopped)} of the time`,
+                              `ends short of a finished item ${percentage(report.short)} of the time`,
                           ),
                       ]
                     : []),
@@ -850,12 +850,12 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
             if (report.unpriced.length > 0) {
                 el.append(h("span", "unpriced", `no price for ${report.unpriced.join(", ")}`));
             }
-            if (report.stopped > 0) {
+            if (report.short > 0) {
                 el.append(
                     h(
                         "span",
                         "when",
-                        `ends short of a finished item ${percentage(report.stopped)} of the time`,
+                        `ends short of a finished item ${percentage(report.short)} of the time`,
                     ),
                 );
             }
