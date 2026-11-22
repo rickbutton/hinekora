@@ -88,6 +88,9 @@ them ask of the same items is worked out once.
 - Base **display names are not unique**, so base ids are metadata paths; resolution treats
   a name collision as `ambiguous` unless the bases agree on class, domain, tags and caps
   (`sameToTheModel`).
+- **No test may run 60 s without yielding**, coverage's slowdown counted: the worker
+  cannot answer vitest's main process meanwhile, and a passing run then ends in
+  `Timeout calling "onTaskUpdate"`. `vitest.setup.ts` yields between tests; split a longer one.
 
 ---
 

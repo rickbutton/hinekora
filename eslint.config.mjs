@@ -32,10 +32,10 @@ export default tseslint.config(
         languageOptions: {
             parserOptions: {
                 // `allowDefaultProject` lets the type-aware parser handle the
-                // root config files (eslint/vitest configs), which belong to no
-                // package tsconfig, via an inferred default program.
+                // root config files (eslint/vitest configs, vitest's setup file),
+                // which belong to no package tsconfig, via an inferred default program.
                 projectService: {
-                    allowDefaultProject: ["*.config.ts", "*.config.mjs"],
+                    allowDefaultProject: ["*.config.ts", "*.config.mjs", "vitest.setup.ts"],
                 },
                 tsconfigRootDir: import.meta.dirname,
             },

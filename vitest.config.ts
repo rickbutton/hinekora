@@ -52,6 +52,7 @@ export default defineConfig({
             root,
             test: { name: packageName(root) },
         })),
+        setupFiles: [fileURLToPath(new URL("./vitest.setup.ts", import.meta.url))],
         coverage: {
             provider: "v8",
             reporter: ["text", "html", "lcov", "json-summary"],
