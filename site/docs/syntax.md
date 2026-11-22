@@ -45,6 +45,7 @@ after each statement.
 | `if <condition> { … } else { … }` | run one block or the other                    | [Branches](./language/if)     |
 | `restart`                         | return to the test of the enclosing `until`   | [Loops](./language/until)     |
 | `fail`                            | give up on this item                          | [Loops](./language/until)     |
+| `done`                            | this item is finished                         | [Loops](./language/until)     |
 | `name(args)`                      | run a definition's steps                      | [Definitions](./language/def) |
 
 An operation is one or two words, such as `exalt` or `harvest reforge`. Its arguments follow

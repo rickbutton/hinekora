@@ -45,12 +45,11 @@ A bench craft costs its bench price, a Harvest craft its lifeforce, a Bestiary c
 ## Totals
 
 `Expected spend` sums the steps by currency. The next line converts it to Chaos Orbs and
-Divine Orbs and names the league and date of the prices. It names a currency that has no
-price in place of the converted total.
+Divine Orbs at the named league and date, or names a currency that has no price.
 
-If the craft can end at a [`fail`](./language/until), a line gives how often, such as
-`The craft ends short of a finished item 18% of the time.` The next says what one finished
-item takes, without the failed attempts' items.
+If the craft can end at a [`fail`](./language/until) (a `done` is finished), a line gives
+how often, such as `The craft ends short of a finished item 18% of the time.` The next says
+what one finished item takes, without the failed attempts' items.
 
 ## Spreads
 

@@ -120,6 +120,7 @@ class Collector {
                     break;
                 case "restart":
                 case "fail":
+                case "done":
                     break;
             }
         }

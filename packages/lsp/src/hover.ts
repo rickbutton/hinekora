@@ -86,6 +86,7 @@ const KEYWORD_DOC: Record<string, string> = {
     else: "The alternative branch of an `if`.",
     restart: "`restart` — abandon this attempt and re-run the enclosing loop from the top.",
     fail: "`fail` — give up on this item: it is not worth more currency. The craft ends here for it, and the steps after are checked only on the items that go on.",
+    done: "`done` — this item is finished: the craft ends here for it, and it is part of the finished item the check shows, with the items that reach the end of the craft. The steps after are checked only on the items that go on.",
     has: '`has "<mod>" [t1] [>= <n>]` — true when the item carries that mod (optionally at that tier, `t1` the game\'s Tier 1 for the modifier on this base, or with its value comparing so).',
     group: '`has group "<mod>"` — true when the item carries any modifier of that modifier\'s group; an item holds one per group, so `if not has group "<mod>" { bench "<mod>" }` guards a bench craft in one clause.',
     not: "`not <pred>` — logical negation of a predicate.",
@@ -249,7 +250,8 @@ function describeStmt(s: Stmt): string {
         case "restart":
             return "restart";
         case "fail":
-            return "fail";
+        case "done":
+            return s.kind;
         case "paramStep":
             return s.param;
     }
@@ -640,6 +642,7 @@ function insideStepArgument(stmts: readonly Stmt[], offset: number): boolean {
             case "operation":
             case "restart":
             case "fail":
+            case "done":
             case "paramStep":
                 return false;
         }

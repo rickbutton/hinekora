@@ -743,6 +743,37 @@ describe("parser — fail", () => {
     });
 });
 
+describe("parser — done", () => {
+    it("parses a done statement, inline and on its own line, and formats it back", () => {
+        const text = [
+            'item { base: "R" ilvl: 84 rarity: rare }',
+            "chaos",
+            'if has "maximum life" { done } else { fail }',
+            "done",
+            "",
+        ].join("\n");
+        const body = parseOk(text).body;
+        expect(body.map((x) => x.kind)).toEqual(["operation", "if", "done"]);
+        const s = body[1] as IfStmt;
+        expect(s.body.map((x) => x.kind)).toEqual(["done"]);
+        expect(s.elseBody!.map((x) => x.kind)).toEqual(["fail"]);
+        const formatted = formatCraft(text)!;
+        expect(formatted).toContain('if has "maximum life" { done } else { fail }\n');
+        expect(formatted).toMatch(/\ndone\n$/);
+        expect(formatCraft(formatted)).toBe(formatted);
+    });
+
+    it("reads stop as a word like any other, a method's first word", () => {
+        const kinds = (word: string): Stmt =>
+            (
+                parseOk(`item { base: "R" ilvl: 84 rarity: rare }\nif has "x" { ${word} }`)
+                    .body[0] as IfStmt
+            ).body[0]!;
+        expect(kinds("stop")).toMatchObject({ kind: "operation", words: ["stop"] });
+        expect(kinds("zork")).toMatchObject({ kind: "operation", words: ["zork"] });
+    });
+});
+
 describe("parser — has group", () => {
     it("parses the group form and formats it back; a group takes no tier", () => {
         const text = [

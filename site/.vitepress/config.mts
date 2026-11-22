@@ -56,7 +56,7 @@ const docsSidebar: DefaultTheme.SidebarItem[] = [
             { text: "The item block", link: "/docs/language/item" },
             { text: "Names and tiers", link: "/docs/language/names" },
             { text: "Conditions", link: "/docs/language/conditions" },
-            { text: "Loops: until, restart, stop", link: "/docs/language/until" },
+            { text: "Loops: until, restart, fail, done", link: "/docs/language/until" },
             { text: "Branches: if and else", link: "/docs/language/if" },
             { text: "Definitions", link: "/docs/language/def" },
         ],

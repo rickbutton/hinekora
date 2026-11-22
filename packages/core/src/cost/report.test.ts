@@ -29,6 +29,7 @@ import {
     procDef,
     restart,
     fail,
+    done,
     until,
     unveil,
     veiled,
@@ -48,6 +49,7 @@ import {
 } from "../__fixtures__/mods.js";
 import { costOf, openNote } from "./report.js";
 import type { Prices } from "./prices.js";
+import type { Stmt } from "../ast/ast.js";
 
 const registry = buildRegistry({
     bases: [RING_BASE],
@@ -252,6 +254,66 @@ describe("the cost of a craft", () => {
         expect(inner.note).toBeUndefined();
         expect(inner.attempts!.expected).toBeGreaterThan(1);
         expect(nested.steps.every((s) => s.note === undefined)).toBe(true);
+    });
+
+    it("a done ends the craft with the item finished, not short of it", () => {
+        const c = craft(ring("rare", ["IncreasedLife1"], ["FireResist1"]), [
+            op("annul"),
+            iff(has("IncreasedLife1"), [done()]),
+            op("exalt"),
+        ]);
+        const r = report(c);
+        expect(r.short).toBe(0);
+        expect(r.perFinished).toBeUndefined();
+        // The items the done keeps take no exalt.
+        const steps = r.steps.filter((s) => s.kind === "operation");
+        expect(steps[1]!.runs).toBeCloseTo(1 / 2, 9);
+    });
+
+    it("a fail and a done in one craft: only the fail ends short", () => {
+        const prices: Prices = {
+            league: "Test",
+            fetchedAt: "2026-11-09T00:00:00Z",
+            chaosPerDivine: 400,
+            chaos: new Map([["Orb of Annulment", 1]]),
+        };
+        const c = craft(ring("rare", ["IncreasedLife1"], ["FireResist1"]), [
+            op("annul"),
+            iff(has("IncreasedLife1"), [done()], [fail()]),
+        ]);
+        const r = report(c, prices);
+        expect(r.short).toBeCloseTo(1 / 2, 9);
+        // One finished item over the half that ends by the done.
+        expect(r.perFinished!.attempts).toBeCloseTo(2, 9);
+        expect(r.perFinished!.total).toEqual([{ item: "Orb of Annulment", amount: 2 }]);
+        // Every item ended by a done: every attempt finishes.
+        const kept = craft(ring("rare", ["IncreasedLife1"], ["FireResist1"]), [
+            op("annul"),
+            iff(has("IncreasedLife1"), [done()], [done()]),
+        ]);
+        expect(report(kept, prices).short).toBe(0);
+        expect(report(kept, prices).perFinished).toBeUndefined();
+    });
+
+    it("a done inside a loop ends the craft finished on its share of the rounds", () => {
+        const body = (end: Stmt) => [
+            until(has("IncreasedLife1"), [op("chaos"), iff(notp(has("FireResist1")), [end])]),
+            op("exalt"),
+        ];
+        const failing = report(craft(ring("rare"), body(fail())));
+        const finishing = report(craft(ring("rare"), body(done())));
+        expect(finishing.short).toBe(0);
+        expect(finishing.perFinished).toBeUndefined();
+        // The rounds and the exalt's runs are the fail's: the items the done
+        // ends leave the loop as the failed ones do, and take no exalt.
+        const exalt = (r: typeof failing) =>
+            r.steps.find((s) => s.kind === "operation" && s.unit![0]!.item === "Exalted Orb")!;
+        expect(exalt(finishing).runs).toBeCloseTo(exalt(failing).runs, 9);
+        expect(exalt(finishing).runs).toBeCloseTo(1 - failing.short, 9);
+        expect(finishing.steps[0]!.attempts!.expected).toBeCloseTo(
+            failing.steps[0]!.attempts!.expected,
+            9,
+        );
     });
 
     it("a restart outside every loop ends the craft", () => {

@@ -157,7 +157,8 @@ function inlineStmt(s: Stmt, source: string, depth: number): string {
         case "restart":
             return "restart";
         case "fail":
-            return "fail";
+        case "done":
+            return s.kind;
         case "paramStep":
             return s.param;
         case "call":
@@ -248,6 +249,7 @@ class Printer {
             case "operation":
             case "restart":
             case "fail":
+            case "done":
             case "paramStep":
                 this.line(depth, inlineStmt(s, this.source, depth), s.span.start.line);
                 return;

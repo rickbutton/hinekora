@@ -104,6 +104,9 @@ export function flowchart(w: Walkthrough): Flowchart {
     /** Restarts met inside a loop's body, which lead back to its decision. */
     type LoopFrame = string[];
 
+    /** The `done` steps, which lead to the end as the last step does. */
+    const finished: string[] = [];
+
     const seq = (steps: readonly Step[], loop: LoopFrame | undefined): Part | undefined => {
         let entry: string | undefined;
         let pending: readonly Exit[] = [];
@@ -136,6 +139,11 @@ export function flowchart(w: Walkthrough): Flowchart {
             }
             case "fail": {
                 const id = declare(fresh(), `([${label("give up on this item")}]):::fail`, node);
+                return { entry: id, exits: [] };
+            }
+            case "done": {
+                const id = declare(fresh(), `([${label("the item is finished")}]):::done`, node);
+                finished.push(id);
                 return { entry: id, exits: [] };
             }
             case "loop": {
@@ -178,5 +186,6 @@ export function flowchart(w: Walkthrough): Flowchart {
         edge({ id: FLOW_START }, body.entry);
         for (const from of body.exits) edge(from, FLOW_END);
     }
+    for (const id of finished) edge({ id }, FLOW_END);
     return { text: ["flowchart TD", ...decls, ...edges].join("\n"), nodes };
 }

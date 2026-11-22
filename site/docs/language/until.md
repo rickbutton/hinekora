@@ -1,4 +1,4 @@
-# Loops: until, restart, fail
+# Loops: until, restart, fail, done
 
 ## until
 
@@ -10,9 +10,8 @@ until <condition> {
 }
 ```
 
-The loop tests its [condition](./conditions) before each pass. It runs
-the body while the condition is false. After the loop the checker knows the condition is true
-and checks the statements that follow against that item.
+The loop tests its [condition](./conditions) before each pass and runs
+the body while it is false. After the loop the checker knows the condition is true.
 
 ```hinekora
 item {
@@ -31,8 +30,8 @@ On exit the item has the essence's maximum Life and a tier 1 fire resistance.
 ### Every pass
 
 The checker runs the body against every item for which the condition can be false at the
-start of a pass, after any number of earlier passes. It rejects this loop. After some exalts
-the item may be full while the life is still absent.
+start of a pass, after any number of earlier passes. It rejects this loop: after some exalts
+the item may be full without the life.
 
 <!-- refused -->
 
@@ -81,9 +80,9 @@ It also rejects a loop whose condition no pass can make true. That message reads
 
 ## restart
 
-`restart` returns to the condition test of the innermost enclosing `until`. The rest of that
-pass does not run. The checker follows the statements after an `if` that ends in `restart`
-only for the items that skipped the `if`.
+`restart` returns to the condition test of the innermost enclosing `until`, skipping the
+rest of that pass. The statements after an `if` that ends in `restart` see only the items
+that skipped the `if`.
 
 ```hinekora
 item {
@@ -106,10 +105,10 @@ until has "maximum life" t1 and has "cold resistance" {
 Outside every `until`, `restart` ends the
 craft for that item, as `fail` does.
 
-## fail
+## fail and done
 
-`fail` gives up on the item. The checker follows the statements after it only
-on the items that continue.
+`fail` gives up on the item. `done` ends the craft for it as finished. The checker follows
+the statements after either only on the items that continue.
 
 ```hinekora
 item {
@@ -127,10 +126,11 @@ until has "maximum life" >= 125 {
 }
 ```
 
-The checker runs the `divine` loop against items with tier 1 Life. A craft that fails every item has no final item.
+The checker runs the `divine` loop against items with tier 1 Life.
 
-A step written after a `fail` or `restart` in its block never runs, and the checker rejects
-it.
+The finished item holds the items a `done` ended and those reaching the end of the craft, an
+implicit `done`. A step after `fail`, `done` or `restart` in its block never runs, and the
+checker rejects it.
 
 ## Related
 

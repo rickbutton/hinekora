@@ -39,7 +39,15 @@ import { checkCached, parseCached } from "./analysis.js";
 import { type Atom, methodAt } from "./method-at.js";
 import { guarded } from "./guard.js";
 
-const CONTROL_KEYWORDS = ["until", "if", "else", "restart", "fail"];
+/** The words that open a control statement, each with what it does to the item. */
+const CONTROL_KEYWORDS: readonly (readonly [string, string])[] = [
+    ["until", "repeat until the item has what the condition asks"],
+    ["if", "run a block where the item has what the condition asks"],
+    ["else", "run a block where it has not"],
+    ["restart", "go back to the start of the loop with the item as it is"],
+    ["fail", "give up on this item: it is not worth more currency"],
+    ["done", "this item is finished"],
+];
 
 /** The keywords that can START a predicate (after `if` / `until` / `not`). */
 const PREDICATE_KEYWORDS: { label: string; detail: string; kind: CompletionItemKind }[] = [
@@ -325,7 +333,7 @@ function statementItems(source: string): CompletionItem[] {
             detail: `${d.name}(${d.params})`,
             kind: CompletionItemKind.Function,
         }));
-    return [...seen.values(), ...procs, ...CONTROL_KEYWORDS.map((w) => keyword(w))];
+    return [...seen.values(), ...procs, ...CONTROL_KEYWORDS.map(([w, d]) => keyword(w, d))];
 }
 
 function completionsAt(source: string, offset: number, registry: Registry): CompletionItem[] {

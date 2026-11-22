@@ -1,6 +1,6 @@
 /**
  * A loop whose body the cost walk can follow (methods read as transitions of
- * the tracked state, branches, loops nested inside, restarts and fails) is not
+ * the tracked state, branches, loops nested inside, restarts, fails and dones) is not
  * a sequence of independent attempts: each round starts from where the last
  * one left the item, and a reforge inside the body (an essence spammed again
  * once a kept modifier is lost) starts it over from its roll's outcomes. It is
@@ -72,8 +72,10 @@ export type ChainStep =
     | { readonly id: number; readonly kind: "reforge"; readonly outcomes: readonly Outcome[] }
     /** Back to the head of the loop around it, the item as it is. */
     | { readonly id: number; readonly kind: "restart" }
-    /** The craft ends. */
+    /** The craft ends short of a finished item. */
     | { readonly id: number; readonly kind: "fail" }
+    /** The craft ends with the item finished. */
+    | { readonly id: number; readonly kind: "done" }
     /** A method read on the item as each state has it: where it takes the
      *  state, with each outcome's chance (`track.ts` asks the checker). */
     | {
@@ -111,13 +113,14 @@ export interface ChainInput {
 }
 
 export interface Chain {
-    /** How the loop ends: in its exit or a `fail`. */
+    /** How the loop ends: in its exit, a `fail` or a `done`. */
     readonly exit: number;
     /** The part of `exit` that holds before the first round. */
     readonly exitAtStart: number;
     /** The mass a `restart` sent back to a loop's head, over all rounds. */
     readonly restart: number;
     readonly fail: number;
+    readonly done: number;
     /** Expected passes through the body in one attempt. */
     readonly passes: number;
     /** Per step id, how often it is reached in one attempt; for a branch how
@@ -126,7 +129,7 @@ export interface Chain {
     readonly reached: ReadonlyMap<number, number>;
     readonly taken: ReadonlyMap<number, number>;
     /** Mass that never leaves: on states from which no run of rounds reaches
-     *  the exit or a `fail` (the item full and nothing removing). */
+     *  the exit, a `fail` or a `done` (the item full and nothing removing). */
     readonly unresolved: number;
     /** The part of `unresolved` a loop inside never let go. */
     readonly stuckInside: number;
@@ -181,6 +184,7 @@ interface Totals {
     exit: number;
     restart: number;
     fail: number;
+    done: number;
     passes: number;
     reached: Map<number, number>;
     taken: Map<number, number>;
@@ -286,6 +290,7 @@ export function chain(input: ChainInput): Chain | undefined {
         exit: t.exit,
         restart: t.restart,
         fail: t.fail,
+        done: t.done,
         passes: t.passes,
         reached: t.reached,
         taken: t.taken,
@@ -305,6 +310,7 @@ function totals(inside = new Map<ChainStep, Inside>()): Totals {
         exit: 0,
         restart: 0,
         fail: 0,
+        done: 0,
         passes: 0,
         reached: new Map(),
         taken: new Map(),
@@ -411,7 +417,7 @@ function iterate(
 }
 
 /** What one round does to one state: where it may be at the head again, and
- *  whether it may leave, by the exit or a `fail`. */
+ *  whether it may leave, by the exit, a `fail` or a `done`. */
 interface Node {
     readonly state: ChainState;
     readonly next: ReadonlyMap<string, number>;
@@ -434,7 +440,7 @@ interface Sorted {
  * Which of the states going round can reach the exit at all: each is followed
  * one round on its own, and the states that round may hand on likewise, until
  * no new state turns up. A state leaves if some run of rounds from it ends in
- * the exit or a `fail`; it never does if none can; and where the states were too
+ * the exit, a `fail` or a `done`; it never does if none can; and where the states were too
  * many to follow to the end, a state that may reach one not followed is left
  * undecided. Rates play no part: a state that leaves once in a million rounds
  * leaves. A way on under `EDGE` is not followed and proves nothing, but
@@ -459,7 +465,7 @@ function fates(
         scratch.work = t.work;
         const point: Dist = new Map([[key(state), { state, prob: 1 }]]);
         const { leaving, next } = oneRound(body, point, exit, input, scratch);
-        const out = massOf(leaving) + scratch.fail;
+        const out = massOf(leaving) + scratch.fail + scratch.done;
         let faint = out > 0 && out <= EDGE;
         const to = new Map<string, number>();
         for (const [k, e] of next) {
@@ -567,6 +573,7 @@ function beyond(
         const ended =
             massOf(leaving) +
             (t.fail - was.fail) +
+            (t.done - was.done) +
             (t.stuck - was.stuck) +
             (t.undecided - was.undecided) +
             gone.never +
@@ -761,6 +768,7 @@ function enter(
 function addEntered(t: Totals, from: Totals, by: number): void {
     t.restart += from.restart * by;
     t.fail += from.fail * by;
+    t.done += from.done * by;
     t.stuck += from.stuck * by;
     t.undecided += from.undecided * by;
     for (const [id, n] of from.reached) add(t.reached, id, n * by);
@@ -793,6 +801,7 @@ function addScaled(t: Totals, was: Totals, factor: number): void {
     t.exit += (t.exit - was.exit) * factor;
     t.restart += (t.restart - was.restart) * factor;
     t.fail += (t.fail - was.fail) * factor;
+    t.done += (t.done - was.done) * factor;
     t.passes += (t.passes - was.passes) * factor;
     t.stuck += (t.stuck - was.stuck) * factor;
     t.undecided += (t.undecided - was.undecided) * factor;
@@ -807,7 +816,7 @@ function addScaled(t: Totals, was: Totals, factor: number): void {
 
 /**
  * One step outside a loop: where it takes each of the states, their weights
- * carried, and the weight on which it ends the craft. A restart, a `fail` or a
+ * carried, and the weight on which it ends the craft. A restart, a `fail`, a `done` or a
  * branch is the walk's to split, not a step's.
  */
 export function advance(
@@ -847,6 +856,9 @@ function apply(step: ChainStep, alive: Dist, input: ChainInput, t: Totals): Dist
             return new Map();
         case "fail":
             t.fail += massOf(alive);
+            return new Map();
+        case "done":
+            t.done += massOf(alive);
             return new Map();
         case "branch": {
             const inside: Dist = new Map();

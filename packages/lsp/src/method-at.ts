@@ -34,6 +34,7 @@ const BOUNDARY_WORDS = new Set([
     "else",
     "restart",
     "fail",
+    "done",
     "has",
     "group",
     "fractured",

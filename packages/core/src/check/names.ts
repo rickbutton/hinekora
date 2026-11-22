@@ -200,6 +200,7 @@ function collect(craft: Craft, u: Universe): CraftNames {
                 }
                 case "restart":
                 case "fail":
+                case "done":
                 case "paramStep":
                     break;
             }

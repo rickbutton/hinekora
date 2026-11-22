@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { check, costOf, possibleTypes, rowsOf } from "@hinekora/core";
+import { check, costOf, percentage, possibleTypes, rowsOf } from "@hinekora/core";
 import { loadDefaultEconomy, loadDefaultPoe1, registryOf } from "@hinekora/data";
 import { parse } from "@hinekora/parser";
 import { chartSource, checkSource, costSource, unjudgedText } from "./check.js";
@@ -139,6 +139,27 @@ describe("the base's own implicit, against real data", () => {
                 "  { Possibly: Corruption Implicit Modifier }",
                 "  one of 38 Corruption implicits",
             ].join("\n"),
+        );
+    });
+
+    it("prints as the finished item the items a done keeps and those that reach the end", () => {
+        const ring = `item { base: "Vermillion Ring" ilvl: 84 rarity: rare }\nvaal`;
+        const kept = run(`${ring}\nif implicit "maximum life" { done }\nfail`);
+        expect(kept.ok).toBe(true);
+        // Only the rings that kept their own implicit are finished.
+        expect(kept.output).toContain("  { Implicit Modifier — Life }");
+        expect(kept.output).not.toContain("Possibly: Implicit Modifier");
+        expect(kept.output).not.toContain("Corruption implicits");
+        // Kept by a done or reaching the end, the finished item is every ring.
+        const both = run(`${ring}\nif implicit "maximum life" { done }`);
+        expect(both.output).toBe(run(ring).output);
+    });
+
+    it("says no item is finished where every attempt fails", () => {
+        const r = run(`item { base: "Vermillion Ring" ilvl: 84 rarity: rare }\nvaal\nfail`);
+        expect(r.ok).toBe(true);
+        expect(r.output).toBe(
+            "✓ test.craft checks.\n\n  (the craft ends for every item before this point)",
         );
     });
 
@@ -1247,6 +1268,27 @@ until has "maximum life" {
         expect(costSource(`${ring}\nvaal`, "test.craft", registry, prices).output).not.toContain(
             "One finished item",
         );
+    });
+
+    it("counts a done as a finished item, beside a fail and the end of the craft", () => {
+        const ring = `item { base: "Vermillion Ring" ilvl: 84 rarity: rare prefixes: [ "maximum life" t1 ] }`;
+        const cost = (body: string): string =>
+            costSource(`${ring}\nvaal\n${body}`, "test.craft", registry, prices).output;
+        // Keeping the ring that holds its own implicit is finishing it.
+        const kept = cost(`if implicit "maximum life" { done }`);
+        expect(kept).not.toContain("ends short");
+        expect(kept).not.toContain("One finished item");
+        // Kept where it holds its implicit, abandoned where it holds none: a
+        // quarter of the time, by the Vaal Orb's no-change outcome, it holds a
+        // corruption implicit and reaches the end, which is finishing too.
+        const both = cost(
+            `if implicit "maximum life" { done }\nif not implicit "maximum endurance charges" { fail }`,
+        );
+        const short = 1 - 3 / 4 - (1 / 4) * (50 / 31_400);
+        expect(both).toContain(
+            `The craft ends short of a finished item ${percentage(short)} of the time.`,
+        );
+        expect(both).toMatch(/\nOne finished item takes ~1\.33 attempts: 1\.33 Vaal Orb/);
     });
 
     it("ends the craft where a Vaal Orb turns a jewel into a unique one", () => {

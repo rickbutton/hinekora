@@ -145,7 +145,7 @@ export interface EldritchDecl {
 // --- Statements (surface §3–§4) -------------------------------------------
 
 export type Stmt =
-    OperationStmt | RestartStmt | FailStmt | UntilStmt | IfStmt | CallStmt | ParamStmt;
+    OperationStmt | RestartStmt | FailStmt | DoneStmt | UntilStmt | IfStmt | CallStmt | ParamStmt;
 
 /**
  * A def parameter in statement position inside an operation function's body:
@@ -197,6 +197,13 @@ export interface RestartStmt {
  *  worth more currency. */
 export interface FailStmt {
     readonly kind: "fail";
+    readonly span: SourceSpan;
+}
+
+/** `done`, end the craft on this path with the item finished: it joins the
+ *  items that reach the end of the craft. */
+export interface DoneStmt {
+    readonly kind: "done";
     readonly span: SourceSpan;
 }
 

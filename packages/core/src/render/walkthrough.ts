@@ -63,12 +63,16 @@ export type Step =
           readonly else?: readonly Step[];
       })
     | (StepBase & { readonly kind: "restart" })
-    | (StepBase & { readonly kind: "fail" });
+    | (StepBase & { readonly kind: "fail" })
+    | (StepBase & { readonly kind: "done" });
 
 export interface Walkthrough {
     /** The item block and the item it declares. */
     readonly start: { readonly span: SourceSpan; readonly item?: ItemSet };
     readonly steps: readonly Step[];
+    /** The finished item: the items that reach the end of the craft or a
+     *  `done`; absent where the craft ends for every item short of both. */
+    readonly finish?: ItemSet;
 }
 
 function quote(s: string): string {
@@ -209,6 +213,8 @@ export function walkthrough(craft: Craft, result: CheckResult, registry: Registr
                 return [{ ...base, kind: "restart" }];
             case "fail":
                 return [{ ...base, kind: "fail" }];
+            case "done":
+                return [{ ...base, kind: "done" }];
             case "paramStep":
                 return [];
         }
@@ -220,6 +226,7 @@ export function walkthrough(craft: Craft, result: CheckResult, registry: Registr
             ...(startItem !== undefined && { item: startItem }),
         },
         steps: steps(craft.body),
+        ...(result.finalState !== undefined && { finish: result.finalState }),
     };
 }
 

@@ -17,7 +17,8 @@
  *   closed; an item never leaves a loop when no path from it meets the
  *   condition.
  * - A `restart` puts the item at the innermost loop enclosing it as written
- *   after inlining; at top level, and at a `fail`, the item's path ends.
+ *   after inlining; at top level, and at a `fail`, the item's path ends; at a
+ *   `done` it ends too, the item among the finished ones.
  * - A call runs its body with its arguments bound (check/defs.ts).
  *
  * The findings are properties of the reachable sets: a step is refused when
@@ -26,7 +27,7 @@
  * never exits when items reach its head and none meets it; a step is
  * unreachable when the step before it is reached and no item gets past it,
  * because every item before it in its block ended, went back to a loop's
- * head, or some of each (an item ends at a `fail`, a top-level `restart`, a
+ * head, or some of each (an item ends at a `fail`, a `done`, a top-level `restart`, a
  * refused or ending step, and in a loop no item leaves).
  */
 import type { Craft, Pred, Stmt } from "../../ast/ast.js";
@@ -78,7 +79,7 @@ export interface RefCraftRun {
      *  reaches. */
     readonly records: ReadonlyMap<string, RefRecord>;
     readonly findings: readonly RefFinding[];
-    /** The items past the last statement. */
+    /** The finished items: past the last statement, or ended by a `done`. */
     readonly final: CItemSet;
 }
 
@@ -249,6 +250,9 @@ export function refCheckCraft(
                 return toHead(loop, x);
             }
             case "fail":
+                return markEnd(n);
+            case "done":
+                put(final, x);
                 return markEnd(n);
             case "if": {
                 const arms = (n.arms ??= [

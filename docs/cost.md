@@ -9,7 +9,7 @@
 ## 1. Beside the checker, not in it
 
 The cost layer reads the checker's method table, op sequences and trace; nothing it
-computes can make the checker accept or refuse a step.
+computes makes the checker accept or refuse a step.
 ---
 
 ## 2. How the game rolls
@@ -155,10 +155,11 @@ unit price (`cost/prices.ts`, in the step's own currency).
   not worked out. States that cannot reach the exit hold the share that never
   leaves.
 - Any other `until` is independent attempts: the body is walked once for the chance
-  one ends in the exit or a `fail`; the expected rounds is its reciprocal, the share
-  ending in a `fail` ending the craft.
+  one ends in the exit, a `fail` or a `done`; the expected rounds is its reciprocal.
 - An **`if`** splits each branch by its condition's chance; a `restart` is back at
-  its loop's head with the item as it is.
+  its loop's head as the item is.
+
+A `fail`, a top-level `restart` or a destroyed item ends short; a `done` finishes.
 
 A loop the check refuses, whose
 exit no round reaches or the item sticks short of, or whose rounds were not worked

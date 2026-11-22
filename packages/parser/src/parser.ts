@@ -514,6 +514,10 @@ class Parser {
             const t = this.advance();
             return { kind: "fail", span: t.span };
         }
+        if (this.atKeyword("done")) {
+            const t = this.advance();
+            return { kind: "done", span: t.span };
+        }
         if (this.atKeyword("else")) {
             throw this.error("'else' without a matching 'if'");
         }

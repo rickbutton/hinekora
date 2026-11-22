@@ -320,6 +320,7 @@ const STMT_KIND: Readonly<Record<Step["kind"], Stmt["kind"]>> = {
     branch: "if",
     restart: "restart",
     fail: "fail",
+    done: "done",
 };
 
 /** "Rare · 2–3 modifiers": the item in a line, when nothing named changed. */
@@ -636,7 +637,8 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                     return;
                 }
                 case "restart":
-                case "fail": {
+                case "fail":
+                case "done": {
                     into.push(
                         anchor(
                             h(
@@ -645,16 +647,18 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
                                 h(
                                     "div",
                                     "row",
-                                    glyph(s.kind === "restart" ? "↺" : "■"),
+                                    glyph({ restart: "↺", fail: "■", done: "✓" }[s.kind]),
                                     h(
                                         "div",
                                         "body",
                                         h(
                                             "div",
                                             "title",
-                                            s.kind === "restart"
-                                                ? "back to the start of the repeat"
-                                                : "give up on this item",
+                                            {
+                                                restart: "back to the start of the repeat",
+                                                fail: "give up on this item",
+                                                done: "the item is finished",
+                                            }[s.kind],
                                         ),
                                     ),
                                 ),
@@ -779,7 +783,7 @@ export function createStoryboard(root: HTMLElement, hooks: StoryHooks): Storyboa
         );
         last = undefined;
         seq(w.steps, out);
-        const final = w.steps[w.steps.length - 1]?.after;
+        const final = w.steps.length === 0 ? undefined : w.finish;
         if (final !== undefined) {
             last = undefined;
             out.push(

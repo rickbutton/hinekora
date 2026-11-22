@@ -49,6 +49,19 @@ until has "maximum life" t1 {
         expect(c.nodes.get("n5")!.step!.kind).toBe("restart");
     });
 
+    it("ends a done at the finished item and a fail on its own end", () => {
+        const c = chart(`item { base: "Iron Ring" ilvl: 84 rarity: rare }
+chaos
+if has "maximum life" { done } else { fail }`);
+        const l = lines(c.text);
+        expect(l).toContain('n3(["`the item is finished`"]):::done');
+        expect(l).toContain('n4(["`give up on this item`"]):::fail');
+        expect(l).toContain(`n3 --> ${FLOW_END}`);
+        expect(l.filter((x) => x.startsWith("n4 "))).toEqual([]);
+        expect(c.nodes.get("n3")!.step!.kind).toBe("done");
+        expect(c.nodes.get("n4")!.step!.kind).toBe("fail");
+    });
+
     it("asks a decision in the player's words, alternatives listed under 'one of'", () => {
         const c = chart(`item { base: "Iron Ring" ilvl: 84 rarity: rare }
 if has "fire resistance" t1 or has "cold resistance" t1 { annul } else { exalt }`);

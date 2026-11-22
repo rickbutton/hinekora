@@ -104,8 +104,9 @@ export interface CostReport {
     /** The items the snapshot could not price; a step whose price is unknown says
      *  so in its own note. */
     readonly unpriced: readonly string[];
-    /** The chance the craft ends before its last step: on a `fail`, or on an
-     *  outcome that destroys the item or turns it into another. */
+    /** The chance the craft ends short of a finished item: on a `fail`, a
+     *  `restart` outside every loop, or an outcome that destroys the item or
+     *  turns it into another. A `done` is a finished item. */
     readonly short: number;
     /** What one finished item takes where the craft can end short of one:
      *  the attempts, one over the share that finishes, and what they spend
@@ -161,6 +162,8 @@ interface Frame {
     readonly scale: number;
     /** Mass ending the craft short (a `fail`, an outcome that ends it), per pass. */
     short: number;
+    /** Mass ending the craft with the item finished (a `done`), per pass. */
+    finished: number;
     /** Mass a `restart` sent back to the head of the loop around it. */
     restarted: number;
     /** The ways of being at each `restart`, with the item the check has
@@ -278,7 +281,7 @@ function walk(
     reading: Reading,
 ): Walk {
     const walker = new Walker(craft, result, registry, reading);
-    const top: Frame = { scale: 1, short: 0, restarted: 0 };
+    const top: Frame = { scale: 1, short: 0, finished: 0, restarted: 0 };
     walker.sequence(craft.body, [walker.start()], top);
     const steps = walker.steps;
     let total: Price[] = [];
@@ -659,6 +662,10 @@ class Walker {
                 frame.short += mass;
                 this.record(stmt, mass, frame, {});
                 return [];
+            case "done":
+                frame.finished += mass;
+                this.record(stmt, mass, frame, {});
+                return [];
             case "paramStep":
                 return withoutStates(branches);
             case "if":
@@ -997,11 +1004,11 @@ class Walker {
         // One attempt: the body from the head with mass one, in a frame of its
         // own, its steps discarded. A round ends where the body does or at a
         // restart, and the attempt ends there in the exit (its chance judged on
-        // each such branch's path), or in a `fail`, or goes another round.
+        // each such branch's path), or in a `fail` or a `done`, or goes another round.
         // The head of a later attempt is where the one before left off, short of
         // the exit, so a condition at the top of the body reads the last roll.
         const round = (from: readonly Branch[]) => {
-            const own: Frame = { scale: 1, short: 0, restarted: 0, again: [] };
+            const own: Frame = { scale: 1, short: 0, finished: 0, restarted: 0, again: [] };
             const saved = this.steps.length;
             const fell = this.sequence(stmt.body, from, own);
             this.steps.length = saved;
@@ -1010,7 +1017,7 @@ class Walker {
                 ...fell.map((branch) => ({ branch, at: exitAfter })),
                 ...(own.again ?? []),
             ];
-            return { ends, short: own.short };
+            return { ends, short: own.short, finished: own.finished };
         };
         const first = round([{ mass: 1, path: undefined }]);
         const head = this.headAfter(
@@ -1043,7 +1050,8 @@ class Walker {
             });
         }
         const failed = attempt.short;
-        if (exit === undefined || exit + failed <= 0) {
+        const finished = attempt.finished;
+        if (exit === undefined || exit + failed + finished <= 0) {
             return this.unknownLoop(
                 stmt,
                 branches,
@@ -1055,7 +1063,7 @@ class Walker {
                 head,
             );
         }
-        const ending = exit + failed;
+        const ending = exit + failed + finished;
         const expected = 1 / ending;
         this.record(stmt, mass, frame, {
             attempts: { chance: exit, expected },
@@ -1063,12 +1071,20 @@ class Walker {
         });
         // The real pass: the body's steps, each run `expected` times per pass of
         // the enclosing frame, from the loop head with mass one.
-        const inner: Frame = { scale: frame.scale * mass * expected, short: 0, restarted: 0 };
+        const inner: Frame = {
+            scale: frame.scale * mass * expected,
+            short: 0,
+            finished: 0,
+            restarted: 0,
+        };
         this.sequence(stmt.body, head, inner);
-        // Of all the loop's rounds, the share that ends in a `fail` ends the craft.
+        // Of all the loop's rounds, the share that ends in a `fail` ends the
+        // craft short, and the share that ends in a `done` ends it finished.
         const failShare = failed / ending;
+        const doneShare = finished / ending;
         frame.short += mass * failShare;
-        const continuing = mass * (1 - failShare);
+        frame.finished += mass * doneShare;
+        const continuing = mass * (1 - failShare - doneShare);
         if (exits.length === 0 || exit <= 0) return [{ mass: continuing, path: undefined }];
         const scale = continuing / exit;
         return exits.map((b) => ({ mass: b.mass * scale, path: b.path }));
@@ -1116,7 +1132,7 @@ class Walker {
         const mass = massOf(branches);
         this.lost = true;
         this.record(stmt, mass, frame, { note, unknown: true });
-        const inner: Frame = { scale: frame.scale * mass, short: 0, restarted: 0 };
+        const inner: Frame = { scale: frame.scale * mass, short: 0, finished: 0, restarted: 0 };
         this.unknowable(() => this.sequence(stmt.body, head, inner));
         return [{ mass, path: undefined }];
     }
@@ -1193,7 +1209,10 @@ class Walker {
         // so the figures stay finite: under half a hundredth it moves them
         // little and passes unremarked, above it the loop has no figure.
         const ending =
-            solved.exit + solved.fail + Math.min(1, solved.unresolved + solved.undecided);
+            solved.exit +
+            solved.fail +
+            solved.done +
+            Math.min(1, solved.unresolved + solved.undecided);
         const attempts = ending > 0 ? 1 / ending : 1;
         // Rounds, not attempts: an attempt here is as many rounds as the item
         // takes, and may be none when the loop is entered at its exit.
@@ -1230,7 +1249,7 @@ class Walker {
             stmts.forEach((s, i) => {
                 const step = steps[i]!;
                 const reached = perRound(solved.reached.get(step.id));
-                const inner: Frame = { scale, short: 0, restarted: 0 };
+                const inner: Frame = { scale, short: 0, finished: 0, restarted: 0 };
                 if (s.kind === "until" && step.kind === "loop") {
                     // An inner loop's rounds per time it is reached; the ones
                     // entered at its exit take none.
@@ -1259,7 +1278,7 @@ class Walker {
                         const body = e.inlined.body;
                         this.calling(() => this.within(e, () => emit(body, step.body)));
                     }
-                } else if (s.kind === "restart" || s.kind === "fail") {
+                } else if (s.kind === "restart" || s.kind === "fail" || s.kind === "done") {
                     this.record(s, reached, inner, {});
                 } else {
                     this.statement(s, [{ mass: reached, path: undefined }], inner);
@@ -1269,8 +1288,10 @@ class Walker {
         if (stuck) this.unknowable(() => emit(stmt.body, body));
         else emit(stmt.body, body);
         const failShare = ending > 0 ? solved.fail / ending : 0;
+        const doneShare = ending > 0 ? solved.done / ending : 0;
         frame.short += mass * failShare;
-        const leaving = mass * (1 - failShare);
+        frame.finished += mass * doneShare;
+        const leaving = mass * (1 - failShare - doneShare);
         if (!(solved.exit > 0)) return [{ mass: leaving, path: undefined }];
         return [
             {
@@ -1341,7 +1362,7 @@ class Walker {
         for (const s of stmts) {
             const id = stepOf.size;
             stepOf.set(id, s);
-            if (s.kind === "restart" || s.kind === "fail") {
+            if (s.kind === "restart" || s.kind === "fail" || s.kind === "done") {
                 out.push({ id, kind: s.kind });
                 continue;
             }

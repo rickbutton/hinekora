@@ -29,6 +29,7 @@ import {
     procDef,
     restart,
     fail,
+    done,
     until,
 } from "../__fixtures__/ast.js";
 import type {
@@ -307,7 +308,8 @@ function randomStmt(sp: Space, shape: Shape): Stmt {
         );
     }
     if (roll < 34 && shape.inLoop) return restart();
-    if (roll < 35) return fail();
+    // Chosen without a draw, so the crafts the seeds make keep their shape.
+    if (roll < 35) return (roll + shape.depth) % 2 === 0 ? done() : fail();
     if (roll < 41 && shape.calls && sp.procs.length > 0) {
         const p = r.pick(sp.procs);
         return p.params[0] === "m"
@@ -537,6 +539,7 @@ function stmtText(s: Stmt, indent: string): string[] {
             ];
         case "restart":
         case "fail":
+        case "done":
             return [`${at}${s.kind}${tag}`];
         case "paramStep":
             return [`${at}${s.param}${tag}`];

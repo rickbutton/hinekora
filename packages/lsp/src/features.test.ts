@@ -13,6 +13,15 @@ transmute
 regal`;
 
 describe("hover", () => {
+    it("says what fail and done do to the item, in the game's words", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }\nchaos\nif has "maximum life" { done } else { fail }`;
+        const done = getHover(src, src.indexOf("done") + 1, registry)!;
+        expect(done).toContain("`done` — this item is finished");
+        expect(done).toContain("part of the finished item the check shows");
+        const fail = getHover(src, src.indexOf("fail") + 1, registry)!;
+        expect(fail).toContain("`fail` — give up on this item: it is not worth more currency");
+    });
+
     it("shows a currency op's signature plus the item tooltip", () => {
         // Offset inside "regal" (last line): the headline is regal's signature,
         // the tooltip is the item AFTER regal — a Rare.
@@ -373,6 +382,15 @@ until has "maximum life" {
 });
 
 describe("completion", () => {
+    it("offers fail and done where a statement starts, each saying what it does to the item", () => {
+        const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }\nchaos\n`;
+        const items = getCompletions(src, src.length, registry);
+        const detail = (label: string) => items.find((c) => c.label === label)?.detail;
+        expect(detail("fail")).toBe("give up on this item: it is not worth more currency");
+        expect(detail("done")).toBe("this item is finished");
+        expect(items.map((c) => c.label)).not.toContain("stop");
+    });
+
     it("offers no Gilded Fossil, whose implicit the checker does not track", () => {
         const src = `item { base: "Iron Ring" ilvl: 84 rarity: rare }\nfossil "`;
         const labels = getCompletions(src, src.length, registry).map((c) => c.label);

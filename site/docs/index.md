@@ -37,7 +37,7 @@ Language
 - [The item block](./language/item)
 - [Names and tiers](./language/names)
 - [Conditions](./language/conditions)
-- [Loops: until, restart, fail](./language/until)
+- [Loops: until, restart, fail, done](./language/until)
 - [Branches: if and else](./language/if)
 - [Definitions](./language/def)
 

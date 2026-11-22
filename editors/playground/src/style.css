@@ -270,6 +270,7 @@ main {
 
 .block.restart .title,
 .block.fail .title,
+.block.done .title,
 .block.finish .title {
     font-weight: 500;
     color: var(--muted);

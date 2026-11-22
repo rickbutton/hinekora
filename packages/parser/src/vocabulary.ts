@@ -8,7 +8,7 @@
 import { ELDRITCH_TIERS, INFLUENCES, type Rarity } from "@hinekora/core";
 
 /** Words that open the item block, a statement or a def. */
-export const KEYWORDS = ["item", "def", "until", "if", "else", "restart", "fail"] as const;
+export const KEYWORDS = ["item", "def", "until", "if", "else", "restart", "fail", "done"] as const;
 
 /** Predicate connectives and the predicate symbols. */
 export const PREDICATE_WORDS = [

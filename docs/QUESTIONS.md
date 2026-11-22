@@ -588,16 +588,6 @@ elsewhere a Bloodstained Fossil always adds one. **Encoded in:**
 `check/ops/marks.ts` `corruptionImplicit`; `check/reference/ops/marks.ts`; `check/library.ts`;
 `cost/track.ts` `OUTCOME_ODDS`.
 
-### Q136 · decision · open — a `stop` that keeps the item
-
-**Q:** `stop` ends the craft for an item kept or not worth more currency (language.md
-§4.3), yet the cost report counts every `stop` as ending short, so `vaal` then
-`if implicit "maximum life" { stop }`, a keep, reads as four attempts per finished item.
-**Options:** (a) every `stop` ends short, as now; (b) a separate word says the item is
-kept, which the report counts as finished, **recommended**.
-**Assumed:** every `stop` ends short. **Encoded in:** `cost/report.ts` `walk` (the
-`stopped` share), `costOfChecked`; `cost/words.ts` `perFinishedText`.
-
 ### Q137 · probe · open — an essence's caster modifier on an attack wand
 
 **Q:** does an Essence of Woe, whose wand modifier is a caster one, apply to a Kinetic

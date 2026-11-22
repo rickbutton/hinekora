@@ -76,7 +76,7 @@ function checked(source: string, file: string, registry: Registry): CheckOutput 
 
     const result = check(parsed.craft, { registry });
     if (result.ok) {
-        // The final item in the game's copy-to-clipboard layout, indented under the verdict.
+        // The finished item in the game's copy-to-clipboard layout, indented under the verdict.
         const item = result.finalState
             ? indented(renderItemText(itemView(result.finalState, registry, parsed.craft)), 2)
             : "  (the craft ends for every item before this point)";

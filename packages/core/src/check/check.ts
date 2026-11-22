@@ -137,7 +137,8 @@ export interface CheckResult {
     readonly ok: boolean;
     readonly diagnostics: readonly CheckDiagnostic[];
     readonly trace: readonly TraceEntry[];
-    /** The items after the last statement, where some fall through it. */
+    /** The finished items: those past the last statement and those a `done`
+     *  ended, where there are some. */
     readonly finalState?: ItemSet;
     readonly findings: readonly Finding[];
 }
@@ -284,6 +285,10 @@ class Checker {
     private readonly procs = new Map<string, ProcEntry>();
     private readonly predDefs: PredDefs = { defs: this.defs, procs: this.procs };
     private readonly maxRounds: number;
+    /** The items a `done` ended. Gathered on the reporting pass alone: it
+     *  runs each loop's body once from the settled head, so a `done` there
+     *  meets every item that reaches it, each once. */
+    private finished: Dd | undefined;
     /** The items a `restart` sends back, by loop, innermost last. */
     private readonly frames: { back: Dd }[] = [];
     /** A loop's settled head by its body and entry: diagrams are canonical, so
@@ -343,7 +348,8 @@ class Checker {
             const first = start.state;
             this.trace.push({ span: craft.item.span, kind: "item", before: first, after: first });
             const flow = this.seq(first, craft.body);
-            return done(flow.fall ?? undefined);
+            const finished = this.u.dd.or(this.dd(flow.fall), this.finished ?? this.u.dd.EMPTY);
+            return done(stateOf(this.u, finished) ?? undefined);
         } catch (e) {
             const abandon =
                 e instanceof DdBudgetError ? new Abandoned(craft.item.span, TOO_MANY, "limit") : e;
@@ -545,6 +551,11 @@ class Checker {
                 return { fall: null, restarted: true, ended: false };
             }
             case "fail":
+                return ENDS;
+            case "done":
+                if (this.quiet === 0) {
+                    this.finished = this.u.dd.or(this.finished ?? this.u.dd.EMPTY, s.dd);
+                }
                 return ENDS;
             case "if":
                 return this.branch(s, stmt);

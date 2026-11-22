@@ -973,6 +973,44 @@ describe("a loop as a chain over the counts and the named modifiers", () => {
         expect(solved.unresolved).toBeCloseTo(0, 9);
     });
 
+    it("a done and a fail each take their share, apart", () => {
+        // Each round: a third of the items done, a third failed, a third at the exit.
+        const solved = chain({
+            atoms: [],
+            body: [
+                {
+                    id: 0,
+                    kind: "transition",
+                    next: () => [
+                        { state: at(1, 1), prob: 1 / 3 },
+                        { state: at(1, 2), prob: 1 / 3 },
+                        { state: at(0, 0), prob: 1 / 3 },
+                    ],
+                },
+                {
+                    id: 1,
+                    kind: "branch",
+                    holds: (s) => s.suffix === 1,
+                    body: [{ id: 2, kind: "done" }],
+                },
+                {
+                    id: 3,
+                    kind: "branch",
+                    holds: (s) => s.suffix === 2,
+                    body: [{ id: 4, kind: "fail" }],
+                },
+            ],
+            starts: [{ state: at(1, 0), weight: 1 }],
+            caps: CAPS,
+            exit: (s) => s.prefix === 0,
+        })!;
+        expect(solved.done).toBeCloseTo(1 / 3, 9);
+        expect(solved.fail).toBeCloseTo(1 / 3, 9);
+        expect(solved.exit).toBeCloseTo(1 / 3, 9);
+        expect(solved.passes).toBeCloseTo(1, 9);
+        expect(solved.unresolved).toBeCloseTo(0, 9);
+    });
+
     it("a body that changes nothing is not a chain", () => {
         expect(
             chain({
