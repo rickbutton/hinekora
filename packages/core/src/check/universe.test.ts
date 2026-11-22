@@ -261,6 +261,26 @@ describe("the universe's well-formed items", () => {
         expect(u.dd.valuesOf(unnamed, tier)).toEqual([0, 3]);
     });
 
+    it("are exactly the reference's where two eldritch implicits are named at different tiers", () => {
+        const rows = [
+            modRow({ id: "Pre1", type: "TypePre", gen: "prefix", text: "+(1-2) to Pre" }),
+            modRow({ id: "Suf1", type: "TypeSuf", gen: "suffix", text: "+(1-2) to Suf" }),
+        ];
+        const ladders = eldritchLadders("exarch", ["Blaze", "Frost"], "boots").filter(
+            (e) => !(e.type === "ImplicitFrost" && e.tier === 3),
+        );
+        const registry = buildRegistry({ bases: [BOOTS_BASE], mods: rows, eldritch: ladders });
+        const u = buildUniverse(registry, BOOTS_BASE, 84, undefined);
+        expectExact(u, refCtx(registry, BOOTS_BASE, 84), false, [0, 2, 3, 4]);
+        // Tier 3 names Blaze alone, so Frost is well-formed at every tier but it.
+        const tier = u.scalar("exarchTier");
+        const type = u.scalar("exarchType");
+        const frost = u.eldritchTypes("exarch").findIndex((t) => t === "ImplicitFrost");
+        expect(u.dd.valuesOf(u.dd.and(u.wf, u.dd.slotIn(type, [frost])), tier)).toEqual([
+            1, 2, 4, 5, 6,
+        ]);
+    });
+
     it("hold an imprint only when one is held, itself well-formed", () => {
         for (let seed = 1; seed <= 4; seed++) {
             const cat = generateCatalog(seed, { types: 2, metamods: ["multimod"] });
