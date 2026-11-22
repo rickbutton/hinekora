@@ -33,7 +33,7 @@ import { restrictionAllows } from "../model/effects.js";
 import type { Mod } from "../model/mod.js";
 import type { CorruptionImplicitSpec } from "../model/sources.js";
 import { MAX_STRANDS } from "../model/strands.js";
-import { veiledNamed } from "../model/veiled.js";
+import { isVeiledPlaceholder, veiledNamed } from "../model/veiled.js";
 import { resolveMessage, withArticle } from "../resolve/messages.js";
 import type { ClusterSize, Registry } from "../resolve/registry.js";
 import {
@@ -405,6 +405,15 @@ export function declareItem(item: ItemBlock, registry: Registry, diag: Diag): It
 
     let prefixCount = countAffixes(item.prefixes, "prefix");
     let suffixCount = countAffixes(item.suffixes, "suffix");
+    const veiledDecls = item.prefixes
+        .concat(item.suffixes)
+        .filter((_a, i) => affixes[i]?.type !== undefined && isVeiledPlaceholder(affixes[i].type));
+    if (veiledDecls.length > 1) {
+        diag(
+            "This item block declares two veiled modifiers; hinekora tracks one on an item.",
+            veiledDecls[1]!.span ?? at("suffixes"),
+        );
+    }
 
     if (item.rarity === "rare" && !canBeRare(base)) {
         diag(

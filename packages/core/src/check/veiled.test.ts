@@ -201,6 +201,12 @@ describe("a veiled modifier in the item block", () => {
             '"Veiled Suffix" is a suffix, but it is listed under prefixes.',
         );
     });
+
+    it("refuses two, as hinekora tracks one", () => {
+        expect(declared(["veiled"], ["of the Veil"]).diagnostics.map((d) => d.message)).toEqual([
+            "This item block declares two veiled modifiers; hinekora tracks one on an item.",
+        ]);
+    });
 });
 
 describe("unveil", () => {
