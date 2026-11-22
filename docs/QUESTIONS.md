@@ -7,7 +7,7 @@ change (`../AGENTS.md`, Asking without blocking).
 An entry is a **probe** (a rule the wiki does not settle; an item and a few steps in game)
 or a **decision** (a design or scope choice). To answer, write under the entry and change
 `open` to `answered`; the next session applies it and deletes the entry, and git history
-keeps it. New entries continue from Q138.
+keeps it. New entries continue from Q139.
 
 ```
 ### Qn · probe|decision · open — title
@@ -608,3 +608,20 @@ fixed how these wands showed "special Essence modifiers", which reads as yes.
 `essenceOps`; `check/ops/fill.ts`, `check/reference/ops/fill.ts` `implicitAllows`;
 `check/item-block.ts` `declareItem`, which still lets an essence's caster modifier be
 declared on the wand (a larger start cannot pass a refused craft).
+
+### Q138 · probe · open — the Breach rings' "Cannot roll Modifiers of Non-Cold Damage Types"
+
+**Q:** do the five Breach rings' implicits (Cryonic Ring's non-cold, and the fire,
+lightning, physical and chaos ones) work as an attack wand's? Which modifiers are "of a
+damage type"? Neither the rings' pages nor the data say;
+[Metamod § Version history](https://www.poewiki.net/wiki/Metamod#Version_history) (3.12.0)
+has the cannot-roll metacrafts read the tags shown.
+**Probe:** on a Cryonic Ring, Chaos Orbs until fire resistance; bench fire and cold
+resistance; an Essence of Anger; the grove's cold-to-fire resistance change; a veiled
+modifier unveiled; record each refusal or result.
+**Assumed:** while held, a modifier tagged fire, lightning, physical or chaos is barred
+from random rolls (a fossil's own rows too) and the bench; cold-and-fire resistance is
+barred, Herald of Thunder (no element tag) is not; the essence and the change are
+refused; the unveil is free. **Encoded in:** `model/metamods.ts` `withImplicitEffects`;
+`check/library.ts` `essenceOps`, `benchOps`, `harvestChangeOps`; `check/ops/fill.ts`,
+`check/reference/ops/fill.ts` `implicitAllows`.

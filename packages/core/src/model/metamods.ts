@@ -104,10 +104,13 @@ export function withMetamodEffects(catalog: readonly Mod[]): readonly Mod[] {
 }
 
 /**
- * The implicits with a cannot-roll metamod's words carrying its restriction:
- * the attack wands' "Cannot roll Caster Modifiers" bars from a roll what the
- * metamod bars. Matched on the text, so the implicit and the metamod share
- * one effect.
+ * The implicits whose words bar modifiers from rolling, each with the
+ * cannot-roll restrictions it carries:
+ * - a cannot-roll metamod's words, its restriction: the attack wands'
+ *   "Cannot roll Caster Modifiers" bars from a roll what the metamod bars;
+ * - "Cannot roll Modifiers of Non-Cold Damage Types" (the Breach rings'), a
+ *   restriction of each damage-type tag but the named one (QUESTIONS.md Q138).
+ * Matched on a line's text, so the implicit and the metamod share one effect.
  */
 export function withImplicitEffects(
     implicits: readonly ImplicitSpec[],
@@ -119,9 +122,30 @@ export function withImplicitEffects(
         if (m.text !== undefined && restricts.length > 0) byText.set(wordsOf(m.text), restricts);
     }
     return implicits.map((i) => {
-        const effects = byText.get(wordsOf(i.text));
-        return effects === undefined || i.effects !== undefined ? i : { ...i, effects };
+        if (i.effects !== undefined) return i;
+        const effects = i.text
+            .split("\n")
+            .flatMap((line) => byText.get(wordsOf(line)) ?? damageTypeRestricts(line));
+        return effects.length === 0 ? i : { ...i, effects };
     });
+}
+
+/** The tags a modifier "of a damage type" carries (QUESTIONS.md Q138). */
+const DAMAGE_TYPE_TAGS: readonly TagId[] = ["fire", "cold", "lightning", "physical", "chaos"].map(
+    TagId,
+);
+
+const NON_DAMAGE_TYPE = /^cannot roll modifiers of non-(\w+) damage types$/;
+
+/** "Cannot roll Modifiers of Non-<type> Damage Types": a restriction of each
+ *  other damage type's tag; none for words of another kind. */
+function damageTypeRestricts(line: string): readonly Effect[] {
+    const kept = NON_DAMAGE_TYPE.exec(wordsOf(line))?.[1];
+    if (kept === undefined || !DAMAGE_TYPE_TAGS.includes(TagId(kept))) return [];
+    return DAMAGE_TYPE_TAGS.filter((t) => t !== kept).map((tag) => ({
+        kind: "poolRestrict" as const,
+        tag,
+    }));
 }
 
 const wordsOf = (text: string): string => text.trim().toLowerCase().replace(/\s+/g, " ");

@@ -168,6 +168,22 @@ describe("the base's own implicit, against real data", () => {
     });
 });
 
+/** By base name, the tags its implicit bars from rolling, of every base
+ *  whose implicit bars any. */
+const restrictingBases = (): Map<string, string> => {
+    const out = new Map<string, string>();
+    for (const b of loadDefaultPoe1().bases) {
+        const tags = registry
+            .baseImplicits(b)
+            .flat()
+            .flatMap((i) =>
+                (i.effects ?? []).flatMap((e) => (e.kind === "poolRestrict" ? [e.tag] : [])),
+            );
+        if (tags.length > 0) out.set(b.name ?? b.id, tags.sort().join(","));
+    }
+    return new Map([...out].sort(([x], [y]) => (x < y ? -1 : 1)));
+};
+
 describe('the attack wands\' "Cannot roll Caster Modifiers" implicit, against real data', () => {
     const wand = (base: string, rarity: string, extra = "") =>
         `item {\n    base: "${base}"\n    ilvl: 85\n    rarity: ${rarity}\n${extra}}\n`;
@@ -175,14 +191,9 @@ describe('the attack wands\' "Cannot roll Caster Modifiers" implicit, against re
     const metamod = '    suffixes: [ bench "cannot roll caster modifiers" ]\n';
 
     it("is carried by exactly the Kinetic, Somatic and Blasting Wands", () => {
-        const bases = new Set<string>();
-        for (const b of loadDefaultPoe1().bases) {
-            const own = registry.baseImplicits(b).flat();
-            if (own.some((i) => (i.effects ?? []).some((e) => e.kind === "poolRestrict"))) {
-                bases.add(b.name ?? b.id);
-            }
-        }
-        expect([...bases].sort()).toEqual(["Blasting Wand", "Kinetic Wand", "Somatic Wand"]);
+        expect(
+            [...restrictingBases()].filter(([, tags]) => tags === "caster").map(([b]) => b),
+        ).toEqual(["Blasting Wand", "Kinetic Wand", "Somatic Wand"]);
     });
 
     it("bars a caster modifier from a Chaos Orb's rolls, as on no Imbued Wand", () => {
@@ -258,6 +269,85 @@ describe('the attack wands\' "Cannot roll Caster Modifiers" implicit, against re
         expect(errors(src)).toContain(
             "No caster modifier can be added while the item holds a Kinetic Wand's implicit, which bars them.",
         );
+    });
+});
+
+// Assumed to work as the attack wands' implicit (QUESTIONS.md Q138).
+describe('the Breach rings\' "Cannot roll Modifiers of Non-<type> Damage Types", against real data', () => {
+    const ring = (base: string, rarity: string, extra = "") =>
+        `item {\n    base: "${base}"\n    ilvl: 84\n    rarity: ${rarity}\n${extra}}\n`;
+    const errors = (src: string): string => run(src).output;
+    const others = (kept: string): string =>
+        ["chaos", "cold", "fire", "lightning", "physical"].filter((t) => t !== kept).join(",");
+
+    it("is carried by exactly the five Breach rings, each barring the other four types", () => {
+        expect([...restrictingBases()].filter(([b]) => b.endsWith(" Ring"))).toEqual([
+            ["Cryonic Ring", others("cold")],
+            ["Enthalpic Ring", others("fire")],
+            ["Fugitive Ring", others("chaos")],
+            ["Organic Ring", others("physical")],
+            ["Synaptic Ring", others("lightning")],
+        ]);
+    });
+
+    it("lets a Chaos Orb roll cold resistance on a Cryonic Ring, never fire resistance", () => {
+        const loop = (mod: string) => `alchemy\nuntil has "${mod}" {\n    chaos\n}\n`;
+        expect(errors(ring("Cryonic Ring", "normal") + loop("fire resistance"))).toMatch(
+            /can never exit/,
+        );
+        expect(run(ring("Cryonic Ring", "normal") + loop("cold resistance")).ok).toBe(true);
+        expect(run(ring("Iron Ring", "normal") + loop("fire resistance")).ok).toBe(true);
+    });
+
+    it("refuses a fire bench craft, a cold one not", () => {
+        const life = '    prefixes: [ "maximum life" t1 ]\n';
+        expect(errors(ring("Cryonic Ring", "rare", life) + 'bench "fire resistance"\n')).toContain(
+            '"fire resistance" is a fire modifier, which a Cryonic Ring\'s implicit bars while the item holds it.',
+        );
+        expect(run(ring("Cryonic Ring", "rare", life) + 'bench "cold resistance"\n').ok).toBe(true);
+    });
+
+    it("refuses a declared fire modifier, and not an unveiled one or once a corruption replaced the implicit", () => {
+        const fire = '    suffixes: [ "fire resistance" t1 ]\n';
+        expect(errors(ring("Cryonic Ring", "rare", fire))).toContain(
+            'A Cryonic Ring\'s implicit bars rolling or bench-crafting a fire modifier, so it holds no "fire resistance" while the implicit stays.',
+        );
+        const unveiled = '    prefixes: [ "JunMasterVeiledAddedFireAndLightningDamage" ]\n';
+        expect(run(ring("Cryonic Ring", "rare", unveiled)).ok).toBe(true);
+        const corrupted = ring(
+            "Cryonic Ring",
+            "rare",
+            `${fire}    corrupted\n    implicits: [ "endurance charges" ]\n`,
+        );
+        expect(errors(corrupted)).not.toMatch(/implicit bars/);
+    });
+
+    it("refuses an Essence of Anger and the grove's change into fire, as hinekora's reading", () => {
+        expect(errors(ring("Cryonic Ring", "normal") + 'essence "anger" t5\n')).toContain(
+            "hinekora takes the essence as refused",
+        );
+        const cold = '    suffixes: [ "cold resistance" t1 ]\n';
+        const change = 'harvest change "cold resistance" "fire resistance"\n';
+        expect(errors(ring("Cryonic Ring", "rare", cold) + change)).toContain(
+            "hinekora takes the grove's change into it as refused",
+        );
+        expect(run(ring("Iron Ring", "rare", cold) + change).ok).toBe(true);
+    });
+
+    // At item level 84 the ring rolls prefixes of weight 59250 and suffixes of
+    // 103600, cold resistance 8000 of the suffixes; the Cryonic Ring bars
+    // 12500 and 23500 of them, none cold. An alteration lays one modifier or,
+    // at even odds, a prefix and a suffix: 1/2 * c/(P+S) + 1/2 * c/S, which is
+    // 1/15.8 on an Iron Ring and 1/12.3 on a Cryonic Ring.
+    it("costs a cold resistance alteration loop by the weights the implicit leaves", () => {
+        const src = (base: string) =>
+            `${ring(base, "normal")}transmute\nuntil has "cold resistance" {\n    alteration\n}\n`;
+        const prices = loadDefaultEconomy();
+        const chance = (base: string) =>
+            /until has "cold resistance" \{\s+1\/(\d+) chance/.exec(
+                costSource(src(base), "test.craft", registry, prices).output,
+            )?.[1];
+        expect([chance("Iron Ring"), chance("Cryonic Ring")]).toEqual(["16", "12"]);
     });
 });
 

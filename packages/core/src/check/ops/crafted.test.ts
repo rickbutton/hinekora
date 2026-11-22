@@ -868,3 +868,50 @@ describe("a base implicit that bars caster modifiers, as the attack wands'", () 
         expect(out.items.every((x) => x.baseImplicit)).toBe(true);
     });
 });
+
+describe("a base implicit that bars modifiers of non-cold damage types, as a Cryonic Ring's", () => {
+    const cat = generateCatalog(8950, {
+        types: 4,
+        bench: true,
+        veiled: true,
+        harvest: true,
+        implicit: "nonColdDamage",
+    });
+    const s = setupOf(cat);
+    const fireBench = byId(cat, "BenchFireRes");
+    const coldBench = byId(cat, "BenchColdRes");
+    const [vPrefix] = cat.veiled;
+    const fireResult = byId(cat, "UnveiledPrefix1");
+
+    it("is exact on a fire and a cold bench craft and an unveil, held or not", () => {
+        const states = statesOf(s, 8951, {
+            rows: ids([fireBench, coldBench, vPrefix, fireResult]),
+            rarities: ["magic", "rare"],
+            baseImplicit: [false, true],
+            crafted: true,
+        });
+        exact(s, states, L.benchOps(fireBench));
+        exact(s, states, L.benchOps(coldBench));
+        exact(s, states, L.unveilOps(undefined));
+    });
+
+    it("refuses a fire bench craft while the implicit is held, a cold one never", () => {
+        const held = cItem({ rarity: "rare", mods: [], baseImplicit: true });
+        expect(outcomes(s, [held], L.benchOps(fireBench)).failure).toEqual({
+            kind: "implicitBars",
+            mod: cat.registry.typeLabel(fireBench.type),
+            tag: TagId("fire"),
+            how: "bench",
+        });
+        expect(outcomes(s, [held], L.benchOps(coldBench)).failure).toBeUndefined();
+        const gone = cItem({ rarity: "rare", mods: [] });
+        expect(outcomes(s, [gone], L.benchOps(fireBench)).failure).toBeUndefined();
+    });
+
+    it("does not bar an unveil's fire result", () => {
+        const held = cItem({ rarity: "rare", mods: [at(vPrefix!)], baseImplicit: true });
+        const out = outcomes(s, [held], L.unveilOps(undefined));
+        expect(fireResult.implicitTags.has(TagId("fire"))).toBe(true);
+        expect(out.items.some((x) => x.mods.some((m) => m.row === fireResult.id))).toBe(true);
+    });
+});

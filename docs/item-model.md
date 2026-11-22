@@ -123,15 +123,16 @@ Rules every row satisfies:
 
 ## 6. Effects
 
-A change to the crafting rules, active while its carrier is on the item. Effects
-are read off the modifiers present, so removing the carrier withdraws its effect. Which currency honours which effect is the table
+A change to the crafting rules, read off the modifiers present, so removing its carrier
+withdraws it. Which currency honours which effect is the table
 in [Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions).
 Four kinds cover the metamods ([Metamod](https://www.poewiki.net/wiki/Metamod),
 [Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Endgame_Changes) for the partial protections):
 
 - `PoolRestrict(category)`, "Cannot roll Attack / Caster Modifiers": bars rows of the
   category from being added, not present ones from removal ([Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Item_Changes)).
-  The attack wands' implicit carries the caster one while held, and bars the bench.
+  Held, the attack wands' implicit carries the caster one, a Breach ring's each other
+  damage type's (`QUESTIONS.md` Q138); both bar the bench.
 - `ProtectGeneration(generation)`, "Prefix / Suffix Modifiers cannot be changed": shields whatever
   occupies that side from removal and reroll.
 - `ProtectSome(generation, n)`, "1 Prefix Modifier cannot be changed" and its siblings:

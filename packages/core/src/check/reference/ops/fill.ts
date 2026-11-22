@@ -31,7 +31,7 @@
 import type { FillCount } from "../../ops/types.js";
 import type { DispatchKey } from "../../ops/handler.js";
 import { InternalError } from "../../ops/handler.js";
-import { addDraws, implicitCheckedRow, readsOfFill, reforgeTotals } from "../../ops/fill.js";
+import { addDraws, implicitCheckedRows, readsOfFill, reforgeTotals } from "../../ops/fill.js";
 import { baseImplicitOf, implicitBars } from "../../implicit.js";
 import { essenceRow } from "../../ops/pools.js";
 import type { FillOp } from "../../ops/steps.js";
@@ -153,11 +153,10 @@ export const checks: RefCheckTable = {
     implicitAllows: {
         reads: [],
         pass: (check, item, { ctx }) => {
-            const row = implicitCheckedRow(ctx, check);
+            const own = baseImplicitOf(ctx.registry, ctx.base);
             return (
                 !item.baseImplicit ||
-                row === undefined ||
-                implicitBars(baseImplicitOf(ctx.registry, ctx.base), row) === undefined
+                implicitCheckedRows(ctx, check).every((row) => implicitBars(own, row) === undefined)
             );
         },
     },

@@ -280,9 +280,16 @@ export function preconditionMessage(
             case "implicitBars": {
                 const base = state.base.name ?? "item";
                 const bars = `${withArticle(`${failure.tag} modifier`)}, which ${withArticle(base)}'s implicit bars`;
-                return failure.how === "bench"
-                    ? `"${failure.mod}" is ${bars} while the item ${sure ? "holds" : "may hold"} it.`
-                    : `This essence's "${failure.mod}" is ${bars}, and hinekora takes the essence as refused while the item ${sure ? "holds" : "may hold"} that implicit.`;
+                const holds = sure ? "holds" : "may hold";
+                switch (failure.how) {
+                    case "bench":
+                        return `"${failure.mod}" is ${bars} while the item ${holds} it.`;
+                    case "essence":
+                        return `This essence's "${failure.mod}" is ${bars}, and hinekora takes the essence as refused while the item ${holds} that implicit.`;
+                    case "harvest":
+                        return `"${failure.mod}" is ${bars}, and hinekora takes the grove's change into it as refused while the item ${holds} that implicit.`;
+                }
+                break;
             }
             case "tooFewMods":
                 return `${failure.what ?? "A Fracturing Orb"} needs at least ${failure.needed} modifiers on the item.`;

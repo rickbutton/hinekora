@@ -11,6 +11,7 @@ import { holdsFour, maxTotal } from "../../model/capacity.js";
 import { type Rarity, TagId } from "../../model/ids.js";
 import { baseImplicitOf, implicitBars } from "../implicit.js";
 import type { Mod } from "../../model/mod.js";
+import type { CannotRoll } from "../rules.js";
 import type { Dd } from "../dd.js";
 import type { ItemSet } from "../state.js";
 import { RARITIES, type Universe } from "../universe.js";
@@ -307,13 +308,36 @@ function takenBy(u: Universe, row: Mod): Dd {
     return r;
 }
 
-/** The row an `implicitAllows` check asks after: the bench's, or the
- *  essence's for the item's class. */
-export function implicitCheckedRow(
+/** The rows an `implicitAllows` check asks after: the bench's, the
+ *  essence's for the item's class, or the Harvest change's. */
+export function implicitCheckedRows(
     w: Where,
     check: Extract<Check, { kind: "implicitAllows" }>,
-): Mod | undefined {
-    return check.how === "bench" ? check.mod : essenceRow(w, check.spec);
+): readonly Mod[] {
+    switch (check.how) {
+        case "bench":
+            return [check.mod];
+        case "essence": {
+            const row = essenceRow(w, check.spec);
+            return row === undefined ? [] : [row];
+        }
+        case "harvest":
+            return check.mods;
+    }
+}
+
+/** The first of the rows the base's implicit bars, with the restriction
+ *  that bars it. */
+export function implicitBarred(
+    w: Where,
+    check: Extract<Check, { kind: "implicitAllows" }>,
+): { readonly row: Mod; readonly by: CannotRoll } | undefined {
+    const own = baseImplicitOf(w.registry, w.base);
+    for (const row of implicitCheckedRows(w, check)) {
+        const by = implicitBars(own, row);
+        if (by !== undefined) return { row, by };
+    }
+    return undefined;
 }
 
 type HarvestFailure = Extract<
@@ -391,17 +415,13 @@ export const checks: CheckTable = {
     implicitAllows: {
         reads: [],
         verdict: (check, _state, { u }) => {
-            const row = implicitCheckedRow(whereOf(u), check);
-            const barred =
-                row === undefined
-                    ? undefined
-                    : implicitBars(baseImplicitOf(u.registry, u.base), row);
+            const barred = implicitBarred(whereOf(u), check);
             return {
                 pass: barred === undefined ? u.dd.ALL : u.dd.slotIn(u.scalar("baseImplicit"), [0]),
                 word: () => ({
                     kind: "implicitBars",
-                    mod: row === undefined ? "" : u.registry.typeLabel(row.type),
-                    tag: barred?.tag ?? TagId(""),
+                    mod: barred === undefined ? "" : u.registry.typeLabel(barred.row.type),
+                    tag: barred?.by.tag ?? TagId(""),
                     how: check.how,
                 }),
             };

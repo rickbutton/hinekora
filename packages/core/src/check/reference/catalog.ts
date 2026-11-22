@@ -286,8 +286,10 @@ export interface CatalogOptions {
     readonly oneValue?: boolean;
     /** The base is made with an implicit (`BaseImplicit1`): its own; one that
      *  cannot be changed; one of two namesakes, the other made with none; or
-     *  "Cannot roll Caster Modifiers", as the attack wands are. */
-    readonly implicit?: "own" | "locked" | "variants" | "cannotRollCaster";
+     *  "Cannot roll Caster Modifiers", as the attack wands are; or "Cannot
+     *  roll Modifiers of Non-Cold Damage Types", as a Cryonic Ring is, its
+     *  types then tagged fire, cold or lightning at random. */
+    readonly implicit?: "own" | "locked" | "variants" | "cannotRollCaster" | "nonColdDamage";
     /** A corruption implicit pool on the base: two rows of one group and one
      *  wording, the second needing item level 30; one of another group; and
      *  one needing item level 80. */
@@ -357,7 +359,13 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
             stat,
             gen: i === 0 ? "prefix" : i === 1 ? "suffix" : r.pick(["prefix", "suffix"]),
             families,
-            tags: [...(r.chance(0.3) ? ["attack"] : []), ...(r.chance(0.3) ? ["caster"] : [])],
+            tags: [
+                ...(r.chance(0.3) ? ["attack"] : []),
+                ...(r.chance(0.3) ? ["caster"] : []),
+                ...(options.implicit === "nonColdDamage"
+                    ? [r.pick(["fire", "cold", "lightning"])]
+                    : []),
+            ],
             levels,
             numbered: levels.map(numbered),
         });
@@ -419,11 +427,10 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
     if (options.bench) {
         const of = r.pick(natural);
         bench = benchRow(`Bench${of.type}`, of, rowText(r, of.type.slice(4), 0, true));
-        // The attack wands' implicit bars a caster bench craft, so one is laid
+        // A barring implicit bars a bench craft of its kind, so one is laid
         // where it can be barred.
-        if (options.implicit === "cannotRollCaster") {
-            bench = { ...bench, implicitTags: new Set([TagId("caster")]) };
-        }
+        const barred = IMPLICIT_BARS[options.implicit ?? ""];
+        if (barred !== undefined) bench = { ...bench, implicitTags: new Set([TagId(barred)]) };
         extra.push(bench);
         benchCrafts.push(benchCraft(bench, base.itemClass));
     }
@@ -486,9 +493,10 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
                     domain: UNVEILED,
                     source: "veiled",
                     spawn: [{ tag: TAG_DEFAULT, weight: 100 }],
-                    // A caster result the attack wands' implicit does not bar.
-                    ...(options.implicit === "cannotRollCaster" &&
-                        gen === "prefix" && { implicitTags: ["caster"] }),
+                    // A result of the kind the base's implicit bars, which an
+                    // unveil offers all the same.
+                    ...(IMPLICIT_BARS[options.implicit ?? ""] !== undefined &&
+                        gen === "prefix" && { implicitTags: [IMPLICIT_BARS[options.implicit!]!] }),
                 }),
             );
         }
@@ -579,19 +587,20 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
             source: "fossil",
             spawn: [{ tag: TAG_DEFAULT, weight: 100 }],
         });
-        // Beside the attack wands' implicit the fossil adds a caster row it
-        // bars, and one it does not.
+        // Beside a barring implicit the fossil adds a row it bars, and one
+        // it does not.
+        const barTag = IMPLICIT_BARS[options.implicit ?? ""];
         const barred =
-            options.implicit === "cannotRollCaster"
+            barTag !== undefined
                 ? modRow({
                       id: "Delve2",
-                      type: "TypeDelveCaster",
+                      type: "TypeDelveBarred",
                       gen: row.gen === "prefix" ? "suffix" : "prefix",
-                      text: rowText(r, "DelveCaster", 0, true),
+                      text: rowText(r, "DelveBarred", 0, true),
                       domain: Domain("delve"),
                       source: "fossil",
                       spawn: [{ tag: TAG_DEFAULT, weight: 100 }],
-                      implicitTags: ["caster"],
+                      implicitTags: [barTag],
                   })
                 : undefined;
         extra.push(row, ...(barred === undefined ? [] : [barred]));
@@ -689,6 +698,13 @@ function corruptionPool(base: Base): CorruptionImplicitSpec[] {
     ];
 }
 
+/** By `implicit` option, a tag the base's implicit bars: what the bench,
+ *  fossil and unveiled rows laid where it can bar them carry. */
+const IMPLICIT_BARS: Readonly<Record<string, string>> = {
+    cannotRollCaster: "caster",
+    nonColdDamage: "fire",
+};
+
 /** The base of the `implicit` option, the bases the registry holds for it,
  *  and the implicit row. */
 function withImplicit(
@@ -699,6 +715,9 @@ function withImplicit(
     if (implicit === undefined) return { base: plain, bases: [plain], implicits: [] };
     const locked = implicit === "locked";
     const caster = implicit === "cannotRollCaster";
+    // Its restrictions are the registry's to derive from the words, as on
+    // real data (model/metamods.ts `withImplicitEffects`).
+    const breach = implicit === "nonColdDamage";
     const spec: ImplicitSpec = {
         id: ModId("BaseImplicit1"),
         type: TypeId("TypeBaseImplicit"),
@@ -708,7 +727,9 @@ function withImplicit(
             ? "Implicit Modifiers Cannot Be Changed"
             : caster
               ? "Cannot roll Caster Modifiers"
-              : "+(1-2) to Implicitness",
+              : breach
+                ? "Cannot roll Modifiers of Non-Cold Damage Types\n+2% to maximum Cold Resistance"
+                : "+(1-2) to Implicitness",
         ...(locked && { locked: true as const }),
         ...(caster && { effects: [{ kind: "poolRestrict" as const, tag: TagId("caster") }] }),
     };
@@ -751,12 +772,16 @@ function harvestResistances(
                     minLevel,
                     text: `+(${lo}-${lo + 1})% to ${e} Resistance`,
                     domain: base.domain,
+                    implicitTags: [e.toLowerCase()],
                 }),
             );
         });
         if (e !== "Lightning") {
             const of = extra.find((m) => m.id === ModId(`${e}Res1`))!;
-            const row = benchRow(`Bench${e}Res`, of, `+(3-4)% to ${e} Resistance`);
+            const row = {
+                ...benchRow(`Bench${e}Res`, of, `+(3-4)% to ${e} Resistance`),
+                implicitTags: of.implicitTags,
+            };
             extra.push(row);
             benchCrafts.push(benchCraft(row, base.itemClass));
         }

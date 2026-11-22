@@ -14,7 +14,7 @@ import { pool } from "../pool/pool.js";
 import { buildRegistry } from "../resolve/registry.js";
 import { influenceTagsOfKey } from "./influence.js";
 import { benchCraft, metamod, modRow } from "./reference/catalog.js";
-import { itemKey, refCtx, rowOf } from "./reference/item.js";
+import { type CItem, itemKey, refCtx, rowOf } from "./reference/item.js";
 import { eligible } from "./reference/ops/pools.js";
 import { allItems } from "./reference/sets.js";
 import { buildUniverse } from "./universe.js";
@@ -281,6 +281,79 @@ describe("under a base implicit that bars caster modifiers", () => {
                 const laid = new Set(r.state.items().flatMap((x) => x.mods.map((m) => m.row)));
                 expect([laid.has(plain!.id), laid.has(caster!.id)]).toEqual([true, !held]);
             }
+        }
+    });
+});
+
+describe("under a base implicit that bars modifiers of non-cold damage types", () => {
+    const opts = { types: 5, implicit: "nonColdDamage" } as const;
+    const plan = (seed: number, extra: Partial<Plan> = {}): Plan => ({
+        seed,
+        opts,
+        baseImplicit: [false, true],
+        ...extra,
+    });
+
+    it("bars each damage type but cold, held or not exactly", () => {
+        const cat = generateCatalog(7060, opts);
+        const own = cat.registry.baseImplicits(cat.base).flat()[0]!;
+        expect((own.effects ?? []).map((e) => (e.kind === "poolRestrict" ? e.tag : ""))).toEqual([
+            "fire",
+            "lightning",
+            "physical",
+            "chaos",
+        ]);
+        exactOn(plan(7061), () => adds(natural));
+        exactOn(plan(7062, { rarities: ["rare"], rows: 3 }), () => [
+            { kind: "strip" },
+            fill(natural, reforge([4, 6])),
+        ]);
+        exactOn(plan(7063, { rows: 3 }), () => adds({ kind: "tagged", tag: TagId("cold") }));
+    });
+
+    // A Vaal Orb's corruption implicit takes the base implicit's place, and
+    // the restriction goes with it: a draw on the items it leaves is exact,
+    // and may lay a fire row.
+    it("is lifted exactly once a corruption implicit replaces it", () => {
+        const cat = generateCatalog(7069, { ...opts, corruption: true });
+        const u = harnessUniverse(cat);
+        const replace: Transform[] = [{ kind: "corrupt" }, { kind: "corruptionImplicit" }];
+        const start = allItems(cat.ctx, { rows: [], rarities: ["magic"], baseImplicit: [true] });
+        const corrupted = refRunMethod(start, replace, cat.ctx).state;
+        const exactCorrupted = runMethod(fromItems(u, start.items())!, replace).state;
+        expect(listItems(u, exactCorrupted.dd).keys()).toEqual(corrupted.keys());
+        const ref = refRunMethod(corrupted, adds(natural), cat.ctx).state;
+        expect(listItems(u, runMethod(exactCorrupted, adds(natural)).state.dd).keys()).toEqual(
+            ref.keys(),
+        );
+        const fire = cat.natural.filter(
+            (m) => m.implicitTags.has(TagId("fire")) && m.minLevel <= cat.ilvl,
+        );
+        const laysFire = (x: CItem) => x.mods.some((c) => fire.some((m) => m.id === c.row));
+        expect(fire.length).toBeGreaterThan(0);
+        expect(ref.items().every((x) => !x.baseImplicit)).toBe(true);
+        expect(ref.items().some(laysFire)).toBe(true);
+    });
+
+    it("draws fire and lightning rows only once the implicit is gone, cold ones always", () => {
+        const cat = generateCatalog(7064, opts);
+        const tagged = (t: string) =>
+            cat.natural.filter((m) => m.implicitTags.has(TagId(t)) && m.minLevel <= cat.ilvl);
+        const others = [...tagged("fire"), ...tagged("lightning")];
+        expect([others.length > 0, tagged("cold").length > 0]).toEqual([true, true]);
+        for (const held of [true, false]) {
+            const items = allItems(cat.ctx, {
+                rows: [],
+                rarities: ["magic"],
+                baseImplicit: [held],
+            });
+            const laid = new Set(
+                refRunMethod(items, adds(natural), cat.ctx)
+                    .state.items()
+                    .flatMap((x) => x.mods.map((m) => m.row)),
+            );
+            expect(others.some((m) => laid.has(m.id))).toBe(!held);
+            expect(tagged("cold").every((m) => laid.has(m.id))).toBe(true);
         }
     });
 });

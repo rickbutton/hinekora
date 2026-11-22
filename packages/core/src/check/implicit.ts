@@ -18,7 +18,8 @@ export interface BaseImplicit {
     readonly locked: boolean;
     /** The cannot-roll restrictions it carries while held, on every base it
      *  stands for that is made with one: the attack wands' "Cannot roll Caster
-     *  Modifiers" (model/metamods.ts `withImplicitEffects`). */
+     *  Modifiers", a Breach ring's "Cannot roll Modifiers of Non-Cold Damage
+     *  Types" (model/metamods.ts `withImplicitEffects`). */
     readonly restricts: readonly CannotRoll[];
 }
 

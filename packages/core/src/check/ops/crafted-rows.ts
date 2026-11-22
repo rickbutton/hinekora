@@ -73,7 +73,7 @@ const unveilCache = new WeakMap<Registry, Map<Base, Map<string, readonly Mod[]>>
  *  `pool/veiled.ts` `veiledPool` with nothing present, of the placeholder's
  *  side (model/veiled.ts: a result of the same generation). An unveil heeds
  *  neither cannot-roll metamod, attack or caster, nor the attack wands'
- *  implicit (seen in game). */
+ *  implicit (seen in game), nor a Breach ring's (QUESTIONS.md Q138). */
 export function unveilRows(w: Where, gen: Gen): readonly Mod[] {
     let byBase = unveilCache.get(w.registry);
     if (byBase === undefined)

@@ -59,6 +59,7 @@ interface Plan {
     readonly corrupted?: boolean;
     readonly strands?: readonly number[];
     readonly rarities?: readonly Rarity[];
+    readonly baseImplicit?: readonly boolean[];
 }
 
 interface Setup {
@@ -86,6 +87,7 @@ function setup(plan: Plan): Setup {
             ...(plan.crafted && { crafted: true }),
             ...(plan.values && { values: true }),
             ...(plan.corrupted && { corrupted: CORRUPTIONS }),
+            ...(plan.baseImplicit && { baseImplicit: plan.baseImplicit }),
         },
         random: 6,
         maxSize: 12,
@@ -245,8 +247,16 @@ describe("the removal of one type and the Harvest change", () => {
         imprint: true,
         rows: 3,
     };
+    const breach: Plan = {
+        seed: 9425,
+        opts: { types: 2, harvest: true, implicit: "nonColdDamage" },
+        include: (cat) => rowsOf(cat, "FireRes2", "ColdRes1", "BenchColdRes"),
+        rows: 3,
+        crafted: true,
+        baseImplicit: [false, true],
+    };
     const fire = TypeId("TypeFireRes");
-    for (const plan of [harvest, protectedPlan, partial, crafted]) {
+    for (const plan of [harvest, protectedPlan, partial, crafted, breach]) {
         it(`is exact for the removal on catalogue ${plan.seed}`, () => {
             exactOn(plan, () => [removable(fire), removeType(fire)]);
             exactOn(plan, () => [removable(TypeId("TypeColdRes"))]);
@@ -269,6 +279,30 @@ describe("the removal of one type and the Harvest change", () => {
             );
         });
     }
+
+    it("refuses a change into a type the base's implicit bars, only while it is held", () => {
+        const cat = generateCatalog(breach.seed, breach.opts);
+        const u = harnessUniverse(cat);
+        const cold = cItem({ rarity: "rare", mods: [cMod(rowNamed(cat, "ColdRes1").id, 6)] });
+        for (const to of ["fire resistance", "lightning resistance"]) {
+            const ops = harvestOps(cat, "cold resistance", to);
+            const r = runMethod(fromItems(u, [{ ...cold, baseImplicit: true }])!, ops);
+            expect(r.ok ? undefined : r.failure).toMatchObject({
+                kind: "implicitBars",
+                how: "harvest",
+            });
+            expect(runMethod(fromItems(u, [cold])!, ops).ok).toBe(true);
+        }
+        const fire = cItem({
+            rarity: "rare",
+            mods: [cMod(rowNamed(cat, "FireRes1").id, 6)],
+            baseImplicit: true,
+        });
+        expect(
+            runMethod(fromItems(u, [fire])!, harvestOps(cat, "fire resistance", "cold resistance"))
+                .ok,
+        ).toBe(true);
+    });
 });
 
 // --- the documented decisions, item by item ----------------------------------------

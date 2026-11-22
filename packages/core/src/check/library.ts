@@ -173,8 +173,8 @@ export function essenceOps(spec: EssenceSpec, ilvl: number): readonly Op[] {
         require({ kind: "essenceRarity", tier: spec.tier }),
         canBeRare,
         require({ kind: "essenceGrant", spec }),
-        // An essence's modifier the attack wands' implicit bars is taken as
-        // refused (QUESTIONS.md Q137).
+        // An essence's modifier the base's implicit bars is taken as refused
+        // (QUESTIONS.md Q137, Q138).
         require({ kind: "implicitAllows", how: "essence", spec }),
         strip(),
         rarity("rare"),
@@ -195,7 +195,8 @@ export function benchOps(mod: Mod): readonly Op[] {
         require({ kind: "craftedBelowCap" }),
         require({ kind: "noGroupConflict", mod }),
         // Neither cannot-roll metamod, attack or caster, bars a bench craft;
-        // the attack wands' implicit does (each seen in game).
+        // the attack wands' implicit does (each seen in game), and a Breach
+        // ring's is assumed to (QUESTIONS.md Q138).
         require({ kind: "implicitAllows", how: "bench", mod }),
         fill({ kind: "bench", mod }, add([1, 1])),
     ];
@@ -610,6 +611,9 @@ export function harvestChangeOps(from: TypeId, label: string, to: readonly Mod[]
                 replacing: from,
             }),
         ),
+        // hinekora takes a change into a modifier the base's implicit bars as
+        // refused, though it is no random roll (QUESTIONS.md Q138).
+        require({ kind: "implicitAllows", how: "harvest", mods: to }),
         remove({ kind: "type", type: from }),
         fill({ kind: "rows", mods: to, replacing: from }, add([1, 1])),
     ];
