@@ -219,6 +219,12 @@ describe('the attack wands\' "Cannot roll Caster Modifiers" implicit, against re
         expect(errors(corrupted)).not.toMatch(/implicit bars/);
     });
 
+    it("accepts a declared caster modifier an unveil gave", () => {
+        const unveiled =
+            '    prefixes: [ "JunMasterVeiledSpellDamageAndManaRegenerationRate1h" ]\n';
+        expect(run(wand("Kinetic Wand", "rare", unveiled)).ok).toBe(true);
+    });
+
     // Seen in game: an unveil offers caster modifiers on these wands, as
     // beside the metamod.
     it("leaves an unveil's caster options as they are, the cost's chance unchanged", () => {
