@@ -12,9 +12,14 @@ vi.setConfig({ testTimeout: 120_000 });
 const registry = registryOf(loadDefaultPoe1());
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 
+// The site's operation pages are generated from site/examples/ops and are not
+// committed, so reading them would count their crafts twice on a built tree
+// and not at all on a fresh one.
+const SKIP = new Set(["node_modules", "public", "operations"]);
+
 function walk(dir: string, ext: string, out: string[] = []): string[] {
     for (const name of readdirSync(dir)) {
-        if (name === "node_modules" || name === "public" || name.startsWith(".")) continue;
+        if (SKIP.has(name) || name.startsWith(".")) continue;
         const p = join(dir, name);
         if (statSync(p).isDirectory()) walk(p, ext, out);
         else if (p.endsWith(ext)) out.push(p);
