@@ -951,7 +951,9 @@ export class Universe {
                         return { ...s, room: this.capsOf(rarity) };
                     }
                     case "corrupted":
-                        return { ...s, corrupted: value };
+                        // Read only by the corruption implicits: where they hold none
+                        // alone, remembering it would split the states for nothing.
+                        return corruptionRows.length > 1 ? { ...s, corrupted: value } : s;
                     case "influences":
                         return { ...s, influenced: this.influenceKeys[value] !== NO_INFLUENCE };
                     case "baseImplicit": {
