@@ -423,6 +423,7 @@ export const checks: CheckTable = {
                     mod: barred === undefined ? "" : u.registry.typeLabel(barred.row.type),
                     tag: barred?.by.tag ?? TagId(""),
                     how: check.how,
+                    ...(baseImplicitOf(u.registry, u.base).assumed && { assumed: true as const }),
                 }),
             };
         },

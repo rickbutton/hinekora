@@ -325,6 +325,8 @@ export type PreconditionFailure =
           readonly mod: string;
           readonly tag: TagId;
           readonly how: "bench" | "essence" | "harvest";
+          /** The implicit's restriction is hinekora's reading (`BaseImplicit.assumed`). */
+          readonly assumed?: true;
       }
     | { readonly kind: "fossilBaseRestricted"; readonly fossil: string }
     | { readonly kind: "wrongBase"; readonly needed: string }

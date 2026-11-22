@@ -123,10 +123,13 @@ export function withImplicitEffects(
     }
     return implicits.map((i) => {
         if (i.effects !== undefined) return i;
-        const effects = i.text
-            .split("\n")
-            .flatMap((line) => byText.get(wordsOf(line)) ?? damageTypeRestricts(line));
-        return effects.length === 0 ? i : { ...i, effects };
+        const lines = i.text.split("\n");
+        const effects = lines.flatMap(
+            (line) => byText.get(wordsOf(line)) ?? damageTypeRestricts(line),
+        );
+        if (effects.length === 0) return i;
+        const assumed = lines.some((line) => damageTypeRestricts(line).length > 0);
+        return { ...i, effects, ...(assumed && { assumed: true as const }) };
     });
 }
 

@@ -21,6 +21,9 @@ export interface BaseImplicit {
      *  Modifiers", a Breach ring's "Cannot roll Modifiers of Non-Cold Damage
      *  Types" (model/metamods.ts `withImplicitEffects`). */
     readonly restricts: readonly CannotRoll[];
+    /** Some of them are hinekora's reading, not the game's seen behaviour
+     *  (`ImplicitSpec.assumed`), so a refusal says so. */
+    readonly assumed: boolean;
 }
 
 export function baseImplicitOf(registry: Registry, base: Base): BaseImplicit {
@@ -42,6 +45,7 @@ export function baseImplicitOf(registry: Registry, base: Base): BaseImplicit {
         every: variants.every((v) => v.length > 0),
         locked: has && base.implicitLocked === true,
         restricts,
+        assumed: variants.some((v) => v.some((i) => i.assumed === true)),
     };
 }
 

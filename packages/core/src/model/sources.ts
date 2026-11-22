@@ -133,6 +133,9 @@ export interface ImplicitSpec {
     /** The cannot-roll restriction of the metamod whose words the row reads
      *  (model/metamods.ts `withImplicitEffects`). */
     readonly effects?: readonly Effect[];
+    /** Its restrictions are hinekora's reading of its words, not the game's
+     *  seen behaviour (QUESTIONS.md Q138). */
+    readonly assumed?: true;
 }
 
 /**

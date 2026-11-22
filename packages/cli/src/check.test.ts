@@ -336,7 +336,7 @@ describe('the Breach rings\' "Cannot roll Modifiers of Non-<type> Damage Types",
     it("refuses a fire bench craft, a cold one not", () => {
         const life = '    prefixes: [ "maximum life" t1 ]\n';
         expect(errors(ring("Cryonic Ring", "rare", life) + 'bench "fire resistance"\n')).toContain(
-            '"fire resistance" is a fire modifier, which a Cryonic Ring\'s implicit bars while the item holds it.',
+            '"fire resistance" is a fire modifier, which hinekora takes a Cryonic Ring\'s implicit to bar while the item holds it.',
         );
         expect(run(ring("Cryonic Ring", "rare", life) + 'bench "cold resistance"\n').ok).toBe(true);
     });
@@ -344,7 +344,7 @@ describe('the Breach rings\' "Cannot roll Modifiers of Non-<type> Damage Types",
     it("refuses a declared fire modifier, and not an unveiled one or once a corruption replaced the implicit", () => {
         const fire = '    suffixes: [ "fire resistance" t1 ]\n';
         expect(errors(ring("Cryonic Ring", "rare", fire))).toContain(
-            'A Cryonic Ring\'s implicit bars rolling or bench-crafting a fire modifier, so it holds no "fire resistance" while the implicit stays.',
+            'Hinekora takes a Cryonic Ring\'s implicit to bar rolling or bench-crafting a fire modifier, so it holds no "fire resistance" while the implicit stays.',
         );
         const unveiled = '    prefixes: [ "JunMasterVeiledAddedFireAndLightningDamage" ]\n';
         expect(run(ring("Cryonic Ring", "rare", unveiled)).ok).toBe(true);

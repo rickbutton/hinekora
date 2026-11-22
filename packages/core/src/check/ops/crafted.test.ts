@@ -902,6 +902,7 @@ describe("a base implicit that bars modifiers of non-cold damage types, as a Cry
             mod: cat.registry.typeLabel(fireBench.type),
             tag: TagId("fire"),
             how: "bench",
+            assumed: true,
         });
         expect(outcomes(s, [held], L.benchOps(coldBench)).failure).toBeUndefined();
         const gone = cItem({ rarity: "rare", mods: [] });

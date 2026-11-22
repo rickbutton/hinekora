@@ -279,11 +279,15 @@ export function preconditionMessage(
                 return "This currency can't be used while a metacraft modifier is on the item — remove it first.";
             case "implicitBars": {
                 const base = state.base.name ?? "item";
-                const bars = `${withArticle(`${failure.tag} modifier`)}, which ${withArticle(base)}'s implicit bars`;
+                const implicit = `${withArticle(base)}'s implicit`;
+                const tagged = withArticle(`${failure.tag} modifier`);
+                const bars = `${tagged}, which ${implicit} bars`;
                 const holds = sure ? "holds" : "may hold";
                 switch (failure.how) {
                     case "bench":
-                        return `"${failure.mod}" is ${bars} while the item ${holds} it.`;
+                        return failure.assumed === true
+                            ? `"${failure.mod}" is ${tagged}, which hinekora takes ${implicit} to bar while the item ${holds} it.`
+                            : `"${failure.mod}" is ${bars} while the item ${holds} it.`;
                     case "essence":
                         return `This essence's "${failure.mod}" is ${bars}, and hinekora takes the essence as refused while the item ${holds} that implicit.`;
                     case "harvest":

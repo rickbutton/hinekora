@@ -548,8 +548,12 @@ export function declareItem(item: ItemBlock, registry: Registry, diag: Diag): It
         );
         if (barred.length === 0 || barred.length < (a.rows ?? []).length) return;
         const tag = restricts.find((e) => !restrictionAllows(e, barred[0]!))!.tag;
+        const implicit = `${withArticle(base.name ?? "item")}'s implicit`;
+        const bars = baseImplicitOf(registry, base).assumed
+            ? `Hinekora takes ${implicit} to bar`
+            : `${capitalise(implicit)} bars`;
         diag(
-            `${capitalise(withArticle(base.name ?? "item"))}'s implicit bars rolling or bench-crafting ${withArticle(`${tag} modifier`)}, so it holds no "${decl.mod}" while the implicit stays.`,
+            `${bars} rolling or bench-crafting ${withArticle(`${tag} modifier`)}, so it holds no "${decl.mod}" while the implicit stays.`,
             decl.span ?? at(i < item.prefixes.length ? "prefixes" : "suffixes"),
         );
     });
