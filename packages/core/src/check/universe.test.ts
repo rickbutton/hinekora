@@ -281,6 +281,23 @@ describe("the universe's well-formed items", () => {
         ]);
     });
 
+    it("are exactly the reference's where two items differ only in which family they claim", () => {
+        // The two prefixes share Aura, so they sit together ahead of the
+        // suffixes: with either alone the item has the same room and one family
+        // claimed, Fire or Ice, and each suffix fits only one of the two.
+        const row = (id: string, gen: Gen, families: string[]): Mod =>
+            modRow({ id, type: `Type${id}`, gen, families, text: `+1 to ${id}` });
+        const rows = [
+            row("Burn", "prefix", ["Aura", "Fire"]),
+            row("Chill", "prefix", ["Aura", "Ice"]),
+            row("Ember", "suffix", ["Fire"]),
+            row("Frost", "suffix", ["Ice"]),
+        ];
+        const registry = buildRegistry({ bases: [RING_BASE], mods: rows });
+        const u = buildUniverse(registry, RING_BASE, 84, undefined);
+        expectExact(u, refCtx(registry, RING_BASE, 84), true);
+    });
+
     it("hold an imprint only when one is held, itself well-formed", () => {
         for (let seed = 1; seed <= 4; seed++) {
             const cat = generateCatalog(seed, { types: 2, metamods: ["multimod"] });
