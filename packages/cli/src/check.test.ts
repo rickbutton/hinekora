@@ -205,17 +205,29 @@ const restrictingBases = (): Map<string, string> => {
     return new Map([...out].sort(([x], [y]) => (x < y ? -1 : 1)));
 };
 
+describe("the bases whose implicit bars modifiers from rolling, against real data", () => {
+    // A reworded export would add or drop a base here without another error.
+    it("are the three attack wands and the five Breach rings, each with what it bars", () => {
+        const others = (kept: string): string =>
+            ["chaos", "cold", "fire", "lightning", "physical"].filter((t) => t !== kept).join(",");
+        expect([...restrictingBases()]).toEqual([
+            ["Blasting Wand", "caster"],
+            ["Cryonic Ring", others("cold")],
+            ["Enthalpic Ring", others("fire")],
+            ["Fugitive Ring", others("chaos")],
+            ["Kinetic Wand", "caster"],
+            ["Organic Ring", others("physical")],
+            ["Somatic Wand", "caster"],
+            ["Synaptic Ring", others("lightning")],
+        ]);
+    });
+});
+
 describe('the attack wands\' "Cannot roll Caster Modifiers" implicit, against real data', () => {
     const wand = (base: string, rarity: string, extra = "") =>
         `item {\n    base: "${base}"\n    ilvl: 85\n    rarity: ${rarity}\n${extra}}\n`;
     const errors = (src: string): string => run(src).output;
     const metamod = '    suffixes: [ bench "cannot roll caster modifiers" ]\n';
-
-    it("is carried by exactly the Kinetic, Somatic and Blasting Wands", () => {
-        expect(
-            [...restrictingBases()].filter(([, tags]) => tags === "caster").map(([b]) => b),
-        ).toEqual(["Blasting Wand", "Kinetic Wand", "Somatic Wand"]);
-    });
 
     it("bars a caster modifier from a Chaos Orb's rolls, as on no Imbued Wand", () => {
         const loop = `alchemy\nuntil has "increased spell damage" {\n    chaos\n}\n`;
@@ -298,19 +310,6 @@ describe('the Breach rings\' "Cannot roll Modifiers of Non-<type> Damage Types",
     const ring = (base: string, rarity: string, extra = "") =>
         `item {\n    base: "${base}"\n    ilvl: 84\n    rarity: ${rarity}\n${extra}}\n`;
     const errors = (src: string): string => run(src).output;
-    const others = (kept: string): string =>
-        ["chaos", "cold", "fire", "lightning", "physical"].filter((t) => t !== kept).join(",");
-
-    it("is carried by exactly the five Breach rings, each barring the other four types", () => {
-        expect([...restrictingBases()].filter(([b]) => b.endsWith(" Ring"))).toEqual([
-            ["Cryonic Ring", others("cold")],
-            ["Enthalpic Ring", others("fire")],
-            ["Fugitive Ring", others("chaos")],
-            ["Organic Ring", others("physical")],
-            ["Synaptic Ring", others("lightning")],
-        ]);
-    });
-
     it("lets a Chaos Orb roll cold resistance on a Cryonic Ring, never fire resistance", () => {
         const loop = (mod: string) => `alchemy\nuntil has "${mod}" {\n    chaos\n}\n`;
         expect(errors(ring("Cryonic Ring", "normal") + loop("fire resistance"))).toMatch(
