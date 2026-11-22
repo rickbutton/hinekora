@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
     andp,
     benchRemove,
@@ -53,6 +53,10 @@ import type { Dd } from "./dd.js";
 import { compareCraft } from "./reference/craft.js";
 import { initialItems } from "./reference/initial.js";
 import { rng, type Rng } from "./reference/rng.js";
+
+// Each craft runs against the reference's items listed in full: a second or two
+// alone, three times that beside the rest of the suite on a loaded machine.
+vi.setConfig({ testTimeout: 30_000 });
 
 // --- the catalogues ---------------------------------------------------------------
 
