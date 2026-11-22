@@ -185,6 +185,23 @@ function elevatedOnlyTypes(catalog: readonly Mod[]): ReadonlySet<TypeId> {
     return made;
 }
 
+const byType = new WeakMap<readonly Mod[], ReadonlyMap<TypeId, readonly Mod[]>>();
+
+/** A catalogue's rows of each type, in catalogue order; one scan per catalogue. */
+function catalogRows(catalog: readonly Mod[], type: TypeId): readonly Mod[] {
+    let rows = byType.get(catalog);
+    if (rows === undefined) {
+        const index = new Map<TypeId, Mod[]>();
+        for (const m of catalog) {
+            const list = index.get(m.type);
+            if (list) list.push(m);
+            else index.set(m.type, [m]);
+        }
+        byType.set(catalog, (rows = index));
+    }
+    return rows.get(type) ?? [];
+}
+
 /** What each tier of lead takes off an implicit's chance to rise under an Orb
  *  of Conflict, and the least chance either side is given. */
 const CONFLICT_STEP = 0.11;
@@ -407,16 +424,14 @@ export class Tracker {
                 // A row no roll lays down (a bench craft's): placed, never drawn,
                 // on the side of the rows the craft's items hold, where its
                 // type's rows elsewhere sit on both.
-                rows = registry.catalog
-                    .filter((m) => m.type === type)
-                    .map((m) => ({ id: m.id, weight: 1 }));
+                rows = catalogRows(registry.catalog, type).map((m) => ({ id: m.id, weight: 1 }));
                 const sides = new Set(items.flatMap((a) => rowsOf(a, type).map((m) => m.gen)));
                 if (sides.size === 1) gen = [...sides][0]!;
             } else {
                 // An elevated row of a type that rolls: an Orb of Dominance
                 // alone makes it, so it is placed, never drawn.
-                for (const m of registry.catalog) {
-                    if (m.type === type && m.source === "elevated" && m.domain === base.domain)
+                for (const m of catalogRows(registry.catalog, type)) {
+                    if (m.source === "elevated" && m.domain === base.domain)
                         rows.push({ id: m.id, weight: 0 });
                 }
             }
