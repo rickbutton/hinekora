@@ -1344,7 +1344,18 @@ class Walker {
                 }
             }
         }
-        return (state) => holdsOn(pred, state, tracker.index, fixed);
+        // A chain asks this of the same state objects round after round (the
+        // tracker hands its outcomes back as they were), and the answer
+        // depends on the state alone.
+        const memo = new WeakMap<ChainState, boolean>();
+        return (state) => {
+            let holds = memo.get(state);
+            if (holds === undefined) {
+                holds = holdsOn(pred, state, tracker.index, fixed);
+                memo.set(state, holds);
+            }
+            return holds;
+        };
     }
 
     /**
