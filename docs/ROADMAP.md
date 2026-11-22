@@ -40,10 +40,10 @@ waits until a craft calls for it.
 - **a name's unveil narrowing by base**: it reads what any item unveils, so a two-handed
   weapon's block names tie with types it cannot roll, and a helmet's Spectre name finds
   a type only Catarina unveils.
-- **a first check's speed**: a flatter node layout, a prebuilt data snapshot, a bundled
+- **speed**: the cost layer keys every state by a string (`cost/chain.ts`), and
+  well-formedness copies its state and builds a string key at each step; numeric keys
+  for both. For a first check, a flatter node layout, a prebuilt data snapshot, a bundled
   command line.
-- **the `baseImplicit` slot on every base**, about 12% of a first check's time and 14% of
-  a cost's: it could be left off a base with no implicit or one that cannot change.
 - English negation sugar (`doesn't have` → `not has`); a power-user annotation tier for
   reusable techniques; a way to name an unveiled modifier whose words a natural one
   shares other than by its mod id.
