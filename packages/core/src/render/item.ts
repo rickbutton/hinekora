@@ -60,7 +60,7 @@ import {
 } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import type { CorruptionImplicitSpec } from "../model/sources.js";
-import { isUnveiledResult } from "../model/veiled.js";
+import { isUnveiledResult, isVeiledPlaceholder } from "../model/veiled.js";
 import type { Registry } from "../resolve/registry.js";
 import { rollableGen, rollableTiers, tierLadders, tierNumber } from "../resolve/tiers.js";
 import { baseLabel } from "./render.js";
@@ -289,7 +289,7 @@ function modView(
               ? held
               : [...rollableTiers(registry.catalog, s.u.base, s.u.ilvl, type, tags)];
     const texts = mods.map((m) => m.text).filter((t): t is string => t !== undefined);
-    const span = texts.length > 0 ? rollSpan(texts) : textless(type, gen, mods, registry);
+    const span = texts.length > 0 ? rollSpan(texts) : textless(type, gen, registry);
     // A value narrower than the rows roll (a condition on it) narrows the first span.
     const value =
         pinned.length > 0 ? hull(pinned.map((m) => valueSpan(s, type, m.id))) : valueSpan(s, type);
@@ -327,16 +327,15 @@ function modView(
 }
 
 /**
- * The text of a modifier whose rows have none: its type's wording, else as
- * the wiki writes a veiled modifier's, its name and side ("Veiled (prefix)",
- * "of the Veil (suffix)": the `mods` Cargo table's `stat_text` of the
- * placeholders). Never the type's id.
+ * The text of a modifier whose rows have none: its type's wording; a veiled
+ * modifier's line, "Veiled Prefix" or "Veiled Suffix", as the game's
+ * advanced copy prints it under `{ Prefix Modifier "Veiled" }` (seen on a
+ * 3.30 item); else its side. Never the type's id.
  */
-function textless(type: TypeId, gen: Gen, mods: readonly Mod[], registry: Registry): string {
+function textless(type: TypeId, gen: Gen, registry: Registry): string {
+    if (isVeiledPlaceholder(type)) return `Veiled ${capitalise(gen)}`;
     const label = registry.typeLabel(type);
-    if (label !== type) return label;
-    const name = mods.find((m) => m.name !== undefined && m.name !== "")?.name;
-    return name === undefined ? `${capitalise(gen)} modifier` : `${name} (${gen})`;
+    return label !== type ? label : `${capitalise(gen)} modifier`;
 }
 
 function hull(ranges: readonly (Range | undefined)[]): Range | undefined {

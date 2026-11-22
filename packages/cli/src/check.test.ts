@@ -75,6 +75,14 @@ describe("the base's own implicit, against real data", () => {
         );
     });
 
+    it("heads a Kinetic Wand's and a veiled prefix as a 3.30 copy does", () => {
+        const out = run(
+            `item { base: "Kinetic Wand" ilvl: 85 rarity: rare prefixes: [ "veiled" ] }`,
+        ).output;
+        expect(out).toContain("  { Implicit Modifier }\n  Cannot roll Caster Modifiers");
+        expect(out).toContain('  { Prefix Modifier "Veiled" }\n  Veiled Prefix');
+    });
+
     it("shows a Two-Stone Ring's as one of its three", () => {
         expect(implicits(`item { base: "Two-Stone Ring" ilvl: 84 rarity: normal }`)).toBe(
             [
