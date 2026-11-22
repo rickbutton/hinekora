@@ -178,7 +178,39 @@ const MAX_SOLVED = 400;
 /** How much of the mass that set out a solved round may leave unaccounted for. */
 const BALANCE = 1e-6;
 
-type Dist = Map<string, { state: ChainState; prob: number }>;
+type Dist = Map<StateId, { state: ChainState; prob: number }>;
+
+/** A state's content as a small number, the same for every state of that
+ *  content within one solve. */
+type StateId = number;
+
+/**
+ * The states one solve meets, each content numbered once. Steps build states
+ * afresh, but the tracker hands the same outcome objects back round after
+ * round, so the content is read once per state object; the table lives as
+ * long as the solve, so no state outlives it here.
+ */
+class StateIds {
+    private readonly byState = new Map<ChainState, StateId>();
+    private readonly byContent = new Map<string, StateId>();
+
+    of(s: ChainState): StateId {
+        let id = this.byState.get(s);
+        if (id === undefined) {
+            let content = `${s.prefix}/${s.suffix}/${s.rows.map((r) => r ?? "-").join(",")}`;
+            if (s.held !== undefined) content += `|${this.of(s.held)}`;
+            id = this.byContent.get(content);
+            if (id === undefined) this.byContent.set(content, (id = this.byContent.size));
+            this.byState.set(s, id);
+        }
+        return id;
+    }
+}
+
+/** A chain's input with the solve's state table. */
+interface Solve extends ChainInput {
+    readonly ids: StateIds;
+}
 
 interface Totals {
     exit: number;
@@ -204,10 +236,10 @@ interface Totals {
 
 /** A loop inside, as the states that enter it find it. */
 interface Inside {
-    readonly entered: Map<string, Entered>;
+    readonly entered: Map<StateId, Entered>;
     /** Per state, the states it may go round as, sorted and taken out once
      *  for every state among them. */
-    readonly closed: Map<string, Closed>;
+    readonly closed: Map<StateId, Closed>;
 }
 
 /** What a loop inside does to one item entering it short of its exit: where
@@ -222,21 +254,9 @@ interface Closed {
     readonly system: System | undefined;
 }
 
-const keys = new WeakMap<ChainState, string>();
-
-function key(s: ChainState): string {
-    let k = keys.get(s);
-    if (k === undefined) {
-        k = `${s.prefix}/${s.suffix}/${s.rows.map((r) => r ?? "-").join(",")}`;
-        if (s.held !== undefined) k += `|${key(s.held)}`;
-        keys.set(s, k);
-    }
-    return k;
-}
-
-function put(d: Dist, state: ChainState, prob: number): void {
+function put(d: Dist, input: Solve, state: ChainState, prob: number): void {
     if (prob <= 0) return;
-    const k = key(state);
+    const k = input.ids.of(state);
     const hit = d.get(k);
     if (hit) hit.prob += prob;
     else d.set(k, { state, prob });
@@ -266,8 +286,9 @@ function changes(steps: readonly ChainStep[]): boolean {
 }
 
 /** Solve the chain; undefined when no step changes the state. */
-export function chain(input: ChainInput): Chain | undefined {
-    if (!changes(input.body)) return undefined;
+export function chain(given: ChainInput): Chain | undefined {
+    if (!changes(given.body)) return undefined;
+    const input: Solve = { ...given, ids: new StateIds() };
     const total = input.starts.reduce((s, x) => s + x.weight, 0);
     if (!(total > 0)) return undefined;
     const t = totals();
@@ -276,15 +297,15 @@ export function chain(input: ChainInput): Chain | undefined {
     for (const { state, weight } of input.starts) {
         if (input.exit(state)) {
             t.exit += weight / total;
-            put(exits, state, weight / total);
-        } else put(head, state, weight / total);
+            put(exits, input, state, weight / total);
+        } else put(head, input, state, weight / total);
     }
     const exitAtStart = t.exit;
     const r = iterate(input.body, head, input.exit, input, t);
     t.passes += r.passes;
     for (const { state, prob } of r.exits.values()) {
         t.exit += prob;
-        put(exits, state, prob);
+        put(exits, input, state, prob);
     }
     return {
         exit: t.exit,
@@ -340,7 +361,7 @@ function oneRound(
     body: readonly ChainStep[],
     head: Dist,
     exit: (s: ChainState) => boolean,
-    input: ChainInput,
+    input: Solve,
     t: Totals,
 ): { leaving: Dist; next: Dist } {
     const outer = t.again;
@@ -351,7 +372,7 @@ function oneRound(
     const next: Dist = new Map();
     const leaving: Dist = new Map();
     for (const { state, prob } of [...alive.values(), ...back.values()])
-        put(exit(state) ? leaving : next, state, prob);
+        put(exit(state) ? leaving : next, input, state, prob);
     return { leaving, next };
 }
 
@@ -367,7 +388,7 @@ function iterate(
     body: readonly ChainStep[],
     start: Dist,
     exit: (s: ChainState) => boolean,
-    input: ChainInput,
+    input: Solve,
     t: Totals,
 ): Rounds {
     let head = start;
@@ -401,7 +422,7 @@ function iterate(
         // goes: only a shape that has stopped moving against it is a tail.
         const settled = decay < 1 - STUCK && distance < SETTLED * (1 - decay);
         const factor = settled ? 1 / (1 - decay) : 1;
-        for (const { state, prob } of leaving.values()) put(exits, state, prob * factor);
+        for (const { state, prob } of leaving.values()) put(exits, input, state, prob * factor);
         head = next;
         if (settled) {
             addScaled(t, was, decay / (1 - decay));
@@ -420,7 +441,7 @@ function iterate(
  *  whether it may leave, by the exit, a `fail` or a `done`. */
 interface Node {
     readonly state: ChainState;
-    readonly next: ReadonlyMap<string, number>;
+    readonly next: ReadonlyMap<StateId, number>;
     /** The chance the round does not hand the state back to the head at all. */
     readonly gone: number;
     readonly ends: boolean;
@@ -432,8 +453,8 @@ interface Node {
 type Fate = "leaves" | "never" | "undecided";
 
 interface Sorted {
-    readonly nodes: ReadonlyMap<string, Node>;
-    readonly fate: (key: string) => Fate;
+    readonly nodes: ReadonlyMap<StateId, Node>;
+    readonly fate: (id: StateId) => Fate;
 }
 
 /**
@@ -452,22 +473,22 @@ function fates(
     body: readonly ChainStep[],
     head: Dist,
     exit: (s: ChainState) => boolean,
-    input: ChainInput,
+    input: Solve,
     t: Totals,
 ): Sorted {
-    const nodes = new Map<string, Node>();
+    const nodes = new Map<StateId, Node>();
     const queue = [...head.values()].map((e) => e.state);
-    const seen = new Set(queue.map(key));
+    const seen = new Set(queue.map((s) => input.ids.of(s)));
     let edges = 0;
     for (let i = 0; i < queue.length && i < MAX_EXPLORED && edges < MAX_EDGES; i++) {
         const state = queue[i]!;
         const scratch = totals(t.inside);
         scratch.work = t.work;
-        const point: Dist = new Map([[key(state), { state, prob: 1 }]]);
+        const point: Dist = new Map([[input.ids.of(state), { state, prob: 1 }]]);
         const { leaving, next } = oneRound(body, point, exit, input, scratch);
         const out = massOf(leaving) + scratch.fail + scratch.done;
         let faint = out > 0 && out <= EDGE;
-        const to = new Map<string, number>();
+        const to = new Map<StateId, number>();
         for (const [k, e] of next) {
             to.set(k, e.prob);
             if (e.prob <= EDGE) {
@@ -480,7 +501,7 @@ function fates(
                 queue.push(e.state);
             }
         }
-        nodes.set(key(state), {
+        nodes.set(input.ids.of(state), {
             state,
             next: to,
             gone: out + scratch.stuck + scratch.undecided,
@@ -488,7 +509,7 @@ function fates(
             unsure: scratch.undecided > EDGE || faint,
         });
     }
-    const into = new Map<string, string[]>();
+    const into = new Map<StateId, StateId[]>();
     for (const [k, n] of nodes) {
         for (const [to, p] of n.next) {
             if (p <= EDGE) continue;
@@ -498,7 +519,7 @@ function fates(
         }
     }
     // The states that can reach one of `from`, those included.
-    const reaching = (from: (n: Node | undefined) => boolean): Set<string> => {
+    const reaching = (from: (n: Node | undefined) => boolean): Set<StateId> => {
         const out = new Set([...seen].filter((k) => from(nodes.get(k))));
         const stack = [...out];
         for (let k = stack.pop(); k !== undefined; k = stack.pop()) {
@@ -534,7 +555,7 @@ function beyond(
     body: readonly ChainStep[],
     head: Dist,
     exit: (s: ChainState) => boolean,
-    input: ChainInput,
+    input: Solve,
     t: Totals,
     exits: Dist,
     tail: boolean,
@@ -579,7 +600,7 @@ function beyond(
             gone.never +
             gone.undecided;
         if (Math.abs(ended - mass) <= BALANCE * mass) {
-            for (const { state, prob } of leaving.values()) put(exits, state, prob);
+            for (const { state, prob } of leaving.values()) put(exits, input, state, prob);
             return {
                 passes: massOf(visits),
                 never: never + gone.never,
@@ -602,7 +623,7 @@ function beyond(
         return { ...open, outright: false };
     }
     const factor = 1 / (1 - decay);
-    for (const { state, prob } of leaving.values()) put(exits, state, prob * factor);
+    for (const { state, prob } of leaving.values()) put(exits, input, state, prob * factor);
     const gone = lost(next);
     addScaled(t, was, factor - 1);
     return {
@@ -618,8 +639,8 @@ function beyond(
 /** The states that can leave, taken out one at a time: what is left of the
  *  chances between them answers for any mass at the head. */
 interface System {
-    readonly order: readonly string[];
-    readonly at: ReadonlyMap<string, number>;
+    readonly order: readonly StateId[];
+    readonly at: ReadonlyMap<StateId, number>;
     readonly states: readonly ChainState[];
     /** Row k left of the diagonal and column k above it, as they stood when
      *  state k was taken out. */
@@ -642,12 +663,12 @@ interface System {
  * them was not followed.
  */
 function reduce(
-    nodes: ReadonlyMap<string, Node>,
-    from: Iterable<string>,
-    fate: (key: string) => Fate,
+    nodes: ReadonlyMap<StateId, Node>,
+    from: Iterable<StateId>,
+    fate: (id: StateId) => Fate,
 ): System | undefined {
-    const order: string[] = [];
-    const at = new Map<string, number>();
+    const order: StateId[] = [];
+    const at = new Map<StateId, number>();
     const stack = [...from];
     for (let k = stack.pop(); k !== undefined; k = stack.pop()) {
         if (at.has(k)) continue;
@@ -720,7 +741,7 @@ function expectedVisits({ order, at, states, q, out }: System, head: Dist): Dist
 function enter(
     step: Extract<ChainStep, { kind: "loop" }>,
     state: ChainState,
-    input: ChainInput,
+    input: Solve,
     t: Totals,
 ): Entered {
     let inside = t.inside.get(step);
@@ -728,7 +749,7 @@ function enter(
         inside = { entered: new Map(), closed: new Map() };
         t.inside.set(step, inside);
     }
-    const k = key(state);
+    const k = input.ids.of(state);
     const hit = inside.entered.get(k);
     if (hit !== undefined) return hit;
     const point: Dist = new Map([[k, { state, prob: 1 }]]);
@@ -825,9 +846,16 @@ export function advance(
     atoms: readonly ChainAtom[],
     caps: Readonly<Record<Gen, number>>,
 ): { states: { state: ChainState; weight: number }[]; ended: number } {
+    const input: Solve = {
+        atoms,
+        body: [],
+        starts: [],
+        caps,
+        exit: () => false,
+        ids: new StateIds(),
+    };
     const alive: Dist = new Map();
-    for (const { state, weight } of states) put(alive, state, weight);
-    const input: ChainInput = { atoms, body: [], starts: [], caps, exit: () => false };
+    for (const { state, weight } of states) put(alive, input, state, weight);
     const t = totals();
     const out = [...apply(step, alive, input, t).values()].map((e) => ({
         state: e.state,
@@ -836,7 +864,7 @@ export function advance(
     return { states: out, ended: t.fail };
 }
 
-function run(steps: readonly ChainStep[], alive: Dist, input: ChainInput, t: Totals): Dist {
+function run(steps: readonly ChainStep[], alive: Dist, input: Solve, t: Totals): Dist {
     let current = alive;
     for (const step of steps) {
         if (current.size === 0) break;
@@ -846,13 +874,13 @@ function run(steps: readonly ChainStep[], alive: Dist, input: ChainInput, t: Tot
     return current;
 }
 
-function apply(step: ChainStep, alive: Dist, input: ChainInput, t: Totals): Dist {
+function apply(step: ChainStep, alive: Dist, input: Solve, t: Totals): Dist {
     switch (step.kind) {
         case "other":
             return alive;
         case "restart":
             t.restart += massOf(alive);
-            for (const { state, prob } of alive.values()) put(t.again, state, prob);
+            for (const { state, prob } of alive.values()) put(t.again, input, state, prob);
             return new Map();
         case "fail":
             t.fail += massOf(alive);
@@ -864,13 +892,13 @@ function apply(step: ChainStep, alive: Dist, input: ChainInput, t: Totals): Dist
             const inside: Dist = new Map();
             const outside: Dist = new Map();
             for (const { state, prob } of alive.values()) {
-                put(step.holds(state) ? inside : outside, state, prob);
+                put(step.holds(state) ? inside : outside, input, state, prob);
             }
             add(t.taken, step.id, massOf(inside));
             const out = run(step.body, inside, input, t);
             const rest =
                 step.otherwise === undefined ? outside : run(step.otherwise, outside, input, t);
-            for (const { state, prob } of out.values()) put(rest, state, prob);
+            for (const { state, prob } of out.values()) put(rest, input, state, prob);
             return rest;
         }
         case "loop": {
@@ -879,12 +907,12 @@ function apply(step: ChainStep, alive: Dist, input: ChainInput, t: Totals): Dist
             for (const { state, prob } of alive.values()) {
                 if (step.exit(state)) {
                     atExit += prob;
-                    put(done, state, prob);
+                    put(done, input, state, prob);
                     continue;
                 }
                 const { exits, counts } = enter(step, state, input, t);
                 addEntered(t, counts, prob);
-                for (const e of exits.values()) put(done, e.state, e.prob * prob);
+                for (const e of exits.values()) put(done, input, e.state, e.prob * prob);
             }
             // A loop entered at its exit takes no round: `taken` counts it.
             add(t.taken, step.id, atExit);
@@ -899,30 +927,30 @@ function apply(step: ChainStep, alive: Dist, input: ChainInput, t: Totals): Dist
                 byOutcomes.set(out, (byOutcomes.get(out) ?? 0) + prob);
             }
             const next: Dist = new Map();
-            for (const [out, mass] of byOutcomes) spread(out, mass, next, t);
+            for (const [out, mass] of byOutcomes) spread(out, mass, next, input, t);
             return next;
         }
         case "reforge": {
             const next: Dist = new Map();
-            spread(step.outcomes, massOf(alive), next, t);
+            spread(step.outcomes, massOf(alive), next, input, t);
             return next;
         }
         case "bench": {
             const next: Dist = new Map();
             for (const { state, prob } of alive.values()) {
                 if (state[step.gen] >= input.caps[step.gen]) {
-                    put(next, state, prob);
+                    put(next, input, state, prob);
                     continue;
                 }
                 const rows = [...state.rows];
                 if (step.atom !== undefined) {
                     if (rows[step.atom] !== null) {
-                        put(next, state, prob);
+                        put(next, input, state, prob);
                         continue;
                     }
                     rows[step.atom] = step.row ?? input.atoms[step.atom]?.rows[0]?.id ?? null;
                 }
-                put(next, bump(state, step.gen, 1, rows), prob);
+                put(next, input, bump(state, step.gen, 1, rows), prob);
             }
             return next;
         }
@@ -934,10 +962,10 @@ function apply(step: ChainStep, alive: Dist, input: ChainInput, t: Totals): Dist
 }
 
 /** `mass` over a step's outcomes: the ones that end the craft count as a `fail`. */
-function spread(out: readonly Outcome[], mass: number, next: Dist, t: Totals): void {
+function spread(out: readonly Outcome[], mass: number, next: Dist, input: Solve, t: Totals): void {
     for (const o of out) {
         if (o.ends) t.fail += mass * o.prob;
-        else put(next, o.state, mass * o.prob);
+        else put(next, input, o.state, mass * o.prob);
     }
 }
 
@@ -951,11 +979,7 @@ function bump(s: ChainState, gen: Gen, by: number, rows: readonly (ModId | null)
 
 /** A removal takes one of the modifiers on the sides it reaches, each equally
  *  likely: a named one goes, or one of the unnamed count. */
-function removeStep(
-    step: Extract<ChainStep, { kind: "remove" }>,
-    alive: Dist,
-    input: ChainInput,
-): Dist {
+function removeStep(step: Extract<ChainStep, { kind: "remove" }>, alive: Dist, input: Solve): Dist {
     const next: Dist = new Map();
     const reach: readonly Gen[] = step.gen === undefined ? ["prefix", "suffix"] : [step.gen];
     for (const { state, prob } of alive.values()) {
@@ -965,7 +989,7 @@ function removeStep(
         let n = 0;
         for (const g of sides) n += state[g];
         if (n <= 0) {
-            put(next, state, prob);
+            put(next, input, state, prob);
             continue;
         }
         const named = { prefix: 0, suffix: 0 };
@@ -974,12 +998,12 @@ function removeStep(
                 named[atom.gen]++;
                 const rows = [...state.rows];
                 rows[i] = null;
-                put(next, bump(state, atom.gen, -1, rows), prob / n);
+                put(next, input, bump(state, atom.gen, -1, rows), prob / n);
             }
         });
         for (const g of sides) {
             const unnamed = Math.max(0, state[g] - named[g]);
-            if (unnamed > 0) put(next, bump(state, g, -1, state.rows), (prob * unnamed) / n);
+            if (unnamed > 0) put(next, input, bump(state, g, -1, state.rows), (prob * unnamed) / n);
         }
     }
     return next;
@@ -990,7 +1014,7 @@ function removeStep(
  * pools (a present atom's group closed, an unnamed modifier closing an
  * average group), then on an absent atom by its share or on an unnamed one.
  */
-function addStep(step: Extract<ChainStep, { kind: "add" }>, alive: Dist, input: ChainInput): Dist {
+function addStep(step: Extract<ChainStep, { kind: "add" }>, alive: Dist, input: Solve): Dist {
     const next: Dist = new Map();
     for (const { state, prob } of alive.values()) {
         const weight = { prefix: step.weight.prefix, suffix: step.weight.suffix };
@@ -1010,7 +1034,7 @@ function addStep(step: Extract<ChainStep, { kind: "add" }>, alive: Dist, input: 
         );
         const totalWeight = open.reduce((s, g) => s + weight[g], 0);
         if (open.length === 0 || totalWeight <= 0) {
-            put(next, state, prob);
+            put(next, input, state, prob);
             continue;
         }
         for (const g of open) {
@@ -1025,11 +1049,11 @@ function addStep(step: Extract<ChainStep, { kind: "add" }>, alive: Dist, input: 
                     const rows = [...state.rows];
                     rows[i] = r.id;
                     const rowShare = rowTotal > 0 ? r.weight / rowTotal : 1 / atom.rows.length;
-                    put(next, bump(state, g, 1, rows), sideProb * share * rowShare);
+                    put(next, input, bump(state, g, 1, rows), sideProb * share * rowShare);
                 }
             });
             const unnamed = Math.max(0, 1 - namedShare);
-            if (unnamed > 0) put(next, bump(state, g, 1, state.rows), sideProb * unnamed);
+            if (unnamed > 0) put(next, input, bump(state, g, 1, state.rows), sideProb * unnamed);
         }
     }
     return next;
