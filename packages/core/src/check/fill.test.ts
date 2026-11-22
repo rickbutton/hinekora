@@ -247,6 +247,42 @@ describe("under a base implicit that bars caster modifiers", () => {
             expect(listed.keys()).toEqual(r.state.keys());
         }
     });
+
+    // A fossil's own row is a random roll as a natural one is.
+    it("bars a fossil's caster row, its other row not, held or not exactly", () => {
+        for (let i = 0; i < 3; i++) {
+            const seed = 7054 + i;
+            const opts = { types: 3, fossil: true, implicit: "cannotRollCaster" } as const;
+            const cat = generateCatalog(seed, opts);
+            const [plain, caster] = cat.fossilRows;
+            expect(caster?.implicitTags.has(TagId("caster"))).toBe(true);
+            const fossil: PoolSpec = {
+                kind: "fossil",
+                blocked: new Set([TagId("attack")]),
+                noTagless: false,
+                added: cat.fossilRows,
+                essence: [],
+                fossils: cat.fossil ? [cat.fossil] : [],
+            };
+            const plan = { seed, opts, baseImplicit: [false, true], rows: 2 };
+            exactOn({ ...plan, rarities: ["rare"] }, () => [fill(fossil, reforge([4, 6]))]);
+            exactOn(plan, () => adds({ kind: "rows", mods: [plain!, caster!] }));
+            for (const held of [true, false]) {
+                const items = allItems(cat.ctx, {
+                    rows: [],
+                    rarities: ["magic"],
+                    baseImplicit: [held],
+                });
+                const r = refRunMethod(
+                    items,
+                    adds({ kind: "rows", mods: [plain!, caster!] }),
+                    cat.ctx,
+                );
+                const laid = new Set(r.state.items().flatMap((x) => x.mods.map((m) => m.row)));
+                expect([laid.has(plain!.id), laid.has(caster!.id)]).toEqual([true, !held]);
+            }
+        }
+    });
 });
 
 describe("a reforge", () => {

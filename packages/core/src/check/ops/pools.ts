@@ -229,6 +229,8 @@ export function essenceRow(
  * - essenceGrant: the essence's row for the class, at its fixed tier on any
  *   item level (Essence § Crafting).
  * - rows: the rows named.
+ * Every pool but the essence's reads the view's restrictions: a fossil's own
+ * rows and a forced row are random rolls as the natural ones are.
  * The cut is read on every pool drawn from the natural one, though today no
  * method that uses strands up draws a tagged or fossil pool: Harvest and
  * resonators consume none (Memory strand § Crafting methods consuming memory
@@ -267,8 +269,8 @@ export function ownPoolRows(
             );
             return [
                 ...natural(w, view, cut, only).filter((m) => !blocked(m)),
-                ...of(added),
-                ...of(spec.essence),
+                ...of(added).filter((m) => allowedBy(view, m)),
+                ...of(spec.essence).filter((m) => allowedBy(view, m)),
             ];
         }
         case "essenceGrant": {
@@ -276,8 +278,28 @@ export function ownPoolRows(
             return row === undefined ? [] : of([row]);
         }
         case "rows":
-            return of(spec.mods);
+            return of(spec.mods).filter((m) => allowedBy(view, m));
     }
+}
+
+const allowedBy = (view: PoolView, m: Mod): boolean =>
+    view.restrictions.every((e) => restrictionAllows(e, m));
+
+/** The rows a fossil pool or a `rows` pool lays beside the natural ones, so
+ *  the image reads which restrictions bar them; one array per set of rows,
+ *  since the analyses are kept by the array. */
+const sourcedCache = new WeakMap<Registry, Map<string, readonly Mod[]>>();
+
+function withSourced(w: Where, natural: boolean, sourced: readonly Mod[]): readonly Mod[] {
+    const own = natural ? baseRows(w).rows : [];
+    if (sourced.length === 0) return own;
+    let byKey = sourcedCache.get(w.registry);
+    if (byKey === undefined)
+        sourcedCache.set(w.registry, (byKey = new Map<string, readonly Mod[]>()));
+    const key = [w.base.id, natural ? 1 : 0, ...sourced.map((m) => m.id)].join("|");
+    let rows = byKey.get(key);
+    if (rows === undefined) byKey.set(key, (rows = [...own, ...sourced]));
+    return rows;
 }
 
 /** What a pool's rows depend on, for the image to split the state by. A
@@ -298,10 +320,16 @@ function ownScope(w: Where, spec: OwnPool, cut: boolean): PoolScope | undefined 
             return { weighed: baseRows(w).rows, ranked: spec.topTiers === true, strands: cut };
         case "tagged":
         case "influence":
-        case "fossil":
             return { weighed: baseRows(w).rows, ranked: false, strands: cut };
-        case "essenceGrant":
+        case "fossil": {
+            const weighed = withSourced(w, true, [...spec.added, ...spec.essence]);
+            return { weighed, ranked: false, strands: cut };
+        }
+        // Its rows are laid whatever the item's tags; only a cannot-roll
+        // restriction changes which of them it offers.
         case "rows":
+            return { weighed: withSourced(w, false, spec.mods), ranked: false, strands: false };
+        case "essenceGrant":
             return undefined;
     }
 }

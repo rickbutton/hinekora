@@ -5,7 +5,7 @@ import type { ItemFacts } from "../model/item.js";
 import { influenceOfTag } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
 import { foulbornKept } from "../model/strands.js";
-import { effectsOf } from "../model/effects.js";
+import { effectsOf, poolRestrictPredicate } from "../model/effects.js";
 import { lookupWeight, pool, slotOpen } from "../pool/pool.js";
 import { influenceTagsOfKey } from "./influence.js";
 import { reforgeImage, type ReforgeMode } from "./ops/fill.js";
@@ -154,6 +154,9 @@ describe("the pools", () => {
                 const natural = pool(cat.registry.catalog, f).map((c) => c.mod);
                 const fromInfluence = influenceTagsOfKey(cat.registry, cat.base, x.influences);
                 const own = new Set([...f.tags].filter((t) => !fromInfluence.has(t)));
+                // A fossil's own rows and a `rows` pool's are random rolls too,
+                // which a cannot-roll metamod bars.
+                const allowed = poolRestrictPredicate(f.effects);
                 const expect_ = (spec: PoolSpec, rows: readonly Mod[]): void => {
                     expect(
                         ids(eligible(spec, x, cat.ctx, false)),
@@ -194,14 +197,17 @@ describe("the pools", () => {
                             (m) =>
                                 m.minLevel <= cat.ilvl &&
                                 (lookupWeight(m, cat.base.tags) ?? 0) > 0 &&
-                                fitsBy(f, m),
+                                fitsBy(f, m) &&
+                                allowed(m),
                         ),
-                        ...(cat.essence && fitsBy(f, cat.essence) ? [cat.essence] : []),
+                        ...(cat.essence && fitsBy(f, cat.essence) && allowed(cat.essence)
+                            ? [cat.essence]
+                            : []),
                     ],
                 );
                 expect_(
                     { kind: "rows", mods: named },
-                    named.filter((m) => fitsBy(f, m)),
+                    named.filter((m) => fitsBy(f, m) && allowed(m)),
                 );
                 // Foulborn currency § Mechanics: each type's top tiers, by rank.
                 expect_(

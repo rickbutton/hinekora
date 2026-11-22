@@ -13,7 +13,14 @@ import type { Base } from "../model/base.js";
 import type { ItemFacts } from "../model/item.js";
 import type { EldritchSide } from "../model/marks.js";
 import type { Mod } from "../model/mod.js";
-import { type Effect, effectKey, effectsKey, effectsOf, metamodKey } from "../model/effects.js";
+import {
+    type Effect,
+    effectKey,
+    effectsKey,
+    effectsOf,
+    metamodKey,
+    poolRestrictPredicate,
+} from "../model/effects.js";
 import { lookupWeight, pool } from "../pool/pool.js";
 import { veiledPool } from "../pool/veiled.js";
 import { FOULBORN_AS_STRANDS } from "../model/strands.js";
@@ -640,8 +647,9 @@ function poolRows(
             const rows = natural()
                 .filter((r) => !blocked(r.mod) && !untagged(r.mod))
                 .map((r) => ({ mod: r.mod, weight: r.weight * multiplier(r.mod) }));
+            const allows = poolRestrictPredicate(sureFacts(a, undefined, reading).effects);
             for (const m of spec.added) {
-                if (blocked(m) || m.minLevel > a.u.ilvl) continue;
+                if (blocked(m) || m.minLevel > a.u.ilvl || !allows(m)) continue;
                 const w = lookupWeight(m, a.u.base.tags) ?? 0;
                 if (w > 0) rows.push({ mod: m, weight: w * multiplier(m) });
             }
@@ -677,8 +685,10 @@ function poolRows(
             const mod = id === undefined ? undefined : registry.resolveMod(id);
             return mod?.ok ? [{ mod: mod.value, weight: 1 }] : [];
         }
-        case "rows":
-            return spec.mods.map((mod) => ({ mod, weight: 1 }));
+        case "rows": {
+            const allows = poolRestrictPredicate(sureFacts(a, undefined, reading).effects);
+            return spec.mods.filter(allows).map((mod) => ({ mod, weight: 1 }));
+        }
         case "veiledPlaceholder": {
             // A veiled prefix or a veiled suffix, alike: the placeholders carry
             // no spawn weight to say otherwise.

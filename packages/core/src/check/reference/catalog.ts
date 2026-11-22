@@ -579,13 +579,28 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
             source: "fossil",
             spawn: [{ tag: TAG_DEFAULT, weight: 100 }],
         });
-        extra.push(row);
+        // Beside the attack wands' implicit the fossil adds a caster row it
+        // bars, and one it does not.
+        const barred =
+            options.implicit === "cannotRollCaster"
+                ? modRow({
+                      id: "Delve2",
+                      type: "TypeDelveCaster",
+                      gen: row.gen === "prefix" ? "suffix" : "prefix",
+                      text: rowText(r, "DelveCaster", 0, true),
+                      domain: Domain("delve"),
+                      source: "fossil",
+                      spawn: [{ tag: TAG_DEFAULT, weight: 100 }],
+                      implicitTags: ["caster"],
+                  })
+                : undefined;
+        extra.push(row, ...(barred === undefined ? [] : [barred]));
         fossils.push({
             id: "TestFossil",
             name: "Test Fossil",
             blockedTags: new Set([TagId("attack")]),
             weights: new Map(),
-            addedMods: [row.id],
+            addedMods: [row.id, ...(barred === undefined ? [] : [barred.id])],
             forcedMods: [],
             corruptedEssenceChance: 0,
             fractures: false,
@@ -649,7 +664,7 @@ export function generateCatalog(seed: number, options: CatalogOptions = {}): Cat
         metamods: (options.metamods ?? []).map((k) => held(metamod(k))),
         eldritch,
         fossil: fossils[0],
-        fossilRows: fossils.length > 0 ? extra.filter((m) => m.id === "Delve1").map(held) : [],
+        fossilRows: extra.filter((m) => m.source === "fossil").map(held),
     };
 }
 
