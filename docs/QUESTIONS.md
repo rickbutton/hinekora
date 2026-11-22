@@ -605,4 +605,6 @@ Wand? [Version 3.30.0 § Bug Fixes](https://www.poewiki.net/wiki/Version_3.30.0#
 fixed how these wands showed "special Essence modifiers", which reads as yes.
 **Probe:** one on a Normal Kinetic Wand; record the refusal or the modifier.
 **Assumed:** refused while the wand holds its implicit. **Encoded in:** `check/library.ts`
-`essenceOps`; `check/ops/fill.ts`, `check/reference/ops/fill.ts` `implicitAllows`.
+`essenceOps`; `check/ops/fill.ts`, `check/reference/ops/fill.ts` `implicitAllows`;
+`check/item-block.ts` `declareItem`, which still lets an essence's caster modifier be
+declared on the wand (a larger start cannot pass a refused craft).
