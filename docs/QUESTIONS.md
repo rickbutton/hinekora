@@ -601,17 +601,17 @@ declared on the wand (a larger start cannot pass a refused craft).
 
 ### Q138 · probe · open — the Breach rings' "Cannot roll Modifiers of Non-Cold Damage Types"
 
-**Q:** do the five Breach rings' implicits (Cryonic Ring's non-cold, and the fire,
-lightning, physical and chaos ones) work as an attack wand's? Which modifiers are "of a
-damage type"? Neither the rings' pages nor the data say;
-[Metamod § Version history](https://www.poewiki.net/wiki/Metamod#Version_history) (3.12.0)
-has the cannot-roll metacrafts read the tags shown.
-**Probe:** on a Cryonic Ring, Chaos Orbs until fire resistance; bench fire and cold
-resistance; an Essence of Anger; the grove's cold-to-fire resistance change; a veiled
-modifier unveiled; record each refusal or result.
-**Assumed:** while held, a modifier tagged fire, lightning, physical or chaos is barred
-from random rolls (a fossil's own rows too) and the bench; cold-and-fire resistance is
-barred, Herald of Thunder (no element tag) is not; the essence and the change are
-refused; the unveil is free. **Encoded in:** `model/metamods.ts` `withImplicitEffects`;
-`check/library.ts` `essenceOps`, `benchOps`, `harvestChangeOps`; `check/ops/fill.ts`,
-`check/reference/ops/fill.ts` `implicitAllows`.
+**Q:** do the five Breach rings' implicits (non-cold, fire, lightning, physical, chaos)
+work as an attack wand's, and which modifiers are "of a damage type"? The rings' pages
+and data are silent; [Metamod § Version history](https://www.poewiki.net/wiki/Metamod#Version_history)
+(3.12.0) has the cannot-roll metacrafts read tags.
+**Probe:** on a Cryonic Ring, chaos until fire resistance; bench fire and cold
+resistance; an Essence of Anger; a cold-to-fire change; an unveil; record each.
+**Assumed:** while held, a fire, lightning, physical or chaos tag bars a row from random
+rolls (fossil and essence rows too) and the bench: cold-and-fire resistance is barred,
+Herald of Thunder not; the essence and the change are refused; the unveil is free; a barred
+forced fossil row would lapse (Q113), but none exists. **Encoded in:**
+`model/metamods.ts` `withImplicitEffects`; `check/library.ts` `essenceOps`, `benchOps`,
+`harvestChangeOps`; `check/ops/fill.ts`, `check/reference/ops/fill.ts` `implicitAllows`;
+`check/ops/pools.ts` `ownPoolRows`; `check/reference/ops/pools.ts` `viewOf`;
+`cost/roll.ts` `poolRows`; `check/item-block.ts` `declareItem`.

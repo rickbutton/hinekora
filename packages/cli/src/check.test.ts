@@ -221,6 +221,23 @@ describe("the bases whose implicit bars modifiers from rolling, against real dat
             ["Synaptic Ring", others("lightning")],
         ]);
     });
+
+    // A forced row such an implicit bars lapses, as any forced row with no
+    // place does (QUESTIONS.md Q113, Q138). Should a fossil force one, this
+    // fails, and whether hinekora refuses the resonator must be decided.
+    it("bar no row a fossil forces", () => {
+        const tags = new Set([...restrictingBases().values()].flatMap((t) => t.split(",")));
+        const forced = loadDefaultPoe1().fossils.flatMap((f) =>
+            f.forcedMods.map((id) => {
+                const row = registry.resolveMod(id);
+                if (!row.ok) throw new Error(`no row ${id}`);
+                return row.value;
+            }),
+        );
+        expect(forced.length).toBeGreaterThan(0);
+        const barred = forced.filter((m) => [...m.implicitTags].some((t) => tags.has(t)));
+        expect(barred.map((m) => m.id)).toEqual([]);
+    });
 });
 
 describe('the attack wands\' "Cannot roll Caster Modifiers" implicit, against real data', () => {
