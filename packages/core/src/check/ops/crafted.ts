@@ -52,7 +52,9 @@ interface Limit {
 const limitCache = new WeakMap<Universe, readonly Limit[]>();
 
 /** Every item by its crafted limit: the greatest `craftedCap` its modifiers
- *  carry, one where none does (model/effects.ts `craftedCapOf`). */
+ *  carry, one where none does (model/effects.ts `craftedCapOf`). The
+ *  multimod counts toward its own three (Version 3.9.0: "limited to 2
+ *  additional crafts"). */
 export function limits(u: Universe): readonly Limit[] {
     const hit = limitCache.get(u);
     if (hit !== undefined) return hit;

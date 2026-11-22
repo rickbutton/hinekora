@@ -359,10 +359,11 @@ export function vaalOps(base: Base): readonly Op[] {
     return [notCorrupted, corrupt, either([], ...outcomes)];
 }
 
-/** The item types the Corruption Altar takes: "an Equipment Item" (Version
- *  3.30.0, Incursion and Atziri), which Equipment reads as weapons, off-hands,
- *  armour and jewellery. Corrupted § Twice Corrupted adds jewels; refusing
- *  them cannot accept a craft the game refuses (`QUESTIONS.md` Q32). */
+/** The item types the Corruption Altar takes: "an Equipment Item or Gem"
+ *  (Version 3.30.0, Incursion and Atziri), which Equipment reads as weapons,
+ *  off-hands, armour and jewellery. Corrupted § Twice Corrupted and Locus of
+ *  Corruption § Possible outcomes add jewels; refusing them cannot accept a
+ *  craft the game refuses (`QUESTIONS.md` Q32). */
 const ALTAR_TAGS = ["weapon", "armour", "ring", "amulet", "belt", "quiver"].map(TagId);
 
 /** The Corruption Altar corrupts a corrupted item a second time, making it
@@ -672,7 +673,9 @@ export function resonatorOps(r: Resonator): readonly Op[] {
 }
 
 /** Veiled Chaos Orb: a rare reforge, one of whose modifiers is veiled. It is
- *  refused only when a veiled or unveiled modifier would survive the reforge. */
+ *  refused only when a veiled modifier would survive the reforge, fractured
+ *  or kept by a metamod (Version 3.30.0b § Hotfix 4), and an unveiled one
+ *  alike (`QUESTIONS.md` Q119). */
 export const VEILED_CHAOS: readonly Op[] = [
     notCorrupted,
     isRare,

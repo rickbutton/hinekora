@@ -68,16 +68,16 @@ not.
 ### Q32 · probe · open — the Corruption Altar
 
 **Q:** [Version 3.30.0 § Incursion and Atziri](https://www.poewiki.net/wiki/Version_3.30.0#Incursion_and_Atziri)
-has it corrupt "an Equipment Item" a second time;
+has it corrupt "an Equipment Item or Gem" a second time;
 [Corrupted § Twice Corrupted](https://www.poewiki.net/wiki/Corrupted#Twice_Corrupted)
-adds jewels. Does it take one, or an uncorrupted item? Are the odds and the implicit rule
-of [Locus of Corruption § Possible outcomes](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes),
-marked as awaiting 3.30, current, or does its implicit replace two, as
-[Corrupted § Corrupted implicit modifiers](https://www.poewiki.net/wiki/Corrupted#Corrupted_implicit_modifiers)
-says? Does the copy show `Twice Corrupted` alone? Does it then take an unveil?
+says "corrupted equipment or jewel", and [Locus of Corruption § Possible outcomes](https://www.poewiki.net/wiki/Locus_of_Corruption#Possible_outcomes)
+gives a jewel its own outcome. Does it take a jewel, or an uncorrupted item? Are that
+section's odds and implicit rule (awaiting 3.30) current, or does its implicit replace two
+([Corrupted § Corrupted implicit modifiers](https://www.poewiki.net/wiki/Corrupted#Corrupted_implicit_modifiers))?
+Does the copy show `Twice Corrupted` alone? Does it then take an unveil?
 **Probe:** corrupted Rares, a jewel, boots with an eldritch and a corruption implicit, an
-uncorrupted ring; the altar forty times, then an unveil; record what changes.
-**Assumed:** corrupted equipment only; 1:1:2 to no change, an implicit, destroyed; its
+uncorrupted ring; forty altars, then an unveil.
+**Assumed:** corrupted equipment, no jewel; 1:1:2 to no change, an implicit, destroyed; its
 implicit is added beside a lone corruption implicit, else replaces any one implicit
 ([Version 3.30.0c](https://www.poewiki.net/wiki/Version_3.30.0c) fixed a unique's case);
 `Twice Corrupted` alone; no unveil. **Encoded in:** `check/library.ts` `locusOps`;
@@ -96,8 +96,10 @@ replaces, of several, picked evenly?
 
 **Q:** which row is it?
 [Modifier § Harvest Crafting](https://www.poewiki.net/wiki/Modifier#Harvest_Crafting)
-has an Incursion resistance become the other element's Incursion row, a bench craft the
-bench's (seen); nothing covers an essence-only, fossil, unveiled, elevated or retired row.
+has an Incursion resistance become the other element's Incursion row (a legacy item's:
+[Version 3.30.0](https://www.poewiki.net/wiki/Version_3.30.0#Incursion_and_Atziri)
+removed their sources on Magic and Rare items), a bench craft the bench's (seen); nothing
+covers an essence-only, fossil, unveiled, elevated or retired row.
 **Probe:** a Rare with an unveiled or essence-only fire modifier; change it to cold;
 record the cold's values and name.
 **Assumed:** the same source's counterpart row or any natural row of the target, above the
@@ -238,7 +240,8 @@ with a fractured modifier; apply a scour to each; record refused or consumed.
 
 **Q:** does the bench craft a modifier onto a Normal item, making it Magic?
 [Crafting Bench § Using the crafting bench](https://www.poewiki.net/wiki/Crafting_Bench#Using_the_crafting_bench)
-asks only for an open slot of the modifier's side and names Magic and Rare items.
+asks only for an open slot of the modifier's side and names Magic and Rare items. Craft
+of Exile's changelog (2026-10-15) reads it as allowed: evidence, not a rule.
 **Probe:** a Normal ring, the bench; craft any modifier; record refused, or the item's
 rarity afterwards.
 **Assumed:** refused: a Normal item has no slot. **Encoded in:** `check/library.ts`
@@ -349,16 +352,6 @@ only that it compares the first number.
 number.
 **Assumed:** false. **Encoded in:** `check/reference/conditions.ts` `holds`.
 
-### Q107 · probe · open — the multimod and its own three
-
-**Q:** does "Can have up to 3 Crafted Modifiers" count toward the three?
-[Metamod](https://www.poewiki.net/wiki/Metamod) and
-[Crafting Bench](https://www.poewiki.net/wiki/Crafting_Bench) do not say.
-**Probe:** craft the multimod, then bench crafts until the bench refuses; record how many
-it took.
-**Assumed:** it counts, so two more fit. **Encoded in:** `check/ops/types.ts` `craftedBelowCap`;
-`check/reference/item.ts` `craftedLimit`.
-
 ### Q108 · probe · open — an Astrolabe Amulet and a fracture
 
 **Q:** the [Astrolabe Amulet](https://www.poewiki.net/wiki/Astrolabe_Amulet) counts as
@@ -450,28 +443,26 @@ results are each blocked by a modifier on it; unveil; record what happens.
 **Assumed:** it stays fractured; with nothing to offer the veiled modifier stays and the
 step is accepted. **Encoded in:** `check/reference/ops/crafted.ts`.
 
-### Q119 · probe · open — the Veiled Chaos Orb beside a veiled modifier it would keep
+### Q119 · probe · open — the Veiled Chaos Orb beside an unveiled modifier it would keep
 
-**Q:** is it refused, and does it honour the protections as a Chaos Orb does?
-[Metamod § Rules and Exceptions](https://www.poewiki.net/wiki/Metamod#Rules_and_Exceptions) has no row for it.
+**Q:** [Version 3.30.0b § Hotfix 4](https://www.poewiki.net/wiki/Version_3.30.0b#Hotfix_4)
+settles a veiled modifier: allowed unless fractured or kept by a metamod. Is an unveiled
+one alike, and does the reforge honour the protections as a Chaos Orb does?
 **Probe:** a Rare with an unveiled prefix and "Prefixes Cannot Be Changed", and one with a
 fractured unveiled modifier; a Veiled Chaos Orb on each.
-**Assumed:** refused where a veiled or unveiled modifier is fractured or on a protected
-side; protections honoured. **Encoded in:** `check/library.ts` `VEILED_CHAOS`;
-`check/reference/ops/crafted.ts`.
+**Assumed:** as a veiled one; protections honoured. **Encoded in:** `check/library.ts`
+`VEILED_CHAOS`; `check/reference/ops/crafted.ts`.
 
-### Q120 · probe · open — the bench under a metamod, and an Aspect
+### Q120 · probe · open — the bench's removal under a protection, and an Aspect
 
-**Q:** does "Remove Crafted Mods" take a crafted modifier on a protected side? Does
-"Cannot roll Attack Modifiers" bar an attack bench craft? Is a beastcrafted Aspect
-([Aspect of the Cat](https://www.poewiki.net/wiki/Aspect_of_the_Cat)) a crafted modifier?
+**Q:** does "Remove Crafted Mods" take a crafted modifier on a protected side? Is a
+beastcrafted Aspect ([Aspect of the Cat](https://www.poewiki.net/wiki/Aspect_of_the_Cat))
+a crafted modifier?
 **Probe:** a Rare with the multimod, "Prefixes Cannot Be Changed" and a crafted prefix;
-remove crafted. A Rare with the cannot-roll metamod; craft an attack modifier. An item with
-an Aspect; bench-craft, then remove crafted.
-**Assumed:** every unfractured crafted modifier goes; the craft is not barred; an Aspect
-is not crafted. **Encoded in:** `check/library.ts` `BENCH_REMOVE`, `benchOps`,
-`beastAspectOps`; `check/reference/ops/crafted.ts`; `cost/roll.ts` `removes`,
-`keepsBeyondRemoval`.
+remove crafted. An item with an Aspect; bench-craft, then remove crafted.
+**Assumed:** every unfractured crafted modifier goes; an Aspect is not crafted. **Encoded
+in:** `check/library.ts` `BENCH_REMOVE`, `beastAspectOps`; `check/reference/ops/crafted.ts`;
+`cost/roll.ts` `removes`, `keepsBeyondRemoval`.
 
 ### Q121 · probe · open — an Orb of Dominance: its order, the item level, the other side
 
@@ -530,17 +521,6 @@ offered.
 `check/ops/crafted-rows.ts` `unveilRows`; `check/ops/crafted.ts`;
 `check/reference/ops/crafted.ts`.
 
-### Q126 · probe · open — the advanced copy of a veiled modifier
-
-**Q:** what header and line does the advanced copy (Ctrl+Alt+C) give a modifier still
-veiled? The `mods` Cargo table names the placeholders "Veiled" and "of the Veil";
-[Veiled modifier](https://www.poewiki.net/wiki/Veiled_modifier) shows no copy.
-**Probe:** a Rare item with one veiled prefix and one veiled suffix (a Veiled Chaos Orb's
-output, a Betrayal drop); copy it with Ctrl+Alt+C; record the two headers and the lines
-under them, and whether `Veiled` leads the header as it does on an unveiled modifier.
-**Assumed:** the header of any affix, `{ Prefix Modifier "Veiled" }`, over the table's
-text. **Encoded in:** `render/item.ts` `modHeader`, `textless`.
-
 ### Q128 · probe · open — the partial protections
 
 **Q:** [§ Endgame Changes](https://www.poewiki.net/wiki/Version_3.30.0#Endgame_Changes)
@@ -575,15 +555,14 @@ that fit, the partial protections among them?
 crafted modifier between uses; count each result.
 **Assumed:** each alike. **Encoded in:** `cost/roll.ts` `poolRows`.
 
-### Q132 · probe · open — the advanced-copy header of a base or corruption implicit
+### Q132 · probe · open — a corruption implicit's advanced-copy header at 3.30
 
-**Q:** what header does the advanced copy (Ctrl+Alt+C) give a base's own implicit and a
-corruption implicit? The wiki's patch notes say both "Corruption Implicit Modifier" and
-"Corrupted Implicit Modifier".
-**Probe:** copy a ring with its base implicit, and a corrupted ring with a corruption
-implicit, with Ctrl+Alt+C; record each implicit's header.
-**Assumed:** `{ Implicit Modifier — … }` and `{ Corruption Implicit Modifier — … }`.
-**Encoded in:** `render/item.ts` `IMPLICIT_NAME`, `IMPLICIT_SHORT`.
+**Q:** a 3.30 copy heads a base implicit `{ Implicit Modifier }`; the corruption
+implicit's `{ Corruption Implicit Modifier — … }` is seen only on 3.28 copies. Is it so at
+3.30?
+**Probe:** copy a corrupted ring with a corruption implicit with Ctrl+Alt+C; record the
+header.
+**Assumed:** as at 3.28. **Encoded in:** `render/item.ts` `IMPLICIT_NAME`, `IMPLICIT_SHORT`.
 
 ### Q133 · decision · open — the Gilded Fossil's implicit
 

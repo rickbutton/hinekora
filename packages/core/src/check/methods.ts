@@ -343,8 +343,9 @@ function harvestChange(
         if (!bySource.has(was.id)) bySource.set(was.id, []);
         if (!isNatural(was)) {
             // A row another source placed becomes that source's counterpart row,
-            // and that alone for an Incursion modifier (Modifier § Harvest
-            // Crafting) and a bench craft (seen in game: the result is the
+            // and that alone for an Incursion modifier, a legacy item's since
+            // Version 3.30.0 removed their sources on Magic and Rare items
+            // (Modifier § Harvest Crafting), and a bench craft (seen in game: the result is the
             // bench's modifier, crafted still). Of any other the natural rows
             // stay possible beside it (`QUESTIONS.md` Q52). Where the source
             // has no counterpart for the item the natural rows are the result,

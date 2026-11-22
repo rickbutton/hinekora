@@ -7,7 +7,8 @@
  *   modifier of its type or group (the same section), and fewer crafted
  *   modifiers than the item's limit, read from the modifiers it holds then
  *   (`craftedLimit`: one, three under the multimod, which counts toward its
- *   own three, QUESTIONS.md Q107).
+ *   own three: "items with the mod will now be limited to 2 additional
+ *   crafts", Version 3.9.0 § Crafted Modifiers).
  * - The replacing removal before a craft: under a limit of one, the item's
  *   single crafted modifier goes; under the multimod nothing goes, the craft
  *   adding beside (Crafting Bench § Using the crafting bench: the craft
@@ -52,15 +53,17 @@
  *   a crafted mod could normally be added without removing another one
  *   first").
  *
+ * - The Veiled Chaos Orb refuses an item whose veiled modifier its strip
+ *   keeps, fractured or kept by a metamod (Version 3.30.0b § Hotfix 4).
+ * - A bench craft ignores the cannot-roll metamods (seen in game).
+ *
  * What the wiki does not settle, assumed here:
  * - a fractured placeholder unveils fractured, and carries its crafted mark;
  * - the placeholder stays where no result can be offered (a library check is
  *   to replace this);
- * - the Veiled Chaos Orb refuses an item whose veiled or unveiled modifier its
- *   strip keeps, fractured or on a protected side, and its strip honours the
- *   protections;
- * - the bench's removal ignores the protections, and a bench craft the
- *   cannot-roll metamods;
+ * - the Veiled Chaos Orb refuses an unveiled modifier its strip keeps as a
+ *   veiled one, and its strip honours the protections;
+ * - the bench's removal ignores the protections;
  * - an Aspect is laid uncrafted.
  */
 import { keeps } from "../rules.js";
