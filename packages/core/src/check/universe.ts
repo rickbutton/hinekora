@@ -879,6 +879,19 @@ export class Universe {
         }
         const types = this.eldritchTypeList;
         const toLogical = (slot: number): number => (this.imprint ? slot >> 1 : slot);
+        // An eldritch type's step reads only the tiers that name it, which most
+        // types of a side share: one step stands for each such class.
+        const typeClasses = (side: EldritchSide): number[] => {
+            const first = new Map<string, number>();
+            return types[side].map((type, value) => {
+                if (type === undefined) return value;
+                const k = namedAt[side].map((n) => (n.has(type) ? 1 : 0)).join("");
+                const at = first.get(k);
+                if (at === undefined) first.set(k, value);
+                return at ?? value;
+            });
+        };
+        const eldritchClasses = { exarch: typeClasses("exarch"), eater: typeClasses("eater") };
 
         const own = baseImplicitOf(registry, base);
         const corruptionRows = this.corruptionRows;
@@ -937,9 +950,13 @@ export class Universe {
         return {
             init,
             slots: this.itemSlots(),
-            // The step reads a value's side and fracture alone.
-            classes: (slot: number) =>
-                this.classesBy("wf", slot, (v) => `${v.row.gen}${v.fractured ? 1 : 0}`),
+            classes: (slot: number) => {
+                const kind = logical[toLogical(slot)]!.kind;
+                if (kind === "exarchType") return eldritchClasses.exarch;
+                if (kind === "eaterType") return eldritchClasses.eater;
+                // A modifier's step reads its side and fracture alone.
+                return this.classesBy("wf", slot, (v) => `${v.row.gen}${v.fractured ? 1 : 0}`);
+            },
             step: (slot: number, value: number, s: S): S | undefined => {
                 const i = toLogical(slot);
                 const at = logical[i]!;
