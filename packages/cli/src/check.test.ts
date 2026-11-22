@@ -320,6 +320,19 @@ describe('the Breach rings\' "Cannot roll Modifiers of Non-<type> Damage Types",
         expect(run(ring("Iron Ring", "normal") + loop("fire resistance")).ok).toBe(true);
     });
 
+    // Among the Glyphic Fossil's ring modifiers are Hysteria's "Gain 10% of
+    // Physical Damage as Extra Fire Damage", tagged fire and physical, and
+    // Horror's cold "Added Cold Damage per Frenzy Charge".
+    it("has a Glyphic Fossil lay its cold essence modifier on a Cryonic Ring, never its fire one", () => {
+        const loop = (mod: string) =>
+            `fossil "glyphic"\nuntil has "${mod}" {\n    fossil "glyphic"\n}\n`;
+        const fire = "FireDamageAsPortionOfPhysicalDamageEssence1";
+        expect(errors(ring("Cryonic Ring", "normal") + loop(fire))).toMatch(/can never exit/);
+        expect(run(ring("Iron Ring", "normal") + loop(fire)).ok).toBe(true);
+        const cold = "AddedColdDamagePerFrenzyChargeEssence1";
+        expect(run(ring("Cryonic Ring", "normal") + loop(cold)).ok).toBe(true);
+    });
+
     it("refuses a fire bench craft, a cold one not", () => {
         const life = '    prefixes: [ "maximum life" t1 ]\n';
         expect(errors(ring("Cryonic Ring", "rare", life) + 'bench "fire resistance"\n')).toContain(

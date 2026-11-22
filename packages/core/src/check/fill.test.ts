@@ -248,7 +248,8 @@ describe("under a base implicit that bars caster modifiers", () => {
         }
     });
 
-    // A fossil's own row is a random roll as a natural one is.
+    // A fossil's own row, and a corrupted essence's modifier the Glyphic
+    // Fossil gives a chance of, are random rolls as a natural one is.
     it("bars a fossil's caster row, its other row not, held or not exactly", () => {
         for (let i = 0; i < 3; i++) {
             const seed = 7054 + i;
@@ -256,30 +257,41 @@ describe("under a base implicit that bars caster modifiers", () => {
             const cat = generateCatalog(seed, opts);
             const [plain, caster] = cat.fossilRows;
             expect(caster?.implicitTags.has(TagId("caster"))).toBe(true);
-            const fossil: PoolSpec = {
+            const fossil = (own: "added" | "essence"): PoolSpec => ({
                 kind: "fossil",
                 blocked: new Set([TagId("attack")]),
                 noTagless: false,
-                added: cat.fossilRows,
-                essence: [],
+                added: own === "added" ? cat.fossilRows : [],
+                essence: own === "essence" ? cat.fossilRows : [],
                 fossils: cat.fossil ? [cat.fossil] : [],
-            };
+            });
             const plan = { seed, opts, baseImplicit: [false, true], rows: 2 };
-            exactOn({ ...plan, rarities: ["rare"] }, () => [fill(fossil, reforge([4, 6]))]);
+            for (const own of ["added", "essence"] as const) {
+                exactOn({ ...plan, rarities: ["rare"] }, () => [
+                    fill(fossil(own), reforge([4, 6])),
+                ]);
+            }
             exactOn(plan, () => adds({ kind: "rows", mods: [plain!, caster!] }));
-            for (const held of [true, false]) {
+            const laid = (rarity: Rarity, held: boolean, ops: readonly Op[]): boolean[] => {
                 const items = allItems(cat.ctx, {
                     rows: [],
-                    rarities: ["magic"],
+                    rarities: [rarity],
                     baseImplicit: [held],
                 });
-                const r = refRunMethod(
-                    items,
-                    adds({ kind: "rows", mods: [plain!, caster!] }),
-                    cat.ctx,
-                );
-                const laid = new Set(r.state.items().flatMap((x) => x.mods.map((m) => m.row)));
-                expect([laid.has(plain!.id), laid.has(caster!.id)]).toEqual([true, !held]);
+                const r = refRunMethod(items, ops, cat.ctx);
+                const ids = new Set(r.state.items().flatMap((x) => x.mods.map((m) => m.row)));
+                return [ids.has(plain!.id), ids.has(caster!.id)];
+            };
+            for (const held of [true, false]) {
+                const rows = adds({ kind: "rows", mods: [plain!, caster!] });
+                expect(laid("magic", held, rows)).toEqual([true, !held]);
+                for (const own of ["added", "essence"] as const) {
+                    const reforged = [fill(fossil(own), reforge([4, 6]))];
+                    expect(laid("rare", held, reforged), `${own}, held ${held}`).toEqual([
+                        true,
+                        !held,
+                    ]);
+                }
             }
         }
     });
